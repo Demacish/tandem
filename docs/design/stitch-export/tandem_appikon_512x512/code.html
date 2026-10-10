@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C2410C"/>
+      <stop offset="100%" stop-color="#9A3412"/>
+    </linearGradient>
+    <linearGradient id="potGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFEDD5"/>
+      <stop offset="100%" stop-color="#FED7AA"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)"/>
+  <g filter="url(#shadow)">
+    <!-- Steam waves -->
+    <path d="M 210 140 Q 225 110 210 80" stroke="#FFEDD5" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.85"/>
+    <path d="M 256 130 Q 275 95 256 60" stroke="#FFEDD5" stroke-width="16" stroke-linecap="round" fill="none" opacity="0.95"/>
+    <path d="M 302 140 Q 317 110 302 80" stroke="#FFEDD5" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.85"/>
+    <!-- Lid handle -->
+    <ellipse cx="256" cy="180" rx="26" ry="12" fill="url(#potGrad)"/>
+    <!-- Lid -->
+    <path d="M 160 210 C 180 185 332 185 352 210 Z" fill="url(#potGrad)"/>
+    <!-- Pot rim -->
+    <rect x="140" y="210" width="232" height="22" rx="11" fill="#FFFFFF"/>
+    <!-- Pot body -->
+    <path d="M 152 232 C 152 350 180 375 256 375 C 332 375 360 350 360 232 Z" fill="url(#potGrad)"/>
+    <!-- Pot handles -->
+    <path d="M 145 255 C 115 255 115 305 145 305" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" fill="none"/>
+    <path d="M 367 255 C 397 255 397 305 367 305" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" fill="none"/>
+    <!-- Decorative Heart/Tandem spoon emblem in center -->
+    <circle cx="256" cy="295" r="32" fill="#C2410C" opacity="0.15"/>
+    <path d="M 256 280 C 250 270 238 270 234 278 C 228 290 256 312 256 312 C 256 312 284 290 278 278 C 274 270 262 270 256 280 Z" fill="#C2410C"/>
+  </g>
+</svg>

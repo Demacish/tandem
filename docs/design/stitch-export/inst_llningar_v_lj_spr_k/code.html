@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3C0C00",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FEDEA8","on-secondary-container":"#2D1600",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#D3F89A","on-tertiary-container":"#142700",surface:"#FBF7F2","on-surface":"#2A2421","surface-container-low":"#F4EEE6","surface-container":"#EDE5DC","surface-container-high":"#E6DDCF","on-surface-variant":"#73685E","outline":"#9A8E83","outline-variant":"#D0C4B8",error:"#BA1A1A","on-error":"#FFFFFF"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}};</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-smoothing:antialiased;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2"><button aria-label="Tillbaka" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container transition-colors" onclick="history.back()" type="button"><span class="material-symbols-rounded text-[24px]">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface tracking-tight">Handla För Veckan</h1></div><div class="flex items-center gap-2"><button aria-label="Stäng" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors" onclick="history.back()" type="button"><span class="material-symbols-rounded text-[24px]">close</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full pt-16 pb-8 px-4 bg-surface relative"><div class="flex flex-col w-full pb-8">
+<div class="relative w-full rounded-3xl bg-surface-container-low p-4 sm:p-5 shadow-sm overflow-hidden mb-5">
+<div class="relative z-10 flex items-start gap-4">
+<div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
+<span class="material-symbols-rounded text-[28px]">translate</span>
+</div>
+<div class="flex-1 min-w-0 pt-0.5">
+<div class="flex items-center gap-2">
+<h2 class="text-xl font-headline font-bold text-on-surface tracking-tight">Välj språk</h2>
+<span class="text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container font-body">Tandoor Sync</span>
+</div>
+<p class="text-xs text-on-surface-variant font-body mt-1 leading-relaxed">
+          Anpassa gränssnittet, receptmått och ingrediensnamn efter ditt kök.
+        </p>
+</div>
+</div>
+<div class="mt-4 relative">
+<div class="relative flex items-center w-full">
+<span class="material-symbols-rounded text-on-surface-variant absolute left-4 pointer-events-none text-[22px]">search</span>
+<input autocomplete="off" class="w-full h-13 pl-12 pr-11 bg-surface rounded-2xl text-on-surface placeholder:text-on-surface-variant/70 text-sm font-body shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" id="language-search-input" placeholder="Sök bland tillgängliga språk..." type="search"/>
+<button aria-label="Rensa sökning" class="hidden absolute right-3 w-8 h-8 rounded-full bg-surface-container text-on-surface-variant items-center justify-center hover:text-on-surface transition-colors" id="clear-search-btn" type="button">
+<span class="material-symbols-rounded text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl bg-secondary-container/40 text-on-secondary-container mb-5">
+<span class="material-symbols-rounded text-secondary text-[20px] shrink-0">kitchen</span>
+<p class="text-xs font-body leading-snug">
+      Receptens originalspråk bevaras alltid, medan gränssnitt och kökstimer anpassas.
+    </p>
+</div>
+<div class="flex flex-col gap-6" id="languages-container">
+<div class="flex flex-col gap-2.5" id="suggested-section">
+<div class="flex items-center justify-between px-1">
+<span class="text-[11px] font-bold tracking-wider uppercase text-on-surface-variant font-body">Föreslagna språk</span>
+<span class="text-[11px] text-on-surface-variant/70 font-body">Baserat på region</span>
+</div>
+<div class="flex flex-col gap-2">
+<button class="language-row active-lang group w-full text-left p-3.5 rounded-2xl bg-surface-container flex items-center justify-between shadow-sm transition-all active:scale-[0.99]" data-lang-code="sv" data-lang-native="Sverige" data-lang-title="Svenska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-tertiary-container text-on-tertiary-container flex items-center justify-center font-headline font-bold text-sm shrink-0 shadow-sm">
+              SV
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Svenska</span>
+<span class="text-xs text-on-surface-variant font-body">(Sverige)</span>
+</div>
+<span class="text-[11px] font-medium text-tertiary font-body flex items-center gap-1 mt-0.5 status-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Aktivt appspråk
+              </span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shrink-0 check-bubble shadow-sm">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="en" data-lang-native="English" data-lang-title="Engelska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              EN
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Engelska</span>
+<span class="text-xs text-on-surface-variant font-body">(English)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Fullständigt översatt</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+</div>
+</div>
+<div class="flex flex-col gap-2.5" id="all-section">
+<div class="flex items-center justify-between px-1">
+<span class="text-[11px] font-bold tracking-wider uppercase text-on-surface-variant font-body">Alla tillgängliga språk</span>
+<span class="text-[11px] text-on-surface-variant/70 font-body" id="lang-count">8 språk</span>
+</div>
+<div class="flex flex-col gap-2" id="all-languages-list">
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="da" data-lang-native="Dansk" data-lang-title="Danska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              DA
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Danska</span>
+<span class="text-xs text-on-surface-variant font-body">(Dansk)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="no" data-lang-native="Norsk bokmål" data-lang-title="Norska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              NB
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Norska</span>
+<span class="text-xs text-on-surface-variant font-body">(Norsk bokmål)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="fi" data-lang-native="Suomi" data-lang-title="Finska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              FI
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Finska</span>
+<span class="text-xs text-on-surface-variant font-body">(Suomi)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="de" data-lang-native="Deutsch" data-lang-title="Tyska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              DE
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Tyska</span>
+<span class="text-xs text-on-surface-variant font-body">(Deutsch)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="fr" data-lang-native="Français" data-lang-title="Franska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              FR
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Franska</span>
+<span class="text-xs text-on-surface-variant font-body">(Français)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="es" data-lang-native="Español" data-lang-title="Spanska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              ES
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Spanska</span>
+<span class="text-xs text-on-surface-variant font-body">(Español)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="it" data-lang-native="Italiano" data-lang-title="Italienska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              IT
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Italienska</span>
+<span class="text-xs text-on-surface-variant font-body">(Italiano)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+<button class="language-row group w-full text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-all active:scale-[0.99]" data-lang-code="nl" data-lang-native="Nederlands" data-lang-title="Nederländska" type="button">
+<div class="flex items-center gap-3.5 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-headline font-bold text-sm shrink-0">
+              NL
+            </div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-base text-on-surface leading-tight">Nederländska</span>
+<span class="text-xs text-on-surface-variant font-body">(Nederlands)</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/80 font-body mt-0.5">Tandoor Core v1.5</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble">
+<span class="material-symbols-rounded text-[20px]">check</span>
+</div>
+</button>
+</div>
+</div>
+<div class="hidden flex-col items-center justify-center py-12 px-4 text-center" id="no-results">
+<div class="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center text-on-surface-variant mb-3">
+<span class="material-symbols-rounded text-[30px]">search_off</span>
+</div>
+<p class="font-headline font-bold text-on-surface text-base">Hittade inga språk</p>
+<p class="font-body text-xs text-on-surface-variant mt-1 max-w-[240px]">
+        Vi hittade inget språk som matchar din sökning. Prova att söka på engelska eller modersmålets namn.
+      </p>
+</div>
+</div>
+<div class="mt-6 p-4 rounded-2xl bg-surface-container-high/60 flex items-start gap-3.5 shadow-sm">
+<div class="w-8 h-8 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-rounded text-[20px]">cloud_sync</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-headline font-bold text-on-surface">Automatisk Tandoor-synk</p>
+<p class="text-xs text-on-surface-variant font-body mt-0.5 leading-relaxed">
+        Översättningar hämtas automatiskt och synkroniseras med Tandoors officiella språkfiler vid ändring.
+      </p>
+</div>
+</div>
+<div class="sticky bottom-0 -mx-4 px-4 pt-4 pb-2 bg-gradient-to-t from-surface via-surface/95 to-transparent mt-6 z-20">
+<button class="w-full h-14 rounded-full bg-primary text-on-primary font-headline font-bold text-base shadow-md hover:bg-primary/95 active:scale-[0.98] transition-all flex items-center justify-center gap-2" id="apply-lang-btn" type="button">
+<span class="material-symbols-rounded text-[22px]">check_circle</span>
+<span id="apply-btn-label">Tillämpa språk (Svenska)</span>
+</button>
+</div>
+</div>
+<script>
+  (() => {
+    const searchInput = document.getElementById('language-search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const langRows = document.querySelectorAll('.language-row');
+    const suggestedSection = document.getElementById('suggested-section');
+    const allSection = document.getElementById('all-section');
+    const noResults = document.getElementById('no-results');
+    const applyBtn = document.getElementById('apply-lang-btn');
+    const applyLabel = document.getElementById('apply-btn-label');
+
+    let currentSelectedCode = 'sv';
+    let currentSelectedTitle = 'Svenska';
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      
+      if (query.length > 0) {
+        clearBtn.classList.remove('hidden');
+        clearBtn.classList.add('flex');
+      } else {
+        clearBtn.classList.add('hidden');
+        clearBtn.classList.remove('flex');
+      }
+
+      let visibleCount = 0;
+
+      langRows.forEach(row => {
+        const title = row.dataset.langTitle.toLowerCase();
+        const native = row.dataset.langNative.toLowerCase();
+        const code = row.dataset.langCode.toLowerCase();
+        
+        const matches = title.includes(query) || native.includes(query) || code.includes(query);
+        
+        if (matches) {
+          row.style.display = 'flex';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      const suggestedVisible = Array.from(suggestedSection.querySelectorAll('.language-row')).some(r => r.style.display !== 'none');
+      suggestedSection.style.display = suggestedVisible ? 'flex' : 'none';
+
+      const allVisible = Array.from(allSection.querySelectorAll('.language-row')).some(r => r.style.display !== 'none');
+      allSection.style.display = allVisible ? 'flex' : 'none';
+
+      if (visibleCount === 0) {
+        noResults.classList.remove('hidden');
+        noResults.classList.add('flex');
+      } else {
+        noResults.classList.add('hidden');
+        noResults.classList.remove('flex');
+      }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      clearBtn.classList.add('hidden');
+      clearBtn.classList.remove('flex');
+      langRows.forEach(row => row.style.display = 'flex');
+      suggestedSection.style.display = 'flex';
+      allSection.style.display = 'flex';
+      noResults.classList.add('hidden');
+      noResults.classList.remove('flex');
+      searchInput.focus();
+    });
+
+    langRows.forEach(row => {
+      row.addEventListener('click', () => {
+        langRows.forEach(r => {
+          r.classList.remove('bg-surface-container', 'shadow-sm');
+          r.classList.add('bg-surface-container-low');
+          
+          const badge = r.querySelector('.status-badge');
+          if (badge) badge.remove();
+          
+          const bubble = r.querySelector('.check-bubble');
+          if (bubble) {
+            bubble.className = 'w-8 h-8 rounded-full bg-transparent text-transparent flex items-center justify-center shrink-0 check-bubble';
+          }
+        });
+
+        row.classList.remove('bg-surface-container-low');
+        row.classList.add('bg-surface-container', 'shadow-sm');
+
+        const bubble = row.querySelector('.check-bubble');
+        if (bubble) {
+          bubble.className = 'w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 check-bubble shadow-sm';
+        }
+
+        const infoDiv = row.querySelector('.flex.flex-col.min-w-0');
+        if (infoDiv && !infoDiv.querySelector('.status-badge')) {
+          const newBadge = document.createElement('span');
+          newBadge.className = 'text-[11px] font-medium text-primary font-body flex items-center gap-1 mt-0.5 status-badge';
+          newBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Valt språk';
+          infoDiv.appendChild(newBadge);
+        }
+
+        currentSelectedCode = row.dataset.langCode;
+        currentSelectedTitle = row.dataset.langTitle;
+        applyLabel.textContent = `Tillämpa språk (${currentSelectedTitle})`;
+      });
+    });
+
+    applyBtn.addEventListener('click', () => {
+      applyBtn.classList.add('scale-95');
+      applyLabel.textContent = `Aktiverar ${currentSelectedTitle}...`;
+      setTimeout(() => {
+        applyBtn.classList.remove('scale-95');
+        applyLabel.textContent = `Klart! (${currentSelectedTitle})`;
+      }, 350);
+    });
+  })();
+</script></main></body></html>

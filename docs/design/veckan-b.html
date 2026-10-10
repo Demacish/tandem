@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html class="light" lang="sv"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matsedel - Recept</title>
+<!-- Google Fonts: Bricolage Grotesque & DM Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#C2410C',
+              container: '#FFDBCF',
+            },
+            'on-primary': '#FFFFFF',
+            'on-primary-container': '#3A1000',
+            secondary: {
+              DEFAULT: '#D97706',
+              container: '#FEF3C7',
+            },
+            tertiary: {
+              DEFAULT: '#4D7C0F',
+              container: '#ECFCCB',
+            },
+            surface: {
+              DEFAULT: '#FBF7F2',
+              variant: '#F2ECE1',
+              container: '#F6EFE5',
+              'container-high': '#EFE6D9',
+            },
+            'on-surface': '#2C2523',
+            'on-surface-variant': '#6E645F',
+            outline: '#DDD4C7'
+          },
+          borderRadius: {
+            DEFAULT: "0.5rem",
+            lg: "1rem",
+            xl: "1.5rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Bricolage Grotesque", "Public Sans", "sans-serif"],
+            display: ["Bricolage Grotesque", "Public Sans", "sans-serif"],
+            body: ["DM Sans", "sans-serif"],
+            label: ["DM Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      background-color: #FBF7F2;
+      color: #2C2523;
+      font-family: 'DM Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-surface min-h-screen antialiased flex justify-center selection:bg-primary-container selection:text-on-primary-container">
+<div class="w-full max-w-md bg-surface min-h-screen flex flex-col relative pb-36">
+<!-- TopAppBar (Shared Component logic from JSON) -->
+<header class="bg-surface sticky top-0 z-40 flex justify-between items-center w-full px-4 h-16 max-w-md mx-auto">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[24px]">soup_kitchen</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline text-xl font-bold tracking-tight text-primary">Recept</span>
+<span class="text-[11px] font-medium text-tertiary flex items-center gap-1 leading-none mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary inline-block animate-pulse"></span> Synkad med Tandoor
+          </span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="Synkronisera" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant text-on-surface-variant active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[22px]">sync</span>
+</button>
+<button aria-label="Sök recept" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant text-on-surface-variant active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[22px]">search</span>
+</button>
+</div>
+</header>
+<!-- Huvudinnehåll / Matsedel Canvas -->
+<main class="px-4 pt-1 flex flex-col gap-5">
+<!-- Veckonavigering & Sammanfattning -->
+<section class="bg-surface-container rounded-xl p-4 shadow-sm border border-outline/30">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1">
+<button aria-label="Föregående vecka" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high text-on-surface-variant active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="flex items-center gap-2">
+<h1 class="font-headline text-lg font-bold text-on-surface tracking-tight">Vecka 43</h1>
+<span class="text-xs bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded-full border border-amber-200">Pågående</span>
+</div>
+<button aria-label="Nästa vecka" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high text-on-surface-variant active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+<button class="text-xs font-semibold px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">pin_drop</span> Idag
+          </button>
+</div>
+<div class="mt-2.5 flex items-center justify-between text-xs text-on-surface-variant">
+<span>21 – 27 oktober</span>
+<span class="font-medium text-on-surface">6 av 7 middagar planerade</span>
+</div>
+<!-- Framstegsindikator (Bar & Dots) -->
+<div class="mt-2 w-full bg-surface-container-high h-2 rounded-full overflow-hidden flex">
+<div class="bg-tertiary h-full w-[43%]" title="Lagade middagar"></div>
+<div class="bg-primary h-full w-[14%]" title="Dagens middag"></div>
+<div class="bg-secondary h-full w-[29%]" title="Kommande planerade"></div>
+<div class="bg-outline/50 h-full w-[14%]" title="Oplanerat"></div>
+</div>
+</section>
+<!-- Matsedel Dagslista -->
+<section class="flex flex-col gap-3">
+<!-- 1. MÅNDAG (Lagad/Klar) -->
+<article class="bg-surface-container/70 rounded-xl p-3.5 border border-outline/30 flex gap-3.5 items-center opacity-85 transition-all hover:opacity-100">
+<div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-variant">
+<img alt="Linsgryta med kokosmjölk" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UIlv_jq_FHOQcN6c5J4kcQgIHzsOzr0qf0dTVVs4RWResp0z-rsDUk3xHjAfxIl6USRznCrZfhZg2eVyEq-UDSj7ZhzEkT-JJFFmiO63tiU-yL5i895h_GkwckEtlSou5WK0nwpsHu7PCXg0sy-MTu8ZFmRFUL5PEP4VRE_Ou6HQTYGfNJtliaDS83Tnzzx5ve_oqlpzmXKdEoJuFmFhJEqMP3ay2ZMtAC7GkIgfOiak8vIm5oFSL12qR6"/>
+<div class="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
+<span class="material-symbols-outlined fill text-tertiary-container bg-tertiary p-1 rounded-full text-[16px] shadow">check</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-tertiary tracking-wider uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Mån 21 okt • Lagad
+              </span>
+<span class="material-symbols-outlined text-outline text-[18px]">more_vert</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-base truncate mt-0.5">Linsgryta med kokosmjölk</h3>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-1.5">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">timer</span> 30 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 4 port</span>
+</div>
+</div>
+</article>
+<!-- 2. TISDAG (Lagad/Klar) -->
+<article class="bg-surface-container/70 rounded-xl p-3.5 border border-outline/30 flex gap-3.5 items-center opacity-85 transition-all hover:opacity-100">
+<div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-variant">
+<img alt="Tomatsoppa &amp; surdegsbröd" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1Wf5MsCxxGg1jxSNz1bgXEFUnDpK6uprERZ_vixcnO0xNbEO_UJIxfDfnjzbP2dvgPEzNTfGrcn5hhRdWiC-3MAnyCqulU7Y120C236VjGLBppvr4DkK3Un3eCHz8q74rurf5NQQjtVL-VHFJowbVmoToY22OSAEE8efejXI-c073RUV_ePi48enU2Bj2dkWf4RdcboDwsHgnC7etTnp-3k4SRF4j9fpMEdcBmln1_bAZlYsNae2tLH0yM"/>
+<div class="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
+<span class="material-symbols-outlined fill text-tertiary-container bg-tertiary p-1 rounded-full text-[16px] shadow">check</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-tertiary tracking-wider uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Tis 22 okt • Lagad
+              </span>
+<span class="material-symbols-outlined text-outline text-[18px]">more_vert</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-base truncate mt-0.5">Tomatsoppa &amp; surdegsbröd</h3>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-1.5">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">timer</span> 25 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 4 port</span>
+</div>
+</div>
+</article>
+<!-- 3. ONSDAG (Lagad/Klar) -->
+<article class="bg-surface-container/70 rounded-xl p-3.5 border border-outline/30 flex gap-3.5 items-center opacity-85 transition-all hover:opacity-100">
+<div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-variant">
+<img alt="Kycklingwok med cashewnötter" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UB0VL9mCdpCaOKotOy0rtTFZvg98MMpNFKD5lmojMZW4KEbcHzoWt65cK0M2FJtOHDneIINAhRHnnbw6UIAyNSrchgn3RYMvDNW_jkOmBTIu5RpkXst3Lw3KSmWOyaMQmjU8XQf4II9cOcKorJVQ6MIL4vbMX9vY3Nzig66nAwyCnJe4S03HNoqL0XoT-Xe0L3DUZDSaQcYhgUjj9alzflTyyV3PoEEXrRaaKpzUb8loulAlpdw_XzCnxJ"/>
+<div class="absolute inset-0 bg-stone-900/20 flex items-center justify-center">
+<span class="material-symbols-outlined fill text-tertiary-container bg-tertiary p-1 rounded-full text-[16px] shadow">check</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-tertiary tracking-wider uppercase flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Ons 23 okt • Lagad
+              </span>
+<span class="material-symbols-outlined text-outline text-[18px]">more_vert</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-base truncate mt-0.5">Kycklingwok med cashewnötter</h3>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-1.5">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">timer</span> 25 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 4 port</span>
+</div>
+</div>
+</article>
+<!-- 4. TORSDAG (IDAG - Highlighted Hero Card) -->
+<article class="bg-white rounded-xl p-4 border-2 border-primary shadow-md relative overflow-hidden transition-transform duration-200">
+<div class="flex items-center justify-between mb-2.5">
+<div class="flex items-center gap-2">
+<span class="bg-primary text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wider">IDAG</span>
+<span class="font-semibold text-xs text-on-surface">Torsdag 24 okt</span>
+</div>
+<span class="text-[11px] font-semibold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined fill text-[14px]">check_circle</span> Alla råvaror hemma
+            </span>
+</div>
+<div class="flex gap-4 items-center">
+<div class="w-24 h-24 rounded-lg overflow-hidden shrink-0 shadow-inner bg-surface-variant">
+<img alt="Krämig svamppasta" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+</div>
+<div class="flex-1 min-w-0">
+<h2 class="font-headline font-bold text-lg text-on-surface leading-tight">Krämig svamppasta</h2>
+<p class="text-xs text-on-surface-variant mt-1 line-clamp-1">Färsk tagliatelle, skogschampinjon, timjan &amp; parmesan</p>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-2 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px] text-secondary">schedule</span> 35 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">soup_kitchen</span> 4 port</span>
+</div>
+</div>
+</div>
+<!-- Stora tryckytor för matlagning i köket -->
+<div class="mt-4 pt-3 border-t border-outline/30 flex items-center gap-2">
+<button class="flex-1 bg-primary text-white font-headline font-bold text-sm py-2.5 px-4 rounded-full flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">skillet</span> Laga middag
+            </button>
+<button aria-label="Visa receptdetaljer" class="w-10 h-10 rounded-full border border-outline/70 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+</button>
+</div>
+</article>
+<!-- 5. FREDAG (Kommande - Saknar varor) -->
+<article class="bg-surface-container rounded-xl p-3.5 border border-outline/40 flex gap-3.5 items-center shadow-sm">
+<div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-variant">
+<img alt="Ugnsbakad lax med dillpotatis" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UzAnXoaFfcV7JfjPCQR5lfcXMArDQhLwjKZhBH7_8da_aMXGeSPgMRv4yswxP0HKMS0jrL9n0y508NlgCHv4H6l7Tw5hCfCuarkNszkToONpaX8etTLqBblStO4BY_OsNouqa5gAnLj79zvn98Z3hLB0nr0NNNstAJvCyeLNPuqi4NxKkXX0CHM_6DRHHCGz2FnziF5Noa-pXjjxSdBFtr4lQr5OFRVcaxl_v2kCl67AldN_iquDqxktQE"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-on-surface-variant tracking-wider uppercase">Fre 25 okt</span>
+<span class="text-[11px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">shopping_basket</span> Saknar 2 varor
+              </span>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-base truncate mt-0.5">Ugnsbakad lax med dillpotatis</h3>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-1.5">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">timer</span> 30 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 4 port</span>
+</div>
+</div>
+</article>
+<!-- 6. LÖRDAG (TOM DAG - Call to action) -->
+<div class="rounded-xl border-2 border-dashed border-outline/80 p-4 bg-surface-variant/40 flex flex-col items-center justify-center text-center gap-2 hover:bg-surface-variant/60 transition-colors cursor-pointer group">
+<div class="flex items-center justify-between w-full">
+<span class="text-[11px] font-bold text-on-surface-variant tracking-wider uppercase">Lör 26 okt</span>
+<span class="text-[11px] text-on-surface-variant italic">Ledig kväll</span>
+</div>
+<div class="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-primary group-hover:scale-105 transition-transform shadow-sm my-1 border border-outline/50">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</div>
+<div>
+<p class="font-headline font-bold text-sm text-on-surface">Ingen middag planerad</p>
+<p class="text-xs text-on-surface-variant">Välj ur favoriter eller prova något nytt</p>
+</div>
+<button class="mt-1 text-xs font-bold text-primary px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 active:scale-95 transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">add</span> Lägg till måltid
+          </button>
+</div>
+<!-- 7. SÖNDAG (Kommande - Storkok) -->
+<article class="bg-surface-container rounded-xl p-3.5 border border-outline/40 flex gap-3.5 items-center shadow-sm">
+<div class="relative w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-surface-variant">
+<img alt="Ugnsstekt citronkyckling" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UB0VL9mCdpCaOKotOy0rtTFZvg98MMpNFKD5lmojMZW4KEbcHzoWt65cK0M2FJtOHDneIINAhRHnnbw6UIAyNSrchgn3RYMvDNW_jkOmBTIu5RpkXst3Lw3KSmWOyaMQmjU8XQf4II9cOcKorJVQ6MIL4vbMX9vY3Nzig66nAwyCnJe4S03HNoqL0XoT-Xe0L3DUZDSaQcYhgUjj9alzflTyyV3PoEEXrRaaKpzUb8loulAlpdw_XzCnxJ"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-on-surface-variant tracking-wider uppercase">Sön 27 okt</span>
+<span class="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                Storkok / Helglyx
+              </span>
+</div>
+<h3 class="font-headline font-bold text-on-surface text-base truncate mt-0.5">Ugnsstekt citronkyckling</h3>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-1.5">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">timer</span> 60 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 6 port</span>
+</div>
+</div>
+</article>
+</section>
+<!-- Prominent Sticky/Flytande Banner för Handla -->
+<section class="mt-2">
+<a class="bg-gradient-to-r from-orange-800 to-primary text-white rounded-xl p-4 shadow-md flex items-center justify-between active:scale-[0.98] transition-transform" href="#handla">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">shopping_cart_checkout</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm leading-tight text-white">Handla för veckan</h4>
+<p class="text-xs text-orange-100">7 ingredienser saknas på inköpslistan</p>
+</div>
+</div>
+<div class="flex items-center gap-1 bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 text-xs font-semibold shrink-0">
+<span>Öppna</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</div>
+</a>
+</section>
+</main>
+<!-- BottomNavBar (Shared Component from JSON, Veckan is active destination) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-2 h-20 max-w-md mx-auto bg-surface-container shadow-sm border-0">
+<!-- Idag -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-surface-container-high rounded-lg transition-colors" href="#idag">
+<span class="material-symbols-outlined text-[22px]">today</span>
+<span class="font-label text-xs font-medium mt-1">Idag</span>
+</a>
+<!-- Recept -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-surface-container-high rounded-lg transition-colors" href="#recept">
+<span class="material-symbols-outlined text-[22px]">menu_book</span>
+<span class="font-label text-xs font-medium mt-1">Recept</span>
+</a>
+<!-- Veckan (Aktiv enligt specifikation) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 font-semibold active:scale-95 transition-transform duration-200" href="#veckan">
+<span class="material-symbols-outlined fill text-[22px]">calendar_month</span>
+<span class="font-label text-xs font-medium mt-0.5">Veckan</span>
+</a>
+<!-- Handla -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-surface-container-high rounded-lg transition-colors" href="#handla">
+<span class="material-symbols-outlined text-[22px]">shopping_basket</span>
+<span class="font-label text-xs font-medium mt-1">Handla</span>
+</a>
+<!-- Mer -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:bg-surface-container-high rounded-lg transition-colors" href="#mer">
+<span class="material-symbols-outlined text-[22px]">more_horiz</span>
+<span class="font-label text-xs font-medium mt-1">Mer</span>
+</a>
+</nav>
+</div>
+</body></html>

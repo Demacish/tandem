@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_demo_banner_title">Demoläge</string>
+    <string name="ui_demo_banner_body">Du utforskar Tandem med exempelrecept. Ändringar sparas bara i telefonen tills du ansluter din egen Tandoor-server.</string>
+    <string name="ui_demo_banner_connect">Anslut din Tandoor</string>
+
+    <string name="ui_status_demo">Demo</string>
+    <string name="ui_status_demo_description">Demoläge: exempeldata</string>
+    <string name="ui_status_offline">Offline</string>
+    <string name="ui_status_offline_description">Offline: visar sparad data</string>
+    <string name="ui_status_safe_mode">Säkert läge</string>
+    <string name="ui_status_safe_mode_description">Säkert läge: skrivskyddat</string>
+
+    <string name="ui_no_tandoor_title">Har du ingen Tandoor?</string>
+    <string name="ui_no_tandoor_body">Tandoor är en gratis receptsamling som du driver själv. Prova Tandem i demoläget först, eller läs hur du sätter upp Tandoor.</string>
+    <string name="ui_no_tandoor_try_demo">Prova demoläget</string>
+    <string name="ui_no_tandoor_learn_more">Om Tandoor</string>
+
+    <string name="ui_error_show_details">Visa detaljer</string>
+    <string name="ui_error_hide_details">Dölj detaljer</string>
+    <string name="ui_error_details_label">Tekniska detaljer</string>
+
+    <string name="ui_error_network_title">Ingen anslutning</string>
+    <string name="ui_error_network_body">Kontrollera att telefonen är ansluten till internet och försök igen.</string>
+    <string name="ui_error_unknown_host_title">Servern hittades inte</string>
+    <string name="ui_error_unknown_host_body">Kontrollera adressen. Om servern bara nås hemifrån behöver du vara på hemnätverket eller ansluten via VPN.</string>
+    <string name="ui_error_timeout_title">Servern svarar inte</string>
+    <string name="ui_error_timeout_body">Det tog för lång tid att få svar. Försök igen om en stund.</string>
+    <string name="ui_error_tls_untrusted_title">Certifikatet är inte betrott</string>
+    <string name="ui_error_tls_untrusted_body">Om servern använder en egen certifikatutfärdare, installera det certifikatet i Androids inställningar (Säkerhet, Kryptering och inloggningsuppgifter) och försök igen.</string>
+    <string name="ui_error_tls_title">Säker anslutning misslyckades</string>
+    <string name="ui_error_tls_body">Serverns certifikat stämmer inte med adressen, eller så gick det inte att upprätta en säker anslutning.</string>
+    <string name="ui_error_invalid_url_title">Ogiltig adress</string>
+    <string name="ui_error_invalid_url_body">Ange hela adressen, till exempel den du öppnar Tandoor med i webbläsaren.</string>
+    <string name="ui_error_invalid_url_cleartext_body">Tandem ansluter bara via https:// så att inloggningen inte kan läsas på vägen.</string>
+    <string name="ui_error_not_tandoor_title">Det här ser inte ut som Tandoor</string>
+    <string name="ui_error_not_tandoor_body">Servern svarade, men inte som en Tandoor-server. Kontrollera adressen och eventuell sökväg efter domännamnet.</string>
+    <string name="ui_error_unauthorized_title">Logga in igen</string>
+    <string name="ui_error_unauthorized_body">Inloggningen på den här enheten gäller inte längre. Det du sparat offline finns kvar.</string>
+    <string name="ui_error_blocked_title">Anropet blockerades</string>
+    <string name="ui_error_blocked_body">Något framför servern, till exempel en brandvägg eller proxy, blockerade anropet. Tandem försöker igen senare.</string>
+    <string name="ui_error_not_found_title">Hittades inte</string>
+    <string name="ui_error_not_found_body">Det kan ha tagits bort på servern.</string>
+    <string name="ui_error_bad_request_title">Servern godtog inte det här</string>
+    <string name="ui_error_bad_request_body">Kontrollera det du fyllt i och försök igen.</string>
+    <string name="ui_error_throttled_title">För många försök</string>
+    <string name="ui_error_throttled_body">Servern begränsar hur ofta man kan försöka. Vänta en stund innan du försöker igen.</string>
+    <string name="ui_error_server_title">Serverfel</string>
+    <string name="ui_error_server_body">Servern fick ett problem. Försök igen om en stund.</string>
+    <string name="ui_error_decode_title">Oväntat svar</string>
+    <string name="ui_error_decode_body">Serverns svar gick inte att läsa. Den här Tandoor-versionen kanske inte stöds än.</string>
+    <string name="ui_error_unknown_title">Något gick fel</string>
+    <string name="ui_error_unknown_body">Försök igen. Om det fortsätter, rapportera problemet med detaljerna nedan.</string>
+
+    <!-- Kraschlogg från en tidigare körning (plan 4.2 p7). Visas i välkomststeget och under Mer. -->
+    <string name="ui_crash_title">Tandem kraschade förra gången</string>
+    <string name="ui_crash_body">En kraschlogg sparades på den här enheten. Inget har skickats. Vill du rapportera felet kan du visa loggen och kopiera eller dela den.</string>
+    <string name="ui_crash_show">Visa</string>
+    <string name="ui_crash_copy">Kopiera</string>
+    <string name="ui_crash_share">Dela</string>
+    <string name="ui_crash_delete">Ta bort</string>
+    <string name="ui_crash_close">Stäng</string>
+    <string name="ui_crash_dialog_title">Kraschlogg</string>
+    <string name="ui_crash_dialog_note">Appversion, Androidversion, enhetsmodell och var i koden Tandem stannade. Lösenord, token och webbadresser är borttagna.</string>
+    <string name="ui_crash_share_subject">Kraschlogg från Tandem</string>
+    <string name="ui_crash_share_chooser">Dela kraschlogg</string>
+</resources>

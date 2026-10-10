@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:'class',theme:{extend:{colors:{background:'#1C1714','on-background':'#F3EBE3',surface:'#1C1714','surface-card':'#2A2320','surface-container':'#2A2320','surface-container-high':'#352D2A','on-surface':'#F3EBE3','on-surface-variant':'#B7ACA4',primary:'#FB8A5C','on-primary':'#1C1714','primary-container':'#FB8A5C','on-primary-container':'#1C1714',secondary:'#F5B044','on-secondary':'#1C1714',success:'#9BC46A','on-success':'#1C1714'},fontFamily:{sans:['system-ui','-apple-system','BlinkMacSystemFont','Segoe UI','Roboto','sans-serif']}}}}</script></head><body class="bg-background text-on-surface font-sans"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-card z-50 flex flex-col justify-between py-6 px-4 shadow-[0_1px_12px_rgba(0,0,0,0.25)]"><div class="flex flex-col gap-8"><div class="flex items-center gap-3 px-3"><div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-2xl">skillet</span></div><div><span class="text-xl font-bold tracking-tight text-on-surface block leading-tight">Tandem</span><span class="text-xs text-on-surface-variant font-medium">Köksassistent</span></div></div><nav class="flex flex-col gap-2" data-active-classes="bg-primary text-on-primary font-semibold shadow-sm"><a aria-current="page" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all bg-primary text-on-primary font-semibold shadow-sm" data-path="idag" href="#"><span class="material-symbols-outlined text-[22px]">wb_sunny</span><span class="text-sm">Idag</span></a><a class="flex items-center gap-3 px-3 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="recept" href="#"><span class="material-symbols-outlined text-[22px]">menu_book</span><span class="text-sm">Recept</span></a><a class="flex items-center gap-3 px-3 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="veckan" href="#"><span class="material-symbols-outlined text-[22px]">calendar_month</span><span class="text-sm">Veckan</span></a><a class="flex items-center gap-3 px-3 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="handla" href="#"><span class="material-symbols-outlined text-[22px]">shopping_basket</span><span class="text-sm">Handla</span></a><a class="flex items-center gap-3 px-3 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="mer" href="#"><span class="material-symbols-outlined text-[22px]">more_horiz</span><span class="text-sm">Mer</span></a></nav></div><div class="px-2"><div class="p-3 rounded-2xl bg-surface-container-high/60 flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-on-secondary shrink-0"><span class="material-symbols-outlined text-[20px]">timer</span></div><div class="flex-1 min-w-0"><span class="text-xs text-on-surface-variant block truncate">Ingen aktiv timer</span><span class="text-xs font-medium text-secondary truncate block">Tryck för ny</span></div></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-background/85 backdrop-blur-xl z-40 px-8 flex items-center justify-end gap-5 shadow-[0_1px_8px_rgba(0,0,0,0.12)]"><button class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-card hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors text-xs font-medium" type="button"><span class="material-symbols-outlined text-[18px] text-secondary">timer</span><span>00:00</span></button><button aria-label="Sök" class="p-2 rounded-full hover:bg-surface-card text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">search</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></header><main class="w-full pt-16 px-8 pb-10 bg-background min-h-screen"><div class="flex flex-col w-full pb-10">
+<div class="grid grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN (approx 60% -> 7 columns on xl/lg) -->
+<div class="col-span-12 lg:col-span-7 flex flex-col gap-6 min-w-0">
+<!-- HERO CARD: Dagens middagsplan -->
+<div class="relative bg-surface-card rounded-xl overflow-hidden shadow-xl group">
+<!-- Dish image with warm vignette and scrim -->
+<div class="relative h-72 sm:h-80 w-full overflow-hidden">
+<img alt="Krämig svamppasta" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-card via-surface-card/40 to-transparent"></div>
+<!-- Top Badges -->
+<div class="absolute top-4 left-4 flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-bold tracking-wide shadow-md">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">dinner_dining</span>
+              IKVÄLL
+            </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high/90 text-on-surface backdrop-blur-md text-xs font-medium">
+              Vegetarisk
+            </span>
+</div>
+<div class="absolute top-4 right-4 flex items-center gap-1 px-3 py-1 rounded-full bg-surface-card/80 backdrop-blur-md text-secondary text-xs font-semibold shadow-md">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>4.8</span>
+<span class="text-on-surface-variant text-[11px] font-normal">(128)</span>
+</div>
+</div>
+<!-- Hero Content Body -->
+<div class="p-6 -mt-12 relative z-10 flex flex-col gap-4">
+<div class="flex flex-col gap-1.5">
+<span class="text-xs font-semibold uppercase tracking-widest text-primary">Dagens middagsplan</span>
+<h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-on-surface leading-tight">
+              Krämig svamppasta med parmesan &amp; färsk timjan
+            </h2>
+</div>
+<!-- Key Meta specs -->
+<div class="flex flex-wrap items-center gap-4 text-xs font-medium text-on-surface-variant">
+<div class="flex items-center gap-1.5 bg-surface-container-high px-3 py-1.5 rounded-lg text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[18px]">schedule</span>
+<span>35 min</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-high px-3 py-1.5 rounded-lg text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px]">group</span>
+<span>4 portioner</span>
+</div>
+<div class="flex items-center gap-1.5 bg-success/15 px-3 py-1.5 rounded-lg text-success font-semibold">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Alla ingredienser hemma</span>
+</div>
+</div>
+<!-- Action buttons -->
+<div class="pt-2 flex items-center gap-3">
+<button class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-primary text-on-primary font-bold text-sm tracking-wide shadow-lg hover:brightness-110 active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">skillet</span>
+<span>Laga nu</span>
+</button>
+<button class="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-surface-container-high hover:bg-surface-container-high/80 text-on-surface font-semibold text-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">format_list_bulleted</span>
+<span>Visa recept</span>
+</button>
+<button aria-label="Fler alternativ" class="p-3.5 rounded-xl bg-surface-container-high hover:bg-surface-container-high/80 text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">bookmark_border</span>
+</button>
+</div>
+</div>
+</div>
+<!-- SECONDARY CARD: Imorgon -->
+<div class="bg-surface-card rounded-xl p-5 shadow-md flex items-center justify-between gap-4 group hover:bg-surface-container-high/50 transition-colors">
+<div class="flex items-center gap-4 min-w-0">
+<div class="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-surface-container-high">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Golden baked salmon fillet with crispy skin garnished with chopped fresh dill, tender steamed potatoes, and lemon wedges on rustic dark ceramic plate, moody warm lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbcI8KNFYEptSBNQ1XjlfUPZcxnHyRgW1Jfpeb6ToT2USnmGklR6wToyzf7DUWofSIxmCO58Lqjs1aMdJQvqcXOp6MKmLasi_i-xPNHZDVc65_Y5VaAhZWVBbk0KURjNLOcmzpMlpXDqC3zK4FZukmExyifPrAex_e3OxApF7GfK-gpI6h-VTD8KbC_qry41BgB-rov1urSCQb6VBVwU_3A9HzANnnKJwVIJUXzU4DAy9KmYiIyemeYg"/>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-[11px] font-bold uppercase tracking-wider text-secondary">Imorgon • Fredag</span>
+<span class="text-[11px] px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-medium">Fisk</span>
+</div>
+<h3 class="text-base sm:text-lg font-bold text-on-surface truncate mt-0.5">
+              Ugnsbakad lax med dillslungad potatis
+            </h3>
+<div class="flex items-center gap-3 text-xs text-on-surface-variant mt-1">
+<span>30 min</span>
+<span>•</span>
+<span class="text-primary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">shopping_cart</span>
+                Saknar 2 varor
+              </span>
+</div>
+</div>
+</div>
+<button aria-label="Öppna morgondagens plan" class="shrink-0 w-10 h-10 rounded-full bg-surface-container-high hover:bg-primary hover:text-on-primary flex items-center justify-center text-on-surface-variant transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+<!-- BOTTOM SECTION: Ofta lagade (Favorites Bento) -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">favorite</span>
+<h3 class="text-base font-bold text-on-surface">Ofta lagade favoriter</h3>
+</div>
+<button class="text-xs font-semibold text-primary hover:underline flex items-center gap-1" type="button">
+<span>Visa alla</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<!-- Favorite 1: Tomatsoppa -->
+<div class="bg-surface-card rounded-xl p-3 flex flex-col gap-2.5 hover:bg-surface-container-high/60 transition-all cursor-pointer group">
+<div class="relative h-28 w-full rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Deep rich roasted tomato soup in a handcrafted rustic bowl, swirled with heavy cream and topped with crispy garlic croutons and fresh basil leaves, dark warm kitchen ambiance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrhQZO0ZRU5rRIPJ0kHypfqaFNfLUbnJgdMgBy-S7AiNUS5hdxiBg6PfpcSjMvEHvmAnKBCL6y2orx_hVepDdw0Bxesa2HO-iMvkFWJAUfZGMjHHhu9B5f45fllIRLzOllxDUM8w3VORY9VjO1mvaWyS3MZZobontNnT34kY2DXcd3JIRhDpykbKZNDj5Zxkl_tvs541Y6R2V7rln4fHSez9KTGYHcztQB_VmtlGMe95nLL-a9LdmN3w"/>
+<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-background/80 backdrop-blur text-[10px] font-semibold text-on-surface">
+                25 min
+              </span>
+</div>
+<div class="flex flex-col">
+<h4 class="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors">Rostad Tomatsoppa</h4>
+<p class="text-[11px] text-on-surface-variant truncate">Med basilika &amp; grillat surdeg</p>
+</div>
+</div>
+<!-- Favorite 2: Linsgryta -->
+<div class="bg-surface-card rounded-xl p-3 flex flex-col gap-2.5 hover:bg-surface-container-high/60 transition-all cursor-pointer group">
+<div class="relative h-28 w-full rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Aromatic red lentil daal curry stew bubbling in an earthenware pot, garnished with fresh cilantro and a swirl of coconut cream, warm golden ambient light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuQjSmKx9cYuBYcD3tgiem49j5XNExcOL-IKAYyqiq6tNPsTxIHtxkjdFIESkUC5-lf_RUqc93VHV2THX5oCdSi7rGlufU-pUlTy5VvrYcVarcu2lW0g56fCR28STtxON_iBEK3IMfuJH2kLHO5qQXFM3k-MwcnDxioB7-jkb1j-rg9o6VRG4yTFJOVTkLiLxptbFDzqh-B2xWh8VRK4mPjsL_T0p4ln0oLKpKDbjg2AD7FdQJNWkZ-A"/>
+<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-background/80 backdrop-blur text-[10px] font-semibold text-on-surface">
+                30 min
+              </span>
+</div>
+<div class="flex flex-col">
+<h4 class="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors">Krämig Linsgryta</h4>
+<p class="text-[11px] text-on-surface-variant truncate">Kokosmjölk, ingefära &amp; spenat</p>
+</div>
+</div>
+<!-- Favorite 3: Ugnsstekt kyckling -->
+<div class="bg-surface-card rounded-xl p-3 flex flex-col gap-2.5 hover:bg-surface-container-high/60 transition-all cursor-pointer group">
+<div class="relative h-28 w-full rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Juicy golden oven roasted chicken thighs with rosemary sprigs and caramelized garlic cloves in a cast iron skillet, cozy rustic evening light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClqwQZvi3enbaqV0bgjsmY5SRdwlwDgpp7p7WJyrqcFulvPUNSH3EcfUPlH3IH1PLWmH6e7oOAtvnI3PXLynnX9kuHx0mb4avgsvBj8TCunj3GIaWNHHa4FuJY_3SjwyAplXj6Re4Q4prZTiIXf54mW3-Nw-fAbf0Qbo9kHwv-t1Y5vHALkQzJqIqA78Nwri__7c8e7U6lw8f4o9-ZG7yFsKTUe2sclFVVUA2dNZTVwC2Ge7a8--6p9A"/>
+<span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-background/80 backdrop-blur text-[10px] font-semibold text-on-surface">
+                45 min
+              </span>
+</div>
+<div class="flex flex-col">
+<h4 class="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors">Ugnsstekt Kyckling</h4>
+<p class="text-[11px] text-on-surface-variant truncate">Citron, rosmarin &amp; vitlök</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (approx 40% -> 5 columns on xl/lg) -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-6 min-w-0">
+<!-- INKÖPSLISTA WIDGET -->
+<div class="bg-surface-card rounded-xl p-5 shadow-lg flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-primary/20 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">shopping_basket</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-on-surface leading-tight">Inköpslista</h3>
+<span class="text-xs text-primary font-semibold">7 varor kvar att handla</span>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-primary hover:text-on-primary text-xs font-semibold text-on-surface transition-all" type="button">
+            Öppna lista
+          </button>
+</div>
+<!-- Quick items preview checklist -->
+<div class="flex flex-col gap-2 pt-1" id="quick-shopping-list">
+<!-- Item 1 -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/60 hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 rounded accent-primary bg-surface-card border-0 cursor-pointer" type="checkbox"/>
+<span class="text-sm font-medium text-on-surface group-hover:text-primary transition-colors">Färsk laxfilé</span>
+</div>
+<span class="text-xs text-on-surface-variant font-mono">600 g</span>
+</label>
+<!-- Item 2 -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/60 hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 rounded accent-primary bg-surface-card border-0 cursor-pointer" type="checkbox"/>
+<span class="text-sm font-medium text-on-surface group-hover:text-primary transition-colors">Färsk dill</span>
+</div>
+<span class="text-xs text-on-surface-variant font-mono">1 kruka</span>
+</label>
+<!-- Item 3 -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/60 hover:bg-surface-container-high transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input class="w-4 h-4 rounded accent-primary bg-surface-card border-0 cursor-pointer" type="checkbox"/>
+<span class="text-sm font-medium text-on-surface group-hover:text-primary transition-colors">Vetemjöl Tipo 00</span>
+</div>
+<span class="text-xs text-on-surface-variant font-mono">1 kg</span>
+</label>
+<!-- Item 4 (checked example) -->
+<label class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-high/30 opacity-60 line-through cursor-pointer">
+<div class="flex items-center gap-3">
+<input checked="" class="w-4 h-4 rounded accent-success bg-surface-card border-0 cursor-pointer" type="checkbox"/>
+<span class="text-sm font-medium text-on-surface-variant">Parmigiano Reggiano</span>
+</div>
+<span class="text-xs text-on-surface-variant font-mono">150 g</span>
+</label>
+</div>
+</div>
+<!-- VECKANS MIDDAGAR SCHEDULE -->
+<div class="bg-surface-card rounded-xl p-5 shadow-lg flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-secondary/20 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+<div>
+<h3 class="text-base font-bold text-on-surface leading-tight">Veckans middagar</h3>
+<span class="text-xs text-on-surface-variant">Vecka 42</span>
+</div>
+</div>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+</button>
+</div>
+<!-- Weekly List -->
+<div class="flex flex-col gap-1.5">
+<!-- Måndag -->
+<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-bold text-on-surface-variant uppercase">Mån</span>
+<span class="text-xs text-on-surface-variant truncate">Rostad rotfruktssoppa</span>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-success shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+              Lagad
+            </span>
+</div>
+<!-- Tisdag -->
+<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-bold text-on-surface-variant uppercase">Tis</span>
+<span class="text-xs text-on-surface-variant truncate">Pasta bolognese med linser</span>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-success shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+              Lagad
+            </span>
+</div>
+<!-- Onsdag -->
+<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-bold text-on-surface-variant uppercase">Ons</span>
+<span class="text-xs text-on-surface-variant truncate">Halloumitacos med mangosalsa</span>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-semibold text-success shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+              Lagad
+            </span>
+</div>
+<!-- Torsdag (IDAG highlight) -->
+<div class="flex items-center justify-between py-2.5 px-3 rounded-xl bg-surface-container-high shadow-sm">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-black text-primary uppercase">Tor</span>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-bold text-on-surface truncate">Krämig svamppasta</span>
+<span class="text-[10px] text-on-surface-variant">4 portioner</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-primary text-on-primary text-[10px] font-black uppercase tracking-wider shrink-0 shadow-sm">
+              IDAG
+            </span>
+</div>
+<!-- Fredag -->
+<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-bold text-on-surface-variant uppercase">Fre</span>
+<span class="text-xs font-semibold text-on-surface truncate">Ugnsbakad lax</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-primary/20 text-primary text-[10px] font-semibold shrink-0">
+              Saknar 2
+            </span>
+</div>
+<!-- Lördag -->
+<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-bold text-on-surface-variant uppercase">Lör</span>
+<span class="text-xs font-semibold text-on-surface truncate">Hemmagjord napolitansk pizza</span>
+</div>
+<span class="text-[11px] text-on-surface-variant shrink-0 font-medium">Planerad</span>
+</div>
+<!-- Söndag -->
+<div class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<span class="w-7 text-xs font-bold text-on-surface-variant uppercase">Sön</span>
+<span class="text-xs font-semibold text-on-surface truncate">Långkokt boeuf bourguignon</span>
+</div>
+<span class="text-[11px] text-on-surface-variant shrink-0 font-medium">Planerad</span>
+</div>
+</div>
+</div>
+<!-- TANDOOR SERVER SYNC CARD -->
+<div class="bg-surface-card rounded-xl p-4 shadow-md flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-2.5 h-2.5 rounded-full bg-success shrink-0 animate-pulse"></div>
+<div class="flex flex-col min-w-0">
+<span class="text-xs text-on-surface font-medium truncate">Synkad med Tandoor</span>
+<span class="text-[11px] text-on-surface-variant truncate">Senast uppdaterad kl 18:14</span>
+</div>
+</div>
+<button class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-container-high/80 text-on-surface text-xs font-semibold transition-all active:scale-95" id="sync-btn" type="button">
+<span class="material-symbols-outlined text-[16px] transition-transform" id="sync-icon">sync</span>
+<span>Synka nu</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for sync button
+  const syncBtn = document.getElementById('sync-btn');
+  const syncIcon = document.getElementById('sync-icon');
+  if (syncBtn && syncIcon) {
+    syncBtn.addEventListener('click', () => {
+      syncIcon.classList.add('animate-spin');
+      syncBtn.disabled = true;
+      setTimeout(() => {
+        syncIcon.classList.remove('animate-spin');
+        syncBtn.disabled = false;
+      }, 1200);
+    });
+  }
+</script></main></div></body></html>

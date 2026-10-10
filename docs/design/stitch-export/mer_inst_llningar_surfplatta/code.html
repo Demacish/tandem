@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3C1000",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FFDDAA","on-secondary-container":"#2D1600",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#D3F7A6","on-tertiary-container":"#142400",background:"#FBF7F2","on-background":"#231A15",surface:"#FBF7F2","on-surface":"#231A15","surface-variant":"#EFE8DE","on-surface-variant":"#54443B","surface-container-lowest":"#FFFFFF","surface-container-low":"#F6F0E7","surface-container":"#EDE5DA","surface-container-high":"#E6DDCF","surface-container-highest":"#DED4C5",outline:"#867468","outline-variant":"#D9C2B4"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}}</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col pt-6 pb-6 shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="px-6 mb-8 flex items-center gap-3"><div class="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-on-primary shadow-[0_2px_8px_rgba(194,65,12,0.25)]"><span class="material-symbols-rounded text-2xl">skillet</span></div><div><span class="text-xl font-headline font-extrabold tracking-tight text-primary leading-none block">Tandem</span><span class="text-xs font-medium text-on-surface-variant tracking-wide block mt-0.5">Recept &amp; Matplan</span></div></div><nav class="flex-1 px-4 space-y-1.5" data-active-classes="bg-primary text-on-primary font-bold shadow-[0_2px_8px_rgba(194,65,12,0.2)]"><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="idag" href="#"><span class="material-symbols-rounded text-[22px]">wb_sunny</span><span class="text-sm font-medium">Idag</span></a><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="recept" href="#"><span class="material-symbols-rounded text-[22px]">menu_book</span><span class="text-sm font-medium">Recept</span></a><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="veckan" href="#"><span class="material-symbols-rounded text-[22px]">calendar_month</span><span class="text-sm font-medium">Veckan</span></a><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="handla" href="#"><span class="material-symbols-rounded text-[22px]">shopping_bag</span><span class="text-sm font-medium">Handla</span></a><a aria-current="page" class="flex items-center gap-3.5 px-4 py-3 rounded-full transition-all bg-primary text-on-primary font-bold shadow-[0_2px_8px_rgba(194,65,12,0.2)]" data-path="mer" href="#"><span class="material-symbols-rounded text-[22px]">more_horiz</span><span class="text-sm font-medium">Mer</span></a></nav><div class="px-4 mt-auto pt-4"><div class="bg-surface-container rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span><div><p class="text-xs font-bold text-on-surface leading-tight">Tandoor ansluten</p><p class="text-[11px] text-on-surface-variant leading-tight">Synkad 2m sedan</p></div></div><button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center transition-colors" type="button"><span class="material-symbols-rounded text-base text-on-surface-variant">sync</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/80 backdrop-blur-xl z-40 flex items-center justify-between px-8 shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="w-96"><div class="relative flex items-center"><span class="material-symbols-rounded absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">search</span><input class="w-full h-10 pl-10 pr-4 rounded-full bg-surface-container-low text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container transition-all" placeholder="Sök recept, råvaror, etiketter..." type="text"/></div></div><div class="flex items-center gap-4"><div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low text-xs font-medium text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-tertiary"></span><span>Synkad med server</span></div><button class="w-10 h-10 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors" type="button"><span class="material-symbols-rounded text-[22px]">timer</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="px-8 py-8 w-full max-w-7xl mx-auto">
+<!-- Breadcrumb & Top Bar Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<div class="flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-on-surface-variant/80 mb-1">
+<span>Konto</span>
+<span class="material-symbols-rounded text-sm">chevron_right</span>
+<span class="text-primary font-bold">Mer &amp; Inställningar</span>
+</div>
+<h1 class="text-3xl lg:text-4xl font-headline font-extrabold text-on-surface tracking-tight">System &amp; Data</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="px-4 py-2 rounded-full bg-tertiary-container/40 flex items-center gap-2 shadow-sm">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-tertiary"></span>
+</span>
+<span class="text-xs font-bold text-on-tertiary-container tracking-wide uppercase">Lokal cache synkad</span>
+</div>
+<button class="h-10 px-5 rounded-full bg-primary text-on-primary font-medium text-sm flex items-center gap-2 shadow-md hover:opacity-90 active:scale-95 transition-all" id="globalSaveFeedback">
+<span class="material-symbols-rounded text-base">save</span>
+<span>Spara ändringar</span>
+</button>
+</div>
+</div>
+<!-- Tablet Split Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- Left Column: Settings Navigation (~320px equivalent in grid) -->
+<aside class="lg:col-span-4 xl:col-span-4 flex flex-col gap-3">
+<!-- Account Mini Card -->
+<div class="p-4 rounded-3xl bg-surface-container-low shadow-sm flex items-center gap-4 mb-2">
+<div class="relative">
+<div class="w-13 h-13 rounded-2xl bg-secondary-container flex items-center justify-center text-on-secondary-container shadow-inner">
+<span class="material-symbols-rounded text-2xl">person_pin</span>
+</div>
+<span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-tertiary border-2 border-surface-container-low"></span>
+</div>
+<div class="flex-1 min-w-0">
+<h2 class="text-sm font-bold font-headline text-on-surface truncate">Elin &amp; Marcus</h2>
+<p class="text-xs text-on-surface-variant truncate">Kockbehörighet • Superuser</p>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-on-surface rounded-full transition-colors">
+<span class="material-symbols-rounded text-lg">logout</span>
+</button>
+</div>
+<!-- Navigation Group -->
+<nav aria-label="Inställningskategorier" class="bg-surface-container-low rounded-3xl p-3 shadow-sm flex flex-col gap-1.5">
+<!-- Item 1: Active -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl bg-primary text-on-primary shadow-sm transition-all group" href="#server">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl">cloud_sync</span>
+<div class="min-w-0">
+<p class="text-sm font-bold leading-tight truncate">Server &amp; Synk</p>
+<p class="text-[11px] opacity-80 leading-tight truncate">Tandoor, tokens, offline</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-primary/70 group-hover:translate-x-0.5 transition-transform">arrow_forward_ios</span>
+</a>
+<!-- Item 2 -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl hover:bg-surface-container text-on-surface transition-all group" href="#utseende">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl text-on-surface-variant">palette</span>
+<div class="min-w-0">
+<p class="text-sm font-medium leading-tight truncate">Utseende &amp; Tema</p>
+<p class="text-[11px] text-on-surface-variant leading-tight truncate">Ljust, skandinavisk sand</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+<!-- Item 3 -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl hover:bg-surface-container text-on-surface transition-all group" href="#koklage">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl text-on-surface-variant">skillet</span>
+<div class="min-w-0">
+<p class="text-sm font-medium leading-tight truncate">Matlagning &amp; Kokläge</p>
+<p class="text-[11px] text-on-surface-variant leading-tight truncate">Handsfree, skärmlås, timer</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+<!-- Item 4 -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl hover:bg-surface-container text-on-surface transition-all group" href="#skafferi">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl text-on-surface-variant">notifications_active</span>
+<div class="min-w-0">
+<p class="text-sm font-medium leading-tight truncate">Skafferi &amp; Notiser</p>
+<p class="text-[11px] text-on-surface-variant leading-tight truncate">Bäst-före, veckomatsedel</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+<!-- Item 5 -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl hover:bg-surface-container text-on-surface transition-all group" href="#integrationer">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl text-on-surface-variant">hub</span>
+<div class="min-w-0">
+<p class="text-sm font-medium leading-tight truncate">Integreringar</p>
+<p class="text-[11px] text-on-surface-variant leading-tight truncate">Wear OS, iCal, Home Assistant</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+<!-- Item 6 -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl hover:bg-surface-container text-on-surface transition-all group" href="#om">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl text-on-surface-variant">info</span>
+<div class="min-w-0">
+<p class="text-sm font-medium leading-tight truncate">Om Tandem &amp; Juridik</p>
+<p class="text-[11px] text-on-surface-variant leading-tight truncate">FOSS, licenser, integritet</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+<div class="my-2 h-px bg-surface-container-high/60"></div>
+<!-- Item 7: Dangerous/Safety -->
+<a class="flex items-center justify-between p-3.5 rounded-2xl hover:bg-surface-container-high text-on-surface transition-all group" href="#felsakert">
+<div class="flex items-center gap-3 min-w-0">
+<span class="material-symbols-rounded text-xl text-primary">healing</span>
+<div class="min-w-0">
+<p class="text-sm font-medium text-primary leading-tight truncate">Felsäkert läge</p>
+<p class="text-[11px] text-on-surface-variant leading-tight truncate">Återställning &amp; diagnostik</p>
+</div>
+</div>
+<span class="material-symbols-rounded text-lg text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</a>
+</nav>
+<!-- Kitchen tip callout card -->
+<div class="p-5 rounded-3xl bg-secondary-container/30 relative overflow-hidden">
+<span class="material-symbols-rounded absolute -right-3 -bottom-4 text-7xl text-secondary/10 pointer-events-none">soup_kitchen</span>
+<p class="text-xs font-bold uppercase tracking-wider text-secondary mb-1">Kocktips</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+            Aktivera "Lokal bildcache" inför sommarresan så kan du laga mat offline även ute på kobben utan 5G.
+          </p>
+</div>
+</aside>
+<!-- Right Pane: Active Detail 'Server & Synk' -->
+<main class="lg:col-span-8 xl:col-span-8 flex flex-col gap-6">
+<!-- Active Server Banner Card -->
+<div class="rounded-3xl bg-surface-container-low p-6 lg:p-7 shadow-sm relative overflow-hidden">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+<div class="flex items-center gap-3.5">
+<div class="w-12 h-12 rounded-2xl bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm">
+<span class="material-symbols-rounded text-2xl">dns</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="text-xl font-headline font-bold text-on-surface">Hemmaköket</h2>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-tertiary-container text-on-tertiary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Ansluten
+                  </span>
+</div>
+<p class="text-xs font-mono text-on-surface-variant mt-0.5">https://recept.familjen.lan</p>
+</div>
+</div>
+<!-- Server metadata badges -->
+<div class="flex flex-wrap items-center gap-2">
+<div class="px-3 py-1.5 rounded-xl bg-surface-container text-xs font-medium text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-rounded text-sm text-secondary">verified</span>
+<span>Tandoor v2.6.13</span>
+</div>
+<div class="px-3 py-1.5 rounded-xl bg-surface-container text-xs font-medium text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-rounded text-sm text-tertiary">key</span>
+<span>API giltigt</span>
+</div>
+</div>
+</div>
+<!-- Quick Action Buttons -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+<button class="h-12 px-5 rounded-2xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-medium text-sm flex items-center justify-center gap-2.5 transition-all active:scale-[0.99]" id="testConnectionBtn">
+<span class="material-symbols-rounded text-lg text-primary">speed</span>
+<span id="testConnectionText">Testa anslutning (14 ms)</span>
+</button>
+<button class="h-12 px-5 rounded-2xl bg-primary text-on-primary hover:opacity-95 font-medium text-sm flex items-center justify-center gap-2.5 shadow-sm transition-all active:scale-[0.99]" id="syncNowBtn">
+<span class="material-symbols-rounded text-lg animate-spin hidden" id="syncSpinner">autorenew</span>
+<span class="material-symbols-rounded text-lg" id="syncIcon">sync</span>
+<span id="syncText">Tvinga synk nu</span>
+</button>
+</div>
+</div>
+<!-- Known Servers Selector Mosaic -->
+<div class="rounded-3xl bg-surface-container-low p-6 lg:p-7 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h3 class="text-base font-headline font-bold text-on-surface">Växla Serverprofil</h3>
+<p class="text-xs text-on-surface-variant">Välj vilken Tandoor-instans du vill arbeta mot</p>
+</div>
+<button class="h-8 px-3 rounded-full bg-surface-container hover:bg-surface-container-high text-xs font-medium text-on-surface flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-rounded text-base">add</span>
+<span>Lägg till</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+<!-- Server Switch Card 1 -->
+<div class="p-4 rounded-2xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all flex items-center justify-between group">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface">
+<span class="material-symbols-rounded text-xl">cabin</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">Sommarstugan</p>
+<p class="text-[11px] text-on-surface-variant truncate">stuga.lan:8080 • Synkad igår</p>
+</div>
+</div>
+<span class="text-xs font-semibold text-primary px-3 py-1.5 rounded-full bg-surface-container-lowest shadow-sm">Växla</span>
+</div>
+<!-- Server Switch Card 2 -->
+<div class="p-4 rounded-2xl bg-surface-container hover:bg-surface-container-high cursor-pointer transition-all flex items-center justify-between group">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface">
+<span class="material-symbols-rounded text-xl">science</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">Receptklubben (Test)</p>
+<p class="text-[11px] text-on-surface-variant truncate">beta.receptklubben.se • v2.7-dev</p>
+</div>
+</div>
+<span class="text-xs font-semibold text-primary px-3 py-1.5 rounded-full bg-surface-container-lowest shadow-sm">Växla</span>
+</div>
+</div>
+</div>
+<!-- Sync Rules & Offline Configuration -->
+<div class="rounded-3xl bg-surface-container-low p-6 lg:p-7 shadow-sm">
+<h3 class="text-base font-headline font-bold text-on-surface mb-1">Synkroniseringsinställningar</h3>
+<p class="text-xs text-on-surface-variant mb-6">Bestäm hur och när recept och shoppinglistor hämtas</p>
+<div class="space-y-4">
+<!-- Row 1: Frequency -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-surface-container">
+<div>
+<p class="text-sm font-bold text-on-surface">Synkfrekvens</p>
+<p class="text-xs text-on-surface-variant">Hur ofta Tandem frågar servern efter ändringar i bakgrunden</p>
+</div>
+<select class="h-10 px-4 rounded-full bg-surface-container-lowest text-xs font-medium text-on-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 cursor-pointer">
+<option selected="">Realtid vid Wi-Fi</option>
+<option>Var 15:e minut</option>
+<option>Varje timme</option>
+<option>Endast manuellt vid start</option>
+</select>
+</div>
+<!-- Row 2: Offline Images Switch -->
+<div class="flex items-center justify-between p-4 rounded-2xl bg-surface-container">
+<div class="pr-4">
+<p class="text-sm font-bold text-on-surface">Spara alla receptbilder offline</p>
+<p class="text-xs text-on-surface-variant">Ladda ned högupplösta bilder till enhetens minne för omedelbar visning i köket</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Row 3: Background sync switch -->
+<div class="flex items-center justify-between p-4 rounded-2xl bg-surface-container">
+<div class="pr-4">
+<p class="text-sm font-bold text-on-surface">Bakgrundssynk i viloläge</p>
+<p class="text-xs text-on-surface-variant">Tillåt Tandem att uppdatera matsedeln tyst när surfplattan laddas på bänken</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Storage & Cache Statistics with visual breakdown -->
+<div class="rounded-3xl bg-surface-container-low p-6 lg:p-7 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div>
+<h3 class="text-base font-headline font-bold text-on-surface">Lagring &amp; Databas</h3>
+<p class="text-xs text-on-surface-variant">Lokal filallokering på denna surfplatta</p>
+</div>
+<button class="h-9 px-4 rounded-full bg-primary-container text-on-primary-container hover:bg-primary/20 text-xs font-bold transition-colors flex items-center gap-1.5" id="clearCacheBtn">
+<span class="material-symbols-rounded text-sm">cleaning_services</span>
+<span>Rensa cache</span>
+</button>
+</div>
+<!-- Storage progress bar -->
+<div class="mb-4">
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden flex">
+<div class="h-full bg-primary rounded-l-full" style="width: 12%" title="SQLite Databas (14.2 MB)"></div>
+<div class="h-full bg-secondary" style="width: 78%" title="Matbilder (128 MB)"></div>
+<div class="h-full bg-surface-container-highest" style="width: 10%" title="Metadata &amp; Loggar (2.1 MB)"></div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant mt-2 font-medium">
+<span>Totalt använt: <strong>144.3 MB</strong></span>
+<span>Ledigt på plattan: <strong>48.2 GB</strong></span>
+</div>
+</div>
+<!-- Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div class="p-4 rounded-2xl bg-surface-container flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+<span class="material-symbols-rounded text-xl">database</span>
+</div>
+<div>
+<p class="text-xs font-medium text-on-surface-variant">SQLite databas</p>
+<p class="text-base font-headline font-bold text-on-surface">14.2 MB <span class="text-xs font-normal text-on-surface-variant">(312 recept)</span></p>
+</div>
+</div>
+<div class="p-4 rounded-2xl bg-surface-container flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
+<span class="material-symbols-rounded text-xl">image</span>
+</div>
+<div>
+<p class="text-xs font-medium text-on-surface-variant">Cachade matbilder</p>
+<p class="text-base font-headline font-bold text-on-surface" id="cacheSizeText">128.0 MB <span class="text-xs font-normal text-on-surface-variant">(584 filer)</span></p>
+</div>
+</div>
+</div>
+</div>
+<!-- Backup & Migration Box -->
+<div class="rounded-3xl bg-surface-container-low p-6 lg:p-7 shadow-sm mb-4">
+<h3 class="text-base font-headline font-bold text-on-surface mb-1">Säkerhetskopia &amp; Export</h3>
+<p class="text-xs text-on-surface-variant mb-4">Dina recept tillhör dig. Exportera och spara oberoende av molnet.</p>
+<div class="flex flex-col sm:flex-row gap-3">
+<button class="flex-1 h-12 px-5 rounded-2xl bg-surface-container hover:bg-surface-container-high text-on-surface font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-rounded text-lg text-primary">data_object</span>
+<span>Exportera alla recept (JSON)</span>
+</button>
+<button class="flex-1 h-12 px-5 rounded-2xl bg-surface-container hover:bg-surface-container-high text-on-surface font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all">
+<span class="material-symbols-rounded text-lg text-tertiary">save_as</span>
+<span>Skapa lokal backup (.tar.gz)</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+</div>
+</div>
+<script>
+  // Interactive micro-feedback for Kitchen Settings Tablet layout
+  const syncBtn = document.getElementById('syncNowBtn');
+  const syncText = document.getElementById('syncText');
+  const syncSpinner = document.getElementById('syncSpinner');
+  const syncIcon = document.getElementById('syncIcon');
+
+  if (syncBtn) {
+    syncBtn.addEventListener('click', () => {
+      syncIcon.classList.add('hidden');
+      syncSpinner.classList.remove('hidden');
+      syncText.innerText = 'Synkroniserar...';
+      syncBtn.disabled = true;
+
+      setTimeout(() => {
+        syncSpinner.classList.add('hidden');
+        syncIcon.classList.remove('hidden');
+        syncIcon.innerText = 'done';
+        syncText.innerText = 'Klart! 312 recept';
+        syncBtn.classList.replace('bg-primary', 'bg-tertiary');
+
+        setTimeout(() => {
+          syncIcon.innerText = 'sync';
+          syncText.innerText = 'Tvinga synk nu';
+          syncBtn.classList.replace('bg-tertiary', 'bg-primary');
+          syncBtn.disabled = false;
+        }, 2200);
+      }, 1400);
+    });
+  }
+
+  const testBtn = document.getElementById('testConnectionBtn');
+  const testText = document.getElementById('testConnectionText');
+
+  if (testBtn) {
+    testBtn.addEventListener('click', () => {
+      testText.innerText = 'Mäter latens...';
+      setTimeout(() => {
+        const ping = Math.floor(Math.random() * 8) + 11;
+        testText.innerText = `Ansluten: ${ping} ms`;
+      }, 500);
+    });
+  }
+
+  const clearBtn = document.getElementById('clearCacheBtn');
+  const cacheText = document.getElementById('cacheSizeText');
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      clearBtn.disabled = true;
+      clearBtn.innerText = 'Rensar...';
+      setTimeout(() => {
+        cacheText.innerHTML = '0 KB <span class="text-xs font-normal text-on-surface-variant">(0 filer)</span>';
+        clearBtn.innerText = 'Cachen rensad';
+        setTimeout(() => {
+          clearBtn.disabled = false;
+          clearBtn.innerHTML = '<span class="material-symbols-rounded text-sm">cleaning_services</span><span>Rensa cache</span>';
+        }, 1800);
+      }, 700);
+    });
+  }
+
+  const globalSave = document.getElementById('globalSaveFeedback');
+  if (globalSave) {
+    globalSave.addEventListener('click', () => {
+      const original = globalSave.innerHTML;
+      globalSave.innerHTML = '<span class="material-symbols-rounded text-base">check</span><span>Sparat!</span>';
+      globalSave.classList.replace('bg-primary', 'bg-tertiary');
+      setTimeout(() => {
+        globalSave.innerHTML = original;
+        globalSave.classList.replace('bg-tertiary', 'bg-primary');
+      }, 1600);
+    });
+  }
+</script></main></div></body></html>

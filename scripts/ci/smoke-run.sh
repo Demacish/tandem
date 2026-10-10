@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Runs the release smoke test on an already booted emulator (.github/workflows/smoke.yml calls
+# it from reactivecircus/android-emulator-runner; see docs/BYGGE.md "Release-röktest").
+#
+# Expects the APKs built beforehand by
+#   ./gradlew :app:assembleSideloadMinified :smoke:assembleMinified
+# and writes everything worth keeping to $SMOKE_OUT (default smoke-results/):
+#   instrumentation.txt   the test runner's output
+#   logcat.txt            the full device log of the run
+#   crash.txt             every FATAL EXCEPTION block of the app (obfuscated, as on a phone)
+#   crash-retraced.txt    the same, retraced with this build's R8 mapping file
+#   device/               screenshots and window hierarchies the test saved
+#   final-screen.png, final-window.xml   the screen when the run ended
+#
+# Exit status: 0 only if every test passed AND the app never crashed.
+#
+# Never run this on the production server: it needs an emulator (CI only).
+set -uo pipefail
+
+APP_PACKAGE=casa.moller.tandem.minified
+TEST_PACKAGE=casa.moller.tandem.smoke
+RUNNER=androidx.test.runner.AndroidJUnitRunner
+OUT="${SMOKE_OUT:-smoke-results}"
+MAPPING=app/build/outputs/mapping/sideloadMinified/mapping.txt
+
+mkdir -p "$OUT"
+app_apk="$(find app/build/outputs/apk/sideload/minified -name '*.apk' | head -n 1)"
+test_apk="$(find smoke/build/outputs/apk/minified -name '*.apk' | head -n 1)"
+if [ -z "$app_apk" ] || [ -z "$test_apk" ]; then
+  echo "::error::APKs missing: build :app:assembleSideloadMinified and :smoke:assembleMinified first"
+  exit 1
+fi
+
+adb wait-for-device
+echo "Device: API $(adb shell getprop ro.build.version.sdk | tr -d '\r'), $(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
+# A freshly booted CI emulator is slow (2 vCPU, software GPU) and its system apps (System UI,
+# Play services) sometimes hit ANRs. Hide those dialogs and let the boot settle; the test also
+# taps "Wait" on such a dialog if one still shows. A crash or ANR of Tandem is still caught
+# below (logcat) and by the test.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell settings put secure show_ime_with_hard_keyboard 0 || true
+sleep 30
+adb shell input keyevent KEYCODE_HOME || true
+adb install -r "$app_apk" || { echo "::error::Installing $app_apk failed"; exit 1; }
+adb install -r "$test_apk" || { echo "::error::Installing $test_apk failed"; exit 1; }
+
+adb logcat -c || true
+adb logcat -v threadtime > "$OUT/logcat.txt" 2>&1 &
+logcat_pid=$!
+
+echo "::group::Instrumentation"
+adb shell am instrument -w "$TEST_PACKAGE/$RUNNER" 2>&1 | tr -d '\r' | tee "$OUT/instrumentation.txt"
+echo "::endgroup::"
+
+# Evidence first, verdict later.
+adb exec-out screencap -p > "$OUT/final-screen.png" 2> /dev/null || true
+adb shell uiautomator dump /sdcard/final-window.xml > /dev/null 2>&1 \
+  && adb pull /sdcard/final-window.xml "$OUT/final-window.xml" > /dev/null 2>&1 || true
+adb pull "/sdcard/Android/media/$TEST_PACKAGE/smoke" "$OUT/device" > /dev/null 2>&1 || true
+sleep 2
+kill "$logcat_pid" 2> /dev/null || true
+wait "$logcat_pid" 2> /dev/null || true
+
+# Every "FATAL EXCEPTION" block of the app's process: the AndroidRuntime lines that follow
+# "Process: casa.moller.tandem.minified", without the logcat prefix.
+awk -v pkg="$APP_PACKAGE" '
+  / E AndroidRuntime: / {
+    line = $0
+    sub(/^.* E AndroidRuntime: /, "", line)
+    if (line ~ /^FATAL EXCEPTION/) { pending = line; inside = 0; next }
+    if (pending != "") {
+      inside = (line ~ ("^Process: " pkg "(,|$)"))
+      if (inside) { print ""; print pending }
+      pending = ""
+    }
+    if (inside) print line
+    next
+  }
+' "$OUT/logcat.txt" > "$OUT/crash.txt"
+
+crashed=false
+if [ -s "$OUT/crash.txt" ]; then
+  crashed=true
+  # Retrace with the R8 that produced the mapping: AGP's own r8.jar from the Gradle cache.
+  r8_jar="$(find "${GRADLE_USER_HOME:-$HOME/.gradle}/caches" -path '*com.android.tools/r8/*' -name 'r8-*.jar' 2> /dev/null \
+    | grep -v -e sources -e javadoc | sort -V | tail -n 1)"
+  if [ -n "$r8_jar" ]; then
+    java -cp "$r8_jar" com.android.tools.r8.retrace.Retrace "$MAPPING" "$OUT/crash.txt" > "$OUT/crash-retraced.txt" 2>&1
+  else
+    retrace="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools" -path '*/bin/retrace' 2> /dev/null | head -n 1)"
+    [ -n "$retrace" ] && "$retrace" "$MAPPING" "$OUT/crash.txt" > "$OUT/crash-retraced.txt" 2>&1
+  fi
+  echo "::error title=The app crashed::$(head -n 3 "$OUT/crash.txt" | tr '\n' ' ')"
+  echo "::group::Crash (obfuscated)"; cat "$OUT/crash.txt"; echo "::endgroup::"
+  echo "::group::Crash (retraced)"; cat "$OUT/crash-retraced.txt" 2> /dev/null; echo "::endgroup::"
+fi
+
+# An ANR of the app counts like a crash (the hidden dialog would not stop the test otherwise).
+if grep -q "ANR in ${APP_PACKAGE}\b" "$OUT/logcat.txt"; then
+  crashed=true
+  grep -A 20 "ANR in ${APP_PACKAGE}\b" "$OUT/logcat.txt" >> "$OUT/crash.txt"
+  echo "::error title=The app did not respond (ANR)::see crash.txt in smoke-results"
+fi
+
+passed=false
+grep -q '^OK (' "$OUT/instrumentation.txt" && ! grep -q -e 'FAILURES!!!' -e 'INSTRUMENTATION_FAILED' -e 'Process crashed' \
+  "$OUT/instrumentation.txt" && passed=true
+
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  {
+    echo "### Release smoke test"
+    echo "- Tests: $([ "$passed" = true ] && echo passed || echo '**FAILED**')"
+    echo "- App crash: $([ "$crashed" = true ] && echo '**yes**' || echo none)"
+    if [ "$crashed" = true ]; then
+      echo
+      echo '<details><summary>Retraced crash</summary>'
+      echo
+      echo '```'
+      head -n 80 "$OUT/crash-retraced.txt" 2> /dev/null || head -n 80 "$OUT/crash.txt"
+      echo '```'
+      echo '</details>'
+    fi
+  } >> "$GITHUB_STEP_SUMMARY"
+fi
+
+if [ "$passed" = true ] && [ "$crashed" = false ]; then
+  echo "Release smoke test passed."
+  exit 0
+fi
+echo "::error title=Release smoke test failed::tests passed: ${passed}, app crashed: ${crashed} (artifact smoke-results)"
+exit 1

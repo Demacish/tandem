@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window theme behind Compose. Everything visible is drawn by TandemTheme
+         (core:designsystem); this only sets the window background so that rotation, resizing
+         and the first frame show the app's surface colour instead of white. -->
+    <style name="Theme.Tandem" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/tandem_window_background</item>
+    </style>
+
+    <!-- Launch theme of MainActivity (core-splashscreen). The icon is the launcher foreground
+         (cream pot) on a tomato circle, on the cream (light) or dark brown (night) background.
+         MainActivity calls installSplashScreen(), which switches to postSplashScreenTheme. -->
+    <style name="Theme.Tandem.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/tandem_window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/tandem_splash_icon_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.Tandem</item>
+    </style>
+</resources>

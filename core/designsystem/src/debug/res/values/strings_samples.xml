@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sample texts for @Preview and Roborazzi screenshots. Debug source set only: never shipped. -->
+<resources>
+    <string name="ds_sample_app_name" translatable="false">Tandem</string>
+    <string name="ds_sample_screen_title">Today</string>
+    <string name="ds_sample_screen_subtitle">Thursday 24 October</string>
+    <string name="ds_sample_settings">Settings</string>
+    <string name="ds_sample_recipe_title">Creamy mushroom pasta</string>
+    <string name="ds_sample_recipe_body">Tagliatelle with fried forest mushrooms, garlic, thyme and grated parmesan. Ready in 35 minutes.</string>
+    <string name="ds_sample_overline">Step 2 of 3</string>
+    <string name="ds_sample_step">Fry the mushrooms in butter until golden, about 5 minutes.</string>
+    <string name="ds_sample_cook">Start cooking</string>
+    <string name="ds_sample_show_items">Show items</string>
+    <string name="ds_sample_add_to_list">Add to list</string>
+    <string name="ds_sample_read_guide">Read the connection guide</string>
+    <string name="ds_sample_connect">Connect</string>
+    <string name="ds_sample_server_label">Server address</string>
+    <string name="ds_sample_server_placeholder" translatable="false">https://recipes.example.com</string>
+    <string name="ds_sample_server_help">The address you open Tandoor with in the browser.</string>
+    <string name="ds_sample_username_label">Username</string>
+    <string name="ds_sample_password_label">Password</string>
+    <string name="ds_sample_server_error">Could not reach the server. Check the address.</string>
+    <string name="ds_sample_info_title">Your password is never stored</string>
+    <string name="ds_sample_info_body">You stay logged in on this device with a token that you can revoke in Tandoor at any time.</string>
+    <string name="ds_sample_callout_title">Week planned</string>
+    <string name="ds_sample_callout_body">Five dinners are planned. Three ingredients are missing at home.</string>
+    <string name="ds_sample_chip_all_at_home">All ingredients at home</string>
+    <string name="ds_sample_chip_tonight">Tonight</string>
+    <string name="ds_sample_chip_missing">2 missing</string>
+</resources>

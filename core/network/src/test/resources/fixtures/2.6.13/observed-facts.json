@@ -1,0 +1,513 @@
+{
+  "tandoorTag": "2.6.13",
+  "serverSettings.noAuth": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "serverSettings.fieldTypes": {
+    "shopping_min_autosync_interval": "string",
+    "disable_external_connectors": "boolean",
+    "terms_url": "string",
+    "privacy_url": "string",
+    "imprint_url": "string",
+    "hosted": "boolean",
+    "debug": "boolean",
+    "version": "string",
+    "unauthenticated_theme_from_space": "number",
+    "force_theme_from_space": "number",
+    "logo_color_32": "null",
+    "logo_color_128": "null",
+    "logo_color_144": "null",
+    "logo_color_180": "null",
+    "logo_color_192": "null",
+    "logo_color_512": "null",
+    "logo_color_svg": "null",
+    "custom_space_theme": "null",
+    "nav_logo": "null",
+    "nav_bg_color": "null"
+  },
+  "serverSettings.version": "2.6.13",
+  "serverSettings.invalidToken": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "login.json": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "login.fieldTypes": {
+    "id": "number",
+    "token": "string",
+    "scope": "string",
+    "expires": "string",
+    "user_id": "number",
+    "test": "number"
+  },
+  "login.scope": "read write app",
+  "login.expires": "2000-01-01T00:00:00.000000Z",
+  "login.expiresInDays": 1824,
+  "login.testEqualsUserId": true,
+  "login-form.status": 200,
+  "login-form.returnsSameTokenAsJsonLogin": true,
+  "login-form.returnsSameIdAsJsonLogin": true,
+  "login-multipart.status": 200,
+  "login-multipart.returnsSameTokenAsJsonLogin": true,
+  "login-multipart.returnsSameIdAsJsonLogin": true,
+  "login.wrongPassword": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "non_field_errors": [
+        "Unable to log in with provided credentials."
+      ]
+    }
+  },
+  "login.missingFields": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "username": [
+        "This field is required."
+      ],
+      "password": [
+        "This field is required."
+      ]
+    }
+  },
+  "deviceToken.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "deviceToken.fieldTypes": {
+    "id": "number",
+    "token": "string",
+    "expires": "string",
+    "scope": "string",
+    "created": "string",
+    "updated": "string"
+  },
+  "deviceToken.tokenIsPlaintextInCreateResponse": true,
+  "deviceToken.scope": "read write",
+  "deviceToken.expiresSent": "2000-01-01T00:00:00Z",
+  "deviceToken.expiresReturned": "2000-01-01T00:00:00+02:00",
+  "deviceToken.expiresInDays": 364,
+  "accessTokenList.isArray": true,
+  "accessTokenList.fresh": [
+    {
+      "id": 1,
+      "scope": "read write app",
+      "plaintext": true,
+      "masked": false,
+      "token": "tda_00000000_0000_0000_0000_000000000001"
+    },
+    {
+      "id": 2,
+      "scope": "read write",
+      "plaintext": true,
+      "masked": false,
+      "token": "tda_00000000_0000_0000_0000_000000000002"
+    }
+  ],
+  "accessTokenList.after16s": [
+    {
+      "id": 1,
+      "scope": "read write app",
+      "plaintext": false,
+      "masked": true,
+      "token": "tda_************_******_***********0001"
+    },
+    {
+      "id": 2,
+      "scope": "read write",
+      "plaintext": false,
+      "masked": true,
+      "token": "tda_************_******_***********0002"
+    }
+  ],
+  "user.byId": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "user.fieldTypes": {
+    "id": "number",
+    "username": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "display_name": "string",
+    "is_staff": "boolean",
+    "is_superuser": "boolean",
+    "is_active": "boolean"
+  },
+  "userPreference.list": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "userPreference.isArray": true,
+  "userPreference.count": 1,
+  "userPreference.fieldTypes": {
+    "user": "object",
+    "image": "null",
+    "theme": "string",
+    "nav_bg_color": "string",
+    "nav_text_color": "string",
+    "nav_show_logo": "boolean",
+    "default_unit": "string",
+    "default_page": "string",
+    "use_fractions": "boolean",
+    "use_kj": "boolean",
+    "nav_sticky": "boolean",
+    "ingredient_decimals": "number",
+    "comments": "boolean",
+    "shopping_auto_sync": "number",
+    "mealplan_autoadd_shopping": "boolean",
+    "food_inherit_default": "array",
+    "default_delay": "number",
+    "mealplan_autoinclude_related": "boolean",
+    "mealplan_autoexclude_onhand": "boolean",
+    "shopping_recent_days": "number",
+    "csv_delim": "string",
+    "csv_prefix": "string",
+    "shopping_update_food_lists": "boolean",
+    "default_meal_type": "null",
+    "filter_to_supermarket": "boolean",
+    "shopping_add_onhand": "boolean",
+    "left_handed": "boolean",
+    "show_step_ingredients": "boolean",
+    "food_children_exist": "boolean"
+  },
+  "userPreference.userField": {
+    "id": 1,
+    "username": "contract-admin",
+    "first_name": "",
+    "last_name": "",
+    "display_name": "contract-admin",
+    "is_staff": true,
+    "is_superuser": true,
+    "is_active": true
+  },
+  "space.current": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "space.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "created_by": "object",
+    "created_at": "string",
+    "message": "string",
+    "max_recipes": "number",
+    "max_file_storage_mb": "number",
+    "max_users": "number",
+    "allow_sharing": "boolean",
+    "demo": "boolean",
+    "food_inherit": "array",
+    "user_count": "number",
+    "recipe_count": "number",
+    "file_size_mb": "number",
+    "image": "null",
+    "nav_logo": "null",
+    "space_theme": "string",
+    "custom_space_theme": "null",
+    "nav_bg_color": "string",
+    "nav_text_color": "string",
+    "logo_color_32": "null",
+    "logo_color_128": "null",
+    "logo_color_144": "null",
+    "logo_color_180": "null",
+    "logo_color_192": "null",
+    "logo_color_512": "null",
+    "logo_color_svg": "null",
+    "ai_credits_monthly": "number",
+    "ai_credits_balance": "number",
+    "ai_monthly_credits_used": "number",
+    "ai_enabled": "boolean",
+    "ai_default_provider": "null",
+    "space_setup_completed": "boolean",
+    "household_setup_completed": "boolean"
+  },
+  "space.id": 1,
+  "space.householdSetupCompleted": false,
+  "userSpace.allPersonal": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "userSpace.fieldTypes": {
+    "id": "number",
+    "user": "object",
+    "space": "number",
+    "groups": "array",
+    "household": "null",
+    "active": "boolean",
+    "internal_note": "null",
+    "invite_link": "null",
+    "created_at": "string",
+    "updated_at": "string"
+  },
+  "userSpace.household": null,
+  "userSpace.groups": [
+    {
+      "id": 3,
+      "name": "admin"
+    }
+  ],
+  "userSpace.space": 1,
+  "userSpace.active": true,
+  "space.current.withLoginToken.status": 200,
+  "invalidToken.missing.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.missing.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.unknownWellFormed.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.unknownWellFormed.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.garbage.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.garbage.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.emptyBearer.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.emptyBearer.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "invalidToken.statuses": [
+    403
+  ],
+  "invalidToken.acceptLanguageSv": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Autentiseringsuppgifter ej tillhandahållna."
+    }
+  },
+  "invalidToken.acceptLanguageSv.contentLanguage": "sv",
+  "expiredToken.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "expiredToken.use": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "expiredToken.deleteStatus": 204,
+  "notFound.recipe": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "No Recipe matches the given query."
+    }
+  },
+  "notFound.accessToken": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "No AccessToken matches the given query."
+    }
+  },
+  "notFound.unknownPath": {
+    "status": 302,
+    "contentType": "text/html; charset=utf-8",
+    "isJson": false,
+    "wwwAuthenticate": null,
+    "body": ""
+  },
+  "notFound.unknownPath.location": "/accounts/login/?next=/api/this-endpoint-does-not-exist/",
+  "revokeLoginToken.delete": {
+    "status": 204,
+    "contentType": null,
+    "isJson": false,
+    "wwwAuthenticate": null,
+    "body": ""
+  },
+  "revokeLoginToken.revokedTokenUse": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "revokeLoginToken.deviceTokenStillWorks": true,
+  "loginAfterRevoke.returnsDeviceToken": true,
+  "loginAfterRevoke.returnsNewToken": false,
+  "loginAfterRevoke.scope": "read write",
+  "loginAfterRevoke.expiresInDays": 364,
+  "revokeDeviceToken.delete": {
+    "status": 204,
+    "contentType": null,
+    "isJson": false,
+    "wwwAuthenticate": null,
+    "body": ""
+  },
+  "revokeDeviceToken.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "revokeDeviceToken.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided."
+    }
+  },
+  "throttle.allowedLoginCallsBefore429": 10,
+  "throttle.response": {
+    "status": 429,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Request was throttled. Expected available in 86380 seconds."
+    }
+  },
+  "throttle.retryAfterHeader": "86380",
+  "noSpace.login": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "noSpace.login.scope": "read write app",
+  "noSpace.accessTokenCreate": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "id": 4,
+      "token": "tda_00000000_0000_0000_0000_000000000004",
+      "expires": "2000-01-01T00:00:00+02:00",
+      "scope": "read write",
+      "created": "2000-01-01T00:00:00.000000+02:00",
+      "updated": "2000-01-01T00:00:00.000000+02:00"
+    }
+  },
+  "noSpace.accessTokenList": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "noSpace.userPreference": {
+    "status": 500,
+    "contentType": "text/html; charset=utf-8",
+    "isJson": false,
+    "wwwAuthenticate": null,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "noSpace.userById": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "noSpace.spaceCurrent": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "noSpace.revokeDeviceTokenStatus": 204
+}

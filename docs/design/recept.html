@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html class="light" lang="sv"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Krämig svamppasta - Recept</title>
+<!-- Google Fonts: Public Sans & DM Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=Public+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#C2410C", // Varm tomat/terrakotta
+            "primary-container": "#FFEDD5",
+            "on-primary": "#FFFFFF",
+            "on-primary-container": "#7C2D12",
+            secondary: "#D97706", // Saffran
+            "secondary-container": "#FEF3C7",
+            tertiary: "#4D7C0F", // Örtgrön
+            "tertiary-container": "#ECFCCB",
+            surface: "#FBF7F2", // Varm gräddvit
+            "surface-container": "#F5EFE6", // Sand/kräm
+            "surface-container-high": "#EFE7DA",
+            "surface-variant": "#EFE6DA",
+            "on-surface": "#2D2621",
+            "on-surface-variant": "#6C625A",
+            outline: "#D8CFC4"
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Public Sans", "sans-serif"],
+            display: ["Public Sans", "sans-serif"],
+            body: ["DM Sans", "sans-serif"],
+            label: ["DM Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      background-color: #F5EFE6;
+      font-family: 'DM Sans', sans-serif;
+      color: #2D2621;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex justify-center selection:bg-primary-container selection:text-on-primary-container">
+<!-- Huvudbehållare för mobil layout -->
+<div class="w-full max-w-md bg-surface min-h-screen shadow-2xl relative pb-32 flex flex-col">
+<!-- Hjältebild med flytande knappar -->
+<div class="relative w-full h-80 sm:h-96 overflow-hidden bg-surface-container-high">
+<img alt="Krämig svamppasta med tagliatelle och hyvlad parmesan i en rustik terrakotta-skål" class="w-full h-full object-cover object-center" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+<!-- Gradient overlay för läsbarhet på knappar -->
+<div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 via-black/20 to-transparent pointer-events-none"></div>
+<!-- Topp-åtgärder: Tillbaka och Spara -->
+<div class="absolute top-4 inset-x-4 flex justify-between items-center z-10">
+<button aria-label="Tillbaka till receptlista" class="w-11 h-11 rounded-full bg-white/85 backdrop-blur-md text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-transform duration-150 hover:bg-white" type="button">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<div class="flex items-center space-x-2">
+<button aria-label="Dela recept" class="w-11 h-11 rounded-full bg-white/85 backdrop-blur-md text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-transform duration-150 hover:bg-white" type="button">
+<span class="material-symbols-outlined text-[22px]">share</span>
+</button>
+<button aria-label="Spara recept till favoriter" class="w-11 h-11 rounded-full bg-white/85 backdrop-blur-md text-on-surface flex items-center justify-center shadow-md active:scale-95 transition-transform duration-150 hover:bg-white" id="bookmark-btn" onclick="toggleBookmark()" type="button">
+<span class="material-symbols-outlined fill text-secondary text-[24px]" id="bookmark-icon">bookmark</span>
+</button>
+</div>
+</div>
+<!-- Mjukt rundad övergång nedåt -->
+<div class="absolute bottom-0 inset-x-0 h-6 bg-surface rounded-t-[28px]"></div>
+</div>
+<!-- Huvudinnehåll -->
+<main class="px-5 pt-1 space-y-6 flex-1">
+<!-- Titel & Nyckelordschips -->
+<div class="space-y-3">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-[15px] mr-1">restaurant</span>
+            Pasta
+          </span>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px] mr-1">schedule</span>
+            Vardag
+          </span>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-tertiary-container text-tertiary">
+<span class="material-symbols-outlined text-[15px] mr-1">eco</span>
+            Vegetarisk
+          </span>
+</div>
+<h1 class="font-headline text-3xl font-bold tracking-tight text-on-surface leading-tight">
+          Krämig svamppasta
+        </h1>
+<!-- Metadata & Betyg -->
+<div class="flex items-center flex-wrap gap-y-2 text-sm text-on-surface-variant pt-0.5">
+<div class="flex items-center text-secondary font-bold mr-3 bg-secondary-container/60 px-2.5 py-0.5 rounded-full">
+<span class="material-symbols-outlined fill text-[18px] mr-1">star</span>
+<span>4.8</span>
+<span class="text-xs font-normal text-on-surface-variant ml-1">(42)</span>
+</div>
+<div class="flex items-center mr-3 font-medium">
+<span class="material-symbols-outlined text-[18px] mr-1 text-primary">timer</span>
+<span>35 min</span>
+</div>
+<span class="text-outline mr-3">•</span>
+<div class="flex items-center text-xs sm:text-sm font-medium">
+<span class="material-symbols-outlined text-[17px] mr-1 text-tertiary">soup_kitchen</span>
+<span>Lagad 6 gånger</span>
+</div>
+</div>
+</div>
+<!-- Portionsväljare (Interaktiv kortbehållare) -->
+<section aria-label="Välj antal portioner" class="bg-surface-container rounded-2xl p-4 flex items-center justify-between border border-outline/30 shadow-sm">
+<div class="flex flex-col">
+<span class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Portioner</span>
+<span class="font-headline font-bold text-lg text-on-surface" id="portions-count">4 portioner</span>
+</div>
+<div class="flex items-center space-x-2 bg-surface rounded-full p-1 border border-outline/40 shadow-inner">
+<button aria-label="Minska antal portioner" class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-outline/50 flex items-center justify-center text-on-surface active:scale-90 transition-transform font-bold" onclick="updatePortions(-1)" type="button">
+<span class="material-symbols-outlined text-[20px]">remove</span>
+</button>
+<span class="w-8 text-center font-headline font-bold text-base text-primary" id="portions-display">4</span>
+<button aria-label="Öka antal portioner" class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-outline/50 flex items-center justify-center text-on-surface active:scale-90 transition-transform font-bold" onclick="updatePortions(1)" type="button">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</section>
+<!-- Ingredienser -->
+<section aria-labelledby="ingredienser-rubrik" class="space-y-3">
+<div class="flex justify-between items-baseline">
+<h2 class="font-headline text-xl font-bold text-on-surface" id="ingredienser-rubrik">Ingredienser</h2>
+<span class="text-xs text-on-surface-variant font-medium">Tryck för att bocka av</span>
+</div>
+<div class="bg-surface-container/60 rounded-2xl p-2 sm:p-3 divide-y divide-outline/30 border border-outline/30">
+<!-- Ingrediens 1 -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Tagliatelle</span>
+<span class="font-headline font-semibold text-primary group-[.done]:text-on-surface-variant ingredient-qty" data-base="75" data-unit="g">300 g</span>
+</div>
+</label>
+<!-- Ingrediens 2 -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Champinjoner (skivade)</span>
+<span class="font-headline font-semibold text-primary group-[.done]:text-on-surface-variant ingredient-qty" data-base="62.5" data-unit="g">250 g</span>
+</div>
+</label>
+<!-- Ingrediens 3 -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Vispgrädde</span>
+<span class="font-headline font-semibold text-primary group-[.done]:text-on-surface-variant ingredient-qty" data-base="0.5" data-unit="dl">2 dl</span>
+</div>
+</label>
+<!-- Ingrediens 4 -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Gul lök (finhackad)</span>
+<span class="font-headline font-semibold text-primary group-[.done]:text-on-surface-variant ingredient-qty" data-base="0.25" data-unit="st">1 st</span>
+</div>
+</label>
+<!-- Ingrediens 5 -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Parmesan (riven)</span>
+<span class="font-headline font-semibold text-primary group-[.done]:text-on-surface-variant ingredient-qty" data-base="12.5" data-unit="g">50 g</span>
+</div>
+</label>
+<!-- Ingrediens 6 -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Vitlök</span>
+<span class="font-headline font-semibold text-primary group-[.done]:text-on-surface-variant ingredient-qty" data-base="0.5" data-unit="klyftor">2 klyftor</span>
+</div>
+</label>
+<!-- Ingrediens 7 (Smaksättning) -->
+<label class="flex items-center py-2.5 px-2 cursor-pointer select-none group transition-colors rounded-lg hover:bg-surface-variant/40">
+<input class="w-5 h-5 rounded-md text-tertiary focus:ring-tertiary border-outline bg-surface mr-3.5 transition-all" onchange="toggleIngredient(this)" type="checkbox"/>
+<div class="flex-1 flex justify-between items-center pr-1 text-sm sm:text-base">
+<span class="font-medium text-on-surface ingredient-name group-[.done]:line-through group-[.done]:text-on-surface-variant">Smör &amp; olivolja, färsk timjan, salt &amp; nymalen svartpeppar</span>
+<span class="font-headline font-semibold text-on-surface-variant text-xs italic">Efter smak</span>
+</div>
+</label>
+</div>
+</section>
+<!-- Kockens Tips (Glassigt / Varmt informationskort) -->
+<section class="bg-gradient-to-r from-secondary-container/80 to-surface-container rounded-2xl p-4 border border-secondary/20 flex gap-3.5 items-start">
+<div class="w-9 h-9 rounded-full bg-secondary text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+<span class="material-symbols-outlined text-[20px]">lightbulb</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-headline font-bold text-sm text-on-surface">Kockens tips</h4>
+<p class="text-xs sm:text-sm text-on-surface leading-relaxed">
+            Spara alltid minst 1 dl av det stärkelseberikade pastavattnet innan du häller av pastan. Det gör att den krämiga såsen fäster perfekt vid varje tagliatelle-slinga.
+          </p>
+</div>
+</section>
+<!-- Gör så här / Tillagningssteg -->
+<section aria-labelledby="instruktioner-rubrik" class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="font-headline text-xl font-bold text-on-surface" id="instruktioner-rubrik">Gör så här</h2>
+<span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-container text-on-surface-variant">5 steg</span>
+</div>
+<div class="space-y-4">
+<!-- Steg 1 -->
+<div class="bg-surface-container/40 border border-outline/30 rounded-2xl p-4 flex gap-4 items-start relative group hover:border-primary/40 transition-colors">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary font-headline font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              1
+            </div>
+<div class="space-y-1 pt-0.5">
+<h3 class="font-headline font-bold text-sm sm:text-base text-on-surface">Koka pastan</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                Koka upp rikligt med saltat vatten i en rymlig kastrull. Koka tagliatellen enligt förpackningens anvisning tills den är precis al dente.
+              </p>
+</div>
+</div>
+<!-- Steg 2 -->
+<div class="bg-surface-container/40 border border-outline/30 rounded-2xl p-4 flex gap-4 items-start relative group hover:border-primary/40 transition-colors">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary font-headline font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              2
+            </div>
+<div class="space-y-1 pt-0.5">
+<h3 class="font-headline font-bold text-sm sm:text-base text-on-surface">Stek svampen krispig</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                Hetta upp en stekpanna med en klick smör och lite olivolja. Stek den skivade svampen på medelhög värme tills den fått en djup gyllenbrun yta och vätskan kokat bort.
+              </p>
+</div>
+</div>
+<!-- Steg 3 -->
+<div class="bg-surface-container/40 border border-outline/30 rounded-2xl p-4 flex gap-4 items-start relative group hover:border-primary/40 transition-colors">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary font-headline font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              3
+            </div>
+<div class="space-y-1 pt-0.5">
+<h3 class="font-headline font-bold text-sm sm:text-base text-on-surface">Fräs lök &amp; timjan</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                Sänk värmen något. Tillsätt den finhackade gula löken, riven vitlök och färska timjanblad. Låt mjukna sakta i 2–3 minuter utan att ta för mycket färg.
+              </p>
+</div>
+</div>
+<!-- Steg 4 -->
+<div class="bg-surface-container/40 border border-outline/30 rounded-2xl p-4 flex gap-4 items-start relative group hover:border-primary/40 transition-colors">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary font-headline font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              4
+            </div>
+<div class="space-y-1 pt-0.5">
+<h3 class="font-headline font-bold text-sm sm:text-base text-on-surface">Skapa den sammetslena såsen</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                Häll på vispgrädden och låt sjuda varsamt i ett par minuter. Skopa i cirka 0,5–1 dl av pastavattnet och rör ner det mesta av den rivna parmesanen så att allt emulgerar.
+              </p>
+</div>
+</div>
+<!-- Steg 5 -->
+<div class="bg-surface-container/40 border border-outline/30 rounded-2xl p-4 flex gap-4 items-start relative group hover:border-primary/40 transition-colors">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary font-headline font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+              5
+            </div>
+<div class="space-y-1 pt-0.5">
+<h3 class="font-headline font-bold text-sm sm:text-base text-on-surface">Vänd ihop &amp; servera</h3>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                Vänd ner den nykokta pastan direkt i såsen. Smaka av med rikligt med nymalen svartpeppar och salt. Toppa med extra parmesan och färsk timjan vid bordet.
+              </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Tandoor server synkstatus (diskret nördig detalj) -->
+<div class="pt-2 pb-4 text-center">
+<span class="inline-flex items-center text-xs text-on-surface-variant/80 gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+          Synkad mot Tandoor-server • Senast ändrad igår
+        </span>
+</div>
+</main>
+<!-- Fast bottenfält för kökshandlingar (Sticky Action Dock) -->
+<div class="fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none">
+<nav class="w-full max-w-md bg-surface/95 backdrop-blur-md px-4 py-3.5 shadow-2xl flex items-center gap-3 pointer-events-auto">
+<!-- Sekundär: Lägg på listan -->
+<button class="flex-1 h-14 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-headline font-bold text-sm flex items-center justify-center gap-2 px-3 active:scale-95 transition-all duration-150 border border-outline/40" onclick="addToListFeedback(this)" type="button">
+<span class="material-symbols-outlined text-primary text-[22px]">shopping_basket</span>
+<span class="truncate">Lägg på listan</span>
+</button>
+<!-- Primär: Börja laga (Kokläge i terrakotta #C2410C) -->
+<button class="flex-[1.3] h-14 rounded-full bg-primary hover:bg-[#a63608] text-on-primary font-headline font-bold text-base flex items-center justify-center gap-2 px-4 shadow-lg shadow-primary/30 active:scale-95 transition-all duration-150" onclick="startCookingMode()" type="button">
+<span class="material-symbols-outlined fill text-[22px]">skillet</span>
+<span class="tracking-wide">Börja laga</span>
+</button>
+</nav>
+</div>
+</div>
+<!-- Enkelt toast-meddelande för feedback -->
+<div class="fixed top-6 z-50 left-1/2 -translate-x-1/2 bg-on-surface text-surface px-5 py-3 rounded-full text-sm font-medium shadow-xl opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2" id="toast">
+<span class="material-symbols-outlined text-tertiary fill text-[20px]">check_circle</span>
+<span id="toast-text">Ingredienser tillagda i inköpslistan!</span>
+</div>
+<script>
+    let portions = 4;
+
+    function updatePortions(delta) {
+      const newPortions = portions + delta;
+      if (newPortions < 1 || newPortions > 20) return;
+      
+      portions = newPortions;
+      document.getElementById('portions-count').innerText = `${portions} portioner`;
+      document.getElementById('portions-display').innerText = portions;
+
+      // Uppdatera ingrediensmängder proportionellt
+      document.querySelectorAll('.ingredient-qty').forEach(el => {
+        const base = parseFloat(el.getAttribute('data-base'));
+        const unit = el.getAttribute('data-unit');
+        if (base && unit) {
+          const calculated = (base * portions);
+          // Runda snyggt
+          const formatted = (calculated % 1 === 0) ? calculated : calculated.toFixed(1).replace('.0', '');
+          el.innerText = `${formatted} ${unit}`;
+        }
+      });
+    }
+
+    function toggleIngredient(checkbox) {
+      const parentLabel = checkbox.closest('label');
+      if (checkbox.checked) {
+        parentLabel.classList.add('done', 'opacity-60');
+      } else {
+        parentLabel.classList.remove('done', 'opacity-60');
+      }
+    }
+
+    function toggleBookmark() {
+      const icon = document.getElementById('bookmark-icon');
+      const isFilled = icon.classList.contains('fill');
+      if (isFilled) {
+        icon.classList.remove('fill', 'text-secondary');
+        icon.classList.add('text-on-surface-variant');
+        showToast("Recept borttaget från sparade", "bookmark_border");
+      } else {
+        icon.classList.add('fill', 'text-secondary');
+        icon.classList.remove('text-on-surface-variant');
+        showToast("Recept sparat i dina favoriter!", "bookmark");
+      }
+    }
+
+    function addToListFeedback(btn) {
+      showToast("Samtliga ingredienser lades till i Handla-listan!", "shopping_basket");
+    }
+
+    function startCookingMode() {
+      showToast("Öppnar kockläge med stor text...", "soup_kitchen");
+    }
+
+    function showToast(message, iconName = "check_circle") {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = toast.querySelector('.material-symbols-outlined');
+      
+      toastText.innerText = message;
+      if (toastIcon && iconName) {
+        toastIcon.innerText = iconName;
+      }
+      
+      toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+      }, 2500);
+    }
+  </script>
+</body></html>

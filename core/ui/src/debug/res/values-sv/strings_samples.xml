@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_sample_greeting">God kväll!</string>
+    <string name="ui_sample_empty_title">Inga recept än</string>
+    <string name="ui_sample_empty_body">Importera ett recept från en webbsida eller ladda några exempelrecept för att komma igång.</string>
+    <string name="ui_sample_empty_import">Importera ett recept</string>
+    <string name="ui_sample_empty_samples">Ladda exempelrecept</string>
+    <string name="ui_sample_error_title">Kunde inte nå servern</string>
+    <string name="ui_sample_error_body">Det är oftast nätverket eller ett portnummer som saknas. Kontrollera adressen och försök igen.</string>
+    <string name="ui_sample_try_demo_instead">Testa med demoläget i stället</string>
+    <string name="ui_sample_loading">Hämtar recept…</string>
+    <string name="ui_sample_login_title">Logga in på Tandoor</string>
+    <string name="ui_sample_login_body">Du förblir inloggad på den här enheten. Lösenordet sparas aldrig.</string>
+    <string name="ui_sample_username">Användarnamn</string>
+    <string name="ui_sample_password">Lösenord</string>
+    <string name="ui_sample_login">Logga in</string>
+</resources>

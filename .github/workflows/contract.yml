@@ -1,0 +1,212 @@
+name: Contract
+
+# Contract tests against a REAL, throwaway Tandoor (Postgres 16 + vabene1111/recipes) started
+# inside the runner. Never against production: credentials are generated per run, the server
+# is deleted with the runner. See contract-tests/ and api-schema/fixtures/<version>/FACTS.md.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 2 * * *" # nightly, 02:23 UTC
+  push:
+    # Branches only (a tag push repeats a SHA that was already tested).
+    branches: ["**"]
+    paths:
+      - "contract-tests/**"
+      - "api-schema/**"
+      - ".github/workflows/contract.yml"
+
+concurrency:
+  group: contract-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Tandoor ${{ matrix.tandoor }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Image tags of vabene1111/recipes (plan 3.6 / 4.4 / 5.6). 2.6.13 is the baseline that
+        # must be green for Fas 0; its recordings are the committed fixtures
+        # (api-schema/fixtures/2.6.13/). 2.6.15 and latest only upload artifacts: a red run
+        # there means upstream changed behaviour the app relies on, before users' servers pull it.
+        # "latest" skips the exact version assertion (TANDOOR_EXPECTED_VERSION is empty).
+        # Pushes run the baseline only; the nightly schedule and manual runs run all three.
+        tandoor: ${{ fromJSON(github.event_name == 'push' && '["2.6.13"]' || '["2.6.13", "2.6.15", "latest"]') }}
+    env:
+      TANDOOR_IMAGE: vabene1111/recipes:${{ matrix.tandoor }}
+      TANDOOR_TAG: ${{ matrix.tandoor }}
+      TANDOOR_EXPECTED_VERSION: ${{ matrix.tandoor != 'latest' && matrix.tandoor || '' }}
+      TANDOOR_URL: http://127.0.0.1:8080
+      TANDOOR_USERNAME: contract-admin
+      TANDOOR_NOSPACE_USERNAME: contract-nospace
+      RECORDINGS: contract-tests/build/contract-recordings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate throwaway credentials
+        run: |
+          password="$(openssl rand -hex 24)"
+          nospace_password="$(openssl rand -hex 24)"
+          secret_key="$(openssl rand -hex 32)"
+          db_password="$(openssl rand -hex 16)"
+          echo "::add-mask::${password}"
+          echo "::add-mask::${nospace_password}"
+          echo "::add-mask::${secret_key}"
+          echo "::add-mask::${db_password}"
+          {
+            echo "TANDOOR_PASSWORD=${password}"
+            echo "TANDOOR_NOSPACE_PASSWORD=${nospace_password}"
+            echo "TANDOOR_SECRET_KEY=${secret_key}"
+            echo "TANDOOR_DB_PASSWORD=${db_password}"
+          } >> "$GITHUB_ENV"
+
+      - name: Start Postgres 16 and Tandoor
+        run: |
+          docker network create tandoor
+          docker run -d --name tandoor-db --network tandoor \
+            -e POSTGRES_USER=tandoor -e POSTGRES_DB=tandoor -e POSTGRES_PASSWORD="$TANDOOR_DB_PASSWORD" \
+            postgres:16-alpine
+          docker pull --quiet "$TANDOOR_IMAGE"
+          # boot.sh: waits for the DB, migrates, collectstatic, then nginx on TANDOOR_PORT (80)
+          # proxies to gunicorn. One worker, so the login throttle (LocMemCache, per worker) is
+          # deterministic.
+          docker run -d --name tandoor --network tandoor -p 127.0.0.1:8080:80 \
+            -e SECRET_KEY="$TANDOOR_SECRET_KEY" \
+            -e DB_ENGINE=django.db.backends.postgresql \
+            -e POSTGRES_HOST=tandoor-db -e POSTGRES_PORT=5432 \
+            -e POSTGRES_USER=tandoor -e POSTGRES_DB=tandoor -e POSTGRES_PASSWORD="$TANDOOR_DB_PASSWORD" \
+            -e ALLOWED_HOSTS=127.0.0.1,localhost \
+            -e TZ=Europe/Stockholm \
+            -e GUNICORN_WORKERS=1 \
+            -e DEBUG=0 \
+            "$TANDOOR_IMAGE"
+          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$TANDOOR_IMAGE")"
+          echo "Image: \`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      # Compile while Tandoor migrates (it takes 1-3 minutes).
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      # Read only: this job needs only a slice of the Gradle home (no Android libraries), so it
+      # must never write the shared entry that main's PR run saves (pr.yml).
+      - name: Restore Gradle cache (read only)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Compile contract tests
+        run: ./gradlew --stacktrace :contract-tests:testClasses
+
+      - name: Wait for Tandoor
+        run: |
+          for attempt in $(seq 1 120); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$TANDOOR_URL/api/server-settings/current/" || true)"
+            if [ "$code" = "200" ]; then
+              echo "Tandoor answered 200 after ${attempt} checks"
+              exit 0
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' tandoor)" != "true" ]; then
+              echo "::error::The Tandoor container stopped"
+              docker logs tandoor | tail -n 100
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Tandoor did not answer 200 within 10 minutes (last status: ${code})"
+          docker logs tandoor | tail -n 100
+          exit 1
+
+      - name: Create users (superuser with a space, plain user without one)
+        run: |
+          # Tandoor 2.x: API requests with a token only get a space if the user already has a
+          # UserSpace (ScopeMiddleware creates one only for session logins), so create it here.
+          docker exec -w /opt/recipes \
+            -e DJANGO_SUPERUSER_USERNAME="$TANDOOR_USERNAME" \
+            -e DJANGO_SUPERUSER_PASSWORD="$TANDOOR_PASSWORD" \
+            -e DJANGO_SUPERUSER_EMAIL=contract@example.invalid \
+            tandoor /opt/recipes/venv/bin/python manage.py createsuperuser --noinput
+          docker exec -w /opt/recipes -e CONTRACT_USERNAME="$TANDOOR_USERNAME" \
+            tandoor /opt/recipes/venv/bin/python manage.py shell -c '
+          import os
+          from django.contrib.auth.models import User
+          from cookbook.helper.permission_helper import create_space_for_user
+          user = User.objects.get(username=os.environ["CONTRACT_USERNAME"])
+          if not user.userspace_set.exists():
+              user_space = create_space_for_user(user, "Contract Space")
+              print("created space", user_space.space_id, "user space", user_space.id, "active", user_space.active)
+          print("groups", [g.name for us in user.userspace_set.all() for g in us.groups.all()])
+          '
+          # A user an admin created who never opened the web UI: no UserSpace (FACTS h).
+          docker exec -w /opt/recipes \
+            -e NOSPACE_USERNAME="$TANDOOR_NOSPACE_USERNAME" -e NOSPACE_PASSWORD="$TANDOOR_NOSPACE_PASSWORD" \
+            tandoor /opt/recipes/venv/bin/python manage.py shell -c '
+          import os
+          from django.contrib.auth.models import User
+          user = User.objects.create_user(os.environ["NOSPACE_USERNAME"], password=os.environ["NOSPACE_PASSWORD"])
+          print("created user", user.id, "user spaces", user.userspace_set.count())
+          '
+
+      - name: Contract tests
+        run: ./gradlew --stacktrace :contract-tests:test
+
+      - name: Check recordings for leaked secrets
+        if: always()
+        run: |
+          [ -d "$RECORDINGS" ] || { echo "No recordings"; exit 0; }
+          leaked=0
+          for value in "$TANDOOR_PASSWORD" "$TANDOOR_NOSPACE_PASSWORD" "$TANDOOR_SECRET_KEY" "$TANDOOR_DB_PASSWORD"; do
+            if grep -rqF -- "$value" "$RECORDINGS"; then leaked=1; fi
+          done
+          # Real tokens look like tda_<8 hex>_...; recordings may only contain the fake
+          # tda_00000000_... values and masked tda_**** forms.
+          if grep -rEo 'tda_[0-9a-f]{8}_' "$RECORDINGS" | grep -v 'tda_00000000_' ; then leaked=1; fi
+          if [ "$leaked" = 1 ]; then
+            echo "::error::A secret or real token was found in the recordings; deleting them"
+            rm -rf "$RECORDINGS"
+            exit 1
+          fi
+          echo "Recordings are clean"
+
+      - name: Upload recordings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: contract-recordings-${{ matrix.tandoor }}
+          path: ${{ env.RECORDINGS }}/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: contract-reports-${{ matrix.tandoor }}
+          path: |
+            contract-tests/build/reports/
+            contract-tests/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Tandoor log
+        if: failure()
+        run: docker logs tandoor 2>&1 | tail -n 200 || true

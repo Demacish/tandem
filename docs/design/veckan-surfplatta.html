@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+
+<html class="light" lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Veckan – Matsedel (Surfplatta)</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#C2410C',
+              dark: '#9A3412',
+              light: '#FFEDD5',
+              container: '#FFEDD5',
+              'on-container': '#7C2D12'
+            },
+            terracotta: {
+              50: '#FFF7ED',
+              100: '#FFEDD5',
+              500: '#C2410C',
+              600: '#EA580C',
+              700: '#C2410C',
+              900: '#7C2D12'
+            },
+            warm: {
+              bg: '#FBF7F2',
+              card: '#FFFFFF',
+              surface: '#F5EFE6',
+              border: '#E8DFD5',
+              muted: '#78716C',
+              dark: '#292524'
+            }
+          },
+          fontFamily: {
+            headline: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill-1 {
+      font-variation-settings: 'FILL' 1;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #E5DDD3;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #D4C9BC;
+    }
+  </style>
+</head>
+<body class="bg-[#FBF7F2] text-[#292524] font-body h-screen w-screen overflow-hidden flex select-none antialiased">
+<!-- ============================================================ -->
+<!-- 1. NAVIGATION RAIL (VÄNSTER, SURFPLATTEFORMAT) -->
+<!-- ============================================================ -->
+<aside class="w-20 bg-white border-r border-[#E8DFD5] flex flex-col items-center py-5 justify-between shrink-0 z-30">
+<!-- Topp: Tandem App-logotyp -->
+<div class="flex flex-col items-center gap-6">
+<div class="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C2410C] to-[#EA580C] text-white shadow-md shadow-orange-900/15 cursor-pointer hover:scale-105 transition-transform" title="Tandem">
+<span class="material-symbols-outlined text-2xl fill-1">soup_kitchen</span>
+</div>
+<!-- Navigation Icons -->
+<nav class="flex flex-col items-center gap-3">
+<!-- Idag -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">today</span>
+<span class="text-[11px] font-medium mt-1">Idag</span>
+</a>
+<!-- Recept -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">menu_book</span>
+<span class="text-[11px] font-medium mt-1">Recept</span>
+</a>
+<!-- Veckan (Aktiv) -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl bg-[#FFEDD5] text-[#C2410C] font-semibold transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-2xl fill-1">calendar_month</span>
+<span class="text-[11px] font-bold mt-1">Veckan</span>
+</a>
+<!-- Handla -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group relative" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">shopping_basket</span>
+<span class="text-[11px] font-medium mt-1">Handla</span>
+<span class="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-[#C2410C]"></span>
+</a>
+<!-- Mer -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">more_horiz</span>
+<span class="text-[11px] font-medium mt-1">Mer</span>
+</a>
+</nav>
+</div>
+<!-- Botten: Synkstatus & Profil / Kokläge -->
+<div class="flex flex-col items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-[#78716C] hover:bg-[#F5EFE6] hover:text-[#292524] transition-colors" title="Tandoor synkad">
+<span class="material-symbols-outlined text-xl text-emerald-600 fill-1">cloud_done</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-[#F5EFE6] border border-[#E8DFD5] flex items-center justify-center text-xs font-bold text-[#7C2D12]">
+        TK
+      </div>
+</div>
+</aside>
+<!-- ============================================================ -->
+<!-- 2. HUVUDYTA: HEADER + VECKORUTNÄT -->
+<!-- ============================================================ -->
+<main class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+<!-- TOP HEADER BAR -->
+<header class="h-16 px-6 bg-white border-b border-[#E8DFD5] flex items-center justify-between shrink-0">
+<div class="flex items-center gap-5">
+<div>
+<div class="flex items-center gap-2.5">
+<h1 class="font-headline text-2xl font-extrabold tracking-tight text-[#292524]">Veckan</h1>
+<span class="px-2.5 py-0.5 rounded-full bg-[#FFEDD5] text-[#C2410C] text-xs font-bold font-headline">Vecka 43</span>
+<span class="text-xs text-[#78716C] font-medium">21 – 27 oktober</span>
+</div>
+</div>
+<!-- Veckonavigation pilar -->
+<div class="flex items-center bg-[#F5EFE6] rounded-xl p-0.5 border border-[#E8DFD5]">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-[#78716C] hover:text-[#292524] hover:bg-white transition-all" title="Föregående vecka">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</button>
+<button class="px-2.5 text-xs font-bold text-[#292524] hover:bg-white rounded-lg h-8 transition-colors">
+            Idag
+          </button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-[#78716C] hover:text-[#292524] hover:bg-white transition-all" title="Nästa vecka">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Action-knappar: Handla för veckan & Snabbfilter -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5EFE6] text-xs font-medium text-[#78716C]">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span>6 av 7 middagar klara</span>
+</div>
+<!-- HUVUDAKTION: Handla för veckan -->
+<button class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#C2410C] hover:bg-[#9A3412] text-white font-headline font-bold text-sm shadow-sm hover:shadow active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg">shopping_cart_checkout</span>
+<span>Handla för veckan</span>
+<span class="bg-[#7C2D12] text-xs px-2 py-0.5 rounded-full font-sans">7 varor</span>
+</button>
+<button class="w-9 h-9 rounded-xl border border-[#E8DFD5] flex items-center justify-center text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-colors" title="Skriv ut / Exportera">
+<span class="material-symbols-outlined text-lg">print</span>
+</button>
+</div>
+</header>
+<!-- RUTNÄTSYTA (KOLUMNER & RADER) -->
+<div class="flex-1 overflow-x-auto overflow-y-auto p-5 bg-[#FBF7F2]">
+<div class="min-w-[980px] h-full flex flex-col">
+<!-- Veckodags-rubriker (7 kolumner) -->
+<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-2.5 mb-2.5">
+<!-- Tom hörncockpit för radetikett -->
+<div class="flex items-center justify-center text-[11px] font-bold uppercase tracking-wider text-[#78716C]">
+            Måltid
+          </div>
+<!-- Mån 21 -->
+<div class="bg-white/70 rounded-xl px-3 py-2 border border-[#E8DFD5] text-center">
+<span class="block text-xs font-semibold text-[#78716C]">Måndag</span>
+<span class="font-headline font-bold text-base text-[#292524]">21 okt</span>
+</div>
+<!-- Tis 22 -->
+<div class="bg-white/70 rounded-xl px-3 py-2 border border-[#E8DFD5] text-center">
+<span class="block text-xs font-semibold text-[#78716C]">Tisdag</span>
+<span class="font-headline font-bold text-base text-[#292524]">22 okt</span>
+</div>
+<!-- Ons 23 -->
+<div class="bg-white/70 rounded-xl px-3 py-2 border border-[#E8DFD5] text-center">
+<span class="block text-xs font-semibold text-[#78716C]">Onsdag</span>
+<span class="font-headline font-bold text-base text-[#292524]">23 okt</span>
+</div>
+<!-- Tor 24 (IDAG - MARKERAD) -->
+<div class="bg-[#FFEDD5] rounded-xl px-3 py-2 border-2 border-[#C2410C] text-center relative shadow-sm">
+<span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#C2410C] text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded-full">
+              Idag
+            </span>
+<span class="block text-xs font-bold text-[#C2410C]">Torsdag</span>
+<span class="font-headline font-extrabold text-base text-[#7C2D12]">24 okt</span>
+</div>
+<!-- Fre 25 -->
+<div class="bg-white/70 rounded-xl px-3 py-2 border border-[#E8DFD5] text-center">
+<span class="block text-xs font-semibold text-[#78716C]">Fredag</span>
+<span class="font-headline font-bold text-base text-[#292524]">25 okt</span>
+</div>
+<!-- Lör 26 -->
+<div class="bg-white/70 rounded-xl px-3 py-2 border border-[#E8DFD5] text-center">
+<span class="block text-xs font-semibold text-[#78716C]">Lördag</span>
+<span class="font-headline font-bold text-base text-[#292524]">26 okt</span>
+</div>
+<!-- Sön 27 -->
+<div class="bg-white/70 rounded-xl px-3 py-2 border border-[#E8DFD5] text-center">
+<span class="block text-xs font-semibold text-[#78716C]">Söndag</span>
+<span class="font-headline font-bold text-base text-[#292524]">27 okt</span>
+</div>
+</div>
+<!-- ============================================== -->
+<!-- RAD 1: FRUKOST -->
+<!-- ============================================== -->
+<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-2.5 mb-2.5 items-stretch">
+<div class="flex flex-col items-center justify-center bg-white/60 rounded-xl border border-[#E8DFD5] p-2 text-center">
+<span class="material-symbols-outlined text-[#D97706] text-xl mb-0.5">bakery_dining</span>
+<span class="text-xs font-bold text-[#292524]">Frukost</span>
+</div>
+<!-- Mån -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C]/40 transition-colors flex flex-col justify-between group">
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Havregrynsgröt</p>
+<span class="text-[10px] text-[#78716C]">med äppelmos &amp; kanel</span>
+</div>
+<!-- Tis -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C]/40 transition-colors flex flex-col justify-between">
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Surdegsfralla &amp; ost</p>
+<span class="text-[10px] text-[#78716C]">Kokt ägg</span>
+</div>
+<!-- Ons -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C]/40 transition-colors flex flex-col justify-between">
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Grekisk yoghurt</p>
+<span class="text-[10px] text-[#78716C]">Honung &amp; valnötter</span>
+</div>
+<!-- Tor (Idag) -->
+<div class="bg-[#FFFDFB] rounded-xl p-2.5 border border-[#E8DFD5] ring-1 ring-[#C2410C]/30 flex flex-col justify-between">
+<p class="text-xs font-bold text-[#292524] line-clamp-1">Havregrynsgröt</p>
+<span class="text-[10px] text-[#78716C]">Färska bär</span>
+</div>
+<!-- Fre -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C]/40 transition-colors flex flex-col justify-between">
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Rostat bröd &amp; avokado</p>
+<span class="text-[10px] text-[#78716C]">Chiliflakes</span>
+</div>
+<!-- Lör -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C]/40 transition-colors flex flex-col justify-between">
+<p class="text-xs font-bold text-[#C2410C] line-clamp-1">Pannkaksfrukost</p>
+<span class="text-[10px] text-[#78716C]">Sylt &amp; lönnsirap</span>
+</div>
+<!-- Sön -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C]/40 transition-colors flex flex-col justify-between">
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Helgfrukost / Äggröra</p>
+<span class="text-[10px] text-[#78716C]">Croissant &amp; juice</span>
+</div>
+</div>
+<!-- ============================================== -->
+<!-- RAD 2: LUNCH -->
+<!-- ============================================== -->
+<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-2.5 mb-2.5 items-stretch">
+<div class="flex flex-col items-center justify-center bg-white/60 rounded-xl border border-[#E8DFD5] p-2 text-center">
+<span class="material-symbols-outlined text-emerald-600 text-xl mb-0.5">lunch_dining</span>
+<span class="text-xs font-bold text-[#292524]">Lunch</span>
+</div>
+<!-- Mån -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-stone-100 text-[#78716C] font-medium">Matlåda</span>
+</div>
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Linssoppa från frysen</p>
+</div>
+<!-- Tis -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-[#ECFCCB] text-[#365314] font-medium">Rester</span>
+</div>
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Linsgryta &amp; ris</p>
+</div>
+<!-- Ons -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-[#ECFCCB] text-[#365314] font-medium">Rester</span>
+</div>
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Tomatsoppa &amp; bröd</p>
+</div>
+<!-- Tor (Idag) -->
+<div class="bg-[#FFFDFB] rounded-xl p-2.5 border border-[#E8DFD5] ring-1 ring-[#C2410C]/30 flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-[#ECFCCB] text-[#365314] font-bold">Rester</span>
+</div>
+<p class="text-xs font-bold text-[#292524] line-clamp-1">Kycklingwok &amp; nudlar</p>
+</div>
+<!-- Fre -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-orange-100 text-[#7C2D12] font-medium">Ute</span>
+</div>
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Fredagslunch kollegor</p>
+</div>
+<!-- Lör -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-stone-100 text-[#78716C] font-medium">Snabb</span>
+</div>
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Matig sallad &amp; feta</p>
+</div>
+<!-- Sön -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between">
+<div class="flex items-center gap-1 mb-1">
+<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-[#7C2D12] font-medium">Brunch</span>
+</div>
+<p class="text-xs font-semibold text-[#292524] line-clamp-1">Sen långbrunch</p>
+</div>
+</div>
+<!-- ============================================== -->
+<!-- RAD 3: MIDDAG (HUVUDMATSEDEL MED KORT & BILDER) -->
+<!-- ============================================== -->
+<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-2.5 flex-1 min-h-[220px] items-stretch">
+<!-- Radetikett Middag -->
+<div class="flex flex-col items-center justify-center bg-white/70 rounded-2xl border border-[#E8DFD5] p-2 text-center shadow-xs">
+<div class="w-10 h-10 rounded-full bg-[#FFEDD5] flex items-center justify-center text-[#C2410C] mb-1">
+<span class="material-symbols-outlined text-2xl fill-1">dinner_dining</span>
+</div>
+<span class="font-headline text-xs font-extrabold text-[#292524]">Middag</span>
+<span class="text-[10px] text-[#78716C] mt-0.5">Veckans meny</span>
+</div>
+<!-- Mån 21: Linsgryta (Lagad) -->
+<div class="bg-white rounded-2xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between shadow-sm hover:shadow transition-shadow group relative">
+<div>
+<div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-stone-100">
+<img alt="Linsgryta" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1UIlv_jq_FHOQcN6c5J4kcQgIHzsOzr0qf0dTVVs4RWResp0z-rsDUk3xHjAfxIl6USRznCrZfhZg2eVyEq-UDSj7ZhzEkT-JJFFmiO63tiU-yL5i895h_GkwckEtlSou5WK0nwpsHu7PCXg0sy-MTu8ZFmRFUL5PEP4VRE_Ou6HQTYGfNJtliaDS83Tnzzx5ve_oqlpzmXKdEoJuFmFhJEqMP3ay2ZMtAC7GkIgfOiak8vIm5oFSL12qR6"/>
+<div class="absolute top-1.5 left-1.5 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 backdrop-blur-xs">
+<span class="material-symbols-outlined text-xs fill-1">check</span>
+<span>Lagad</span>
+</div>
+</div>
+<h3 class="font-headline font-bold text-xs text-[#292524] leading-snug line-clamp-2">Linsgryta med kokosmjölk</h3>
+<p class="text-[11px] text-[#78716C] mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 30 min
+              </p>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+<span class="text-[#365314] bg-[#ECFCCB] px-1.5 py-0.2 rounded text-[10px] font-medium">Vegansk</span>
+<span class="text-[#78716C]">4 port</span>
+</div>
+</div>
+<!-- Tis 22: Tomatsoppa (Lagad) -->
+<div class="bg-white rounded-2xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between shadow-sm hover:shadow transition-shadow group relative">
+<div>
+<div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-stone-100">
+<img alt="Tomatsoppa" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1Wf5MsCxxGg1jxSNz1bgXEFUnDpK6uprERZ_vixcnO0xNbEO_UJIxfDfnjzbP2dvgPEzNTfGrcn5hhRdWiC-3MAnyCqulU7Y120C236VjGLBppvr4DkK3Un3eCHz8q74rurf5NQQjtVL-VHFJowbVmoToY22OSAEE8efejXI-c073RUV_ePi48enU2Bj2dkWf4RdcboDwsHgnC7etTnp-3k4SRF4j9fpMEdcBmln1_bAZlYsNae2tLH0yM"/>
+<div class="absolute top-1.5 left-1.5 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 backdrop-blur-xs">
+<span class="material-symbols-outlined text-xs fill-1">check</span>
+<span>Lagad</span>
+</div>
+</div>
+<h3 class="font-headline font-bold text-xs text-[#292524] leading-snug line-clamp-2">Tomatsoppa &amp; surdegsbröd</h3>
+<p class="text-[11px] text-[#78716C] mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 25 min
+              </p>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+<span class="text-[#365314] bg-[#ECFCCB] px-1.5 py-0.2 rounded text-[10px] font-medium">Vardag</span>
+<span class="text-[#78716C]">4 port</span>
+</div>
+</div>
+<!-- Ons 23: Kycklingwok (Lagad) -->
+<div class="bg-white rounded-2xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between shadow-sm hover:shadow transition-shadow group relative">
+<div>
+<div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-stone-100">
+<img alt="Kycklingwok" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg"/>
+<div class="absolute top-1.5 left-1.5 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 backdrop-blur-xs">
+<span class="material-symbols-outlined text-xs fill-1">check</span>
+<span>Lagad</span>
+</div>
+</div>
+<h3 class="font-headline font-bold text-xs text-[#292524] leading-snug line-clamp-2">Kycklingwok med cashewnötter</h3>
+<p class="text-[11px] text-[#78716C] mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 25 min
+              </p>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+<span class="text-[#78716C] bg-stone-100 px-1.5 py-0.2 rounded text-[10px]">Wok</span>
+<span class="text-[#78716C]">4 port</span>
+</div>
+</div>
+<!-- Tor 24: Krämig svamppasta (IDAG - AKTIVT VALD) -->
+<div class="bg-white rounded-2xl p-2.5 border-2 border-[#C2410C] flex flex-col justify-between shadow-md relative group ring-2 ring-[#C2410C]/20">
+<div>
+<div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-stone-100">
+<img alt="Krämig svamppasta" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+<div class="absolute top-1.5 left-1.5 bg-[#C2410C] text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-xs">
+                  Ikväll
+                </div>
+<div class="absolute bottom-1.5 right-1.5 bg-black/60 backdrop-blur-xs text-white text-[10px] font-medium px-1.5 py-0.5 rounded">
+                  Alla råvaror hemma
+                </div>
+</div>
+<h3 class="font-headline font-extrabold text-xs text-[#C2410C] leading-snug line-clamp-2">Krämig svamppasta</h3>
+<p class="text-[11px] text-[#78716C] mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 35 min
+              </p>
+</div>
+<div class="pt-2 border-t border-orange-100 flex items-center justify-between">
+<button class="w-full py-1.5 px-2 bg-[#C2410C] hover:bg-[#9A3412] text-white rounded-lg font-headline font-bold text-xs flex items-center justify-center gap-1 transition-colors shadow-xs">
+<span class="material-symbols-outlined text-sm fill-1">skillet</span>
+<span>Laga middag</span>
+</button>
+</div>
+</div>
+<!-- Fre 25: Ugnsbakad lax -->
+<div class="bg-white rounded-2xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between shadow-sm hover:shadow transition-shadow group relative">
+<div>
+<div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-stone-100">
+<img alt="Ugnsbakad lax" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1UzAnXoaFfcV7JfjPCQR5lfcXMArDQhLwjKZhBH7_8da_aMXGeSPgMRv4yswxP0HKMS0jrL9n0y508NlgCHv4H6l7Tw5hCfCuarkNszkToONpaX8etTLqBblStO4BY_OsNouqa5gAnLj79zvn98Z3hLB0nr0NNNstAJvCyeLNPuqi4NxKkXX0CHM_6DRHHCGz2FnziF5Noa-pXjjxSdBFtr4lQr5OFRVcaxl_v2kCl67AldN_iquDqxktQE"/>
+<div class="absolute top-1.5 left-1.5 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                  Saknar 2 varor
+                </div>
+</div>
+<h3 class="font-headline font-bold text-xs text-[#292524] leading-snug line-clamp-2">Ugnsbakad lax med dillpotatis</h3>
+<p class="text-[11px] text-[#78716C] mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 30 min
+              </p>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+<span class="text-[#7C2D12] bg-[#FFEDD5] px-1.5 py-0.2 rounded text-[10px] font-medium">Fisk &amp; grönt</span>
+<span class="text-[#78716C]">4 port</span>
+</div>
+</div>
+<!-- Lör 26: TOM CELL MED STRECKAD KANT OCH "+" (SPECIFICERAT KRAV) -->
+<div class="bg-[#FBF7F2] rounded-2xl p-3 border-2 border-dashed border-[#D4C9BC] hover:border-[#C2410C] hover:bg-[#FFF7ED] transition-all flex flex-col items-center justify-center text-center cursor-pointer group">
+<div class="w-11 h-11 rounded-full bg-white border border-[#E8DFD5] group-hover:border-[#C2410C] group-hover:bg-[#FFEDD5] flex items-center justify-center text-[#78716C] group-hover:text-[#C2410C] transition-all mb-2 shadow-xs group-hover:scale-110">
+<span class="material-symbols-outlined text-2xl">add</span>
+</div>
+<span class="font-headline font-bold text-xs text-[#292524] group-hover:text-[#C2410C]">Ingen middag planerad</span>
+<span class="text-[10px] text-[#78716C] mt-0.5 max-w-[120px] leading-tight">Dra ett recept hit eller tryck för att välja</span>
+<span class="mt-2.5 text-[10px] font-bold text-[#C2410C] bg-[#FFEDD5] px-2 py-0.5 rounded-full opacity-90 group-hover:opacity-100">
+              + Planera lördag
+            </span>
+</div>
+<!-- Sön 27: Ugnsstekt citronkyckling (Helglyx) -->
+<div class="bg-white rounded-2xl p-2.5 border border-[#E8DFD5] flex flex-col justify-between shadow-sm hover:shadow transition-shadow group relative">
+<div>
+<div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-stone-100">
+<img alt="Ugnsstekt citronkyckling" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1UB0VL9mCdpCaOKotOy0rtTFZvg98MMpNFKD5lmojMZW4KEbcHzoWt65cK0M2FJtOHDneIINAhRHnnbw6UIAyNSrchgn3RYMvDNW_jkOmBTIu5RpkXst3Lw3KSmWOyaMQmjU8XQf4II9cOcKorJVQ6MIL4vbMX9vY3Nzig66nAwyCnJe4S03HNoqL0XoT-Xe0L3DUZDSaQcYhgUjj9alzflTyyV3PoEEXrRaaKpzUb8loulAlpdw_XzCnxJ"/>
+<div class="absolute top-1.5 left-1.5 bg-[#C2410C] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs">
+                  Helglyx
+                </div>
+</div>
+<h3 class="font-headline font-bold text-xs text-[#292524] leading-snug line-clamp-2">Ugnsstekt citronkyckling</h3>
+<p class="text-[11px] text-[#78716C] mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span> 60 min
+              </p>
+</div>
+<div class="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+<span class="text-[#365314] bg-[#ECFCCB] px-1.5 py-0.2 rounded text-[10px] font-medium">Storkok</span>
+<span class="text-[#78716C]">6 port</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- ============================================================ -->
+<!-- 3. HÖGERPANEL: "VILL LAGA" (RECEPTKORT FÖR DRAG-AND-DROP) -->
+<!-- ============================================================ -->
+<aside class="w-72 bg-white border-l border-[#E8DFD5] flex flex-col h-full shrink-0 z-20">
+<!-- Panel Header -->
+<div class="p-4 border-b border-[#E8DFD5] flex items-center justify-between bg-[#FFFDFB]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#C2410C] fill-1 text-xl">favorite</span>
+<div>
+<h2 class="font-headline font-bold text-sm text-[#292524]">Vill laga</h2>
+<p class="text-[11px] text-[#78716C]">Dra kort till matsedeln</p>
+</div>
+</div>
+<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FFEDD5] text-[#C2410C]">5 sparade</span>
+</div>
+<!-- Sökfält & Kategori i panelen -->
+<div class="p-3 border-b border-stone-100 bg-[#FBF7F2]">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-[#78716C] text-base">search</span>
+<input class="w-full bg-white text-xs pl-8 pr-3 py-1.5 rounded-lg border border-[#E8DFD5] focus:outline-none focus:border-[#C2410C] placeholder:text-stone-400" placeholder="Sök bland sparade..." type="text"/>
+</div>
+</div>
+<!-- Lista över receptkort att dra in -->
+<div class="flex-1 overflow-y-auto p-3 space-y-2.5">
+<!-- Kort 1: Fransk örtomelett -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Fransk örtomelett" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-[#C2410C] uppercase tracking-wide">Snabbt</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Fransk örtomelett</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>15 min</span>
+<span>•</span>
+<span class="text-emerald-700 font-medium">Klar på 15m</span>
+</div>
+</div>
+</div>
+<!-- Kort 2: Hemmagjord pizza margherita -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Pizza" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Helglyx</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Pizza Margherita</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>45 min</span>
+<span>•</span>
+<span>4 port</span>
+</div>
+</div>
+</div>
+<!-- Kort 3: Boeuf Bourguignon -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Långkok" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-stone-600 uppercase tracking-wide">Långkok</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Boeuf Bourguignon</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>150 min</span>
+<span>•</span>
+<span>6 port</span>
+</div>
+</div>
+</div>
+<!-- Kort 4: Krämig daal på röda linser -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Daal" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida/AEtjO1UIlv_jq_FHOQcN6c5J4kcQgIHzsOzr0qf0dTVVs4RWResp0z-rsDUk3xHjAfxIl6USRznCrZfhZg2eVyEq-UDSj7ZhzEkT-JJFFmiO63tiU-yL5i895h_GkwckEtlSou5WK0nwpsHu7PCXg0sy-MTu8ZFmRFUL5PEP4VRE_Ou6HQTYGfNJtliaDS83Tnzzx5ve_oqlpzmXKdEoJuFmFhJEqMP3ay2ZMtAC7GkIgfOiak8vIm5oFSL12qR6"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Grytor</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Röd linsdaal</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>30 min</span>
+<span>•</span>
+<span class="text-emerald-700">Har hemma</span>
+</div>
+</div>
+</div>
+<!-- Kort 5: Ugnsrostad tomatsoppa -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Tomatsoppa" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida/AEtjO1Wf5MsCxxGg1jxSNz1bgXEFUnDpK6uprERZ_vixcnO0xNbEO_UJIxfDfnjzbP2dvgPEzNTfGrcn5hhRdWiC-3MAnyCqulU7Y120C236VjGLBppvr4DkK3Un3eCHz8q74rurf5NQQjtVL-VHFJowbVmoToY22OSAEE8efejXI-c073RUV_ePi48enU2Bj2dkWf4RdcboDwsHgnC7etTnp-3k4SRF4j9fpMEdcBmln1_bAZlYsNae2tLH0yM"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-stone-600 uppercase tracking-wide">Soppa</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Ugnsrostad tomatsoppa</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>35 min</span>
+<span>•</span>
+<span>Vegetarisk</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Panelfot: Slumpa middag / Bläddra -->
+<div class="p-3 border-t border-[#E8DFD5] bg-[#FBF7F2] flex items-center gap-2">
+<button class="flex-1 py-2 px-3 bg-white hover:bg-stone-50 border border-[#E8DFD5] rounded-xl text-xs font-bold text-[#292524] flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+<span class="material-symbols-outlined text-sm text-[#C2410C]">shuffle</span>
+<span>Slumpa middag</span>
+</button>
+<button class="py-2 px-3 bg-white hover:bg-stone-50 border border-[#E8DFD5] rounded-xl text-xs font-bold text-[#78716C] hover:text-[#292524] flex items-center justify-center transition-colors" title="Fler recept">
+<span class="material-symbols-outlined text-base">filter_list</span>
+</button>
+</div>
+</aside>
+</body>
+</html>

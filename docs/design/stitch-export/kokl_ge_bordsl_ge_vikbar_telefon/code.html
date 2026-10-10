@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { primary: '#C2410C', 'on-primary': '#FFFFFF', 'primary-container': '#FFDBCF', 'on-primary-container': '#3A0C00', secondary: '#D97706', 'on-secondary': '#FFFFFF', 'secondary-container': '#FFDDB4', 'on-secondary-container': '#2C1600', tertiary: '#4D7C0F', 'on-tertiary': '#FFFFFF', 'tertiary-container': '#CEF59A', 'on-tertiary-container': '#132100', surface: '#FBF7F2', 'on-surface': '#201A18', 'surface-variant': '#F2ECE4', 'on-surface-variant': '#51443E', 'surface-container-low': '#F6F0E9', 'surface-container': '#EFE8E0', 'surface-container-high': '#E8E1D8', outline: '#84746E', 'outline-variant': '#D6C8C1', error: '#BA1A1A', 'on-error': '#FFFFFF' }, fontFamily: { headline: ['"Bricolage Grotesque"', 'sans-serif'], body: ['"DM Sans"', 'sans-serif'] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; } body { overscroll-behavior: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }</style></head><body class="bg-surface font-body text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-14 px-3 flex items-center justify-between"><div class="flex items-center gap-1"><button aria-label="Tillbaka" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-all" onclick="history.back()"><span class="material-symbols-rounded text-2xl">arrow_back</span></button><div class="flex items-center gap-2 pl-1"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container text-[11px] font-semibold text-secondary tracking-wide uppercase"><span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>Bordsläge 90°</span><h1 class="text-base font-headline font-bold text-on-surface truncate max-w-[150px]">Kokläge Flex</h1></div></div><div class="flex items-center gap-2"><button aria-label="Timer status" class="w-11 h-11 rounded-full flex items-center justify-center text-secondary hover:bg-secondary-container/40 active:scale-95 transition-all"><span class="material-symbols-rounded text-2xl">timer</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-14 pb-safe bg-surface flex-1"><div class="flex flex-col w-full">
+<!-- ÖVRE HALVAN: Visningsdeck (Vinklad uppåt mot kocken i 90° bordsläge) -->
+<section class="flex flex-col px-4 pt-3 pb-6 relative">
+<!-- Kompakt receptkort & sammanhang -->
+<div class="flex items-center justify-between gap-3 bg-surface-container rounded-2xl p-2.5 shadow-sm mb-4">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-inner">
+<img alt="Krämig svamppasta" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-secondary">Tandoor Sync</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-xs text-on-surface-variant">4 portioner</span>
+</div>
+<h2 class="font-headline font-bold text-base text-on-surface truncate">Krämig svamppasta</h2>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0 bg-surface-container-high px-2.5 py-1.5 rounded-full">
+<span class="material-symbols-rounded text-tertiary text-base" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+<span class="text-xs font-semibold text-on-surface">Middag</span>
+</div>
+</div>
+<!-- Steg-indikator med stor läsbarhet -->
+<div class="flex items-center justify-between mb-2">
+<span class="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide uppercase px-3 py-1 rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-rounded text-sm">skillet</span>
+        Steg 3 av 5
+      </span>
+<!-- Mini-progress dots -->
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2 rounded-full bg-tertiary"></span>
+<span class="w-2.5 h-2 rounded-full bg-tertiary"></span>
+<span class="w-6 h-2 rounded-full bg-primary"></span>
+<span class="w-2.5 h-2 rounded-full bg-surface-container-high"></span>
+<span class="w-2.5 h-2 rounded-full bg-surface-container-high"></span>
+</div>
+</div>
+<!-- Stegrubrik -->
+<h2 class="font-headline text-2xl font-extrabold text-on-surface tracking-tight mb-2 leading-snug">
+      Fräs lök &amp; timjan
+    </h2>
+<!-- Extra stor stegtext, tydlig från 1 meters avstånd på köksbänken -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-sm mb-4">
+<p class="font-body text-[22px] sm:text-[26px] leading-snug font-medium text-on-surface tracking-normal">
+        Sänk värmen något. Tillsätt <mark class="bg-secondary-container text-on-secondary-container px-1 py-0.5 rounded font-bold not-italic">finhackad lök</mark> och <mark class="bg-secondary-container text-on-secondary-container px-1 py-0.5 rounded font-bold not-italic">riven vitlök</mark>. Fräs tills löken är genomskinlig och doftar ljuvligt, cirka 3 minuter.
+      </p>
+</div>
+<!-- Ingredienser för detta steg (Pills) -->
+<div class="flex flex-col gap-1.5">
+<span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-rounded text-sm">grocery</span> Ingredienser just nu:
+      </span>
+<div class="flex flex-wrap gap-2">
+<div class="inline-flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-full shadow-sm text-sm font-medium text-on-surface">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>Gul lök</span>
+<span class="text-xs text-on-surface-variant font-bold">1 st</span>
+</div>
+<div class="inline-flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-full shadow-sm text-sm font-medium text-on-surface">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span>Vitlök</span>
+<span class="text-xs text-on-surface-variant font-bold">2 klyftor</span>
+</div>
+<div class="inline-flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-full shadow-sm text-sm font-medium text-on-surface">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>Färsk timjan</span>
+<span class="text-xs text-on-surface-variant font-bold">3 kvistar</span>
+</div>
+</div>
+</div>
+</section>
+<!-- MELLANSEKTION: Bordsläge / Viklinje (Fysisk böjlinje på foldern 90 grader) -->
+<div class="relative w-full flex items-center justify-center my-1 select-none">
+<div class="w-full h-1 bg-gradient-to-r from-transparent via-outline-variant to-transparent opacity-60"></div>
+<div class="absolute px-3 py-1 bg-surface-variant rounded-full shadow-sm flex items-center gap-1.5 text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
+<span class="material-symbols-rounded text-xs text-secondary animate-pulse">phonelink_setup</span>
+      Köksstyrning • Bordsläge 90°
+    </div>
+</div>
+<!-- NEDRE HALVAN: Kontrolldeck (Ligger plant mot köksbänken - Gigantiska tryckytor för blöta fingrar & knogar) -->
+<section class="flex flex-col px-4 pt-4 pb-6 bg-surface-container-low rounded-t-3xl shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+<!-- Primär Timer för aktuellt steg -->
+<div class="bg-surface rounded-2xl p-4 shadow-sm mb-3">
+<div class="flex items-center justify-between mb-1.5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-rounded text-secondary text-xl">hourglass_top</span>
+<span class="text-xs font-bold uppercase tracking-wider text-secondary">Aktiv timer: Fräs lök</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container text-[11px] font-bold">
+          Steg 3
+        </div>
+</div>
+<div class="flex items-center justify-between gap-3">
+<!-- Stor tidsdisplay -->
+<div class="flex flex-col">
+<span class="font-headline text-5xl font-extrabold tracking-tight text-on-surface leading-none tabular-nums" id="timer-display">
+            03:00
+          </span>
+<span class="text-[11px] font-medium text-on-surface-variant mt-1">Automatisk nedräkning</span>
+</div>
+<!-- Gigantiska touchknappar för timer -->
+<div class="flex items-center gap-2">
+<button class="h-16 px-6 rounded-2xl bg-primary text-on-primary font-headline font-bold text-lg flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all min-w-[120px]" id="timer-toggle-btn">
+<span class="material-symbols-rounded text-2xl" id="timer-icon" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span id="timer-label">Starta</span>
+</button>
+<button class="h-16 w-16 rounded-2xl bg-secondary-container text-on-secondary-container font-headline font-bold text-base flex flex-col items-center justify-center shadow-sm active:scale-95 transition-all shrink-0" id="add-minute-btn">
+<span class="text-xs font-bold">+1</span>
+<span class="text-[10px] leading-tight">min</span>
+</button>
+</div>
+</div>
+<!-- Sekundära parallella timers (t.ex. kokande pasta) -->
+<div class="mt-3 pt-3 flex items-center justify-between bg-surface-container px-3 py-2 rounded-xl">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-rounded text-tertiary text-lg" style="font-variation-settings: 'FILL' 1;">soup_kitchen</span>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-bold text-on-surface truncate">Koka tagliatelle</span>
+<span class="text-[11px] text-tertiary font-medium">I bakgrunden</span>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="font-headline font-bold text-sm text-tertiary tabular-nums">05:42 kvar</span>
+<button class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-on-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-rounded text-base">pause</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Massiva stegnavigeringsknappar (Knogvänliga tryckytor) -->
+<div class="grid grid-cols-2 gap-3 mb-4">
+<button class="h-18 py-3.5 px-4 rounded-2xl bg-surface-container-high text-on-surface hover:bg-surface-variant active:scale-95 transition-all flex items-center justify-center gap-2 shadow-sm font-headline font-bold text-base">
+<span class="material-symbols-rounded text-2xl text-on-surface-variant">arrow_back</span>
+<span>Föregående</span>
+</button>
+<button class="h-18 py-3.5 px-4 rounded-2xl bg-primary text-on-primary hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md font-headline font-bold text-base">
+<span>Nästa steg</span>
+<span class="material-symbols-rounded text-2xl">arrow_forward</span>
+</button>
+</div>
+<!-- Smarta köksläges-kontroller / Handsfree chips -->
+<div class="flex flex-col gap-2">
+<div class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant px-1 flex items-center justify-between">
+<span>Köksinställningar &amp; Handsfree</span>
+<span class="text-tertiary font-bold">Trygg för kladdiga händer</span>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<!-- Röstuppläsning chip -->
+<button class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-surface shadow-sm text-on-surface hover:bg-surface-variant active:scale-95 transition-all text-center" id="voice-btn">
+<div class="w-9 h-9 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-rounded text-xl" style="font-variation-settings: 'FILL' 1;">volume_up</span>
+</div>
+<span class="text-xs font-bold leading-tight">Läs upp steg</span>
+</button>
+<!-- Skärmlås Alltid på -->
+<button class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-surface shadow-sm text-on-surface hover:bg-surface-variant active:scale-95 transition-all text-center">
+<div class="w-9 h-9 rounded-full bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-rounded text-xl" style="font-variation-settings: 'FILL' 1;">screen_lock_portrait</span>
+</div>
+<span class="text-xs font-bold leading-tight">Skärm på</span>
+</button>
+<!-- Handsfree gester -->
+<button class="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-surface shadow-sm text-on-surface hover:bg-surface-variant active:scale-95 transition-all text-center">
+<div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-rounded text-xl" style="font-variation-settings: 'FILL' 1;">front_hand</span>
+</div>
+<span class="text-xs font-bold leading-tight">Vinka nästa</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Lätt interaktivitet för mock-timer -->
+<script>
+    (function() {
+      let seconds = 180;
+      let timerRunning = false;
+      let interval = null;
+
+      const display = document.getElementById('timer-display');
+      const toggleBtn = document.getElementById('timer-toggle-btn');
+      const icon = document.getElementById('timer-icon');
+      const label = document.getElementById('timer-label');
+      const addMinBtn = document.getElementById('add-minute-btn');
+      const voiceBtn = document.getElementById('voice-btn');
+
+      function formatTime(s) {
+        const m = Math.floor(s / 60);
+        const rem = s % 60;
+        return `${String(m).padStart(2, '0')}:${String(rem).padStart(2, '0')}`;
+      }
+
+      function updateDisplay() {
+        if (display) display.textContent = formatTime(seconds);
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          timerRunning = !timerRunning;
+          if (timerRunning) {
+            icon.textContent = 'pause';
+            label.textContent = 'Pausa';
+            interval = setInterval(() => {
+              if (seconds > 0) {
+                seconds--;
+                updateDisplay();
+              } else {
+                clearInterval(interval);
+                timerRunning = false;
+                icon.textContent = 'play_arrow';
+                label.textContent = 'Klar!';
+              }
+            }, 1000);
+          } else {
+            clearInterval(interval);
+            icon.textContent = 'play_arrow';
+            label.textContent = 'Starta';
+          }
+        });
+      }
+
+      if (addMinBtn) {
+        addMinBtn.addEventListener('click', () => {
+          seconds += 60;
+          updateDisplay();
+        });
+      }
+
+      if (voiceBtn) {
+        voiceBtn.addEventListener('click', () => {
+          voiceBtn.classList.add('scale-95');
+          setTimeout(() => voiceBtn.classList.remove('scale-95'), 150);
+          if ('speechSynthesis' in window) {
+            const text = "Steg 3. Sänk värmen något. Tillsätt finhackad lök och riven vitlök. Fräs tills löken är genomskinlig och doftar ljuvligt, cirka 3 minuter.";
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'sv-SE';
+            utterance.rate = 0.95;
+            window.speechSynthesis.speak(utterance);
+          }
+        });
+      }
+    })();
+  </script>
+</div></main></body></html>

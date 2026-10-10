@@ -1,0 +1,21 @@
+# Endpoints Tandem calls, one "METHOD /path" per line, paths exactly as in tandoor-2.6.13.yaml.
+# Allow-list for the schema diff (oasdiff) in tandoor-watch.yml and for the contract tests.
+# Add a line in the same change that adds a call. Lines starting with # are comments.
+
+# --- Fas 0: login and device token (plan 3.1) ---
+POST /api-token-auth/
+GET /api/access-token/
+POST /api/access-token/
+DELETE /api/access-token/{id}/
+
+# --- Fas 0: server probe, version and capabilities (plan 3.6) ---
+GET /api/server-settings/current/
+GET /api/space/current/
+
+# --- Fas 0: current user ---
+# There is no /api/user/me/. GET /api/user-preference/ returns only the caller's preferences
+# (including the user object) and works without a space (FACTS d, h), so both login paths use
+# it. GET /api/user/{id}/ is refused (403) for an account without a space; it stays in the
+# client (TandoorApi.users.user) but no login step depends on it.
+GET /api/user/{id}/
+GET /api/user-preference/

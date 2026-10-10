@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3C0C00",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FEDEA8","on-secondary-container":"#2D1600",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#D3F89A","on-tertiary-container":"#142700",surface:"#FBF7F2","on-surface":"#2A2421","surface-container-low":"#F4EEE6","surface-container":"#EDE5DC","surface-container-high":"#E6DDCF","on-surface-variant":"#73685E","outline":"#9A8E83","outline-variant":"#D0C4B8",error:"#BA1A1A","on-error":"#FFFFFF"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}};</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-smoothing:antialiased;}</style></head><body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2"><button aria-label="Tillbaka" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container transition-colors" onclick="history.back()" type="button"><span class="material-symbols-rounded text-[24px]">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface tracking-tight">Planera Måltid</h1></div><div class="flex items-center gap-2"><button aria-label="Stäng" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors" onclick="history.back()" type="button"><span class="material-symbols-rounded text-[24px]">close</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full pt-16 pb-8 px-4 bg-surface relative"><div class="flex flex-col w-full pb-28 space-y-5">
+<!-- Modal Drag Handle & Täckande Topplist -->
+<div class="flex flex-col items-center pt-1 pb-1">
+<div class="w-12 h-1.5 rounded-full bg-outline-variant/60"></div>
+</div>
+<!-- Modal Rubrik med stängikon & subtil kontext -->
+<div class="flex items-center justify-between px-1">
+<div>
+<span class="text-xs font-medium uppercase tracking-wider text-primary font-headline">Matsedel • Vecka 43</span>
+<h2 class="text-2xl font-headline font-bold text-on-surface tracking-tight">Planera måltid</h2>
+</div>
+<button aria-label="Stäng modal" class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" onclick="history.back()" type="button">
+<span class="material-symbols-rounded text-[22px]">close</span>
+</button>
+</div>
+<!-- 1. Dagväljare & Måltidstyp (Kompakt och taktil) -->
+<section class="space-y-3">
+<!-- Horisontella Dag-pills -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="day-selector">
+<button class="day-chip flex flex-col items-center justify-center min-w-[70px] py-2 px-3 rounded-2xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
+<span class="text-xs font-medium">Fre</span>
+<span class="text-base font-bold font-headline">25 okt</span>
+</button>
+<button class="day-chip active flex flex-col items-center justify-center min-w-[74px] py-2 px-3 rounded-2xl bg-primary text-on-primary shadow-sm ring-2 ring-primary/20 transition-all font-semibold" type="button">
+<span class="text-xs opacity-90">Lör</span>
+<span class="text-base font-bold font-headline">26 okt</span>
+</button>
+<button class="day-chip flex flex-col items-center justify-center min-w-[70px] py-2 px-3 rounded-2xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
+<span class="text-xs font-medium">Sön</span>
+<span class="text-base font-bold font-headline">27 okt</span>
+</button>
+<button class="day-chip flex flex-col items-center justify-center min-w-[70px] py-2 px-3 rounded-2xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
+<span class="text-xs font-medium">Mån</span>
+<span class="text-base font-bold font-headline">28 okt</span>
+</button>
+<button class="day-chip flex flex-col items-center justify-center min-w-[70px] py-2 px-3 rounded-2xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all" type="button">
+<span class="text-xs font-medium">Tis</span>
+<span class="text-base font-bold font-headline">29 okt</span>
+</button>
+</div>
+<!-- Måltidstyp Segmented Control -->
+<div class="bg-surface-container-low p-1 rounded-2xl flex items-center gap-1 text-sm font-medium">
+<button class="meal-btn flex-1 py-2 rounded-xl text-center text-on-surface-variant hover:text-on-surface transition-all" type="button">Frukost</button>
+<button class="meal-btn flex-1 py-2 rounded-xl text-center text-on-surface-variant hover:text-on-surface transition-all" type="button">Lunch</button>
+<button class="meal-btn active flex-1 py-2 rounded-xl bg-surface text-primary font-bold shadow-xs transition-all" type="button">Middag</button>
+<button class="meal-btn flex-1 py-2 rounded-xl text-center text-on-surface-variant hover:text-on-surface transition-all" type="button">Mellanmål</button>
+</div>
+</section>
+<!-- 2. Källval Tabs / Piller -->
+<section class="space-y-2">
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-on-surface text-surface text-xs font-bold transition-all shadow-xs" type="button">
+<span class="material-symbols-rounded text-[18px]">menu_book</span>
+<span>Välj recept</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-medium hover:bg-surface-container-high transition-all" type="button">
+<span class="material-symbols-rounded text-[18px]">inventory_2</span>
+<span>Rester från tidigare</span>
+</button>
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-medium hover:bg-surface-container-high transition-all" type="button">
+<span class="material-symbols-rounded text-[18px]">restaurant</span>
+<span>Egen anteckning / Äta ute</span>
+</button>
+</div>
+</section>
+<!-- 3. Sökfält & Snabbfilter -->
+<section class="space-y-2.5">
+<!-- Sökfält -->
+<div class="relative w-full">
+<span class="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container-low focus:bg-surface-container text-on-surface placeholder:text-on-surface-variant text-sm rounded-2xl pl-10 pr-10 py-3 outline-none transition-all" placeholder="Sök bland dina recept i Tandoor..." type="text"/>
+<button class="material-symbols-rounded absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] hover:text-on-surface" type="button">mic</button>
+</div>
+<!-- Filter chips -->
+<div class="flex items-center gap-2 overflow-x-auto no-scrollbar text-xs">
+<button class="px-3 py-1.5 rounded-full bg-surface-container-high font-semibold text-on-surface flex items-center gap-1 shadow-xs" type="button">
+<span class="material-symbols-rounded text-[14px]">history</span>
+<span>Senaste</span>
+</button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high flex items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-rounded text-[14px] text-secondary">star</span>
+<span>Favoriter</span>
+</button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high flex items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-rounded text-[14px]">timer</span>
+<span>Snabba (&lt;30 min)</span>
+</button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high flex items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-rounded text-[14px]">sentiment_satisfied</span>
+<span>Barnfavoriter</span>
+</button>
+</div>
+</section>
+<!-- 4. Receptförslag lista -->
+<section class="space-y-3" id="recipe-list">
+<div class="flex items-center justify-between px-1">
+<h3 class="text-sm font-bold font-headline text-on-surface-variant uppercase tracking-wider">Förslag för lördagsmiddag</h3>
+<span class="text-xs text-on-surface-variant">3 valbara</span>
+</div>
+<!-- Receptkort 1: Lax (Förvalt) -->
+<div class="recipe-card cursor-pointer group relative p-3 rounded-2xl bg-surface-container-low transition-all duration-200 flex items-center gap-3.5 shadow-sm ring-2 ring-primary bg-primary-container/20" data-recipe="lax" onclick="selectRecipe(this)">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative">
+<img alt="Ugnsbakad lax" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1UzAnXoaFfcV7JfjPCQR5lfcXMArDQhLwjKZhBH7_8da_aMXGeSPgMRv4yswxP0HKMS0jrL9n0y508NlgCHv4H6l7Tw5hCfCuarkNszkToONpaX8etTLqBblStO4BY_OsNouqa5gAnLj79zvn98Z3hLB0nr0NNNstAJvCyeLNPuqi4NxKkXX0CHM_6DRHHCGz2FnziF5Noa-pXjjxSdBFtr4lQr5OFRVcaxl_v2kCl67AldN_iquDqxktQE"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-high/90 text-[10px] font-bold px-1.5 py-0.5 rounded text-on-surface">4 port</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center gap-1.5 mb-0.5">
+<span class="material-symbols-rounded text-secondary text-[16px]">local_fire_department</span>
+<span class="text-xs font-medium text-secondary">Populär helgrätt</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface truncate">Ugnsbakad lax med dillpotatis</h4>
+<div class="flex items-center gap-3 mt-1.5 text-xs text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-rounded text-[16px]">schedule</span> 30 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-rounded text-[16px] text-tertiary">check_circle</span> Alla ingredienser hemma</span>
+</div>
+</div>
+<div class="radio-indicator shrink-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-rounded text-[18px]">check</span>
+</div>
+</div>
+<!-- Receptkort 2: Linsgryta -->
+<div class="recipe-card cursor-pointer group relative p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 flex items-center gap-3.5 shadow-sm" data-recipe="linsgryta" onclick="selectRecipe(this)">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="A warm creamy lentil dahl curry with coconut milk, aromatic spices, and fresh green herbs served in an artisan rustic bowl in a cozy kitchen setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw4SDyxtIWDUvTqH_W4jVDWwq7yC1qF-kroPp1gSTTryk014VZt8aAC3T4QIfEPm-IOxek42x2wqQNzzF73VvBOPG-FBRKgqheUL7N3ZAacnFfOqikBAT7LHJqHn0I1UGrkpIHg8KzLf4uJP7Z6lT4ukb9P2_wIVNrQ05KDWGJqrNwRtFSo4mofW0preeMHIotripd08WGi9DqrE1TDEfAPPcsOy4qBV792McZVqyz1PydQq-LRA-vkg"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-high/90 text-[10px] font-bold px-1.5 py-0.5 rounded text-on-surface">4 port</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center gap-1.5 mb-0.5">
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-tertiary-container text-on-tertiary-container">Vegansk</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface truncate">Linsgryta med kokosmjölk</h4>
+<div class="flex items-center gap-3 mt-1.5 text-xs text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-rounded text-[16px]">schedule</span> 30 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-rounded text-[16px]">shopping_cart</span> 2 att köpa</span>
+</div>
+</div>
+<div class="radio-indicator shrink-0 w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-transparent">
+<span class="material-symbols-rounded text-[18px]">check</span>
+</div>
+</div>
+<!-- Receptkort 3: Tomatsoppa -->
+<div class="recipe-card cursor-pointer group relative p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all duration-200 flex items-center gap-3.5 shadow-sm" data-recipe="tomatsoppa" onclick="selectRecipe(this)">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Rich velvety roasted tomato soup with a swirl of fresh cream and fresh basil leaves served with crusty sourdough bread on a wooden board" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI7T9YM59a74Anyf6vP1hiDV3YwYRzbtmFfGLABqC-N5ZaAGSwNsQmAENC0QjGpBaWXGxJdEjx_tyzchk1dgL74vTQtwpeTg-5NQAyZiT7-A8YNeAnheFEdecwV_Jgp2TBlRzfxsKJV93kw5OG5CoM0PwV4HqZLowaYEkOqXnktLIMA4Xbsxnh4l8vLJW9h3KSClyX3tiqvr-WBmUVOyjzXwM11TImdaq14Mkj-QejaKIMVhi1ITjlCQ"/>
+<span class="absolute bottom-1 right-1 bg-surface-container-high/90 text-[10px] font-bold px-1.5 py-0.5 rounded text-on-surface">3 port</span>
+</div>
+<div class="flex-1 min-w-0 pr-1">
+<div class="flex items-center gap-1.5 mb-0.5">
+<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container">Snabblagat</span>
+</div>
+<h4 class="font-headline font-bold text-base text-on-surface truncate">Tomatsoppa &amp; surdegsbröd</h4>
+<div class="flex items-center gap-3 mt-1.5 text-xs text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-rounded text-[16px]">schedule</span> 25 min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-rounded text-[16px] text-tertiary">check_circle</span> Har hemma</span>
+</div>
+</div>
+<div class="radio-indicator shrink-0 w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-transparent">
+<span class="material-symbols-rounded text-[18px]">check</span>
+</div>
+</div>
+</section>
+<!-- 5. Portionsjusterare & Notering -->
+<section class="bg-surface-container-low rounded-2xl p-4 flex items-center justify-between shadow-xs">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-rounded text-[22px]">group</span>
+</div>
+<div>
+<div class="text-xs font-medium text-on-surface-variant">Portioner att laga</div>
+<div class="text-xs text-on-surface font-semibold">Skalar automatiskt receptet</div>
+</div>
+</div>
+<!-- Stepper Button -->
+<div class="flex items-center gap-3 bg-surface rounded-full px-2 py-1 shadow-xs">
+<button aria-label="Minska portioner" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-95 transition-all" onclick="adjustPortions(-1)" type="button">
+<span class="material-symbols-rounded text-[18px]">remove</span>
+</button>
+<span class="font-headline font-bold text-base w-4 text-center text-on-surface" id="portions-count">4</span>
+<button aria-label="Öka portioner" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface hover:bg-surface-container-high active:scale-95 transition-all" onclick="adjustPortions(1)" type="button">
+<span class="material-symbols-rounded text-[18px]">add</span>
+</button>
+</div>
+</section>
+<!-- Extra detalj: Lägg ingredienser direkt på inköpslistan -->
+<div class="flex items-center justify-between px-2 py-1">
+<label class="flex items-center gap-3 cursor-pointer select-none">
+<input checked="" class="w-5 h-5 rounded-lg accent-primary cursor-pointer" type="checkbox"/>
+<span class="text-xs text-on-surface font-medium">Lägg saknade varor direkt på Handla-listan</span>
+</label>
+</div>
+<!-- 6. Sticky Bottenknapp-sektion -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-xl flex flex-col items-center gap-2.5 max-w-lg mx-auto z-40">
+<button class="w-full bg-primary hover:bg-primary/95 text-on-primary py-3.5 px-6 rounded-2xl font-headline font-bold text-base flex items-center justify-center gap-2.5 shadow-md active:scale-[0.99] transition-all" onclick="saveMealPlan()" type="button">
+<span class="material-symbols-rounded text-[22px]">calendar_add_on</span>
+<span>Lägg till i matsedeln (Lördag)</span>
+</button>
+<button class="text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors py-1" onclick="history.back()" type="button">
+      Avbryt och återgå till veckovyn
+    </button>
+</div>
+</div>
+<script>
+  // Portionsjusterare
+  let currentPortions = 4;
+  function adjustPortions(delta) {
+    currentPortions = Math.max(1, Math.min(12, currentPortions + delta));
+    const countEl = document.getElementById('portions-count');
+    if (countEl) countEl.textContent = currentPortions;
+  }
+
+  // Val av receptkort
+  function selectRecipe(selectedCard) {
+    const cards = document.querySelectorAll('.recipe-card');
+    cards.forEach(card => {
+      card.classList.remove('ring-2', 'ring-primary', 'bg-primary-container/20');
+      card.classList.add('bg-surface-container-low');
+      const indicator = card.querySelector('.radio-indicator');
+      if (indicator) {
+        indicator.classList.remove('bg-primary', 'text-on-primary');
+        indicator.classList.add('bg-surface-container-high', 'text-transparent');
+      }
+    });
+
+    selectedCard.classList.add('ring-2', 'ring-primary', 'bg-primary-container/20');
+    selectedCard.classList.remove('bg-surface-container-low');
+    const activeIndicator = selectedCard.querySelector('.radio-indicator');
+    if (activeIndicator) {
+      activeIndicator.classList.remove('bg-surface-container-high', 'text-transparent');
+      activeIndicator.classList.add('bg-primary', 'text-on-primary');
+    }
+  }
+
+  // Interaktion för dag- och måltidschips
+  document.querySelectorAll('.day-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.day-chip').forEach(b => {
+        b.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm', 'ring-2', 'ring-primary/20', 'font-semibold');
+        b.classList.add('bg-surface-container', 'text-on-surface-variant');
+      });
+      btn.classList.add('bg-primary', 'text-on-primary', 'shadow-sm', 'ring-2', 'ring-primary/20', 'font-semibold');
+      btn.classList.remove('bg-surface-container', 'text-on-surface-variant');
+    });
+  });
+
+  document.querySelectorAll('.meal-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.meal-btn').forEach(b => {
+        b.classList.remove('bg-surface', 'text-primary', 'font-bold', 'shadow-xs');
+        b.classList.add('text-on-surface-variant');
+      });
+      btn.classList.add('bg-surface', 'text-primary', 'font-bold', 'shadow-xs');
+      btn.classList.remove('text-on-surface-variant');
+    });
+  });
+
+  function saveMealPlan() {
+    const btn = event.currentTarget;
+    btn.innerHTML = `<span class="material-symbols-rounded animate-spin text-[20px]">progress_activity</span><span>Sparar i Tandoor...</span>`;
+    setTimeout(() => {
+      history.back();
+    }, 450);
+  }
+</script></main></body></html>

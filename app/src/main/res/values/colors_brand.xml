@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window and splash colours. They match TandemTheme (core:designsystem) so there is no
+         colour jump between the splash screen, the window and the first Compose frame. -->
+    <color name="tandem_window_background">#FBF7F2</color>
+    <color name="tandem_splash_icon_background">#C2410C</color>
+</resources>

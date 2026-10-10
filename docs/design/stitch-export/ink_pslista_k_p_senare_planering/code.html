@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3A0B00",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FFDDB4","on-secondary-container":"#2B1700",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#CEF59C","on-tertiary-container":"#142700",surface:"#FBF7F2","surface-container-low":"#F5EFE6","surface-container":"#EDE4D8","surface-container-high":"#E6DCCE","on-surface":"#2C2523","on-surface-variant":"#736762",outline:"#8A7D77","outline-variant":"#D8CBC4",error:"#BA1A1A","on-error":"#FFFFFF"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}};</script></head><body class="bg-surface text-on-surface font-body antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2"><h1 class="text-xl font-headline font-bold text-on-surface tracking-tight leading-none">Inköpslista</h1></div><div class="flex items-center gap-2"><button aria-label="Sök" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-rounded text-2xl">search</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface"><div class="flex flex-col w-full px-4 pt-2 pb-8 gap-5">
+<!-- Toppöversikt & Status -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-xs uppercase tracking-wider font-semibold text-secondary">Tandem Skafferi &amp; Butik</p>
+<p class="text-sm text-on-surface-variant font-medium mt-0.5">5 varor i butik • 4 sparade till senare</p>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container px-3 py-1.5 rounded-full text-xs font-medium text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-tertiary" style="font-variation-settings: 'FILL' 1;">sync</span>
+<span>Synkad</span>
+</div>
+</div>
+<!-- Snabbinmatning & Filterknapp -->
+<div class="flex items-center gap-2">
+<div class="flex-1 flex items-center bg-surface-container-low px-4 py-3 rounded-2xl gap-2.5 shadow-sm focus-within:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-primary text-xl">add_circle</span>
+<input class="w-full bg-transparent text-sm text-on-surface placeholder:text-outline focus:outline-none font-body" id="quickAddInput" placeholder="Lägg till vara (t.ex. Koriander 1 kruka)..." type="text"/>
+</div>
+<button aria-label="Sortera efter butiksgångar" class="w-12 h-12 flex items-center justify-center rounded-2xl bg-surface-container text-on-surface-variant active:scale-95 transition-all shadow-sm" id="sortToggleBtn" title="Sortera gångar">
+<span class="material-symbols-outlined text-xl">tune</span>
+</button>
+</div>
+</div>
+<!-- Sektion 1: Att handla nu -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></span>
+<h2 class="text-lg font-headline font-bold text-on-surface">Att handla nu</h2>
+<span class="px-2 py-0.5 bg-primary-container text-on-primary-container text-xs font-semibold rounded-full">5 varor</span>
+</div>
+<span class="text-xs text-on-surface-variant font-medium">Efter avdelning</span>
+</div>
+<!-- Gång: Frukt & grönt -->
+<div class="flex flex-col bg-surface-container-low rounded-2xl p-3.5 gap-2.5 shadow-sm">
+<div class="flex items-center gap-2 px-1">
+<span class="material-symbols-outlined text-tertiary text-lg">eco</span>
+<span class="text-xs font-bold uppercase tracking-wider text-tertiary">Frukt &amp; Grönt</span>
+</div>
+<!-- Artikel 1 -->
+<div class="group flex items-center justify-between p-2.5 bg-surface rounded-xl shadow-xs transition-all active:scale-[0.99] gap-3">
+<label class="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center text-transparent peer-checked:bg-tertiary peer-checked:text-on-tertiary transition-colors shrink-0">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-sm font-medium text-on-surface peer-checked:line-through peer-checked:text-outline truncate">Färsk babyspenat</p>
+<p class="text-xs text-on-surface-variant">1 påse • Sallad &amp; pasta</p>
+</div>
+</label>
+<button aria-label="Spara till senare" class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-colors shrink-0" onclick="moveToLater(this, 'Färsk babyspenat', '1 påse')" title="Flytta till Köp senare">
+<span class="material-symbols-outlined text-lg">schedule</span>
+</button>
+</div>
+<!-- Artikel 2 -->
+<div class="group flex items-center justify-between p-2.5 bg-surface rounded-xl shadow-xs transition-all active:scale-[0.99] gap-3">
+<label class="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center text-transparent peer-checked:bg-tertiary peer-checked:text-on-tertiary transition-colors shrink-0">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-sm font-medium text-on-surface peer-checked:line-through peer-checked:text-outline truncate">Skogssvamp</p>
+<p class="text-xs text-on-surface-variant">250 g • Champinjon/Kantarell</p>
+</div>
+</label>
+<button aria-label="Spara till senare" class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-colors shrink-0" onclick="moveToLater(this, 'Skogssvamp', '250 g')" title="Flytta till Köp senare">
+<span class="material-symbols-outlined text-lg">schedule</span>
+</button>
+</div>
+<!-- Artikel 3 -->
+<div class="group flex items-center justify-between p-2.5 bg-surface rounded-xl shadow-xs transition-all active:scale-[0.99] gap-3">
+<label class="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center text-transparent peer-checked:bg-tertiary peer-checked:text-on-tertiary transition-colors shrink-0">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-sm font-medium text-on-surface peer-checked:line-through peer-checked:text-outline truncate">Gul lök</p>
+<p class="text-xs text-on-surface-variant">1 st stor</p>
+</div>
+</label>
+<button aria-label="Spara till senare" class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-colors shrink-0" onclick="moveToLater(this, 'Gul lök', '1 st')" title="Flytta till Köp senare">
+<span class="material-symbols-outlined text-lg">schedule</span>
+</button>
+</div>
+</div>
+<!-- Gång: Mejeri & Kyl -->
+<div class="flex flex-col bg-surface-container-low rounded-2xl p-3.5 gap-2.5 shadow-sm">
+<div class="flex items-center gap-2 px-1">
+<span class="material-symbols-outlined text-secondary text-lg">egg_alt</span>
+<span class="text-xs font-bold uppercase tracking-wider text-secondary">Mejeri &amp; Ost</span>
+</div>
+<!-- Artikel 4 -->
+<div class="group flex items-center justify-between p-2.5 bg-surface rounded-xl shadow-xs transition-all active:scale-[0.99] gap-3">
+<label class="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center text-transparent peer-checked:bg-tertiary peer-checked:text-on-tertiary transition-colors shrink-0">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-sm font-medium text-on-surface peer-checked:line-through peer-checked:text-outline truncate">Vispgrädde 40%</p>
+<p class="text-xs text-on-surface-variant">3 dl • Torsdagssoppa</p>
+</div>
+</label>
+<button aria-label="Spara till senare" class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-colors shrink-0" onclick="moveToLater(this, 'Vispgrädde 40%', '3 dl')" title="Flytta till Köp senare">
+<span class="material-symbols-outlined text-lg">schedule</span>
+</button>
+</div>
+<!-- Artikel 5 -->
+<div class="group flex items-center justify-between p-2.5 bg-surface rounded-xl shadow-xs transition-all active:scale-[0.99] gap-3">
+<label class="flex items-center gap-3 min-w-0 cursor-pointer flex-1">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-6 h-6 rounded-lg bg-surface-container flex items-center justify-center text-transparent peer-checked:bg-tertiary peer-checked:text-on-tertiary transition-colors shrink-0">
+<span class="material-symbols-outlined text-base">check</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="text-sm font-medium text-on-surface peer-checked:line-through peer-checked:text-outline truncate">Parmesanost</p>
+<p class="text-xs text-on-surface-variant">Riven • Parmigiano Reggiano</p>
+</div>
+</label>
+<button aria-label="Spara till senare" class="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-secondary-container hover:text-on-secondary-container transition-colors shrink-0" onclick="moveToLater(this, 'Parmesanost', 'Riven')" title="Flytta till Köp senare">
+<span class="material-symbols-outlined text-lg">schedule</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Sektion 2: KÖP SENARE (Hyllan) -->
+<div class="flex flex-col bg-surface-container rounded-3xl p-4 gap-3 shadow-md">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-2xl" style="font-variation-settings: 'FILL' 1;">shelves</span>
+<h2 class="text-base font-headline font-bold text-on-surface leading-snug">Köp senare (4 varor)</h2>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">Varor sparade för kommande veckor eller större storhandling.</p>
+</div>
+<button aria-label="Dölj eller visa hyllan" class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant active:scale-95 transition-transform" id="toggleLaterShelf">
+<span class="material-symbols-outlined text-xl transition-transform" id="shelfChevron">expand_less</span>
+</button>
+</div>
+<!-- Infochip -->
+<div class="flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[11px] font-semibold">
+<span class="material-symbols-outlined text-sm">info</span>
+<span>Påverkar inte dagens matsedel</span>
+</div>
+<!-- Lista med artiklar på hyllan -->
+<div class="flex flex-col gap-2.5 transition-all" id="laterShelfContent">
+<!-- Hylla 1 -->
+<div class="flex items-center justify-between p-3 rounded-2xl bg-surface shadow-xs gap-3">
+<div class="min-w-0 flex-1">
+<div class="flex items-center gap-1.5">
+<p class="text-sm font-semibold text-on-surface truncate">Olivolja Extra Virgin</p>
+<span class="px-1.5 py-0.5 rounded-md bg-secondary-container text-on-secondary-container text-[10px] font-bold">Storköp</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5">1 l • <span class="italic text-secondary">När det är extrapris</span></p>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="px-2.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all" onclick="moveToShop(this, 'Olivolja Extra Virgin', '1 l')" title="Flytta till att handla nu">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+<span class="hidden sm:inline">Handla</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="deleteLaterItem(this)" title="Ta bort">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Hylla 2 -->
+<div class="flex items-center justify-between p-3 rounded-2xl bg-surface shadow-xs gap-3">
+<div class="min-w-0 flex-1">
+<p class="text-sm font-semibold text-on-surface truncate">Flingsalt med jod</p>
+<p class="text-xs text-on-surface-variant mt-0.5">2 burkar • Skafferibuffert</p>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="px-2.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all" onclick="moveToShop(this, 'Flingsalt med jod', '2 burkar')" title="Flytta till att handla nu">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+<span class="hidden sm:inline">Handla</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="deleteLaterItem(this)" title="Ta bort">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Hylla 3 -->
+<div class="flex items-center justify-between p-3 rounded-2xl bg-surface shadow-xs gap-3">
+<div class="min-w-0 flex-1">
+<p class="text-sm font-semibold text-on-surface truncate">Runt bakplåtspapper</p>
+<p class="text-xs text-on-surface-variant mt-0.5">För pizzasten • Förbrukat</p>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="px-2.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all" onclick="moveToShop(this, 'Runt bakplåtspapper', 'För pizzasten')" title="Flytta till att handla nu">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+<span class="hidden sm:inline">Handla</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="deleteLaterItem(this)" title="Ta bort">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Hylla 4 -->
+<div class="flex items-center justify-between p-3 rounded-2xl bg-surface shadow-xs gap-3">
+<div class="min-w-0 flex-1">
+<p class="text-sm font-semibold text-on-surface truncate">Arborioris</p>
+<p class="text-xs text-on-surface-variant mt-0.5">1 kg • Höstrisotto</p>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="px-2.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all" onclick="moveToShop(this, 'Arborioris', '1 kg')" title="Flytta till att handla nu">
+<span class="material-symbols-outlined text-sm">shopping_cart</span>
+<span class="hidden sm:inline">Handla</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:text-error hover:bg-surface-container-high transition-colors" onclick="deleteLaterItem(this)" title="Ta bort">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Sektion 3: Avbockade varor -->
+<div class="flex flex-col bg-surface-container-low/60 rounded-2xl p-3.5 gap-2">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5 text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+<span class="material-symbols-outlined text-base text-tertiary">check_circle</span>
+<span>Klara varor (2)</span>
+</div>
+<button class="text-xs font-semibold text-primary hover:underline active:opacity-75" id="clearCheckedBtn">
+        Rensa alla
+      </button>
+</div>
+<div class="flex flex-col gap-1.5 opacity-65" id="completedList">
+<div class="flex items-center justify-between py-1.5 px-2 rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-lg">check_box</span>
+<span class="text-sm line-through text-outline">Krossade tomater (Mutti, 2 burkar)</span>
+</div>
+</div>
+<div class="flex items-center justify-between py-1.5 px-2 rounded-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-lg">check_box</span>
+<span class="text-sm line-through text-outline">Färsk rosmarin (1 kruka)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Flytande butiksläge / Sticky handla-knapp -->
+<div class="sticky bottom-1 w-full pt-2">
+<button class="w-full h-14 bg-primary text-on-primary rounded-2xl flex items-center justify-center gap-2.5 shadow-xl font-headline font-semibold text-base active:scale-[0.98] transition-transform" id="startShopModeBtn">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">shopping_basket</span>
+<span>Starta butiksläge (5 varor)</span>
+</button>
+</div>
+</div>
+<script>
+  // Hyllan expandera/fäll ihop
+  const shelfToggleBtn = document.getElementById('toggleLaterShelf');
+  const shelfContent = document.getElementById('laterShelfContent');
+  const shelfChevron = document.getElementById('shelfChevron');
+
+  if (shelfToggleBtn && shelfContent && shelfChevron) {
+    shelfToggleBtn.addEventListener('click', () => {
+      const isHidden = shelfContent.classList.contains('hidden');
+      if (isHidden) {
+        shelfContent.classList.remove('hidden');
+        shelfChevron.textContent = 'expand_less';
+      } else {
+        shelfContent.classList.add('hidden');
+        shelfChevron.textContent = 'expand_more';
+      }
+    });
+  }
+
+  // Rensa klara varor
+  const clearCheckedBtn = document.getElementById('clearCheckedBtn');
+  const completedList = document.getElementById('completedList');
+  if (clearCheckedBtn && completedList) {
+    clearCheckedBtn.addEventListener('click', () => {
+      completedList.innerHTML = '<p class="text-xs text-outline py-2 text-center">Inga klara varor kvar i listan.</p>';
+      clearCheckedBtn.style.display = 'none';
+    });
+  }
+
+  // Flytta artikel till Köp senare (Micro-interaction)
+  function moveToLater(btn, name, amount) {
+    const row = btn.closest('.group');
+    if (!row) return;
+    row.style.opacity = '0';
+    row.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      row.remove();
+      const shelf = document.getElementById('laterShelfContent');
+      if (shelf) {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-3 rounded-2xl bg-surface shadow-xs gap-3 animate-pulse';
+        item.innerHTML = `
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-on-surface truncate">${name}</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">${amount} &bull; Flyttad nyss</p>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button onclick="moveToShop(this, '${name}', '${amount}')" class="px-2.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 shadow-sm active:scale-95 transition-all">
+              <span class="material-symbols-outlined text-sm">shopping_cart</span>
+            </button>
+            <button onclick="deleteLaterItem(this)" class="w-8 h-8 flex items-center justify-center rounded-xl text-outline hover:text-error hover:bg-surface-container-high transition-colors">
+              <span class="material-symbols-outlined text-lg">delete</span>
+            </button>
+          </div>
+        `;
+        shelf.prepend(item);
+        setTimeout(() => item.classList.remove('animate-pulse'), 800);
+      }
+    }, 200);
+  }
+
+  // Flytta artikel till Att handla (Micro-interaction)
+  function moveToShop(btn, name, amount) {
+    const card = btn.closest('.flex.items-center.justify-between');
+    if (!card) return;
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(-6px)';
+    setTimeout(() => {
+      card.remove();
+    }, 200);
+  }
+
+  // Radera från Köp senare
+  function deleteLaterItem(btn) {
+    const card = btn.closest('.flex.items-center.justify-between');
+    if (!card) return;
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.9)';
+    setTimeout(() => card.remove(), 180);
+  }
+
+  // Butiksläge knapp feedback
+  const startShopBtn = document.getElementById('startShopModeBtn');
+  if (startShopBtn) {
+    startShopBtn.addEventListener('click', () => {
+      startShopBtn.classList.add('bg-tertiary');
+      startShopBtn.innerHTML = `
+        <span class="material-symbols-outlined text-2xl animate-spin">progress_activity</span>
+        <span>Öppnar butiksläge...</span>
+      `;
+      setTimeout(() => {
+        startShopBtn.classList.remove('bg-tertiary');
+        startShopBtn.innerHTML = `
+          <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">shopping_basket</span>
+          <span>Starta butiksläge (5 varor)</span>
+        `;
+      }, 1000);
+    });
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-2"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="idag" href="#"><span class="material-symbols-rounded text-2xl">dinner_dining</span><span class="text-[11px] font-medium">Idag</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="recept" href="#"><span class="material-symbols-rounded text-2xl">menu_book</span><span class="text-[11px] font-medium">Recept</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="veckan" href="#"><span class="material-symbols-rounded text-2xl">calendar_today</span><span class="text-[11px] font-medium">Veckan</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="inkopslista" href="#"><span class="material-symbols-rounded text-2xl">shopping_cart</span><span class="text-[11px] font-medium">Handla</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mer" href="#"><span class="material-symbols-rounded text-2xl">more_horiz</span><span class="text-[11px] font-medium">Mer</span></a></div></nav></body></html>

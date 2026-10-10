@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ds_sample_screen_title">Idag</string>
+    <string name="ds_sample_screen_subtitle">Torsdag 24 oktober</string>
+    <string name="ds_sample_settings">Inställningar</string>
+    <string name="ds_sample_recipe_title">Krämig svamppasta</string>
+    <string name="ds_sample_recipe_body">Tagliatelle med stekt skogssvamp, vitlök, timjan och riven parmesan. Klar på 35 minuter.</string>
+    <string name="ds_sample_overline">Steg 2 av 3</string>
+    <string name="ds_sample_step">Stek svampen i smör tills den är gyllene, ca 5 minuter.</string>
+    <string name="ds_sample_cook">Laga mat</string>
+    <string name="ds_sample_show_items">Visa varor</string>
+    <string name="ds_sample_add_to_list">Lägg på listan</string>
+    <string name="ds_sample_read_guide">Läs anslutningsguiden</string>
+    <string name="ds_sample_connect">Anslut</string>
+    <string name="ds_sample_server_label">Serveradress</string>
+    <string name="ds_sample_server_help">Adressen du öppnar Tandoor med i webbläsaren.</string>
+    <string name="ds_sample_username_label">Användarnamn</string>
+    <string name="ds_sample_password_label">Lösenord</string>
+    <string name="ds_sample_server_error">Kunde inte nå servern. Kontrollera adressen.</string>
+    <string name="ds_sample_info_title">Lösenordet sparas aldrig</string>
+    <string name="ds_sample_info_body">Du förblir inloggad på den här enheten med en token som du kan återkalla i Tandoor när som helst.</string>
+    <string name="ds_sample_callout_title">Veckan är planerad</string>
+    <string name="ds_sample_callout_body">Fem middagar är planerade. Tre ingredienser saknas hemma.</string>
+    <string name="ds_sample_chip_all_at_home">Alla ingredienser hemma</string>
+    <string name="ds_sample_chip_tonight">Ikväll</string>
+    <string name="ds_sample_chip_missing">2 saknas</string>
+</resources>

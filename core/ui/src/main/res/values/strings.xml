@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Demo mode banner (plan 6.2, design "Idag i demoläge"). -->
+    <string name="ui_demo_banner_title">Demo mode</string>
+    <string name="ui_demo_banner_body">You are exploring Tandem with sample recipes. Changes stay on this phone until you connect your own Tandoor server.</string>
+    <string name="ui_demo_banner_connect">Connect your Tandoor</string>
+
+    <!-- Status chips. Short: they sit next to headings. -->
+    <string name="ui_status_demo">Demo</string>
+    <string name="ui_status_demo_description">Demo mode: sample data</string>
+    <string name="ui_status_offline">Offline</string>
+    <string name="ui_status_offline_description">Offline: showing saved data</string>
+    <string name="ui_status_safe_mode">Safe mode</string>
+    <string name="ui_status_safe_mode_description">Safe mode: read only</string>
+
+    <!-- "Don't have a Tandoor?" callout on the server step of the intro. -->
+    <string name="ui_no_tandoor_title">Don\'t have a Tandoor?</string>
+    <string name="ui_no_tandoor_body">Tandoor is a free recipe manager that you host yourself. Try Tandem in demo mode first, or read how to set up Tandoor.</string>
+    <string name="ui_no_tandoor_try_demo">Try demo mode</string>
+    <string name="ui_no_tandoor_learn_more">About Tandoor</string>
+
+    <!-- Error state. -->
+    <string name="ui_error_show_details">Show details</string>
+    <string name="ui_error_hide_details">Hide details</string>
+    <string name="ui_error_details_label">Technical details</string>
+
+    <!-- Error texts per TandemError type (plan 5.4), see TandemErrorText.kt. -->
+    <string name="ui_error_network_title">No connection</string>
+    <string name="ui_error_network_body">Check that the phone is online and try again.</string>
+    <string name="ui_error_unknown_host_title">Server not found</string>
+    <string name="ui_error_unknown_host_body">Check the address. If the server can only be reached at home, connect to your home network or VPN.</string>
+    <string name="ui_error_timeout_title">The server is not answering</string>
+    <string name="ui_error_timeout_body">It took too long to get an answer. Try again in a moment.</string>
+    <string name="ui_error_tls_untrusted_title">The certificate is not trusted</string>
+    <string name="ui_error_tls_untrusted_body">If your server uses its own certificate authority, install that certificate in the Android settings (Security, Encryption and credentials) and try again.</string>
+    <string name="ui_error_tls_title">Secure connection failed</string>
+    <string name="ui_error_tls_body">The server\'s certificate does not match the address, or a secure connection could not be set up.</string>
+    <string name="ui_error_invalid_url_title">Invalid address</string>
+    <string name="ui_error_invalid_url_body">Enter the full address, for example the one you open Tandoor with in the browser.</string>
+    <string name="ui_error_invalid_url_cleartext_body">Tandem only connects over https:// so that your login cannot be read on the way.</string>
+    <string name="ui_error_not_tandoor_title">This does not look like Tandoor</string>
+    <string name="ui_error_not_tandoor_body">The server answered, but not like a Tandoor server. Check the address and any path after the domain name.</string>
+    <string name="ui_error_unauthorized_title">Log in again</string>
+    <string name="ui_error_unauthorized_body">Your login on this device is no longer valid. Nothing you saved offline is lost.</string>
+    <string name="ui_error_blocked_title">The request was blocked</string>
+    <string name="ui_error_blocked_body">Something in front of the server, such as a firewall or proxy, blocked the request. Tandem will try again later.</string>
+    <string name="ui_error_not_found_title">Not found</string>
+    <string name="ui_error_not_found_body">It may have been deleted on the server.</string>
+    <string name="ui_error_bad_request_title">The server did not accept this</string>
+    <string name="ui_error_bad_request_body">Check what you entered and try again.</string>
+    <string name="ui_error_throttled_title">Too many attempts</string>
+    <string name="ui_error_throttled_body">The server limits how often you can try. Wait a while before you try again.</string>
+    <string name="ui_error_server_title">Server error</string>
+    <string name="ui_error_server_body">The server had a problem. Try again in a moment.</string>
+    <string name="ui_error_decode_title">Unexpected answer</string>
+    <string name="ui_error_decode_body">The server\'s answer could not be read. This Tandoor version may not be supported yet.</string>
+    <string name="ui_error_unknown_title">Something went wrong</string>
+    <string name="ui_error_unknown_body">Try again. If it keeps happening, report the problem with the details below.</string>
+
+    <!-- Crash log from an earlier run (plan 4.2 p7). Shown on the welcome step and in More. -->
+    <string name="ui_crash_title">Tandem crashed last time</string>
+    <string name="ui_crash_body">A crash log was saved on this device. Nothing has been sent. If you want to report the problem, view the log and copy or share it.</string>
+    <string name="ui_crash_show">View</string>
+    <string name="ui_crash_copy">Copy</string>
+    <string name="ui_crash_share">Share</string>
+    <string name="ui_crash_delete">Delete</string>
+    <string name="ui_crash_close">Close</string>
+    <string name="ui_crash_dialog_title">Crash log</string>
+    <string name="ui_crash_dialog_note">App version, Android version, device model and where in the code Tandem stopped. Passwords, tokens and web addresses are removed.</string>
+    <string name="ui_crash_share_subject">Tandem crash log</string>
+    <string name="ui_crash_share_chooser">Share crash log</string>
+</resources>

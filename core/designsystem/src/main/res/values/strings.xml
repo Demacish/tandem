@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic labels used by the design system components (core:designsystem). -->
+    <string name="tandem_action_back">Back</string>
+    <string name="tandem_action_close">Close</string>
+    <string name="tandem_action_retry">Try again</string>
+    <string name="tandem_password_show">Show password</string>
+    <string name="tandem_password_hide">Hide password</string>
+    <string name="tandem_loading">Loading…</string>
+</resources>

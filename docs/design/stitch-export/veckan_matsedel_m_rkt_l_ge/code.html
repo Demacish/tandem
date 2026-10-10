@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><title>Tandem</title><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'background': '#1C1714', 'surface': '#1C1714', 'surface-container': '#2A2320', 'surface-container-high': '#352D29', 'primary': '#FB8A5C', 'on-primary': '#1C1714', 'secondary': '#F5B044', 'on-secondary': '#1C1714', 'tertiary': '#9BC46A', 'on-tertiary': '#1C1714', 'on-surface': '#F3EBE3', 'on-surface-variant': '#A89B91', 'outline': '#4E433E', 'outline-variant': '#382F2B' } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; background-color: #1C1714; color: #F3EBE3; } body { overscroll-behavior: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style></head><body class="bg-background text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-background/85 backdrop-blur-xl pt-safe"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-3"><span class="text-xl font-bold tracking-tight text-on-surface">Veckans Matsedel</span></div><div class="flex items-center gap-2"><button aria-label="Sök" class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[24px]">search</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-24 bg-surface min-h-screen"><div class="flex flex-col w-full pb-20">
+<!-- Status & Quick Navigation Bar -->
+<div class="px-4 pt-3 pb-2 flex flex-col gap-3">
+<!-- Sync Status & Progress Overview -->
+<div class="bg-surface-container rounded-xl p-3 flex items-center justify-between shadow-md">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[19px]">sync</span>
+</div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="text-xs font-medium text-on-surface">Synkad med Tandoor</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-medium">Vecka 43 • 21–27 oktober</p>
+</div>
+</div>
+<button class="bg-primary/15 hover:bg-primary/25 active:scale-95 transition-all text-primary text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1" id="scrollToTodayBtn">
+<span>Idag</span>
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</button>
+</div>
+<!-- Planning Progress Metric -->
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="text-xs text-on-surface font-semibold tracking-wide uppercase">Matsedel</span>
+<span class="text-xs text-on-surface-variant">• 6 av 7 middagar klara</span>
+</div>
+<!-- Mini Weekly Tracker dots -->
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary" title="Måndag: Klar"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary" title="Tisdag: Klar"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary" title="Onsdag: Klar"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-primary" title="Torsdag: Idag"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-secondary" title="Fredag: Planerad"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-surface-container-high" title="Lördag: Ej planerad"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-secondary" title="Söndag: Planerad"></span>
+</div>
+</div>
+</div>
+<!-- Weekly Timeline Vertical Flow -->
+<div class="flex flex-col gap-3.5 px-4 pt-1">
+<!-- MÅNDAG (Lagad) -->
+<div class="bg-surface-container rounded-xl p-3 flex gap-3 items-center opacity-75 hover:opacity-100 transition-opacity">
+<img alt="Linsgryta" class="w-18 h-18 w-[72px] h-[72px] rounded-lg object-cover flex-shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1UIlv_jq_FHOQcN6c5J4kcQgIHzsOzr0qf0dTVVs4RWResp0z-rsDUk3xHjAfxIl6USRznCrZfhZg2eVyEq-UDSj7ZhzEkT-JJFFmiO63tiU-yL5i895h_GkwckEtlSou5WK0nwpsHu7PCXg0sy-MTu8ZFmRFUL5PEP4VRE_Ou6HQTYGfNJtliaDS83Tnzzx5ve_oqlpzmXKdEoJuFmFhJEqMP3ay2ZMtAC7GkIgfOiak8vIm5oFSL12qR6"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Måndag 21 okt</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            Lagad
+          </span>
+</div>
+<h3 class="text-sm font-semibold text-on-surface truncate mt-0.5">Linsgryta med kokosmjölk</h3>
+<p class="text-xs text-on-surface-variant line-clamp-1">Ingefära, spiskummin, färsk koriander &amp; ris</p>
+</div>
+</div>
+<!-- TISDAG (Lagad) -->
+<div class="bg-surface-container rounded-xl p-3 flex gap-3 items-center opacity-75 hover:opacity-100 transition-opacity">
+<img class="w-[72px] h-[72px] rounded-lg object-cover flex-shrink-0" data-alt="A rustic ceramic bowl filled with steaming homemade creamy tomato soup garnished with fresh basil leaves and a swirl of cream, accompanied by crusty sourdough bread on a dark warm wooden surface, warm atmospheric candlelight mood in dark kitchen tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7Iy_zqO3hOGDpz_V6rU2XSp-GzdT1WYozw-iFgPE-y9ywU4SI5L9qkeSLw2YxM8VOJlxF7QD8X8RntSMlUjnBOjXQ6bO66mlxNpBDP_Nm6l3-yxrAkGgCEYQZc2OUfED5n_j2CzDGxonLVmnZc9GrogRwl-0oS1AjPEP2G812dqx0kgxHKae3MrSEyf6CosKfeHF63HPDL4yHzwkWPiJKwTtLjhRbbdBxXxLUDnjH"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Tisdag 22 okt</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            Lagad
+          </span>
+</div>
+<h3 class="text-sm font-semibold text-on-surface truncate mt-0.5">Tomatsoppa &amp; surdegsbröd</h3>
+<p class="text-xs text-on-surface-variant line-clamp-1">Rostade san marzano-tomater, vitlök, olivolja</p>
+</div>
+</div>
+<!-- ONSDAG (Lagad) -->
+<div class="bg-surface-container rounded-xl p-3 flex gap-3 items-center opacity-75 hover:opacity-100 transition-opacity">
+<img class="w-[72px] h-[72px] rounded-lg object-cover flex-shrink-0" data-alt="Stir fried crispy chicken with crunchy cashew nuts, sliced sweet bell peppers and spring onions in a savory wok soy sauce glaze, served in a ceramic bowl with atmospheric warm ambient kitchen illumination." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxNqtaQ0zDRL8Ks32meGlUsRXQcnku3P8HU6bHtyhx1MKyH6b6nu9Fbcy9mqD1RspXKG8ScaIWyh35TrNL3OOpTP73Yw0WssuHz89r-Dm34hDY2PJwZe-7Acyt6VqTJw7q-KWcXGzKA5uP_g4VZwRsJidLzb-GFoO2DByXyV9zkLWlKLdS94he4Z5pg3AENR1anoBIurmU801-XP0G52NZwkiGrshGxA8yEvdWNjA9"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Onsdag 23 okt</span>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium text-tertiary bg-tertiary/10 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            Lagad
+          </span>
+</div>
+<h3 class="text-sm font-semibold text-on-surface truncate mt-0.5">Kycklingwok med cashewnötter</h3>
+<p class="text-xs text-on-surface-variant line-clamp-1">Broccoli, soja, chili och jasminris</p>
+</div>
+</div>
+<!-- IDAG - TORSDAG (Framhävt aktivt kort) -->
+<div class="bg-surface-container rounded-2xl p-4 shadow-xl relative overflow-hidden flex flex-col gap-3.5" id="todayCard">
+<!-- Ambient Glow Accents -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary"></div>
+<div class="absolute -right-12 -top-12 w-36 h-36 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Top Card Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="bg-primary text-on-primary text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md tracking-wider">IDAG</span>
+<span class="text-xs font-semibold text-on-surface">Torsdag 24 okt</span>
+</div>
+<span class="inline-flex items-center gap-1 text-[11px] font-medium text-tertiary bg-tertiary/15 px-2.5 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">kitchen</span>
+          Alla råvaror hemma
+        </span>
+</div>
+<!-- Featured Recipe Image with scrim & time -->
+<div class="relative w-full h-44 rounded-xl overflow-hidden shadow-inner group">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Plate of creamy mushroom tagliatelle pasta with shaved parmesan cheese and freshly ground black pepper on a rustic terracotta plate, natural warm moody interior background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe_vjhe2h6B38TNvUHr2C2tShK0MON6fiXt03x2y58_yrfLdIdlEWV-y8Qfs1bIqbXAPvg5JcH80YguF8r7Rr3K_mW8aHKUjw2GkPL1qgOAuDuqd6rIlHVq9m55TZc9MIDmtxHtSGCMjNfCYJ6N2oHAL21IK2SNbAYpjZd-9SUIK4NPS9OpWK37lZYGIlz9gJjKXXj-lxt1VwvsZoHMshmcXXczrYBW6W-sgoEYUGs"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background/90 via-background/25 to-transparent"></div>
+<div class="absolute bottom-2.5 left-3 right-3 flex items-end justify-between">
+<div>
+<span class="text-xs text-secondary font-medium tracking-wide">Snabb vardagsfavorit</span>
+<h2 class="text-lg font-bold text-on-surface leading-tight drop-shadow-sm">Krämig svamppasta</h2>
+</div>
+<div class="bg-surface-container-high/90 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1 text-on-surface text-xs font-medium">
+<span class="material-symbols-outlined text-[15px] text-secondary">timer</span>
+<span>25 min</span>
+</div>
+</div>
+</div>
+<!-- Card details and actions -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between text-xs text-on-surface-variant px-0.5">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">restaurant_menu</span>
+            4 portioner
+          </span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">local_fire_department</span>
+            540 kcal/port
+          </span>
+<span class="text-secondary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">grade</span>
+            4.9 (42)
+          </span>
+</div>
+<!-- Big Primary CTA -->
+<button class="w-full bg-primary hover:bg-primary/90 active:scale-[0.98] transition-all text-on-primary font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">skillet</span>
+<span>Laga middag nu</span>
+</button>
+</div>
+</div>
+<!-- FREDAG (Ugnsbakad lax) -->
+<div class="bg-surface-container rounded-xl p-3 flex gap-3 items-center hover:bg-surface-container-high transition-colors">
+<img class="w-[72px] h-[72px] rounded-lg object-cover flex-shrink-0" data-alt="A baked salmon fillet fillet served with baby dill potatoes and tender green asparagus on a rustic plate, warm wooden table setting, garnished with fresh lemon." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCShiHYaxqRqm7TEX3nZd-iRyIYJ8lWBJDHR1as_FOWv1bkrKEJmoK0rraq3SnfXPJRyvgoJHfE6PguknfMcIdFlltuA9PCHLWFZrxGvGt6LSz2lgrgZvEP8vk6k1a-zG4Jdpog7EOxBFgvxTYIPPVWfLx6nZ0senyLyM7KT7xnVc5ZTlkzoSiUeNAEUyQ751vbHutM9c8CTZzCpPE6NieAUhciX4QFlZekqDd1-_Rr"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Fredag 25 okt</span>
+<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-secondary bg-secondary/15 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+            Saknar 2 varor
+          </span>
+</div>
+<h3 class="text-sm font-semibold text-on-surface truncate mt-0.5">Ugnsbakad lax med dillpotatis</h3>
+<p class="text-xs text-on-surface-variant line-clamp-1">Citronsmörsås, sparris &amp; färsk dill</p>
+</div>
+</div>
+<!-- LÖRDAG (Tom dag / Planera) -->
+<div class="bg-surface-container/50 rounded-xl p-4 flex flex-col items-center justify-center gap-2.5 text-center">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[22px]">restaurant</span>
+</div>
+<div>
+<div class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Lördag 26 okt</div>
+<p class="text-xs text-on-surface-variant mt-0.5">Ingen middag planerad än</p>
+</div>
+<button class="mt-1 bg-surface-container-high hover:bg-primary/20 hover:text-primary text-on-surface active:scale-95 transition-all text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">add_circle</span>
+<span>Planera lördagsmiddag</span>
+</button>
+</div>
+<!-- SÖNDAG (Ugnsstekt citronkyckling) -->
+<div class="bg-surface-container rounded-xl p-3 flex gap-3 items-center hover:bg-surface-container-high transition-colors">
+<img class="w-[72px] h-[72px] rounded-lg object-cover flex-shrink-0" data-alt="Whole roasted golden herb and lemon chicken carved in a rustic roasting pan with baby carrots and garlic cloves, warm home cooked comfort food atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbhL2unn9znB6UGoKVtfjif6RohpnUFAFh_nHgPWGS3nn5ak1Q7LMX2qfDhoXVpj97wMm2V67M_GECGlg-dhEMYqEBM-vW4t2H8hylESi9eHjYSIBgZNX8owjBO7_bDMS9V12DM3c4COj96Ch2EhZ5qF6chDbvujrrYzG85gs1pRn9GFttm6baG9iAjEwh75cPipG1TqVPB0S_mQJucsipb1KSTg3U7ZvJjG1F8rbf"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Söndag 27 okt</span>
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px] text-secondary">workspace_premium</span>
+            Helglyx
+          </span>
+</div>
+<h3 class="text-sm font-semibold text-on-surface truncate mt-0.5">Ugnsstekt citronkyckling</h3>
+<p class="text-xs text-on-surface-variant line-clamp-1">Storkok • Rostade rotfrukter &amp; dragonsås</p>
+</div>
+</div>
+</div>
+<!-- Sticky Inköps-Banner över nav -->
+<div class="fixed bottom-16 left-0 right-0 z-40 px-3 pb-2 pt-1 pointer-events-none">
+<div class="max-w-md mx-auto bg-surface-container-high/95 backdrop-blur-md rounded-xl p-3 shadow-2xl flex items-center justify-between pointer-events-auto">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[19px]">shopping_cart</span>
+</div>
+<div class="flex flex-col min-w-0">
+<p class="text-xs font-bold text-on-surface truncate">Handla för veckan</p>
+<p class="text-[11px] text-on-surface-variant truncate">7 ingredienser saknas på inköpslistan</p>
+</div>
+</div>
+<button class="ml-2 flex-shrink-0 bg-secondary hover:bg-secondary/90 active:scale-95 text-on-secondary text-xs font-bold px-3 py-1.5 rounded-lg transition-transform flex items-center gap-1">
+<span>Öppna</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // Smooth scroll to Today card when pressing quick button
+  document.getElementById('scrollToTodayBtn')?.addEventListener('click', () => {
+    const todayCard = document.getElementById('todayCard');
+    if (todayCard) {
+      todayCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      todayCard.classList.add('scale-[1.01]');
+      setTimeout(() => todayCard.classList.remove('scale-[1.01]'), 300);
+    }
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.35)]" data-active-classes="text-primary font-medium"><div class="flex justify-around items-center h-16 px-2"><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="idag" href="#"><span class="material-symbols-outlined text-[24px]">today</span><span class="text-[11px] leading-none">Idag</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="receptkatalog" href="#"><span class="material-symbols-outlined text-[24px]">menu_book</span><span class="text-[11px] leading-none">Recept</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 transition-colors text-primary font-medium" data-path="veckans-matsedel" href="#"><span class="material-symbols-outlined text-[24px]">calendar_month</span><span class="text-[11px] leading-none">Veckan</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="inkopslista" href="#"><span class="material-symbols-outlined text-[24px]">shopping_basket</span><span class="text-[11px] leading-none">Handla</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mer-meny" href="#"><span class="material-symbols-outlined text-[24px]">more_horiz</span><span class="text-[11px] leading-none">Mer</span></a></div></nav></body></html>

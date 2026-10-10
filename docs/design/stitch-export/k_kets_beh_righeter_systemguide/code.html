@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;color:#292524;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { 'primary': '#C2410C', 'on-primary': '#FFFFFF', 'primary-container': '#FFEDD5', 'on-primary-container': '#7C2D12', 'secondary': '#D97706', 'on-secondary': '#FFFFFF', 'secondary-container': '#FEF3C7', 'on-secondary-container': '#78350F', 'tertiary': '#4D7C0F', 'on-tertiary': '#FFFFFF', 'tertiary-container': '#ECFCCB', 'on-tertiary-container': '#1A2E05', 'surface': '#FBF7F2', 'on-surface': '#292524', 'surface-variant': '#F5EBE1', 'on-surface-variant': '#78716C', 'outline': '#E7E5E4' }, fontFamily: { 'headline': ['Bricolage Grotesque', 'sans-serif'], 'body': ['DM Sans', 'sans-serif'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body flex flex-col text-on-surface"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 px-3 flex items-center justify-between"><div class="flex items-center gap-1.5 min-w-0"><button aria-label="Tillbaka" class="w-11 h-11 flex items-center justify-center text-on-surface rounded-full hover:bg-surface-variant transition-colors" onclick="history.back()"><span class="material-symbols-rounded text-2xl">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface truncate pr-2">Receptdetalj</h1></div><div class="flex items-center gap-1 shrink-0"><button class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors"><span class="material-symbols-rounded text-2xl">share</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-8">
+<div class="px-5 pt-3 pb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-2xl bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm shrink-0">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-semibold tracking-wider uppercase text-secondary">Tandem • Trygg matlagning</span>
+<h2 class="text-2xl font-bold font-headline text-on-surface leading-tight">Kökets behörigheter</h2>
+</div>
+</div>
+<p class="mt-3 text-sm text-on-surface-variant leading-relaxed">
+      För att ge dig en felfri upplevelse vid spisen och i butiken behöver Tandem några verktyg i mobilen. Här är exakt vad vi ber om och varför.
+    </p>
+</div>
+<div class="px-5 mb-5">
+<div class="rounded-2xl bg-surface-variant/80 p-4 shadow-sm flex items-start gap-3">
+<div class="w-9 h-9 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+</div>
+<div class="flex-1">
+<h3 class="text-sm font-bold font-headline text-on-surface">100% lokal integritet i ditt kök</h3>
+<p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+          All data stannar i din egen Tandoor-server. Vi samlar varken position, personuppgifter eller matvanor till någon tredjepart.
+        </p>
+</div>
+</div>
+</div>
+<div class="px-5 flex flex-col gap-3.5">
+<div class="rounded-2xl bg-surface-variant/50 p-4 shadow-sm">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-tertiary-container text-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-base font-bold font-headline text-on-surface truncate">Aviseringar för köket</h3>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+              Larm när kökstimers går ut och påminnelser när någon i familjen bockar av varor i butiken.
+            </p>
+</div>
+</div>
+<div class="shrink-0 flex items-center gap-1 bg-tertiary/15 text-tertiary px-2.5 py-1 rounded-full text-xs font-semibold">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+<span>Beviljad</span>
+</div>
+</div>
+</div>
+<div class="rounded-2xl bg-surface-variant/50 p-4 shadow-sm transition-all duration-300" id="card-exact-alarm">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">hourglass_top</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-base font-bold font-headline text-on-surface">Exakta kökstimers</h3>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary/15 text-secondary uppercase tracking-wider">Viktig</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+              Krävs för att pastatimern och ugnslarmet ska ringa på sekunden och inte fördröjas av Androids Doze-läge.
+            </p>
+</div>
+</div>
+</div>
+<div class="mt-3.5 pt-3 flex items-center justify-between">
+<span class="text-xs font-medium text-on-surface-variant" id="status-alarm-text">SCHEDULE_EXACT_ALARM</span>
+<button aria-label="Tillåt exakta larm" class="h-10 px-4 rounded-full bg-secondary text-on-secondary text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform" id="btn-exact-alarm" onclick="toggleExactAlarm()">
+<span class="material-symbols-outlined text-base">alarm_on</span>
+<span>Tillåt exakta larm</span>
+</button>
+</div>
+</div>
+<div class="rounded-2xl bg-surface-variant/50 p-4 shadow-sm transition-all duration-300" id="card-camera">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 flex-1 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-base font-bold font-headline text-on-surface">Receptskanner &amp; Streckkoder</h3>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+              Används för OCR av sidor i fysiska kokböcker samt snabbskanning av EAN-streckkoder direkt in i skafferiet.
+            </p>
+</div>
+</div>
+</div>
+<div class="mt-3.5 pt-3 flex items-center justify-between">
+<span class="text-xs font-medium text-on-surface-variant" id="status-camera-text">CAMERA (Valfri)</span>
+<button aria-label="Ge tillgång till kameran" class="h-10 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform" id="btn-camera" onclick="toggleCamera()">
+<span class="material-symbols-outlined text-base">center_focus_strong</span>
+<span>Ge tillgång till kameran</span>
+</button>
+</div>
+</div>
+<div class="rounded-2xl bg-surface-variant/50 p-4 shadow-sm">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">battery_alert</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="text-base font-bold font-headline text-on-surface">Stäng av batterisparare</h3>
+<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-on-surface-variant">Samsung • Pixel • Xiaomi</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+            Låt Tandem köra i bakgrunden utan begränsningar så att aggressiva tillverkarsystem inte tystar ugnslarmet när skärmen är släckt.
+          </p>
+<div class="mt-3 flex items-center gap-2">
+<button class="h-9 px-3.5 rounded-full bg-surface-variant hover:bg-surface text-on-surface text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors active:scale-95" onclick="openBatterySettings()">
+<span class="material-symbols-outlined text-base text-primary">settings_applications</span>
+<span>Öppna batteriinställningar</span>
+</button>
+<span class="text-[11px] text-on-surface-variant hidden" id="battery-status">Klar</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-5 mt-6 flex flex-col items-center gap-3">
+<button class="w-full h-14 rounded-full bg-primary text-on-primary font-headline font-bold text-base flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform" onclick="saveAndReturn()">
+<span class="material-symbols-outlined text-xl">restaurant</span>
+<span>Klar • Återgå till köket</span>
+</button>
+<button class="text-xs font-medium text-on-surface-variant hover:text-primary transition-colors py-1 flex items-center gap-1" onclick="toggleInfoModal()">
+<span class="material-symbols-outlined text-sm">help_outline</span>
+<span>Varför krävs detta? Läs vår transparensguide</span>
+</button>
+</div>
+<div class="fixed inset-x-0 bottom-0 z-50 bg-surface rounded-t-3xl p-6 shadow-2xl transition-transform duration-300 transform translate-y-full max-h-[751px] overflow-y-auto" id="info-sheet">
+<div class="w-12 h-1.5 bg-surface-variant rounded-full mx-auto mb-4"></div>
+<div class="flex items-center justify-between pb-3">
+<h3 class="text-lg font-bold font-headline text-on-surface">Hur Tandem hanterar tillstånd</h3>
+<button aria-label="Stäng modal" class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant" onclick="toggleInfoModal()">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<div class="space-y-3.5 text-xs text-on-surface-variant leading-relaxed mt-2">
+<p>
+<strong class="text-on-surface font-semibold">Exakt alarmfunktion:</strong> Android 12+ introducerade restriktioner för bakgrundsalarm för att spara ström. För en köksapp är en minut felmarginal skillnaden mellan al dente och överkokt pasta.
+      </p>
+<p>
+<strong class="text-on-surface font-semibold">Kamera &amp; integritet:</strong> Kameran aktiveras uteslutande när du trycker på 'Skanna'. Bilderna skickas direkt via lokal OCR i telefonen till din egen server och raderas från minnet sekunden efteråt.
+      </p>
+<p>
+<strong class="text-on-surface font-semibold">Ändra när som helst:</strong> Du kan när som helst återkalla eller justera dessa rättigheter via mobilens systeminställningar.
+      </p>
+</div>
+<button class="mt-6 w-full h-11 rounded-full bg-surface-variant text-on-surface font-medium text-xs flex items-center justify-center" onclick="toggleInfoModal()">
+      Förstått
+    </button>
+</div>
+<div class="fixed inset-0 bg-black/40 z-40 transition-opacity duration-300 opacity-0 pointer-events-none" id="modal-backdrop" onclick="toggleInfoModal()"></div>
+<div class="fixed bottom-6 inset-x-6 z-50 flex items-center justify-center pointer-events-none transition-all duration-300 opacity-0 transform translate-y-2" id="toast">
+<div class="bg-on-surface text-surface text-xs font-medium py-2.5 px-4 rounded-full shadow-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-base" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span id="toast-message">Inställning uppdaterad</span>
+</div>
+</div>
+</div>
+<script>
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    const label = document.getElementById('toast-message');
+    label.innerText = msg;
+    toast.classList.remove('opacity-0', 'translate-y-2');
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-2');
+    }, 2400);
+  }
+
+  function toggleExactAlarm() {
+    const btn = document.getElementById('btn-exact-alarm');
+    const statusText = document.getElementById('status-alarm-text');
+    btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> Beviljad';
+    btn.className = 'h-10 px-4 rounded-full bg-tertiary-container text-tertiary text-xs font-semibold flex items-center gap-1.5 shadow-xs pointer-events-none';
+    statusText.innerText = 'Exakta larm aktiverade';
+    showToast('Exakta kökstimers beviljade!');
+  }
+
+  function toggleCamera() {
+    const btn = document.getElementById('btn-camera');
+    const statusText = document.getElementById('status-camera-text');
+    btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> Tillåten';
+    btn.className = 'h-10 px-4 rounded-full bg-tertiary-container text-tertiary text-xs font-semibold flex items-center gap-1.5 shadow-xs pointer-events-none';
+    statusText.innerText = 'Kamera aktiverad för skanning';
+    showToast('Kameraåtkomst tillåten!');
+  }
+
+  function openBatterySettings() {
+    const label = document.getElementById('battery-status');
+    label.classList.remove('hidden');
+    label.innerText = 'Begäran skickad till system';
+    showToast('Öppnar systemets optimeringsguide...');
+  }
+
+  function toggleInfoModal() {
+    const sheet = document.getElementById('info-sheet');
+    const backdrop = document.getElementById('modal-backdrop');
+    const isOpen = !sheet.classList.contains('translate-y-full');
+    if (isOpen) {
+      sheet.classList.add('translate-y-full');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    } else {
+      sheet.classList.remove('translate-y-full');
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    }
+  }
+
+  function saveAndReturn() {
+    showToast('Sparar behörigheter och återgår...');
+    setTimeout(() => {
+      if (window.history.length > 1) {
+        window.history.back();
+      }
+    }, 700);
+  }
+</script></main></body></html>

@@ -1,0 +1,70 @@
+package casa.moller.tandem.core.network.api
+
+import casa.moller.tandem.core.network.di.TandoorHttpClient
+import casa.moller.tandem.core.network.http.AuthInterceptor
+import casa.moller.tandem.core.network.http.HtmlResponseGuardInterceptor
+import casa.moller.tandem.core.network.http.TokenProvider
+import casa.moller.tandem.core.network.json.TandoorJson
+import javax.inject.Inject
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+
+/** The Retrofit services for one server and one token source. */
+class TandoorApi internal constructor(
+    /** Normalized base URL with trailing slash. */
+    val baseUrl: String,
+    val auth: AuthService,
+    val users: UserService,
+    val space: SpaceService,
+    val server: ServerService,
+    /** The client with this server's [AuthInterceptor]; for raw calls in tests and later image loading. */
+    internal val httpClient: OkHttpClient,
+)
+
+/**
+ * Creates [TandoorApi] instances at runtime, because the server URL is chosen by the user.
+ * All instances share the injected base client (dispatcher, connection pool, rate limiter).
+ */
+class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseClient: OkHttpClient) {
+    /**
+     * @param baseUrl the normalized `https://` base URL from the probe (trailing slash).
+     * @param tokenProvider sends its token only to [baseUrl] (see [AuthInterceptor]).
+     * @param retryOnConnectionFailure false for the password login, which must never be sent twice.
+     * @throws IllegalArgumentException if [baseUrl] is not an absolute https URL.
+     */
+    fun create(baseUrl: String, tokenProvider: TokenProvider, retryOnConnectionFailure: Boolean = true): TandoorApi {
+        val url = requireHttpsBase(baseUrl)
+        val client = baseClient.newBuilder()
+            .addInterceptor(AuthInterceptor(url, tokenProvider))
+            .addInterceptor(HtmlResponseGuardInterceptor())
+            .retryOnConnectionFailure(retryOnConnectionFailure)
+            .build()
+        val retrofit = Retrofit.Builder()
+            .baseUrl(url)
+            .client(client)
+            .addConverterFactory(TandoorJson.asConverterFactory(JSON))
+            .build()
+        return TandoorApi(
+            baseUrl = url.toString(),
+            auth = retrofit.create(AuthService::class.java),
+            users = retrofit.create(UserService::class.java),
+            space = retrofit.create(SpaceService::class.java),
+            server = retrofit.create(ServerService::class.java),
+            httpClient = client,
+        )
+    }
+
+    private companion object {
+        val JSON = "application/json".toMediaType()
+
+        fun requireHttpsBase(baseUrl: String): HttpUrl {
+            val url = requireNotNull(baseUrl.toHttpUrlOrNull()) { "Not a URL: $baseUrl" }
+            require(url.isHttps) { "Tandem only talks HTTPS (plan 5.5): $baseUrl" }
+            return if (url.encodedPath.endsWith("/")) url else url.newBuilder().addPathSegment("").build()
+        }
+    }
+}

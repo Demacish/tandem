@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="light" lang="sv"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Recept - Inköpslista</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=Public+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface": "#FBF7F2",
+            "surface-container": "#F5EFE6",
+            "surface-container-high": "#EDE5D8",
+            "surface-variant": "#EAE2D5",
+            "primary": "#C2410C",
+            "on-primary": "#FFFFFF",
+            "primary-container": "#FFEDD5",
+            "on-primary-container": "#7C2D12",
+            "secondary": "#D97706",
+            "on-secondary": "#FFFFFF",
+            "tertiary": "#4D7C0F",
+            "on-tertiary": "#FFFFFF",
+            "on-surface": "#292524",
+            "on-surface-variant": "#78716C",
+            "outline": "#D6D3D1"
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline": ["Public Sans", "sans-serif"],
+            "display": ["Public Sans", "sans-serif"],
+            "body": ["DM Sans", "sans-serif"],
+            "label": ["DM Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen pb-28">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface fixed top-0 left-0 right-0 z-40 max-w-md mx-auto">
+<div class="flex justify-between items-center w-full px-4 h-16 max-w-md mx-auto">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-variant dark:hover:bg-surface-variant active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">soup_kitchen</span>
+</button>
+<h1 class="font-headline text-headline font-bold text-primary dark:text-primary tracking-tight text-xl">Inköpslista</h1>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-variant dark:hover:bg-surface-variant active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="max-w-md mx-auto px-4 pt-20 space-y-6">
+<!-- Inmatningsfält -->
+<div class="pt-2">
+<div class="relative flex items-center">
+<span class="absolute left-4 text-on-surface-variant material-symbols-outlined">add</span>
+<input class="w-full pl-12 pr-24 py-3.5 bg-surface-container rounded-xl border-none text-on-surface placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary shadow-sm text-base" placeholder="Lägg till vara…" type="text"/>
+<button class="absolute right-2 px-4 py-2 bg-primary text-on-primary rounded-lg font-medium text-sm active:scale-95 transition-transform">Lägg till</button>
+</div>
+</div>
+<!-- Butikskategori: Frukt & grönt -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-headline font-bold text-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">eco</span>
+          Frukt &amp; grönt
+        </h2>
+<span class="text-xs font-label text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">3 varor</span>
+</div>
+<div class="bg-surface-container/60 rounded-2xl p-2 space-y-1 shadow-sm">
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Avokado (4 st)</span>
+<span class="text-xs text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-md">Eko</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Färsk spenat</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Lime</span>
+</label>
+</div>
+</section>
+<!-- Butikskategori: Mejeri -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-headline font-bold text-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">nutrition</span>
+          Mejeri
+        </h2>
+<span class="text-xs font-label text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">2 varor</span>
+</div>
+<div class="bg-surface-container/60 rounded-2xl p-2 space-y-1 shadow-sm">
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Grekisk yoghurt 10%</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Smör 82%</span>
+</label>
+</div>
+</section>
+<!-- Butikskategori: Skafferi -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-headline font-bold text-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">kitchen</span>
+          Skafferi
+        </h2>
+<span class="text-xs font-label text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">2 varor</span>
+</div>
+<div class="bg-surface-container/60 rounded-2xl p-2 space-y-1 shadow-sm">
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Krossade tomater</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/50 transition-colors cursor-pointer group">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary accent-[#C2410C]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface group-hover:text-primary transition-colors">Basmatiris</span>
+</label>
+</div>
+</section>
+<!-- Avbockade sektion -->
+<section class="space-y-3 pt-4 border-t border-surface-variant">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-headline font-semibold text-base text-on-surface-variant">Avbockade</h2>
+<button class="text-xs text-primary font-medium hover:underline">Rensa alla</button>
+</div>
+<div class="bg-surface-container/40 rounded-2xl p-2 space-y-1">
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/30 transition-colors cursor-pointer opacity-60">
+<input checked="" class="w-5 h-5 rounded border-outline text-tertiary focus:ring-tertiary accent-[#4D7C0F]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface line-through">Olivolja</span>
+<span class="text-xs text-tertiary flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+            Klar
+          </span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-variant/30 transition-colors cursor-pointer opacity-60">
+<input checked="" class="w-5 h-5 rounded border-outline text-tertiary focus:ring-tertiary accent-[#4D7C0F]" type="checkbox"/>
+<span class="flex-1 font-body text-on-surface line-through">Havregryn</span>
+<span class="text-xs text-tertiary flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+            Klar
+          </span>
+</label>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-2 h-20 max-w-md mx-auto bg-surface-container dark:bg-surface-container shadow-sm">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">today</span>
+<span class="font-label text-xs font-medium mt-1">Idag</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-label text-xs font-medium mt-1">Recept</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="font-label text-xs font-medium mt-1">Veckan</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 font-semibold active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shopping_basket</span>
+<span class="font-label text-xs font-medium mt-0.5">Handla</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-3 py-1 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-label text-xs font-medium mt-1">Mer</span>
+</a>
+</nav>
+</body></html>

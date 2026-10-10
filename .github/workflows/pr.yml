@@ -1,0 +1,128 @@
+name: PR
+
+on:
+  push:
+    # Branches only: a v* tag points at a SHA that main already tested (release.yml builds it).
+    # Keep running on main: main's run is the only writer of the Gradle cache.
+    branches: ["**"]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  pull_request:
+    # Lanes push their branch (which runs above); PRs, if ever used, only target main.
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint, unit tests, sideload debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Caching is done explicitly below: setup-gradle's basic provider uses one exact key
+          # with no fallback, and branch caches are invisible to main, so it almost never hit.
+          cache-disabled: true
+
+      # One Gradle home per dependency set, written ONLY by main (so every branch can read it);
+      # branches restore the newest main entry by prefix and never save.
+      - name: Restore Gradle cache
+        id: gradle-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Show Kotlin / KSP / AGP plugin versions on the build classpath
+        run: |
+          ./gradlew --quiet --no-configuration-cache buildEnvironment > build-environment.txt
+          grep -E "kotlin-gradle-plugin:|symbol-processing-gradle-plugin:|com.android.tools.build:gradle:" build-environment.txt \
+            | sed 's/^[| +\\-]*//' | sort -u || true
+          kotlin=$(sed -n 's/^kotlin = "\(.*\)".*/\1/p' gradle/libs.versions.toml)
+          # AGP 9 built-in Kotlin silently falls back to KGP 2.2.10 if the root build loses the
+          # `apply false` plugin declarations. Fail early instead of compiling with the wrong KGP.
+          grep -q "kotlin-gradle-plugin:.*${kotlin}" build-environment.txt \
+            || { echo "::error::kotlin-gradle-plugin ${kotlin} is not on the build classpath"; exit 1; }
+
+      - name: Lint, unit tests and sideload debug APK
+        # --continue: report every failing module in one run instead of stopping at the first.
+        run: ./gradlew --stacktrace --continue ciLint ciTest :app:assembleSideloadDebug
+
+      - name: Save Gradle cache (main only)
+        if: success() && github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        run: |
+          ./gradlew --stop
+          find ~/.gradle/caches -name '*.lock' -delete -o -name 'gc.properties' -delete || true
+
+      - name: Upload Gradle cache (main only)
+        if: success() && github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
+
+      - name: Upload test and lint reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload screenshots
+        # Phase 0 records Roborazzi screenshots on every ciTest run: components, the intro and
+        # the shell on a compact phone (412x915 dp) and an expanded tablet (1280x800 dp), light
+        # and dark, English and Swedish. Files are named <device>_<screen>_<theme>[_sv].png per
+        # module. Golden comparison comes in Phase 1. Uploaded even when the build step fails.
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshots
+          path: "**/build/outputs/roborazzi/"
+          if-no-files-found: warn
+          retention-days: ${{ github.ref == 'refs/heads/main' && 7 || 3 }}
+
+      - name: Upload sideload debug APK
+        # Pull requests from forks build untrusted code: no installable APK under the usual name.
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tandem-sideload-debug
+          path: app/build/outputs/apk/sideload/debug/*.apk
+          if-no-files-found: error
+          # Signed with the committed debug key (app/debug.p12), so it installs over older ones.
+          retention-days: ${{ github.ref == 'refs/heads/main' && 7 || 3 }}

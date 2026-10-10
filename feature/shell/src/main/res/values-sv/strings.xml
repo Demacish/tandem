@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Huvudflikar (plan 6.1). Korta: de står under ikoner i navigeringsfältet. -->
+    <string name="shell_tab_today">Idag</string>
+    <string name="shell_tab_recipes">Recept</string>
+    <string name="shell_tab_week">Veckan</string>
+    <string name="shell_tab_shopping">Handla</string>
+    <string name="shell_tab_more">Mer</string>
+
+    <!-- Platshållarflikar: vad varje flik kommer att visa. Ingen påhittad data. -->
+    <string name="shell_today_title">Här börjar din dag i köket</string>
+    <string name="shell_today_body">I nästa version visar Idag kvällens och morgondagens måltider från matsedeln, recept du ofta lagar och en genväg tillbaka till matlagningen.</string>
+    <string name="shell_recipes_title">Dina recept är på väg</string>
+    <string name="shell_recipes_body">I nästa version kommer dina recept från Tandoor in i appen: sök, filter, böcker och ett kokläge med timers, även offline.</string>
+    <string name="shell_week_title">Här planerar du veckan</string>
+    <string name="shell_week_body">En senare version visar veckans matsedel från Tandoor, låter dig lägga till måltider och lägger deras ingredienser på inköpslistan.</string>
+    <string name="shell_shopping_title">Inköpslistan kommer snart</string>
+    <string name="shell_shopping_body">En senare version tar in Tandoors inköpslista: sorterad efter butikens avdelningar, delad med hushållet och användbar offline i butiken.</string>
+
+    <!-- "Mer": konto och inställningar. -->
+    <string name="shell_more_section_app">Appen</string>
+    <string name="shell_account_signed_in_as">Inloggad som %1$s</string>
+    <string name="shell_account_server">Server</string>
+    <string name="shell_account_space">Space</string>
+    <string name="shell_account_version">Tandoor %1$s</string>
+    <string name="shell_account_version_unknown">Tandoor, okänd version</string>
+    <string name="shell_account_checking">Kontrollerar servern…</string>
+    <string name="shell_account_check_failed">Det gick inte att kontrollera servern: %1$s</string>
+    <string name="shell_account_check_again">Kontrollera igen</string>
+    <string name="shell_compat_supported">Stöds</string>
+    <string name="shell_compat_supported_description">Den här Tandoor-versionen stöds</string>
+    <string name="shell_compat_too_old">För gammal</string>
+    <string name="shell_compat_too_old_description">Den här Tandoor-versionen är för gammal för Tandem</string>
+    <string name="shell_safe_mode_note">Tandem är inte testad med den här Tandoor-versionen än, så appen körs i säkert läge.</string>
+    <string name="shell_language">Språk</string>
+    <string name="shell_theme">Tema</string>
+    <string name="shell_theme_system">System</string>
+    <string name="shell_theme_light">Ljust</string>
+    <string name="shell_theme_dark">Mörkt</string>
+    <string name="shell_about">Om Tandem</string>
+    <string name="shell_about_version">Version %1$s</string>
+    <string name="shell_log_out_of">Logga ut från %1$s</string>
+
+    <!-- Utloggning (plan 4.2 punkt 4). -->
+    <string name="shell_logout_title">Logga ut?</string>
+    <string name="shell_logout_body">Inloggningen tas bort från den här enheten. Dina recept och övriga data på servern påverkas inte, och du kan logga in igen när du vill.</string>
+    <string name="shell_logout_revoke">Återkalla den här enhetens token</string>
+    <string name="shell_logout_revoke_body">Bara den token som Tandem skapade för den här enheten raderas på servern. Dina andra enheter förblir inloggade.</string>
+    <string name="shell_logout_pasted_token_note">Du loggade in med en token som du klistrade in. Tandem låter den finnas kvar på servern, eftersom andra appar eller enheter kan använda den. Radera den i Tandoor under Inställningar → API om du inte behöver den längre.</string>
+    <string name="shell_logout_confirm">Logga ut</string>
+    <string name="shell_cancel">Avbryt</string>
+    <string name="shell_logged_out">Utloggad.</string>
+    <string name="shell_logged_out_token_not_revoked">Utloggad på den här enheten, men token gick inte att återkalla: servern gick inte att nå, eller så nekade den (eller något framför den, till exempel en inloggningsportal). Radera den i Tandoor under Inställningar → API.</string>
+    <string name="shell_logged_out_pasted_token">Utloggad på den här enheten. Den inklistrade token gäller fortfarande; radera den i Tandoor under Inställningar → API om du inte behöver den längre.</string>
+    <string name="shell_logout_failed">Det gick inte att logga ut: den säkra lagringen på enheten går inte att använda.</string>
+    <string name="shell_settings_not_saved">Inställningen gick inte att spara.</string>
+
+    <!-- Språk (plan 6.7). Språknamnen visas på sitt eget språk. -->
+    <string name="shell_language_system">Systemets språk</string>
+    <string name="shell_language_system_body">Följer telefonens språk</string>
+    <string name="shell_language_english">Engelska</string>
+    <string name="shell_language_swedish">Svenska</string>
+    <string name="shell_language_fully_translated">%1$s · Fullständigt översatt</string>
+    <string name="shell_language_recipes_title">Recepten behåller sitt språk</string>
+    <string name="shell_language_recipes_body">Det här ändrar Tandems egna texter. Recept, ingredienser och enheter visas precis som de är i din Tandoor.</string>
+    <string name="shell_language_system_settings">Du kan också byta språk i Androids inställningar under Appar → Tandem → Språk.</string>
+
+    <!-- Om -->
+    <string name="shell_about_tagline">En Android-app för Tandoor Recipes, receptsamlingen du driftar själv.</string>
+    <string name="shell_about_version_full">Version %1$s (%2$d) · %3$s</string>
+    <string name="shell_about_independent_title">Inte associerad med Tandoor-projektet</string>
+    <string name="shell_about_independent_body">Tandem är en fristående app gjord för Tandoor. Rapportera problem med Tandem till Tandem, inte till Tandoor-projektet.</string>
+    <string name="shell_about_privacy_title">Din data är din</string>
+    <string name="shell_about_privacy_body">Tandem pratar bara med den Tandoor-server du ansluter appen till. Ingen reklam, ingen analys, ingen spårning.</string>
+    <string name="shell_about_licenses">Licenser</string>
+    <string name="shell_about_licenses_body">Typsnitt, ikoner och bibliotek med öppen källkod</string>
+
+    <!-- Licenser. Produkt- och licensnamn översätts inte. -->
+    <string name="shell_licenses_fonts">Typsnitt och ikoner</string>
+    <string name="shell_licenses_libraries">Bibliotek med öppen källkod</string>
+    <string name="shell_license_text_unavailable">Licenstexten gick inte att läsa in.</string>
+</resources>

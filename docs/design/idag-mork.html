@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sv"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Recept - Idag</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&amp;family=Public+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#FB8A5C",
+            "on-primary": "#1C1714",
+            "primary-container": "#FB8A5C",
+            "on-primary-container": "#1C1714",
+            secondary: "#FB8A5C",
+            "on-secondary": "#1C1714",
+            "secondary-container": "#362E2A",
+            "on-secondary-container": "#FB8A5C",
+            tertiary: "#9BC46A",
+            "on-tertiary": "#1C1714",
+            "tertiary-container": "#2E3B1E",
+            "on-tertiary-container": "#9BC46A",
+            surface: "#1C1714",
+            "on-surface": "#F3EBE3",
+            "surface-variant": "#362E2A",
+            "on-surface-variant": "#A89F97",
+            "surface-container": "#2A2320",
+            "surface-container-high": "#362E2A",
+            "surface-container-low": "#2A2320",
+            outline: "#4A403A",
+            "outline-variant": "#3D3430"
+          },
+          borderRadius: {
+            DEFAULT: "0.5rem",
+            lg: "1rem",
+            xl: "1.5rem",
+            "2xl": "1.25rem",
+            "3xl": "1.75rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Public Sans", "sans-serif"],
+            display: ["Public Sans", "sans-serif"],
+            body: ["DM Sans", "sans-serif"],
+            label: ["DM Sans", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined[data-weight="fill"],
+    .icon-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24 !important;
+    }
+    /* Hide scrollbar for clean horizontal carousel */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-[#14100E] font-body text-on-surface antialiased flex justify-center min-h-screen">
+<!-- Mobile Device Simulation Frame -->
+<div class="w-full max-w-md bg-[#1C1714] min-h-screen flex flex-col relative pb-28 shadow-2xl">
+<!-- Android Status Bar -->
+<header class="w-full px-6 pt-3 pb-1 flex justify-between items-center text-xs font-semibold text-[#A89F97] select-none tracking-tight">
+<span>18:24</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">wifi</span>
+<span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[18px]">battery_full</span>
+</div>
+</header>
+<!-- Top App Bar / Greeting Section -->
+<section class="w-full px-5 pt-3 pb-2 flex items-center justify-between">
+<div>
+<div class="text-xs font-medium text-[#FB8A5C] uppercase tracking-wider mb-0.5">Torsdag 24 oktober</div>
+<h1 class="font-headline text-3xl font-bold tracking-tight text-[#F3EBE3]">God kväll</h1>
+</div>
+<div class="flex items-center gap-2">
+<button aria-label="Sök recept" class="w-11 h-11 rounded-full flex items-center justify-center bg-[#362E2A] text-[#F3EBE3] hover:bg-[#433A35] active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-xl" data-icon="search">search</span>
+</button>
+<button aria-label="Min profil" class="w-11 h-11 rounded-full flex items-center justify-center bg-[#362E2A] text-[#FB8A5C] hover:bg-[#433A35] active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-xl icon-fill" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</section>
+<!-- Main Scrollable Area -->
+<main class="flex-1 px-4 space-y-6 pt-2">
+<!-- HERO CARD: Ikväll -->
+<section class="bg-[#2A2320] rounded-3xl p-3 shadow-md border border-[#3D3430] overflow-hidden transition-all">
+<!-- Hero Image Container with Badge -->
+<div class="relative w-full aspect-[1.65/1] rounded-2xl overflow-hidden shadow-inner bg-[#362E2A]">
+<img alt="Krämig svamppasta tagliatelle med färska örter och riven parmesan" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+<!-- Badge 'Ikväll' -->
+<div class="absolute top-3 left-3 bg-[#1C1714]/85 backdrop-blur-md px-3.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm border border-[#3D3430]/50">
+<span class="w-2 h-2 rounded-full bg-[#FB8A5C] animate-pulse"></span>
+<span class="text-xs font-bold text-[#F3EBE3] tracking-wide">Ikväll</span>
+</div>
+<!-- Tandoor Sync Status Icon -->
+<div class="absolute top-3 right-3 bg-[#1C1714]/85 backdrop-blur-md w-8 h-8 rounded-full flex items-center justify-center text-[#9BC46A] shadow-sm border border-[#3D3430]/50">
+<span class="material-symbols-outlined text-sm icon-fill" data-icon="cloud_done">cloud_done</span>
+</div>
+</div>
+<!-- Recipe Content Info -->
+<div class="p-3 pt-4">
+<div class="flex items-start justify-between gap-2 mb-2">
+<h2 class="font-headline text-2xl font-bold text-[#F3EBE3] leading-tight tracking-tight">
+              Krämig svamppasta
+            </h2>
+<button aria-label="Spara till favoriter" class="text-[#A89F97] hover:text-[#FB8A5C] p-1 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-2xl icon-fill text-[#FB8A5C]" data-icon="bookmark">bookmark</span>
+</button>
+</div>
+<!-- Metadata Chips -->
+<div class="flex items-center gap-3 text-xs font-medium text-[#A89F97] mb-5">
+<div class="flex items-center gap-1.5 bg-[#362E2A] text-[#F3EBE3] px-2.5 py-1 rounded-lg">
+<span class="material-symbols-outlined text-base text-[#FB8A5C]" data-icon="schedule">schedule</span>
+<span>35 min</span>
+</div>
+<div class="flex items-center gap-1.5 bg-[#362E2A] text-[#F3EBE3] px-2.5 py-1 rounded-lg">
+<span class="material-symbols-outlined text-base text-[#FB8A5C]" data-icon="restaurant">restaurant</span>
+<span>4 portioner</span>
+</div>
+<div class="flex items-center gap-1.5 bg-[#2E3B1E] text-[#9BC46A] px-2.5 py-1 rounded-lg font-semibold ml-auto border border-[#9BC46A]/20">
+<span class="material-symbols-outlined text-sm icon-fill text-[#9BC46A]" data-icon="check_circle">check_circle</span>
+<span>Alla ingredienser</span>
+</div>
+</div>
+<!-- Primary Actions (Large kitchen-friendly buttons) -->
+<div class="grid grid-cols-2 gap-3">
+<button class="h-13 py-3 px-4 rounded-2xl bg-[#FB8A5C] text-[#1C1714] font-headline font-bold flex items-center justify-center gap-2 shadow-md hover:bg-[#fa7b48] active:scale-95 transition-all text-base">
+<span class="material-symbols-outlined text-xl icon-fill" data-icon="skillet">skillet</span>
+<span>Laga</span>
+</button>
+<button class="h-13 py-3 px-4 rounded-2xl bg-[#362E2A] text-[#F3EBE3] font-headline font-bold flex items-center justify-center gap-2 hover:bg-[#433A35] active:scale-95 transition-all text-base border border-[#4A403A]">
+<span class="material-symbols-outlined text-xl text-[#FB8A5C]" data-icon="add_shopping_cart">add_shopping_cart</span>
+<span>Handla</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Nästa planering - "Imorgon" Card -->
+<section>
+<div class="flex items-center justify-between bg-[#2A2320] hover:bg-[#322A26] transition-colors p-3.5 px-4 rounded-2xl border border-[#3D3430] active:scale-[0.99] cursor-pointer">
+<div class="flex items-center gap-3.5">
+<div class="w-10 h-10 rounded-xl bg-[#362E2A] text-[#FB8A5C] flex items-center justify-center border border-[#4A403A]/50">
+<span class="material-symbols-outlined text-xl" data-icon="event">event</span>
+</div>
+<div>
+<div class="text-[11px] font-semibold uppercase tracking-wider text-[#A89F97]">Imorgon</div>
+<div class="font-headline font-bold text-base text-[#F3EBE3]">Ugnsbakad lax med dillslungad potatis</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[#A89F97] text-xl" data-icon="chevron_right">chevron_right</span>
+</div>
+</section>
+<!-- Horisontell receptkarusell - "Ofta lagade" -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<div>
+<h3 class="font-headline text-lg font-bold text-[#F3EBE3]">Ofta lagade</h3>
+<p class="text-xs text-[#A89F97]">Baserat på din Tandoor-historik</p>
+</div>
+<button class="text-xs font-bold text-[#FB8A5C] hover:text-[#fa9c75] transition-colors py-1 px-2 rounded-lg">
+            Visa alla
+          </button>
+</div>
+<!-- Carousel Track -->
+<div class="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
+<!-- Card 1: Tomatsoppa med surdeg -->
+<article class="flex-shrink-0 w-44 bg-[#2A2320] rounded-2xl p-2.5 border border-[#3D3430] flex flex-col justify-between">
+<div class="w-full h-28 rounded-xl overflow-hidden bg-[#362E2A] mb-2.5 relative">
+<img class="w-full h-full object-cover" data-alt="A warm and appetizing rustic ceramic bowl of rich velvety roasted tomato soup topped with cold-pressed olive oil, cracked black pepper, and crusty artisanal toasted sourdough bread beside it on a linen kitchen table, bright Scandinavian natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlStEkDLoItJYTC8B4HDbg-2_SzWqYZLefY-j1zJleq4aMW98s2hAPHtGmUp641oDJ2WWWr12HWZFFcj9pdCugTMxu3HtnCqP1NwJrsugCEMLyQrtiTcTlnE4Wh1R7NmBwGxqSH23sUN31-SUZrS-gEMrF6r3goBEi9cKtlQuEHNcZ1m2wzvzpU5GoavFGTl7e4vF7b0uQEzOTkrsbDIO6tmTsCSoXxyFGFpPNtgL_WPzgrqeZqDjjRvfkuudH35zQZe38yhy-V8mQ"/>
+<span class="absolute bottom-1.5 right-1.5 bg-[#1C1714]/85 text-[#F3EBE3] text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-[#3D3430]/50">25 min</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm text-[#F3EBE3] line-clamp-1 leading-snug">Tomatsoppa med surdeg</h4>
+<p class="text-xs text-[#A89F97] mt-0.5">Vegetarisk · Enkel</p>
+</div>
+<div class="mt-2.5 pt-2 border-t border-[#3D3430] flex items-center justify-between">
+<span class="text-[11px] font-medium text-[#9BC46A] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs icon-fill" data-icon="inventory_2">inventory_2</span>
+                Hemma
+              </span>
+<button aria-label="Lägg till i matsedel" class="w-7 h-7 rounded-full bg-[#362E2A] text-[#F3EBE3] flex items-center justify-center hover:bg-[#433A35]">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</button>
+</div>
+</article>
+<!-- Card 2: Linsgryta med kokosmjölk -->
+<article class="flex-shrink-0 w-44 bg-[#2A2320] rounded-2xl p-2.5 border border-[#3D3430] flex flex-col justify-between">
+<div class="w-full h-28 rounded-xl overflow-hidden bg-[#362E2A] mb-2.5 relative">
+<img class="w-full h-full object-cover" data-alt="Fragrant creamy red lentil dahl stew with coconut milk, fresh coriander, ginger, and turmeric in a warm terracotta pot on a cozy kitchen counter, soft warm Scandinavian daylight highlighting textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWlGgFl_nM76zwQupV-zco64DWnMFuf-ddL2YYOwh4fAdQRaV47cLNw5oSHZZHxA8jtdC3xbSdXaQ2_N9f6aVO9i2CNz4eYZUabtjQGcg45nn3OQkDHlB4vFS-nTcjI5McYPfkKEjBZbRylfYJ0hgRr8nNzZlh17MIDJhcGBfwMzNgI_YrHsVnk_hrHBDEj-qB06gwmN_jhbKIRf0OR5obU3w_bKzsbZSjggq6YsgWw4fAKejc2RBkkazEETATe3z6XBLeRKGTOyK3"/>
+<span class="absolute bottom-1.5 right-1.5 bg-[#1C1714]/85 text-[#F3EBE3] text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-[#3D3430]/50">30 min</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm text-[#F3EBE3] line-clamp-1 leading-snug">Linsgryta med kokosmjölk</h4>
+<p class="text-xs text-[#A89F97] mt-0.5">Vegansk · 4 port</p>
+</div>
+<div class="mt-2.5 pt-2 border-t border-[#3D3430] flex items-center justify-between">
+<span class="text-[11px] font-medium text-[#FB8A5C] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="shopping_bag">shopping_bag</span>
+                Köp 2 ingr.
+              </span>
+<button aria-label="Lägg till i matsedel" class="w-7 h-7 rounded-full bg-[#362E2A] text-[#F3EBE3] flex items-center justify-center hover:bg-[#433A35]">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</button>
+</div>
+</article>
+<!-- Card 3: Klassisk bolognese -->
+<article class="flex-shrink-0 w-44 bg-[#2A2320] rounded-2xl p-2.5 border border-[#3D3430] flex flex-col justify-between">
+<div class="w-full h-28 rounded-xl overflow-hidden bg-[#362E2A] mb-2.5 relative">
+<img class="w-full h-full object-cover" data-alt="Rich slow-cooked traditional bolognese ragu over fresh tagliatelle pasta sprinkled with aged parmesan cheese and basil leaves, staged in an earthy clay plate in a sunny kitchen environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsbCy7aFMssuQ0zYRkRY_ZCQzrtUxwr_Of80SjnVp1Gie4hbVDOYZ56_sMCfDSN2z1dHN2Kh4Zf0m7k0UEwJuo_PRgtxcNL26YLQHx5Rb3ylUawGVZzYWkJCTR9xRS0hhzZr4zcBoG0TKvAd2Ii_omS7GB-QjKlJLSlJeA3zb1ckAK3TDtqyba7HRr4JQqJ99T3LeFStHAYVCIm_h-o_QWDfqrifrSu45778UT508VXOKFd1pjL2XgmO2MrcJWyZbOBnWRUN34O4ku"/>
+<span class="absolute bottom-1.5 right-1.5 bg-[#1C1714]/85 text-[#F3EBE3] text-[10px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-[#3D3430]/50">45 min</span>
+</div>
+<div>
+<h4 class="font-headline font-bold text-sm text-[#F3EBE3] line-clamp-1 leading-snug">Klassisk bolognese</h4>
+<p class="text-xs text-[#A89F97] mt-0.5">Favorit · 6 port</p>
+</div>
+<div class="mt-2.5 pt-2 border-t border-[#3D3430] flex items-center justify-between">
+<span class="text-[11px] font-medium text-[#9BC46A] flex items-center gap-1">
+<span class="material-symbols-outlined text-xs icon-fill" data-icon="inventory_2">inventory_2</span>
+                Hemma
+              </span>
+<button aria-label="Lägg till i matsedel" class="w-7 h-7 rounded-full bg-[#362E2A] text-[#F3EBE3] flex items-center justify-center hover:bg-[#433A35]">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</button>
+</div>
+</article>
+</div>
+</section>
+<!-- Snabbgenväg / Tandoor Synk Notis -->
+<section class="bg-[#2A2320] rounded-2xl p-3 px-4 flex items-center justify-between text-xs text-[#A89F97] border border-[#3D3430]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-[#9BC46A]" data-icon="sync">sync</span>
+<span>Synkad med server: <strong class="text-[#F3EBE3] font-semibold">Tandoor Home</strong></span>
+</div>
+<span class="text-[11px] opacity-70 text-[#A89F97]">Nyss</span>
+</section>
+</main>
+<!-- BottomNavBar (Material 3 Expressive Bottom Navigation Bar) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-2 h-20 max-w-md mx-auto bg-[#2A2320] border-t border-[#3D3430] shadow-xl select-none">
+<!-- Destination 1: Idag (ACTIVE) -->
+<button class="flex flex-col items-center justify-center bg-[#FB8A5C] text-[#1C1714] rounded-full px-4 py-1 font-semibold active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl icon-fill" data-icon="today" data-weight="fill">today</span>
+<span class="font-label text-xs font-semibold mt-0.5">Idag</span>
+</button>
+<!-- Destination 2: Recept -->
+<button class="flex flex-col items-center justify-center text-[#A89F97] hover:text-[#F3EBE3] px-3 py-1 hover:bg-[#362E2A] rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="menu_book">menu_book</span>
+<span class="font-label text-xs font-medium mt-0.5">Recept</span>
+</button>
+<!-- Destination 3: Veckan -->
+<button class="flex flex-col items-center justify-center text-[#A89F97] hover:text-[#F3EBE3] px-3 py-1 hover:bg-[#362E2A] rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="calendar_month">calendar_month</span>
+<span class="font-label text-xs font-medium mt-0.5">Veckan</span>
+</button>
+<!-- Destination 4: Handla -->
+<button class="flex flex-col items-center justify-center text-[#A89F97] hover:text-[#F3EBE3] px-3 py-1 hover:bg-[#362E2A] rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="shopping_basket">shopping_basket</span>
+<span class="font-label text-xs font-medium mt-0.5">Handla</span>
+</button>
+<!-- Destination 5: Mer -->
+<button class="flex flex-col items-center justify-center text-[#A89F97] hover:text-[#F3EBE3] px-3 py-1 hover:bg-[#362E2A] rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="more_horiz">more_horiz</span>
+<span class="font-label text-xs font-medium mt-0.5">Mer</span>
+</button>
+</nav>
+</div>
+</body></html>

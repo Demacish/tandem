@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tandem</string>
+    <string name="app_cancel">Cancel</string>
+
+    <!-- Recovery screen (plan 4.2 step 7) -->
+    <string name="app_recovery_title">Tandem had to reset its storage</string>
+    <string name="app_recovery_reason_key">The key that protects your login could not be used, for example after the app was restored to a new phone. Saved logins were removed.</string>
+    <string name="app_recovery_reason_accounts">Saved logins could not be read and were removed.</string>
+    <string name="app_recovery_reason_settings">Settings could not be read and were reset.</string>
+    <string name="app_recovery_reason_unavailable">Secure storage on this device is not available right now, so logins cannot be saved. Restart the phone; if that does not help, clear the app data.</string>
+    <string name="app_recovery_server_safe_title">Your recipes are safe</string>
+    <string name="app_recovery_server_safe_body">Only data on this device was affected. Everything in your Tandoor is unchanged.</string>
+    <string name="app_recovery_log_in_again">Log in again</string>
+    <string name="app_recovery_clear_data">Clear app data</string>
+    <string name="app_recovery_clear_title">Clear app data?</string>
+    <string name="app_recovery_clear_body">All logins and settings are removed from this device. Nothing is deleted on your Tandoor server.</string>
+    <string name="app_clear_data_failed">Some data could not be cleared. The encryption keys were destroyed, so it can no longer be read.</string>
+</resources>

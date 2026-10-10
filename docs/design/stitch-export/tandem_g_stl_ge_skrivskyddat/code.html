@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;600;700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3A0B00",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FFDDB4","on-secondary-container":"#2B1700",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#CEF59C","on-tertiary-container":"#142700",surface:"#FBF7F2","surface-container-low":"#F5EFE6","surface-container":"#EDE4D8","surface-container-high":"#E6DCCE","on-surface":"#2C2523","on-surface-variant":"#736762",outline:"#8A7D77","outline-variant":"#D8CBC4",error:"#BA1A1A","on-error":"#FFFFFF"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}};</script></head><body class="bg-surface text-on-surface font-body antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2"><h1 class="text-xl font-headline font-bold text-on-surface tracking-tight leading-none">Idag</h1></div><div class="flex items-center gap-2"><button aria-label="Sök" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-rounded text-2xl">search</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface"><div class="flex flex-col w-full px-4 pb-6 space-y-4">
+<!-- Gästläge Status Banner -->
+<aside class="w-full bg-secondary-container/60 rounded-2xl p-4 shadow-sm transition-all" id="guest-banner">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-xl bg-secondary/15 flex items-center justify-center shrink-0 text-secondary">
+<span class="material-symbols-rounded text-2xl" style="font-variation-settings: 'FILL' 1;">visibility</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-secondary text-on-secondary">
+            Gästläge aktivt
+          </span>
+<span class="text-xs font-medium text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-rounded text-sm">lock</span>
+            Skrivskyddat
+          </span>
+</div>
+<p class="mt-1.5 text-xs text-on-surface leading-relaxed">
+          Du bläddrar i delade recept från hemmets Tandoor-server som gäst. Ändringar, betyg och måltidsplanering sparas när du ansluter ditt konto.
+        </p>
+<div class="mt-3 flex items-center gap-2 flex-wrap">
+<button class="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-sm active:scale-95 transition-transform" onclick="showLoginToast()" type="button">
+<span class="material-symbols-rounded text-base">login</span>
+            Logga in / Anslut
+          </button>
+<button class="inline-flex items-center gap-1 h-9 px-3 rounded-full bg-surface-container text-on-surface text-xs font-medium active:scale-95 transition-all" onclick="toggleDetails()" type="button">
+<span class="material-symbols-rounded text-base">info</span>
+<span id="toggle-text">Mer info</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Expanderbar server-info -->
+<div class="hidden mt-3 pt-3 border-t-0 bg-surface/70 rounded-xl p-3 text-xs text-on-surface-variant space-y-1.5" id="guest-extra-info">
+<div class="flex items-center justify-between">
+<span class="font-medium text-on-surface">Ansluten server:</span>
+<span class="font-mono text-primary text-[11px]">https://koket.tandoor.lan</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-medium text-on-surface">Behörighetsroll:</span>
+<span class="bg-surface-container-high px-2 py-0.5 rounded-md text-[11px] text-on-surface font-medium">Läsbehörighet (Family Guest)</span>
+</div>
+</div>
+</aside>
+<!-- Dagens Delade Recept -->
+<section class="space-y-2">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-rounded text-primary text-xl" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<h2 class="text-sm font-semibold tracking-wide uppercase text-on-surface-variant font-headline">Dagens utvalda middag</h2>
+</div>
+<span class="text-xs font-medium text-tertiary bg-tertiary-container px-2.5 py-0.5 rounded-full">
+        Matsedel: Tisdag
+      </span>
+</div>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden shadow-sm flex flex-col">
+<!-- Receptbild -->
+<div class="relative w-full aspect-[16/9] bg-surface-container overflow-hidden">
+<img alt="Krämig svamppasta tagliatelle serverad i varm skål" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1W0DROWDUJlJF2RSewRPPnBCbqX0Z_max1PbOkrdaFecXv7Je95N5MlQeocTNA9QGooXJrfGmjk_6J8vcG3NC5RicKDybg1__Zgtv-v2-mRq1k9iTvL4lgHJ1CQ9Latlhhof4loOFJDVy3IXbyL7YKKJJfB7Rg38lYBq-1ViOOjsYMRBg2uP9ouZgOs0u9XwdvT7I10zBqPvGEV2Phye6UHkycsbQ9an9qvX8urE9dqpLvqEovJMbEAvVRq"/>
+<!-- Flytande chips på bild -->
+<div class="absolute top-3 left-3 flex items-center gap-1.5">
+<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-surface/90 text-on-surface backdrop-blur-md shadow-sm flex items-center gap-1">
+<span class="material-symbols-rounded text-sm text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            Kan lagas
+          </span>
+<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-surface/90 text-on-surface backdrop-blur-md shadow-sm">
+            4 portioner
+          </span>
+</div>
+<div class="absolute bottom-3 right-3">
+<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface/90 text-secondary backdrop-blur-md shadow-sm flex items-center gap-1">
+<span class="material-symbols-rounded text-sm">schedule</span>
+            25 min
+          </span>
+</div>
+</div>
+<!-- Innehåll i kortet -->
+<div class="p-4 space-y-3">
+<div>
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="text-lg font-bold text-on-surface font-headline leading-snug">
+              Krämig svamppasta med timjan
+            </h3>
+<span class="text-xs text-on-surface-variant shrink-0">Pasta &amp; vegetariskt</span>
+</div>
+<p class="mt-1 text-xs text-on-surface-variant leading-relaxed line-clamp-2">
+            Färsk tagliatelle vänd i brynt skogssvamp, grädde, finriven parmesan och färsk timjan. En snabblagad vardagsfavorit!
+          </p>
+</div>
+<!-- Ingredienssnabbvy -->
+<div class="bg-surface-container rounded-xl p-2.5 text-xs text-on-surface flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-rounded text-primary text-base">receipt_long</span>
+<span class="font-medium">8 ingredienser</span>
+</div>
+<span class="text-tertiary font-medium flex items-center gap-1">
+<span class="material-symbols-rounded text-sm" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+            Alla finns hemma
+          </span>
+</div>
+<!-- Åtgärder för recept (Kokläge vs Skrivskyddade funktioner) -->
+<div class="pt-1 flex flex-col sm:flex-row gap-2">
+<!-- Kokläge: Helt öppet i gästläge -->
+<button class="flex-1 h-12 rounded-xl bg-primary text-on-primary font-semibold text-sm flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-transform" onclick="startCookingMode()" type="button">
+<span class="material-symbols-rounded text-xl" style="font-variation-settings: 'FILL' 1;">soup_kitchen</span>
+            Starta kokläge
+          </button>
+<!-- Skyddade åtgärder -->
+<div class="flex items-center gap-2">
+<button class="flex-1 h-12 px-3 rounded-xl bg-surface-container text-on-surface-variant font-medium text-xs flex items-center justify-center gap-1.5 active:bg-surface-container-high transition-colors" onclick="showLockedAction('Redigera recept')" title="Kräver inloggat konto" type="button">
+<span class="material-symbols-rounded text-base text-secondary">lock</span>
+<span>Ändra</span>
+</button>
+<button class="h-12 w-12 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center active:bg-surface-container-high transition-colors" onclick="showLockedAction('Spara som favorit')" title="Kräver inloggat konto" type="button">
+<span class="material-symbols-rounded text-lg text-secondary">lock</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Tillgänglighet och begränsningar för gäst -->
+<section class="bg-surface-container-low rounded-2xl p-4 shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-rounded text-secondary text-xl">tune</span>
+<h2 class="text-sm font-semibold text-on-surface font-headline">Vad du kan göra som gäst</h2>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-full">
+        Översikt
+      </span>
+</div>
+<!-- Lista med behörigheter -->
+<div class="grid grid-cols-1 gap-2 pt-1">
+<!-- Tillåtna funktioner -->
+<div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-container/60 text-xs text-on-surface">
+<div class="w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-medium">Bläddra bland alla 312 recept</span>
+</div>
+<div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-container/60 text-xs text-on-surface">
+<div class="w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-medium">Använda kokläge och kökstimers</span>
+</div>
+<div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-container/60 text-xs text-on-surface">
+<div class="w-6 h-6 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="font-medium">Se veckans planerade matsedel</span>
+</div>
+<!-- Skrivskyddade funktioner -->
+<div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-container/30 text-xs text-on-surface-variant">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-sm">lock</span>
+</div>
+<div class="flex-1 flex items-center justify-between">
+<span>Spara egna anteckningar &amp; ändra ingredienser</span>
+<span class="text-[10px] text-secondary font-medium uppercase tracking-wider">Låst</span>
+</div>
+</div>
+<div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-container/30 text-xs text-on-surface-variant">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-sm">lock</span>
+</div>
+<div class="flex-1 flex items-center justify-between">
+<span>Bocka av eller lägga till varor i inköpslistan</span>
+<span class="text-[10px] text-secondary font-medium uppercase tracking-wider">Låst</span>
+</div>
+</div>
+<div class="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-container/30 text-xs text-on-surface-variant">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-sm">lock</span>
+</div>
+<div class="flex-1 flex items-center justify-between">
+<span>Synkronisera offline-ändringar till servern</span>
+<span class="text-[10px] text-secondary font-medium uppercase tracking-wider">Låst</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Full behörighet CTA Box -->
+<section class="bg-primary-container text-on-primary-container rounded-2xl p-4 shadow-sm flex flex-col space-y-3">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-rounded text-2xl">key</span>
+</div>
+<div class="space-y-1">
+<h3 class="text-sm font-bold font-headline leading-tight">Vill du ha full behörighet?</h3>
+<p class="text-xs leading-relaxed opacity-90">
+          Logga in med din användare eller be serverägaren dela en personlig inbjudningslänk för att redigera och planera måltider tillsammans.
+        </p>
+</div>
+</div>
+<div class="pt-1 flex gap-2">
+<button class="flex-1 h-11 bg-primary text-on-primary font-semibold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-transform" onclick="showLoginToast()" type="button">
+<span class="material-symbols-rounded text-base">hub</span>
+        Anslut till servern
+      </button>
+<button class="h-11 px-3 bg-surface-container/80 text-on-surface font-medium text-xs rounded-xl flex items-center justify-center active:bg-surface-container transition-colors" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" type="button">
+        Uppåt
+      </button>
+</div>
+</section>
+<!-- Interaktiv feedback toast för gästrestriktioner -->
+<div class="fixed bottom-20 left-4 right-4 z-50 transform translate-y-24 opacity-0 pointer-events-none transition-all duration-300 ease-out flex items-center justify-center" id="toast">
+<div class="bg-on-surface text-surface px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs max-w-sm w-full">
+<span class="material-symbols-rounded text-secondary text-lg" id="toast-icon">lock</span>
+<span class="flex-1 leading-snug" id="toast-text">Åtgärden kräver inloggat konto.</span>
+<button class="text-primary font-bold text-xs uppercase tracking-wide ml-1" onclick="hideToast()" type="button">Stäng</button>
+</div>
+</div>
+</div>
+<script>
+  let toastTimer;
+  function showToast(message, icon = 'lock') {
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toast-text');
+    const toastIcon = document.getElementById('toast-icon');
+    if (!toast || !toastText) return;
+
+    toastText.textContent = message;
+    toastIcon.textContent = icon;
+    toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      hideToast();
+    }, 3500);
+  }
+
+  function hideToast() {
+    const toast = document.getElementById('toast');
+    if (toast) {
+      toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+      toast.classList.remove('translate-y-0', 'opacity-100');
+    }
+  }
+
+  function showLockedAction(actionName) {
+    showToast(`"${actionName}" kräver inloggat konto med skrivbehörighet.`, 'lock');
+  }
+
+  function showLoginToast() {
+    showToast('Öppnar inloggning mot Tandoor-server...', 'login');
+  }
+
+  function startCookingMode() {
+    showToast('Startar kokläge för "Krämig svamppasta"! (Tillgängligt i gästläge)', 'soup_kitchen');
+  }
+
+  function toggleDetails() {
+    const info = document.getElementById('guest-extra-info');
+    const text = document.getElementById('toggle-text');
+    if (!info) return;
+
+    const isHidden = info.classList.contains('hidden');
+    if (isHidden) {
+      info.classList.remove('hidden');
+      if (text) text.textContent = 'Mindre info';
+    } else {
+      info.classList.add('hidden');
+      if (text) text.textContent = 'Mer info';
+    }
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-semibold"><div class="flex justify-around items-center h-16 px-2"><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 transition-colors text-primary font-semibold" data-path="idag" href="#"><span class="material-symbols-rounded text-2xl">dinner_dining</span><span class="text-[11px] font-medium">Idag</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="recept" href="#"><span class="material-symbols-rounded text-2xl">menu_book</span><span class="text-[11px] font-medium">Recept</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="veckan" href="#"><span class="material-symbols-rounded text-2xl">calendar_today</span><span class="text-[11px] font-medium">Veckan</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="inkopslista" href="#"><span class="material-symbols-rounded text-2xl">shopping_cart</span><span class="text-[11px] font-medium">Handla</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] h-12 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mer" href="#"><span class="material-symbols-rounded text-2xl">more_horiz</span><span class="text-[11px] font-medium">Mer</span></a></div></nav></body></html>

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#FBF7F2;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF",secondary:"#D97706","on-secondary":"#FFFFFF",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF",surface:"#FBF7F2","surface-variant":"#F4ECE1","on-surface":"#2C2523","on-surface-variant":"#786D66",outline:"#D8CEBE"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}}</script></head><body class="bg-surface font-body text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(44,37,35,0.04)]"><div class="h-16 px-3 flex items-center justify-between"><div class="flex items-center gap-1 flex-1 min-w-0 mr-2"><button aria-label="Gå tillbaka" class="w-11 h-11 -ml-1 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant transition-colors" onclick="history.back()"><span class="material-symbols-rounded text-2xl">arrow_back</span></button><h1 class="text-xl font-headline font-bold text-on-surface truncate">Redigera Recept</h1></div><div class="flex items-center gap-1.5"><button aria-label="Spara ändringar" class="h-9 px-3 rounded-full bg-primary text-on-primary font-medium text-sm flex items-center gap-1 hover:opacity-90 active:scale-95 transition-all shadow-sm"><span class="material-symbols-rounded text-base">check</span><span>Spara</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-28">
+<!-- Status banner / Synk-hint -->
+<div class="px-4 pt-3 pb-1">
+<div class="bg-surface-variant/70 rounded-2xl p-3 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary/15 flex items-center justify-center shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[19px]">cloud_sync</span>
+</div>
+<p class="text-xs text-on-surface-variant font-medium leading-relaxed">
+        Synkas mot <span class="font-bold text-on-surface">Hemmaköket (Tandoor v2.6)</span> när du sparar.
+      </p>
+</div>
+</div>
+<form class="flex flex-col gap-5 px-4 pt-3" id="recipe-form" onsubmit="event.preventDefault();">
+<!-- SEKTION 1: Grundinformation -->
+<section class="bg-surface-variant/40 rounded-2xl p-4 flex flex-col gap-4 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">edit_note</span>
+<h2 class="font-headline font-bold text-base text-on-surface">Grundinformation</h2>
+</div>
+<span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-variant text-on-surface-variant">Recept-ID #142</span>
+</div>
+<!-- Receptnamn -->
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-bold tracking-wide text-on-surface-variant uppercase" for="recipe-title">Receptnamn</label>
+<div class="relative">
+<input class="w-full bg-surface text-on-surface text-lg font-headline font-bold px-3.5 py-2.5 rounded-xl outline-none shadow-sm focus:bg-surface-variant/30 transition-all placeholder:text-on-surface-variant/40" id="recipe-title" placeholder="T.ex. Krämig svamppasta" type="text" value="Krämig svamppasta"/>
+</div>
+</div>
+<!-- Bildväljare / Receptfoto -->
+<div class="flex items-center gap-3 bg-surface p-2.5 rounded-xl shadow-sm">
+<div class="relative w-16 h-16 rounded-lg overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A warm, golden bowl of creamy tagliatelle pasta with sauteed brown mushrooms, chopped parsley, and freshly grated parmesan, shot in soft natural Scandinavian kitchen light with warm terracotta tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwOA5rMeFk7_y79PT7aWaIQAUIteScGhV3bg-iH8RN3cKZerLllGYwl25fHgj-8gqZ-MsSyHdQM4XTQOJ6SxGUlAJn4l0RD8usGbUOJ7pLVMhDBpiCQlPrUrVTEul9P2tq1r_ss49IVcmt75T8lE7Q3S8V1rSeFbKBYES2ob398mkpTHl0_-f1nbqB2Z7jwmyAz1sj5DUHmDenLYgrjtEVSAbsktvvzeAsfENgZHgm"/>
+<button aria-label="Byt foto" class="absolute inset-0 bg-on-surface/30 flex items-center justify-center text-on-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span>
+</button>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<span class="text-xs font-bold text-on-surface truncate">krämig-svamppasta-v2.jpg</span>
+<span class="text-[11px] text-on-surface-variant">Klicka för att byta eller beskära</span>
+</div>
+<button class="h-8 px-2.5 rounded-lg bg-surface-variant text-on-surface-variant text-xs font-medium hover:text-on-surface" type="button">
+          Ändra
+        </button>
+</div>
+<!-- Beskrivning -->
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-bold tracking-wide text-on-surface-variant uppercase" for="recipe-desc">Beskrivning / Anteckning</label>
+<textarea class="w-full bg-surface text-on-surface text-sm font-normal p-3 rounded-xl outline-none shadow-sm resize-none focus:bg-surface-variant/30 leading-relaxed placeholder:text-on-surface-variant/40" id="recipe-desc" placeholder="Skriv en kort aptitretande introduktion..." rows="3">Klassisk italiensk tagliatelle slungad i en sammetslen gräddsås med smörfrästa champinjoner, vitlök och nymalen svartpeppar.</textarea>
+</div>
+<!-- Snabbreglage: Tid & Portioner -->
+<div class="grid grid-cols-2 gap-2.5 pt-1">
+<!-- Tid -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex flex-col justify-between">
+<span class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">schedule</span> Tillagningstid
+          </span>
+<div class="flex items-baseline gap-1 mt-2">
+<input class="w-14 font-headline text-xl font-bold bg-surface-variant/50 rounded-lg px-2 py-0.5 text-on-surface outline-none" type="number" value="35"/>
+<span class="text-xs font-medium text-on-surface-variant">minuter</span>
+</div>
+</div>
+<!-- Portioner med stepper -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex flex-col justify-between">
+<span class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">groups</span> Portioner
+          </span>
+<div class="flex items-center justify-between mt-2">
+<button aria-label="Minska portioner" class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center text-on-surface active:scale-95 transition-transform" onclick="decrementPortions()" type="button">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<span class="font-headline text-xl font-bold text-on-surface" id="portion-count">4</span>
+<button aria-label="Öka portioner" class="w-7 h-7 rounded-full bg-surface-variant flex items-center justify-center text-on-surface active:scale-95 transition-transform" onclick="incrementPortions()" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Taggar -->
+<div class="flex flex-col gap-2 pt-1">
+<label class="text-xs font-bold tracking-wide text-on-surface-variant uppercase flex items-center justify-between">
+<span>Kategorier &amp; Taggar</span>
+<span class="text-[11px] font-normal lowercase">3 valda</span>
+</label>
+<div class="flex flex-wrap items-center gap-1.5" id="tags-container">
+<span class="inline-flex items-center gap-1 bg-surface text-on-surface text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
+<span>Pasta</span>
+<button class="text-on-surface-variant hover:text-primary" onclick="this.parentElement.remove()" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface text-on-surface text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
+<span>Vardag</span>
+<button class="text-on-surface-variant hover:text-primary" onclick="this.parentElement.remove()" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</span>
+<span class="inline-flex items-center gap-1 bg-tertiary/15 text-tertiary text-xs font-medium px-3 py-1.5 rounded-full shadow-sm">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span>Vegetarisk</span>
+<button class="text-tertiary hover:opacity-75" onclick="this.parentElement.remove()" type="button">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</span>
+<button class="inline-flex items-center gap-1 bg-surface text-primary text-xs font-semibold px-2.5 py-1.5 rounded-full shadow-sm active:scale-95 transition-transform" onclick="addTagPrompt()" type="button">
+<span class="material-symbols-outlined text-[14px]">add</span>
+<span>Tagg</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SEKTION 2: Ingredienser -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline font-bold text-lg text-on-surface">Ingredienser</h2>
+<p class="text-xs text-on-surface-variant">Håll och dra i handtaget för att ändra ordning</p>
+</div>
+<span class="text-xs font-bold px-2 py-0.5 rounded-md bg-surface-variant text-on-surface-variant" id="ing-counter">8 st</span>
+</div>
+<!-- Snabbknappar för ingredienser -->
+<div class="flex items-center gap-2">
+<button class="flex-1 h-9 rounded-xl bg-primary/10 text-primary font-semibold text-xs flex items-center justify-center gap-1 active:bg-primary/20 transition-colors" onclick="addIngredientRow()" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Ny ingrediens</span>
+</button>
+<button class="h-9 px-3 rounded-xl bg-surface-variant text-on-surface font-medium text-xs flex items-center gap-1 hover:bg-surface-variant/80 transition-colors" onclick="toggleQuickImport()" type="button">
+<span class="material-symbols-outlined text-[16px]">format_list_bulleted</span>
+<span>Snabbtext</span>
+</button>
+</div>
+<!-- Snabbinmatningsfält (dolt som standard) -->
+<div class="hidden bg-surface-variant/60 p-3 rounded-2xl flex flex-col gap-2" id="quick-import-panel">
+<span class="text-xs font-bold text-on-surface">Klistra in råvaror (en per rad):</span>
+<textarea class="w-full bg-surface text-on-surface text-xs p-2.5 rounded-xl outline-none shadow-sm" placeholder="300 g Tagliatelle
+250 g Champinjoner
+2 dl Vispgrädde" rows="3"></textarea>
+<div class="flex justify-end gap-2">
+<button class="px-3 py-1 text-xs text-on-surface-variant" onclick="toggleQuickImport()" type="button">Avbryt</button>
+<button class="px-3 py-1 bg-primary text-on-primary text-xs font-semibold rounded-lg" onclick="toggleQuickImport()" type="button">Infoga rader</button>
+</div>
+</div>
+<!-- Ingredienslista -->
+<div class="flex flex-col gap-2" id="ingredients-list">
+<!-- Rad 1 -->
+<div class="group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all">
+<button aria-label="Flytta" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" type="button">
+<span class="material-symbols-outlined text-[18px]">drag_handle</span>
+</button>
+<input aria-label="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" type="text" value="300 g"/>
+<input aria-label="Råvara" class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" type="text" value="Tagliatelle"/>
+<button aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors" onclick="deleteIngredientRow(this)" type="button">
+<span class="material-symbols-outlined text-[17px]">delete_outline</span>
+</button>
+</div>
+<!-- Rad 2 -->
+<div class="group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all">
+<button aria-label="Flytta" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" type="button">
+<span class="material-symbols-outlined text-[18px]">drag_handle</span>
+</button>
+<input aria-label="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" type="text" value="250 g"/>
+<input aria-label="Råvara" class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" type="text" value="Champinjoner (skivade)"/>
+<button aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors" onclick="deleteIngredientRow(this)" type="button">
+<span class="material-symbols-outlined text-[17px]">delete_outline</span>
+</button>
+</div>
+<!-- Rad 3 -->
+<div class="group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all">
+<button aria-label="Flytta" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" type="button">
+<span class="material-symbols-outlined text-[18px]">drag_handle</span>
+</button>
+<input aria-label="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" type="text" value="2 dl"/>
+<input aria-label="Råvara" class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" type="text" value="Vispgrädde 40%"/>
+<button aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors" onclick="deleteIngredientRow(this)" type="button">
+<span class="material-symbols-outlined text-[17px]">delete_outline</span>
+</button>
+</div>
+<!-- Rad 4 -->
+<div class="group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all">
+<button aria-label="Flytta" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" type="button">
+<span class="material-symbols-outlined text-[18px]">drag_handle</span>
+</button>
+<input aria-label="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" type="text" value="1 st"/>
+<input aria-label="Råvara" class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" type="text" value="Gul lök (finhackad)"/>
+<button aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors" onclick="deleteIngredientRow(this)" type="button">
+<span class="material-symbols-outlined text-[17px]">delete_outline</span>
+</button>
+</div>
+<!-- Rad 5 -->
+<div class="group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all">
+<button aria-label="Flytta" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" type="button">
+<span class="material-symbols-outlined text-[18px]">drag_handle</span>
+</button>
+<input aria-label="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" type="text" value="50 g"/>
+<input aria-label="Råvara" class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" type="text" value="Parmesanost (riven)"/>
+<button aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors" onclick="deleteIngredientRow(this)" type="button">
+<span class="material-symbols-outlined text-[17px]">delete_outline</span>
+</button>
+</div>
+<!-- Rad 6 -->
+<div class="group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all">
+<button aria-label="Flytta" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" type="button">
+<span class="material-symbols-outlined text-[18px]">drag_handle</span>
+</button>
+<input aria-label="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" type="text" value="2 klyftor"/>
+<input aria-label="Råvara" class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" type="text" value="Vitlök (pressad)"/>
+<button aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors" onclick="deleteIngredientRow(this)" type="button">
+<span class="material-symbols-outlined text-[17px]">delete_outline</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SEKTION 3: Tillagningssteg -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline font-bold text-lg text-on-surface">Tillagningssteg</h2>
+<p class="text-xs text-on-surface-variant">Stora pedagogiska moment för kokläget</p>
+</div>
+<span class="text-xs font-bold px-2 py-0.5 rounded-md bg-surface-variant text-on-surface-variant">5 steg</span>
+</div>
+<!-- Steg-kort -->
+<div class="flex flex-col gap-3" id="steps-list">
+<!-- Steg 1 -->
+<div class="bg-surface rounded-2xl p-3.5 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-headline font-bold flex items-center justify-center">1</span>
+<input class="font-headline font-bold text-sm text-on-surface bg-transparent outline-none flex-1" placeholder="Rubrik på steget..." type="text" value="Koka pastan"/>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant/60">
+<button aria-label="Flytta upp" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+</button>
+<button aria-label="Flytta ner" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</button>
+<button aria-label="Radera steg" class="w-7 h-7 flex items-center justify-center hover:text-primary" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<textarea class="w-full bg-surface-variant/30 text-on-surface text-xs leading-relaxed p-2.5 rounded-xl outline-none resize-none font-normal" rows="2">Koka tagliatellen al dente i rikligt saltat vatten. Spara 1 dl av pastavattnet innan du häller av.</textarea>
+</div>
+<!-- Steg 2 -->
+<div class="bg-surface rounded-2xl p-3.5 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-headline font-bold flex items-center justify-center">2</span>
+<input class="font-headline font-bold text-sm text-on-surface bg-transparent outline-none flex-1" placeholder="Rubrik på steget..." type="text" value="Stek svampen krispig"/>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant/60">
+<button aria-label="Flytta upp" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+</button>
+<button aria-label="Flytta ner" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</button>
+<button aria-label="Radera steg" class="w-7 h-7 flex items-center justify-center hover:text-primary" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<textarea class="w-full bg-surface-variant/30 text-on-surface text-xs leading-relaxed p-2.5 rounded-xl outline-none resize-none font-normal" rows="2">Hetta upp en klick smör i panna och stek champinjonerna på medelhög värme tills all vätska kokat bort och de fått djup gyllene färg.</textarea>
+</div>
+<!-- Steg 3 (med inbyggd timer) -->
+<div class="bg-surface rounded-2xl p-3.5 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-headline font-bold flex items-center justify-center">3</span>
+<input class="font-headline font-bold text-sm text-on-surface bg-transparent outline-none flex-1" placeholder="Rubrik på steget..." type="text" value="Fräs lök &amp; timjan"/>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant/60">
+<button aria-label="Flytta upp" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+</button>
+<button aria-label="Flytta ner" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</button>
+<button aria-label="Radera steg" class="w-7 h-7 flex items-center justify-center hover:text-primary" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<textarea class="w-full bg-surface-variant/30 text-on-surface text-xs leading-relaxed p-2.5 rounded-xl outline-none resize-none font-normal" rows="2">Tillsätt finhackad gul lök, pressad vitlök och torkad timjan. Fräs försiktigt utan att löken tar bränd färg.</textarea>
+<!-- Timer-tagg knuten till steget -->
+<div class="flex items-center justify-between pt-1">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary/15 text-secondary text-xs font-bold">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+<span>Timer: 3 minuter</span>
+<button aria-label="Redigera timer" class="hover:opacity-75" type="button">
+<span class="material-symbols-outlined text-[13px]">edit</span>
+</button>
+</div>
+<button class="text-xs text-on-surface-variant hover:text-on-surface flex items-center gap-0.5" type="button">
+<span class="material-symbols-outlined text-[14px]">add_alarm</span>
+<span>Lägg till timer</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lägg till steg knapp -->
+<button class="w-full h-11 rounded-2xl bg-surface-variant/80 text-on-surface font-semibold text-xs flex items-center justify-center gap-2 hover:bg-surface-variant active:scale-[0.99] transition-all shadow-sm" onclick="addStepCard()" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">add_circle</span>
+<span>Lägg till tillagningssteg</span>
+</button>
+</section>
+<!-- Tandoor synk & versionsinfo -->
+<div class="mt-2 p-3.5 rounded-2xl bg-surface-variant/30 flex items-center justify-between text-xs text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">check_circle</span>
+<span>Lokal kopia uppdaterad nyss</span>
+</div>
+<span class="font-mono text-[11px] opacity-70">rev 4.1</span>
+</div>
+</form>
+<!-- FAST BOTTENFÄLT (Bottom Action Bar) -->
+<div class="fixed bottom-0 left-0 right-0 z-40 bg-surface/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(44,37,35,0.06)] px-4 py-3 pb-safe">
+<div class="max-w-md mx-auto flex items-center gap-3">
+<!-- Avbryt knapp -->
+<button class="flex-1 h-12 rounded-full bg-surface-variant text-on-surface font-semibold text-sm flex items-center justify-center active:scale-95 transition-transform" onclick="history.back()" type="button">
+        Avbryt
+      </button>
+<!-- Spara ändringar (Accentuerad terrakotta) -->
+<button class="flex-[2] h-12 rounded-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-md hover:opacity-95 active:scale-95 transition-all" onclick="triggerSaveAnimation()" type="button">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Spara ändringar</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  function incrementPortions() {
+    const el = document.getElementById('portion-count');
+    let val = parseInt(el.textContent, 10) || 4;
+    el.textContent = Math.min(24, val + 1);
+  }
+
+  function decrementPortions() {
+    const el = document.getElementById('portion-count');
+    let val = parseInt(el.textContent, 10) || 4;
+    if (val > 1) el.textContent = val - 1;
+  }
+
+  function toggleQuickImport() {
+    const panel = document.getElementById('quick-import-panel');
+    panel.classList.toggle('hidden');
+  }
+
+  function deleteIngredientRow(btn) {
+    const row = btn.closest('.group');
+    if (row) {
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(20px)';
+      setTimeout(() => {
+        row.remove();
+        updateIngCount();
+      }, 150);
+    }
+  }
+
+  function updateIngCount() {
+    const count = document.querySelectorAll('#ingredients-list > div').length;
+    const badge = document.getElementById('ing-counter');
+    if (badge) badge.textContent = `${count} st`;
+  }
+
+  function addIngredientRow() {
+    const list = document.getElementById('ingredients-list');
+    const newRow = document.createElement('div');
+    newRow.className = 'group bg-surface rounded-xl p-2 flex items-center gap-2 shadow-sm transition-all opacity-0';
+    newRow.innerHTML = `
+      <button type="button" class="cursor-grab active:cursor-grabbing text-on-surface-variant/50 hover:text-on-surface p-1 touch-none" aria-label="Flytta">
+        <span class="material-symbols-outlined text-[18px]">drag_handle</span>
+      </button>
+      <input type="text" placeholder="Mängd" class="w-16 bg-surface-variant/40 text-on-surface font-semibold text-xs px-2 py-1.5 rounded-lg outline-none text-center" />
+      <input type="text" placeholder="Ny ingrediens..." class="flex-1 min-w-0 bg-transparent text-on-surface text-sm font-medium px-1 outline-none truncate" />
+      <button type="button" onclick="deleteIngredientRow(this)" aria-label="Ta bort" class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant/60 hover:text-primary hover:bg-primary/10 transition-colors">
+        <span class="material-symbols-outlined text-[17px]">delete_outline</span>
+      </button>
+    `;
+    list.appendChild(newRow);
+    requestAnimationFrame(() => {
+      newRow.style.opacity = '1';
+    });
+    updateIngCount();
+    const input = newRow.querySelector('input:last-of-type');
+    if (input) input.focus();
+  }
+
+  function addStepCard() {
+    const stepsList = document.getElementById('steps-list');
+    const stepCount = stepsList.children.length + 1;
+    const newCard = document.createElement('div');
+    newCard.className = 'bg-surface rounded-2xl p-3.5 shadow-sm flex flex-col gap-2.5';
+    newCard.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-primary/15 text-primary text-xs font-headline font-bold flex items-center justify-center">${stepCount}</span>
+          <input type="text" placeholder="Stegets rubrik..." class="font-headline font-bold text-sm text-on-surface bg-transparent outline-none flex-1" />
+        </div>
+        <div class="flex items-center gap-1 text-on-surface-variant/60">
+          <button type="button" class="w-7 h-7 flex items-center justify-center hover:text-on-surface" aria-label="Flytta upp">
+            <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+          </button>
+          <button type="button" class="w-7 h-7 flex items-center justify-center hover:text-primary" onclick="this.closest('.bg-surface').remove()" aria-label="Radera steg">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+          </button>
+        </div>
+      </div>
+      <textarea rows="2" placeholder="Beskriv vad som ska göras i detta moment..." class="w-full bg-surface-variant/30 text-on-surface text-xs leading-relaxed p-2.5 rounded-xl outline-none resize-none font-normal"></textarea>
+    `;
+    stepsList.appendChild(newCard);
+  }
+
+  function addTagPrompt() {
+    const tagName = prompt('Skriv in ny tagg (t.ex. Snabbmiddag):');
+    if (tagName && tagName.trim()) {
+      const container = document.getElementById('tags-container');
+      const addBtn = container.querySelector('button');
+      const pill = document.createElement('span');
+      pill.className = 'inline-flex items-center gap-1 bg-surface text-on-surface text-xs font-medium px-3 py-1.5 rounded-full shadow-sm';
+      pill.innerHTML = `
+        <span>${tagName.trim()}</span>
+        <button type="button" onclick="this.parentElement.remove()" class="text-on-surface-variant hover:text-primary">
+          <span class="material-symbols-outlined text-[14px]">close</span>
+        </button>
+      `;
+      container.insertBefore(pill, addBtn);
+    }
+  }
+
+  function triggerSaveAnimation() {
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-on-surface text-surface text-xs font-medium px-4 py-2.5 rounded-full shadow-xl flex items-center gap-2 z-50 transition-all';
+    toast.innerHTML = '<span class="material-symbols-outlined text-tertiary text-base" style="font-variation-settings: \'FILL\' 1;">check_circle</span> Recept sparat i Tandoor!';
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 2200);
+  }
+</script></main></body></html>

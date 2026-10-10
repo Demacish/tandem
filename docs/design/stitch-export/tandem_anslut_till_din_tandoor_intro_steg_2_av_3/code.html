@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="sv" class="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tandem – Anslut till din Tandoor</title>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: "#C2410C",
+              hover: "#9A3412",
+              container: "#FFEDD5",
+              "on-container": "#7C2D12"
+            },
+            surface: {
+              DEFAULT: "#FBF7F2",
+              variant: "#F3EDE4",
+              container: "#EFE8DC"
+            },
+            "on-surface": "#292524",
+            "on-surface-variant": "#78716C"
+          },
+          fontFamily: {
+            headline: ["Public Sans", "sans-serif"],
+            body: ["DM Sans", "sans-serif"],
+            label: ["DM Sans", "sans-serif"]
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.filled {
+      font-variation-settings: 'FILL' 1, 'wght' 500;
+    }
+    body {
+      background-color: #FBF7F2;
+      color: #292524;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="font-body bg-[#FBF7F2] min-h-screen text-[#292524] antialiased flex flex-col justify-between selection:bg-[#FFEDD5] selection:text-[#7C2D12]">
+  <!-- Mobile Container (Max-width 390-440px feel) -->
+  <main class="w-full max-w-md mx-auto min-h-screen flex flex-col justify-between px-6 py-6 sm:py-8">
+    
+    <!-- Top Bar: Back & Step Indicator -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <!-- Back button -->
+        <button type="button" aria-label="Gå tillbaka" class="w-10 h-10 rounded-full flex items-center justify-center text-stone-700 hover:bg-[#F3EDE4] active:scale-95 transition-all duration-150 -ml-2">
+          <span class="material-symbols-outlined text-2xl">arrow_back</span>
+        </button>
+
+        <!-- Stegindikator (Steg 2 av 3) -->
+        <div class="flex items-center gap-2 bg-[#F3EDE4] px-3.5 py-1.5 rounded-full border border-stone-200/70 shadow-xs">
+          <span class="font-label text-xs font-semibold text-stone-700 tracking-wide uppercase">Steg 2 av 3</span>
+          <div class="flex items-center gap-1.5 ml-1">
+            <span class="w-2 h-2 rounded-full bg-[#C2410C]"></span>
+            <span class="w-4 h-2 rounded-full bg-[#C2410C]"></span>
+            <span class="w-2 h-2 rounded-full bg-stone-300"></span>
+          </div>
+        </div>
+
+        <!-- Spacer for alignment -->
+        <div class="w-10 -mr-2"></div>
+      </div>
+
+      <!-- Hero Warm Illustration -->
+      <div class="flex justify-center my-3">
+        <div class="relative w-44 h-44 sm:w-48 sm:h-48 rounded-3xl overflow-hidden bg-[#F3EDE4]/80 p-2 shadow-sm border border-stone-200/60 flex items-center justify-center">
+          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhVyzTG5QzY70e7BSBnQXI1OxaCXHQUazSAYZpgJOS_JOQ5bqNg5JyelRmUzzb0bSY5PrnHasTpktxn9CRXC7kY8JXYFWjn4Ae7XP1-FpGdqFmwmo2AvCNTaotHqrSjmJKnBCkhH4_IJVGw1yyYLUDzqoVq7xpwdCOo34xQ3q26O_cKCO2T293kb-vXuujTMjWcJX4NlVxHLFtJ3qwSvo36iMTHUW9nHrs8IlGQsuK4k9lNRja3G5FjXYh7BurypseNrGF2zBSMlWA" alt="Varm köksillustration med kastrull och receptbok" class="w-full h-full object-contain rounded-2xl" />
+        </div>
+      </div>
+
+      <!-- Heading & Explanatory text -->
+      <div class="text-center mt-3 mb-6 space-y-2">
+        <h1 class="font-headline text-2xl sm:text-3xl font-extrabold tracking-tight text-[#292524]">
+          Anslut till din Tandoor
+        </h1>
+        <p class="text-stone-600 text-sm leading-relaxed max-w-xs mx-auto">
+          Ange adressen till din Tandoor-server. Du hittar den i webbläsarens adressfält.
+        </p>
+      </div>
+
+      <!-- Server Input Form -->
+      <div class="space-y-3 mt-4">
+        <div class="space-y-1.5">
+          <label for="server-address" class="block text-xs font-bold uppercase tracking-wider text-stone-700 px-1">
+            Adress till din Tandoor
+          </label>
+          <div class="relative flex items-center">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <span class="material-symbols-outlined text-xl text-stone-500">cloud</span>
+            </div>
+            <input 
+              type="text" 
+              id="server-address" 
+              value="recept.exempel.se" 
+              placeholder="recept.exempel.se" 
+              class="w-full pl-11 pr-11 py-3.5 bg-white border-2 border-stone-300 rounded-2xl text-stone-900 font-medium text-base focus:border-[#C2410C] focus:ring-2 focus:ring-[#FFEDD5] transition-all shadow-sm outline-none"
+            />
+            <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-emerald-600">
+              <span class="material-symbols-outlined text-xl filled">check_circle</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Green Confirmation Badge -->
+        <div class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-semibold transition-all">
+          <span class="material-symbols-outlined text-base text-emerald-600 filled">verified</span>
+          <span>✓ Tandoor 2.6.13 hittad</span>
+          <span class="ml-auto inline-flex items-center text-[11px] font-normal text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">Snabb svarstid</span>
+        </div>
+
+        <!-- Small Helper hint -->
+        <div class="pt-2 px-1 flex items-start gap-2 text-xs text-stone-500">
+          <span class="material-symbols-outlined text-sm text-stone-400 mt-0.5">help_outline</span>
+          <p>Exempelvis <code class="bg-[#F3EDE4] text-stone-700 px-1.5 py-0.5 rounded font-mono text-[11px]">https://mitt-kok.se</code> eller med port.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Actions: Primary Button & Demo Mode Link (No bottom nav) -->
+    <div class="pt-8 pb-4 space-y-3.5 text-center">
+      <!-- Stor knapp "Anslut" -->
+      <button 
+        type="button" 
+        class="w-full py-4 px-6 rounded-full bg-[#C2410C] hover:bg-[#9A3412] text-white font-headline font-bold text-base shadow-md shadow-orange-950/20 active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2"
+      >
+        <span>Anslut</span>
+        <span class="material-symbols-outlined text-xl">arrow_forward</span>
+      </button>
+
+      <!-- Textlänk "Prova utan server (demoläge)" -->
+      <div>
+        <a 
+          href="#demo" 
+          class="inline-block py-2 px-4 text-xs sm:text-sm font-medium text-stone-600 hover:text-[#C2410C] hover:underline underline-offset-4 active:scale-95 transition-all duration-150"
+        >
+          Prova utan server (demoläge)
+        </a>
+      </div>
+    </div>
+
+  </main>
+</body>
+</html>

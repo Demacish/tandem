@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The fake Tandoor (MockWebServer) listens on localhost inside this test APK. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Package visibility (API 30+): the test launches the app under test by package name. -->
+    <queries>
+        <package android:name="casa.moller.tandem.minified" />
+    </queries>
+</manifest>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tandem_action_back">Tillbaka</string>
+    <string name="tandem_action_close">Stäng</string>
+    <string name="tandem_action_retry">Försök igen</string>
+    <string name="tandem_password_show">Visa lösenord</string>
+    <string name="tandem_password_hide">Dölj lösenord</string>
+    <string name="tandem_loading">Laddar…</string>
+</resources>

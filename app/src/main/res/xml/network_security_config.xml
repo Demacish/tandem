@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    No cleartext traffic. Trust the system CAs plus CAs the user installed on the device, so a
+    self-hosted Tandoor behind a private CA works without an in-app "accept any certificate"
+    switch (plan 5.5, docs/design/README.md). No certificate pinning (Let's Encrypt rotates).
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates
+                src="user"
+                tools:ignore="AcceptsUserCertificates" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

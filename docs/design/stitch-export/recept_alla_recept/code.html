@@ -1,0 +1,413 @@
+<!DOCTYPE html><html class="light" lang="sv"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Recept</title>
+<!-- Google Fonts: Public Sans & DM Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&amp;family=Public+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: "#C2410C",
+              hover: "#9A3412",
+              container: "#FFEDD5",
+              "on-container": "#7C2D12"
+            },
+            secondary: {
+              DEFAULT: "#D97706",
+              container: "#FEF3C7",
+              "on-container": "#78350F"
+            },
+            tertiary: {
+              DEFAULT: "#4D7C0F",
+              container: "#ECFCCB",
+              "on-container": "#365314"
+            },
+            surface: {
+              DEFAULT: "#FBF7F2",
+              variant: "#F3EDE4",
+              card: "#FFFFFF",
+              container: "#F5EFE6",
+              "container-high": "#EDE5DA"
+            },
+            "on-surface": "#2C2523",
+            "on-surface-variant": "#78716C",
+            outline: "#E7DFD5"
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "1rem",
+            "xl": "1.5rem",
+            "2xl": "1.25rem",
+            "3xl": "1.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Public Sans", "sans-serif"],
+            display: ["Public Sans", "sans-serif"],
+            body: ["DM Sans", "sans-serif"],
+            label: ["DM Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .icon-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 450, 'GRAD' 0, 'opsz' 24;
+    }
+    /* Hide scrollbar for clean chip row */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased selection:bg-primary-container selection:text-primary min-h-screen pb-24">
+<!-- Mobile Container Shell (max-w-md matching Swedish culinary app experience) -->
+<div class="max-w-md mx-auto min-h-screen relative flex flex-col bg-surface shadow-2xl shadow-stone-900/5">
+<!-- Top App Bar Component (from Shared Components JSON) -->
+<header class="bg-surface flex justify-between items-center w-full px-4 h-16 max-w-md mx-auto sticky top-0 z-40">
+<div class="flex items-center gap-2">
+<button aria-label="Meny" class="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-surface-variant active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl" data-icon="soup_kitchen">soup_kitchen</span>
+</button>
+<div>
+<h1 class="font-headline text-xl font-bold tracking-tight text-primary leading-tight">Tandem</h1>
+<span class="text-[11px] font-medium text-on-surface-variant block leading-none">312 sparade från Tandoor</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button aria-label="Synkronisera eller filtrera" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant active:scale-95 transition-transform duration-150 relative">
+<span class="material-symbols-outlined text-2xl" data-icon="sync">sync</span>
+</button>
+<button aria-label="Lägg till recept" class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl font-bold" data-icon="add">add</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-4 pt-1 pb-6 space-y-4">
+<!-- Search Input Section -->
+<section class="relative">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3.5 text-on-surface-variant pointer-events-none text-xl" data-icon="search">search</span>
+<input class="w-full bg-surface-variant/90 border-0 text-on-surface placeholder-on-surface-variant text-sm rounded-2xl py-3 pl-11 pr-24 focus:ring-2 focus:ring-primary focus:bg-white transition-all shadow-sm" placeholder="Sök bland 312 recept..." type="text">
+<div class="absolute right-2 flex items-center gap-1 text-on-surface-variant">
+<button aria-label="Röstsökning" class="p-1.5 hover:text-on-surface transition-colors rounded-full">
+<span class="material-symbols-outlined text-lg" data-icon="mic">mic</span>
+</button>
+<button aria-label="Filter" class="p-1.5 hover:text-on-surface transition-colors rounded-full">
+<span class="material-symbols-outlined text-lg" data-icon="tune">tune</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Horizontal Filter Chips -->
+<section class="overflow-x-auto no-scrollbar -mx-4 px-4 flex items-center gap-2 py-0.5">
+<!-- Active Chip: Kan laga nu -->
+<button class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-tertiary-container text-tertiary shadow-sm shrink-0 active:scale-95 transition-transform duration-150 border border-tertiary/20">
+<span class="material-symbols-outlined text-base icon-fill" data-icon="check_circle">check_circle</span>
+<span class="">Kan laga nu (28)</span>
+</button>
+<!-- Active/Highlighted Chip: Under 30 min -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-card hover:bg-surface-variant text-on-surface border border-outline shrink-0 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-base text-secondary" data-icon="timer">timer</span>
+<span class="">Under 30 min</span>
+</button>
+<!-- Filter Chip: Vegetariskt -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-card hover:bg-surface-variant text-on-surface border border-outline shrink-0 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-base text-tertiary" data-icon="eco">eco</span>
+<span class="">Vegetariskt</span>
+</button>
+<!-- Filter Chip: Favoriter -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-card hover:bg-surface-variant text-on-surface border border-outline shrink-0 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-base text-secondary icon-fill" data-icon="star">star</span>
+<span class="">Favoriter</span>
+</button>
+<!-- Filter Chip: Vill laga -->
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-surface-card hover:bg-surface-variant text-on-surface border border-outline shrink-0 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-base text-primary" data-icon="bookmark">bookmark</span>
+<span class="">Vill laga</span>
+</button>
+</section>
+<!-- Status Subtext & Sort indicator -->
+<div class="flex items-center justify-between text-xs text-on-surface-variant px-0.5 pt-1">
+<span class="font-medium">Visar sparade recept</span>
+<button class="flex items-center gap-1 font-semibold text-primary hover:text-primary-hover transition-colors">
+<span class="">Senast tillagda</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+</div>
+<!-- Bento-inspired Recipe Grid (2 Columns) -->
+<section class="grid grid-cols-2 gap-3.5">
+<!-- Kort 1: Krämig svamppasta -->
+<article class="bg-surface-card rounded-2xl p-2.5 shadow-sm border border-outline flex flex-col justify-between hover:shadow-md transition-shadow group">
+<div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-100">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Appetizing homemade creamy mushroom tagliatelle in a rustic terracotta earthenware bowl garnished with shaved parmesan and fresh thyme in a warm cozy sunlit Scandinavian kitchen atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAowHXgcTUurd0l6O7Bt__RTN8rt6EqNbckWx00IV0EsV43hDuzfNr_Olw-XHleC1mFEwShxTiY2egBO40e-cifi7c9oeCtUdJ5gXY1n9nP1qlXWcZRivj5G4bfr6mbA5CweVnwKoPNY2F6HcBqGsuJjlBozbanTSzQXOthQ6UIDU1-LKIESZc4Y1ys6tEM7pJZ1a2Znc83nCjZEN8q4yAn0TPfySYLWqOoHeJhStDAF59P613ayxgakyV5qLR8TdQ0idem8SjBKJm6">
+<!-- Favorite button -->
+<button aria-label="Spara som favorit" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-md flex items-center justify-center text-primary shadow-sm hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base icon-fill" data-icon="favorite">favorite</span>
+</button>
+<span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-stone-900/75 backdrop-blur-sm text-white">
+                Pasta
+              </span>
+</div>
+<div class="mt-2.5">
+<h3 class="font-headline font-bold text-sm text-on-surface line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                Krämig svamppasta med timjan &amp; parmesan
+              </h3>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" data-icon="schedule">schedule</span>
+                25 min
+              </span>
+<span class="flex items-center gap-0.5 text-on-surface font-semibold">
+<span class="material-symbols-outlined text-xs text-secondary icon-fill" data-icon="star">star</span>
+                4.9
+              </span>
+</div>
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-tertiary bg-tertiary-container/60 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[11px] icon-fill" data-icon="check">check</span>
+              Alla ingredienser
+            </span>
+</div>
+</article>
+<!-- Kort 2: Tomatsoppa med surdegsbröd -->
+<article class="bg-surface-card rounded-2xl p-2.5 shadow-sm border border-outline flex flex-col justify-between hover:shadow-md transition-shadow group">
+<div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-100">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Rich roasted tomato soup with fresh basil and cream swirl served with a crusty slice of artisan sourdough bread on a wooden rustic kitchen board, warm bright daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6g1HkcUs8-OnAuqoGnyTpRxzMoEXWKGKXqDfIpfjn4hI2AnzrFGMFA1Ga1OdVNhmflpQgrCZnejv50aK8KalH1uZflZ9y0hWYaiC-mzoCSQ1QOU19y1VAtYPU0VVj1mkrtBIScyXrapwdLGPLZZ6vwyQ4WqtbgXWl3lVpQIiRjw9MtFYRBaMLrfp7Eofm66q75f1yHjrlSjSosH5ii3azPeWxGj2HPCb1smWaLHEGbQ4XG3ChQ4b5dIV2iE5xURih_H9Q2JaoTxMQ">
+<button aria-label="Spara som favorit" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-md flex items-center justify-center text-on-surface-variant hover:text-primary shadow-sm hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base" data-icon="favorite">favorite</span>
+</button>
+<span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-stone-900/75 backdrop-blur-sm text-white">
+                Soppor
+              </span>
+</div>
+<div class="mt-2.5">
+<h3 class="font-headline font-bold text-sm text-on-surface line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                Ugnsrostad tomatsoppa med surdeg
+              </h3>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" data-icon="schedule">schedule</span>
+                35 min
+              </span>
+<span class="flex items-center gap-0.5 text-on-surface font-semibold">
+<span class="material-symbols-outlined text-xs text-secondary icon-fill" data-icon="star">star</span>
+                4.8
+              </span>
+</div>
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-primary bg-primary-container/70 text-on-primary-container px-2 py-0.5 rounded-full">
+              Vegetarisk
+            </span>
+</div>
+</article>
+<!-- Kort 3: Linsgryta med kokosmjölk -->
+<article class="bg-surface-card rounded-2xl p-2.5 shadow-sm border border-outline flex flex-col justify-between hover:shadow-md transition-shadow group">
+<div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-100">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Aromatic yellow lentil dahl curry in a terracotta bowl topped with fresh cilantro lime wedge and warm naan bread on a rustic wooden table in a bright Nordic home kitchen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzLksb0tgPqaM3STq6-eTYLAJpx9_bnSQszJAcwl_yjnjRNS81j3TJ0kx4TjocH84rt7yFT2KT3wgivQRM00exI51futdBmVtgbo9dcE7d2IHSRZwOEzRwwzgE9wzckWb8_x_umynoBWh2RoIa4Ve9SAxSTmOzldkQUG9OI9ioMa38ObR9t5Tu8llFBBD3JCP6SZ2Efp7mR70N7lM0QYfGXP_N58UsCYJTIlDw81fzXvWBkDXg0m0GvTndBiaw0iXBY11-h9e0Rf1B">
+<button aria-label="Spara som favorit" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-md flex items-center justify-center text-primary shadow-sm hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base icon-fill" data-icon="favorite">favorite</span>
+</button>
+<span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-stone-900/75 backdrop-blur-sm text-white">
+                Grytor
+              </span>
+</div>
+<div class="mt-2.5">
+<h3 class="font-headline font-bold text-sm text-on-surface line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                Krämig daal på röda linser &amp; kokos
+              </h3>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" data-icon="schedule">schedule</span>
+                30 min
+              </span>
+<span class="flex items-center gap-0.5 text-on-surface font-semibold">
+<span class="material-symbols-outlined text-xs text-secondary icon-fill" data-icon="star">star</span>
+                4.7
+              </span>
+</div>
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-tertiary bg-tertiary-container/60 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[11px] icon-fill" data-icon="check">check</span>
+              Har hemma
+            </span>
+</div>
+</article>
+<!-- Kort 4: Ugnsbakad lax med dillpotatis (Available Image https://lh3.googleusercontent.com/aida/AEtjO1UzAnXoaFfcV7JfjPCQR5lfcXMArDQhLwjKZhBH7_8da_aMXGeSPgMRv4yswxP0HKMS0jrL9n0y508NlgCHv4H6l7Tw5hCfCuarkNszkToONpaX8etTLqBblStO4BY_OsNouqa5gAnLj79zvn98Z3hLB0nr0NNNstAJvCyeLNPuqi4NxKkXX0CHM_6DRHHCGz2FnziF5Noa-pXjjxSdBFtr4lQr5OFRVcaxl_v2kCl67AldN_iquDqxktQE) -->
+<article class="bg-surface-card rounded-2xl p-2.5 shadow-sm border border-outline flex flex-col justify-between hover:shadow-md transition-shadow group">
+<div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-100">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="https://lh3.googleusercontent.com/aida/AEtjO1UzAnXoaFfcV7JfjPCQR5lfcXMArDQhLwjKZhBH7_8da_aMXGeSPgMRv4yswxP0HKMS0jrL9n0y508NlgCHv4H6l7Tw5hCfCuarkNszkToONpaX8etTLqBblStO4BY_OsNouqa5gAnLj79zvn98Z3hLB0nr0NNNstAJvCyeLNPuqi4NxKkXX0CHM_6DRHHCGz2FnziF5Noa-pXjjxSdBFtr4lQr5OFRVcaxl_v2kCl67AldN_iquDqxktQE">
+<button aria-label="Spara som favorit" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-md flex items-center justify-center text-on-surface-variant hover:text-primary shadow-sm hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base" data-icon="favorite">favorite</span>
+</button>
+<span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-stone-900/75 backdrop-blur-sm text-white">
+                Fisk
+              </span>
+</div>
+<div class="mt-2.5">
+<h3 class="font-headline font-bold text-sm text-on-surface line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                Ugnsbakad lax med citron &amp; dillpotatis
+              </h3>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" data-icon="schedule">schedule</span>
+                25 min
+              </span>
+<span class="flex items-center gap-0.5 text-on-surface font-semibold">
+<span class="material-symbols-outlined text-xs text-secondary icon-fill" data-icon="star">star</span>
+                4.9
+              </span>
+</div>
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full">
+              Klassiker
+            </span>
+</div>
+</article>
+<!-- Kort 5: Särskilt nedtonat kort för OFFLINE-STATUS (Available Image https://lh3.googleusercontent.com/aida/AEtjO1UB0VL9mCdpCaOKotOy0rtTFZvg98MMpNFKD5lmojMZW4KEbcHzoWt65cK0M2FJtOHDneIINAhRHnnbw6UIAyNSrchgn3RYMvDNW_jkOmBTIu5RpkXst3Lw3KSmWOyaMQmjU8XQf4II9cOcKorJVQ6MIL4vbMX9vY3Nzig66nAwyCnJe4S03HNoqL0XoT-Xe0L3DUZDSaQcYhgUjj9alzflTyyV3PoEEXrRaaKpzUb8loulAlpdw_XzCnxJ) -->
+<article class="bg-surface-variant/50 rounded-2xl p-2.5 shadow-none border border-dashed border-stone-300 flex flex-col justify-between opacity-75 relative group overflow-hidden">
+<div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-200">
+<!-- Gråtonad/dimmad bild -->
+<img class="w-full h-full object-cover grayscale contrast-75 brightness-95" src="https://lh3.googleusercontent.com/aida/AEtjO1UB0VL9mCdpCaOKotOy0rtTFZvg98MMpNFKD5lmojMZW4KEbcHzoWt65cK0M2FJtOHDneIINAhRHnnbw6UIAyNSrchgn3RYMvDNW_jkOmBTIu5RpkXst3Lw3KSmWOyaMQmjU8XQf4II9cOcKorJVQ6MIL4vbMX9vY3Nzig66nAwyCnJe4S03HNoqL0XoT-Xe0L3DUZDSaQcYhgUjj9alzflTyyV3PoEEXrRaaKpzUb8loulAlpdw_XzCnxJ">
+<!-- Semi-transparent overlay with offline indicator -->
+<div class="absolute inset-0 bg-stone-900/35 backdrop-blur-[1.5px] flex flex-col items-center justify-center p-2 text-center text-white">
+<span class="material-symbols-outlined text-2xl mb-1 text-stone-200" data-icon="cloud_off">cloud_off</span>
+<span class="text-[11px] font-semibold tracking-wide bg-stone-900/70 px-2 py-0.5 rounded-full">Ej nedladdad</span>
+</div>
+</div>
+<div class="mt-2.5">
+<h3 class="font-headline font-medium text-sm text-on-surface-variant line-clamp-2 leading-snug">
+                Citron- &amp; örtrostad kyckling med rotfrukter
+              </h3>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-stone-200/60 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-stone-400">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="schedule">schedule</span>
+                50 min
+              </span>
+<span class="text-[10px] flex items-center gap-0.5 text-stone-500 font-medium">
+                Kräver nätverk
+              </span>
+</div>
+<button class="w-full py-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-xs" data-icon="cloud_download">cloud_download</span>
+              Hämta offline
+            </button>
+</div>
+</article>
+<!-- Kort 6: Snabb vardagsomelett med getost -->
+<article class="bg-surface-card rounded-2xl p-2.5 shadow-sm border border-outline flex flex-col justify-between hover:shadow-md transition-shadow group">
+<div>
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-stone-100">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Fluffy rustic French herbs omelette filled with melted goat cheese and baby spinach on an artisanal ceramic plate with warm morning sun rays" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxRM7bS9-f4nDHxTguf_Dg_FBFAHKcTv6GVJ9-fdXLOifzVkXECtqQF1uxC6FCp0UZrTAuPIG3dZEQp0RwgzfSdyDsQb3CnvIQ0qY7aMSB6Mf-pvVVEzaeZy2yCbsGzRSJR1z-sqyF8euoyDnh0zBhnMRBts9ffyjje_eulHVbKWo2ppH9yOoVisv9HDBepi0qg9tBHN_KB4nmC8f87XMwzKIxZqk_q9XnUZ3NkCgueCiKTqOQ2UGDl8tviba8Us0FnKAuH1WKa3a8">
+<button aria-label="Spara som favorit" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 backdrop-blur-md flex items-center justify-center text-on-surface-variant hover:text-primary shadow-sm hover:scale-110 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-base" data-icon="favorite">favorite</span>
+</button>
+<span class="absolute bottom-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-stone-900/75 backdrop-blur-sm text-white">
+                Snabbt
+              </span>
+</div>
+<div class="mt-2.5">
+<h3 class="font-headline font-bold text-sm text-on-surface line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+                Fransk örtomelett med chèvre &amp; spenat
+              </h3>
+</div>
+</div>
+<div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-secondary" data-icon="schedule">schedule</span>
+                15 min
+              </span>
+<span class="flex items-center gap-0.5 text-on-surface font-semibold">
+<span class="material-symbols-outlined text-xs text-secondary icon-fill" data-icon="star">star</span>
+                4.6
+              </span>
+</div>
+<span class="inline-flex items-center gap-1 text-[10px] font-medium text-tertiary bg-tertiary-container/60 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[11px] icon-fill" data-icon="check">check</span>
+              Klar på 15m
+            </span>
+</div>
+</article>
+</section>
+<!-- Extended FAB: Slumpa fram middag / Laga något -->
+<div class="sticky bottom-24 flex justify-center z-30 pt-2 pointer-events-none">
+<button class="pointer-events-auto bg-primary text-white shadow-lg shadow-primary/30 rounded-full px-5 py-2.5 flex items-center gap-2 hover:bg-primary-hover active:scale-95 transition-all text-sm font-semibold tracking-wide">
+<span class="material-symbols-outlined text-xl" data-icon="shuffle">shuffle</span>
+<span class="">Slumpa middag</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar (from Shared Components JSON with Recept as active tab) -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-2 py-2 h-20 max-w-md mx-auto bg-surface-container shadow-sm">
+<!-- Flik 1: Idag (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 font-label text-xs font-medium active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-0.5" data-icon="today">today</span>
+<span class="">Idag</span>
+</a>
+<!-- Flik 2: Recept (ACTIVE - EXACT JSON style_active_navigation mapping) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 font-semibold font-label text-xs active:scale-95 transition-transform duration-200 shadow-sm" href="#">
+<span class="material-symbols-outlined text-2xl mb-0.5 icon-fill" data-icon="menu_book">menu_book</span>
+<span class="">Recept</span>
+</a>
+<!-- Flik 3: Veckan (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 font-label text-xs font-medium active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-0.5" data-icon="calendar_month">calendar_month</span>
+<span class="">Veckan</span>
+</a>
+<!-- Flik 4: Handla (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 font-label text-xs font-medium active:scale-95 transition-transform duration-200 relative" href="#">
+<span class="material-symbols-outlined text-2xl mb-0.5" data-icon="shopping_basket">shopping_basket</span>
+<span class="">Handla</span>
+<!-- Small shopping counter badge -->
+<span class="absolute top-1 right-3 w-2 h-2 rounded-full bg-primary ring-2 ring-surface-container"></span>
+</a>
+<!-- Flik 5: Mer (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 font-label text-xs font-medium active:scale-95 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined text-2xl mb-0.5" data-icon="more_horiz">more_horiz</span>
+<span class="">Mer</span>
+</a>
+</nav>
+</div>
+
+
+</body></html>

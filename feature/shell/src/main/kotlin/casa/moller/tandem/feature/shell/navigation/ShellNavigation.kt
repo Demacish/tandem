@@ -1,0 +1,166 @@
+package casa.moller.tandem.feature.shell.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
+import androidx.navigation3.runtime.rememberNavBackStack
+import kotlinx.serialization.Serializable
+
+/**
+ * Navigation 3 keys of the shell. They are @Serializable so that [rememberNavBackStack] can save
+ * every tab's back stack across configuration changes and process death.
+ */
+@Serializable
+sealed interface ShellKey : NavKey
+
+@Serializable
+data object TodayKey : ShellKey
+
+@Serializable
+data object RecipesKey : ShellKey
+
+@Serializable
+data object WeekKey : ShellKey
+
+@Serializable
+data object ShoppingKey : ShellKey
+
+@Serializable
+data object MoreKey : ShellKey
+
+/** Mer → Språk. */
+@Serializable
+data object LanguageKey : ShellKey
+
+/** Mer → Om Tandem. */
+@Serializable
+data object AboutKey : ShellKey
+
+/** Mer → Om Tandem → Licenser. */
+@Serializable
+data object LicensesKey : ShellKey
+
+/** The full text of one bundled licence. */
+@Serializable
+data class LicenseTextKey(val license: BundledLicense) : ShellKey
+
+/** The five top-level destinations (plan 6.1), in the order of the navigation bar. */
+enum class ShellTab(val root: ShellKey) {
+    TODAY(TodayKey),
+    RECIPES(RecipesKey),
+    WEEK(WeekKey),
+    SHOPPING(ShoppingKey),
+    MORE(MoreKey),
+}
+
+/**
+ * One back stack per tab plus the selected tab. What the shell shows is [backStack]: the Today
+ * stack with the current tab's stack on top (each stack decorated on its own, see
+ * `ShellNavDisplay`), so system back goes
+ * up inside a tab first, then to Today, and only leaves the app from Today (Material navigation
+ * guidance; the Navigation 3 "multiple back stacks" recipe).
+ *
+ * The stacks are plain mutable lists, so the logic is unit-testable without Compose.
+ */
+@Stable
+class ShellNavigationState(
+    private val stacks: Map<ShellTab, MutableList<NavKey>>,
+    initialTab: ShellTab = ShellTab.TODAY,
+    private val onTabChanged: (ShellTab) -> Unit = {},
+) {
+    init {
+        require(ShellTab.entries.all { stacks[it]?.isNotEmpty() == true }) { "every tab needs a non-empty stack" }
+    }
+
+    var currentTab: ShellTab by mutableStateOf(initialTab)
+        private set
+
+    /** The keys to display, bottom to top. Never empty. */
+    val backStack: List<NavKey>
+        get() = if (currentTab == ShellTab.TODAY) {
+            stack(ShellTab.TODAY)
+        } else {
+            stack(ShellTab.TODAY) + stack(currentTab)
+        }
+
+    /** The key on top of the current tab, i.e. the visible screen. */
+    val currentKey: NavKey
+        get() = stack(currentTab).last()
+
+    /**
+     * Selects [tab]. Selecting the tab that is already shown returns to its first screen
+     * (Material behaviour for re-selecting a destination).
+     */
+    fun selectTab(tab: ShellTab) {
+        if (tab == currentTab) {
+            val stack = stack(tab)
+            while (stack.size > 1) stack.removeAt(stack.lastIndex)
+        } else {
+            currentTab = tab
+            onTabChanged(tab)
+        }
+    }
+
+    /** Opens [key] on top of the current tab. */
+    fun navigate(key: ShellKey) {
+        val stack = stack(currentTab)
+        if (stack.last() != key) stack.add(key)
+    }
+
+    /**
+     * System back / the top bar's back arrow. Returns false when there is nothing to go back to
+     * inside the shell (on Today's first screen); the system then leaves the app.
+     */
+    fun goBack(): Boolean {
+        val stack = stack(currentTab)
+        return when {
+            stack.size > 1 -> {
+                stack.removeAt(stack.lastIndex)
+                true
+            }
+
+            currentTab != ShellTab.TODAY -> {
+                currentTab = ShellTab.TODAY
+                onTabChanged(ShellTab.TODAY)
+                true
+            }
+
+            else -> false
+        }
+    }
+
+    /** The back stack of [tab], bottom to top, whether the tab is shown or not. Never empty. */
+    fun stackOf(tab: ShellTab): List<NavKey> = stack(tab)
+
+    private fun stack(tab: ShellTab): MutableList<NavKey> = stacks.getValue(tab)
+}
+
+/** Remembers the shell's back stacks and selected tab, saved across process death. */
+@Composable
+fun rememberShellNavigationState(): ShellNavigationState {
+    val today: NavBackStack<NavKey> = rememberNavBackStack(TodayKey)
+    val recipes: NavBackStack<NavKey> = rememberNavBackStack(RecipesKey)
+    val week: NavBackStack<NavKey> = rememberNavBackStack(WeekKey)
+    val shopping: NavBackStack<NavKey> = rememberNavBackStack(ShoppingKey)
+    val more: NavBackStack<NavKey> = rememberNavBackStack(MoreKey)
+    var savedTab by rememberSaveable { mutableStateOf(ShellTab.TODAY) }
+    return remember(today, recipes, week, shopping, more) {
+        ShellNavigationState(
+            stacks = mapOf(
+                ShellTab.TODAY to today,
+                ShellTab.RECIPES to recipes,
+                ShellTab.WEEK to week,
+                ShellTab.SHOPPING to shopping,
+                ShellTab.MORE to more,
+            ),
+            initialTab = savedTab,
+            onTabChanged = { savedTab = it },
+        )
+    }
+}

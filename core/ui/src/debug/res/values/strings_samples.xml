@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sample texts for @Preview and Roborazzi screenshots. Debug source set only: never shipped. -->
+<resources>
+    <string name="ui_sample_greeting">Good evening!</string>
+    <string name="ui_sample_empty_title">No recipes yet</string>
+    <string name="ui_sample_empty_body">Import a recipe from a website or load a few sample recipes to get started.</string>
+    <string name="ui_sample_empty_import">Import a recipe</string>
+    <string name="ui_sample_empty_samples">Load sample recipes</string>
+    <string name="ui_sample_error_title">Could not reach the server</string>
+    <string name="ui_sample_error_body">It is usually the network or a missing port number. Check the address and try again.</string>
+    <string name="ui_sample_error_details" translatable="false">SocketTimeoutException: timeout after 10 s\nGET /api/server-settings/current/</string>
+    <string name="ui_sample_try_demo_instead">Try demo mode instead</string>
+    <string name="ui_sample_loading">Fetching recipes…</string>
+    <string name="ui_sample_login_title">Log in to Tandoor</string>
+    <string name="ui_sample_login_body">You stay logged in on this device. Your password is never stored.</string>
+    <string name="ui_sample_username">Username</string>
+    <string name="ui_sample_password">Password</string>
+    <string name="ui_sample_login">Log in</string>
+</resources>

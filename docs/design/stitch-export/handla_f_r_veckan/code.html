@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3C0C00",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FEDEA8","on-secondary-container":"#2D1600",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#D3F89A","on-tertiary-container":"#142700",surface:"#FBF7F2","on-surface":"#2A2421","surface-container-low":"#F4EEE6","surface-container":"#EDE5DC","surface-container-high":"#E6DDCF","on-surface-variant":"#73685E","outline":"#9A8E83","outline-variant":"#D0C4B8",error:"#BA1A1A","on-error":"#FFFFFF"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}};</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}.material-symbols-rounded{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-smoothing:antialiased;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-4 flex items-center justify-between"><div class="flex items-center gap-2"><button aria-label="Tillbaka" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-container transition-colors" onclick="history.back()" type="button"><span class="material-symbols-rounded text-[24px]">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface tracking-tight">Handla För Veckan</h1></div><div class="flex items-center gap-2"><button aria-label="Stäng" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition-colors" onclick="history.back()" type="button"><span class="material-symbols-rounded text-[24px]">close</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full pt-16 pb-8 px-4 bg-surface relative"><div class="flex flex-col w-full pb-28 space-y-5">
+<!-- Sheet Handle & Context -->
+<div class="flex flex-col items-center pt-1 pb-1">
+<div class="w-12 h-1.5 bg-surface-container-high rounded-full mb-3"></div>
+<div class="w-full flex items-center justify-between px-1">
+<div>
+<h2 class="text-2xl font-headline font-bold text-on-surface tracking-tight">Handla för veckan</h2>
+<p class="text-xs font-medium text-on-surface-variant mt-0.5 flex items-center gap-1.5">
+<span class="inline-block w-2 h-2 rounded-full bg-secondary"></span>
+          Vecka 43 • 6 planerade middagar
+        </p>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">calendar_today</span>
+</div>
+</div>
+</div>
+<!-- Smart Pantry Summary Hero Card -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-sm space-y-4">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<span class="text-xs uppercase tracking-wider font-semibold text-on-surface-variant">Smart skafferianalys</span>
+<div class="text-xl font-headline font-bold text-on-surface flex items-baseline gap-1">
+<span id="summary-headline">12 varor saknas</span>
+<span class="text-xs font-normal text-on-surface-variant">av 28 totalt</span>
+</div>
+</div>
+<div class="flex -space-x-2 overflow-hidden py-1">
+<div class="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold ring-2 ring-surface">
+          12!
+        </div>
+<div class="w-9 h-9 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center text-xs font-bold ring-2 ring-surface">
+<span class="material-symbols-outlined text-sm">inventory_2</span>
+</div>
+</div>
+</div>
+<!-- Progress pill stats -->
+<div class="grid grid-cols-2 gap-2 text-xs">
+<div class="bg-surface rounded-xl p-2.5 flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]">shopping_basket</span>
+</div>
+<div class="min-w-0">
+<p class="font-bold text-on-surface truncate">12 att köpa</p>
+<p class="text-[11px] text-on-surface-variant truncate">saknas i hemmet</p>
+</div>
+</div>
+<div class="bg-surface rounded-xl p-2.5 flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-lg bg-tertiary-container flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="min-w-0">
+<p class="font-bold text-tertiary truncate">16 i basskafferi</p>
+<p class="text-[11px] text-on-surface-variant truncate">kryddor, olja &amp; mjöl</p>
+</div>
+</div>
+</div>
+<!-- Segmented Quick Filters -->
+<div class="bg-surface-container rounded-xl p-1 flex items-center gap-1">
+<button class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-center transition-all bg-primary text-on-primary shadow-sm flex items-center justify-center gap-1.5" id="btn-filter-missing" onclick="togglePantryFilter('missing')" type="button">
+<span class="material-symbols-outlined text-[16px]">remove_shopping_cart</span>
+        Bara det som saknas (12)
+      </button>
+<button class="flex-1 py-2 px-3 rounded-lg text-xs font-medium text-center transition-all text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1.5" id="btn-filter-all" onclick="togglePantryFilter('all')" type="button">
+<span class="material-symbols-outlined text-[16px]">checklist</span>
+        Alla råvaror (28)
+      </button>
+</div>
+</div>
+<!-- Included Meals Horizontal Carousel -->
+<div class="space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="text-xs uppercase tracking-wider font-semibold text-on-surface-variant">Inkluderade middagar</span>
+<span class="text-xs text-secondary font-medium">Tryck för att exkludera</span>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-1.5 -mx-4 px-4 scrollbar-none snap-x">
+<!-- Mån: Linsgryta -->
+<button class="meal-chip snap-start shrink-0 flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-surface-container-low text-on-surface transition-colors" onclick="toggleMeal(this)" type="button">
+<span class="w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center text-[12px] transition-transform">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<div class="text-left">
+<span class="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider block leading-tight">Mån</span>
+<span class="text-xs font-bold leading-tight">Linsgryta</span>
+</div>
+</button>
+<!-- Tis: Tomatsoppa -->
+<button class="meal-chip snap-start shrink-0 flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-surface-container-low text-on-surface transition-colors" onclick="toggleMeal(this)" type="button">
+<span class="w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center text-[12px] transition-transform">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<div class="text-left">
+<span class="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider block leading-tight">Tis</span>
+<span class="text-xs font-bold leading-tight">Tomatsoppa</span>
+</div>
+</button>
+<!-- Ons: Kycklingwok -->
+<button class="meal-chip snap-start shrink-0 flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-surface-container-low text-on-surface transition-colors" onclick="toggleMeal(this)" type="button">
+<span class="w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center text-[12px] transition-transform">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<div class="text-left">
+<span class="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider block leading-tight">Ons</span>
+<span class="text-xs font-bold leading-tight">Kycklingwok</span>
+</div>
+</button>
+<!-- Tor: Svamppasta (Hero Dish visual anchor) -->
+<button class="meal-chip snap-start shrink-0 flex items-center gap-2 py-1.5 pl-1.5 pr-3 rounded-full bg-surface-container-high text-on-surface shadow-sm" onclick="toggleMeal(this)" type="button">
+<div class="w-6 h-6 rounded-full overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Rustic close-up of a creamy wild mushroom tagliatelle pasta served in a terracotta bowl with shaved parmesan, scattered cracked black pepper, and fresh thyme sprigs in warm Nordic morning kitchen lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDX8ccHd5EARQVmmwtY3Ei5fBWj4U96mBLiESyvSbhk3O8sjCAOZZqdEJwg3InnMl7r61xXd9QdJO6TQEDXAmJefxqybQYGGcuTurAKW3toVJV5C9JGWWMaHa8c2MeLwNCoEp7nBNUCiYIA-AnOlrfmjigZ7_xxkbAPDwhU73TxIMAl8us3RJ49OOFGdb0k7keKF9hSadPtmpKf7dfMahbnmGT8ohuFPHPS7h8n5HPuKh5z-bdSNBdTkg"/>
+</div>
+<div class="text-left">
+<span class="text-[10px] font-semibold text-primary uppercase tracking-wider block leading-tight">Tor</span>
+<span class="text-xs font-bold leading-tight">Svamppasta</span>
+</div>
+</button>
+<!-- Fre: Ugnsbakad lax -->
+<button class="meal-chip snap-start shrink-0 flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-surface-container-low text-on-surface transition-colors" onclick="toggleMeal(this)" type="button">
+<span class="w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center text-[12px] transition-transform">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<div class="text-left">
+<span class="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider block leading-tight">Fre</span>
+<span class="text-xs font-bold leading-tight">Ugnsbakad lax</span>
+</div>
+</button>
+<!-- Sön: Citronkyckling -->
+<button class="meal-chip snap-start shrink-0 flex items-center gap-2 py-1.5 pl-2 pr-3 rounded-full bg-surface-container-low text-on-surface transition-colors" onclick="toggleMeal(this)" type="button">
+<span class="w-5 h-5 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center text-[12px] transition-transform">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</span>
+<div class="text-left">
+<span class="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider block leading-tight">Sön</span>
+<span class="text-xs font-bold leading-tight">Citronkyckling</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Aisle-Grouped Ingredients List -->
+<div class="space-y-4">
+<!-- Category 1: Frukt & Grönt -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-sm space-y-3">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-tertiary/15 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">nutrition</span>
+</span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Frukt &amp; grönt</h3>
+</div>
+<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant">4 varor</span>
+</div>
+<div class="space-y-1">
+<!-- Dill -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Dill</span>
+<span class="text-xs text-on-surface-variant">1 knippe • Till Lax</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Grönsaksdisken</span>
+</label>
+<!-- Citroner -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Citroner</span>
+<span class="text-xs text-on-surface-variant">2 st • Till Citronkyckling</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Eko</span>
+</label>
+<!-- Vitlök -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Vitlök</span>
+<span class="text-xs text-on-surface-variant">1 hel • Till gryta &amp; pasta</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Lösvikt</span>
+</label>
+<!-- Champinjoner -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Champinjoner</span>
+<span class="text-xs text-on-surface-variant">250 g • Kastanjechampinjon</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Kylt</span>
+</label>
+<!-- Example Pantry In-Stock Item (hidden by default filter) -->
+<label class="pantry-item hidden flex items-center justify-between p-2.5 rounded-xl bg-surface/50 opacity-60">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-5 h-5 rounded-full bg-tertiary-container flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="min-w-0">
+<span class="text-sm font-medium line-through text-on-surface-variant block leading-tight truncate">Gul lök</span>
+<span class="text-xs text-tertiary font-medium">Finns i skafferiet (3 st kvar)</span>
+</div>
+</div>
+<span class="text-xs text-on-surface-variant shrink-0">Lager</span>
+</label>
+</div>
+</div>
+<!-- Category 2: Fisk & Kött -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-sm space-y-3">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">set_meal</span>
+</span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Fisk &amp; kött</h3>
+</div>
+<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant">2 varor</span>
+</div>
+<div class="space-y-1">
+<!-- Laxfilé -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Laxfilé</span>
+<span class="text-xs text-on-surface-variant">4 bitar (~500 g) • ASC-märkt</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Fiskdisk</span>
+</label>
+<!-- Hel färsk kyckling -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Hel färsk kyckling</span>
+<span class="text-xs text-on-surface-variant">1,2 kg • Svensk gårdskyckling</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Köttkyl</span>
+</label>
+</div>
+</div>
+<!-- Category 3: Mejeri (with smart aggregated quantity!) -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-sm space-y-3">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">egg_alt</span>
+</span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Mejeri</h3>
+</div>
+<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant">3 varor</span>
+</div>
+<div class="space-y-1">
+<!-- Vispgrädde (summerad!) -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors bg-secondary/5">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="item-title text-sm font-medium text-on-surface truncate">Vispgrädde</span>
+<span class="px-1.5 py-0.2 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded-md uppercase">Summerad</span>
+</div>
+<span class="text-xs font-medium text-secondary">5 dl totalt (3 dl Svamppasta + 2 dl Fisksoppa)</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Mejerikyl</span>
+</label>
+<!-- Smör -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Smör normalsaltat</span>
+<span class="text-xs text-on-surface-variant">500 g • Arla Svenskt</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Smörhylla</span>
+</label>
+<!-- Riven parmesan -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Riven parmesan</span>
+<span class="text-xs text-on-surface-variant">100 g • Parmigiano Reggiano</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Ost</span>
+</label>
+</div>
+</div>
+<!-- Category 4: Skafferi -->
+<div class="bg-surface-container-low rounded-2xl p-4 shadow-sm space-y-3">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-surface-container text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">shelves</span>
+</span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Skafferi</h3>
+</div>
+<span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container">3 saknas</span>
+</div>
+<div class="space-y-1">
+<!-- Basmatiris -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Basmatiris</span>
+<span class="text-xs text-on-surface-variant">1 kg • Gång 4</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Torrvaror</span>
+</label>
+<!-- Kokosmjölk -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Kokosmjölk</span>
+<span class="text-xs text-on-surface-variant">1 burk (400 ml) • Krämig</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Asiatiskt</span>
+</label>
+<!-- Tagliatelle -->
+<label class="item-row flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-3 min-w-0">
+<input checked="" class="item-checkbox w-5 h-5 rounded text-primary accent-primary cursor-pointer" onchange="handleItemCheck(this)" type="checkbox"/>
+<div class="min-w-0">
+<span class="item-title text-sm font-medium text-on-surface block leading-tight truncate">Tagliatelle äggpasta</span>
+<span class="text-xs text-on-surface-variant">500 g • De Cecco / motsv.</span>
+</div>
+</div>
+<span class="text-xs font-medium text-on-surface-variant shrink-0">Pasta</span>
+</label>
+<!-- Skafferi varor som finns hemma -->
+<label class="pantry-item hidden flex items-center justify-between p-2.5 rounded-xl bg-surface/50 opacity-60">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-5 h-5 rounded-full bg-tertiary-container flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="min-w-0">
+<span class="text-sm font-medium line-through text-on-surface-variant block leading-tight truncate">Olivolja Extra Virgin</span>
+<span class="text-xs text-tertiary font-medium">Finns i skafferiet (~0.6 L kvar)</span>
+</div>
+</div>
+<span class="text-xs text-on-surface-variant shrink-0">Lager</span>
+</label>
+<label class="pantry-item hidden flex items-center justify-between p-2.5 rounded-xl bg-surface/50 opacity-60">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-5 h-5 rounded-full bg-tertiary-container flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+<div class="min-w-0">
+<span class="text-sm font-medium line-through text-on-surface-variant block leading-tight truncate">Flingsalt &amp; svartpeppar</span>
+<span class="text-xs text-tertiary font-medium">Finns i skafferiet</span>
+</div>
+</div>
+<span class="text-xs text-on-surface-variant shrink-0">Kryddor</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Store Target Selector -->
+<div class="bg-surface-container rounded-2xl p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-surface flex items-center justify-center text-primary shadow-xs">
+<span class="material-symbols-outlined text-[20px]">storefront</span>
+</div>
+<div>
+<span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider block leading-tight">Läggs till i butikslista</span>
+<span class="text-sm font-bold text-on-surface">Hemköp Karlaplan</span>
+</div>
+</div>
+<button class="px-3 py-1.5 rounded-full bg-surface text-on-surface text-xs font-semibold flex items-center gap-1 hover:bg-surface-container-high transition-colors" type="button">
+<span>Ändra</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</button>
+</div>
+<!-- Sticky Bottom Actions Container -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-surface via-surface/95 to-transparent backdrop-blur-sm z-40">
+<div class="max-w-md mx-auto space-y-2">
+<!-- Primary Action CTA -->
+<button class="w-full py-4 px-6 rounded-2xl bg-primary text-on-primary font-headline font-bold text-base shadow-lg shadow-primary/25 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5" id="btn-add-items" onclick="confirmAddToList()" type="button">
+<span class="material-symbols-outlined text-[22px]">shopping_cart_checkout</span>
+<span id="cta-label">Lägg till 12 varor i inköpslistan</span>
+</button>
+<!-- Secondary Direct Action -->
+<button class="w-full py-2.5 px-4 rounded-xl text-center text-xs font-bold text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center gap-1.5" type="button">
+<span>Gå direkt till butiksläget</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  let showingAll = false;
+
+  function togglePantryFilter(type) {
+    const missingBtn = document.getElementById('btn-filter-missing');
+    const allBtn = document.getElementById('btn-filter-all');
+    const pantryItems = document.querySelectorAll('.pantry-item');
+    const summaryHeadline = document.getElementById('summary-headline');
+
+    if (type === 'all') {
+      showingAll = true;
+      allBtn.className = "flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-center transition-all bg-primary text-on-primary shadow-sm flex items-center justify-center gap-1.5";
+      missingBtn.className = "flex-1 py-2 px-3 rounded-lg text-xs font-medium text-center transition-all text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1.5";
+      pantryItems.forEach(el => el.classList.remove('hidden'));
+      summaryHeadline.textContent = "28 råvaror totalt";
+    } else {
+      showingAll = false;
+      missingBtn.className = "flex-1 py-2 px-3 rounded-lg text-xs font-semibold text-center transition-all bg-primary text-on-primary shadow-sm flex items-center justify-center gap-1.5";
+      allBtn.className = "flex-1 py-2 px-3 rounded-lg text-xs font-medium text-center transition-all text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1.5";
+      pantryItems.forEach(el => el.classList.add('hidden'));
+      summaryHeadline.textContent = "12 varor saknas";
+    }
+    updateCtaCount();
+  }
+
+  function toggleMeal(btn) {
+    const isExcluded = btn.getAttribute('data-excluded') === 'true';
+    if (isExcluded) {
+      btn.setAttribute('data-excluded', 'false');
+      btn.style.opacity = '1';
+      btn.classList.remove('bg-surface');
+      btn.classList.add('bg-surface-container-low');
+      const badge = btn.querySelector('.rounded-full');
+      if (badge && !badge.querySelector('img')) {
+        badge.classList.remove('bg-surface-variant', 'text-on-surface-variant');
+        badge.classList.add('bg-tertiary', 'text-on-tertiary');
+      }
+    } else {
+      btn.setAttribute('data-excluded', 'true');
+      btn.style.opacity = '0.45';
+      btn.classList.add('bg-surface');
+      btn.classList.remove('bg-surface-container-low');
+      const badge = btn.querySelector('.rounded-full');
+      if (badge && !badge.querySelector('img')) {
+        badge.classList.add('bg-surface-variant', 'text-on-surface-variant');
+        badge.classList.remove('bg-tertiary', 'text-on-tertiary');
+      }
+    }
+    updateCtaCount();
+  }
+
+  function handleItemCheck(checkbox) {
+    const row = checkbox.closest('.item-row');
+    const title = row.querySelector('.item-title');
+    if (!checkbox.checked) {
+      title.classList.add('line-through', 'opacity-50');
+    } else {
+      title.classList.remove('line-through', 'opacity-50');
+    }
+    updateCtaCount();
+  }
+
+  function updateCtaCount() {
+    const checkedBoxes = document.querySelectorAll('.item-checkbox:checked').length;
+    const ctaLabel = document.getElementById('cta-label');
+    if (ctaLabel) {
+      ctaLabel.textContent = `Lägg till ${checkedBoxes} varor i inköpslistan`;
+    }
+  }
+
+  function confirmAddToList() {
+    const btn = document.getElementById('btn-add-items');
+    if (!btn) return;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<span class="material-symbols-outlined text-[22px]">check_circle</span> Sparat till Hemköp Karlaplan!`;
+    btn.classList.remove('bg-primary');
+    btn.classList.add('bg-tertiary');
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.classList.remove('bg-tertiary');
+      btn.classList.add('bg-primary');
+    }, 2400);
+  }
+</script></main></body></html>

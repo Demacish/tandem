@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shell_app_name" translatable="false">Tandem</string>
+
+    <!-- Top-level destinations (plan 6.1). Short: they sit under icons in the navigation bar. -->
+    <string name="shell_tab_today">Today</string>
+    <string name="shell_tab_recipes">Recipes</string>
+    <string name="shell_tab_week">Week</string>
+    <string name="shell_tab_shopping">Shopping</string>
+    <string name="shell_tab_more">More</string>
+
+    <!-- Placeholder tabs: what each tab will show. No fake data. -->
+    <string name="shell_today_title">Your day in the kitchen starts here</string>
+    <string name="shell_today_body">In the next version, Today shows tonight’s and tomorrow’s meals from your meal plan, recipes you cook often and a quick way back into cooking.</string>
+    <string name="shell_recipes_title">Your recipes are on their way</string>
+    <string name="shell_recipes_body">The next version brings your Tandoor recipes into the app: search, filters, books and a cooking mode with timers, also offline.</string>
+    <string name="shell_week_title">Plan your week here</string>
+    <string name="shell_week_body">A later version shows the week’s meal plan from Tandoor, lets you add meals and puts their ingredients on the shopping list.</string>
+    <string name="shell_shopping_title">Your shopping list is coming</string>
+    <string name="shell_shopping_body">A later version brings Tandoor’s shopping list: sorted by store aisle, shared with your household and usable offline in the store.</string>
+
+    <!-- "More": account and settings. -->
+    <string name="shell_more_section_app">App</string>
+    <string name="shell_account_signed_in_as">Signed in as %1$s</string>
+    <string name="shell_account_server">Server</string>
+    <string name="shell_account_space">Space</string>
+    <string name="shell_account_version">Tandoor %1$s</string>
+    <string name="shell_account_version_unknown">Tandoor, version unknown</string>
+    <string name="shell_account_checking">Checking the server…</string>
+    <string name="shell_account_check_failed">Could not check the server: %1$s</string>
+    <string name="shell_account_check_again">Check again</string>
+    <string name="shell_compat_supported">Supported</string>
+    <string name="shell_compat_supported_description">This Tandoor version is supported</string>
+    <string name="shell_compat_too_old">Too old</string>
+    <string name="shell_compat_too_old_description">This Tandoor version is too old for Tandem</string>
+    <string name="shell_safe_mode_note">Tandem has not been tested with this Tandoor version yet, so it runs in safe mode.</string>
+    <string name="shell_language">Language</string>
+    <string name="shell_theme">Theme</string>
+    <string name="shell_theme_system">System</string>
+    <string name="shell_theme_light">Light</string>
+    <string name="shell_theme_dark">Dark</string>
+    <string name="shell_about">About Tandem</string>
+    <string name="shell_about_version">Version %1$s</string>
+    <string name="shell_log_out_of">Log out of %1$s</string>
+
+    <!-- Logout (plan 4.2 step 4). -->
+    <string name="shell_logout_title">Log out?</string>
+    <string name="shell_logout_body">Your login is removed from this device. Your recipes and other data on the server are not affected, and you can log in again at any time.</string>
+    <string name="shell_logout_revoke">Revoke this device’s token</string>
+    <string name="shell_logout_revoke_body">Only the token Tandem created for this device is deleted on the server. Your other devices stay logged in.</string>
+    <string name="shell_logout_pasted_token_note">You signed in with a token you pasted. Tandem leaves it on the server, because other apps or devices may use it. Delete it in Tandoor under Settings → API if you no longer need it.</string>
+    <string name="shell_logout_confirm">Log out</string>
+    <string name="shell_cancel">Cancel</string>
+    <string name="shell_logged_out">Logged out.</string>
+    <string name="shell_logged_out_token_not_revoked">Logged out on this device, but the token could not be revoked: the server could not be reached, or it (or something in front of it, such as a login portal) refused. Delete it in Tandoor under Settings → API.</string>
+    <string name="shell_logged_out_pasted_token">Logged out on this device. The pasted token is still valid; delete it in Tandoor under Settings → API if you no longer need it.</string>
+    <string name="shell_logout_failed">Could not log out: secure storage on this device is not available.</string>
+    <string name="shell_settings_not_saved">The setting could not be saved.</string>
+
+    <!-- Language (plan 6.7). Language names are shown in their own language. -->
+    <string name="shell_language_system">System language</string>
+    <string name="shell_language_system_body">Follows the language of your phone</string>
+    <string name="shell_language_name_en" translatable="false">English</string>
+    <string name="shell_language_name_sv" translatable="false">Svenska</string>
+    <string name="shell_language_english">English</string>
+    <string name="shell_language_swedish">Swedish</string>
+    <string name="shell_language_fully_translated">%1$s · Fully translated</string>
+    <string name="shell_language_recipes_title">Recipes keep their language</string>
+    <string name="shell_language_recipes_body">This changes Tandem’s own texts. Recipes, ingredients and units are shown exactly as they are in your Tandoor.</string>
+    <string name="shell_language_system_settings">You can also change the language in Android’s settings under Apps → Tandem → Language.</string>
+
+    <!-- About -->
+    <string name="shell_about_tagline">An Android app for Tandoor Recipes, the recipe manager you host yourself.</string>
+    <string name="shell_about_version_full">Version %1$s (%2$d) · %3$s</string>
+    <string name="shell_about_independent_title">Not affiliated with the Tandoor project</string>
+    <string name="shell_about_independent_body">Tandem is an independent app made for Tandoor. Please report problems with Tandem to Tandem, not to the Tandoor project.</string>
+    <string name="shell_about_privacy_title">Your data stays yours</string>
+    <string name="shell_about_privacy_body">Tandem only talks to the Tandoor server you connect it to. No ads, no analytics, no tracking.</string>
+    <string name="shell_about_licenses">Licenses</string>
+    <string name="shell_about_licenses_body">Fonts, icons and open-source libraries</string>
+
+    <!-- Licenses. Product and licence names are not translated. -->
+    <string name="shell_licenses_fonts">Fonts and icons</string>
+    <string name="shell_licenses_libraries">Open-source libraries</string>
+    <string name="shell_license_text_unavailable">The license text could not be loaded.</string>
+    <string name="shell_license_bricolage" translatable="false">Bricolage Grotesque</string>
+    <string name="shell_license_dm_sans" translatable="false">DM Sans</string>
+    <string name="shell_license_material_symbols" translatable="false">Material Symbols Rounded</string>
+    <string name="shell_license_libraries" translatable="false">AndroidX, Jetpack Compose, Kotlin, kotlinx, Dagger Hilt, OkHttp, Retrofit, Tink</string>
+    <string name="shell_license_ofl" translatable="false">SIL Open Font License 1.1</string>
+    <string name="shell_license_apache" translatable="false">Apache License 2.0</string>
+</resources>

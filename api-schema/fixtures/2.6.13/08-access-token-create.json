@@ -1,0 +1,39 @@
+{
+  "name": "access-token-create",
+  "request": {
+    "method": "POST",
+    "path": "/api/access-token/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "scope": "read write",
+      "expires": "2000-01-01T00:00:00Z"
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 2,
+      "token": "tda_00000000_0000_0000_0000_000000000002",
+      "expires": "2000-01-01T00:00:00+02:00",
+      "scope": "read write",
+      "created": "2000-01-01T00:00:00.000000+02:00",
+      "updated": "2000-01-01T00:00:00.000000+02:00"
+    }
+  }
+}

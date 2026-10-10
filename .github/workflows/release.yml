@@ -1,0 +1,360 @@
+name: Release
+
+# Tag v* -> signed sideload release APK (R8), apksigner verify, GitHub Release with the Swedish
+# CHANGELOG.md section, the APK, the R8 mapping and SHA256SUMS.
+# Dry run (workflow_dispatch, default, or a push to a lane branch that touches the build or R8
+# configuration): the same build + sign + verify path with a THROWAWAY key made exactly like the
+# real one. The APK gets the package casa.moller.tandem.dryrun and a DRYRUN file name, it is kept
+# as an artifact for 2 days, and no release is created. See docs/RELEASE.md.
+#
+# A real release also runs the release smoke test (smoke.yml, R8-minified app on an emulator);
+# "publish" waits for it and stops if it fails.
+#
+# Jobs: "mode" decides dry run or release without running any build code. "build" runs all
+# third-party build code (Gradle, AGP, KSP, ...) with a READ-ONLY token and no stored git
+# credentials. The signing secrets live in the GitHub environment "release", which only v* tags may
+# use; dry runs run in the empty environment "dry-run", so they never receive the key. Only
+# "publish" can write to the repository, and it runs no build code: it downloads the verified
+# artifact and calls `gh release create`.
+on:
+  push:
+    tags: ["v*"]
+    # Lane branches only: main receives the identical, already dry-run SHA by fast-forward.
+    branches: ["**", "!main"]
+    # Path filters apply to branch pushes only; tag pushes always run. Anything that can change
+    # what R8 sees (dependencies, build logic, keep rules) triggers a dry run before a tag does.
+    paths:
+      - ".github/workflows/release.yml"
+      - "**/build.gradle.kts"
+      - "**/proguard-rules.pro"
+      - "**/consumer-rules.pro"
+      - "build-logic/**"
+      - "gradle/libs.versions.toml"
+      - "gradle/wrapper/gradle-wrapper.properties"
+      - "gradle.properties"
+      - "settings.gradle.kts"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: throwaway keystore, APK as artifact, no GitHub Release"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+permissions:
+  contents: read
+
+jobs:
+  mode:
+    name: Decide mode and version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+      version: ${{ steps.mode.outputs.version }}
+      artifact: ${{ steps.mode.outputs.artifact }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Decide mode and version
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          DRY_INPUT: ${{ inputs.dry_run }}
+        run: |
+          version="$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' app/build.gradle.kts | head -n 1)"
+          [ -n "$version" ] || { echo "::error::versionName not found in app/build.gradle.kts"; exit 1; }
+          dry_run=true
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && { [ "$EVENT" = "push" ] || [ "$DRY_INPUT" = "false" ]; }; then
+            dry_run=false
+          fi
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$DRY_INPUT" = "false" ] && [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::error title=Not a tag::A real release needs a v* tag. Push the tag (git push origin v${version}) or run this workflow on the tag."
+            exit 1
+          fi
+          if [ "$dry_run" = "false" ] && [ "$GITHUB_REF_NAME" != "v${version}" ]; then
+            echo "::error title=Tag and versionName differ::Tag ${GITHUB_REF_NAME} but versionName is ${version} in app/build.gradle.kts. Bump versionName/versionCode first."
+            exit 1
+          fi
+          echo "dry_run=${dry_run}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "artifact=tandem-${version}-$([ "$dry_run" = true ] && echo dry-run || echo release)" >> "$GITHUB_OUTPUT"
+          if [ "$dry_run" = "false" ] && ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error title=Tag not on main::${GITHUB_REF_NAME} points at a commit that is not on main. Releases are only made from main."
+            exit 1
+          fi
+          echo "Mode: $([ "$dry_run" = true ] && echo 'dry run (throwaway keystore)' || echo 'RELEASE') - Tandem ${version}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: ${{ needs.mode.outputs.dry_run == 'false' && 'Build release' || 'Build (dry run)' }}
+    needs: mode
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # The signing secrets exist only in the environment "release" (deployments limited to v* tags).
+    environment: ${{ needs.mode.outputs.dry_run == 'false' && 'release' || 'dry-run' }}
+    permissions:
+      contents: read
+    outputs:
+      dry_run: ${{ needs.mode.outputs.dry_run }}
+      version: ${{ needs.mode.outputs.version }}
+      artifact: ${{ needs.mode.outputs.artifact }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The build runs third-party code; it must not find a token in .git/config.
+          persist-credentials: false
+
+      - name: Check signing secrets
+        if: needs.mode.outputs.dry_run == 'false'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.TANDEM_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.TANDEM_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.TANDEM_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.TANDEM_KEY_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$KEYSTORE_BASE64" ] || missing="$missing TANDEM_KEYSTORE_BASE64"
+          [ -n "$KEYSTORE_PASSWORD" ] || missing="$missing TANDEM_KEYSTORE_PASSWORD"
+          [ -n "$KEY_ALIAS" ] || missing="$missing TANDEM_KEY_ALIAS"
+          [ -n "$KEY_PASSWORD" ] || missing="$missing TANDEM_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error title=Signing secrets missing::Missing secrets in the environment 'release':${missing}. Upload them with scripts/create-signing-key.sh --upload-only (docs/RELEASE.md). Nothing was built."
+            exit 1
+          fi
+          echo "All four signing secrets are present."
+
+      # Before the build, so a missing changelog stops a real release within seconds (plan 4.4:
+      # "GitHub Release med APK + svensk changelog"). Dry runs only warn.
+      - name: Release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ needs.mode.outputs.version }}
+          DRY_RUN: ${{ needs.mode.outputs.dry_run }}
+        run: |
+          mkdir -p dist
+          # The section for this version: "## [0.0.1] – 2026-10-10", "## v0.0.1" or "## 0.0.1".
+          python3 - "$VERSION" <<'PY'
+          import pathlib, re, sys
+          version = sys.argv[1]
+          path = pathlib.Path("CHANGELOG.md")
+          lines, inside = [], False
+          if path.exists():
+              for line in path.read_text(encoding="utf-8").splitlines():
+                  if line.startswith("## "):
+                      if inside:
+                          break
+                      match = re.match(r"^##\s+\[?v?([0-9][^\]\s]*)", line)
+                      inside = bool(match and match.group(1) == version)
+                      continue
+                  if inside:
+                      lines.append(line)
+          pathlib.Path("dist/release-notes.md").write_text("\n".join(lines).strip() + "\n", encoding="utf-8")
+          PY
+          if [ -n "$(tr -d '[:space:]' < dist/release-notes.md)" ]; then
+            echo "Using the CHANGELOG.md section for ${VERSION}"
+          elif [ "$DRY_RUN" = "true" ]; then
+            echo "::warning title=No changelog::CHANGELOG.md has no section for ${VERSION}; a real release would stop here."
+          else
+            echo "::error title=No changelog::CHANGELOG.md has no section '## [${VERSION}]'. Add the Swedish changelog for this version (docs/RELEASE.md step 2), then tag again."
+            exit 1
+          fi
+
+      # A published release must never carry a pre-filled server address (app/build.gradle.kts).
+      - name: No default server URL in published builds
+        run: |
+          if grep -qs '^[[:space:]]*tandem\.defaultServerUrl' gradle.properties; then
+            echo "::error title=Default server URL::gradle.properties sets tandem.defaultServerUrl. That is only for local builds; remove it before releasing."
+            exit 1
+          fi
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Caching is done by the restore step below; main's PR run is the only cache writer.
+          cache-disabled: true
+
+      # Real releases build from scratch: no task outputs or jars restored from an earlier run.
+      - name: Restore Gradle cache (read only, dry runs)
+        if: needs.mode.outputs.dry_run == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # Keystore, passwords and the signed build live in this ONE step, so the secrets are not
+      # exported to any other step (no $GITHUB_ENV) and the keystore file is deleted afterwards.
+      # A dry run makes its throwaway key with the same openssl commands as
+      # scripts/create-signing-key.sh and feeds it through the same base64 + keytool path, so only
+      # the source of the secrets differs between the two modes.
+      - name: Build and sign release
+        env:
+          DRY_RUN: ${{ needs.mode.outputs.dry_run }}
+          EVENT: ${{ github.event_name }}
+          SECRET_KEYSTORE_BASE64: ${{ needs.mode.outputs.dry_run == 'false' && secrets.TANDEM_KEYSTORE_BASE64 || '' }}
+          SECRET_KEYSTORE_PASSWORD: ${{ needs.mode.outputs.dry_run == 'false' && secrets.TANDEM_KEYSTORE_PASSWORD || '' }}
+          SECRET_KEY_ALIAS: ${{ needs.mode.outputs.dry_run == 'false' && secrets.TANDEM_KEY_ALIAS || '' }}
+          SECRET_KEY_PASSWORD: ${{ needs.mode.outputs.dry_run == 'false' && secrets.TANDEM_KEY_PASSWORD || '' }}
+        run: |
+          umask 077
+          keystore="$RUNNER_TEMP/tandem-release.p12"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$keystore" "$work"' EXIT
+          gradle_args=()
+          tasks=(:app:assembleSideloadRelease :app:bundlePlayRelease)
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::group::Throwaway PKCS12 keystore (dry run)"
+            password="$(openssl rand -hex 32)"
+            echo "::add-mask::${password}"
+            printf '%s' "$password" > "$work/password"
+            openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$work/key.pem" 2> /dev/null
+            openssl req -new -x509 -sha256 -key "$work/key.pem" -days 2 \
+              -subj "/CN=Tandem dry run (throwaway)/O=Tandem" -out "$work/cert.pem"
+            openssl pkcs12 -export -name tandem -inkey "$work/key.pem" -in "$work/cert.pem" \
+              -keypbe AES-256-CBC -certpbe AES-256-CBC -macalg SHA256 \
+              -passout "file:$work/password" -out "$work/throwaway.p12"
+            SECRET_KEYSTORE_BASE64="$(base64 -w0 "$work/throwaway.p12")"
+            SECRET_KEYSTORE_PASSWORD="$password"
+            SECRET_KEY_PASSWORD="$password"
+            SECRET_KEY_ALIAS=tandem
+            # Own package name (casa.moller.tandem.dryrun) and version suffix: such an APK can
+            # never be mistaken for, or block updates of, a real release.
+            gradle_args+=(-Ptandem.dryRun=true)
+            # Lane pushes check the sideload R8 build; a manual dry run builds both like a release.
+            [ "$EVENT" = "workflow_dispatch" ] || tasks=(:app:assembleSideloadRelease)
+            echo "::endgroup::"
+          fi
+          printf '%s' "$SECRET_KEYSTORE_BASE64" | base64 --decode > "$keystore" \
+            || { echo "::error::TANDEM_KEYSTORE_BASE64 is not valid base64"; exit 1; }
+          export TANDEM_KEYSTORE_PASSWORD="$SECRET_KEYSTORE_PASSWORD"
+          export TANDEM_KEY_PASSWORD="$SECRET_KEY_PASSWORD"
+          export TANDEM_KEY_ALIAS="$SECRET_KEY_ALIAS"
+          export TANDEM_KEYSTORE_PATH="$keystore"
+          if ! keytool -list -storetype PKCS12 -keystore "$keystore" -storepass:env TANDEM_KEYSTORE_PASSWORD \
+              -alias "$TANDEM_KEY_ALIAS" > /dev/null; then
+            echo "::error title=Keystore check failed::The keystore cannot be opened with TANDEM_KEYSTORE_PASSWORD (PKCS12), or it has no entry named TANDEM_KEY_ALIAS."
+            exit 1
+          fi
+          # No configuration cache: it would store the signing passwords in its cache entry.
+          ./gradlew --stacktrace --no-configuration-cache "${gradle_args[@]}" "${tasks[@]}"
+
+      - name: Verify signature (apksigner)
+        id: verify
+        env:
+          VERSION: ${{ needs.mode.outputs.version }}
+          DRY_RUN: ${{ needs.mode.outputs.dry_run }}
+          EXPECTED_CERT_SHA256: ${{ vars.TANDEM_CERT_SHA256 }}
+        run: |
+          apk=app/build/outputs/apk/sideload/release/app-sideload-release.apk
+          if [ ! -f "$apk" ]; then
+            echo "::error::Signed APK not found (an *-unsigned.apk means the signingConfig was not applied)"
+            ls -la app/build/outputs/apk/sideload/release/ || true
+            exit 1
+          fi
+          build_tools="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)"
+          "$build_tools/apksigner" verify --verbose --print-certs --min-sdk-version 34 "$apk" | tee apksigner.txt
+          grep -qx "Verifies" apksigner.txt || { echo "::error::apksigner did not verify the APK"; exit 1; }
+          # minSdk 34: the signer writes only scheme v3 (v2/v1 are skipped as no device needs them).
+          grep -q "Verified using v3 scheme (APK Signature Scheme v3): true" apksigner.txt \
+            || { echo "::error::APK is not signed with signature scheme v3"; exit 1; }
+          grep -q "^Number of signers: 1$" apksigner.txt || { echo "::error::Expected exactly one signer"; exit 1; }
+          fingerprint="$(sed -n 's/^.*Signer.*: certificate SHA-256 digest: //p' apksigner.txt | head -n 1)"
+          [ -n "$fingerprint" ] || { echo "::error::No signer certificate in apksigner output"; exit 1; }
+          normalize() { printf '%s' "$1" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]'; }
+          if [ "$DRY_RUN" = "false" ] && [ -z "$EXPECTED_CERT_SHA256" ]; then
+            echo "::error title=No expected certificate::Repository variable TANDEM_CERT_SHA256 is missing, so the signing key cannot be checked. Run scripts/create-signing-key.sh --upload-only, then tag again."
+            exit 1
+          fi
+          if [ "$DRY_RUN" = "false" ] \
+              && [ "$(normalize "$fingerprint")" != "$(normalize "$EXPECTED_CERT_SHA256")" ]; then
+            echo "::error title=Wrong signing key::Certificate SHA-256 ${fingerprint} differs from repository variable TANDEM_CERT_SHA256. Updates would not install over the existing app."
+            exit 1
+          fi
+          # A dry-run APK never gets the real asset name (the Obtainium regex matches that one).
+          if [ "$DRY_RUN" = "true" ]; then
+            name="tandem-${VERSION}-DRYRUN-throwaway-key.apk"
+          else
+            name="tandem-${VERSION}-sideload.apk"
+          fi
+          mapping="tandem-${VERSION}-sideload-mapping.txt"
+          cp "$apk" "dist/${name}"
+          cp app/build/outputs/mapping/sideloadRelease/mapping.txt "dist/${mapping}"
+          (cd dist && sha256sum "$name" "$mapping" > SHA256SUMS)
+          {
+            echo "### Signed APK"
+            echo "- \`${name}\`"
+            echo "- Certificate SHA-256: \`${fingerprint}\`$([ "$DRY_RUN" = true ] && echo ' (throwaway dry-run key, package casa.moller.tandem.dryrun)')"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK, mapping and AAB (artifact)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ needs.mode.outputs.artifact }}
+          path: |
+            dist/
+            app/build/outputs/bundle/playRelease/*.aab
+          if-no-files-found: error
+          # Real releases also attach the mapping to the GitHub Release, which keeps it for good.
+          retention-days: ${{ needs.mode.outputs.dry_run == 'true' && 2 || 90 }}
+
+  # REQUIRED before publishing: the R8-minified app (same R8 configuration as this release) must
+  # log in, survive a restart and log out on an emulator (smoke.yml, docs/RELEASE.md). Lane dry
+  # runs skip it here; smoke.yml runs on its own for the same changes.
+  smoke:
+    name: Release smoke test
+    needs: build
+    if: needs.build.outputs.dry_run == 'false'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/smoke.yml
+
+  publish:
+    name: Publish GitHub Release
+    needs: [build, smoke]
+    # smoke.yml's "ran" is its emulator job's own result: a skipped emulator run never publishes.
+    if: needs.build.outputs.dry_run == 'false' && needs.smoke.result == 'success' && needs.smoke.outputs.ran == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # gh release create; this job checks nothing out and runs no build code
+    steps:
+      - name: Download the verified build
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: artifact
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          dist="$(dirname "$(find artifact -name SHA256SUMS -print -quit)")"
+          [ -f "$dist/release-notes.md" ] || { echo "::error::release-notes.md missing from the build artifact"; exit 1; }
+          (cd "$dist" && sha256sum --check SHA256SUMS)
+          gh release create "$GITHUB_REF_NAME" \
+            "$dist/tandem-${VERSION}-sideload.apk" \
+            "$dist/tandem-${VERSION}-sideload-mapping.txt" \
+            "$dist/SHA256SUMS" \
+            -R "$GITHUB_REPOSITORY" --verify-tag --title "Tandem ${VERSION}" \
+            --notes-file "$dist/release-notes.md"

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+
+<html class="light" lang="sv"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Veckan – Matsedel (Surfplatta)</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#C2410C',
+              dark: '#9A3412',
+              light: '#FFEDD5',
+              container: '#FFEDD5',
+              'on-container': '#7C2D12'
+            },
+            terracotta: {
+              50: '#FFF7ED',
+              100: '#FFEDD5',
+              500: '#C2410C',
+              600: '#EA580C',
+              700: '#C2410C',
+              900: '#7C2D12'
+            },
+            warm: {
+              bg: '#FBF7F2',
+              card: '#FFFFFF',
+              surface: '#F5EFE6',
+              border: '#E8DFD5',
+              muted: '#78716C',
+              dark: '#292524'
+            }
+          },
+          fontFamily: {
+            headline: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill-1 {
+      font-variation-settings: 'FILL' 1;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #E5DDD3;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #D4C9BC;
+    }
+  </style>
+<meta content="web_dashboard" name="shell-type"/></head>
+<body class="bg-[#FBF7F2] text-[#292524] font-body h-screen w-screen overflow-hidden flex select-none antialiased">
+<!-- ============================================================ -->
+<!-- 1. NAVIGATION RAIL (VÄNSTER, SURFPLATTEFORMAT) -->
+<!-- ============================================================ -->
+<aside class="w-20 bg-white border-r border-[#E8DFD5] flex flex-col items-center py-5 justify-between shrink-0 z-30">
+<!-- Topp: Tandem App-logotyp -->
+<div class="flex flex-col items-center gap-6">
+<div class="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C2410C] to-[#EA580C] text-white shadow-md shadow-orange-900/15 cursor-pointer hover:scale-105 transition-transform" title="Tandem">
+<span class="material-symbols-outlined text-2xl fill-1">soup_kitchen</span>
+</div>
+<!-- Navigation Icons -->
+<nav class="flex flex-col items-center gap-3">
+<!-- Idag -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">today</span>
+<span class="text-[11px] font-medium mt-1">Idag</span>
+</a>
+<!-- Recept -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">menu_book</span>
+<span class="text-[11px] font-medium mt-1">Recept</span>
+</a>
+<!-- Veckan (Aktiv) -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl bg-[#FFEDD5] text-[#C2410C] font-semibold transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-2xl fill-1">calendar_month</span>
+<span class="text-[11px] font-bold mt-1">Veckan</span>
+</a>
+<!-- Handla -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group relative" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">shopping_basket</span>
+<span class="text-[11px] font-medium mt-1">Handla</span>
+<span class="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-[#C2410C]"></span>
+</a>
+<!-- Mer -->
+<a class="flex flex-col items-center justify-center w-14 py-2 rounded-xl text-[#78716C] hover:text-[#292524] hover:bg-[#F5EFE6] transition-all group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">more_horiz</span>
+<span class="text-[11px] font-medium mt-1">Mer</span>
+</a>
+</nav>
+</div>
+<!-- Botten: Synkstatus & Profil / Kokläge -->
+<div class="flex flex-col items-center gap-3">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-[#78716C] hover:bg-[#F5EFE6] hover:text-[#292524] transition-colors" title="Tandoor synkad">
+<span class="material-symbols-outlined text-xl text-emerald-600 fill-1">cloud_done</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-[#F5EFE6] border border-[#E8DFD5] flex items-center justify-center text-xs font-bold text-[#7C2D12]">
+        TK
+      </div>
+</div>
+</aside>
+<!-- ============================================================ -->
+<!-- 2. HUVUDYTA: HEADER + VECKORUTNÄT -->
+<!-- ============================================================ -->
+<main class="flex-1 flex flex-col min-w-0 h-full overflow-hidden"><div class="flex flex-col w-full h-full p-4 lg:p-6 overflow-hidden">
+<!-- Topprad: Vy-status & Tablet-anpassad snabbåtgärd -->
+<header class="flex items-center justify-between pb-4 shrink-0">
+<div class="flex items-baseline gap-3">
+<h1 class="font-headline text-2xl font-extrabold text-warm-dark tracking-tight">Inköpslista</h1>
+<span class="text-xs uppercase tracking-wider font-semibold text-terracotta-700 bg-terracotta-100 px-2.5 py-0.5 rounded-full">
+        Vecka 43 • Hemköp Karlaplan
+      </span>
+</div>
+<!-- Höger snabbverktyg -->
+<div class="flex items-center gap-2">
+<button class="px-3.5 py-1.5 rounded-xl bg-warm-surface hover:bg-warm-border text-warm-dark text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm" id="btn-toggle-done">
+<span class="material-symbols-outlined text-base text-terracotta-700">visibility</span>
+<span>Dölj klara (2)</span>
+</button>
+<button class="w-9 h-9 rounded-xl bg-warm-surface hover:bg-warm-border text-warm-dark flex items-center justify-center transition-colors shadow-sm" title="Dela lista">
+<span class="material-symbols-outlined text-lg">share</span>
+</button>
+</div>
+</header>
+<!-- 2-KOLUMNS LAYOUT FÖR SURFPLATTA -->
+<div class="flex-1 flex gap-5 min-h-0 overflow-hidden">
+<!-- ========================================== -->
+<!-- VÄNSTER KOLUMN (Fast panel ~340px)        -->
+<!-- ========================================== -->
+<aside class="w-[340px] shrink-0 flex flex-col gap-4 h-full overflow-y-auto pr-1">
+<!-- KORT: Lägg till ny vara -->
+<section class="bg-warm-card rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-terracotta-700">
+<span class="material-symbols-outlined text-lg">add_shopping_cart</span>
+<h2 class="font-headline font-bold text-sm text-warm-dark">Lägg till vara</h2>
+</div>
+<span class="text-[11px] font-medium text-warm-muted">Tandoor synk</span>
+</div>
+<form class="flex flex-col gap-2.5" id="add-item-form" onsubmit="event.preventDefault(); window.addNewItem();">
+<!-- Textinmatning -->
+<div>
+<label class="block text-[11px] font-semibold text-warm-muted uppercase tracking-wider mb-1" for="item-name">Artikel</label>
+<input class="w-full text-xs font-medium px-3 py-2.5 rounded-xl bg-warm-bg text-warm-dark focus:outline-none focus:ring-2 focus:ring-terracotta-500 placeholder:text-stone-400" id="item-name" placeholder="T.ex. Havremjölk eller Mandelmjöl" required="" type="text"/>
+</div>
+<!-- Mängd & Enhet i rad -->
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="block text-[11px] font-semibold text-warm-muted uppercase tracking-wider mb-1" for="item-qty">Mängd</label>
+<input class="w-full text-xs font-medium px-3 py-2 rounded-xl bg-warm-bg text-warm-dark focus:outline-none focus:ring-2 focus:ring-terracotta-500 placeholder:text-stone-400" id="item-qty" placeholder="2 st / 500g" type="text"/>
+</div>
+<div>
+<label class="block text-[11px] font-semibold text-warm-muted uppercase tracking-wider mb-1" for="item-category">Kategori</label>
+<select class="w-full text-xs font-medium px-2 py-2 rounded-xl bg-warm-bg text-warm-dark focus:outline-none focus:ring-2 focus:ring-terracotta-500 cursor-pointer" id="item-category">
+<option value="Frukt &amp; grönt">Frukt &amp; grönt</option>
+<option value="Mejeri">Mejeri</option>
+<option value="Skafferi">Skafferi</option>
+<option value="Kött &amp; fisk">Kött &amp; fisk</option>
+<option value="Frys">Frys</option>
+<option value="Kryddor &amp; Övrigt">Kryddor &amp; Övrigt</option>
+</select>
+</div>
+</div>
+<!-- Kategori-snabbval som piller -->
+<div class="flex flex-wrap gap-1.5 pt-1">
+<button class="px-2 py-1 rounded-lg bg-warm-surface hover:bg-terracotta-100 hover:text-terracotta-700 text-[10px] font-semibold text-warm-muted transition-colors" onclick="document.getElementById('item-category').value='Frukt &amp; grönt'" type="button">Grönt</button>
+<button class="px-2 py-1 rounded-lg bg-warm-surface hover:bg-terracotta-100 hover:text-terracotta-700 text-[10px] font-semibold text-warm-muted transition-colors" onclick="document.getElementById('item-category').value='Mejeri'" type="button">Mejeri</button>
+<button class="px-2 py-1 rounded-lg bg-warm-surface hover:bg-terracotta-100 hover:text-terracotta-700 text-[10px] font-semibold text-warm-muted transition-colors" onclick="document.getElementById('item-category').value='Skafferi'" type="button">Skafferi</button>
+<button class="px-2 py-1 rounded-lg bg-warm-surface hover:bg-terracotta-100 hover:text-terracotta-700 text-[10px] font-semibold text-warm-muted transition-colors" onclick="document.getElementById('item-category').value='Kött &amp; fisk'" type="button">Kött/fisk</button>
+</div>
+<!-- Stor terrakottaknapp anpassad för köksmiljö -->
+<button class="w-full mt-2 py-3 px-4 rounded-xl bg-terracotta-600 hover:bg-terracotta-700 active:scale-[0.98] text-white font-headline font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all" type="submit">
+<span class="material-symbols-outlined text-base">add_circle</span>
+<span>Lägg till i listan</span>
+</button>
+</form>
+</section>
+<!-- KORT: Från veckans matsedel -->
+<section class="bg-gradient-to-br from-terracotta-50 to-warm-surface rounded-2xl p-4 shadow-sm flex flex-col gap-3 relative overflow-hidden">
+<div class="flex items-center gap-2 text-terracotta-900">
+<span class="material-symbols-outlined text-xl text-terracotta-700">restaurant_menu</span>
+<div>
+<h3 class="font-headline font-bold text-xs text-warm-dark">Från matsedeln (v. 43)</h3>
+<p class="text-[11px] text-warm-muted">7 varor saknas i skafferiet</p>
+</div>
+</div>
+<!-- Receptkälla miniatyr -->
+<div class="flex items-center gap-2.5 p-2 rounded-xl bg-warm-card shadow-xs">
+<div class="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-stone-200">
+<img class="w-full h-full object-cover" data-alt="Close up of a warm red lentil curry with fresh herbs and a slice of lime on rustic ceramic dish, warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBV9boqv2D8zCN_y5ekN9W9r8fiDHkIVgjP3fmU0TK-4EoAvgBJBhCTUOO5pWOsSyE98nkzvgyj65XUXeqf2f66xb4XS8NqF3rsRvNe28mm3CZ6QCEp7ucV0vS0I4llqxNGvTzxQH2eSKEPO2pz73r_WEexyNbhOpkCDJX37H7TwqYGTDO8h1_a6NaBW7cxThTlDK4SdIph0GGJ58lCxRJTB4VlYPNR1OhKrMPAIg6Tdo73LRymjAGSYw"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-[11px] font-bold text-warm-dark truncate">Röd linsdaal &amp; Tomatsoppa</p>
+<p class="text-[10px] text-terracotta-700 font-semibold">Torsdag &amp; Fredag</p>
+</div>
+</div>
+<button class="w-full py-2.5 px-3 rounded-xl bg-warm-card hover:bg-terracotta-100 text-terracotta-900 hover:text-terracotta-700 text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-colors" id="btn-sync-week" onclick="window.importMealPlanItems()">
+<span class="material-symbols-outlined text-sm text-terracotta-700">playlist_add_check</span>
+<span>Lägg till alla från veckan</span>
+</button>
+</section>
+<!-- KORT: Butikssortering & Ruttsystem -->
+<section class="bg-warm-card rounded-2xl p-4 shadow-sm flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<span class="font-headline font-bold text-xs text-warm-dark">Butiksgångar</span>
+<span class="material-symbols-outlined text-warm-muted text-base">storefront</span>
+</div>
+<p class="text-[11px] text-warm-muted leading-tight">Sortera listan efter hur hyllorna står i din favoritbutik.</p>
+<div class="grid grid-cols-3 gap-1.5 pt-1">
+<button class="py-2 px-1.5 rounded-xl bg-terracotta-100 text-terracotta-900 text-xs font-bold text-center transition-all shadow-xs">
+            Standard
+          </button>
+<button class="py-2 px-1.5 rounded-xl bg-warm-bg hover:bg-warm-surface text-warm-muted hover:text-warm-dark text-xs font-medium text-center transition-all">
+            ICA Maxi
+          </button>
+<button class="py-2 px-1.5 rounded-xl bg-warm-bg hover:bg-warm-surface text-warm-muted hover:text-warm-dark text-xs font-medium text-center transition-all">
+            Hemköp
+          </button>
+</div>
+</section>
+</aside>
+<!-- ========================================== -->
+<!-- HÖGER KOLUMN (Huvudlistan, ca 65% bredd)  -->
+<!-- ========================================== -->
+<main class="flex-1 flex flex-col min-w-0 bg-warm-bg h-full overflow-hidden">
+<!-- Sökfält & Progress-översikt -->
+<div class="bg-warm-card rounded-2xl p-3.5 mb-3 shadow-sm flex items-center justify-between gap-4 shrink-0">
+<!-- Sökfält med mjuk ikon -->
+<div class="flex-1 relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-stone-400 text-lg">search</span>
+<input class="w-full text-xs font-medium pl-9 pr-3 py-2 rounded-xl bg-warm-bg text-warm-dark focus:outline-none focus:ring-2 focus:ring-terracotta-500 placeholder:text-stone-400" id="search-input" oninput="window.filterItems(this.value)" placeholder="Sök i din inköpslista..." type="text"/>
+</div>
+<!-- Mätare & Saldo -->
+<div class="flex items-center gap-3 shrink-0 pl-2">
+<div class="flex flex-col text-right">
+<span class="text-xs font-extrabold text-warm-dark" id="items-left-text">7 varor kvar</span>
+<span class="text-[10px] text-emerald-800 font-semibold">2 redan i vagnen</span>
+</div>
+<!-- Cirkulär visuell progress-indikator inline SVG -->
+<div class="relative w-9 h-9 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-warm-surface" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-terracotta-600 transition-all duration-300" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" id="progress-ring-circle" stroke="currentColor" stroke-dasharray="22, 100" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+<span class="absolute text-[10px] font-bold text-warm-dark">22%</span>
+</div>
+</div>
+</div>
+<!-- Scrollbar lista med matbutikens avdelningar -->
+<div class="flex-1 overflow-y-auto space-y-3.5 pr-1 pb-6" id="shopping-categories-container">
+<!-- SEKTION 1: Frukt & grönt -->
+<section class="category-block bg-warm-card rounded-2xl p-4 shadow-sm">
+<div class="flex items-center justify-between pb-2 mb-2">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">eco</span>
+</span>
+<h3 class="font-headline font-bold text-xs uppercase tracking-wider text-warm-dark">Frukt &amp; grönt</h3>
+</div>
+<span class="text-[11px] font-semibold text-warm-muted">Gång 1–2</span>
+</div>
+<div class="space-y-1.5" id="group-frukt-gront">
+<!-- Artikel 1 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Avokado</span>
+<div class="flex items-center gap-1.5">
+<span class="text-[11px] font-bold text-warm-muted">4 st</span>
+<span class="text-[9px] font-extrabold uppercase bg-emerald-100 text-emerald-900 px-1.5 py-0.2 rounded">Eko</span>
+</div>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Artikel 2 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Färsk spenat</span>
+<span class="text-[11px] font-medium text-warm-muted">1 påse (200 g)</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Artikel 3 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Lime</span>
+<span class="text-[11px] font-medium text-warm-muted">2 st</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SEKTION 2: Mejeri & Kyl -->
+<section class="category-block bg-warm-card rounded-2xl p-4 shadow-sm">
+<div class="flex items-center justify-between pb-2 mb-2">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">egg_alt</span>
+</span>
+<h3 class="font-headline font-bold text-xs uppercase tracking-wider text-warm-dark">Mejeri</h3>
+</div>
+<span class="text-[11px] font-semibold text-warm-muted">Gång 4</span>
+</div>
+<div class="space-y-1.5" id="group-mejeri">
+<!-- Artikel 4 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Grekisk yoghurt</span>
+<span class="text-[11px] font-medium text-warm-muted">1 burk (10% fetthalt)</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Artikel 5 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Normalsaltat smör</span>
+<span class="text-[11px] font-medium text-warm-muted">500 g (82%)</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SEKTION 3: Skafferi -->
+<section class="category-block bg-warm-card rounded-2xl p-4 shadow-sm">
+<div class="flex items-center justify-between pb-2 mb-2">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">shelves</span>
+</span>
+<h3 class="font-headline font-bold text-xs uppercase tracking-wider text-warm-dark">Skafferi</h3>
+</div>
+<span class="text-[11px] font-semibold text-warm-muted">Gång 7</span>
+</div>
+<div class="space-y-1.5" id="group-skafferi">
+<!-- Artikel 6 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Krossade tomater</span>
+<span class="text-[11px] font-medium text-warm-muted">2 burkar (Mutti finkrossade)</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Artikel 7 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Basmatiris</span>
+<span class="text-[11px] font-medium text-warm-muted">1 kg</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SEKTION 4: Kryddor & Övrigt -->
+<section class="category-block bg-warm-card rounded-2xl p-4 shadow-sm">
+<div class="flex items-center justify-between pb-2 mb-2">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">grain</span>
+</span>
+<h3 class="font-headline font-bold text-xs uppercase tracking-wider text-warm-dark">Kryddor &amp; Övrigt</h3>
+</div>
+<span class="text-[11px] font-semibold text-warm-muted">Gång 3</span>
+</div>
+<div class="space-y-1.5" id="group-kryddor">
+<!-- Artikel 8 -->
+<div class="shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark">Färsk timjan</span>
+<span class="text-[11px] font-medium text-warm-muted">1 kruka</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SEKTION 5: Avbockade varor -->
+<section class="bg-warm-surface/70 rounded-2xl p-4 shadow-xs transition-all" id="section-done">
+<div class="flex items-center justify-between pb-2 mb-2">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">done_all</span>
+</span>
+<h3 class="font-headline font-bold text-xs uppercase tracking-wider text-warm-dark">Avbockade varor (<span id="done-counter">2</span>)</h3>
+</div>
+<button class="text-[11px] font-bold text-terracotta-700 hover:text-terracotta-900 flex items-center gap-1 transition-colors" onclick="window.clearCompleted()">
+<span class="material-symbols-outlined text-xs">delete_sweep</span>
+<span>Rensa alla</span>
+</button>
+</div>
+<div class="space-y-1.5" id="group-done">
+<!-- Redan avbockad 1 -->
+<div class="shopping-item checked-item flex items-center justify-between p-2.5 rounded-xl bg-warm-card/60 transition-colors group cursor-pointer opacity-70" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-base font-bold">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark line-through text-stone-500">Kallpressad olivolja</span>
+<span class="text-[11px] font-medium text-stone-400">1 flaska (750 ml)</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<!-- Redan avbockad 2 -->
+<div class="shopping-item checked-item flex items-center justify-between p-2.5 rounded-xl bg-warm-card/60 transition-colors group cursor-pointer opacity-70" onclick="window.toggleCheck(this)">
+<div class="flex items-center gap-3">
+<div class="check-box w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-base font-bold">check</span>
+</div>
+<div class="flex flex-col">
+<span class="item-title font-medium text-xs text-warm-dark line-through text-stone-500">Havregryn</span>
+<span class="text-[11px] font-medium text-stone-400">1 påse (1,5 kg)</span>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+</div>
+<script>
+  // Handha avbockning med omedelbar visuell feedback och flytt till avbockat
+  window.toggleCheck = function(rowElement) {
+    const isChecked = rowElement.classList.contains('checked-item');
+    const checkBox = rowElement.querySelector('.check-box');
+    const checkIcon = checkBox.querySelector('.material-symbols-outlined');
+    const title = rowElement.querySelector('.item-title');
+    const doneGroup = document.getElementById('group-done');
+    const activeContainer = document.getElementById('group-frukt-gront'); // default fall-back
+
+    if (!isChecked) {
+      // Markera som klar
+      rowElement.classList.add('checked-item', 'opacity-70');
+      checkBox.className = 'check-box w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center transition-colors';
+      checkIcon.className = 'material-symbols-outlined text-white text-base font-bold';
+      title.classList.add('line-through', 'text-stone-500');
+      doneGroup.prepend(rowElement);
+    } else {
+      // Återställ till aktiv
+      rowElement.classList.remove('checked-item', 'opacity-70');
+      checkBox.className = 'check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors';
+      checkIcon.className = 'material-symbols-outlined text-transparent select-none text-base';
+      title.classList.remove('line-through', 'text-stone-500');
+      activeContainer.prepend(rowElement);
+    }
+    updateCounters();
+  };
+
+  // Ta bort vara
+  window.deleteItem = function(btn) {
+    const row = btn.closest('.shopping-item');
+    if (row) {
+      row.style.transform = 'translateX(20px)';
+      row.style.opacity = '0';
+      row.style.transition = 'all 0.2s ease-out';
+      setTimeout(() => {
+        row.remove();
+        updateCounters();
+      }, 200);
+    }
+  };
+
+  // Rensa klara
+  window.clearCompleted = function() {
+    const doneGroup = document.getElementById('group-done');
+    doneGroup.innerHTML = '<p class="text-xs text-warm-muted italic py-1">Inga avbockade varor just nu</p>';
+    updateCounters();
+  };
+
+  // Lägg till ny vara manuellt
+  window.addNewItem = function() {
+    const nameInput = document.getElementById('item-name');
+    const qtyInput = document.getElementById('item-qty');
+    const catInput = document.getElementById('item-category');
+
+    const name = nameInput.value.trim();
+    if (!name) return;
+
+    const qty = qtyInput.value.trim() || '1 st';
+    const category = catInput.value;
+
+    let targetContainer = document.getElementById('group-skafferi');
+    if (category === 'Frukt & grönt') targetContainer = document.getElementById('group-frukt-gront');
+    if (category === 'Mejeri') targetContainer = document.getElementById('group-mejeri');
+    if (category === 'Kryddor & Övrigt') targetContainer = document.getElementById('group-kryddor');
+
+    const newRow = document.createElement('div');
+    newRow.className = 'shopping-item flex items-center justify-between p-2.5 rounded-xl hover:bg-warm-bg transition-colors group cursor-pointer animate-fadeIn';
+    newRow.onclick = function() { window.toggleCheck(this); };
+    newRow.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="check-box w-7 h-7 rounded-lg bg-warm-surface group-hover:bg-warm-border flex items-center justify-center transition-colors">
+          <span class="material-symbols-outlined text-transparent select-none text-base">check</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="item-title font-medium text-xs text-warm-dark">${name}</span>
+          <span class="text-[11px] font-medium text-warm-muted">${qty}</span>
+        </div>
+      </div>
+      <button class="opacity-0 group-hover:opacity-100 text-warm-muted hover:text-rose-600 transition-opacity p-1" onclick="event.stopPropagation(); window.deleteItem(this)">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    `;
+
+    targetContainer.prepend(newRow);
+    nameInput.value = '';
+    qtyInput.value = '';
+    updateCounters();
+  };
+
+  // Importera recept-ingredienser
+  window.importMealPlanItems = function() {
+    const btn = document.getElementById('btn-sync-week');
+    btn.innerHTML = `<span class="material-symbols-outlined text-sm text-emerald-700 animate-spin">sync</span><span>Lägger till...</span>`;
+    
+    setTimeout(() => {
+      btn.innerHTML = `<span class="material-symbols-outlined text-sm text-emerald-700">check</span><span>Tillagda i listan!</span>`;
+      btn.classList.add('bg-emerald-50', 'text-emerald-900');
+    }, 400);
+  };
+
+  // Filtrering/Sök
+  window.filterItems = function(query) {
+    const q = query.toLowerCase().trim();
+    const items = document.querySelectorAll('.shopping-item');
+    items.forEach(item => {
+      const title = item.querySelector('.item-title').textContent.toLowerCase();
+      if (title.includes(q)) {
+        item.style.display = 'flex';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  };
+
+  // Uppdatera räknare och progress ring
+  function updateCounters() {
+    const all = document.querySelectorAll('.shopping-item').length;
+    const completed = document.querySelectorAll('#group-done .shopping-item').length;
+    const remaining = all - completed;
+
+    const leftText = document.getElementById('items-left-text');
+    if (leftText) leftText.textContent = `${remaining} varor kvar`;
+
+    const doneCountEl = document.getElementById('done-counter');
+    if (doneCountEl) doneCountEl.textContent = completed;
+
+    const percent = all === 0 ? 0 : Math.round((completed / all) * 100);
+    const circle = document.getElementById('progress-ring-circle');
+    if (circle) {
+      circle.setAttribute('stroke-dasharray', `${percent}, 100`);
+    }
+  }
+
+  // Toggle visa/dölj klara
+  document.getElementById('btn-toggle-done').addEventListener('click', function() {
+    const sectionDone = document.getElementById('section-done');
+    const isHidden = sectionDone.classList.contains('hidden');
+    if (isHidden) {
+      sectionDone.classList.remove('hidden');
+      this.querySelector('span:last-child').textContent = 'Dölj klara';
+    } else {
+      sectionDone.classList.add('hidden');
+      this.querySelector('span:last-child').textContent = 'Visa klara';
+    }
+  });
+</script></main>
+<!-- ============================================================ -->
+<!-- 3. HÖGERPANEL: "VILL LAGA" (RECEPTKORT FÖR DRAG-AND-DROP) -->
+<!-- ============================================================ -->
+<aside class="w-72 bg-white border-l border-[#E8DFD5] flex flex-col h-full shrink-0 z-20">
+<!-- Panel Header -->
+<div class="p-4 border-b border-[#E8DFD5] flex items-center justify-between bg-[#FFFDFB]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#C2410C] fill-1 text-xl">favorite</span>
+<div>
+<h2 class="font-headline font-bold text-sm text-[#292524]">Vill laga</h2>
+<p class="text-[11px] text-[#78716C]">Dra kort till matsedeln</p>
+</div>
+</div>
+<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-[#FFEDD5] text-[#C2410C]">5 sparade</span>
+</div>
+<!-- Sökfält & Kategori i panelen -->
+<div class="p-3 border-b border-stone-100 bg-[#FBF7F2]">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-[#78716C] text-base">search</span>
+<input class="w-full bg-white text-xs pl-8 pr-3 py-1.5 rounded-lg border border-[#E8DFD5] focus:outline-none focus:border-[#C2410C] placeholder:text-stone-400" placeholder="Sök bland sparade..." type="text"/>
+</div>
+</div>
+<!-- Lista över receptkort att dra in -->
+<div class="flex-1 overflow-y-auto p-3 space-y-2.5">
+<!-- Kort 1: Fransk örtomelett -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Fransk örtomelett" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcTZlk_vIjDNL-AHRM2La4uifaiKPNyM-GPXyuWCjT8-pUTk4bEXDjyIS134PE4iN-sKcmn4PrrZfFyq6rQaMAy1V7pZAo1htv5guLdzT8C-p99AdMgP5bwwA0O8Dkgh9XcRKull1gVxa8BNNRyvGbfgzJifa2TIkwh2M5uiNV9EbFLfqHz0g0t9o_8IxBKUvuCtG4wwC8M__3nBZK37ay1qAu08yaw05KXH39iHY_KZcusEVI_vCCJQ"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-[#C2410C] uppercase tracking-wide">Snabbt</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Fransk örtomelett</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>15 min</span>
+<span>•</span>
+<span class="text-emerald-700 font-medium">Klar på 15m</span>
+</div>
+</div>
+</div>
+<!-- Kort 2: Hemmagjord pizza margherita -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Pizza" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXGPZ0GRCGiPI7iexPOpi5PHq8_7F2pNfIqO_uIEuABBjCVCbJAcTJyiGz6pbd-zDr2Q7aItRsogZCCArOt3p5wACvkUqkv4c3NLtCFj-UOaICHDu3cBEcdUIU4xYDsQrK9XL8VTpT7dtg3zthwNzldbY4JQU_HcwfBQ0_C_6qGAqRQgfKfZF1w2ugK7NCLMQhplsGaElJfG4rcN41f8nGnE4CZLUNuOHsraH2ZiemOkcEGYkpznJL6A"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Helglyx</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Pizza Margherita</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>45 min</span>
+<span>•</span>
+<span>4 port</span>
+</div>
+</div>
+</div>
+<!-- Kort 3: Boeuf Bourguignon -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Långkok" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPsa-T-Ll-ICSAYBkDEsj5ln3HkWBPb64cB-09WmQdThdGC8it7I6ztS8C7J5TonO3bIbV0xCN59tIldFBMWFTLd_aGB2fx1WnzSNqvs1PZAxD4D1BUUzq0cDGqdnlmQQu4S1C05s27iBg_lg9n_k39HNLZoZ0zrdzLnf8WVhqoLt9x26TzKWlbRI0UAQZVUPuJcxTU3hi56D_RdMnNgPF43ZVsKt-2Otkj0_ukJSERgc3axrhPEhdbg"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-stone-600 uppercase tracking-wide">Långkok</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Boeuf Bourguignon</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>150 min</span>
+<span>•</span>
+<span>6 port</span>
+</div>
+</div>
+</div>
+<!-- Kort 4: Krämig daal på röda linser -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Daal" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida/AEtjO1UIlv_jq_FHOQcN6c5J4kcQgIHzsOzr0qf0dTVVs4RWResp0z-rsDUk3xHjAfxIl6USRznCrZfhZg2eVyEq-UDSj7ZhzEkT-JJFFmiO63tiU-yL5i895h_GkwckEtlSou5WK0nwpsHu7PCXg0sy-MTu8ZFmRFUL5PEP4VRE_Ou6HQTYGfNJtliaDS83Tnzzx5ve_oqlpzmXKdEoJuFmFhJEqMP3ay2ZMtAC7GkIgfOiak8vIm5oFSL12qR6"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wide">Grytor</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Röd linsdaal</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>30 min</span>
+<span>•</span>
+<span class="text-emerald-700">Har hemma</span>
+</div>
+</div>
+</div>
+<!-- Kort 5: Ugnsrostad tomatsoppa -->
+<div class="bg-white rounded-xl p-2.5 border border-[#E8DFD5] hover:border-[#C2410C] hover:shadow-md cursor-grab active:cursor-grabbing transition-all group flex gap-3 items-center" draggable="true">
+<div class="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-stone-100 relative">
+<img alt="Tomatsoppa" class="w-full h-full object-cover group-hover:scale-105 transition-transform" src="https://lh3.googleusercontent.com/aida/AEtjO1Wf5MsCxxGg1jxSNz1bgXEFUnDpK6uprERZ_vixcnO0xNbEO_UJIxfDfnjzbP2dvgPEzNTfGrcn5hhRdWiC-3MAnyCqulU7Y120C236VjGLBppvr4DkK3Un3eCHz8q74rurf5NQQjtVL-VHFJowbVmoToY22OSAEE8efejXI-c073RUV_ePi48enU2Bj2dkWf4RdcboDwsHgnC7etTnp-3k4SRF4j9fpMEdcBmln1_bAZlYsNae2tLH0yM"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="text-[10px] font-bold text-stone-600 uppercase tracking-wide">Soppa</span>
+<span class="material-symbols-outlined text-[#78716C] text-xs opacity-0 group-hover:opacity-100 transition-opacity">drag_indicator</span>
+</div>
+<h4 class="font-headline font-bold text-xs text-[#292524] truncate">Ugnsrostad tomatsoppa</h4>
+<div class="flex items-center gap-2 mt-1 text-[11px] text-[#78716C]">
+<span>35 min</span>
+<span>•</span>
+<span>Vegetarisk</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Panelfot: Slumpa middag / Bläddra -->
+<div class="p-3 border-t border-[#E8DFD5] bg-[#FBF7F2] flex items-center gap-2">
+<button class="flex-1 py-2 px-3 bg-white hover:bg-stone-50 border border-[#E8DFD5] rounded-xl text-xs font-bold text-[#292524] flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+<span class="material-symbols-outlined text-sm text-[#C2410C]">shuffle</span>
+<span>Slumpa middag</span>
+</button>
+<button class="py-2 px-3 bg-white hover:bg-stone-50 border border-[#E8DFD5] rounded-xl text-xs font-bold text-[#78716C] hover:text-[#292524] flex items-center justify-center transition-colors" title="Fler recept">
+<span class="material-symbols-outlined text-base">filter_list</span>
+</button>
+</div>
+</aside>
+</body></html>

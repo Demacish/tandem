@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark window theme; see values/themes.xml. Theme.Tandem.Starting is inherited from
+         values/ and picks up the night colours from values-night/colors_brand.xml. -->
+    <style name="Theme.Tandem" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/tandem_window_background</item>
+    </style>
+</resources>

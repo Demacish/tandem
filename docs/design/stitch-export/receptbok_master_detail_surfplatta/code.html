@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3C1000",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FFDDAA","on-secondary-container":"#2D1600",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#D3F7A6","on-tertiary-container":"#142400",background:"#FBF7F2","on-background":"#231A15",surface:"#FBF7F2","on-surface":"#231A15","surface-variant":"#EFE8DE","on-surface-variant":"#54443B","surface-container-lowest":"#FFFFFF","surface-container-low":"#F6F0E7","surface-container":"#EDE5DA","surface-container-high":"#E6DDCF","surface-container-highest":"#DED4C5",outline:"#867468","outline-variant":"#D9C2B4"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}}</script></head><body class="bg-background font-body text-on-surface"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col pt-6 pb-6 shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="px-6 mb-8 flex items-center gap-3"><div class="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-on-primary shadow-[0_2px_8px_rgba(194,65,12,0.25)]"><span class="material-symbols-rounded text-2xl">skillet</span></div><div><span class="text-xl font-headline font-extrabold tracking-tight text-primary leading-none block">Tandem</span><span class="text-xs font-medium text-on-surface-variant tracking-wide block mt-0.5">Recept &amp; Matplan</span></div></div><nav class="flex-1 px-4 space-y-1.5" data-active-classes="bg-primary text-on-primary font-bold shadow-[0_2px_8px_rgba(194,65,12,0.2)]"><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="idag" href="#"><span class="material-symbols-rounded text-[22px]">wb_sunny</span><span class="text-sm font-medium">Idag</span></a><a aria-current="page" class="flex items-center gap-3.5 px-4 py-3 rounded-full transition-all bg-primary text-on-primary font-bold shadow-[0_2px_8px_rgba(194,65,12,0.2)]" data-path="recept" href="#"><span class="material-symbols-rounded text-[22px]">menu_book</span><span class="text-sm font-medium">Recept</span></a><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="veckan" href="#"><span class="material-symbols-rounded text-[22px]">calendar_month</span><span class="text-sm font-medium">Veckan</span></a><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="handla" href="#"><span class="material-symbols-rounded text-[22px]">shopping_bag</span><span class="text-sm font-medium">Handla</span></a><a class="flex items-center gap-3.5 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-path="mer" href="#"><span class="material-symbols-rounded text-[22px]">more_horiz</span><span class="text-sm font-medium">Mer</span></a></nav><div class="px-4 mt-auto pt-4"><div class="bg-surface-container rounded-2xl p-4 flex items-center justify-between"><div class="flex items-center gap-2.5"><span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse"></span><div><p class="text-xs font-bold text-on-surface leading-tight">Tandoor ansluten</p><p class="text-[11px] text-on-surface-variant leading-tight">Synkad 2m sedan</p></div></div><button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center transition-colors" type="button"><span class="material-symbols-rounded text-base text-on-surface-variant">sync</span></button></div></div></aside><div class="pl-72"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/80 backdrop-blur-xl z-40 flex items-center justify-between px-8 shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="w-96"><div class="relative flex items-center"><span class="material-symbols-rounded absolute left-3.5 text-on-surface-variant text-[20px] pointer-events-none">search</span><input class="w-full h-10 pl-10 pr-4 rounded-full bg-surface-container-low text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container transition-all" placeholder="Sök recept, råvaror, etiketter..." type="text"/></div></div><div class="flex items-center gap-4"><div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low text-xs font-medium text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-tertiary"></span><span>Synkad med server</span></div><button class="w-10 h-10 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-colors" type="button"><span class="material-symbols-rounded text-[22px]">timer</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="relative pt-16 bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="px-6 py-6 max-w-7xl mx-auto w-full">
+<!-- Top Action / Context Row -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="text-xs uppercase tracking-wider font-semibold text-primary">Tandoor Server</span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<span class="text-xs text-on-surface-variant font-medium">Synkad lokalt</span>
+</div>
+<h1 class="text-2xl md:text-3xl font-headline font-extrabold text-on-surface tracking-tight">Receptsamling</h1>
+</div>
+<div class="flex items-center gap-2.5">
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface text-sm font-medium transition-all shadow-sm" type="button">
+<span class="material-symbols-rounded text-lg text-secondary">cloud_download</span>
+<span>Importera länk</span>
+</button>
+<button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary hover:bg-primary/95 text-on-primary text-sm font-semibold transition-all shadow-[0_2px_10px_rgba(194,65,12,0.25)]" type="button">
+<span class="material-symbols-rounded text-lg">add</span>
+<span>Nytt recept</span>
+</button>
+</div>
+</div>
+<!-- Master-Detail Container -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT PANE: Master List (~380px on desktop) -->
+<section class="lg:col-span-4 xl:col-span-4 flex flex-col gap-4 bg-surface-container-lowest rounded-3xl p-4 shadow-sm">
+<!-- Search & Filter bar -->
+<div class="space-y-3">
+<div class="relative">
+<span class="material-symbols-rounded absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full h-11 pl-10 pr-10 rounded-full bg-surface-container-low text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:bg-surface-container transition-all" placeholder="Sök bland 312 sparade recept..." type="text" value=""/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-rounded text-lg">tune</span>
+</button>
+</div>
+<!-- Quick Filters Chips -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+<button class="px-3 py-1.5 rounded-full bg-primary text-on-primary font-semibold whitespace-nowrap shadow-xs" type="button">
+              Alla 312
+            </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant whitespace-nowrap transition-colors" type="button">
+              Snabb (&lt;30m)
+            </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant whitespace-nowrap transition-colors" type="button">
+              Vegetariskt
+            </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant whitespace-nowrap transition-colors" type="button">
+              Favoriter
+            </button>
+<button class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant whitespace-nowrap transition-colors" type="button">
+              Kan lagas nu
+            </button>
+</div>
+<!-- Sort & Counter Bar -->
+<div class="flex items-center justify-between text-xs px-1 text-on-surface-variant">
+<span>Visar <strong>312</strong> sparade</span>
+<div class="flex items-center gap-1 font-medium cursor-pointer hover:text-on-surface">
+<span>Sortera: <strong>Senast tillagda</strong></span>
+<span class="material-symbols-rounded text-sm">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Recipe Card List -->
+<div class="space-y-2.5 max-h-[calc(100vh-290px)] overflow-y-auto pr-0.5">
+<!-- Card 1: ACTIVE (Krämig svamppasta) -->
+<article class="p-3 rounded-2xl bg-primary/10 relative transition-all cursor-pointer shadow-sm">
+<div class="absolute left-0 top-3 bottom-3 w-1.5 bg-primary rounded-r-full"></div>
+<div class="flex gap-3 pl-1.5">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<img alt="Krämig svamppasta" class="w-full h-full object-cover" data-alt="Appetizing warm bowl of creamy tagliatelle mushroom pasta with golden browned sautéed mushrooms fresh green thyme leaves and grated parmesan cheese presented on rustic wooden table with bright scandinavian daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClt6L2_DJiD7Sq7ry4ytI4nPxdOeLfGpv8Pkdm36ols6zV0HU5PlnQXwmNd9zmSs1-_Qt0hJqEkBNi5zSZwF_Vv5CnHrK8G3DTiTIyoou513o5qnnHjNDS8eFKfGXciby7gSXeHuuMAJvfRT6jjDKKaEdWli4MRbnvhwY36-MtF2jxKXdfF6ldtA2XOKPX1VpSOIs4F-LB5x3oHLsZTDpLEwtruPreugU0UbkHrNnhkV6aHMC7xaghVQ"/>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+<div>
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-primary uppercase tracking-wide">Vegetariskt</span>
+<span class="material-symbols-rounded text-primary text-base" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface leading-snug truncate mt-0.5">Krämig svamppasta med timjan</h3>
+</div>
+<div class="flex items-center justify-between text-xs text-on-surface-variant pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-rounded text-sm text-secondary">schedule</span>
+                    35 min
+                  </span>
+<span class="inline-flex items-center gap-1 text-[11px] text-tertiary font-bold bg-tertiary-container/60 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Alla råvaror
+                  </span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2: Tomatsoppa -->
+<article class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all cursor-pointer">
+<div class="flex gap-3">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<img alt="Rostad tomatsoppa" class="w-full h-full object-cover" data-alt="Rich roasted tomato soup with fresh basil swirl of double cream in artisanal stoneware bowl next to freshly sliced sourdough loaf on a warm wooden kitchen table with natural sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YnSWxdSi5LEygmbkjDKk4CfIzbSxSZd53RvKt0UYJDPHm7_cXuy36INgMdmdgDl4CNDa_SBdh46KvrIUjnQfCheANntVrvhIgw5hsEWyhVN-AJyEK69HOnDM-kd8HNjjqNNBkstF8pAKMZJHIYuRHVldkAx22jjHv8zxRa1mj-UyyFz7T_Sh7MlBnZHizcmsRHEVlOoaAQLHXFOieEdiHV-sBGp7YXME3U2lQ_P3N2Spxt2bUg0EDg"/>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+<div>
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">Soppa</span>
+<span class="material-symbols-rounded text-on-surface-variant text-base">bookmark_border</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface leading-snug truncate mt-0.5">Rostad tomatsoppa &amp; surdegsbröd</h3>
+</div>
+<div class="flex items-center justify-between text-xs text-on-surface-variant pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-rounded text-sm text-secondary">schedule</span>
+                    25 min
+                  </span>
+<span class="text-[11px] text-on-surface-variant">Saknar 1 råvara</span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3: Röd linsgryta -->
+<article class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all cursor-pointer">
+<div class="flex gap-3">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<img alt="Linsgryta med kokosmjölk" class="w-full h-full object-cover" data-alt="Creamy aromatic yellow dal tadka lentil stew with fresh coriander leaves cumin seeds lime wedge and warm clay oven baked naan bread placed in a rustic terracotta bowl in scandinavian kitchen setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEGGhKG9rYHBgOdV9aB4pGS6Q6ivpVpPsRC-KfBSGJkNMeSSHRkquR1BAlsY8M_pfdfpGNv2pTGpEoSXk5wc5-maclJLY5cnc-gG0UzEvwxC-k9BOgI62rqvcgqU-bGtZS7GSXZ8SxBPRO2bnbzoS4fUauK3Lc0WKgexDwQnuegHbqwz_lqYyqN9_G8RBYLgRqII3zwIWk5M1BjppKRciiB7GB1vyd2DV2gI-uPhK-U145_6785CZICw"/>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+<div>
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">Gryta</span>
+<span class="material-symbols-rounded text-on-surface-variant text-base">bookmark_border</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface leading-snug truncate mt-0.5">Krämig daal med kokos &amp; naan</h3>
+</div>
+<div class="flex items-center justify-between text-xs text-on-surface-variant pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-rounded text-sm text-secondary">schedule</span>
+                    30 min
+                  </span>
+<span class="inline-flex items-center gap-1 text-[11px] text-tertiary font-bold bg-tertiary-container/60 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                    Alla råvaror
+                  </span>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 4: Ugnsbakad lax -->
+<article class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-all cursor-pointer">
+<div class="flex gap-3">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<img alt="Ugnsbakad lax" class="w-full h-full object-cover" data-alt="Perfect golden oven baked salmon fillet with fresh dill sprigs lemon slices and tender buttered baby potatoes with green asparagus on a rustic ceramic plate" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCU5CMqMWTueloHUSeLGP-tcyEm_39qV9hz2dk43U4q-FQDKwXQQ4cDk7jzV3mDOVT68hPJPzysNKhaTO-qimOTUHv9NGpnjzXez2-WBVIb5BfIcHCIaC6CazPIU_BH214jnedZEmpDeRh22uZ2cJrZCuTJOdxIgd-cbtrQgtXkLi05dvPRUxD4c7FVHOK57eJP0eTONbhsjx0dFaLFX51Xp8FrDKeyDkJR6BCceBK7XBT2nkeAKkRTfg"/>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+<div>
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">Fisk</span>
+<span class="material-symbols-rounded text-primary text-base" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface leading-snug truncate mt-0.5">Ugnsbakad lax med dillslungad potatis</h3>
+</div>
+<div class="flex items-center justify-between text-xs text-on-surface-variant pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-rounded text-sm text-secondary">schedule</span>
+                    20 min
+                  </span>
+<span class="text-[11px] text-on-surface-variant">Saknar 2 råvaror</span>
+</div>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- RIGHT PANE: Recipe Detail -->
+<section class="lg:col-span-8 xl:col-span-8 flex flex-col gap-6">
+<!-- Recipe Header & Banner Card -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm flex flex-col">
+<!-- Hero Image & Badge Overlay -->
+<div class="relative w-full h-72 md:h-80 bg-surface-container overflow-hidden">
+<img alt="Krämig svamppasta med timjan" class="w-full h-full object-cover" data-alt="Close up warm shot of delicious creamy tagliatelle pasta tossed with sautéed golden brown wild mushrooms fresh thyme sprigs and shaving of parmesan in an earthy terracotta bowl set upon a rustic timber dining table with soft kitchen morning light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEeILpwzZsp9CWU5ls6aj63xGhlGFgFlwQ-71W4eBEV65gKEff6YBNrYsqdUl1G7sixxKEqIRlL77IRRMT7aN9f8dvm044J9lz0UJIDzd5cOHosiymYrG1p4inuDnNbOigViS4oaDUGaIJGyg2_At8_QIkdJFImP7qR_sHAi1TJ05A6O02Ujl3NB8hzzXESSKu9mssS1MWRcIrvQWkODLELNAHzwvJoEFpBDZ6_xTwrrOuZstsBZU9cw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"></div>
+<div class="absolute top-4 right-4 flex items-center gap-2">
+<button class="w-10 h-10 rounded-full bg-surface-container-lowest/80 backdrop-blur-md hover:bg-surface-container-lowest text-on-surface flex items-center justify-center transition-colors shadow-sm" type="button">
+<span class="material-symbols-rounded text-lg">share</span>
+</button>
+<button class="w-10 h-10 rounded-full bg-surface-container-lowest/80 backdrop-blur-md hover:bg-surface-container-lowest text-primary flex items-center justify-center transition-colors shadow-sm" type="button">
+<span class="material-symbols-rounded text-xl" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+<!-- Tags & Meta Overlaid -->
+<div class="absolute bottom-4 left-6 right-6 text-on-primary">
+<div class="flex flex-wrap items-center gap-2 mb-2">
+<span class="px-3 py-1 rounded-full text-xs font-semibold bg-primary text-on-primary shadow-sm">Pasta</span>
+<span class="px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-lowest/30 backdrop-blur-md text-on-primary">Vardagsfavorit</span>
+<span class="px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-lowest/30 backdrop-blur-md text-on-primary">Vegetarisk</span>
+</div>
+<h2 class="text-2xl md:text-3xl font-headline font-extrabold tracking-tight text-white leading-tight">
+                Krämig svamppasta med timjan
+              </h2>
+</div>
+</div>
+<!-- Quick Stats & Big Actions -->
+<div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-surface-container-low/40">
+<!-- Key Metrics -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-2xl bg-secondary/15 text-secondary flex items-center justify-center">
+<span class="material-symbols-rounded text-2xl">timer</span>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant font-medium">Tillagningstid</p>
+<p class="text-sm font-bold text-on-surface">35 minuter</p>
+</div>
+</div>
+<div class="w-px h-8 bg-surface-container-high hidden sm:block"></div>
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-2xl bg-primary/15 text-primary flex items-center justify-center">
+<span class="material-symbols-rounded text-2xl" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant font-medium">Betyg</p>
+<p class="text-sm font-bold text-on-surface">4.8 <span class="text-xs font-normal text-on-surface-variant">(42)</span></p>
+</div>
+</div>
+<div class="w-px h-8 bg-surface-container-high hidden sm:block"></div>
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-2xl bg-tertiary/15 text-tertiary flex items-center justify-center">
+<span class="material-symbols-rounded text-2xl">check_circle</span>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant font-medium">Skafferi</p>
+<p class="text-sm font-bold text-tertiary">Allt hemma</p>
+</div>
+</div>
+</div>
+<!-- Big Action Buttons -->
+<div class="flex flex-wrap items-center gap-3">
+<button class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-bold transition-all shadow-xs" type="button">
+<span class="material-symbols-rounded text-lg text-primary">add_shopping_cart</span>
+<span>Lägg till på listan</span>
+</button>
+<button class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-full bg-primary hover:bg-primary/95 text-on-primary text-sm font-bold transition-all shadow-[0_4px_14px_rgba(194,65,12,0.3)]" type="button">
+<span class="material-symbols-rounded text-xl">play_circle</span>
+<span>Laga nu (Kokläge)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Recipe Content Split: Ingredients & Method -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+<!-- LEFT COLUMN: Ingredients & Portions (5 cols) -->
+<div class="md:col-span-5 flex flex-col gap-5">
+<!-- Portions Stepper Card -->
+<div class="bg-surface-container-lowest rounded-3xl p-5 shadow-sm space-y-4">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="font-headline font-bold text-base text-on-surface">Ingredienser</h3>
+<p class="text-xs text-on-surface-variant">Skala automatiskt</p>
+</div>
+<!-- Stepper -->
+<div class="flex items-center gap-2 bg-surface-container-low px-2 py-1 rounded-full">
+<button class="w-7 h-7 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface flex items-center justify-center text-sm font-bold transition-colors" id="dec-portion" type="button">
+                    -
+                  </button>
+<span class="text-xs font-bold px-1 text-on-surface" id="portion-count">4 port</span>
+<button class="w-7 h-7 rounded-full bg-surface-container-lowest hover:bg-surface-container text-on-surface flex items-center justify-center text-sm font-bold transition-colors" id="inc-portion" type="button">
+                    +
+                  </button>
+</div>
+</div>
+<!-- Ingredient Checkboxes -->
+<div class="space-y-2 pt-2 text-sm">
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Tagliatelle pasta</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">300 g</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Färska champinjoner</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">250 g</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Vispgrädde (eller matgrädde)</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">2 dl</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Gul lök, finhackad</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">1 st</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Vitlöksklyftor</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">2 st</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Parmesanost, riven</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">50 g</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Färsk timjan</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">2 msk</span>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<input checked="" class="w-5 h-5 rounded-md accent-primary text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+<span class="text-on-surface font-medium">Smör &amp; olivolja till stekning</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">1 msk</span>
+</label>
+</div>
+<!-- Pantry Sync Info -->
+<div class="pt-2">
+<div class="p-3 bg-tertiary-container/40 rounded-2xl flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-rounded text-tertiary text-lg">inventory_2</span>
+<span class="text-xs font-medium text-on-surface">Alla 8 ingredienser finns i skafferiet</span>
+</div>
+<span class="material-symbols-rounded text-tertiary text-sm">done</span>
+</div>
+</div>
+</div>
+<!-- Nutrition Summary Card -->
+<div class="bg-surface-container-lowest rounded-3xl p-5 shadow-sm space-y-3">
+<h4 class="font-headline font-bold text-sm text-on-surface">Näringsvärde per portion</h4>
+<div class="grid grid-cols-4 gap-2 text-center">
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-xs text-on-surface-variant block">Kalorier</span>
+<span class="text-sm font-bold text-on-surface mt-0.5 block">540</span>
+<span class="text-[10px] text-on-surface-variant">kcal</span>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-xs text-on-surface-variant block">Protein</span>
+<span class="text-sm font-bold text-on-surface mt-0.5 block">18g</span>
+<span class="text-[10px] text-on-surface-variant">14%</span>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-xs text-on-surface-variant block">Kolhydr.</span>
+<span class="text-sm font-bold text-on-surface mt-0.5 block">62g</span>
+<span class="text-[10px] text-on-surface-variant">46%</span>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-xs text-on-surface-variant block">Fett</span>
+<span class="text-sm font-bold text-on-surface mt-0.5 block">24g</span>
+<span class="text-[10px] text-on-surface-variant">40%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: Step-by-Step Instructions & Tips (7 cols) -->
+<div class="md:col-span-7 flex flex-col gap-5">
+<!-- Instructions Card -->
+<div class="bg-surface-container-lowest rounded-3xl p-6 shadow-sm space-y-6">
+<div class="flex items-center justify-between pb-2">
+<div>
+<h3 class="font-headline font-bold text-xl text-on-surface">Gör så här</h3>
+<p class="text-xs text-on-surface-variant">5 enkla moment i köket</p>
+</div>
+<span class="text-xs font-semibold px-3 py-1 rounded-full bg-surface-container text-on-surface-variant">
+                  Steg för steg
+                </span>
+</div>
+<!-- Steps List -->
+<div class="space-y-6">
+<!-- Step 1 -->
+<div class="flex items-start gap-4 group">
+<div class="w-9 h-9 rounded-2xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-on-surface font-headline font-extrabold flex items-center justify-center shrink-0 transition-colors">
+                    1
+                  </div>
+<div class="space-y-1 pt-1">
+<h4 class="font-headline font-bold text-base text-on-surface">Koka upp pastavatten</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                      Koka upp rikligt med vatten i en rymlig kastrull och salta ordentligt (cirka 1 msk salt per liter vatten). Lägg i tagliatellen och koka al dente enligt anvisning.
+                    </p>
+<div class="pt-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/15 hover:bg-secondary/25 text-secondary text-xs font-bold transition-colors" type="button">
+<span class="material-symbols-rounded text-base">alarm</span>
+<span>Starta timer: 9 min</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="flex items-start gap-4 group">
+<div class="w-9 h-9 rounded-2xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-on-surface font-headline font-extrabold flex items-center justify-center shrink-0 transition-colors">
+                    2
+                  </div>
+<div class="space-y-1 pt-1">
+<h4 class="font-headline font-bold text-base text-on-surface">Förbered och stek svampen</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                      Ansa och skiva champinjonerna i lagom tjocka bitar. Stek i torr stekpanna på medelhög värme tills vätskan dunstat, tillsätt sedan en klick smör och olivolja tills svampen fått fin gyllenbrun färg.
+                    </p>
+<div class="pt-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/15 hover:bg-secondary/25 text-secondary text-xs font-bold transition-colors" type="button">
+<span class="material-symbols-rounded text-base">alarm</span>
+<span>Starta timer: 6 min</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="flex items-start gap-4 group">
+<div class="w-9 h-9 rounded-2xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-on-surface font-headline font-extrabold flex items-center justify-center shrink-0 transition-colors">
+                    3
+                  </div>
+<div class="space-y-1 pt-1">
+<h4 class="font-headline font-bold text-base text-on-surface">Fräs lök och krydda med timjan</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                      Sänk värmen något. Rör ner den finhackade löken och pressa i vitlöken. Fräs mjukt i cirka 2 minuter utan att det tar för mycket färg. Repa ner färsk timjan och krydda med nymalen svartpeppar.
+                    </p>
+</div>
+</div>
+<!-- Step 4 -->
+<div class="flex items-start gap-4 group">
+<div class="w-9 h-9 rounded-2xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-on-surface font-headline font-extrabold flex items-center justify-center shrink-0 transition-colors">
+                    4
+                  </div>
+<div class="space-y-1 pt-1">
+<h4 class="font-headline font-bold text-base text-on-surface">Sjud såsen krämig</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                      Häll på vispgrädden. Låt puttra ihop på svag värme i några minuter så att smakerna sätter sig. Ta cirka 0.5 dl av det stärkelserika pastavattnet och rör ner i såsen.
+                    </p>
+</div>
+</div>
+<!-- Step 5 -->
+<div class="flex items-start gap-4 group">
+<div class="w-9 h-9 rounded-2xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-on-surface font-headline font-extrabold flex items-center justify-center shrink-0 transition-colors">
+                    5
+                  </div>
+<div class="space-y-1 pt-1">
+<h4 class="font-headline font-bold text-base text-on-surface">Blanda samman och toppa</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                      Vänd ner den nykokta pastan och fint riven parmesanost direkt i pannan. Rör runt tills såsen lägger sig som ett sammetslent täcke runt pastan. Toppa med extra flingsalt och timjankvistar!
+                    </p>
+</div>
+</div>
+</div>
+<!-- Chef's Pro Tip Note -->
+<div class="p-4 rounded-2xl bg-secondary-container/40 flex items-start gap-3.5 mt-4">
+<span class="material-symbols-rounded text-secondary text-2xl shrink-0 mt-0.5">tips_and_updates</span>
+<div class="text-xs text-on-surface leading-relaxed">
+<strong class="font-bold block text-sm text-on-secondary-container mb-0.5">Kockens tips:</strong>
+                  Spara alltid lite pastavatten innan du häller av durkslaget! Stärkelsen binder fettet i grädden och osten till en professionell, glansig pastasås precis som på trattoria.
+                </div>
+</div>
+</div>
+<!-- Notes & Cook History Card -->
+<div class="bg-surface-container-lowest rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-2xl bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-rounded text-xl">history</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface">Senast lagad för 12 dagar sedan</p>
+<p class="text-[11px] text-on-surface-variant">Serverades med grönsallad och citronvatten</p>
+</div>
+</div>
+<button class="text-xs font-bold text-primary hover:underline flex items-center gap-1" type="button">
+<span>Egna kockanteckningar (2)</span>
+<span class="material-symbols-rounded text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<script>
+  // Simple Portion Stepper Interactive Logic
+  const portionCountEl = document.getElementById('portion-count');
+  const decBtn = document.getElementById('dec-portion');
+  const incBtn = document.getElementById('inc-portion');
+  let portions = 4;
+
+  if (decBtn && incBtn && portionCountEl) {
+    decBtn.addEventListener('click', () => {
+      if (portions > 1) {
+        portions--;
+        portionCountEl.textContent = portions + ' port';
+      }
+    });
+
+    incBtn.addEventListener('click', () => {
+      if (portions < 20) {
+        portions++;
+        portionCountEl.textContent = portions + ' port';
+      }
+    });
+  }
+</script></main></div></body></html>

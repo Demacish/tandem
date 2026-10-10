@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gemensamt -->
+    <string name="onboarding_step_of">Steg %1$d av %2$d</string>
+    <string name="onboarding_try_demo">Prova demoläget</string>
+    <string name="onboarding_language_button">Språk: %1$s</string>
+    <string name="onboarding_language_system">Systemets språk</string>
+
+    <!-- Steg 1: välkommen -->
+    <string name="onboarding_welcome_title">Välkommen till Tandem</string>
+    <string name="onboarding_welcome_body">Recept, veckomeny och inköpslista från din egen Tandoor.</string>
+    <string name="onboarding_feature_recipes_title">Dina recept nära till hands</string>
+    <string name="onboarding_feature_recipes_body">Bläddra bland dina Tandoor-recept och laga steg för steg.</string>
+    <string name="onboarding_feature_plan_title">Planera veckan, handla tillsammans</string>
+    <string name="onboarding_feature_plan_body">Veckomeny och inköpslista som delas med hushållet.</string>
+    <string name="onboarding_feature_server_title">Din server, din data</string>
+    <string name="onboarding_feature_server_body">Tandem pratar bara med din egen Tandoor. Ingen reklam, ingen spårning.</string>
+    <string name="onboarding_get_started">Kom igång</string>
+    <string name="onboarding_unofficial">Tandem är en inofficiell app för Tandoor Recipes.</string>
+
+    <!-- Steg 2: serveradress -->
+    <string name="onboarding_server_title">Anslut till din Tandoor</string>
+    <string name="onboarding_server_body">Ange adressen som du öppnar Tandoor med i webbläsaren.</string>
+    <string name="onboarding_server_label">Adress till din Tandoor</string>
+    <string name="onboarding_server_hint">https:// läggs till om du utelämnar det. Kör Tandoor under en sökväg tar du med den, t.ex. exempel.se/tandoor.</string>
+    <string name="onboarding_connect">Anslut</string>
+    <string name="onboarding_checking">Kontrollerar servern…</string>
+    <string name="onboarding_checking_button">Kontrollerar…</string>
+    <string name="onboarding_untested_title">Tandoor %1$s är inte testad ännu</string>
+    <string name="onboarding_unrecognized_title">Okänd Tandoor-version ”%1$s”</string>
+    <string name="onboarding_untested_body">Tandem är testad med Tandoor 2.6. Du kan fortsätta, men appen startar i säkert läge: du kan läsa allt, och ändringar hålls kvar tills en testad version av Tandem finns.</string>
+    <string name="onboarding_continue_safe_mode">Fortsätt i säkert läge</string>
+    <string name="onboarding_too_old_title">Tandoor %1$s är för gammal</string>
+    <string name="onboarding_too_old_body">Tandem kräver Tandoor 2.0 eller senare. Be den som sköter servern att uppdatera den och försök sedan igen.</string>
+    <string name="onboarding_proxy_login_title">Servern kräver inloggning först</string>
+    <string name="onboarding_hint_title">Det här kan du göra</string>
+    <string name="onboarding_hint_tls">1. Hämta CA-certifikatet (en .crt- eller .pem-fil) från den som sköter servern.\n2. Öppna Inställningar på telefonen och sök efter ”CA-certifikat”, eller gå till Säkerhet och integritet → Fler säkerhetsinställningar → Installera från enhetens lagring → CA-certifikat. Menyernas namn skiljer sig mellan tillverkare.\n3. Välj filen, kom tillbaka hit och tryck på Anslut igen.\nTandem stänger aldrig av certifikatkontrollen: då skulle andra kunna läsa din inloggning.</string>
+    <string name="onboarding_hint_blocked">Något framför Tandoor, till exempel en brandvägg, CrowdSec eller en inloggningsportal (Authentik, Authelia), stoppade appen. Tandem måste nå /api/, /api-token-auth/ och /media/ direkt, utan inloggning i webbläsaren.</string>
+    <string name="onboarding_hint_not_tandoor">Använd samma adress som du öppnar Tandoor med i webbläsaren. Kör Tandoor under en sökväg tar du med den, till exempel https://exempel.se/tandoor.</string>
+    <string name="onboarding_hint_timeout">Går servern bara att nå hemifrån? Anslut till ditt wifi hemma eller till VPN och försök igen.</string>
+    <string name="onboarding_no_tandoor_title">Har du ingen Tandoor-server?</string>
+    <string name="onboarding_no_tandoor_body">Tandoor Recipes är fri programvara som du kör själv. Prova Tandem med exempeldata först, eller läs hur du kommer igång.</string>
+    <string name="onboarding_get_tandoor">Så kommer du igång med Tandoor</string>
+    <string name="onboarding_get_tandoor_title">Kom igång med Tandoor</string>
+    <string name="onboarding_get_tandoor_body">Tandoor Recipes är en fri receptsamling med öppen källkod. Du installerar den på en egen server, en NAS eller en liten dator hemma, oftast med Docker. Den officiella dokumentationen går igenom varje steg. När den är igång kommer du tillbaka hit och anger adressen.</string>
+    <string name="onboarding_open_install_guide">Öppna installationsguiden</string>
+
+    <!-- Steg 3: logga in -->
+    <string name="onboarding_server_connected">Ansluten till %1$s</string>
+    <string name="onboarding_server_version">Tandoor %1$s</string>
+    <string name="onboarding_login_title">Logga in</string>
+    <string name="onboarding_login_body">Använd ditt användarnamn och lösenord i Tandoor.</string>
+    <string name="onboarding_username">Användarnamn</string>
+    <string name="onboarding_password">Lösenord</string>
+    <string name="onboarding_login_privacy">Du förblir inloggad på den här enheten. Lösenordet sparas aldrig.</string>
+    <string name="onboarding_log_in">Logga in</string>
+    <string name="onboarding_logging_in">Loggar in…</string>
+    <string name="onboarding_use_token">Klistra in token i stället</string>
+    <string name="onboarding_use_password">Använd användarnamn och lösenord i stället</string>
+    <string name="onboarding_try_demo_instead">Prova demoläget i stället</string>
+    <string name="onboarding_token_body">Klistra in en API-token från ditt Tandoor-konto.</string>
+    <string name="onboarding_token_label">API-token</string>
+    <string name="onboarding_token_howto_title">Var får jag en token?</string>
+    <string name="onboarding_token_howto_body">Öppna Tandoor i webbläsaren, gå till Inställningar → API och skapa en ny token med behörigheten ”read write”. Skapa en token per enhet, så kan du ta bort den senare utan att dina andra enheter loggas ut.</string>
+    <string name="onboarding_error_wrong_credentials_title">Fel användarnamn eller lösenord</string>
+    <string name="onboarding_error_wrong_credentials_body">Kontrollera båda och försök igen. Tandoor tillåter 10 inloggningsförsök per dag, misslyckade inräknade.</string>
+    <string name="onboarding_error_throttled_title">För många inloggningsförsök i dag</string>
+    <string name="onboarding_error_throttled_body">Tandoor tillåter 10 inloggningsförsök per dag från ditt nätverk, misslyckade inräknade. Försök igen senare, eller klistra in en API-token i stället.</string>
+    <plurals name="onboarding_retry_hours">
+        <item quantity="one">Du kan försöka igen om ungefär %d timme.</item>
+        <item quantity="other">Du kan försöka igen om ungefär %d timmar.</item>
+    </plurals>
+    <plurals name="onboarding_retry_minutes">
+        <item quantity="one">Du kan försöka igen om ungefär %d minut.</item>
+        <item quantity="other">Du kan försöka igen om ungefär %d minuter.</item>
+    </plurals>
+    <string name="onboarding_error_invalid_token_title">Token godtogs inte</string>
+    <string name="onboarding_error_invalid_token_body">Den kan vara felskriven, ha gått ut eller ha tagits bort. Skapa en ny token i Tandoor under Inställningar → API.</string>
+    <string name="onboarding_error_no_space_title">Ditt konto har inget space ännu</string>
+    <string name="onboarding_error_no_space_body">Logga in i Tandoor i webbläsaren en gång för att skapa eller gå med i ett space och försök sedan igen.</string>
+    <string name="onboarding_error_storage_title">Inloggningen kunde inte sparas</string>
+    <string name="onboarding_error_storage_body">Den säkra lagringen på enheten går inte att använda just nu, så Tandem kan inte hålla dig inloggad. Starta om telefonen och försök igen.</string>
+
+    <!-- Ansluten -->
+    <string name="onboarding_connected_title">Nu är du ansluten</string>
+    <string name="onboarding_connected_summary">Ansluten till %1$s · Tandoor %2$s</string>
+    <string name="onboarding_connected_account">Inloggad som %1$s</string>
+    <string name="onboarding_safe_mode_title">Säkert läge</string>
+    <string name="onboarding_safe_mode_body">Tandem har inte testats med Tandoor %1$s än. Läsning fungerar som vanligt; ändringar hålls kvar tills en testad version av Tandem finns.</string>
+    <string name="onboarding_continue">Fortsätt</string>
+</resources>

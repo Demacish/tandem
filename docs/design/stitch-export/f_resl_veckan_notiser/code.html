@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#C2410C","on-primary":"#FFFFFF","primary-container":"#FFDBCF","on-primary-container":"#3A0B00",secondary:"#D97706","on-secondary":"#FFFFFF","secondary-container":"#FEF3C7","on-secondary-container":"#451A03",tertiary:"#4D7C0F","on-tertiary":"#FFFFFF","tertiary-container":"#ECFCCB","on-tertiary-container":"#1A2E05",surface:"#FBF7F2","on-surface":"#2C2523","surface-variant":"#F3EBE1","on-surface-variant":"#5B524E","outline":"#8C807A","outline-variant":"#E5DCD3",error:"#BA1A1A","on-error":"#FFFFFF","error-container":"#FFDAD6","on-error-container":"#410002"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["DM Sans","sans-serif"]}}}};</script></head><body class="bg-surface font-body text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] pt-safe"><div class="h-16 px-3 flex items-center justify-between"><div class="flex items-center gap-2"><button aria-label="Gå tillbaka" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface hover:bg-surface-variant/50 transition-colors" onclick="history.back()"><span class="material-symbols-rounded text-2xl">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface tracking-tight truncate max-w-[200px]">Notisinställningar</h1></div><div class="flex items-center gap-1"><button aria-label="Spara eller åtgärd" class="w-11 h-11 flex items-center justify-center rounded-full text-primary hover:bg-primary-container/40 transition-colors"><span class="material-symbols-rounded text-2xl">check</span></button><div class="w-11 h-11 flex items-center justify-center"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm"><span class="material-symbols-rounded text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-8">
+<div class="px-4 pt-2 pb-4 flex flex-col gap-6">
+<!-- Magisk AI Planerare Card -->
+<div class="bg-surface-variant rounded-xl p-5 shadow-sm flex flex-col gap-5 relative overflow-hidden">
+<!-- Mjuk bakgrundston & Dekorativ cirkel -->
+<div class="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-secondary-container/40 pointer-events-none blur-2xl"></div>
+<!-- Rubrik & Smart Badge -->
+<div class="flex flex-col gap-2 relative z-10">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-tertiary-container text-on-tertiary-container">
+<span class="material-symbols-rounded text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            Smart skafferimatchning
+          </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-secondary-container text-on-secondary-container">
+<span class="material-symbols-rounded text-sm">eco</span>
+            Säsong: Höst/Vinter
+          </span>
+</div>
+<h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface">Föreslå veckans matsedel</h2>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+          Optimerad mot ditt anslutna Tandoor-skafferi för minimalt matsvinn och snabb vardagsmat.
+        </p>
+</div>
+<!-- Parametrar / Chips -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 relative z-10">
+<!-- Parameter 1 -->
+<div class="bg-surface rounded-lg p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-base">restaurant</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-[11px] text-on-surface-variant font-medium">Antal middagar</span>
+<span class="text-xs font-bold text-on-surface truncate">5 st (Mån–Fre)</span>
+</div>
+</div>
+<button aria-label="Justera antal" class="w-7 h-7 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center hover:bg-surface-variant/80" type="button">
+<span class="material-symbols-rounded text-sm">tune</span>
+</button>
+</div>
+<!-- Parameter 2 -->
+<div class="bg-surface rounded-lg p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-base">recycling</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-[11px] text-on-surface-variant font-medium">Fokusläge</span>
+<span class="text-xs font-bold text-on-surface truncate">Rädda skafferivaror</span>
+</div>
+</div>
+<span class="material-symbols-rounded text-tertiary text-sm">check_circle</span>
+</div>
+<!-- Parameter 3 -->
+<div class="bg-surface rounded-lg p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-base">timer</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-[11px] text-on-surface-variant font-medium">Vardagstempo</span>
+<span class="text-xs font-bold text-on-surface truncate">Max 30 minuter</span>
+</div>
+</div>
+<span class="material-symbols-rounded text-secondary text-sm">bolt</span>
+</div>
+</div>
+<!-- Matsedel Förhandsvisning -->
+<div class="flex flex-col gap-2 relative z-10">
+<div class="flex items-center justify-between px-1">
+<span class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Genererat förslag</span>
+<span class="text-xs text-secondary font-medium">5 av 5 måltider matchade</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Måndag -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex items-center gap-3 transition-transform active:scale-[0.99]">
+<img class="w-14 h-14 rounded-lg object-cover shrink-0 shadow-inner" data-alt="A warm, rustic ceramic bowl with creamy forest mushroom pasta, fresh parsley garnish, warm kitchen ambient evening lighting, Nordic cookbook aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0nhRzKK4Sj8cPYoxjYL8JPWy8iRZDjUH-J7jsSLoLs40LStqQYN1KQOukytZM82YIAdseI_M-pq0c0hb9sp2YmN2en9hJK6LhhBCtiXuEdClI35-vs6nt7KpXU3-JTudgquQA-QoRQJcMIB764IxdnkEl9UCri52oAlypnaeCc-lC_HsJtw0e-0oiH8Nn6oSBKgtjo5FVFschuN6_6zk8IhHaNIBAXXWZqyD3h6F2"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-bold tracking-wide uppercase text-primary">Mån</span>
+<span class="text-[10px] text-on-surface-variant flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">schedule</span> 25m</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Krämig svamppasta</h3>
+<p class="text-[11px] text-tertiary flex items-center gap-1 truncate font-medium">
+<span class="material-symbols-rounded text-xs shrink-0">inventory_2</span>
+                Använder skogschampinjoner &amp; grädde
+              </p>
+</div>
+<button aria-label="Byt rätt" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant" type="button">
+<span class="material-symbols-rounded text-lg">sync</span>
+</button>
+</div>
+<!-- Tisdag -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex items-center gap-3 transition-transform active:scale-[0.99]">
+<img class="w-14 h-14 rounded-lg object-cover shrink-0 shadow-inner" data-alt="Steaming rich roasted tomato soup in an artisan bowl beside crusty artisan sourdough bread slice, natural daylight, fresh basil leaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrmi6NcBXJi2l6Vse33xQZUGhhhGhcqexh6TBMX5_flKNORcCyaEMXq91BZ7m4NvfRPFOQSMGPsY94Aq3wgEWfGX7ANpwcX8KeMKQ8Sq-X-blie0g3cRZZgWm70nLvBrPkjWFMecwG3JYD1oYeXZ7e5ul2v7t7Qs_JM4NjWnCVhWT3ZDYwNM_tYpoOM40e6MHmzBbmdQwvavEPTJnRVhVwyOhRd7XvuSH1SQ2SazcJ"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-bold tracking-wide uppercase text-primary">Tis</span>
+<span class="text-[10px] text-on-surface-variant flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">schedule</span> 20m</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Tomatsoppa med surdegsbröd</h3>
+<p class="text-[11px] text-tertiary flex items-center gap-1 truncate font-medium">
+<span class="material-symbols-rounded text-xs shrink-0">inventory_2</span>
+                Använder 6 st mogna tomater
+              </p>
+</div>
+<button aria-label="Byt rätt" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant" type="button">
+<span class="material-symbols-rounded text-lg">sync</span>
+</button>
+</div>
+<!-- Onsdag -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex items-center gap-3 transition-transform active:scale-[0.99]">
+<img class="w-14 h-14 rounded-lg object-cover shrink-0 shadow-inner" data-alt="Classic French herb omelette folded softly in cast iron skillet, goat cheese chèvre melting, sprinkled with chives, bright morning light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2ImtkNopXrvdxkJhGD3xus0ozjx7v7klCY2GJzmgQAF0iabGJc_b8yOtSxuXhQS5T5WW8GQS_1XUaxl_4E6dw49vdunP9JWvVWd6kPeQpCRv-4KlrYhDdc3-bw2gTh91TmkynKjgLttzOnRVaftwyeGv6_E3RdVmhRvj_j340ljzs-q9CvWaMXm1-0UPvhyHJm4aIyBPiefxUqXLwUYEfiinzQ56PoOepQX_cjKxf"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-bold tracking-wide uppercase text-secondary">Ons</span>
+<span class="text-[10px] text-on-surface-variant flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">bolt</span> 15m</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Fransk örtomelett med chèvre</h3>
+<p class="text-[11px] text-on-surface-variant flex items-center gap-1 truncate">
+<span class="material-symbols-rounded text-xs shrink-0 text-secondary">flash_on</span>
+                Snabb vardagsräddare
+              </p>
+</div>
+<button aria-label="Byt rätt" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant" type="button">
+<span class="material-symbols-rounded text-lg">sync</span>
+</button>
+</div>
+<!-- Torsdag -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex items-center gap-3 transition-transform active:scale-[0.99]">
+<img class="w-14 h-14 rounded-lg object-cover shrink-0 shadow-inner" data-alt="Golden fragrant red lentil dahl curry with creamy coconut milk drizzle, cilantro, clay bowl, rustic kitchen setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbDG84hvmYkKKZQwWJ1X2gVv-FQvd1DrW0nW18aRHnDVP1Gf7zHl9UAN63KWXykY7rW6C2J_Rd2VvpiiKD44f2TnrYwiybCnTII4JPEKyZKmpolNAaipWw87iq3fIrN53NC1MEJGxY_RNm_my5exJ7Sc053NACh4NWFSrHzOXozpHrml-c3yeJWymI037ehnATWKgJgrX7h-hvme7n141j44zkUmPPOfrgtr6iXImK"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-bold tracking-wide uppercase text-primary">Tor</span>
+<span class="text-[10px] text-on-surface-variant flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">schedule</span> 30m</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Linsgryta med kokosmjölk</h3>
+<p class="text-[11px] text-tertiary flex items-center gap-1 truncate font-medium">
+<span class="material-symbols-rounded text-xs shrink-0">shelves</span>
+                100% skafferivaror
+              </p>
+</div>
+<button aria-label="Byt rätt" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant" type="button">
+<span class="material-symbols-rounded text-lg">sync</span>
+</button>
+</div>
+<!-- Fredag -->
+<div class="bg-surface rounded-xl p-3 shadow-sm flex items-center gap-3 transition-transform active:scale-[0.99]">
+<img class="w-14 h-14 rounded-lg object-cover shrink-0 shadow-inner" data-alt="Oven baked salmon fillet with golden herb crust, fresh dill potatoes, lemon wedges on a Scandinavian ceramic platter" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1w99nLblk-7ViqbLrRwysfpKuJHEJC0POJkY8NLXsGUNZX0G7JkEy40tyGeQJLB-68QSPDcSRSIR0zuIyR6vTre9nJIkEh2cD-s77j7eJsefGviiLhP8vDOd0hpNoQDXPMKtx20DPnBNxiftxfC6YihwNwz2hRm9kTeT3W8prlklWM4BQkJEyCN1kvYUrh24T-8uL-7UoW_Fpb0bkHlO0ZFSM6g3NP2Ev6PXPbFQx"/>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between gap-1">
+<span class="text-[11px] font-bold tracking-wide uppercase text-primary">Fre</span>
+<span class="text-[10px] text-on-surface-variant flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">schedule</span> 28m</span>
+</div>
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Ugnsbakad lax med dillpotatis</h3>
+<p class="text-[11px] text-secondary flex items-center gap-1 truncate font-medium">
+<span class="material-symbols-rounded text-xs shrink-0">shopping_cart</span>
+                Kräver färsk lax (läggs på listan)
+              </p>
+</div>
+<button aria-label="Byt rätt" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant" type="button">
+<span class="material-symbols-rounded text-lg">sync</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Besparingssummering -->
+<div class="bg-tertiary-container/60 rounded-xl p-3.5 flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-rounded text-lg">savings</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-tertiary-container">Smart veckovinst</span>
+<p class="text-xs text-on-tertiary-container leading-tight mt-0.5">
+            Detta sparar <span class="font-bold underline">~180 kr</span> och räddar 3 råvaror från att slängas. Endast 6 nya varor läggs till på inköpslistan.
+          </p>
+</div>
+</div>
+<!-- Action-knappar -->
+<div class="flex flex-col gap-2 pt-1 relative z-10">
+<button class="w-full h-13 py-3.5 px-5 bg-primary text-on-primary font-headline font-bold text-sm rounded-full shadow-md flex items-center justify-center gap-2 hover:bg-primary/95 active:scale-[0.98] transition-all" id="acceptPlanBtn" type="button">
+<span class="material-symbols-rounded text-xl">event_available</span>
+          Godkänn och lägg i Veckan
+        </button>
+<button class="w-full h-11 py-2.5 px-4 bg-surface text-on-surface font-headline font-semibold text-xs rounded-full shadow-sm flex items-center justify-center gap-2 hover:bg-surface-variant active:scale-[0.98] transition-all" id="shufflePlanBtn" type="button">
+<span class="material-symbols-rounded text-base text-secondary">casino</span>
+          Slumpa om / Byt ut recept
+        </button>
+</div>
+</div>
+<!-- Sektion: Notisinställningar -->
+<div class="flex flex-col gap-3">
+<div class="flex flex-col px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-rounded text-primary text-xl">notifications_active</span>
+<h2 class="font-headline text-lg font-bold text-on-surface">Notisinställningar för köket</h2>
+</div>
+<p class="text-xs text-on-surface-variant">Anpassa när Tandoor ska påminna dig, synka med familjen och varna för datum.</p>
+</div>
+<!-- Inställningslista -->
+<div class="bg-surface-variant rounded-xl p-2 flex flex-col gap-1.5 shadow-sm">
+<!-- Notis 1: Bäst före -->
+<div class="bg-surface rounded-lg p-3.5 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-rounded text-lg">event_busy</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-on-surface truncate">Bäst före-varningar</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-variant text-on-surface-variant font-medium">kl 09:00</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-snug mt-0.5">
+                Pushnotis 2 dagar innan råvaror i skafferiet passerar sitt datum.
+              </p>
+</div>
+</div>
+<!-- M3 Switch -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+<!-- Notis 2: Dagens middagspåminnelse -->
+<div class="bg-surface rounded-lg p-3.5 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-rounded text-lg">skillet</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-on-surface truncate">Dagens middag</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-variant text-on-surface-variant font-medium">kl 16:30</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-snug mt-0.5">
+                Vad som ska lagas och om något behöver tas fram ur frysen.
+              </p>
+</div>
+</div>
+<!-- M3 Switch -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+<!-- Notis 3: Inköpsliste-synk -->
+<div class="bg-surface rounded-lg p-3.5 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-rounded text-lg">checklist_rtl</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-on-surface truncate">Inköpsliste-synk</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-tertiary-container text-on-tertiary-container font-medium">Delad lista</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-snug mt-0.5">
+                Avisera när en familjemedlem bockar av eller lägger till varor.
+              </p>
+</div>
+</div>
+<!-- M3 Switch -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+<!-- Notis 4: Kökstimer i bakgrunden -->
+<div class="bg-surface rounded-lg p-3.5 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-rounded text-lg">hourglass_top</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-on-surface truncate">Kökstimer på låsskärm</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-variant text-on-surface-variant font-medium">Live Notis</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-snug mt-0.5">
+                Håll pågående koktider synliga utan att behöva låsa upp telefonen.
+              </p>
+</div>
+</div>
+<!-- M3 Switch -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+<!-- Notis 5: Veckoplanering söndagar -->
+<div class="bg-surface rounded-lg p-3.5 flex items-center justify-between gap-3 shadow-xs">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-rounded text-lg">calendar_month</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-sm font-bold text-on-surface truncate">Veckoplanering</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-variant text-on-surface-variant font-medium">Sön kl 18:00</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-snug mt-0.5">
+                Gör dig redo för veckan och godkänn matsedeln i lugn och ro.
+              </p>
+</div>
+</div>
+<!-- M3 Switch -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-12 h-7 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Bekräftelse-toast (interaktiv popup) -->
+<div class="fixed bottom-6 inset-x-4 max-w-sm mx-auto bg-on-surface text-surface py-3 px-4 rounded-xl shadow-xl flex items-center gap-3 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none z-50" id="toastMessage">
+<div class="w-6 h-6 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center shrink-0">
+<span class="material-symbols-rounded text-base">done</span>
+</div>
+<span class="text-xs font-medium flex-1" id="toastText">Veckomatsedeln är sparad och synkad till Tandoor!</span>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    const acceptBtn = document.getElementById('acceptPlanBtn');
+    const shuffleBtn = document.getElementById('shufflePlanBtn');
+    const toast = document.getElementById('toastMessage');
+    const toastText = document.getElementById('toastText');
+
+    let toastTimeout;
+    function showToast(msg) {
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastText.textContent = msg;
+      toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+      }, 2600);
+    }
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        showToast('5 middagar inlagda i Veckan! Inköpslistan uppdaterad.');
+      });
+    }
+
+    if (shuffleBtn) {
+      shuffleBtn.addEventListener('click', () => {
+        showToast('Analyserar skafferi... Nya middagar föreslagna!');
+      });
+    }
+  })();
+</script></main></body></html>

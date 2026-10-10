@@ -1,0 +1,192 @@
+name: Release smoke test
+
+# The R8-minified app on an Android emulator, driven by the black-box UiAutomator test in :smoke
+# against an HTTPS fake Tandoor (docs/BYGGE.md "Release-röktest"). :app's "minified" build type
+# has exactly the release R8 configuration, so this catches keep-rule mistakes that unit tests
+# (unminified) cannot: v0.0.1 crashed on "Log in" because of one.
+#
+# An emulator run takes minutes, so it does not run on every push:
+# - every push to main,
+# - lane pushes that change what R8 sees or the test itself (see `changes` below),
+# - every v* tag: release.yml calls this workflow and publishes only if it passes,
+# - by hand (Actions -> Release smoke test -> Run workflow).
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      ran:
+        description: "Result of the emulator job (success, failure or skipped)"
+        value: ${{ jobs.smoke.result }}
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref_type != 'tag' }}
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Decide whether to run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Decide
+        id: decide
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # Lane pushes only run when something R8 sees, the smoke test or this workflow changed.
+          pattern='^(app/proguard-rules\.pro|.*consumer-rules\.pro|.*proguard-rules\.pro|build-logic/.*|gradle/libs\.versions\.toml|app/build\.gradle\.kts|app/src/minified/.*|smoke/.*|scripts/ci/smoke-run\.sh|\.github/workflows/(smoke|release)\.yml)$'
+          run=false
+          if [ "$EVENT" != "push" ] || [ "$GITHUB_REF" = "refs/heads/main" ] || [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            run=true
+          else
+            if [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+                && git cat-file -e "${BEFORE}^{commit}" 2> /dev/null; then
+              base="$BEFORE"
+            else
+              # A new branch: everything since it left main.
+              base="$(git merge-base origin/main HEAD)"
+            fi
+            changed="$(git diff --name-only "$base" HEAD)"
+            printf '%s\n' "$changed"
+            printf '%s\n' "$changed" | grep -Eq "$pattern" && run=true
+          fi
+          echo "run=${run}" >> "$GITHUB_OUTPUT"
+          echo "Run the release smoke test: ${run}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  smoke:
+    name: Minified app on an emulator (API 36)
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The build runs third-party code; it must not find a token in .git/config.
+          persist-credentials: false
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Caching is done by the restore step below; main's PR run is the only cache writer.
+          cache-disabled: true
+
+      - name: Restore Gradle cache (read only)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # Built before the emulator starts and the Gradle daemon is stopped afterwards: the runner
+      # (2 vCPU / 7 GB) cannot hold Gradle and an emulator at the same time.
+      - name: Build the minified app and the smoke test APK
+        run: |
+          ./gradlew --stacktrace :app:assembleSideloadMinified :smoke:assembleMinified
+          ./gradlew --stop
+
+      # The emulator's userdata partition needs about 7.5 GB; a fresh runner has about 5.5 GB left
+      # after the build. Remove large preinstalled toolchains this job never uses.
+      - name: Free disk space for the emulator
+        run: |
+          df -h / | tail -n 1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell || true
+          df -h / | tail -n 1
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the smoke test on an emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 3072M
+          disk-size: 4096M
+          # A hardware keyboard keeps the soft keyboard from covering the buttons.
+          enable-hw-keyboard: true
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/ci/smoke-run.sh
+
+      # The incident check, independent of the emulator: every Retrofit service interface must
+      # survive R8 (v0.0.1 lost ServerService, and with it the whole login), and the password
+      # login's method and its request body must still be there.
+      - name: Check the R8 mapping for the Retrofit services
+        if: ${{ !cancelled() }}
+        run: |
+          mapping=app/build/outputs/mapping/sideloadMinified/mapping.txt
+          [ -s "$mapping" ] || { echo "::error::No R8 mapping at $mapping"; exit 1; }
+          api_dir=core/network/src/main/kotlin/casa/moller/tandem/core/network/api
+          checked=0
+          failed=0
+          while IFS= read -r -d '' file; do
+            pkg="$(sed -n 's/^package[[:space:]]\{1,\}\([A-Za-z0-9_.]*\).*/\1/p' "$file" | head -n 1)"
+            for name in $(sed -n 's/^\(public[[:space:]]\{1,\}\|internal[[:space:]]\{1,\}\)\{0,1\}interface[[:space:]]\{1,\}\([A-Za-z0-9_]*\).*/\2/p' "$file"); do
+              fqcn="${pkg}.${name}"
+              line="$(awk -v prefix="${fqcn} -> " 'index($0, prefix) == 1 { print; exit }' "$mapping")"
+              checked=$((checked + 1))
+              if [ -z "$line" ]; then
+                echo "::error::${fqcn} is not in the R8 mapping (removed)"; failed=1
+              elif printf '%s' "$line" | grep -q 'R8\$\$REMOVED\$\$CLASS'; then
+                echo "::error::${fqcn} was replaced by R8\$\$REMOVED\$\$CLASS"; failed=1
+              else
+                echo "kept: ${line}"
+              fi
+            done
+          done < <(find "$api_dir" -name '*.kt' -print0)
+          [ "$checked" -gt 0 ] || { echo "::error::No service interfaces found under $api_dir"; exit 1; }
+          awk '
+            /^casa\.moller\.tandem\.core\.network\.api\.AuthService -> / { inside = 1; next }
+            /^[^ #]/ { inside = 0 }
+            inside && /login\(casa\.moller\.tandem\.core\.network\.dto\.TokenAuthRequestDto,kotlin\.coroutines\.Continuation\)/ { found = 1 }
+            END { exit found ? 0 : 1 }
+          ' "$mapping" || { echo "::error::AuthService.login(TokenAuthRequestDto) was removed by R8"; failed=1; }
+          grep -q '^casa\.moller\.tandem\.core\.network\.dto\.TokenAuthRequestDto -> ' "$mapping" \
+            || { echo "::error::TokenAuthRequestDto was removed by R8"; failed=1; }
+          [ "$failed" -eq 0 ] || exit 1
+          echo "All ${checked} service interfaces, AuthService.login and TokenAuthRequestDto are in the mapping."
+
+      - name: Upload smoke test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-results
+          path: |
+            smoke-results/
+            app/build/outputs/mapping/sideloadMinified/
+          if-no-files-found: warn
+          retention-days: 7

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tandem</string>
+    <string name="app_cancel">Avbryt</string>
+
+    <!-- Återställningsskärm (plan 4.2 punkt 7) -->
+    <string name="app_recovery_title">Tandem behövde återställa sin lagring</string>
+    <string name="app_recovery_reason_key">Nyckeln som skyddar din inloggning gick inte att använda, till exempel efter att appen återställts på en ny telefon. Sparade inloggningar togs bort.</string>
+    <string name="app_recovery_reason_accounts">Sparade inloggningar gick inte att läsa och togs bort.</string>
+    <string name="app_recovery_reason_settings">Inställningarna gick inte att läsa och återställdes.</string>
+    <string name="app_recovery_reason_unavailable">Den säkra lagringen på enheten går inte att använda just nu, så inloggningar kan inte sparas. Starta om telefonen; hjälper inte det, rensa appdata.</string>
+    <string name="app_recovery_server_safe_title">Dina recept är kvar</string>
+    <string name="app_recovery_server_safe_body">Bara data på den här enheten påverkades. Allt i din Tandoor är oförändrat.</string>
+    <string name="app_recovery_log_in_again">Logga in igen</string>
+    <string name="app_recovery_clear_data">Rensa appdata</string>
+    <string name="app_recovery_clear_title">Rensa appdata?</string>
+    <string name="app_recovery_clear_body">Alla inloggningar och inställningar tas bort från den här enheten. Ingenting raderas på din Tandoor-server.</string>
+    <string name="app_clear_data_failed">En del data gick inte att rensa. Krypteringsnycklarna förstördes, så den går inte längre att läsa.</string>
+</resources>

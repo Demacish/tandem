@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;color:#292524;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { 'primary': '#C2410C', 'on-primary': '#FFFFFF', 'primary-container': '#FFEDD5', 'on-primary-container': '#7C2D12', 'secondary': '#D97706', 'on-secondary': '#FFFFFF', 'secondary-container': '#FEF3C7', 'on-secondary-container': '#78350F', 'tertiary': '#4D7C0F', 'on-tertiary': '#FFFFFF', 'tertiary-container': '#ECFCCB', 'on-tertiary-container': '#1A2E05', 'surface': '#FBF7F2', 'on-surface': '#292524', 'surface-variant': '#F5EBE1', 'on-surface-variant': '#78716C', 'outline': '#E7E5E4' }, fontFamily: { 'headline': ['Bricolage Grotesque', 'sans-serif'], 'body': ['DM Sans', 'sans-serif'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body flex flex-col text-on-surface"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 px-3 flex items-center justify-between"><div class="flex items-center gap-1.5 min-w-0"><button aria-label="Tillbaka" class="w-11 h-11 flex items-center justify-center text-on-surface rounded-full hover:bg-surface-variant transition-colors" onclick="history.back()"><span class="material-symbols-rounded text-2xl">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface truncate pr-2">Receptdetalj</h1></div><div class="flex items-center gap-1 shrink-0"><button class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors"><span class="material-symbols-rounded text-2xl">share</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-10 space-y-5 px-4">
+<!-- Subtitle Bar (complementing fixed shell header) -->
+<div class="flex items-center justify-between pt-1">
+<div>
+<span class="text-xs font-label uppercase tracking-wider text-secondary font-bold">Geofencing &amp; Smarta köp</span>
+<h2 class="text-xl font-headline font-bold text-on-surface">Smarta notiser vid butik</h2>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-tertiary-container rounded-full">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-xs font-label font-medium text-on-tertiary-container">Geo-vakt aktiv</span>
+</div>
+</div>
+<!-- Permission Status Banner -->
+<div class="bg-surface-variant/70 rounded-xl p-4 shadow-sm relative overflow-hidden">
+<div class="flex items-start gap-3.5">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[22px]">share_location</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="text-sm font-headline font-bold text-on-surface">Platsbehörighet 'Tillåt alltid'</h3>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-tertiary-container text-on-tertiary-container">
+<span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+            Aktiv på enheten
+          </span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+          Tandem använder enbart batterisnål geofencing i Android via hårdvaruchipet. Din exakta position sparas aldrig och lämnar aldrig telefonen.
+        </p>
+</div>
+</div>
+</div>
+<!-- Main Triggers & Switches Section -->
+<div class="bg-surface-variant/50 rounded-xl p-4 space-y-4 shadow-sm">
+<!-- Master Switch -->
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-on-surface">Påminn när jag är nära</p>
+<p class="text-xs text-on-surface-variant truncate">Triggas inom vald radie</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" id="master-switch" type="checkbox"/>
+<div class="w-12 h-7 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-[22px] after:w-[22px] after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="h-px bg-outline/40"></div>
+<!-- Condition Switch -->
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">shopping_cart_checkout</span>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-semibold text-on-surface">Kräv oavbockade varor</p>
+<p class="text-xs text-on-surface-variant truncate">Minst 1 ogjord vara på listan</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer" id="condition-switch" type="checkbox"/>
+<div class="w-12 h-7 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-[22px] after:w-[22px] after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Interactive Mini Preview: Android System Notification -->
+<div class="space-y-2">
+<div class="flex items-center justify-between px-1">
+<span class="text-xs font-label uppercase tracking-wider font-bold text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary">phone_android</span>
+        Simulering av notis
+      </span>
+<button class="text-xs font-medium text-primary hover:underline flex items-center gap-0.5" onclick="triggerNotificationPulse()" type="button">
+<span class="material-symbols-outlined text-[15px]">play_circle</span> Testa larm
+      </button>
+</div>
+<!-- Android 14 Notification Card -->
+<div class="bg-surface-variant rounded-xl p-3.5 shadow-md transition-all duration-300" id="demo-notification">
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant mb-2">
+<div class="flex items-center gap-1.5">
+<div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-on-primary font-bold">T</div>
+<span class="font-medium text-on-surface">Tandem Handla</span>
+<span>•</span>
+<span>Just nu</span>
+</div>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-primary shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">storefront</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-on-surface">Du är nära ICA Kvantum!</p>
+<p class="text-xs text-on-surface leading-snug mt-0.5">
+            Du har 7 varor på din inköpslista (bl.a. <span class="font-medium">Vispgrädde, Avokado, Smör</span>).
+          </p>
+<p class="text-[11px] text-on-surface-variant mt-1">Tryck för att öppna butiksläget med gångsortering.</p>
+</div>
+</div>
+<!-- Action Chips inside notification -->
+<div class="flex items-center gap-2 mt-3 pt-2">
+<button class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-xs font-medium flex items-center gap-1 shadow-sm active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+          Öppna Handla
+        </button>
+<button class="px-3 py-1.5 rounded-full bg-surface text-on-surface text-xs font-medium flex items-center gap-1 shadow-sm active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-sm">snooze</span>
+          Snooze 1 timme
+        </button>
+</div>
+</div>
+</div>
+<!-- Favorite Geofence Zones List -->
+<div class="space-y-3 pt-1">
+<div class="flex items-center justify-between px-1">
+<div>
+<h3 class="text-base font-headline font-bold text-on-surface">Dina favoritbutiker</h3>
+<p class="text-xs text-on-surface-variant">3 geofence-zoner sparade på enheten</p>
+</div>
+<span class="text-xs font-label bg-surface-variant text-on-surface-variant px-2.5 py-1 rounded-full font-medium">Max 20</span>
+</div>
+<!-- Store 1: ICA Kvantum Mölndal -->
+<div class="bg-surface-variant/60 rounded-xl p-4 shadow-sm flex flex-col gap-3 relative overflow-hidden">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-11 h-11 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+            ICA
+          </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-sm font-headline font-bold text-on-surface truncate">ICA Kvantum Mölndal</h4>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container shrink-0">
+                Aktiv zon
+              </span>
+</div>
+<p class="text-xs text-on-surface-variant truncate mt-0.5">Flöjelbergsgatan 2</p>
+<div class="flex items-center gap-3 mt-1.5 text-xs text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-secondary">radar</span>
+                Radie: 250 m
+              </span>
+<span>•</span>
+<span class="text-on-surface font-medium">Auto-butiksläge</span>
+</div>
+</div>
+</div>
+<button aria-label="Redigera ICA Kvantum Mölndal" class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-on-surface shadow-sm shrink-0" type="button">
+<span class="material-symbols-outlined text-base">tune</span>
+</button>
+</div>
+<!-- Matched Items Chip Bar -->
+<div class="bg-surface rounded-lg p-2.5 flex items-center justify-between gap-2 text-xs">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-sm text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-on-surface font-medium truncate">2 varor matchade: <span class="font-normal text-on-surface-variant">Vispgrädde, Smör</span></span>
+</div>
+<span class="text-[11px] font-bold text-primary shrink-0">Visa lista</span>
+</div>
+</div>
+<!-- Store 2: Coop Konsum Centrum -->
+<div class="bg-surface-variant/60 rounded-xl p-4 shadow-sm flex flex-col gap-3">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-11 h-11 rounded-xl bg-tertiary text-on-tertiary flex items-center justify-center font-bold text-xs shrink-0 shadow-sm uppercase tracking-tight">
+            COOP
+          </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-sm font-headline font-bold text-on-surface truncate">Coop Konsum Centrum</h4>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-tertiary-container text-on-tertiary-container shrink-0">
+                Aktiv zon
+              </span>
+</div>
+<p class="text-xs text-on-surface-variant truncate mt-0.5">Storgatan 14</p>
+<div class="flex items-center gap-3 mt-1.5 text-xs text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-secondary">radar</span>
+                Radie: 150 m
+              </span>
+<span>•</span>
+<span class="text-on-surface-variant">Inga matchade varor</span>
+</div>
+</div>
+</div>
+<button aria-label="Redigera Coop Konsum Centrum" class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-on-surface shadow-sm shrink-0" type="button">
+<span class="material-symbols-outlined text-base">tune</span>
+</button>
+</div>
+</div>
+<!-- Store 3: Willys Sisjön (Paused) -->
+<div class="bg-surface-variant/40 rounded-xl p-4 shadow-sm flex flex-col gap-3 opacity-80">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-start gap-3 min-w-0">
+<div class="w-11 h-11 rounded-xl bg-on-surface-variant/30 text-on-surface flex items-center justify-center font-bold text-xs shrink-0 shadow-sm uppercase tracking-tight">
+            WILLYS
+          </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-sm font-headline font-bold text-on-surface truncate">Willys Sisjön</h4>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-variant text-on-surface-variant shrink-0">
+                Pausad
+              </span>
+</div>
+<p class="text-xs text-on-surface-variant truncate mt-0.5">Hantverksvägen 5</p>
+<div class="flex items-center gap-3 mt-1.5 text-xs text-on-surface-variant">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">radar</span>
+                Radie: 300 m
+              </span>
+<span>•</span>
+<span class="text-on-surface-variant italic">Triggas ej</span>
+</div>
+</div>
+</div>
+<button aria-label="Redigera Willys Sisjön" class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-on-surface-variant hover:text-on-surface shadow-sm shrink-0" type="button">
+<span class="material-symbols-outlined text-base">tune</span>
+</button>
+</div>
+</div>
+<!-- Add Store Action Button -->
+<button class="w-full py-3.5 px-4 rounded-xl bg-surface-variant text-primary font-headline font-bold text-sm flex items-center justify-center gap-2 shadow-sm hover:bg-primary-container active:scale-[0.99] transition-all" type="button">
+<span class="material-symbols-outlined text-lg">add_location_alt</span>
+      + Lägg till ny favoritbutik (Karta &amp; adress)
+    </button>
+</div>
+<!-- Time Filter / Quiet Hours Section -->
+<div class="bg-surface-variant/50 rounded-xl p-4 space-y-3 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-xl">schedule</span>
+<h3 class="text-sm font-headline font-bold text-on-surface">Tidsfilter &amp; Stör ej</h3>
+</div>
+<span class="text-xs text-secondary font-medium font-label">Flexibel schemaläggning</span>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-1" id="time-filter-group">
+<!-- Option 1: Work Hours Muted -->
+<button class="time-filter-btn px-3 py-2.5 rounded-lg bg-primary-container text-on-primary-container text-left flex flex-col gap-0.5 shadow-sm transition-all" data-selected="true" onclick="selectTimeFilter(this)" type="button">
+<div class="flex items-center justify-between w-full">
+<span class="text-xs font-bold">Under arbetstid</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[11px] opacity-80">Tyst 08:00–16:00</span>
+</button>
+<!-- Option 2: Always notify -->
+<button class="time-filter-btn px-3 py-2.5 rounded-lg bg-surface text-on-surface-variant text-left flex flex-col gap-0.5 shadow-sm transition-all hover:bg-surface-variant" data-selected="false" onclick="selectTimeFilter(this)" type="button">
+<div class="flex items-center justify-between w-full">
+<span class="text-xs font-bold text-on-surface">Alla tider</span>
+<span class="material-symbols-outlined text-sm opacity-0">check</span>
+</div>
+<span class="text-[11px] opacity-80">Varna dygnet runt</span>
+</button>
+</div>
+</div>
+<!-- Helpful Privacy Footnote -->
+<div class="px-2 text-center">
+<p class="text-[11px] text-on-surface-variant flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-xs text-tertiary">lock</span>
+      Platsdata stannar i din telefon via Android Geofencing API
+    </p>
+</div>
+</div>
+<script>
+  function selectTimeFilter(btn) {
+    const group = document.getElementById('time-filter-group');
+    const buttons = group.querySelectorAll('.time-filter-btn');
+    buttons.forEach(b => {
+      b.classList.remove('bg-primary-container', 'text-on-primary-container');
+      b.classList.add('bg-surface', 'text-on-surface-variant');
+      const icon = b.querySelector('.material-symbols-outlined');
+      if (icon) icon.classList.add('opacity-0');
+      b.dataset.selected = "false";
+    });
+
+    btn.classList.remove('bg-surface', 'text-on-surface-variant');
+    btn.classList.add('bg-primary-container', 'text-on-primary-container');
+    const activeIcon = btn.querySelector('.material-symbols-outlined');
+    if (activeIcon) activeIcon.classList.remove('opacity-0');
+    btn.dataset.selected = "true";
+  }
+
+  function triggerNotificationPulse() {
+    const card = document.getElementById('demo-notification');
+    if (!card) return;
+    card.classList.add('scale-[1.02]', 'bg-primary-container/40');
+    setTimeout(() => {
+      card.classList.remove('scale-[1.02]', 'bg-primary-container/40');
+    }, 400);
+  }
+</script></main></body></html>

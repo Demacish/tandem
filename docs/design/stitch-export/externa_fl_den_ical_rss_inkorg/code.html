@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { primary: '#C2410C', 'on-primary': '#FFFFFF', 'primary-container': '#FFDBCF', 'on-primary-container': '#3E1000', secondary: '#D97706', 'on-secondary': '#FFFFFF', 'secondary-container': '#FFDEAA', 'on-secondary-container': '#2C1600', tertiary: '#4D7C0F', 'on-tertiary': '#FFFFFF', 'tertiary-container': '#CEF596', 'on-tertiary-container': '#142500', error: '#BA1A1A', 'on-error': '#FFFFFF', 'error-container': '#FFDAD6', 'on-error-container': '#410002', surface: '#FBF7F2', 'on-surface': '#201A18', 'surface-variant': '#EFE8DE', 'on-surface-variant': '#51443B', 'surface-container-lowest': '#FFFFFF', 'surface-container-low': '#F5F0E9', 'surface-container': '#EFEAE3', 'surface-container-high': '#E9E4DC', 'surface-container-highest': '#E3DED5', outline: '#847369', 'outline-variant': '#D7C2B4' }, fontFamily: { headline: ['"Bricolage Grotesque"', 'sans-serif'], body: ['"DM Sans"', 'sans-serif'] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;}body{overscroll-behavior:none;font-family:'DM Sans',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style></head><body class="bg-surface text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 px-3 flex items-center justify-between"><div class="flex items-center gap-1 min-w-0"><button aria-label="Tillbaka" class="w-11 h-11 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant/50 transition-colors" onclick="history.back()"><span class="material-symbols-rounded text-[24px]">arrow_back</span></button><h1 class="text-lg font-headline font-bold tracking-tight text-on-surface truncate">Externa Flöden</h1></div><div class="flex items-center gap-1"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full pb-10">
+<!-- Topp-ingress och statusbadge -->
+<div class="px-5 pt-3 pb-4 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-tertiary-container text-on-tertiary-container">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">sync</span>
+        Tandoor Synk Aktiv
+      </span>
+<span class="text-xs font-body text-surface-variant font-medium text-outline">Uppdaterad nyss</span>
+</div>
+<h2 class="text-2xl font-headline font-bold text-on-surface tracking-tight">Koppla ihop köket</h2>
+<p class="text-sm text-on-surface-variant font-body leading-relaxed">
+      Dela din matplanering med familjens kalendrar och hämta recept direkt från dina favoritkällor till din Tandoor-databas.
+    </p>
+</div>
+<div class="flex flex-col gap-6 px-4">
+<!-- SEKTION 1: iCal Matsedel -->
+<section class="flex flex-col bg-surface-container rounded-2xl p-5 shadow-sm">
+<div class="flex items-start gap-3.5 mb-4">
+<div class="w-12 h-12 rounded-xl bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">calendar_month</span>
+</div>
+<div class="flex flex-col min-w-0">
+<h3 class="text-lg font-headline font-bold text-on-surface">Matsedel till kalendern</h3>
+<p class="text-xs text-on-surface-variant font-body leading-snug mt-0.5">
+            Synka planerade måltider direkt till Google Kalender, Apple Kalender eller Outlook.
+          </p>
+</div>
+</div>
+<!-- iCal Link Card med kopiering & QR-popover -->
+<div class="bg-surface-container-lowest rounded-xl p-3.5 flex flex-col gap-3 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold tracking-wide uppercase text-outline">Personlig webcal-länk</span>
+<span class="text-[11px] font-medium text-tertiary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Privat token
+          </span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-3 py-2 rounded-lg min-w-0">
+<span class="material-symbols-outlined text-outline text-[18px] shrink-0">link</span>
+<input class="bg-transparent text-xs text-on-surface font-mono truncate w-full outline-none select-all" id="ical-url" readonly="" type="text" value="webcal://tandoor.local/api/feed/cal/8f3a92-matsedel.ics"/>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-1">
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-sm active:scale-95 transition-all" id="copy-btn" onclick="copyIcalLink()">
+<span class="material-symbols-outlined text-[17px]">content_copy</span>
+<span id="copy-btn-text">Kopiera länk</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-surface-container-highest text-on-surface text-xs font-semibold active:scale-95 transition-all" onclick="toggleQrModal()">
+<span class="material-symbols-outlined text-[17px]">qr_code_2</span>
+<span>Visa QR-kod</span>
+</button>
+</div>
+<!-- Fällbar QR-modul -->
+<div class="hidden flex-col items-center justify-center p-4 bg-surface-container-low rounded-xl gap-2 transition-all" id="qr-container">
+<div class="p-2.5 bg-white rounded-lg shadow-sm">
+<svg class="w-36 h-36" fill="currentColor" viewbox="0 0 100 100">
+<!-- Stiliserad QR-kod representation -->
+<rect fill="white" height="100" width="100"></rect>
+<!-- Hörnrutor -->
+<rect fill="#201A18" height="28" rx="3" width="28" x="6" y="6"></rect>
+<rect fill="white" height="18" rx="1" width="18" x="11" y="11"></rect>
+<rect fill="#201A18" height="10" width="10" x="15" y="15"></rect>
+<rect fill="#201A18" height="28" rx="3" width="28" x="66" y="6"></rect>
+<rect fill="white" height="18" rx="1" width="18" x="71" y="11"></rect>
+<rect fill="#201A18" height="10" width="10" x="75" y="15"></rect>
+<rect fill="#201A18" height="28" rx="3" width="28" x="6" y="66"></rect>
+<rect fill="white" height="18" rx="1" width="18" x="11" y="71"></rect>
+<rect fill="#201A18" height="10" width="10" x="15" y="75"></rect>
+<!-- Mönster/Data blocks -->
+<rect fill="#C2410C" height="6" width="6" x="38" y="10"></rect>
+<rect fill="#201A18" height="8" width="8" x="48" y="10"></rect>
+<rect fill="#201A18" height="6" width="12" x="38" y="22"></rect>
+<rect fill="#D97706" height="6" width="6" x="54" y="24"></rect>
+<rect fill="#201A18" height="6" width="8" x="10" y="38"></rect>
+<rect fill="#201A18" height="10" width="6" x="22" y="42"></rect>
+<rect fill="#4D7C0F" height="10" width="10" x="34" y="36"></rect>
+<rect fill="#201A18" height="6" width="6" x="48" y="38"></rect>
+<rect fill="#201A18" height="6" width="14" x="60" y="36"></rect>
+<rect fill="#201A18" height="8" width="8" x="80" y="42"></rect>
+<rect fill="#201A18" height="12" width="8" x="38" y="52"></rect>
+<rect fill="#201A18" height="8" width="12" x="52" y="50"></rect>
+<rect fill="#C2410C" height="6" width="8" x="70" y="54"></rect>
+<rect fill="#201A18" height="6" width="12" x="38" y="70"></rect>
+<rect fill="#201A18" height="12" width="6" x="54" y="68"></rect>
+<rect fill="#201A18" height="8" width="12" x="66" y="72"></rect>
+<rect fill="#201A18" height="14" width="8" x="82" y="70"></rect>
+<rect fill="#D97706" height="8" width="8" x="44" y="82"></rect>
+</svg>
+</div>
+<p class="text-[11px] text-center text-on-surface-variant font-body">Skanna med mobilens kamera för att direkt prenumerera på kalendern.</p>
+</div>
+</div>
+<!-- Synkinställningar -->
+<div class="mt-4 flex flex-col gap-3">
+<h4 class="text-xs font-semibold tracking-wide uppercase text-on-surface-variant">Synkroniseringsval</h4>
+<!-- Filter chips måltider -->
+<div class="flex items-center gap-2">
+<label class="meal-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors bg-primary text-on-primary">
+<input checked="" class="hidden" onchange="toggleMealChip(this)" type="checkbox"/>
+<span class="material-symbols-outlined text-[16px]">check</span>
+            Middagar
+          </label>
+<label class="meal-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors bg-surface-container-highest text-on-surface">
+<input class="hidden" onchange="toggleMealChip(this)" type="checkbox"/>
+<span class="material-symbols-outlined text-[16px] hidden">check</span>
+            Luncher
+          </label>
+<label class="meal-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors bg-surface-container-highest text-on-surface">
+<input class="hidden" onchange="toggleMealChip(this)" type="checkbox"/>
+<span class="material-symbols-outlined text-[16px] hidden">check</span>
+            Frukostar
+          </label>
+</div>
+<!-- Inställningsrader -->
+<div class="flex flex-col gap-2 mt-1">
+<!-- Påminnelsetid -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-lowest">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-on-surface">Kalenderpåminnelse</span>
+<span class="text-[11px] text-on-surface-variant">Larm inför middagstid</span>
+</div>
+</div>
+<select class="bg-surface-container-high text-xs font-medium text-on-surface py-1.5 px-2.5 rounded-lg outline-none cursor-pointer">
+<option value="16:00">Kl 16:00</option>
+<option selected="" value="17:00">Kl 17:00</option>
+<option value="18:00">Kl 18:00</option>
+<option value="ingen">Ingen påminnelse</option>
+</select>
+</div>
+<!-- Inkludera ingredienslista -->
+<label class="flex items-center justify-between p-3 rounded-xl bg-surface-container-lowest cursor-pointer">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary text-[20px]">format_list_bulleted</span>
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-on-surface">Baka in ingredienser</span>
+<span class="text-[11px] text-on-surface-variant">Lägg råvaror i händelsens anteckningar</span>
+</div>
+</div>
+<input checked="" class="w-4 h-4 accent-primary rounded cursor-pointer" type="checkbox"/>
+</label>
+</div>
+</div>
+</section>
+<!-- SEKTION 2: RSS-inkorg för recept -->
+<section class="flex flex-col bg-surface-container rounded-2xl p-5 shadow-sm">
+<div class="flex items-start justify-between gap-3 mb-2">
+<div class="flex items-start gap-3.5">
+<div class="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[26px]">rss_feed</span>
+</div>
+<div class="flex flex-col">
+<h3 class="text-lg font-headline font-bold text-on-surface">Receptinkorg (RSS)</h3>
+<p class="text-xs text-on-surface-variant font-body leading-snug mt-0.5">
+              Bevaka matkreatörer och bloggar. Nya recept fångas upp automatiskt och sparas till Tandoor.
+            </p>
+</div>
+</div>
+</div>
+<!-- Knapp: Lägg till RSS-flöde -->
+<button class="mt-2 mb-4 w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-surface-container-lowest text-primary text-xs font-bold shadow-sm active:scale-95 transition-all" onclick="toggleAddFeed()">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+        Lägg till nytt RSS-flöde
+      </button>
+<!-- Fällbart formulär för ny feed -->
+<div class="hidden flex-col gap-2.5 p-3.5 mb-4 bg-surface-container-lowest rounded-xl" id="add-feed-form">
+<span class="text-xs font-bold text-on-surface">Prenumerera på blogg / RSS-länk</span>
+<div class="flex gap-2">
+<input class="flex-1 bg-surface-container-low text-xs px-3 py-2 rounded-lg text-on-surface outline-none placeholder:text-outline" placeholder="https://exempel.se/recept/feed" type="url"/>
+<button class="bg-primary text-on-primary text-xs font-semibold px-4 py-2 rounded-lg active:scale-95 transition-transform" onclick="saveNewFeed()">
+            Spara
+          </button>
+</div>
+</div>
+<!-- Lista med aktiva flöden & receptkort -->
+<div class="flex flex-col gap-3">
+<!-- Receptkort 1: Zeinas Kitchen (Färskt och med åtgärd) -->
+<article class="flex flex-col bg-surface-container-lowest rounded-xl p-3.5 shadow-[0_1px_4px_rgba(0,0,0,0.03)] gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-2 h-2 rounded-full bg-primary shrink-0 animate-pulse"></span>
+<span class="text-xs font-bold text-on-surface truncate">Zeinas Kitchen</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-mono">RSS</span>
+</div>
+<span class="text-[11px] font-medium text-secondary">Idag 11:20</span>
+</div>
+<div class="flex gap-3 items-center">
+<div class="w-16 h-16 rounded-lg bg-surface-container-high overflow-hidden shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="A warm and comforting bowl of creamy red lentil soup garnished with fresh lemon slice, fragrant chopped herbs, olive oil swirl, top-down kitchen food photography with soft natural daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF4MWVz6mj_fUZP6-KS40t2quWsM33Snf-k-Lv_UXqVgY-tS6MvtevKhSaC7PTOb_iX9GxrdeZenTkY4aqLr_BI3ey0v75-k6KHbThH8yKCSmLkB9BVQpa_VArLNax1KglRMqXPhRjXajICdyHPMZhgx3Xs02I3RD7Qweyf590pWfeUkjDTw6XYzj1ZkrigORnSg_liIRE2WW6dEWkfVFyjGpKayFxWRG3sAiI6aZg"/>
+</div>
+<div class="flex flex-col min-w-0">
+<h5 class="text-sm font-headline font-bold text-on-surface leading-tight truncate">Krämig linssoppa med citron</h5>
+<p class="text-xs text-on-surface-variant font-body line-clamp-1 mt-0.5">Mild orientalisk linssoppa med spiskummin och färskpressad citronjuice.</p>
+<div class="flex items-center gap-2 mt-1.5">
+<span class="text-[10px] text-outline flex items-center gap-1 font-medium">
+<span class="material-symbols-outlined text-[13px]">timer</span> 25 min
+                </span>
+<span class="text-[10px] text-tertiary font-medium">Vegansk</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-1 border-t-0">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-sm active:scale-95 transition-all" id="import-btn-1" onclick="handleImport('import-btn-1')">
+<span class="material-symbols-outlined text-[16px]">bookmark_add</span>
+<span>Granska &amp; Spara till Tandoor</span>
+</button>
+<a class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant shrink-0" href="#" title="Öppna källänk">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</a>
+</div>
+</article>
+<!-- Receptkort 2: Under Tian -->
+<article class="flex flex-col bg-surface-container-lowest rounded-xl p-3.5 shadow-[0_1px_4px_rgba(0,0,0,0.03)] gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<span class="w-2 h-2 rounded-full bg-outline-variant shrink-0"></span>
+<span class="text-xs font-bold text-on-surface truncate">Under Tian</span>
+<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-mono">Atom</span>
+</div>
+<span class="text-[11px] text-on-surface-variant">Igår 17:45</span>
+</div>
+<div class="flex gap-3 items-center">
+<div class="w-14 h-14 rounded-lg bg-surface-container-high overflow-hidden shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="Rustic baked root vegetable gratin in a ceramic casserole dish, golden baked cheese crust, flavored with whole grain mustard and thyme, rustic wooden tabletop background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2t1WBgpbChOd_PDK8Cvw2pdvfUEqvqw0RMc8MLz4O2pvN6sZAWsODKthrrwmmXeyas2nVMogmsY-WzhXvKJ4KfGGAHAho5vl2zYTXvLFvH_LO_1_y9Fi4wDQu0meDKhhr2gnHwcZGdKRmyoNR2-FF818xqVnby-BJQPzPkBnWpIGSDHA0vII1Nm_ulonqzzXbtUgvwtZlx0kYjZa9ZY6P8Pg_FXLorAmwrYK49OWu"/>
+</div>
+<div class="flex flex-col min-w-0">
+<h5 class="text-xs font-headline font-bold text-on-surface leading-tight truncate">Rotfruktsgratäng med senap</h5>
+<p class="text-[11px] text-on-surface-variant font-body line-clamp-1 mt-0.5">Billig höstmat med palsternacka, potatis och grovkornig dijonsenap.</p>
+<span class="text-[10px] text-outline mt-1">Sparad till inkorg</span>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface text-xs font-medium active:scale-95 transition-all" id="import-btn-2" onclick="handleImport('import-btn-2')">
+<span class="material-symbols-outlined text-[15px]">add</span>
+<span>Spara recept</span>
+</button>
+</article>
+<!-- Receptkort 3: Portionen Under Tian / Receptfavoriter -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-lowest">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-outline shrink-0">
+<span class="material-symbols-outlined text-[18px]">feed</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-bold text-on-surface truncate">Portionen Under Tian</span>
+<span class="text-[10px] text-on-surface-variant truncate">Inga nya recept sedan i tisdags</span>
+</div>
+</div>
+<span class="text-[11px] font-semibold text-tertiary px-2 py-0.5 rounded-full bg-tertiary-container">Uppdaterad</span>
+</div>
+</div>
+</section>
+<!-- SEKTION 3: Integritet & Säkerhet -->
+<section class="flex items-center gap-3 bg-surface-variant/40 rounded-xl p-3.5">
+<div class="w-9 h-9 rounded-full bg-surface-container-lowest flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+</div>
+<div class="flex flex-col">
+<h4 class="text-xs font-headline font-bold text-on-surface">Direkt &amp; Privat Synkning</h4>
+<p class="text-[11px] text-on-surface-variant font-body leading-tight mt-0.5">
+          All data överförs krypterat direkt mellan din Tandoor-instans och dina klienter. Inga mellanhänder lagrar dina matvanor.
+        </p>
+</div>
+</section>
+</div>
+</div>
+<script>
+  function copyIcalLink() {
+    const input = document.getElementById('ical-url');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btnText = document.getElementById('copy-btn-text');
+      const copyBtn = document.getElementById('copy-btn');
+      if (btnText && copyBtn) {
+        btnText.innerText = 'Kopierad!';
+        copyBtn.classList.add('bg-tertiary');
+        copyBtn.classList.remove('bg-primary');
+        setTimeout(() => {
+          btnText.innerText = 'Kopiera länk';
+          copyBtn.classList.add('bg-primary');
+          copyBtn.classList.remove('bg-tertiary');
+        }, 2000);
+      }
+    }).catch(() => {
+      input.select();
+      document.execCommand('copy');
+    });
+  }
+
+  function toggleQrModal() {
+    const qrContainer = document.getElementById('qr-container');
+    if (qrContainer) {
+      qrContainer.classList.toggle('hidden');
+      qrContainer.classList.toggle('flex');
+    }
+  }
+
+  function toggleAddFeed() {
+    const form = document.getElementById('add-feed-form');
+    if (form) {
+      form.classList.toggle('hidden');
+      form.classList.toggle('flex');
+    }
+  }
+
+  function saveNewFeed() {
+    toggleAddFeed();
+  }
+
+  function toggleMealChip(checkbox) {
+    const parent = checkbox.closest('label');
+    const icon = parent.querySelector('.material-symbols-outlined');
+    if (checkbox.checked) {
+      parent.classList.remove('bg-surface-container-highest', 'text-on-surface');
+      parent.classList.add('bg-primary', 'text-on-primary');
+      if (icon) icon.classList.remove('hidden');
+    } else {
+      parent.classList.remove('bg-primary', 'text-on-primary');
+      parent.classList.add('bg-surface-container-highest', 'text-on-surface');
+      if (icon) icon.classList.add('hidden');
+    }
+  }
+
+  function handleImport(buttonId) {
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span> <span class="text-tertiary font-bold">Sparat i Tandoor!</span>';
+    btn.classList.add('bg-tertiary-container');
+    btn.classList.remove('bg-primary', 'text-on-primary');
+  }
+</script></main></body></html>

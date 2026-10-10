@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ONLY for the "minified" build type (casa.moller.tandem.minified), the R8 release smoke test
+    (docs/BYGGE.md). It replaces src/main/res/xml/network_security_config.xml for that build type
+    and is identical except for one extra trust anchor: the public, test-only CA in
+    res/raw/tandem_smoke_test_ca.pem, which signs the HTTPS fake Tandoor in the :smoke test APK.
+    debug and release builds never see this file or the CA.
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates
+                src="user"
+                tools:ignore="AcceptsUserCertificates" />
+            <certificates src="@raw/tandem_smoke_test_ca" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

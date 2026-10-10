@@ -1,0 +1,249 @@
+# Tandem – Gradle version catalog.
+# All versions verified against maven-metadata.xml on Google Maven / Maven Central /
+# Gradle Plugin Portal on 2026-10-09. Pre-releases are marked "PRE-RELEASE" with the reason.
+# Gradle wrapper: 9.7.1 (AGP 9.4 needs >= 9.6.0; KGP 2.4.20+ is fully tested up to 9.7.x).
+# CI JDK: Temurin 21 (AGP needs >= 17; Robolectric needs 21 for SDK 36+).
+
+[versions]
+# --- SDK levels (read by build-logic convention plugins) ---
+minSdk = "34"
+targetSdk = "36"
+# Required, not optional: Compose UI 1.12.1, core 1.19.1, material3 1.5.0-beta01,
+# navigation3 1.2.0 and adaptive-navigation3 1.3.0 all declare minCompileSdk=37 (AGP >= 9.1.0).
+compileSdk = "37"
+
+# --- Build toolchain ---
+agp = "9.4.1"
+# AGP 9.4.1 only has a runtime dependency on KGP 2.2.10 / KSP 2.2.10-2.0.2. Declaring the
+# plugins below (root build.gradle.kts, `apply false`) upgrades the shared classpath.
+kotlin = "2.4.21"
+ksp = "2.3.12"            # KSP2, version decoupled from Kotlin since 2.3.0; AGP 9 needs >= 2.3.6
+
+# --- DI ---
+hilt = "2.60.1"           # AGP 9 requires >= 2.59.2; bundles kotlin-metadata-jvm 2.3.21 (reads up to 2.4.x)
+androidxHilt = "1.4.0"    # hilt-lifecycle-viewmodel-compose, hilt-work, androidx.hilt:hilt-compiler
+
+# --- Compose / UI ---
+composeBom = "2026.09.00" # ui/foundation 1.12.1, material3 1.4.0, adaptive 1.3.0, navigation-suite 1.4.0
+# PRE-RELEASE (required by plan 5.1): Expressive APIs (MaterialExpressiveTheme, MotionScheme,
+# LoadingIndicator) only exist in 1.5.0. Depends on Compose 1.12.0 stable, so it fits BOM 2026.09.00.
+# Its Gradle metadata pins material3-adaptive-navigation-suite to the same version.
+material3 = "1.5.0-beta01"
+material3Adaptive = "1.3.0"          # adaptive, adaptive-layout, adaptive-navigation, adaptive-navigation3 (all stable)
+navigation3 = "1.2.0"
+lifecycle = "2.11.0"                 # incl. lifecycle-viewmodel-navigation3
+activity = "1.13.0"
+coreKtx = "1.19.1"
+coreSplashscreen = "1.2.0"
+glance = "1.2.0"
+coil = "3.6.3"
+
+# --- Data / background ---
+datastore = "1.2.1"       # datastore-tink exists only as 1.3.0-alpha -> own Tink Serializer on stable 1.2.1
+tink = "1.23.0"
+room3 = "3.0.3"           # androidx.room3 (fallback: androidx.room 2.8.5)
+paging = "3.5.2"
+work = "2.12.0"
+
+# --- Network / serialization ---
+retrofit = "3.0.0"        # depends on OkHttp 4.12; our explicit OkHttp 5 pin wins (binary compatible)
+okhttp = "5.5.0"
+kotlinxSerialization = "1.11.0"
+kotlinxCoroutines = "1.11.0"
+kotlinxDatetime = "0.8.0"
+
+# --- Tests ---
+junit4 = "4.13.2"         # Android/Robolectric/Compose UI tests
+junit5 = "5.14.4"         # pure JVM modules (Jupiter). JUnit 6.1.3 exists; mockwebserver3-junit5 5.5.0 is built against 5.13.4
+robolectric = "4.17"      # supports SDK 37; android-all-instrumented 16 (API 36) and 17 (API 37) published
+roborazzi = "1.76.0"
+# --- Static checks (plan 5.6). ktlint-gradle >= 14.1 supports AGP 9 built-in Kotlin. ---
+ktlintGradle = "14.2.0"
+ktlint = "1.8.0"          # the ktlint engine (com.pinterest.ktlint), set in tandem convention plugins
+turbine = "1.2.1"
+androidxTestCore = "1.7.0"
+androidxTestExtJunit = "1.3.0"
+androidxTestRunner = "1.7.0"
+uiautomator = "2.4.0"     # release smoke test (:smoke), black-box UI driver
+
+[libraries]
+# Gradle plugins as libraries for build-logic (compileOnly in build-logic/convention)
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
+hilt-gradlePlugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
+room3-gradlePlugin = { module = "androidx.room3:room3-gradle-plugin", version.ref = "room3" }
+roborazzi-gradlePlugin = { module = "io.github.takahirom.roborazzi:roborazzi-gradle-plugin", version.ref = "roborazzi" }
+ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintGradle" }
+
+# AndroidX core
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
+
+# Compose (versions from BOM unless overridden)
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation" }
+androidx-compose-animation = { module = "androidx.compose.animation:animation" }
+androidx-compose-runtime = { module = "androidx.compose.runtime:runtime" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
+androidx-compose-material3-navigationSuite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite", version.ref = "material3" }
+androidx-compose-material3-windowSizeClass = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "material3" }
+androidx-compose-material3-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "material3Adaptive" }
+androidx-compose-material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "material3Adaptive" }
+androidx-compose-material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "material3Adaptive" }
+androidx-compose-material3-adaptive-navigation3 = { module = "androidx.compose.material3.adaptive:adaptive-navigation3", version.ref = "material3Adaptive" }
+
+# Navigation 3
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+
+# Hilt
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
+androidx-hilt-lifecycle-viewmodel-compose = { module = "androidx.hilt:hilt-lifecycle-viewmodel-compose", version.ref = "androidxHilt" }
+androidx-hilt-work = { module = "androidx.hilt:hilt-work", version.ref = "androidxHilt" }
+androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHilt" }
+# Fallback only: if Hilt ever reports "Provided Metadata instance has version 2.4.x, while maximum
+# supported version is ...", add `ksp(libs.kotlin.metadata.jvm)` next to hilt-compiler.
+kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
+
+# Data
+androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
+tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
+androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3" }
+androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
+androidx-room3-paging = { module = "androidx.room3:room3-paging", version.ref = "room3" }
+androidx-room3-testing = { module = "androidx.room3:room3-testing", version.ref = "room3" }
+androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+
+# Widgets / images
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
+androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+
+# Network / serialization
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-converter-kotlinxSerialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
+okhttp-bom = { module = "com.squareup.okhttp3:okhttp-bom", version.ref = "okhttp" }
+okhttp = { module = "com.squareup.okhttp3:okhttp" }
+okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor" }
+okhttp-mockwebserver3 = { module = "com.squareup.okhttp3:mockwebserver3" }
+okhttp-mockwebserver3-junit4 = { module = "com.squareup.okhttp3:mockwebserver3-junit4" }
+okhttp-mockwebserver3-junit5 = { module = "com.squareup.okhttp3:mockwebserver3-junit5" }
+# --- network lane: TLS certificates for HTTPS MockWebServer tests (version from okhttp-bom) ---
+okhttp-tls = { module = "com.squareup.okhttp3:okhttp-tls" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+
+# Tests
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+junit5-bom = { module = "org.junit:junit-bom", version.ref = "junit5" }
+junit5-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit5-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { module = "io.github.takahirom.roborazzi:roborazzi-junit-rule", version.ref = "roborazzi" }
+roborazzi-accessibility-check = { module = "io.github.takahirom.roborazzi:roborazzi-accessibility-check", version.ref = "roborazzi" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-compose-ui-test-junit4-accessibility = { module = "androidx.compose.ui:ui-test-junit4-accessibility" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "androidxTestCore" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "androidxTestExtJunit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+
+[bundles]
+compose-ui = [
+    "androidx-compose-ui",
+    "androidx-compose-ui-graphics",
+    "androidx-compose-ui-tooling-preview",
+    "androidx-compose-foundation",
+    "androidx-compose-animation",
+    "androidx-compose-material3",
+]
+compose-adaptive = [
+    "androidx-compose-material3-navigationSuite",
+    "androidx-compose-material3-adaptive",
+    "androidx-compose-material3-adaptive-layout",
+    "androidx-compose-material3-adaptive-navigation",
+    "androidx-compose-material3-adaptive-navigation3",
+]
+navigation3 = [
+    "androidx-navigation3-runtime",
+    "androidx-navigation3-ui",
+    "androidx-lifecycle-viewmodel-navigation3",
+]
+lifecycle-compose = [
+    "androidx-lifecycle-runtime-compose",
+    "androidx-lifecycle-viewmodel-compose",
+]
+network = [
+    "retrofit",
+    "retrofit-converter-kotlinxSerialization",
+    "okhttp",
+    "okhttp-logging",
+    "kotlinx-serialization-json",
+]
+room3 = [
+    "androidx-room3-runtime",
+    "androidx-room3-paging",
+]
+# JVM unit tests on Android modules (JUnit 4 runner, Robolectric, Compose UI test, screenshots)
+android-unit-test = [
+    "junit4",
+    "robolectric",
+    "turbine",
+    "kotlinx-coroutines-test",
+    "androidx-test-core",
+    "androidx-test-ext-junit",
+    "androidx-compose-ui-test-junit4",
+    "androidx-compose-ui-test-junit4-accessibility",
+    "roborazzi",
+    "roborazzi-compose",
+    "roborazzi-junit-rule",
+]
+# Pure JVM modules (core:model, core:domain, core:common); add platform(libs.junit5.bom) and
+# testRuntimeOnly(libs.junit5.platform.launcher) separately.
+jvm-unit-test = [
+    "junit5-jupiter",
+    "turbine",
+    "kotlinx-coroutines-test",
+]
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+# Test-APK modules (the release smoke test :smoke, see docs/BYGGE.md).
+android-test = { id = "com.android.test", version.ref = "agp" }
+# Do NOT add org.jetbrains.kotlin.android: incompatible with AGP 9 built-in Kotlin / new DSL.
+# kotlin-jvm is used by pure JVM modules AND (applied `apply false` in the root build) is what
+# puts KGP 2.4.21 on the shared classpath instead of AGP's default 2.2.10.
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+room3 = { id = "androidx.room3", version.ref = "room3" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }

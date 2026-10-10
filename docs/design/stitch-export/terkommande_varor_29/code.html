@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;700;800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#FBF7F2;color:#292524;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { 'primary': '#C2410C', 'on-primary': '#FFFFFF', 'primary-container': '#FFEDD5', 'on-primary-container': '#7C2D12', 'secondary': '#D97706', 'on-secondary': '#FFFFFF', 'secondary-container': '#FEF3C7', 'on-secondary-container': '#78350F', 'tertiary': '#4D7C0F', 'on-tertiary': '#FFFFFF', 'tertiary-container': '#ECFCCB', 'on-tertiary-container': '#1A2E05', 'surface': '#FBF7F2', 'on-surface': '#292524', 'surface-variant': '#F5EBE1', 'on-surface-variant': '#78716C', 'outline': '#E7E5E4' }, fontFamily: { 'headline': ['Bricolage Grotesque', 'sans-serif'], 'body': ['DM Sans', 'sans-serif'] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body flex flex-col text-on-surface"><header class="fixed top-0 inset-x-0 z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="h-16 px-3 flex items-center justify-between"><div class="flex items-center gap-1.5 min-w-0"><button aria-label="Tillbaka" class="w-11 h-11 flex items-center justify-center text-on-surface rounded-full hover:bg-surface-variant transition-colors" onclick="history.back()"><span class="material-symbols-rounded text-2xl">arrow_back</span></button><h1 class="text-lg font-headline font-bold text-on-surface truncate pr-2">Receptdetalj</h1></div><div class="flex items-center gap-1 shrink-0"><button class="w-11 h-11 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors"><span class="material-symbols-rounded text-2xl">share</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-16 pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full pb-8">
+<!-- Search & Action Bar -->
+<div class="px-4 py-3 flex items-center gap-3">
+<div class="flex-1 relative flex items-center">
+<span class="material-symbols-outlined text-on-surface-variant absolute left-3.5 text-xl">search</span>
+<input class="w-full bg-surface-variant text-on-surface placeholder:text-on-surface-variant/70 pl-11 pr-4 py-2.5 rounded-full text-sm font-body outline-none focus:bg-surface-variant/80 transition-all" placeholder="Sök bland dina basvaror..." type="text"/>
+</div>
+<button class="bg-primary text-on-primary px-3.5 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform text-xs font-medium font-headline shrink-0">
+<span class="material-symbols-outlined text-lg">add</span>
+<span>Ny basvara</span>
+</button>
+</div>
+<!-- Warm Editorial Intro Banner -->
+<div class="px-4 pt-1 pb-4">
+<div class="relative overflow-hidden bg-primary-container text-on-primary-container rounded-2xl p-4 shadow-sm">
+<div class="relative z-10 flex gap-3.5 items-start">
+<div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<h2 class="font-headline font-bold text-base leading-tight">Smarta basvaror</h2>
+<span class="bg-primary/15 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktiv assistent</span>
+</div>
+<p class="text-xs text-on-primary-container/85 leading-relaxed font-body">
+            Håll kyl och skafferi fyllda utan att tänka. Tandem lägger till eller påminner om dessa varor baserat på dina matvanor.
+          </p>
+</div>
+</div>
+<div class="absolute -right-4 -bottom-6 w-24 h-24 rounded-full bg-primary/10 pointer-events-none"></div>
+</div>
+</div>
+<!-- Filter Pills (Scrollable) -->
+<div class="flex items-center gap-2 px-4 pb-3 overflow-x-auto no-scrollbar">
+<button class="bg-primary text-on-primary px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 shadow-sm transition-colors">
+      Alla aktiva (6)
+    </button>
+<button class="bg-surface-variant text-on-surface-variant px-3.5 py-1.5 rounded-full text-xs font-medium shrink-0 hover:bg-surface-variant/80 transition-colors">
+      Varje vecka (3)
+    </button>
+<button class="bg-surface-variant text-on-surface-variant px-3.5 py-1.5 rounded-full text-xs font-medium shrink-0 hover:bg-surface-variant/80 transition-colors">
+      Varannan vecka (2)
+    </button>
+<button class="bg-surface-variant text-on-surface-variant px-3.5 py-1.5 rounded-full text-xs font-medium shrink-0 hover:bg-surface-variant/80 transition-colors">
+      Månadsvis (1)
+    </button>
+</div>
+<!-- Cards List -->
+<div class="px-4 space-y-3.5 pt-1">
+<!-- Item 1: Mjölk -->
+<div class="bg-surface-variant/50 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="A clean organic glass bottle and cardboard carton of Swedish standard fresh milk on a sunlit wooden kitchen table, warm Scandinavian photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr4KamAgIe1yEE_kOQNVgwTCOUZg5k17I5fP4gjcm5NiYqPJQ7-VQAZXN2k1yKaG3nnBX0IEIqUmpoRKwIKo8VyO-nAxmQtCsu7PwpM7zA6DJDbQ9yB1UOMqgEYUzrtg0vOwH19eR2BreTvIsnQ26hGwrqq-JC6RtcHMzvy32ZZCX43WRjaxohCcZy82crCreHx8i74XQkntVRTbquxJjUQnbTTScq23h6SUFUEpsrbuZe7wBBjXtK1g"/>
+</div>
+<div class="min-w-0">
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Arla Standardmjölk 3%</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-0.5">Varje vecka (Måndagar) • 2 st</p>
+</div>
+</div>
+<!-- Switch (Active) -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="inline-flex items-center gap-1.5 bg-tertiary-container text-on-tertiary-container px-2.5 py-1 rounded-full text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+          Lades till i inköpslistan idag
+        </span>
+<button aria-label="Inställningar för Arla Mjölk" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Item 2: Smör -->
+<div class="bg-surface-variant/50 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Traditional Scandinavian wrapped foil pack of butter on a light ceramic dish, warm morning sunlight, wholesome organic food" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFMjmqrHbjTjedBUZf93M4fRFnAucZdm195LQA5qoqtVXOyVf1jvCG5nCzEKh2uIGBZEN1FuOUaTrjHKYLAHYyxM6EjxL1MZcQCWMc30uVXZSn3yreFAKTA-KTghZmSaxwx-GUtMrFtVg1oAmH4n8eoyYsPsaxOQACqgdalnqymcukrY1EqTcE0OE-X72ZFnzENLvgcCzvgulnAErqJQqGZOmFZf7KREZ8_L9OFoMS9WlI8crI50TpBg"/>
+</div>
+<div class="min-w-0">
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Smör Normalsaltat 500g</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-0.5">Varannan vecka • 1 st</p>
+</div>
+</div>
+<!-- Switch (Active) -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-full text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px]">event</span>
+          Nästa påfyllning: Fredag 25 okt (om 2 dagar)
+        </span>
+<button aria-label="Inställningar för Smör" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Item 3: Ägg -->
+<div class="bg-surface-variant/50 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Rustic organic brown farm eggs in an open cardboard carton with wheat straw accents on warm birch background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3b8Dak_PFV-Ol_qu-WBsk4uvowPssEzIpYc1KYEOhOpjl0_bkW6y8NuUjiI_9DlAWxNnjCpM4aH2jcyAbvgWtLseJ4lOb78chOJgmsTYeSK0Ce5_Dbxr1rDsbO3OlKESgzsw4UWe7EGDrmjADl2cE6yD3Z8XwmBFdaLkIWx4jUSzNdUbASK26_1S4CxokMQ6EYpT1eL6GAgmfJOB5ELFNKbQzH8loUrCO9xpjC5l94oszjf8geeOo0Q"/>
+</div>
+<div class="min-w-0">
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">KRAV Ägg 12-pack</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-0.5">Varje vecka • 1 st</p>
+</div>
+</div>
+<!-- Switch (Active) -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="inline-flex items-center gap-1.5 bg-tertiary-container text-on-tertiary-container px-2.5 py-1 rounded-full text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">shopping_bag</span>
+          Ligger i varukorgen
+        </span>
+<button aria-label="Inställningar för Ägg" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Item 4: Kaffe -->
+<div class="bg-surface-variant/50 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Craft paper pouch of dark roast ground coffee with roasted aromatic coffee beans scattered on a warm wooden Nordic countertop" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvW8eluiFiJ2_n6jWnnX2uWV7mntEgYmEfmG3TiiX0RR2w4jA3sfsStqI5rkbtwOEr8lFODkrNTzag3sPHlK4UQ4LLMJqr9O3ZZqBvirtaSoIGWAIYBjoNnMSWG8PAorEYz3oCz4iemg_xoH8X41pFaQ1Y8Ape2QXFl1dWF3fPOFkIrxnSBDfnjij9dJ8g1jXeGVZBTPwW0QNM0v6Mi6e1hkrTQ5UXJH5O0LB-Nf8kb5EadJJIZnD64Q"/>
+</div>
+<div class="min-w-0">
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Mörkrost Bryggkaffe</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-0.5">Var 3:e vecka • 1 paket (450g)</p>
+</div>
+</div>
+<!-- Switch (Active) -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="inline-flex items-center gap-1.5 bg-surface text-on-surface-variant px-2.5 py-1 rounded-full text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px]">schedule</span>
+          Nästa: 4 nov
+        </span>
+<button aria-label="Inställningar för Kaffe" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Item 5: Havregryn -->
+<div class="bg-surface-variant/50 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center shrink-0 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="Eco-friendly paper sack of wholesome organic rolled oats beside a ceramic bowl with oats and cinnamon in soft morning Scandinavian kitchen light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBefJ5wsYr3tY4aeqd31-1-hg0ATHI4jKT2xRbYHx6RM2bnQVboI5aRriWJKlxdk0oAAqwiL_sUqjUcLQPphO-XLWdemEU0xyVmo68T_L5Azr908LyMhY_75Ls8m_LNH9s0-tebG_TLPGZR36XSAdGvi6tnZinf5hUbbEplhQruZhBBqrTVkh-g8WmMap-DYKXGJTtX1uu34CdVWQy0Iu2jLJiDwrGw_ggMuML8QF6qZEUoRD4-GzmOXA"/>
+</div>
+<div class="min-w-0">
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Ekologiska Havregryn 1.5kg</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-0.5">Månadsvis • 1 påse</p>
+</div>
+</div>
+<!-- Switch (Active) -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="inline-flex items-center gap-1.5 bg-surface text-on-surface-variant px-2.5 py-1 rounded-full text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px]">schedule</span>
+          Nästa: 15 nov
+        </span>
+<button aria-label="Inställningar för Havregryn" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Item 6: Gul lök (Pausad) -->
+<div class="bg-surface-variant/30 opacity-75 rounded-2xl p-4 shadow-sm flex flex-col gap-3 transition-all hover:opacity-100">
+<div class="flex items-start justify-between gap-3">
+<div class="flex gap-3 min-w-0">
+<div class="w-12 h-12 rounded-xl bg-surface-variant flex items-center justify-center shrink-0 overflow-hidden relative grayscale-[40%]">
+<img class="w-full h-full object-cover" data-alt="Net bag filled with fresh golden yellow cooking onions placed on an artisan terracotta surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIDPCMUBX6ZEPP6Tfpk3jMqAlY2_uS-yV57DbeMT_B3sZdfFnmBHkw89r5Jcl0dgJIZ9lQBNexm4k681lINa2TixMqBC-Q3zrhyO5w00dJw2r2w6YjYuA7YQKcp7Wkir97UcnIUTVSBXI9NXy-10rhedzqmYm5iPdPhqXixjO8vW_O3OBgMLMhanypgt2lVeT2s3Hh5uLEVZfIMScC50DZhgFvx4QDuoIT99kZ8s2SpokCo4rwHVfvFQ"/>
+</div>
+<div class="min-w-0">
+<h3 class="font-headline font-bold text-sm text-on-surface truncate">Gul lök i nät (1 kg)</h3>
+<p class="text-xs text-on-surface-variant font-medium mt-0.5">Varje vecka • 1 st</p>
+</div>
+</div>
+<!-- Switch (Inactive) -->
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="inline-flex items-center gap-1.5 bg-surface-variant text-on-surface-variant px-2.5 py-1 rounded-full text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[15px]">pause_circle</span>
+          Pausad till 1 nov
+        </span>
+<button aria-label="Inställningar för Gul lök" class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">more_horiz</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Automation Preferences Settings Card -->
+<div class="px-4 pt-6">
+<div class="bg-surface-variant/60 rounded-2xl p-4 space-y-3.5 shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">tune</span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Hur vill du få varorna?</h3>
+</div>
+<div class="space-y-2.5">
+<label class="flex items-start gap-3 p-2.5 rounded-xl bg-surface cursor-pointer transition-colors hover:bg-surface/80">
+<input checked="" class="mt-0.5 text-primary accent-primary w-4 h-4" name="replenishment_mode" type="radio" value="auto"/>
+<div class="text-xs">
+<span class="font-bold text-on-surface block font-headline">Lägg till automatiskt i Handla</span>
+<span class="text-on-surface-variant leading-snug">Artiklarna dyker upp direkt under rätt butiksgång när intervallet inträffar.</span>
+</div>
+</label>
+<label class="flex items-start gap-3 p-2.5 rounded-xl bg-surface cursor-pointer transition-colors hover:bg-surface/80">
+<input class="mt-0.5 text-primary accent-primary w-4 h-4" name="replenishment_mode" type="radio" value="notify"/>
+<div class="text-xs">
+<span class="font-bold text-on-surface block font-headline">Fråga mig först med en notis</span>
+<span class="text-on-surface-variant leading-snug">Du får en vänlig påminnelse på morgonen och godkänner med ett tryck.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Bottom Action Card -->
+<div class="px-4 pt-4">
+<button class="w-full bg-surface-variant/80 hover:bg-surface-variant py-3.5 px-4 rounded-2xl flex items-center justify-between text-left transition-colors group shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl">post_add</span>
+</div>
+<div>
+<span class="font-headline font-bold text-sm text-on-surface block">Skapa ny återkommande vara</span>
+<span class="text-xs text-on-surface-variant">Välj intervall, kvantitet och föredragen butik</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</button>
+</div>
+</div></main></body></html>

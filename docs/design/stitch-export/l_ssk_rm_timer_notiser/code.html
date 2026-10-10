@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { theme: { extend: { colors: { primary: '#C2410C', 'on-primary': '#FFFFFF', 'primary-container': '#FFEDE5', 'on-primary-container': '#431200', secondary: '#D97706', 'on-secondary': '#FFFFFF', 'secondary-container': '#FEF3C7', 'on-secondary-container': '#451A03', tertiary: '#4D7C0F', 'on-tertiary': '#FFFFFF', 'tertiary-container': '#ECFCCB', 'on-tertiary-container': '#142E00', surface: '#FBF7F2', 'on-surface': '#292524', 'surface-container-low': '#F5EFE6', 'surface-container': '#ECE3D7', 'surface-container-high': '#E4D9CC', 'on-surface-variant': '#78716C', outline: '#D6CEC3', error: '#B91C1C', 'on-error': '#FFFFFF' }, fontFamily: { headline: ['"Bricolage Grotesque"', 'sans-serif'], body: ['"DM Sans"', 'sans-serif'] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } } .material-symbols-rounded { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; } ::-webkit-scrollbar { display: none; }</style></head><body class="bg-surface font-body text-on-surface antialiased min-h-screen flex flex-col pt-safe pb-safe"><main class="flex-1 w-full bg-surface"><div class="flex flex-col w-full relative select-none overflow-hidden pb-8">
+<!-- Dynamic Lock Screen Background Canvas -->
+<div class="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-stone-900 text-stone-100 p-5 sm:p-7 flex flex-col justify-between">
+<!-- Ambient Wallpaper Backdrop -->
+<div class="absolute inset-0 bg-cover bg-center scale-105 filter blur-md opacity-35" data-alt="Soft atmospheric photo of a warm Scandinavian wooden kitchen counter with cast iron pan, fresh rosemary, sea salt and warm dim evening sunlight, cinematic shallow depth of field, warm earth tones, cozy ambient lighting" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCACp6ea-qfbKct53xvBVhLm8epASaJUumdfnzlAk5fHacxkuskAKO4ersRj_IyQEx_DhUeR7mdsE_VTNJooGGnYZORu2n29KEXxSujd8amAjuF91URfyTYhqOSVTdZ5jfV2iLEMQ4KkGHRg0XuFwS0rlab51CC00HExp3wIIhrRPthpN0g_e1IWD81M9F99au4yFadbD717ftp0sXrvqS03MHkDD0wLvIWh_o9q3xT')"></div>
+<!-- Dark gradient overlay for contrast -->
+<div class="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-stone-900/80 to-stone-950/95 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col w-full">
+<!-- Top Status & Glance Area -->
+<div class="flex items-center justify-between text-xs font-medium text-stone-300/80 px-2 pt-1 mb-8">
+<div class="flex items-center gap-1.5 tracking-tight">
+<span class="material-symbols-outlined text-[15px] text-stone-300">signal_cellular_4_bar</span>
+<span>Telia</span>
+<span class="material-symbols-outlined text-[15px] ml-1">wifi</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[15px]">do_not_disturb_on</span>
+<span class="text-[12px] font-sans font-semibold">88%</span>
+<span class="material-symbols-outlined text-[16px]">battery_charging_full</span>
+</div>
+</div>
+<!-- Android Lock Screen Clock Header -->
+<div class="flex flex-col items-center justify-center text-center mt-2 mb-8">
+<div class="text-[78px] leading-none font-headline font-bold tracking-tight text-stone-100 drop-shadow-sm select-none" id="lock-clock">
+          18:42
+        </div>
+<div class="mt-2 text-base font-body font-medium text-stone-200 tracking-wide">
+          Torsdag 24 oktober
+        </div>
+<!-- Smart Space / At A Glance pill -->
+<div class="mt-2.5 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-800/70 backdrop-blur-md text-xs text-stone-300">
+<span class="material-symbols-outlined text-[15px] text-secondary">wb_cloudy</span>
+<span>14°C · Molnigt</span>
+<span class="text-stone-500">·</span>
+<span class="flex items-center gap-1 text-orange-300 font-medium">
+<span class="material-symbols-outlined text-[14px]">skillet</span>
+            Grytan kokar
+          </span>
+</div>
+</div>
+<!-- Tandem Kitchen Ongoing Live Activity Card -->
+<div class="w-full bg-[#241E1C]/95 backdrop-blur-xl rounded-[28px] p-5 shadow-2xl mb-4 transition-all">
+<!-- Live Activity Card Header -->
+<div class="flex items-center justify-between pb-3.5">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">soup_kitchen</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-xs font-headline font-bold tracking-wide uppercase text-orange-200">Tandem</span>
+<span class="text-[11px] text-stone-400">· Kokläge pågår</span>
+</div>
+<span class="text-sm font-headline font-bold text-stone-100 truncate">Krämig svamppasta</span>
+</div>
+</div>
+<div class="flex items-center gap-1 flex-shrink-0">
+<span class="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-[11px] text-stone-400 font-medium">nu</span>
+</div>
+</div>
+<!-- Timers Container -->
+<div class="flex flex-col gap-3 pt-1">
+<!-- Timer 1: Tagliatelle -->
+<div class="bg-stone-900/80 rounded-2xl p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-6 h-6 rounded-lg bg-orange-950 flex items-center justify-center text-orange-400 flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">cooking</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-medium text-stone-300 truncate">Tagliatelle (Kastrull)</span>
+<span class="text-[11px] text-stone-500">Mål: Al dente</span>
+</div>
+</div>
+<!-- Countdown Display & Actions -->
+<div class="flex items-center gap-2">
+<span class="text-2xl font-headline font-extrabold tracking-tight text-orange-400" id="timer1-time">04:15</span>
+<button aria-label="Lägg till en minut på Tagliatelle" class="h-8 px-2.5 rounded-full bg-stone-800 active:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center justify-center transition-colors" onclick="addOneMin('timer1')">
+                  +1 min
+                </button>
+<button aria-label="Pausa Tagliatelle-timer" class="w-8 h-8 rounded-full bg-stone-800 active:bg-stone-700 text-stone-200 flex items-center justify-center transition-colors" id="btn-pause-1" onclick="toggleTimer('timer1')">
+<span class="material-symbols-outlined text-[18px]" id="icon-pause-1">pause</span>
+</button>
+</div>
+</div>
+<!-- Progress Bar Tagliatelle -->
+<div class="w-full bg-stone-800/90 h-2 rounded-full overflow-hidden flex">
+<div class="h-full bg-primary rounded-full transition-all duration-500" id="prog-1" style="width: 65%;"></div>
+</div>
+</div>
+<!-- Timer 2: Stek champinjoner -->
+<div class="bg-stone-900/80 rounded-2xl p-3.5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-6 h-6 rounded-lg bg-amber-950 flex items-center justify-center text-amber-400 flex-shrink-0">
+<span class="material-symbols-outlined text-[16px]">skillet</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-xs font-medium text-stone-300 truncate">Stek champinjoner (Panna)</span>
+<span class="text-[11px] text-stone-500">Tillsätt smör &amp; vitlök</span>
+</div>
+</div>
+<!-- Countdown Display & Actions -->
+<div class="flex items-center gap-2">
+<span class="text-2xl font-headline font-extrabold tracking-tight text-secondary" id="timer2-time">01:20</span>
+<button aria-label="Lägg till en minut på Champinjoner" class="h-8 px-2.5 rounded-full bg-stone-800 active:bg-stone-700 text-stone-200 text-xs font-semibold flex items-center justify-center transition-colors" onclick="addOneMin('timer2')">
+                  +1 min
+                </button>
+<button aria-label="Pausa Champinjoner-timer" class="w-8 h-8 rounded-full bg-stone-800 active:bg-stone-700 text-stone-200 flex items-center justify-center transition-colors" id="btn-pause-2" onclick="toggleTimer('timer2')">
+<span class="material-symbols-outlined text-[18px]" id="icon-pause-2">pause</span>
+</button>
+</div>
+</div>
+<!-- Progress Bar Stek Champinjoner -->
+<div class="w-full bg-stone-800/90 h-2 rounded-full overflow-hidden flex">
+<div class="h-full bg-secondary rounded-full transition-all duration-500" id="prog-2" style="width: 88%;"></div>
+</div>
+</div>
+</div>
+<!-- Quick actions at card bottom -->
+<div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t-0">
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-primary/20 hover:bg-primary/30 text-orange-200 text-xs font-semibold transition" onclick="triggerHaptic('Öppnar kokläget...')">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+<span>Kokläget i Tandem</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-full bg-stone-800/80 hover:bg-stone-800 text-stone-300 text-xs font-semibold transition" onclick="dismissAllTimers()">
+<span class="material-symbols-outlined text-[16px]">timer_off</span>
+<span>Stäng av alla</span>
+</button>
+</div>
+</div>
+<!-- Secondary Notification: Inköpslista Synkad -->
+<div class="w-full bg-[#241E1C]/85 backdrop-blur-md rounded-2xl p-4 shadow-lg flex items-center justify-between gap-3 mb-10 transition-all" id="secondary-notification">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-full bg-tertiary-container flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">sync_saved_locally</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-xs font-headline font-bold text-stone-200 truncate">Inköpslista synkad</span>
+<span class="text-[10px] text-stone-400">12 min sen</span>
+</div>
+<p class="text-[12px] text-stone-300 truncate">12 varor sparade till Hemköp Karlaplan</p>
+</div>
+</div>
+<button class="flex-shrink-0 px-3 py-1.5 rounded-full bg-stone-800 text-stone-200 text-xs font-medium hover:bg-stone-700 transition" onclick="triggerHaptic('Öppnar Hemköpslistan...')">
+          Visa lista
+        </button>
+</div>
+<!-- Lock Screen Footer & Unlock Target -->
+<div class="flex flex-col items-center justify-end pt-2 pb-1 gap-5">
+<!-- Interactive Unlock Indicator / Fingerprint -->
+<div aria-label="Lås upp enhet" class="flex flex-col items-center gap-1 cursor-pointer group" onclick="pulseUnlock()" role="button" tabindex="0">
+<div class="w-12 h-12 rounded-full bg-stone-800/60 group-hover:bg-stone-700/80 group-active:scale-95 flex items-center justify-center text-stone-300 backdrop-blur-md transition-all shadow-inner">
+<span class="material-symbols-outlined text-[26px]">fingerprint</span>
+</div>
+<span class="text-[11px] font-medium tracking-wide text-stone-400 flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[13px] animate-bounce">expand_less</span>
+            Svep uppåt för att låsa upp
+          </span>
+</div>
+<!-- Android Lock Screen Corner Shortcuts -->
+<div class="w-full flex items-center justify-between px-3">
+<button aria-label="Ficklampa" class="w-11 h-11 rounded-full bg-stone-800/80 active:bg-amber-500/20 text-stone-300 flex items-center justify-center backdrop-blur-md transition-all shadow-md" id="flashlight-btn" onclick="toggleFlashlight()">
+<span class="material-symbols-outlined text-[20px]" id="flash-icon">flashlight_on</span>
+</button>
+<button aria-label="Kamera" class="w-11 h-11 rounded-full bg-stone-800/80 active:bg-stone-700 text-stone-300 flex items-center justify-center backdrop-blur-md transition-all shadow-md" onclick="triggerHaptic('Kamera startas...')">
+<span class="material-symbols-outlined text-[20px]">photo_camera</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro-interactions Script for realistic live timer countdown -->
+<script>
+    (function initLockScreenTimers() {
+      let t1Seconds = 255; // 4:15
+      let t2Seconds = 80;  // 1:20
+      let t1Running = true;
+      let t2Running = true;
+
+      function fmt(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      }
+
+      window.addOneMin = function(timerId) {
+        if (timerId === 'timer1') {
+          t1Seconds += 60;
+          document.getElementById('timer1-time').textContent = fmt(t1Seconds);
+        } else {
+          t2Seconds += 60;
+          document.getElementById('timer2-time').textContent = fmt(t2Seconds);
+        }
+      };
+
+      window.toggleTimer = function(timerId) {
+        if (timerId === 'timer1') {
+          t1Running = !t1Running;
+          const icon = document.getElementById('icon-pause-1');
+          icon.textContent = t1Running ? 'pause' : 'play_arrow';
+        } else {
+          t2Running = !t2Running;
+          const icon = document.getElementById('icon-pause-2');
+          icon.textContent = t2Running ? 'pause' : 'play_arrow';
+        }
+      };
+
+      window.dismissAllTimers = function() {
+        t1Running = false;
+        t2Running = false;
+        document.getElementById('timer1-time').textContent = "00:00";
+        document.getElementById('timer2-time').textContent = "00:00";
+        document.getElementById('prog-1').style.width = "100%";
+        document.getElementById('prog-2').style.width = "100%";
+      };
+
+      window.toggleFlashlight = function() {
+        const btn = document.getElementById('flashlight-btn');
+        btn.classList.toggle('bg-amber-400');
+        btn.classList.toggle('text-stone-900');
+      };
+
+      window.pulseUnlock = function() {
+        const clk = document.getElementById('lock-clock');
+        clk.classList.add('scale-105');
+        setTimeout(() => clk.classList.remove('scale-105'), 200);
+      };
+
+      window.triggerHaptic = function(msg) {
+        // Subtle feedback simulation
+        const notif = document.getElementById('secondary-notification');
+        if (notif) {
+          notif.classList.add('opacity-75');
+          setTimeout(() => notif.classList.remove('opacity-75'), 250);
+        }
+      };
+
+      setInterval(() => {
+        if (t1Running && t1Seconds > 0) {
+          t1Seconds--;
+          document.getElementById('timer1-time').textContent = fmt(t1Seconds);
+        }
+        if (t2Running && t2Seconds > 0) {
+          t2Seconds--;
+          document.getElementById('timer2-time').textContent = fmt(t2Seconds);
+        }
+      }, 1000);
+    })();
+  </script>
+</div></main></body></html>

@@ -1,0 +1,45 @@
+# Planning backups
+*.bak-*
+
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+.navigation/
+
+# Signing material and secrets: never commit
+*.keystore
+*.jks
+*.p12
+# Public debug-only signing key (not a secret, see app/build.gradle.kts).
+!app/debug.p12
+*.pfx
+*.pem
+# Public, TEST-ONLY CA of the release smoke test: trusted only by the .minified build type
+# (app/src/minified), never by debug or release builds. Not a secret (docs/BYGGE.md).
+!app/src/minified/res/raw/tandem_smoke_test_ca.pem
+!smoke/src/main/assets/tandem-smoke-test-ca.pem
+keystore.properties
+signing.properties
+signing/
+.env
+.env.*
+
+# OS
+.DS_Store
+
+# Signing material and service configs that must never be committed
+tandem-signing/
+keystore-password.txt
+google-services.json
+*.pk8
+*.key
+*.der

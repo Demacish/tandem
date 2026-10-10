@@ -1,0 +1,2 @@
+# Recept – mörkt läge
+Samma app och komponenter som det ljusa temat, men för kvällsmatlagning: varm, nästan svart brun bakgrund (#1C1714), ytor i djup kaffebrun (#2A2320), aldrig kallt blågrå. Primär ljus tomat (#FB8A5C) med mörk text på knappar, saffran (#F5B044) för timers, örtgrön (#9BC46A) för avbockat/har hemma. Text i varm off-white (#F3EBE3). Matbilderna ska lysa – håll gränssnittet dämpat runt dem. Bra kontrast (WCAG AA). All text på svenska. Bottennavigering: Idag, Recept, Veckan, Handla, Mer.

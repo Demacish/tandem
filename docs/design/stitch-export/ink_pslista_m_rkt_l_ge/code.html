@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="sv"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { background: '#1C1714', surface: '#2A2320', 'surface-dark': '#1C1714', 'surface-container': '#2A2320', 'surface-container-high': '#352D2A', 'surface-container-highest': '#433A36', primary: '#FB8A5C', 'on-primary': '#2A170F', secondary: '#F5B044', 'on-secondary': '#2B1D05', tertiary: '#9BC46A', 'on-tertiary': '#1B260E', 'on-surface': '#F3EBE3', 'on-surface-variant': '#C8BCB3', outline: '#4D433F', error: '#FF6B6B', 'on-error': '#330808' }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } } };</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#1C1714;color:#F3EBE3;font-family:Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style></head><body class="bg-background text-on-surface flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-background/85 backdrop-blur-xl pt-safe shadow-[0_2px_12px_rgba(0,0,0,0.35)]"><div class="h-16 px-4 flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><h1 class="text-lg font-bold tracking-tight text-on-surface truncate">Handla</h1></div><div class="flex items-center gap-2"><button aria-label="Sök" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface transition-colors"><span class="material-symbols-outlined text-[24px]">search</span></button><button aria-label="Meny" class="w-11 h-11 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface transition-colors"><span class="material-symbols-outlined text-[24px]">more_vert</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-background"><div class="flex flex-col w-full pb-8">
+<!-- Snabbinmatningsfält -->
+<section class="px-4 pt-3 pb-2">
+<form class="bg-surface p-2 rounded-xl shadow-md flex items-center gap-2" id="add-item-form">
+<div class="flex items-center pl-2 text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+</div>
+<input class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/60 text-sm font-body focus:outline-none min-w-0 py-1.5" id="item-input" placeholder="Lägg till vara..." type="text"/>
+<button class="bg-primary hover:brightness-105 active:scale-95 transition-all text-on-primary font-label font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-1 flex-shrink-0 shadow-sm" type="submit">
+<span>Lägg till</span>
+</button>
+</form>
+<!-- Sammanfattning & Progress -->
+<div class="flex items-center justify-between mt-3 px-1">
+<div class="flex items-center gap-2">
+<span class="text-xs font-label text-on-surface-variant uppercase tracking-wider font-semibold">Framsteg</span>
+<span class="bg-surface-container-high text-secondary text-[11px] font-semibold px-2 py-0.5 rounded-full" id="counter-badge">2 av 9 klara</span>
+</div>
+<div class="w-28 h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full transition-all duration-300" id="progress-bar" style="width: 22%;"></div>
+</div>
+</div>
+</section>
+<!-- Grupperingar -->
+<div class="flex flex-col gap-4 px-4 mt-2">
+<!-- 1. Frukt & Grönt -->
+<section class="bg-surface rounded-xl p-3.5 shadow-sm">
+<div class="flex items-center justify-between mb-2.5 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">eco</span>
+<h2 class="text-xs font-headline font-bold uppercase tracking-wider text-on-surface-variant">Frukt &amp; grönt</h2>
+</div>
+<span class="text-[11px] font-label text-on-surface-variant/70">3 varor</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<!-- Avokado -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="4 st" data-badge="Eko" data-name="Avokado" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex items-center gap-2 min-w-0">
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Avokado</span>
+<span class="bg-tertiary/20 text-tertiary text-[10px] font-semibold px-1.5 py-0.5 rounded font-label flex-shrink-0">Eko</span>
+</div>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">4 st</span>
+</label>
+<!-- Färsk spenat -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="1 påse" data-name="Färsk spenat" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Färsk spenat</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">1 påse</span>
+</label>
+<!-- Lime -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="2 st" data-name="Lime" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Lime</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">2 st</span>
+</label>
+</div>
+</section>
+<!-- 2. Mejeri -->
+<section class="bg-surface rounded-xl p-3.5 shadow-sm">
+<div class="flex items-center justify-between mb-2.5 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">water_drop</span>
+<h2 class="text-xs font-headline font-bold uppercase tracking-wider text-on-surface-variant">Mejeri</h2>
+</div>
+<span class="text-[11px] font-label text-on-surface-variant/70">2 varor</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<!-- Grekisk yoghurt -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="10%, 1 kg" data-name="Grekisk yoghurt" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Grekisk yoghurt</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">10%, 1 kg</span>
+</label>
+<!-- Smör 82% -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="82%, 500 g" data-name="Smör" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Smör</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">82%, 500 g</span>
+</label>
+</div>
+</section>
+<!-- 3. Skafferi -->
+<section class="bg-surface rounded-xl p-3.5 shadow-sm">
+<div class="flex items-center justify-between mb-2.5 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">shelves</span>
+<h2 class="text-xs font-headline font-bold uppercase tracking-wider text-on-surface-variant">Skafferi</h2>
+</div>
+<span class="text-[11px] font-label text-on-surface-variant/70">2 varor</span>
+</div>
+<div class="flex flex-col gap-1.5" id="pantry-list">
+<!-- Krossade tomater -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="2 burkar" data-name="Krossade tomater" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Krossade tomater</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">2 burkar</span>
+</label>
+<!-- Basmatiris -->
+<label class="group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex items-center gap-3 min-w-0">
+<input class="peer sr-only" data-amount="1 kg" data-name="Basmatiris" type="checkbox"/>
+<div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">Basmatiris</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">1 kg</span>
+</label>
+</div>
+</section>
+<!-- Avbockade sektion -->
+<section class="bg-surface rounded-xl p-3.5 shadow-sm mt-1">
+<div class="flex items-center justify-between mb-2.5 pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+<h2 class="text-xs font-headline font-bold uppercase tracking-wider text-on-surface-variant">Avbockade</h2>
+</div>
+<button class="text-xs font-label text-primary hover:text-secondary active:scale-95 transition-all flex items-center gap-1 font-semibold px-2 py-1 rounded-md bg-surface-container" id="clear-all-btn" type="button">
+<span class="material-symbols-outlined text-[15px]">delete_sweep</span>
+<span>Rensa alla</span>
+</button>
+</div>
+<div class="flex flex-col gap-1.5 opacity-80" id="checked-container">
+<!-- Olivolja -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-6 h-6 rounded-full bg-tertiary flex items-center justify-center text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface-variant line-through truncate">Olivolja</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/70 pl-2 flex-shrink-0">1 flaska</span>
+</div>
+<!-- Havregryn -->
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-container">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-6 h-6 rounded-full bg-tertiary flex items-center justify-center text-on-tertiary">
+<span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-sm font-medium font-body text-on-surface-variant line-through truncate">Havregryn</span>
+</div>
+<span class="text-xs font-label text-on-surface-variant/70 pl-2 flex-shrink-0">750 g</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<script>
+  (function() {
+    const form = document.getElementById('add-item-form');
+    const input = document.getElementById('item-input');
+    const pantryList = document.getElementById('pantry-list');
+    const clearBtn = document.getElementById('clear-all-btn');
+    const checkedContainer = document.getElementById('checked-container');
+    const counterBadge = document.getElementById('counter-badge');
+    const progressBar = document.getElementById('progress-bar');
+
+    function updateStats() {
+      const activeCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+      const totalActive = activeCheckboxes.length;
+      const checkedActive = Array.from(activeCheckboxes).filter(cb => cb.checked).length;
+      const staticChecked = checkedContainer ? checkedContainer.children.length : 0;
+      
+      const totalItems = totalActive + staticChecked;
+      const totalDone = checkedActive + staticChecked;
+
+      if (counterBadge && progressBar) {
+        counterBadge.textContent = totalDone + ' av ' + totalItems + ' klara';
+        const pct = totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+        progressBar.style.width = pct + '%';
+      }
+    }
+
+    if (form && input && pantryList) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (!val) return;
+
+        const label = document.createElement('label');
+        label.className = 'group flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer select-none';
+        
+        label.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <input type="checkbox" class="peer sr-only" data-name="${val}">
+            <div class="w-6 h-6 rounded-full bg-surface-container-highest flex items-center justify-center transition-all peer-checked:bg-tertiary text-transparent peer-checked:text-on-tertiary">
+              <span class="material-symbols-outlined text-[16px] leading-none" style="font-variation-settings: 'FILL' 1;">check</span>
+            </div>
+            <span class="text-sm font-medium font-body text-on-surface peer-checked:line-through peer-checked:text-on-surface-variant/60 truncate">${val}</span>
+          </div>
+          <span class="text-xs font-label text-on-surface-variant/90 pl-2 flex-shrink-0">1 st</span>
+        `;
+
+        const cb = label.querySelector('input');
+        cb.addEventListener('change', updateStats);
+
+        pantryList.appendChild(label);
+        input.value = '';
+        updateStats();
+      });
+    }
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.addEventListener('change', updateStats);
+    });
+
+    if (clearBtn && checkedContainer) {
+      clearBtn.addEventListener('click', function() {
+        checkedContainer.innerHTML = '<div class="py-2 text-center text-xs text-on-surface-variant/50 font-body">Inga avbockade varor kvar</div>';
+        updateStats();
+      });
+    }
+  })();
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-background/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.35)]" data-active-classes="text-primary font-semibold"><div class="flex items-center justify-around h-16 px-2"><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="idag" href="#"><span class="material-symbols-outlined text-[22px]">wb_sunny</span><span class="text-[11px] font-medium leading-none">Idag</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="recept" href="#"><span class="material-symbols-outlined text-[22px]">menu_book</span><span class="text-[11px] font-medium leading-none">Recept</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="veckan" href="#"><span class="material-symbols-outlined text-[22px]">calendar_month</span><span class="text-[11px] font-medium leading-none">Veckan</span></a><a aria-current="page" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 transition-colors text-primary font-semibold" data-path="handla" href="#"><span class="material-symbols-outlined text-[22px]">shopping_bag</span><span class="text-[11px] font-medium leading-none">Handla</span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] gap-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="mer" href="#"><span class="material-symbols-outlined text-[22px]">more_horiz</span><span class="text-[11px] font-medium leading-none">Mer</span></a></div></nav></body></html>

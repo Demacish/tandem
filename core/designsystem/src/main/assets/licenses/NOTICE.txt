@@ -1,0 +1,23 @@
+Third-party design assets bundled in Tandem (core:designsystem)
+================================================================
+
+Bricolage Grotesque (variable font, axes opsz/wdth/wght)
+  File:    res/font/bricolage_grotesque.ttf
+  Source:  https://github.com/google/fonts/blob/518dd7e35e026a565d6f655413c4ebe120d11e87/ofl/bricolagegrotesque/BricolageGrotesque%5Bopsz,wdth,wght%5D.ttf
+  SHA-256: 413e7357809ddd12fd80a96a8a396de0e401638d4acd3cb3e37532f0472ac682
+  License: SIL Open Font License 1.1, see OFL-BricolageGrotesque.txt
+
+DM Sans (variable font, axes opsz/wght)
+  File:    res/font/dm_sans.ttf
+  Source:  https://github.com/google/fonts/blob/518dd7e35e026a565d6f655413c4ebe120d11e87/ofl/dmsans/DMSans%5Bopsz,wght%5D.ttf
+  SHA-256: 8cd08d97e89c24d0aa92edd2f0f4c8ee6195eee9b7c9f154865a58b02f0c1c0d
+  License: SIL Open Font License 1.1, see OFL-DMSans.txt
+
+Material Symbols Rounded (24 px, weight 400, grade 0; FILL 0 and some FILL 1)
+  Files:   res/drawable/tandem_ic_*.xml (converted from the SVGs: path data unchanged,
+           viewBox "0 -960 960 960" mapped with a translateY of 960)
+  Source:  https://github.com/google/material-design-icons/tree/49d4db35df873165d6bd6ba09b063c7dafbac2f4/symbols/web
+  License: Apache License 2.0, see Apache-2.0-MaterialSymbols.txt
+
+All files were checked against the git blob hashes reported by the GitHub API for the commits
+above when they were downloaded (2026-10-09).
