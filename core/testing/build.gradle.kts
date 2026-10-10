@@ -6,11 +6,15 @@ plugins {
     id("tandem.android.library")
 }
 
-android {
-    sourceSets.getByName("main") {
+val fixtureDir: String = rootProject.file("api-schema/fixtures").path
+
+androidComponents {
+    onVariants { variant ->
         // api-schema/fixtures/<version>/<file> becomes the classpath resource <version>/<file>
-        // (read by TandoorFixtures), so there is no further copy of the recordings.
-        resources.directories.add(rootProject.file("api-schema/fixtures").path)
+        // (read by TandoorFixtures), so there is no further copy of the recordings. (The Variant
+        // API, because the library DSL's source sets cannot be configured from a build script
+        // with AGP 9 built-in Kotlin.)
+        variant.sources.resources?.addStaticSourceDirectory(fixtureDir)
     }
 }
 
