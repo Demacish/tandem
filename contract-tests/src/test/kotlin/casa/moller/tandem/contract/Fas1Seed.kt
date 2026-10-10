@@ -394,13 +394,8 @@ internal object Fas1Seed {
         ),
     )
 
-    private fun ing(
-        amount: Any,
-        unit: String?,
-        food: String?,
-        note: String = "",
-        noAmount: Boolean = false,
-    ): SeedIngredient = SeedIngredient(amount, unit, food, note, header = false, noAmount = noAmount)
+    private fun ing(amount: Any, unit: String?, food: String?, note: String = "", noAmount: Boolean = false): SeedIngredient =
+        SeedIngredient(amount, unit, food, note, header = false, noAmount = noAmount)
 
     private fun header(text: String): SeedIngredient = SeedIngredient(0, null, null, text, header = true, noAmount = false)
 }

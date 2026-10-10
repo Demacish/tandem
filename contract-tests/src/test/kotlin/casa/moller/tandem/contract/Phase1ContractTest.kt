@@ -145,7 +145,14 @@ class Phase1ContractTest {
                 put("base_unit", buildJsonObject { put("name", conversion.baseUnit) })
                 put("converted_amount", conversion.convertedAmount)
                 put("converted_unit", buildJsonObject { put("name", conversion.convertedUnit) })
-                put("food", conversion.food?.let { name -> buildJsonObject { put("name", name) } } ?: JsonNull)
+                conversion.food?.let { name -> put("food", buildJsonObject { put("name", name) }) }
+            }
+            if (conversion.food == null) {
+                // UnitConversionSerializer.create calls validated_data.get('food', {}).get('name'): an explicit
+                // null crashes it [K]; a generic conversion must leave the key out.
+                val withNull = JsonObject(body + ("food" to JsonNull))
+                val crash = api("seed-unit-conversion-create-food-null", "POST", "/api/unit-conversion/", withNull)
+                verify("unitConversion.explicitNullFood.status", crash.status, 500)
             }
             val name = if (conversion.food == null) "seed-unit-conversion-create" else "seed-unit-conversion-create-food"
             val created = api(name, "POST", "/api/unit-conversion/", body)
@@ -166,7 +173,7 @@ class Phase1ContractTest {
         val child = keywordIds.getValue(Fas1Seed.CHILD_KEYWORD)
         val parent = keywordIds.getValue(Fas1Seed.PARENT_KEYWORD)
         // The keyword `parent` field is read-only; the tree is changed with PUT .../move/{parent}/.
-        val move = api("seed-keyword-move", "PUT", "/api/keyword/$child/move/$parent/")
+        val move = api("seed-keyword-move", "PUT", "/api/keyword/$child/move/$parent/", JsonObject(emptyMap()))
         verify("keyword.move.status", move.status, 200)
 
         val dinner = api(
@@ -493,6 +500,8 @@ class Phase1ContractTest {
         observe("list.overview.ratingWithoutSort", pasta?.get("rating"))
         observe("list.overview.lastCookedWithoutSort", pasta?.get("last_cooked"))
         observe("list.overview.keywords", pasta?.get("keywords"))
+        // `recent` is only present when num_recent is sent (DRF skips the missing attribute).
+        verify("list.overview.keys", pasta?.keys?.sorted(), OVERVIEW_KEYS)
     }
 
     @Test
@@ -505,10 +514,14 @@ class Phase1ContractTest {
         val child = keywordIds.getValue(Fas1Seed.CHILD_KEYWORD)
 
         listQuery("query-svamp", "query=svamp", record = true).also { expectNames("query.svamp", it, listOf("Krämig svamppasta")) }
-        listQuery("query-kottbullar", "query=kottbullar").also { observeNames("query.withoutDiacritics", it) }
-        listQuery("query-uppercase", "query=ÄRTSOPPA").also { observeNames("query.uppercase", it) }
+        // Fuzzy (trigram) name search with the default search preferences: diacritics and case do not matter,
+        // and similar names match too.
+        listQuery("query-kottbullar", "query=kottbullar").also {
+            expectNames("query.withoutDiacritics", it, listOf("Köttbullar med potatismos", "Kanelbullar"))
+        }
+        listQuery("query-uppercase", "query=ÄRTSOPPA").also { expectNames("query.uppercase", it, listOf("Ärtsoppa", "Grönsakssoppa")) }
         listQuery("query-english", "query=shakshuka").also { expectNames("query.english", it, listOf("Shakshuka")) }
-        listQuery("query-ingredient", "query=champinjon").also { observeNames("query.ingredientName", it) }
+        listQuery("query-ingredient", "query=champinjon").also { expectNames("query.ingredientName", it, emptyList()) }
 
         listQuery("keywords-or-parent", "keywords_or=$parent", record = true).also {
             expectNames("keywords.orParent.includesChildKeyword", it, listOf("Krämig svamppasta", "Köttbullar med potatismos"))
@@ -518,11 +531,24 @@ class Phase1ContractTest {
         }
         listQuery("keywords-or-child", "keywords_or=$child").also { expectNames("keywords.orChild", it, listOf("Krämig svamppasta")) }
 
-        listQuery("sort-times-cooked", "sort_order=-times_cooked", record = true).also { observeNames("sort.minusTimesCooked", it) }
-        listQuery("sort-last-cooked", "sort_order=-lastcooked").also { observeNames("sort.minusLastCooked", it) }
-        listQuery("sort-rating", "sort_order=-rating").also { observeNames("sort.minusRating", it) }
-        listQuery("timescooked-gte", "timescooked_gte=1&sort_order=-lastcooked").also { observeNames("filter.timescookedGte1", it) }
-        listQuery("rating-gte", "rating_gte=4").also { observeNames("filter.ratingGte4", it) }
+        // sort_order=-times_cooked is offered by the web's search page but crashes in 2.6.13 (no such annotation).
+        listQuery("sort-times-cooked", "sort_order=-times_cooked", record = true).also {
+            verify("sort.minusTimesCooked.status", it.status, 500)
+        }
+        listQuery("sort-last-cooked", "sort_order=-lastcooked", record = true).also { ex ->
+            observeNames("sort.minusLastCooked", ex)
+            verify("sort.minusLastCooked.first3", namesOf(ex).take(3), listOf("Krämig svamppasta", "Äppelkaka", "Pannkakor"))
+            observe("sort.minusLastCooked.lastCookedField", fieldByName(ex, "last_cooked"))
+        }
+        listQuery("sort-rating", "sort_order=-rating", record = true).also { ex ->
+            observeNames("sort.minusRating", ex)
+            verify("sort.minusRating.first3", namesOf(ex).take(3), listOf("Äppelkaka", "Krämig svamppasta", "Pannkakor"))
+            observe("sort.minusRating.ratingField", fieldByName(ex, "rating"))
+        }
+        listQuery("timescooked-gte", "timescooked_gte=1&sort_order=-lastcooked", record = true).also {
+            expectNames("filter.timescookedGte1", it, listOf("Krämig svamppasta", "Äppelkaka", "Pannkakor"))
+        }
+        listQuery("rating-gte", "rating_gte=4").also { expectNames("filter.ratingGte4", it, listOf("Krämig svamppasta", "Äppelkaka")) }
 
         val longAgo = today.minusDays(60)
         listQuery("cookedon-lte", "cookedon_lte=$longAgo&sort_order=lastcooked", record = true).also {
@@ -533,7 +559,10 @@ class Phase1ContractTest {
         }
         listQuery("num-recent", "num_recent=16", record = true).also { ex ->
             val results = ex.jsonObject.arrAt("results").objects()
-            observe("numRecent.recentField", results.associate { (it.stringAt("name") ?: "?") to it["recent"] })
+            observe("numRecent.recentField", fieldByName(ex, "recent"))
+            // `recent` is the id of the latest ViewLog ("0" = not among the last n viewed); recent ones first.
+            verify("numRecent.firstTwo", namesOf(ex).take(2), listOf("Kanelbullar", "Krämig svamppasta"))
+            verify("numRecent.othersAreZero", results.drop(2).all { it.stringAt("recent") == "0" }, true)
         }
         listQuery("new", "new=true", record = true).also { ex ->
             val results = ex.jsonObject.arrAt("results").objects()
@@ -545,7 +574,7 @@ class Phase1ContractTest {
 
         listQuery("updatedon-gte-today", "updatedon_gte=$today", record = true).also {
             verify("updatedonGte.today.count", it.jsonObject.longAt("count"), total - 1)
-            verify("updatedonGte.today.excludesOld", namesOf(it).contains(OLD_RECIPE), false)
+            verify("updatedonGte.today.containsOld", namesOf(it).contains(OLD_RECIPE), false)
         }
         listQuery("updatedon-gte-yesterday", "updatedon_gte=$yesterday").also {
             verify("updatedonGte.yesterday.count", it.jsonObject.longAt("count"), total - 1)
@@ -555,6 +584,8 @@ class Phase1ContractTest {
         }
         val dateTime = api("recipe-list-updatedon-gte-datetime", "GET", "/api/recipe/?updatedon_gte=${today}T00:00:00")
         observe("updatedonGte.dateTime", describe(dateTime, includeBody = dateTime.json != null))
+        // The filter compares updated_at__date: anything but yyyy-MM-dd crashes the query.
+        verify("updatedonGte.dateTime.status", dateTime.status, 500)
     }
 
     @Test
@@ -612,8 +643,10 @@ class Phase1ContractTest {
                 observe("detail.pannkakor.rating", recipe["rating"])
             }
             if (slug == "appelkaka") {
-                observe("detail.appelkaka.rating", recipe["rating"])
-                observe("detail.appelkaka.lastCooked", recipe["last_cooked"])
+                // rating = the requesting user's average cook-log rating, rounded. last_cooked stays null in
+                // 2.6.13 although the recipe was cooked (the annotation is called `lastcooked`).
+                verify("detail.appelkaka.rating", recipe["rating"], JsonPrimitive(5.0))
+                verify("detail.appelkaka.lastCooked", recipe["last_cooked"], JsonNull)
             }
             if (slug == "shakshuka") {
                 observe("templates.shakshuka", recipe.arrAt("steps").objects().map { it.stringAt("instructions_markdown") })
@@ -655,7 +688,7 @@ class Phase1ContractTest {
         observe("media.noAuth", describe(anonymous, includeBody = false))
         verify("media.noAuth.status", anonymous.status, 200)
         verify("media.noAuth.contentType", anonymous.contentType, "image/png")
-        observe("media.noAuth.contentDisposition", anonymous.header("Content-Disposition"))
+        verify("media.noAuth.contentDisposition", anonymous.header("Content-Disposition"), "attachment; filename=\"\"")
         observe("media.noAuth.cacheControl", anonymous.header("Cache-Control"))
         observe("media.noAuth.etag", anonymous.header("ETag") != null)
         observe("media.noAuth.lastModified", anonymous.header("Last-Modified") != null)
@@ -783,6 +816,9 @@ class Phase1ContractTest {
 
     private fun namesOf(ex: Exchange): List<String?> = ex.jsonObject.arrAt("results").objects().map { it.stringAt("name") }
 
+    private fun fieldByName(ex: Exchange, field: String): Map<String, JsonElement?> =
+        ex.jsonObject.arrAt("results").objects().associate { (it.stringAt("name") ?: "?") to it[field] }
+
     /** Compares the names as sets (the database collation decides the order of å/ä/ö); the order is kept as a fact. */
     private fun expectNames(key: String, ex: Exchange, expected: List<String>) {
         verify(key, namesOf(ex).map { it.orEmpty() }.sorted(), expected.sorted())
@@ -882,5 +918,26 @@ class Phase1ContractTest {
         const val OLD_RECIPE = "Pytt i panna"
         const val OLD_RECIPE_SLUG = "pyttipanna"
         const val PUBLIC_ORIGIN = "https://${ContractEnv.PUBLIC_HOST}"
+
+        /** Fields of a recipe overview in `GET /api/recipe/` without num_recent. */
+        val OVERVIEW_KEYS = listOf(
+            "created_at",
+            "created_by",
+            "description",
+            "id",
+            "image",
+            "internal",
+            "keywords",
+            "last_cooked",
+            "name",
+            "new",
+            "private",
+            "rating",
+            "servings",
+            "servings_text",
+            "updated_at",
+            "waiting_time",
+            "working_time",
+        )
     }
 }
