@@ -365,6 +365,48 @@ class Phase1ContractTest {
         observe("mealType.list.keys", (types.json as? JsonObject)?.keys?.toList())
     }
 
+    // --- d2. Recipe books ("samlingar" in the search filter) -----------------------------------
+
+    @Test
+    @Order(45)
+    fun recipeBooks() {
+        val book = api(
+            "recipe-book-create",
+            "POST",
+            "/api/recipe-book/",
+            buildJsonObject {
+                put("name", "Favoriter")
+                put("description", "Det vi lagar om och om igen.")
+                put("shared", JsonArray(emptyList()))
+                put("filter", JsonNull)
+            },
+        )
+        assertEquals(201, book.status, book.toString())
+        val bookId = book.jsonObject.longAt("id")!!
+        for (slug in listOf("svamppasta", "appelkaka")) {
+            val entry = api(
+                "recipe-book-entry-create",
+                "POST",
+                "/api/recipe-book-entry/",
+                buildJsonObject {
+                    put("book", bookId)
+                    put("recipe", recipeIds.getValue(slug))
+                },
+                record = slug == "svamppasta",
+            )
+            assertEquals(201, entry.status, entry.toString())
+        }
+        val books = api("recipe-book-list", "GET", "/api/recipe-book/")
+        verify("recipeBook.list.count", (books.json as? JsonObject)?.longAt("count"), 1)
+        val entries = api("recipe-book-entry-list", "GET", "/api/recipe-book-entry/?book=$bookId")
+        verify("recipeBook.entries.count", (entries.json as? JsonObject)?.longAt("count"), 2)
+        listQuery("books-or", "books_or=$bookId", record = true).also {
+            expectNames("recipeBook.recipeListBooksOr", it, listOf("Krämig svamppasta", "Äppelkaka"))
+        }
+        val asReader = api("recipe-book-list-as-other-member", "GET", "/api/recipe-book/", token = env.readerToken, record = false)
+        verify("recipeBook.otherMember.count", (asReader.json as? JsonObject)?.longAt("count"), 0)
+    }
+
     // --- e. What bumps Recipe.updated_at (plan §3.5) --------------------------------------------
 
     @Test
