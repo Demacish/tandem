@@ -70,6 +70,7 @@ class ShellScaffoldTest {
                     language = AppLanguage.SYSTEM,
                     onLanguageSelected = { languages += it },
                     onConnectTandoor = { connectClicks++ },
+                    features = PlaceholderShellFeatures(state),
                 )
             }
         }

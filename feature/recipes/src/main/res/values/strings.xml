@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipes_title">Recipes</string>
+    <string name="recipes_placeholder_title">Your recipes are on their way</string>
+    <string name="recipes_placeholder_body">Searching and browsing your Tandoor recipes, also offline, arrives in Tandem 0.1.</string>
+    <string name="recipe_detail_title">Recipe</string>
+    <string name="recipe_detail_placeholder_title">Recipe %1$d</string>
+    <string name="recipe_detail_placeholder_body">The recipe view with servings, scaled amounts and steps arrives in Tandem 0.1.</string>
+    <string name="recipe_pane_empty_title">Pick a recipe</string>
+    <string name="recipe_pane_empty_body">The recipe opens here, next to the list.</string>
+</resources>

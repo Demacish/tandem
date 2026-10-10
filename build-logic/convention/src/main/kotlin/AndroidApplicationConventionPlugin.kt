@@ -21,6 +21,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 defaultConfig.targetSdk = libs.intVersion("targetSdk")
             }
             configureKtlint()
+            // `checkModuleGraph`; app/build.gradle.kts makes its `ciLint` depend on it.
+            pluginManager.apply("tandem.module-graph")
         }
     }
 }

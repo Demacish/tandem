@@ -1,6 +1,5 @@
 package casa.moller.tandem.core.data.remote
 
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.model.error.InvalidUrlReason
@@ -8,6 +7,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
 import casa.moller.tandem.core.model.error.map
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.network.auth.DeviceCredentials
 import casa.moller.tandem.core.network.auth.RevokeResult
 import casa.moller.tandem.core.network.auth.TandoorAuthenticator

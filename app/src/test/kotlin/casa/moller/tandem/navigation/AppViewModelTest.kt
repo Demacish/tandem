@@ -2,7 +2,6 @@ package casa.moller.tandem.navigation
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -11,6 +10,7 @@ import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.feature.shell.ShellMessage

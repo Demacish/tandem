@@ -13,4 +13,6 @@ dependencies {
     implementation(projects.core.common)
 
     implementation(libs.kotlinx.coroutines.android)
+    // --- Phase 1 (grund lane): the repository interfaces expose Flow/StateFlow. ---
+    api(libs.kotlinx.coroutines.core)
 }

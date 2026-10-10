@@ -1,10 +1,10 @@
 package casa.moller.tandem.feature.shell
 
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
 
 /** What the shell shows; built by [ShellViewModel] from the session and the settings. */

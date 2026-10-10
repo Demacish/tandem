@@ -5,10 +5,18 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
+import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
+import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldValue
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -17,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -26,15 +35,23 @@ import androidx.compose.ui.unit.toSize
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberDecoratedNavEntries
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.scene.SceneStrategy
+import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
+import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.language.LanguageController
 import casa.moller.tandem.core.ui.language.rememberLanguageController
+import casa.moller.tandem.core.ui.navigation.AppChrome
+import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.shell.more.AboutScreen
 import casa.moller.tandem.feature.shell.more.LanguageScreen
 import casa.moller.tandem.feature.shell.more.LicenseTextScreen
@@ -46,6 +63,8 @@ import casa.moller.tandem.feature.shell.navigation.LicenseTextKey
 import casa.moller.tandem.feature.shell.navigation.LicensesKey
 import casa.moller.tandem.feature.shell.navigation.MoreKey
 import casa.moller.tandem.feature.shell.navigation.RecipesKey
+import casa.moller.tandem.feature.shell.navigation.RouteShellFeatures
+import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigation.ShoppingKey
@@ -93,6 +112,7 @@ fun TandemShell(
             languageController.select(it)
         },
         onConnectTandoor = onConnectTandoor,
+        features = RouteShellFeatures,
         modifier = modifier,
         crashNotice = crashNotice,
     )
@@ -136,7 +156,29 @@ fun shellNavigationSuiteType(windowSize: DpSize): NavigationSuiteType = when {
 @Composable
 internal fun currentShellWindowSize(): DpSize = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.toSize().toDpSize() }
 
-/** Stateless shell for previews and screenshot tests. */
+/** The status chip feature screens show next to their title ([LocalAppChrome]). */
+internal val ShellUiState.appStatus: AppStatus?
+    get() = when {
+        isDemo -> AppStatus.Demo
+        isSafeMode -> AppStatus.SafeMode
+        else -> null
+    }
+
+/**
+ * Stateless shell for previews and screenshot tests.
+ *
+ * Navigation (plan 6.1, docs/BYGGE.md "Navigering"):
+ * - Every tab has its own back stack ([ShellNavigationState]); feature routes come from
+ *   [features] and their callbacks become keys here.
+ * - Recipes tab: the list is the list pane of a Navigation 3 list-detail scene
+ *   ([ListDetailSceneStrategy]). On medium/expanded windows a recipe opened from the list shows
+ *   in the detail pane beside it (a new pick replaces it); on compact windows the detail is a
+ *   single pane.
+ * - A [casa.moller.tandem.core.ui.navigation.FullScreenDestination] on top (recipe detail, later
+ *   cook mode) hides the bottom bar on compact windows; the rail stays on wider windows unless
+ *   the destination hides it on all widths.
+ */
+@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 internal fun ShellScaffold(
     state: ShellUiState,
@@ -145,12 +187,37 @@ internal fun ShellScaffold(
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
     onConnectTandoor: () -> Unit,
+    features: ShellFeatures,
     modifier: Modifier = Modifier,
     navigationSuiteType: NavigationSuiteType = shellNavigationSuiteType(currentShellWindowSize()),
     crashNotice: @Composable () -> Unit = {},
 ) {
     // The demo banner can be put away for this session; the "Demo" chip in the top bar stays.
     var demoBannerDismissed by rememberSaveable { mutableStateOf(false) }
+    val showDemoBanner = state.isDemo && !demoBannerDismissed
+    val chrome = remember(state.appStatus, showDemoBanner, onConnectTandoor) {
+        AppChrome(
+            status = state.appStatus,
+            showDemoBanner = showDemoBanner,
+            onConnectTandoor = onConnectTandoor,
+            onDismissDemoBanner = { demoBannerDismissed = true },
+        )
+    }
+
+    // Full-screen destinations (recipe detail, later cook mode) cover the tab bar on phones.
+    val compactWidth = navigationSuiteType == NavigationSuiteType.ShortNavigationBarCompact
+    val hideNavigation = navigation.hidesNavigation(compactWidth)
+    val suiteState = rememberNavigationSuiteScaffoldState(
+        if (hideNavigation) NavigationSuiteScaffoldValue.Hidden else NavigationSuiteScaffoldValue.Visible,
+    )
+    LaunchedEffect(suiteState, hideNavigation) {
+        if (hideNavigation) suiteState.hide() else suiteState.show()
+    }
+    val uriHandler = LocalUriHandler.current
+    val openOnWeb: (String) -> Unit = { url ->
+        // No browser installed must not crash the app.
+        runCatching { uriHandler.openUri(url) }
+    }
 
     NavigationSuiteScaffold(
         navigationItems = {
@@ -167,6 +234,7 @@ internal fun ShellScaffold(
         },
         modifier = modifier.testTag(SHELL_TEST_TAG_PREFIX + navigationSuiteType),
         navigationSuiteType = navigationSuiteType,
+        state = suiteState,
     ) {
         val placeholder: @Composable (ShellTab) -> Unit = { tab ->
             PlaceholderTab(
@@ -178,8 +246,31 @@ internal fun ShellScaffold(
             )
         }
         val entryProvider = entryProvider<NavKey> {
-            entry<TodayKey> { placeholder(ShellTab.TODAY) }
-            entry<RecipesKey> { placeholder(ShellTab.RECIPES) }
+            entry<TodayKey> {
+                features.Today(
+                    onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
+                    onOpenRecipes = { navigation.selectTab(ShellTab.RECIPES) },
+                    onOpenWeek = { navigation.selectTab(ShellTab.WEEK) },
+                )
+            }
+            entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {
+                features.Recipes(
+                    onOpenRecipe = { id ->
+                        navigation.navigate(RecipeDetailKey(id, inListDetail = true), replace = { it is RecipeDetailKey })
+                    },
+                )
+            }
+            entry<RecipeDetailKey>(
+                metadata = { key -> if (key.inListDetail) ListDetailSceneStrategy.detailPane() else emptyMap() },
+            ) { key ->
+                features.RecipeDetail(
+                    recipeId = key.recipeId,
+                    onBack = { navigation.goBack() },
+                    // A sub-recipe opens on top, in the same pane as the recipe that links to it.
+                    onOpenRecipe = { navigation.navigate(RecipeDetailKey(it, inListDetail = key.inListDetail)) },
+                    onOpenOnWeb = openOnWeb,
+                )
+            }
             entry<WeekKey> { placeholder(ShellTab.WEEK) }
             entry<ShoppingKey> { placeholder(ShellTab.SHOPPING) }
             entry<MoreKey> {
@@ -217,7 +308,10 @@ internal fun ShellScaffold(
                 LicenseTextScreen(license = key.license, onNavigateBack = { navigation.goBack() })
             }
         }
-        ShellNavDisplay(navigation = navigation, entryProvider = entryProvider)
+        val listDetail = rememberListDetailSceneStrategy<NavKey>(backNavigationBehavior = BackNavigationBehavior.PopLatest)
+        CompositionLocalProvider(LocalAppChrome provides chrome) {
+            ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
+        }
     }
 }
 
@@ -235,11 +329,17 @@ internal fun ShellNavDisplay(
     navigation: ShellNavigationState,
     entryProvider: (NavKey) -> NavEntry<NavKey>,
     modifier: Modifier = Modifier,
+    sceneStrategy: SceneStrategy<NavKey> = SinglePaneSceneStrategy(),
 ) {
     val entriesByTab: Map<ShellTab, List<NavEntry<NavKey>>> = ShellTab.entries.associateWith { tab ->
         key(tab) {
-            // Phase 1 adds the ViewModelStore decorator here, also per tab.
-            val decorators = listOf(rememberSaveableStateHolderNavEntryDecorator<NavKey>())
+            // Saved UI state and a ViewModelStore per entry, per tab: a screen's ViewModel
+            // (hiltViewModel()) lives while its entry is on its tab's stack, also while the tab
+            // is hidden, and is cleared when the entry is popped.
+            val decorators: List<NavEntryDecorator<NavKey>> = listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            )
             rememberDecoratedNavEntries(navigation.stackOf(tab), decorators, entryProvider)
         }
     }
@@ -252,6 +352,7 @@ internal fun ShellNavDisplay(
     NavDisplay(
         entries = entries,
         modifier = modifier,
+        sceneStrategy = sceneStrategy,
         // Calm cross-fades: tabs are siblings, not a forward/backward journey.
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         popTransitionSpec = { fadeIn() togetherWith fadeOut() },

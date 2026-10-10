@@ -34,3 +34,13 @@ include(":feature:shell")
 include(":contract-tests")
 // Release smoke test: drives the R8-minified app on an emulator (smoke.yml, docs/BYGGE.md).
 include(":smoke")
+
+// --- Phase 1 (grund lane): every Phase 1a/1b module is declared here up front, so that the
+// network, database, sync, demo, UI, cook and timer lanes never need to edit this file. ---
+include(":core:database")
+include(":core:sync")
+include(":core:testing")
+include(":core:timer")
+include(":feature:recipes")
+include(":feature:home")
+include(":feature:cook")

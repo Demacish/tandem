@@ -3,7 +3,6 @@ package casa.moller.tandem.core.data.internal
 import app.cash.turbine.test
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
@@ -14,6 +13,7 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
 import casa.moller.tandem.core.model.error.errorOrNull
 import casa.moller.tandem.core.model.error.getOrNull
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.StorageHealth

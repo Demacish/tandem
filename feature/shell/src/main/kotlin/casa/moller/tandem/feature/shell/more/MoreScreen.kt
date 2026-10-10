@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.designsystem.component.StatusChip
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
@@ -51,6 +50,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.account.TokenOrigin
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.AppStatusChip

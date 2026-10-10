@@ -6,7 +6,7 @@ package casa.moller.tandem.core.common
  * of the app.
  *
  * @property versionName for example `0.0.1` (release) or `0.0.1-dev` (debug).
- * @property distribution the product flavor: `sideload`, `play` or `fdroid`.
+ * @property distribution the product flavor: `sideload` or `play`.
  * @property sdkInt `Build.VERSION.SDK_INT` of the device.
  */
 data class AppBuildInfo(val versionName: String, val versionCode: Long, val distribution: String, val isDebug: Boolean, val sdkInt: Int) {

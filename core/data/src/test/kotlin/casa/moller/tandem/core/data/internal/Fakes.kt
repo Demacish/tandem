@@ -2,7 +2,6 @@ package casa.moller.tandem.core.data.internal
 
 import casa.moller.tandem.core.data.remote.RemoteCredentials
 import casa.moller.tandem.core.data.remote.TandoorRemote
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.datastore.SecureAccountStore
@@ -10,6 +9,7 @@ import casa.moller.tandem.core.datastore.SecureStorageException
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.AppSettings
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred

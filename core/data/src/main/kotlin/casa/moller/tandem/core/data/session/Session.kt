@@ -1,7 +1,7 @@
 package casa.moller.tandem.core.data.session
 
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.model.account.ServerAccount
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.RecoveryReason
 
 /** What the app should show at the top level (start destination, plan 4.2 / 6.2). */

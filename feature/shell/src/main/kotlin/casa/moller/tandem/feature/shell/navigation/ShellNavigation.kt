@@ -10,11 +10,16 @@ import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import casa.moller.tandem.core.ui.navigation.FullScreenDestination
 import kotlinx.serialization.Serializable
 
 /**
  * Navigation 3 keys of the shell. They are @Serializable so that [rememberNavBackStack] can save
  * every tab's back stack across configuration changes and process death.
+ *
+ * Feature destinations have their own keys in their feature module (e.g. `RecipeDetailKey` in
+ * feature:recipes, also @Serializable); the tab stacks hold any [NavKey]. The tab roots
+ * ([TodayKey], [RecipesKey], ...) stay here: the shell maps them to the features' routes.
  */
 @Serializable
 sealed interface ShellKey : NavKey
@@ -107,10 +112,25 @@ class ShellNavigationState(
         }
     }
 
-    /** Opens [key] on top of the current tab. */
-    fun navigate(key: ShellKey) {
+    /**
+     * Opens [key] on top of the current tab. Keys on top of the stack for which [replace] is true
+     * are removed first (never the tab's first screen): picking another recipe in the list of a
+     * list-detail layout replaces the open detail instead of stacking one detail per tap.
+     */
+    fun navigate(key: NavKey, replace: (NavKey) -> Boolean = { false }) {
         val stack = stack(currentTab)
+        while (stack.size > 1 && replace(stack.last())) stack.removeAt(stack.lastIndex)
         if (stack.last() != key) stack.add(key)
+    }
+
+    /**
+     * True when the visible screen is a [FullScreenDestination] that hides the shell's navigation:
+     * on a compact window (bottom bar) always, on wider windows (rail) only when the destination
+     * asks for it ([FullScreenDestination.hidesNavigationOnAllWidths], e.g. cook mode).
+     */
+    fun hidesNavigation(compactWidth: Boolean): Boolean {
+        val destination = currentKey as? FullScreenDestination ?: return false
+        return compactWidth || destination.hidesNavigationOnAllWidths
     }
 
     /**

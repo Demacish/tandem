@@ -3,12 +3,12 @@ package casa.moller.tandem.feature.onboarding
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import casa.moller.tandem.core.data.DataProblem
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.model.error.InvalidUrlReason
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.TlsErrorKind
 import casa.moller.tandem.core.model.error.UnauthorizedSource
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import kotlin.time.Duration.Companion.hours
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers

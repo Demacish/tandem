@@ -1,6 +1,9 @@
 package casa.moller.tandem.feature.shell
 
-import casa.moller.tandem.core.data.server.ServerCompatibility
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -9,7 +12,13 @@ import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.feature.shell.navigation.ShellFeatures
+import casa.moller.tandem.feature.shell.navigation.ShellTab
+import casa.moller.tandem.feature.shell.ui.PlaceholderTab
+import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
@@ -116,5 +125,45 @@ internal class RecordingActions : ShellActions {
 
     override fun setThemeMode(mode: ThemeMode) {
         themes += mode
+    }
+}
+
+/**
+ * Shell tests never render the real feature routes (they create ViewModels with Hilt): Today and
+ * Recipes show the Phase 0 placeholders, the recipe detail a minimal page with a back arrow.
+ */
+internal class PlaceholderShellFeatures(private val state: ShellUiState) : ShellFeatures {
+    @Composable
+    override fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit) {
+        Placeholder(ShellTab.TODAY)
+    }
+
+    @Composable
+    override fun Recipes(onOpenRecipe: (Long) -> Unit) {
+        Placeholder(ShellTab.RECIPES)
+    }
+
+    @Composable
+    override fun RecipeDetail(recipeId: Long, onBack: () -> Unit, onOpenRecipe: (Long) -> Unit, onOpenOnWeb: (String) -> Unit) {
+        ShellScreenScaffold(title = "Recipe $recipeId", state = state, onNavigateBack = onBack) { padding ->
+            Text(text = "Recipe detail $recipeId", modifier = Modifier.padding(padding))
+        }
+    }
+
+    @Composable
+    override fun EmptyRecipePane() {
+        Text(text = "Pick a recipe")
+    }
+
+    @Composable
+    private fun Placeholder(tab: ShellTab) {
+        val chrome = LocalAppChrome.current
+        PlaceholderTab(
+            tab = tab,
+            state = state,
+            showDemoBanner = chrome.showDemoBanner,
+            onDismissDemoBanner = chrome.onDismissDemoBanner,
+            onConnectTandoor = chrome.onConnectTandoor,
+        )
     }
 }

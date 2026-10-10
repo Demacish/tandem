@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Today</string>
+    <string name="home_placeholder_title">Today is coming</string>
+    <string name="home_placeholder_body">Tonight\'s dinner from your meal plan, often cooked and new recipes arrive in Tandem 0.1.</string>
+</resources>

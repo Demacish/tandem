@@ -6,13 +6,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.cash.turbine.test
 import casa.moller.tandem.core.common.AppBuildInfo
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
 import kotlinx.coroutines.CompletableDeferred

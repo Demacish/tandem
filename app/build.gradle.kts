@@ -33,7 +33,7 @@ val releaseDryRun = providers.gradleProperty("tandem.dryRun").orNull.toBoolean()
 
 // Optional pre-filled server address for LOCAL or private sideload builds only (plan 4.5: no
 // server is hard-coded). Empty unless set with -Ptandem.defaultServerUrl=https://... or in
-// ~/.gradle/gradle.properties; play and fdroid builds never get one, and release.yml refuses to
+// ~/.gradle/gradle.properties; play builds never get one, and release.yml refuses to
 // build a published release with it set.
 val sideloadDefaultServerUrl = providers.gradleProperty("tandem.defaultServerUrl").orElse("").get().trim()
 require(sideloadDefaultServerUrl.isEmpty() || Regex("""^https://[^\s"'\\]+$""").matches(sideloadDefaultServerUrl)) {
@@ -126,6 +126,8 @@ android {
         }
     }
 
+    // Decision B10 (2026-10-10): GitHub Releases + Obtainium first, Google Play later; no F-Droid
+    // flavor (IzzyOnDroid, if ever, takes the sideload APK from GitHub Releases).
     flavorDimensions += "distribution"
     productFlavors {
         // Obtainium / GitHub Releases (the household build).
@@ -135,11 +137,6 @@ android {
         }
         // Google Play: restricted permissions differ (plan 4.4/4.5).
         create("play") {
-            dimension = "distribution"
-            buildConfigField("String", "DEFAULT_SERVER_URL", "\"\"")
-        }
-        // F-Droid / IzzyOnDroid: no proprietary dependencies.
-        create("fdroid") {
             dimension = "distribution"
             buildConfigField("String", "DEFAULT_SERVER_URL", "\"\"")
         }
@@ -157,6 +154,14 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.feature.onboarding)
     implementation(projects.feature.shell)
+    // --- Phase 1 (grund lane): the app wires every module into the Hilt graph. The shell hosts
+    // feature:recipes and feature:home; feature:cook and core:timer are Phase 1b placeholders. ---
+    implementation(projects.core.database)
+    implementation(projects.core.sync)
+    implementation(projects.core.timer)
+    implementation(projects.feature.recipes)
+    implementation(projects.feature.home)
+    implementation(projects.feature.cook)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
@@ -169,7 +174,7 @@ dependencies {
 }
 
 androidComponents {
-    // The smoke test runs the sideload build only; play/fdroid minified variants would just cost
+    // The smoke test runs the sideload build only; a play minified variant would just cost
     // configuration time and are never built.
     beforeVariants(selector().withBuildType("minified")) { variant ->
         variant.enable = variant.flavorName == "sideload"
@@ -184,6 +189,6 @@ tasks.register("ciTest") {
 }
 tasks.register("ciLint") {
     group = "verification"
-    description = "Runs ktlint and Android Lint for the sideload debug variant."
-    dependsOn("ktlintCheck", "lintSideloadDebug")
+    description = "Runs ktlint, the module graph check and Android Lint for the sideload debug variant."
+    dependsOn("ktlintCheck", "checkModuleGraph", "lintSideloadDebug")
 }

@@ -42,10 +42,12 @@ internal fun Project.defaultNamespace(): String =
 
 /**
  * Registers the `ciTest` / `ciLint` lifecycle tasks that the CI workflow runs in every module.
- * `ciLint` is ktlint ([configureKtlint]) plus, in Android modules, Android Lint for [lintTask].
+ * `ciLint` is ktlint ([configureKtlint]), the module graph rules (`checkModuleGraph`, applied
+ * here through `tandem.module-graph`) and, in Android modules, Android Lint for [lintTask].
  * Task names are resolved lazily, so variant tasks created later by AGP are fine.
  */
 internal fun Project.registerCiTasks(testTask: String, lintTask: String?) {
+    pluginManager.apply("tandem.module-graph")
     tasks.register("ciTest") {
         group = "verification"
         description = "Runs the unit tests CI cares about for this module ($testTask)."
@@ -53,8 +55,8 @@ internal fun Project.registerCiTasks(testTask: String, lintTask: String?) {
     }
     tasks.register("ciLint") {
         group = "verification"
-        description = "Runs ktlint" + (lintTask?.let { " and Android Lint ($it)" } ?: "") + " for this module."
-        dependsOn("ktlintCheck")
+        description = "Runs ktlint, the module graph check" + (lintTask?.let { " and Android Lint ($it)" } ?: "") + " for this module."
+        dependsOn("ktlintCheck", "checkModuleGraph")
         if (lintTask != null) dependsOn(lintTask)
     }
 }

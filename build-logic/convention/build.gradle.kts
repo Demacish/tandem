@@ -24,6 +24,8 @@ dependencies {
     compileOnly(libs.compose.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
     compileOnly(libs.ktlint.gradlePlugin)
+    // --- Phase 1 (grund lane): tandem.android.room configures the Room 3 Gradle plugin's DSL. ---
+    compileOnly(libs.room3.gradlePlugin)
 }
 
 tasks {
@@ -68,6 +70,18 @@ gradlePlugin {
         register("androidRoborazzi") {
             id = "tandem.android.roborazzi"
             implementationClass = "AndroidRoborazziConventionPlugin"
+        }
+        // --- Phase 1 (grund lane) ---
+        // Room 3 + KSP with exported schemas in <module>/schemas (core:database).
+        register("androidRoom") {
+            id = "tandem.android.room"
+            implementationClass = "AndroidRoomConventionPlugin"
+        }
+        // Dependency rules of plan 5.2 as a `checkModuleGraph` task (part of every `ciLint`).
+        // Applied automatically by tandem.android.application/library and tandem.jvm.library.
+        register("moduleGraph") {
+            id = "tandem.module-graph"
+            implementationClass = "ModuleGraphConventionPlugin"
         }
     }
 }

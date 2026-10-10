@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.dataProblem
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.model.error.InvalidUrlReason
@@ -14,6 +13,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
 import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job

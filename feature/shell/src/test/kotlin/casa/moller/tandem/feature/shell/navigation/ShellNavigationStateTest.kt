@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.shell.navigation
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -84,5 +85,36 @@ class ShellNavigationStateTest {
             initialTab = ShellTab.WEEK,
         )
         assertEquals(listOf<NavKey>(TodayKey, WeekKey), restored.backStack)
+    }
+
+    @Test
+    fun pickingAnotherRecipeInTheListReplacesTheOpenDetail() {
+        navigation.selectTab(ShellTab.RECIPES)
+        val fromList = { id: Long -> navigation.navigate(RecipeDetailKey(id, inListDetail = true), replace = { it is RecipeDetailKey }) }
+        fromList(101)
+        // A sub-recipe opened from the detail stacks on top of it ...
+        navigation.navigate(RecipeDetailKey(105, inListDetail = true))
+        // ... but the next pick in the list replaces both.
+        fromList(103)
+        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(103, inListDetail = true)), navigation.backStack)
+        assertTrue(navigation.goBack())
+        assertEquals(RecipesKey, navigation.currentKey)
+    }
+
+    @Test
+    fun replaceNeverRemovesTheTabsFirstScreen() {
+        navigation.navigate(RecipeDetailKey(101), replace = { true })
+        assertEquals(listOf<NavKey>(TodayKey, RecipeDetailKey(101)), navigation.backStack)
+    }
+
+    @Test
+    fun fullScreenDestinationsHideTheBarOnlyOnCompactWindows() {
+        assertFalse(navigation.hidesNavigation(compactWidth = true))
+        navigation.navigate(RecipeDetailKey(101))
+        assertTrue(navigation.hidesNavigation(compactWidth = true))
+        assertFalse("the rail stays beside a recipe", navigation.hidesNavigation(compactWidth = false))
+        navigation.selectTab(ShellTab.MORE)
+        navigation.navigate(AboutKey)
+        assertFalse(navigation.hidesNavigation(compactWidth = true))
     }
 }

@@ -77,6 +77,29 @@ jobs:
         # --continue: report every failing module in one run instead of stopping at the first.
         run: ./gradlew --stacktrace --continue ciLint ciTest :app:assembleSideloadDebug
 
+      # --- Phase 1 (grund lane): Room schemas (tandem.android.room, docs/BYGGE.md "Room") ---
+      # The build above exports core/database/schemas/<database>/<version>.json. A new or changed
+      # file that is not committed means the database changed without its schema: fail, and
+      # upload the exported files so they can be committed as they are.
+      - name: Room schemas are committed
+        id: room-schemas
+        run: |
+          changes=$(git status --porcelain --untracked-files=all -- core/database/schemas)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Room schema changed but is not committed. Download the room-schemas artifact and commit core/database/schemas/."
+            exit 1
+          fi
+
+      - name: Upload exported Room schemas
+        if: ${{ failure() && steps.room-schemas.outputs.changed == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: room-schemas
+          path: core/database/schemas/
+          retention-days: 3
+
       - name: Save Gradle cache (main only)
         if: success() && github.ref == 'refs/heads/main' && steps.gradle-cache.outputs.cache-hit != 'true'
         run: |

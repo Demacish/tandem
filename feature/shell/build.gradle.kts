@@ -9,4 +9,9 @@ plugins {
 
 dependencies {
     implementation(libs.bundles.compose.adaptive)
+    // --- Phase 1 (grund lane): the shell is the navigation host. It is the ONE feature module
+    // allowed to depend on other features (checkModuleGraph): it shows their routes and maps
+    // their callbacks to Navigation 3 keys (docs/BYGGE.md "Navigering"). ---
+    implementation(projects.feature.recipes)
+    implementation(projects.feature.home)
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipes_title">Recept</string>
+    <string name="recipes_placeholder_title">Dina recept är på väg</string>
+    <string name="recipes_placeholder_body">Sökning och bläddring bland dina Tandoor-recept, även offline, kommer i Tandem 0.1.</string>
+    <string name="recipe_detail_title">Recept</string>
+    <string name="recipe_detail_placeholder_title">Recept %1$d</string>
+    <string name="recipe_detail_placeholder_body">Receptvyn med portioner, skalade mängder och steg kommer i Tandem 0.1.</string>
+    <string name="recipe_pane_empty_title">Välj ett recept</string>
+    <string name="recipe_pane_empty_body">Receptet öppnas här, bredvid listan.</string>
+</resources>

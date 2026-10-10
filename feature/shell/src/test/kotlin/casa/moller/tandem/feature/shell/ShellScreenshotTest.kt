@@ -11,15 +11,15 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.ui.language.AppLanguage
+import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.LanguageKey
 import casa.moller.tandem.feature.shell.navigation.LicensesKey
-import casa.moller.tandem.feature.shell.navigation.ShellKey
 import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
@@ -98,6 +98,14 @@ abstract class ShellScreenshotTest(private val device: String) {
     @Test
     fun language() = capture("language_light", CONNECTED_STATE, ShellTab.MORE, LanguageKey)
 
+    /** Phones: the detail covers the bottom bar. Tablets: list and detail side by side. */
+    @Test
+    fun recipeDetail() = capture("recipe_detail_light", CONNECTED_STATE, ShellTab.RECIPES, RecipeDetailKey(101, inListDetail = true))
+
+    /** Opened from Today: full screen on phones, beside the rail (no list) on tablets. */
+    @Test
+    fun recipeDetailFromToday() = capture("recipe_detail_from_today_light", DEMO_STATE, ShellTab.TODAY, RecipeDetailKey(103))
+
     @Test
     fun about() = capture("about_light", CONNECTED_STATE, ShellTab.MORE, AboutKey)
 
@@ -133,7 +141,7 @@ abstract class ShellScreenshotTest(private val device: String) {
         name: String,
         state: ShellUiState,
         tab: ShellTab,
-        vararg pages: ShellKey,
+        vararg pages: NavKey,
         darkTheme: Boolean = false,
         language: AppLanguage = AppLanguage.SYSTEM,
     ) {
@@ -144,7 +152,7 @@ abstract class ShellScreenshotTest(private val device: String) {
     private fun setShell(
         state: ShellUiState,
         tab: ShellTab,
-        vararg pages: ShellKey,
+        vararg pages: NavKey,
         darkTheme: Boolean = false,
         language: AppLanguage = AppLanguage.SYSTEM,
     ) {
@@ -164,6 +172,7 @@ abstract class ShellScreenshotTest(private val device: String) {
                 language = language,
                 onLanguageSelected = {},
                 onConnectTandoor = {},
+                features = PlaceholderShellFeatures(state),
             )
         }
     }
@@ -172,7 +181,7 @@ abstract class ShellScreenshotTest(private val device: String) {
 }
 
 /** Navigation state that shows [tab] with [pages] opened on top of its first screen. */
-internal fun navigationAt(tab: ShellTab, vararg pages: ShellKey): ShellNavigationState = ShellNavigationState(
+internal fun navigationAt(tab: ShellTab, vararg pages: NavKey): ShellNavigationState = ShellNavigationState(
     stacks = ShellTab.entries.associateWith { entry ->
         NavBackStack<NavKey>(entry.root).apply { if (entry == tab) addAll(pages) }
     },
@@ -242,6 +251,7 @@ class ShellPhoneLandscapeScreenshotTest {
                     language = AppLanguage.SYSTEM,
                     onLanguageSelected = {},
                     onConnectTandoor = {},
+                    features = PlaceholderShellFeatures(state),
                 )
             }
         }

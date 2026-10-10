@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Idag</string>
+    <string name="home_placeholder_title">Idag är på väg</string>
+    <string name="home_placeholder_body">Kvällens middag från matsedeln, ofta lagade och nya recept kommer i Tandem 0.1.</string>
+</resources>

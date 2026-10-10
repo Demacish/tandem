@@ -13,7 +13,7 @@ data class CrashLogEnvironment(
     val versionCode: Long,
     /** `debug`, `release` or `minified`. */
     val buildType: String,
-    /** The product flavor: `sideload`, `play` or `fdroid`. */
+    /** The product flavor: `sideload` or `play`. */
     val distribution: String,
     /** `Build.VERSION.RELEASE`, e.g. `16`. */
     val androidRelease: String,

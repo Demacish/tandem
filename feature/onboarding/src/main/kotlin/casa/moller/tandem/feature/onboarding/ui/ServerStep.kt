@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.designsystem.R as DesignR
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.InfoCard
@@ -47,6 +46,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.TlsErrorKind
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.ui.R as UiR
 import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.onboarding.OnboardingActions

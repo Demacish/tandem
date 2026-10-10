@@ -2,13 +2,13 @@ package casa.moller.tandem.feature.onboarding
 
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.data.account.AccountRepository
-import casa.moller.tandem.core.data.server.ServerCompatibility
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.language.LanguageController
 import kotlin.time.Instant
