@@ -1,5 +1,6 @@
 package casa.moller.tandem.contract
 
+import java.time.LocalDate
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -61,6 +62,24 @@ class SanitizerTest {
         assertEquals("2000-01-01T00:00+01:00", Sanitizer.normalizeDateTime("2027-01-09T07:00+01:00"))
         assertEquals("2027-10-09", Sanitizer.normalizeDateTime("2027-10-09"))
         assertEquals("read write", Sanitizer.normalizeDateTime("read write"))
+    }
+
+    @Test
+    fun fas1ShiftsDatesAndKeepsWholeMinuteTimes() {
+        val sanitizer = Sanitizer(emptyList(), runToday = LocalDate.of(2026, 10, 11))
+        assertEquals(
+            "/api/meal-plan/?from_date=2000-01-15&to_date=2000-01-16",
+            sanitizer.sanitize("/api/meal-plan/?from_date=2026-10-11&to_date=2026-10-12"),
+        )
+        val json = Json.parseToJsonElement(
+            """{"from_date":"2026-10-11T18:00:00+02:00","created_at":"2026-07-13T14:23:11.123456+02:00","day":"2026-10-10"}""",
+        )
+        val clean = sanitizer.sanitize(json).jsonObject
+        assertEquals("2000-01-15T18:00:00+02:00", clean["from_date"]!!.jsonPrimitive.content)
+        assertEquals("1999-10-17T00:00:00.000000+02:00", clean["created_at"]!!.jsonPrimitive.content)
+        assertEquals("2000-01-14", clean["day"]!!.jsonPrimitive.content)
+        assertEquals("2000-01-15T12:00:00.000000Z", Sanitizer.normalizeTimeOfDay("2000-01-15T12:00:00.000000Z"))
+        assertEquals("2000-01-15T00:00:00Z", Sanitizer.normalizeTimeOfDay("2000-01-15T12:00:01Z"))
     }
 
     @Test

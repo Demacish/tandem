@@ -1,6 +1,7 @@
 // Contract tests against a temporary Tandoor started inside GitHub Actions (contract.yml).
-// Phase0ContractTest is skipped unless the environment variable TANDOOR_URL is set, so pr.yml
-// stays green without a server (SanitizerTest always runs). Never point TANDOOR_URL at a
+// Phase0ContractTest is skipped unless the environment variable TANDOOR_URL is set and
+// Phase1ContractTest unless TANDOOR_FAS1_TOKEN is set, so pr.yml stays green without a server
+// (SanitizerTest and ScalingGoldenTest, which reads the committed fixtures, always run). Never point TANDOOR_URL at a
 // production server: the tests revoke tokens and exhaust the login throttle on purpose.
 // Raw OkHttp + kotlinx.serialization only; no dependency on :core:network.
 plugins {
@@ -17,11 +18,16 @@ dependencies {
 val tandoorUrl: Provider<String> = providers.environmentVariable("TANDOOR_URL").orElse("")
 val recordDir: Provider<Directory> = layout.buildDirectory.dir("contract-recordings")
 
+// Committed fixtures (api-schema/fixtures/), read by ScalingGoldenTest.
+val fixturesDir: Directory = layout.projectDirectory.dir("../api-schema/fixtures")
+
 tasks.withType<Test>().configureEach {
     // A different server URL must never reuse a cached or up-to-date result.
     inputs.property("tandoorUrl", tandoorUrl)
     // Sanitized request/response recordings + observed-facts.json, one folder per image tag.
     systemProperty("tandem.contract.recordDir", recordDir.get().asFile.absolutePath)
+    systemProperty("tandem.contract.fixturesDir", fixturesDir.asFile.absolutePath)
+    inputs.dir(fixturesDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("fixtures")
     if (tandoorUrl.get().isNotEmpty()) {
         outputs.upToDateWhen { false }
         outputs.cacheIf { false }

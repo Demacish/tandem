@@ -22,6 +22,8 @@ internal class Exchange(
     val status: Int,
     val responseHeaders: List<Pair<String, String>>,
     val bodyText: String,
+    /** Size of the raw response body in bytes (images are not decoded as text). */
+    val bodySize: Int = bodyText.length,
 ) {
     val contentType: String? = header("Content-Type")
 
@@ -37,20 +39,31 @@ internal class Exchange(
 
 /**
  * Raw HTTP client for the contract tests (deliberately independent of :core:network).
- * Every call is written, sanitized, to [ContractEnv.recordDir] as `NN-name.json`.
+ * Every call is written, sanitized, to [recordDir] as `NN-name.json` ([numbered]) or `name.json`.
+ *
+ * @param defaultHeaders sent with every request unless a call overrides them (Fas 1 sends
+ *   `Host` + `X-Forwarded-Proto` like a TLS reverse proxy would).
  */
-internal class TandoorHttp(private val baseUrl: String, private val sanitizer: Sanitizer, private val recordDir: File) {
+internal class TandoorHttp(
+    private val baseUrl: String,
+    private val sanitizer: Sanitizer,
+    private val recordDir: File,
+    private val numbered: Boolean = true,
+    private val defaultHeaders: Map<String, String> = emptyMap(),
+) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .followRedirects(false)
         .build()
     private var counter = 0
+    private val recordedNames = mutableSetOf<String>()
 
     /**
      * @param recordBody what to write to the recording for the request body (must already hide
      *   the password); the real [body] is never recorded.
      * @param record false for repetitive calls that add nothing to the fixtures.
+     * @param recordBodyText false for binary bodies (images): only status and headers are recorded.
      */
     fun call(
         name: String,
@@ -62,13 +75,14 @@ internal class TandoorHttp(private val baseUrl: String, private val sanitizer: S
         recordBody: JsonElement? = null,
         record: Boolean = true,
         extraHeaders: Map<String, String> = emptyMap(),
+        recordBodyText: Boolean = true,
     ): Exchange {
         val request = Request.Builder()
             .url(baseUrl + path)
             .header("Accept", "application/json")
             .header("User-Agent", USER_AGENT)
             .apply { if (authorization != null) header("Authorization", authorization) }
-            .apply { extraHeaders.forEach { (name, value) -> header(name, value) } }
+            .apply { (defaultHeaders + extraHeaders).forEach { (name, value) -> header(name, value) } }
             .method(method, body)
             .build()
         val requestHeaders = buildList<Pair<String, String>> {
@@ -76,6 +90,7 @@ internal class TandoorHttp(private val baseUrl: String, private val sanitizer: S
             body?.contentType()?.let { add("Content-Type" to it.toString()) }
         }
         val exchange = client.newCall(request).execute().use { response ->
+            val bytes = response.body.bytes()
             Exchange(
                 name = name,
                 method = method,
@@ -84,16 +99,19 @@ internal class TandoorHttp(private val baseUrl: String, private val sanitizer: S
                 requestBody = recordBody,
                 status = response.code,
                 responseHeaders = response.headers.toList(),
-                bodyText = response.body.string(),
+                bodyText = if (recordBodyText) bytes.toString(Charsets.UTF_8) else "",
+                bodySize = bytes.size,
             )
         }
-        if (record) record(exchange)
+        if (record) record(exchange, recordBodyText)
         return exchange
     }
 
-    private fun record(exchange: Exchange) {
+    private fun record(exchange: Exchange, recordBodyText: Boolean) {
         counter += 1
-        val file = File(recordDir, "%02d-%s.json".format(counter, exchange.name))
+        check(numbered || recordedNames.add(exchange.name)) { "recording name used twice: ${exchange.name}" }
+        val fileName = if (numbered) "%02d-%s.json".format(counter, exchange.name) else "${exchange.name}.json"
+        val file = File(recordDir, fileName)
         val recorded = buildJsonObject {
             put("name", exchange.name)
             put(
@@ -114,6 +132,8 @@ internal class TandoorHttp(private val baseUrl: String, private val sanitizer: S
                     val json = exchange.json
                     if (json != null) {
                         put("body", sanitizer.sanitize(json))
+                    } else if (!recordBodyText) {
+                        put("bodySize", exchange.bodySize)
                     } else {
                         put("bodyText", sanitizer.sanitize(exchange.bodyText.take(MAX_TEXT_BODY)))
                     }

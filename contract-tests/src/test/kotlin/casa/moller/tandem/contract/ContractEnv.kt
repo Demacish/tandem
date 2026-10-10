@@ -35,4 +35,29 @@ internal object ContractEnv {
         System.getProperty("tandem.contract.recordDir") ?: "build/contract-recordings",
         tag,
     )
+
+    // --- Fas 1 (Phase1ContractTest) ---------------------------------------------------------
+
+    /**
+     * A `read write` access token of [username], created by contract.yml with `manage.py shell`
+     * AFTER Phase0ContractTest (which needs a token-free account and uses up the login throttle).
+     * Phase1ContractTest is skipped unless it is set.
+     */
+    val fas1Token: String = System.getenv("TANDOOR_FAS1_TOKEN").orEmpty()
+
+    /**
+     * A token of a second, ordinary member ("user" group) of the same space, used to check what
+     * other members see of a private recipe.
+     */
+    val readerToken: String = System.getenv("TANDOOR_READER_TOKEN").orEmpty()
+
+    /**
+     * Host name the Fas 1 requests claim to be addressed to (sent as `Host` together with
+     * `X-Forwarded-Proto: https`, like behind a TLS reverse proxy). Must be in the server's
+     * ALLOWED_HOSTS. A reserved example domain: nothing resolves or contacts it.
+     */
+    const val PUBLIC_HOST: String = "tandoor.example.com"
+
+    /** Fas 1 recordings: `<recordDir>/fas1/<name>.json` (committed to api-schema/fixtures/<tag>/fas1/). */
+    val fas1RecordDir: File = File(recordDir, "fas1")
 }
