@@ -10,6 +10,7 @@ import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.api.TandoorApiFactory
 import casa.moller.tandem.core.network.capabilities.CapabilityResolver
 import casa.moller.tandem.core.sync.account.AccountMirror
@@ -58,9 +59,9 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
         serverVersion = "2.6.13",
         addedAt = Instant.fromEpochMilliseconds(0),
     )
-    val api = TandoorApiFactory(TestTls.httpClient()).create(server.baseUrl, { sources.token })
-    val remote = ActiveSource.Remote(account, api)
-    val sources = FakeSources(remote)
+    val api: TandoorApi = TandoorApiFactory(TestTls.httpClient()).create(server.baseUrl, { sources.token })
+    val remote: ActiveSource.Remote = ActiveSource.Remote(account, api)
+    val sources: FakeSources = FakeSources(remote)
     val sessions = FakeSessionRepository(Session.LoggedIn(account, account.serverVersion, ServerCompatibility.SUPPORTED))
     val accountStore = FakeAccountStore(listOf(account))
     val health = StorageHealthMonitor()
