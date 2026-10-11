@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_sync_connected">Tandoor %1$s ansluten</string>
+    <string name="onboarding_sync_title">Hämtar dina recept…</string>
+    <plurals name="onboarding_sync_title_count">
+        <item quantity="one">Hämtar %1$d recept…</item>
+        <item quantity="other">Hämtar %1$d recept…</item>
+    </plurals>
+    <string name="onboarding_sync_done_title">Klart</string>
+    <string name="onboarding_sync_failed_title">Första synkningen stannade</string>
+    <string name="onboarding_sync_body">Tandem sparar dina recept och matsedeln i enheten, så att de fungerar i köket även utan anslutning.</string>
+    <string name="onboarding_sync_body_server">Tandem sparar dina recept och matsedeln från %1$s i enheten, så att de fungerar i köket även utan anslutning.</string>
+    <string name="onboarding_sync_status">Synkstatus</string>
+    <string name="onboarding_sync_percent">%1$d %%</string>
+    <string name="onboarding_sync_recipes_progress">%1$d av %2$d recept</string>
+    <string name="onboarding_sync_failed_body">Inget går förlorat: det som hämtats finns kvar, och Tandem försöker igen i bakgrunden. %1$s</string>
+
+    <string name="onboarding_sync_phase_server">Server och inloggning</string>
+    <string name="onboarding_sync_phase_reference">Nyckelord, enheter och livsmedel</string>
+    <string name="onboarding_sync_phase_index">Receptlistan</string>
+    <plurals name="onboarding_sync_phase_index_count">
+        <item quantity="one">%1$d recept</item>
+        <item quantity="other">%1$d recept</item>
+    </plurals>
+    <string name="onboarding_sync_phase_details">Recept för offline</string>
+    <string name="onboarding_sync_phase_images">Bilder</string>
+    <string name="onboarding_sync_phase_meal_plan">Matsedel</string>
+    <string name="onboarding_sync_status_waiting">Väntar</string>
+    <string name="onboarding_sync_status_running">Pågår</string>
+    <string name="onboarding_sync_status_done">Klar</string>
+    <string name="onboarding_sync_status_failed">Stoppad</string>
+    <string name="onboarding_sync_phase_description">%1$s: %2$s</string>
+
+    <string name="onboarding_sync_tip_title">Du kan börja redan nu</string>
+    <string name="onboarding_sync_tip_body">Resten hämtas i bakgrunden medan du tittar runt.</string>
+    <string name="onboarding_sync_continue_background">Fortsätt i bakgrunden</string>
+    <string name="onboarding_sync_continue_anyway">Fortsätt ändå</string>
+
+    <string name="onboarding_battery_title">Ett tips för Samsung-telefoner</string>
+    <string name="onboarding_battery_body">Samsungs batterisparläge kan hindra Tandem från att synka i bakgrunden. Om recepten eller matsedeln slutar uppdateras, tillåt bakgrundsanvändning för Tandem: öppna inställningarna nedan, tryck på Batteri och välj Obegränsad.</string>
+    <string name="onboarding_battery_open_settings">Öppna batteriinställningar</string>
+    <string name="onboarding_battery_done">Klar</string>
+</resources>

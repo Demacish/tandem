@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Recovery screen actions (feature #37, Stitch terst_llning_fels_kert_l_ge). -->
+    <string name="app_recovery_actions_heading">What you can do</string>
+    <string name="app_recovery_log_in_body">Connect to your Tandoor again. Nothing on the server has changed.</string>
+    <string name="app_recovery_export_title">Export pending changes</string>
+    <plurals name="app_recovery_export_pending">
+        <item quantity="one">%1$d change has not been sent to Tandoor yet. Share it as text so it is not lost.</item>
+        <item quantity="other">%1$d changes have not been sent to Tandoor yet. Share them as text so they are not lost.</item>
+    </plurals>
+    <string name="app_recovery_export_none">No changes are waiting to be sent.</string>
+    <string name="app_recovery_export_unknown">Changes that have not been sent yet can be shared as text before you clear the app data.</string>
+    <string name="app_recovery_export_unavailable">This version of Tandem cannot export waiting changes yet.</string>
+    <string name="app_recovery_export_button">Share as text</string>
+    <string name="app_recovery_export_failed">The waiting changes could not be read.</string>
+    <string name="app_recovery_export_subject">Tandem: changes not sent to Tandoor</string>
+    <string name="app_recovery_export_chooser">Share waiting changes</string>
+    <string name="app_recovery_clear_card_body">Removes logins and settings from this device and starts over. Export waiting changes first.</string>
+</resources>

@@ -20,6 +20,9 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.TlsErrorKind
+import casa.moller.tandem.core.model.sync.SyncPhase
+import casa.moller.tandem.core.model.sync.SyncProgress
+import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.feature.onboarding.ui.PASSWORD_FIELD_TAG
 import casa.moller.tandem.feature.onboarding.ui.SERVER_URL_FIELD_TAG
@@ -45,8 +48,12 @@ class OnboardingFlowTest {
     private var finishedCalls = 0
     private var demoCalls = 0
 
-    private fun setContent(startAtServerStep: Boolean = false) {
-        val vm = viewModel(accounts, session)
+    private fun setContent(
+        startAtServerStep: Boolean = false,
+        sync: FakeSyncRepository = FakeSyncRepository(),
+        config: OnboardingConfig = OnboardingConfig(),
+    ) {
+        val vm = viewModel(accounts, session, config = config, sync = sync)
         composeRule.setContent {
             TandemTheme {
                 OnboardingFlow(
@@ -115,6 +122,8 @@ class OnboardingFlowTest {
             .assertIsDisplayed()
         composeRule.onNodeWithText(string(R.string.onboarding_connected_account, "Anna")).assertIsDisplayed()
         button(R.string.onboarding_continue).scrollAndClick()
+        // The first sync (fake: 312 recipes, then done) runs and the intro ends by itself.
+        composeRule.waitForIdle()
         assertEquals(1, finishedCalls)
         assertEquals(listOf("tandoor.example.com"), accounts.probes)
         assertEquals(1, accounts.logins.size)
@@ -200,5 +209,48 @@ class OnboardingFlowTest {
         composeRule.onNodeWithText("Välkommen till Tandem").assertIsDisplayed()
         composeRule.onNode(hasText("Kom igång") and hasClickAction()).performScrollTo().assertIsDisplayed()
         composeRule.onNode(hasText("Prova demoläget") and hasClickAction()).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun failedFirstSyncOffersRetryAndContinueAnyway() {
+        val sync = FakeSyncRepository().apply { firstSyncProgress = FakeSyncRepository.failingFirstSync() }
+        setContent(sync = sync)
+        connectTo()
+        logIn()
+        button(R.string.onboarding_continue).scrollAndClick()
+        composeRule.onNodeWithText(string(R.string.onboarding_sync_failed_title)).performScrollTo().assertIsDisplayed()
+        assertEquals(0, finishedCalls)
+
+        // Try again: this time it gets through and the intro ends.
+        sync.firstSyncProgress = listOf(SyncProgress(SyncPhase.RECIPE_INDEX, done = 312, total = 312), SyncProgress(SyncPhase.DONE))
+        button(DesignR.string.tandem_action_retry).scrollAndClick()
+        composeRule.waitForIdle()
+        assertEquals(1, finishedCalls)
+    }
+
+    @Test
+    fun continueAnywayAfterAFailedFirstSyncEndsTheIntro() {
+        val sync = FakeSyncRepository().apply { firstSyncProgress = FakeSyncRepository.failingFirstSync() }
+        setContent(sync = sync)
+        connectTo()
+        logIn()
+        button(R.string.onboarding_continue).scrollAndClick()
+        button(R.string.onboarding_sync_continue_anyway).scrollAndClick()
+        composeRule.waitForIdle()
+        assertEquals(1, finishedCalls)
+    }
+
+    @Test
+    fun samsungGetsTheBatteryTipBeforeTheEnd() {
+        setContent(config = OnboardingConfig(showBatteryTip = true))
+        connectTo()
+        logIn()
+        button(R.string.onboarding_continue).scrollAndClick()
+        composeRule.onNodeWithText(string(R.string.onboarding_battery_title)).performScrollTo().assertIsDisplayed()
+        button(R.string.onboarding_battery_open_settings).performScrollTo().assertIsDisplayed()
+        assertEquals(0, finishedCalls)
+        button(R.string.onboarding_battery_done).scrollAndClick()
+        composeRule.waitForIdle()
+        assertEquals(1, finishedCalls)
     }
 }

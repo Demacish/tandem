@@ -6,9 +6,11 @@ import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
+import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.language.LanguageController
 import kotlin.time.Instant
@@ -121,7 +123,8 @@ internal fun viewModel(
     session: SessionRepository = FakeSessionRepository(),
     handle: SavedStateHandle = SavedStateHandle(),
     config: OnboardingConfig = OnboardingConfig(),
-) = OnboardingViewModel(handle, accounts, session, config)
+    sync: SyncRepository = FakeSyncRepository(),
+) = OnboardingViewModel(handle, accounts, session, config, sync)
 
 /** Does nothing; for screenshot tests of fixed states. */
 internal object NoOpActions : OnboardingActions {
@@ -136,4 +139,8 @@ internal object NoOpActions : OnboardingActions {
     override fun onLoginMethodChange(method: LoginMethod) = Unit
     override fun onLogin() = Unit
     override fun onStartDemo() = Unit
+    override fun onContinueAfterLogin() = Unit
+    override fun onRetryFirstSync() = Unit
+    override fun onContinueFirstSyncInBackground() = Unit
+    override fun onBatteryTipDone() = Unit
 }

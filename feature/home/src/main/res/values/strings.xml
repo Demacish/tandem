@@ -1,6 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_title">Today</string>
-    <string name="home_placeholder_title">Today is coming</string>
-    <string name="home_placeholder_body">Tonight\'s dinner from your meal plan, often cooked and new recipes arrive in Tandem 0.1.</string>
+
+    <!-- Header above Today (design idag_*: the date and a greeting). -->
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_day">Hello</string>
+    <string name="home_greeting_evening">Good evening</string>
+
+    <!-- Meal plan: tonight, the rest of today, tomorrow. -->
+    <string name="home_tonight">Tonight</string>
+    <string name="home_also_today">Also today</string>
+    <string name="home_tomorrow">Tomorrow</string>
+    <string name="home_meal_label">%1$s · %2$s</string>
+    <string name="home_open_recipe">Open recipe</string>
+    <string name="home_meal_without_recipe">No recipe linked</string>
+    <string name="home_minutes">%1$d min</string>
+    <string name="home_hours">%1$d h</string>
+    <string name="home_hours_minutes">%1$d h %2$d min</string>
+    <plurals name="home_servings">
+        <item quantity="one">%1$s serving</item>
+        <item quantity="other">%1$s servings</item>
+    </plurals>
+
+    <!-- Empty state (plan 6.2: "Inget planerat idag. Planera veckan →"). -->
+    <string name="home_nothing_planned_title">Nothing planned today</string>
+    <string name="home_nothing_planned_body">Plan the week in Tandoor and tonight\'s dinner shows up here.</string>
+    <string name="home_plan_week">Plan the week</string>
+    <string name="home_browse_recipes">Browse recipes</string>
+    <string name="home_empty_sections">Recipes you cook often, new recipes and the ones you viewed show up here after the first sync.</string>
+
+    <!-- Recipe carousels (plan 3.3 "Hemsektioner"). -->
+    <string name="home_section_pinned">Pinned</string>
+    <string name="home_section_pinned_subtitle">Saved on this device</string>
+    <string name="home_section_often_cooked">Often cooked</string>
+    <string name="home_section_often_cooked_subtitle">Your household\'s favourites</string>
+    <string name="home_section_new">New</string>
+    <string name="home_section_new_subtitle">Recently added to Tandoor</string>
+    <string name="home_section_recently_viewed">Recently viewed</string>
+    <string name="home_section_recently_viewed_subtitle">Opened in the last two weeks</string>
+    <string name="home_section_not_cooked_lately">Not cooked in a while</string>
+    <string name="home_section_not_cooked_lately_subtitle">Time for an old favourite?</string>
+    <string name="home_all_recipes">All recipes</string>
+
+    <!-- Sync status card (design idag_surfplatta_*: "Senast synkad med Tandoor kl 18:14 · Synka nu"). -->
+    <string name="home_sync_last">Last synced with Tandoor %1$s</string>
+    <string name="home_sync_never">Not synced with Tandoor yet</string>
+    <string name="home_sync_running">Syncing with Tandoor…</string>
+    <string name="home_sync_now">Sync now</string>
+    <string name="home_refresh_failed">Could not update. Showing what is saved on this device.</string>
 </resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_recovery_actions_heading">Det här kan du göra</string>
+    <string name="app_recovery_log_in_body">Anslut till din Tandoor igen. Inget på servern har ändrats.</string>
+    <string name="app_recovery_export_title">Exportera väntande ändringar</string>
+    <plurals name="app_recovery_export_pending">
+        <item quantity="one">%1$d ändring har inte skickats till Tandoor än. Dela den som text så att den inte går förlorad.</item>
+        <item quantity="other">%1$d ändringar har inte skickats till Tandoor än. Dela dem som text så att de inte går förlorade.</item>
+    </plurals>
+    <string name="app_recovery_export_none">Inga ändringar väntar på att skickas.</string>
+    <string name="app_recovery_export_unknown">Ändringar som inte skickats än kan delas som text innan du rensar appdata.</string>
+    <string name="app_recovery_export_unavailable">Den här versionen av Tandem kan inte exportera väntande ändringar än.</string>
+    <string name="app_recovery_export_button">Dela som text</string>
+    <string name="app_recovery_export_failed">De väntande ändringarna gick inte att läsa.</string>
+    <string name="app_recovery_export_subject">Tandem: ändringar som inte skickats till Tandoor</string>
+    <string name="app_recovery_export_chooser">Dela väntande ändringar</string>
+    <string name="app_recovery_clear_card_body">Tar bort inloggningar och inställningar från enheten och börjar om. Exportera väntande ändringar först.</string>
+</resources>

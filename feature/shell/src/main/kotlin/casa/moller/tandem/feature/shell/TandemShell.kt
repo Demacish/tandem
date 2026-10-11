@@ -48,12 +48,16 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
+import casa.moller.tandem.core.model.error.isConnectivityProblem
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.language.LanguageController
 import casa.moller.tandem.core.ui.language.rememberLanguageController
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.core.ui.status.SafeModeInfoScreen
+import casa.moller.tandem.core.ui.status.TANDEM_RELEASES_URL
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.shell.more.AboutScreen
 import casa.moller.tandem.feature.shell.more.LanguageScreen
@@ -67,6 +71,7 @@ import casa.moller.tandem.feature.shell.navigation.LicensesKey
 import casa.moller.tandem.feature.shell.navigation.MoreKey
 import casa.moller.tandem.feature.shell.navigation.RecipesKey
 import casa.moller.tandem.feature.shell.navigation.RouteShellFeatures
+import casa.moller.tandem.feature.shell.navigation.SafeModeInfoKey
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
@@ -74,6 +79,9 @@ import casa.moller.tandem.feature.shell.navigation.ShoppingKey
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
 import casa.moller.tandem.feature.shell.navigation.rememberShellNavigationState
+import casa.moller.tandem.feature.shell.status.ServerNotice
+import casa.moller.tandem.feature.shell.status.ServerStatusFrame
+import casa.moller.tandem.feature.shell.status.serverNotice
 import casa.moller.tandem.feature.shell.ui.PlaceholderTab
 import casa.moller.tandem.feature.shell.ui.icon
 import casa.moller.tandem.feature.shell.ui.label
@@ -159,10 +167,14 @@ fun shellNavigationSuiteType(windowSize: DpSize): NavigationSuiteType = when {
 @Composable
 internal fun currentShellWindowSize(): DpSize = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.toSize().toDpSize() }
 
-/** The status chip feature screens show next to their title ([LocalAppChrome]). */
+/**
+ * The status chip feature screens show next to their title ([LocalAppChrome]). "Offline" when the
+ * last server check could not reach the server (Phase 1, idag-ui lane); never in demo mode.
+ */
 internal val ShellUiState.appStatus: AppStatus?
     get() = when {
         isDemo -> AppStatus.Demo
+        refreshError?.isConnectivityProblem == true -> AppStatus.Offline
         isSafeMode -> AppStatus.SafeMode
         else -> null
     }
@@ -317,10 +329,28 @@ internal fun ShellScaffold(
             entry<LicenseTextKey> { key ->
                 LicenseTextScreen(license = key.license, onNavigateBack = { navigation.goBack() })
             }
+            // --- Phase 1 (idag-ui lane): what safe mode means (feature #2), from the banner. ---
+            entry<SafeModeInfoKey> {
+                val notice = state.serverNotice as? ServerNotice.SafeMode
+                SafeModeInfoScreen(
+                    version = notice?.version,
+                    compatibility = notice?.compatibility ?: ServerCompatibility.UNTESTED_NEWER,
+                    onBack = { navigation.goBack() },
+                    onOpenReleases = { openOnWeb(TANDEM_RELEASES_URL) },
+                )
+            }
         }
         val listDetail = rememberListDetailSceneStrategy<NavKey>(backNavigationBehavior = BackNavigationBehavior.PopLatest)
         CompositionLocalProvider(LocalAppChrome provides chrome) {
-            ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
+            // Phase 1 (idag-ui lane): the server status (safe mode banner, too old) around the tabs.
+            ServerStatusFrame(
+                state = state,
+                navigation = navigation,
+                onOpenSafeModeInfo = { navigation.navigate(SafeModeInfoKey) },
+                onCheckAgain = actions::refreshServerInfo,
+            ) {
+                ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
+            }
         }
     }
 }

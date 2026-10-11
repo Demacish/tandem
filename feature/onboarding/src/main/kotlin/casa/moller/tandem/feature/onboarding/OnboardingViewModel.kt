@@ -8,12 +8,15 @@ import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.SessionRepository
+import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.InvalidUrlReason
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
 import casa.moller.tandem.core.model.error.catchingUnexpected
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.sync.SyncPhase
+import casa.moller.tandem.core.model.sync.SyncProgress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -22,25 +25,30 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * State holder of the intro (welcome -> server -> login -> connected, plan 6.2).
+ * State holder of the intro (welcome -> server -> login -> connected -> first sync -> battery tip,
+ * plan 6.2).
  *
  * Survives rotation (ViewModel) and process death ([SavedStateHandle]: step, address, probed
  * server, login method, username, connected summary). The password and a pasted token are kept
  * in memory only and are never saved.
  *
- * Nothing is retried automatically: every probe and login is started by the user.
+ * Nothing is retried automatically: every probe, login and first sync retry is started by the
+ * user. Leaving the first sync early never cancels it: [SyncRepository.firstSync] goes on in the
+ * background.
  */
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val accountRepository: AccountRepository,
     private val sessionRepository: SessionRepository,
-    config: OnboardingConfig,
+    private val config: OnboardingConfig,
+    private val syncRepository: SyncRepository,
 ) : ViewModel(),
     OnboardingActions {
 
@@ -51,7 +59,13 @@ class OnboardingViewModel @Inject constructor(
     val events: Flow<OnboardingEvent> = eventChannel.receiveAsFlow()
 
     private var probeJob: Job? = null
+    private var firstSyncJob: Job? = null
     private var demoStarting = false
+
+    init {
+        // After process death on the first sync step: follow (or restart) the sync again.
+        if (state.value.step == OnboardingStep.FIRST_SYNC) startFirstSync()
+    }
 
     /**
      * Called once when the intro is shown. [atServerStep] skips the welcome step, e.g. for
@@ -87,7 +101,7 @@ class OnboardingViewModel @Inject constructor(
                 }
             }
 
-            OnboardingStep.WELCOME, OnboardingStep.CONNECTED -> Unit
+            OnboardingStep.WELCOME, OnboardingStep.CONNECTED, OnboardingStep.FIRST_SYNC, OnboardingStep.BATTERY_TIP -> Unit
         }
     }
 
@@ -195,6 +209,70 @@ class OnboardingViewModel @Inject constructor(
             if (sessionRepository.startDemo() is Outcome.Success) eventChannel.send(OnboardingEvent.DemoStarted)
             demoStarting = false
         }
+    }
+
+    override fun onContinueAfterLogin() {
+        if (state.value.step != OnboardingStep.CONNECTED) return
+        setState { it.copy(step = OnboardingStep.FIRST_SYNC, firstSync = FirstSyncState()) }
+        startFirstSync()
+    }
+
+    override fun onRetryFirstSync() {
+        if (state.value.step != OnboardingStep.FIRST_SYNC || state.value.firstSync.error == null) return
+        setState { it.copy(firstSync = it.firstSync.copy(error = null)) }
+        startFirstSync()
+    }
+
+    override fun onContinueFirstSyncInBackground() {
+        if (state.value.step != OnboardingStep.FIRST_SYNC) return
+        // Only stops following it here; the sync itself goes on (SyncRepository.firstSync).
+        firstSyncJob?.cancel()
+        afterFirstSync()
+    }
+
+    override fun onBatteryTipDone() {
+        if (state.value.step != OnboardingStep.BATTERY_TIP) return
+        finish()
+    }
+
+    private fun startFirstSync() {
+        firstSyncJob?.cancel()
+        firstSyncJob = viewModelScope.launch {
+            syncRepository.firstSync()
+                // The contract says firstSync never throws for network errors; anything else
+                // (a bug) must still leave the user a way on instead of a frozen step.
+                .catch { emit(SyncProgress(SyncPhase.FAILED, error = TandemError.Unknown(it::class.simpleName))) }
+                .collect { progress ->
+                    when (progress.phase) {
+                        SyncPhase.FAILED -> setState {
+                            it.copy(firstSync = it.firstSync.copy(error = progress.error ?: TandemError.Unknown()))
+                        }
+
+                        SyncPhase.DONE -> {
+                            setState { it.copy(firstSync = it.firstSync.copy(progress = progress)) }
+                            afterFirstSync()
+                        }
+
+                        else -> setState {
+                            val total = progress.total.takeIf { progress.phase == SyncPhase.RECIPE_INDEX }
+                            it.copy(firstSync = it.firstSync.copy(progress = progress, recipeCount = total ?: it.firstSync.recipeCount))
+                        }
+                    }
+                }
+        }
+    }
+
+    /** The first sync is done or left to the background: the battery tip on Samsung, else the end. */
+    private fun afterFirstSync() {
+        if (config.showBatteryTip) {
+            setState { it.copy(step = OnboardingStep.BATTERY_TIP) }
+        } else {
+            finish()
+        }
+    }
+
+    private fun finish() {
+        viewModelScope.launch { eventChannel.send(OnboardingEvent.Finished) }
     }
 
     private inline fun setState(transform: (OnboardingUiState) -> OnboardingUiState) {

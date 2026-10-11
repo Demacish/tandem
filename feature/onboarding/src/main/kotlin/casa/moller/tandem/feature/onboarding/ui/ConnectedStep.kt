@@ -21,9 +21,9 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.feature.onboarding.ConnectedSummary
 import casa.moller.tandem.feature.onboarding.R
 
-/** After login: "Connected to <server> · Tandoor <version>" (Fas 0 "Klart när" #3), then continue. */
+/** After login: "Connected to <server> · Tandoor <version>" (Fas 0 "Klart när" #3), then the first sync. */
 @Composable
-internal fun ColumnScope.ConnectedStep(summary: ConnectedSummary, onFinished: () -> Unit) {
+internal fun ColumnScope.ConnectedStep(summary: ConnectedSummary, onContinue: () -> Unit) {
     TandemIconHero(
         icon = TandemIcons.CheckCircle,
         modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -64,7 +64,7 @@ internal fun ColumnScope.ConnectedStep(summary: ConnectedSummary, onFinished: ()
     }
     TandemPrimaryButton(
         text = stringResource(R.string.onboarding_continue),
-        onClick = onFinished,
+        onClick = onContinue,
         modifier = Modifier.fillMaxWidth(),
         trailingIcon = TandemIcons.ArrowForward,
     )

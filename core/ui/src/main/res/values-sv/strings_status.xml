@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_safe_mode_headline_newer">Tandoor %1$s är inte testad ännu</string>
+    <string name="ui_safe_mode_headline_older">Tandoor %1$s är äldre än de testade versionerna</string>
+    <string name="ui_safe_mode_headline_unrecognized">Tandoor-versionen %1$s känns inte igen</string>
+    <string name="ui_safe_mode_headline_unknown">Den här Tandoor-versionen är inte testad ännu</string>
+    <string name="ui_safe_mode_banner_body">Tandem kör i säkert läge: läsning fungerar, ändringar väntar.</string>
+    <string name="ui_safe_mode_banner_open">läsa om säkert läge</string>
+
+    <string name="ui_safe_mode_title">Säkert läge</string>
+    <string name="ui_safe_mode_intro">Tandem har inte testats med den här Tandoor-versionen. För att skydda dina recept och listor kör appen i säkert läge tills en testad version av Tandem finns.</string>
+    <string name="ui_safe_mode_meaning_heading">Vad säkert läge innebär</string>
+    <string name="ui_safe_mode_reading_title">Läsning fungerar</string>
+    <string name="ui_safe_mode_reading_body">Recept, matsedeln och allt som sparats för offline fungerar som vanligt.</string>
+    <string name="ui_safe_mode_queued_title">Ändringar väntar i enheten</string>
+    <string name="ui_safe_mode_queued_body">Ändringar du gör i Tandem, till exempel kokloggar, sparas i enheten och skickas inte till servern än.</string>
+    <string name="ui_safe_mode_send_anyway_title">”Skicka ändå” kommer senare</string>
+    <string name="ui_safe_mode_send_anyway_body">En senare version av Tandem låter dig skicka väntande ändringar ändå. Inget du sparat kastas bort.</string>
+    <string name="ui_safe_mode_update_heading">Det här kan du göra</string>
+    <string name="ui_safe_mode_update_body">Uppdatera Tandem när en ny version finns. Versionsanteckningarna visar vilka Tandoor-versioner varje version har testats med.</string>
+    <string name="ui_safe_mode_releases">Tandems versioner på GitHub</string>
+
+    <string name="ui_server_too_old_title">Tandoor %1$s är för gammal</string>
+    <string name="ui_server_too_old_title_unknown">Den här Tandoor-versionen är för gammal</string>
+    <string name="ui_server_too_old_body">Tandem kräver Tandoor 2.0 eller nyare, så synk och ändringar är avstängda. Uppdatera Tandoor på servern och försök igen. Du kan logga ut under Mer.</string>
+
+    <string name="ui_offline_notice">Offline: visar det som sparats i enheten</string>
+</resources>

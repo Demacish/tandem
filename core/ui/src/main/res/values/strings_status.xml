@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Server status (feature #2, plan 3.6): safe mode banner and explanation, too old server, offline. -->
+    <string name="ui_safe_mode_headline_newer">Tandoor %1$s is not tested yet</string>
+    <string name="ui_safe_mode_headline_older">Tandoor %1$s is older than the tested versions</string>
+    <string name="ui_safe_mode_headline_unrecognized">Tandoor version %1$s is not recognised</string>
+    <string name="ui_safe_mode_headline_unknown">This Tandoor version is not tested yet</string>
+    <string name="ui_safe_mode_banner_body">Tandem runs in safe mode: reading works, changes wait.</string>
+    <string name="ui_safe_mode_banner_open">read about safe mode</string>
+
+    <string name="ui_safe_mode_title">Safe mode</string>
+    <string name="ui_safe_mode_intro">Tandem has not been tested with this Tandoor version. To keep your recipes and lists safe, it runs in safe mode until a tested version of Tandem is available.</string>
+    <string name="ui_safe_mode_meaning_heading">What safe mode means</string>
+    <string name="ui_safe_mode_reading_title">Reading works</string>
+    <string name="ui_safe_mode_reading_body">Recipes, the meal plan and everything saved for offline use work as usual.</string>
+    <string name="ui_safe_mode_queued_title">Changes wait on this device</string>
+    <string name="ui_safe_mode_queued_body">Changes you make in Tandem, such as cook logs, are kept on this device and are not sent to the server yet.</string>
+    <string name="ui_safe_mode_send_anyway_title">“Send anyway” comes later</string>
+    <string name="ui_safe_mode_send_anyway_body">A later version of Tandem lets you send waiting changes anyway. Nothing you saved is thrown away.</string>
+    <string name="ui_safe_mode_update_heading">What you can do</string>
+    <string name="ui_safe_mode_update_body">Update Tandem when a new version is out. The release notes say which Tandoor versions each version has been tested with.</string>
+    <string name="ui_safe_mode_releases">Tandem releases on GitHub</string>
+
+    <string name="ui_server_too_old_title">Tandoor %1$s is too old</string>
+    <string name="ui_server_too_old_title_unknown">This Tandoor version is too old</string>
+    <string name="ui_server_too_old_body">Tandem needs Tandoor 2.0 or newer, so syncing and changes are turned off. Update Tandoor on your server and try again. You can log out under More.</string>
+
+    <string name="ui_offline_notice">Offline: showing what is saved on this device</string>
+</resources>

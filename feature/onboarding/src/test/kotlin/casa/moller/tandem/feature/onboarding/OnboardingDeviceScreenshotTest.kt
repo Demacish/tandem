@@ -75,7 +75,6 @@ abstract class OnboardingDeviceScreenshotTest(private val device: String) {
                     actions = NoOpActions,
                     language = AppLanguage.SYSTEM,
                     onLanguageSelected = {},
-                    onFinished = {},
                 )
             }
         }

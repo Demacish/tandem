@@ -36,6 +36,7 @@ import casa.moller.tandem.feature.shell.TandemShell
 import casa.moller.tandem.navigation.AppDestination
 import casa.moller.tandem.navigation.AppMessage
 import casa.moller.tandem.navigation.AppViewModel
+import casa.moller.tandem.recovery.RecoveryRoute
 
 /**
  * Top level: one Navigation 3 back stack whose single entry follows the session (intro, shell or
@@ -97,7 +98,7 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                 TandemShell(onConnectTandoor = viewModel::connectFromDemo, crashNotice = crashNotice)
             }
             entry<AppDestination.Recovery> {
-                RecoveryScreen(
+                RecoveryRoute(
                     reasons = (state.session as? Session.RecoveryNeeded)?.reasons.orEmpty(),
                     onLogInAgain = viewModel::acknowledgeRecovery,
                     onClearAppData = viewModel::clearAppData,

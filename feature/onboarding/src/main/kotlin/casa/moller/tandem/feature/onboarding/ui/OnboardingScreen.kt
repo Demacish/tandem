@@ -48,8 +48,8 @@ internal fun OnboardingScreen(
     actions: OnboardingActions,
     language: AppLanguage,
     onLanguageSelected: (AppLanguage) -> Unit,
-    onFinished: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenBatterySettings: () -> Unit = {},
     crashNotice: @Composable () -> Unit = {},
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -86,7 +86,19 @@ internal fun OnboardingScreen(
 
                                 OnboardingStep.LOGIN -> LoginStep(state, actions)
 
-                                OnboardingStep.CONNECTED -> state.connected?.let { ConnectedStep(it, onFinished) }
+                                OnboardingStep.CONNECTED -> state.connected?.let { ConnectedStep(it, actions::onContinueAfterLogin) }
+
+                                OnboardingStep.FIRST_SYNC -> FirstSyncStep(
+                                    sync = state.firstSync,
+                                    connected = state.connected,
+                                    onRetry = actions::onRetryFirstSync,
+                                    onContinueInBackground = actions::onContinueFirstSyncInBackground,
+                                )
+
+                                OnboardingStep.BATTERY_TIP -> BatteryTipStep(
+                                    onOpenSettings = onOpenBatterySettings,
+                                    onDone = actions::onBatteryTipDone,
+                                )
                             }
                         }
                     }

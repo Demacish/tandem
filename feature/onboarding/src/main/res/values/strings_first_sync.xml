@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- First sync after login (plan 6.2 "Efter inloggning", Stitch intro_f_rsta_synk). -->
+    <string name="onboarding_sync_connected">Tandoor %1$s connected</string>
+    <string name="onboarding_sync_title">Fetching your recipes…</string>
+    <plurals name="onboarding_sync_title_count">
+        <item quantity="one">Fetching %1$d recipe…</item>
+        <item quantity="other">Fetching %1$d recipes…</item>
+    </plurals>
+    <string name="onboarding_sync_done_title">All set</string>
+    <string name="onboarding_sync_failed_title">The first sync stopped</string>
+    <string name="onboarding_sync_body">Tandem saves your recipes and meal plan on this device, so they work in the kitchen even without a connection.</string>
+    <string name="onboarding_sync_body_server">Tandem saves your recipes and meal plan from %1$s on this device, so they work in the kitchen even without a connection.</string>
+    <string name="onboarding_sync_status">Sync status</string>
+    <string name="onboarding_sync_percent">%1$d %%</string>
+    <string name="onboarding_sync_recipes_progress">%1$d of %2$d recipes</string>
+    <string name="onboarding_sync_failed_body">Nothing is lost: what was fetched is kept, and Tandem tries again in the background. %1$s</string>
+
+    <string name="onboarding_sync_phase_server">Server and login</string>
+    <string name="onboarding_sync_phase_reference">Keywords, units and foods</string>
+    <string name="onboarding_sync_phase_index">Recipe list</string>
+    <plurals name="onboarding_sync_phase_index_count">
+        <item quantity="one">%1$d recipe</item>
+        <item quantity="other">%1$d recipes</item>
+    </plurals>
+    <string name="onboarding_sync_phase_details">Recipes for offline use</string>
+    <string name="onboarding_sync_phase_images">Pictures</string>
+    <string name="onboarding_sync_phase_meal_plan">Meal plan</string>
+    <string name="onboarding_sync_status_waiting">Waiting</string>
+    <string name="onboarding_sync_status_running">In progress</string>
+    <string name="onboarding_sync_status_done">Done</string>
+    <string name="onboarding_sync_status_failed">Stopped</string>
+    <string name="onboarding_sync_phase_description">%1$s: %2$s</string>
+
+    <string name="onboarding_sync_tip_title">You can start already</string>
+    <string name="onboarding_sync_tip_body">The rest is fetched in the background while you look around.</string>
+    <string name="onboarding_sync_continue_background">Continue in the background</string>
+    <string name="onboarding_sync_continue_anyway">Continue anyway</string>
+
+    <!-- Battery tip (Samsung only, plan 6.2; never a forced flow). -->
+    <string name="onboarding_battery_title">A tip for Samsung phones</string>
+    <string name="onboarding_battery_body">Samsung\'s battery saving can stop Tandem from syncing in the background. If your recipes or meal plan stop updating, allow background use for Tandem: open the settings below, tap Battery and choose Unrestricted.</string>
+    <string name="onboarding_battery_open_settings">Open battery settings</string>
+    <string name="onboarding_battery_done">Done</string>
+</resources>

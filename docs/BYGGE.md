@@ -265,6 +265,39 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   (`build/outputs/roborazzi/recipes/` resp. `ui/`).
 <!-- /Fas 1 recept-ui -->
 
+## Idag, första synken, serverstatus och återställning (Fas 1)
+
+- **Idag (`:feature:home`):** `TodayRoute` → `HomeViewModel` (`HomeRepository` + `SyncRepository`)
+  → den tillståndslösa `TodayScreen(state, onAction)`. "Ikväll" är dagens måltid vars måltidstyp
+  börjar från 15:00 (annars dagens sista måltid utan tid); övriga måltider idag och imorgon visas
+  som rader, sedan karusellerna som har recept. `HomeRepository.refresh()` körs en gång när fliken
+  öppnas och sedan bara vid dra-för-att-uppdatera/"Synka nu" (som också ber synken om
+  `USER_REFRESH`). Når den inte servern (`TandemError.isConnectivityProblem` i `:core:model`)
+  visas det som hämtats senast med en offlineruta. Från 840 dp bredd: två kolumner
+  (idag_surfplatta_*), annars en kolumn.
+- **Första synken (`:feature:onboarding`):** efter "Fortsätt" i ansluten-steget följer
+  `OnboardingViewModel` `SyncRepository.firstSync()` (steg `FIRST_SYNC`). "Fortsätt i
+  bakgrunden" avslutar bara bevakningen, inte synken. Vid fel: "Försök igen" eller "Fortsätt
+  ändå". På Samsung (`OnboardingConfig.showBatteryTip`, sätts i appens `OnboardingConfigModule`)
+  kommer ett tips om batterioptimering med en länk till appens systeminställningar (bara en
+  Intent, ingen behörighet). Introt avslutas med händelsen `OnboardingEvent.Finished`.
+- **Serverstatus (`:core:ui` `status/`, kopplat i skalet):** `SafeModeBanner` (otestad version,
+  blockerar inget), `SafeModeInfoScreen` (vad säkert läge innebär, länk till releaserna på
+  GitHub), `ServerTooOldNotice` (för gammal Tandoor: ersätter innehållet i alla flikar utom Mer)
+  och `OfflineNotice`. Kroken i skalet är `ServerStatusFrame` (`:feature:shell` `status/`), som
+  lägger bannern ovanför flikinnehållet och förbrukar statusradens inset; statuschipet visar
+  "Offline" när den senaste serverkontrollen inte nådde servern.
+- **Återställning (`:app`):** `RecoveryRoute` + `RecoveryViewModel`. "Exportera väntande
+  ändringar" delar utkorgen som JSON-text via delningsarket genom gränssnittet
+  `PendingChangesExporter` (`:core:data`). Det injiceras som `Optional` (`@BindsOptionalOf` i
+  `app/.../di/PendingChangesModule.kt`): tills utkorgens implementation binder det med `@Binds`
+  visas exporten som otillgänglig.
+- **Ikoner:** nya ikoner för de här skärmarna ligger i `TandemIconsStatus.kt` (samma källa och
+  kontroll som övriga, se `assets/licenses/NOTICE.txt`).
+- **Skärmdumpar:** `TodayScreenshotTest`, `OnboardingFirstSyncScreenshotTest`,
+  `ServerStatusScreenshotTest` och `RecoveryScreenshotTest` (telefon 412×915 dp, medium stående
+  800×1280 dp, surfplatta liggande 1280×800 dp; ljust/mörkt, engelska/svenska, textskala 2).
+
 ## CI
 
 `.github/workflows/pr.yml` körs vid varje push och pull request (inte när bara `docs/**` eller

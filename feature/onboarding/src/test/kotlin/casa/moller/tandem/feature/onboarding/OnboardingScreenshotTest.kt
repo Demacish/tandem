@@ -153,7 +153,6 @@ class OnboardingScreenshotTest {
                         actions = NoOpActions,
                         language = AppLanguage.SYSTEM,
                         onLanguageSelected = {},
-                        onFinished = {},
                     )
                 }
             }

@@ -2,14 +2,26 @@ package casa.moller.tandem.feature.onboarding
 
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.sync.SyncPhase
+import casa.moller.tandem.core.model.sync.SyncProgress
 import kotlin.time.Duration
 
-/** The steps of the intro (plan 6.2). Welcome, server and login are "steg 1-3 av 3". */
+/**
+ * The steps of the intro (plan 6.2). Welcome, server and login are "steg 1-3 av 3"; after a login
+ * come the connected summary, the first sync and (Samsung only) the battery tip ("Efter
+ * inloggning").
+ */
 enum class OnboardingStep {
     WELCOME,
     SERVER,
     LOGIN,
     CONNECTED,
+
+    /** The first sync with progress (Stitch intro_f_rsta_synk). */
+    FIRST_SYNC,
+
+    /** A short tip about Samsung's battery optimisation; never a forced flow. */
+    BATTERY_TIP,
 }
 
 /** How the user logs in on the login step. */
@@ -56,6 +68,69 @@ sealed interface LoginError {
     data class Other(val error: TandemError) : LoginError
 }
 
+/**
+ * The first sync after a login (plan 6.2 "Efter inloggning": "Fetching 312 recipes…").
+ *
+ * @property progress the last progress reported, null before the first one.
+ * @property recipeCount recipes on the server, once the index phase reported a total.
+ * @property error why the sync stopped; the step offers "Try again" and "Continue anyway".
+ */
+data class FirstSyncState(val progress: SyncProgress? = null, val recipeCount: Int? = null, val error: TandemError? = null) {
+    /** The phase running now; null before the first progress or after an error. */
+    val currentPhase: SyncPhase?
+        get() = progress?.phase?.takeIf { error == null && it != SyncPhase.FAILED }
+
+    /**
+     * Overall progress 0..1 across the [VisiblePhases] (the current phase's own fraction counts
+     * within its slot), null before the first progress.
+     */
+    val overallFraction: Float?
+        get() {
+            val current = progress ?: return null
+            if (current.phase == SyncPhase.DONE || current.phase == SyncPhase.OUTBOX) return 1f
+            val index = VisiblePhases.indexOf(current.phase).takeIf { it >= 0 } ?: return null
+            return ((index + (current.fraction ?: 0f)) / VisiblePhases.size).coerceIn(0f, 1f)
+        }
+
+    /** Where [phase] stands in this sync. */
+    fun statusOf(phase: SyncPhase): PhaseStatus {
+        val currentIndex = progress?.phase?.let { current ->
+            when (current) {
+                SyncPhase.DONE, SyncPhase.OUTBOX -> VisiblePhases.size
+                else -> VisiblePhases.indexOf(current)
+            }
+        } ?: -1
+        val index = VisiblePhases.indexOf(phase)
+        return when {
+            currentIndex < 0 -> PhaseStatus.WAITING
+            index < currentIndex -> PhaseStatus.DONE
+            index == currentIndex && error != null -> PhaseStatus.FAILED
+            index == currentIndex -> PhaseStatus.RUNNING
+            else -> PhaseStatus.WAITING
+        }
+    }
+
+    companion object {
+        /** The phases the first sync step lists, in order (plan 3.5). */
+        val VisiblePhases: List<SyncPhase> = listOf(
+            SyncPhase.SERVER_CHECK,
+            SyncPhase.REFERENCE_DATA,
+            SyncPhase.RECIPE_INDEX,
+            SyncPhase.RECIPE_DETAILS,
+            SyncPhase.IMAGES,
+            SyncPhase.MEAL_PLAN,
+        )
+    }
+}
+
+/** A phase in the first sync step's list. */
+enum class PhaseStatus {
+    WAITING,
+    RUNNING,
+    DONE,
+    FAILED,
+}
+
 /** What the connected step shows: "Connected to <server> · Tandoor <version>". */
 data class ConnectedSummary(val serverAddress: String, val serverVersion: String, val accountLabel: String, val safeMode: Boolean)
 
@@ -76,6 +151,7 @@ data class OnboardingUiState(
     val loginInProgress: Boolean = false,
     val loginError: LoginError? = null,
     val connected: ConnectedSummary? = null,
+    val firstSync: FirstSyncState = FirstSyncState(),
 ) {
     val canConnect: Boolean
         get() = serverUrl.isNotBlank() && serverCheck != ServerCheck.Checking
@@ -90,13 +166,16 @@ data class OnboardingUiState(
     override fun toString(): String = "OnboardingUiState(step=$step, serverUrl=$serverUrl, serverCheck=$serverCheck, server=$server, " +
         "loginMethod=$loginMethod, username=$username, password=<${password.length} chars>, " +
         "token=<${token.length} chars>, loginInProgress=$loginInProgress, loginError=$loginError, " +
-        "connected=$connected)"
+        "connected=$connected, firstSync=$firstSync)"
 }
 
 /** One-off events for the composable (plan 5.3: effects through a Channel). */
 sealed interface OnboardingEvent {
     /** Demo mode is switched on; the app leaves the intro. */
     data object DemoStarted : OnboardingEvent
+
+    /** Logged in, first sync done (or left to run in the background): the app leaves the intro. */
+    data object Finished : OnboardingEvent
 }
 
 /** User actions of the intro. Implemented by [OnboardingViewModel]; screenshot tests use no-ops. */
@@ -122,6 +201,21 @@ interface OnboardingActions {
     fun onLogin()
 
     fun onStartDemo()
+
+    /** "Continue" on the connected step: starts the first sync. */
+    fun onContinueAfterLogin()
+
+    /** "Try again" after the first sync failed. */
+    fun onRetryFirstSync()
+
+    /**
+     * "Continue in the background" while the first sync runs, or "Continue anyway" after it
+     * failed: the intro ends and the sync goes on (or is retried) in the background.
+     */
+    fun onContinueFirstSyncInBackground()
+
+    /** "Done" on the battery tip. */
+    fun onBatteryTipDone()
 }
 
 /**
@@ -130,5 +224,8 @@ interface OnboardingActions {
  * @property defaultServerUrl pre-fills the server field. Empty in every build unless the
  *   sideload build sets the Gradle property `tandem.defaultServerUrl` (plan 4.5: no server
  *   address is hard-coded in the app).
+ * @property showBatteryTip show the battery optimisation tip after the first sync: true on
+ *   Samsung devices, whose battery optimisation stops background work more often (plan 6.2,
+ *   open question 13).
  */
-data class OnboardingConfig(val defaultServerUrl: String = "")
+data class OnboardingConfig(val defaultServerUrl: String = "", val showBatteryTip: Boolean = false)

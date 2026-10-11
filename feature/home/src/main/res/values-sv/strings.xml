@@ -1,6 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="home_title">Idag</string>
-    <string name="home_placeholder_title">Idag är på väg</string>
-    <string name="home_placeholder_body">Kvällens middag från matsedeln, ofta lagade och nya recept kommer i Tandem 0.1.</string>
+
+    <string name="home_greeting_morning">God morgon</string>
+    <string name="home_greeting_day">Hej</string>
+    <string name="home_greeting_evening">God kväll</string>
+
+    <string name="home_tonight">Ikväll</string>
+    <string name="home_also_today">Också idag</string>
+    <string name="home_tomorrow">Imorgon</string>
+    <string name="home_meal_label">%1$s · %2$s</string>
+    <string name="home_open_recipe">Öppna receptet</string>
+    <string name="home_meal_without_recipe">Inget recept kopplat</string>
+    <string name="home_minutes">%1$d min</string>
+    <string name="home_hours">%1$d tim</string>
+    <string name="home_hours_minutes">%1$d tim %2$d min</string>
+    <plurals name="home_servings">
+        <item quantity="one">%1$s portion</item>
+        <item quantity="other">%1$s portioner</item>
+    </plurals>
+
+    <string name="home_nothing_planned_title">Inget planerat idag</string>
+    <string name="home_nothing_planned_body">Planera veckan i Tandoor så syns kvällens middag här.</string>
+    <string name="home_plan_week">Planera veckan</string>
+    <string name="home_browse_recipes">Bläddra bland recept</string>
+    <string name="home_empty_sections">Recept ni lagar ofta, nya recept och de du har tittat på visas här efter första synkningen.</string>
+
+    <string name="home_section_pinned">Fästa recept</string>
+    <string name="home_section_pinned_subtitle">Sparade i enheten</string>
+    <string name="home_section_often_cooked">Ofta lagade</string>
+    <string name="home_section_often_cooked_subtitle">Hushållets favoriter</string>
+    <string name="home_section_new">Nya</string>
+    <string name="home_section_new_subtitle">Nyligen tillagda i Tandoor</string>
+    <string name="home_section_recently_viewed">Nyligen visade</string>
+    <string name="home_section_recently_viewed_subtitle">Öppnade de senaste två veckorna</string>
+    <string name="home_section_not_cooked_lately">Inte lagat på länge</string>
+    <string name="home_section_not_cooked_lately_subtitle">Dags för en gammal favorit?</string>
+    <string name="home_all_recipes">Alla recept</string>
+
+    <string name="home_sync_last">Senast synkad med Tandoor %1$s</string>
+    <string name="home_sync_never">Inte synkad med Tandoor än</string>
+    <string name="home_sync_running">Synkar med Tandoor…</string>
+    <string name="home_sync_now">Synka nu</string>
+    <string name="home_refresh_failed">Kunde inte uppdatera. Visar det som sparats i enheten.</string>
 </resources>

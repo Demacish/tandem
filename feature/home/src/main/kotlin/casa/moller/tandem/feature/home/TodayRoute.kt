@@ -1,24 +1,16 @@
 package casa.moller.tandem.feature.home
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
-import casa.moller.tandem.core.designsystem.icon.TandemIcons
-import casa.moller.tandem.core.designsystem.theme.TandemTheme
-import casa.moller.tandem.core.ui.EmptyState
-import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
-import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
+import androidx.compose.ui.platform.LocalResources
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import casa.moller.tandem.feature.home.ui.TodayScreen
 
 /**
  * The Today tab (plan 6.2 "Idag"): tonight and tomorrow from the meal plan, the carousels, and
@@ -28,42 +20,44 @@ import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
  * @param onOpenRecipe opens a recipe's detail (full screen on phones, beside the rail on tablets).
  * @param onOpenRecipes switches to the Recipes tab (e.g. "All recipes" after a carousel).
  * @param onOpenWeek switches to the Week tab ("Plan the week", Phase 2 content).
+ * @param viewModel injected by Hilt; tests pass one with fake repositories.
  *
- * PLACEHOLDER (grund lane): the UI lane replaces the body (ViewModel on core:data's
- * HomeRepository) and keeps this signature. Phase 1b adds `onStartCooking`.
+ * Phase 1b adds `onStartCooking`.
  */
 @Composable
-fun TodayRoute(onOpenRecipe: (recipeId: Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit, modifier: Modifier = Modifier) {
-    val spacing = TandemTheme.spacing
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TandemTopAppBar(
-                title = stringResource(R.string.home_title),
-                actions = { AppChromeStatusChip(Modifier.padding(end = spacing.md)) },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = spacing.screenHorizontal),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            AppChromeDemoBanner(
-                Modifier
-                    .padding(top = spacing.sm)
-                    .widthIn(max = TandemTheme.sizes.maxReadingWidth),
-            )
-            EmptyState(
-                icon = TandemIcons.Today,
-                title = stringResource(R.string.home_placeholder_title),
-                body = stringResource(R.string.home_placeholder_body),
-                modifier = Modifier.fillMaxWidth(),
-            )
+fun TodayRoute(
+    onOpenRecipe: (recipeId: Long) -> Unit,
+    onOpenRecipes: () -> Unit,
+    onOpenWeek: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    val currentOpenRecipe by rememberUpdatedState(onOpenRecipe)
+    val currentOpenRecipes by rememberUpdatedState(onOpenRecipes)
+    val currentOpenWeek by rememberUpdatedState(onOpenWeek)
+
+    LaunchedEffect(viewModel, resources) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is HomeEffect.RefreshFailed -> snackbarHostState.showSnackbar(resources.getString(R.string.home_refresh_failed))
+            }
         }
     }
+
+    TodayScreen(
+        state = state,
+        onAction = { action ->
+            when (action) {
+                is HomeAction.OpenRecipe -> currentOpenRecipe(action.recipeId)
+                HomeAction.OpenRecipes -> currentOpenRecipes()
+                HomeAction.OpenWeek -> currentOpenWeek()
+                HomeAction.Refresh -> viewModel.onAction(action)
+            }
+        },
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+    )
 }
