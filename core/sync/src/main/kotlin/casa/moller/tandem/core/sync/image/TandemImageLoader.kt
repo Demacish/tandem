@@ -12,7 +12,7 @@ import java.io.File
 
 /**
  * The app's one Coil [ImageLoader] (plan 5.1 "Bilder"), installed as Coil's singleton at app
- * start (`SyncStarter`), so every `AsyncImage` uses it:
+ * start (`SyncStarter`, `SingletonImageLoader.setSafe`), so every `AsyncImage` uses it:
  *
  * - network images only through [AccountImageCallFactory] (Coil's own default OkHttp client is
  *   switched off with the service loader, so no image request bypasses the limits);
@@ -26,7 +26,7 @@ internal object TandemImageLoader {
     private const val MEMORY_CACHE_PERCENT = 0.2
 
     fun build(context: Context, callFactory: AccountImageCallFactory): ImageLoader = ImageLoader.Builder(context)
-        .components { add(OkHttpNetworkFetcherFactory(callFactory = callFactory)) }
+        .components { add(OkHttpNetworkFetcherFactory(callFactory = { callFactory })) }
         .serviceLoaderEnabled(false)
         .memoryCache { MemoryCache.Builder().maxSizePercent(context, MEMORY_CACHE_PERCENT).build() }
         .diskCache {

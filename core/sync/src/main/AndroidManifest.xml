@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ConnectivityMonitor: whether a network is available (offline first, plan 3.5). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!--
+        The "Server" channel's notice when Tandoor's version changed (plan B18). Only declared
+        here; the app asks for it at runtime and posts nothing unless the user allowed it (the
+        in-app banner is shown either way).
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+</manifest>

@@ -5,6 +5,9 @@ import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.WritePolicy
 import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.capabilities.TandoorVersionTable
+import casa.moller.tandem.core.network.http.TokenProvider
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 
 /**
  * Where the repositories read and write right now (plan 5.3, 6.2): nothing, the demo database, or
@@ -49,10 +52,6 @@ internal sealed interface ActiveSource {
         val baseUrl: String
             get() = api.baseUrl
 
-        /** Identifies the account and its token: a new login (new token) clears an auth pause. */
-        val authKey: String
-            get() = account.id + "|" + account.tokenId
-
         /**
          * What happens to queued changes (plan 3.6): tested versions send, untested ones in the
          * supported range wait (safe mode), anything outside the range never sends.
@@ -73,3 +72,27 @@ internal val ActiveSource.identity: String
         ActiveSource.Demo -> "demo"
         is ActiveSource.Remote -> "remote:" + accountId + "|" + baseUrl
     }
+
+/**
+ * The [ActiveSource] the repositories and the sync use (implemented by [ActiveSourceProvider];
+ * tests drive it directly).
+ */
+internal interface ActiveSources {
+    /** The current source; [ActiveSource.Loading] until the session is known. */
+    val source: StateFlow<ActiveSource>
+
+    /** The current source once the session is known. */
+    suspend fun current(): ActiveSource = source.first { it != ActiveSource.Loading }
+
+    /**
+     * A fingerprint (hash) of the token the account's requests carry right now, null when none
+     * is loaded. Never the token itself; used to notice that a new login replaced a rejected token.
+     */
+    fun tokenFingerprint(accountId: String): Int?
+
+    /** Reads the account's token from encrypted storage again (after a login on the same account). */
+    suspend fun reloadToken(accountId: String)
+
+    /** The account's in-memory token for OkHttp (also for its image client); null when none is loaded. */
+    fun tokenProvider(accountId: String): TokenProvider
+}

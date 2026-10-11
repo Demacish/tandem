@@ -17,14 +17,18 @@ import javax.inject.Singleton
 /**
  * Posts "Tandoor was updated" in the notification channel "Server" (plan B18), only when the user
  * allowed notifications ([VersionNotificationPolicy.shouldPost]). Tapping it opens the app.
+ * Without the permission nothing is posted; the app's safe mode banner is the notice then.
  */
 @Singleton
-internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationContext private val context: Context) : VersionChangeNotifier {
+internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationContext private val context: Context) :
+    VersionChangeNotifier {
 
     override fun onVersionChanged(change: ServerVersionChange) {
         val manager = NotificationManagerCompat.from(context)
-        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (!VersionNotificationPolicy.shouldPost(granted, manager.areNotificationsEnabled())) return
+        val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+        if (permission != PackageManager.PERMISSION_GRANTED) return
+        val enabled = manager.areNotificationsEnabled()
+        if (!VersionNotificationPolicy.shouldPost(permissionGranted = true, notificationsEnabled = enabled)) return
         manager.createNotificationChannel(
             NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
                 .setName(context.getString(R.string.sync_notification_channel_server))
@@ -59,6 +63,7 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
     }
 
     private companion object {
+        /** The channel "Server" (plan B18). */
         const val CHANNEL_ID = "server"
         const val NOTIFICATION_ID = 1001
     }

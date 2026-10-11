@@ -162,6 +162,10 @@ dependencies {
     implementation(projects.feature.recipes)
     implementation(projects.feature.home)
     implementation(projects.feature.cook)
+    // --- sync lane (Phase 1): WorkManager runs core:sync's @HiltWorker workers through the
+    // HiltWorkerFactory that TandemApplication provides (Configuration.Provider). ---
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)

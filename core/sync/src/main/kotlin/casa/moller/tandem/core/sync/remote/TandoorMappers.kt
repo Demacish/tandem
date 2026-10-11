@@ -15,10 +15,13 @@ import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.MeasurementUnit
 import casa.moller.tandem.core.model.recipe.NutritionPresence
 import casa.moller.tandem.core.model.recipe.Recipe
-import casa.moller.tandem.core.model.recipe.RecipeOverview
+import casa.moller.tandem.core.model.recipe.RecipeQuery
+import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.model.recipe.Step
 import casa.moller.tandem.core.model.recipe.StepRecipeRef
 import casa.moller.tandem.core.model.recipe.UnitConversion
+import casa.moller.tandem.core.network.api.RecipeListQuery
+import casa.moller.tandem.core.network.api.RecipeSortOrder
 import casa.moller.tandem.core.network.dto.CookLogDto
 import casa.moller.tandem.core.network.dto.FoodDto
 import casa.moller.tandem.core.network.dto.IngredientDto
@@ -32,6 +35,7 @@ import casa.moller.tandem.core.network.dto.StepDto
 import casa.moller.tandem.core.network.dto.UnitDto
 import casa.moller.tandem.core.network.dto.UserPreferenceDto
 import casa.moller.tandem.core.network.json.TandoorDates
+import kotlin.math.floor
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.JsonObject
@@ -91,26 +95,9 @@ internal fun RecipeOverviewDto.toOverviewWrite(accountId: String, images: ImageR
             createdAtEpochMillis = tandoorMillis(createdAt),
             updatedAtEpochMillis = tandoorMillis(updatedAt),
         ),
-        keywords = keywords.mapNotNull { keyword -> keyword.id?.let { KeywordEntity(accountId = accountId, id = it, name = keyword.label) } },
-    )
-}
-
-/** One `recipe/` list result as core:model's overview (local state unknown here). */
-internal fun RecipeOverviewDto.toOverview(images: ImageResolver): RecipeOverview? {
-    val recipeId = id ?: return null
-    return RecipeOverview(
-        id = recipeId,
-        name = name,
-        description = description?.takeIf { it.isNotBlank() },
-        imageUrl = images.resolve(image),
-        workingMinutes = workingTime.coerceAtLeast(0),
-        waitingMinutes = waitingTime.coerceAtLeast(0),
-        rating = rating,
-        lastCooked = tandoorInstant(lastCooked),
-        keywords = keywords.mapNotNull { keyword -> keyword.id?.let { Keyword(id = it, name = keyword.label) } },
-        isNew = isNew,
-        isPrivate = isPrivate,
-        updatedAt = tandoorInstant(updatedAt),
+        keywords = keywords.mapNotNull { keyword ->
+            keyword.id?.let { KeywordEntity(accountId = accountId, id = it, name = keyword.label) }
+        },
     )
 }
 
@@ -214,7 +201,14 @@ internal fun FoodDto.toEntity(accountId: String): FoodEntity? {
 
 internal fun UnitDto.toEntity(accountId: String): UnitEntity? {
     val unitId = id ?: return null
-    return UnitEntity(accountId = accountId, id = unitId, name = name, pluralName = pluralName, description = description, baseUnit = baseUnit)
+    return UnitEntity(
+        accountId = accountId,
+        id = unitId,
+        name = name,
+        pluralName = pluralName,
+        description = description,
+        baseUnit = baseUnit,
+    )
 }
 
 internal fun MealTypeDto.toEntity(accountId: String): MealTypeEntity? {
@@ -278,5 +272,33 @@ internal data class CookStats(val recipeId: Long, val timesCooked: Int, val last
 internal fun List<CookLogDto>.toCookStats(): List<CookStats> = mapNotNull { log -> log.recipe?.let { recipeId -> recipeId to log } }
     .groupBy({ it.first }, { it.second })
     .map { (recipeId, logs) ->
-        CookStats(recipeId = recipeId, timesCooked = logs.size, lastCookedEpochMillis = logs.mapNotNull { tandoorMillis(it.createdAt) }.maxOrNull())
+        CookStats(
+            recipeId = recipeId,
+            timesCooked = logs.size,
+            lastCookedEpochMillis = logs.mapNotNull { tandoorMillis(it.createdAt) }.maxOrNull(),
+        )
     }
+
+// ---------------------------------------------------------------- recipe search
+
+/**
+ * The server side of a recipe list query (plan 3.3): text, keywords (all must match), rating and
+ * sort map to `GET /api/recipe/` filters; [RecipeQuery.maxTotalMinutes] and
+ * [RecipeQuery.onlyOffline] have no server filter and are applied locally afterwards. Sorting by
+ * times cooked uses `-lastcooked`, because `-times_cooked` answers 500 on 2.6 (FACTS "Fas 1 c").
+ */
+internal fun RecipeQuery.toListQuery(): RecipeListQuery = RecipeListQuery(
+    text = text.trim().takeIf { it.isNotEmpty() },
+    keywordsAnd = keywordIds,
+    ratingAtLeast = minRating?.let { floor(it).toInt() }?.coerceIn(0, MAX_RATING),
+    sortOrder = when (sort) {
+        RecipeSort.NAME -> RecipeSortOrder.NAME
+        RecipeSort.RATING -> RecipeSortOrder.RATING_DESC
+        RecipeSort.LAST_COOKED, RecipeSort.TIMES_COOKED -> RecipeSortOrder.LAST_COOKED_DESC
+        RecipeSort.NEWEST -> RecipeSortOrder.CREATED_DESC
+        RecipeSort.TOTAL_TIME -> null
+    },
+    pageSize = RecipeListQuery.MAX_PAGE_SIZE,
+)
+
+private const val MAX_RATING = 5

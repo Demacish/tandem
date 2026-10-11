@@ -138,6 +138,8 @@ androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", versi
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+# --- sync lane (Phase 1): the app-wide singleton ImageLoader (SingletonImageLoader lives in "coil"). ---
+coil-singleton = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
 # --- recept-ui lane: Custom Tabs ("Open on the web", recipe sources). ---
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 

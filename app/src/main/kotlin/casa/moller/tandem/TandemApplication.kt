@@ -3,20 +3,44 @@ package casa.moller.tandem
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import casa.moller.tandem.core.common.crash.CrashLogEnvironment
 import casa.moller.tandem.core.common.crash.CrashLogHandler
 import casa.moller.tandem.core.common.crash.CrashLogStore
+import casa.moller.tandem.core.sync.SyncStarter
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
+import javax.inject.Inject
 
 @HiltAndroidApp
-class TandemApplication : Application() {
+class TandemApplication :
+    Application(),
+    Configuration.Provider {
+
+    /** Creates the sync's @HiltWorker workers (core:sync); WorkManager starts on demand with it. */
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var syncStarter: SyncStarter
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
         // First thing in the process (before content providers, Hilt and every activity): the
         // local crash log (plan 4.2 p7). It only installs a handler here; the folder is resolved
         // and written only when a crash happens. Nothing is ever sent anywhere.
         CrashLogHandler.install(crashLogStore(this)) { crashLogEnvironment() }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Phase 1 data layer (core:sync): image loader, account mirror, periodic sync, and a sync
+        // request whenever the app comes to the foreground.
+        syncStarter.start()
     }
 
     companion object {

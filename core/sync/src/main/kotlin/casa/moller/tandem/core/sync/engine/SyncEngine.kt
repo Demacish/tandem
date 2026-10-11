@@ -1,0 +1,523 @@
+package casa.moller.tandem.core.sync.engine
+
+import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.database.TandemDatabase
+import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.SyncStateEntity
+import casa.moller.tandem.core.database.mapper.toEntity
+import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.home.HomeSectionType
+import casa.moller.tandem.core.model.sync.SyncPhase
+import casa.moller.tandem.core.model.sync.SyncProgress
+import casa.moller.tandem.core.model.sync.SyncReason
+import casa.moller.tandem.core.network.api.RecipeListQuery
+import casa.moller.tandem.core.network.api.RecipeSortOrder
+import casa.moller.tandem.core.network.api.TandoorApi
+import casa.moller.tandem.core.network.api.list
+import casa.moller.tandem.core.network.dto.PageDto
+import casa.moller.tandem.core.network.paging.PagedResult
+import casa.moller.tandem.core.network.paging.Paginator
+import casa.moller.tandem.core.sync.SyncSchedule
+import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
+import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.image.ImagePrefetcher
+import casa.moller.tandem.core.sync.platform.NetworkStatus
+import casa.moller.tandem.core.sync.platform.SyncClock
+import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.remote.ImageResolver
+import casa.moller.tandem.core.sync.remote.RemoteCaller
+import casa.moller.tandem.core.sync.remote.toCookStats
+import casa.moller.tandem.core.sync.remote.toEntity
+import casa.moller.tandem.core.sync.remote.toIndexEntry
+import casa.moller.tandem.core.sync.remote.toModel
+import casa.moller.tandem.core.sync.remote.toOverviewWrite
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.transformWhile
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+
+/**
+ * What the engine is doing, for `SyncStatus`.
+ *
+ * @property running a sync run is in progress.
+ * @property progress its current step, null when idle.
+ * @property lastError why the last run failed, null after a successful one.
+ */
+internal data class EngineState(val running: Boolean = false, val progress: SyncProgress? = null, val lastError: TandemError? = null)
+
+/**
+ * The sync of the active account (plan 3.5 "Synkstrategi", 3.6, 4.1, 5.3): Room is the single
+ * source of truth, and a run brings it up to date with the server in this order:
+ *
+ * 1. **Server check** (periodic runs; start and resume are checked by the shell): version and
+ *    capabilities, at most every 15 minutes.
+ * 2. **Small tables** (keywords, foods, units, meal types, user preferences, cook statistics from
+ *    the cook log): full relist, at most every hour on start/resume/refresh and every 6 hours in
+ *    the periodic sync.
+ * 3. **Recipe index** (`recipe/flat`, deletions) and **overviews** (`recipe/` pages of 100 with
+ *    `updatedon_gte` = last sync day minus one day; all of them on the first sync): at most every
+ *    hour, always on the first sync and on pull to refresh.
+ * 4. **Meal plan** (-14..+42 days) and **Today's carousels** (plan 3.3 queries): every 15 minutes.
+ * 5. **Details** of pinned (older than 24 h), planned (yesterday..+7) and recently viewed recipes
+ *    (missing ones): at most [SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN] per run, 2 at a time with a
+ *    pause, then their **images** into the disk cache.
+ * 6. **Outbox** ([OutboxSender]).
+ *
+ * Only one run at a time ([run] waits for a running one). Every request passes [SyncGuard]; a run
+ * stops as soon as the guard closes (unauthorized, blocked, breaker or, for background runs, an
+ * import) or the active account changes. Failures of steps 2, 4 and 5 keep the stored data and
+ * do not fail the run; a failed index (step 3) does.
+ */
+@Singleton
+internal class SyncEngine @Inject constructor(
+    private val sources: ActiveSources,
+    private val databases: TandemDatabaseFactory,
+    private val caller: RemoteCaller,
+    private val details: DetailFetcher,
+    private val images: ImagePrefetcher,
+    private val outbox: OutboxSender,
+    private val serverStatus: DefaultServerStatusRepository,
+    private val scheduler: SyncScheduler,
+    private val guard: SyncGuard,
+    private val network: NetworkStatus,
+    private val clock: SyncClock,
+    @ApplicationScope private val scope: CoroutineScope,
+) {
+    private val mutex = Mutex()
+    private val homeMutex = Mutex()
+    private val mutableState = MutableStateFlow(EngineState())
+    private val firstSyncLock = Any()
+    private var firstSyncAttempt: MutableStateFlow<SyncProgress>? = null
+    private val prefetchedImages: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /** The engine's state for `SyncStatus`. */
+    val state: StateFlow<EngineState> = mutableState.asStateFlow()
+
+    /**
+     * The first sync after a login (plan 6.2 "Efter inloggning"): starts one run in the
+     * application scope (or joins the running attempt) and streams its progress until DONE or
+     * FAILED. Cancelling the collector does not cancel the run.
+     */
+    fun firstSync(): Flow<SyncProgress> {
+        val attempt = synchronized(firstSyncLock) {
+            firstSyncAttempt?.takeIf { !it.value.isFinished } ?: MutableStateFlow(SyncProgress(SyncPhase.SERVER_CHECK)).also { flow ->
+                firstSyncAttempt = flow
+                scope.launch { flow.value = run(SyncReason.FIRST_SYNC) { progress -> flow.value = progress } }
+            }
+        }
+        return attempt.transformWhile { progress ->
+            emit(progress)
+            !progress.isFinished
+        }
+    }
+
+    /**
+     * Runs one sync of the active account and returns how it ended (DONE or FAILED). Without a
+     * logged-in account there is nothing to do (DONE). Never throws except for cancellation.
+     */
+    suspend fun run(reason: SyncReason, onProgress: (SyncProgress) -> Unit = {}): SyncProgress {
+        val remote = sources.current() as? ActiveSource.Remote ?: return SyncProgress(SyncPhase.DONE)
+        return mutex.withLock {
+            val run = SyncRun(remote, reason, onProgress)
+            mutableState.update { it.copy(running = true, progress = SyncProgress(SyncPhase.SERVER_CHECK)) }
+            var result = SyncProgress(SyncPhase.FAILED, error = TandemError.Unknown(CANCELLED))
+            try {
+                result = try {
+                    run.execute()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    SyncProgress(SyncPhase.FAILED, error = TandemError.Unknown(e.javaClass.name))
+                }
+            } finally {
+                val failed = result.phase == SyncPhase.FAILED
+                mutableState.update { EngineState(running = false, progress = null, lastError = if (failed) result.error else null) }
+            }
+            result
+        }
+    }
+
+    /**
+     * Today's pull to refresh and first display (`HomeRepository.refresh`): the meal plan window
+     * and the carousels, at most every [SyncSchedule.HOME_MIN_INTERVAL].
+     */
+    suspend fun refreshHome(remote: ActiveSource.Remote): Outcome<Unit> = homeMutex.withLock {
+        catchingUnexpected {
+            if (!network.online.value) return@catchingUnexpected Outcome.Failure(TandemError.NetworkUnavailable)
+            val run = SyncRun(remote, SyncReason.USER_REFRESH) {}
+            if (!run.isDue(SyncKeys.HOME, SyncSchedule.HOME_MIN_INTERVAL, always = false)) return@catchingUnexpected Outcome.Success(Unit)
+            run.syncMealPlanAndHome()
+        }
+    }
+
+    /** One sync run for [remote]; holds the run's settings so the steps stay short. */
+    private inner class SyncRun(
+        private val remote: ActiveSource.Remote,
+        private val reason: SyncReason,
+        private val onProgress: (SyncProgress) -> Unit,
+    ) {
+        private val accountId = remote.accountId
+        private val database: TandemDatabase = databases.get(remote.kind)
+        private val imageResolver = ImageResolver.forBaseUrl(remote.baseUrl)
+
+        /** Requests the user did not start may be held back by the breaker and imports. */
+        private val background = reason != SyncReason.FIRST_SYNC && reason != SyncReason.USER_REFRESH
+
+        /** Steps that ignore their "at most every ..." limit for this run. */
+        private val forced = reason == SyncReason.FIRST_SYNC || reason == SyncReason.ACCOUNT_CHANGED || reason == SyncReason.USER_REFRESH
+
+        suspend fun execute(): SyncProgress {
+            openGate()?.let { return failed(it) }
+
+            progress(SyncPhase.SERVER_CHECK)
+            if (reason == SyncReason.PERIODIC) serverStatus.refresh(force = false)
+            serverStatus.ensureCapabilities(remote)
+            stopReason()?.let { return failed(it) }
+
+            val referenceInterval = if (reason == SyncReason.PERIODIC) {
+                SyncSchedule.REFERENCE_DATA_INTERVAL
+            } else {
+                SyncSchedule.REFERENCE_DATA_MIN_INTERVAL
+            }
+            val referenceForced = reason == SyncReason.FIRST_SYNC || reason == SyncReason.ACCOUNT_CHANGED
+            val referenceDue = isDue(SyncKeys.REFERENCE_DATA, referenceInterval, referenceForced)
+            if (referenceDue) {
+                progress(SyncPhase.REFERENCE_DATA)
+                syncReferenceData()
+            }
+            stopReason()?.let { return failed(it) }
+
+            if (isDue(SyncKeys.RECIPE_INDEX, SyncSchedule.RECIPE_INDEX_MIN_INTERVAL, forced)) {
+                progress(SyncPhase.RECIPE_INDEX)
+                val index = syncIndex()
+                if (index is Outcome.Failure) return failed(stopReason() ?: index.error)
+            }
+            if (referenceDue) {
+                // After the index, so the counts reach recipes stored by this run too.
+                syncCookStatistics()
+                markDone(SyncKeys.REFERENCE_DATA)
+            }
+            stopReason()?.let { return failed(it) }
+
+            if (isDue(SyncKeys.HOME, SyncSchedule.HOME_INTERVAL, forced)) {
+                progress(SyncPhase.MEAL_PLAN)
+                syncMealPlanAndHome()
+            }
+            stopReason()?.let { return failed(it) }
+
+            prefetchDetails()
+            stopReason()?.let { return failed(it) }
+            prefetchImages()
+
+            progress(SyncPhase.OUTBOX)
+            if (outbox.drain(remote) == DrainResult.RETRY) scheduler.scheduleOutbox()
+
+            markDone(SyncKeys.LAST_SUCCESS)
+            return SyncProgress(SyncPhase.DONE).also { onProgress(it) }
+        }
+
+        // ------------------------------------------------------------ gate and bookkeeping
+
+        /** Checks whether this run may start at all; a new login lifts an unauthorized pause. */
+        private suspend fun openGate(): TandemError? {
+            if (!network.online.value) return TandemError.NetworkUnavailable
+            if (guard.state.value.unauthorizedAccount == accountId) {
+                sources.reloadToken(accountId)
+                guard.liftUnauthorizedIfTokenChanged(accountId, sources.tokenFingerprint(accountId))
+            }
+            return guard.check(accountId, background)
+        }
+
+        /** Why the run must stop now, or null to go on. */
+        fun stopReason(): TandemError? {
+            if (sources.source.value.identity != remote.identity) return TandemError.Unknown(SOURCE_CHANGED)
+            return guard.check(accountId, background)
+        }
+
+        private fun failed(error: TandemError): SyncProgress = SyncProgress(SyncPhase.FAILED, error = error).also { onProgress(it) }
+
+        private fun progress(phase: SyncPhase, done: Int = 0, total: Int? = null) {
+            val progress = SyncProgress(phase, done, total)
+            mutableState.update { it.copy(progress = progress) }
+            onProgress(progress)
+        }
+
+        private suspend fun syncState(key: String): SyncStateEntity? = database.syncStateDao().get(accountId, key)
+
+        private suspend fun updateSyncState(key: String, transform: (SyncStateEntity) -> SyncStateEntity) {
+            val current = syncState(key) ?: SyncStateEntity(accountId = accountId, entity = key)
+            database.syncStateDao().upsert(transform(current))
+        }
+
+        private suspend fun markDone(key: String) {
+            val now = clock.nowMillis()
+            updateSyncState(key) { it.copy(lastFullRelistEpochMillis = now) }
+        }
+
+        /** True when the step [key] last finished at least [interval] ago (or never), or [always]. */
+        suspend fun isDue(key: String, interval: Duration, always: Boolean): Boolean {
+            if (always) return true
+            val last = syncState(key)?.lastFullRelistEpochMillis ?: return true
+            return clock.nowMillis() - last >= interval.inWholeMilliseconds
+        }
+
+        /** Every page of a list (page 1 without `page`), as one guarded call. */
+        private suspend fun <T> fetchAll(fetch: suspend TandoorApi.(page: Int?) -> PageDto<T>): Outcome<PagedResult<T>> =
+            caller.call(remote, background) {
+                val api = this
+                Paginator.fetchAll { page -> api.fetch(page.takeIf { it > 1 }) }
+            }
+
+        // ------------------------------------------------------------ 2. small tables
+
+        private suspend fun syncReferenceData() {
+            val recipeDao = database.recipeDao()
+            val reference = database.referenceDao()
+            val keywords = fetchAll { page -> taxonomy.keywords(page) }
+            if (keywords is Outcome.Success && keywords.value.complete) {
+                val rows = keywords.value.items.mapNotNull { it.toEntity(accountId) }
+                val hash = rows.sortedBy { it.id }.hashCode().toString()
+                if (syncState(SyncKeys.KEYWORDS)?.hash != hash) {
+                    recipeDao.replaceKeywords(accountId, rows)
+                    updateSyncState(SyncKeys.KEYWORDS) { it.copy(hash = hash) }
+                }
+            }
+            if (stopReason() != null) return
+            val foods = fetchAll { page -> taxonomy.foods(page) }
+            if (foods is Outcome.Success && foods.value.complete) {
+                reference.replaceFoods(accountId, foods.value.items.mapNotNull { it.toEntity(accountId) })
+            }
+            if (stopReason() != null) return
+            val units = fetchAll { page -> taxonomy.units(page) }
+            if (units is Outcome.Success && units.value.complete) {
+                reference.replaceUnits(accountId, units.value.items.mapNotNull { it.toEntity(accountId) })
+            }
+            if (stopReason() != null) return
+            val mealTypes = fetchAll { page -> taxonomy.mealTypes(page) }
+            if (mealTypes is Outcome.Success && mealTypes.value.complete) {
+                reference.replaceMealTypes(accountId, mealTypes.value.items.mapNotNull { it.toEntity(accountId) })
+            }
+            if (stopReason() != null) return
+            val userPreferences = caller.call(remote, background) { preferences.userPreferences() }
+            if (userPreferences is Outcome.Success) {
+                val own = userPreferences.value.firstOrNull()
+                if (own != null) reference.upsertUserPreference(own.toModel().toEntity(accountId, clock.nowMillis()))
+            }
+        }
+
+        /**
+         * Times cooked and last cooked, counted from the cook log (FACTS "Fas 1 c": `last_cooked`
+         * is always null and `-times_cooked` answers 500 on 2.6).
+         */
+        private suspend fun syncCookStatistics() {
+            val recipeDao = database.recipeDao()
+            val cookLog = fetchAll { page -> logs.cookLogs(recipe = null, page = page) }
+            if (cookLog is Outcome.Success && cookLog.value.complete) {
+                val known = recipeDao.getRecipeIds(accountId).toHashSet()
+                cookLog.value.items.toCookStats()
+                    .filter { it.recipeId in known }
+                    .forEach { recipeDao.setCookStats(accountId, it.recipeId, it.lastCookedEpochMillis, it.timesCooked) }
+            }
+        }
+
+        // ------------------------------------------------------------ 3. index and overviews
+
+        private suspend fun syncIndex(): Outcome<Unit> {
+            val flat = when (val result = caller.call(remote, background) { recipes.flat() }) {
+                is Outcome.Failure -> return result
+                is Outcome.Success -> result.value
+            }
+            val entries = flat.mapNotNull { it.toIndexEntry(imageResolver) }
+            progress(SyncPhase.RECIPE_INDEX, done = 0, total = entries.size)
+            val change = database.recipeDao().applyIndex(accountId, entries)
+            if (stopReason() != null) return Outcome.Success(Unit)
+
+            val since = syncState(SyncKeys.RECIPES)?.lastDate
+                ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+                ?.minus(1, DateTimeUnit.DAY)
+            val startedOn = clock.today()
+            val first = fetchOverviews(since, entries.size)
+            val firstIds = (first as? Outcome.Success)?.value
+            val missed = since != null && firstIds != null && change.inserted.any { it !in firstIds }
+            // A recipe became visible without being changed (e.g. shared): read every overview.
+            val fetched = if (missed) fetchOverviews(since = null, total = entries.size) else first
+            if (fetched is Outcome.Failure) return fetched
+            updateSyncState(SyncKeys.RECIPES) { it.copy(lastDate = startedOn.toString()) }
+            markDone(SyncKeys.RECIPE_INDEX)
+            return Outcome.Success(Unit)
+        }
+
+        /** Reads overview pages (100 each) and stores each page in one transaction; returns the ids seen. */
+        private suspend fun fetchOverviews(since: LocalDate?, total: Int): Outcome<Set<Long>> {
+            val seen = HashSet<Long>()
+            val query = RecipeListQuery(updatedOnOrAfter = since, sortOrder = RecipeSortOrder.NAME)
+            val result = caller.call(remote, background) {
+                val api = this
+                Paginator.fetchAll { page ->
+                    api.recipes.list(query, page).also { response ->
+                        val writes = response.results.mapNotNull { it.toOverviewWrite(accountId, imageResolver) }
+                        database.recipeDao().upsertOverviews(accountId, writes)
+                        writes.forEach { seen += it.overview.serverId }
+                        if (since == null) progress(SyncPhase.RECIPE_INDEX, done = seen.size.coerceAtMost(total), total = total)
+                    }
+                }
+            }
+            return when (result) {
+                is Outcome.Failure -> result
+                is Outcome.Success -> Outcome.Success(seen)
+            }
+        }
+
+        // ------------------------------------------------------------ 4. meal plan and Today
+
+        suspend fun syncMealPlanAndHome(): Outcome<Unit> {
+            val today = clock.today()
+            val from = today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY)
+            val to = today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
+            val plan = fetchAll { page -> mealPlans.mealPlans(from, to, page) }
+            if (plan is Outcome.Success && plan.value.complete) {
+                val entries = plan.value.items
+                val plannedRecipes = entries.mapNotNull { it.recipe?.toOverviewWrite(accountId, imageResolver) }
+                database.recipeDao().upsertOverviews(accountId, plannedRecipes)
+                val rows = entries.mapNotNull { it.toEntity(accountId) }
+                database.mealPlanDao().replaceWindow(accountId, from.toString(), to.toString(), rows)
+                updateSyncState(SyncKeys.MEAL_PLAN) { it.copy(windowFrom = from.toString(), windowTo = to.toString()) }
+            }
+            if (stopReason() == null) syncHomeSections(today)
+            if (plan is Outcome.Failure) return plan
+            markDone(SyncKeys.HOME)
+            return Outcome.Success(Unit)
+        }
+
+        /** The carousel queries of plan 3.3, each one page; a failed query keeps its cached result. */
+        private suspend fun syncHomeSections(today: LocalDate) {
+            val size = SyncSchedule.HOME_SECTION_SIZE
+            val queries = listOf(
+                HomeSectionType.OFTEN_COOKED to RecipeListQuery(
+                    timesCookedAtLeast = 1,
+                    sortOrder = RecipeSortOrder.LAST_COOKED_DESC,
+                    pageSize = SyncSchedule.OFTEN_COOKED_CANDIDATES,
+                ),
+                // `new=true` only sorts new recipes first (FACTS "Fas 1 c"); the `new` flag filters.
+                HomeSectionType.NEW to RecipeListQuery(newFirst = true, pageSize = size),
+                HomeSectionType.RECENTLY_VIEWED to RecipeListQuery(
+                    viewedOnOrAfter = today.minus(SyncSchedule.RECENTLY_VIEWED_DAYS, DateTimeUnit.DAY),
+                    sortOrder = RecipeSortOrder.LAST_VIEWED_DESC,
+                    pageSize = size,
+                ),
+                HomeSectionType.NOT_COOKED_LATELY to RecipeListQuery(
+                    cookedOnOrBefore = today.minus(SyncSchedule.NOT_COOKED_LATELY_DAYS, DateTimeUnit.DAY),
+                    sortOrder = RecipeSortOrder.LAST_COOKED,
+                    pageSize = size,
+                ),
+            )
+            val recipeDao = database.recipeDao()
+            for ((type, query) in queries) {
+                if (stopReason() != null) return
+                val page = caller.call(remote, background) { recipes.list(query) }
+                if (page !is Outcome.Success) continue
+                val results = page.value.results
+                recipeDao.upsertOverviews(accountId, results.mapNotNull { it.toOverviewWrite(accountId, imageResolver) })
+                val inOrder = results.mapNotNull { it.id }.distinct()
+                val ids = when (type) {
+                    HomeSectionType.OFTEN_COOKED -> {
+                        // Server order (last cooked) for ties; the cook log's count first.
+                        val counts = recipeDao.getListItems(accountId, inOrder)
+                            .associate { it.overview.serverId to (it.overview.timesCooked ?: 0) }
+                        inOrder.sortedByDescending { counts[it] ?: 0 }
+                    }
+
+                    HomeSectionType.NEW -> results.filter { it.isNew }.mapNotNull { it.id }
+
+                    else -> inOrder
+                }
+                database.homeSectionDao().replaceSection(accountId, type, ids.take(size), clock.nowMillis())
+            }
+        }
+
+        // ------------------------------------------------------------ 5. details and images
+
+        private suspend fun plannedRecipeIds(): List<Long> {
+            val today = clock.today()
+            val from = today.minus(SyncSchedule.PLANNED_DAYS_BEFORE, DateTimeUnit.DAY).toString()
+            val to = today.plus(SyncSchedule.PLANNED_DAYS_AFTER, DateTimeUnit.DAY).toString()
+            return database.mealPlanDao().getRange(accountId, from, to).mapNotNull { it.entry.recipeId }.distinct()
+        }
+
+        private suspend fun prefetchDetails() {
+            val recipes = database.recipeDao()
+            val staleBefore = clock.nowMillis() - SyncSchedule.PINNED_DETAIL_MAX_AGE.inWholeMilliseconds
+            val pinned = recipes.getPinnedIdsToRefresh(accountId, staleBefore)
+            val planned = plannedRecipeIds().filter { id ->
+                val row = recipes.getDetailRow(accountId, id)
+                row?.rawJson == null || (row.fetchedAtEpochMillis ?: 0L) < staleBefore
+            }
+            val stored = recipes.getStoredDetailIds(accountId).toHashSet()
+            val viewedLocally = recipes.observeRecentlyViewedLocal(accountId, SyncSchedule.HOME_SECTION_SIZE).first()
+                .map { it.overview.serverId }
+            val viewedOnServer = database.homeSectionDao().observeSectionRows(accountId).first()
+                .filter { it.sectionType == HomeSectionType.RECENTLY_VIEWED }
+                .map { it.item.overview.serverId }
+            val viewed = (viewedLocally + viewedOnServer).filter { it !in stored }
+            // Only recipes the index knows: an id from stale data must not become a 404 (plan 4.1).
+            val known = recipes.getRecipeIds(accountId).toHashSet()
+            val ids = (pinned + planned + viewed).distinct()
+                .filter { it in known }
+                .take(SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN)
+            if (ids.isEmpty()) return
+            progress(SyncPhase.RECIPE_DETAILS, done = 0, total = ids.size)
+            val done = AtomicInteger()
+            coroutineScope {
+                ids.forEach { id ->
+                    launch {
+                        if (stopReason() != null) return@launch
+                        details.fetch(remote, id, isBackground = true)
+                        progress(SyncPhase.RECIPE_DETAILS, done = done.incrementAndGet(), total = ids.size)
+                    }
+                }
+            }
+        }
+
+        private suspend fun prefetchImages() {
+            val recipes = database.recipeDao()
+            val pinned = recipes.observePinned(accountId).first()
+            val planned = recipes.getListItems(accountId, plannedRecipeIds())
+            val urls = (pinned + planned).mapNotNull { it.overview.imageUrl }
+                .distinct()
+                .filter { it !in prefetchedImages }
+                .take(SyncSchedule.MAX_IMAGE_PREFETCH_PER_RUN)
+            if (urls.isEmpty() || (background && guard.state.value.importsRunning > 0)) return
+            progress(SyncPhase.IMAGES, done = 0, total = urls.size)
+            images.prefetch(urls)
+            prefetchedImages += urls
+        }
+    }
+
+    private companion object {
+        const val CANCELLED = "tandem.sync.cancelled"
+        const val SOURCE_CHANGED = "tandem.sync.source-changed"
+    }
+}

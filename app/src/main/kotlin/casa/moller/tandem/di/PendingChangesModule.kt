@@ -8,8 +8,8 @@ import dagger.hilt.components.SingletonComponent
 
 /**
  * The recovery screen's "Export pending changes" (feature #37) takes the outbox exporter as
- * `Optional<PendingChangesExporter>`: absent until the outbox implementation (sync lane) binds
- * one with `@Binds`, after which the export works without further changes here.
+ * `Optional<PendingChangesExporter>`. core:sync binds it (`RoomPendingChangesExporter`), so it
+ * is present in the app; the optional binding keeps the recovery screen independent of it.
  */
 @Module
 @InstallIn(SingletonComponent::class)

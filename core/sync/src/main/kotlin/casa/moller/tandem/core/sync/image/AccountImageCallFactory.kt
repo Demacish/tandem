@@ -3,7 +3,7 @@ package casa.moller.tandem.core.sync.image
 import casa.moller.tandem.core.network.di.TandoorImageHttpClient
 import casa.moller.tandem.core.network.image.TandoorImageClientFactory
 import casa.moller.tandem.core.sync.account.ActiveSource
-import casa.moller.tandem.core.sync.account.ActiveSourceProvider
+import casa.moller.tandem.core.sync.account.ActiveSources
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.Call
@@ -18,7 +18,7 @@ import okhttp3.Request
  */
 @Singleton
 internal class AccountImageCallFactory @Inject constructor(
-    private val sources: ActiveSourceProvider,
+    private val sources: ActiveSources,
     private val clients: TandoorImageClientFactory,
     @TandoorImageHttpClient private val anonymous: OkHttpClient,
 ) : Call.Factory {

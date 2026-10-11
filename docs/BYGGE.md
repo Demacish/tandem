@@ -182,9 +182,8 @@ exempeldata (`SampleRecipes`: svenska namn med å/ä/ö, bråk, rubrikrader, ste
 `MainDispatcherRule` och `TandoorFixtures`, som läser de inspelade svaren i
 `api-schema/fixtures/<version>/` från klassvägen. Används bara med `testImplementation`.
 
-Tills de riktiga implementationerna finns binder appen tillfälliga, tomma implementationer i
-`app/src/main/kotlin/casa/moller/tandem/di/TemporaryFas1DataModule.kt`. Den som binder de
-riktiga tar bort den filen i samma ändring (annars blir det en dubbel Hilt-bindning).
+De riktiga implementationerna ligger i `:core:sync` och binds i `core/sync/.../di/SyncModule.kt`
+(se "Synk" nedan); grundens tillfälliga `TemporaryFas1DataModule` är borttagen.
 
 ## Navigering
 
@@ -567,6 +566,61 @@ nyligen visade recept, två receptböcker, användarinställningar (bråk på) o
   (`TimerDetector`), samma struktur på båda språken, bilder på högst 70 kB och högst 1,2 MB
   totalt.
 <!-- /Fas 1 demo -->
+
+<!-- Fas 1 sync -->
+## Synk och offline (`:core:sync`, Fas 1)
+
+Room är den enda sanningskällan (plan 5.3). `:core:sync` implementerar alla Fas 1-gränssnitt i
+`:core:data` och binder dem med Hilt (`di/SyncModule.kt`): `OfflineFirstRecipeRepository`,
+`OfflineFirstHomeRepository`, `DefaultSyncRepository`, `DefaultPreferencesRepository`,
+`DefaultServerStatusRepository`, `RoomPendingChangesExporter` (återställningsskärmens export),
+`DefaultImportGate` och `DemoSeeder` (`DemoDataRepository`, "Återställ demodata"). Appen lägger
+bara till `HiltWorkerFactory` (`TandemApplication` är `Configuration.Provider`, WorkManagers
+standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()` i `onCreate`.
+
+- **Aktiv källa:** `ActiveSourceProvider` gör sessionen till `ActiveSource`: `Remote` (riktig
+  databas + kontots server), `Demo` (demodatabasen, aldrig nätverk) eller `None`. Alla flöden
+  byter källa när sessionen ändras; varje rad har kontots `account_id`.
+- **Synkkörning (`engine/SyncEngine`, plan 3.5):** serverkoll (bara i den periodiska synken;
+  start/återupptagning kollar skalet) → små tabeller (nyckelord, livsmedel, enheter,
+  måltidstyper, användarinställningar; högst 1/h vid start, var 6:e timme periodiskt) →
+  receptindex `recipe/flat` (raderingar) och översikter `recipe/` med 100 per sida och
+  `updatedon_gte` = senaste synkdag − 1 dag (allt vid första synken) → kokstatistik ur
+  `cook-log` → matsedel −14..+42 dagar och Idags karuseller (var 15:e minut) → detaljer för
+  fästa (äldre än 24 h), planerade (igår..+7) och nyligen visade recept, högst 40 per körning
+  och 2 åt gången med paus → bilder till diskcachen → outboxen. Dra-för-att-uppdatera och första
+  synken struntar i intervallen (utom de små tabellerna).
+- **Skydd (`guard/SyncGuard`, plan 4.1):** alla anrop går genom `RemoteCaller`. 401/JSON-403
+  stoppar kontots anrop tills en ny token laddas (outboxen behålls), 403 utan JSON pausar 5 min
+  och dubblar upp till 1 h, kretsbrytaren pausar bakgrundsanrop 5 min efter fler än 5 fel på
+  60 s eller 5 svar 404/400 på 100 s, och en import (`ImportGate.whileImporting`) pausar
+  bakgrunden. En JSON-403 på ett enskilt recept kontrolleras med ett billigt anrop innan den
+  räknas som utloggning (annans privata recept ger också 403).
+- **Detaljer (stale-while-revalidate):** `observeRecipe` visar den lagrade kopian direkt, hämtar
+  om den är äldre än 5 minuter (online) och visar `refreshing`. 404 tar bort receptet lokalt
+  (`isDeleted`). Rå JSON sparas i `recipe_detail`.
+- **Outbox (`engine/OutboxSender`):** Fas 1 köar bara `VIEW_LOG` (`markViewed`, sammanslagen per
+  recept). Säkert läge (otestad version) sätter raderna i PAUSED; 404 slängs, 400 blir FAILED,
+  recept som inte längre finns skickas aldrig.
+- **WorkManager (`work/`):** `tandem.sync.now` (`SyncWorker`, expedited, nätverkskrav; app-start,
+  återupptagning, dra-för-att-uppdatera, kontobyte), `tandem.sync.periodic`
+  (`PeriodicSyncWorker`, 15 min, nätverk och ej låg batterinivå) och `tandem.sync.outbox`
+  (`SyncOutboxWorker`, exponentiell backoff från 30 s). Taggar `tandem.sync` och
+  `tandem.outbox`. Arbetarnas klassnamn skyddas mot R8 i `core/sync/consumer-rules.pro`.
+- **Versionsbyte (plan B18):** `AccountMirror` speglar kontot i `server_account`. När
+  serverversionen skiljer sig från den sparade sänds `observeVersionChanges()` och en notis i
+  kanalen "Server" (bara med `POST_NOTIFICATIONS`; annars bara bannern).
+- **Utloggning:** ett konto som inte längre finns får alla sina rader borttagna; ett utgånget
+  token tar inte bort något. Inloggning på ett riktigt konto tömmer demodatabasen.
+- **Bilder:** en enda Coil-`ImageLoader` (Coils singleton) med kontots bildklient från
+  `:core:network` (token bara till kontots origin), 250 MB diskcache i `noBackupFilesDir`, och
+  `file:///android_asset/demo/...` för demobilderna.
+- **Tester** (Robolectric, Room i minnet, HTTPS-MockWebServer med fixturerna i
+  `api-schema/fixtures/2.6.13/fas1`): indexradering, `updatedon_gte`, intervall, SWR-ordning,
+  högst 2 parallella detaljhämtningar, outboxens sammanslagning, 404-kretsbrytare, säkert läge,
+  utloggning/kontoisolering, demoisolering och att alla demorecept renderas utan trasiga mallar.
+  `:smoke`s `FakeTandoor` svarar också på Fas 1-anropen så att första synken blir klar.
+<!-- /Fas 1 sync -->
 
 ## Backup och nätverk
 

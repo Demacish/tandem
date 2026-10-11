@@ -7,6 +7,7 @@ import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.ServerAccountEntity
 import casa.moller.tandem.core.datastore.SecureAccountStore
+import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.sync.demo.DemoSeeder
@@ -44,6 +45,7 @@ import kotlinx.coroutines.launch
 internal class AccountMirror @Inject constructor(
     private val sessions: SessionRepository,
     private val accountStore: SecureAccountStore,
+    private val health: StorageHealthMonitor,
     private val databases: TandemDatabaseFactory,
     private val demo: DemoSeeder,
     private val notifier: VersionChangeNotifier,
@@ -104,6 +106,8 @@ internal class AccountMirror @Inject constructor(
     }
 
     private suspend fun removeForgottenAccounts() {
+        // A store that was just reset reads as empty: never mistake that for a logout.
+        if (health.health.value.recoveryNeeded) return
         val known = accountStore.accounts.first().mapTo(HashSet()) { it.id }
         val mirrored = databases.get(DatabaseKind.REAL).accountDao().observeAll().first()
         for (row in mirrored) {

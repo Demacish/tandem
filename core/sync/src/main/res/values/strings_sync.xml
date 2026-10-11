@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channel for notices about the Tandoor server (plan B18). -->
+    <string name="sync_notification_channel_server">Server</string>
+    <string name="sync_notification_channel_server_description">Notices about your Tandoor server, such as a new version.</string>
+
+    <!-- The server's Tandoor version changed. %1$s = new version, %2$s = previous version, e.g. 2.6.15 and 2.6.13. -->
+    <string name="sync_notification_version_title">Tandoor was updated</string>
+    <string name="sync_notification_version_text">Your server now runs Tandoor %1$s (before: %2$s).</string>
+    <string name="sync_notification_version_safe_mode">Tandem has not been tested with this version yet. Reading works as usual; your changes wait until you choose to send them.</string>
+    <string name="sync_notification_version_writes_off">This version is newer than Tandem supports. Reading works; changes are not sent until Tandem is updated.</string>
+</resources>

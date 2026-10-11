@@ -18,8 +18,8 @@ import org.junit.rules.ExternalResource
 
 /**
  * A Tandoor 2.6.13 stand-in for the smoke test: an HTTPS MockWebServer on localhost that answers
- * the endpoints of the intro, the shell and logout with the sanitized recordings in
- * `api-schema/fixtures/2.6.13` (packaged as assets of this test APK).
+ * the endpoints of the intro, the shell, logout and the Phase 1 sync with the sanitized
+ * recordings in `api-schema/fixtures/2.6.13` (packaged as assets of this test APK).
  *
  * Its certificate is issued at runtime by the fixed, test-only CA in
  * `assets/tandem-smoke-test-ca.pem`, which only the app's `minified` build type trusts
@@ -110,6 +110,15 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             method == "GET" && USER_PATH.matches(path) -> fixture("11-user-by-id")
 
+            // --- Phase 1 (sync lane): the first sync and the background sync after a login read
+            // the recipe index, overviews, small tables, meal plan and cook log, and send view logs.
+            method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
+
+            method == "GET" && RECIPE_PATH.matches(path) ->
+                fixture(RECIPES_BY_ID[RECIPE_PATH.find(path)!!.groupValues[1]] ?: "fas1/recipe-deleted-get")
+
+            method == "POST" && path == "/api/view-log/" -> fixture("fas1/view-log-create")
+
             // Tandoor sends unknown paths to its login page (FACTS g).
             else -> fixture("29-not-found-unknown-path")
         }
@@ -148,6 +157,30 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private val TOKENS_BY_ID = mapOf("1" to LOGIN_TOKEN, "2" to DEVICE_TOKEN)
         private val ACCESS_TOKEN_PATH = Regex("^/api/access-token/(\\d+)/$")
         private val USER_PATH = Regex("^/api/user/\\d+/$")
+        private val RECIPE_PATH = Regex("^/api/recipe/(\\d+)/$")
+        private val PHASE1_LISTS = mapOf(
+            "/api/recipe/flat/" to "fas1/recipe-flat",
+            "/api/recipe/" to "fas1/recipe-list-default",
+            "/api/keyword/" to "fas1/keyword-list",
+            "/api/food/" to "fas1/food-list",
+            "/api/unit/" to "fas1/unit-list",
+            "/api/meal-type/" to "fas1/meal-type-list",
+            "/api/meal-plan/" to "fas1/meal-plan-list",
+            "/api/cook-log/" to "fas1/cook-log-list-recipe",
+        )
+        private val RECIPES_BY_ID = mapOf(
+            "1" to "fas1/recipe-pyttipanna",
+            "2" to "fas1/recipe-svamppasta",
+            "3" to "fas1/recipe-pannkakor",
+            "4" to "fas1/recipe-kanelbullar",
+            "5" to "fas1/recipe-kottbullar",
+            "6" to "fas1/recipe-shakshuka",
+            "7" to "fas1/recipe-artsoppa",
+            "8" to "fas1/recipe-gronsakssoppa",
+            "9" to "fas1/recipe-smorgastarta",
+            "10" to "fas1/recipe-appelkaka",
+            "11" to "fas1/recipe-rarakor",
+        )
         private val SKIPPED_HEADERS = setOf("content-length", "transfer-encoding", "connection")
         private val json = Json { ignoreUnknownKeys = true }
     }
