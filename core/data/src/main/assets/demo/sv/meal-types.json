@@ -1,0 +1,1 @@
+[{"id":1,"name":"Frukost","order":0,"time":"07:30:00","color":"#D97706","created_by":1},{"id":2,"name":"Lunch","order":1,"time":"12:00:00","color":"#4D7C0F","created_by":1},{"id":3,"name":"Middag","order":2,"time":"18:00:00","color":"#C2410C","created_by":1},{"id":4,"name":"Fika","order":3,"time":"15:00:00","color":"#8C5A3C","created_by":1}]

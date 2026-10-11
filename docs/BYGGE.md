@@ -526,6 +526,37 @@ det; features aldrig (`checkModuleGraph`).
   `used-endpoints.txt` och att varje rad där finns i OpenAPI-schemat.
 <!-- /Fas 1 network -->
 
+## Demoinnehåll (`:core:data`, Fas 1)
+
+Demoläget (plan 6.2) har inbyggd exempeldata i `core/data/src/main/assets/demo/` (se README.md
+där): 14 egna recept på svenska och engelska, nyckelord, måltidstyper, en matsedel för
+igår–nästa vecka, en kokhistorik (ger "Ofta lagade", "Inte lagat på länge" och betyg),
+nyligen visade recept, två receptböcker, användarinställningar (bråk på) och 14 bilder.
+
+- **Samma form som Tandoor 2.6.13.** Varje fil är ett riktigt API-svar (receptdetalj,
+  listelement, matsedel osv.), så demosessioner går genom samma DTO → modell → entitet-mappning
+  som en riktig server. `DemoContentTest` avkodar allt strikt med core:networks DTO:er och
+  jämför nycklarna med fixturerna i `api-schema/fixtures/2.6.13/fas1/`.
+- **`DemoContent`** (`casa.moller.tandem.core.data.demo`, en `@Singleton` via Hilt) läser
+  filerna: `recipes(locale, today)`, `recipe(id, locale, today)`, `recipeJson(…)`,
+  `recipeOverviews`, `recipeFlat`, `keywords`, `mealTypes`, `mealPlan(locale, today)`,
+  `cookLog(today)`, `viewLog(today)`, `recipeBooks`, `recipeBookEntries`,
+  `userPreferences(locale)`, `pinnedRecipeIds`, `imageUris`. Svenska för `sv`-locales, annars
+  engelska. Bara en laddare: synken kopplar in den som datakälla för demosessioner.
+- **Datum:** filerna är skrivna som om idag vore 2000-01-15 (`REFERENCE_DATE`, samma dag som
+  fixturerna). `DemoContent` flyttar alla `created_at`, `updated_at`, `from_date`, `to_date`
+  och `last_cooked` lika många dagar som det är till `today`. Resultatet är deterministiskt
+  för ett givet datum.
+- **Bilder** är `file:///android_asset/demo/images/<namn>.webp` (Coil läser dem ur APK:n). De
+  är inga Tandoor-media-URL:er och får inte gå genom `MediaUrls.resolve`.
+- **Ändra innehållet:** redigera `scripts/demo-content/demo_source.py` och kör
+  `python3 scripts/demo-content/generate_demo_content.py` (JSON) och vid behov
+  `python3 scripts/demo-content/build_images.py` (bilder; kräver Pillow med WebP och pycairo).
+  Checka in både källan och resultatet. Testerna kräver bl.a. en timer i varje steg med tid
+  (`TimerDetector`), samma struktur på båda språken, bilder på högst 70 kB och högst 1,2 MB
+  totalt.
+<!-- /Fas 1 demo -->
+
 ## Backup och nätverk
 
 - `android:allowBackup="false"` och `data_extraction_rules.xml` undantar alla domäner från både
