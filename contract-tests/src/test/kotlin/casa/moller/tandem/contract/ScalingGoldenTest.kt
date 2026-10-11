@@ -6,7 +6,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -22,8 +21,7 @@ class ScalingGoldenTest {
     @Test
     fun theReferenceReproducesEveryGoldenValue() {
         val goldenFile = File(fas1, "scaling-golden.json")
-        // TODO(kontrakt): turn into an assertion once the first golden table is committed.
-        assumeTrue(goldenFile.isFile, "missing $goldenFile")
+        assertTrue(goldenFile.isFile, "missing $goldenFile")
         val golden = json.decodeFromString(Golden.serializer(), goldenFile.readText())
         val decimals = golden.meta["ingredientDecimals"]?.toString()?.toInt() ?: error("meta.ingredientDecimals")
         assertTrue(golden.recipes.size >= MIN_RECIPES, "the golden table covers ${golden.recipes.size} recipes")

@@ -19,3 +19,26 @@ GET /api/space/current/
 # client (TandoorApi.users.user) but no login step depends on it.
 GET /api/user/{id}/
 GET /api/user-preference/
+
+# --- Fas 1: recipe index, search and details (plan 3.3, 3.5; FACTS "Fas 1") ---
+# recipe/flat is unpaginated with RELATIVE image paths; recipe/ and recipe/{id}/ return absolute
+# image URLs built from the request's Host and X-Forwarded-Proto.
+GET /api/recipe/
+GET /api/recipe/flat/
+GET /api/recipe/{id}/
+
+# --- Fas 1: small tables, read in full (plan 3.5) ---
+GET /api/keyword/
+GET /api/food/
+GET /api/unit/
+GET /api/recipe-book/
+GET /api/recipe-book-entry/
+
+# --- Fas 1: Today tab (read only in Fas 1) ---
+GET /api/meal-plan/
+GET /api/meal-type/
+
+# --- Fas 1: cook log and view log (sent through the outbox) ---
+GET /api/cook-log/
+POST /api/cook-log/
+POST /api/view-log/

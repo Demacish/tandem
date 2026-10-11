@@ -117,6 +117,17 @@ Kontraktstesterna i `:contract-tests` hoppas över om miljövariabeln `TANDOOR_U
 Ett eget arbetsflöde (`contract.yml`) startar en tillfällig Tandoor i Actions och sätter den.
 Peka aldrig `TANDOOR_URL` mot en produktionsserver.
 
+<!-- Fas 1 kontrakt -->
+Fas 1 (`Phase1ContractTest`) seedar samma tillfälliga server via API:t och spelar in
+`api-schema/fixtures/2.6.13/fas1/` (artefakten `contract-recordings-<tagg>`); fakta står i
+`api-schema/fixtures/2.6.13/FACTS.md` under "Fas 1". Skalningstabellen
+`fas1/scaling-golden.json` tas fram i `contract.yml` genom att köra Tandoors egen webbkod
+(utcheckad vid samma tagg, aldrig incheckad) med `contract-tests/web-scaling/golden.mjs`, som
+jämför med den incheckade filen. `ScalingGoldenTest` (körs i `ciTest`, utan server) räknar om
+tabellen med en oberoende Kotlin-implementation. Förnya fixturerna genom att ladda ned
+artefakten från en grön `contract.yml`-körning och ersätta mappen i samma ändring som testet.
+<!-- /Fas 1 kontrakt -->
+
 ## Release-röktest
 
 Enhetstester och Robolectric kör **ominifierad** kod och kan inte se fel i R8:s keep-regler.

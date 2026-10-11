@@ -1,0 +1,464 @@
+{
+  "name": "recipe-pannkakor",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/3/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 3,
+      "name": "Pannkakor",
+      "description": "",
+      "image": null,
+      "keywords": [
+        {
+          "id": 5,
+          "name": "Husmanskost",
+          "label": "Husmanskost",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+02:00",
+          "updated_at": "2000-01-15T00:00:00.000000+02:00",
+          "full_name": "Husmanskost"
+        }
+      ],
+      "steps": [
+        {
+          "id": 4,
+          "name": "",
+          "instruction": "Vispa ihop en smet och stek ungefär {{ scale(12) }} tunna pannkakor i {{ ingredients[4].unit }} {{ ingredients[4].food }}.",
+          "ingredients": [
+            {
+              "id": 10,
+              "food": {
+                "id": 18,
+                "name": "ägg",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "ägg",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 3.0,
+              "conversions": [],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 3,
+                  "name": "Pannkakor"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 11,
+              "food": {
+                "id": 19,
+                "name": "mjölk",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "mjölk",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 6.0,
+              "conversions": [
+                {
+                  "food": "mjölk",
+                  "unit": "dl",
+                  "amount": 6.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "ml",
+                  "amount": 600.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "cup",
+                  "amount": 2.53605
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "l",
+                  "amount": 0.6
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "msk",
+                  "amount": 40.5768
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "tsk",
+                  "amount": 121.73039999999999
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 3,
+                  "name": "Pannkakor"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 12,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vetemjöl",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.5,
+              "conversions": [
+                {
+                  "food": "vetemjöl",
+                  "unit": "dl",
+                  "amount": 2.5
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "ml",
+                  "amount": 250.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "g",
+                  "amount": 150.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "cup",
+                  "amount": 1.0566875
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "l",
+                  "amount": 0.25
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "msk",
+                  "amount": 16.907
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "tsk",
+                  "amount": 50.721
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "kg",
+                  "amount": 0.15
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 3,
+                  "name": "Pannkakor"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 13,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 0.5,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "tsk",
+                  "amount": 0.5
+                },
+                {
+                  "food": "salt",
+                  "unit": "cup",
+                  "amount": 0.010416666666666666
+                },
+                {
+                  "food": "salt",
+                  "unit": "l",
+                  "amount": 0.0024644624514500897
+                },
+                {
+                  "food": "salt",
+                  "unit": "ml",
+                  "amount": 2.46446245145009
+                },
+                {
+                  "food": "salt",
+                  "unit": "msk",
+                  "amount": 0.16666666666666666
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 3,
+                  "name": "Pannkakor"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 14,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 6,
+                "name": "msk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tbsp",
+                "open_data_slug": null
+              },
+              "amount": 3.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "msk",
+                  "amount": 3.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "cup",
+                  "amount": 0.1875
+                },
+                {
+                  "food": "smör",
+                  "unit": "l",
+                  "amount": 0.044360324126101615
+                },
+                {
+                  "food": "smör",
+                  "unit": "ml",
+                  "amount": 44.36032412610162
+                },
+                {
+                  "food": "smör",
+                  "unit": "tsk",
+                  "amount": 8.999999999999998
+                }
+              ],
+              "note": "till stekning",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 3,
+                  "name": "Pannkakor"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Vispa ihop en smet och stek ungefär <scalable-number v-bind:number=\"12.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> tunna pannkakor i msk smör.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 30,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+02:00",
+      "updated_at": "2000-01-15T00:00:00.000000+02:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": 3.0,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

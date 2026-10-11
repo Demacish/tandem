@@ -1,0 +1,23 @@
+{
+  "name": "media-image-get-no-auth",
+  "request": {
+    "method": "GET",
+    "path": "/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+    "headers": {
+      "accept": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "accept-ranges": "bytes",
+      "content-disposition": "attachment; filename=\"\"",
+      "content-type": "image/png",
+      "etag": "\"6acac68e-4d\"",
+      "last-modified": "Sat, 10 Oct 2026 23:13:18 GMT",
+      "server": "nginx"
+    },
+    "isJson": false,
+    "bodySize": 77
+  }
+}

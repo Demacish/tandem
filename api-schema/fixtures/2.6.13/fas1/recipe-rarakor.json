@@ -1,0 +1,378 @@
+{
+  "name": "recipe-rarakor",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/11/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 11,
+      "name": "Rårakor med lingon",
+      "description": "",
+      "image": null,
+      "keywords": [
+        {
+          "id": 3,
+          "name": "Vegetariskt",
+          "label": "Vegetariskt",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+02:00",
+          "updated_at": "2000-01-15T00:00:00.000000+02:00",
+          "full_name": "Vegetariskt"
+        },
+        {
+          "id": 5,
+          "name": "Husmanskost",
+          "label": "Husmanskost",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+02:00",
+          "updated_at": "2000-01-15T00:00:00.000000+02:00",
+          "full_name": "Husmanskost"
+        }
+      ],
+      "steps": [
+        {
+          "id": 19,
+          "name": "Riv",
+          "instruction": "Riv potatisen grovt. {{ scale( }}",
+          "ingredients": [
+            {
+              "id": 69,
+              "food": {
+                "id": 4,
+                "name": "potatis",
+                "plural_name": "potatisar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "potatis",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 2,
+                "name": "kg",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "kg",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "potatis",
+                  "unit": "kg",
+                  "amount": 1.0
+                },
+                {
+                  "food": "potatis",
+                  "unit": "g",
+                  "amount": 1000.0
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 11,
+                  "name": "Rårakor med lingon"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 70,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "salt",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "salt",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "salt",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "salt",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 11,
+                  "name": "Rårakor med lingon"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "Could not parse template code. Error: Template Syntax broken",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 20,
+          "name": "Stek",
+          "instruction": "Stek tunna rårakor i {{ ingredients[0] }}. Servera med {{ ingredients[1].food }}.",
+          "ingredients": [
+            {
+              "id": 71,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 6,
+                "name": "msk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tbsp",
+                "open_data_slug": null
+              },
+              "amount": 3.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "msk",
+                  "amount": 3.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "cup",
+                  "amount": 0.1875
+                },
+                {
+                  "food": "smör",
+                  "unit": "l",
+                  "amount": 0.044360324126101615
+                },
+                {
+                  "food": "smör",
+                  "unit": "ml",
+                  "amount": 44.36032412610162
+                },
+                {
+                  "food": "smör",
+                  "unit": "tsk",
+                  "amount": 8.999999999999998
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 11,
+                  "name": "Rårakor med lingon"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 72,
+              "food": {
+                "id": 27,
+                "name": "lingonsylt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "lingonsylt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": true,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 11,
+                  "name": "Rårakor med lingon"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Stek tunna rårakor i <scalable-number v-bind:number=\"3.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> msk smör. Servera med lingonsylt.</p>",
+          "time": 15,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 30,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+02:00",
+      "updated_at": "2000-01-15T00:00:00.000000+02:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "name": "recipe-book-entry-create",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe-book-entry/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "book": 1,
+      "recipe": 2
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 1,
+      "book": 1,
+      "book_content": {
+        "id": 1,
+        "name": "Favoriter",
+        "description": "Det vi lagar om och om igen.",
+        "shared": [],
+        "created_by": {
+          "id": 1,
+          "username": "contract-admin",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-admin",
+          "is_staff": true,
+          "is_superuser": true,
+          "is_active": true
+        },
+        "filter": null,
+        "order": 0
+      },
+      "recipe": 2,
+      "recipe_content": {
+        "id": 2,
+        "name": "Krämig svamppasta",
+        "description": "Snabb vardagspasta med champinjoner och grädde.",
+        "image": "https://tandoor.example.com/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+        "keywords": [
+          {
+            "id": 2,
+            "label": "Pasta"
+          },
+          {
+            "id": 3,
+            "label": "Vegetariskt"
+          }
+        ],
+        "working_time": 20,
+        "waiting_time": 10,
+        "created_by": {
+          "id": 1,
+          "username": "contract-admin",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-admin",
+          "is_staff": true,
+          "is_superuser": true,
+          "is_active": true
+        },
+        "created_at": "2000-01-15T00:00:00.000000+02:00",
+        "updated_at": "2000-01-15T00:00:00.000000+02:00",
+        "internal": true,
+        "private": false,
+        "servings": 4,
+        "servings_text": "portioner",
+        "rating": null,
+        "last_cooked": null,
+        "new": true
+      }
+    }
+  }
+}

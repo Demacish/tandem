@@ -1,0 +1,131 @@
+{
+  "name": "unit-list",
+  "request": {
+    "method": "GET",
+    "path": "/api/unit/?page_size=100",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 12,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-14T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 9,
+          "name": "burk",
+          "plural_name": "burkar",
+          "description": null,
+          "base_unit": null,
+          "open_data_slug": null
+        },
+        {
+          "id": 11,
+          "name": "clove",
+          "plural_name": "cloves",
+          "description": null,
+          "base_unit": null,
+          "open_data_slug": null
+        },
+        {
+          "id": 10,
+          "name": "cup",
+          "plural_name": "cups",
+          "description": null,
+          "base_unit": "us_cup",
+          "open_data_slug": null
+        },
+        {
+          "id": 5,
+          "name": "dl",
+          "plural_name": "dl",
+          "description": null,
+          "base_unit": null,
+          "open_data_slug": null
+        },
+        {
+          "id": 1,
+          "name": "g",
+          "plural_name": null,
+          "description": null,
+          "base_unit": "g",
+          "open_data_slug": null
+        },
+        {
+          "id": 2,
+          "name": "kg",
+          "plural_name": null,
+          "description": null,
+          "base_unit": "kg",
+          "open_data_slug": null
+        },
+        {
+          "id": 4,
+          "name": "l",
+          "plural_name": null,
+          "description": null,
+          "base_unit": "l",
+          "open_data_slug": null
+        },
+        {
+          "id": 3,
+          "name": "ml",
+          "plural_name": null,
+          "description": null,
+          "base_unit": "ml",
+          "open_data_slug": null
+        },
+        {
+          "id": 6,
+          "name": "msk",
+          "plural_name": null,
+          "description": null,
+          "base_unit": "tbsp",
+          "open_data_slug": null
+        },
+        {
+          "id": 12,
+          "name": "pinch",
+          "plural_name": "pinches",
+          "description": null,
+          "base_unit": null,
+          "open_data_slug": null
+        },
+        {
+          "id": 8,
+          "name": "st",
+          "plural_name": "st",
+          "description": null,
+          "base_unit": null,
+          "open_data_slug": null
+        },
+        {
+          "id": 7,
+          "name": "tsk",
+          "plural_name": null,
+          "description": null,
+          "base_unit": "tsp",
+          "open_data_slug": null
+        }
+      ]
+    }
+  }
+}

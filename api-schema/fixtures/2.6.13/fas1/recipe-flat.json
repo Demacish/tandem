@@ -1,0 +1,89 @@
+{
+  "name": "recipe-flat",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/flat/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": [
+      {
+        "id": 8,
+        "name": "Grönsakssoppa",
+        "image": null
+      },
+      {
+        "id": 4,
+        "name": "Kanelbullar",
+        "image": null
+      },
+      {
+        "id": 2,
+        "name": "Krämig svamppasta",
+        "image": "/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png"
+      },
+      {
+        "id": 5,
+        "name": "Köttbullar med potatismos",
+        "image": null
+      },
+      {
+        "id": 3,
+        "name": "Pannkakor",
+        "image": null
+      },
+      {
+        "id": 1,
+        "name": "Pytt i panna",
+        "image": null
+      },
+      {
+        "id": 11,
+        "name": "Rårakor med lingon",
+        "image": null
+      },
+      {
+        "id": 6,
+        "name": "Shakshuka",
+        "image": null
+      },
+      {
+        "id": 9,
+        "name": "Smörgåstårta",
+        "image": null
+      },
+      {
+        "id": 12,
+        "name": "Tillfälligt recept",
+        "image": null
+      },
+      {
+        "id": 10,
+        "name": "Äppelkaka",
+        "image": "/media/recipes/b5cce38e-0668-44de-b5a4-2226e80e672c_10.png"
+      },
+      {
+        "id": 7,
+        "name": "Ärtsoppa",
+        "image": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,585 @@
+{
+  "name": "recipe-appelkaka",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/10/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 10,
+      "name": "Äppelkaka",
+      "description": "",
+      "image": "https://tandoor.example.com/media/recipes/b5cce38e-0668-44de-b5a4-2226e80e672c_10.png",
+      "keywords": [
+        {
+          "id": 4,
+          "name": "Bakning",
+          "label": "Bakning",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+02:00",
+          "updated_at": "2000-01-15T00:00:00.000000+02:00",
+          "full_name": "Bakning"
+        }
+      ],
+      "steps": [
+        {
+          "id": 17,
+          "name": "Smeten",
+          "instruction": "Rör ihop {{ ingredients[1] }}, {{ ingredients[2] }} och {{ ingredients[3] }}.",
+          "ingredients": [
+            {
+              "id": 62,
+              "food": {
+                "id": 6,
+                "name": "äpple",
+                "plural_name": "äpplen",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "äpple",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 4.0,
+              "conversions": [],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 63,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 150.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "g",
+                  "amount": 150.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "kg",
+                  "amount": 0.15
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 64,
+              "food": {
+                "id": 22,
+                "name": "socker",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "socker",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.5,
+              "conversions": [
+                {
+                  "food": "socker",
+                  "unit": "dl",
+                  "amount": 1.5
+                },
+                {
+                  "food": "socker",
+                  "unit": "ml",
+                  "amount": 150.0
+                },
+                {
+                  "food": "socker",
+                  "unit": "cup",
+                  "amount": 0.6340125
+                },
+                {
+                  "food": "socker",
+                  "unit": "l",
+                  "amount": 0.15
+                },
+                {
+                  "food": "socker",
+                  "unit": "msk",
+                  "amount": 10.1442
+                },
+                {
+                  "food": "socker",
+                  "unit": "tsk",
+                  "amount": 30.432599999999997
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 65,
+              "food": {
+                "id": 18,
+                "name": "ägg",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "ägg",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 2.0,
+              "conversions": [],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 66,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vetemjöl",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.5,
+              "conversions": [
+                {
+                  "food": "vetemjöl",
+                  "unit": "dl",
+                  "amount": 2.5
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "ml",
+                  "amount": 250.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "g",
+                  "amount": 150.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "cup",
+                  "amount": 1.0566875
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "l",
+                  "amount": 0.25
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "msk",
+                  "amount": 16.907
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "tsk",
+                  "amount": 50.721
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "kg",
+                  "amount": 0.15
+                }
+              ],
+              "note": "",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 67,
+              "food": {
+                "id": 38,
+                "name": "bakpulver",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "bakpulver",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "bakpulver",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "bakpulver",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "bakpulver",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "bakpulver",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "bakpulver",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "",
+              "order": 5,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Rör ihop <scalable-number v-bind:number=\"150.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g smör, <scalable-number v-bind:number=\"1.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl socker och <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> ägg.</p>",
+          "time": 10,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 18,
+          "name": "Grädda",
+          "instruction": "Lägg {{ ingredients[0] }} i klyftor ovanpå och strö över kanel. Grädda i 175 grader.",
+          "ingredients": [
+            {
+              "id": 68,
+              "food": {
+                "id": 24,
+                "name": "kanel",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "kanel",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "kanel",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "kanel",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "kanel",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "kanel",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "kanel",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 10,
+                  "name": "Äppelkaka"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Lägg <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> tsk kanel i klyftor ovanpå och strö över kanel. Grädda i 175 grader.</p>",
+          "time": 40,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 20,
+      "waiting_time": 40,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+02:00",
+      "updated_at": "2000-01-15T00:00:00.000000+02:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 8,
+      "file_path": "",
+      "servings_text": "bitar",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": 5.0,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

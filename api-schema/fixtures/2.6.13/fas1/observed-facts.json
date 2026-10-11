@@ -1,0 +1,1053 @@
+{
+  "tandoorTag": "2.6.13",
+  "runDay": "2000-01-15",
+  "publicHost": "tandoor.example.com",
+  "unit.g.pluralAfterPatch": null,
+  "unit.g.baseUnitAfterPatch": "g",
+  "unit.kg.pluralAfterPatch": null,
+  "unit.kg.baseUnitAfterPatch": "kg",
+  "unit.ml.pluralAfterPatch": null,
+  "unit.ml.baseUnitAfterPatch": "ml",
+  "unit.l.pluralAfterPatch": null,
+  "unit.l.baseUnitAfterPatch": "l",
+  "unit.msk.pluralAfterPatch": null,
+  "unit.msk.baseUnitAfterPatch": "tbsp",
+  "unit.tsk.pluralAfterPatch": null,
+  "unit.tsk.baseUnitAfterPatch": "tsp",
+  "unit.create.sentPluralName": "burkar",
+  "unit.create.returnedPluralName": "burk",
+  "unit.create.returnedBaseUnit": null,
+  "unit.patch.returnedPluralName": "burkar",
+  "unit.burk.pluralAfterPatch": "burkar",
+  "unit.burk.baseUnitAfterPatch": null,
+  "unit.cup.pluralAfterPatch": "cups",
+  "unit.cup.baseUnitAfterPatch": "us_cup",
+  "unit.clove.pluralAfterPatch": "cloves",
+  "unit.clove.baseUnitAfterPatch": null,
+  "unit.pinch.pluralAfterPatch": "pinches",
+  "unit.pinch.baseUnitAfterPatch": null,
+  "food.champinjon.pluralAfterCreate": "champinjoner",
+  "food.gul lök.pluralAfterCreate": "gula lökar",
+  "food.vitlöksklyfta.pluralAfterCreate": "vitlöksklyftor",
+  "food.potatis.pluralAfterCreate": "potatisar",
+  "food.morot.pluralAfterCreate": "morötter",
+  "food.äpple.pluralAfterCreate": "äpplen",
+  "food.tomat.pluralAfterCreate": "tomater",
+  "food.räka.pluralAfterCreate": "räkor",
+  "food.gul ärta.pluralAfterCreate": "gula ärtor",
+  "food.egg.pluralAfterCreate": "eggs",
+  "food.onion.pluralAfterCreate": "onions",
+  "food.vetemjöl.pluralAfterCreate": null,
+  "unitConversion.explicitNullFood.status": 500,
+  "unitConversion.generic.name": "1 dl  = 100 ml",
+  "unitConversion.vetemjöl.name": "1 dl  vetemjöl = 60 g",
+  "keyword.move.status": 200,
+  "mealType.lunch.time": null,
+  "recipe.create.amountStringWithComma": 1.5,
+  "recipeIds": {
+    "svamppasta": 2,
+    "pannkakor": 3,
+    "kanelbullar": 4,
+    "kottbullar": 5,
+    "shakshuka": 6,
+    "artsoppa": 7,
+    "gronsakssoppa": 8,
+    "smorgastarta": 9,
+    "appelkaka": 10,
+    "rarakor": 11
+  },
+  "image.put.responseFields": [
+    "image",
+    "image_url"
+  ],
+  "image.put.image": "/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+  "cookLog.create.fieldTypes": {
+    "id": "number",
+    "recipe": "number",
+    "servings": "number",
+    "rating": "number",
+    "comment": "string",
+    "created_by": "object",
+    "created_at": "string",
+    "updated_at": "string"
+  },
+  "cookLog.backdated.createdAtKeptDate": "1999-10-17",
+  "cookLog.listByRecipe.count": 3,
+  "cookLog.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "viewLog.create.fieldTypes": {
+    "id": "number",
+    "recipe": "number",
+    "created_by": "number",
+    "created_at": "string"
+  },
+  "viewLog.again.status": 201,
+  "viewLog.againWithin5MinReturnsSameId": true,
+  "mealPlan.midnightWithTypeTime.fromTime": "18:00:00",
+  "mealPlan.toDateDefaultsToFromDate": "2000-01-15T18:00:00+02:00",
+  "mealPlan.fieldTypes": {
+    "id": "number",
+    "title": "string",
+    "recipe": "object",
+    "servings": "number",
+    "note": "string",
+    "note_markdown": "string",
+    "from_date": "string",
+    "to_date": "string",
+    "meal_type": "object",
+    "created_by": "number",
+    "recipe_name": "string",
+    "meal_type_name": "string",
+    "shopping": "boolean"
+  },
+  "mealPlan.midnightWithoutTypeTime.fromTime": "12:00:00",
+  "mealPlan.explicitTime.fromTime": "19:30:00",
+  "mealPlan.titleOnly.recipe": null,
+  "mealPlan.titleOnly.noteMarkdown": "Ät upp det som finns i <strong>kylen</strong>.",
+  "mealPlan.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "mealPlan.list.todayAndTomorrow.count": 3,
+  "mealPlan.list.todayOnly.count": 1,
+  "mealPlan.list.defaultWindow.count": 3,
+  "mealType.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "recipeBook.list.count": 1,
+  "recipeBook.entries.count": 2,
+  "list.books-or.status": 200,
+  "recipeBook.recipeListBooksOr": [
+    "Krämig svamppasta",
+    "Äppelkaka"
+  ],
+  "recipeBook.recipeListBooksOr.order": [
+    "Krämig svamppasta",
+    "Äppelkaka"
+  ],
+  "recipeBook.otherMember.count": 0,
+  "updatedAt.stepPatch.bumpsRecipe": false,
+  "updatedAt.ingredientPatch.bumpsRecipe": false,
+  "updatedAt.foodRename.bumpsRecipe": false,
+  "updatedAt.recipePatch.bumpsRecipe": true,
+  "updatedAt.recipePatch.stepsKept": [
+    15
+  ],
+  "flat.isArray": true,
+  "flat.fields": [
+    "id",
+    "image",
+    "name"
+  ],
+  "flat.count": 12,
+  "flat.containsPrivateOwnRecipe": true,
+  "flat.image": "/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+  "flat.imageIsRelative": true,
+  "flat.imageNullWithoutImage": null,
+  "flat.orderOfNames": [
+    "Grönsakssoppa",
+    "Kanelbullar",
+    "Krämig svamppasta",
+    "Köttbullar med potatismos",
+    "Pannkakor",
+    "Pytt i panna",
+    "Rårakor med lingon",
+    "Shakshuka",
+    "Smörgåstårta",
+    "Tillfälligt recept",
+    "Äppelkaka",
+    "Ärtsoppa"
+  ],
+  "list.pages": [
+    {
+      "path": "/api/recipe/?page_size=4",
+      "keys": [
+        "count",
+        "next",
+        "previous",
+        "results"
+      ],
+      "count": 12,
+      "next": "https://tandoor.example.com/api/recipe/?page=2&page_size=4",
+      "previous": null,
+      "names": [
+        "Grönsakssoppa",
+        "Kanelbullar",
+        "Krämig svamppasta",
+        "Köttbullar med potatismos"
+      ]
+    },
+    {
+      "path": "/api/recipe/?page=2&page_size=4",
+      "keys": [
+        "count",
+        "next",
+        "previous",
+        "results"
+      ],
+      "count": 12,
+      "next": "https://tandoor.example.com/api/recipe/?page=3&page_size=4",
+      "previous": "https://tandoor.example.com/api/recipe/?page_size=4",
+      "names": [
+        "Pannkakor",
+        "Pytt i panna",
+        "Rårakor med lingon",
+        "Shakshuka"
+      ]
+    },
+    {
+      "path": "/api/recipe/?page=3&page_size=4",
+      "keys": [
+        "count",
+        "next",
+        "previous",
+        "results"
+      ],
+      "count": 12,
+      "next": null,
+      "previous": "https://tandoor.example.com/api/recipe/?page=2&page_size=4",
+      "names": [
+        "Smörgåstårta",
+        "Tillfälligt recept",
+        "Äppelkaka",
+        "Ärtsoppa"
+      ]
+    }
+  ],
+  "list.keys": [
+    "count",
+    "next",
+    "previous",
+    "results"
+  ],
+  "list.count": 12,
+  "list.pageCount": 3,
+  "list.page1.previous": null,
+  "list.page1.next": "https://tandoor.example.com/api/recipe/?page=2&page_size=4",
+  "list.page2.previous": "https://tandoor.example.com/api/recipe/?page_size=4",
+  "list.lastPage.next": null,
+  "list.outOfRange": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "Invalid page."
+    }
+  },
+  "list.outOfRange.status": 404,
+  "list.default.names": [
+    "Grönsakssoppa",
+    "Kanelbullar",
+    "Krämig svamppasta",
+    "Köttbullar med potatismos",
+    "Pannkakor",
+    "Pytt i panna",
+    "Rårakor med lingon",
+    "Shakshuka",
+    "Smörgåstårta",
+    "Tillfälligt recept",
+    "Äppelkaka",
+    "Ärtsoppa"
+  ],
+  "list.overview.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "description": "string",
+    "image": "null",
+    "keywords": "array",
+    "working_time": "number",
+    "waiting_time": "number",
+    "created_by": "object",
+    "created_at": "string",
+    "updated_at": "string",
+    "internal": "boolean",
+    "private": "boolean",
+    "servings": "number",
+    "servings_text": "string",
+    "rating": "null",
+    "last_cooked": "null",
+    "new": "boolean"
+  },
+  "list.overview.image": "https://tandoor.example.com/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+  "list.overview.imageIsAbsoluteHttps": true,
+  "list.overview.ratingWithoutSort": null,
+  "list.overview.lastCookedWithoutSort": null,
+  "list.overview.keywords": [
+    {
+      "id": 2,
+      "label": "Pasta"
+    },
+    {
+      "id": 3,
+      "label": "Vegetariskt"
+    }
+  ],
+  "list.overview.keys": [
+    "created_at",
+    "created_by",
+    "description",
+    "id",
+    "image",
+    "internal",
+    "keywords",
+    "last_cooked",
+    "name",
+    "new",
+    "private",
+    "rating",
+    "servings",
+    "servings_text",
+    "updated_at",
+    "waiting_time",
+    "working_time"
+  ],
+  "list.query-svamp.status": 200,
+  "query.svamp": [
+    "Krämig svamppasta"
+  ],
+  "query.svamp.order": [
+    "Krämig svamppasta"
+  ],
+  "list.query-kottbullar.status": 200,
+  "query.withoutDiacritics": [
+    "Kanelbullar",
+    "Köttbullar med potatismos"
+  ],
+  "query.withoutDiacritics.order": [
+    "Köttbullar med potatismos",
+    "Kanelbullar"
+  ],
+  "list.query-uppercase.status": 200,
+  "query.uppercase": [
+    "Grönsakssoppa",
+    "Ärtsoppa"
+  ],
+  "query.uppercase.order": [
+    "Ärtsoppa",
+    "Grönsakssoppa"
+  ],
+  "list.query-english.status": 200,
+  "query.english": [
+    "Shakshuka"
+  ],
+  "query.english.order": [
+    "Shakshuka"
+  ],
+  "list.query-ingredient.status": 200,
+  "query.ingredientName": [],
+  "query.ingredientName.order": [],
+  "list.keywords-or-parent.status": 200,
+  "keywords.orParent.includesChildKeyword": [
+    "Krämig svamppasta",
+    "Köttbullar med potatismos"
+  ],
+  "keywords.orParent.includesChildKeyword.order": [
+    "Krämig svamppasta",
+    "Köttbullar med potatismos"
+  ],
+  "list.keywords-or-parent-no-children.status": 200,
+  "keywords.orParent.withoutChildren": [
+    "Köttbullar med potatismos"
+  ],
+  "keywords.orParent.withoutChildren.order": [
+    "Köttbullar med potatismos"
+  ],
+  "list.keywords-or-child.status": 200,
+  "keywords.orChild": [
+    "Krämig svamppasta"
+  ],
+  "keywords.orChild.order": [
+    "Krämig svamppasta"
+  ],
+  "list.sort-times-cooked.status": 500,
+  "list.sort-times-cooked.error": {
+    "status": 500,
+    "contentType": "text/html; charset=utf-8",
+    "isJson": false,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "sort.minusTimesCooked.status": 500,
+  "list.sort-last-cooked.status": 200,
+  "sort.minusLastCooked": [
+    "Krämig svamppasta",
+    "Äppelkaka",
+    "Pannkakor",
+    "Pytt i panna",
+    "Kanelbullar",
+    "Köttbullar med potatismos",
+    "Shakshuka",
+    "Ärtsoppa",
+    "Grönsakssoppa",
+    "Smörgåstårta",
+    "Rårakor med lingon",
+    "Tillfälligt recept"
+  ],
+  "sort.minusLastCooked.first3": [
+    "Krämig svamppasta",
+    "Äppelkaka",
+    "Pannkakor"
+  ],
+  "sort.minusLastCooked.lastCookedField": {
+    "Krämig svamppasta": null,
+    "Äppelkaka": null,
+    "Pannkakor": null,
+    "Pytt i panna": null,
+    "Kanelbullar": null,
+    "Köttbullar med potatismos": null,
+    "Shakshuka": null,
+    "Ärtsoppa": null,
+    "Grönsakssoppa": null,
+    "Smörgåstårta": null,
+    "Rårakor med lingon": null,
+    "Tillfälligt recept": null
+  },
+  "list.sort-rating.status": 200,
+  "sort.minusRating": [
+    "Äppelkaka",
+    "Krämig svamppasta",
+    "Pannkakor",
+    "Pytt i panna",
+    "Kanelbullar",
+    "Köttbullar med potatismos",
+    "Shakshuka",
+    "Ärtsoppa",
+    "Grönsakssoppa",
+    "Smörgåstårta",
+    "Rårakor med lingon",
+    "Tillfälligt recept"
+  ],
+  "sort.minusRating.first3": [
+    "Äppelkaka",
+    "Krämig svamppasta",
+    "Pannkakor"
+  ],
+  "sort.minusRating.ratingField": {
+    "Äppelkaka": 5.0,
+    "Krämig svamppasta": 4.0,
+    "Pannkakor": 3.0,
+    "Pytt i panna": null,
+    "Kanelbullar": null,
+    "Köttbullar med potatismos": null,
+    "Shakshuka": null,
+    "Ärtsoppa": null,
+    "Grönsakssoppa": null,
+    "Smörgåstårta": null,
+    "Rårakor med lingon": null,
+    "Tillfälligt recept": null
+  },
+  "list.timescooked-gte.status": 200,
+  "filter.timescookedGte1": [
+    "Krämig svamppasta",
+    "Pannkakor",
+    "Äppelkaka"
+  ],
+  "filter.timescookedGte1.order": [
+    "Krämig svamppasta",
+    "Äppelkaka",
+    "Pannkakor"
+  ],
+  "list.rating-gte.status": 200,
+  "filter.ratingGte4": [
+    "Krämig svamppasta",
+    "Äppelkaka"
+  ],
+  "filter.ratingGte4.order": [
+    "Krämig svamppasta",
+    "Äppelkaka"
+  ],
+  "list.cookedon-lte.status": 200,
+  "filter.cookedonLte60DaysAgo": [
+    "Pannkakor"
+  ],
+  "filter.cookedonLte60DaysAgo.order": [
+    "Pannkakor"
+  ],
+  "list.viewedon-gte.status": 200,
+  "filter.viewedonGte14DaysAgo": [
+    "Kanelbullar",
+    "Krämig svamppasta"
+  ],
+  "filter.viewedonGte14DaysAgo.order": [
+    "Kanelbullar",
+    "Krämig svamppasta"
+  ],
+  "list.num-recent.status": 200,
+  "numRecent.recentField": {
+    "Kanelbullar": "2",
+    "Krämig svamppasta": "1",
+    "Grönsakssoppa": "0",
+    "Köttbullar med potatismos": "0",
+    "Pannkakor": "0",
+    "Pytt i panna": "0",
+    "Rårakor med lingon": "0",
+    "Shakshuka": "0",
+    "Smörgåstårta": "0",
+    "Tillfälligt recept": "0",
+    "Äppelkaka": "0",
+    "Ärtsoppa": "0"
+  },
+  "numRecent.firstTwo": [
+    "Kanelbullar",
+    "Krämig svamppasta"
+  ],
+  "numRecent.othersAreZero": true,
+  "list.new.status": 200,
+  "new.namesInOrder": [
+    "Grönsakssoppa",
+    "Kanelbullar",
+    "Krämig svamppasta",
+    "Köttbullar med potatismos",
+    "Pannkakor",
+    "Rårakor med lingon",
+    "Shakshuka",
+    "Smörgåstårta",
+    "Tillfälligt recept",
+    "Äppelkaka",
+    "Ärtsoppa",
+    "Pytt i panna"
+  ],
+  "new.count": 12,
+  "new.oldRecipeFlag": false,
+  "new.oldRecipeLast": "Pytt i panna",
+  "list.updatedon-gte-today.status": 200,
+  "updatedonGte.today.count": 11,
+  "updatedonGte.today.containsOld": false,
+  "list.updatedon-gte-yesterday.status": 200,
+  "updatedonGte.yesterday.count": 11,
+  "list.updatedon-gte-tomorrow.status": 200,
+  "updatedonGte.tomorrow.count": 0,
+  "updatedonGte.dateTime": {
+    "status": 500,
+    "contentType": "text/html; charset=utf-8",
+    "isJson": false
+  },
+  "updatedonGte.dateTime.status": 500,
+  "urls.proxy.next": "https://tandoor.example.com/api/recipe/?page=2&page_size=1",
+  "urls.hostWithoutHttps.next": "http://tandoor.example.com/api/recipe/?page=2&page_size=1",
+  "urls.direct.next": "http://127.0.0.1:8080/api/recipe/?page=2&page_size=1",
+  "old.recipeFound": true,
+  "detail.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "description": "string",
+    "image": "string",
+    "keywords": "array",
+    "steps": "array",
+    "working_time": "number",
+    "waiting_time": "number",
+    "created_by": "object",
+    "created_at": "string",
+    "updated_at": "string",
+    "source_url": "string",
+    "internal": "boolean",
+    "show_ingredient_overview": "boolean",
+    "nutrition": "null",
+    "properties": "array",
+    "food_properties": "object",
+    "servings": "number",
+    "file_path": "string",
+    "servings_text": "string",
+    "diameter": "number",
+    "diameter_text": "string",
+    "rating": "number",
+    "last_cooked": "null",
+    "private": "boolean",
+    "shared": "array"
+  },
+  "detail.step.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "instruction": "string",
+    "ingredients": "array",
+    "instructions_markdown": "string",
+    "time": "number",
+    "order": "number",
+    "show_as_header": "boolean",
+    "file": "null",
+    "step_recipe": "null",
+    "step_recipe_data": "null",
+    "show_ingredients_table": "boolean"
+  },
+  "detail.ingredient.fieldTypes": {
+    "id": "number",
+    "food": "object",
+    "unit": "object",
+    "amount": "number",
+    "conversions": "array",
+    "note": "string",
+    "order": "number",
+    "is_header": "boolean",
+    "no_amount": "boolean",
+    "original_text": "null",
+    "used_in_recipes": "array",
+    "checked": "boolean"
+  },
+  "detail.food.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "plural_name": "string",
+    "description": "string",
+    "recipe": "null",
+    "url": "string",
+    "properties": "array",
+    "properties_food_amount": "number",
+    "properties_food_unit": "null",
+    "fdc_id": "null",
+    "food_onhand": "boolean",
+    "supermarket_category": "null",
+    "parent": "null",
+    "numchild": "number",
+    "inherit_fields": "array",
+    "full_name": "string",
+    "ignore_shopping": "boolean",
+    "substitute": "array",
+    "substitute_siblings": "boolean",
+    "substitute_children": "boolean",
+    "substitute_onhand": "boolean",
+    "child_inherit_fields": "array",
+    "open_data_slug": "null",
+    "shopping_lists": "array"
+  },
+  "detail.unit.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "plural_name": "null",
+    "description": "null",
+    "base_unit": "string",
+    "open_data_slug": "null"
+  },
+  "detail.image": "https://tandoor.example.com/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+  "detail.imageIsAbsoluteHttps": true,
+  "detail.rating": 4.0,
+  "detail.lastCooked": null,
+  "detail.keywords": [
+    {
+      "id": 2,
+      "name": "Pasta",
+      "label": "Pasta",
+      "description": "",
+      "parent": 1,
+      "numchild": 0,
+      "created_at": "2000-01-15T00:00:00.000000+02:00",
+      "updated_at": "2000-01-15T00:00:00.000000+02:00",
+      "full_name": "Huvudrätt > Pasta"
+    },
+    {
+      "id": 3,
+      "name": "Vegetariskt",
+      "label": "Vegetariskt",
+      "description": "",
+      "parent": null,
+      "numchild": 0,
+      "created_at": "2000-01-15T00:00:00.000000+02:00",
+      "updated_at": "2000-01-15T00:00:00.000000+02:00",
+      "full_name": "Vegetariskt"
+    }
+  ],
+  "templates.svamppasta": [
+    "<p>Skiva <plural-name singular=\"champinjon\" plural=\"champinjoner\" v-bind:amount=\"250.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> och hacka <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> st <plural-name singular=\"gul lök\" plural=\"gula lökar\" v-bind:amount=\"1.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name>.<br>\nPressa <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"vitlöksklyfta\" plural=\"vitlöksklyftor\" v-bind:amount=\"2.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name>.</p>",
+    "<p>Koka pastan i <scalable-number v-bind:number=\"3.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> liter saltat vatten.</p>",
+    "<p>Häll i <scalable-number v-bind:number=\"2.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl vispgrädde och låt puttra.</p>\n<p>Rör ner <scalable-number v-bind:number=\"50.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g parmesan (<em>riven</em>) och smaka av med svartpeppar.</p>"
+  ],
+  "conversions.flour": [
+    {
+      "food": "vetemjöl",
+      "unit": "dl",
+      "amount": 2.5
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "ml",
+      "amount": 250.0
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "g",
+      "amount": 150.0
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "cup",
+      "amount": 1.0566875
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "l",
+      "amount": 0.25
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "msk",
+      "amount": 16.907
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "tsk",
+      "amount": 50.721
+    },
+    {
+      "food": "vetemjöl",
+      "unit": "kg",
+      "amount": 0.15
+    }
+  ],
+  "templates.pannkakor": [
+    "<p>Vispa ihop en smet och stek ungefär <scalable-number v-bind:number=\"12.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> tunna pannkakor i msk smör.</p>"
+  ],
+  "detail.pannkakor.lastCooked": null,
+  "detail.pannkakor.rating": 3.0,
+  "header.ingredient": {
+    "id": 15,
+    "food": null,
+    "unit": null,
+    "amount": 0.0,
+    "conversions": [],
+    "note": "Deg",
+    "order": 0,
+    "is_header": true,
+    "no_amount": false,
+    "original_text": null,
+    "used_in_recipes": [
+      {
+        "id": 4,
+        "name": "Kanelbullar"
+      }
+    ],
+    "checked": false
+  },
+  "noAmount.ingredient": {
+    "id": 34,
+    "food": {
+      "id": 14,
+      "name": "salt",
+      "plural_name": null,
+      "description": "",
+      "recipe": null,
+      "url": "",
+      "properties": [],
+      "properties_food_amount": 100.0,
+      "properties_food_unit": null,
+      "fdc_id": null,
+      "food_onhand": false,
+      "supermarket_category": null,
+      "parent": null,
+      "numchild": 0,
+      "inherit_fields": [],
+      "full_name": "salt",
+      "ignore_shopping": false,
+      "substitute": [],
+      "substitute_siblings": false,
+      "substitute_children": false,
+      "substitute_onhand": false,
+      "child_inherit_fields": [],
+      "open_data_slug": null,
+      "shopping_lists": []
+    },
+    "unit": null,
+    "amount": 0.0,
+    "conversions": [],
+    "note": "",
+    "order": 5,
+    "is_header": false,
+    "no_amount": true,
+    "original_text": null,
+    "used_in_recipes": [
+      {
+        "id": 5,
+        "name": "Köttbullar med potatismos"
+      }
+    ],
+    "checked": false
+  },
+  "conversions.noUnit": [],
+  "templates.shakshuka": [
+    "<p>Fry <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"onion\" plural=\"onions\" v-bind:amount=\"1.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> and <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> cloves garlic, then add <scalable-number v-bind:number=\"1.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> cups crushed tomatoes and <scalable-number v-bind:number=\"0.6666666666666666\" v-bind:factor=\"ingredient_factor\"></scalable-number> cups water.</p>",
+    "<p>Make <scalable-number v-bind:number=\"4.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> wells and crack <scalable-number v-bind:number=\"4.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"egg\" plural=\"eggs\" v-bind:amount=\"4.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> into them.</p>"
+  ],
+  "amount.twoThirds": 0.6667,
+  "templates.edited": [
+    "<p>Koka <scalable-number v-bind:number=\"5.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"ekologisk morot\" plural=\"ekologiska morötter\" v-bind:amount=\"5.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> och <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"potatis\" plural=\"potatisar\" v-bind:amount=\"2.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> i <scalable-number v-bind:number=\"20.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> min. Smaka av.</p>"
+  ],
+  "amount.smorgastarta": {
+    "majonnäs": 0.25,
+    "räka": 0.333,
+    "stenbitsrom": 0.6667,
+    "crème fraiche": 400.0,
+    "dill": 1.5,
+    "tomat": 0.0
+  },
+  "conversions.smorgastarta": {
+    "majonnäs": [
+      {
+        "food": "majonnäs",
+        "unit": "l",
+        "amount": 0.25
+      },
+      {
+        "food": "majonnäs",
+        "unit": "cup",
+        "amount": 1.0566875
+      },
+      {
+        "food": "majonnäs",
+        "unit": "ml",
+        "amount": 250.0
+      },
+      {
+        "food": "majonnäs",
+        "unit": "msk",
+        "amount": 16.907
+      },
+      {
+        "food": "majonnäs",
+        "unit": "tsk",
+        "amount": 50.721
+      }
+    ],
+    "räka": [
+      {
+        "food": "räka",
+        "unit": "kg",
+        "amount": 0.333
+      },
+      {
+        "food": "räka",
+        "unit": "g",
+        "amount": 333.0
+      }
+    ],
+    "stenbitsrom": [
+      {
+        "food": "stenbitsrom",
+        "unit": "burk",
+        "amount": 0.6666666666666666
+      }
+    ],
+    "crème fraiche": [
+      {
+        "food": "crème fraiche",
+        "unit": "g",
+        "amount": 400.0
+      },
+      {
+        "food": "crème fraiche",
+        "unit": "kg",
+        "amount": 0.4
+      }
+    ],
+    "dill": [
+      {
+        "food": "dill",
+        "unit": "dl",
+        "amount": 1.5
+      },
+      {
+        "food": "dill",
+        "unit": "ml",
+        "amount": 150.0
+      },
+      {
+        "food": "dill",
+        "unit": "cup",
+        "amount": 0.6340125
+      },
+      {
+        "food": "dill",
+        "unit": "l",
+        "amount": 0.15
+      },
+      {
+        "food": "dill",
+        "unit": "msk",
+        "amount": 10.1442
+      },
+      {
+        "food": "dill",
+        "unit": "tsk",
+        "amount": 30.432599999999997
+      }
+    ],
+    "tomat": [
+      {
+        "food": "tomat",
+        "unit": "st",
+        "amount": 0.0
+      }
+    ]
+  },
+  "detail.appelkaka.rating": 5.0,
+  "detail.appelkaka.lastCooked": null,
+  "templates.broken": "Could not parse template code. Error: Template Syntax broken",
+  "detail.recipes": [
+    "svamppasta",
+    "pannkakor",
+    "kanelbullar",
+    "kottbullar",
+    "shakshuka",
+    "artsoppa",
+    "gronsakssoppa",
+    "smorgastarta",
+    "appelkaka",
+    "rarakor",
+    "pyttipanna"
+  ],
+  "media.noAuth": {
+    "status": 200,
+    "contentType": "image/png",
+    "isJson": false
+  },
+  "media.noAuth.status": 200,
+  "media.noAuth.contentType": "image/png",
+  "media.noAuth.contentDisposition": "attachment; filename=\"\"",
+  "media.noAuth.cacheControl": null,
+  "media.noAuth.etag": true,
+  "media.noAuth.lastModified": true,
+  "media.withToken.status": 200,
+  "media.missing": {
+    "status": 404,
+    "contentType": "text/html",
+    "isJson": false
+  },
+  "private.otherMember.flatContains": false,
+  "private.otherMember.listCount": 11,
+  "private.otherMember.detail": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "private.otherMember.detailStatus": 403,
+  "private.otherMember.publicDetailStatus": 200,
+  "private.otherMember.publicRating": null,
+  "keyword-list.status": 200,
+  "keyword-list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "keyword-list.count": 7,
+  "keyword-list.itemFieldTypes": {
+    "id": "number",
+    "name": "string",
+    "label": "string",
+    "description": "string",
+    "parent": "null",
+    "numchild": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "full_name": "string"
+  },
+  "food-list.status": 200,
+  "food-list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "food-list.count": 38,
+  "food-list.itemFieldTypes": {
+    "id": "number",
+    "name": "string",
+    "plural_name": "null",
+    "description": "string",
+    "shopping": "string",
+    "recipe": "null",
+    "url": "string",
+    "properties": "array",
+    "properties_food_amount": "number",
+    "properties_food_unit": "null",
+    "fdc_id": "null",
+    "food_onhand": "boolean",
+    "supermarket_category": "null",
+    "parent": "null",
+    "numchild": "number",
+    "inherit_fields": "array",
+    "full_name": "string",
+    "ignore_shopping": "boolean",
+    "substitute": "array",
+    "substitute_siblings": "boolean",
+    "substitute_children": "boolean",
+    "substitute_onhand": "boolean",
+    "child_inherit_fields": "array",
+    "open_data_slug": "null",
+    "shopping_lists": "array"
+  },
+  "unit-list.status": 200,
+  "unit-list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "unit-list.count": 12,
+  "unit-list.itemFieldTypes": {
+    "id": "number",
+    "name": "string",
+    "plural_name": "string",
+    "description": "null",
+    "base_unit": "null",
+    "open_data_slug": "null"
+  },
+  "unit-conversion-list.status": 200,
+  "unit-conversion-list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "unit-conversion-list.count": 2,
+  "unit-conversion-list.itemFieldTypes": {
+    "id": "number",
+    "name": "string",
+    "base_amount": "number",
+    "base_unit": "object",
+    "converted_amount": "number",
+    "converted_unit": "object",
+    "food": "null",
+    "open_data_slug": "null"
+  },
+  "keyword.list.root0.names": [
+    "Bakning",
+    "Breakfast",
+    "Husmanskost",
+    "Huvudrätt",
+    "Soppa",
+    "Vegetariskt"
+  ],
+  "keyword.list.childrenOfParent.names": [
+    "Pasta"
+  ],
+  "userPreference.useFractions": false,
+  "userPreference.ingredientDecimals": 2,
+  "userPreference.defaultMealType": null,
+  "space.status": 200,
+  "delete.flatContainsBefore": true,
+  "delete.status": 204,
+  "delete.flatContainsAfter": false,
+  "delete.getStatus": 404,
+  "delete.getBody": {
+    "detail": "No Recipe matches the given query."
+  },
+  "delete.againStatus": 404,
+  "delete.listCount": 11,
+  "mismatches": []
+}

@@ -1,0 +1,477 @@
+{
+  "name": "recipe-smorgastarta",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/9/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 9,
+      "name": "Smörgåstårta",
+      "description": "",
+      "image": null,
+      "keywords": [],
+      "steps": [
+        {
+          "id": 16,
+          "name": "Fyllning",
+          "instruction": "Blanda {{ ingredients[0] }} med {{ ingredients[2] }}. Garnera med {{ ingredients[5] }}.",
+          "ingredients": [
+            {
+              "id": 56,
+              "food": {
+                "id": 34,
+                "name": "majonnäs",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "majonnäs",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 4,
+                "name": "l",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "l",
+                "open_data_slug": null
+              },
+              "amount": 0.25,
+              "conversions": [
+                {
+                  "food": "majonnäs",
+                  "unit": "l",
+                  "amount": 0.25
+                },
+                {
+                  "food": "majonnäs",
+                  "unit": "cup",
+                  "amount": 1.0566875
+                },
+                {
+                  "food": "majonnäs",
+                  "unit": "ml",
+                  "amount": 250.0
+                },
+                {
+                  "food": "majonnäs",
+                  "unit": "msk",
+                  "amount": 16.907
+                },
+                {
+                  "food": "majonnäs",
+                  "unit": "tsk",
+                  "amount": 50.721
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 9,
+                  "name": "Smörgåstårta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 57,
+              "food": {
+                "id": 8,
+                "name": "räka",
+                "plural_name": "räkor",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "räka",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 2,
+                "name": "kg",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "kg",
+                "open_data_slug": null
+              },
+              "amount": 0.333,
+              "conversions": [
+                {
+                  "food": "räka",
+                  "unit": "kg",
+                  "amount": 0.333
+                },
+                {
+                  "food": "räka",
+                  "unit": "g",
+                  "amount": 333.0
+                }
+              ],
+              "note": "skalade",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 9,
+                  "name": "Smörgåstårta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 58,
+              "food": {
+                "id": 35,
+                "name": "stenbitsrom",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "stenbitsrom",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 9,
+                "name": "burk",
+                "plural_name": "burkar",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 0.6667,
+              "conversions": [
+                {
+                  "food": "stenbitsrom",
+                  "unit": "burk",
+                  "amount": 0.6666666666666666
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 9,
+                  "name": "Smörgåstårta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 59,
+              "food": {
+                "id": 36,
+                "name": "crème fraiche",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "crème fraiche",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 400.0,
+              "conversions": [
+                {
+                  "food": "crème fraiche",
+                  "unit": "g",
+                  "amount": 400.0
+                },
+                {
+                  "food": "crème fraiche",
+                  "unit": "kg",
+                  "amount": 0.4
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 9,
+                  "name": "Smörgåstårta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 60,
+              "food": {
+                "id": 37,
+                "name": "dill",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "dill",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.5,
+              "conversions": [
+                {
+                  "food": "dill",
+                  "unit": "dl",
+                  "amount": 1.5
+                },
+                {
+                  "food": "dill",
+                  "unit": "ml",
+                  "amount": 150.0
+                },
+                {
+                  "food": "dill",
+                  "unit": "cup",
+                  "amount": 0.6340125
+                },
+                {
+                  "food": "dill",
+                  "unit": "l",
+                  "amount": 0.15
+                },
+                {
+                  "food": "dill",
+                  "unit": "msk",
+                  "amount": 10.1442
+                },
+                {
+                  "food": "dill",
+                  "unit": "tsk",
+                  "amount": 30.432599999999997
+                }
+              ],
+              "note": "hackad (mängden skickades som strängen \"1,5\")",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 9,
+                  "name": "Smörgåstårta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 61,
+              "food": {
+                "id": 7,
+                "name": "tomat",
+                "plural_name": "tomater",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "tomat",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 8,
+                "name": "st",
+                "plural_name": "st",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 0.0,
+              "conversions": [
+                {
+                  "food": "tomat",
+                  "unit": "st",
+                  "amount": 0.0
+                }
+              ],
+              "note": "till garnering (mängd 0, inte no_amount)",
+              "order": 5,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 9,
+                  "name": "Smörgåstårta"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Blanda <scalable-number v-bind:number=\"0.25\" v-bind:factor=\"ingredient_factor\"></scalable-number> l majonnäs med <scalable-number v-bind:number=\"0.6666666666666666\" v-bind:factor=\"ingredient_factor\"></scalable-number> burkar stenbitsrom. Garnera med <scalable-number v-bind:number=\"0.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> st <plural-name singular=\"tomat\" plural=\"tomater\" v-bind:amount=\"0.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name>.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 60,
+      "waiting_time": 240,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+02:00",
+      "updated_at": "2000-01-15T00:00:00.000000+02:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 12,
+      "file_path": "",
+      "servings_text": "bitar",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

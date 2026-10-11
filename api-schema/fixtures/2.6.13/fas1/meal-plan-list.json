@@ -1,0 +1,172 @@
+{
+  "name": "meal-plan-list",
+  "request": {
+    "method": "GET",
+    "path": "/api/meal-plan/?from_date=2026-10-11&to_date=2026-10-12",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 3,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-14T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 1,
+          "title": "",
+          "recipe": {
+            "id": 2,
+            "name": "Krämig svamppasta",
+            "description": "Snabb vardagspasta med champinjoner och grädde.",
+            "image": "https://tandoor.example.com/media/recipes/75bd727c-cd0f-41e7-b16f-f0aff01156bc_2.png",
+            "keywords": [
+              {
+                "id": 2,
+                "label": "Pasta"
+              },
+              {
+                "id": 3,
+                "label": "Vegetariskt"
+              }
+            ],
+            "working_time": 20,
+            "waiting_time": 10,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+02:00",
+            "updated_at": "2000-01-15T00:00:00.000000+02:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "portioner",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 4.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-01-15T18:00:00+02:00",
+          "to_date": "2000-01-15T18:00:00+02:00",
+          "meal_type": {
+            "id": 1,
+            "name": "Middag",
+            "order": 0,
+            "time": "18:00:00",
+            "color": "#C2185B",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Krämig svamppasta",
+          "meal_type_name": "Middag",
+          "shopping": false
+        },
+        {
+          "id": 2,
+          "title": "",
+          "recipe": {
+            "id": 6,
+            "name": "Shakshuka",
+            "description": "Eggs poached in a spiced tomato sauce.",
+            "image": null,
+            "keywords": [
+              {
+                "id": 3,
+                "label": "Vegetariskt"
+              },
+              {
+                "id": 7,
+                "label": "Breakfast"
+              }
+            ],
+            "working_time": 25,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+02:00",
+            "updated_at": "2000-01-15T00:00:00.000000+02:00",
+            "internal": true,
+            "private": false,
+            "servings": 2,
+            "servings_text": "servings",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 2.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-01-16T12:00:00+02:00",
+          "to_date": "2000-01-16T12:00:00+02:00",
+          "meal_type": {
+            "id": 2,
+            "name": "Lunch",
+            "order": 1,
+            "time": null,
+            "color": null,
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Shakshuka",
+          "meal_type_name": "Lunch",
+          "shopping": false
+        },
+        {
+          "id": 3,
+          "title": "Rester",
+          "recipe": null,
+          "servings": 1.0,
+          "note": "Ät upp det som finns i **kylen**.",
+          "note_markdown": "Ät upp det som finns i <strong>kylen</strong>.",
+          "from_date": "2000-01-16T19:30:00+02:00",
+          "to_date": "2000-01-16T19:30:00+02:00",
+          "meal_type": {
+            "id": 1,
+            "name": "Middag",
+            "order": 0,
+            "time": "18:00:00",
+            "color": "#C2185B",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "meal_type_name": "Middag",
+          "shopping": false
+        }
+      ]
+    }
+  }
+}
