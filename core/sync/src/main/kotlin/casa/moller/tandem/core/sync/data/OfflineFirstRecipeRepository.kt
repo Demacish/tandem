@@ -87,11 +87,11 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
             when (source) {
                 is ActiveSource.Stored -> recipeDao(source)
                     .observeRecipeList(source.accountId, query, Locale.getDefault())
-                    .map { items -> items.map { it.toModel() } }
+                    .map { items -> items.map { item -> item.toModel() } }
 
-                ActiveSource.Loading -> emptyFlow()
+                ActiveSource.Loading -> emptyFlow<List<RecipeOverview>>()
 
-                ActiveSource.None -> flowOf(emptyList())
+                ActiveSource.None -> flowOf(emptyList<RecipeOverview>())
             }
         }
         .flowOn(Dispatchers.Default)
@@ -102,7 +102,7 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
 
             // Demo mode has no server: the same query runs on the demo database.
             ActiveSource.Demo -> Outcome.Success(
-                recipeDao(source).getListItemsFor(source.accountId, query),
+                recipeDao(ActiveSource.Demo).getListItemsFor(ActiveSource.Demo.accountId, query),
             )
 
             ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
@@ -139,7 +139,7 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         .flatMapLatest { source ->
             when (source) {
                 is ActiveSource.Stored -> detailStates(source, id)
-                ActiveSource.Loading -> emptyFlow()
+                ActiveSource.Loading -> emptyFlow<RecipeDetailState>()
                 ActiveSource.None -> flowOf(RecipeDetailState(recipeId = id, error = DataProblem.NO_ACCOUNT.toError()))
             }
         }
@@ -226,9 +226,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
                 is ActiveSource.Stored -> recipeDao(source).observePortionsChosen(source.accountId, id)
                     .map { servings -> servings?.takeIf { it > 0 }?.let { ServingsChoice(id, it) } }
 
-                ActiveSource.Loading -> emptyFlow()
+                ActiveSource.Loading -> emptyFlow<ServingsChoice?>()
 
-                ActiveSource.None -> flowOf(null)
+                ActiveSource.None -> flowOf<ServingsChoice?>(null)
             }
         }
         .distinctUntilChanged()
@@ -275,9 +275,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
                     rows.map { it.toModel() }.sortedWith(compareBy<Keyword, String>(collator) { it.name })
                 }
 
-                ActiveSource.Loading -> emptyFlow()
+                ActiveSource.Loading -> emptyFlow<List<Keyword>>()
 
-                ActiveSource.None -> flowOf(emptyList())
+                ActiveSource.None -> flowOf(emptyList<Keyword>())
             }
         }
         .flowOn(Dispatchers.Default)

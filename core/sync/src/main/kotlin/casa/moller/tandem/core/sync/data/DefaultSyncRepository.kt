@@ -112,8 +112,10 @@ internal class DefaultSyncRepository @Inject constructor(
         scope.launch {
             when (sources.current()) {
                 is ActiveSource.Remote -> scheduler.requestSync(reason)
+
                 // Demo mode has no server; asking for a sync only refreshes the demo data's dates.
                 ActiveSource.Demo -> demo.ensureSeeded()
+
                 ActiveSource.Loading, ActiveSource.None -> Unit
             }
         }

@@ -52,13 +52,9 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
         val current = mutableState.value
         return when {
             current.unauthorizedAccount == accountId -> current.unauthorizedError ?: TandemError.Unauthorized(UnauthorizedSource.TANDOOR)
-
             current.blockedUntil > now -> TandemError.Blocked
-
             background && current.breakerUntil > now -> BREAKER_ERROR
-
             background && current.importsRunning > 0 -> IMPORT_ERROR
-
             else -> null
         }
     }

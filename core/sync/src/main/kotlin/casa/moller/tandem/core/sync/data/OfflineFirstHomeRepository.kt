@@ -58,8 +58,8 @@ internal class OfflineFirstHomeRepository @Inject constructor(
         .flatMapLatest { source ->
             when (source) {
                 is ActiveSource.Stored -> sections(source)
-                ActiveSource.Loading -> emptyFlow()
-                ActiveSource.None -> flowOf(emptyList())
+                ActiveSource.Loading -> emptyFlow<List<HomeSection>>()
+                ActiveSource.None -> flowOf(emptyList<HomeSection>())
             }
         }
         .distinctUntilChanged()
@@ -94,7 +94,7 @@ internal class OfflineFirstHomeRepository @Inject constructor(
         .flatMapLatest { source ->
             when (source) {
                 is ActiveSource.Stored -> clock.days().flatMapLatest { today -> upcoming(source, today) }
-                ActiveSource.Loading -> emptyFlow()
+                ActiveSource.Loading -> emptyFlow<UpcomingMeals>()
                 ActiveSource.None -> clock.days().map { today -> UpcomingMeals(today = today) }
             }
         }
