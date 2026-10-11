@@ -70,6 +70,7 @@ class RecipeDisplayGoldenTest {
             }
         }
         assertTrue(compared >= MIN_STEPS, "compared $compared steps")
+        println("RecipeDisplayGoldenTest: ${recipes.size} recipes, $compared steps identical to ${goldenFile.name}")
     }
 
     private fun compareIngredients(where: String, expected: List<JsonObject>, actual: List<IngredientRow>, useFractions: Boolean) {

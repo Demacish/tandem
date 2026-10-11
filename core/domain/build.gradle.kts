@@ -20,4 +20,9 @@ val fixturesDir: Directory = layout.projectDirectory.dir("../../api-schema/fixtu
 tasks.withType<Test>().configureEach {
     systemProperty("tandem.fixturesDir", fixturesDir.asFile.absolutePath)
     inputs.dir(fixturesDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("fixtures")
+    // A skipped parity test (missing golden file) and the golden test's summary line show in the CI log.
+    testLogging {
+        events("skipped", "failed")
+        showStandardStreams = true
+    }
 }
