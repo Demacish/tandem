@@ -53,9 +53,15 @@ fun formatRating(rating: Double, locale: Locale): String = NumberFormat.getNumbe
     maximumFractionDigits = 1
 }.format(rating)
 
-/** The locale of the app's current configuration (follows the per-app language). */
+/**
+ * The locale of the app's current configuration (follows the per-app language and recomposes
+ * when it changes). [Locale.ROOT] only for an empty locale list, which Android never reports.
+ */
 @Composable
-fun currentLocale(): Locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+fun currentLocale(): Locale {
+    val locales = LocalConfiguration.current.locales
+    return if (locales.isEmpty) Locale.ROOT else locales[0]
+}
 
 /** Icon plus a short text, e.g. a clock and "25 min". TalkBack reads [contentDescription] or the text. */
 @Composable
