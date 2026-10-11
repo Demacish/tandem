@@ -1,13 +1,13 @@
-package casa.moller.tandem.core.domain.markdown
+package casa.moller.tandem.core.ui.markdown
 
-import casa.moller.tandem.core.domain.markdown.MarkdownInline.Code
-import casa.moller.tandem.core.domain.markdown.MarkdownInline.Emphasis
-import casa.moller.tandem.core.domain.markdown.MarkdownInline.LineBreak
-import casa.moller.tandem.core.domain.markdown.MarkdownInline.Link
-import casa.moller.tandem.core.domain.markdown.MarkdownInline.Strong
-import casa.moller.tandem.core.domain.markdown.MarkdownInline.Text
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import casa.moller.tandem.core.ui.markdown.MarkdownInline.Code
+import casa.moller.tandem.core.ui.markdown.MarkdownInline.Emphasis
+import casa.moller.tandem.core.ui.markdown.MarkdownInline.LineBreak
+import casa.moller.tandem.core.ui.markdown.MarkdownInline.Link
+import casa.moller.tandem.core.ui.markdown.MarkdownInline.Strong
+import casa.moller.tandem.core.ui.markdown.MarkdownInline.Text
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 class MarkdownTest {
 

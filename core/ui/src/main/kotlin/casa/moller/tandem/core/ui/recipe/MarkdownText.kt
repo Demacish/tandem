@@ -26,12 +26,12 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
-import casa.moller.tandem.core.domain.markdown.Markdown
-import casa.moller.tandem.core.domain.markdown.MarkdownBlock
-import casa.moller.tandem.core.domain.markdown.MarkdownInline
+import casa.moller.tandem.core.ui.markdown.Markdown
+import casa.moller.tandem.core.ui.markdown.MarkdownBlock
+import casa.moller.tandem.core.ui.markdown.MarkdownInline
 
 /**
- * Renders a step instruction written in Markdown (see core:domain [Markdown] for what is
+ * Renders a step instruction written in Markdown (see [Markdown] for what is
  * supported). Headings are TalkBack headings, links open in the browser through Compose's link
  * handling (only http, https and mailto links exist after parsing).
  */
@@ -79,11 +79,11 @@ fun MarkdownText(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier, sty
 /** The inline Markdown as styled text with clickable links. */
 fun List<MarkdownInline>.toAnnotatedString(linkColor: Color, codeBackground: Color): AnnotatedString = buildAnnotatedString {
     val linkStyles = TextLinkStyles(style = SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline))
-    fun appendAll(inlines: List<MarkdownInline>) {
-        inlines.forEach { appendInline(it) }
-    }
+    appendInlines(this@toAnnotatedString, linkStyles, codeBackground)
+}
 
-    fun appendInline(inline: MarkdownInline) {
+private fun AnnotatedString.Builder.appendInlines(inlines: List<MarkdownInline>, linkStyles: TextLinkStyles, codeBackground: Color) {
+    inlines.forEach { inline ->
         when (inline) {
             is MarkdownInline.Text -> append(inline.text)
 
@@ -91,14 +91,19 @@ fun List<MarkdownInline>.toAnnotatedString(linkColor: Color, codeBackground: Col
                 append(inline.text)
             }
 
-            is MarkdownInline.Strong -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { appendAll(inline.children) }
+            is MarkdownInline.Strong -> withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                appendInlines(inline.children, linkStyles, codeBackground)
+            }
 
-            is MarkdownInline.Emphasis -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { appendAll(inline.children) }
+            is MarkdownInline.Emphasis -> withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                appendInlines(inline.children, linkStyles, codeBackground)
+            }
 
-            is MarkdownInline.Link -> withLink(LinkAnnotation.Url(inline.url, linkStyles)) { appendAll(inline.children) }
+            is MarkdownInline.Link -> withLink(LinkAnnotation.Url(inline.url, linkStyles)) {
+                appendInlines(inline.children, linkStyles, codeBackground)
+            }
 
             MarkdownInline.LineBreak -> append('\n')
         }
     }
-    forEach { appendInline(it) }
 }

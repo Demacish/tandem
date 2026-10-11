@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 internal val ExampleAccount = ServerAccount(
     id = "account-1",
     baseUrl = "https://tandoor.example.com",
-    username = "anna",
+    username = "kock",
     userId = 1,
     spaceId = 1,
     addedAt = Instant.parse("2026-10-01T00:00:00Z"),

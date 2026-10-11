@@ -98,17 +98,11 @@ class RecipeDetailViewModel @AssistedInject constructor(
     fun onAction(action: RecipeDetailAction) {
         when (action) {
             RecipeDetailAction.IncreaseServings -> changeServings { floor(it) + 1.0 }
-
             RecipeDetailAction.DecreaseServings -> changeServings { (ceil(it) - 1.0).coerceAtLeast(ServingsState.MIN_SERVINGS) }
-
             RecipeDetailAction.ResetServings -> viewModelScope.launch { recipes.setServingsChoice(recipeId, null) }
-
             is RecipeDetailAction.ToggleIngredient -> toggleIngredient(action.id)
-
             is RecipeDetailAction.SwitchUnit -> switchUnit(action.id)
-
             RecipeDetailAction.Refresh -> refresh()
-
             RecipeDetailAction.ToggleOffline -> toggleOffline()
         }
     }
@@ -229,8 +223,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
         isPrivate = isPrivate,
     )
 
-    private fun Recipe.toSteps(factor: Double, preferences: UserPreferences): List<StepItem> {
-        return steps.sortedBy { it.order }.mapIndexed { index, step ->
+    private fun Recipe.toSteps(factor: Double, preferences: UserPreferences): List<StepItem> =
+        steps.sortedBy { it.order }.mapIndexed { index, step ->
             StepItem(
                 id = step.id,
                 number = index + 1,
@@ -240,11 +234,10 @@ class RecipeDetailViewModel @AssistedInject constructor(
                 ingredients = step.ingredients.sortedBy { it.order }.map { ingredientItem(it, factor) },
                 // Without an overview the steps are the only place the ingredients appear.
                 showIngredients = step.ingredients.isNotEmpty() &&
-                    (!showIngredientOverview || step.showIngredientsTable && preferences.showStepIngredients),
+                    (!showIngredientOverview || (step.showIngredientsTable && preferences.showStepIngredients)),
                 stepRecipe = step.stepRecipe,
             )
         }
-    }
 
     private data class SessionInfo(val isDemo: Boolean = false, val baseUrl: String? = null)
 

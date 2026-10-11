@@ -61,7 +61,7 @@ kan installeras bredvid release-bygget.
 | `:core:network` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:datastore` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:designsystem` | Android-bibliotek + Compose | – |
-| `:core:ui` | Android-bibliotek + Compose | `core:{designsystem,model,domain}` (receptkomponenterna visar `core:domain`s Markdown) |
+| `:core:ui` | Android-bibliotek + Compose | `core:{designsystem,model}` |
 | `:core:model`, `:core:common`, `:core:domain` | ren Kotlin/JVM | `domain` → `model`, `common` |
 | `:contract-tests` | ren Kotlin/JVM | – (pratar HTTP med en tillfällig Tandoor) |
 | `:smoke` | `tandem.android.test` (test-APK) | – (svart låda: rör bara `:app`s minifierade APK via skärmen) |
@@ -239,8 +239,9 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   "Öppna på webben" öppnar `<server>/recipe/<id>/` i en Custom Tab (skalet, `androidx.browser`,
   vanlig webbläsare som reserv).
 - **Steg och Markdown:** stegtexten är Markdown. Appen har en egen liten läsare i
-  `core:domain` (`casa.moller.tandem.core.domain.markdown.Markdown`, ren Kotlin) och
-  `MarkdownText` i `core:ui`, i stället för ett bibliotek: stegtexterna använder bara fet,
+  `core:ui` (`casa.moller.tandem.core.ui.markdown.Markdown`, ren Kotlin utan Android-typer, så
+  den kan flyttas till en ren Kotlin-modul vid en iOS-port) och `MarkdownText` bredvid, i
+  stället för ett bibliotek: stegtexterna använder bara fet,
   kursiv, listor, rubriker och länkar, och ett fullt CommonMark-bibliotek för Compose skulle
   följa egna Compose-/Material-versioner ovanpå vår pre-release av Material 3. Länkar blir bara
   klickbara för `http`, `https` och `mailto`.

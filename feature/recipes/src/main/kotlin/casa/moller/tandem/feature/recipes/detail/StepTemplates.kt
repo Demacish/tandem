@@ -55,13 +55,9 @@ object StepTemplates {
         val own = item.unitAmount(0)
         return when (part) {
             "amount" -> own?.takeIf { it.amount > 0.0 }?.let { formatAmount(it.amount, locale, preferences) }.orEmpty()
-
             "unit" -> own?.let { it.unitText(plural = it.amount != 1.0) }.orEmpty()
-
             "food" -> item.nameText()
-
             "note" -> item.note.orEmpty()
-
             else -> listOfNotNull(item.amountText(0, locale, preferences), item.nameText().takeIf { it.isNotBlank() }).joinToString(" ")
         }
     }

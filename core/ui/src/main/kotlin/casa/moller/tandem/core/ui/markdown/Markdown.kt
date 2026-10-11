@@ -1,4 +1,4 @@
-package casa.moller.tandem.core.domain.markdown
+package casa.moller.tandem.core.ui.markdown
 
 /**
  * A small Markdown reader for Tandoor step instructions (plan 6.2 "Receptdetalj", feature #4).
@@ -22,6 +22,9 @@ package casa.moller.tandem.core.domain.markdown
  *   schemes (`javascript:`, `intent:`, `file:`) stay plain text.
  *
  * Tandoor templates (`{{ scale(100) }}`) are not Markdown; render them before parsing.
+ *
+ * Lives in core:ui (next to [casa.moller.tandem.core.ui.recipe.MarkdownText]) but uses no Android
+ * types, so it can move to a pure-Kotlin module unchanged if an iOS port needs it.
  */
 object Markdown {
 
@@ -35,6 +38,7 @@ object Markdown {
     fun plainText(inlines: List<MarkdownInline>): String = buildString { inlines.forEach { appendPlain(it) } }
 
     /** The text of [blocks] without formatting; blocks and list items are separated by newlines. */
+    @JvmName("plainTextOfBlocks")
     fun plainText(blocks: List<MarkdownBlock>): String = blocks.joinToString("\n") { block ->
         when (block) {
             is MarkdownBlock.Paragraph -> plainText(block.inlines)

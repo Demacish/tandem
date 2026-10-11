@@ -14,9 +14,7 @@ dependencies {
     // api: ErrorState(error: TandemError) exposes the core:model error type.
     api(projects.core.model)
 
-    // --- Phase 1 (recept-ui lane): recipe components (core:ui recipe/). ---
-    // api: MarkdownText(blocks) exposes core:domain's Markdown model.
-    api(projects.core.domain)
+    // --- Phase 1 (recept-ui lane): recipe components (core:ui recipe/, markdown/). ---
     // RecipeImage loads photos with Coil's singleton ImageLoader (configured by the app).
     implementation(libs.coil.compose)
 }
