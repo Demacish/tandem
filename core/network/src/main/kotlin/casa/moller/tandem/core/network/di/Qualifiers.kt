@@ -11,3 +11,11 @@ annotation class TandoorHttpClient
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class TandoorLongRunningHttpClient
+
+/**
+ * The base client for images: own dispatcher and rate limit, no token. Per-account clients come
+ * from `TandoorImageClientFactory`.
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class TandoorImageHttpClient

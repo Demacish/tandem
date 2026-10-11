@@ -21,6 +21,16 @@ class TandoorApi internal constructor(
     val users: UserService,
     val space: SpaceService,
     val server: ServerService,
+    /** Phase 1: recipe index, search and details. */
+    val recipes: RecipeService,
+    /** Phase 1: keywords, foods, units, meal types and recipe books. */
+    val taxonomy: TaxonomyService,
+    val mealPlans: MealPlanService,
+    val preferences: PreferenceService,
+    /** Phase 1: cook log and view log. */
+    val logs: LogService,
+    /** Capability probes; see `CapabilityResolver`. */
+    internal val probes: CapabilityProbeService,
     /** The client with this server's [AuthInterceptor]; for raw calls in tests and later image loading. */
     internal val httpClient: OkHttpClient,
 )
@@ -54,6 +64,12 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             users = retrofit.create(UserService::class.java),
             space = retrofit.create(SpaceService::class.java),
             server = retrofit.create(ServerService::class.java),
+            recipes = retrofit.create(RecipeService::class.java),
+            taxonomy = retrofit.create(TaxonomyService::class.java),
+            mealPlans = retrofit.create(MealPlanService::class.java),
+            preferences = retrofit.create(PreferenceService::class.java),
+            logs = retrofit.create(LogService::class.java),
+            probes = retrofit.create(CapabilityProbeService::class.java),
             httpClient = client,
         )
     }

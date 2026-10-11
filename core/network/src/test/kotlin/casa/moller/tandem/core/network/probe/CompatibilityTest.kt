@@ -29,9 +29,12 @@ class CompatibilityTest {
             "2.6.0" to Compatibility.SUPPORTED,
             "2.6.13" to Compatibility.SUPPORTED,
             "2.6.15" to Compatibility.SUPPORTED,
-            "2.6.99" to Compatibility.SUPPORTED,
+            // Phase 1: only the tested versions are SUPPORTED; later 2.6.x run in safe mode.
+            "2.6.16" to Compatibility.UNTESTED_NEWER,
+            "2.6.99" to Compatibility.UNTESTED_NEWER,
             "2.7.0" to Compatibility.UNTESTED_NEWER,
             "2.7.0-beta1" to Compatibility.UNTESTED_NEWER,
+            "2.8.0" to Compatibility.UNTESTED_NEWER,
             "3.0.0" to Compatibility.UNTESTED_NEWER,
             "2.5.3" to Compatibility.UNTESTED_OLDER,
             "2.5.99" to Compatibility.UNTESTED_OLDER,

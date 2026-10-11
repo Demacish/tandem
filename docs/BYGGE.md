@@ -399,6 +399,59 @@ Vid nästa start visar välkomststeget och Mer kortet *Tandem kraschade förra g
 skickas automatiskt. Obfuskerade namn i en delad logg från ett release-bygge går att översätta
 med releasens mappningsfil (`retrace`).
 
+<!-- Fas 1 network -->
+## Nätverk (`:core:network`, Fas 1)
+
+Allt som pratar HTTP med Tandoor. Repositories och synken (`core:data`, `core:sync`) använder
+det; features aldrig (`checkModuleGraph`).
+
+- **DTO:er** (`dto/`): toleranta enligt plan 3.6: `TandoorJson` (`ignoreUnknownKeys`,
+  `explicitNulls = false`, `coerceInputValues`), standardvärde på varje fält, enum-värden som
+  `String`, okända eller otypade former som `JsonElement` (näring, `properties`,
+  `food_properties`, ingrediensernas `conversions`, `step_recipe_data`). Fas 1:
+  `RecipeFlatDto`, `RecipeOverviewDto`, `RecipeDto` (`StepDto`, `IngredientDto`, `FoodDto`,
+  `UnitDto`, `KeywordDto`), `MealPlanDto`, `MealTypeDto`, `RecipeBookDto`,
+  `RecipeBookEntryDto`, `CookLogDto`, `ViewLogDto`, `ShareLinkDto`, hela `UserPreferenceDto`,
+  utökad `SpaceDto` och `PageDto<T>` (DRF-sidor). Datum är råa strängar; tolka med
+  `TandoorDates`.
+- **Tjänster** (`api/`, Retrofit, alla gränssnitt under `core.network.api` så att R8-regeln
+  täcker dem): `TandoorApi.recipes` (`flat`, `list`, `recipe`, `recipeJson`),
+  `taxonomy` (nyckelord, livsmedel, enheter, måltidstyper, böcker; `page_size` 200),
+  `mealPlans`, `preferences` och `logs`. Receptsök via `RecipeListQuery` och
+  `RecipeService.list(query, page)`: listparametrar upprepas, datum skickas som rena datum
+  (med klockslag svarar 2.6.13 med 500), `page_size` högst 100, och `RecipeSortOrder` saknar
+  `times_cooked` (500).
+- **Paginering**: `Paginator.fetchAll { page -> … }` läser bara sidnumret ur `next` och
+  begär nästa sida med samma anrop mot kontots bas-URL. Värd, sökväg och övriga parametrar i
+  länken används aldrig (proxyn bygger den, och en fientlig server kan peka vart som helst).
+  Högst 100 sidor, sidnumret måste öka och avbrott kontrolleras före varje sida.
+  `PagedResult.complete` är `false` om listan avbröts; då får synken inte tolka saknade poster
+  som raderade.
+- **Versioner och kapabiliteter** (`capabilities/`): `TandoorVersionTable` har de testade
+  versionerna (2.6.0–2.6.15) och stödintervallet `>= 2.6.0 < 2.8.0`. `assess(version)` ger
+  `ServerCompatibility` och en egen `writePolicy`: otestat inom intervallet ger säkert läge och
+  pausad outbox, över intervallet stängs skrivningar av. `CapabilityResolver` bygger
+  `Capabilities` av versionen och `space/current` (`ai_enabled`, `household_setup_completed`).
+  Bara när versionen inte går att tolka görs högst 3 sonderingar mot list-endpoints
+  (`page_size=1`). En okänd sökväg ger då 302 till inloggningen, inte 404. Varje fel utom en
+  omdirigering stoppar sonderingen. Sökvägarna står i `api-schema/used-endpoints.txt`.
+- **Bilder** (`image/`): `TandoorImageClientFactory.create(baseUrl, tokenProvider)` ger en
+  OkHttp-klient per konto för Coil (`OkHttpNetworkFetcherFactory(callFactory = { client })`).
+  Token skickas bara till kontots origin och bassökväg, och OkHttp tar bort den vid en
+  omdirigering till en annan värd. Bilderna har en egen dispatcher (3 per värd, 6 totalt) och
+  en egen token-bucket (8/s), så de tar aldrig API:ts två platser. `ImageErrorBreakerInterceptor`
+  pausar bilder i 5 min efter 5 svar med 400/403/404 inom 100 s (plan 4.1).
+  `MediaUrls.resolve(baseUrl, image)` gör relativa sökvägar från `recipe/flat` absoluta och
+  flyttar `http://…/media/…` från en proxy utan `X-Forwarded-Proto` till kontots bas-URL.
+- **Tester** läser `api-schema/` på plats via systemegenskapen `tandem.apiSchemaDir` (satt i
+  `core/network/build.gradle.kts`), utan kopior. `DtoFixturesTest` avkodar **varje** lyckat
+  JSON-svar i `api-schema/fixtures/2.6.13` med sin DTO. Den kontrollerar också att alla fält
+  stämmer med fixturen och att varje deklarerat fält finns i någon fixtur, vilket fångar
+  felstavade `@SerialName`. En ny fixtur kräver en rad i testets routetabell eller ett skäl i
+  `notModelled`. `UsedEndpointsTest` kräver att varje Retrofit-anrop står i
+  `used-endpoints.txt` och att varje rad där finns i OpenAPI-schemat.
+<!-- /Fas 1 network -->
+
 ## Backup och nätverk
 
 - `android:allowBackup="false"` och `data_extraction_rules.xml` undantar alla domäner från både

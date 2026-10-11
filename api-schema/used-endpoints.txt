@@ -42,3 +42,10 @@ GET /api/meal-type/
 GET /api/cook-log/
 POST /api/cook-log/
 POST /api/view-log/
+
+# --- Fas 1 (network lane): capability probes (plan 3.6, 4.1) ---
+# List endpoints only (an unknown path answers 302 to the login page, never 404), page_size=1,
+# at most 3 per start, and only when the version cannot decide (an unparseable version string).
+GET /api/view-log/
+GET /api/household/
+GET /api/inventory-location/

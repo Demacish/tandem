@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.network.http
 
+import casa.moller.tandem.core.network.image.ImageErrorBreakerInterceptor
 import java.util.concurrent.TimeUnit
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
@@ -30,6 +31,15 @@ object TandemHttpClients {
     const val LONG_READ_WRITE_TIMEOUT_SECONDS: Long = 120
     const val LONG_CALL_TIMEOUT_SECONDS: Long = 150
     const val MAX_REQUESTS_PER_HOST: Int = 2
+
+    /** Image requests per host at once, on their own dispatcher ([images]). */
+    const val IMAGE_MAX_REQUESTS_PER_HOST: Int = 3
+
+    /** Image requests at once over all hosts. */
+    const val IMAGE_MAX_REQUESTS: Int = 6
+
+    /** Image requests per second (own token bucket; burst of the same size). */
+    const val IMAGE_PERMITS_PER_SECOND: Int = 8
 
     /**
      * @param userAgent `AppBuildInfo.userAgent` from `:app` (never this module's BuildConfig).
@@ -74,4 +84,34 @@ object TandemHttpClients {
         .writeTimeout(LONG_READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .callTimeout(LONG_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
+
+    /**
+     * The base client for images (plan 3.4, 4.1): the same pipeline as [base] (HTTPS only,
+     * User-Agent, timeouts, connection pool, debug logging), but with
+     * - its own [Dispatcher] ([IMAGE_MAX_REQUESTS_PER_HOST], [IMAGE_MAX_REQUESTS]) and its own
+     *   [TokenBucket] ([IMAGE_PERMITS_PER_SECOND]) instead of the API's, so images never use up
+     *   the two API slots or the API's rate budget;
+     * - an [ImageErrorBreakerInterceptor] in front of the rate limit;
+     * - redirects followed (external media storage), but never from https to http.
+     *
+     * Per-account clients with the token come from `TandoorImageClientFactory`.
+     */
+    fun images(
+        base: OkHttpClient,
+        rateLimiter: TokenBucket = TokenBucket(IMAGE_PERMITS_PER_SECOND, IMAGE_PERMITS_PER_SECOND),
+        breaker: ImageErrorBreakerInterceptor = ImageErrorBreakerInterceptor(),
+    ): OkHttpClient {
+        val dispatcher = Dispatcher().apply {
+            maxRequests = IMAGE_MAX_REQUESTS
+            maxRequestsPerHost = IMAGE_MAX_REQUESTS_PER_HOST
+        }
+        val builder = base.newBuilder()
+            .dispatcher(dispatcher)
+            .followRedirects(true)
+            .followSslRedirects(false)
+        builder.interceptors().removeAll { it is RateLimitInterceptor }
+        builder.addInterceptor(breaker)
+        builder.addInterceptor(RateLimitInterceptor(rateLimiter))
+        return builder.build()
+    }
 }

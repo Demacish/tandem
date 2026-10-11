@@ -1,5 +1,8 @@
 package casa.moller.tandem.core.network.probe
 
+import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.network.capabilities.TandoorVersionTable
+
 /** A Tandoor release version such as `2.6.13` (a `v` prefix and suffixes like `-rc1` are ignored). */
 data class TandoorVersion(val major: Int, val minor: Int, val patch: Int) : Comparable<TandoorVersion> {
 
@@ -19,12 +22,18 @@ data class TandoorVersion(val major: Int, val minor: Int, val patch: Int) : Comp
     }
 }
 
-/** How the app treats a server version (plan 3.6). */
+/**
+ * How the app treats a server version (plan 3.6). The login flow's view of
+ * [ServerCompatibility]; both come from [TandoorVersionTable].
+ */
 enum class Compatibility {
-    /** Inside the tested line (2.6.x): everything enabled. */
+    /** A tested version (2.6.0 to 2.6.15): everything enabled. */
     SUPPORTED,
 
-    /** Newer than the tested line: works, but later phases run it in safe mode (outbox paused). */
+    /**
+     * Newer than the tested versions (2.6.16 and later): works, in safe mode (outbox paused).
+     * Beyond the supported range (2.8.0 and later) writes are disabled (`VersionAssessment.writePolicy`).
+     */
     UNTESTED_NEWER,
 
     /**
@@ -40,27 +49,15 @@ enum class Compatibility {
     UNRECOGNIZED,
 }
 
-/**
- * The tested range. Contract tests ran against 2.6.13 (FACTS); 2.6.0 to 2.6.15 changed no fields
- * the app uses (plan 3.6), so the whole 2.6 line counts as supported. Other 2.x versions may log
- * in and run in safe mode; 1.x is refused (plan 4.5 and 6.2: "too old" means < 2.0).
- */
+/** Classifies versions with [TandoorVersionTable] (the tested versions and the supported range). */
 object TandoorCompatibility {
-    /** Oldest version the app logs in to at all (in safe mode below [MIN_SUPPORTED]). */
-    val MIN_LOGIN: TandoorVersion = TandoorVersion(2, 0, 0)
+    fun classify(version: TandoorVersion?): Compatibility = classify(version?.toString())
 
-    val MIN_SUPPORTED: TandoorVersion = TandoorVersion(2, 6, 0)
-
-    /** First version that is no longer in the tested line. */
-    val FIRST_UNTESTED: TandoorVersion = TandoorVersion(2, 7, 0)
-
-    fun classify(version: TandoorVersion?): Compatibility = when {
-        version == null -> Compatibility.UNRECOGNIZED
-        version < MIN_LOGIN -> Compatibility.TOO_OLD
-        version < MIN_SUPPORTED -> Compatibility.UNTESTED_OLDER
-        version < FIRST_UNTESTED -> Compatibility.SUPPORTED
-        else -> Compatibility.UNTESTED_NEWER
+    fun classify(rawVersion: String?): Compatibility = when (TandoorVersionTable.assess(rawVersion).compatibility) {
+        ServerCompatibility.SUPPORTED -> Compatibility.SUPPORTED
+        ServerCompatibility.UNTESTED_NEWER -> Compatibility.UNTESTED_NEWER
+        ServerCompatibility.UNTESTED_OLDER -> Compatibility.UNTESTED_OLDER
+        ServerCompatibility.TOO_OLD -> Compatibility.TOO_OLD
+        ServerCompatibility.UNRECOGNIZED -> Compatibility.UNRECOGNIZED
     }
-
-    fun classify(rawVersion: String?): Compatibility = classify(TandoorVersion.parse(rawVersion))
 }

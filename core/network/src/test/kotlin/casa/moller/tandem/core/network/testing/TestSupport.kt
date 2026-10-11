@@ -2,6 +2,7 @@ package casa.moller.tandem.core.network.testing
 
 import casa.moller.tandem.core.network.http.TandemHttpClients
 import casa.moller.tandem.core.network.http.TokenBucket
+import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -97,7 +98,16 @@ fun emptyResponse(code: Int, vararg headers: Pair<String, String>): MockResponse
     .apply { headers.forEach { (name, value) -> addHeader(name, value) } }
     .build()
 
-/** One recorded exchange from `api-schema/fixtures/2.6.13` (copied to test resources). */
+/** The repository's `api-schema/` folder. */
+object ApiSchema {
+    fun dir(): File {
+        val path = System.getProperty("tandem.apiSchemaDir")
+        require(!path.isNullOrBlank()) { "tandem.apiSchemaDir is not set (core/network/build.gradle.kts)" }
+        return File(path).also { require(it.isDirectory) { "Not a directory: $it" } }
+    }
+}
+
+/** One recorded exchange from `api-schema/fixtures/2.6.13`, read in place. */
 class Fixture(val name: String, private val root: JsonObject) {
     private val request = root.getValue("request").jsonObject
     private val response = root.getValue("response").jsonObject
@@ -133,12 +143,25 @@ class Fixture(val name: String, private val root: JsonObject) {
         private val SKIPPED_HEADERS = setOf("content-length", "transfer-encoding", "connection")
         private val json = Json { ignoreUnknownKeys = true }
 
+        /** `fas1/recipe-flat` or `13-space-current`, below `api-schema/fixtures/2.6.13/`. */
         fun load(name: String): Fixture {
-            val resource = "fixtures/2.6.13/$name.json"
-            val text = requireNotNull(Fixture::class.java.classLoader!!.getResource(resource)) {
-                "Missing test resource $resource"
-            }.readText()
-            return Fixture(name, json.parseToJsonElement(text).jsonObject)
+            val file = File(fixtureDir(), "$name.json")
+            require(file.isFile) { "Missing fixture $file" }
+            return Fixture(name, json.parseToJsonElement(file.readText()).jsonObject)
+        }
+
+        /** `api-schema/fixtures/2.6.13`, read in place (system property set by core/network/build.gradle.kts). */
+        fun fixtureDir(version: String = "2.6.13"): File = File(ApiSchema.dir(), "fixtures/$version")
+
+        /** Every recorded exchange (files with a `request`), as names for [load]. */
+        fun allNames(version: String = "2.6.13"): List<String> {
+            val root = fixtureDir(version)
+            return root.walkTopDown()
+                .filter { it.isFile && it.extension == "json" }
+                .filter { json.parseToJsonElement(it.readText()).let { e -> e is JsonObject && "request" in e } }
+                .map { it.relativeTo(root).invariantSeparatorsPath.removeSuffix(".json") }
+                .sorted()
+                .toList()
         }
     }
 }
