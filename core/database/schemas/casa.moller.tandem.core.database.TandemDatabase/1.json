@@ -2,11 +2,1087 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "618b38bf90afe3b11f2d5e436f0c6dae",
+    "identityHash": "421635769013ec78a5d1acba18aca8f4",
     "entities": [
       {
+        "tableName": "server_account",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `base_url` TEXT NOT NULL, `user_id` INTEGER NOT NULL, `space_id` INTEGER NOT NULL, `household_id` INTEGER, `server_version` TEXT, `group_level` TEXT, `token_id` INTEGER, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseUrl",
+            "columnName": "base_url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "spaceId",
+            "columnName": "space_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "householdId",
+            "columnName": "household_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "serverVersion",
+            "columnName": "server_version",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "groupLevel",
+            "columnName": "group_level",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tokenId",
+            "columnName": "token_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "recipe_overview",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`local_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `account_id` TEXT NOT NULL, `server_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `image_url` TEXT, `working_minutes` INTEGER NOT NULL, `waiting_minutes` INTEGER NOT NULL, `rating` REAL, `last_cooked` INTEGER, `times_cooked` INTEGER, `is_new` INTEGER NOT NULL, `is_private` INTEGER NOT NULL, `created_at` INTEGER, `updated_at` INTEGER, `search_name` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "localId",
+            "columnName": "local_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "server_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "image_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "workingMinutes",
+            "columnName": "working_minutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waitingMinutes",
+            "columnName": "waiting_minutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rating",
+            "columnName": "rating",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lastCookedEpochMillis",
+            "columnName": "last_cooked",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "timesCooked",
+            "columnName": "times_cooked",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isNew",
+            "columnName": "is_new",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isPrivate",
+            "columnName": "is_private",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "created_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updated_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "searchName",
+            "columnName": "search_name",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "local_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recipe_overview_account_id_server_id",
+            "unique": true,
+            "columnNames": [
+              "account_id",
+              "server_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_recipe_overview_account_id_server_id` ON `${TABLE_NAME}` (`account_id`, `server_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "recipe_detail",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `recipe_id` INTEGER NOT NULL, `raw_json` TEXT, `servings` INTEGER NOT NULL, `servings_text` TEXT NOT NULL, `working_minutes` INTEGER NOT NULL, `waiting_minutes` INTEGER NOT NULL, `diameter` INTEGER NOT NULL, `diameter_text` TEXT NOT NULL, `source_url` TEXT, `show_ingredient_overview` INTEGER NOT NULL, `nutrition` TEXT NOT NULL, `fetched_at` INTEGER, `pinned` INTEGER NOT NULL, `last_viewed_local` INTEGER, `portions_chosen` REAL, PRIMARY KEY(`account_id`, `recipe_id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipe_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rawJson",
+            "columnName": "raw_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "servings",
+            "columnName": "servings",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "servingsText",
+            "columnName": "servings_text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workingMinutes",
+            "columnName": "working_minutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "waitingMinutes",
+            "columnName": "waiting_minutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diameter",
+            "columnName": "diameter",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "diameterText",
+            "columnName": "diameter_text",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceUrl",
+            "columnName": "source_url",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "showIngredientOverview",
+            "columnName": "show_ingredient_overview",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nutrition",
+            "columnName": "nutrition",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtEpochMillis",
+            "columnName": "fetched_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "pinned",
+            "columnName": "pinned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastViewedLocalEpochMillis",
+            "columnName": "last_viewed_local",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "portionsChosen",
+            "columnName": "portions_chosen",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "recipe_id"
+          ]
+        }
+      },
+      {
+        "tableName": "step",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `recipe_id` INTEGER NOT NULL, `position` INTEGER NOT NULL, `step_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `instruction` TEXT NOT NULL, `time_minutes` INTEGER NOT NULL, `step_order` INTEGER NOT NULL, `show_as_header` INTEGER NOT NULL, `show_ingredients_table` INTEGER NOT NULL, `step_recipe_id` INTEGER, `step_recipe_name` TEXT, PRIMARY KEY(`account_id`, `recipe_id`, `position`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipe_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepId",
+            "columnName": "step_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "instruction",
+            "columnName": "instruction",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeMinutes",
+            "columnName": "time_minutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepOrder",
+            "columnName": "step_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showAsHeader",
+            "columnName": "show_as_header",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showIngredientsTable",
+            "columnName": "show_ingredients_table",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepRecipeId",
+            "columnName": "step_recipe_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stepRecipeName",
+            "columnName": "step_recipe_name",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "recipe_id",
+            "position"
+          ]
+        }
+      },
+      {
+        "tableName": "ingredient",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `recipe_id` INTEGER NOT NULL, `step_position` INTEGER NOT NULL, `position` INTEGER NOT NULL, `ingredient_id` INTEGER NOT NULL, `food_id` INTEGER, `food_name` TEXT, `food_plural_name` TEXT, `food_on_hand` INTEGER NOT NULL, `unit_id` INTEGER, `unit_name` TEXT, `unit_plural_name` TEXT, `unit_base_unit` TEXT, `amount` REAL NOT NULL, `note` TEXT, `is_header` INTEGER NOT NULL, `no_amount` INTEGER NOT NULL, `original_text` TEXT, `ingredient_order` INTEGER NOT NULL, `conversions_json` TEXT, PRIMARY KEY(`account_id`, `recipe_id`, `step_position`, `position`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipe_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepPosition",
+            "columnName": "step_position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ingredientId",
+            "columnName": "ingredient_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foodId",
+            "columnName": "food_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "foodName",
+            "columnName": "food_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "foodPluralName",
+            "columnName": "food_plural_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "foodOnHand",
+            "columnName": "food_on_hand",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unitId",
+            "columnName": "unit_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "unitName",
+            "columnName": "unit_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "unitPluralName",
+            "columnName": "unit_plural_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "unitBaseUnit",
+            "columnName": "unit_base_unit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isHeader",
+            "columnName": "is_header",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "noAmount",
+            "columnName": "no_amount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalText",
+            "columnName": "original_text",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ingredientOrder",
+            "columnName": "ingredient_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conversionsJson",
+            "columnName": "conversions_json",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "recipe_id",
+            "step_position",
+            "position"
+          ]
+        }
+      },
+      {
+        "tableName": "recipe_keyword",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `recipe_id` INTEGER NOT NULL, `keyword_id` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `recipe_id`, `keyword_id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipe_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keywordId",
+            "columnName": "keyword_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "recipe_id",
+            "keyword_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recipe_keyword_account_id_keyword_id",
+            "unique": false,
+            "columnNames": [
+              "account_id",
+              "keyword_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recipe_keyword_account_id_keyword_id` ON `${TABLE_NAME}` (`account_id`, `keyword_id`)"
+          }
+        ]
+      },
+      {
+        "tableName": "recipe_fts",
+        "createSql": "CREATE VIRTUAL TABLE IF NOT EXISTS `${TABLE_NAME}` USING FTS4(`name` TEXT NOT NULL, `description` TEXT NOT NULL, `keywords` TEXT NOT NULL, `ingredients` TEXT NOT NULL, tokenize=unicode61 `remove_diacritics=2`)",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keywords",
+            "columnName": "keywords",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ingredients",
+            "columnName": "ingredients",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "rowid"
+          ]
+        },
+        "ftsVersion": "FTS4",
+        "ftsOptions": {
+          "tokenizer": "unicode61",
+          "tokenizerArgs": [
+            "remove_diacritics=2"
+          ],
+          "contentTable": "",
+          "languageIdColumnName": "",
+          "matchInfo": "FTS4",
+          "notIndexedColumns": [],
+          "prefixSizes": [],
+          "preferredOrder": "ASC"
+        },
+        "contentSyncTriggers": []
+      },
+      {
+        "tableName": "keyword",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `id` INTEGER NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `parent_id` INTEGER, `full_name` TEXT, PRIMARY KEY(`account_id`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "parentId",
+            "columnName": "parent_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fullName",
+            "columnName": "full_name",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "food",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `id` INTEGER NOT NULL, `name` TEXT NOT NULL, `plural_name` TEXT, `on_hand` INTEGER NOT NULL, `ignore_shopping` INTEGER NOT NULL, `supermarket_category_id` INTEGER, PRIMARY KEY(`account_id`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pluralName",
+            "columnName": "plural_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "onHand",
+            "columnName": "on_hand",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ignoreShopping",
+            "columnName": "ignore_shopping",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "supermarketCategoryId",
+            "columnName": "supermarket_category_id",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "unit",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `id` INTEGER NOT NULL, `name` TEXT NOT NULL, `plural_name` TEXT, `description` TEXT, `base_unit` TEXT, PRIMARY KEY(`account_id`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pluralName",
+            "columnName": "plural_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "baseUnit",
+            "columnName": "base_unit",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "meal_type",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `id` INTEGER NOT NULL, `name` TEXT NOT NULL, `type_order` INTEGER NOT NULL, `time` TEXT, `color` TEXT, PRIMARY KEY(`account_id`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "typeOrder",
+            "columnName": "type_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "meal_plan",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `local_id` INTEGER NOT NULL, `server_id` INTEGER, `title` TEXT NOT NULL, `recipe_id` INTEGER, `servings` REAL NOT NULL, `note` TEXT NOT NULL, `from_date` TEXT NOT NULL, `to_date` TEXT NOT NULL, `from_raw` TEXT, `to_raw` TEXT, `meal_type_id` INTEGER NOT NULL, `shopping` INTEGER NOT NULL, `created_by` INTEGER, `base_snapshot` TEXT, PRIMARY KEY(`account_id`, `local_id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localId",
+            "columnName": "local_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "server_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipe_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "servings",
+            "columnName": "servings",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromDate",
+            "columnName": "from_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "toDate",
+            "columnName": "to_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fromRaw",
+            "columnName": "from_raw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "toRaw",
+            "columnName": "to_raw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mealTypeId",
+            "columnName": "meal_type_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shopping",
+            "columnName": "shopping",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdBy",
+            "columnName": "created_by",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "baseSnapshot",
+            "columnName": "base_snapshot",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "local_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_meal_plan_account_id_server_id",
+            "unique": true,
+            "columnNames": [
+              "account_id",
+              "server_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_meal_plan_account_id_server_id` ON `${TABLE_NAME}` (`account_id`, `server_id`)"
+          },
+          {
+            "name": "index_meal_plan_account_id_to_date",
+            "unique": false,
+            "columnNames": [
+              "account_id",
+              "to_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_meal_plan_account_id_to_date` ON `${TABLE_NAME}` (`account_id`, `to_date`)"
+          }
+        ]
+      },
+      {
+        "tableName": "user_preference",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `use_fractions` INTEGER NOT NULL, `ingredient_decimals` INTEGER NOT NULL, `default_unit` TEXT NOT NULL, `use_kj` INTEGER NOT NULL, `show_step_ingredients` INTEGER NOT NULL, `default_meal_type_id` INTEGER, `shopping_auto_sync_seconds` INTEGER NOT NULL, `meal_plan_auto_add_shopping` INTEGER NOT NULL, `meal_plan_auto_exclude_on_hand` INTEGER NOT NULL, `meal_plan_auto_include_related` INTEGER NOT NULL, `default_delay_hours` REAL NOT NULL, `filter_to_supermarket` INTEGER NOT NULL, `shopping_recent_days` INTEGER NOT NULL, `shopping_add_on_hand` INTEGER NOT NULL, `comments_enabled` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "useFractions",
+            "columnName": "use_fractions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ingredientDecimals",
+            "columnName": "ingredient_decimals",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultUnit",
+            "columnName": "default_unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "useKj",
+            "columnName": "use_kj",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "showStepIngredients",
+            "columnName": "show_step_ingredients",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultMealTypeId",
+            "columnName": "default_meal_type_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "shoppingAutoSyncSeconds",
+            "columnName": "shopping_auto_sync_seconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealPlanAutoAddShopping",
+            "columnName": "meal_plan_auto_add_shopping",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealPlanAutoExcludeOnHand",
+            "columnName": "meal_plan_auto_exclude_on_hand",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealPlanAutoIncludeRelated",
+            "columnName": "meal_plan_auto_include_related",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "defaultDelayHours",
+            "columnName": "default_delay_hours",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "filterToSupermarket",
+            "columnName": "filter_to_supermarket",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shoppingRecentDays",
+            "columnName": "shopping_recent_days",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shoppingAddOnHand",
+            "columnName": "shopping_add_on_hand",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commentsEnabled",
+            "columnName": "comments_enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtEpochMillis",
+            "columnName": "fetched_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id"
+          ]
+        }
+      },
+      {
+        "tableName": "home_section",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `section_type` TEXT NOT NULL, `fetched_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `section_type`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sectionType",
+            "columnName": "section_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAtEpochMillis",
+            "columnName": "fetched_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "section_type"
+          ]
+        }
+      },
+      {
+        "tableName": "home_section_recipe",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `section_type` TEXT NOT NULL, `position` INTEGER NOT NULL, `recipe_id` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `section_type`, `position`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sectionType",
+            "columnName": "section_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recipeId",
+            "columnName": "recipe_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "section_type",
+            "position"
+          ]
+        }
+      },
+      {
         "tableName": "sync_state",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `entity` TEXT NOT NULL, `last_server_timestamp` TEXT, `last_date` TEXT, `last_full_relist` INTEGER, PRIMARY KEY(`account_id`, `entity`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `entity` TEXT NOT NULL, `last_server_timestamp` TEXT, `last_date` TEXT, `last_full_relist` INTEGER, `window_from` TEXT, `window_to` TEXT, `hash` TEXT, PRIMARY KEY(`account_id`, `entity`))",
         "fields": [
           {
             "fieldPath": "accountId",
@@ -34,6 +1110,21 @@
             "fieldPath": "lastFullRelistEpochMillis",
             "columnName": "last_full_relist",
             "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "windowFrom",
+            "columnName": "window_from",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "windowTo",
+            "columnName": "window_to",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hash",
+            "columnName": "hash",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -43,11 +1134,128 @@
             "entity"
           ]
         }
+      },
+      {
+        "tableName": "outbox",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `account_id` TEXT NOT NULL, `op` TEXT NOT NULL, `entity` TEXT NOT NULL, `local_id` INTEGER, `server_id` INTEGER, `payload` TEXT NOT NULL, `base_snapshot` TEXT, `depends_on` INTEGER, `attempts` INTEGER NOT NULL, `last_error` TEXT, `created_at` INTEGER NOT NULL, `state` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "op",
+            "columnName": "op",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entity",
+            "columnName": "entity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localId",
+            "columnName": "local_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "serverId",
+            "columnName": "server_id",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "payload",
+            "columnName": "payload",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "baseSnapshot",
+            "columnName": "base_snapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dependsOn",
+            "columnName": "depends_on",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "attempts",
+            "columnName": "attempts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "last_error",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_outbox_account_id_state",
+            "unique": false,
+            "columnNames": [
+              "account_id",
+              "state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_outbox_account_id_state` ON `${TABLE_NAME}` (`account_id`, `state`)"
+          },
+          {
+            "name": "index_outbox_account_id_entity_server_id",
+            "unique": false,
+            "columnNames": [
+              "account_id",
+              "entity",
+              "server_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_outbox_account_id_entity_server_id` ON `${TABLE_NAME}` (`account_id`, `entity`, `server_id`)"
+          },
+          {
+            "name": "index_outbox_depends_on",
+            "unique": false,
+            "columnNames": [
+              "depends_on"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_outbox_depends_on` ON `${TABLE_NAME}` (`depends_on`)"
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '618b38bf90afe3b11f2d5e436f0c6dae')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '421635769013ec78a5d1acba18aca8f4')"
     ]
   }
 }
