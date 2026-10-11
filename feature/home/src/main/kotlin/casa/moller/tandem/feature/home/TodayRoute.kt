@@ -33,12 +33,7 @@ import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
  * HomeRepository) and keeps this signature. Phase 1b adds `onStartCooking`.
  */
 @Composable
-fun TodayRoute(
-    onOpenRecipe: (recipeId: Long) -> Unit,
-    onOpenRecipes: () -> Unit,
-    onOpenWeek: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun TodayRoute(onOpenRecipe: (recipeId: Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
     Scaffold(
         modifier = modifier.fillMaxSize(),

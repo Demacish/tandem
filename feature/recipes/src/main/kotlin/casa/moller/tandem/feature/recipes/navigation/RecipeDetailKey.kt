@@ -17,4 +17,6 @@ import kotlinx.serialization.Serializable
  * @property inListDetail shown as the detail pane of the Recipes list on wide windows.
  */
 @Serializable
-data class RecipeDetailKey(val recipeId: Long, val inListDetail: Boolean = false) : NavKey, FullScreenDestination
+data class RecipeDetailKey(val recipeId: Long, val inListDetail: Boolean = false) :
+    NavKey,
+    FullScreenDestination

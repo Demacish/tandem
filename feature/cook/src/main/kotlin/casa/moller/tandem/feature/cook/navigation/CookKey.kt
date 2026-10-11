@@ -13,7 +13,9 @@ import kotlinx.serialization.Serializable
  * @property servings the servings chosen on the detail screen (amounts are scaled to it).
  */
 @Serializable
-data class CookKey(val recipeId: Long, val servings: Double) : NavKey, FullScreenDestination {
+data class CookKey(val recipeId: Long, val servings: Double) :
+    NavKey,
+    FullScreenDestination {
     override val hidesNavigationOnAllWidths: Boolean
         get() = true
 }

@@ -83,6 +83,8 @@ jobs:
       # upload the exported files so they can be committed as they are.
       - name: Room schemas are committed
         id: room-schemas
+        # Also after a failing build step, so a missing schema is reported in the same run.
+        if: ${{ !cancelled() }}
         run: |
           changes=$(git status --porcelain --untracked-files=all -- core/database/schemas)
           if [ -n "$changes" ]; then

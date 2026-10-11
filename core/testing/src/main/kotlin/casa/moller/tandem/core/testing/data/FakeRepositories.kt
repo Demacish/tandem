@@ -230,11 +230,16 @@ private fun RecipeSort.comparator(): Comparator<RecipeOverview> {
     val byName = compareBy<RecipeOverview, String>(swedishCollator) { it.name }
     return when (this) {
         RecipeSort.NAME -> byName
+
         RecipeSort.RATING -> compareByDescending<RecipeOverview> { it.rating ?: -1.0 }.then(byName)
+
         RecipeSort.LAST_COOKED -> compareByDescending<RecipeOverview> { it.lastCooked }.then(byName)
+
         RecipeSort.TIMES_COOKED ->
             compareByDescending<RecipeOverview> { it.timesCooked ?: -1 }.thenByDescending { it.lastCooked }.then(byName)
+
         RecipeSort.NEWEST -> compareByDescending<RecipeOverview> { it.isNew }.thenByDescending { it.id }
+
         RecipeSort.TOTAL_TIME -> compareBy<RecipeOverview> { if (it.totalMinutes > 0) it.totalMinutes else Int.MAX_VALUE }.then(byName)
     }
 }

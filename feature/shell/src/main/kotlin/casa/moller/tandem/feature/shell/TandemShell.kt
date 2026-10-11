@@ -352,7 +352,7 @@ internal fun ShellNavDisplay(
     NavDisplay(
         entries = entries,
         modifier = modifier,
-        sceneStrategy = sceneStrategy,
+        sceneStrategies = listOf(sceneStrategy),
         // Calm cross-fades: tabs are siblings, not a forward/backward journey.
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         popTransitionSpec = { fadeIn() togetherWith fadeOut() },
