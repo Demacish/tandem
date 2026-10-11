@@ -1,0 +1,53 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "618b38bf90afe3b11f2d5e436f0c6dae",
+    "entities": [
+      {
+        "tableName": "sync_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`account_id` TEXT NOT NULL, `entity` TEXT NOT NULL, `last_server_timestamp` TEXT, `last_date` TEXT, `last_full_relist` INTEGER, PRIMARY KEY(`account_id`, `entity`))",
+        "fields": [
+          {
+            "fieldPath": "accountId",
+            "columnName": "account_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entity",
+            "columnName": "entity",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastServerTimestamp",
+            "columnName": "last_server_timestamp",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastDate",
+            "columnName": "last_date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastFullRelistEpochMillis",
+            "columnName": "last_full_relist",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "account_id",
+            "entity"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '618b38bf90afe3b11f2d5e436f0c6dae')"
+    ]
+  }
+}
