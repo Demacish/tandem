@@ -21,9 +21,12 @@ internal interface ShellFeatures {
     @Composable
     fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit)
 
-    /** The Recipes tab's first screen and list pane (feature:recipes). */
+    /**
+     * The Recipes tab's first screen and list pane (feature:recipes). [selectedRecipeId] is the
+     * recipe open in the detail pane beside it (highlighted), null when none.
+     */
     @Composable
-    fun Recipes(onOpenRecipe: (Long) -> Unit)
+    fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?)
 
     /** A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows. */
     @Composable
@@ -42,8 +45,8 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Recipes(onOpenRecipe: (Long) -> Unit) {
-        RecipesRoute(onOpenRecipe = onOpenRecipe)
+    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?) {
+        RecipesRoute(onOpenRecipe = onOpenRecipe, selectedRecipeId = selectedRecipeId)
     }
 
     @Composable

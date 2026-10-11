@@ -1,5 +1,7 @@
 package casa.moller.tandem.feature.shell
 
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -24,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -214,9 +217,13 @@ internal fun ShellScaffold(
         if (hideNavigation) suiteState.hide() else suiteState.show()
     }
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     val openOnWeb: (String) -> Unit = { url ->
-        // No browser installed must not crash the app.
-        runCatching { uriHandler.openUri(url) }
+        // A Custom Tab keeps the user in the app's task (the Tandoor web app for editing, a
+        // recipe's source); without a Custom Tabs browser, the default browser. No browser at
+        // all must not crash the app.
+        runCatching { CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, Uri.parse(url)) }
+            .onFailure { runCatching { uriHandler.openUri(url) } }
     }
 
     NavigationSuiteScaffold(
@@ -254,10 +261,13 @@ internal fun ShellScaffold(
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {
+                // The recipe open beside the list (wide windows) is highlighted in it.
+                val selected = navigation.stackOf(ShellTab.RECIPES).lastOrNull { it is RecipeDetailKey && it.inListDetail }
                 features.Recipes(
                     onOpenRecipe = { id ->
                         navigation.navigate(RecipeDetailKey(id, inListDetail = true), replace = { it is RecipeDetailKey })
                     },
+                    selectedRecipeId = (selected as? RecipeDetailKey)?.recipeId,
                 )
             }
             entry<RecipeDetailKey>(

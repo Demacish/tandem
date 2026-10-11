@@ -61,7 +61,7 @@ kan installeras bredvid release-bygget.
 | `:core:network` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:datastore` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:designsystem` | Android-bibliotek + Compose | – |
-| `:core:ui` | Android-bibliotek + Compose | `core:{designsystem,model}` |
+| `:core:ui` | Android-bibliotek + Compose | `core:{designsystem,model,domain}` (receptkomponenterna visar `core:domain`s Markdown) |
 | `:core:model`, `:core:common`, `:core:domain` | ren Kotlin/JVM | `domain` → `model`, `common` |
 | `:contract-tests` | ren Kotlin/JVM | – (pratar HTTP med en tillfällig Tandoor) |
 | `:smoke` | `tandem.android.test` (test-APK) | – (svart låda: rör bara `:app`s minifierade APK via skärmen) |
@@ -212,6 +212,57 @@ täcker alla `@Serializable`-klasser under `casa.moller.tandem`).
   annan flik (Idag) fyller innehållsytan bredvid railen. Tillbaka tar bort en post i taget.
 - **Statuschip och demobanner:** skalet tillhandahåller `LocalAppChrome` (`:core:ui`); skärmarna
   visar `AppChromeStatusChip()` i toppfältet och `AppChromeDemoBanner()` överst.
+
+<!-- Fas 1 recept-ui -->
+## Recept (`:feature:recipes`)
+
+Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillståndslösa
+(`RecipeListScreen(state, onAction)`, `RecipeDetailScreen(state, onAction)`); routerna i
+`RecipesRoutes.kt` hämtar ViewModel med `hiltViewModel()` och visar engångshändelser som snackbar.
+
+- **Lista** (`list/`): `RecipeListViewModel` söker lokalt direkt vid varje tangenttryck
+  (`RecipeRepository.observeRecipes`) och, när enheten är online och frågan smalnar av listan,
+  även på servern efter 400 ms paus (`searchServer`, aldrig i demoläget eller med "bara
+  nedladdade"). Serverträffar som inte finns lokalt läggs efter de lokala, utan dubbletter.
+  Frågan sparas i `SavedStateHandle`; rutnät/lista sparas per enhet i en egen liten
+  Preferences-DataStore (`RecipeListPreferences`, filen `recipe_list_ui`) – ett UI-val, inte
+  kontodata, därför inte i `core:datastore`. Dra-för-att-uppdatera begär en synk
+  (`SyncReason.USER_REFRESH`) och visar indikatorn tills synken är klar (högst 2 s om den aldrig
+  startar). Offline tonas recept utan sparad detalj ned med molnikon.
+- **Detalj** (`detail/`): `RecipeDetailViewModel` (assisted injection med recept-id) visar
+  sparad kopia direkt, tyst uppdatering, "Visar sparad version" offline och felläge med
+  "Försök igen" när inget finns sparat. Portioner sparas per recept i repositoryt;
+  avbockade rader och vald enhet gäller bara sessionen (`SavedStateHandle`). Mängder skalas med
+  `ScaleIngredients` och formateras med `FormatAmount` efter Tandoors `use_fractions` /
+  `ingredient_decimals`; enhet och livsmedel i plural när mängden inte är 1. Tryck på en mängd
+  växlar mellan enheterna i serverns `conversions` (dubbletten av den egna enheten tas bort).
+  "Öppna på webben" öppnar `<server>/recipe/<id>/` i en Custom Tab (skalet, `androidx.browser`,
+  vanlig webbläsare som reserv).
+- **Steg och Markdown:** stegtexten är Markdown. Appen har en egen liten läsare i
+  `core:domain` (`casa.moller.tandem.core.domain.markdown.Markdown`, ren Kotlin) och
+  `MarkdownText` i `core:ui`, i stället för ett bibliotek: stegtexterna använder bara fet,
+  kursiv, listor, rubriker och länkar, och ett fullt CommonMark-bibliotek för Compose skulle
+  följa egna Compose-/Material-versioner ovanpå vår pre-release av Material 3. Länkar blir bara
+  klickbara för `http`, `https` och `mailto`.
+- **Mallar** (`{{ scale(100) }}`, `{{ ingredients[0] }}`): renderas av `StepTemplates` i
+  `feature:recipes`, en tillfällig krok tills den gemensamma mallrenderaren finns i `core:domain`
+  (domain-lanen); byt då ut kroppen i `StepTemplates.render` och behåll signaturen.
+- **Komponenter i `core:ui`** (`casa.moller.tandem.core.ui.recipe`): `RecipeCard`,
+  `RecipeListItem`, `RecipeImage` (Coil 3 `AsyncImage` med appens gemensamma `ImageLoader`,
+  övertoning och platshållare), `RatingStars`, `RecipeTimeLabel`, `OfflineBadge`,
+  `NotDownloadedBadge`, `KeywordPill`, `ServingsStepper`, `IngredientRow`, `IngredientHeader`,
+  `StepCard` och `MarkdownText`. Exempel för förhandsvisning ligger i `src/debug`.
+- **Ikoner:** receptskärmarnas ikoner är tillägg till `TandemIcons` i en egen fil
+  (`icon/TandemIconsRecipes.kt`, `import casa.moller.tandem.core.designsystem.icon.Search`),
+  så att parallella ändringar inte krockar i samma rader.
+- **Surfplatta:** list-detalj enligt navigeringskontraktet; skalet skickar `selectedRecipeId`
+  till `RecipesRoute`, så det öppna receptet markeras i listan. Detaljen visar ingredienser och
+  steg sida vid sida när panelen är minst 720 dp bred.
+- **Skärmbilder:** `RecipesScreenshotTest` (telefon 412×915, hög telefon, medium 700×1000 stående,
+  surfplatta 1280×800 liggande; ljust/mörkt, engelska/svenska, textstorlek 2,0) och
+  `RecipeComponentsScreenshotTest` i `core:ui` sparas i artefakten `screenshots`
+  (`build/outputs/roborazzi/recipes/` resp. `ui/`).
+<!-- /Fas 1 recept-ui -->
 
 ## CI
 

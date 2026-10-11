@@ -1,11 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="recipes_title">Recept</string>
-    <string name="recipes_placeholder_title">Dina recept är på väg</string>
-    <string name="recipes_placeholder_body">Sökning och bläddring bland dina Tandoor-recept, även offline, kommer i Tandem 0.1.</string>
+    <plurals name="recipes_count">
+        <item quantity="one">%1$d recept</item>
+        <item quantity="other">%1$d recept</item>
+    </plurals>
+    <string name="recipes_show_as_list">Visa som lista</string>
+    <string name="recipes_show_as_grid">Visa som rutnät</string>
+    <string name="recipes_search_hint">Sök recept, råvaror, nyckelord</string>
+    <string name="recipes_search_clear">Rensa sökningen</string>
+    <string name="recipes_refresh">Uppdatera</string>
+    <string name="recipes_refresh_offline">Du är offline. Recepten uppdateras när du är ansluten igen.</string>
+
+    <string name="recipes_filter_keywords">Nyckelord</string>
+    <plurals name="recipes_filter_keywords_count">
+        <item quantity="one">%1$d nyckelord</item>
+        <item quantity="other">%1$d nyckelord</item>
+    </plurals>
+    <string name="recipes_filter_quick">Under %1$d min</string>
+    <string name="recipes_filter_rating">Betyg %1$d+</string>
+    <string name="recipes_filter_offline">Nedladdade</string>
+    <string name="recipes_sort_label">Sortera: %1$s</string>
+    <string name="recipes_sort_name">A–Ö</string>
+    <string name="recipes_sort_newest">Senast tillagda</string>
+    <string name="recipes_sort_rating">Högst betyg</string>
+    <string name="recipes_sort_last_cooked">Senast lagade</string>
+    <string name="recipes_sort_times_cooked">Oftast lagade</string>
+    <string name="recipes_sort_total_time">Kortast tid</string>
+
+    <string name="recipes_keywords_title">Nyckelord</string>
+    <string name="recipes_keywords_clear">Rensa</string>
+    <string name="recipes_keywords_filter_hint">Hitta ett nyckelord</string>
+    <string name="recipes_keywords_empty">Inga nyckelord än. Lägg till dem på recepten i Tandoor.</string>
+
+    <plurals name="recipes_result_count">
+        <item quantity="one">%1$d recept</item>
+        <item quantity="other">%1$d recept</item>
+    </plurals>
+    <string name="recipes_searching_server">Söker i Tandoor…</string>
+    <string name="recipes_search_offline">Offline: söker bland recepten på enheten</string>
+    <string name="recipes_search_failed">Kunde inte söka i Tandoor</string>
+    <plurals name="recipes_from_server">
+        <item quantity="one">%1$d till från Tandoor</item>
+        <item quantity="other">%1$d till från Tandoor</item>
+    </plurals>
+    <string name="recipes_offline_hint">Offline: nedtonade recept kräver anslutning</string>
+
+    <string name="recipes_empty_title">Inga recept än</string>
+    <string name="recipes_empty_body">Lägg till recept i Tandoor på webben och dra sedan ner här för att hämta dem.</string>
+    <string name="recipes_empty_offline_title">Du är offline</string>
+    <string name="recipes_empty_offline_body">Dina recept visas här efter den första synkningen. Anslut till internet och dra ner för att uppdatera.</string>
+    <string name="recipes_empty_no_match_title">Inget matchar</string>
+    <string name="recipes_empty_no_match_body">Prova andra ord eller rensa filtren.</string>
+    <string name="recipes_empty_no_match_offline_body">Offline söks bara recepten på enheten. Prova andra ord eller rensa filtren.</string>
+    <string name="recipes_clear_filters">Rensa sökning och filter</string>
+    <string name="recipes_loading_first_sync">Hämtar dina recept…</string>
+
     <string name="recipe_detail_title">Recept</string>
-    <string name="recipe_detail_placeholder_title">Recept %1$d</string>
-    <string name="recipe_detail_placeholder_body">Receptvyn med portioner, skalade mängder och steg kommer i Tandem 0.1.</string>
+    <string name="recipe_detail_loading">Hämtar receptet…</string>
+    <string name="recipe_private">Privat</string>
+    <string name="recipe_detail_working_time">Aktiv %1$s</string>
+    <string name="recipe_detail_waiting_time">Väntan %1$s</string>
+    <string name="recipe_detail_total_time">Totalt %1$s</string>
+    <plurals name="recipe_detail_cooked_times">
+        <item quantity="one">Lagad en gång</item>
+        <item quantity="other">Lagad %1$d gånger</item>
+    </plurals>
+    <plurals name="recipe_detail_cooked_times_last">
+        <item quantity="one">Lagad en gång, %2$s</item>
+        <item quantity="other">Lagad %1$d gånger, senast %2$s</item>
+    </plurals>
+    <string name="recipe_detail_cooked_last">Senast lagad %1$s</string>
+    <string name="recipe_detail_saved_version">Visar sparad version</string>
+    <string name="recipe_detail_saved_version_from">Sparad version från %1$s</string>
+    <string name="recipe_detail_deleted_title">Borttaget i Tandoor</string>
+    <string name="recipe_detail_deleted_body">Receptet finns inte längre på servern eller delas inte längre med dig. Du ser den senast sparade versionen.</string>
+    <string name="recipe_detail_not_downloaded_title">Inte nedladdat</string>
+    <string name="recipe_detail_not_downloaded_body">Receptet finns inte på enheten än. Anslut till internet för att öppna det. Välj \"Ladda ner offline\" för att spara ett recept för användning utan anslutning.</string>
+    <string name="recipe_detail_action_retry">Försök igen</string>
+
+    <string name="recipe_detail_servings_label">Portioner</string>
+    <plurals name="recipe_detail_servings">
+        <item quantity="one">%1$s portion</item>
+        <item quantity="other">%1$s portioner</item>
+    </plurals>
+    <string name="recipe_detail_servings_with_text">%1$s %2$s</string>
+    <string name="recipe_detail_servings_reset">Återställ till %1$d</string>
+
+    <string name="recipe_detail_ingredients">Ingredienser</string>
+    <string name="recipe_detail_ingredients_hint">Tryck för att bocka av</string>
+    <string name="recipe_detail_steps">Gör så här</string>
+    <plurals name="recipe_detail_step_count">
+        <item quantity="one">%1$d steg</item>
+        <item quantity="other">%1$d steg</item>
+    </plurals>
+    <string name="recipe_detail_open_step_recipe">Öppna receptet</string>
+    <string name="recipe_detail_open_step_recipe_named">Öppna %1$s</string>
+    <string name="recipe_detail_source">Källa: %1$s</string>
+
+    <string name="recipe_detail_action_download_offline">Ladda ner offline</string>
+    <string name="recipe_detail_action_remove_offline">Ta bort offlinekopian</string>
+    <string name="recipe_detail_action_more">Fler alternativ</string>
+    <string name="recipe_detail_action_open_on_web">Öppna på webben</string>
+    <string name="recipe_detail_action_refresh">Uppdatera</string>
+
+    <string name="recipe_detail_offline_saved">Nedladdat för offline</string>
+    <string name="recipe_detail_offline_queued">Laddas ner när du är ansluten igen</string>
+    <string name="recipe_detail_offline_removed">Sparas inte längre för offline</string>
+    <string name="recipe_detail_offline_failed">Kunde inte ändra offlineinställningen</string>
+    <string name="recipe_detail_refresh_failed">Kunde inte uppdatera receptet. Visar sparad version.</string>
+    <string name="recipe_detail_refresh_failed_offline">Du är offline. Visar sparad version.</string>
+
     <string name="recipe_pane_empty_title">Välj ett recept</string>
     <string name="recipe_pane_empty_body">Receptet öppnas här, bredvid listan.</string>
 </resources>

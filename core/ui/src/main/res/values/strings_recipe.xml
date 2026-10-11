@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Recipe components (core:ui recipe/: cards, ratings, ingredient rows, steps). Phase 1, feature:recipes. -->
+<resources>
+    <!-- Durations. Recipe and step times are whole minutes. -->
+    <string name="ui_recipe_minutes">%1$d min</string>
+    <string name="ui_recipe_hours">%1$d h</string>
+    <string name="ui_recipe_hours_minutes">%1$d h %2$d min</string>
+    <string name="ui_recipe_total_time_description">Total time %1$s</string>
+    <string name="ui_recipe_step_time_description">Step time %1$s</string>
+
+    <!-- Ratings: %1$s is the rating with one decimal, e.g. 4.5. -->
+    <string name="ui_recipe_rating_description">Rated %1$s of 5</string>
+    <string name="ui_recipe_not_rated">Not rated</string>
+
+    <!-- Offline availability (plan 6.2: recipes without a downloaded detail are dimmed offline). -->
+    <string name="ui_recipe_offline_badge">Downloaded</string>
+    <string name="ui_recipe_offline_badge_description">Downloaded, opens offline</string>
+    <string name="ui_recipe_not_downloaded">Not downloaded</string>
+    <string name="ui_recipe_not_downloaded_description">Not downloaded, needs a connection</string>
+
+    <!-- Servings stepper and ingredient rows. -->
+    <string name="ui_recipe_fewer_servings">Fewer servings</string>
+    <string name="ui_recipe_more_servings">More servings</string>
+    <string name="ui_recipe_show_other_unit">Show in another unit</string>
+
+    <!-- Steps. -->
+    <string name="ui_recipe_step_number">Step %1$d</string>
+    <string name="ui_recipe_step_number_title">Step %1$d: %2$s</string>
+</resources>

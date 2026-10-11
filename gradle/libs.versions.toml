@@ -37,6 +37,8 @@ coreKtx = "1.19.1"
 coreSplashscreen = "1.2.0"
 glance = "1.2.0"
 coil = "3.6.3"
+# --- recept-ui lane: "Open on the web" in a Custom Tab (feature:shell). ---
+browser = "1.10.0"
 
 # --- Data / background ---
 datastore = "1.2.1"       # datastore-tink exists only as 1.3.0-alpha -> own Tink Serializer on stable 1.2.1
@@ -136,6 +138,8 @@ androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", versi
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+# --- recept-ui lane: Custom Tabs ("Open on the web", recipe sources). ---
+androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 
 # Network / serialization
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }

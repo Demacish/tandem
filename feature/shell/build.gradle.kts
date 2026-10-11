@@ -14,4 +14,7 @@ dependencies {
     // their callbacks to Navigation 3 keys (docs/BYGGE.md "Navigering"). ---
     implementation(projects.feature.recipes)
     implementation(projects.feature.home)
+    // --- Phase 1 (recept-ui lane): web pages ("Open on the web", recipe sources) open in a
+    // Custom Tab, with the system browser as fallback. ---
+    implementation(libs.androidx.browser)
 }

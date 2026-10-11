@@ -1,0 +1,292 @@
+package casa.moller.tandem.feature.recipes
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
+import androidx.lifecycle.SavedStateHandle
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.data.session.Session
+import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.preferences.UserPreferences
+import casa.moller.tandem.core.model.recipe.RecipeDetailState
+import casa.moller.tandem.core.model.recipe.RecipeQuery
+import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.testing.data.FakePreferencesRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeRepository
+import casa.moller.tandem.core.testing.data.FakeSyncRepository
+import casa.moller.tandem.core.testing.data.SampleRecipes
+import casa.moller.tandem.core.ui.AppStatus
+import casa.moller.tandem.core.ui.navigation.AppChrome
+import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
+import casa.moller.tandem.feature.recipes.list.RecipeListLayout
+import casa.moller.tandem.feature.recipes.list.RecipeListScreen
+import casa.moller.tandem.feature.recipes.list.RecipeListUiState
+import casa.moller.tandem.feature.recipes.list.ServerSearch
+import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
+import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+
+private val Demo = AppChrome(status = AppStatus.Demo, showDemoBanner = true)
+private val Offline = AppChrome(status = AppStatus.Offline)
+
+/**
+ * Screenshots of the recipe list and the recipe detail (plan 6.5/6.6 test matrix): light and
+ * dark, phone, medium and expanded windows, English and Swedish, font scale 2.0. Recorded in CI
+ * and uploaded in the "screenshots" artifact (build/outputs/roborazzi/recipes/).
+ */
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+abstract class RecipesScreenshotTest(private val device: String) {
+
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    protected fun capture(
+        name: String,
+        darkTheme: Boolean = false,
+        chrome: AppChrome = AppChrome(),
+        fontScale: Float? = null,
+        content: @Composable () -> Unit,
+    ) {
+        composeRule.setContent { TestFrame(darkTheme = darkTheme, chrome = chrome, fontScale = fontScale, content = content) }
+        composeRule.waitForIdle()
+        composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/${device}_$name.png")
+    }
+
+    @Composable
+    protected fun ListScreen(state: RecipeListUiState, selected: Long? = null) {
+        RecipeListScreen(state = state, onAction = {}, onOpenRecipe = {}, selectedRecipeId = selected)
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = PHONE)
+class RecipesPhoneScreenshotTest : RecipesScreenshotTest("phone") {
+
+    @Test
+    fun list() = capture("list_light") { ListScreen(listState()) }
+
+    @Test
+    fun listDark() = capture("list_dark", darkTheme = true) { ListScreen(listState()) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun listSwedish() = capture("list_light_sv") { ListScreen(listState()) }
+
+    @Test
+    fun listAsRows() = capture("list_rows_light") { ListScreen(listState { copy(layout = RecipeListLayout.LIST) }) }
+
+    @Test
+    fun listAsRowsDark() = capture("list_rows_dark", darkTheme = true) { ListScreen(listState { copy(layout = RecipeListLayout.LIST) }) }
+
+    @Test
+    fun listDemo() = capture("list_demo_light", chrome = Demo) { ListScreen(listState()) }
+
+    @Test
+    fun listOffline() = capture("list_offline_light", chrome = Offline) { ListScreen(listState { copy(offline = true) }) }
+
+    @Test
+    fun listOfflineDark() = capture("list_offline_dark", darkTheme = true, chrome = Offline) {
+        ListScreen(listState { copy(offline = true) })
+    }
+
+    @Test
+    fun searchSearchingTheServer() = capture("list_search_light") {
+        ListScreen(listState(RecipeQuery(text = "svamp", maxTotalMinutes = 30)) { copy(serverSearch = ServerSearch.SEARCHING) })
+    }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun searchWithFiltersSwedish() = capture("list_search_filters_light_sv") {
+        val query = RecipeQuery(keywordIds = setOf(SampleRecipes.Baking.id), minRating = 4.0)
+        ListScreen(listState(query) { copy(serverSearch = ServerSearch.DONE, serverOnlyCount = 0) })
+    }
+
+    @Test
+    fun searchOffline() = capture("list_search_offline_light", chrome = Offline) {
+        ListScreen(listState(RecipeQuery(text = "soppa")) { copy(offline = true, serverSearch = ServerSearch.OFFLINE) })
+    }
+
+    @Test
+    fun nothingMatches() = capture("list_empty_no_match_light") {
+        ListScreen(listState(RecipeQuery(text = "lasagne")) { copy(serverSearch = ServerSearch.DONE) })
+    }
+
+    @Test
+    fun noRecipesYet() = capture("list_empty_light") { ListScreen(RecipeListUiState(loaded = true)) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun noRecipesYetSwedish() = capture("list_empty_light_sv") { ListScreen(RecipeListUiState(loaded = true)) }
+
+    @Test
+    fun noRecipesOffline() = capture("list_empty_offline_dark", darkTheme = true, chrome = Offline) {
+        ListScreen(RecipeListUiState(loaded = true, offline = true))
+    }
+
+    @Test
+    fun firstSync() = capture("list_first_sync_light") { ListScreen(RecipeListUiState(loaded = true, syncing = true)) }
+
+    @Test
+    fun listFontScale2() = capture("list_font_scale_2_light", fontScale = 2f) { ListScreen(listState()) }
+
+    @OptIn(ExperimentalRoborazziApi::class)
+    @Test
+    fun keywordPicker() {
+        composeRule.setContent { TestFrame { ListScreen(listState()) } }
+        val keywords = ApplicationProvider.getApplicationContext<android.content.Context>().getString(R.string.recipes_filter_keywords)
+        composeRule.onNodeWithText(keywords).performClick()
+        composeRule.waitForIdle()
+        captureScreenRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/phone_keyword_picker_light.png")
+    }
+
+    @Test
+    fun detail() = capture("detail_light") { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    fun detailDark() = capture("detail_dark", darkTheme = true) { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun detailSwedish() = capture("detail_light_sv") { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    fun detailFontScale2() = capture("detail_font_scale_2_light", fontScale = 2f) { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    fun detailNotDownloadedOffline() = capture("detail_not_downloaded_offline_light", chrome = Offline) {
+        val fakes = remember {
+            DetailFakes(
+                repository = FakeRecipeRepository().apply {
+                    detailOverrides.value = mapOf(
+                        SampleRecipes.PeaSoup.id to RecipeDetailState(
+                            recipeId = SampleRecipes.PeaSoup.id,
+                            overview = SampleRecipes.overview(SampleRecipes.PeaSoup.id),
+                            error = TandemError.NetworkUnavailable,
+                        ),
+                    )
+                },
+                sync = FakeSyncRepository(SyncStatus(pause = SyncPause.OFFLINE)),
+            )
+        }
+        DetailWithFakes(SampleRecipes.PeaSoup.id, fakes = fakes)
+    }
+
+    @Test
+    fun detailError() = capture("detail_error_light") {
+        val fakes = remember {
+            DetailFakes(
+                repository = FakeRecipeRepository().apply {
+                    detailOverrides.value = mapOf(999L to RecipeDetailState(recipeId = 999, error = TandemError.Timeout))
+                },
+            )
+        }
+        DetailWithFakes(999, fakes = fakes)
+    }
+
+    @Test
+    fun detailDemo() = capture("detail_demo_light", chrome = AppChrome(status = AppStatus.Demo)) {
+        DetailWithFakes(SampleRecipes.CinnamonBuns.id, fakes = remember { DetailFakes(sessions = FakeSessionRepository(Session.Demo)) })
+    }
+}
+
+/** Whole recipes on a tall phone, to review every section in one image. */
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = PHONE_TALL)
+class RecipesTallPhoneScreenshotTest : RecipesScreenshotTest("phone_tall") {
+
+    @Test
+    fun detailScaledWithFractions() = capture("detail_scaled_fractions_light") {
+        val fakes = remember {
+            DetailFakes(
+                repository = FakeRecipeRepository().apply { servingsChoices.value = mapOf(SampleRecipes.MushroomPasta.id to 6.0) },
+                preferences = FakePreferencesRepository(UserPreferences(useFractions = true)),
+                handle = SavedStateHandle(mapOf(RecipeDetailViewModel.KEY_STRUCK to longArrayOf(10111, 10112))),
+            )
+        }
+        DetailWithFakes(SampleRecipes.MushroomPasta.id, fakes = fakes)
+    }
+
+    @Test
+    fun detailHeadersAndSubRecipeDark() = capture("detail_buns_dark", darkTheme = true) { DetailWithFakes(SampleRecipes.CinnamonBuns.id) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun detailSavedVersionSwedish() = capture("detail_saved_version_light_sv", chrome = Offline) {
+        val fakes = remember {
+            DetailFakes(
+                repository = FakeRecipeRepository().apply {
+                    detailOverrides.value = mapOf(
+                        SampleRecipes.PeaSoup.id to RecipeDetailState(
+                            recipeId = SampleRecipes.PeaSoup.id,
+                            overview = SampleRecipes.overview(SampleRecipes.PeaSoup.id),
+                            recipe = SampleRecipes.PeaSoup,
+                            fetchedAt = kotlin.time.Instant.parse("2026-10-05T12:00:00Z"),
+                            error = TandemError.NetworkUnavailable,
+                        ),
+                    )
+                },
+                sync = FakeSyncRepository(SyncStatus(pause = SyncPause.OFFLINE)),
+            )
+        }
+        DetailWithFakes(SampleRecipes.PeaSoup.id, fakes = fakes)
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = TABLET)
+class RecipesTabletScreenshotTest : RecipesScreenshotTest("tablet") {
+
+    @Test
+    fun listDetail() = capture("list_detail_light") { ListDetail(listState(), SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    fun listDetailDark() = capture("list_detail_dark", darkTheme = true) { ListDetail(listState(), SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun listDetailSwedish() = capture("list_detail_light_sv") { ListDetail(listState(), SampleRecipes.CinnamonBuns.id) }
+
+    @Test
+    fun listDetailFontScale2() = capture("list_detail_font_scale_2_light", fontScale = 2f) {
+        ListDetail(listState(), SampleRecipes.MushroomPasta.id)
+    }
+
+    @Test
+    fun detailFullWidth() = capture("detail_full_width_light") { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    fun listOnly() = capture("list_light") { ListScreen(listState()) }
+}
+
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = MEDIUM)
+class RecipesMediumScreenshotTest : RecipesScreenshotTest("medium") {
+    // Medium windows show one pane at a time (the shell's list-detail scene splits only when expanded).
+
+    @Test
+    fun list() = capture("list_light") { ListScreen(listState()) }
+
+    @Test
+    fun listDark() = capture("list_dark", darkTheme = true) { ListScreen(listState()) }
+
+    @Test
+    fun detail() = capture("detail_light") { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    fun detailDark() = capture("detail_dark", darkTheme = true) { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
+
+    @Test
+    @Config(qualifiers = "sv-$MEDIUM")
+    fun detailSwedish() = capture("detail_light_sv") { DetailWithFakes(SampleRecipes.CinnamonBuns.id) }
+}

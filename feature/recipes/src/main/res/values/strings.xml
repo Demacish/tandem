@@ -1,11 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Recipe list (plan 6.2 "Receptlista"). -->
     <string name="recipes_title">Recipes</string>
-    <string name="recipes_placeholder_title">Your recipes are on their way</string>
-    <string name="recipes_placeholder_body">Searching and browsing your Tandoor recipes, also offline, arrives in Tandem 0.1.</string>
+    <plurals name="recipes_count">
+        <item quantity="one">%1$d recipe</item>
+        <item quantity="other">%1$d recipes</item>
+    </plurals>
+    <string name="recipes_show_as_list">Show as list</string>
+    <string name="recipes_show_as_grid">Show as grid</string>
+    <string name="recipes_search_hint">Search recipes, ingredients, keywords</string>
+    <string name="recipes_search_clear">Clear search</string>
+    <string name="recipes_refresh">Refresh</string>
+    <string name="recipes_refresh_offline">You\'re offline. Recipes update when you\'re back online.</string>
+
+    <!-- Filter chips and sort. -->
+    <string name="recipes_filter_keywords">Keywords</string>
+    <plurals name="recipes_filter_keywords_count">
+        <item quantity="one">%1$d keyword</item>
+        <item quantity="other">%1$d keywords</item>
+    </plurals>
+    <string name="recipes_filter_quick">Under %1$d min</string>
+    <string name="recipes_filter_rating">Rating %1$d+</string>
+    <string name="recipes_filter_offline">Downloaded</string>
+    <string name="recipes_sort_label">Sort: %1$s</string>
+    <string name="recipes_sort_name">Name</string>
+    <string name="recipes_sort_newest">Newest</string>
+    <string name="recipes_sort_rating">Rating</string>
+    <string name="recipes_sort_last_cooked">Recently cooked</string>
+    <string name="recipes_sort_times_cooked">Most cooked</string>
+    <string name="recipes_sort_total_time">Quickest</string>
+
+    <!-- Keyword picker. -->
+    <string name="recipes_keywords_title">Keywords</string>
+    <string name="recipes_keywords_clear">Clear</string>
+    <string name="recipes_keywords_filter_hint">Find a keyword</string>
+    <string name="recipes_keywords_empty">No keywords yet. Add them to your recipes in Tandoor.</string>
+
+    <!-- Search status above the results. -->
+    <plurals name="recipes_result_count">
+        <item quantity="one">%1$d recipe</item>
+        <item quantity="other">%1$d recipes</item>
+    </plurals>
+    <string name="recipes_searching_server">Searching Tandoor…</string>
+    <string name="recipes_search_offline">Offline: searching recipes on this device</string>
+    <string name="recipes_search_failed">Couldn\'t search Tandoor</string>
+    <plurals name="recipes_from_server">
+        <item quantity="one">%1$d more from Tandoor</item>
+        <item quantity="other">%1$d more from Tandoor</item>
+    </plurals>
+    <string name="recipes_offline_hint">Offline: dimmed recipes need a connection</string>
+
+    <!-- Empty states (docs/design/README.md "Tomma lägen"). -->
+    <string name="recipes_empty_title">No recipes yet</string>
+    <string name="recipes_empty_body">Add recipes in Tandoor on the web, then pull down here to fetch them.</string>
+    <string name="recipes_empty_offline_title">You\'re offline</string>
+    <string name="recipes_empty_offline_body">Your recipes appear here after the first sync. Connect to the internet and pull down to refresh.</string>
+    <string name="recipes_empty_no_match_title">Nothing matches</string>
+    <string name="recipes_empty_no_match_body">Try other words or clear the filters.</string>
+    <string name="recipes_empty_no_match_offline_body">Offline, only the recipes on this device are searched. Try other words or clear the filters.</string>
+    <string name="recipes_clear_filters">Clear search and filters</string>
+    <string name="recipes_loading_first_sync">Fetching your recipes…</string>
+
+    <!-- Recipe detail (plan 6.2 "Receptdetalj"). -->
     <string name="recipe_detail_title">Recipe</string>
-    <string name="recipe_detail_placeholder_title">Recipe %1$d</string>
-    <string name="recipe_detail_placeholder_body">The recipe view with servings, scaled amounts and steps arrives in Tandem 0.1.</string>
+    <string name="recipe_detail_loading">Fetching the recipe…</string>
+    <string name="recipe_private">Private</string>
+    <string name="recipe_detail_working_time">Active %1$s</string>
+    <string name="recipe_detail_waiting_time">Waiting %1$s</string>
+    <string name="recipe_detail_total_time">Total %1$s</string>
+    <plurals name="recipe_detail_cooked_times">
+        <item quantity="one">Cooked once</item>
+        <item quantity="other">Cooked %1$d times</item>
+    </plurals>
+    <plurals name="recipe_detail_cooked_times_last">
+        <item quantity="one">Cooked once, on %2$s</item>
+        <item quantity="other">Cooked %1$d times, last on %2$s</item>
+    </plurals>
+    <string name="recipe_detail_cooked_last">Last cooked on %1$s</string>
+    <string name="recipe_detail_saved_version">Showing the saved version</string>
+    <string name="recipe_detail_saved_version_from">Saved version from %1$s</string>
+    <string name="recipe_detail_deleted_title">Removed from Tandoor</string>
+    <string name="recipe_detail_deleted_body">This recipe no longer exists on the server or is no longer shared with you. You are looking at the last saved version.</string>
+    <string name="recipe_detail_not_downloaded_title">Not downloaded</string>
+    <string name="recipe_detail_not_downloaded_body">This recipe isn\'t on this device yet. Connect to the internet to open it. To keep a recipe for offline use, choose \"Download for offline use\".</string>
+    <string name="recipe_detail_action_retry">Try again</string>
+
+    <!-- Servings. %1$s is the number, %2$s the recipe's own word for it (servings_text). -->
+    <string name="recipe_detail_servings_label">Servings</string>
+    <plurals name="recipe_detail_servings">
+        <item quantity="one">%1$s serving</item>
+        <item quantity="other">%1$s servings</item>
+    </plurals>
+    <string name="recipe_detail_servings_with_text">%1$s %2$s</string>
+    <string name="recipe_detail_servings_reset">Reset to %1$d</string>
+
+    <!-- Sections. -->
+    <string name="recipe_detail_ingredients">Ingredients</string>
+    <string name="recipe_detail_ingredients_hint">Tap to check off</string>
+    <string name="recipe_detail_steps">Instructions</string>
+    <plurals name="recipe_detail_step_count">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <string name="recipe_detail_open_step_recipe">Open the recipe</string>
+    <string name="recipe_detail_open_step_recipe_named">Open %1$s</string>
+    <string name="recipe_detail_source">Source: %1$s</string>
+
+    <!-- Top bar actions. -->
+    <string name="recipe_detail_action_download_offline">Download for offline use</string>
+    <string name="recipe_detail_action_remove_offline">Remove offline copy</string>
+    <string name="recipe_detail_action_more">More options</string>
+    <string name="recipe_detail_action_open_on_web">Open on the web</string>
+    <string name="recipe_detail_action_refresh">Refresh</string>
+
+    <!-- Messages (snackbar). -->
+    <string name="recipe_detail_offline_saved">Downloaded for offline use</string>
+    <string name="recipe_detail_offline_queued">Will download when you\'re back online</string>
+    <string name="recipe_detail_offline_removed">No longer kept for offline use</string>
+    <string name="recipe_detail_offline_failed">Couldn\'t change the offline setting</string>
+    <string name="recipe_detail_refresh_failed">Couldn\'t update the recipe. Showing the saved version.</string>
+    <string name="recipe_detail_refresh_failed_offline">You\'re offline. Showing the saved version.</string>
+
+    <!-- Detail pane on wide windows before a recipe is picked. -->
     <string name="recipe_pane_empty_title">Pick a recipe</string>
     <string name="recipe_pane_empty_body">The recipe opens here, next to the list.</string>
 </resources>

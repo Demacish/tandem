@@ -20,4 +20,5 @@ Material Symbols Rounded (24 px, weight 400, grade 0; FILL 0 and some FILL 1)
   License: Apache License 2.0, see Apache-2.0-MaterialSymbols.txt
 
 All files were checked against the git blob hashes reported by the GitHub API for the commits
-above when they were downloaded (2026-10-09).
+above when they were downloaded (2026-10-09; the recipe screens' icons in
+icon/TandemIconsRecipes.kt on 2026-10-11, same commit).

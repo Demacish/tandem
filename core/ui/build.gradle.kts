@@ -1,5 +1,6 @@
 // Shared app-level composables built on the design system: DemoBanner, status chips, empty /
-// error / loading states, AdaptiveContentCard. Later: RecipeCard, IngredientRow, OfflineBanner.
+// error / loading states, AdaptiveContentCard, and the recipe components (RecipeCard,
+// IngredientRow, StepCard, RatingStars, MarkdownText, ...).
 plugins {
     id("tandem.android.library")
     id("tandem.android.compose")
@@ -12,4 +13,10 @@ dependencies {
     api(projects.core.designsystem)
     // api: ErrorState(error: TandemError) exposes the core:model error type.
     api(projects.core.model)
+
+    // --- Phase 1 (recept-ui lane): recipe components (core:ui recipe/). ---
+    // api: MarkdownText(blocks) exposes core:domain's Markdown model.
+    api(projects.core.domain)
+    // RecipeImage loads photos with Coil's singleton ImageLoader (configured by the app).
+    implementation(libs.coil.compose)
 }

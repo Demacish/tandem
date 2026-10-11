@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Receptkomponenter (core:ui recipe/: kort, betyg, ingrediensrader, steg). Fas 1, feature:recipes. -->
+<resources>
+    <string name="ui_recipe_minutes">%1$d min</string>
+    <string name="ui_recipe_hours">%1$d tim</string>
+    <string name="ui_recipe_hours_minutes">%1$d tim %2$d min</string>
+    <string name="ui_recipe_total_time_description">Total tid %1$s</string>
+    <string name="ui_recipe_step_time_description">Tid för steget %1$s</string>
+
+    <string name="ui_recipe_rating_description">Betyg %1$s av 5</string>
+    <string name="ui_recipe_not_rated">Inget betyg</string>
+
+    <string name="ui_recipe_offline_badge">Nedladdad</string>
+    <string name="ui_recipe_offline_badge_description">Nedladdad, öppnas offline</string>
+    <string name="ui_recipe_not_downloaded">Ej nedladdad</string>
+    <string name="ui_recipe_not_downloaded_description">Ej nedladdad, kräver anslutning</string>
+
+    <string name="ui_recipe_fewer_servings">Färre portioner</string>
+    <string name="ui_recipe_more_servings">Fler portioner</string>
+    <string name="ui_recipe_show_other_unit">Visa i annan enhet</string>
+
+    <string name="ui_recipe_step_number">Steg %1$d</string>
+    <string name="ui_recipe_step_number_title">Steg %1$d: %2$s</string>
+</resources>

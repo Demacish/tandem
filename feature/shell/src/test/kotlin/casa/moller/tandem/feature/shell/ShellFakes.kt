@@ -139,7 +139,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     }
 
     @Composable
-    override fun Recipes(onOpenRecipe: (Long) -> Unit) {
+    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?) {
         Placeholder(ShellTab.RECIPES)
     }
 

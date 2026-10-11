@@ -14,6 +14,9 @@ dependencies {
     implementation(libs.bundles.compose.adaptive)
     // Recipe images (the app configures the shared ImageLoader with Tandem's OkHttp client).
     implementation(libs.coil.compose)
+    // The grid/list choice of the recipe list, remembered on the device (RecipeListPreferences).
+    // The DataStore library itself, not core:datastore (which holds account data).
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(projects.core.testing)
 }

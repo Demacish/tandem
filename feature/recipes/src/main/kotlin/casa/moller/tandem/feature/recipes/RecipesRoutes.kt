@@ -1,24 +1,24 @@
 package casa.moller.tandem.feature.recipes
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
-import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.EmptyState
-import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
-import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
+import casa.moller.tandem.feature.recipes.detail.RecipeDetailEffect
+import casa.moller.tandem.feature.recipes.detail.RecipeDetailScreen
+import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
+import casa.moller.tandem.feature.recipes.list.RecipeListEffect
+import casa.moller.tandem.feature.recipes.list.RecipeListScreen
+import casa.moller.tandem.feature.recipes.list.RecipeListViewModel
 
 /**
  * The Recipes tab's first screen: the recipe list (plan 6.2 "Receptlista", feature #3).
@@ -27,17 +27,29 @@ import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
  * list-detail scene; [onOpenRecipe] opens the recipe detail full screen on phones and in the
  * detail pane beside the list on wider windows (the shell decides).
  *
- * PLACEHOLDER (grund lane): the UI lane replaces the body with the real list, keeping this
- * signature. The ViewModel (RecipeRepository from core:data) goes behind this function.
+ * @param selectedRecipeId the recipe open in the detail pane beside the list, highlighted in
+ *   the list (wide windows); null when none is open.
  */
 @Composable
-fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Modifier) {
-    PlaceholderScreen(
-        title = stringResource(R.string.recipes_title),
-        bodyTitle = stringResource(R.string.recipes_placeholder_title),
-        body = stringResource(R.string.recipes_placeholder_body),
+fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Modifier, selectedRecipeId: Long? = null) {
+    val viewModel: RecipeListViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    LaunchedEffect(viewModel, snackbarHostState) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is RecipeListEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+            }
+        }
+    }
+    RecipeListScreen(
+        state = state,
+        onAction = viewModel::onAction,
+        onOpenRecipe = onOpenRecipe,
         modifier = modifier,
-        showDemoBanner = true,
+        selectedRecipeId = selectedRecipeId,
+        snackbarHostState = snackbarHostState,
     )
 }
 
@@ -48,8 +60,7 @@ fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Mo
  * @param onOpenRecipe opens another recipe, e.g. a step's sub-recipe (pushed on top).
  * @param onOpenOnWeb opens a URL in the browser ("Open on the web" for editing, the source URL).
  *
- * PLACEHOLDER (grund lane): the UI lane replaces the body, keeping this signature. Phase 1b adds
- * `onStartCooking`.
+ * Phase 1b adds `onStartCooking`.
  */
 @Composable
 fun RecipeDetailRoute(
@@ -59,18 +70,34 @@ fun RecipeDetailRoute(
     onOpenOnWeb: (url: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    PlaceholderScreen(
-        title = stringResource(R.string.recipe_detail_title),
-        bodyTitle = stringResource(R.string.recipe_detail_placeholder_title, recipeId),
-        body = stringResource(R.string.recipe_detail_placeholder_body),
+    val viewModel = hiltViewModel<RecipeDetailViewModel, RecipeDetailViewModel.Factory>(
+        key = "recipe-$recipeId",
+        creationCallback = { factory -> factory.create(recipeId) },
+    )
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    LaunchedEffect(viewModel, snackbarHostState) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is RecipeDetailEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+            }
+        }
+    }
+    RecipeDetailScreen(
+        state = state,
+        onAction = viewModel::onAction,
+        onBack = onBack,
+        onOpenUrl = onOpenOnWeb,
+        onOpenRecipe = onOpenRecipe,
         modifier = modifier,
-        onNavigateBack = onBack,
+        snackbarHostState = snackbarHostState,
     )
 }
 
 /**
  * The empty detail pane beside the list on medium/expanded widths before a recipe is picked
- * ("Välj ett recept"). Also replaced by the UI lane.
+ * ("Välj ett recept").
  */
 @Composable
 fun RecipeDetailPanePlaceholder(modifier: Modifier = Modifier) {
@@ -80,50 +107,4 @@ fun RecipeDetailPanePlaceholder(modifier: Modifier = Modifier) {
         body = stringResource(R.string.recipe_pane_empty_body),
         modifier = modifier.fillMaxSize(),
     )
-}
-
-@Composable
-private fun PlaceholderScreen(
-    title: String,
-    bodyTitle: String,
-    body: String,
-    modifier: Modifier = Modifier,
-    onNavigateBack: (() -> Unit)? = null,
-    showDemoBanner: Boolean = false,
-) {
-    val spacing = TandemTheme.spacing
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TandemTopAppBar(
-                title = title,
-                onNavigateBack = onNavigateBack,
-                actions = { AppChromeStatusChip(Modifier.padding(end = spacing.md)) },
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = spacing.screenHorizontal),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (showDemoBanner) {
-                AppChromeDemoBanner(
-                    Modifier
-                        .padding(top = spacing.sm)
-                        .widthIn(max = TandemTheme.sizes.maxReadingWidth),
-                )
-            }
-            EmptyState(
-                icon = TandemIcons.MenuBook,
-                title = bodyTitle,
-                body = body,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
 }
