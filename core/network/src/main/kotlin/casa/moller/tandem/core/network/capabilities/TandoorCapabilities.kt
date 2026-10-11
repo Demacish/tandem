@@ -57,6 +57,8 @@ object TandoorCapabilities {
 
     /** What [assessment] and [space] (null when not read) decide, and which probes are left. */
     fun plan(assessment: VersionAssessment, space: SpaceDto?): CapabilityPlan {
+        // A server the app refuses offers nothing, whatever its space says.
+        if (assessment.compatibility == ServerCompatibility.TOO_OLD) return CapabilityPlan(emptySet(), emptyList())
         val features = mutableSetOf<ServerFeature>()
         val probes = mutableListOf<CapabilityProbe>()
         val householdsSetUp = space?.householdSetupCompleted == true
@@ -64,8 +66,6 @@ object TandoorCapabilities {
 
         val version = assessment.version
         when {
-            assessment.compatibility == ServerCompatibility.TOO_OLD -> Unit
-
             version == null -> {
                 features += BASE_2X - ServerFeature.VIEW_LOG
                 probes += CapabilityProbe.VIEW_LOG
