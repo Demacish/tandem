@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -128,7 +130,8 @@ class RecoveryScreenshotTest {
     fun logInAgainIsOffered() {
         show()
         val text = ApplicationProvider.getApplicationContext<Application>().getString(R.string.app_recovery_log_in_again)
-        composeRule.onNodeWithText(text).performScrollTo().performClick()
+        // The card's heading says the same thing; the button is the clickable node.
+        composeRule.onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         assertEquals(1, logInAgain)
     }
 }
