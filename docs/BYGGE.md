@@ -120,9 +120,55 @@ Gemensamt för Android-moduler:
   och checka in filerna oförändrade.
 - **Version:** till och med den första release som innehåller databasen (0.1.0) stannar
   versionen på 1 och `1.json` genereras om. Därefter kräver varje ändring en ny version, en
-  migrering och ett migreringstest.
-- **Migreringstester** (Robolectric) hittar schemamappen i systemegenskapen `tandem.roomSchemaDir`,
-  som `tandem.android.room` sätter på alla testuppgifter.
+  migrering i `TandemMigrations` och ett fall i `TandemMigrationTest`.
+- **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
+  schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
+  (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
+  instrumenterade tester). Mappen finns också i systemegenskapen `tandem.roomSchemaDir`.
+  `TandemMigrationTest` visar redan nu att en fil skapad från den incheckade `1.json` öppnas av
+  koden (Room jämför identity hash), så ett schema som inte checkats in fångas även av testerna.
+
+### Tabeller (plan 5.7)
+
+Alla tabeller utom `server_account` och `outbox` har `account_id` först i nyckeln, och varje
+DAO-funktion tar konto-id:t. Det finns inga SQL-främmande nycklar: `AccountDao.deleteAccountData`
+tar bort ett kontos rader i alla tabeller i en transaktion (en `INSERT OR REPLACE` på kontot kan
+alltså aldrig kaskadradera allt).
+
+| Tabell | Innehåll |
+|---|---|
+| `server_account` | Kontospegel utan hemligheter (bas-URL, användar-, space- och hushålls-id, version, gruppnivå, tokenens id) |
+| `recipe_overview` | Listdata. Nyckel `(account_id, server_id)` (unikt index); `local_id` är rowid och delas med `recipe_fts` |
+| `recipe_detail` | Rå JSON + utdragna kolumner + lokalt läge (`pinned`, `last_viewed_local`, `portions_chosen`). En rad utan JSON är en "stubbe" med bara lokalt läge; offline = JSON finns |
+| `step`, `ingredient` | Byggs om när detaljen sparas. Nyckel position (serverns `order` är inte unik) |
+| `recipe_keyword`, `keyword`, `food`, `unit`, `meal_type`, `user_preference` | Referensdata |
+| `meal_plan` | `from_date`/`to_date` som `yyyy-MM-dd` (serverns zon) + rå datetime; `local_id = server_id` för serverposter |
+| `home_section`, `home_section_recipe` | Idag-karusellernas senaste svar (typ, ordnade recept-id, `fetched_at`) |
+| `sync_state` | En rad per entitet: tidsstämpel, datum, full omläsning, matsedelsfönster, hash |
+| `outbox` | Köade skrivningar (plan 5.7-kolumnerna, `state` PENDING/PAUSED/FAILED/IN_FLIGHT) |
+| `recipe_fts` | FTS4, `unicode61 remove_diacritics=2`, över namn, beskrivning, nyckelord och ingrediensnamn |
+
+- **FTS hålls i synk för hand** (ingen external content, eftersom innehållet kommer från fyra
+  tabeller): `RecipeDao`s skrivfunktioner (`applyIndex`, `upsertOverviews`, `replaceDetail`,
+  `deleteRecipes`, `evictDetail`, `replaceKeywords`) skriver om FTS-raderna i samma transaktion.
+  Skriv aldrig till recepttabellerna förbi dem.
+- **Sökning** (`RecipeDao.observeRecipeList`): varje ord måste matcha, antingen som ordprefix
+  någonstans i FTS-indexet eller som delsträng i namnet (`search_name`, gemener utan diakritiska
+  tecken), så att "pasta" hittar "Svamppasta". Användarens text blir citerade prefixtermer, så
+  FTS-operatorer kan inte ge syntaxfel. Filtren körs i SQL; sorteringen i Kotlin med en Collator
+  för språket (svenska: å, ä, ö efter z), samma regler som fejkrepositoryt i `:core:testing`.
+- **Indexets raderingsregel** (`applyIndex`): recept som saknas i `recipe/flat` raderas med allt
+  som hör till dem (även osända outbox-rader), utom fästa recept med osända redigeringar. En tom
+  lista raderar ingenting om inte `allowEmpty = true`.
+- **Outbox:** `nextReady` ger lägsta id vars `depends_on` är klar (raderad) och som inte har en
+  äldre rad för samma objekt kvar. `markFailed` markerar även alla beroende rader. Flera osända
+  VIEW_LOG för samma recept slås ihop (`enqueueViewLog`).
+- **Två databasfiler** (plan 6.2 Demoläge): `TandemDatabaseFactory.get(DatabaseKind.REAL | DEMO)`
+  ger `tandem.db` respektive `tandem-demo.db` med samma schema. Hilt binder den riktiga som
+  `TandemDatabase` (och alla DAO:er) och demodatabasen som `@DemoDatabase TandemDatabase`.
+  `clear(kind)` tömmer en fil, `clearAccount(kind, id)` ett konto (utloggning).
+- `mapper/` mappar rader till `core:model` och tillbaka (`Recipe.toDetailWrite`,
+  `RecipeOverview.toOverviewWrite`, `RecipeListItem.toModel`, `MealPlanRow.toModel` ...).
 
 ## Repository-kontrakt (`:core:data`) och fakes (`:core:testing`)
 

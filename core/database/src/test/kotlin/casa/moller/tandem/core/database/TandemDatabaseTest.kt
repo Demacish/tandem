@@ -1,8 +1,7 @@
 package casa.moller.tandem.core.database
 
-import androidx.room3.Room
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.database.entity.SyncEntities
 import casa.moller.tandem.core.database.entity.SyncStateEntity
 import java.io.File
 import kotlinx.coroutines.flow.first
@@ -17,11 +16,7 @@ import org.junit.runner.RunWith
 /** The Room wiring works on Robolectric: KSP generated the database, and rows round-trip. */
 @RunWith(AndroidJUnit4::class)
 class TandemDatabaseTest {
-
-    private val database = Room.inMemoryDatabaseBuilder(
-        ApplicationProvider.getApplicationContext(),
-        TandemDatabase::class.java,
-    ).build()
+    private val database = newDatabase()
 
     @After
     fun close() {
@@ -31,15 +26,25 @@ class TandemDatabaseTest {
     @Test
     fun syncStateIsStoredPerAccount() = runTest {
         val dao = database.syncStateDao()
-        dao.upsert(SyncStateEntity(accountId = "a", entity = "recipe", lastDate = "2026-10-01"))
-        dao.upsert(SyncStateEntity(accountId = "b", entity = "recipe"))
+        dao.upsert(SyncStateEntity(accountId = "a", entity = SyncEntities.RECIPE, lastDate = "2026-10-01"))
+        dao.upsert(SyncStateEntity(accountId = "a", entity = SyncEntities.MEAL_PLAN, windowFrom = "2026-09-22", windowTo = "2026-11-17"))
+        dao.upsert(SyncStateEntity(accountId = "b", entity = SyncEntities.RECIPE, hash = "abc"))
 
-        assertEquals("2026-10-01", dao.get("a", "recipe")?.lastDate)
-        assertEquals(listOf("recipe"), dao.observe("a").first().map { it.entity })
+        assertEquals("2026-10-01", dao.get("a", SyncEntities.RECIPE)?.lastDate)
+        assertEquals("2026-11-17", dao.get("a", SyncEntities.MEAL_PLAN)?.windowTo)
+        assertEquals(listOf(SyncEntities.MEAL_PLAN, SyncEntities.RECIPE), dao.observe("a").first().map { it.entity })
 
+        dao.delete("a", SyncEntities.MEAL_PLAN)
+        assertNull(dao.get("a", SyncEntities.MEAL_PLAN))
         dao.deleteAccount("a")
-        assertNull(dao.get("a", "recipe"))
-        assertEquals(1, dao.observe("b").first().size)
+        assertNull(dao.get("a", SyncEntities.RECIPE))
+        assertEquals("abc", dao.get("b", SyncEntities.RECIPE)?.hash)
+    }
+
+    @Test
+    fun ftsTableUsesUnicode61WithoutDiacritics() = runTest {
+        val sql = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'recipe_fts' AND sql LIKE '%unicode61%remove_diacritics=2%'"
+        assertEquals(1L, database.count(sql))
     }
 
     @Test

@@ -1,14 +1,19 @@
 import androidx.room3.gradle.RoomExtension
+import androidx.room3.gradle.RoomSchemaCopyTask
+import androidx.room3.gradle.RoomSimpleCopyTask
 import casa.moller.tandem.buildlogic.addBundle
 import casa.moller.tandem.buildlogic.bundle
 import casa.moller.tandem.buildlogic.lib
 import casa.moller.tandem.buildlogic.libs
 import casa.moller.tandem.buildlogic.withAndroid
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
+import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 
 /**
@@ -19,7 +24,9 @@ import org.gradle.kotlin.dsl.withType
  *   pr.yml fails when a build changes or adds a schema file that is not committed (the CI
  *   artifact `room-schemas` then holds the new files, see docs/BYGGE.md "Room").
  * - Unit tests (Robolectric) get the schema folder as the system property `tandem.roomSchemaDir`,
- *   for migration tests (`MigrationTestHelper` with a schema directory).
+ *   and the schema files as unit-test assets (`<database class>/<version>.json`), which is where
+ *   room3-testing's `MigrationTestHelper` reads them (the Room plugin only does this for
+ *   instrumented tests).
  * - Adds room3-runtime + room3-paging (bundle `room3`), `ksp(room3-compiler)` and room3-testing for tests.
  */
 class AndroidRoomConventionPlugin : Plugin<Project> {
@@ -31,6 +38,18 @@ class AndroidRoomConventionPlugin : Plugin<Project> {
                 pluginManager.apply("androidx.room3")
                 extensions.configure<RoomExtension> {
                     schemaDirectory(schemaDir)
+                }
+                extensions.findByType(LibraryAndroidComponentsExtension::class.java)?.onVariants { variant ->
+                    val unitTest = variant.unitTest ?: return@onVariants
+                    val copySchemas = tasks.register<RoomSimpleCopyTask>(
+                        "copyRoomSchemasToUnitTestAssets" + variant.name.replaceFirstChar { it.uppercase() },
+                    ) {
+                        // Same wiring as the Room plugin's copy for instrumented tests; ordered after
+                        // Room exported the current schema into the folder.
+                        inputDirectory.set(tasks.named<RoomSchemaCopyTask>("copyRoomSchemas").flatMap { it.schemaDirectory })
+                        mustRunAfter(tasks.withType<RoomSchemaCopyTask>())
+                    }
+                    unitTest.sources.assets?.addGeneratedSourceDirectory(copySchemas, RoomSimpleCopyTask::outputDirectory)
                 }
                 dependencies {
                     addBundle("implementation", libs.bundle("room3"))

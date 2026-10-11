@@ -8,9 +8,13 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.core.model)
+    // DAO signatures use core:model types (RecipeQuery, HomeSectionType, NutritionPresence) and
+    // TandemDatabase extends RoomDatabase, so both are part of this module's API.
+    api(projects.core.model)
+    api(libs.androidx.room3.runtime)
     implementation(projects.core.common)
     implementation(libs.kotlinx.coroutines.android)
-    // The raw recipe JSON is stored next to the extracted columns (plan 3.6, 5.7).
+    // The raw recipe JSON is stored next to the extracted columns (plan 3.6, 5.7); the
+    // ingredient conversions column is JSON too.
     implementation(libs.kotlinx.serialization.json)
 }
