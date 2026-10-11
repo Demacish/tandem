@@ -6,6 +6,7 @@ import casa.moller.tandem.buildlogic.bundle
 import casa.moller.tandem.buildlogic.lib
 import casa.moller.tandem.buildlogic.libs
 import casa.moller.tandem.buildlogic.withAndroid
+import com.android.build.api.variant.HasUnitTest
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -40,7 +41,8 @@ class AndroidRoomConventionPlugin : Plugin<Project> {
                     schemaDirectory(schemaDir)
                 }
                 extensions.findByType(LibraryAndroidComponentsExtension::class.java)?.onVariants { variant ->
-                    val unitTest = variant.unitTest ?: return@onVariants
+                    // `Variant.unitTest` is hidden in AGP 9; the replacement is HasUnitTest.unitTest.
+                    val unitTest = (variant as? HasUnitTest)?.unitTest ?: return@onVariants
                     val copySchemas = tasks.register<RoomSimpleCopyTask>(
                         "copyRoomSchemasToUnitTestAssets" + variant.name.replaceFirstChar { it.uppercase() },
                     ) {
