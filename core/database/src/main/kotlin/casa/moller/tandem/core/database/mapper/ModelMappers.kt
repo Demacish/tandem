@@ -220,27 +220,23 @@ fun MealType.toEntity(accountId: String): MealTypeEntity = MealTypeEntity(
  * A meal plan entry from the server (`local_id = server id`). [fromRaw]/[toRaw] are the
  * server's date-times as sent; the dates in the entry are already the server-zone days.
  */
-fun MealPlanEntry.toEntity(
-    accountId: String,
-    fromRaw: String? = null,
-    toRaw: String? = null,
-    createdBy: Long? = null,
-): MealPlanEntity = MealPlanEntity(
-    accountId = accountId,
-    localId = id,
-    serverId = id,
-    title = title,
-    recipeId = recipe?.id,
-    servings = servings,
-    note = note,
-    fromDate = fromDate.toString(),
-    toDate = toDate.toString(),
-    fromRaw = fromRaw,
-    toRaw = toRaw,
-    mealTypeId = mealType.id,
-    shopping = onShoppingList,
-    createdBy = createdBy,
-)
+fun MealPlanEntry.toEntity(accountId: String, fromRaw: String? = null, toRaw: String? = null, createdBy: Long? = null): MealPlanEntity =
+    MealPlanEntity(
+        accountId = accountId,
+        localId = id,
+        serverId = id,
+        title = title,
+        recipeId = recipe?.id,
+        servings = servings,
+        note = note,
+        fromDate = fromDate.toString(),
+        toDate = toDate.toString(),
+        fromRaw = fromRaw,
+        toRaw = toRaw,
+        mealTypeId = mealType.id,
+        shopping = onShoppingList,
+        createdBy = createdBy,
+    )
 
 fun UserPreferences.toEntity(accountId: String, fetchedAtEpochMillis: Long): UserPreferenceEntity = UserPreferenceEntity(
     accountId = accountId,
