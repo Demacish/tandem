@@ -298,6 +298,47 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   `ServerStatusScreenshotTest` och `RecoveryScreenshotTest` (telefon 412×915 dp, medium stående
   800×1280 dp, surfplatta liggande 1280×800 dp; ljust/mörkt, engelska/svenska, textskala 2).
 
+<!-- Fas 1 domain -->
+## Receptvisning (`:core:domain`, Fas 1)
+
+Ren Kotlin (JVM, JUnit 5) utan Android-typer. Allt som receptvyn och senare kokläget visar och
+som beror på portionerna räknas här, likadant som Tandoors webb (plan §10 Fas 1, FACTS.md
+"Fas 1 d" och "Fas 1 l"):
+
+- **Ett anrop för UI:t:** `RecipeDisplay.build(recipe, servings, preferences, style)` ger
+  `RecipeDisplayModel` med faktorn, alla ingrediensrader (`ingredients`, rubriker inräknade;
+  `ingredientGroups` grupperade under rubrikerna) och stegen (`StepDisplay`: nummer, namn,
+  instruktionen som Markdown med mallarna renderade, `hasBrokenTemplate`, stegets rader, tid,
+  `show_as_header`, `show_ingredients_table`, delrecept). `style` kommer från UI:ts locale:
+  `Locale.toNumberStyle()` (decimalkomma på svenska, typografiska bråk `1 ½`, `³⁄₁₁`).
+- **Skalning och format** (`scaling/`): `ServingsScaling.factor` = valda portioner /
+  max(`servings`, 1); `servings_text` är bara en etikett (`ServingsText.label`).
+  `WebAmountFormat` avrundar som JavaScripts `toFixed` (det exakta binära värdet, `1.005` → `1`)
+  eller ger bråk med nämnare ≤ 16 (Stern–Brocot som webbens `frac`); `PluralRule` väljer singular
+  när |mängd − 1| < 0,0001, vid `no_amount` eller utan pluralnamn. Det äldre `FormatAmount` finns
+  kvar men följer inte webben.
+- **Ingrediensrader** (`IngredientDisplay`): rubrik = `note`; mängd och enhet bara när
+  `!no_amount && amount != 0`; enhetsbyte i serverns `conversions`-ordning utan dubbletter
+  (`Item.unitAt(index)` går runt i båda riktningarna).
+- **Mallar** (`TemplateRenderer`): `{{ scale(N) }}`, `{{ ingredients[i] }}` och `.amount`,
+  `.unit`, `.food`, `.note`. Enhetstexten skrivs för receptets egen mängd (som servern), livsmedlet
+  för den skalade. JSON:en avrundar mängder till 4 decimaler; mallarna tar det exakta värdet ur
+  radens första `conversions`-post (annars blir t.ex. 13/12 portioner av ⅔ `8⁄11` i stället för
+  webbens `5⁄7`). Okända mallar står kvar som de skrevs; trasig syntax ger `hasBrokenTemplate`
+  och instruktionen oförändrad. Insatt text Markdown-escapas.
+- **Metadata** (`RecipeMeta.kt`): `DurationText.format(75)` = "1 h 15 min" (hårt mellanslag mellan
+  tal och enhet), `RatingDisplay.of(rating, style)` (halva stjärnor, text med en decimal),
+  `ServingsText`.
+- **Webbparitet:** `RecipeDisplayGoldenTest` läser `api-schema/fixtures/2.6.13/fas1/` (sökvägen
+  skickas som systemegenskapen `tandem.fixturesDir` från `core/domain/build.gradle.kts`) och
+  kräver att varje ingrediensrad, varje mallvärde och varje stegtext är identisk med
+  `scaling-golden.json` för alla 11 recept, portioner och bråk av/på (stegtexterna jämförs som
+  synlig text: webbens HTML mot appens Markdown). Saknas filen hoppas testet över med ett
+  tydligt meddelande.
+- **KMP (B2):** de publika signaturerna är ren Kotlin; enda JVM-beroendena är
+  `Locale.toNumberStyle()` och `java.math` internt i `WebAmountFormat.toFixed`.
+<!-- /Fas 1 domain -->
+
 ## CI
 
 `.github/workflows/pr.yml` körs vid varje push och pull request (inte när bara `docs/**` eller
