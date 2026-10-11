@@ -339,8 +339,11 @@ class DemoContentTest {
      */
     private fun skeleton(json: JsonElement, key: String?): JsonElement = when (json) {
         is JsonObject -> JsonObject(json.mapValues { (k, v) -> skeleton(v, k) })
+
         is JsonArray -> JsonArray(json.map { skeleton(it, key) })
+
         is JsonNull -> if (key == "plural_name") JsonPrimitive("s") else json
+
         is JsonPrimitive -> when {
             !json.isString -> json
             key in KEEP_STRINGS -> json

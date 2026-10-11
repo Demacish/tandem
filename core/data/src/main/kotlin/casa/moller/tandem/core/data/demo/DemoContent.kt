@@ -192,12 +192,15 @@ class DemoContent(private val assets: DemoAssets) {
          */
         internal fun shiftDates(json: JsonElement, days: Int): JsonElement = when {
             days == 0 -> json
+
             json is JsonObject -> JsonObject(
                 json.mapValues { (key, value) ->
                     if (key in DATE_KEYS && value is JsonPrimitive && value.isString) shiftDate(value, days) else shiftDates(value, days)
                 },
             )
+
             json is JsonArray -> JsonArray(json.map { shiftDates(it, days) })
+
             else -> json
         }
 
