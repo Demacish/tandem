@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
@@ -75,6 +77,22 @@ internal fun HomeRecipeImage(imageUrl: String?, modifier: Modifier = Modifier, p
     }
 }
 
+/** Tallest the "Tonight" photo gets; on wide columns it is cropped instead of growing. */
+private val TonightImageMaxHeight = 300.dp
+
+/**
+ * Full width and [ratio] (width / height), but never taller than [maxHeight]. `heightIn` followed
+ * by `aspectRatio` cannot express this: with a fixed width the ratio wins and the photo overflows
+ * its slot into the text below (tablet two-column layout).
+ */
+private fun Modifier.cappedAspectRatio(ratio: Float, maxHeight: Dp): Modifier = layout { measurable, constraints ->
+    val cap = maxHeight.roundToPx()
+    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else (cap * ratio).toInt()
+    val height = (width / ratio).toInt().coerceAtMost(cap).coerceIn(constraints.minHeight, constraints.maxHeight)
+    val placeable = measurable.measure(Constraints.fixed(width, height))
+    layout(width, height) { placeable.place(0, 0) }
+}
+
 /**
  * "Tonight" (design idag_*: "Ikväll"): photo, meal type, name, description, time and servings.
  * The whole card opens the recipe; an entry with only a title is shown but not clickable.
@@ -105,10 +123,7 @@ internal fun TonightCard(entry: MealPlanEntry, onOpenRecipe: (Long) -> Unit, mod
             HomeRecipeImage(
                 imageUrl = recipe.imageUrl,
                 placeholderSize = 56.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 300.dp)
-                    .aspectRatio(16f / 9f),
+                modifier = Modifier.cappedAspectRatio(ratio = 16f / 9f, maxHeight = TonightImageMaxHeight),
             )
         }
         Column(
