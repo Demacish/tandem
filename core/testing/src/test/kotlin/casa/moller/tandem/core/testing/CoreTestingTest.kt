@@ -57,4 +57,11 @@ class CoreTestingTest {
         assertNotNull(user.body)
         assertTrue(TandoorFixtures.text("FACTS.md").isNotBlank())
     }
+
+    @Test
+    fun phase1RecordingsAreInTheFas1Folder() {
+        val preferences = TandoorFixtures.exchange("fas1/user-preference")
+        assertEquals("/api/user-preference/", preferences.path)
+        assertEquals(200, preferences.status)
+    }
 }

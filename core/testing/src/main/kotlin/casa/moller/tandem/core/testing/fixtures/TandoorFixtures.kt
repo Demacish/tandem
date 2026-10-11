@@ -8,11 +8,13 @@ import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Reads the sanitized recordings of a real Tandoor (`api-schema/fixtures/<version>/`, made by
- * `Phase0ContractTest` in contract.yml; see FACTS.md there). core:testing puts that folder on the
- * test classpath, so any module's unit test can use the same files as the contract tests.
+ * `Phase0ContractTest` and, in the `fas1/` subfolder, `Phase1ContractTest` in contract.yml; see
+ * FACTS.md there). core:testing puts that folder on the test classpath, so any module's unit test
+ * can use the same files as the contract tests.
  *
  * ```
  * val user = TandoorFixtures.exchange("11-user-by-id")
+ * val recipes = TandoorFixtures.exchange("fas1/recipe-list-default")
  * server.enqueue(MockResponse(code = user.status, body = user.body!!))
  * ```
  */
