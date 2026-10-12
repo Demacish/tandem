@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.containerColor
 import casa.moller.tandem.core.designsystem.component.contentColor
@@ -98,6 +99,53 @@ fun SafeModeBanner(
                 contentDescription = null,
                 modifier = Modifier.size(TandemTheme.sizes.icon),
             )
+        }
+    }
+}
+
+/**
+ * Banner above the tab content after Tandoor refused this device's token (401 or JSON-403, plan
+ * 4.1 and 5.4): the sync has stopped, nothing was deleted, and "Log in again" leads to a new
+ * login on the same server. Logging in to the same user and space keeps every stored recipe and
+ * lets the outbox continue (plan 3.5). Announced politely by TalkBack when it appears.
+ *
+ * @param windowInsets insets to keep the text clear of (the status bar when the banner is at the
+ *   top of the window); the colour still fills the area behind them.
+ */
+@Composable
+fun LoginExpiredBanner(onLogInAgain: () -> Unit, modifier: Modifier = Modifier, windowInsets: WindowInsets = WindowInsets(0)) {
+    val spacing = TandemTheme.spacing
+    val tone = TandemTone.Error
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+        color = tone.containerColor(),
+        contentColor = tone.contentColor(),
+    ) {
+        Row(
+            modifier = Modifier
+                .windowInsetsPadding(windowInsets)
+                .heightIn(min = TandemTheme.sizes.minTouchTarget)
+                .padding(start = spacing.lg, end = spacing.sm, top = spacing.sm, bottom = spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            Icon(
+                imageVector = TandemIcons.Key,
+                contentDescription = null,
+                tint = tone.iconColor(),
+                modifier = Modifier.size(TandemTheme.sizes.icon),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.ui_login_expired_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(text = stringResource(R.string.ui_login_expired_body), style = MaterialTheme.typography.bodySmall)
+            }
+            TandemTextButton(text = stringResource(R.string.ui_login_expired_action), onClick = onLogInAgain)
         }
     }
 }

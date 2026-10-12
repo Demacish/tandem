@@ -56,6 +56,8 @@
     <string name="shell_logged_out_pasted_token">Logged out on this device. The pasted token is still valid; delete it in Tandoor under Settings → API if you no longer need it.</string>
     <string name="shell_logout_failed">Could not log out: secure storage on this device is not available.</string>
     <string name="shell_settings_not_saved">The setting could not be saved.</string>
+    <string name="shell_demo_data_reset">The demo data is back to how it started.</string>
+    <string name="shell_demo_data_reset_failed">The demo data could not be reset.</string>
 
     <!-- Language (plan 6.7). Language names are shown in their own language. -->
     <string name="shell_language_system">System language</string>
@@ -89,4 +91,9 @@
     <string name="shell_license_libraries" translatable="false">AndroidX, Jetpack Compose, Kotlin, kotlinx, Dagger Hilt, OkHttp, Retrofit, Tink</string>
     <string name="shell_license_ofl" translatable="false">SIL Open Font License 1.1</string>
     <string name="shell_license_apache" translatable="false">Apache License 2.0</string>
+
+    <!-- Demo mode under More (plan 6.2 "Demoläge"). -->
+    <string name="shell_more_section_demo">Demo</string>
+    <string name="shell_reset_demo_data">Reset demo data</string>
+    <string name="shell_reset_demo_data_body">Undo what you changed and start the sample recipes over</string>
 </resources>

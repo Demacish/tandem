@@ -25,4 +25,9 @@
     <string name="ui_server_too_old_body">Tandem kräver Tandoor 2.0 eller nyare, så synk och ändringar är avstängda. Uppdatera Tandoor på servern och försök igen. Du kan logga ut under Mer.</string>
 
     <string name="ui_offline_notice">Offline: visar det som sparats i enheten</string>
+
+    <!-- The sync stopped on 401 / JSON-403 (plan 4.1, 5.4): banner above the tabs. -->
+    <string name="ui_login_expired_title">Logga in igen för att synka</string>
+    <string name="ui_login_expired_body">Tandoor godkänner inte längre den här enhetens inloggning. Sparade recept och ändringar som inte skickats finns kvar i enheten.</string>
+    <string name="ui_login_expired_action">Logga in igen</string>
 </resources>

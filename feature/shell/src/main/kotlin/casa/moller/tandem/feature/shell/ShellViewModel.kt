@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.shell
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.common.AppBuildInfo
+import casa.moller.tandem.core.data.demo.DemoDataRepository
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -41,6 +42,9 @@ interface ShellActions {
     fun logout(revokeToken: Boolean)
 
     fun setThemeMode(mode: ThemeMode)
+
+    /** "Reset demo data" in demo mode: the sample recipes as they were shipped. */
+    fun resetDemoData()
 }
 
 /**
@@ -58,6 +62,7 @@ class ShellViewModel internal constructor(
     buildInfo: AppBuildInfo,
     private val applicationScope: CoroutineScope,
     syncRepository: SyncRepository,
+    private val demoData: DemoDataRepository,
     /** Monotonic time in milliseconds, for the resume throttle. */
     private val elapsedMillis: () -> Long,
 ) : ViewModel(),
@@ -71,6 +76,7 @@ class ShellViewModel internal constructor(
         buildInfo: AppBuildInfo,
         @ApplicationScope applicationScope: CoroutineScope,
         syncRepository: SyncRepository,
+        demoData: DemoDataRepository,
     ) : this(
         sessionRepository = sessionRepository,
         appearanceRepository = appearanceRepository,
@@ -78,6 +84,7 @@ class ShellViewModel internal constructor(
         buildInfo = buildInfo,
         applicationScope = applicationScope,
         syncRepository = syncRepository,
+        demoData = demoData,
         elapsedMillis = { System.nanoTime() / NANOS_PER_MILLI },
     )
 
@@ -91,23 +98,28 @@ class ShellViewModel internal constructor(
 
     private val appVersion = AppVersion(buildInfo.versionName, buildInfo.versionCode, buildInfo.distribution)
 
-    // Phase 1 (sync lane): the "Offline" chip also follows the sync's own network pause.
-    private val syncOffline = syncRepository.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged()
+    // Phase 1 (sync lane): the "Offline" chip also follows the sync's own network pause; the
+    // integration lane adds the "Log in again" banner for a token Tandoor no longer accepts.
+    private val syncPause = syncRepository.status.map { it.pause }.distinctUntilChanged()
 
     val uiState: StateFlow<ShellUiState> = combine(
         session,
         appearanceRepository.themeMode,
         operations,
-        syncOffline,
-    ) { current, theme, ops, offline ->
+        syncPause,
+    ) { current, theme, ops, pause ->
+        val mode = current.toShellMode()
         ShellUiState(
-            mode = current.toShellMode(),
+            mode = mode,
             themeMode = theme,
             refreshing = ops.refreshing,
             refreshError = ops.refreshError,
             loggingOut = ops.loggingOut,
             appVersion = appVersion,
-            syncOffline = offline,
+            syncOffline = pause == SyncPause.OFFLINE,
+            // Only for the account that is shown: never in demo mode or while switching.
+            loginExpired = pause == SyncPause.UNAUTHORIZED && mode is ShellMode.Connected,
+            resettingDemo = ops.resettingDemo,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
@@ -161,7 +173,22 @@ class ShellViewModel internal constructor(
         }
     }
 
-    private data class Operations(val refreshing: Boolean = false, val refreshError: TandemError? = null, val loggingOut: Boolean = false)
+    override fun resetDemoData() {
+        if (operations.value.resettingDemo || session.value != Session.Demo) return
+        operations.update { it.copy(resettingDemo = true) }
+        viewModelScope.launch {
+            val result = demoData.resetDemoData()
+            operations.update { it.copy(resettingDemo = false) }
+            messages.post(if (result is Outcome.Success) ShellMessage.DEMO_DATA_RESET else ShellMessage.DEMO_DATA_RESET_FAILED)
+        }
+    }
+
+    private data class Operations(
+        val refreshing: Boolean = false,
+        val refreshError: TandemError? = null,
+        val loggingOut: Boolean = false,
+        val resettingDemo: Boolean = false,
+    )
 
     internal companion object {
         /** Plan 3.6 point 3: at most one automatic version check per 15 minutes on resume. */

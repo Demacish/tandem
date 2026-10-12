@@ -95,11 +95,14 @@ import casa.moller.tandem.feature.shell.ui.selectedIcon
  *   the intro at the server step (plan 6.2).
  * @param crashNotice shown at the top of Mer: the app's "Tandem crashed last time" card while a
  *   crash log is stored (plan 4.2 p7); emits nothing otherwise.
+ * @param onLogInAgain "Log in again" on the banner after Tandoor refused the token: the app opens
+ *   the intro at the server step for the same server (plan 4.1, 5.4).
  */
 @Composable
 fun TandemShell(
     onConnectTandoor: () -> Unit,
     modifier: Modifier = Modifier,
+    onLogInAgain: (serverUrl: String) -> Unit = {},
     viewModel: ShellViewModel = hiltViewModel(),
     languageController: LanguageController = rememberLanguageController(),
     crashNotice: @Composable () -> Unit = {},
@@ -126,6 +129,7 @@ fun TandemShell(
         features = RouteShellFeatures,
         modifier = modifier,
         crashNotice = crashNotice,
+        onLogInAgain = onLogInAgain,
     )
 }
 
@@ -207,6 +211,7 @@ internal fun ShellScaffold(
     modifier: Modifier = Modifier,
     navigationSuiteType: NavigationSuiteType = shellNavigationSuiteType(currentShellWindowSize()),
     crashNotice: @Composable () -> Unit = {},
+    onLogInAgain: (serverUrl: String) -> Unit = {},
 ) {
     // The demo banner can be put away for this session; the "Demo" chip in the top bar stays.
     var demoBannerDismissed by rememberSaveable { mutableStateOf(false) }
@@ -349,6 +354,7 @@ internal fun ShellScaffold(
                 navigation = navigation,
                 onOpenSafeModeInfo = { navigation.navigate(SafeModeInfoKey) },
                 onCheckAgain = actions::refreshServerInfo,
+                onLogInAgain = { (state.mode as? ShellMode.Connected)?.let { onLogInAgain(it.account.serverUrl) } },
             ) {
                 ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
             }

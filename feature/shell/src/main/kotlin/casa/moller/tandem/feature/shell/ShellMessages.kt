@@ -14,6 +14,8 @@ enum class ShellMessage(@StringRes val text: Int) {
     LOGGED_OUT_PASTED_TOKEN(R.string.shell_logged_out_pasted_token),
     LOGOUT_FAILED(R.string.shell_logout_failed),
     SETTINGS_NOT_SAVED(R.string.shell_settings_not_saved),
+    DEMO_DATA_RESET(R.string.shell_demo_data_reset),
+    DEMO_DATA_RESET_FAILED(R.string.shell_demo_data_reset_failed),
 }
 
 /**

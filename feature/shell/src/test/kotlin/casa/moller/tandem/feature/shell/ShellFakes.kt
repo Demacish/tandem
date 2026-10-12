@@ -126,6 +126,12 @@ internal class RecordingActions : ShellActions {
     override fun setThemeMode(mode: ThemeMode) {
         themes += mode
     }
+
+    var demoResets = 0
+
+    override fun resetDemoData() {
+        demoResets++
+    }
 }
 
 /**

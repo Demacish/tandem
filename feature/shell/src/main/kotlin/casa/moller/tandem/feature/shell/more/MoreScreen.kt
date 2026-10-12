@@ -72,7 +72,7 @@ import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
  * "Mer" in Phase 0 (plan 6.2 "Inställningar", design mer_inst_llningar with the corrections in
  * docs/design/README.md): the account with server address and the Tandoor version (checked again
  * by pull-to-refresh), language, theme, About and logout. In demo mode the account card is
- * replaced by the demo banner. [crashNotice] (the app's "Tandem crashed last time" card, plan
+ * replaced by the demo banner, and "Reset demo data" puts the sample recipes back. [crashNotice] (the app's "Tandem crashed last time" card, plan
  * 4.2 p7) comes first when there is a crash log.
  */
 @Composable
@@ -141,6 +141,18 @@ internal fun MoreScreen(
                             supporting = stringResource(R.string.shell_about_version, state.appVersion.name),
                             onClick = onOpenAbout,
                         )
+                    }
+
+                    if (state.isDemo) {
+                        SectionHeader(stringResource(R.string.shell_more_section_demo))
+                        SettingsGroup {
+                            SettingsRow(
+                                icon = TandemIcons.Refresh,
+                                title = stringResource(R.string.shell_reset_demo_data),
+                                supporting = stringResource(R.string.shell_reset_demo_data_body),
+                                onClick = actions::resetDemoData,
+                            )
+                        }
                     }
 
                     if (connected != null) {

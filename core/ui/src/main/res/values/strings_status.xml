@@ -26,4 +26,9 @@
     <string name="ui_server_too_old_body">Tandem needs Tandoor 2.0 or newer, so syncing and changes are turned off. Update Tandoor on your server and try again. You can log out under More.</string>
 
     <string name="ui_offline_notice">Offline: showing what is saved on this device</string>
+
+    <!-- The sync stopped on 401 / JSON-403 (plan 4.1, 5.4): banner above the tabs. -->
+    <string name="ui_login_expired_title">Log in again to sync</string>
+    <string name="ui_login_expired_body">Tandoor no longer accepts this device’s login. Your saved recipes and unsent changes stay on this device.</string>
+    <string name="ui_login_expired_action">Log in again</string>
 </resources>

@@ -99,11 +99,16 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                     onFinished = viewModel::onOnboardingFinished,
                     onStartDemo = viewModel::onDemoStarted,
                     startAtServerStep = state.startOnboardingAtServer,
+                    serverUrl = state.onboardingServerUrl,
                     crashNotice = crashNotice,
                 )
             }
             entry<AppDestination.Shell> {
-                TandemShell(onConnectTandoor = viewModel::connectFromDemo, crashNotice = crashNotice)
+                TandemShell(
+                    onConnectTandoor = viewModel::connectFromDemo,
+                    crashNotice = crashNotice,
+                    onLogInAgain = viewModel::logInAgain,
+                )
             }
             entry<AppDestination.Recovery> {
                 RecoveryRoute(

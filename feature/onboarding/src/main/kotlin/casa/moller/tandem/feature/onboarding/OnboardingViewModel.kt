@@ -69,11 +69,15 @@ class OnboardingViewModel @Inject constructor(
 
     /**
      * Called once when the intro is shown. [atServerStep] skips the welcome step, e.g. for
-     * "Connect your Tandoor" from demo mode. Ignored after process death or rotation.
+     * "Connect your Tandoor" from demo mode; [serverUrl] fills in the address ("Log in again"
+     * after Tandoor refused the stored token). Ignored after process death or rotation.
      */
-    fun start(atServerStep: Boolean) {
+    fun start(atServerStep: Boolean, serverUrl: String? = null) {
         if (savedStateHandle.get<Boolean>(KEY_STARTED) == true) return
         savedStateHandle[KEY_STARTED] = true
+        if (!serverUrl.isNullOrBlank()) {
+            setState { it.copy(serverUrl = serverUrl) }
+        }
         if (atServerStep && state.value.step == OnboardingStep.WELCOME) {
             setState { it.copy(step = OnboardingStep.SERVER) }
         }

@@ -91,6 +91,14 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun startFillsInTheServerAddressToLogInAgain() {
+        val vm = newViewModel()
+        vm.start(atServerStep = true, serverUrl = "https://tandoor.example.com/recipes")
+        assertEquals(OnboardingStep.SERVER, vm.uiState.value.step)
+        assertEquals("https://tandoor.example.com/recipes", vm.uiState.value.serverUrl)
+    }
+
+    @Test
     fun blankAddressFailsLocallyWithoutProbing() {
         val vm = newViewModel().atServerStep(url = "  ")
         vm.onConnect()

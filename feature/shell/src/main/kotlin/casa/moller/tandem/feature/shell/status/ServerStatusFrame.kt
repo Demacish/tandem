@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.ui.navigation.FullScreenDestination
+import casa.moller.tandem.core.ui.status.LoginExpiredBanner
 import casa.moller.tandem.core.ui.status.SafeModeBanner
 import casa.moller.tandem.core.ui.status.ServerTooOldNotice
 import casa.moller.tandem.feature.shell.ShellMode
@@ -47,7 +48,8 @@ internal val ShellUiState.serverNotice: ServerNotice?
 
 /**
  * The hook between the shell and the server status UI of core:ui (docs/BYGGE.md "Serverstatus"):
- * the safe mode banner on top of the tab content, and the blocking notice for a server that is too
+ * the "Log in again" banner after Tandoor refused the token, the safe mode banner on top of the
+ * tab content, and the blocking notice for a server that is too
  * old in place of every tab but "More" (where the user can log out or change server).
  *
  * The banner takes the status bar inset and consumes it, so the screens below it do not pad for
@@ -60,21 +62,27 @@ internal fun ServerStatusFrame(
     navigation: ShellNavigationState,
     onOpenSafeModeInfo: () -> Unit,
     onCheckAgain: () -> Unit,
+    onLogInAgain: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val notice = state.serverNotice
     val current = navigation.currentKey
-    val showBanner = notice is ServerNotice.SafeMode &&
-        current != SafeModeInfoKey &&
-        (current as? FullScreenDestination)?.hidesNavigationOnAllWidths != true
+    val bannersAllowed = (current as? FullScreenDestination)?.hidesNavigationOnAllWidths != true
+    val showLoginExpired = state.loginExpired && bannersAllowed
+    val showSafeMode = notice is ServerNotice.SafeMode && current != SafeModeInfoKey && bannersAllowed
+    val showBanner = showLoginExpired || showSafeMode
     val bannerInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     Column(modifier = Modifier.fillMaxSize()) {
-        if (notice is ServerNotice.SafeMode && showBanner) {
+        // The topmost banner keeps its text clear of the status bar.
+        if (showLoginExpired) {
+            LoginExpiredBanner(onLogInAgain = onLogInAgain, windowInsets = bannerInsets)
+        }
+        if (notice is ServerNotice.SafeMode && showSafeMode) {
             SafeModeBanner(
                 version = notice.version,
                 compatibility = notice.compatibility,
                 onClick = onOpenSafeModeInfo,
-                windowInsets = bannerInsets,
+                windowInsets = if (showLoginExpired) WindowInsets(0) else bannerInsets,
             )
         }
         Box(

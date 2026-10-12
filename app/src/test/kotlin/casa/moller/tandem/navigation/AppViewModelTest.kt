@@ -66,6 +66,22 @@ class AppViewModelTest {
     }
 
     @Test
+    fun logInAgainOpensTheIntroAtTheServerStepForTheSameServer() {
+        sessions.state.value = LOGGED_IN
+        val vm = newViewModel()
+        assertEquals(AppDestination.Shell, vm.destination())
+
+        vm.logInAgain("https://tandoor.example.com")
+        assertEquals("the stored account stays, the intro is shown", AppDestination.Onboarding, vm.destination())
+        assertTrue(vm.uiState.value.startOnboardingAtServer)
+        assertEquals("https://tandoor.example.com", vm.uiState.value.onboardingServerUrl)
+
+        vm.onOnboardingFinished()
+        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(null, vm.uiState.value.onboardingServerUrl)
+    }
+
+    @Test
     fun loggedInUserGoesStraightHome() {
         sessions.state.value = LOGGED_IN
         assertEquals(AppDestination.Shell, newViewModel().destination())

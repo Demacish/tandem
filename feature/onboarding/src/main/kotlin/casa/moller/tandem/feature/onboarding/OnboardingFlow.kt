@@ -28,6 +28,7 @@ import casa.moller.tandem.feature.onboarding.ui.OnboardingScreen
  *   run in the background (and the battery tip, if shown, is closed).
  * @param onStartDemo called after demo mode was switched on (plan 4.5).
  * @param startAtServerStep skip the welcome step, e.g. for "Connect your Tandoor" in demo mode.
+ * @param serverUrl the address the server step starts with ("Log in again"), null for empty.
  * @param viewModel injected by Hilt; tests pass one with fake repositories.
  * @param languageController per-app language for the picker on the welcome step.
  * @param crashNotice shown at the top of the welcome step: the app's "Tandem crashed last time"
@@ -39,6 +40,7 @@ fun OnboardingFlow(
     onStartDemo: () -> Unit,
     modifier: Modifier = Modifier,
     startAtServerStep: Boolean = false,
+    serverUrl: String? = null,
     viewModel: OnboardingViewModel = hiltViewModel(),
     languageController: LanguageController = rememberLanguageController(),
     crashNotice: @Composable () -> Unit = {},
@@ -50,7 +52,7 @@ fun OnboardingFlow(
     var language by remember(languageController) { mutableStateOf(languageController.current) }
 
     LaunchedEffect(viewModel) {
-        viewModel.start(startAtServerStep)
+        viewModel.start(startAtServerStep, serverUrl)
         viewModel.events.collect { event ->
             when (event) {
                 OnboardingEvent.DemoStarted -> currentOnStartDemo()

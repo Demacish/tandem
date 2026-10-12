@@ -19,6 +19,13 @@ data class ShellUiState(
     val appVersion: AppVersion = AppVersion("", 0, ""),
     /** The sync pauses because the device has no network (`SyncStatus.pause == OFFLINE`). */
     val syncOffline: Boolean = false,
+    /**
+     * Tandoor refused the account's token (`SyncStatus.pause == UNAUTHORIZED`): the sync stopped
+     * and the shell shows "Log in again" (plan 4.1, 5.4). Never true in demo mode.
+     */
+    val loginExpired: Boolean = false,
+    /** "Reset demo data" is running. */
+    val resettingDemo: Boolean = false,
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo

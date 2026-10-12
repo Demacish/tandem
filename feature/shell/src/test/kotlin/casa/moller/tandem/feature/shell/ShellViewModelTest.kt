@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.cash.turbine.test
 import casa.moller.tandem.core.common.AppBuildInfo
+import casa.moller.tandem.core.data.demo.DemoDataRepository
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.TokenRevocation
@@ -80,7 +81,55 @@ class ShellViewModelTest {
         override fun firstSync(): Flow<SyncProgress> = emptyFlow()
     }
 
-    private fun newViewModel() = ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope, sync) { nowMillis }
+    /** "Reset demo data": counts the calls and answers with [demoResetResult]. */
+    private var demoResets = 0
+    private var demoResetResult: Outcome<Unit> = Outcome.Success(Unit)
+    private val demoData = object : DemoDataRepository {
+        override suspend fun resetDemoData(): Outcome<Unit> {
+            demoResets++
+            return demoResetResult
+        }
+    }
+
+    private fun newViewModel() = ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope, sync, demoData) { nowMillis }
+
+    @Test
+    fun theSyncsUnauthorizedPauseAsksToLogInAgain() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        val vm = newViewModel()
+        assertFalse(vm.uiState.value.loginExpired)
+
+        syncStatus.value = SyncStatus(pause = SyncPause.UNAUTHORIZED)
+        assertTrue(vm.uiState.value.loginExpired)
+        assertFalse("unauthorized is not offline", vm.uiState.value.syncOffline)
+
+        // Never for demo mode (the pause belongs to an account).
+        sessions.state.value = Session.Demo
+        assertFalse(vm.uiState.value.loginExpired)
+    }
+
+    @Test
+    fun resetDemoDataReportsTheResult() = runTest {
+        sessions.state.value = Session.Demo
+        val vm = newViewModel()
+        messages.messages.test {
+            vm.resetDemoData()
+            assertEquals(ShellMessage.DEMO_DATA_RESET, awaitItem())
+
+            demoResetResult = Outcome.Failure(TandemError.Unknown())
+            vm.resetDemoData()
+            assertEquals(ShellMessage.DEMO_DATA_RESET_FAILED, awaitItem())
+        }
+        assertEquals(2, demoResets)
+        assertFalse(vm.uiState.value.resettingDemo)
+    }
+
+    @Test
+    fun resetDemoDataIsIgnoredForARealAccount() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        newViewModel().resetDemoData()
+        assertEquals(0, demoResets)
+    }
 
     @Test
     fun theSyncsNetworkPauseShowsTheOfflineChip() {

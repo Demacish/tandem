@@ -49,6 +49,8 @@ data class AppUiState(
     val destination: AppDestination = AppDestination.Loading,
     val session: Session? = null,
     val startOnboardingAtServer: Boolean = false,
+    /** The server address the intro starts with ("Log in again"), null for an empty field. */
+    val onboardingServerUrl: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     /** False until the stored theme has been read; [themeMode] is only a default before that. */
     val themeModeLoaded: Boolean = false,
@@ -88,12 +90,14 @@ class AppViewModel @Inject constructor(
         session,
         savedStateHandle.getStateFlow(KEY_HOLD_ONBOARDING, false),
         savedStateHandle.getStateFlow(KEY_START_AT_SERVER, false),
+        savedStateHandle.getStateFlow<String?>(KEY_SERVER_URL, null),
         appearanceRepository.themeMode,
-    ) { current, hold, atServer, theme ->
+    ) { current, hold, atServer, serverUrl, theme ->
         AppUiState(
             destination = resolveDestination(current, hold),
             session = current,
             startOnboardingAtServer = atServer,
+            onboardingServerUrl = serverUrl,
             themeMode = theme,
             themeModeLoaded = true,
         )
@@ -136,6 +140,20 @@ class AppViewModel @Inject constructor(
     private fun releaseOnboarding() {
         savedStateHandle[KEY_HOLD_ONBOARDING] = false
         savedStateHandle[KEY_START_AT_SERVER] = false
+        savedStateHandle[KEY_SERVER_URL] = null
+    }
+
+    /**
+     * "Log in again" after Tandoor refused the stored token (plan 4.1, 5.4): the intro opens at
+     * the server step with the account's address filled in, while the account stays stored.
+     * Logging in to the same user and space replaces only its token, so the stored recipes and
+     * the outbox are kept and the paused sync goes on; leaving the intro early (system back on
+     * the welcome step) keeps the old session as it was.
+     */
+    fun logInAgain(serverUrl: String) {
+        savedStateHandle[KEY_SERVER_URL] = serverUrl
+        savedStateHandle[KEY_START_AT_SERVER] = true
+        savedStateHandle[KEY_HOLD_ONBOARDING] = true
     }
 
     /** "Connect your Tandoor" in demo mode: leave demo and open the intro at the server step. */
@@ -157,6 +175,7 @@ class AppViewModel @Inject constructor(
     internal companion object {
         const val KEY_HOLD_ONBOARDING = "app.holdOnboarding"
         const val KEY_START_AT_SERVER = "app.startAtServer"
+        const val KEY_SERVER_URL = "app.onboardingServerUrl"
 
         fun resolveDestination(session: Session?, holdOnboarding: Boolean): AppDestination = when (session) {
             null -> AppDestination.Loading

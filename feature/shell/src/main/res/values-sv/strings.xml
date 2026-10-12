@@ -54,6 +54,8 @@
     <string name="shell_logged_out_pasted_token">Utloggad på den här enheten. Den inklistrade token gäller fortfarande; radera den i Tandoor under Inställningar → API om du inte behöver den längre.</string>
     <string name="shell_logout_failed">Det gick inte att logga ut: den säkra lagringen på enheten går inte att använda.</string>
     <string name="shell_settings_not_saved">Inställningen gick inte att spara.</string>
+    <string name="shell_demo_data_reset">Demodatan är återställd.</string>
+    <string name="shell_demo_data_reset_failed">Demodatan gick inte att återställa.</string>
 
     <!-- Språk (plan 6.7). Språknamnen visas på sitt eget språk. -->
     <string name="shell_language_system">Systemets språk</string>
@@ -79,4 +81,9 @@
     <string name="shell_licenses_fonts">Typsnitt och ikoner</string>
     <string name="shell_licenses_libraries">Bibliotek med öppen källkod</string>
     <string name="shell_license_text_unavailable">Licenstexten gick inte att läsa in.</string>
+
+    <!-- Demoläget under Mer (plan 6.2 "Demoläge"). -->
+    <string name="shell_more_section_demo">Demo</string>
+    <string name="shell_reset_demo_data">Återställ demodata</string>
+    <string name="shell_reset_demo_data_body">Ångra det du ändrat och börja om med exempelrecepten</string>
 </resources>

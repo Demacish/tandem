@@ -89,6 +89,10 @@ abstract class ShellScreenshotTest(private val device: String) {
     @Test
     fun moreDemo() = capture("more_demo_light", DEMO_STATE, ShellTab.MORE)
 
+    /** Tandoor refused the token: the "Log in again" banner above the tab (integration lane). */
+    @Test
+    fun todayLoginExpired() = capture("today_login_expired_light", CONNECTED_STATE.copy(loginExpired = true), ShellTab.TODAY)
+
     @Test
     fun todayDemo() = capture("today_demo_light", DEMO_STATE, ShellTab.TODAY)
 
