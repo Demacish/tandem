@@ -615,10 +615,15 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
 - **Bilder:** en enda Coil-`ImageLoader` (Coils singleton) med kontots bildklient från
   `:core:network` (token bara till kontots origin), 250 MB diskcache i `noBackupFilesDir`, och
   `file:///android_asset/demo/...` för demobilderna.
-- **Tester** (Robolectric, Room i minnet, HTTPS-MockWebServer med fixturerna i
-  `api-schema/fixtures/2.6.13/fas1`): indexradering, `updatedon_gte`, intervall, SWR-ordning,
-  högst 2 parallella detaljhämtningar, outboxens sammanslagning, 404-kretsbrytare, säkert läge,
-  utloggning/kontoisolering, demoisolering och att alla demorecept renderas utan trasiga mallar.
+- **Offline-chippet** i skalet visar "Offline" både när serverkollen inte nådde servern och när
+  synken pausar för att nätet saknas (`SyncStatus.pause == OFFLINE`).
+- **Tester** (Robolectric, Room på fil, ny databas per test, HTTPS-MockWebServer med fixturerna i
+  `api-schema/fixtures/2.6.13/fas1`): indexradering (och att ett misslyckat index inte raderar
+  något), `updatedon_gte`, intervall, SWR-ordning, högst 2 parallella detaljhämtningar,
+  outboxens sammanslagning, 404-kretsbrytare, säkert läge, utloggning/kontoisolering,
+  demoisolering och att alla demorecept på båda språken renderas utan trasiga mallar. Inte Room
+  i minnet: om ett flöde avbryts mitt i databasens första öppning stänger Room anslutningen, och
+  en ny `:memory:`-anslutning är en tom databas utan tabeller.
   `:smoke`s `FakeTandoor` svarar också på Fas 1-anropen så att första synken blir klar.
 <!-- /Fas 1 sync -->
 
