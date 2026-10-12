@@ -9,17 +9,27 @@ import casa.moller.tandem.core.common.AppBuildInfo
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.TokenRevocation
+import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.model.sync.SyncProgress
+import casa.moller.tandem.core.model.sync.SyncReason
+import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.ui.AppStatus
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -60,7 +70,31 @@ class ShellViewModelTest {
     private val applicationScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher())
     private var nowMillis = 1_000_000L
 
-    private fun newViewModel() = ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope) { nowMillis }
+    /** The sync's status; only its pause matters to the shell (the Offline chip). */
+    private val syncStatus = MutableStateFlow(SyncStatus.Idle)
+    private val sync = object : SyncRepository {
+        override val status: StateFlow<SyncStatus> = syncStatus
+
+        override fun requestSync(reason: SyncReason) = Unit
+
+        override fun firstSync(): Flow<SyncProgress> = emptyFlow()
+    }
+
+    private fun newViewModel() = ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope, sync) { nowMillis }
+
+    @Test
+    fun theSyncsNetworkPauseShowsTheOfflineChip() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout) // not a connectivity problem
+        val vm = newViewModel()
+        assertFalse(vm.uiState.value.syncOffline)
+
+        syncStatus.value = SyncStatus(pause = SyncPause.OFFLINE)
+        assertTrue(vm.uiState.value.syncOffline)
+        assertEquals(AppStatus.Offline, vm.uiState.value.appStatus)
+
+        syncStatus.value = SyncStatus.Idle
+        assertFalse(vm.uiState.value.syncOffline)
+    }
 
     @Test
     fun loggedInSessionBecomesTheAccountCard() {

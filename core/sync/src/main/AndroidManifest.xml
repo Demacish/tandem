@@ -6,8 +6,8 @@
 
     <!--
         The "Server" channel's notice when Tandoor's version changed (plan B18). Only declared
-        here; the app asks for it at runtime and posts nothing unless the user allowed it (the
-        in-app banner is shown either way).
+        here: Phase 1 does not ask for it, so the notice is posted only once the user has allowed
+        notifications for the app (the in-app banner is shown either way).
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

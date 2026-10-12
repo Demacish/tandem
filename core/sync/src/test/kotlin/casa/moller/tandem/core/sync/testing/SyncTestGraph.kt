@@ -43,7 +43,16 @@ import kotlinx.coroutines.withTimeout
 internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer().also { it.start() }) {
     val context: Context = ApplicationProvider.getApplicationContext()
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val databases = TandemDatabaseFactory.inMemory(context)
+    /**
+     * File databases (fresh per graph), like the app. Not in-memory: when a flow that opens a
+     * database for the first time is cancelled mid-open (the eager status flow when a test switches
+     * to demo mode), Room closes that connection, and reopening ":memory:" gives an EMPTY database
+     * that Room no longer creates tables in ("no such table"). A file keeps its tables.
+     */
+    val databases = TandemDatabaseFactory { kind ->
+        context.deleteDatabase(kind.fileName)
+        TandemDatabase.build(context, kind.fileName)
+    }
     val clock = FakeClock()
     val network = FakeNetwork()
     val scheduler = FakeScheduler()

@@ -169,12 +169,13 @@ internal fun currentShellWindowSize(): DpSize = with(LocalDensity.current) { Loc
 
 /**
  * The status chip feature screens show next to their title ([LocalAppChrome]). "Offline" when the
- * last server check could not reach the server (Phase 1, idag-ui lane); never in demo mode.
+ * last server check could not reach the server (Phase 1, idag-ui lane) or the sync pauses for a
+ * missing network (sync lane); never in demo mode.
  */
 internal val ShellUiState.appStatus: AppStatus?
     get() = when {
         isDemo -> AppStatus.Demo
-        refreshError?.isConnectivityProblem == true -> AppStatus.Offline
+        refreshError?.isConnectivityProblem == true || syncOffline -> AppStatus.Offline
         isSafeMode -> AppStatus.SafeMode
         else -> null
     }

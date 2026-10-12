@@ -17,6 +17,8 @@ data class ShellUiState(
     val refreshError: TandemError? = null,
     val loggingOut: Boolean = false,
     val appVersion: AppVersion = AppVersion("", 0, ""),
+    /** The sync pauses because the device has no network (`SyncStatus.pause == OFFLINE`). */
+    val syncOffline: Boolean = false,
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo

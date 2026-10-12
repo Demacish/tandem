@@ -8,9 +8,11 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.data.settings.AppearanceRepository
+import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.sync.SyncPause
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -53,6 +57,7 @@ class ShellViewModel internal constructor(
     private val messages: ShellMessageQueue,
     buildInfo: AppBuildInfo,
     private val applicationScope: CoroutineScope,
+    syncRepository: SyncRepository,
     /** Monotonic time in milliseconds, for the resume throttle. */
     private val elapsedMillis: () -> Long,
 ) : ViewModel(),
@@ -65,12 +70,14 @@ class ShellViewModel internal constructor(
         messages: ShellMessageQueue,
         buildInfo: AppBuildInfo,
         @ApplicationScope applicationScope: CoroutineScope,
+        syncRepository: SyncRepository,
     ) : this(
         sessionRepository = sessionRepository,
         appearanceRepository = appearanceRepository,
         messages = messages,
         buildInfo = buildInfo,
         applicationScope = applicationScope,
+        syncRepository = syncRepository,
         elapsedMillis = { System.nanoTime() / NANOS_PER_MILLI },
     )
 
@@ -84,11 +91,15 @@ class ShellViewModel internal constructor(
 
     private val appVersion = AppVersion(buildInfo.versionName, buildInfo.versionCode, buildInfo.distribution)
 
+    // Phase 1 (sync lane): the "Offline" chip also follows the sync's own network pause.
+    private val syncOffline = syncRepository.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged()
+
     val uiState: StateFlow<ShellUiState> = combine(
         session,
         appearanceRepository.themeMode,
         operations,
-    ) { current, theme, ops ->
+        syncOffline,
+    ) { current, theme, ops, offline ->
         ShellUiState(
             mode = current.toShellMode(),
             themeMode = theme,
@@ -96,6 +107,7 @@ class ShellViewModel internal constructor(
             refreshError = ops.refreshError,
             loggingOut = ops.loggingOut,
             appVersion = appVersion,
+            syncOffline = offline,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
