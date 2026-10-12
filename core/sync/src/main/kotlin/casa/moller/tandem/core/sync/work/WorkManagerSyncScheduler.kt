@@ -22,8 +22,10 @@ import javax.inject.Singleton
 /**
  * [SyncScheduler] on WorkManager. Every request is unique work, so it never runs twice:
  *
- * - `tandem.sync.now` ([SyncWorker]): expedited when the quota allows, else normal; a request
- *   while one is waiting or running is dropped (KEEP).
+ * - `tandem.sync.now` ([SyncWorker]): expedited when the quota allows, else normal; an automatic
+ *   request while one is waiting or running is dropped (KEEP). Pull to refresh
+ *   ([SyncReason.USER_REFRESH]) replaces it instead (REPLACE): an app start run that skips the
+ *   hourly recipe index must not swallow the user's explicit refresh, which always reads it.
  * - `tandem.sync.periodic` ([PeriodicSyncWorker]): every 15 minutes with any network and a
  *   battery that is not low; no exact alarms and no foreground service, which keeps it friendly
  *   to Samsung's battery management (plan 4.4, question 13).
@@ -47,7 +49,7 @@ internal class WorkManagerSyncScheduler @Inject constructor(@ApplicationContext 
             .setInputData(workDataOf(SyncWorker.KEY_REASON to reason.name))
             .addTag(SyncSchedule.TAG_SYNC)
             .build()
-        workManager.enqueueUniqueWork(SyncSchedule.WORK_ONE_TIME, ExistingWorkPolicy.KEEP, request)
+        workManager.enqueueUniqueWork(SyncSchedule.WORK_ONE_TIME, policyFor(reason), request)
     }
 
     override fun scheduleOutbox() {
@@ -73,5 +75,11 @@ internal class WorkManagerSyncScheduler @Inject constructor(@ApplicationContext 
 
     override fun cancelPeriodic() {
         workManager.cancelUniqueWork(SyncSchedule.WORK_PERIODIC)
+    }
+
+    internal companion object {
+        /** See the class comment: only the user's own refresh replaces a waiting or running sync. */
+        fun policyFor(reason: SyncReason): ExistingWorkPolicy =
+            if (reason == SyncReason.USER_REFRESH) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
     }
 }
