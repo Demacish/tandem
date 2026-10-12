@@ -181,6 +181,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
     }
 
     private fun detailState(id: Long, item: RecipeListItem?, detail: RecipeDetailWithSteps?, refresh: RefreshState): RecipeDetailState {
+        // A 404 removed the recipe locally (DetailFetcher). Room's flows report the removal a
+        // moment later; until then the stale rows must not be shown together with "deleted".
+        if (refresh.error == TandemError.NotFound) return RecipeDetailState(recipeId = id, error = TandemError.NotFound)
         val overview = item?.toModel()
         val recipe = detail?.toRecipe(item?.overview, overview?.keywords.orEmpty())
         return RecipeDetailState(

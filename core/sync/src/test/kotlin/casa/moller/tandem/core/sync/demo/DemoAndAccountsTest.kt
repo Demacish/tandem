@@ -130,8 +130,20 @@ class DemoAndAccountsTest {
 
         graph.mirror.onSession(Session.LoggedIn(graph.account, "2.6.13", ServerCompatibility.SUPPORTED))
 
-        assertTrue(graph.demoDatabase.recipeDao().getRecipeIds(DEMO_ACCOUNT_ID).isEmpty())
         assertEquals(graph.account.baseUrl, graph.real.accountDao().get(ACCOUNT_ID)?.baseUrl)
+        val left = graph.demoDatabase.recipeDao().getRecipeIds(DEMO_ACCOUNT_ID)
+        assertTrue("demo rows left: $left, a second clear: ${graph.demo.clearIfSeeded()}", left.isEmpty())
+    }
+
+    @Test
+    fun clearingTheSeededDemoEmptiesIt() = runBlocking {
+        useDemo()
+        assertTrue(graph.demo.ensureSeeded() is Outcome.Success)
+
+        val cleared = graph.demo.clearIfSeeded()
+
+        assertTrue("clear: $cleared", cleared is Outcome.Success)
+        assertTrue(graph.demoDatabase.recipeDao().getRecipeIds(DEMO_ACCOUNT_ID).isEmpty())
     }
 
     @Test

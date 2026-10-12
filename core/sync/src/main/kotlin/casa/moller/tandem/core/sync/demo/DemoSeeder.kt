@@ -103,9 +103,9 @@ internal class DemoSeeder(
     }
 
     /** A real account logged in: the demo data is removed (plan 6.2). Never throws. */
-    suspend fun clearIfSeeded() {
-        if (!hasDemoFile()) return
-        mutex.withLock {
+    suspend fun clearIfSeeded(): Outcome<Unit> {
+        if (!hasDemoFile()) return Outcome.Success(Unit)
+        return mutex.withLock {
             catchingUnexpected {
                 val database = databases.get(DatabaseKind.DEMO)
                 if (database.syncStateDao().get(DEMO_ACCOUNT_ID, SEED_KEY) != null) databases.clear(DatabaseKind.DEMO)
