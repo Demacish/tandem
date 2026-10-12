@@ -206,13 +206,31 @@ class TandemApp(val device: UiDevice) {
             }
         } else {
             shell("cmd connectivity airplane-mode enable")
-            if (!waitForNetwork(connected = false, NETWORK_TIMEOUT_MS / 2)) {
+            if (!waitForStableOffline(NETWORK_TIMEOUT_MS / 2)) {
                 shell("svc wifi disable")
                 shell("svc data disable")
-                if (!waitForNetwork(connected = false, NETWORK_TIMEOUT_MS / 2)) {
+                if (!waitForStableOffline(NETWORK_TIMEOUT_MS / 2)) {
                     throw AssertionError("Could not turn the emulator's network off: ${networkReport()}")
                 }
             }
+        }
+    }
+
+    /**
+     * Waits until the device has had no default network for [OFFLINE_SETTLE_MS] in a row.
+     * Airplane mode takes Wi-Fi down first; the emulator's mobile data then becomes the default
+     * network for a few hundred milliseconds before the radio is off too (seen in CI logcat), so
+     * the first "no network" is only the gap between the two.
+     */
+    private fun waitForStableOffline(timeoutMs: Long): Boolean {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        var offlineSince: Long? = null
+        while (true) {
+            val now = SystemClock.uptimeMillis()
+            offlineSince = if (hasNetwork()) null else offlineSince ?: now
+            if (offlineSince != null && now - offlineSince >= OFFLINE_SETTLE_MS) return true
+            if (now > deadline) return false
+            SystemClock.sleep(POLL_MS)
         }
     }
 
@@ -269,6 +287,7 @@ class TandemApp(val device: UiDevice) {
         const val PACKAGE = "casa.moller.tandem.minified"
         const val UI_TIMEOUT_MS = 20_000L
         private const val NETWORK_TIMEOUT_MS = 60_000L
+        private const val OFFLINE_SETTLE_MS = 3_000L
         private const val LAUNCH_TIMEOUT_MS = 30_000L
         private const val POLL_MS = 250L
         private const val MAX_SCROLLS = 6

@@ -110,6 +110,53 @@ class RecipeListViewModelTest {
     }
 
     @Test
+    fun aNetworkFlickerDoesNotSearchTheServerAgain() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = subscribed()
+        viewModel.onAction(RecipeListAction.Search("pasta"))
+        advanceUntilIdle()
+        assertEquals(1, repository.searchedQueries.size)
+
+        // Wi-Fi goes away, mobile data takes over for a moment, then it is gone too: the app is
+        // online again for longer than the typing pause, but the answer is already there.
+        sync.setStatus(SyncStatus(pause = SyncPause.OFFLINE))
+        advanceUntilIdle()
+        assertEquals(ServerSearch.OFFLINE, viewModel.uiState.value.serverSearch)
+        sync.setStatus(SyncStatus.Idle)
+        advanceUntilIdle()
+        sync.setStatus(SyncStatus(pause = SyncPause.OFFLINE))
+        advanceUntilIdle()
+        sync.setStatus(SyncStatus.Idle)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.searchedQueries.size)
+        assertEquals(ServerSearch.DONE, viewModel.uiState.value.serverSearch)
+    }
+
+    @Test
+    fun aSearchTypedOfflineAsksTheServerWhenTheNetworkComesBack() = runTest(mainDispatcher.dispatcher) {
+        sync.setStatus(SyncStatus(pause = SyncPause.OFFLINE))
+        val viewModel = subscribed()
+        viewModel.onAction(RecipeListAction.Search("pasta"))
+        advanceUntilIdle()
+        assertTrue(repository.searchedQueries.isEmpty())
+
+        sync.setStatus(SyncStatus.Idle)
+        advanceUntilIdle()
+        assertEquals(listOf(RecipeQuery(text = "pasta")), repository.searchedQueries)
+        assertEquals(ServerSearch.DONE, viewModel.uiState.value.serverSearch)
+    }
+
+    @Test
+    fun pullToRefreshSearchesTheServerAgainForTheSameQuery() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = subscribed()
+        viewModel.onAction(RecipeListAction.Search("pasta"))
+        advanceUntilIdle()
+        viewModel.onAction(RecipeListAction.Refresh)
+        advanceUntilIdle()
+        assertEquals(2, repository.searchedQueries.size)
+    }
+
+    @Test
     fun aFailedServerSearchKeepsTheStoredResults() = runTest(mainDispatcher.dispatcher) {
         repository.searchServerResult = Outcome.Failure(TandemError.ServerError(502))
         val viewModel = subscribed()

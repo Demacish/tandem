@@ -183,10 +183,18 @@ class RecipeListViewModel @Inject constructor(
             serverSearch.value = ServerSearch.OFFLINE
             return
         }
+        // The network came back (or flickered, e.g. Wi-Fi handing over to mobile data) while this
+        // query's answer is already shown: asking again changes nothing (plan 4.1). Typing or
+        // pull to refresh (a new generation) still asks.
+        val answered = serverResult.value
+        if (answered != null && answered.query == current && answered.generation == request.generation) {
+            serverSearch.value = ServerSearch.DONE
+            return
+        }
         serverSearch.value = ServerSearch.SEARCHING
         when (val result = recipes.searchServer(current)) {
             is Outcome.Success -> {
-                serverResult.value = ServerResult(current, result.value)
+                serverResult.value = ServerResult(current, request.generation, result.value)
                 serverSearch.value = ServerSearch.DONE
             }
 
@@ -212,7 +220,7 @@ class RecipeListViewModel @Inject constructor(
         }
     }
 
-    private data class ServerResult(val query: RecipeQuery, val recipes: List<RecipeOverview>)
+    private data class ServerResult(val query: RecipeQuery, val generation: Int, val recipes: List<RecipeOverview>)
 
     private data class Listing(val recipes: List<RecipeOverview>, val loaded: Boolean, val serverOnlyCount: Int)
 

@@ -435,7 +435,11 @@ den kod som skickas:
   `scaling-golden.json` ("168.75 g" smör), väljer "Download for offline use", slår av nätet och
   kallstartar: flygplansläge (`cmd connectivity airplane-mode enable` från
   instrumenteringens shell, med `svc wifi/data disable` som reserv; testet kontrollerar via
-  `ConnectivityManager` att inget standardnätverk finns kvar). Loopback påverkas inte av
+  `ConnectivityManager` att inget standardnätverk finns kvar, tre sekunder i följd: på
+  emulatorn försvinner wifi först och mobildata blir standardnätverk några hundra millisekunder
+  innan radion också stängs). Ett sådant flimmer får inte heller ge nya anrop: receptlistan
+  frågar inte servern igen om en sökning vars svar redan visas (bara ny text eller
+  dra-för-att-uppdatera gör det). Loopback påverkas inte av
   flygplansläget, så `FakeTandoor.offline` stänger dessutom varje anslutning; testet kräver att
   inget `GET /api/recipe…` kom fram medan nätet var av. Offline: Offline-chippet, sökningen
   "Offline: searching recipes on this device", receptet med bild ur diskcachen och de sparade
