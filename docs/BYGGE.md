@@ -15,7 +15,8 @@ den; AGP laddar annars ner en saknad plattform om licenserna är godkända). Ang
 ./gradlew :feature:onboarding:testDebugUnitTest   # en enskild modul
 ```
 
-Debug-bygget har paketnamnet `casa.moller.tandem.dev` och versionsnamnet `0.0.1-dev`, så det
+Debug-bygget har paketnamnet `casa.moller.tandem.dev` och versionsnamnet `<version>-dev`
+(t.ex. `0.1.0-dev`), så det
 kan installeras bredvid release-bygget.
 
 ## Versioner
@@ -118,9 +119,10 @@ Gemensamt för Android-moduler:
   som inte är incheckad, och laddar då upp artefakten `room-schemas`. Eftersom inget byggs lokalt
   på servern: hämta artefakten (`gh run download <id> -n room-schemas -D core/database/schemas`)
   och checka in filerna oförändrade.
-- **Version:** till och med den första release som innehåller databasen (0.1.0) stannar
-  versionen på 1 och `1.json` genereras om. Därefter kräver varje ändring en ny version, en
-  migrering i `TandemMigrations` och ett fall i `TandemMigrationTest`.
+- **Version:** schemaversion 1 är den som 0.1.0 (den första release som innehåller databasen)
+  skickas med, och `1.json` är nu **fryst**. Varje ändring av en entitet kräver från och med nu
+  en ny version (2, 3 …), en migrering i `TandemMigrations` och ett fall i
+  `TandemMigrationTest`; `1.json` får aldrig skrivas om.
 - **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
   schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
   (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
@@ -291,7 +293,10 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   ändå". På Samsung (`OnboardingConfig.showBatteryTip`, sätts i appens `OnboardingConfigModule`)
   kommer ett tips om batterioptimering med en länk till appens systeminställningar (bara en
   Intent, ingen behörighet). Introt avslutas med händelsen `OnboardingEvent.Finished`.
-- **Serverstatus (`:core:ui` `status/`, kopplat i skalet):** `SafeModeBanner` (otestad version,
+- **Serverstatus (`:core:ui` `status/`, kopplat i skalet):** `LoginExpiredBanner` (Tandoor
+  godtar inte längre enhetens token, `SyncStatus.pause == UNAUTHORIZED`: "Logga in igen" öppnar
+  introt vid serversteget med kontots adress ifylld via `AppViewModel.logInAgain`; samma
+  användare och space behåller recept och utkorg), `SafeModeBanner` (otestad version,
   blockerar inget), `SafeModeInfoScreen` (vad säkert läge innebär, länk till releaserna på
   GitHub), `ServerTooOldNotice` (för gammal Tandoor: ersätter innehållet i alla flikar utom Mer)
   och `OfflineNotice`. Kroken i skalet är `ServerStatusFrame` (`:feature:shell` `status/`), som
@@ -300,8 +305,8 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
 - **Återställning (`:app`):** `RecoveryRoute` + `RecoveryViewModel`. "Exportera väntande
   ändringar" delar utkorgen som JSON-text via delningsarket genom gränssnittet
   `PendingChangesExporter` (`:core:data`). Det injiceras som `Optional` (`@BindsOptionalOf` i
-  `app/.../di/PendingChangesModule.kt`): tills utkorgens implementation binder det med `@Binds`
-  visas exporten som otillgänglig.
+  `app/.../di/PendingChangesModule.kt`); `:core:sync` binder `RoomPendingChangesExporter`, så
+  exporten finns i appen.
 - **Ikoner:** nya ikoner för de här skärmarna ligger i `TandemIconsStatus.kt` (samma källa och
   kontroll som övriga, se `assets/licenses/NOTICE.txt`).
 - **Skärmdumpar:** `TodayScreenshotTest`, `OnboardingFirstSyncScreenshotTest`,
@@ -418,9 +423,37 @@ den kod som skickas:
   token återkallas, en inklistrad token lämnas kvar). Utloggningens toast kontrolleras via
   tillgänglighetshändelser: "Logged out." kräver att DELETE:s 204 hanterades (`suspend fun ...:
   Unit`), annars hade appen sagt att token inte kunde återkallas.
+- **Fas 1 (0.1.0, `Phase1SmokeTest`):** `FakeTandoor` svarar också på Fas 1-anropen med
+  fixturerna i `fas1/`: `recipe/flat`, `recipe/` (synkens översikter, Idags karuseller efter
+  frågeparametrarna och en sökning `query`, filtrerad på namn med vikta versaler och diakritiska
+  tecken som Tandoors sökning), receptdetaljer, nyckelord, livsmedel, enheter, måltidstyper,
+  matsedel, kokloggen, användarinställningar och `POST view-log/`. Den inspelade adressen
+  `tandoor.example.com` byts mot den falska serverns egen, så receptbilder (`/media/...`, en
+  genererad PNG) hämtas därifrån. Testet loggar in med lösenord, väntar ut den riktiga första
+  synken, ser fixturrecepten i Recept, söker på "äppel" (bara Äppelkaka, lokalt och på servern),
+  öppnar receptet (bilden laddad), ökar portionerna 8 → 9 och kräver exakt webbens mängd ur
+  `scaling-golden.json` ("168.75 g" smör), väljer "Download for offline use", slår av nätet och
+  kallstartar: flygplansläge (`cmd connectivity airplane-mode enable` från
+  instrumenteringens shell, med `svc wifi/data disable` som reserv; testet kontrollerar via
+  `ConnectivityManager` att inget standardnätverk finns kvar). Loopback påverkas inte av
+  flygplansläget, så `FakeTandoor.offline` stänger dessutom varje anslutning; testet kräver att
+  inget `GET /api/recipe…` kom fram medan nätet var av. Offline: Offline-chippet, sökningen
+  "Offline: searching recipes on this device", receptet med bild ur diskcachen och de sparade
+  portionerna (9, "168.75 g"). Nätet slås alltid på igen i `@After`. Demotestet startar demoläget,
+  kräver "Tonight" med middagen och dess bild på Idag, öppnar receptet (bild, "600 g",
+  "salmon fillet…") och att den falska servern inte fick en enda begäran. Att en bild verkligen
+  laddats syns utifrån genom testtaggen `recipe_image_loaded` (`RecipeImageTags` i `:core:ui`);
+  appen exponerar testtaggar som resurs-id (`testTagsAsResourceId` i `TandemApp`).
 - **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 36,
   `google_apis`, x86_64, KVM) med `reactivecircus/android-emulator-runner` och kör
-  `scripts/ci/smoke-run.sh`. Steget fallerar om ett test fallerar **eller** om appen kraschar.
+  `scripts/ci/smoke-run.sh`. Steget fallerar om ett test fallerar, om appen kraschar, om ingen
+  av `core:sync`s WorkManager-arbetare blev klar (`Worker result SUCCESS` för
+  `casa.moller.tandem.core.sync.work.*` i appens logcat, `workers.txt`: Hilt-fabriken och
+  klassnamnen fungerar under R8) **eller** om appens processer loggade
+  `ClassNotFoundException`, `NoClassDefFoundError`, `NoSuchMethodError`/`-Exception`,
+  `NoSuchFieldError` eller WorkManagers "Could not instantiate/create Worker"
+  (`missing-classes.txt`), även om appen fångade felet. CI-loggen listar arbetarnas resultat och
+  den falska serverns begäranden.
   Ett separat steg kontrollerar att **varje** gränssnitt som deklareras under
   `core/network/.../api/` (alla underpaket) finns i mappningsfilen och inte är
   `R8$$REMOVED$$CLASS`, och att `AuthService.login` och `TokenAuthRequestDto` finns kvar. Vid fel laddas artefakten `smoke-results` upp: hela logcat, kraschen som den
@@ -603,7 +636,9 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
   recept). Säkert läge (otestad version) sätter raderna i PAUSED; 404 slängs, 400 blir FAILED,
   recept som inte längre finns skickas aldrig.
 - **WorkManager (`work/`):** `tandem.sync.now` (`SyncWorker`, expedited, nätverkskrav; app-start,
-  återupptagning, dra-för-att-uppdatera, kontobyte), `tandem.sync.periodic`
+  återupptagning, dra-för-att-uppdatera, kontobyte; en automatisk begäran medan en körning väntar
+  eller pågår släpps (`KEEP`), dra-för-att-uppdatera ersätter den (`REPLACE`) så att användarens
+  uppdatering alltid läser receptindexet), `tandem.sync.periodic`
   (`PeriodicSyncWorker`, 15 min, nätverk och ej låg batterinivå) och `tandem.sync.outbox`
   (`SyncOutboxWorker`, exponentiell backoff från 30 s). Taggar `tandem.sync` och
   `tandem.outbox`. Arbetarnas klassnamn skyddas mot R8 i `core/sync/consumer-rules.pro`.
@@ -611,7 +646,9 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
   serverversionen skiljer sig från den sparade sänds `observeVersionChanges()` och en notis i
   kanalen "Server" (bara med `POST_NOTIFICATIONS`; annars bara bannern).
 - **Utloggning:** ett konto som inte längre finns får alla sina rader borttagna; ett utgånget
-  token tar inte bort något. Inloggning på ett riktigt konto tömmer demodatabasen.
+  token tar inte bort något (skalet visar "Logga in igen"). Inloggning på ett riktigt konto
+  tömmer demodatabasen. "Återställ demodata" under Mer i demoläget anropar
+  `DemoDataRepository.resetDemoData()`.
 - **Bilder:** en enda Coil-`ImageLoader` (Coils singleton) med kontots bildklient från
   `:core:network` (token bara till kontots origin), 250 MB diskcache i `noBackupFilesDir`, och
   `file:///android_asset/demo/...` för demobilderna.

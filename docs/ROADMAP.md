@@ -9,17 +9,21 @@ inloggning med en egen token per enhet (lösenordet sparas aldrig), flikar, inst
 språk (svenska och engelska), ingången till demoläget, lokal kraschlogg.
 
 ## Fas 1: Laga
-- Receptlista med sökning offline och mot servern, filter och sortering.
-- Receptvy: portioner, skalade mängder, bråk, enhetsomräkning, steg, betyg.
-- Recept sparade för offline, med bilder.
-- Kokläge: ett steg per sida, mängderna för steget, skärmen hålls på, stor text.
-- Timers som hittas i stegtexten, flera samtidigt, larm även med låst skärm.
-- "Klart!" med betyg och kommentar (Tandoors koklogg).
-- Fliken Idag: kvällens måltid, ofta lagade, nya recept.
-- Versionskontroll av servern och säkert läge för otestade Tandoor-versioner.
-- Återställningsskärm i stället för kraschloop.
-- Demoläge med inbyggda exempelrecept, för den som inte har någon Tandoor.
-- Surfplatta: lista och recept sida vid sida, kokläge i två paneler.
+Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, laga).
+
+- ✅ Receptlista med sökning offline och mot servern, filter och sortering (0.1.0).
+- ✅ Receptvy: portioner, skalade mängder som i Tandoors webb, bråk, enhetsomräkning, steg,
+  betyg (0.1.0).
+- ✅ Recept sparade för offline, med bilder (0.1.0).
+- Kokläge: ett steg per sida, mängderna för steget, skärmen hålls på, stor text (0.2.0).
+- Timers som hittas i stegtexten, flera samtidigt, larm även med låst skärm (0.2.0).
+- "Klart!" med betyg och kommentar (Tandoors koklogg) (0.2.0).
+- ✅ Fliken Idag: kvällens måltid, ofta lagade, nya recept (0.1.0).
+- ✅ Versionskontroll av servern och säkert läge för otestade Tandoor-versioner (0.1.0).
+- ✅ Återställningsskärm i stället för kraschloop (0.1.0).
+- ✅ Demoläge med inbyggda exempelrecept, för den som inte har någon Tandoor (0.1.0).
+- Surfplatta: ✅ lista och recept sida vid sida (0.1.0); kokläge i två paneler (0.2.0).
+- Fler inställningar och en nattlig kontroll mot nya Tandoor-versioner (0.2.0).
 
 ## Fas 2: Handla och planera
 - Inköpslista som fungerar offline och synkas mellan hushållets telefoner.

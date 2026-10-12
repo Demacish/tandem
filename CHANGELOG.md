@@ -6,6 +6,45 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+## [0.1.0] – 2026-10-12
+
+Första versionen med recept (Fas 1a, "läsa recept"): bläddra, sök och läs dina recept från
+Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslista och matsedel
+(flikarna Veckan och Handla) i Fas 2.
+
+- **Första synken:** efter inloggningen hämtar appen dina recept med förlopp ("Hämtar 312
+  recept…"). Du kan fortsätta medan den pågår; sedan synkar appen i bakgrunden ungefär var 15:e
+  minut när det finns nät, och när du öppnar appen.
+- **Recept:** alla dina recept i rutnät eller lista, med sökning direkt i telefonen (även på
+  delar av ord och utan å/ä/ö, "kram" hittar "Krämig") och samtidigt på servern. Filter på
+  nyckelord, tid och betyg och "bara nedladdade", sortering på namn, nyast, betyg, senast lagat,
+  oftast lagat och snabbast. Dra nedåt för att uppdatera.
+- **Receptvyn:** bild, nyckelord, betyg, tider, hur ofta och när det lagades, beskrivning,
+  ingredienser och steg. **Portionerna** går att ändra och minns per recept, och mängderna
+  räknas om **exakt som i Tandoors webb** (med dina inställningar för bråk och decimaler,
+  rubriker, "ingen mängd", plural och mallar som `{{ scale(100) }}` i stegtexten). Tryck på en
+  mängd för att se den i en annan enhet när Tandoor har en omräkning. Bocka av ingredienser
+  medan du läser. Länkade delrecept öppnas direkt; "Öppna på webben" öppnar receptet i Tandoor.
+- **Offline:** "Ladda ner offline" sparar ett recept med bild på telefonen. Fästa, planerade och
+  nyligen visade recept hämtas automatiskt. Utan nät visas *Offline*, sökningen går mot det som
+  finns sparat och recept som inte är nedladdade är nedtonade.
+- **Idag:** kvällens måltid från matsedeln (*Ikväll*), resten av dagen och imorgon, och
+  karusellerna Fästa recept, Ofta lagade, Nya, Nyligen visade och Inte lagat på länge.
+- **Surfplatta:** receptlistan och receptet sida vid sida, ingredienser och steg i två kolumner.
+- **Serverversion:** appen kontrollerar Tandoors version och kör i *säkert läge* (läsning
+  fungerar, ändringar väntar) på en version som inte är testad. Byter servern version får du en
+  notis om du har tillåtit notiser för Tandem.
+- **Logga in igen:** godtar Tandoor inte längre enhetens inloggning stoppas synken och en banner
+  ber dig logga in igen. Loggar du in som samma användare finns allt kvar.
+- **Återställningsskärm:** kan inloggningen eller inställningarna inte läsas visas en skärm med
+  *Logga in igen*, *Exportera väntande ändringar* och *Rensa appdata* i stället för en krasch.
+- **Demoläge** med 14 egna exempelrecept med bilder (på svenska och engelska), en matsedel och
+  kokhistorik, så att allt ovan går att prova utan Tandoor. *Återställ demodata* under Mer.
+- Appen visar vilka recept du har öppnat för Tandoor (som webbens "Nyligen visade").
+- **Release-röktest:** varje version loggar nu också in, väntar ut första synken, söker, skalar,
+  laddar ner ett recept och läser det i flygplansläge, och provar demoläget, med just
+  release-bygget på en Android-emulator innan den släpps.
+
 ## [0.0.2] – 2026-10-10
 
 - **Rättat:** inloggningen kraschade i release-bygget (0.0.1) när man tryckte på *Logga in*.
