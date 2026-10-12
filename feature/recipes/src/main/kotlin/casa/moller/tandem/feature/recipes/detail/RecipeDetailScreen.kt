@@ -346,17 +346,19 @@ private fun Header(state: RecipeDetailUiState, twoPane: Boolean) {
     }
 }
 
+/**
+ * Active, waiting and total time. Each fact is its own item of the surrounding FlowRow, so a long
+ * line (English "Active 15 min  Waiting 15 min  Total 30 min" on a phone) wraps between the facts
+ * instead of cutting the last one off.
+ */
 @Composable
 private fun TimeFacts(header: RecipeHeader) {
-    val spacing = TandemTheme.spacing
     if (header.totalMinutes <= 0) return
-    Row(horizontalArrangement = Arrangement.spacedBy(spacing.lg)) {
-        if (header.workingMinutes > 0 && header.waitingMinutes > 0) {
-            Fact(R.string.recipe_detail_working_time, header.workingMinutes)
-            Fact(R.string.recipe_detail_waiting_time, header.waitingMinutes)
-        }
-        Fact(R.string.recipe_detail_total_time, header.totalMinutes)
+    if (header.workingMinutes > 0 && header.waitingMinutes > 0) {
+        Fact(R.string.recipe_detail_working_time, header.workingMinutes)
+        Fact(R.string.recipe_detail_waiting_time, header.waitingMinutes)
     }
+    Fact(R.string.recipe_detail_total_time, header.totalMinutes)
 }
 
 @Composable
