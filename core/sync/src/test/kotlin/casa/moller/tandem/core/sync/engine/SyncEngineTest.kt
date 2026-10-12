@@ -103,6 +103,17 @@ class SyncEngineTest {
     }
 
     @Test
+    fun aFailedIndexRemovesNothing() = runBlocking {
+        graph.real.recipeDao().applyIndex(ACCOUNT_ID, listOf(RecipeIndexEntry(99, "Bara lokalt")))
+        graph.server.respond("GET", "/api/recipe/flat/") { FakeTandoorServer.json(500, """{"detail":"Server error"}""") }
+
+        val result = graph.engine.run(SyncReason.USER_REFRESH)
+
+        assertEquals(SyncPhase.FAILED, result.phase)
+        assertTrue("a failed index never deletes", 99L in storedRecipeIds())
+    }
+
+    @Test
     fun laterSyncsAskOnlyForRecipesChangedSinceTheLastSyncDayMinusOneDay() = runBlocking {
         graph.engine.run(SyncReason.FIRST_SYNC)
         server.requests.clear()

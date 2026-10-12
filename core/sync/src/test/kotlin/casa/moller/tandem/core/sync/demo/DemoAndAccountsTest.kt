@@ -75,18 +75,25 @@ class DemoAndAccountsTest {
     }
 
     @Test
-    fun everyDemoRecipeRendersWithoutBrokenTemplates() = runBlocking {
+    fun everyDemoRecipeRendersWithoutBrokenTemplatesInBothLanguages() = runBlocking {
         useDemo()
-        graph.demo.ensureSeeded()
-        val preferences = graph.demoDatabase.referenceDao().getUserPreference(DEMO_ACCOUNT_ID)
-        assertTrue("demo preferences are stored", preferences != null)
+        val languages = listOf(Locale.forLanguageTag("sv-SE") to NumberStyle.Swedish, Locale.ENGLISH to NumberStyle.English)
+        for ((locale, numbers) in languages) {
+            graph.demoLocale = locale
+            assertTrue(graph.demo.ensureSeeded() is Outcome.Success)
+            val preferences = graph.demoDatabase.referenceDao().getUserPreference(DEMO_ACCOUNT_ID)
+            assertTrue("demo preferences are stored", preferences != null)
 
-        for (id in graph.demoContent.recipeIds) {
-            val recipe = graph.recipes.observeRecipe(id).first { it.recipe != null }.recipe!!
-            assertTrue("recipe $id has steps", recipe.steps.isNotEmpty())
-            assertTrue(recipe.imageUrl.orEmpty().startsWith("file:///android_asset/demo/images/"))
-            val display = RecipeDisplay.build(recipe, recipe.servings * 2.0, UserPreferences.Default, NumberStyle.Swedish)
-            assertTrue("recipe $id has no broken template", display.steps.none { it.hasBrokenTemplate })
+            for (id in graph.demoContent.recipeIds) {
+                val recipe = graph.recipes.observeRecipe(id).first { it.recipe != null }.recipe!!
+                val label = "$locale recipe $id"
+                assertTrue("$label has steps", recipe.steps.isNotEmpty())
+                assertTrue(recipe.imageUrl.orEmpty().startsWith("file:///android_asset/demo/images/"))
+                for (servings in listOf(recipe.servings.toDouble(), recipe.servings * 2.0)) {
+                    val display = RecipeDisplay.build(recipe, servings, UserPreferences.Default, numbers)
+                    assertTrue("$label has no broken template", display.steps.none { it.hasBrokenTemplate })
+                }
+            }
         }
     }
 
