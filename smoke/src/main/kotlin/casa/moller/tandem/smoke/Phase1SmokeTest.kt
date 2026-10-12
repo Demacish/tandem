@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -43,11 +42,22 @@ class Phase1SmokeTest {
     private val app = TandemApp(UiDevice.getInstance(instrumentation))
     private var networkTurnedOff = false
 
+    /**
+     * The network always comes back, also after a failure, so later tests can log in. The
+     * outermost rule, so a failure is captured (below) while the network is still off.
+     */
     @get:Rule(order = 0)
+    val network = object : TestWatcher() {
+        override fun finished(description: Description) {
+            if (networkTurnedOff) app.setNetworkEnabled(true)
+        }
+    }
+
+    @get:Rule(order = 1)
     val tandoor = FakeTandoor(instrumentation.context.assets)
 
     /** On failure: screenshot, window hierarchy, the server's request log and the network state. */
-    @get:Rule(order = 1)
+    @get:Rule(order = 2)
     val artifacts = object : TestWatcher() {
         override fun failed(e: Throwable, description: Description) {
             val name = "FAILED-${description.methodName}"
@@ -64,13 +74,6 @@ class Phase1SmokeTest {
     @Before
     fun startFresh() {
         app.clearData()
-    }
-
-    /** The network always comes back, also after a failure, so later tests can log in. */
-    @After
-    fun restoreNetwork() {
-        tandoor.offline = false
-        if (networkTurnedOff) app.setNetworkEnabled(true)
     }
 
     @Test
@@ -148,7 +151,8 @@ class Phase1SmokeTest {
         app.tap("Recipes")
         app.waitFor(By.desc(OFFLINE_CHIP))
         app.type(0, SEARCH)
-        app.waitFor(By.text("Offline: searching recipes on this device"))
+        // IconLabel: one element whose description is the text (TalkBack reads it once).
+        app.waitFor(By.desc("Offline: searching recipes on this device"))
         app.waitFor(By.text(ONE_RESULT))
         app.waitFor(By.text(RECIPE_NAME))
         app.capture("phase1-offline-search")

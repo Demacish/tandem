@@ -439,7 +439,8 @@ den kod som skickas:
   flygplansläget, så `FakeTandoor.offline` stänger dessutom varje anslutning; testet kräver att
   inget `GET /api/recipe…` kom fram medan nätet var av. Offline: Offline-chippet, sökningen
   "Offline: searching recipes on this device", receptet med bild ur diskcachen och de sparade
-  portionerna (9, "168.75 g"). Nätet slås alltid på igen i `@After`. Demotestet startar demoläget,
+  portionerna (9, "168.75 g"). Nätet slås alltid på igen av testets yttersta regel (efter att
+  ett fel har fångats med nätet avslaget). Demotestet startar demoläget,
   kräver "Tonight" med middagen och dess bild på Idag, öppnar receptet (bild, "600 g",
   "salmon fillet…") och att den falska servern inte fick en enda begäran. Att en bild verkligen
   laddats syns utifrån genom testtaggen `recipe_image_loaded` (`RecipeImageTags` i `:core:ui`);

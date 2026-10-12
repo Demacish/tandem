@@ -289,7 +289,6 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private val combiningMarks = Regex("\\p{Mn}+")
 
         /** Lower case without diacritics, like Tandoor's unaccent search: "Äppel" -> "appel". */
-        fun fold(text: String): String =
-            Normalizer.normalize(text, Normalizer.Form.NFD).replace(combiningMarks, "").lowercase(Locale.ROOT)
+        fun fold(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFD).replace(combiningMarks, "").lowercase(Locale.ROOT)
     }
 }
