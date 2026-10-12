@@ -1,19 +1,33 @@
 package casa.moller.tandem.smoke
 
 import android.content.res.AssetManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.util.Log
+import java.io.ByteArrayOutputStream
+import java.text.Normalizer
+import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
+import mockwebserver3.SocketEffect
+import okhttp3.HttpUrl
 import okhttp3.tls.HandshakeCertificates
 import okhttp3.tls.HeldCertificate
+import okio.Buffer
 import org.junit.rules.ExternalResource
 
 /**
@@ -29,6 +43,13 @@ import org.junit.rules.ExternalResource
  * Tokens work like on the real server: the password login hands out [LOGIN_TOKEN], which may
  * create the device token [DEVICE_TOKEN]; every other API call needs one of the two as a Bearer
  * token, otherwise it gets Tandoor's 403. A deleted token stops working.
+ *
+ * Phase 1 (integration lane): the recorded server address `tandoor.example.com` in every body is
+ * replaced by this server's own address, so recipe photos (`/media/...`) are loaded from here (a
+ * generated PNG); `api/recipe/` answers the sync's and Today's queries with the matching
+ * recordings and filters the recipe list for `query` like Tandoor's search (case and diacritics
+ * folded). While [offline] is set every request is answered by closing the connection: the
+ * emulator's airplane mode does not cut localhost, so this is what takes the server away.
  */
 class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private val server = MockWebServer()
@@ -36,6 +57,21 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
     /** `METHOD path` of every request, in order, e.g. `POST /api-token-auth/`. */
     val requests: MutableList<String> = CopyOnWriteArrayList()
+
+    /** The `query` of every recipe search (`GET /api/recipe/?query=...`), decoded. */
+    val searches: MutableList<String> = CopyOnWriteArrayList()
+
+    /** `METHOD path` of the requests that arrived while [offline] was set (all were refused). */
+    val requestsWhileOffline: MutableList<String> = CopyOnWriteArrayList()
+
+    /** True: every request is answered by closing the connection (see the class comment). */
+    @Volatile
+    var offline: Boolean = false
+
+    /** `https://localhost:<port>`: replaces the recorded server address in every body. */
+    private val origin: String get() = "https://localhost:${server.port}"
+
+    private val image: ByteArray by lazy { generatedPng() }
 
     /** What the user types as the server address, e.g. `localhost:41234`. */
     val address: String get() = "localhost:${server.port}"
@@ -76,11 +112,22 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private fun respond(request: RecordedRequest): MockResponse {
         val method = request.method
         val path = request.url.encodedPath
+        if (offline) {
+            requestsWhileOffline += "$method $path"
+            return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
+        }
         requests += "$method $path"
         val token = request.headers["Authorization"]?.removePrefix("Bearer ")?.trim()
         val loggedIn = token != null && token in VALID_TOKENS && token !in revoked
         return when {
             method == "GET" && path == "/api/server-settings/current/" -> fixture("01-server-settings-no-auth")
+
+            // Recipe photos: served without auth like the official image (FACTS "Fas 1 e").
+            method == "GET" && path.startsWith("/media/") -> MockResponse.Builder()
+                .code(200)
+                .addHeader("Content-Type", "image/png")
+                .body(Buffer().write(image))
+                .build()
 
             method == "POST" && path == "/api-token-auth/" -> {
                 val body = request.body?.utf8().orEmpty()
@@ -112,6 +159,8 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             // --- Phase 1 (sync lane): the first sync and the background sync after a login read
             // the recipe index, overviews, small tables, meal plan and cook log, and send view logs.
+            method == "GET" && path == "/api/recipe/" -> recipeList(request.url)
+
             method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
             method == "GET" && RECIPE_PATH.matches(path) ->
@@ -124,8 +173,45 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         }
     }
 
-    /** The recorded response of [name], without hop-by-hop and length headers. */
-    private fun fixture(name: String): MockResponse {
+    /**
+     * `GET /api/recipe/` like Tandoor 2.6.13 answers the app's queries (plan 3.3): a search
+     * (`query`) filters the recorded list by name, Today's carousels get their recordings, and
+     * every other list (the sync's overview pages) gets the default list.
+     */
+    private fun recipeList(url: HttpUrl): MockResponse {
+        val query = url.queryParameter("query")
+        if (query != null) {
+            searches += query
+            val words = fold(query).split(' ').filter { it.isNotBlank() }
+            return fixture("fas1/recipe-list-default") { body ->
+                val results = body.jsonObject.getValue("results").jsonArray.filter { recipe ->
+                    val name = fold(recipe.jsonObject["name"]?.jsonPrimitive?.content.orEmpty())
+                    words.all { it in name }
+                }
+                JsonObject(
+                    body.jsonObject + mapOf(
+                        "count" to JsonPrimitive(results.size),
+                        "next" to JsonNull,
+                        "results" to JsonArray(results),
+                    ),
+                )
+            }
+        }
+        val recording = when {
+            url.queryParameter("timescooked_gte") != null -> "fas1/recipe-list-timescooked-gte"
+            url.queryParameter("viewedon_gte") != null -> "fas1/recipe-list-viewedon-gte"
+            url.queryParameter("cookedon_lte") != null -> "fas1/recipe-list-cookedon-lte"
+            url.queryParameter("new") != null -> "fas1/recipe-list-new"
+            else -> "fas1/recipe-list-default"
+        }
+        return fixture(recording)
+    }
+
+    /**
+     * The recorded response of [name], without hop-by-hop and length headers, with this server's
+     * address in place of the recorded one; [transform] may change a JSON body first.
+     */
+    private fun fixture(name: String, transform: ((JsonElement) -> JsonElement)? = null): MockResponse {
         val root = json.parseToJsonElement(assets.open("$name.json").bufferedReader().use { it.readText() }).jsonObject
         val response = root.getValue("response").jsonObject
         val status = response.getValue("status").jsonPrimitive.content.toInt()
@@ -134,13 +220,25 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             .filterKeys { it !in SKIPPED_HEADERS }
         val body = when (val recorded = response["body"]) {
             null, is JsonPrimitive -> (response["bodyText"] as? JsonPrimitive)?.content.orEmpty()
-            else -> recorded.toString()
-        }
+            else -> (transform?.invoke(recorded) ?: recorded).toString()
+        }.replace(RECORDED_ORIGIN, origin).replace(RECORDED_ORIGIN_HTTP, origin)
         return MockResponse.Builder()
             .code(status)
             .apply { headers.forEach { (header, value) -> addHeader(header, value) } }
             .body(body)
             .build()
+    }
+
+    /** A small two-coloured PNG: something Coil can decode and show as a recipe photo. */
+    private fun generatedPng(): ByteArray {
+        val bitmap = Bitmap.createBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(Color.rgb(0xE0, 0x7A, 0x2F))
+        canvas.drawCircle(IMAGE_WIDTH / 2f, IMAGE_HEIGHT / 2f, IMAGE_HEIGHT / 3f, Paint().apply { color = Color.rgb(0x2F, 0x6B, 0x3A) })
+        return ByteArrayOutputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            out.toByteArray()
+        }
     }
 
     companion object {
@@ -160,7 +258,6 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private val RECIPE_PATH = Regex("^/api/recipe/(\\d+)/$")
         private val PHASE1_LISTS = mapOf(
             "/api/recipe/flat/" to "fas1/recipe-flat",
-            "/api/recipe/" to "fas1/recipe-list-default",
             "/api/keyword/" to "fas1/keyword-list",
             "/api/food/" to "fas1/food-list",
             "/api/unit/" to "fas1/unit-list",
@@ -183,5 +280,16 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         )
         private val SKIPPED_HEADERS = setOf("content-length", "transfer-encoding", "connection")
         private val json = Json { ignoreUnknownKeys = true }
+
+        /** The server address in the recordings (FACTS: sanitized to tandoor.example.com). */
+        private const val RECORDED_ORIGIN = "https://tandoor.example.com"
+        private const val RECORDED_ORIGIN_HTTP = "http://tandoor.example.com"
+        private const val IMAGE_WIDTH = 160
+        private const val IMAGE_HEIGHT = 120
+        private val combiningMarks = Regex("\\p{Mn}+")
+
+        /** Lower case without diacritics, like Tandoor's unaccent search: "Äppel" -> "appel". */
+        fun fold(text: String): String =
+            Normalizer.normalize(text, Normalizer.Form.NFD).replace(combiningMarks, "").lowercase(Locale.ROOT)
     }
 }

@@ -4,6 +4,9 @@
     <!-- The fake Tandoor (MockWebServer) listens on localhost inside this test APK. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- The offline test checks that the emulator really has no network (ConnectivityManager). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!-- Package visibility (API 30+): the test launches the app under test by package name. -->
     <queries>
         <package android:name="casa.moller.tandem.minified" />

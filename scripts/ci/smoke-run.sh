@@ -9,10 +9,14 @@
 #   logcat.txt            the full device log of the run
 #   crash.txt             every FATAL EXCEPTION block of the app (obfuscated, as on a phone)
 #   crash-retraced.txt    the same, retraced with this build's R8 mapping file
+#   app-logcat.txt        the log lines of the app's own processes
+#   workers.txt           WorkManager results of core:sync's workers (must contain a SUCCESS)
+#   missing-classes.txt   ClassNotFound/NoSuchMethod/... in the app's processes (must be empty)
 #   device/               screenshots and window hierarchies the test saved
 #   final-screen.png, final-window.xml   the screen when the run ended
 #
-# Exit status: 0 only if every test passed AND the app never crashed.
+# Exit status: 0 only if every test passed, the app never crashed, a sync worker finished and
+# nothing was missing at runtime.
 #
 # Never run this on the production server: it needs an emulator (CI only).
 set -uo pipefail
@@ -102,6 +106,35 @@ if grep -q "ANR in ${APP_PACKAGE}\b" "$OUT/logcat.txt"; then
   echo "::error title=The app did not respond (ANR)::see crash.txt in smoke-results"
 fi
 
+# Phase 1: the minified app must start its WorkManager workers (core:sync's @HiltWorker classes,
+# created by HiltWorkerFactory; their names are kept by core/sync/consumer-rules.pro), and nothing
+# R8 removed may be missing at runtime, even where the app catches the error (a worker, Coil,
+# kotlinx.serialization). Only the app's own processes count (pids from "Start proc").
+app_pids=" $(grep -oE "Start proc [0-9]+:${APP_PACKAGE}/" "$OUT/logcat.txt" | grep -oE '[0-9]+' | sort -u | tr '\n' ' ')"
+awk -v pids="$app_pids" 'index(pids, " " $3 " ") > 0' "$OUT/logcat.txt" > "$OUT/app-logcat.txt"
+grep -E 'ClassNotFoundException|NoClassDefFoundError|NoSuchMethodError|NoSuchMethodException|NoSuchFieldError|Could not instantiate|Could not create Worker' \
+  "$OUT/app-logcat.txt" > "$OUT/missing-classes.txt" || true
+grep -E 'WM-WorkerWrapper.*Worker result (SUCCESS|RETRY|FAILURE) for .*casa\.moller\.tandem\.core\.sync\.work\.' \
+  "$OUT/app-logcat.txt" > "$OUT/workers.txt" || true
+echo "::group::WorkManager workers of the app (${app_pids# })"
+cat "$OUT/workers.txt"
+echo "::endgroup::"
+echo "::group::Fake Tandoor requests"
+grep -E ' FakeTandoor: ' "$OUT/logcat.txt" | sed 's/^.* FakeTandoor: //' || true
+echo "::endgroup::"
+workers_ok=false
+if [ -s "$OUT/workers.txt" ] && grep -q 'Worker result SUCCESS' "$OUT/workers.txt"; then
+  workers_ok=true
+else
+  echo "::error title=No sync worker ran::WorkManager never finished one of core:sync's workers in the minified app (workers.txt)"
+fi
+classes_ok=true
+if [ -s "$OUT/missing-classes.txt" ]; then
+  classes_ok=false
+  echo "::error title=Missing class or method at runtime::$(head -n 3 "$OUT/missing-classes.txt" | tr '\n' ' ')"
+  echo "::group::Missing classes or methods (app processes)"; cat "$OUT/missing-classes.txt"; echo "::endgroup::"
+fi
+
 passed=false
 grep -q '^OK (' "$OUT/instrumentation.txt" && ! grep -q -e 'FAILURES!!!' -e 'INSTRUMENTATION_FAILED' -e 'Process crashed' \
   "$OUT/instrumentation.txt" && passed=true
@@ -111,6 +144,8 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
     echo "### Release smoke test"
     echo "- Tests: $([ "$passed" = true ] && echo passed || echo '**FAILED**')"
     echo "- App crash: $([ "$crashed" = true ] && echo '**yes**' || echo none)"
+    echo "- Sync workers finished: $(grep -c 'Worker result SUCCESS' "$OUT/workers.txt" || true)"
+    echo "- Missing classes or methods: $([ "$classes_ok" = true ] && echo none || echo '**yes**')"
     if [ "$crashed" = true ]; then
       echo
       echo '<details><summary>Retraced crash</summary>'
@@ -123,9 +158,9 @@ if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   } >> "$GITHUB_STEP_SUMMARY"
 fi
 
-if [ "$passed" = true ] && [ "$crashed" = false ]; then
+if [ "$passed" = true ] && [ "$crashed" = false ] && [ "$workers_ok" = true ] && [ "$classes_ok" = true ]; then
   echo "Release smoke test passed."
   exit 0
 fi
-echo "::error title=Release smoke test failed::tests passed: ${passed}, app crashed: ${crashed} (artifact smoke-results)"
+echo "::error title=Release smoke test failed::tests passed: ${passed}, app crashed: ${crashed}, workers ran: ${workers_ok}, classes complete: ${classes_ok} (artifact smoke-results)"
 exit 1
