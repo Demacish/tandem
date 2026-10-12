@@ -37,12 +37,13 @@ import kotlinx.coroutines.withTimeout
 
 /**
  * Everything of core:sync wired by hand for one test, the way Hilt wires it in the app, on
- * in-memory databases, an HTTPS fake Tandoor with the recorded fixtures, and fake clock, network,
+ * file databases, an HTTPS fake Tandoor with the recorded fixtures, and fake clock, network,
  * scheduler and image loader.
  */
 internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer().also { it.start() }) {
     val context: Context = ApplicationProvider.getApplicationContext()
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     /**
      * File databases (fresh per graph), like the app. Not in-memory: when a flow that opens a
      * database for the first time is cancelled mid-open (the eager status flow when a test switches
