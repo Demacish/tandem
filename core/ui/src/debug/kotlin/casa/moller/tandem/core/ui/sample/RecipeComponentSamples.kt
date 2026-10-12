@@ -12,10 +12,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.preview.ThemePreviews
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeOverview
+import casa.moller.tandem.core.ui.R
 import casa.moller.tandem.core.ui.recipe.IngredientHeader
 import casa.moller.tandem.core.ui.recipe.IngredientRow
 import casa.moller.tandem.core.ui.recipe.KeywordPill
@@ -32,7 +35,8 @@ import casa.moller.tandem.core.ui.recipe.StepCard
 
 /*
  * Samples of the recipe components for @Preview and the screenshot tests. Debug source set only;
- * the recipe content (names, amounts) stands for what a Tandoor server sends.
+ * the recipe content (names, amounts, units, step text) stands for what a Tandoor server sends,
+ * the app's own words come from string resources (strings_samples.xml, English and Swedish).
  */
 
 private val pasta = RecipeOverview(
@@ -97,13 +101,13 @@ fun RecipeMetaSample() {
 fun IngredientsSample() {
     var struck by remember { mutableStateOf(setOf(2)) }
     ServingsStepper(
-        label = "PORTIONER",
-        valueText = "6 portioner",
-        amountText = "6",
+        label = stringResource(R.string.ui_sample_servings_label),
+        valueText = pluralStringResource(R.plurals.ui_sample_servings, SAMPLE_SERVINGS, SAMPLE_SERVINGS),
+        amountText = SAMPLE_SERVINGS.toString(),
         onDecrease = {},
         onIncrease = {},
         onReset = {},
-        resetText = "Återställ till 4",
+        resetText = stringResource(R.string.ui_sample_servings_reset, ORIGINAL_SERVINGS),
     )
     Column {
         IngredientHeader("Svampen")
@@ -129,6 +133,9 @@ fun StepCardSample() {
         Text("Servera genast.")
     }
 }
+
+private const val SAMPLE_SERVINGS = 6
+private const val ORIGINAL_SERVINGS = 4
 
 private infix fun Set<Int>.xor(value: Int): Set<Int> = if (value in this) this - value else this + value
 

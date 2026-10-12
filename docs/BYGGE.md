@@ -232,10 +232,14 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
 - **Detalj** (`detail/`): `RecipeDetailViewModel` (assisted injection med recept-id) visar
   sparad kopia direkt, tyst uppdatering, "Visar sparad version" offline och felläge med
   "Försök igen" när inget finns sparat. Portioner sparas per recept i repositoryt;
-  avbockade rader och vald enhet gäller bara sessionen (`SavedStateHandle`). Mängder skalas med
-  `ScaleIngredients` och formateras med `FormatAmount` efter Tandoors `use_fractions` /
-  `ingredient_decimals`; enhet och livsmedel i plural när mängden inte är 1. Tryck på en mängd
-  växlar mellan enheterna i serverns `conversions` (dubbletten av den egna enheten tas bort).
+  avbockade rader och vald enhet gäller bara sessionen (`SavedStateHandle`). Ingrediensrader och
+  stegtexter byggs i ViewModel med `core:domain`s `RecipeDisplay.build(recipe, servings,
+  preferences, style)` – samma regler som Tandoors webb (skalning, `use_fractions` /
+  `ingredient_decimals`, plural utom för exakt 1, alltså även `1⁄2 lökar`, rubriker, `no_amount`,
+  anteckningar, mallar), se "Receptvisning" nedan. `style` (decimalkomma, bråktecken) skickar
+  skärmen från sin locale med `RecipeDetailAction.SetNumberStyle`, så texten följer ett byte av
+  appspråk. Tryck på en mängd växlar mellan enheterna i serverns `conversions`
+  (`IngredientRow.Item.unitAt`, dubbletten av den egna enheten tas bort).
   "Öppna på webben" öppnar `<server>/recipe/<id>/` i en Custom Tab (skalet, `androidx.browser`,
   vanlig webbläsare som reserv).
 - **Steg och Markdown:** stegtexten är Markdown. Appen har en egen liten läsare i
@@ -245,14 +249,20 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   kursiv, listor, rubriker och länkar, och ett fullt CommonMark-bibliotek för Compose skulle
   följa egna Compose-/Material-versioner ovanpå vår pre-release av Material 3. Länkar blir bara
   klickbara för `http`, `https` och `mailto`.
-- **Mallar** (`{{ scale(100) }}`, `{{ ingredients[0] }}`): renderas av `StepTemplates` i
-  `feature:recipes`, en tillfällig krok tills den gemensamma mallrenderaren finns i `core:domain`
-  (domain-lanen); byt då ut kroppen i `StepTemplates.render` och behåll signaturen.
+- **Mallar** (`{{ scale(100) }}`, `{{ ingredients[0] }}`): renderas av `core:domain`s
+  `TemplateRenderer` (via `RecipeDisplay.build`) för de valda portionerna. Kan Tandoor inte tolka
+  mallen (`hasBrokenTemplate`) visas steget som det är skrivet med en rad om att mängderna inte
+  skalas.
+- **Webbparitet i vyn:** `RecipeDetailWebParityTest` kör den riktiga `RecipeDetailViewModel` med
+  `core:testing`s fakes på fyra inspelade recept (`api-schema/fixtures/2.6.13/fas1/`, katalogen
+  via systemegenskapen `tandem.fixturesDir` som i `core:domain`) vid halva och dubbla portioner,
+  bråk av och på, och kräver exakt webbens rader och stegtexter ur `scaling-golden.json`.
 - **Komponenter i `core:ui`** (`casa.moller.tandem.core.ui.recipe`): `RecipeCard`,
   `RecipeListItem`, `RecipeImage` (Coil 3 `AsyncImage` med appens gemensamma `ImageLoader`,
   övertoning och platshållare), `RatingStars`, `RecipeTimeLabel`, `OfflineBadge`,
   `NotDownloadedBadge`, `KeywordPill`, `ServingsStepper`, `IngredientRow`, `IngredientHeader`,
-  `StepCard` och `MarkdownText`. Exempel för förhandsvisning ligger i `src/debug`.
+  `StepCard` och `MarkdownText`. Exempel för förhandsvisning ligger i `src/debug`; appens egna ord
+  där kommer från `strings_samples.xml` (engelska och svenska), bara receptinnehållet är svenskt.
 - **Ikoner:** receptskärmarnas ikoner är tillägg till `TandemIcons` i en egen fil
   (`icon/TandemIconsRecipes.kt`, `import casa.moller.tandem.core.designsystem.icon.Search`),
   så att parallella ändringar inte krockar i samma rader.
@@ -262,7 +272,8 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
 - **Skärmbilder:** `RecipesScreenshotTest` (telefon 412×915, hög telefon, medium 700×1000 stående,
   surfplatta 1280×800 liggande; ljust/mörkt, engelska/svenska, textstorlek 2,0) och
   `RecipeComponentsScreenshotTest` i `core:ui` sparas i artefakten `screenshots`
-  (`build/outputs/roborazzi/recipes/` resp. `ui/`).
+  (`build/outputs/roborazzi/recipes/` resp. `ui/`). `phone_tall_detail_templates_*` visar det
+  inspelade receptet Krämig svamppasta med mallar, halverat med bråk och dubblerat på svenska.
 <!-- /Fas 1 recept-ui -->
 
 ## Idag, första synken, serverstatus och återställning (Fas 1)
@@ -315,8 +326,8 @@ som beror på portionerna räknas här, likadant som Tandoors webb (plan §10 Fa
   max(`servings`, 1); `servings_text` är bara en etikett (`ServingsText.label`).
   `WebAmountFormat` avrundar som JavaScripts `toFixed` (det exakta binära värdet, `1.005` → `1`)
   eller ger bråk med nämnare ≤ 16 (Stern–Brocot som webbens `frac`); `PluralRule` väljer singular
-  när |mängd − 1| < 0,0001, vid `no_amount` eller utan pluralnamn. Det äldre `FormatAmount` finns
-  kvar men följer inte webben.
+  när |mängd − 1| < 0,0001, vid `no_amount` eller utan pluralnamn. Det äldre `FormatAmount` (egen
+  avrundning, inte webbens) är borttaget; all mängdformatering går genom `WebAmountFormat`.
 - **Ingrediensrader** (`IngredientDisplay`): rubrik = `note`; mängd och enhet bara när
   `!no_amount && amount != 0`; enhetsbyte i serverns `conversions`-ordning utan dubbletter
   (`Item.unitAt(index)` går runt i båda riktningarna).

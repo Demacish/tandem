@@ -22,6 +22,7 @@ import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.navigation.AppChrome
+import casa.moller.tandem.feature.recipes.detail.FixtureRecipes
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
 import casa.moller.tandem.feature.recipes.list.RecipeListLayout
 import casa.moller.tandem.feature.recipes.list.RecipeListScreen
@@ -217,6 +218,19 @@ class RecipesTallPhoneScreenshotTest : RecipesScreenshotTest("phone_tall") {
         DetailWithFakes(SampleRecipes.MushroomPasta.id, fakes = fakes)
     }
 
+    /** A recorded Tandoor recipe with templates in its steps, halved, fractions on (web parity, plan §10 Fas 1). */
+    @Test
+    fun detailTemplatesHalvedWithFractions() = capture("detail_templates_fractions_light") {
+        DetailWithFakes(MUSHROOM_PASTA_FIXTURE_ID, fakes = remember { fixtureFakes(servings = 2.0, useFractions = true) })
+    }
+
+    /** The same recipe doubled in Swedish: decimal comma, plural names, templates scaled. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun detailTemplatesDoubledSwedish() = capture("detail_templates_light_sv") {
+        DetailWithFakes(MUSHROOM_PASTA_FIXTURE_ID, fakes = remember { fixtureFakes(servings = 8.0, useFractions = false) })
+    }
+
     @Test
     fun detailHeadersAndSubRecipeDark() = capture("detail_buns_dark", darkTheme = true) { DetailWithFakes(SampleRecipes.CinnamonBuns.id) }
 
@@ -241,6 +255,21 @@ class RecipesTallPhoneScreenshotTest : RecipesScreenshotTest("phone_tall") {
         }
         DetailWithFakes(SampleRecipes.PeaSoup.id, fakes = fakes)
     }
+}
+
+/** The recorded Tandoor 2.6.13 "Krämig svamppasta" (api-schema/fixtures, with templates and conversions). */
+private const val MUSHROOM_PASTA_FIXTURE_ID = 2L
+
+/** Fakes that hold only the recorded mushroom pasta, at [servings] with `use_fractions` = [useFractions]. */
+private fun fixtureFakes(servings: Double, useFractions: Boolean): DetailFakes {
+    val recipe = FixtureRecipes.recipe("recipe-svamppasta.json")
+    check(recipe.id == MUSHROOM_PASTA_FIXTURE_ID) { "unexpected fixture id ${recipe.id}" }
+    return DetailFakes(
+        repository = FakeRecipeRepository(details = listOf(recipe), overviews = emptyList()).apply {
+            servingsChoices.value = mapOf(recipe.id to servings)
+        },
+        preferences = FakePreferencesRepository(UserPreferences(useFractions = useFractions)),
+    )
 }
 
 @RunWith(AndroidJUnit4::class)

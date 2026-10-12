@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
@@ -29,10 +30,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,7 +62,9 @@ import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.MoreVert
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
-import casa.moller.tandem.core.domain.scaling.FormatAmount
+import casa.moller.tandem.core.domain.format.toNumberStyle
+import casa.moller.tandem.core.domain.recipe.IngredientRow as DisplayRow
+import casa.moller.tandem.core.domain.recipe.UnitAmount
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
@@ -96,6 +101,9 @@ internal val TwoPaneMinWidth = 720.dp
  *
  * Phase 1a shows no cooking, shopping, planning or favourite actions (Phase 1b/2).
  *
+ * Amounts and step texts arrive ready to show (core:domain `RecipeDisplay`, web parity); the
+ * screen only reports how numbers are written in its locale ([RecipeDetailAction.SetNumberStyle]).
+ *
  * @param onOpenUrl opens a web page (the recipe in Tandoor, the source, links in steps go
  *   through Compose's own link handling).
  * @param onOpenRecipe opens another recipe (a step's sub-recipe).
@@ -116,6 +124,10 @@ fun RecipeDetailScreen(
     // The name moves into the top bar once the big title has scrolled away.
     val titleThreshold = with(LocalDensity.current) { TITLE_SCROLL_THRESHOLD.roundToPx() }
     val showNameInBar by remember { derivedStateOf { scrollState.value > titleThreshold } }
+    // Decimal comma and fraction glyphs follow the (per-app) language; resent when it changes.
+    val numberStyle = currentLocale().toNumberStyle()
+    val currentOnAction by rememberUpdatedState(onAction)
+    LaunchedEffect(numberStyle) { currentOnAction(RecipeDetailAction.SetNumberStyle(numberStyle)) }
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -394,8 +406,7 @@ private fun MissingDetail(state: RecipeDetailUiState, onAction: (RecipeDetailAct
 @Composable
 private fun Servings(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit) {
     val servings = state.servings ?: return
-    val locale = currentLocale()
-    val amount = FormatAmount(servings.current, locale, useFractions = true, decimals = 2)
+    val amount = servings.amountText
     val valueText = if (servings.text.isNotBlank()) {
         stringResource(R.string.recipe_detail_servings_with_text, amount, servings.text)
     } else {
@@ -434,30 +445,49 @@ private fun Ingredients(state: RecipeDetailUiState, onAction: (RecipeDetailActio
 }
 
 @Composable
-private fun IngredientRows(items: List<IngredientItem>, state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit) {
-    val locale = currentLocale()
-    items.forEach { item ->
-        if (item.isHeader) {
-            IngredientHeader(item.title)
-        } else {
-            val unitIndex = state.unitChoices[item.id] ?: 0
-            IngredientRow(
-                amountText = item.amountText(unitIndex, locale, state.preferences),
-                name = item.nameText(),
-                note = item.note,
-                struck = item.id in state.struckIngredientIds,
-                onToggle = { onAction(RecipeDetailAction.ToggleIngredient(item.id)) },
-                onAmountClick = if (item.canSwitchUnit) ({ onAction(RecipeDetailAction.SwitchUnit(item.id)) }) else null,
+private fun IngredientRows(rows: List<DisplayRow>, state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit) {
+    rows.forEach { row ->
+        when (row) {
+            is DisplayRow.Header -> IngredientHeader(row.title)
+
+            is DisplayRow.Item -> IngredientRow(
+                amountText = row.unitAt(state.unitChoices[row.id] ?: 0)?.text(),
+                name = row.food,
+                note = row.note.ifEmpty { null },
+                struck = row.id in state.struckIngredientIds,
+                onToggle = { onAction(RecipeDetailAction.ToggleIngredient(row.id)) },
+                onAmountClick = if (row.canCycleUnits) ({ onAction(RecipeDetailAction.SwitchUnit(row.id)) }) else null,
             )
         }
+    }
+}
+
+/** "2,5 dl", "3" (no unit), "1 ½ cups": the amount and unit the web shows, in one text. */
+private fun UnitAmount.text(): String = if (unit.isEmpty()) amount else "$amount $unit"
+
+/** Shown under a step whose templates Tandoor could not parse: its text is as written, not scaled. */
+@Composable
+private fun BrokenTemplateNote() {
+    Row(horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs)) {
+        Icon(
+            imageVector = TandemIcons.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(TandemTheme.sizes.iconSmall),
+        )
+        Text(
+            text = stringResource(R.string.recipe_detail_step_template_broken),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
 private fun Steps(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit, onOpenRecipe: (Long) -> Unit) {
     if (state.steps.isEmpty()) return
-    val locale = currentLocale()
-    val factor = state.servings?.factor ?: 1.0
     Column(verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md)) {
         SectionHeading(
             title = stringResource(R.string.recipe_detail_steps),
@@ -466,9 +496,6 @@ private fun Steps(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> 
         state.steps.forEach { step ->
             val stepRecipe = step.stepRecipe
             val stepRecipeName = stepRecipe?.name
-            val instruction = remember(step.instruction, step.ingredients, factor, locale, state.preferences) {
-                StepTemplates.render(step.instruction, step.ingredients, factor, locale, state.preferences)
-            }
             StepCard(
                 number = step.number,
                 title = step.name,
@@ -490,7 +517,8 @@ private fun Steps(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> 
                     null
                 },
             ) {
-                if (instruction.isNotBlank()) MarkdownText(markdown = instruction)
+                if (step.instruction.isNotBlank()) MarkdownText(markdown = step.instruction)
+                if (step.hasBrokenTemplate) BrokenTemplateNote()
             }
         }
     }

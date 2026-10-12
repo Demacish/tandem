@@ -90,6 +90,7 @@
     <string name="recipe_detail_ingredients">Ingredienser</string>
     <string name="recipe_detail_ingredients_hint">Tryck för att bocka av</string>
     <string name="recipe_detail_steps">Gör så här</string>
+    <string name="recipe_detail_step_template_broken">Mängderna i steget skalas inte: Tandoor kunde inte läsa stegets mall, så steget visas som det är skrivet.</string>
     <plurals name="recipe_detail_step_count">
         <item quantity="one">%1$d steg</item>
         <item quantity="other">%1$d steg</item>

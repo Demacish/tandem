@@ -8,6 +8,13 @@ import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
+import casa.moller.tandem.core.domain.format.NumberStyle
+import casa.moller.tandem.core.domain.format.toNumberStyle
+import casa.moller.tandem.core.domain.recipe.IngredientRow
+import casa.moller.tandem.core.domain.recipe.RecipeDisplay
+import casa.moller.tandem.core.domain.recipe.RecipeDisplayModel
+import casa.moller.tandem.core.domain.recipe.ServingsText
+import casa.moller.tandem.core.domain.scaling.ServingsScaling
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.preferences.UserPreferences
@@ -20,6 +27,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlinx.coroutines.channels.Channel
@@ -37,8 +45,13 @@ import kotlinx.coroutines.launch
 
 /**
  * The recipe detail (plan 6.2 "Receptdetalj", feature #4): stored copy first, quiet refresh,
- * servings remembered per recipe, amounts scaled and formatted after the user's Tandoor
- * preferences, rows struck through and units switched for this session only.
+ * servings remembered per recipe, rows struck through and units switched for this session only.
+ *
+ * Ingredient rows and step texts come from core:domain's [RecipeDisplay.build], the same rules
+ * as Tandoor's web (scaling, `use_fractions` / `ingredient_decimals`, plural names, headers,
+ * `no_amount`, templates; golden-tested against `scaling-golden.json`), written in the UI's
+ * [NumberStyle] (decimal comma in Swedish), which the screen sends with
+ * [RecipeDetailAction.SetNumberStyle].
  *
  * The recipe counts as viewed once per ViewModel, i.e. once per opening (plan 3.3 view log).
  */
@@ -64,6 +77,9 @@ class RecipeDetailViewModel @AssistedInject constructor(
 
     private val manualRefresh = MutableStateFlow(false)
 
+    /** Until the screen reports its locale: the process default (the app's language at start). */
+    private val numberStyle = MutableStateFlow(Locale.getDefault().toNumberStyle())
+
     private val sessionInfo: Flow<SessionInfo> = sessionRepository.session
         .map { session ->
             SessionInfo(
@@ -87,8 +103,13 @@ class RecipeDetailViewModel @AssistedInject constructor(
         sessionInfo,
     ) { detail, choice, preferences, offline, session -> Sources(detail, choice, preferences, offline, session) }
 
-    val uiState: StateFlow<RecipeDetailUiState> = combine(sources, sessionChoices, manualRefresh) { current, choices, refreshing ->
-        buildState(current, choices, refreshing)
+    val uiState: StateFlow<RecipeDetailUiState> = combine(
+        sources,
+        sessionChoices,
+        manualRefresh,
+        numberStyle,
+    ) { current, choices, refreshing, style ->
+        buildState(current, choices, refreshing, style)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeDetailUiState(recipeId = recipeId))
 
     init {
@@ -104,6 +125,7 @@ class RecipeDetailViewModel @AssistedInject constructor(
             is RecipeDetailAction.SwitchUnit -> switchUnit(action.id)
             RecipeDetailAction.Refresh -> refresh()
             RecipeDetailAction.ToggleOffline -> toggleOffline()
+            is RecipeDetailAction.SetNumberStyle -> numberStyle.value = action.style
         }
     }
 
@@ -123,8 +145,10 @@ class RecipeDetailViewModel @AssistedInject constructor(
 
     private fun switchUnit(id: Long) {
         val state = uiState.value
-        val item = (state.ingredients + state.steps.flatMap { it.ingredients }).firstOrNull { it.id == id } ?: return
-        if (!item.canSwitchUnit) return
+        val item = (state.ingredients + state.steps.flatMap { it.ingredients })
+            .filterIsInstance<IngredientRow.Item>()
+            .firstOrNull { it.id == id } ?: return
+        if (!item.canCycleUnits) return
         val choices = savedStateHandle.get<LongArray>(KEY_UNITS)?.toUnitChoices().orEmpty()
         val next = ((choices[id] ?: 0) + 1) % item.units.size
         savedStateHandle[KEY_UNITS] = (choices + (id to next)).toLongArray()
@@ -161,18 +185,21 @@ class RecipeDetailViewModel @AssistedInject constructor(
         }
     }
 
-    private fun buildState(sources: Sources, choices: SessionChoices, manualRefreshing: Boolean): RecipeDetailUiState {
+    private fun buildState(sources: Sources, choices: SessionChoices, manualRefreshing: Boolean, style: NumberStyle): RecipeDetailUiState {
         val detail = sources.detail
         val recipe = detail.recipe
         val overview = detail.overview
         val servings = recipe?.let {
+            val current = ServingsScaling.initialServings(it, sources.choice?.servings)
             ServingsState(
-                current = sources.choice?.servings ?: it.servings.toDouble(),
-                original = it.servings.coerceAtLeast(1),
+                current = current,
+                original = ServingsScaling.baseServings(it.servings),
                 text = it.servingsText,
+                amountText = ServingsText.number(current, style),
             )
         }
-        val factor = servings?.factor ?: 1.0
+        val display = recipe?.let { RecipeDisplay.build(it, servings?.current ?: 0.0, sources.preferences, style) }
+        val showOverview = recipe?.showIngredientOverview ?: true
         val offline = sources.offline || detail.error.isConnectionProblem()
         return RecipeDetailUiState(
             recipeId = recipeId,
@@ -193,8 +220,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
             },
             hasDetail = recipe != null,
             servings = servings,
-            ingredients = recipe?.takeIf { it.showIngredientOverview }?.ingredients?.map { ingredientItem(it, factor) }.orEmpty(),
-            steps = recipe?.toSteps(factor, sources.preferences).orEmpty(),
+            ingredients = display?.takeIf { showOverview }?.ingredients.orEmpty(),
+            steps = display?.toSteps(showOverview, sources.preferences).orEmpty(),
             sourceUrl = recipe?.sourceUrl?.takeIf { it.startsWith("https://") || it.startsWith("http://") },
             preferences = sources.preferences,
             refreshing = detail.refreshing || manualRefreshing,
@@ -223,19 +250,20 @@ class RecipeDetailViewModel @AssistedInject constructor(
         isPrivate = isPrivate,
     )
 
-    private fun Recipe.toSteps(factor: Double, preferences: UserPreferences): List<StepItem> =
-        steps.sortedBy { it.order }.mapIndexed { index, step ->
+    private fun RecipeDisplayModel.toSteps(showIngredientOverview: Boolean, preferences: UserPreferences): List<StepItem> =
+        steps.map { step ->
             StepItem(
                 id = step.id,
-                number = index + 1,
+                number = step.number,
                 name = step.name,
                 instruction = step.instruction,
                 minutes = step.timeMinutes,
-                ingredients = step.ingredients.sortedBy { it.order }.map { ingredientItem(it, factor) },
+                ingredients = step.ingredients,
                 // Without an overview the steps are the only place the ingredients appear.
                 showIngredients = step.ingredients.isNotEmpty() &&
                     (!showIngredientOverview || (step.showIngredientsTable && preferences.showStepIngredients)),
                 stepRecipe = step.stepRecipe,
+                hasBrokenTemplate = step.hasBrokenTemplate,
             )
         }
 

@@ -19,4 +19,15 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     testImplementation(projects.core.testing)
+    // Web parity of the detail (RecipeDetailWebParityTest) reads the recorded recipes and scaling-golden.json.
+    testImplementation(libs.kotlinx.serialization.json)
+}
+
+// The committed Tandoor fixtures (api-schema/fixtures/), read by RecipeDetailWebParityTest like
+// core:domain's golden test. Declared as an input so a changed fixture reruns the tests.
+val fixturesDir: Directory = layout.projectDirectory.dir("../../api-schema/fixtures")
+
+tasks.withType<Test>().configureEach {
+    systemProperty("tandem.fixturesDir", fixturesDir.asFile.absolutePath)
+    inputs.dir(fixturesDir).withPathSensitivity(PathSensitivity.RELATIVE).withPropertyName("fixtures")
 }

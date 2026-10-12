@@ -2,6 +2,8 @@ package casa.moller.tandem.feature.recipes.detail
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import casa.moller.tandem.core.domain.format.NumberStyle
+import casa.moller.tandem.core.domain.recipe.IngredientRow
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.recipe.Keyword
@@ -18,9 +20,11 @@ import kotlin.time.Instant
  *   list entry while no detail is stored. Null when the recipe is unknown locally.
  * @property hasDetail the full recipe (ingredients, steps) is stored.
  * @property servings the servings shown (the user's choice or the recipe's own), null without detail.
- * @property ingredients the ingredient overview (headers included), scaled; empty when the
- *   recipe shows its ingredients per step only.
- * @property steps the steps, with their ingredients scaled.
+ * @property ingredients the ingredient overview (headers included), scaled and formatted like
+ *   Tandoor's web (core:domain `RecipeDisplay`); empty when the recipe shows its ingredients per
+ *   step only.
+ * @property steps the steps, with their ingredients scaled and their templates rendered.
+ * @property preferences the user's Tandoor preferences the amounts were formatted with.
  * @property refreshing a refresh from the server runs (quiet indicator).
  * @property error why the last refresh failed; with a stored detail the screen keeps showing it.
  * @property offline the device is offline (sync paused) or the last refresh could not connect.
@@ -39,7 +43,7 @@ data class RecipeDetailUiState(
     val header: RecipeHeader? = null,
     val hasDetail: Boolean = false,
     val servings: ServingsState? = null,
-    val ingredients: List<IngredientItem> = emptyList(),
+    val ingredients: List<IngredientRow> = emptyList(),
     val steps: List<StepItem> = emptyList(),
     val sourceUrl: String? = null,
     val preferences: UserPreferences = UserPreferences.Default,
@@ -96,18 +100,15 @@ data class RecipeHeader(
  * @property current the servings the amounts are scaled to (may be fractional).
  * @property original the recipe's own servings (`servings`).
  * @property text the unit of the servings as written in Tandoor (`servings_text`), empty when not set.
+ * @property amountText [current] as a number in the UI's language ("4", "2,5"), core:domain `ServingsText.number`.
  */
 @Immutable
-data class ServingsState(val current: Double, val original: Int, val text: String) {
+data class ServingsState(val current: Double, val original: Int, val text: String, val amountText: String) {
     val isChanged: Boolean
         get() = current != original.toDouble()
 
     val canDecrease: Boolean
         get() = current > MIN_SERVINGS
-
-    /** `servings / recipe.servings`, the factor every amount is multiplied with. */
-    val factor: Double
-        get() = current / original.coerceAtLeast(1)
 
     companion object {
         const val MIN_SERVINGS: Double = 1.0
@@ -115,10 +116,14 @@ data class ServingsState(val current: Double, val original: Int, val text: Strin
 }
 
 /**
- * One step of the recipe detail.
+ * One step of the recipe detail, from core:domain's `StepDisplay`.
  *
  * @property number 1-based position.
- * @property ingredients the step's ingredients, scaled (for templates and, if [showIngredients], the table).
+ * @property instruction the instruction as Markdown, with Tandoor's templates (`{{ scale(100) }}`,
+ *   `{{ ingredients[0] }}`) rendered for the chosen servings (core:domain `TemplateRenderer`).
+ * @property hasBrokenTemplate the templates could not be parsed (Tandoor's web shows an error),
+ *   so [instruction] is the text as written; the screen says that its amounts are not scaled.
+ * @property ingredients the step's ingredients, scaled (shown when [showIngredients]).
  * @property showIngredients show [ingredients] with the step (Tandoor `show_ingredients_table` and
  *   the user preference `show_step_ingredients`, or always when the recipe has no overview).
  */
@@ -129,9 +134,10 @@ data class StepItem(
     val name: String,
     val instruction: String,
     val minutes: Int,
-    val ingredients: List<IngredientItem>,
+    val ingredients: List<IngredientRow>,
     val showIngredients: Boolean,
     val stepRecipe: StepRecipeRef?,
+    val hasBrokenTemplate: Boolean = false,
 )
 
 /** What the detail screen can do. */
@@ -149,6 +155,12 @@ sealed interface RecipeDetailAction {
     data object Refresh : RecipeDetailAction
 
     data object ToggleOffline : RecipeDetailAction
+
+    /**
+     * How numbers are written in the UI's language (decimal comma, fraction glyphs). The screen
+     * sends it from its configuration's locale, so the text follows a per-app language change.
+     */
+    data class SetNumberStyle(val style: NumberStyle) : RecipeDetailAction
 }
 
 /** One-off events of the detail screen. */

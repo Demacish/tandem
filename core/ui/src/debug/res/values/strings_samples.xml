@@ -16,4 +16,10 @@
     <string name="ui_sample_username">Username</string>
     <string name="ui_sample_password">Password</string>
     <string name="ui_sample_login">Log in</string>
+    <string name="ui_sample_servings_label">Servings</string>
+    <plurals name="ui_sample_servings">
+        <item quantity="one">%1$d serving</item>
+        <item quantity="other">%1$d servings</item>
+    </plurals>
+    <string name="ui_sample_servings_reset">Reset to %1$d</string>
 </resources>

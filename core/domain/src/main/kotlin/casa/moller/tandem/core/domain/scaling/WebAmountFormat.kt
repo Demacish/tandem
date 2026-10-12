@@ -7,8 +7,8 @@ import kotlin.math.floor
 
 /**
  * Rounds and writes a scaled amount exactly like Tandoor 2.6's web (FACTS.md "Fas 1 l", checked
- * against `scaling-golden.json`). This is the formatting for recipe display; [FormatAmount] is
- * the older, general helper and does not match the web.
+ * against `scaling-golden.json`). The one amount formatter of the app (recipe detail, templates,
+ * servings); the older `FormatAmount` with its own rounding was removed in favour of it.
  *
  * - **Fractions off:** JavaScript `Number(x.toFixed(decimals))`: the exact binary value is
  *   rounded half up (`0.125` → `0.13`, but `1.005` → `1` because 1.005 is stored as

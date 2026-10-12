@@ -1,4 +1,4 @@
-// Pure Kotlin domain logic (ScaleIngredients, FormatAmount, TimerDetector, recipe display, ...).
+// Pure Kotlin domain logic (ScaleIngredients, WebAmountFormat, TimerDetector, recipe display, ...).
 // No Android types.
 plugins {
     id("tandem.jvm.library")
