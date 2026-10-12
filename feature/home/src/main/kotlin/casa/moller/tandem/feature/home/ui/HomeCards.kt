@@ -20,12 +20,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -45,8 +50,10 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.recipe.RecipeOverview
+import casa.moller.tandem.core.ui.recipe.RecipeImageTags
 import casa.moller.tandem.feature.home.R
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import java.text.NumberFormat
 
 /**
@@ -56,8 +63,11 @@ import java.text.NumberFormat
  */
 @Composable
 internal fun HomeRecipeImage(imageUrl: String?, modifier: Modifier = Modifier, placeholderSize: Dp = 32.dp) {
+    var loaded by remember(imageUrl) { mutableStateOf(false) }
     Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest),
+        modifier = modifier
+            .testTag(RecipeImageTags.of(loaded))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -72,6 +82,7 @@ internal fun HomeRecipeImage(imageUrl: String?, modifier: Modifier = Modifier, p
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
+                onState = { loaded = it is AsyncImagePainter.State.Success },
             )
         }
     }

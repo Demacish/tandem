@@ -17,9 +17,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -43,6 +46,7 @@ import casa.moller.tandem.recovery.RecoveryRoute
  * recovery). Each entry gets its own ViewModelStore, so the intro starts fresh after a logout and
  * the shell's state ends with the account.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashReports: CrashReportViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,7 +72,11 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
         // has been applied to the window).
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            // Test tags become resource ids in the accessibility tree, so UiAutomator (the release
+            // smoke test, later the macrobenchmarks) can find e.g. a loaded recipe photo
+            // (core:ui RecipeImageTags). They carry no user data.
+            .semantics { testTagsAsResourceId = true },
         // Single-entry stack: system back on a top-level screen leaves the app as usual (the
         // intro and the shell handle back inside themselves).
         onBack = {},

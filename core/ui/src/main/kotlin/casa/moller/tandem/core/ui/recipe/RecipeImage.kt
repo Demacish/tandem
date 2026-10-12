@@ -6,14 +6,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -37,8 +43,10 @@ fun RecipeImage(
     dimmed: Boolean = false,
     placeholderIconSize: Dp = TandemTheme.sizes.iconLarge,
 ) {
+    var loaded by remember(imageUrl) { mutableStateOf(false) }
     Box(
         modifier = modifier
+            .testTag(RecipeImageTags.of(loaded))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .alpha(if (dimmed) DIMMED_ALPHA else 1f),
         contentAlignment = Alignment.Center,
@@ -58,6 +66,7 @@ fun RecipeImage(
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
+                onState = { loaded = it is AsyncImagePainter.State.Success },
             )
         }
     }
@@ -65,3 +74,16 @@ fun RecipeImage(
 
 /** Opacity of recipes that cannot be opened right now (offline without a stored detail). */
 const val DIMMED_ALPHA: Float = 0.45f
+
+/**
+ * Test tags of a recipe photo: [LOADED] once the image is on screen, [PLACEHOLDER] while it
+ * loads, after a failure and for recipes without one. The app exposes test tags as resource ids
+ * (`testTagsAsResourceId`), so the release smoke test (:smoke) can tell from outside the app
+ * whether a photo (a demo asset or a cached server image, also offline) really loaded.
+ */
+object RecipeImageTags {
+    const val PLACEHOLDER: String = "recipe_image"
+    const val LOADED: String = "recipe_image_loaded"
+
+    fun of(loaded: Boolean): String = if (loaded) LOADED else PLACEHOLDER
+}
