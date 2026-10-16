@@ -238,7 +238,8 @@ private fun RecipeSort.comparator(): Comparator<RecipeOverview> {
         RecipeSort.TIMES_COOKED ->
             compareByDescending<RecipeOverview> { it.timesCooked ?: -1 }.thenByDescending { it.lastCooked }.then(byName)
 
-        RecipeSort.NEWEST -> compareByDescending<RecipeOverview> { it.isNew }.thenByDescending { it.id }
+        // The model has no creation time; the sample ids grow with it (like RecipeSorting's tie-break).
+        RecipeSort.NEWEST -> compareByDescending<RecipeOverview> { it.id }
 
         RecipeSort.TOTAL_TIME -> compareBy<RecipeOverview> { if (it.totalMinutes > 0) it.totalMinutes else Int.MAX_VALUE }.then(byName)
     }

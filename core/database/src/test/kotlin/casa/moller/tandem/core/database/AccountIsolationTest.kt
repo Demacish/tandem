@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.database
 
+import androidx.room3.useReaderConnection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.database.entity.MealPlanEntity
 import casa.moller.tandem.core.database.entity.MealTypeEntity
@@ -104,6 +105,37 @@ class AccountIsolationTest {
         // Every account-scoped table is empty for A (the FTS table has no account column, see above).
         ACCOUNT_TABLES.forEach { table ->
             assertEquals(table, 0L, database.count("SELECT COUNT(*) FROM $table WHERE account_id = '$ACCOUNT_A'"))
+        }
+    }
+
+    @Test
+    fun storedAccountIdsIncludeRowsWithoutAMirrorRow() = runTest {
+        seed(ACCOUNT_A, "Pannkakor", "Pannkaksfest")
+        seed(ACCOUNT_B, "Våfflor", "Våffeldag")
+        // A late response written after B's mirror row was removed (logout during a sync).
+        database.accountDao().deleteAccountData(ACCOUNT_B)
+        database.store(ACCOUNT_B, TestRecipes.recipe(id = 2, name = "Sen pannkaka"))
+
+        assertEquals(listOf(ACCOUNT_A, ACCOUNT_B), database.accountDao().getStoredAccountIds().sorted())
+        assertEquals(listOf(ACCOUNT_A), database.accountDao().observeAll().first().map { it.id })
+
+        database.accountDao().deleteAccountData(ACCOUNT_B)
+        assertEquals(listOf(ACCOUNT_A), database.accountDao().getStoredAccountIds())
+    }
+
+    @Test
+    fun everyTableWithAnAccountColumnIsCleanedOnRemoval() = runTest {
+        val tables = database.texts("SELECT name FROM sqlite_master WHERE type = 'table'").filter { table ->
+            "account_id" in database.texts("PRAGMA table_info(`$table`)", column = 1)
+        }
+
+        // A new account-scoped table must be added to AccountDao.deleteFrom and getStoredAccountIds.
+        assertEquals(ACCOUNT_TABLES.sorted(), tables.sorted())
+    }
+
+    private suspend fun TandemDatabase.texts(sql: String, column: Int = 0): List<String> = useReaderConnection { connection ->
+        connection.usePrepared(sql) { statement ->
+            buildList { while (statement.step()) add(statement.getText(column)) }
         }
     }
 

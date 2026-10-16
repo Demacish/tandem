@@ -8,7 +8,7 @@ import java.util.Locale
 /**
  * Orders of the recipe list ([RecipeSort]), the same as the fake repository in core:testing:
  * ties and [RecipeSort.NAME] use a locale collator (Swedish: å, ä, ö after z), unknown values
- * (unrated, never cooked, no times) come last.
+ * (unrated, never cooked, no times, no creation time) come last.
  */
 object RecipeSorting {
     /** A comparator for [sort]; names are compared with a [Collator] for [locale]. */
@@ -27,7 +27,11 @@ object RecipeSorting {
                     .thenByDescending { it.overview.lastCookedEpochMillis }
                     .then(byName)
 
-            RecipeSort.NEWEST -> compareByDescending<RecipeListItem> { it.overview.isNew }.thenByDescending { it.overview.serverId }
+            // By creation time, not by the stored `new` flag: that flag is only true for 7 days on
+            // the server but is not re-read until the recipe changes again.
+            RecipeSort.NEWEST ->
+                compareByDescending<RecipeListItem> { it.overview.createdAtEpochMillis ?: Long.MIN_VALUE }
+                    .thenByDescending { it.overview.serverId }
 
             RecipeSort.TOTAL_TIME ->
                 compareBy<RecipeListItem> { item ->

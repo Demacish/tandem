@@ -116,12 +116,21 @@ abstract class RecipeDao {
     @Query("SELECT server_id FROM recipe_overview WHERE account_id = :accountId")
     abstract suspend fun getRecipeIds(accountId: String): List<Long>
 
-    /** Pinned recipes whose detail is missing or older than [olderThanEpochMillis] (plan 3.5: refresh every 24 h). */
+    /**
+     * Pinned recipes whose detail is missing or older than [olderThanEpochMillis] (plan 3.5:
+     * refresh every 24 h), or fetched after [newerThanEpochMillis]: a time in the future means
+     * the device clock was ahead then, and such a copy would otherwise never count as stale.
+     */
     @Query(
         "SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND pinned = 1 " +
-            "AND (raw_json IS NULL OR fetched_at IS NULL OR fetched_at < :olderThanEpochMillis) ORDER BY recipe_id",
+            "AND (raw_json IS NULL OR fetched_at IS NULL OR fetched_at < :olderThanEpochMillis " +
+            "OR fetched_at > :newerThanEpochMillis) ORDER BY recipe_id",
     )
-    abstract suspend fun getPinnedIdsToRefresh(accountId: String, olderThanEpochMillis: Long): List<Long>
+    abstract suspend fun getPinnedIdsToRefresh(
+        accountId: String,
+        olderThanEpochMillis: Long,
+        newerThanEpochMillis: Long = Long.MAX_VALUE,
+    ): List<Long>
 
     /** Recipes with a stored detail (available offline). */
     @Query("SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL ORDER BY recipe_id")
@@ -284,6 +293,51 @@ abstract class RecipeDao {
             "WHERE account_id = :accountId AND server_id = :recipeId",
     )
     abstract suspend fun setCookStats(accountId: String, recipeId: Long, lastCookedEpochMillis: Long?, timesCooked: Int?)
+
+    /**
+     * Replaces the cook statistics of the whole account with [stats] (computed from the complete
+     * cook log) in ONE transaction, so the observed lists are invalidated once: recipes missing
+     * from [stats] (their cook-log entries were deleted) go back to "never cooked".
+     *
+     * @param withRatings also replace `rating` with [CookStatsRow.rating] (null for recipes not
+     *   in [stats]): the list responses carry no rating (FACTS "Fas 1 c"), so the cook log is
+     *   its source. False keeps the stored ratings (demo mode, whose details carry them).
+     */
+    @Transaction
+    open suspend fun replaceCookStats(accountId: String, stats: List<CookStatsRow>, withRatings: Boolean) {
+        if (withRatings) resetCookStatsAndRatings(accountId) else resetCookStats(accountId)
+        stats.distinctBy { it.recipeId }.forEach { row ->
+            if (withRatings) {
+                setCookStatsAndRating(accountId, row.recipeId, row.lastCookedEpochMillis, row.timesCooked, row.rating)
+            } else {
+                setCookStats(accountId, row.recipeId, row.lastCookedEpochMillis, row.timesCooked)
+            }
+        }
+    }
+
+    @Query(
+        "UPDATE recipe_overview SET last_cooked = NULL, times_cooked = NULL " +
+            "WHERE account_id = :accountId AND (last_cooked IS NOT NULL OR times_cooked IS NOT NULL)",
+    )
+    abstract suspend fun resetCookStats(accountId: String)
+
+    @Query(
+        "UPDATE recipe_overview SET last_cooked = NULL, times_cooked = NULL, rating = NULL " +
+            "WHERE account_id = :accountId AND (last_cooked IS NOT NULL OR times_cooked IS NOT NULL OR rating IS NOT NULL)",
+    )
+    abstract suspend fun resetCookStatsAndRatings(accountId: String)
+
+    @Query(
+        "UPDATE recipe_overview SET last_cooked = :lastCookedEpochMillis, times_cooked = :timesCooked, rating = :rating " +
+            "WHERE account_id = :accountId AND server_id = :recipeId",
+    )
+    abstract suspend fun setCookStatsAndRating(
+        accountId: String,
+        recipeId: Long,
+        lastCookedEpochMillis: Long?,
+        timesCooked: Int?,
+        rating: Double?,
+    )
 
     /** Rebuilds the whole FTS index of the account (after the keyword list changed names). */
     @Transaction

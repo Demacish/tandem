@@ -1,15 +1,19 @@
 package casa.moller.tandem.core.database
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.database.dao.CookStatsRow
 import casa.moller.tandem.core.database.dao.IndexChange
 import casa.moller.tandem.core.database.dao.RecipeIndexEntry
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.RecipeOverviewEntity
 import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.mapper.toOverviewWrite
 import casa.moller.tandem.core.database.mapper.toRecipe
+import casa.moller.tandem.core.database.query.RecipeSorting
+import casa.moller.tandem.core.database.relation.RecipeListItem
 import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
@@ -108,6 +112,9 @@ class RecipeDaoTest {
         database.store(ACCOUNT_A, TestRecipes.MushroomPasta, fetchedAtEpochMillis = 1_000L)
         assertEquals(emptyList<Long>(), dao.getPinnedIdsToRefresh(ACCOUNT_A, olderThanEpochMillis = 500L))
         assertEquals(listOf(1L), dao.getPinnedIdsToRefresh(ACCOUNT_A, olderThanEpochMillis = 2_000L))
+
+        // A copy fetched "in the future" (the clock was ahead then) counts as stale too.
+        assertEquals(listOf(1L), dao.getPinnedIdsToRefresh(ACCOUNT_A, olderThanEpochMillis = 500L, newerThanEpochMillis = 900L))
 
         dao.evictDetail(ACCOUNT_A, 1)
         val evicted = checkNotNull(dao.observeListItem(ACCOUNT_A, 1).first())
@@ -216,5 +223,58 @@ class RecipeDaoTest {
         assertEquals(emptyList<String>(), names(RecipeQuery(keywordIds = setOf(TestRecipes.Soup.id, TestRecipes.Pasta.id))))
         assertEquals(6, names(RecipeQuery(onlyOffline = true)).size)
         assertEquals(listOf("Svampsoppa"), names(RecipeQuery(text = "svamp", keywordIds = setOf(TestRecipes.Soup.id))))
+    }
+
+    @Test
+    fun cookStatsAreReplacedInOneGoAndCarryTheOwnRating() = runTest {
+        TestRecipes.All.forEach { database.store(ACCOUNT_A, it) }
+        dao.applyIndex(ACCOUNT_A, TestRecipes.All.map { RecipeIndexEntry(it.id, it.name) } + RecipeIndexEntry(7, "Ölbröd"))
+        dao.setCookStats(ACCOUNT_A, 2, lastCookedEpochMillis = 5_000L, timesCooked = 4)
+
+        // Only Ölbröd (no detail stored) was rated by the user; Ärtsoppa's log entries are gone.
+        val bread7 = CookStatsRow(7, timesCooked = 2, lastCookedEpochMillis = 9_000L, rating = 5.0)
+        dao.replaceCookStats(ACCOUNT_A, listOf(bread7), withRatings = true)
+
+        val pea = dao.getOverviews(ACCOUNT_A, listOf(2)).single()
+        assertNull(pea.timesCooked)
+        assertNull(pea.lastCookedEpochMillis)
+        assertNull("no own rating in the cook log", pea.rating)
+        val bread = dao.getOverviews(ACCOUNT_A, listOf(7)).single()
+        assertEquals(2, bread.timesCooked)
+        assertEquals(5.0, checkNotNull(bread.rating), 0.0)
+        // The offline "Rating 4+" filter and the rating sort find it without a stored detail.
+        assertEquals(listOf("Ölbröd"), names(RecipeQuery(minRating = 4.0)))
+        assertEquals("Ölbröd", names(RecipeQuery(sort = RecipeSort.RATING)).first())
+        // A later name-sorted list (rating null) keeps it.
+        dao.upsertOverviews(ACCOUNT_A, listOf(RecipeOverview(id = 7, name = "Ölbröd", rating = null).toOverviewWrite(ACCOUNT_A)))
+        assertEquals(5.0, checkNotNull(dao.getOverviews(ACCOUNT_A, listOf(7)).single().rating), 0.0)
+
+        // Without ratings (demo mode) the stored ratings stay.
+        dao.replaceCookStats(ACCOUNT_A, emptyList(), withRatings = false)
+        assertEquals(5.0, checkNotNull(dao.getOverviews(ACCOUNT_A, listOf(7)).single().rating), 0.0)
+        assertNull(dao.getOverviews(ACCOUNT_A, listOf(7)).single().timesCooked)
+    }
+
+    @Test
+    fun newestSortsByCreationTimeNotByTheStoredNewFlag() {
+        fun item(id: Long, createdAt: Long?, isNew: Boolean) = RecipeListItem(
+            overview = RecipeOverviewEntity(
+                accountId = ACCOUNT_A,
+                serverId = id,
+                name = "R$id",
+                createdAtEpochMillis = createdAt,
+                isNew = isNew,
+            ),
+            pinned = false,
+            availableOffline = false,
+            lastViewedLocalEpochMillis = null,
+            keywordList = null,
+        )
+        // 100 was new when it was first synced and kept the flag; 150 was created a month later.
+        val items = listOf(item(100, 1_000L, isNew = true), item(150, 30_000L, isNew = false), item(160, null, isNew = false))
+
+        val sorted = items.sortedWith(RecipeSorting.comparator(RecipeSort.NEWEST, SWEDISH)).map { it.overview.serverId }
+
+        assertEquals(listOf(150L, 100L, 160L), sorted)
     }
 }

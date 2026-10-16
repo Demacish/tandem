@@ -38,6 +38,14 @@ data class RecipeDetailWrite(
 )
 
 /**
+ * Cook statistics of one recipe, computed from the whole cook log (`RecipeDao.replaceCookStats`).
+ *
+ * @property rating the logged-in user's own average rating from the cook log, rounded like the
+ *   server does (FACTS "Fas 1 d"), or null when the user never rated it.
+ */
+data class CookStatsRow(val recipeId: Long, val timesCooked: Int, val lastCookedEpochMillis: Long?, val rating: Double? = null)
+
+/**
  * What `RecipeDao.applyIndex` changed.
  *
  * @property inserted recipe ids that were new.

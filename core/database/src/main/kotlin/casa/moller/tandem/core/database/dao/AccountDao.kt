@@ -35,6 +35,24 @@ abstract class AccountDao {
     @Query(RecipeSql.FTS_DELETE_ACCOUNT)
     abstract suspend fun deleteFts(accountId: String)
 
+    /**
+     * Every account id that has a row in any account-scoped table (the mirror included). Logout
+     * clean-up compares it with the stored accounts, so rows a late response wrote after the
+     * account was removed are found too, although its `server_account` row is gone. Keep the
+     * table list the same as [deleteFrom] (AccountIsolationTest checks both against the schema).
+     */
+    @Query(
+        "SELECT account_id FROM recipe_overview UNION SELECT account_id FROM recipe_detail " +
+            "UNION SELECT account_id FROM step UNION SELECT account_id FROM ingredient " +
+            "UNION SELECT account_id FROM recipe_keyword UNION SELECT account_id FROM keyword " +
+            "UNION SELECT account_id FROM food UNION SELECT account_id FROM unit " +
+            "UNION SELECT account_id FROM meal_type UNION SELECT account_id FROM meal_plan " +
+            "UNION SELECT account_id FROM user_preference UNION SELECT account_id FROM home_section " +
+            "UNION SELECT account_id FROM home_section_recipe UNION SELECT account_id FROM sync_state " +
+            "UNION SELECT account_id FROM outbox UNION SELECT id FROM server_account",
+    )
+    abstract suspend fun getStoredAccountIds(): List<String>
+
     private suspend fun deleteFrom(accountId: String) {
         deleteRecipeOverviews(accountId)
         deleteRecipeDetails(accountId)
