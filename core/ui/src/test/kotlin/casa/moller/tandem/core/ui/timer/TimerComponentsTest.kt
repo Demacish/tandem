@@ -67,8 +67,9 @@ class TimerComponentsTest(private val theme: String) {
         TimerStartButton(durationText = timerDurationText(25.minutes), detail = "ca 20–25 minuter (25 min)", onClick = {})
         TimerStartButton(durationText = timerDurationText(90.seconds), onClick = {})
         TimerBar(timers = all, now = now, actions = actions, maxHeight = 600.dp)
-        TimerCard(timer = running, now = now, actions = actions, overline = "Steg 2")
-        TimerCard(timer = ringing, now = now, actions = actions)
+        // Other timers than the bar's: the same timer twice would be the same TalkBack labels twice.
+        TimerCard(timer = running.copy(id = 5, label = "Såsen"), now = now, actions = actions, overline = "Steg 2")
+        TimerCard(timer = ringing.copy(id = 6, label = "Kycklingen"), now = now, actions = actions)
     }
 
     @Test

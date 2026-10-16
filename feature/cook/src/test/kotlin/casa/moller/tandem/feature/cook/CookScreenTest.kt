@@ -88,7 +88,7 @@ class CookScreenTest {
     fun aTimerButtonStartsATimerShownInTheBar() {
         val fakes = show()
 
-        composeRule.onNodeWithText("Start 5 min").performScrollTo().performClick()
+        composeRule.onNodeWithContentDescription("Start a 5 min timer", substring = true).performScrollTo().performClick()
         composeRule.waitForIdle()
 
         val timer = fakes.timers.timers.value.single()
