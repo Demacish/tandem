@@ -52,13 +52,13 @@ kan installeras bredvid release-bygget.
 | Modul | Typ | Får bero på |
 |---|---|---|
 | `:app` | applikation | allt den kopplar ihop |
-| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook` | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` (+ `core:timer` för kokläget) – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore` och aldrig en annan feature |
+| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook` | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer` och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
 | `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes` och `feature:home`: skalet är navigationsvärden (se Navigering) |
 | `:core:data` | Android-bibliotek + Hilt | `core:{network,datastore,model,common}`; repository-gränssnitten för Fas 1 |
 | `:core:database` | Android-bibliotek + Hilt + `tandem.android.room` | `core:{model,common}` |
 | `:core:sync` | Android-bibliotek + Hilt + WorkManager/hilt-work | `core:{data,network,database,datastore,domain,model,common}` |
 | `:core:testing` | Android-bibliotek, **bara för tester** | `core:{data,model}`; fakes, exempeldata, fixturer |
-| `:core:timer` | Android-bibliotek + Hilt (platshållare till Fas 1b) | `core:{domain,model,common}` |
+| `:core:timer` | Android-bibliotek + Hilt (Fas 1b) | `core:{data,domain,model,common}`; implementerar `TimerController` |
 | `:core:network` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:datastore` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:designsystem` | Android-bibliotek + Compose | – |
@@ -95,8 +95,8 @@ ktlintFormat` rättar det som går att rätta automatiskt.
 Plan §5.2:s beroenderegler kontrolleras i varje modul av `checkModuleGraph` (en del av `ciLint`,
 alltså av `pr.yml`). Den läser de projektberoenden modulen själv deklarerar och fallerar om:
 
-1. en `:feature:*` beror på `:core:network`, `:core:database`, `:core:sync` eller `:core:datastore`
-   (features pratar bara med `:core:data`),
+1. en `:feature:*` beror på `:core:network`, `:core:database`, `:core:sync`, `:core:datastore`
+   eller `:core:timer` (features pratar bara med `:core:data`),
 2. en `:feature:*` beror på en annan `:feature:*` – utom `:feature:shell`, som är navigationsvärd,
 3. en `:core:*` beror på en `:feature:*`,
 4. något annat än en testkonfiguration (`testImplementation` m.fl.) beror på `:core:testing`.
@@ -186,6 +186,127 @@ exempeldata (`SampleRecipes`: svenska namn med å/ä/ö, bråk, rubrikrader, ste
 
 De riktiga implementationerna ligger i `:core:sync` och binds i `core/sync/.../di/SyncModule.kt`
 (se "Synk" nedan); grundens tillfälliga `TemporaryFas1DataModule` är borttagen.
+
+<!-- Fas 1b kontrakt -->
+## Fas 1b – kontrakt (0.2.0 "laga")
+
+Grunden för 0.2.0 (kokläge, timers med larm, "Klart!" + koklogg, fler inställningar,
+diagnostik) lades först, så att banorna kan bygga parallellt mot samma typer. Allt nedan finns
+på `main`; de riktiga implementationerna kommer från banorna.
+
+### Rena typer (`:core:model`)
+
+| Paket | Typer |
+|---|---|
+| `timer` | `CookTimer` (id, etikett, recept-id + stegindex, längd, `TimerState` RUNNING/PAUSED/RINGING/FINISHED, `endsAt`, `pausedRemaining`, `createdAt`) med de enda tillståndsövergångarna (`pause`, `resume`, `plusOneMinute`, `ring`, `stopRinging`, `remaining`, `isDue`, `CookTimer.start`), `MAX_PARALLEL_TIMERS` = 8. `TimerMode` IN_APP/CLOCK_APP, `TimerStartResult`, `TimerCapabilities` (notiser tillåtna/frågat, larmkanal på, exakta larm tillåtna/går att begära, fullskärmslarm, klockapp finns; `shouldAskForNotifications`, `alarmMayBeSilent`, `alarmMayBeLate`), `TimerSuggestion` + `TimerSuggestionSource` STEP_TIME/TEXT (med `textRange`) |
+| `cooklog` | `CookLogDraft` (recept-id, hela portioner eller null, betyg 0–5 eller null, kommentar, `cookedAt`); `servingsOf(Double)` avrundar halvt uppåt, minst 1 |
+| `settings` | `AppSettings` + `dynamicColor`, `cookTextScale` (`CookTextScale.STEPS` 0,85–2,0, A−/A+), `cookModeAlwaysDark`, `timerMode`, `syncInterval` (`SyncInterval` 15 min/1 h/6 h/manuellt, standard 15 min), `downloadAllRecipes`, `notificationPermissionAsked`, `exactAlarmPromptDismissed` |
+| `diagnostics` | `DiagnosticsSnapshot` (versioner, `ColdStartTiming`, `FullSyncTiming` med receptantal), `LogExport` (text, valfri `content://`-URI, filnamn) |
+| `notification` | `TandemNotificationChannel` (kanal-id, se nedan), `TandemNotificationIds` |
+
+**Timerns klocka:** `endsAt` är **väggklocka** (`kotlin.time.Instant`), inte `elapsedRealtime`:
+den sparas och ska överleva processdöd **och omstart** (den monotona klockan börjar om på 0 vid
+varje start), och `AlarmManager.setAlarmClock` tar bara väggklocktid. Tidszonsbyten spelar
+ingen roll. En manuell klockändring rättas av implementationen (`ACTION_TIME_CHANGED`, monoton
+ankarpunkt i minnet, nytt larm); efter en omstart gäller sparad `endsAt` (en timer vars slut
+passerade medan telefonen var av ringer direkt). Injicera `kotlin.time.Clock`
+(`core:data` `ClockModule`, `Clock.System`); testerna använder `TestClock`.
+
+### Gränssnitt (`:core:data`)
+
+| Gränssnitt | Implementeras av | Innehåll |
+|---|---|---|
+| `timer.TimerController` | timerbanan i `:core:timer` | `timers`/`capabilities` (StateFlow), `start` → `TimerStartResult`, `pause`, `resume`, `addOneMinute`, `cancel`, `stopRinging`, `clearFinished`, `onNotificationPermissionResult`, `refreshCapabilities` |
+| `cooklog.CookLogRepository` | kokloggsbanan i `:core:sync` (outbox `COOK_LOG`) | `logCooked(CookLogDraft)` (lokalt direkt + outbox), `observePendingCount()` |
+| `settings.SettingsRepository` | **klar** i `:core:data` (`DefaultSettingsRepository`, nycklarna i `PreferencesSettingsStore`) | `settings` + en setter per Fas 1b-inställning; tema finns kvar i `AppearanceRepository` |
+| `diagnostics.DiagnosticsRepository` | inställnings-/diagnostikbanan | `observeDiagnostics`, `recordColdStart` (`:app`), `recordFullSync` (`:core:sync`), `exportLog` (tvättad som kraschloggen) |
+
+**Behörighet i sammanhanget:** innan den första `start` tittar UI:t på
+`capabilities.shouldAskForNotifications`; är den sann startar featuren själv systemdialogen
+(`ActivityResultContracts.RequestPermission` för `POST_NOTIFICATIONS`, inga core:timer-typer),
+rapporterar svaret med `onNotificationPermissionResult` och startar timern oavsett svar. Aldrig
+vid första start, aldrig råa behörighetsnamn i UI:t.
+
+### Timerförslag (`:core:domain`)
+
+`StepTimerSuggestions().suggest(stepText, stepTimeMinutes, languageTag)` → `List<TimerSuggestion>`:
+`Step.time` först (om texten inte redan har exakt samma tid), sedan texttimers i textordning från
+`TimerDetector`. `stepText` är den **renderade** instruktionen (`StepDisplay.instruction`) och
+`textRange` pekar in i den. KDoc:en listar de svenska och engelska formerna; timerbanan
+kompletterar reglerna (`languageTag` bryter bara oavgjort).
+
+### Navigering
+
+- `CookKey(recipeId, servings: Double? = null, startStep: Int = 0)` och `TimersKey`
+  (`:feature:cook`, alla löpande timers). `servings = null` = receptets sparade val. Kokläget
+  kopplas in i skalet genom att `:feature:shell` får `implementation(projects.feature.cook)` och
+  en `entry<CookKey>`; detaljen och Idag får `onStartCooking`.
+- Inställningarnas undersidor (`:feature:shell`, `navigation/SettingsKeys.kt`, alla `ShellKey`
+  på Mer-flikens stack): `AppearanceSettingsKey`, `CookingSettingsKey`, `SyncSettingsKey`,
+  `PermissionsKey` (översikt, inget tvingat steg) och `DiagnosticsKey`.
+- Själva larmet (ringer på låst skärm) är en egen aktivitet, ingen Navigation 3-nyckel.
+
+### Fakes (`:core:testing`) och tillfälliga bindningar (`:app`)
+
+`FakeTimerController` (med `TestClock`, `advanceTimeBy`, `setCapabilities`, `mode`,
+`clockAppRequests`), `FakeCookLogRepository`, `FakeSettingsRepository`,
+`FakeDiagnosticsRepository` och `time.TestClock`.
+
+`app/.../di/TemporaryFas1bModule.kt` binder tillfälliga minnesimplementationer så att appen går
+att köra hela vägen: `TemporaryFas1bTimerModule`, `TemporaryFas1bCookLogModule` och
+`TemporaryFas1bDiagnosticsModule` (inga larm, inga notiser, ingen outbox, inget överlever
+processdöd). **Den bana som binder den riktiga implementationen tar bort motsvarande modul i
+samma ändring** (annars dubbelbindning i Hilt); integrationsbanan tar bort filen. Inget av det
+får följa med i 0.2.0.
+
+### Notiskanaler (plan 8.7, bestämda nu, byts aldrig)
+
+| Id | Kanal | Viktighet | Ljud | Ägare |
+|---|---|---|---|---|
+| `timer_alarm` | Timers (larm) | hög | larmljud, `USAGE_ALARM` | `:core:timer` |
+| `timer_ongoing` | Pågående timers (nedräkning, Live Update) | låg | tyst | `:core:timer` |
+| `sync_problems` | Synkproblem (blockerad, utloggad, säkert läge) | låg | tyst | `:core:sync` |
+| `server` | Server ("Tandoor uppdaterades", sedan 0.1.0) | standard | notis | `:core:sync` |
+| `shopping`, `import_done`, `meal_reminders` | reserverade för Fas 2–5 | standard | notis | skapas inte än |
+
+Varje modul skapar sina kanaler precis innan den postar, med värdena ur
+`TandemNotificationChannel` och egna översatta namn. Ett id byts aldrig (användarens val i
+systeminställningarna hänger på id:t); en ny kanal får ett nytt id. Notis-id:n:
+`TandemNotificationIds` (server 1001, synkproblem 1101, ringtjänsten 2000, per timer
+3000–3999 nedräkning och 4000–4999 larm).
+
+### Behörigheter per flavor (timerbanan implementerar)
+
+| Behörighet | `sideload` | `play` | Varför |
+|---|---|---|---|
+| `POST_NOTIFICATIONS` | ✅ | ✅ | Notiser och larm; frågas vid första timern |
+| `USE_EXACT_ALARM` | ✅ | – | Exakt larm utan fråga (Play begränsar den till larm-/kalenderappar) |
+| `SCHEDULE_EXACT_ALARM` | – | ✅ | Användaren tillåter i systeminställningarna (`ACTION_REQUEST_SCHEDULE_EXACT_ALARM`, uppmaning i appen); annars inexakt larm (`setAndAllowWhileIdle`) med varning |
+| `USE_FULL_SCREEN_INTENT` | ✅ | – | Larmet tar över låst skärm (kontrollera `canUseFullScreenIntent()`, går att återkalla); play får en heads-up-notis |
+| `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_SYSTEM_EXEMPTED` | ✅ | ✅ | Kort förgrundstjänst **bara medan larmet ringer**, typ `systemExempted` (tillåten för appar med exakta larm som fortsätter ett larm i bakgrunden). Ingen tjänst under nedräkningen |
+| (typ `shortService`, ingen extra behörighet) | – | ✅ | Reserv i play när exakta larm saknas: ringer högst ca 3 min |
+| `WAKE_LOCK` | ✅ | ✅ | Ljud/vibration medan det ringer med skärmen av |
+| `VIBRATE` | ✅ | ✅ | Larmvibration |
+| `RECEIVE_BOOT_COMPLETED` | ✅ | ✅ | Lägger tillbaka larmen efter omstart (även `ACTION_TIME_CHANGED`, `TIMEZONE_CHANGED`, `MY_PACKAGE_REPLACED`) |
+| `POST_PROMOTED_NOTIFICATIONS` | ✅ | ✅ | Live Update för nedräkningen (Android 16) |
+| `com.android.alarm.permission.SET_ALARM` + `<queries>` för `android.intent.action.SET_TIMER` | ✅ | ✅ | Läget "timer i klockappen" (`AlarmClock.ACTION_SET_TIMER`) och att se om en klockapp finns |
+
+Det flavor-specifika (`USE_EXACT_ALARM`, `USE_FULL_SCREEN_INTENT` resp. `SCHEDULE_EXACT_ALARM`)
+deklareras i `app/src/sideload/AndroidManifest.xml` resp. `app/src/play/AndroidManifest.xml`;
+resten i `:core:timer`s biblioteksmanifest. Fungerar `systemExempted` inte på emulatorn (API 36)
+byter timerbanan till `mediaPlayback` och skriver varför här.
+
+### Vem bygger vad
+
+| Bana | Bygger på | Levererar |
+|---|---|---|
+| Timer (`:core:timer`) | `TimerController`, `CookTimer`, `TimerCapabilities`, `SettingsRepository.timerMode`, kanalerna, behörighetstabellen | Riktig `TimerController`, larm, notiser/Live Update, ringtjänst, omstart; tar bort `TemporaryFas1bTimerModule`; `TimerModule.MAX_PARALLEL_TIMERS` → `CookTimer.MAX_PARALLEL_TIMERS`; kompletterar `StepTimerSuggestions` |
+| Kokläge (`:feature:cook`) | `CookKey`, `TimersKey`, `RecipeRepository`, `RecipeDisplay`, `StepTimerSuggestions`, `TimerController` (fake i tester), `SettingsRepository` (textstorlek, alltid mörkt) | Pager, ingredienser per steg, timerchips och -rad, surfplatta/vikbar, "Klart!"-sidan |
+| Koklogg (`:core:sync`) | `CookLogRepository`, `CookLogDraft`, outboxens `COOK_LOG` | Riktig `CookLogRepository`; tar bort `TemporaryFas1bCookLogModule` |
+| Inställningar och diagnostik (`:feature:shell`) | Inställningsnycklarna, `SettingsRepository`, `TimerController.capabilities`, `DiagnosticsRepository` | Undersidorna, behörighetsöversikten, diagnostik med export; tar bort `TemporaryFas1bDiagnosticsModule`; `SyncInterval` i `:core:sync` |
+| CI | – | `tandoor-watch.yml`, Roborazzi-jämförelse, pseudospråk |
+| Integration | allt ovan | kopplar ihop, tar bort `TemporaryFas1bModule.kt` |
+<!-- /Fas 1b kontrakt -->
 
 <!-- fix-bygg: tillgänglighetskontroller -->
 ### Tillgänglighetskontroller (ATF) i UI-testerna

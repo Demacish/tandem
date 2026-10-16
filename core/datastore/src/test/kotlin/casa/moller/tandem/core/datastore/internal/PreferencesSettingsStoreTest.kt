@@ -12,7 +12,9 @@ import casa.moller.tandem.core.datastore.StoreScopes
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.timer.TimerMode
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -153,5 +155,41 @@ class PreferencesSettingsStoreTest {
         dataStore.edit { it[PreferencesSettingsStore.Keys.THEME_MODE] = "PURPLE" }
 
         assertEquals(ThemeMode.SYSTEM, PreferencesSettingsStore(dataStore).settings.first().themeMode)
+    }
+
+    // --- Phase 1b (grund lane) ---
+
+    @Test
+    fun phase1bSettingsSurviveARestart() = runTest {
+        val expected = AppSettings(
+            themeMode = ThemeMode.DARK,
+            dynamicColor = true,
+            cookTextScale = 1.75f,
+            cookModeAlwaysDark = true,
+            timerMode = TimerMode.CLOCK_APP,
+            syncInterval = SyncInterval.SIX_HOURS,
+            downloadAllRecipes = true,
+            notificationPermissionAsked = true,
+            exactAlarmPromptDismissed = true,
+        )
+        open().update { expected }
+
+        scopes.closeAll()
+        assertEquals(expected, open().settings.first())
+    }
+
+    @Test
+    fun unknownOrOutOfRangePhase1bValuesFallBack() = runTest {
+        val dataStore = PreferenceDataStoreFactory.create(scope = scopes.newScope(), produceFile = { file })
+        dataStore.edit {
+            it[PreferencesSettingsStore.Keys.TIMER_MODE] = "SUNDIAL"
+            it[PreferencesSettingsStore.Keys.SYNC_INTERVAL] = "EVERY_SECOND"
+            it[PreferencesSettingsStore.Keys.COOK_TEXT_SCALE] = 40f
+        }
+
+        val settings = PreferencesSettingsStore(dataStore).settings.first()
+        assertEquals(TimerMode.IN_APP, settings.timerMode)
+        assertEquals(SyncInterval.FIFTEEN_MINUTES, settings.syncInterval)
+        assertEquals(2.0f, settings.cookTextScale)
     }
 }

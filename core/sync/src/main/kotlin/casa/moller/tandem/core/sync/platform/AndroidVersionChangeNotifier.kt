@@ -8,6 +8,8 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import casa.moller.tandem.core.model.notification.TandemNotificationChannel
+import casa.moller.tandem.core.model.notification.TandemNotificationIds
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.sync.R
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -76,8 +78,8 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
     }
 
     private companion object {
-        /** The channel "Server" (plan B18). */
-        const val CHANNEL_ID = "server"
-        const val NOTIFICATION_ID = 1001
+        /** The channel "Server" (plan B18); every channel id is decided in core:model (Phase 1b). */
+        val CHANNEL_ID: String = TandemNotificationChannel.SERVER.id
+        const val NOTIFICATION_ID = TandemNotificationIds.SERVER_VERSION
     }
 }

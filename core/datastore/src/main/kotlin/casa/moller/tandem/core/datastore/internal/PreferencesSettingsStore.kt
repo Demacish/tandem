@@ -8,13 +8,17 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.CookTextScale
 import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.timer.TimerMode
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +50,17 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         val VERSION_NOTICE_ACCOUNT = stringPreferencesKey("version_notice_account")
         val VERSION_NOTICE_PREVIOUS = stringPreferencesKey("version_notice_previous")
         val VERSION_NOTICE_NEW = stringPreferencesKey("version_notice_new")
+
+        // --- Phase 1b (grund lane): cook mode, timer and sync settings (plan 6.2). Enums are
+        // stored by name; an unknown name (newer version, garbage) reads as the default. ---
+        val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val COOK_TEXT_SCALE = floatPreferencesKey("cook_text_scale")
+        val COOK_MODE_ALWAYS_DARK = booleanPreferencesKey("cook_mode_always_dark")
+        val TIMER_MODE = stringPreferencesKey("timer_mode")
+        val SYNC_INTERVAL = stringPreferencesKey("sync_interval")
+        val DOWNLOAD_ALL_RECIPES = booleanPreferencesKey("download_all_recipes")
+        val NOTIFICATION_PERMISSION_ASKED = booleanPreferencesKey("notification_permission_asked")
+        val EXACT_ALARM_PROMPT_DISMISSED = booleanPreferencesKey("exact_alarm_prompt_dismissed")
     }
 
     companion object {
@@ -73,6 +88,21 @@ private fun Preferences.toAppSettings(): AppSettings {
         demoMode = this[PreferencesSettingsStore.Keys.DEMO_MODE] ?: defaults.demoMode,
         activeAccountId = this[PreferencesSettingsStore.Keys.ACTIVE_ACCOUNT_ID],
         versionNotice = readVersionNotice(),
+        // --- Phase 1b (grund lane) ---
+        dynamicColor = this[PreferencesSettingsStore.Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
+        cookTextScale = this[PreferencesSettingsStore.Keys.COOK_TEXT_SCALE]?.let(CookTextScale::coerce) ?: defaults.cookTextScale,
+        cookModeAlwaysDark = this[PreferencesSettingsStore.Keys.COOK_MODE_ALWAYS_DARK] ?: defaults.cookModeAlwaysDark,
+        timerMode = this[PreferencesSettingsStore.Keys.TIMER_MODE]
+            ?.let { stored -> TimerMode.entries.firstOrNull { it.name == stored } }
+            ?: defaults.timerMode,
+        syncInterval = this[PreferencesSettingsStore.Keys.SYNC_INTERVAL]
+            ?.let { stored -> SyncInterval.entries.firstOrNull { it.name == stored } }
+            ?: defaults.syncInterval,
+        downloadAllRecipes = this[PreferencesSettingsStore.Keys.DOWNLOAD_ALL_RECIPES] ?: defaults.downloadAllRecipes,
+        notificationPermissionAsked = this[PreferencesSettingsStore.Keys.NOTIFICATION_PERMISSION_ASKED]
+            ?: defaults.notificationPermissionAsked,
+        exactAlarmPromptDismissed = this[PreferencesSettingsStore.Keys.EXACT_ALARM_PROMPT_DISMISSED]
+            ?: defaults.exactAlarmPromptDismissed,
     )
 }
 
@@ -104,4 +134,13 @@ private fun MutablePreferences.write(settings: AppSettings) {
         this[PreferencesSettingsStore.Keys.VERSION_NOTICE_PREVIOUS] = notice.previousVersion
         this[PreferencesSettingsStore.Keys.VERSION_NOTICE_NEW] = notice.newVersion
     }
+    // --- Phase 1b (grund lane) ---
+    this[PreferencesSettingsStore.Keys.DYNAMIC_COLOR] = settings.dynamicColor
+    this[PreferencesSettingsStore.Keys.COOK_TEXT_SCALE] = CookTextScale.coerce(settings.cookTextScale)
+    this[PreferencesSettingsStore.Keys.COOK_MODE_ALWAYS_DARK] = settings.cookModeAlwaysDark
+    this[PreferencesSettingsStore.Keys.TIMER_MODE] = settings.timerMode.name
+    this[PreferencesSettingsStore.Keys.SYNC_INTERVAL] = settings.syncInterval.name
+    this[PreferencesSettingsStore.Keys.DOWNLOAD_ALL_RECIPES] = settings.downloadAllRecipes
+    this[PreferencesSettingsStore.Keys.NOTIFICATION_PERMISSION_ASKED] = settings.notificationPermissionAsked
+    this[PreferencesSettingsStore.Keys.EXACT_ALARM_PROMPT_DISMISSED] = settings.exactAlarmPromptDismissed
 }

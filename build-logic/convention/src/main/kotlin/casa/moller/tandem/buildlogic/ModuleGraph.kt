@@ -17,8 +17,9 @@ internal data class DeclaredProjectDependency(val configuration: String, val pat
  * The module dependency rules of plan 5.2, checked on the dependencies a module DECLARES
  * (`implementation(projects.core.network)`, `testImplementation(...)`, ...):
  *
- * 1. `:feature:*` never depends on `:core:network`, `:core:database`, `:core:sync` or
- *    `:core:datastore`; features talk to `:core:data` only (repositories hide the sources).
+ * 1. `:feature:*` never depends on `:core:network`, `:core:database`, `:core:sync`,
+ *    `:core:datastore` or `:core:timer`; features talk to `:core:data` only (repositories and the
+ *    Phase 1b `TimerController` hide the implementations).
  * 2. `:feature:*` never depends on another `:feature:*`, except `:feature:shell`, the navigation
  *    host that shows the other features' routes (docs/BYGGE.md "Navigering").
  * 3. `:core:*` never depends on `:feature:*`.
@@ -29,7 +30,7 @@ internal data class DeclaredProjectDependency(val configuration: String, val pat
  */
 internal object ModuleGraphRules {
     /** Modules that features must not use directly (plan 5.2). */
-    val FEATURE_FORBIDDEN: Set<String> = setOf(":core:network", ":core:database", ":core:sync", ":core:datastore")
+    val FEATURE_FORBIDDEN: Set<String> = setOf(":core:network", ":core:database", ":core:sync", ":core:datastore", ":core:timer")
 
     /** The one feature module that may depend on other features: it hosts their routes. */
     const val FEATURE_HOST: String = ":feature:shell"
@@ -52,7 +53,7 @@ internal object ModuleGraphRules {
             target == projectPath -> null
 
             isFeature && target in FEATURE_FORBIDDEN ->
-                "$where: feature modules use :core:data, never :core:network/:core:database/:core:sync/:core:datastore"
+                "$where: feature modules use :core:data, never :core:network/:core:database/:core:sync/:core:datastore/:core:timer"
 
             isFeature && projectPath != FEATURE_HOST && target.startsWith(":feature:") ->
                 "$where: only $FEATURE_HOST may depend on another feature (it hosts their routes)"

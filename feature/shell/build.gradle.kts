@@ -20,4 +20,6 @@ dependencies {
 
     // --- komplettering-3: core:testing's FakeServerStatusRepository (the in-app version notice). ---
     testImplementation(projects.core.testing)
+    // --- Phase 1b (grund lane): SettingsKeysTest round-trips the @Serializable settings keys. ---
+    testImplementation(libs.kotlinx.serialization.json)
 }
