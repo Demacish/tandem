@@ -85,6 +85,7 @@ internal fun DetailWithFakes(
     modifier: Modifier = Modifier,
     fakes: DetailFakes = remember { DetailFakes() },
     onBack: () -> Unit = {},
+    onStartCooking: () -> Unit = {},
 ) {
     val viewModel = remember(recipeId) {
         RecipeDetailViewModel(recipeId, fakes.handle, fakes.repository, fakes.preferences, fakes.sync, fakes.sessions)
@@ -97,6 +98,8 @@ internal fun DetailWithFakes(
         onOpenUrl = {},
         onOpenRecipe = {},
         modifier = modifier,
+        // Phase 1b: "Börja laga" is part of every detail screenshot and ATF check.
+        onStartCooking = onStartCooking,
     )
 }
 
