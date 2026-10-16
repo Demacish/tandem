@@ -21,4 +21,5 @@ Material Symbols Rounded (24 px, weight 400, grade 0; FILL 0 and some FILL 1)
 
 All files were checked against the git blob hashes reported by the GitHub API for the commits
 above when they were downloaded (2026-10-09; the recipe screens' icons in
-icon/TandemIconsRecipes.kt on 2026-10-11, same commit).
+icon/TandemIconsRecipes.kt on 2026-10-11 and cook mode's in icon/TandemIconsCook.kt on 2026-10-16,
+same commit).
