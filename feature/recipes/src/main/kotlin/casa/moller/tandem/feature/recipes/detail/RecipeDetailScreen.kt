@@ -9,11 +9,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
@@ -43,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -62,6 +65,8 @@ import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.MoreVert
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.domain.format.needsSpokenNumbers
+import casa.moller.tandem.core.domain.format.spokenNumbers
 import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow as DisplayRow
 import casa.moller.tandem.core.domain.recipe.UnitAmount
@@ -74,6 +79,7 @@ import casa.moller.tandem.core.ui.recipe.IngredientRow
 import casa.moller.tandem.core.ui.recipe.KeywordPill
 import casa.moller.tandem.core.ui.recipe.MarkdownText
 import casa.moller.tandem.core.ui.recipe.RatingStars
+import casa.moller.tandem.core.ui.recipe.cappedAspectRatio
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.core.ui.recipe.ServingsStepper
 import casa.moller.tandem.core.ui.recipe.StepCard
@@ -96,8 +102,10 @@ internal val TwoPaneMinWidth = 720.dp
  * receptvy_kr_mig_svamppasta_surfplatta). Stateless: [state] in, [onAction] out.
  *
  * - Compact: photo, title and facts, servings, ingredients, then the steps in one column.
- * - At least [TwoPaneMinWidth] wide (tablet, list-detail pane): photo as a banner, then
- *   ingredients with the servings picker on the left and the steps on the right.
+ * - At least [TwoPaneMinWidth] wide (tablet, list-detail pane; plan 6.5, design
+ *   receptvy_kr_mig_svamppasta_surfplatta): two panes that scroll on their own. The left pane
+ *   holds the photo (height capped), the servings picker and the ingredients, so they stay in
+ *   view while the right pane (title, facts, description, steps) scrolls through the steps.
  *
  * Phase 1a shows no cooking, shopping, planning or favourite actions (Phase 1b/2).
  *
@@ -233,39 +241,85 @@ private fun DetailContent(
 ) {
     val spacing = TandemTheme.spacing
     BoxWithConstraints(modifier = modifier) {
-        val twoPane = maxWidth >= TwoPaneMinWidth
+        if (maxWidth >= TwoPaneMinWidth && state.hasDetail) {
+            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = spacing.screenHorizontal)
+                    .padding(bottom = spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(spacing.lg),
+            ) {
+                if (state.refreshing) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+                Notices(state)
+                HeaderImage(state, Modifier.fillMaxWidth().aspectRatio(PHOTO_ASPECT_RATIO))
+                Header(state)
+                if (!state.hasDetail) {
+                    MissingDetail(state = state, onAction = onAction)
+                } else {
+                    Servings(state, onAction)
+                    Ingredients(state, onAction)
+                    Steps(state, onAction, onOpenRecipe)
+                    Source(state, onOpenUrl)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Tablet layout (plan 6.5 "ingredienser (fasta, med portionsväljare) till vänster, steg till
+ * höger"): each pane scrolls on its own, so the ingredients stay in view while the steps scroll.
+ * [scrollState] belongs to the right pane, which holds the title (it moves into the top bar).
+ */
+@Composable
+private fun TwoPaneContent(
+    state: RecipeDetailUiState,
+    scrollState: ScrollState,
+    onAction: (RecipeDetailAction) -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onOpenRecipe: (Long) -> Unit,
+) {
+    val spacing = TandemTheme.spacing
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = spacing.screenHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(spacing.xl),
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(INGREDIENT_PANE_WEIGHT)
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = spacing.xxl)
+                .testTag(DETAIL_INGREDIENT_PANE_TAG),
+            verticalArrangement = Arrangement.spacedBy(spacing.lg),
+        ) {
+            HeaderImage(state, Modifier.cappedAspectRatio(PHOTO_ASPECT_RATIO, PANE_PHOTO_MAX_HEIGHT))
+            Servings(state, onAction)
+            Ingredients(state, onAction)
+        }
+        Column(
+            modifier = Modifier
+                .weight(STEP_PANE_WEIGHT)
+                .fillMaxHeight()
                 .verticalScroll(scrollState)
-                .padding(horizontal = spacing.screenHorizontal)
-                .padding(bottom = spacing.xxl),
+                .padding(bottom = spacing.xxl)
+                .testTag(DETAIL_STEP_PANE_TAG),
             verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             if (state.refreshing) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             Notices(state)
-            Header(state = state, twoPane = twoPane)
-            if (!state.hasDetail) {
-                MissingDetail(state = state, onAction = onAction)
-            } else if (twoPane) {
-                Row(horizontalArrangement = Arrangement.spacedBy(spacing.xl)) {
-                    Column(modifier = Modifier.weight(INGREDIENT_PANE_WEIGHT), verticalArrangement = Arrangement.spacedBy(spacing.lg)) {
-                        Servings(state, onAction)
-                        Ingredients(state, onAction)
-                    }
-                    Column(modifier = Modifier.weight(STEP_PANE_WEIGHT), verticalArrangement = Arrangement.spacedBy(spacing.lg)) {
-                        Steps(state, onAction, onOpenRecipe)
-                        Source(state, onOpenUrl)
-                    }
-                }
-            } else {
-                Servings(state, onAction)
-                Ingredients(state, onAction)
-                Steps(state, onAction, onOpenRecipe)
-                Source(state, onOpenUrl)
-            }
+            Header(state)
+            Steps(state, onAction, onOpenRecipe)
+            Source(state, onOpenUrl)
         }
     }
 }
@@ -280,33 +334,36 @@ private fun Notices(state: RecipeDetailUiState) {
             tone = TandemTone.Warning,
         )
 
+        // A line that wraps rather than a one-line chip: at font scale 2.0 the date must stay
+        // visible ("Saved version from Oct 1, 2026" is wider than a phone).
         state.showsSavedVersion -> {
             val fetched = state.fetchedAt?.let { formatDate(it, currentLocale()) }
-            StatusChip(
-                label = if (fetched != null) {
+            IconLabel(
+                icon = if (state.offline) TandemIcons.CloudOff else TandemIcons.Info,
+                text = if (fetched != null) {
                     stringResource(R.string.recipe_detail_saved_version_from, fetched)
                 } else {
                     stringResource(R.string.recipe_detail_saved_version)
                 },
-                icon = if (state.offline) TandemIcons.CloudOff else TandemIcons.Info,
-                tone = TandemTone.Neutral,
+                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
 
+/** The recipe's photo (or its placeholder), sized by [modifier]. */
 @Composable
-private fun Header(state: RecipeDetailUiState, twoPane: Boolean) {
+private fun HeaderImage(state: RecipeDetailUiState, modifier: Modifier) {
+    val header = state.header ?: return
+    RecipeImage(imageUrl = header.imageUrl, modifier = modifier.clip(MaterialTheme.shapes.extraLarge))
+}
+
+/** Keywords, name, rating and times, how often it was cooked, and the description. */
+@Composable
+private fun Header(state: RecipeDetailUiState) {
     val header = state.header ?: return
     val spacing = TandemTheme.spacing
     val locale = currentLocale()
-    RecipeImage(
-        imageUrl = header.imageUrl,
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(if (twoPane) BANNER_ASPECT_RATIO else PHOTO_ASPECT_RATIO)
-            .clip(MaterialTheme.shapes.extraLarge),
-    )
     Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         if (header.keywords.isNotEmpty() || header.isPrivate) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.xs), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
@@ -341,7 +398,13 @@ private fun Header(state: RecipeDetailUiState, twoPane: Boolean) {
         }
         CookedLine(header, locale)
         header.description?.takeIf { it.isNotBlank() }?.let {
-            Text(text = it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Readable line length, about 70 characters (plan 6.5).
+                modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth),
+            )
         }
     }
 }
@@ -452,14 +515,19 @@ private fun IngredientRows(rows: List<DisplayRow>, state: RecipeDetailUiState, o
         when (row) {
             is DisplayRow.Header -> IngredientHeader(row.title)
 
-            is DisplayRow.Item -> IngredientRow(
-                amountText = row.unitAt(state.unitChoices[row.id] ?: 0)?.text(),
-                name = row.food,
-                note = row.note.ifEmpty { null },
-                struck = row.id in state.struckIngredientIds,
-                onToggle = { onAction(RecipeDetailAction.ToggleIngredient(row.id)) },
-                onAmountClick = if (row.canCycleUnits) ({ onAction(RecipeDetailAction.SwitchUnit(row.id)) }) else null,
-            )
+            is DisplayRow.Item -> {
+                val amount = row.unitAt(state.unitChoices[row.id] ?: 0)?.text()
+                IngredientRow(
+                    amountText = amount,
+                    // "3/16 tsk" instead of the typographic "³⁄₁₆ tsk" for TalkBack (plan 6.6).
+                    amountDescription = amount?.let(::spokenNumbers),
+                    name = row.food,
+                    note = row.note.ifEmpty { null },
+                    struck = row.id in state.struckIngredientIds,
+                    onToggle = { onAction(RecipeDetailAction.ToggleIngredient(row.id)) },
+                    onAmountClick = if (row.canCycleUnits) ({ onAction(RecipeDetailAction.SwitchUnit(row.id)) }) else null,
+                )
+            }
         }
     }
 }
@@ -519,7 +587,13 @@ private fun Steps(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> 
                     null
                 },
             ) {
-                if (step.instruction.isNotBlank()) MarkdownText(markdown = step.instruction)
+                if (step.instruction.isNotBlank()) {
+                    MarkdownText(
+                        markdown = step.instruction,
+                        modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth),
+                        spokenText = SpokenFractions,
+                    )
+                }
                 if (step.hasBrokenTemplate) BrokenTemplateNote()
             }
         }
@@ -568,9 +642,18 @@ internal fun formatDate(instant: Instant, locale: Locale): String {
 private val TITLE_SCROLL_THRESHOLD = 280.dp
 
 private const val PHOTO_ASPECT_RATIO = 16f / 10f
-private const val BANNER_ASPECT_RATIO = 21f / 8f
+
+/** The photo at the top of the ingredient pane never pushes the ingredients far down. */
+private val PANE_PHOTO_MAX_HEIGHT = 240.dp
 private const val INGREDIENT_PANE_WEIGHT = 0.42f
 private const val STEP_PANE_WEIGHT = 0.58f
+
+/** Test tags of the two scrolling panes on wide windows. */
+internal const val DETAIL_INGREDIENT_PANE_TAG = "recipe-detail:ingredient-pane"
+internal const val DETAIL_STEP_PANE_TAG = "recipe-detail:step-pane"
+
+/** Step texts with scaled typographic fractions get a spoken form; others stay as they are. */
+private val SpokenFractions: (String) -> String = { text -> if (needsSpokenNumbers(text)) spokenNumbers(text) else text }
 
 /** Any quantity that selects the "other" plural form in English and Swedish. */
 private const val PLURAL_OTHER = 2

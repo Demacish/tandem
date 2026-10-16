@@ -5,14 +5,18 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.ui.EmptyState
+import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailEffect
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailScreen
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
@@ -36,11 +40,22 @@ fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Mo
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
+    // The error's title is a composable text (core:ui toErrorText), so a failed sync is shown
+    // from composition: the effect stores it, the LaunchedEffect below shows the snackbar.
+    var syncFailure by remember { mutableStateOf<SyncFailure?>(null) }
     LaunchedEffect(viewModel, snackbarHostState) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is RecipeListEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+                is RecipeListEffect.SyncFailed -> syncFailure = SyncFailure(effect.error)
             }
+        }
+    }
+    syncFailure?.let { failure ->
+        val message = stringResource(R.string.recipes_refresh_failed, failure.error.toErrorText().title)
+        LaunchedEffect(failure) {
+            snackbarHostState.showSnackbar(message)
+            syncFailure = null
         }
     }
     RecipeListScreen(
@@ -52,6 +67,9 @@ fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Mo
         snackbarHostState = snackbarHostState,
     )
 }
+
+/** One failed pull-to-refresh sync; a new instance per failure, so the same error shows again. */
+private class SyncFailure(val error: TandemError)
 
 /**
  * The recipe detail (plan 6.2 "Receptdetalj", feature #4) for [recipeId].

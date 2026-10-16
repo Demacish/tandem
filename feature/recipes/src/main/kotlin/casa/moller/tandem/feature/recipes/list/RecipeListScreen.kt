@@ -3,16 +3,24 @@ package casa.moller.tandem.feature.recipes.list
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -30,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -45,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -69,6 +80,7 @@ import casa.moller.tandem.core.designsystem.icon.ViewAgenda
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.ui.EmptyState
+import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
@@ -85,6 +97,11 @@ import casa.moller.tandem.feature.recipes.R
  * grid of photo cards or a list of rows; pull to refresh syncs. Offline, recipes without a
  * stored detail are dimmed with a cloud badge.
  *
+ * The keyword picker is a bottom sheet on compact and medium windows and a side panel on
+ * expanded ones (plan 6.5): beside the recipes when the list is wide enough, otherwise in their
+ * place inside the list pane, so the recipe open beside the list stays visible. The content
+ * keeps clear of the keyboard (edge-to-edge: the window is not resized for it).
+ *
  * @param selectedRecipeId the recipe open in the detail pane beside the list (wide windows), highlighted.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,6 +115,9 @@ fun RecipeListScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     var showKeywordPicker by rememberSaveable { mutableStateOf(false) }
+    val keywordPanel = isExpandedWindow()
+    // Hoisted, so the scroll position survives while the side panel replaces the grid.
+    val gridState = rememberLazyGridState()
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -116,24 +136,54 @@ fun RecipeListScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
+        // The keyboard as part of the content insets: the last results can scroll above it and
+        // snackbars appear above it.
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.ime),
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = state.refreshing,
-            onRefresh = { onAction(RecipeListAction.Refresh) },
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .consumeWindowInsets(padding),
         ) {
-            RecipeGrid(
-                state = state,
-                onAction = onAction,
-                onOpenRecipe = onOpenRecipe,
-                onOpenKeywordPicker = { showKeywordPicker = true },
-                selectedRecipeId = selectedRecipeId,
-            )
+            val panelOpen = keywordPanel && showKeywordPicker
+            val panelBeside = maxWidth >= PANEL_BESIDE_MIN_WIDTH
+            Row(modifier = Modifier.fillMaxSize()) {
+                if (panelOpen) {
+                    KeywordPickerPanel(
+                        keywords = state.keywords,
+                        selectedIds = state.query.keywordIds,
+                        onToggle = { onAction(RecipeListAction.ToggleKeyword(it)) },
+                        onClear = { onAction(RecipeListAction.ClearKeywords) },
+                        onDismiss = { showKeywordPicker = false },
+                        modifier = Modifier
+                            .then(if (panelBeside) Modifier.width(PANEL_WIDTH) else Modifier.weight(1f))
+                            .fillMaxHeight()
+                            .padding(start = TandemTheme.spacing.sm, end = TandemTheme.spacing.sm, bottom = TandemTheme.spacing.sm),
+                    )
+                }
+                if (!panelOpen || panelBeside) {
+                    PullToRefreshBox(
+                        isRefreshing = state.refreshing,
+                        onRefresh = { onAction(RecipeListAction.Refresh) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    ) {
+                        RecipeGrid(
+                            state = state,
+                            gridState = gridState,
+                            onAction = onAction,
+                            onOpenRecipe = onOpenRecipe,
+                            onOpenKeywordPicker = { showKeywordPicker = !(keywordPanel && showKeywordPicker) },
+                            selectedRecipeId = selectedRecipeId,
+                        )
+                    }
+                }
+            }
         }
     }
-    if (showKeywordPicker) {
+    if (showKeywordPicker && !keywordPanel) {
         KeywordPickerSheet(
             keywords = state.keywords,
             selectedIds = state.query.keywordIds,
@@ -155,9 +205,17 @@ private fun LayoutToggle(layout: RecipeListLayout, onToggle: () -> Unit) {
     }
 }
 
+/** Expanded window (at least 840 dp wide): filters open as a side panel, not a bottom sheet. */
+@Composable
+private fun isExpandedWindow(): Boolean {
+    val width = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    return width >= EXPANDED_WINDOW_MIN_WIDTH
+}
+
 @Composable
 private fun RecipeGrid(
     state: RecipeListUiState,
+    gridState: LazyGridState,
     onAction: (RecipeListAction) -> Unit,
     onOpenRecipe: (Long) -> Unit,
     onOpenKeywordPicker: () -> Unit,
@@ -167,7 +225,7 @@ private fun RecipeGrid(
     val columns = if (state.layout == RecipeListLayout.GRID) GridCells.Adaptive(GRID_MIN_CELL) else GridCells.Adaptive(LIST_MIN_CELL)
     LazyVerticalGrid(
         columns = columns,
-        state = rememberLazyGridState(),
+        state = gridState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.xxl),
         horizontalArrangement = Arrangement.spacedBy(spacing.md),
@@ -422,6 +480,10 @@ private fun EmptyContent(state: RecipeListUiState, onAction: (RecipeListAction) 
             body = stringResource(R.string.recipes_empty_offline_body),
         )
 
+        // The sync failed (blocked, server error, unexpected answer): say why instead of
+        // "No recipes yet", which is wrong for a library that could not be read (plan 5.4).
+        state.syncError != null -> ErrorState(error = state.syncError, onRetry = { onAction(RecipeListAction.Refresh) })
+
         else -> EmptyState(
             icon = TandemIcons.MenuBook,
             title = stringResource(R.string.recipes_empty_title),
@@ -435,6 +497,13 @@ private fun EmptyContent(state: RecipeListUiState, onAction: (RecipeListAction) 
         }
     }
 }
+
+/** Window width from which filters open as a side panel (Material's expanded width class). */
+private val EXPANDED_WINDOW_MIN_WIDTH = 840.dp
+
+/** The list itself is wide enough for the side panel beside the recipes. */
+private val PANEL_BESIDE_MIN_WIDTH = 640.dp
+private val PANEL_WIDTH = 320.dp
 
 /** Two columns on phones and in the 360 dp list pane beside a recipe, more on wide windows. */
 private val GRID_MIN_CELL = 150.dp

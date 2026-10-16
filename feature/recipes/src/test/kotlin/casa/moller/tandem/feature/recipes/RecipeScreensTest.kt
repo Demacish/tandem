@@ -1,7 +1,11 @@
 package casa.moller.tandem.feature.recipes
 
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onFirst
@@ -12,10 +16,12 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.designsystem.R as DesignR
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.ui.R as UiR
 import casa.moller.tandem.feature.recipes.list.RecipeListAction
 import casa.moller.tandem.feature.recipes.list.RecipeListScreen
+import casa.moller.tandem.feature.recipes.list.RecipeListUiState
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -78,10 +84,11 @@ class RecipeScreensTest {
     @Test
     fun tappingAnIngredientStrikesItThrough() {
         composeRule.setContent { TestFrame { DetailWithFakes(SampleRecipes.MushroomPasta.id) } }
-        val mushrooms = composeRule.onAllNodes(hasText("champinjoner")).onFirst()
+        // An ingredient row is one TalkBack item labelled "<amount> <food>, <note>" (plan 6.6).
+        val mushrooms = composeRule.onAllNodes(hasContentDescription("champinjoner", substring = true)).onFirst()
         mushrooms.performScrollTo().assertIsOff()
         mushrooms.performClick()
-        composeRule.onAllNodes(hasText("champinjoner")).onFirst().assertIsOn()
+        composeRule.onAllNodes(hasContentDescription("champinjoner", substring = true)).onFirst().assertIsOn()
     }
 
     @Test
@@ -89,6 +96,24 @@ class RecipeScreensTest {
         composeRule.setContent { TestFrame { DetailWithFakes(SampleRecipes.MushroomPasta.id) } }
         composeRule.onNodeWithContentDescription(string(UiR.string.ui_recipe_more_servings)).performScrollTo().performClick()
         composeRule.waitForIdle()
-        composeRule.onAllNodes(hasText("500 g")).onFirst().assertExists()
+        composeRule.onAllNodes(hasContentDescription("500 g ", substring = true)).onFirst().assertExists()
+    }
+
+    @Test
+    fun anEmptyListAfterAFailedSyncSaysWhyAndCanRetry() {
+        val actions = mutableListOf<RecipeListAction>()
+        composeRule.setContent {
+            TestFrame {
+                RecipeListScreen(
+                    state = RecipeListUiState(loaded = true, syncError = TandemError.Blocked),
+                    onAction = { actions += it },
+                    onOpenRecipe = {},
+                )
+            }
+        }
+        composeRule.onNodeWithText(string(UiR.string.ui_error_blocked_title)).assertIsDisplayed()
+        composeRule.onAllNodes(hasText(string(R.string.recipes_empty_title))).assertCountEquals(0)
+        composeRule.onNode(hasText(string(DesignR.string.tandem_action_retry)) and hasClickAction()).performScrollTo().performClick()
+        assertEquals(listOf(RecipeListAction.Refresh), actions)
     }
 }

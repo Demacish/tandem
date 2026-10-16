@@ -12,6 +12,7 @@
     <string name="recipes_search_clear">Clear search</string>
     <string name="recipes_refresh">Refresh</string>
     <string name="recipes_refresh_offline">You\'re offline. Recipes update when you\'re back online.</string>
+    <string name="recipes_refresh_failed">Could not sync: %1$s</string>
 
     <!-- Filter chips and sort. -->
     <string name="recipes_filter_keywords">Keywords</string>
@@ -35,6 +36,7 @@
     <string name="recipes_keywords_clear">Clear</string>
     <string name="recipes_keywords_filter_hint">Find a keyword</string>
     <string name="recipes_keywords_empty">No keywords yet. Add them to your recipes in Tandoor.</string>
+    <string name="recipes_keywords_close">Close keywords</string>
 
     <!-- Search status above the results. -->
     <plurals name="recipes_result_count">

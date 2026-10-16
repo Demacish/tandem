@@ -11,6 +11,7 @@
     <string name="recipes_search_clear">Rensa sökningen</string>
     <string name="recipes_refresh">Uppdatera</string>
     <string name="recipes_refresh_offline">Du är offline. Recepten uppdateras när du är ansluten igen.</string>
+    <string name="recipes_refresh_failed">Kunde inte synka: %1$s</string>
 
     <string name="recipes_filter_keywords">Nyckelord</string>
     <plurals name="recipes_filter_keywords_count">
@@ -32,6 +33,7 @@
     <string name="recipes_keywords_clear">Rensa</string>
     <string name="recipes_keywords_filter_hint">Hitta ett nyckelord</string>
     <string name="recipes_keywords_empty">Inga nyckelord än. Lägg till dem på recepten i Tandoor.</string>
+    <string name="recipes_keywords_close">Stäng nyckelord</string>
 
     <plurals name="recipes_result_count">
         <item quantity="one">%1$d recept</item>

@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.error.UnauthorizedSource
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.recipe.RecipeSort
@@ -279,5 +280,80 @@ class RecipeListViewModelTest {
         assertTrue(state.loaded)
         assertTrue(state.recipes.isEmpty())
         assertFalse(state.isFiltered)
+    }
+
+    @Test
+    fun comingBackToTheScreenKeepsTheShownListAndLayout() = runTest(mainDispatcher.dispatcher) {
+        listPreferences.stored.value = RecipeListLayout.LIST
+        val viewModel = newViewModel()
+        viewModel.uiState.test {
+            runCurrent()
+            val shown = expectMostRecentItem()
+            assertTrue(shown.loaded)
+            assertEquals(RecipeListLayout.LIST, shown.layout)
+            cancelAndIgnoreRemainingEvents()
+        }
+        // Longer than the stop timeout: the upstream flows stop (recipe opened, app in background).
+        advanceTimeBy(6_000)
+        runCurrent()
+
+        val seen = mutableListOf<RecipeListUiState>()
+        val collector = backgroundScope.launch { viewModel.uiState.collect { seen += it } }
+        runCurrent()
+        advanceUntilIdle()
+        collector.cancel()
+
+        assertTrue(seen.isNotEmpty())
+        assertTrue("no loading placeholder after coming back: ${seen.map { it.loaded }}", seen.all { it.loaded })
+        assertTrue("no grid flash: ${seen.map { it.layout }}", seen.all { it.layout == RecipeListLayout.LIST })
+        assertTrue(seen.all { it.recipes.size == SampleRecipes.overviews.size && it.keywords.size == SampleRecipes.keywords.size })
+    }
+
+    @Test
+    fun aFailedSyncIsShownButOfflineAndLoginProblemsAreNot() = runTest(mainDispatcher.dispatcher) {
+        repository.overviews.value = emptyList()
+        val viewModel = subscribed()
+        sync.setStatus(SyncStatus(lastError = TandemError.Blocked, pause = SyncPause.BLOCKED))
+        runCurrent()
+        assertEquals(TandemError.Blocked, viewModel.uiState.value.syncError)
+
+        sync.setStatus(SyncStatus(running = true, lastError = TandemError.Blocked))
+        runCurrent()
+        assertEquals("not while a sync runs", null, viewModel.uiState.value.syncError)
+
+        sync.setStatus(SyncStatus(lastError = TandemError.NetworkUnavailable, pause = SyncPause.OFFLINE))
+        runCurrent()
+        assertEquals(null, viewModel.uiState.value.syncError)
+
+        sync.setStatus(SyncStatus(lastError = TandemError.Unauthorized(UnauthorizedSource.TANDOOR), pause = SyncPause.UNAUTHORIZED))
+        runCurrent()
+        assertEquals(null, viewModel.uiState.value.syncError)
+    }
+
+    @Test
+    fun aPullToRefreshWhoseSyncFailsSaysWhy() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = subscribed()
+        viewModel.effects.test {
+            viewModel.onAction(RecipeListAction.Refresh)
+            sync.setStatus(SyncStatus(running = true))
+            runCurrent()
+            sync.setStatus(SyncStatus(lastError = TandemError.ServerError(502)))
+            runCurrent()
+            assertEquals(RecipeListEffect.SyncFailed(TandemError.ServerError(502)), awaitItem())
+        }
+        assertFalse(viewModel.uiState.value.refreshing)
+    }
+
+    @Test
+    fun aPullToRefreshWhoseSyncSucceedsSaysNothing() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = subscribed()
+        viewModel.effects.test {
+            viewModel.onAction(RecipeListAction.Refresh)
+            sync.setStatus(SyncStatus(running = true))
+            runCurrent()
+            sync.setStatus(SyncStatus.Idle)
+            runCurrent()
+            expectNoEvents()
+        }
     }
 }

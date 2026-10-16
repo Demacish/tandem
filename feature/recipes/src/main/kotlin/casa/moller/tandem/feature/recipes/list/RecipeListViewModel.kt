@@ -8,11 +8,13 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncReason
+import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.detail.isConnectionProblem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +50,11 @@ import kotlinx.coroutines.withTimeoutOrNull
  * - **State:** the query survives rotation and process death ([SavedStateHandle]); the grid/list
  *   choice is remembered on the device ([RecipeListPreferences]).
  * - **Pull to refresh** asks for a sync (USER_REFRESH, never throttled) and shows the indicator
- *   until that sync has finished.
+ *   until that sync has finished; a sync that fails says why (snackbar, plan 5.4).
+ * - **Sync errors** other than "offline" and "log in again" (which have their own notices) are
+ *   in [RecipeListUiState.syncError], so an empty list explains itself instead of "no recipes".
+ * - **Coming back** to the screen keeps the shown list (and its scroll position): the inputs
+ *   have no placeholder values, so a new subscription shows the cached state until Room answers.
  */
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
@@ -80,15 +86,17 @@ class RecipeListViewModel @Inject constructor(
 
     private val offline: Flow<Boolean> = sync.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged()
 
-    private val localRecipes: Flow<List<RecipeOverview>?> = query
-        .flatMapLatest { recipes.observeRecipes(it) }
-        .map<List<RecipeOverview>, List<RecipeOverview>?> { it }
-        .onStart { emit(null) }
+    private val syncInfo: Flow<SyncInfo> = sync.status
+        .map { SyncInfo(offline = it.pause == SyncPause.OFFLINE, running = it.running, error = it.shownError()) }
+        .distinctUntilChanged()
+
+    // No placeholder (`onStart`) values on these inputs: when the screen subscribes again after
+    // the stop timeout, `combine` waits for the real values and the cached state stays on screen.
+    // A placeholder would replace the list with "loading" for a frame and lose the scroll position.
+    private val localRecipes: Flow<List<RecipeOverview>> = query.flatMapLatest { recipes.observeRecipes(it) }
 
     private val listing: Flow<Listing> = combine(localRecipes, serverResult, query) { local, server, current ->
         when {
-            local == null -> Listing(emptyList(), loaded = false, serverOnlyCount = 0)
-
             server == null || server.query != current -> Listing(local, loaded = true, serverOnlyCount = 0)
 
             else -> {
@@ -100,17 +108,16 @@ class RecipeListViewModel @Inject constructor(
     }
 
     private val status: Flow<Status> = combine(
-        offline,
+        syncInfo,
         refreshing,
-        sync.status.map { it.running }.distinctUntilChanged(),
         serverSearch,
-        listPreferences.layout.onStart { emit(RecipeListLayout.GRID) }.distinctUntilChanged(),
-    ) { isOffline, isRefreshing, syncing, search, layout -> Status(isOffline, isRefreshing, syncing, search, layout) }
+        listPreferences.layout.distinctUntilChanged(),
+    ) { info, isRefreshing, search, layout -> Status(info, isRefreshing, search, layout) }
 
     val uiState: StateFlow<RecipeListUiState> = combine(
         query,
         listing,
-        recipes.observeKeywords().onStart { emit(emptyList()) },
+        recipes.observeKeywords(),
         status,
     ) { current, list, keywords, flags ->
         RecipeListUiState(
@@ -121,9 +128,10 @@ class RecipeListViewModel @Inject constructor(
             layout = flags.layout,
             serverSearch = flags.serverSearch,
             serverOnlyCount = list.serverOnlyCount,
-            offline = flags.offline,
+            offline = flags.sync.offline,
             refreshing = flags.refreshing,
-            syncing = flags.syncing,
+            syncing = flags.sync.running,
+            syncError = flags.sync.error,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeListUiState())
 
@@ -215,8 +223,10 @@ class RecipeListViewModel @Inject constructor(
         viewModelScope.launch {
             // The sync may be ignored (offline, demo mode, already running): stop after a moment.
             val started = withTimeoutOrNull(SYNC_START_TIMEOUT_MILLIS) { sync.status.first { it.running } } != null
-            if (started) sync.status.first { !it.running }
+            val error = if (started) sync.status.first { !it.running }.shownError() else null
             refreshing.value = false
+            // The user asked: a failed sync gets an answer (plan 5.4), not just a stopped spinner.
+            if (error != null) effectChannel.trySend(RecipeListEffect.SyncFailed(error))
         }
     }
 
@@ -224,17 +234,28 @@ class RecipeListViewModel @Inject constructor(
 
     private data class Listing(val recipes: List<RecipeOverview>, val loaded: Boolean, val serverOnlyCount: Int)
 
-    private data class Status(
-        val offline: Boolean,
-        val refreshing: Boolean,
-        val syncing: Boolean,
-        val serverSearch: ServerSearch,
-        val layout: RecipeListLayout,
-    )
+    private data class SyncInfo(val offline: Boolean, val running: Boolean, val error: TandemError?)
+
+    private data class Status(val sync: SyncInfo, val refreshing: Boolean, val serverSearch: ServerSearch, val layout: RecipeListLayout)
 
     private data class SearchRequest(val query: RecipeQuery, val demo: Boolean, val offline: Boolean, val generation: Int)
 
     internal companion object {
+        /**
+         * Why the last sync failed, when the list should say so: not while a sync runs, and not
+         * for a missing network or a rejected login, which the offline notice and the shell's
+         * "Log in again" banner already cover.
+         */
+        fun SyncStatus.shownError(): TandemError? {
+            val error = lastError ?: return null
+            return when {
+                running -> null
+                pause == SyncPause.OFFLINE || pause == SyncPause.UNAUTHORIZED -> null
+                error == TandemError.NetworkUnavailable || error is TandemError.Unauthorized -> null
+                else -> error
+            }
+        }
+
         /** Pause in typing before the server is asked (plan 4.1). */
         const val SEARCH_DEBOUNCE_MILLIS = 400L
 

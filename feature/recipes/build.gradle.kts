@@ -17,6 +17,8 @@ dependencies {
     // The grid/list choice of the recipe list, remembered on the device (RecipeListPreferences).
     // The DataStore library itself, not core:datastore (which holds account data).
     implementation(libs.androidx.datastore.preferences)
+    // BackHandler for the keyword side panel on expanded windows (plan 6.5).
+    implementation(libs.androidx.activity.compose)
 
     testImplementation(projects.core.testing)
     // Web parity of the detail (RecipeDetailWebParityTest) reads the recorded recipes and scaling-golden.json.

@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.recipes.list
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
@@ -45,6 +46,9 @@ enum class ServerSearch {
  * @property offline the device is offline: recipes without a stored detail are dimmed.
  * @property refreshing a pull to refresh runs.
  * @property syncing a sync runs (e.g. the first one after login).
+ * @property syncError why the last sync failed (blocked, server error, unexpected answer...);
+ *   null while it runs, after a success, and for "offline" or "log in again", which have their
+ *   own notices. An empty list shows it instead of "No recipes yet".
  */
 @Immutable
 data class RecipeListUiState(
@@ -58,6 +62,7 @@ data class RecipeListUiState(
     val offline: Boolean = false,
     val refreshing: Boolean = false,
     val syncing: Boolean = false,
+    val syncError: TandemError? = null,
 ) {
     /** Text, keywords, time, rating or "only offline" narrow the list. */
     val isFiltered: Boolean
@@ -108,4 +113,7 @@ sealed interface RecipeListAction {
 /** One-off events of the recipe list. */
 sealed interface RecipeListEffect {
     data class Message(@StringRes val text: Int) : RecipeListEffect
+
+    /** The sync a pull to refresh asked for failed: "Could not sync: <what happened>". */
+    data class SyncFailed(val error: TandemError) : RecipeListEffect
 }

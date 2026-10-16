@@ -95,10 +95,13 @@ class RecipeDetailViewModel @AssistedInject constructor(
         savedStateHandle.getStateFlow(KEY_UNITS, LongArray(0)),
     ) { struck, units -> SessionChoices(struck.toSet(), units.toUnitChoices()) }
 
+    // No placeholder values for the servings choice and the preferences: after the screen comes
+    // back (stop timeout), the cached state stays until the real values arrive instead of
+    // flashing the recipe's default servings and decimals for a frame.
     private val sources: Flow<Sources> = combine(
         recipes.observeRecipe(recipeId),
-        recipes.observeServingsChoice(recipeId).onStart { emit(null) },
-        preferencesRepository.observeUserPreferences().onStart { emit(UserPreferences.Default) },
+        recipes.observeServingsChoice(recipeId),
+        preferencesRepository.observeUserPreferences(),
         syncRepository.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged(),
         sessionInfo,
     ) { detail, choice, preferences, offline, session -> Sources(detail, choice, preferences, offline, session) }
