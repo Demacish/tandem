@@ -118,8 +118,8 @@ private fun CookTheme(alwaysDark: Boolean, dynamicColor: Boolean, content: @Comp
             controller?.isAppearanceLightStatusBars = false
             controller?.isAppearanceLightNavigationBars = false
             onDispose {
-                lightStatus?.let { controller?.isAppearanceLightStatusBars = it }
-                lightNavigation?.let { controller?.isAppearanceLightNavigationBars = it }
+                lightStatus?.let { controller.isAppearanceLightStatusBars = it }
+                lightNavigation?.let { controller.isAppearanceLightNavigationBars = it }
             }
         }
         content()
