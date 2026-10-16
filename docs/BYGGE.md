@@ -450,6 +450,86 @@ bara via `core:data`.
   tjänstetypen och manifestet. `TimerStoreTest`: filformatet.
 <!-- /Fas 1b timer -->
 
+<!-- Fas 1b kokläge -->
+## Kokläge (`:feature:cook`, Fas 1b)
+
+Kokläget (plan 6.2 "Kokläge", 6.5, 8.1, funktion #6–#8). `CookRoute(key, onClose)` →
+`CookViewModel` (assisted injection med `CookKey`) → den tillståndslösa
+`CookScreen(state, onAction)`. Bara gränssnitt i `:core:data`: `RecipeRepository`,
+`PreferencesRepository`, `SettingsRepository`, `TimerController`, `CookLogRepository`,
+`SyncRepository` och `kotlin.time.Clock` (`ClockModule`).
+
+- **Sidor:** en sida per steg (`HorizontalPager`), sist "Klart!". Ett recept utan steg får en
+  sida med alla ingredienser. Sidan, portionerna, den öppna ingredienssektionen, avbockade rader,
+  valda enheter, betyg, kommentar, loggade portioner och en timer som väntar på notisfrågan ligger
+  i `SavedStateHandle` (Bundle-typer: timern som en sträng, `PendingTimer.encode`), så allt
+  överlever rotation, storleksbyte och processdöd; timers lever i `TimerController`.
+- **Mängder:** `RecipeDisplay.build` i de valda portionerna, samma regler som receptvyn och
+  Tandoors webb (mallar i stegtexten skalas). Portionerna börjar som `CookKey.servings` (detaljens
+  val, Idags planerade portioner) eller receptets sparade val; en ändring i kokläget sparas som
+  receptets val, precis som i detaljen.
+- **Timers:** `StepTimerSuggestions.suggest(instruction, Step.time, språk)` ger stegets knappar
+  ("Starta 5 min", 64 dp). Tiderna i texten är understrukna och går att trycka på: stegets
+  Markdown visas av `ui/StepInstruction` (`core:ui`s `Markdown`), som letar upp varje förslags
+  text (`textRange` i källtexten) i den synliga texten (`timerSpans`, ren funktion). En träff som
+  korsar en Markdown-markör blir inte tryckbar, knappen finns ändå. De tryckbara orden är ingen
+  egen TalkBack-post (knapparna gör samma sak). Etiketten är "<stegets namn eller receptets> ·
+  <förslaget>".
+- **Timerkomponenter (`:core:ui` `timer/`):** `TimerStartButton`, `TimerBar` (ringande först,
+  sedan äldst först, rullar inuti när de inte får plats), `TimerBarItem`, `TimerCard`
+  (surfplatta, timerlistan), `KitchenIconButton` (64 dp), `TimerActions`, `formatRemaining`
+  ("7:39", avrundat uppåt), `timerDurationText`, `timerDescription` (TalkBack) och
+  `rememberTimerNow()`, som tickar en gång per sekund med `LocalTimerClock` (tester sätter en
+  `TestClock` och `LocalTimerTicks = false`). Ringande timer: felbehållaren, larmikon, "Stoppa"
+  och en `liveRegion`.
+- **Notiser i sammanhanget (plan 8.7):** första timern med `capabilities.shouldAskForNotifications`
+  (och timer i appen) visar först en förklaring ("Vill du höra timern när skärmen är låst?");
+  "Fortsätt" startar systemdialogen (`RequestPermission` i routen), svaret går till
+  `onNotificationPermissionResult` och timern startar oavsett svar. "Inte nu" startar timern och
+  frågar inte igen under samma kokläge. Därefter: `alarmMayBeSilent` → kort med "Inställningar"
+  (appens notisinställningar); `alarmMayBeLate` (play utan exakta larm) → "Timern kan larma lite
+  för sent" med "Tillåt" (`ACTION_REQUEST_SCHEDULE_EXACT_ALARM`) och "Inte nu"
+  (`exactAlarmPromptDismissed`, sedan bara en rad). Inga råa behörighetsnamn. Behörigheterna
+  läses om vid varje `ON_RESUME`.
+- **Layout (`CookLayout`, från fönstret, aldrig från enhetstypen):** under 600 dp `PHONE`
+  (ingredienserna och portionerna i en utfällbar sektion på sidan, timerraden och
+  Föregående/Nästa längst ned); från 600 dp `TWO_PANE` (surfplatta i båda orienteringarna,
+  telefon liggande: portioner, stegets ingredienser och aktiva timers som kort till vänster, steget
+  till höger; från 840 dp större stegtext); bordsläge (`currentWindowAdaptiveInfoV2()
+  .windowPosture.isTabletop`) `TABLETOP`: steget i övre halvan, timers och knappar under vecket.
+- **Övrigt:** skärmen hålls på (`View.keepScreenOn` medan kokläget visas), A−/A+ sparas med
+  `setCookTextScale` och gäller stegtexten (`cookStep`, 28 sp, 34 sp brett), "Kokläge alltid
+  mörkt" lägger ett mörkt `TandemTheme` (och ljusa systemikoner) runt bara kokläget. Tangentbord:
+  pil höger/vänster, Page Down/Up och mellanslag (Skift+mellanslag bakåt), via en `focusTarget`
+  utan semantik. Alla tryckytor i kokläget är minst 64 dp. Volymknapparna som bläddrare (plan 8.1
+  "Handsfree") är inte med.
+- **"Klart!" (Stitch kokl_ge_klart, utan snabbintryck och "Dela bild", som Tandoor saknar):**
+  portioner (hela, `servingsOf`, ändringsbara), 1–5 stjärnor (radiogrupp, samma stjärna igen tar
+  bort betyget), kommentar och "Spara i kokloggen" → `CookLogRepository.logCooked` med
+  `cookedAt = clock.now()`, sedan `TimerController.clearFinished()`, en toast ("Sparat i
+  kokloggen", "… skickas när du är online igen", "Sparat i demot") och tillbaka. Fel: snackbar och
+  knappen går att trycka igen.
+- **Timerlistan (`TimersKey`):** `TimersRoute` / `TimersScreen` med alla timers som kort, "Rensa
+  klara", en timer med recept öppnar kokläget vid sitt steg.
+- **Ingångar:** "Börja laga" i receptdetaljen (`RecipeDetailRoute(onStartCooking)`, visas när
+  detaljen finns, med portionerna som visas) och "Laga" på Ikväll-kortet
+  (`TodayRoute(onStartCooking)`, matsedelns portioner). Skalet: `feature:cook` som beroende,
+  `ShellFeatures.Cook/Timers`, `entry<CookKey>` och `entry<TimersKey>` på den flik kokläget
+  öppnades från (`CookKey` döljer navigeringen på alla bredder).
+- **Kvar för integrationsbanan:** `TimerIntents.ACTION_OPEN_TIMER` från en timernotis →
+  `CookKey(recipeId, startStep = stepIndex)` eller `TimersKey`. Stegbilder visas inte: Tandoors
+  `Step.file` finns inte i `core:model`/databasen än.
+- **Tester:** `CookViewModelTest` (sidor, portioner i ingredienser och mallar, sparat val, förslag,
+  timers från knappar, två timers som ringer, notisfrågan, klockappen, varningar, textstorlek,
+  Klart! online/offline/demo/fel, processdöd), `CookLogicTest` (`timerSpans`, layoutval),
+  `CookScreenTest` (Compose: knappar, tangentbord, timerraden, ingredienssektionen, portioner,
+  Klart!, surfplattans paneler), `CookScreenshotTest` (telefon, hög telefon, telefon liggande,
+  surfplatta liggande och stående, bordsläge; ljust/mörkt, svenska, textstorlek 2; ringande,
+  pausad, notisfrågan, varningar, Klart!, timerlistan; artefakten `screenshots`, `cook/`),
+  `CookAccessibilityTest` (ATF för samma tillstånd) och i `core:ui` `TimerComponentsTest` och
+  `TimerFormatTest`.
+<!-- /Fas 1b kokläge -->
+
 <!-- fix-bygg: tillgänglighetskontroller -->
 ### Tillgänglighetskontroller (ATF) i UI-testerna
 

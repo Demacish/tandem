@@ -16,15 +16,15 @@ Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, l
 - ✅ Receptvy: portioner, skalade mängder som i Tandoors webb, bråk, enhetsomräkning, steg,
   betyg (0.1.0).
 - ✅ Recept sparade för offline, med bilder (0.1.0).
-- Kokläge: ett steg per sida, mängderna för steget, skärmen hålls på, stor text (0.2.0).
+- ✅ Kokläge: ett steg per sida, mängderna för steget, skärmen hålls på, stor text (0.2.0).
 - Timers som hittas i stegtexten, flera samtidigt, larm även med låst skärm (0.2.0).
-- "Klart!" med betyg och kommentar (Tandoors koklogg) (0.2.0).
+- ✅ "Klart!" med betyg och kommentar (Tandoors koklogg) (0.2.0).
 - ✅ Fliken Idag: kvällens måltid, ofta lagade, nya recept (0.1.0).
 - ✅ Versionskontroll av servern och säkert läge för otestade Tandoor-versioner (0.1.0).
 - ✅ Återställningsskärm i stället för kraschloop (0.1.0).
 - ✅ Demoläge med inbyggda exempelrecept, för den som inte har någon Tandoor (0.1.0).
 - Surfplatta: ✅ lista och recept sida vid sida, ingredienser och steg som rullar var för sig,
-  nyckelords- och livsmedelsfiltret som sidopaneler (0.1.0); kokläge i två paneler (0.2.0).
+  nyckelords- och livsmedelsfiltret som sidopaneler (0.1.0); ✅ kokläge i två paneler (0.2.0).
 - Fler inställningar och en nattlig kontroll mot nya Tandoor-versioner (0.2.0).
 - ✅ Automatiska tillgänglighetskontroller (ATF) av skärmarna i UI-testerna (0.1.0);
   skärmbildstester mot referensbilder och med pseudospråk för lång text och höger-till-vänster

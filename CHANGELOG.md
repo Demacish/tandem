@@ -10,6 +10,16 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   utan nät, med "+1 min" och "Stopp" i notisen och en nedräkning i statusraden (Live Update på
   Android 16). Timers överlever omstart av appen och telefonen. "ca 20–25 minuter" i ett steg
   blir en timer på 25 minuter. Kan också lämnas till klockappen.
+- **Kokläge:** "Börja laga" i receptet och "Laga" på kvällens måltid under Idag öppnar ett steg
+  per sida med stegets ingredienser i de valda portionerna (går att ändra), stegtexten i stor
+  stil (A−/A+) och knappar för stegets tider; en tid i texten går också att trycka på. Aktiva
+  timers syns längst ned med paus, "+1 min" och stopp, och ett ringande larm syns tydligt.
+  Skärmen hålls på, sidorna bläddras med svep, knappar eller tangentbordets pilar, och kokläget
+  kan vara mörkt jämt. Första timern frågar om notiser med en förklaring. På surfplatta och i
+  liggande läge står ingredienserna och timerna bredvid steget; en vikbar telefon på bordet
+  visar steget upptill och timerna nedtill.
+- **"Klart!":** sista sidan sparar receptet i Tandoors koklogg med portioner, betyg och
+  kommentar, även offline (skickas senare) och i demoläget.
 
 ## [0.1.0] – 2026-10-16
 
