@@ -24,7 +24,7 @@ class CookLogicTest {
         // "**8**–10 min" in the Markdown source is "8–10 min" on screen: the match crosses a marker.
         val spans = timerSpans(listOf("Koka 8–10 min."), listOf(TimerMatch(0, "**8**–10 min"), TimerMatch(1, "10 min")))
 
-        assertEquals(listOf(TimerSpan(1, 9, 15)), spans[0])
+        assertEquals(listOf(TimerSpan(1, 7, 13)), spans[0])
     }
 
     @Test

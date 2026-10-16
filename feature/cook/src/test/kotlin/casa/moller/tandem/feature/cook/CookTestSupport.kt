@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.cook
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -96,5 +97,9 @@ internal fun CookWithFakes(
 ) {
     val viewModel = remember(key) { fakes.viewModel(key).also(prepare) }
     val state by viewModel.uiState.collectAsState()
+    // Like CookRoute: leave after "Klart!" was saved.
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collect { effect -> if (effect is CookEffect.Finished) onClose() }
+    }
     CookScreen(state = state, onAction = viewModel::onAction, onClose = onClose, layout = layout, modifier = modifier)
 }

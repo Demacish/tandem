@@ -9,7 +9,7 @@
     <string name="ui_timer_start_description">Starta en timer på %1$s, %2$s</string>
 
     <string name="ui_timer_ringing">Tiden är ute!</string>
-    <string name="ui_timer_paused">Pausad</string>
+    <string name="ui_timer_paused_time">%1$s · pausad</string>
     <string name="ui_timer_finished">Klar</string>
     <string name="ui_timer_running_description">%1$s, %2$s kvar</string>
     <string name="ui_timer_paused_description">%1$s, pausad med %2$s kvar</string>

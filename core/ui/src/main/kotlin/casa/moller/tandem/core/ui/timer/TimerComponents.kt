@@ -292,18 +292,17 @@ private fun TimerInfo(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        // A paused timer says so on the same line ("3:12 · Pausad"), so the row keeps its height.
         Text(
             text = when (timer.state) {
                 TimerState.RINGING -> stringResource(R.string.ui_timer_ringing)
                 TimerState.FINISHED -> stringResource(R.string.ui_timer_finished)
-                else -> formatRemaining(timer.remaining(now))
+                TimerState.PAUSED -> stringResource(R.string.ui_timer_paused_time, formatRemaining(timer.remaining(now)))
+                TimerState.RUNNING -> formatRemaining(timer.remaining(now))
             },
             style = timeStyle.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = TABULAR_NUMBERS),
             color = if (timer.state == TimerState.RUNNING) colors.accent else colors.content,
         )
-        if (timer.state == TimerState.PAUSED) {
-            Text(text = stringResource(R.string.ui_timer_paused), style = MaterialTheme.typography.labelMedium)
-        }
     }
 }
 
