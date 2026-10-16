@@ -104,6 +104,14 @@ class RecipeScreensTest {
     }
 
     @Test
+    fun startCookingOpensCookMode() {
+        var starts = 0
+        composeRule.setContent { TestFrame { DetailWithFakes(SampleRecipes.MushroomPasta.id, onStartCooking = { starts++ }) } }
+        composeRule.onNodeWithText(string(R.string.recipe_detail_start_cooking)).performScrollTo().performClick()
+        assertEquals(1, starts)
+    }
+
+    @Test
     fun tappingAnIngredientStrikesItThrough() {
         composeRule.setContent { TestFrame { DetailWithFakes(SampleRecipes.MushroomPasta.id) } }
         // An ingredient row is one TalkBack item labelled "<amount> <food>, <note>" (plan 6.6).
