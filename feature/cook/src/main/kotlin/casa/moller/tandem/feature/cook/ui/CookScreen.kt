@@ -231,7 +231,6 @@ private fun CookContent(
         HorizontalPager(
             state = pagerState,
             modifier = pagerModifier.testTag(COOK_PAGER_TAG),
-            beyondViewportPageCount = 1,
         ) { page ->
             if (page < state.steps.size) {
                 CookStepPage(
