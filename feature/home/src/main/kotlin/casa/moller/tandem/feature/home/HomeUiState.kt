@@ -72,6 +72,9 @@ sealed interface HomeAction {
 
     data class OpenRecipe(val recipeId: Long) : HomeAction
 
+    /** "Laga" on tonight's meal (Phase 1b): cook mode at the planned [servings]. */
+    data class StartCooking(val recipeId: Long, val servings: Double) : HomeAction
+
     /** "All recipes": switch to the Recipes tab. */
     data object OpenRecipes : HomeAction
 

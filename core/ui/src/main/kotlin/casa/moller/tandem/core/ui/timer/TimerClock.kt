@@ -66,7 +66,11 @@ internal data class DurationParts(val hours: Long, val minutes: Long, val second
 
 internal fun durationParts(duration: Duration): DurationParts {
     val totalSeconds = ceil(duration.coerceAtLeast(Duration.ZERO).inWholeMilliseconds / MILLIS_PER_SECOND.toDouble()).toLong()
-    return DurationParts(totalSeconds / SECONDS_PER_HOUR, totalSeconds % SECONDS_PER_HOUR / SECONDS_PER_MINUTE, totalSeconds % SECONDS_PER_MINUTE)
+    return DurationParts(
+        hours = totalSeconds / SECONDS_PER_HOUR,
+        minutes = totalSeconds % SECONDS_PER_HOUR / SECONDS_PER_MINUTE,
+        seconds = totalSeconds % SECONDS_PER_MINUTE,
+    )
 }
 
 private fun Long.twoDigits(): String = toString().padStart(2, '0')

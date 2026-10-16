@@ -77,8 +77,8 @@ private class SyncFailure(val error: TandemError)
  * @param onBack closes the detail (system back is handled by the shell).
  * @param onOpenRecipe opens another recipe, e.g. a step's sub-recipe (pushed on top).
  * @param onOpenOnWeb opens a URL in the browser ("Open on the web" for editing, the source URL).
- *
- * Phase 1b adds `onStartCooking`.
+ * @param onStartCooking "Börja laga" (Phase 1b): opens cook mode for the recipe at the servings
+ *   shown (null: the recipe's own). Null hides the button.
  */
 @Composable
 fun RecipeDetailRoute(
@@ -87,6 +87,7 @@ fun RecipeDetailRoute(
     onOpenRecipe: (recipeId: Long) -> Unit,
     onOpenOnWeb: (url: String) -> Unit,
     modifier: Modifier = Modifier,
+    onStartCooking: ((recipeId: Long, servings: Double?) -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<RecipeDetailViewModel, RecipeDetailViewModel.Factory>(
         key = "recipe-$recipeId",
@@ -110,6 +111,7 @@ fun RecipeDetailRoute(
         onOpenRecipe = onOpenRecipe,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onStartCooking = onStartCooking?.let { start -> { start(recipeId, state.servings?.current) } },
     )
 }
 

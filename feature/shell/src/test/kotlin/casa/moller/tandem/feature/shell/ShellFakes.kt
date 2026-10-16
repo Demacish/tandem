@@ -15,6 +15,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.ui.PlaceholderTab
@@ -146,7 +147,12 @@ internal class RecordingActions : ShellActions {
  */
 internal class PlaceholderShellFeatures(private val state: ShellUiState) : ShellFeatures {
     @Composable
-    override fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit) {
+    override fun Today(
+        onOpenRecipe: (Long) -> Unit,
+        onOpenRecipes: () -> Unit,
+        onOpenWeek: () -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    ) {
         Placeholder(ShellTab.TODAY)
     }
 
@@ -156,7 +162,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     }
 
     @Composable
-    override fun RecipeDetail(recipeId: Long, onBack: () -> Unit, onOpenRecipe: (Long) -> Unit, onOpenOnWeb: (String) -> Unit) {
+    override fun RecipeDetail(
+        recipeId: Long,
+        onBack: () -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onOpenOnWeb: (String) -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    ) {
         ShellScreenScaffold(title = "Recipe $recipeId", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Recipe detail $recipeId", modifier = Modifier.padding(padding))
         }
@@ -165,6 +177,20 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     @Composable
     override fun EmptyRecipePane() {
         Text(text = "Pick a recipe")
+    }
+
+    @Composable
+    override fun Cook(key: CookKey, onClose: () -> Unit) {
+        ShellScreenScaffold(title = "Cook ${key.recipeId}", state = state, onNavigateBack = onClose) { padding ->
+            Text(text = "Cook mode ${key.recipeId}", modifier = Modifier.padding(padding))
+        }
+    }
+
+    @Composable
+    override fun Timers(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit) {
+        ShellScreenScaffold(title = "Timers", state = state, onNavigateBack = onBack) { padding ->
+            Text(text = "Timers", modifier = Modifier.padding(padding))
+        }
     }
 
     @Composable

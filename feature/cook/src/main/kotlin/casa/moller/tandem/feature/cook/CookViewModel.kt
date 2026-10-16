@@ -139,8 +139,8 @@ class CookViewModel @AssistedInject constructor(
         SessionState(page, servings.takeIf { it > 0.0 }, open, rows.first, rows.second, done)
     }
 
-    val uiState: StateFlow<CookUiState> = combine(recipeSources, timerSources, sessionState, settings) { recipe, timers, session, settings ->
-        buildState(recipe, timers, session, settings)
+    val uiState: StateFlow<CookUiState> = combine(recipeSources, timerSources, sessionState, settings) { recipe, timers, session, app ->
+        buildState(recipe, timers, session, app)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), CookUiState(recipeId = recipeId, page = key.startStep))
 
     fun onAction(action: CookAction) {
@@ -200,7 +200,10 @@ class CookViewModel @AssistedInject constructor(
     }
 
     private fun switchUnit(id: Long) {
-        val item = uiState.value.steps.flatMap { it.ingredients }.filterIsInstance<IngredientRow.Item>().firstOrNull { it.id == id } ?: return
+        val item = uiState.value.steps
+            .flatMap { it.ingredients }
+            .filterIsInstance<IngredientRow.Item>()
+            .firstOrNull { it.id == id } ?: return
         if (!item.canCycleUnits) return
         val choices = savedStateHandle.get<LongArray>(KEY_UNITS)?.toUnitChoices().orEmpty()
         val next = ((choices[id] ?: 0) + 1) % item.units.size
@@ -360,7 +363,9 @@ class CookViewModel @AssistedInject constructor(
         val display = RecipeDisplay.build(recipe, servings, preferences, locale.style)
         if (display.steps.isEmpty()) {
             // A recipe without steps still gets one page with all its ingredients, then "Klart!".
-            return listOf(CookStep(index = 0, number = 1, name = "", instruction = "", ingredients = display.ingredients, suggestions = emptyList()))
+            return listOf(
+                CookStep(index = 0, number = 1, name = "", instruction = "", ingredients = display.ingredients, suggestions = emptyList()),
+            )
         }
         return display.steps.mapIndexed { index, step ->
             CookStep(

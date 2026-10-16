@@ -58,6 +58,8 @@ import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.status.SafeModeInfoScreen
 import casa.moller.tandem.core.ui.status.TANDEM_RELEASES_URL
+import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.shell.more.AboutScreen
 import casa.moller.tandem.feature.shell.more.LanguageScreen
@@ -276,6 +278,7 @@ internal fun ShellScaffold(
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                     onOpenRecipes = { navigation.selectTab(ShellTab.RECIPES) },
                     onOpenWeek = { navigation.selectTab(ShellTab.WEEK) },
+                    onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {
@@ -297,6 +300,15 @@ internal fun ShellScaffold(
                     // A sub-recipe opens on top, in the same pane as the recipe that links to it.
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it, inListDetail = key.inListDetail)) },
                     onOpenOnWeb = openOnWeb,
+                    onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                )
+            }
+            // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---
+            entry<CookKey> { key -> features.Cook(key = key, onClose = { navigation.goBack() }) }
+            entry<TimersKey> {
+                features.Timers(
+                    onBack = { navigation.goBack() },
+                    onOpenCook = { recipeId, step -> navigation.navigate(CookKey(recipeId, startStep = step)) },
                 )
             }
             entry<WeekKey> { placeholder(ShellTab.WEEK) }

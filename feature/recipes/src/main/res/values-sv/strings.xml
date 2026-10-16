@@ -128,4 +128,6 @@
 
     <string name="recipe_pane_empty_title">Välj ett recept</string>
     <string name="recipe_pane_empty_body">Receptet öppnas här, bredvid listan.</string>
+    <!-- Fas 1b (kokläge-banan): öppnar kokläget med portionerna som visas. -->
+    <string name="recipe_detail_start_cooking">Börja laga</string>
 </resources>

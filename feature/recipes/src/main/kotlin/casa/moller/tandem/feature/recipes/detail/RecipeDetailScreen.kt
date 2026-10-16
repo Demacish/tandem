@@ -54,10 +54,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.StatusChip
+import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.Cooking
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
 import casa.moller.tandem.core.designsystem.icon.DownloadForOfflineFilled
 import casa.moller.tandem.core.designsystem.icon.History
@@ -107,7 +109,7 @@ internal val TwoPaneMinWidth = 720.dp
  *   holds the photo (height capped), the servings picker and the ingredients, so they stay in
  *   view while the right pane (title, facts, description, steps) scrolls through the steps.
  *
- * Phase 1a shows no cooking, shopping, planning or favourite actions (Phase 1b/2).
+ * No shopping, planning or favourite actions yet (Phase 2); "Börja laga" opens cook mode (Phase 1b).
  *
  * Amounts and step texts arrive ready to show (core:domain `RecipeDisplay`, web parity); the
  * screen only reports how numbers are written in its locale ([RecipeDetailAction.SetNumberStyle]).
@@ -115,6 +117,8 @@ internal val TwoPaneMinWidth = 720.dp
  * @param onOpenUrl opens a web page (the recipe in Tandoor, the source, links in steps go
  *   through Compose's own link handling).
  * @param onOpenRecipe opens another recipe (a step's sub-recipe).
+ * @param onStartCooking opens cook mode at the servings shown ("Börja laga", Phase 1b); the
+ *   button shows once the recipe's detail is stored. Null hides it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,6 +130,7 @@ fun RecipeDetailScreen(
     onOpenRecipe: (Long) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onStartCooking: (() -> Unit)? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val scrollState = rememberScrollState()
@@ -170,6 +175,7 @@ fun RecipeDetailScreen(
                 onAction = onAction,
                 onOpenUrl = onOpenUrl,
                 onOpenRecipe = onOpenRecipe,
+                onStartCooking = onStartCooking,
                 modifier = contentModifier,
             )
         }
@@ -237,12 +243,13 @@ private fun DetailContent(
     onAction: (RecipeDetailAction) -> Unit,
     onOpenUrl: (String) -> Unit,
     onOpenRecipe: (Long) -> Unit,
+    onStartCooking: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
     BoxWithConstraints(modifier = modifier) {
         if (maxWidth >= TwoPaneMinWidth && state.hasDetail) {
-            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe)
+            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe, onStartCooking)
         } else {
             Column(
                 modifier = Modifier
@@ -261,6 +268,7 @@ private fun DetailContent(
                 if (!state.hasDetail) {
                     MissingDetail(state = state, onAction = onAction)
                 } else {
+                    StartCooking(onStartCooking)
                     Servings(state, onAction)
                     Ingredients(state, onAction)
                     Steps(state, onAction, onOpenRecipe)
@@ -283,6 +291,7 @@ private fun TwoPaneContent(
     onAction: (RecipeDetailAction) -> Unit,
     onOpenUrl: (String) -> Unit,
     onOpenRecipe: (Long) -> Unit,
+    onStartCooking: (() -> Unit)?,
 ) {
     val spacing = TandemTheme.spacing
     Row(
@@ -301,6 +310,7 @@ private fun TwoPaneContent(
             verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             HeaderImage(state, Modifier.cappedAspectRatio(PHOTO_ASPECT_RATIO, PANE_PHOTO_MAX_HEIGHT))
+            StartCooking(onStartCooking)
             Servings(state, onAction)
             Ingredients(state, onAction)
         }
@@ -466,6 +476,20 @@ private fun MissingDetail(state: RecipeDetailUiState, onAction: (RecipeDetailAct
 
         else -> LoadingState(message = stringResource(R.string.recipe_detail_loading))
     }
+}
+
+/** "Börja laga" (plan 6.2 "Åtgärder"): the prominent way into cook mode, 64 dp high (plan 6.6). */
+@Composable
+private fun StartCooking(onStartCooking: (() -> Unit)?) {
+    if (onStartCooking == null) return
+    TandemPrimaryButton(
+        text = stringResource(R.string.recipe_detail_start_cooking),
+        onClick = onStartCooking,
+        leadingIcon = TandemIcons.Cooking,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = TandemTheme.sizes.kitchenTouchTarget),
+    )
 }
 
 @Composable

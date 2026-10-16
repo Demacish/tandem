@@ -2,6 +2,9 @@ package casa.moller.tandem.feature.shell.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import casa.moller.tandem.feature.cook.CookRoute
+import casa.moller.tandem.feature.cook.TimersRoute
+import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.home.TodayRoute
 import casa.moller.tandem.feature.recipes.RecipeDetailPanePlaceholder
 import casa.moller.tandem.feature.recipes.RecipeDetailRoute
@@ -17,9 +20,9 @@ import casa.moller.tandem.feature.recipes.RecipesRoute
  */
 @Stable
 internal interface ShellFeatures {
-    /** The Today tab's first screen (feature:home). */
+    /** The Today tab's first screen (feature:home); [onStartCooking] is tonight's "Laga" (Phase 1b). */
     @Composable
-    fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit)
+    fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit, onStartCooking: (Long, Double?) -> Unit)
 
     /**
      * The Recipes tab's first screen and list pane (feature:recipes). [selectedRecipeId] is the
@@ -28,20 +31,49 @@ internal interface ShellFeatures {
     @Composable
     fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?)
 
-    /** A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows. */
+    /**
+     * A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows.
+     * [onStartCooking] is "Börja laga" (Phase 1b).
+     */
     @Composable
-    fun RecipeDetail(recipeId: Long, onBack: () -> Unit, onOpenRecipe: (Long) -> Unit, onOpenOnWeb: (String) -> Unit)
+    fun RecipeDetail(
+        recipeId: Long,
+        onBack: () -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onOpenOnWeb: (String) -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    )
 
     /** The detail pane before a recipe is picked (wide windows only). */
     @Composable
     fun EmptyRecipePane()
+
+    // --- Phase 1b (kokläge lane): cook mode and the timer list (feature:cook). ---
+
+    /** Cook mode (full screen on every width). */
+    @Composable
+    fun Cook(key: CookKey, onClose: () -> Unit)
+
+    /** All timers; [onOpenCook] opens cook mode at a timer's recipe and step. */
+    @Composable
+    fun Timers(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit)
 }
 
 /** The real feature routes. */
 internal object RouteShellFeatures : ShellFeatures {
     @Composable
-    override fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit) {
-        TodayRoute(onOpenRecipe = onOpenRecipe, onOpenRecipes = onOpenRecipes, onOpenWeek = onOpenWeek)
+    override fun Today(
+        onOpenRecipe: (Long) -> Unit,
+        onOpenRecipes: () -> Unit,
+        onOpenWeek: () -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    ) {
+        TodayRoute(
+            onOpenRecipe = onOpenRecipe,
+            onOpenRecipes = onOpenRecipes,
+            onOpenWeek = onOpenWeek,
+            onStartCooking = onStartCooking,
+        )
     }
 
     @Composable
@@ -50,12 +82,34 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun RecipeDetail(recipeId: Long, onBack: () -> Unit, onOpenRecipe: (Long) -> Unit, onOpenOnWeb: (String) -> Unit) {
-        RecipeDetailRoute(recipeId = recipeId, onBack = onBack, onOpenRecipe = onOpenRecipe, onOpenOnWeb = onOpenOnWeb)
+    override fun RecipeDetail(
+        recipeId: Long,
+        onBack: () -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onOpenOnWeb: (String) -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    ) {
+        RecipeDetailRoute(
+            recipeId = recipeId,
+            onBack = onBack,
+            onOpenRecipe = onOpenRecipe,
+            onOpenOnWeb = onOpenOnWeb,
+            onStartCooking = onStartCooking,
+        )
     }
 
     @Composable
     override fun EmptyRecipePane() {
         RecipeDetailPanePlaceholder()
+    }
+
+    @Composable
+    override fun Cook(key: CookKey, onClose: () -> Unit) {
+        CookRoute(key = key, onClose = onClose)
+    }
+
+    @Composable
+    override fun Timers(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit) {
+        TimersRoute(onBack = onBack, onOpenCook = onOpenCook)
     }
 }

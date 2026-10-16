@@ -14,6 +14,8 @@ dependencies {
     // their callbacks to Navigation 3 keys (docs/BYGGE.md "Navigering"). ---
     implementation(projects.feature.recipes)
     implementation(projects.feature.home)
+    // --- Phase 1b (kokläge lane): cook mode and the timer list (CookKey, TimersKey). ---
+    implementation(projects.feature.cook)
     // --- Phase 1 (recept-ui lane): web pages ("Open on the web", recipe sources) open in a
     // Custom Tab, with the system browser as fallback. ---
     implementation(libs.androidx.browser)

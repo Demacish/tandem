@@ -13,6 +13,8 @@ plugins {
 dependencies {
     implementation(libs.bundles.compose.adaptive)
     implementation(libs.coil.compose)
+    // The in-context notification question (rememberLauncherForActivityResult, plan 8.7).
+    implementation(libs.androidx.activity.compose)
 
     testImplementation(projects.core.testing)
     // --- Phase 1b (grund lane): CookKeyTest round-trips the @Serializable keys. ---

@@ -84,7 +84,7 @@ class HomeViewModel internal constructor(
             }
 
             // Navigation is handled by the route.
-            is HomeAction.OpenRecipe, HomeAction.OpenRecipes, HomeAction.OpenWeek -> Unit
+            is HomeAction.OpenRecipe, HomeAction.OpenRecipes, HomeAction.OpenWeek, is HomeAction.StartCooking -> Unit
         }
     }
 

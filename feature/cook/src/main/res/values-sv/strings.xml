@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kokläget (feature:cook, plan 6.2 "Kokläge", funktion #6-#8). -->
+<resources>
+    <string name="cook_title">Kokläge</string>
+    <string name="cook_close">Stäng kokläget</string>
+    <string name="cook_screen_on">Skärmen hålls vaken</string>
+    <string name="cook_step_of">Steg %1$d av %2$d</string>
+    <string name="cook_done_page">Klart!</string>
+    <string name="cook_text_smaller">Mindre text</string>
+    <string name="cook_text_larger">Större text</string>
+    <string name="cook_previous">Föregående</string>
+    <string name="cook_next">Nästa</string>
+    <string name="cook_next_done">Klart!</string>
+    <string name="cook_loading">Läser in receptet …</string>
+    <string name="cook_not_downloaded_title">Receptet är inte nedladdat</string>
+    <string name="cook_not_downloaded_body">Anslut till internet för att öppna det i kokläget.</string>
+    <string name="cook_retry">Försök igen</string>
+    <string name="cook_setting_not_saved">Inställningen kunde inte sparas.</string>
+
+    <string name="cook_step_heading">Steg %1$d</string>
+    <string name="cook_step_template_broken">Mängderna i det här steget skalas inte: Tandoor kunde inte läsa dess mall.</string>
+    <string name="cook_step_recipe">Använder receptet %1$s</string>
+    <string name="cook_step_recipe_unnamed">Använder ett annat recept</string>
+    <string name="cook_no_steps">Receptet har inga steg. Här är alla ingredienser.</string>
+    <string name="cook_timers_for_step">Timers</string>
+
+    <string name="cook_ingredients_for_step">Ingredienser till det här steget</string>
+    <string name="cook_ingredients_for_step_number">Ingredienser till steg %1$d</string>
+    <string name="cook_all_ingredients">Alla ingredienser</string>
+    <plurals name="cook_ingredient_count">
+        <item quantity="one">%1$d ingrediens</item>
+        <item quantity="other">%1$d ingredienser</item>
+    </plurals>
+    <string name="cook_expanded">Utfälld</string>
+    <string name="cook_collapsed">Hopfälld</string>
+    <string name="cook_show_other_unit">Visa i annan enhet</string>
+
+    <string name="cook_servings_label">Portioner</string>
+    <plurals name="cook_servings">
+        <item quantity="one">%1$s portion</item>
+        <item quantity="other">%1$s portioner</item>
+    </plurals>
+    <string name="cook_servings_with_text">%1$s %2$s</string>
+    <string name="cook_fewer_servings">Färre portioner</string>
+    <string name="cook_more_servings">Fler portioner</string>
+
+    <string name="cook_active_timers">Aktiva timers</string>
+    <string name="cook_timer_clock_app">Timern startades i klockappen.</string>
+    <string name="cook_timer_no_clock_app">Ingen klockapp kunde starta timern. Välj timers i Tandem under Inställningar.</string>
+    <string name="cook_timer_too_many">För många timers samtidigt. Ta bort en för att starta en ny.</string>
+
+    <string name="cook_notifications_title">Vill du höra timern när skärmen är låst?</string>
+    <string name="cook_notifications_body">Tandem behöver få visa notiser för att kunna larma när timern är klar, även när skärmen är släckt eller du är i en annan app.</string>
+    <string name="cook_notifications_continue">Fortsätt</string>
+    <string name="cook_notifications_not_now">Inte nu</string>
+    <string name="cook_alarm_silent_title">Notiserna är avstängda</string>
+    <string name="cook_alarm_silent_body">Timern larmar bara medan Tandem är öppet. Slå på notiserna för att höra den när skärmen är låst.</string>
+    <string name="cook_alarm_late_title">Timern kan larma lite för sent</string>
+    <string name="cook_alarm_late_body">Tandem får inte ställa exakta larm, så Android kan skjuta upp larmet några minuter.</string>
+    <string name="cook_alarm_allow">Tillåt</string>
+    <string name="cook_open_settings">Inställningar</string>
+    <string name="cook_dismiss">Inte nu</string>
+
+    <string name="cook_done_title">Smaklig måltid!</string>
+    <string name="cook_done_badge">Färdiglagat</string>
+    <string name="cook_done_body">Spara i kokloggen, så håller Tandoor räkningen på hur ofta du lagar receptet.</string>
+    <string name="cook_done_rating_title">Hur smakade det?</string>
+    <string name="cook_done_rating_none">Inget betyg</string>
+    <string name="cook_done_rating_value">%1$d av 5 stjärnor</string>
+    <plurals name="cook_done_star">
+        <item quantity="one">%1$d stjärna</item>
+        <item quantity="other">%1$d stjärnor</item>
+    </plurals>
+    <string name="cook_done_servings_label">Lagade portioner</string>
+    <string name="cook_done_comment_label">Kommentar (valfritt)</string>
+    <string name="cook_done_comment_placeholder">Vad skulle du ändra nästa gång?</string>
+    <string name="cook_done_save">Spara i kokloggen</string>
+    <string name="cook_done_leave">Stäng utan att spara</string>
+    <string name="cook_done_online">Posten skickas till din Tandoor.</string>
+    <string name="cook_done_offline">Du är offline. Posten sparas nu och skickas till Tandoor när du är online igen.</string>
+    <string name="cook_done_demo">Demoläge: posten sparas bara på den här enheten.</string>
+    <string name="cook_done_saved">Sparat i kokloggen.</string>
+    <string name="cook_done_saved_offline">Sparat. Det skickas när du är online igen.</string>
+    <string name="cook_done_saved_demo">Sparat i demot.</string>
+    <string name="cook_done_save_failed">Posten kunde inte sparas.</string>
+
+    <string name="cook_timers_title">Timers</string>
+    <string name="cook_timers_empty_title">Inga timers igång</string>
+    <string name="cook_timers_empty_body">Starta en timer från ett steg i kokläget.</string>
+    <string name="cook_timers_clear_finished">Rensa klara</string>
+    <string name="cook_back">Tillbaka</string>
+</resources>

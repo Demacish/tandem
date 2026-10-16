@@ -139,4 +139,6 @@
     <!-- Detail pane on wide windows before a recipe is picked. -->
     <string name="recipe_pane_empty_title">Pick a recipe</string>
     <string name="recipe_pane_empty_body">The recipe opens here, next to the list.</string>
+    <!-- Phase 1b (kokläge lane): opens cook mode at the servings shown (plan 6.2 "Börja laga"). -->
+    <string name="recipe_detail_start_cooking">Start cooking</string>
 </resources>
