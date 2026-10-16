@@ -132,6 +132,12 @@ internal class RecordingActions : ShellActions {
     override fun resetDemoData() {
         demoResets++
     }
+
+    var serverUpdateDismissals = 0
+
+    override fun dismissServerUpdate() {
+        serverUpdateDismissals++
+    }
 }
 
 /**

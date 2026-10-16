@@ -17,4 +17,7 @@ dependencies {
     // --- Phase 1 (recept-ui lane): web pages ("Open on the web", recipe sources) open in a
     // Custom Tab, with the system browser as fallback. ---
     implementation(libs.androidx.browser)
+
+    // --- komplettering-3: core:testing's FakeServerStatusRepository (the in-app version notice). ---
+    testImplementation(projects.core.testing)
 }

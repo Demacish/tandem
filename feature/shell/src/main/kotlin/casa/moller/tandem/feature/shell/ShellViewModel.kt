@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.common.AppBuildInfo
 import casa.moller.tandem.core.data.demo.DemoDataRepository
 import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
@@ -12,6 +13,8 @@ import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.SyncPause
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +25,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -45,6 +49,9 @@ interface ShellActions {
 
     /** "Reset demo data" in demo mode: the sample recipes as they were shipped. */
     fun resetDemoData()
+
+    /** Closes the "Tandoor was updated" banner ([ShellUiState.serverUpdatedTo]). */
+    fun dismissServerUpdate()
 }
 
 /**
@@ -53,6 +60,10 @@ interface ShellActions {
  * The server version is checked once when the shell opens for an account (that is, on app start
  * and after a login), when the app returns to the foreground if the last check is at least 15
  * minutes old, and on pull-to-refresh (plan 3.6 point 3).
+ *
+ * A server update that got no system notification (plan B18: notifications are asked for only at
+ * the first timer) is shown once as a banner ([ShellUiState.serverUpdatedTo]); it is marked as
+ * shown in the store as soon as it appears, so it does not come back after process death.
  */
 @HiltViewModel
 class ShellViewModel internal constructor(
@@ -63,6 +74,7 @@ class ShellViewModel internal constructor(
     private val applicationScope: CoroutineScope,
     syncRepository: SyncRepository,
     private val demoData: DemoDataRepository,
+    private val serverStatus: ServerStatusRepository,
     /** Monotonic time in milliseconds, for the resume throttle. */
     private val elapsedMillis: () -> Long,
 ) : ViewModel(),
@@ -77,6 +89,7 @@ class ShellViewModel internal constructor(
         @ApplicationScope applicationScope: CoroutineScope,
         syncRepository: SyncRepository,
         demoData: DemoDataRepository,
+        serverStatus: ServerStatusRepository,
     ) : this(
         sessionRepository = sessionRepository,
         appearanceRepository = appearanceRepository,
@@ -85,6 +98,7 @@ class ShellViewModel internal constructor(
         applicationScope = applicationScope,
         syncRepository = syncRepository,
         demoData = demoData,
+        serverStatus = serverStatus,
         elapsedMillis = { System.nanoTime() / NANOS_PER_MILLI },
     )
 
@@ -102,12 +116,16 @@ class ShellViewModel internal constructor(
     // integration lane adds the "Log in again" banner for a token Tandoor no longer accepts.
     private val syncPause = syncRepository.status.map { it.pause }.distinctUntilChanged()
 
+    /** The server update shown in the banner until the user closes it (already marked as shown). */
+    private val serverUpdate = MutableStateFlow<ServerVersionChange?>(null)
+
     val uiState: StateFlow<ShellUiState> = combine(
         session,
         appearanceRepository.themeMode,
         operations,
         syncPause,
-    ) { current, theme, ops, pause ->
+        serverUpdate,
+    ) { current, theme, ops, pause, update ->
         val mode = current.toShellMode()
         ShellUiState(
             mode = mode,
@@ -120,6 +138,8 @@ class ShellViewModel internal constructor(
             // Only for the account that is shown: never in demo mode or while switching.
             loginExpired = pause == SyncPause.UNAUTHORIZED && mode is ShellMode.Connected,
             resettingDemo = ops.resettingDemo,
+            // Only for the account that is shown, and never next to the safe mode banner.
+            serverUpdatedTo = update?.newVersion?.takeIf { mode is ShellMode.Connected && current.isTested },
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
@@ -133,6 +153,22 @@ class ShellViewModel internal constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            combine(session, serverStatus.observeVersionNotice()) { current, change ->
+                // Never in demo mode, and never for an untested version (the safe mode banner).
+                change?.takeIf { current.isTested && it.compatibility == ServerCompatibility.SUPPORTED }
+            }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { change ->
+                    serverUpdate.value = change
+                    serverStatus.markVersionNoticeShown(change)
+                }
+        }
+    }
+
+    override fun dismissServerUpdate() {
+        serverUpdate.value = null
     }
 
     override fun refreshServerInfo() {
@@ -189,6 +225,10 @@ class ShellViewModel internal constructor(
         val loggingOut: Boolean = false,
         val resettingDemo: Boolean = false,
     )
+
+    /** Logged in to a server that runs a tested version. */
+    private val Session?.isTested: Boolean
+        get() = this is Session.LoggedIn && compatibility == ServerCompatibility.SUPPORTED
 
     internal companion object {
         /** Plan 3.6 point 3: at most one automatic version check per 15 minutes on resume. */

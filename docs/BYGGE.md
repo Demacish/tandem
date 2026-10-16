@@ -362,7 +362,8 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   GitHub), `ServerTooOldNotice` (för gammal Tandoor: ersätter innehållet i alla flikar utom Mer)
   och `OfflineNotice`. Kroken i skalet är `ServerStatusFrame` (`:feature:shell` `status/`), som
   lägger bannern ovanför flikinnehållet och förbrukar statusradens inset; statuschipet visar
-  "Offline" när den senaste serverkontrollen inte nådde servern.
+  "Offline" när den senaste serverkontrollen inte nådde servern. Där ligger också
+  `ServerUpdatedBanner` (versionsbyte utan notis, se "Versionsbyte" nedan).
 - **Återställning (`:app`):** `RecoveryRoute` + `RecoveryViewModel`. "Exportera väntande
   ändringar" delar utkorgen som JSON-text via delningsarket genom gränssnittet
   `PendingChangesExporter` (`:core:data`). Det injiceras som `Optional` (`@BindsOptionalOf` i
@@ -726,8 +727,15 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
   periodiska synkens första körning kommer en period efter inloggningen (introts `FIRST_SYNC`
   gör första synken; annars gjordes allt två gånger).
 - **Versionsbyte (plan B18):** `AccountMirror` speglar kontot i `server_account`. När
-  serverversionen skiljer sig från den sparade sänds `observeVersionChanges()` och en notis i
-  kanalen "Server" (bara med `POST_NOTIFICATIONS`; annars bara bannern).
+  serverversionen skiljer sig från den sparade (aldrig vid första inloggningen) sänds
+  `observeVersionChanges()` och en notis i kanalen "Server" (bara med `POST_NOTIFICATIONS`, som
+  appen frågar efter först vid första timern i 0.2, och med kanalen påslagen). Kunde notisen
+  inte visas och är den nya versionen testad sparar `AccountMirror` meddelandet i
+  `AppSettings.versionNotice` (DataStore, så det överlever processdöd och hittas även när
+  bakgrundssynken upptäckte bytet). `ServerStatusRepository.observeVersionNotice()` lämnar det
+  bara för det aktiva kontot (aldrig i demoläget); skalet visar `ServerUpdatedBanner` ("Tandoor
+  uppdaterades till 2.6.15", stängbar) och anropar `markVersionNoticeShown` direkt, så det visas
+  en gång. En otestad version får inget eget meddelande: bannern för säkert läge räcker.
 - **Utloggning:** ett konto som inte längre finns får alla sina rader borttagna, i alla tabeller
   och även rader med okända konto-id (ett svar som kom efter utloggningen; städas senast vid nästa
   appstart via `AccountDao.getStoredAccountIds`), och bildcachen töms (även efter "Rensa

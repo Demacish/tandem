@@ -24,7 +24,7 @@ Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, l
 - ✅ Återställningsskärm i stället för kraschloop (0.1.0).
 - ✅ Demoläge med inbyggda exempelrecept, för den som inte har någon Tandoor (0.1.0).
 - Surfplatta: ✅ lista och recept sida vid sida, ingredienser och steg som rullar var för sig,
-  nyckelordsfiltret som sidopanel (0.1.0); kokläge i två paneler (0.2.0).
+  nyckelords- och livsmedelsfiltret som sidopaneler (0.1.0); kokläge i två paneler (0.2.0).
 - Fler inställningar och en nattlig kontroll mot nya Tandoor-versioner (0.2.0).
 - ✅ Automatiska tillgänglighetskontroller (ATF) av skärmarna i UI-testerna (0.1.0);
   skärmbildstester mot referensbilder och med pseudospråk för lång text och höger-till-vänster

@@ -28,7 +28,9 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.designsystem.R as DesignR
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.ui.R as UiR
 import casa.moller.tandem.core.ui.language.AppLanguage
@@ -259,5 +261,23 @@ class ShellScaffoldTest {
         setShell(state = DEMO_STATE, navigation = navigationAt(ShellTab.MORE))
         composeRule.onNodeWithText(string(R.string.shell_log_out_of, "tandoor.example.com")).assertDoesNotExist()
         composeRule.onNodeWithText(string(UiR.string.ui_demo_banner_connect)).assertExists()
+    }
+
+    // --- komplettering-3: the one-time "Tandoor was updated" banner (plan B18 fallback) ---
+
+    @Test
+    fun aServerUpdateIsShownAboveTheTabsUntilItIsClosed() {
+        setShell(state = CONNECTED_STATE.copy(serverUpdatedTo = "2.6.15"))
+        composeRule.onNodeWithText(string(R.string.shell_server_updated_title, "2.6.15")).assertIsDisplayed()
+        composeRule.onNode(hasContentDescription(string(DesignR.string.tandem_action_close))).performClick()
+        assertEquals(1, actions.serverUpdateDismissals)
+    }
+
+    @Test
+    fun aServerUpdateIsNeverShownNextToTheSafeModeBanner() {
+        val untested = LOGGED_IN.copy(serverVersion = "2.7.0", compatibility = ServerCompatibility.UNTESTED_NEWER)
+        setShell(state = CONNECTED_STATE.copy(mode = untested.toShellMode(), serverUpdatedTo = "2.7.0"))
+        composeRule.onNodeWithText(string(UiR.string.ui_safe_mode_headline_newer, "2.7.0")).assertExists()
+        composeRule.onNodeWithText(string(R.string.shell_server_updated_title, "2.7.0")).assertDoesNotExist()
     }
 }

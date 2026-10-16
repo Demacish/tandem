@@ -26,6 +26,11 @@ data class ShellUiState(
     val loginExpired: Boolean = false,
     /** "Reset demo data" is running. */
     val resettingDemo: Boolean = false,
+    /**
+     * The server was updated to this (tested) version and no system notification told the user
+     * (plan B18): the shell shows "Tandoor was updated to 2.6.15" once, until it is closed.
+     */
+    val serverUpdatedTo: String? = null,
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo

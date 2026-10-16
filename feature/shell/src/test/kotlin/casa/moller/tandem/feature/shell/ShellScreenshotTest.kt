@@ -93,6 +93,10 @@ abstract class ShellScreenshotTest(private val device: String) {
     @Test
     fun todayLoginExpired() = capture("today_login_expired_light", CONNECTED_STATE.copy(loginExpired = true), ShellTab.TODAY)
 
+    /** The server was updated and no notification could tell: the one-time banner (komplettering-3, B18). */
+    @Test
+    fun todayServerUpdated() = capture("today_server_updated_light", CONNECTED_STATE.copy(serverUpdatedTo = "2.6.15"), ShellTab.TODAY)
+
     @Test
     fun todayDemo() = capture("today_demo_light", DEMO_STATE, ShellTab.TODAY)
 
@@ -222,6 +226,11 @@ class ShellPhoneScreenshotTest : ShellScreenshotTest("phone") {
     @Test
     @Config(qualifiers = PHONE_SV)
     fun logoutDialogPastedTokenSwedish() = captureLogoutDialog("logout_dialog_pasted_light_sv", PASTED_STATE)
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun todayServerUpdatedSwedish() =
+        capture("today_server_updated_light_sv", CONNECTED_STATE.copy(serverUpdatedTo = "2.6.15"), ShellTab.TODAY)
 }
 
 /**

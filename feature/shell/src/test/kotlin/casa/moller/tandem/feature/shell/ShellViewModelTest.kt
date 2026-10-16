@@ -15,12 +15,14 @@ import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncProgress
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.testing.data.FakeServerStatusRepository
 import casa.moller.tandem.core.ui.AppStatus
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -91,7 +93,73 @@ class ShellViewModelTest {
         }
     }
 
-    private fun newViewModel() = ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope, sync, demoData) { nowMillis }
+    /** The server status; its version notice stands for the persisted store (it outlives ViewModels). */
+    private val serverStatus = FakeServerStatusRepository()
+
+    private fun newViewModel() =
+        ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope, sync, demoData, serverStatus) { nowMillis }
+
+    // --- komplettering-3: the in-app notice for a server update (plan B18 fallback) ---
+
+    private val update = ServerVersionChange("2.6.13", "2.6.15", ServerCompatibility.SUPPORTED)
+
+    @Test
+    fun aServerUpdateWithoutANotificationIsShownOnceAlsoAfterProcessDeath() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        serverStatus.versionNotice.value = update
+        val vm = newViewModel()
+
+        assertEquals("2.6.15", vm.uiState.value.serverUpdatedTo)
+        // Marked as shown as soon as it appears, so a new process does not show it again.
+        assertEquals(listOf(update), serverStatus.shownVersionNotices)
+        assertNull(serverStatus.versionNotice.value)
+
+        vm.dismissServerUpdate()
+        assertNull(vm.uiState.value.serverUpdatedTo)
+
+        // Process death: a new ViewModel on the same store has nothing to show.
+        val restarted = newViewModel()
+        assertNull(restarted.uiState.value.serverUpdatedTo)
+        assertEquals(1, serverStatus.shownVersionNotices.size)
+    }
+
+    @Test
+    fun noBannerWithoutAStoredNoticeOnTheFirstRunOrAfterANotification() = runTest {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        val vm = newViewModel()
+        // The first login and a change the system notification told about store no notice;
+        // the change itself (observeVersionChanges) is not shown by the shell.
+        serverStatus.emitVersionChange(update)
+
+        assertNull(vm.uiState.value.serverUpdatedTo)
+        assertTrue(serverStatus.shownVersionNotices.isEmpty())
+    }
+
+    @Test
+    fun noBannerInDemoMode() {
+        sessions.state.value = Session.Demo
+        serverStatus.versionNotice.value = update
+        val vm = newViewModel()
+
+        assertNull(vm.uiState.value.serverUpdatedTo)
+        assertTrue("not used up in demo mode", serverStatus.shownVersionNotices.isEmpty())
+    }
+
+    @Test
+    fun noBannerNextToSafeModeAndNoneAfterLeavingTheAccount() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.state.value = LOGGED_IN.copy(serverVersion = "2.7.0", compatibility = ServerCompatibility.UNTESTED_NEWER)
+        serverStatus.versionNotice.value = ServerVersionChange("2.6.13", "2.7.0", ServerCompatibility.UNTESTED_NEWER)
+        val vm = newViewModel()
+        assertNull("the safe mode banner tells about an untested version", vm.uiState.value.serverUpdatedTo)
+
+        // Shown for a tested version, then gone as soon as the shell no longer shows the account.
+        sessions.state.value = LOGGED_IN
+        serverStatus.versionNotice.value = update
+        assertEquals("2.6.15", vm.uiState.value.serverUpdatedTo)
+        sessions.state.value = Session.Demo
+        assertNull(vm.uiState.value.serverUpdatedTo)
+    }
 
     @Test
     fun theSyncsUnauthorizedPauseAsksToLogInAgain() {

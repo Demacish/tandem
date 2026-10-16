@@ -355,6 +355,7 @@ internal fun ShellScaffold(
                 onOpenSafeModeInfo = { navigation.navigate(SafeModeInfoKey) },
                 onCheckAgain = actions::refreshServerInfo,
                 onLogInAgain = { (state.mode as? ShellMode.Connected)?.let { onLogInAgain(it.account.serverUrl) } },
+                onDismissServerUpdate = actions::dismissServerUpdate,
             ) {
                 ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
             }

@@ -33,7 +33,8 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
 - **Surfplatta:** receptlistan och receptet sida vid sida, ingredienser och steg i två kolumner.
 - **Serverversion:** appen kontrollerar Tandoors version och kör i *säkert läge* (läsning
   fungerar, ändringar väntar) på en version som inte är testad. Byter servern version får du en
-  notis om du har tillåtit notiser för Tandem.
+  notis om du har tillåtit notiser för Tandem; annars visar appen en gång "Tandoor uppdaterades
+  till …" (en otestad version visas i stället av bannern för säkert läge).
 - **Logga in igen:** godtar Tandoor inte längre enhetens inloggning stoppas synken och en banner
   ber dig logga in igen. Loggar du in som samma användare finns allt kvar.
 - **Återställningsskärm:** kan inloggningen eller inställningarna inte läsas visas en skärm med
@@ -42,7 +43,7 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
   kokhistorik, så att allt ovan går att prova utan Tandoor. *Återställ demodata* under Mer.
 - Recept du öppnar i appen syns nu också under "Nyligen visade" i Tandoor på webben (appen meddelar Tandoor när du öppnar ett recept).
 - **Utloggning** tar bort kontots recept och bilder från telefonen; betyget räknas ur din kokhistorik så att sortering och filter på betyg fungerar offline; *Logga in igen* går att avbryta.
-- **Tillgänglighet och surfplatta:** TalkBack läser en ingrediensrad som en post med mängden (bråk som 3/16) och receptkort med namnet först; texter bryts i stället för att klippas vid stor text; på surfplatta rullar ingredienser och steg var för sig och nyckelordsfiltret är en sidopanel; en misslyckad synk visas i receptlistan; Idag leder inte till den ännu tomma fliken Veckan.
+- **Tillgänglighet och surfplatta:** TalkBack läser en ingrediensrad som en post med mängden (bråk som 3/16) och receptkort med namnet först; texter bryts i stället för att klippas vid stor text; på surfplatta rullar ingredienser och steg var för sig och nyckelords- och livsmedelsfiltret är sidopaneler; en misslyckad synk visas i receptlistan; Idag leder inte till den ännu tomma fliken Veckan.
 - **Release-röktest:** varje version loggar nu också in, väntar ut första synken, söker, skalar,
   laddar ner ett recept och läser det i flygplansläge, och provar demoläget, med just
   release-bygget på en Android-emulator innan den släpps.
