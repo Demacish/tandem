@@ -20,7 +20,9 @@ import casa.moller.tandem.core.sync.data.OfflineFirstRecipeRepository
 import casa.moller.tandem.core.sync.data.RoomPendingChangesExporter
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.image.AccountImageCallFactory
+import casa.moller.tandem.core.sync.image.CoilImageCache
 import casa.moller.tandem.core.sync.image.CoilImagePrefetcher
+import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.image.TandemImageLoader
 import casa.moller.tandem.core.sync.platform.AndroidVersionChangeNotifier
@@ -89,6 +91,9 @@ internal abstract class SyncModule {
 
     @Binds
     abstract fun bindImagePrefetcher(impl: CoilImagePrefetcher): ImagePrefetcher
+
+    @Binds
+    abstract fun bindImageCache(impl: CoilImageCache): ImageCache
 }
 
 /** The app's one Coil [ImageLoader] (installed as Coil's singleton by `SyncStarter`). */

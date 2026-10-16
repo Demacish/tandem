@@ -7,6 +7,7 @@ import casa.moller.tandem.core.data.demo.DemoLanguage
 import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.dao.CookStatsRow
 import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.database.mapper.toEntity
@@ -73,11 +74,15 @@ internal class DemoSeeder(
 
     private val mutex = Mutex()
 
-    /** Seeds the demo database if it is empty or outdated (see the class comment). */
-    suspend fun ensureSeeded(): Outcome<Unit> = mutex.withLock {
+    /**
+     * Seeds the demo database if it is empty or outdated (see the class comment).
+     *
+     * @param currentLocale the app language; the default reads it now. `SyncStarter` passes the
+     *   new one when the language changes, before the default locale may have caught up.
+     */
+    suspend fun ensureSeeded(currentLocale: Locale = locale()): Outcome<Unit> = mutex.withLock {
         catchingUnexpected {
             val database = databases.get(DatabaseKind.DEMO)
-            val currentLocale = locale()
             val today = clock.today()
             val key = seedKey(currentLocale)
             val state = database.syncStateDao().get(DEMO_ACCOUNT_ID, SEED_KEY)
@@ -134,8 +139,10 @@ internal class DemoSeeder(
         }
         recipes.replaceKeywords(accountId, content.keywords(locale, today).mapNotNull { it.toEntity(accountId) })
 
+        // One transaction; the demo details carry their ratings, so only the counts are written.
         val stats = content.cookLog(today).toCookStats()
-        stats.forEach { recipes.setCookStats(accountId, it.recipeId, it.lastCookedEpochMillis, it.timesCooked) }
+        val rows = stats.map { CookStatsRow(it.recipeId, it.timesCooked, it.lastCookedEpochMillis) }
+        recipes.replaceCookStats(accountId, rows, withRatings = false)
 
         val reference = database.referenceDao()
         reference.replaceMealTypes(accountId, content.mealTypes(locale).mapNotNull { it.toEntity(accountId) })

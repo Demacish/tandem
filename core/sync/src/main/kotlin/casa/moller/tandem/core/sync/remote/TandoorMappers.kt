@@ -264,20 +264,35 @@ internal fun UserPreferenceDto.toModel(): UserPreferences = UserPreferences(
 // ---------------------------------------------------------------- cook log
 
 /**
- * "Times cooked" and "last cooked" of one recipe, counted from the cook log (FACTS "Fas 1 c":
- * `last_cooked` is always null in 2.6.13 and `-times_cooked` answers 500).
+ * "Times cooked", "last cooked" and the user's own rating of one recipe, counted from the cook log
+ * (FACTS "Fas 1 c": `last_cooked` is always null in 2.6.13, `-times_cooked` answers 500, and
+ * lists carry `rating` only when sorted by it).
+ *
+ * @property rating the average of the logged-in user's own rated entries, rounded half up like
+ *   the detail's `rating` (FACTS "Fas 1 d": 5, 4, 5 -> 5.0; 4 and no rating -> 4.0); null when
+ *   the user never rated the recipe. Other members' entries are ignored (the log is space-wide).
  */
-internal data class CookStats(val recipeId: Long, val timesCooked: Int, val lastCookedEpochMillis: Long?)
+internal data class CookStats(val recipeId: Long, val timesCooked: Int, val lastCookedEpochMillis: Long?, val rating: Double? = null)
 
-internal fun List<CookLogDto>.toCookStats(): List<CookStats> = mapNotNull { log -> log.recipe?.let { recipeId -> recipeId to log } }
-    .groupBy({ it.first }, { it.second })
-    .map { (recipeId, logs) ->
-        CookStats(
-            recipeId = recipeId,
-            timesCooked = logs.size,
-            lastCookedEpochMillis = logs.mapNotNull { tandoorMillis(it.createdAt) }.maxOrNull(),
-        )
-    }
+/** @param ownUserId the logged-in Tandoor user; null computes no ratings. */
+internal fun List<CookLogDto>.toCookStats(ownUserId: Long? = null): List<CookStats> =
+    mapNotNull { log -> log.recipe?.let { recipeId -> recipeId to log } }
+        .groupBy({ it.first }, { it.second })
+        .map { (recipeId, logs) ->
+            val ownRatings = if (ownUserId == null) {
+                emptyList()
+            } else {
+                logs.filter { it.createdBy?.id == ownUserId }.mapNotNull { it.rating }
+            }
+            CookStats(
+                recipeId = recipeId,
+                timesCooked = logs.size,
+                lastCookedEpochMillis = logs.mapNotNull { tandoorMillis(it.createdAt) }.maxOrNull(),
+                rating = ownRatings.takeIf { it.isNotEmpty() }?.let { floor(it.average() + HALF) },
+            )
+        }
+
+private const val HALF = 0.5
 
 // ---------------------------------------------------------------- recipe search
 

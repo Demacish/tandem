@@ -9,6 +9,8 @@ import casa.moller.tandem.core.network.dto.RecipeDto
 import casa.moller.tandem.core.network.json.TandoorJson
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.ImageResolver
 import casa.moller.tandem.core.sync.remote.RemoteCaller
@@ -30,9 +32,12 @@ import kotlinx.serialization.SerializationException
  * - 404 means the recipe was deleted (plan 4.1: never retried): it is removed locally with its
  *   unsent outbox rows, so the detail screen shows "deleted". Another member's private recipe
  *   (JSON 403 with a working token) is treated the same way.
+ * - An answer that arrives after the active account changed (logout during the fetch) is not
+ *   stored, so a logged-out account's recipe never comes back.
  */
 @Singleton
 internal class DetailFetcher @Inject constructor(
+    private val sources: ActiveSources,
     private val databases: TandemDatabaseFactory,
     private val caller: RemoteCaller,
     private val clock: SyncClock,
@@ -50,6 +55,7 @@ internal class DetailFetcher @Inject constructor(
 
     private suspend fun fetchNow(remote: ActiveSource.Remote, recipeId: Long, background: Boolean): Outcome<Unit> = catchingUnexpected {
         val response = caller.call(remote, background, confirmUnauthorized = true) { recipes.recipeJson(recipeId) }
+        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(TandemError.Unknown(SOURCE_CHANGED))
         val json = when (response) {
             is Outcome.Failure -> {
                 if (response.error == TandemError.NotFound) {
@@ -77,5 +83,6 @@ internal class DetailFetcher @Inject constructor(
 
     private companion object {
         const val DECODE_DETAIL = "recipe detail"
+        const val SOURCE_CHANGED = "tandem.sync.source-changed"
     }
 }

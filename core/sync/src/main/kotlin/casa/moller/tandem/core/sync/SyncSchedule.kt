@@ -38,6 +38,12 @@ object SyncSchedule {
     /** Stale-while-revalidate: a stored detail younger than this is not fetched again when opened. */
     val DETAIL_FRESH_FOR: Duration = 5.minutes
 
+    /**
+     * A stored sync or fetch time further than this in the future means the device clock was
+     * ahead when it was written: it then counts as due or stale (normal NTP nudges stay below it).
+     */
+    val CLOCK_SKEW_TOLERANCE: Duration = 5.minutes
+
     /** Pause after each background detail fetch (plan 3.5 "liten paus"). */
     val DETAIL_FETCH_PAUSE: Duration = 250.milliseconds
 
@@ -81,9 +87,18 @@ object SyncSchedule {
     /** ... pause the sync for this long. */
     val BREAKER_PAUSE: Duration = 5.minutes
 
-    /** A 403 without JSON (a firewall) pauses for this long first, doubling up to [BLOCKED_MAX_PAUSE]. */
+    /** A 403 without a Tandoor `detail` (a firewall) pauses for this long first, doubling up to [BLOCKED_MAX_PAUSE]. */
     val BLOCKED_FIRST_PAUSE: Duration = 5.minutes
     val BLOCKED_MAX_PAUSE: Duration = 1.hours
+
+    /**
+     * A 429 stops every request of the account until its `Retry-After` (FACTS "Konsekvenser" 1,
+     * plan 4.1: never retried automatically): this long without the header, at least
+     * [THROTTLED_MIN_PAUSE] and at most [THROTTLED_MAX_PAUSE].
+     */
+    val THROTTLED_DEFAULT_PAUSE: Duration = 5.minutes
+    val THROTTLED_MIN_PAUSE: Duration = 30.seconds
+    val THROTTLED_MAX_PAUSE: Duration = 1.hours
 
     /** First retry delay of the outbox worker (exponential backoff, plan 3.5). */
     val OUTBOX_BACKOFF: Duration = 30.seconds

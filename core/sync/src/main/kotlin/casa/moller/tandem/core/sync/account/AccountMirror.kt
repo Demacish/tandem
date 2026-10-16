@@ -11,6 +11,7 @@ import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.sync.demo.DemoSeeder
+import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.VersionChangeNotifier
 import java.util.concurrent.atomic.AtomicBoolean
@@ -33,9 +34,12 @@ import kotlinx.coroutines.launch
  * - **Version changes** (plan B18): a server version that differs from the stored one is emitted
  *   on [versionChanges] and reported to the [VersionChangeNotifier] (a notification if allowed).
  *   It works whoever checked the version (the shell's probe or the sync).
- * - **Logout and account removal:** rows of accounts that are no longer stored are deleted. An
- *   expired token (Unauthorized) removes nothing: the account stays, so the outbox continues after
- *   logging in again to the same account and space.
+ * - **Logout and account removal:** rows of accounts that are no longer stored are deleted, in
+ *   every table: also rows that a response still in flight wrote after the account's mirror row
+ *   was gone (they are found by their `account_id`, at the latest at the next app start). The
+ *   image cache is emptied with them (it is shared, decision B14), and after "Clear app data".
+ *   An expired token (Unauthorized) removes nothing: the account stays, so the outbox continues
+ *   after logging in again to the same account and space.
  * - **Demo data** is cleared as soon as a real account is logged in (plan 6.2).
  *
  * Nothing happens while local storage needs recovery, so "Export pending changes" still finds
@@ -48,6 +52,7 @@ internal class AccountMirror @Inject constructor(
     private val health: StorageHealthMonitor,
     private val databases: TandemDatabaseFactory,
     private val demo: DemoSeeder,
+    private val imageCache: ImageCache,
     private val notifier: VersionChangeNotifier,
     private val clock: SyncClock,
     @ApplicationScope private val scope: CoroutineScope,
@@ -72,7 +77,7 @@ internal class AccountMirror @Inject constructor(
                 mirror(session.account)
                 demo.clearIfSeeded()
             }
-            removeForgottenAccounts()
+            removeForgottenAccounts(session)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -84,7 +89,10 @@ internal class AccountMirror @Inject constructor(
         val dao = databases.get(DatabaseKind.REAL).accountDao()
         val stored = dao.get(account.id)
         val decision = MirrorDecision.of(stored, account)
-        if (decision.clearStoredData) databases.clearAccount(DatabaseKind.REAL, account.id)
+        if (decision.clearStoredData) {
+            databases.clearAccount(DatabaseKind.REAL, account.id)
+            imageCache.clear()
+        }
         val kept = stored?.takeUnless { decision.clearStoredData }
         dao.upsert(
             ServerAccountEntity(
@@ -105,14 +113,18 @@ internal class AccountMirror @Inject constructor(
         }
     }
 
-    private suspend fun removeForgottenAccounts() {
+    private suspend fun removeForgottenAccounts(session: Session) {
         // A store that was just reset reads as empty: never mistake that for a logout.
         if (health.health.value.recoveryNeeded) return
+        // The ids with rows are read BEFORE the stored accounts: an account that logs in meanwhile
+        // is stored before its first row is written, so it is always in `known`.
+        val withRows = databases.get(DatabaseKind.REAL).accountDao().getStoredAccountIds()
         val known = accountStore.accounts.first().mapTo(HashSet()) { it.id }
-        val mirrored = databases.get(DatabaseKind.REAL).accountDao().observeAll().first()
-        for (row in mirrored) {
-            if (row.id !in known) databases.clearAccount(DatabaseKind.REAL, row.id)
-        }
+        val forgotten = withRows.filter { it !in known }
+        forgotten.forEach { databases.clearAccount(DatabaseKind.REAL, it) }
+        // Without any account (logout, "Clear app data") no image may stay either, also when an
+        // earlier clean-up removed the rows but did not get to the images.
+        if (forgotten.isNotEmpty() || (known.isEmpty() && session == Session.NoAccount)) imageCache.clear()
     }
 
     private companion object {

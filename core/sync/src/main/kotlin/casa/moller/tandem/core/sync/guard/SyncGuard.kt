@@ -8,6 +8,7 @@ import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.platform.SyncClock
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,11 +19,15 @@ import kotlinx.coroutines.flow.update
  * request of the sync and the repositories passes it ([check] before, [record] after; see
  * `RemoteCaller`). Pure bookkeeping on a clock, so the rules are unit tested:
  *
- * - **Unauthorized** (401 or a JSON 403): every request of that account stops until a new token
- *   is loaded (a new login), so a revoked token never sends a burst of 403s (CrowdSec
- *   `http-generic-403-bf`). The outbox is kept.
- * - **Blocked** (403 without JSON, a firewall): pause [SyncSchedule.BLOCKED_FIRST_PAUSE],
+ * - **Unauthorized** (401 or a Tandoor 403 with `detail`): every request of that account stops
+ *   until a new token is loaded (a new login), so a revoked token never sends a burst of 403s
+ *   (CrowdSec `http-generic-403-bf`). The outbox is kept.
+ * - **Blocked** (any other 403, a firewall): pause [SyncSchedule.BLOCKED_FIRST_PAUSE],
  *   doubling with every new block up to [SyncSchedule.BLOCKED_MAX_PAUSE]; a success resets it.
+ * - **Throttled** (429): every request waits until `Retry-After` (default
+ *   [SyncSchedule.THROTTLED_DEFAULT_PAUSE], within [SyncSchedule.THROTTLED_MIN_PAUSE] ..
+ *   [SyncSchedule.THROTTLED_MAX_PAUSE]); nothing is retried automatically before then (FACTS
+ *   "Konsekvenser" 1, plan 4.1).
  * - **Circuit breaker**: more than [SyncSchedule.BREAKER_MAX_ERRORS] errors within
  *   [SyncSchedule.BREAKER_ERROR_WINDOW], or [SyncSchedule.BREAKER_MAX_CLIENT_ERRORS] answers
  *   404/400 within [SyncSchedule.BREAKER_CLIENT_ERROR_WINDOW] (half of CrowdSec's
@@ -32,7 +37,7 @@ import kotlinx.coroutines.flow.update
  *   user's import has the server's other worker thread.
  *
  * Requests the user starts (opening a recipe, pull to refresh, search) are only stopped by an
- * unauthorized or blocked state, never by the breaker or an import.
+ * unauthorized, blocked or throttled state, never by the breaker or an import.
  */
 @Singleton
 internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
@@ -53,6 +58,7 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
         return when {
             current.unauthorizedAccount == accountId -> current.unauthorizedError ?: TandemError.Unauthorized(UnauthorizedSource.TANDOOR)
             current.blockedUntil > now -> TandemError.Blocked
+            current.throttledUntil > now -> TandemError.Throttled((current.throttledUntil - now).milliseconds)
             background && current.breakerUntil > now -> BREAKER_ERROR
             background && current.importsRunning > 0 -> IMPORT_ERROR
             else -> null
@@ -84,6 +90,12 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
                         (current.blockedPauseMillis * 2).coerceAtMost(SyncSchedule.BLOCKED_MAX_PAUSE.inWholeMilliseconds)
                     }
                     current.copy(blockedUntil = now + pause, blockedPauseMillis = pause)
+                }
+
+                error is TandemError.Throttled -> {
+                    val pause = (error.retryAfter ?: SyncSchedule.THROTTLED_DEFAULT_PAUSE)
+                        .coerceIn(SyncSchedule.THROTTLED_MIN_PAUSE, SyncSchedule.THROTTLED_MAX_PAUSE)
+                    current.copy(throttledUntil = maxOf(current.throttledUntil, now + pause.inWholeMilliseconds))
                 }
 
                 error.isConnectivityProblem -> current
@@ -122,7 +134,7 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
     /** Why requests of [accountId] are paused at [nowMillis], null when they are not. */
     fun pauseAt(state: GuardState, accountId: String, nowMillis: Long): SyncPause? = when {
         state.unauthorizedAccount == accountId -> SyncPause.UNAUTHORIZED
-        state.blockedUntil > nowMillis -> SyncPause.BLOCKED
+        state.blockedUntil > nowMillis || state.throttledUntil > nowMillis -> SyncPause.BLOCKED
         state.breakerUntil > nowMillis -> SyncPause.CIRCUIT_BREAKER
         state.importsRunning > 0 -> SyncPause.IMPORT_RUNNING
         else -> null
@@ -161,6 +173,7 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
  * @property unauthorizedError the rejection as classified (401 proxy or 403 Tandoor).
  * @property blockedUntil requests wait until then after a non-JSON 403.
  * @property blockedPauseMillis the last blocked pause (doubles with every block).
+ * @property throttledUntil every request waits until then after a 429 (`Retry-After`).
  * @property breakerUntil background requests wait until then (circuit breaker).
  * @property errorTimes recent errors (breaker window).
  * @property clientErrorTimes recent 404/400 answers (breaker window).
@@ -172,6 +185,7 @@ internal data class GuardState(
     val unauthorizedError: TandemError? = null,
     val blockedUntil: Long = 0L,
     val blockedPauseMillis: Long = 0L,
+    val throttledUntil: Long = 0L,
     val breakerUntil: Long = 0L,
     val errorTimes: List<Long> = emptyList(),
     val clientErrorTimes: List<Long> = emptyList(),

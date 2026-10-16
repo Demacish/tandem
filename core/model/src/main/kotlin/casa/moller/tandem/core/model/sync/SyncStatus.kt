@@ -76,10 +76,13 @@ enum class SyncPause {
     /** No network. */
     OFFLINE,
 
-    /** The token was rejected (401 or JSON 403): a new login is needed. */
+    /** The token was rejected (401 or a Tandoor 403 with `detail`): a new login is needed. */
     UNAUTHORIZED,
 
-    /** A 403 without JSON: blocked by a firewall in front of Tandoor for a while. */
+    /**
+     * Held back for a while: a 403 without Tandoor's `detail` (a firewall in front of Tandoor) or
+     * a 429 (rate limited; requests wait until `Retry-After`).
+     */
     BLOCKED,
 
     /** Too many errors in a short time: paused for 5 minutes (circuit breaker). */

@@ -24,7 +24,7 @@ internal enum class DrainResult {
     /** A temporary failure (offline, timeout, 5xx): try again later with backoff. */
     RETRY,
 
-    /** The guard holds requests back (unauthorized, blocked, circuit breaker): wait for the next sync. */
+    /** The guard holds requests back (unauthorized, blocked, throttled, circuit breaker): wait for the next sync. */
     STOPPED,
 
     /** Safe mode (plan 3.6): the rows are held as PAUSED and not sent. */
@@ -40,8 +40,9 @@ internal enum class DrainResult {
  * - **Deleted objects** (plan 3.5): a row whose recipe is no longer stored (the index removed it)
  *   is dropped without sending, so offline views of deleted recipes never become a 404 burst.
  * - **Answers**: 2xx done; 404 = deleted elsewhere, dropped; 400 = FAILED (kept for "Pending
- *   changes"); 401/403 and blocked stop the drain and keep the row; offline, timeouts and 5xx
- *   keep the row for a retry with backoff. 404 and 400 count in the circuit breaker
+ *   changes"); 401/403, blocked and 429 stop the drain and keep the row (a 429 is never retried
+ *   automatically: the next sync after its `Retry-After` sends it, plan 4.1); offline, timeouts
+ *   and 5xx keep the row for a retry with backoff. 404 and 400 count in the circuit breaker
  *   (`SyncGuard`), which stops the drain after 5 within 100 s.
  */
 @Singleton
@@ -113,12 +114,12 @@ internal class OutboxSender @Inject constructor(
                 null
             }
 
-            error is TandemError.Unauthorized || error == TandemError.Blocked -> {
+            error is TandemError.Unauthorized || error == TandemError.Blocked || error is TandemError.Throttled -> {
                 outbox.markRetry(row.id, error.code())
                 DrainResult.STOPPED
             }
 
-            error.isConnectivityProblem || error is TandemError.ServerError || error is TandemError.Throttled -> {
+            error.isConnectivityProblem || error is TandemError.ServerError -> {
                 outbox.markRetry(row.id, error.code())
                 DrainResult.RETRY
             }

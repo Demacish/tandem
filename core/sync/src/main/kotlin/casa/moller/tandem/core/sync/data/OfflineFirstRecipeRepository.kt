@@ -22,6 +22,7 @@ import casa.moller.tandem.core.network.api.list
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.platform.NetworkStatus
@@ -117,6 +118,8 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
             is Outcome.Failure -> return response
             is Outcome.Success -> response.value
         }
+        // Logged out (or switched account) while the search ran: store nothing for the old account.
+        if (sources.source.value.identity != remote.identity) return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         val resolver = ImageResolver.forBaseUrl(remote.baseUrl)
         val writes = page.results.mapNotNull { it.toOverviewWrite(remote.accountId, resolver) }
         val dao = recipeDao(remote)
@@ -169,7 +172,11 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         refresh: MutableStateFlow<RefreshState>,
     ) {
         val fetchedAt = stored.fetchedAt?.toEpochMilliseconds()
-        val fresh = fetchedAt != null && clock.nowMillis() - fetchedAt < SyncSchedule.DETAIL_FRESH_FOR.inWholeMilliseconds
+        // A fetch time in the future (the clock was ahead then) is not fresh.
+        val age = fetchedAt?.let { clock.nowMillis() - it }
+        val fresh = age != null &&
+            age >= -SyncSchedule.CLOCK_SKEW_TOLERANCE.inWholeMilliseconds &&
+            age < SyncSchedule.DETAIL_FRESH_FOR.inWholeMilliseconds
         if (fresh) return
         if (!network.online.value) {
             refresh.value = RefreshState(error = TandemError.NetworkUnavailable)

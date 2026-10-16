@@ -13,11 +13,14 @@ import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.network.http.TokenProvider
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
+import casa.moller.tandem.core.sync.image.PrefetchedImages
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.platform.VersionChangeNotifier
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
@@ -99,12 +102,24 @@ internal class FakeScheduler : SyncScheduler {
     }
 }
 
+/** Records the requested URLs; URLs in [failing] fail temporarily (every other one is settled). */
 internal class FakeImagePrefetcher : ImagePrefetcher {
     val urls: MutableList<String> = CopyOnWriteArrayList()
+    val failing: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
-    override suspend fun prefetch(urls: List<String>): Int {
+    override suspend fun prefetch(urls: List<String>): Set<String> {
         this.urls += urls
-        return urls.size
+        return urls.filterTo(LinkedHashSet()) { it !in failing }
+    }
+}
+
+/** Counts how often the image caches were emptied (and empties the shared prefetch memory like the real one). */
+internal class FakeImageCache(private val prefetched: PrefetchedImages) : ImageCache {
+    val clears = AtomicInteger()
+
+    override suspend fun clear() {
+        prefetched.clear()
+        clears.incrementAndGet()
     }
 }
 

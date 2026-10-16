@@ -24,6 +24,7 @@ import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxSender
 import casa.moller.tandem.core.sync.engine.SyncEngine
 import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.image.PrefetchedImages
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import java.io.File
 import java.util.Locale
@@ -58,6 +59,8 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val network = FakeNetwork()
     val scheduler = FakeScheduler()
     val images = FakeImagePrefetcher()
+    val prefetched = PrefetchedImages()
+    val imageCache = FakeImageCache(prefetched)
     val notifier = FakeNotifier()
 
     val account = ServerAccount(
@@ -82,11 +85,25 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
 
     val guard = SyncGuard(clock)
     val caller = RemoteCaller(guard, sources)
-    val details = DetailFetcher(databases, caller, clock)
+    val details = DetailFetcher(sources, databases, caller, clock)
     val outbox = OutboxSender(databases, caller, network)
-    val mirror = AccountMirror(sessions, accountStore, health, databases, demo, notifier, clock, scope)
+    val mirror = AccountMirror(sessions, accountStore, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, CapabilityResolver(), guard, clock)
-    val engine = SyncEngine(sources, databases, caller, details, images, outbox, serverStatus, scheduler, guard, network, clock, scope)
+    val engine = SyncEngine(
+        sources,
+        databases,
+        caller,
+        details,
+        images,
+        prefetched,
+        outbox,
+        serverStatus,
+        scheduler,
+        guard,
+        network,
+        clock,
+        scope,
+    )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
     val sync = DefaultSyncRepository(sources, databases, engine, scheduler, demo, guard, network, clock, scope)

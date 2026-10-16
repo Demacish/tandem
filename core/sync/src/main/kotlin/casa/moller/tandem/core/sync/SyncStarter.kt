@@ -1,5 +1,8 @@
 package casa.moller.tandem.core.sync
 
+import android.content.ComponentCallbacks
+import android.content.Context
+import android.content.res.Configuration
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -15,6 +18,7 @@ import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
@@ -34,10 +38,13 @@ import kotlinx.coroutines.launch
  *   demo mode seeds the demo database; logging out or demo mode cancel the periodic sync;
  *   switching to another account asks for an ACCOUNT_CHANGED sync;
  * - asks for a sync when the app comes to the foreground (APP_START once, then APP_RESUMED; the
- *   engine's throttles decide what is actually fetched).
+ *   engine's throttles decide what is actually fetched);
+ * - rewrites the demo data in the new language when the app language changes in demo mode (the
+ *   per-app language recreates the activity without a trip to the background, plan 6.7).
  */
 @Singleton
 class SyncStarter @Inject internal constructor(
+    @ApplicationContext private val context: Context,
     private val sources: ActiveSources,
     private val mirror: AccountMirror,
     private val demo: DemoSeeder,
@@ -60,6 +67,18 @@ class SyncStarter @Inject internal constructor(
         }
     }
 
+    private val configuration = object : ComponentCallbacks {
+        override fun onConfigurationChanged(newConfig: Configuration) {
+            if (sources.source.value != ActiveSource.Demo) return
+            // The seed key holds the language: an unchanged one costs a single read.
+            val locale = newConfig.locales.takeIf { !it.isEmpty }?.get(0)
+            scope.launch { if (locale != null) demo.ensureSeeded(locale) else demo.ensureSeeded() }
+        }
+
+        @Suppress("OVERRIDE_DEPRECATION")
+        override fun onLowMemory() = Unit
+    }
+
     /** Starts everything; later calls do nothing. Call on the main thread. */
     fun start() {
         if (!started.compareAndSet(false, true)) return
@@ -75,6 +94,7 @@ class SyncStarter @Inject internal constructor(
                     previous = current
                 }
         }
+        context.registerComponentCallbacks(configuration)
         try {
             ProcessLifecycleOwner.get().lifecycle.addObserver(foreground)
         } catch (e: IllegalStateException) {
