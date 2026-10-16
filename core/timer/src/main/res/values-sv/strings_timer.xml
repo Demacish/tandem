@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- core:timer: notiskanaler, timernotiser och larmet på låst skärm (plan 8.1, 8.7). -->
+<resources>
+    <string name="timer_channel_alarm_name">Timers (larm)</string>
+    <string name="timer_channel_alarm_description">Ringer när en koktimer är klar, även på låst skärm.</string>
+    <string name="timer_channel_ongoing_name">Pågående timers</string>
+    <string name="timer_channel_ongoing_description">Tyst nedräkning för koktimers som är igång.</string>
+
+    <string name="timer_notification_running">Klar %1$s</string>
+    <string name="timer_notification_paused">Pausad · %1$s kvar</string>
+
+    <string name="timer_notification_ringing">Tiden är ute</string>
+    <string name="timer_notification_missed">Ringde %1$s</string>
+    <plurals name="timer_notification_ringing_summary">
+        <item quantity="one">%d timer ringer</item>
+        <item quantity="other">%d timers ringer</item>
+    </plurals>
+
+    <string name="timer_action_plus_one_minute">+1 min</string>
+    <string name="timer_action_stop">Stopp</string>
+    <string name="timer_action_stop_all">Stoppa alla</string>
+    <string name="timer_action_pause">Pausa</string>
+    <string name="timer_action_resume">Fortsätt</string>
+    <string name="timer_action_cancel">Avbryt</string>
+    <string name="timer_action_plus_one_minute_for">Lägg till en minut på %1$s</string>
+    <string name="timer_action_stop_for">Stoppa %1$s</string>
+
+    <string name="timer_alarm_title">Tiden är ute</string>
+</resources>

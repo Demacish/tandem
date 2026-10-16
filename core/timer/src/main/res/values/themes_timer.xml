@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The lock-screen alarm (TimerAlarmActivity): always dark, like a clock app's alarm. -->
+    <style name="TandemTimer.Alarm" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/tandem_timer_alarm_background</item>
+    </style>
+
+    <color name="tandem_timer_alarm_background">#FF151A17</color>
+    <color name="tandem_timer_alarm_text">#FFFFFFFF</color>
+    <color name="tandem_timer_alarm_text_secondary">#FFC9D1CB</color>
+</resources>

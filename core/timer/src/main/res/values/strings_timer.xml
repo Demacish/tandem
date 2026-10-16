@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- core:timer: notification channels, timer notifications and the lock-screen alarm (plan 8.1, 8.7). -->
+<resources>
+    <!-- Notification channels (ids fixed in core:model TandemNotificationChannel). -->
+    <string name="timer_channel_alarm_name">Timers (alarm)</string>
+    <string name="timer_channel_alarm_description">Rings when a cooking timer is done, also on a locked screen.</string>
+    <string name="timer_channel_ongoing_name">Running timers</string>
+    <string name="timer_channel_ongoing_description">Silent countdown of the cooking timers that are running.</string>
+
+    <!-- Countdown notification. %1$s is a clock time, e.g. "18:45". -->
+    <string name="timer_notification_running">Done at %1$s</string>
+    <!-- %1$s is the time left, e.g. "3:12". -->
+    <string name="timer_notification_paused">Paused · %1$s left</string>
+
+    <!-- Alarm notification and lock-screen alarm. -->
+    <string name="timer_notification_ringing">Time\'s up</string>
+    <!-- A timer that rang until it was silenced automatically. %1$s is a clock time. -->
+    <string name="timer_notification_missed">Rang at %1$s</string>
+    <plurals name="timer_notification_ringing_summary">
+        <item quantity="one">%d timer is ringing</item>
+        <item quantity="other">%d timers are ringing</item>
+    </plurals>
+
+    <!-- Actions (notifications and the lock-screen alarm). -->
+    <string name="timer_action_plus_one_minute">+1 min</string>
+    <string name="timer_action_stop">Stop</string>
+    <string name="timer_action_stop_all">Stop all</string>
+    <string name="timer_action_pause">Pause</string>
+    <string name="timer_action_resume">Resume</string>
+    <string name="timer_action_cancel">Cancel</string>
+    <!-- TalkBack labels of the lock-screen buttons. %1$s is the timer's name. -->
+    <string name="timer_action_plus_one_minute_for">Add one minute to %1$s</string>
+    <string name="timer_action_stop_for">Stop %1$s</string>
+
+    <string name="timer_alarm_title">Time\'s up</string>
+</resources>

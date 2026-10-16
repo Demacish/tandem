@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cook-mode timers (plan 8.1, 8.7; docs/BYGGE.md "Timers"). Only the permissions both flavors
+    share are declared here. The flavor-specific ones live in the app:
+    - app/src/sideload/AndroidManifest.xml: USE_EXACT_ALARM, USE_FULL_SCREEN_INTENT,
+    - app/src/play/AndroidManifest.xml: SCHEDULE_EXACT_ALARM (Play restricts the other two).
+    The code checks at run time what the build was granted (AndroidTimerSystem), so this module
+    never needs to know the flavor.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Countdown and alarm notifications; asked for in context at the first timer, never at first start. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The short service while an alarm rings (systemExempted: an app with exact alarms continuing an alarm). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
+    <!-- Sound and vibration while the screen is off. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Alarms are lost on reboot: put them back (also after a clock change or an app update). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Android 16 Live Update for the countdown. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- "Timer in the clock app" (AlarmClock.ACTION_SET_TIMER). -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
+    <queries>
+        <!-- Whether a clock app takes timers (TimerCapabilities.clockAppAvailable). -->
+        <intent>
+            <action android:name="android.intent.action.SET_TIMER" />
+        </intent>
+    </queries>
+
+    <application>
+        <!-- Alarm fired, notification actions (+1 min, Stop, Pause, Resume, Cancel), auto-silence. Only our own PendingIntents. -->
+        <receiver
+            android:name=".alarm.TimerAlarmReceiver"
+            android:exported="false" />
+
+        <!--
+            System events that clear or move alarms. Every action below is a protected broadcast
+            only the system can send; the receiver ignores anything else.
+        -->
+        <receiver
+            android:name=".alarm.TimerSystemEventReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            Runs ONLY while an alarm rings (never during the countdown). systemExempted when exact
+            alarms are allowed; otherwise shortService (play without exact alarms), which the
+            system stops after about 3 minutes.
+        -->
+        <service
+            android:name=".ring.TimerRingingService"
+            android:exported="false"
+            android:foregroundServiceType="systemExempted|shortService" />
+
+        <!-- The full-screen alarm on a locked screen (sideload; the play build gets a heads-up notification). -->
+        <activity
+            android:name=".ring.TimerAlarmActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/TandemTimer.Alarm"
+            android:turnScreenOn="true" />
+    </application>
+</manifest>

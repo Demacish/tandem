@@ -1,18 +1,12 @@
 package casa.moller.tandem.di
 
 import casa.moller.tandem.core.common.AppBuildInfo
-import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
-import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.model.diagnostics.ColdStartTiming
 import casa.moller.tandem.core.model.diagnostics.DiagnosticsSnapshot
 import casa.moller.tandem.core.model.diagnostics.FullSyncTiming
 import casa.moller.tandem.core.model.diagnostics.LogExport
 import casa.moller.tandem.core.model.error.Outcome
-import casa.moller.tandem.core.model.timer.CookTimer
-import casa.moller.tandem.core.model.timer.TimerCapabilities
-import casa.moller.tandem.core.model.timer.TimerStartResult
-import casa.moller.tandem.core.model.timer.TimerState
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -21,17 +15,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
 import kotlin.time.Duration
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /*
  * TEMPORARY (Phase 1b grund lane): stand-in bindings for the Phase 1b contracts in core:data, so
@@ -49,94 +35,9 @@ import kotlinx.coroutines.launch
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface TemporaryFas1bTimerModule {
-    @Binds
-    fun bindTimerController(impl: TemporaryTimerController): TimerController
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
 internal interface TemporaryFas1bDiagnosticsModule {
     @Binds
     fun bindDiagnosticsRepository(impl: TemporaryDiagnosticsRepository): DiagnosticsRepository
-}
-
-/** In-memory timers that ring only while the process lives (no alarm, no notification). */
-@Singleton
-internal class TemporaryTimerController @Inject constructor(private val clock: Clock, @ApplicationScope scope: CoroutineScope) :
-    TimerController {
-    private val mutableTimers = MutableStateFlow<List<CookTimer>>(emptyList())
-    private val mutableCapabilities = MutableStateFlow(
-        TimerCapabilities(
-            notificationsAllowed = false,
-            notificationPermissionAsked = false,
-            alarmChannelEnabled = true,
-            exactAlarmsAllowed = false,
-            exactAlarmsRequestable = false,
-            fullScreenAlarmAllowed = false,
-            clockAppAvailable = false,
-        ),
-    )
-    private var nextId = 1L
-
-    override val timers: StateFlow<List<CookTimer>> = mutableTimers.asStateFlow()
-    override val capabilities: StateFlow<TimerCapabilities> = mutableCapabilities.asStateFlow()
-
-    init {
-        // Rings due timers twice a second, only while one is running.
-        scope.launch {
-            mutableTimers.map { list -> list.any { it.state == TimerState.RUNNING } }
-                .distinctUntilChanged()
-                .collectLatest { running ->
-                    while (running) {
-                        delay(TICK_MILLIS)
-                        val now = clock.now()
-                        mutableTimers.update { list -> list.map { it.ring(now) } }
-                    }
-                }
-        }
-    }
-
-    override suspend fun start(label: String, duration: Duration, recipeId: Long?, stepIndex: Int?): TimerStartResult {
-        if (label.isBlank() || duration < CookTimer.MIN_DURATION) return TimerStartResult.Invalid
-        var result: TimerStartResult = TimerStartResult.TooManyTimers(CookTimer.MAX_PARALLEL_TIMERS)
-        mutableTimers.update { list ->
-            if (list.count { it.state != TimerState.FINISHED } >= CookTimer.MAX_PARALLEL_TIMERS) {
-                list
-            } else {
-                val timer = CookTimer.start(nextId++, label, duration, clock.now(), recipeId, stepIndex)
-                result = TimerStartResult.Started(timer)
-                list + timer
-            }
-        }
-        return result
-    }
-
-    override suspend fun pause(id: Long) = change(id) { it.pause(clock.now()) }
-
-    override suspend fun resume(id: Long) = change(id) { it.resume(clock.now()) }
-
-    override suspend fun addOneMinute(id: Long) = change(id) { it.plusOneMinute(clock.now()) }
-
-    override suspend fun cancel(id: Long) = mutableTimers.update { list -> list.filterNot { it.id == id } }
-
-    override suspend fun stopRinging(id: Long) = change(id) { it.stopRinging() }
-
-    override suspend fun clearFinished() = mutableTimers.update { list -> list.filterNot { it.state == TimerState.FINISHED } }
-
-    override suspend fun onNotificationPermissionResult(granted: Boolean) {
-        mutableCapabilities.update { it.copy(notificationsAllowed = granted, notificationPermissionAsked = true) }
-    }
-
-    override fun refreshCapabilities() = Unit
-
-    private fun change(id: Long, transform: (CookTimer) -> CookTimer) {
-        mutableTimers.update { list -> list.map { if (it.id == id) transform(it) else it } }
-    }
-
-    private companion object {
-        const val TICK_MILLIS = 500L
-    }
 }
 
 /** Versions from the build and timings in memory; the export has the versions only. */
