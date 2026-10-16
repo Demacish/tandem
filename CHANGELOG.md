@@ -17,8 +17,8 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
   minut när det finns nät, och när du öppnar appen.
 - **Recept:** alla dina recept i rutnät eller lista, med sökning direkt i telefonen (även på
   delar av ord och utan å/ä/ö, "kram" hittar "Krämig") och samtidigt på servern. Filter på
-  nyckelord, tid och betyg och "bara nedladdade", sortering på namn, nyast, betyg, senast lagat,
-  oftast lagat och snabbast. Dra nedåt för att uppdatera.
+  nyckelord, tid och betyg och "bara nedladdade", sortering på namn, nyast, betyg och senast
+  lagat. Dra nedåt för att uppdatera.
 - **Receptvyn:** bild, nyckelord, betyg, tider, hur ofta och när det lagades, beskrivning,
   ingredienser och steg. **Portionerna** går att ändra och minns per recept, och mängderna
   räknas om **exakt som i Tandoors webb** (med dina inställningar för bråk och decimaler,
@@ -40,7 +40,7 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
   *Logga in igen*, *Exportera väntande ändringar* och *Rensa appdata* i stället för en krasch.
 - **Demoläge** med 14 egna exempelrecept med bilder (på svenska och engelska), en matsedel och
   kokhistorik, så att allt ovan går att prova utan Tandoor. *Återställ demodata* under Mer.
-- Appen visar vilka recept du har öppnat för Tandoor (som webbens "Nyligen visade").
+- Recept du öppnar i appen syns nu också under "Nyligen visade" i Tandoor på webben (appen meddelar Tandoor när du öppnar ett recept).
 - **Utloggning** tar bort kontots recept och bilder från telefonen; betyget räknas ur din kokhistorik så att sortering och filter på betyg fungerar offline; *Logga in igen* går att avbryta.
 - **Tillgänglighet och surfplatta:** TalkBack läser en ingrediensrad som en post med mängden (bråk som 3/16) och receptkort med namnet först; texter bryts i stället för att klippas vid stor text; på surfplatta rullar ingredienser och steg var för sig och nyckelordsfiltret är en sidopanel; en misslyckad synk visas i receptlistan; Idag leder inte till den ännu tomma fliken Veckan.
 - **Release-röktest:** varje version loggar nu också in, väntar ut första synken, söker, skalar,
