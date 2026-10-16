@@ -88,8 +88,10 @@ internal fun RecoveryScreen(
                     .semantics { heading() },
                 style = MaterialTheme.typography.titleLarge,
             )
+            // Card titles say what the card is about, the button what it does: the same text twice is
+            // one name for two things for TalkBack (ATF DuplicateSpeakableTextCheck).
             RecoveryAction(
-                title = stringResource(R.string.app_recovery_log_in_again),
+                title = stringResource(R.string.app_recovery_log_in_title),
                 body = stringResource(R.string.app_recovery_log_in_body),
             ) {
                 TandemPrimaryButton(
@@ -112,7 +114,7 @@ internal fun RecoveryScreen(
                 )
             }
             RecoveryAction(
-                title = stringResource(R.string.app_recovery_clear_data),
+                title = stringResource(R.string.app_recovery_clear_card_title),
                 body = stringResource(R.string.app_recovery_clear_card_body),
                 container = MaterialTheme.colorScheme.errorContainer.copy(alpha = ERROR_CARD_ALPHA),
             ) {

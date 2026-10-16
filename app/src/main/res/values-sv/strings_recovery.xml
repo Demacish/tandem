@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_recovery_actions_heading">Det här kan du göra</string>
+    <string name="app_recovery_log_in_title">Din Tandoor-inloggning</string>
     <string name="app_recovery_log_in_body">Anslut till din Tandoor igen. Inget på servern har ändrats.</string>
     <string name="app_recovery_export_title">Exportera väntande ändringar</string>
     <plurals name="app_recovery_export_pending">
@@ -14,5 +15,6 @@
     <string name="app_recovery_export_failed">De väntande ändringarna gick inte att läsa.</string>
     <string name="app_recovery_export_subject">Tandem: ändringar som inte skickats till Tandoor</string>
     <string name="app_recovery_export_chooser">Dela väntande ändringar</string>
+    <string name="app_recovery_clear_card_title">Börja om</string>
     <string name="app_recovery_clear_card_body">Tar bort inloggningar och inställningar från enheten och börjar om. Exportera väntande ändringar först.</string>
 </resources>

@@ -8,6 +8,15 @@ import com.github.takahirom.roborazzi.RoborazziATFAccessibilityCheckOptions
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityChecker
 import com.github.takahirom.roborazzi.checkRoboAccessibility
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckPreset
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityViewCheckResult
+import com.google.android.apps.common.testing.accessibility.framework.checks.DuplicateSpeakableTextCheck
+import com.google.android.apps.common.testing.accessibility.framework.checks.ImageContrastCheck
+import com.google.android.apps.common.testing.accessibility.framework.checks.TextContrastCheck
+import com.google.android.apps.common.testing.accessibility.framework.uielement.ViewHierarchyElement
+import org.hamcrest.CoreMatchers.anyOf
+import org.hamcrest.Description
+import org.hamcrest.Matcher
+import org.hamcrest.TypeSafeMatcher
 
 /**
  * Accessibility Test Framework (ATF) checks in the Robolectric Compose UI tests (plan 5.1 and 5.6,
@@ -38,11 +47,52 @@ fun SemanticsNodeInteraction.assertAccessible() {
     checkRoboAccessibility(roborazziATFAccessibilityCheckOptions = TandemAccessibility.options)
 }
 
-/** The one ATF configuration of every module's UI tests, so a suppression is decided once. */
+/**
+ * The one ATF configuration of every module's UI tests, so a suppression is decided once. Every
+ * suppression is narrow (one check, one kind of element) and says why the finding is intended.
+ */
 @OptIn(ExperimentalRoborazziApi::class)
 object TandemAccessibility {
+
+    /**
+     * Contrast of a DISABLED control (and the text inside it), e.g. the recovery screen's "Share as
+     * text" while nothing can be exported. WCAG 1.4.3 exempts inactive user interface components;
+     * Material draws them at 38 % on purpose, so they read as unavailable.
+     */
+    private val disabledControlContrast: Matcher<AccessibilityViewCheckResult> = result("contrast of a disabled control") {
+        (sourceCheckClass == TextContrastCheck::class.java || sourceCheckClass == ImageContrastCheck::class.java) &&
+            element?.selfOrAncestorDisabled() == true
+    }
+
+    /**
+     * The same CHECKBOX twice: Tandoor shows a step's ingredients again under the step
+     * (`show_ingredients_table`, web parity, plan 6.2), so the recipe detail has two ingredient
+     * rows with the same text. Both toggle the same checked state, and each is read inside its own
+     * section (Ingredients, or the step), so they are not two different controls with one name.
+     */
+    private val repeatedIngredientCheckbox: Matcher<AccessibilityViewCheckResult> = result("a repeated ingredient checkbox") {
+        sourceCheckClass == DuplicateSpeakableTextCheck::class.java && element?.isCheckable() == true
+    }
+
     val options: RoborazziATFAccessibilityCheckOptions = RoborazziATFAccessibilityCheckOptions(
-        checker = RoborazziATFAccessibilityChecker(preset = AccessibilityCheckPreset.LATEST),
+        checker = RoborazziATFAccessibilityChecker(
+            preset = AccessibilityCheckPreset.LATEST,
+            suppressions = anyOf(disabledControlContrast, repeatedIngredientCheckbox),
+        ),
         failureLevel = RoborazziATFAccessibilityChecker.CheckLevel.Warning,
     )
+
+    private fun ViewHierarchyElement.selfOrAncestorDisabled(): Boolean =
+        generateSequence(this) { it.parentView }.any { !it.isEnabled }
+
+    private fun result(
+        description: String,
+        predicate: AccessibilityViewCheckResult.() -> Boolean,
+    ): Matcher<AccessibilityViewCheckResult> = object : TypeSafeMatcher<AccessibilityViewCheckResult>() {
+        override fun matchesSafely(item: AccessibilityViewCheckResult): Boolean = item.predicate()
+
+        override fun describeTo(out: Description) {
+            out.appendText(description)
+        }
+    }
 }

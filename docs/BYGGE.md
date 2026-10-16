@@ -187,6 +187,39 @@ exempeldata (`SampleRecipes`: svenska namn med å/ä/ö, bråk, rubrikrader, ste
 De riktiga implementationerna ligger i `:core:sync` och binds i `core/sync/.../di/SyncModule.kt`
 (se "Synk" nedan); grundens tillfälliga `TemporaryFas1DataModule` är borttagen.
 
+<!-- fix-bygg: tillgänglighetskontroller -->
+### Tillgänglighetskontroller (ATF) i UI-testerna
+
+Plan 5.6 och Fas 1:s "Klart när" kräver att tillgänglighetskontrollerna i UI-testerna är gröna.
+`:core:testing` har `assertAccessible()` (`accessibility/AccessibilityChecks.kt`), som kör
+Googles Accessibility Test Framework på varje fönster i kompositionen (även ett öppet bottenark
+eller en dialog) med förvalet `LATEST`: tryckytor på minst 48 dp, etikett på allt som går att
+trycka på, kontrast för text och ikoner mätt på en riktig skärmbild (Robolectrics NATIVE-grafik),
+dubbla eller överlappande klickytor m.m. Testet fallerar på ATF:s fel **och** varningar.
+Composes egen `enableAccessibilityChecks()` gör ingenting under Robolectric (b/332778271), därför
+Roborazzis ATF-integration (`roborazzi-accessibility-check`).
+
+Testerna som kör ATF: `CoreUiAccessibilityTest` (`core:ui`: receptkort och -rader, metaraden,
+ingrediensrader, stegkort, statusbanners, säkert läge, tomt/fel/laddar, demo; ljust och mörkt),
+`RecipeAccessibilityTest` (`feature:recipes`: rutnät, lista, textstorlek 2, offline, filter,
+nyckelordsarket, receptvyn med omräkningar och bråk, ej nedladdat offline, surfplattans
+list-detalj), `TodayAccessibilityTest` (`feature:home`: Idag med alla karuseller, inget planerat,
+offline, demo, laddar, textstorlek 2, surfplatta) och `RecoveryAccessibilityTest` (`:app`).
+`CoreUiAccessibilityTest.theChecksRunAndFail` kräver att en liten knapp utan etikett fallerar,
+eftersom Roborazzi annars hoppar över kontrollen tyst (API under 34 eller äldre grafikläge).
+
+Undantag beslutas på ett ställe, `TandemAccessibility`, smalt och med motivering: kontrast för
+**inaktiverade** kontroller (WCAG 1.4.3 undantar dem; Material ritar dem med 38 % med flit) och
+samma **kryssruta** två gånger (Tandoor visar ett stegs ingredienser igen under steget, båda
+raderna delar samma bockade läge). Ett nytt fynd rättas i komponenten; undantag kräver en
+kommentar som säger varför fyndet är avsiktligt.
+
+Skärmbilderna (Roborazzi) **spelas bara in** (`roborazzi.test.record=true`) och granskas för
+hand. Jämförelse mot incheckade referensbilder (`verifyRoborazziDebug`) och en variant med
+pseudospråken en-XA (lång text) och ar-XB (höger-till-vänster, plan 5.6/6.7) kommer i slutet av
+Fas 1 (0.2.0).
+<!-- /fix-bygg: tillgänglighetskontroller -->
+
 ## Navigering
 
 Navigation 3, en back stack per flik (`ShellNavigationState` i `:feature:shell`), nycklar

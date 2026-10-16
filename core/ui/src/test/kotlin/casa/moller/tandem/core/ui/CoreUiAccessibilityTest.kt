@@ -1,7 +1,12 @@
 package casa.moller.tandem.core.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.testing.accessibility.assertAccessible
 import casa.moller.tandem.core.ui.sample.DemoSample
 import casa.moller.tandem.core.ui.sample.EmptyStateSample
@@ -16,6 +21,8 @@ import casa.moller.tandem.core.ui.sample.ServerTooOldSample
 import casa.moller.tandem.core.ui.sample.StatusBannersSample
 import casa.moller.tandem.core.ui.sample.StepCardSample
 import casa.moller.tandem.core.ui.sample.UiSampleSurface
+import com.google.android.apps.common.testing.accessibility.framework.integrations.espresso.AccessibilityViewCheckException
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,6 +79,18 @@ class CoreUiAccessibilityTest(private val theme: String) {
 
     @Test
     fun demo() = check { DemoSample() }
+
+    /**
+     * The gate itself: Roborazzi skips ATF silently (only a log line) on API < 34 or with legacy
+     * graphics, so a tiny unlabelled button must FAIL here, or every other check proves nothing.
+     */
+    @Test
+    fun theChecksRunAndFail() {
+        composeRule.setContent {
+            UiSampleSurface(darkTheme = theme == DARK) { Box(Modifier.size(16.dp).clickable {}) }
+        }
+        assertThrows(AccessibilityViewCheckException::class.java) { composeRule.assertAccessible() }
+    }
 
     private fun check(fillScreen: Boolean = false, sample: @Composable () -> Unit) {
         composeRule.setContent { UiSampleSurface(darkTheme = theme == DARK, fillScreen = fillScreen) { sample() } }

@@ -130,7 +130,6 @@ class RecoveryScreenshotTest {
     fun logInAgainIsOffered() {
         show()
         val text = ApplicationProvider.getApplicationContext<Application>().getString(R.string.app_recovery_log_in_again)
-        // The card's heading says the same thing; the button is the clickable node.
         composeRule.onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         assertEquals(1, logInAgain)
     }

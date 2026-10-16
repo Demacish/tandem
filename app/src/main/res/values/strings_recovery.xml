@@ -2,6 +2,7 @@
 <resources>
     <!-- Recovery screen actions (feature #37, Stitch terst_llning_fels_kert_l_ge). -->
     <string name="app_recovery_actions_heading">What you can do</string>
+    <string name="app_recovery_log_in_title">Your Tandoor login</string>
     <string name="app_recovery_log_in_body">Connect to your Tandoor again. Nothing on the server has changed.</string>
     <string name="app_recovery_export_title">Export pending changes</string>
     <plurals name="app_recovery_export_pending">
@@ -15,5 +16,6 @@
     <string name="app_recovery_export_failed">The waiting changes could not be read.</string>
     <string name="app_recovery_export_subject">Tandem: changes not sent to Tandoor</string>
     <string name="app_recovery_export_chooser">Share waiting changes</string>
+    <string name="app_recovery_clear_card_title">Start over</string>
     <string name="app_recovery_clear_card_body">Removes logins and settings from this device and starts over. Export waiting changes first.</string>
 </resources>

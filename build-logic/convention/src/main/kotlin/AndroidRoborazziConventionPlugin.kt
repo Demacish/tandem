@@ -8,9 +8,14 @@ import org.gradle.kotlin.dsl.withType
  * Apply together with `tandem.android.compose` (which already adds the roborazzi test
  * libraries).
  *
- * Phase 0 only RECORDS: root gradle.properties sets roborazzi.test.record=true, so every
+ * Screenshots are only RECORDED: root gradle.properties sets roborazzi.test.record=true, so every
  * `ciTest` run writes PNGs to build/outputs/roborazzi/ and CI uploads them as an artifact.
- * Golden comparison (verifyRoborazziDebug against committed images) comes in Phase 1.
+ * Golden comparison (verifyRoborazziDebug against committed images) and an en-XA/ar-XB
+ * pseudo-locale variant come at the end of Phase 1 (0.2.0, docs/BYGGE.md).
+ *
+ * The NATIVE graphics below also serve the ATF accessibility checks (core:testing
+ * `assertAccessible`), which measure contrast on a real screenshot; Roborazzi skips them silently
+ * in LEGACY mode.
  */
 class AndroidRoborazziConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
