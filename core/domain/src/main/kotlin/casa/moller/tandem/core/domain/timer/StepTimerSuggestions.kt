@@ -31,19 +31,22 @@ import kotlin.time.Duration.Companion.seconds
  *   "an hour and a half", "half an hour", "20 to 25 minutes", "between 10 and 12 minutes",
  *   "30 seconds", "twenty-five minutes", "10-minute", "1.5 hours"; never "a second egg" (too
  *   short) or "3:30".
- * - **Ranges** give the shorter end as [TimerSuggestion.duration] and the longer one as
- *   [TimerSuggestion.maxDuration]; "ca/about" sets [TimerSuggestion.isApproximate].
+ * - **No timer** for "över natten"/"overnight", temperatures ("200 grader"), amounts ("2 dl") or
+ *   clock times ("kl. 18").
+ * - **Ranges** ("ca 20–25 minuter", "mellan 10 och 12 minuter", "20 to 25 minutes") run for the
+ *   UPPER bound: [TimerSuggestion.duration] is the longer end, [TimerSuggestion.minDuration] the
+ *   shorter one, and the label says which time the timer runs for ("ca 20–25 minuter (25 min)").
+ *   "ca/about" sets [TimerSuggestion.isApproximate].
  */
 class StepTimerSuggestions(private val detector: TimerDetector = TimerDetector()) {
 
     /** The chips for one step, STEP_TIME first, then the text matches in text order. */
     fun suggest(stepText: String, stepTimeMinutes: Int, languageTag: String): List<TimerSuggestion> {
-        // languageTag: tie-break between rule sets, completed by the timer lane (see the KDoc).
-        val fromText = detector.detect(stepText).map { found ->
+        val fromText = detector.detect(stepText, preferredLanguage = languageTag).map { found ->
             TimerSuggestion(
-                label = found.label,
-                duration = found.minSeconds.seconds,
-                maxDuration = found.maxSeconds.seconds,
+                label = if (found.isRange) "${found.label} (${formatSeconds(found.maxSeconds)})" else found.label,
+                duration = found.maxSeconds.seconds,
+                minDuration = found.minSeconds.seconds,
                 source = TimerSuggestionSource.TEXT,
                 textRange = found.start until found.end,
                 isApproximate = found.isApproximate,
@@ -60,5 +63,23 @@ class StepTimerSuggestions(private val detector: TimerDetector = TimerDetector()
                 )
             }
         return listOfNotNull(stepChip) + fromText
+    }
+
+    /** "25 min", "1 h 30 min", "45 s", "1 min 30 s": the same short units as [DurationText], in both languages. */
+    private fun formatSeconds(totalSeconds: Long): String {
+        val separator = DurationText.NUMBER_UNIT_SEPARATOR
+        val hours = totalSeconds / SECONDS_PER_HOUR
+        val minutes = totalSeconds % SECONDS_PER_HOUR / SECONDS_PER_MINUTE
+        val seconds = totalSeconds % SECONDS_PER_MINUTE
+        return listOfNotNull(
+            hours.takeIf { it > 0 }?.let { "$it${separator}h" },
+            minutes.takeIf { it > 0 }?.let { "$it${separator}min" },
+            seconds.takeIf { it > 0 }?.let { "$it${separator}s" },
+        ).joinToString(" ")
+    }
+
+    private companion object {
+        const val SECONDS_PER_MINUTE = 60L
+        const val SECONDS_PER_HOUR = 3600L
     }
 }

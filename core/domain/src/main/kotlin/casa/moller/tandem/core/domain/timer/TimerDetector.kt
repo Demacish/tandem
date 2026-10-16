@@ -20,10 +20,16 @@ class TimerDetector(
 ) {
     private val matchers = rules.map(::RuleMatcher)
 
-    fun detect(text: String): List<DetectedTimer> {
+    /**
+     * Every duration in [text], in text order, without overlaps.
+     *
+     * @param preferredLanguage the app's language ("sv", "en"); only breaks a tie when the text's
+     *   own words do not decide the language. It never decides whether something is a duration.
+     */
+    fun detect(text: String, preferredLanguage: String? = null): List<DetectedTimer> {
         if (text.isBlank()) return emptyList()
         val tokens = TimerTokenizer.tokenize(text)
-        val ranking = rankLanguages(tokens)
+        val ranking = rankLanguages(tokens, preferredLanguage)
         val candidates = matchers.flatMap { matcher -> matcher.findAll(tokens).map { matcher to it } }
             .mapNotNull { (matcher, match) -> toTimer(text, tokens, matcher, match) }
             .sortedWith(
@@ -50,10 +56,17 @@ class TimerDetector(
         matcher.rules.languageTag to tokens.count { it.kind == TokenKind.WORD && it.text in matcher.rules.hintWords }
     }
 
-    /** Language tags, best guess first; ties keep the configured order. */
-    private fun rankLanguages(tokens: List<Token>): List<String> = scores(tokens).withIndex()
-        .sortedWith(compareByDescending<IndexedValue<Pair<String, Int>>> { it.value.second }.thenBy { it.index })
-        .map { it.value.first }
+    /** Language tags, best guess first; ties go to [preferred], then keep the configured order. */
+    private fun rankLanguages(tokens: List<Token>, preferred: String?): List<String> {
+        val preferredBase = preferred?.substringBefore('-')?.substringBefore('_')?.lowercase()
+        return scores(tokens).withIndex()
+            .sortedWith(
+                compareByDescending<IndexedValue<Pair<String, Int>>> { it.value.second }
+                    .thenByDescending { it.value.first == preferredBase }
+                    .thenBy { it.index },
+            )
+            .map { it.value.first }
+    }
 
     private fun toTimer(text: String, tokens: List<Token>, matcher: RuleMatcher, match: RuleMatcher.Match): DetectedTimer? {
         if (match.minSeconds.isNaN() || match.maxSeconds.isNaN()) return null

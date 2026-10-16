@@ -174,6 +174,26 @@ class TimerDetectorTest {
             case("Låt vila tjugoen minuter.", t("tjugoen minuter", 1260)),
             case("Grädda sjuttiofem minuter.", t("sjuttiofem minuter", 4500)),
             case("Koka arton minuter.", t("arton minuter", 1080)),
+            // Phase 1b (timer lane): the forms listed for the timer chips.
+            case("Låt jäsa 1,5 timmar.", t("1,5 timmar", 5400)),
+            case("Låt jäsa 1.5 timmar.", t("1.5 timmar", 5400)),
+            case("Grädda ca 20–25 minuter.", t("ca 20–25 minuter", 1200, 1500, approx = true)),
+            case("Grädda ca 20-25 minuter.", t("ca 20-25 minuter", 1200, 1500, approx = true)),
+            case("Grädda 1 h 30 min.", t("1 h 30 min", 5400)),
+            case("Grädda 1 tim 30 min.", t("1 tim 30 min", 5400)),
+            case("Rör i 30 sekunder.", t("30 sekunder", 30)),
+            case("Koka en minut.", t("en minut", 60)),
+            case("Koka två minuter.", t("två minuter", 120)),
+            case("Koka sex minuter.", t("sex minuter", 360)),
+            case("Koka nio minuter.", t("nio minuter", 540)),
+            case("Koka tio minuter.", t("tio minuter", 600)),
+            case("Koka elva minuter.", t("elva minuter", 660)),
+            case("Koka femton minuter.", t("femton minuter", 900)),
+            case("Koka nitton minuter.", t("nitton minuter", 1140)),
+            case("Koka tjugo minuter.", t("tjugo minuter", 1200)),
+            case("Koka tre timmar.", t("tre timmar", 10800)),
+            case("Koka fem till sju minuter.", t("fem till sju minuter", 300, 420)),
+            case("Grädda 40 min. Låt sedan stå över natten.", t("40 min", 2400)),
         )
 
         @JvmStatic
@@ -230,6 +250,20 @@ class TimerDetectorTest {
             case("Bake one-and-a-half hours.", t("one-and-a-half hours", 5400)),
             case("Rest seventeen minutes.", t("seventeen minutes", 1020)),
             case("Bake twenty to twenty-five minutes.", t("twenty to twenty-five minutes", 1200, 1500)),
+            // Phase 1b (timer lane): numbers in words up to twenty, ranges and short units.
+            case("Boil one minute.", t("one minute", 60)),
+            case("Boil three minutes.", t("three minutes", 180)),
+            case("Boil ten minutes.", t("ten minutes", 600)),
+            case("Boil eleven minutes.", t("eleven minutes", 660)),
+            case("Boil twelve minutes.", t("twelve minutes", 720)),
+            case("Boil nineteen minutes.", t("nineteen minutes", 1140)),
+            case("Boil twenty minutes.", t("twenty minutes", 1200)),
+            case("Bake 20–25 minutes.", t("20–25 minutes", 1200, 1500)),
+            case("Bake 20 - 25 mins.", t("20 - 25 mins", 1200, 1500)),
+            case("Bake 1 h 30 min.", t("1 h 30 min", 5400)),
+            case("Braise 2 hrs 15 mins.", t("2 hrs 15 mins", 8100)),
+            case("Rest 90 seconds.", t("90 seconds", 90)),
+            case("Bake 40 minutes, then leave overnight.", t("40 minutes", 2400)),
         )
 
         @JvmStatic
@@ -254,6 +288,17 @@ class TimerDetectorTest {
             case("Ett minimum av socker."),
             case("Steg 2: blanda allt."),
             case("Koka upp i en stor kastrull."),
+            // Phase 1b (timer lane): no timer for overnight, temperatures, amounts or clock times.
+            case("Låt stå över natten."),
+            case("Låt degen jäsa över natten i kylen."),
+            case("Sätt ugnen på 200 grader."),
+            case("Grädda i 200 °C."),
+            case("Tillsätt 2 dl grädde."),
+            case("Tillsätt 1,5 dl mjölk och 3 msk smör."),
+            case("Ät kl. 18."),
+            case("Ät kl 18 eller kl. 19.30."),
+            case("Servera 18:30."),
+            case("Ugnen ska vara 175 grader varmluft."),
             // English
             case("Preheat the oven to 350°F."),
             case("Bake at 200 degrees."),
@@ -268,6 +313,11 @@ class TimerDetectorTest {
             case("Cook for a few minutes."),
             case("Hours of fun in the kitchen."),
             case("Use a 9 inch pan."),
+            case("Chill overnight."),
+            case("Leave it over night."),
+            case("Bake at 200 degrees for a while."),
+            case("Add 2 cups of stock."),
+            case("Serve at 6:30."),
             // An unknown hyphenated word after a number word is no range.
             case("Bake twenty-something minutes."),
             case("Mix thirty-ish minutes."),

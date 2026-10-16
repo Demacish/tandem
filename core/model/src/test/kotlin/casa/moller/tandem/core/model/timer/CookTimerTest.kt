@@ -100,13 +100,15 @@ class CookTimerTest {
     @Test
     fun suggestionsCarryARangeOnlyForText() {
         val text = TimerSuggestion(
-            label = "ca 20–25 min",
-            duration = 20.minutes,
-            maxDuration = 25.minutes,
+            label = "ca 20–25 min (25 min)",
+            duration = 25.minutes,
+            minDuration = 20.minutes,
             source = TimerSuggestionSource.TEXT,
             textRange = 6..17,
         )
         assertTrue(text.isRange)
+        assertEquals(25.minutes, text.maxDuration)
+        assertThrows<IllegalArgumentException> { text.copy(minDuration = 30.minutes) }
         val step = TimerSuggestion(label = "10 min", duration = 10.minutes, source = TimerSuggestionSource.STEP_TIME)
         assertFalse(step.isRange)
         assertThrows<IllegalArgumentException> { step.copy(textRange = 0..1) }
