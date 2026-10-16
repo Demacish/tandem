@@ -6,6 +6,7 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncProgress
+import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import kotlinx.coroutines.test.runTest
@@ -81,6 +82,20 @@ class OnboardingFirstSyncTest {
             assertEquals(OnboardingEvent.Finished, awaitItem())
         }
         assertNull(vm.uiState.value.firstSync.error)
+    }
+
+    @Test
+    fun aCancelledOrOvertakenFirstSyncIsNoErrorAndGoesOnInTheBackground() = runTest {
+        // komplettering-3: SyncStop markers are no failure ("Try again" would start a needless run).
+        listOf(SyncStop.Cancelled, SyncStop.SourceChanged).forEach { stop ->
+            sync.firstSyncProgress = FakeSyncRepository.failingFirstSync(stop)
+            val vm = connectedViewModel()
+            vm.events.test {
+                vm.onContinueAfterLogin()
+                assertEquals(OnboardingEvent.Finished, awaitItem())
+            }
+            assertNull(stop.toString(), vm.uiState.value.firstSync.error)
+        }
     }
 
     @Test

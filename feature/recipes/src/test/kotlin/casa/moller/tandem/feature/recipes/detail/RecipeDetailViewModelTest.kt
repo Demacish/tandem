@@ -16,6 +16,7 @@ import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.model.recipe.Step
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
@@ -219,6 +220,31 @@ class RecipeDetailViewModelTest {
             assertEquals(RecipeDetailEffect.Message(R.string.recipe_detail_refresh_failed_offline), awaitItem())
         }
         assertFalse(viewModel.uiState.value.refreshing)
+    }
+
+    @Test
+    fun aRefreshOvertakenByALogoutIsNoMessageAndNoError() = runTest(mainDispatcher.dispatcher) {
+        // komplettering-3: SyncStop.SourceChanged after a logout or account switch is no failure.
+        repository.refreshResult = Outcome.Failure(SyncStop.SourceChanged)
+        val viewModel = viewModel()
+        viewModel.effects.test {
+            viewModel.onAction(RecipeDetailAction.Refresh)
+            runCurrent()
+            expectNoEvents()
+        }
+        assertFalse(viewModel.uiState.value.refreshing)
+
+        // The same marker in the stored state shows neither an error nor "saved version".
+        repository.detailOverrides.value = mapOf(
+            pasta to RecipeDetailState(recipeId = pasta, recipe = SampleRecipes.MushroomPasta, error = SyncStop.SourceChanged),
+            999L to RecipeDetailState(recipeId = 999, error = SyncStop.Cancelled),
+        )
+        runCurrent()
+        val state = viewModel.uiState.value
+        assertNull(state.error)
+        assertFalse(state.showsSavedVersion)
+        assertFalse(state.offline)
+        assertNull(viewModel(id = 999).uiState.value.error)
     }
 
     @Test

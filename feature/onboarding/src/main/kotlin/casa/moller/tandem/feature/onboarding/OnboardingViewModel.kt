@@ -17,6 +17,7 @@ import casa.moller.tandem.core.model.error.catchingUnexpected
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncProgress
+import casa.moller.tandem.core.model.sync.isTransientSyncStop
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -264,12 +265,17 @@ class OnboardingViewModel @Inject constructor(
                 // (a bug) must still leave the user a way on instead of a frozen step.
                 .catch { emit(SyncProgress(SyncPhase.FAILED, error = TandemError.Unknown(it::class.simpleName))) }
                 .collect { progress ->
-                    when (progress.phase) {
-                        SyncPhase.FAILED -> setState {
+                    when {
+                        // A run that was only cancelled or overtaken by an account change
+                        // (SyncStop, komplettering-3) is no failure to retry: the sync goes on in
+                        // the background like after "Continue in the background".
+                        progress.phase == SyncPhase.FAILED && progress.error?.isTransientSyncStop == true -> afterFirstSync()
+
+                        progress.phase == SyncPhase.FAILED -> setState {
                             it.copy(firstSync = it.firstSync.copy(error = progress.error ?: TandemError.Unknown()))
                         }
 
-                        SyncPhase.DONE -> {
+                        progress.phase == SyncPhase.DONE -> {
                             setState { it.copy(firstSync = it.firstSync.copy(progress = progress)) }
                             afterFirstSync()
                         }

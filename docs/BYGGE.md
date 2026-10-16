@@ -280,7 +280,9 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   ersätter en pågående synk (`REPLACE`), som då slutar avbruten; indikatorn väntar därför på en
   körning som startat **efter** begäran (`SyncStatus.runsStarted`), och interna stoppmarkörer
   (`SyncStop`, `TandemError.isTransientSyncStop`: avbruten, kontot bytt) visas aldrig som "Kunde
-  inte synka" eller felläge.
+  inte synka" eller felläge. Samma filter gäller receptdetaljen (`refreshRecipe` efter en
+  utloggning ger varken meddelande eller felläge) och introts första synk (en avbruten körning
+  ger inget "Försök igen" utan går vidare som "Fortsätt i bakgrunden").
 - **Detalj** (`detail/`): `RecipeDetailViewModel` (assisted injection med recept-id) visar
   sparad kopia direkt, tyst uppdatering, "Visar sparad version" offline och felläge med
   "Försök igen" när inget finns sparat. Portioner sparas per recept i repositoryt;

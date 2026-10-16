@@ -22,6 +22,7 @@ import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.model.recipe.ServingsChoice
 import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.model.sync.isTransientSyncStop
 import casa.moller.tandem.feature.recipes.R
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -163,8 +164,9 @@ class RecipeDetailViewModel @AssistedInject constructor(
         viewModelScope.launch {
             val result = recipes.refreshRecipe(recipeId)
             manualRefresh.value = false
-            // Without a stored detail the screen shows the error state itself.
-            if (result is Outcome.Failure && uiState.value.hasDetail) {
+            // Without a stored detail the screen shows the error state itself. A refresh that was
+            // only overtaken by an account change (logout while it ran, SyncStop) is no failure.
+            if (result is Outcome.Failure && !result.error.isTransientSyncStop && uiState.value.hasDetail) {
                 effectChannel.trySend(RecipeDetailEffect.Message(refreshFailedMessage(result.error)))
             }
         }
@@ -203,7 +205,9 @@ class RecipeDetailViewModel @AssistedInject constructor(
         }
         val display = recipe?.let { RecipeDisplay.build(it, servings?.current ?: 0.0, sources.preferences, style) }
         val showOverview = recipe?.showIngredientOverview ?: true
-        val offline = sources.offline || detail.error.isConnectionProblem()
+        // SyncStop markers (a fetch overtaken by a logout or account switch) are no error to show.
+        val error = detail.error?.takeUnless { it.isTransientSyncStop }
+        val offline = sources.offline || error.isConnectionProblem()
         return RecipeDetailUiState(
             recipeId = recipeId,
             loading = false,
@@ -228,7 +232,7 @@ class RecipeDetailViewModel @AssistedInject constructor(
             sourceUrl = recipe?.sourceUrl?.takeIf { it.startsWith("https://") || it.startsWith("http://") },
             preferences = sources.preferences,
             refreshing = detail.refreshing || manualRefreshing,
-            error = detail.error,
+            error = error,
             offline = offline,
             fetchedAt = detail.fetchedAt,
             availableOffline = overview?.availableOffline == true || recipe != null,
