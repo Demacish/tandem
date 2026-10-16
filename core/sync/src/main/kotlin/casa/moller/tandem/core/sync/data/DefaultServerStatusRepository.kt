@@ -3,8 +3,10 @@ package casa.moller.tandem.core.sync.data
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.data.session.SessionRepository
+import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.Capabilities
+import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.network.capabilities.CapabilityResolver
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 /**
@@ -37,12 +40,15 @@ import kotlinx.coroutines.flow.update
  * - Capabilities come from the version and `space/current` (`CapabilityResolver`, at most 3
  *   probes and only for unparseable versions); they are resolved once per account and version
  *   while the app runs ([ensureCapabilities]), and derived from the version alone before that.
+ * - The in-app version notice (B18 fallback) is the one `AccountMirror` stored in the settings;
+ *   it is offered only for the active account and while its server still runs that version.
  */
 @Singleton
 internal class DefaultServerStatusRepository @Inject constructor(
     private val sources: ActiveSources,
     private val sessions: SessionRepository,
     private val mirror: AccountMirror,
+    private val settings: SettingsStore,
     private val resolver: CapabilityResolver,
     private val guard: SyncGuard,
     private val clock: SyncClock,
@@ -54,6 +60,33 @@ internal class DefaultServerStatusRepository @Inject constructor(
         .distinctUntilChanged()
 
     override fun observeVersionChanges(): Flow<ServerVersionChange> = mirror.versionChanges
+
+    override fun observeVersionNotice(): Flow<ServerVersionChange?> = combine(
+        sources.source,
+        settings.settings.map { it.versionNotice }.distinctUntilChanged(),
+    ) { source, notice ->
+        val remote = source as? ActiveSource.Remote
+        val current = remote?.account?.serverVersion
+        notice
+            ?.takeIf { remote != null && it.accountId == remote.accountId && it.newVersion == current }
+            ?.let { ServerVersionChange(it.previousVersion, it.newVersion, TandoorVersionTable.assess(it.newVersion).compatibility) }
+            // Only a tested version (an untested one has the safe mode banner).
+            ?.takeIf { it.compatibility == ServerCompatibility.SUPPORTED }
+    }.distinctUntilChanged()
+
+    override suspend fun markVersionNoticeShown(change: ServerVersionChange) {
+        try {
+            settings.update { current ->
+                val pending = current.versionNotice
+                val shown = pending != null && pending.previousVersion == change.previousVersion && pending.newVersion == change.newVersion
+                if (shown) current.copy(versionNotice = null) else current
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Not saved: the notice may show once more at the next start.
+        }
+    }
 
     override suspend fun refresh(force: Boolean): Outcome<ServerStatus> {
         val source = sources.current()

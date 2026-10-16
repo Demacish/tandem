@@ -17,18 +17,29 @@ import javax.inject.Singleton
 /**
  * Posts "Tandoor was updated" in the notification channel "Server" (plan B18), only when the user
  * allowed notifications ([VersionNotificationPolicy.shouldPost]). Tapping it opens the app.
- * Without the permission nothing is posted; the app's safe mode banner is the notice then.
+ * Without the permission (the app asks for it only at the first timer, plan 6), or with the
+ * channel switched off, nothing is posted and `false` tells `AccountMirror` to store the in-app
+ * notice instead ([VersionNotificationPolicy.needsInAppNotice]).
  */
 @Singleton
 internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationContext private val context: Context) :
     VersionChangeNotifier {
 
-    override fun onVersionChanged(change: ServerVersionChange) {
+    override fun onVersionChanged(change: ServerVersionChange): Boolean {
         val manager = NotificationManagerCompat.from(context)
         val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
-        if (permission != PackageManager.PERMISSION_GRANTED) return
+        if (permission != PackageManager.PERMISSION_GRANTED) return false
         val enabled = manager.areNotificationsEnabled()
-        if (!VersionNotificationPolicy.shouldPost(permissionGranted = true, notificationsEnabled = enabled)) return
+        // A channel the user switched off (importance NONE) shows nothing: tell in the app instead.
+        // A channel that does not exist yet is created below with the default importance.
+        val channelEnabled = manager.getNotificationChannelCompat(CHANNEL_ID)
+            ?.let { it.importance != NotificationManagerCompat.IMPORTANCE_NONE } ?: true
+        val post = VersionNotificationPolicy.shouldPost(
+            permissionGranted = true,
+            notificationsEnabled = enabled,
+            channelEnabled = channelEnabled,
+        )
+        if (!post) return false
         manager.createNotificationChannel(
             NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
                 .setName(context.getString(R.string.sync_notification_channel_server))
@@ -50,10 +61,12 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
             .setAutoCancel(true)
             .setContentIntent(openAppIntent())
             .build()
-        try {
+        return try {
             manager.notify(NOTIFICATION_ID, notification)
+            true
         } catch (e: SecurityException) {
-            // The permission was revoked between the check and the call: the in-app banner remains.
+            // The permission was revoked between the check and the call: tell in the app instead.
+            false
         }
     }
 

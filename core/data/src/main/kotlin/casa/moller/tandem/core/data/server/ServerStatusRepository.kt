@@ -29,6 +29,23 @@ interface ServerStatusRepository {
     fun observeVersionChanges(): Flow<ServerVersionChange>
 
     /**
+     * The in-app fallback for the version notification (plan B18): a change to a TESTED version
+     * that the app has not shown yet because no system notification could be posted
+     * (notifications not allowed or the "Server" channel switched off). Null when there is none,
+     * in demo mode, for another account than the active one, and after [markVersionNoticeShown].
+     * Stored, so a change found by the background sync is shown at the next app start. An
+     * untested version never appears here: the safe mode banner tells about it.
+     */
+    fun observeVersionNotice(): Flow<ServerVersionChange?>
+
+    /**
+     * The app showed [change] ([observeVersionNotice]): it is not shown again, also after process
+     * death. A newer pending change is kept. Never throws; if the write fails, the notice may
+     * show once more at the next start.
+     */
+    suspend fun markVersionNoticeShown(change: ServerVersionChange)
+
+    /**
      * Checks the server now. Without [force], a check younger than 15 minutes is reused (plan
      * 3.6 point 3) and the call succeeds without a request. Fails with the network or server
      * error; the stored status is then kept.

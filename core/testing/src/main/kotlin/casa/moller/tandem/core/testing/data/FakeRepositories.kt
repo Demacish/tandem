@@ -214,6 +214,19 @@ class FakeServerStatusRepository(initial: ServerStatus = ServerStatus.Unknown) :
 
     override fun observeVersionChanges(): Flow<ServerVersionChange> = versionChanges
 
+    /** The stored in-app version notice (a persisted store in the app: it outlives ViewModels). */
+    val versionNotice = MutableStateFlow<ServerVersionChange?>(null)
+
+    /** Every change [markVersionNoticeShown] was called with. */
+    val shownVersionNotices = mutableListOf<ServerVersionChange>()
+
+    override fun observeVersionNotice(): Flow<ServerVersionChange?> = versionNotice
+
+    override suspend fun markVersionNoticeShown(change: ServerVersionChange) {
+        shownVersionNotices += change
+        if (versionNotice.value == change) versionNotice.value = null
+    }
+
     override suspend fun refresh(force: Boolean): Outcome<ServerStatus> {
         refreshes += force
         return refreshResult ?: Outcome.Success(status.value)

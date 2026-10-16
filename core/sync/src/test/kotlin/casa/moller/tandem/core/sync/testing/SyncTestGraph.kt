@@ -62,6 +62,7 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val prefetched = PrefetchedImages()
     val imageCache = FakeImageCache(prefetched)
     val notifier = FakeNotifier()
+    val settings = FakeSettingsStore()
 
     val account = ServerAccount(
         id = ACCOUNT_ID,
@@ -87,8 +88,8 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val caller = RemoteCaller(guard, sources)
     val details = DetailFetcher(sources, databases, caller, clock)
     val outbox = OutboxSender(databases, caller, network)
-    val mirror = AccountMirror(sessions, accountStore, health, databases, demo, imageCache, notifier, clock, scope)
-    val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, CapabilityResolver(), guard, clock)
+    val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
+    val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
         sources,
         databases,

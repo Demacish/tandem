@@ -12,6 +12,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
 import java.io.File
@@ -40,6 +41,11 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val DEMO_MODE = booleanPreferencesKey("demo_mode")
         val ACTIVE_ACCOUNT_ID = stringPreferencesKey("active_account_id")
+
+        // The in-app "Tandoor was updated" notice (plan B18), stored as three strings.
+        val VERSION_NOTICE_ACCOUNT = stringPreferencesKey("version_notice_account")
+        val VERSION_NOTICE_PREVIOUS = stringPreferencesKey("version_notice_previous")
+        val VERSION_NOTICE_NEW = stringPreferencesKey("version_notice_new")
     }
 
     companion object {
@@ -66,7 +72,16 @@ private fun Preferences.toAppSettings(): AppSettings {
         onboardingCompleted = this[PreferencesSettingsStore.Keys.ONBOARDING_COMPLETED] ?: defaults.onboardingCompleted,
         demoMode = this[PreferencesSettingsStore.Keys.DEMO_MODE] ?: defaults.demoMode,
         activeAccountId = this[PreferencesSettingsStore.Keys.ACTIVE_ACCOUNT_ID],
+        versionNotice = readVersionNotice(),
     )
+}
+
+/** The pending version notice, or null when any of its three parts is missing. */
+private fun Preferences.readVersionNotice(): PendingVersionNotice? {
+    val accountId = this[PreferencesSettingsStore.Keys.VERSION_NOTICE_ACCOUNT] ?: return null
+    val previous = this[PreferencesSettingsStore.Keys.VERSION_NOTICE_PREVIOUS] ?: return null
+    val new = this[PreferencesSettingsStore.Keys.VERSION_NOTICE_NEW] ?: return null
+    return PendingVersionNotice(accountId = accountId, previousVersion = previous, newVersion = new)
 }
 
 private fun MutablePreferences.write(settings: AppSettings) {
@@ -78,5 +93,15 @@ private fun MutablePreferences.write(settings: AppSettings) {
         remove(PreferencesSettingsStore.Keys.ACTIVE_ACCOUNT_ID)
     } else {
         this[PreferencesSettingsStore.Keys.ACTIVE_ACCOUNT_ID] = activeAccountId
+    }
+    val notice = settings.versionNotice
+    if (notice == null) {
+        remove(PreferencesSettingsStore.Keys.VERSION_NOTICE_ACCOUNT)
+        remove(PreferencesSettingsStore.Keys.VERSION_NOTICE_PREVIOUS)
+        remove(PreferencesSettingsStore.Keys.VERSION_NOTICE_NEW)
+    } else {
+        this[PreferencesSettingsStore.Keys.VERSION_NOTICE_ACCOUNT] = notice.accountId
+        this[PreferencesSettingsStore.Keys.VERSION_NOTICE_PREVIOUS] = notice.previousVersion
+        this[PreferencesSettingsStore.Keys.VERSION_NOTICE_NEW] = notice.newVersion
     }
 }

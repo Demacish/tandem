@@ -7,13 +7,16 @@ import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.ServerAccountEntity
 import casa.moller.tandem.core.datastore.SecureAccountStore
+import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.ServerVersionChange
+import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.VersionChangeNotifier
+import casa.moller.tandem.core.sync.platform.VersionNotificationPolicy
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +36,10 @@ import kotlinx.coroutines.launch
  *   first ([MirrorDecision]).
  * - **Version changes** (plan B18): a server version that differs from the stored one is emitted
  *   on [versionChanges] and reported to the [VersionChangeNotifier] (a notification if allowed).
- *   It works whoever checked the version (the shell's probe or the sync).
+ *   When no notification could be posted, a change to a tested version is stored as the in-app
+ *   notice (`AppSettings.versionNotice`, shown once by the shell). It works whoever checked the
+ *   version (the shell's probe or the background sync, also while no screen is open). The first
+ *   login stores the version without any notice.
  * - **Logout and account removal:** rows of accounts that are no longer stored are deleted, in
  *   every table: also rows that a response still in flight wrote after the account's mirror row
  *   was gone (they are found by their `account_id`, at the latest at the next app start). The
@@ -49,6 +55,7 @@ import kotlinx.coroutines.launch
 internal class AccountMirror @Inject constructor(
     private val sessions: SessionRepository,
     private val accountStore: SecureAccountStore,
+    private val settings: SettingsStore,
     private val health: StorageHealthMonitor,
     private val databases: TandemDatabaseFactory,
     private val demo: DemoSeeder,
@@ -109,7 +116,14 @@ internal class AccountMirror @Inject constructor(
         )
         decision.versionChange?.let { change ->
             changes.tryEmit(change)
-            notifier.onVersionChanged(change)
+            val posted = notifier.onVersionChanged(change)
+            val notice = PendingVersionNotice(account.id, change.previousVersion, change.newVersion)
+            val inApp = VersionNotificationPolicy.needsInAppNotice(change, posted)
+            // A newer change replaces an older notice of the same account that was never shown.
+            settings.update { current ->
+                val kept = current.versionNotice?.takeUnless { it.accountId == account.id }
+                current.copy(versionNotice = if (inApp) notice else kept)
+            }
         }
     }
 
@@ -122,6 +136,10 @@ internal class AccountMirror @Inject constructor(
         val known = accountStore.accounts.first().mapTo(HashSet()) { it.id }
         val forgotten = withRows.filter { it !in known }
         forgotten.forEach { databases.clearAccount(DatabaseKind.REAL, it) }
+        // An in-app version notice for an account that is gone is never shown.
+        if (settings.settings.first().versionNotice?.accountId?.let { it !in known } == true) {
+            settings.update { current -> current.copy(versionNotice = current.versionNotice?.takeIf { it.accountId in known }) }
+        }
         // Without any account (logout, "Clear app data") no image may stay either, also when an
         // earlier clean-up removed the rows but did not get to the images.
         if (forgotten.isNotEmpty() || (known.isEmpty() && session == Session.NoAccount)) imageCache.clear()

@@ -10,6 +10,7 @@ import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.StoreScopes
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
 import java.io.File
@@ -84,6 +85,22 @@ class PreferencesSettingsStoreTest {
         val settings = store.settings.first()
         assertEquals(ThemeMode.LIGHT, settings.themeMode)
         assertNull(settings.activeAccountId)
+    }
+
+    @Test
+    fun aPendingVersionNoticeSurvivesARestartUntilItIsCleared() = runTest {
+        val notice = PendingVersionNotice(accountId = "account-1", previousVersion = "2.6.13", newVersion = "2.6.15")
+        open().update { it.copy(versionNotice = notice) }
+
+        // Process death: a new store on the same file still has the notice ...
+        scopes.closeAll()
+        val reopened = open()
+        assertEquals(notice, reopened.settings.first().versionNotice)
+
+        // ... and after it was shown (cleared) it stays gone, also after the next restart.
+        reopened.update { it.copy(versionNotice = null) }
+        scopes.closeAll()
+        assertNull(open().settings.first().versionNotice)
     }
 
     @Test

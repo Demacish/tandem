@@ -13,6 +13,9 @@ import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerStatus
+import casa.moller.tandem.core.model.server.ServerVersionChange
+import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncReason
@@ -30,6 +33,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -252,6 +257,77 @@ class DemoAndAccountsTest {
         assertEquals(1, graph.notifier.changes.size)
         assertEquals("2.6.13", graph.notifier.changes.single().previousVersion)
         assertEquals(ServerCompatibility.UNTESTED_NEWER, graph.notifier.changes.single().compatibility)
+    }
+
+    // --- In-app notice when no notification could be posted (plan B18, komplettering-3) ---
+
+    private fun loggedIn(version: String, compatibility: ServerCompatibility = ServerCompatibility.SUPPORTED): Session.LoggedIn {
+        val account = graph.account.copy(serverVersion = version)
+        graph.sources.source.value = ActiveSource.Remote(account, graph.api)
+        return Session.LoggedIn(account, version, compatibility)
+    }
+
+    @Test
+    fun aTestedVersionIsToldInTheAppOnceWhenNoNotificationWasPosted() = runBlocking {
+        graph.notifier.posted = false
+        graph.mirror.onSession(loggedIn("2.6.13"))
+        // The first run stores the version without any notice.
+        assertNull(graph.settings.state.value.versionNotice)
+        assertNull(graph.serverStatus.observeVersionNotice().first())
+
+        graph.mirror.onSession(loggedIn("2.6.15"))
+        assertEquals(PendingVersionNotice(ACCOUNT_ID, "2.6.13", "2.6.15"), graph.settings.state.value.versionNotice)
+        val change = graph.serverStatus.observeVersionNotice().first()
+        assertEquals(ServerVersionChange("2.6.13", "2.6.15", ServerCompatibility.SUPPORTED), change)
+
+        graph.serverStatus.markVersionNoticeShown(change!!)
+        assertNull(graph.settings.state.value.versionNotice)
+        assertNull(graph.serverStatus.observeVersionNotice().first())
+
+        // The same version again (the next check, the next app start): nothing new.
+        graph.mirror.onSession(loggedIn("2.6.15"))
+        assertNull(graph.settings.state.value.versionNotice)
+    }
+
+    @Test
+    fun noInAppNoticeWhenTheNotificationWasPosted() = runBlocking {
+        graph.notifier.posted = true
+        graph.mirror.onSession(loggedIn("2.6.13"))
+        graph.mirror.onSession(loggedIn("2.6.15"))
+
+        assertEquals(1, graph.notifier.changes.size)
+        assertNull(graph.settings.state.value.versionNotice)
+        assertNull(graph.serverStatus.observeVersionNotice().first())
+    }
+
+    @Test
+    fun noInAppNoticeForAnUntestedVersionWhichHasTheSafeModeBanner() = runBlocking {
+        graph.notifier.posted = false
+        graph.mirror.onSession(loggedIn("2.6.13"))
+        graph.mirror.onSession(loggedIn("2.6.15"))
+        assertNotNull(graph.settings.state.value.versionNotice)
+
+        // A newer, untested version replaces the notice that was never shown: one message per change.
+        graph.mirror.onSession(loggedIn("2.7.0", ServerCompatibility.UNTESTED_NEWER))
+        assertEquals(2, graph.notifier.changes.size)
+        assertNull(graph.settings.state.value.versionNotice)
+        assertNull(graph.serverStatus.observeVersionNotice().first())
+    }
+
+    @Test
+    fun noInAppNoticeInDemoModeOrForAnAccountThatIsGone() = runBlocking {
+        val notice = PendingVersionNotice(ACCOUNT_ID, "2.6.13", "2.6.15")
+        graph.settings.state.value = AppSettings(versionNotice = notice)
+        loggedIn("2.6.15")
+        assertNotNull(graph.serverStatus.observeVersionNotice().first())
+
+        useDemo()
+        assertNull(graph.serverStatus.observeVersionNotice().first())
+
+        // After a logout the notice of the removed account is dropped.
+        graph.accountStore.clearAll()
+        graph.mirror.onSession(Session.NoAccount)
+        assertNull(graph.settings.state.value.versionNotice)
     }
 
     @Test

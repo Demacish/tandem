@@ -5,10 +5,12 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.datastore.SecureAccountStore
+import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerVersionChange
+import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.network.http.TokenProvider
 import casa.moller.tandem.core.sync.account.ActiveSource
@@ -28,6 +30,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.update
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
@@ -123,11 +126,27 @@ internal class FakeImageCache(private val prefetched: PrefetchedImages) : ImageC
     }
 }
 
+/** Records the changes; [posted] says whether the system notification was allowed. */
 internal class FakeNotifier : VersionChangeNotifier {
     val changes: MutableList<ServerVersionChange> = CopyOnWriteArrayList()
 
-    override fun onVersionChanged(change: ServerVersionChange) {
+    @Volatile
+    var posted: Boolean = false
+
+    override fun onVersionChanged(change: ServerVersionChange): Boolean {
         changes += change
+        return posted
+    }
+}
+
+/** The app settings in memory (the real store is a Preferences DataStore file, tested in core:datastore). */
+internal class FakeSettingsStore(initial: AppSettings = AppSettings.Default) : SettingsStore {
+    val state = MutableStateFlow(initial)
+
+    override val settings: Flow<AppSettings> = state
+
+    override suspend fun update(transform: (AppSettings) -> AppSettings) {
+        state.update(transform)
     }
 }
 
