@@ -149,6 +149,7 @@ internal class OutboxSender @Inject constructor(
             // The last attempt may have reached the server with its answer lost: look before posting.
             when (val found = findOnServer(remote, request)) {
                 is Outcome.Failure -> return handleFailure(remote, row, found.error, gone, rejected)
+
                 is Outcome.Success -> found.value?.let { existing ->
                     settleSent(remote, row, localId, existing, request)
                     return null
@@ -203,6 +204,7 @@ internal class OutboxSender @Inject constructor(
         }
         return when (listed) {
             is Outcome.Failure -> listed
+
             is Outcome.Success -> Outcome.Success(
                 listed.value.items.firstOrNull { entry ->
                     entry.recipe == request.recipe &&

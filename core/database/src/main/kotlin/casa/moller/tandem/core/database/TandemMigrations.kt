@@ -19,7 +19,7 @@ object TandemMigrations {
      * The SQL is Room's own for `CookLogEntity` (see `schemas/.../2.json`).
      */
     val MIGRATION_1_2: Migration = object : Migration(1, 2) {
-        override fun migrate(connection: SQLiteConnection) {
+        override suspend fun migrate(connection: SQLiteConnection) {
             connection.execSQL(
                 "CREATE TABLE IF NOT EXISTS `cook_log` (`account_id` TEXT NOT NULL, `local_id` INTEGER NOT NULL, " +
                     "`server_id` INTEGER, `recipe_id` INTEGER NOT NULL, `servings` INTEGER, `rating` INTEGER, `comment` TEXT, " +

@@ -88,6 +88,7 @@ internal class OfflineFirstCookLogRepository @Inject constructor(
         .flatMapLatest { source ->
             when (source) {
                 is ActiveSource.Remote -> databases.get(source.kind).cookLogDao().observePendingCount(source.accountId)
+
                 // Demo entries are never queued; without an account nothing waits.
                 ActiveSource.Demo, ActiveSource.Loading, ActiveSource.None -> flowOf(0)
             }
