@@ -78,7 +78,10 @@ internal class DetailFetcher @Inject constructor(
             ?.takeIf { it.id == recipeId }
             ?: return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
         val write = recipe.toDetailWrite(remote.accountId, rawJson = json.toString(), fetchedAtEpochMillis = clock.nowMillis())
-        databases.get(remote.kind).recipeDao().replaceDetail(remote.accountId, write)
+        val database = databases.get(remote.kind)
+        database.recipeDao().replaceDetail(remote.accountId, write)
+        // The detail's rating does not know this device's unsent "Klart!" entries yet.
+        database.cookLogDao().reapplyUnsent(remote.accountId, recipeId, remote.cookStatsRules)
         Outcome.Success(Unit)
     }
 

@@ -2,6 +2,8 @@ package casa.moller.tandem.core.database
 
 import androidx.room3.useReaderConnection
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.database.dao.CookStatsRules
+import casa.moller.tandem.core.database.entity.CookLogEntity
 import casa.moller.tandem.core.database.entity.MealPlanEntity
 import casa.moller.tandem.core.database.entity.MealTypeEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
@@ -57,6 +59,12 @@ class AccountIsolationTest {
         database.homeSectionDao().replaceSection(accountId, HomeSectionType.NEW, listOf(1), 1)
         database.syncStateDao().upsert(SyncStateEntity(accountId, SyncEntities.RECIPE_INDEX, lastFullRelistEpochMillis = 1))
         database.outboxDao().enqueueViewLog(accountId, recipeId = 1, payload = "{}", nowEpochMillis = 1)
+        database.cookLogDao().logLocally(
+            CookLogEntity(accountId = accountId, localId = 0, serverId = null, recipeId = 1, rating = 4, cookedAtEpochMillis = 1),
+            outboxPayload = "{}",
+            nowEpochMillis = 1,
+            rules = CookStatsRules(ownUserId = 1, ratingsFromLog = true),
+        )
         database.referenceDao().upsertUserPreference(UserPreferences(useFractions = accountId == ACCOUNT_A).toEntity(accountId, 1))
     }
 
@@ -80,6 +88,16 @@ class AccountIsolationTest {
         assertEquals(OutboxEntities.RECIPE, database.outboxDao().nextReady(ACCOUNT_B)?.entity)
         assertTrue(checkNotNull(database.referenceDao().getUserPreference(ACCOUNT_A)).toModel().useFractions)
         assertEquals(false, database.referenceDao().getUserPreference(ACCOUNT_B)?.toModel()?.useFractions)
+        // Each account counts only its own "Klart!" (same recipe id in both).
+        database.cookLogDao().logLocally(
+            CookLogEntity(accountId = ACCOUNT_A, localId = 0, serverId = null, recipeId = 1, cookedAtEpochMillis = 2),
+            outboxPayload = "{}",
+            nowEpochMillis = 2,
+            rules = CookStatsRules(ownUserId = 1, ratingsFromLog = true),
+        )
+        assertEquals(2, database.recipeDao().observeListItem(ACCOUNT_A, 1).first()?.overview?.timesCooked)
+        assertEquals(1, database.recipeDao().observeListItem(ACCOUNT_B, 1).first()?.overview?.timesCooked)
+        assertEquals(1, database.cookLogDao().observePendingCount(ACCOUNT_B).first())
     }
 
     @Test
@@ -101,7 +119,8 @@ class AccountIsolationTest {
         assertEquals(listOf("Våfflor"), recipeNames(ACCOUNT_B, "vafflor"))
         assertEquals(1, database.mealPlanDao().getRange(ACCOUNT_B, "2026-10-06", "2026-10-06").size)
         assertEquals(1L, database.count("SELECT COUNT(*) FROM recipe_fts"))
-        assertEquals(1L, database.count("SELECT COUNT(*) FROM outbox"))
+        assertEquals("B's view and cook log", 2L, database.count("SELECT COUNT(*) FROM outbox"))
+        assertEquals(1, database.cookLogDao().getEntries(ACCOUNT_B).size)
         // Every account-scoped table is empty for A (the FTS table has no account column, see above).
         ACCOUNT_TABLES.forEach { table ->
             assertEquals(table, 0L, database.count("SELECT COUNT(*) FROM $table WHERE account_id = '$ACCOUNT_A'"))
@@ -156,6 +175,7 @@ class AccountIsolationTest {
             "home_section_recipe",
             "sync_state",
             "outbox",
+            "cook_log",
         )
     }
 }

@@ -1,11 +1,9 @@
 package casa.moller.tandem.di
 
 import casa.moller.tandem.core.common.AppBuildInfo
-import casa.moller.tandem.core.data.cooklog.CookLogRepository
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
 import casa.moller.tandem.core.data.timer.TimerController
-import casa.moller.tandem.core.model.cooklog.CookLogDraft
 import casa.moller.tandem.core.model.diagnostics.ColdStartTiming
 import casa.moller.tandem.core.model.diagnostics.DiagnosticsSnapshot
 import casa.moller.tandem.core.model.diagnostics.FullSyncTiming
@@ -44,7 +42,7 @@ import kotlinx.coroutines.launch
  * Each lane that binds the real implementation (@Binds in its own module) DELETES the matching
  * module below in the same change, otherwise Hilt reports a duplicate binding:
  * - timer lane (core:timer): TemporaryFas1bTimerModule,
- * - cook-log lane (core:sync): TemporaryFas1bCookLogModule,
+ * - cook-log lane (core:sync): TemporaryFas1bCookLogModule (removed: SyncModule binds OfflineFirstCookLogRepository),
  * - settings/diagnostics lane: TemporaryFas1bDiagnosticsModule.
  * The integration lane deletes this file. Nothing here may ship in 0.2.0.
  */
@@ -54,13 +52,6 @@ import kotlinx.coroutines.launch
 internal interface TemporaryFas1bTimerModule {
     @Binds
     fun bindTimerController(impl: TemporaryTimerController): TimerController
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-internal interface TemporaryFas1bCookLogModule {
-    @Binds
-    fun bindCookLogRepository(impl: TemporaryCookLogRepository): CookLogRepository
 }
 
 @Module
@@ -146,19 +137,6 @@ internal class TemporaryTimerController @Inject constructor(private val clock: C
     private companion object {
         const val TICK_MILLIS = 500L
     }
-}
-
-/** Keeps "Klart!" entries in memory only; they are NEVER sent to Tandoor. */
-@Singleton
-internal class TemporaryCookLogRepository @Inject constructor() : CookLogRepository {
-    private val pending = MutableStateFlow<List<CookLogDraft>>(emptyList())
-
-    override suspend fun logCooked(draft: CookLogDraft): Outcome<Unit> {
-        pending.update { it + draft }
-        return Outcome.Success(Unit)
-    }
-
-    override fun observePendingCount(): Flow<Int> = pending.map { it.size }
 }
 
 /** Versions from the build and timings in memory; the export has the versions only. */

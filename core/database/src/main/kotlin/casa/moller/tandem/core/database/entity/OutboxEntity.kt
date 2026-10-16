@@ -65,12 +65,17 @@ enum class OutboxState {
     IN_FLIGHT,
 }
 
-/** Values for [OutboxEntity.op] (plan 5.7). Phase 1 only sends [VIEW_LOG]. */
+/** Values for [OutboxEntity.op] (plan 5.7). Phase 1 sends [VIEW_LOG] and (from 0.2.0) [COOK_LOG]. */
 object OutboxOps {
     const val CREATE: String = "CREATE"
     const val PATCH: String = "PATCH"
     const val DELETE: String = "DELETE"
     const val BULK_CHECK: String = "BULK_CHECK"
+
+    /**
+     * `POST /api/cook-log/` for "Klart!" (Phase 1b): [OutboxEntity.serverId] is the recipe id and the
+     * `cook_log` entry points to the row (`outbox_id`). Never merged. Queued by `CookLogDao.logLocally`.
+     */
     const val COOK_LOG: String = "COOK_LOG"
 
     /** `POST /api/view-log/` `{recipe}` when a recipe is opened (plan 3.3). */

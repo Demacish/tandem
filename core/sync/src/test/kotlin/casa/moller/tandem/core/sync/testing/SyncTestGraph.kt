@@ -17,6 +17,7 @@ import casa.moller.tandem.core.sync.account.AccountMirror
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.data.DefaultSyncRepository
+import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstHomeRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstRecipeRepository
 import casa.moller.tandem.core.sync.demo.DemoSeeder
@@ -87,7 +88,7 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val guard = SyncGuard(clock)
     val caller = RemoteCaller(guard, sources)
     val details = DetailFetcher(sources, databases, caller, clock)
-    val outbox = OutboxSender(databases, caller, network)
+    val outbox = OutboxSender(databases, caller, network, clock)
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
@@ -107,6 +108,7 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
+    val cookLogs = OfflineFirstCookLogRepository(sources, databases, scheduler, clock)
     val sync = DefaultSyncRepository(sources, databases, engine, scheduler, demo, guard, network, clock, scope)
 
     val real: TandemDatabase

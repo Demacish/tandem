@@ -828,6 +828,64 @@ class Phase1ContractTest {
         verify("delete.listCount", list.jsonObject.longAt("count"), Fas1Seed.recipes.size + 1)
     }
 
+    // --- k. "Klart!" as the app sends it (Phase 1b, 0.2.0) ---------------------------------------
+
+    /**
+     * The app's outbox sends `POST /api/cook-log/` with `created_at` = when "Klart!" was pressed, in
+     * UTC whole seconds (`TandoorDates.format`), possibly days later. Tandoor must accept it, keep
+     * the instant, and list it under the same instant and author: a retry after a lost answer
+     * looks the entry up that way instead of posting it twice. Runs after the list facts and
+     * deletes its entry again, so no other fact changes.
+     */
+    @Test
+    @Order(91)
+    fun cookLogBackdatedAsTheAppSends() {
+        val pasta = recipeIds.getValue("svamppasta")
+        val cookedAt = ZonedDateTime.now(ZoneId.of("UTC")).minusDays(3).withNano(0)
+        val sentAt = cookedAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        val body = buildJsonObject {
+            put("recipe", pasta)
+            put("servings", 3)
+            put("rating", 4)
+            put("comment", "Lagad offline")
+            put("created_at", sentAt)
+        }
+        val created = api("cook-log-create-app", "POST", "/api/cook-log/", body, record = false)
+        verify("cookLog.app.status", created.status, 201)
+        val entry = created.json as? JsonObject ?: return
+        val returnedAt = entry.stringAt("created_at")?.let { ZonedDateTime.parse(it).toInstant() }
+        verify("cookLog.app.createdAtInstantKept", returnedAt == cookedAt.toInstant(), true)
+        verify(
+            "cookLog.app.fieldsKept",
+            listOf(entry.longAt("servings"), entry.longAt("rating"), entry.stringAt("comment")),
+            listOf(3L, 4L, "Lagad offline"),
+        )
+
+        val id = entry.longAt("id")
+        val author = entry.objAt("created_by")?.longAt("id")
+        val listed = api("cook-log-list-app", "GET", "/api/cook-log/?recipe=$pasta&page_size=100", record = false)
+        val match = listed.jsonObject.arrAt("results").objects().firstOrNull { it.longAt("id") == id }
+        val listedAt = match?.stringAt("created_at")?.let { ZonedDateTime.parse(it).toInstant() }
+        verify("cookLog.app.listedSameInstant", listedAt == cookedAt.toInstant(), true)
+        verify("cookLog.app.listedSameAuthor", match?.objAt("created_by")?.longAt("id") == author && author != null, true)
+
+        // A deleted recipe: the outbox drops the entry on 404 and keeps it as FAILED on 400.
+        temporaryRecipeId?.let { gone ->
+            val orphan = buildJsonObject {
+                put("recipe", gone)
+                put("created_at", sentAt)
+            }
+            val answer = api("cook-log-create-deleted-recipe", "POST", "/api/cook-log/", orphan, record = false)
+            observe("cookLog.deletedRecipe.status", answer.status)
+            observe("cookLog.deletedRecipe.body", answer.json)
+        }
+
+        if (id != null) {
+            val cleanup = api("cook-log-delete-app", "DELETE", "/api/cook-log/$id/", record = false)
+            observe("cookLog.app.deleteStatus", cleanup.status)
+        }
+    }
+
     // --- Baseline ---------------------------------------------------------------------------------
 
     @Test

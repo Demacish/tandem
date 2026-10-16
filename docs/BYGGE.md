@@ -122,7 +122,8 @@ Gemensamt för Android-moduler:
 - **Version:** schemaversion 1 är den som 0.1.0 (den första release som innehåller databasen)
   skickas med, och `1.json` är nu **fryst**. Varje ändring av en entitet kräver från och med nu
   en ny version (2, 3 …), en migrering i `TandemMigrations` och ett fall i
-  `TandemMigrationTest`; `1.json` får aldrig skrivas om.
+  `TandemMigrationTest`; `1.json` får aldrig skrivas om. Version 2 (0.2.0) lägger till
+  `cook_log` (`TandemMigrations.MIGRATION_1_2`, testad från en fil skapad ur `1.json`).
 - **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
   schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
   (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
@@ -149,6 +150,7 @@ alltså aldrig kaskadradera allt).
 | `sync_state` | En rad per entitet: tidsstämpel, datum, full omläsning, matsedelsfönster, hash |
 | `outbox` | Köade skrivningar (plan 5.7-kolumnerna, `state` PENDING/PAUSED/FAILED/IN_FLIGHT) |
 | `recipe_fts` | FTS4, `unicode61 remove_diacritics=2`, över namn, beskrivning, nyckelord och ingrediensnamn |
+| `cook_log` | Kokloggen (från 0.2.0): serverns poster (`local_id = server_id`) och "Klart!" från enheten (negativt `local_id`, `outbox_id` till sin outbox-rad), `state` SYNCED/PENDING/SENT/FAILED/DROPPED, se "Koklogg" nedan |
 
 - **FTS hålls i synk för hand** (ingen external content, eftersom innehållet kommer från fyra
   tabeller): `RecipeDao`s skrivfunktioner (`applyIndex`, `upsertOverviews`, `replaceDetail`,
@@ -164,7 +166,8 @@ alltså aldrig kaskadradera allt).
   lista raderar ingenting om inte `allowEmpty = true`.
 - **Outbox:** `nextReady` ger lägsta id vars `depends_on` är klar (raderad) och som inte har en
   äldre rad för samma objekt kvar. `markFailed` markerar även alla beroende rader. Flera osända
-  VIEW_LOG för samma recept slås ihop (`enqueueViewLog`).
+  VIEW_LOG för samma recept slås ihop (`enqueueViewLog`). En FAILED loggrad (`VIEW_LOG`,
+  `COOK_LOG`) håller inte tillbaka senare rader för samma recept.
 - **Två databasfiler** (plan 6.2 Demoläge): `TandemDatabaseFactory.get(DatabaseKind.REAL | DEMO)`
   ger `tandem.db` respektive `tandem-demo.db` med samma schema. Hilt binder den riktiga som
   `TandemDatabase` (och alla DAO:er) och demodatabasen som `@DemoDatabase TandemDatabase`.
@@ -307,6 +310,54 @@ byter timerbanan till `mediaPlayback` och skriver varför här.
 | CI | – | `tandoor-watch.yml`, Roborazzi-jämförelse, pseudospråk |
 | Integration | allt ovan | kopplar ihop, tar bort `TemporaryFas1bModule.kt` |
 <!-- /Fas 1b kontrakt -->
+
+<!-- Fas 1b koklogg -->
+### Koklogg ("Klart!", `:core:sync` + `:core:database`)
+
+`OfflineFirstCookLogRepository` (bunden i `SyncModule`; `TemporaryFas1bCookLogModule` är
+borttagen) implementerar `CookLogRepository` offline först (plan 5.3/5.7, funktion #8):
+
+- **Lokalt direkt:** `logCooked` skriver i en transaktion (`CookLogDao.logLocally`) en
+  `cook_log`-post (PENDING, negativt `local_id`), en outbox-rad `COOK_LOG` (`entity = recipe`,
+  `server_id` = recept-id, kroppen till `POST /api/cook-log/` `{recipe, servings, rating,
+  comment, created_at}` utan null-fält) och receptets statistik; sedan schemaläggs
+  `SyncOutboxWorker`. `created_at` är när "Klart!" trycktes, i hela sekunder (`TandoorDates.format`),
+  så en post som skickas dagar senare behåller sitt datum (bakåtdatering fungerar, FACTS "Fas 1 f").
+- **Statistiken** ("antal gånger", "senast lagad", eget betyg för sortering, filter och stjärnor)
+  räknas på ett ställe, `CookStatistics` (`:core:database`), samma avrundning som 0.1.0 och
+  servern (eget snitt, halvt uppåt). Räknas: SYNCED (serverns lista), SENT (skickad efter att
+  listan begärdes) och PENDING. Synkens kokloggssteg ersätter serverns del av `cook_log` med den
+  kompletta listan och räknar om alla recept i en transaktion (`CookLogDao.reconcile`); en skickad
+  post har serverns id, så listans kopia ersätter den och inget räknas två gånger. En
+  detaljhämtning skriver serverns betyg; har receptet osända poster räknas de in igen
+  (`reapplyUnsent`). Före den första kompletta listan efter uppdateringen från 0.1.0 är tabellen
+  tom (`isComplete` falsk): då lägger "Klart!" bara till (+1, senare datum, betyg om inget fanns)
+  och synken hämtar kokloggen i nästa körning oavsett intervall.
+- **Skicka (`OutboxSender`):** 201 gör posten till serverns (SENT, id från svaret) och tar bort
+  outbox-raden i samma transaktion. Recept som inte längre finns lagrat → DROPPED
+  (`recipe_gone`) utan anrop; 404 → DROPPED (`not_found`); receptet borttaget ur indexet →
+  outbox-raden försvinner med receptet och posten blir DROPPED (`recipe_deleted`); 400 → posten
+  och outbox-raden FAILED (finns kvar i "Väntande ändringar" och exporten, försöks inte igen
+  automatiskt). 401/403, 429 och kretsbrytaren pausar som för VIEW_LOG (posten räknas fortfarande),
+  säkert läge sätter raden i PAUSED. `POST /api/cook-log/` är inte idempotent: en rad som försökts
+  förut slår först upp `GET /api/cook-log/?recipe=` och letar efter egen post med samma
+  `created_at`, så ett svar som tappades vid timeout aldrig blir en dubblett.
+- **Demoläge:** posten hamnar bara i demodatabasen, köas aldrig och räknas direkt (demons kokhistorik
+  ligger i `cook_log` via `DemoSeeder`; demodetaljernas betyg står kvar utom för recept som fått betyg
+  i demoläget). "Återställ demodata" tömmer demodatabasen, posterna med.
+- **Konto:** raderna har kontots id; utloggning tar bort dem (`AccountDao.deleteAccountData`), "Logga
+  in igen" som samma användare och space skickar dem. `observePendingCount()` = kontots
+  `COOK_LOG`-rader i outboxen (0 i demoläget). Återställningsskärmens export
+  (`RoomPendingChangesExporter`) tar med dem som alla outbox-rader.
+- **Tester:** `CookLogDaoTest` (`:core:database`: inkrementellt före första listan, omräkning,
+  SENT/listan utan dubbelräkning, DROPPED/FAILED, indexradering, demoregler, avrundning),
+  `TandemMigrationTest` (1 → 2), `AccountIsolationTest`, `OutboxDaoTest` och `CookLogRepositoryTest`
+  (`:core:sync`, HTTPS-MockWebServer med `cook-log-create*.json`: offline → online med bevarat
+  datum, synkens avstämning, detaljhämtning, 404, 404-storm, 400 + export, 429, 403 + ny
+  inloggning, tappat svar, säkert läge, demo, konton). Kontraktstestet `cookLogBackdatedAsTheAppSends`
+  kontrollerar att Tandoor tar emot och lämnar tillbaka appens exakta kropp med `created_at` bakåt i
+  tiden (2.6.13 vid push, hela matrisen nattligen).
+<!-- /Fas 1b koklogg -->
 
 <!-- fix-bygg: tillgänglighetskontroller -->
 ### Tillgänglighetskontroller (ATF) i UI-testerna
@@ -836,9 +887,9 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
 - **Detaljer (stale-while-revalidate):** `observeRecipe` visar den lagrade kopian direkt, hämtar
   om den är äldre än 5 minuter (online) och visar `refreshing`. 404 tar bort receptet lokalt
   (`isDeleted`). Rå JSON sparas i `recipe_detail`.
-- **Outbox (`engine/OutboxSender`):** Fas 1 köar bara `VIEW_LOG` (`markViewed`, sammanslagen per
-  recept). Säkert läge (otestad version) sätter raderna i PAUSED; 404 slängs, 400 blir FAILED,
-  recept som inte längre finns skickas aldrig.
+- **Outbox (`engine/OutboxSender`):** `VIEW_LOG` (`markViewed`, sammanslagen per recept) och från
+  0.2.0 `COOK_LOG` ("Klart!", se "Koklogg" nedan). Säkert läge (otestad version) sätter raderna i
+  PAUSED; 404 slängs, 400 blir FAILED, recept som inte längre finns skickas aldrig.
 - **WorkManager (`work/`):** `tandem.sync.now` (`SyncWorker`, expedited, nätverkskrav; app-start,
   återupptagning, dra-för-att-uppdatera, kontobyte; en automatisk begäran medan en körning väntar
   eller pågår släpps (`KEEP`), dra-för-att-uppdatera ersätter den (`REPLACE`) så att användarens

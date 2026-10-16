@@ -5,12 +5,14 @@ import androidx.room3.Database
 import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import casa.moller.tandem.core.database.dao.AccountDao
+import casa.moller.tandem.core.database.dao.CookLogDao
 import casa.moller.tandem.core.database.dao.HomeSectionDao
 import casa.moller.tandem.core.database.dao.MealPlanDao
 import casa.moller.tandem.core.database.dao.OutboxDao
 import casa.moller.tandem.core.database.dao.RecipeDao
 import casa.moller.tandem.core.database.dao.ReferenceDao
 import casa.moller.tandem.core.database.dao.SyncStateDao
+import casa.moller.tandem.core.database.entity.CookLogEntity
 import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.HomeSectionEntity
 import casa.moller.tandem.core.database.entity.HomeSectionRecipeEntity
@@ -38,9 +40,8 @@ import casa.moller.tandem.core.database.entity.UserPreferenceEntity
  * separate demo database ([DEMO_FILE_NAME]), so demo data never mixes with a real account. Open
  * them through [TandemDatabaseFactory].
  *
- * Until the first release that ships the database (0.1.0) the version stays 1 and
- * `schemas/.../1.json` is simply regenerated; after that every change needs a new version, a
- * migration in [TandemMigrations] and a migration test (see `TandemMigrationTest`).
+ * Version 1 shipped with 0.1.0 and `schemas/.../1.json` is frozen: every change needs a new
+ * version, a migration in [TandemMigrations] and a migration test (see `TandemMigrationTest`).
  */
 @Database(
     entities = [
@@ -61,6 +62,7 @@ import casa.moller.tandem.core.database.entity.UserPreferenceEntity
         HomeSectionRecipeEntity::class,
         SyncStateEntity::class,
         OutboxEntity::class,
+        CookLogEntity::class,
     ],
     version = TandemDatabase.VERSION,
     exportSchema = true,
@@ -80,8 +82,13 @@ abstract class TandemDatabase : RoomDatabase() {
 
     abstract fun syncStateDao(): SyncStateDao
 
+    abstract fun cookLogDao(): CookLogDao
+
     companion object {
-        const val VERSION: Int = 1
+        /**
+         * Schema version. 1 = 0.1.0 (frozen); 2 = 0.2.0 adds `cook_log` ([TandemMigrations.MIGRATION_1_2]).
+         */
+        const val VERSION: Int = 2
 
         /** File name of the real database (the whole database folder is excluded from backup, data_extraction_rules.xml). */
         const val FILE_NAME: String = "tandem.db"

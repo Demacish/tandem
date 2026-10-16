@@ -12,24 +12,19 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Migration scaffold (plan 5.6 "Databas: migreringar"). [MigrationTestHelper] reads the committed
+ * Migrations (plan 5.6 "Databas: migreringar"). [MigrationTestHelper] reads the committed
  * `schemas/<database class>/<version>.json` from the unit-test assets (`tandem.android.room`).
  *
- * Today it proves that the committed version 1 schema is exactly what the code expects: a file
- * created from `1.json` opens with the current [TandemDatabase] (Room checks the identity hash)
- * and its rows are readable. When version 2 arrives, add a test per migration:
- * ```
- * helper.createDatabase(1).apply { execSQL("INSERT ..."); close() }
- * helper.runMigrationsAndValidate(2, TandemMigrations.ALL).close()
- * // then open TandemDatabase.build(context, TEST_DB) and check the rows survived
- * ```
+ * Version 1 (0.1.0) is frozen: a file created from `1.json` must migrate to the current version
+ * with its rows (an offline view in the outbox survives the app update) and then open with the
+ * current [TandemDatabase] (Room checks the identity hash, so an uncommitted schema fails here).
  */
 @RunWith(AndroidJUnit4::class)
 class TandemMigrationTest {
@@ -50,9 +45,37 @@ class TandemMigrationTest {
     }
 
     @Test
-    fun noMigrationsYetAtVersionOne() {
-        assertEquals(1, TandemDatabase.VERSION)
-        assertTrue(TandemMigrations.ALL.isEmpty())
+    fun everyVersionHasAMigration() {
+        assertEquals(2, TandemDatabase.VERSION)
+        assertEquals((1 until TandemDatabase.VERSION).toList(), TandemMigrations.ALL.map { it.startVersion })
+    }
+
+    @Test
+    fun versionOneMigratesToTwoWithAnEmptyCookLog() = runTest {
+        helper.createDatabase(1).apply {
+            execSQL(
+                "INSERT INTO outbox (account_id, op, entity, server_id, payload, attempts, created_at, state) " +
+                    "VALUES ('$ACCOUNT_A', 'VIEW_LOG', 'recipe', 2, '{}', 0, 1, 'PENDING')",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(2, TandemMigrations.ALL).apply {
+            execSQL(
+                "INSERT INTO cook_log (account_id, local_id, server_id, recipe_id, rating, state) " +
+                    "VALUES ('$ACCOUNT_A', -1, NULL, 2, 5, 'PENDING')",
+            )
+            close()
+        }
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            assertEquals(2L, database.outboxDao().nextReady(ACCOUNT_A)?.serverId)
+            assertEquals(listOf(-1L), database.cookLogDao().getEntries(ACCOUNT_A).map { it.localId })
+            assertFalse("no server list yet: only adds to the stored counts", database.cookLogDao().isComplete(ACCOUNT_A))
+        } finally {
+            database.close()
+        }
     }
 
     @Test

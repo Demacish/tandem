@@ -49,7 +49,8 @@ abstract class AccountDao {
             "UNION SELECT account_id FROM meal_type UNION SELECT account_id FROM meal_plan " +
             "UNION SELECT account_id FROM user_preference UNION SELECT account_id FROM home_section " +
             "UNION SELECT account_id FROM home_section_recipe UNION SELECT account_id FROM sync_state " +
-            "UNION SELECT account_id FROM outbox UNION SELECT id FROM server_account",
+            "UNION SELECT account_id FROM outbox UNION SELECT account_id FROM cook_log " +
+            "UNION SELECT id FROM server_account",
     )
     abstract suspend fun getStoredAccountIds(): List<String>
 
@@ -69,6 +70,7 @@ abstract class AccountDao {
         deleteHomeSectionRecipes(accountId)
         deleteSyncStates(accountId)
         deleteOutbox(accountId)
+        deleteCookLog(accountId)
         deleteAccount(accountId)
     }
 
@@ -118,6 +120,9 @@ abstract class AccountDao {
 
     @Query("DELETE FROM outbox WHERE account_id = :accountId")
     abstract suspend fun deleteOutbox(accountId: String)
+
+    @Query("DELETE FROM cook_log WHERE account_id = :accountId")
+    abstract suspend fun deleteCookLog(accountId: String)
 
     @Query("DELETE FROM server_account WHERE id = :accountId")
     abstract suspend fun deleteAccount(accountId: String)

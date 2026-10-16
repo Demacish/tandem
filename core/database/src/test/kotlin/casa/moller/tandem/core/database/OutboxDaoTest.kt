@@ -80,6 +80,22 @@ class OutboxDaoTest {
     }
 
     @Test
+    fun aFailedLogRowDoesNotHoldBackLaterRowsOfTheRecipe() = runTest {
+        val rejected = add(entity = OutboxEntities.RECIPE, serverId = 2, op = OutboxOps.COOK_LOG)
+        val edit = add(entity = OutboxEntities.RECIPE, serverId = 2, op = OutboxOps.PATCH)
+        outbox.markInFlight(rejected)
+        outbox.markFailed(rejected, "http-400")
+
+        assertEquals(edit, outbox.nextReady(ACCOUNT_A)?.id)
+        outbox.markInFlight(edit)
+        outbox.markFailed(edit, "http-400")
+        val next = add(entity = OutboxEntities.RECIPE, serverId = 2, op = OutboxOps.COOK_LOG)
+        assertNull("a failed edit still holds the recipe's later rows", outbox.nextReady(ACCOUNT_A))
+        outbox.markDone(edit)
+        assertEquals(next, outbox.nextReady(ACCOUNT_A)?.id)
+    }
+
+    @Test
     fun aPermanentFailureFailsEveryDependentRow() = runTest {
         val create = add(entity = OutboxEntities.SHOPPING_ENTRY, localId = -7, op = OutboxOps.CREATE)
         val check = add(entity = OutboxEntities.SHOPPING_ENTRY, localId = -7, dependsOn = create, op = OutboxOps.BULK_CHECK)

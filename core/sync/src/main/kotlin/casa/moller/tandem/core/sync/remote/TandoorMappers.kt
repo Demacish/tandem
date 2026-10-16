@@ -1,7 +1,12 @@
 package casa.moller.tandem.core.sync.remote
 
+import casa.moller.tandem.core.database.dao.CookLogFact
+import casa.moller.tandem.core.database.dao.CookStatistics
+import casa.moller.tandem.core.database.dao.CookStatsRow
 import casa.moller.tandem.core.database.dao.RecipeIndexEntry
 import casa.moller.tandem.core.database.dao.RecipeOverviewWrite
+import casa.moller.tandem.core.database.entity.CookLogEntity
+import casa.moller.tandem.core.database.entity.CookLogState
 import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.KeywordEntity
 import casa.moller.tandem.core.database.entity.MealPlanEntity
@@ -264,35 +269,44 @@ internal fun UserPreferenceDto.toModel(): UserPreferences = UserPreferences(
 // ---------------------------------------------------------------- cook log
 
 /**
- * "Times cooked", "last cooked" and the user's own rating of one recipe, counted from the cook log
+ * "Times cooked", "last cooked" and the user's own rating per recipe, counted from the cook log
  * (FACTS "Fas 1 c": `last_cooked` is always null in 2.6.13, `-times_cooked` answers 500, and
- * lists carry `rating` only when sorted by it).
+ * lists carry `rating` only when sorted by it) with the shared rules of [CookStatistics]: the
+ * rating is the average of the logged-in user's own rated entries, rounded half up like the
+ * detail's `rating` (FACTS "Fas 1 d": 5, 4, 5 -> 5.0; 4 and no rating -> 4.0); other members'
+ * entries are ignored (the log is space-wide).
  *
- * @property rating the average of the logged-in user's own rated entries, rounded half up like
- *   the detail's `rating` (FACTS "Fas 1 d": 5, 4, 5 -> 5.0; 4 and no rating -> 4.0); null when
- *   the user never rated the recipe. Other members' entries are ignored (the log is space-wide).
+ * @param ownUserId the logged-in Tandoor user; null computes no ratings.
  */
-internal data class CookStats(val recipeId: Long, val timesCooked: Int, val lastCookedEpochMillis: Long?, val rating: Double? = null)
-
-/** @param ownUserId the logged-in Tandoor user; null computes no ratings. */
-internal fun List<CookLogDto>.toCookStats(ownUserId: Long? = null): List<CookStats> =
-    mapNotNull { log -> log.recipe?.let { recipeId -> recipeId to log } }
-        .groupBy({ it.first }, { it.second })
-        .map { (recipeId, logs) ->
-            val ownRatings = if (ownUserId == null) {
-                emptyList()
-            } else {
-                logs.filter { it.createdBy?.id == ownUserId }.mapNotNull { it.rating }
-            }
-            CookStats(
+internal fun List<CookLogDto>.toCookStats(ownUserId: Long? = null): List<CookStatsRow> = CookStatistics.of(
+    mapNotNull { log ->
+        log.recipe?.let { recipeId ->
+            CookLogFact(
                 recipeId = recipeId,
-                timesCooked = logs.size,
-                lastCookedEpochMillis = logs.mapNotNull { tandoorMillis(it.createdAt) }.maxOrNull(),
-                rating = ownRatings.takeIf { it.isNotEmpty() }?.let { floor(it.average() + HALF) },
+                cookedAtEpochMillis = tandoorMillis(log.createdAt),
+                rating = log.rating,
+                own = ownUserId != null && log.createdBy?.id == ownUserId,
             )
         }
+    },
+)
 
-private const val HALF = 0.5
+/** A server cook-log entry as a `cook_log` row (`local_id` = server id); null without id or recipe. */
+internal fun CookLogDto.toEntity(accountId: String): CookLogEntity? {
+    val serverId = id ?: return null
+    return CookLogEntity(
+        accountId = accountId,
+        localId = serverId,
+        serverId = serverId,
+        recipeId = recipe ?: return null,
+        servings = servings,
+        rating = rating,
+        comment = comment,
+        createdBy = createdBy?.id,
+        cookedAtEpochMillis = tandoorMillis(createdAt),
+        state = CookLogState.SYNCED,
+    )
+}
 
 // ---------------------------------------------------------------- recipe search
 

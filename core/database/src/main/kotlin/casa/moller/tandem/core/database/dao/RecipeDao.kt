@@ -383,6 +383,8 @@ abstract class RecipeDao {
             deleteKeywordRefs(accountId, chunk)
             deleteHomeSectionRefs(accountId, chunk)
             deleteUnsentOutboxRows(accountId, chunk)
+            // Their queued "Klart!" went with the outbox rows: record why they were never sent.
+            dropUnqueuedCookLogs(accountId, chunk)
         }
     }
 
@@ -472,6 +474,14 @@ abstract class RecipeDao {
             "AND server_id IN (:recipeIds)",
     )
     abstract suspend fun deleteUnsentOutboxRows(accountId: String, recipeIds: List<Long>)
+
+    /** PENDING cook-log entries of [recipeIds] whose outbox row is gone become DROPPED (`CookLogProblems.RECIPE_DELETED`). */
+    @Query(
+        "UPDATE cook_log SET state = 'DROPPED', problem = 'recipe_deleted', outbox_id = NULL WHERE account_id = :accountId " +
+            "AND state = 'PENDING' AND recipe_id IN (:recipeIds) " +
+            "AND NOT EXISTS (SELECT 1 FROM outbox o WHERE o.id = cook_log.outbox_id)",
+    )
+    abstract suspend fun dropUnqueuedCookLogs(accountId: String, recipeIds: List<Long>)
 
     /** Detail rows (stubs included) whose recipe is not in the overview any more. */
     @Query(

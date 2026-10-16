@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.Flow
  * Ordering rules of [nextReady]: lowest [OutboxEntity.id] first; a row waits while its
  * `depends_on` row still exists (any state, so a FAILED dependency blocks it) and while an older
  * row for the same object (same `entity` and `server_id` or `local_id`) is still in the outbox.
+ * A FAILED log row (`VIEW_LOG`, `COOK_LOG`) holds nothing back: log entries are independent of
+ * each other and of the recipe's edits, so one rejected "Klart!" never blocks the next.
  */
 @Dao
 abstract class OutboxDao {
@@ -34,7 +36,8 @@ abstract class OutboxDao {
             "AND (o.depends_on IS NULL OR NOT EXISTS (SELECT 1 FROM outbox dep WHERE dep.id = o.depends_on)) " +
             "AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.account_id = o.account_id AND p.id < o.id " +
             "AND p.entity = o.entity AND ((o.server_id IS NOT NULL AND p.server_id = o.server_id) " +
-            "OR (o.local_id IS NOT NULL AND p.local_id = o.local_id))) " +
+            "OR (o.local_id IS NOT NULL AND p.local_id = o.local_id)) " +
+            "AND NOT (p.state = 'FAILED' AND p.op IN ('VIEW_LOG', 'COOK_LOG'))) " +
             "ORDER BY o.id LIMIT 1",
     )
     abstract suspend fun nextReady(accountId: String): OutboxEntity?

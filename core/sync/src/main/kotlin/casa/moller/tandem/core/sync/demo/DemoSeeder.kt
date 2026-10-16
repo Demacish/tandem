@@ -7,7 +7,6 @@ import casa.moller.tandem.core.data.demo.DemoLanguage
 import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
-import casa.moller.tandem.core.database.dao.CookStatsRow
 import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.database.mapper.toEntity
@@ -15,7 +14,9 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.catchingUnexpected
 import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.sync.SyncSchedule
+import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.DEMO_ACCOUNT_ID
+import casa.moller.tandem.core.sync.engine.cookStatsRules
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.ImageResolver
 import casa.moller.tandem.core.sync.remote.tandoorMillis
@@ -139,10 +140,18 @@ internal class DemoSeeder(
         }
         recipes.replaceKeywords(accountId, content.keywords(locale, today).mapNotNull { it.toEntity(accountId) })
 
-        // One transaction; the demo details carry their ratings, so only the counts are written.
-        val stats = content.cookLog(today).toCookStats()
-        val rows = stats.map { CookStatsRow(it.recipeId, it.timesCooked, it.lastCookedEpochMillis) }
-        recipes.replaceCookStats(accountId, rows, withRatings = false)
+        // The content's cook log is stored like a server list (one transaction); entries logged in
+        // demo mode stay and keep counting. The demo details carry their ratings, so only recipes
+        // rated in demo mode get the log's rating (ActiveSource.Demo.cookStatsRules).
+        val cookLog = content.cookLog(today)
+        database.cookLogDao().reconcile(
+            accountId = accountId,
+            serverEntries = cookLog.mapNotNull { it.toEntity(accountId) },
+            listRequestedAtEpochMillis = now,
+            nowEpochMillis = now,
+            rules = ActiveSource.Demo.cookStatsRules,
+        )
+        val stats = cookLog.toCookStats()
 
         val reference = database.referenceDao()
         reference.replaceMealTypes(accountId, content.mealTypes(locale).mapNotNull { it.toEntity(accountId) })

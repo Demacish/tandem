@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.sync.di
 
 import android.content.Context
+import casa.moller.tandem.core.data.cooklog.CookLogRepository
 import casa.moller.tandem.core.data.demo.DemoDataRepository
 import casa.moller.tandem.core.data.home.HomeRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
@@ -15,6 +16,7 @@ import casa.moller.tandem.core.sync.data.DefaultImportGate
 import casa.moller.tandem.core.sync.data.DefaultPreferencesRepository
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.data.DefaultSyncRepository
+import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstHomeRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstRecipeRepository
 import casa.moller.tandem.core.sync.data.RoomPendingChangesExporter
@@ -64,6 +66,9 @@ internal abstract class SyncModule {
 
     @Binds
     abstract fun bindServerStatusRepository(impl: DefaultServerStatusRepository): ServerStatusRepository
+
+    @Binds
+    abstract fun bindCookLogRepository(impl: OfflineFirstCookLogRepository): CookLogRepository
 
     @Binds
     abstract fun bindPendingChangesExporter(impl: RoomPendingChangesExporter): PendingChangesExporter

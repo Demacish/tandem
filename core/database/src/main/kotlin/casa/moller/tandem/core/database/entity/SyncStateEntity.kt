@@ -38,4 +38,7 @@ object SyncEntities {
     const val MEAL_PLAN: String = "meal_plan"
     const val USER_PREFERENCE: String = "user_preference"
     const val HOME_SECTIONS: String = "home_sections"
+
+    /** `last_full_relist`: when a complete server cook log was last stored in `cook_log` (Phase 1b). */
+    const val COOK_LOG: String = "cook_log"
 }

@@ -3,7 +3,6 @@ package casa.moller.tandem.core.sync.engine
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
-import casa.moller.tandem.core.database.dao.CookStatsRow
 import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toEntity
 import casa.moller.tandem.core.model.error.Outcome
@@ -34,7 +33,6 @@ import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.remote.ImageResolver
 import casa.moller.tandem.core.sync.remote.RemoteCaller
-import casa.moller.tandem.core.sync.remote.toCookStats
 import casa.moller.tandem.core.sync.remote.toEntity
 import casa.moller.tandem.core.sync.remote.toIndexEntry
 import casa.moller.tandem.core.sync.remote.toModel
@@ -232,11 +230,10 @@ internal class SyncEngine @Inject constructor(
                 val index = syncIndex()
                 if (index is Outcome.Failure) return failed(stopReason() ?: index.error)
             }
-            if (referenceDue) {
-                // After the index, so the counts reach recipes stored by this run too.
-                syncCookStatistics()
-                markDone(SyncKeys.REFERENCE_DATA)
-            }
+            // After the index, so the counts reach recipes stored by this run too. Also out of
+            // turn while no complete cook log is stored (first run after the update to 0.2.0).
+            if (referenceDue || !database.cookLogDao().isComplete(accountId)) syncCookStatistics()
+            if (referenceDue) markDone(SyncKeys.REFERENCE_DATA)
             stopReason()?.let { return failed(it) }
 
             // Serialized with Today's refresh (refreshHome) and checked again inside the lock:
@@ -366,19 +363,23 @@ internal class SyncEngine @Inject constructor(
         /**
          * Times cooked, last cooked and the user's own rating, counted from the cook log (FACTS
          * "Fas 1 c": `last_cooked` is always null, `-times_cooked` answers 500 on 2.6 and lists
-         * carry a rating only when sorted by it). Written in one transaction; recipes without
-         * entries go back to "never cooked, not rated". The detail's rating has the same meaning
-         * (FACTS "Fas 1 d"), so a later detail fetch agrees with it.
+         * carry a rating only when sorted by it). The complete list replaces the server's part of
+         * `cook_log` and every recipe is recounted in one transaction (`CookLogDao.reconcile`):
+         * entries logged here and not yet sent (or sent after the list was requested) still
+         * count, once; recipes without entries go back to "never cooked, not rated". The detail's
+         * rating has the same meaning (FACTS "Fas 1 d"), so a later detail fetch agrees with it.
          */
         private suspend fun syncCookStatistics() {
-            val recipeDao = database.recipeDao()
+            val requestedAt = clock.nowMillis()
             val cookLog = fetchAll { page -> logs.cookLogs(recipe = null, page = page) }
             if (cookLog is Outcome.Success && cookLog.value.complete) {
-                val known = recipeDao.getRecipeIds(accountId).toHashSet()
-                val stats = cookLog.value.items.toCookStats(ownUserId = remote.account.userId)
-                    .filter { it.recipeId in known }
-                    .map { CookStatsRow(it.recipeId, it.timesCooked, it.lastCookedEpochMillis, it.rating) }
-                recipeDao.replaceCookStats(accountId, stats, withRatings = true)
+                database.cookLogDao().reconcile(
+                    accountId = accountId,
+                    serverEntries = cookLog.value.items.mapNotNull { it.toEntity(accountId) },
+                    listRequestedAtEpochMillis = requestedAt,
+                    nowEpochMillis = clock.nowMillis(),
+                    rules = remote.cookStatsRules,
+                )
             }
         }
 
