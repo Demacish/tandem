@@ -72,10 +72,8 @@ internal interface TemporaryFas1bDiagnosticsModule {
 
 /** In-memory timers that ring only while the process lives (no alarm, no notification). */
 @Singleton
-internal class TemporaryTimerController @Inject constructor(
-    private val clock: Clock,
-    @ApplicationScope scope: CoroutineScope,
-) : TimerController {
+internal class TemporaryTimerController @Inject constructor(private val clock: Clock, @ApplicationScope scope: CoroutineScope) :
+    TimerController {
     private val mutableTimers = MutableStateFlow<List<CookTimer>>(emptyList())
     private val mutableCapabilities = MutableStateFlow(
         TimerCapabilities(

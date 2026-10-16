@@ -103,7 +103,9 @@ data class CookTimer(
      */
     fun plusOneMinute(now: Instant): CookTimer = when (state) {
         TimerState.RUNNING -> copy(duration = duration + ONE_MINUTE, endsAt = endsAt!! + ONE_MINUTE)
+
         TimerState.PAUSED -> copy(duration = duration + ONE_MINUTE, pausedRemaining = pausedRemaining!! + ONE_MINUTE)
+
         TimerState.RINGING, TimerState.FINISHED ->
             copy(duration = duration + ONE_MINUTE, state = TimerState.RUNNING, endsAt = now + ONE_MINUTE)
     }
@@ -125,23 +127,17 @@ data class CookTimer(
         val ONE_MINUTE: Duration = 1.minutes
 
         /** A new RUNNING timer started at [now]. */
-        fun start(
-            id: Long,
-            label: String,
-            duration: Duration,
-            now: Instant,
-            recipeId: Long? = null,
-            stepIndex: Int? = null,
-        ): CookTimer = CookTimer(
-            id = id,
-            label = label,
-            recipeId = recipeId,
-            stepIndex = stepIndex,
-            duration = duration,
-            state = TimerState.RUNNING,
-            endsAt = now + duration,
-            createdAt = now,
-        )
+        fun start(id: Long, label: String, duration: Duration, now: Instant, recipeId: Long? = null, stepIndex: Int? = null): CookTimer =
+            CookTimer(
+                id = id,
+                label = label,
+                recipeId = recipeId,
+                stepIndex = stepIndex,
+                duration = duration,
+                state = TimerState.RUNNING,
+                endsAt = now + duration,
+                createdAt = now,
+            )
     }
 }
 
