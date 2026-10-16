@@ -8,12 +8,14 @@
     </plurals>
     <string name="onboarding_sync_done_title">Klart</string>
     <string name="onboarding_sync_failed_title">Första synkningen stannade</string>
-    <string name="onboarding_sync_body">Tandem sparar dina recept och matsedeln i enheten, så att de fungerar i köket även utan anslutning.</string>
-    <string name="onboarding_sync_body_server">Tandem sparar dina recept och matsedeln från %1$s i enheten, så att de fungerar i köket även utan anslutning.</string>
+    <string name="onboarding_sync_body">Tandem sparar receptlistan och matsedeln i enheten. Recept du laddar ner, har planerat eller nyligen öppnat går att läsa även utan anslutning.</string>
+    <string name="onboarding_sync_body_server">Tandem sparar receptlistan och matsedeln från %1$s i enheten. Recept du laddar ner, har planerat eller nyligen öppnat går att läsa även utan anslutning.</string>
     <string name="onboarding_sync_status">Synkstatus</string>
     <string name="onboarding_sync_percent">%1$d %%</string>
     <string name="onboarding_sync_recipes_progress">%1$d av %2$d recept</string>
     <string name="onboarding_sync_failed_body">Inget går förlorat: det som hämtats finns kvar, och Tandem försöker igen i bakgrunden. %1$s</string>
+    <string name="onboarding_sync_failed_body_kept">Inget går förlorat: det som hämtats finns kvar. %1$s</string>
+    <string name="onboarding_sync_log_in_again">Logga in igen</string>
 
     <string name="onboarding_sync_phase_server">Server och inloggning</string>
     <string name="onboarding_sync_phase_reference">Nyckelord, enheter och livsmedel</string>

@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.onboarding
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.error.UnauthorizedSource
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncProgress
 import casa.moller.tandem.core.testing.MainDispatcherRule
@@ -80,6 +81,30 @@ class OnboardingFirstSyncTest {
             assertEquals(OnboardingEvent.Finished, awaitItem())
         }
         assertNull(vm.uiState.value.firstSync.error)
+    }
+
+    @Test
+    fun aRefusedLoginLeadsBackToTheLoginStepInsteadOfARetry() = runTest {
+        sync.firstSyncProgress = FakeSyncRepository.failingFirstSync(TandemError.Unauthorized(UnauthorizedSource.TANDOOR))
+        val vm = connectedViewModel()
+        vm.onContinueAfterLogin()
+        assertEquals(OnboardingStep.FIRST_SYNC, vm.uiState.value.step)
+
+        vm.onLogInAgainAfterFirstSync()
+        val state = vm.uiState.value
+        assertEquals(OnboardingStep.LOGIN, state.step)
+        assertNull(state.firstSync.error)
+        assertNull(state.connected)
+        assertEquals("anna", state.username)
+    }
+
+    @Test
+    fun logInAgainIsIgnoredForOtherErrors() = runTest {
+        sync.firstSyncProgress = FakeSyncRepository.failingFirstSync(TandemError.Timeout)
+        val vm = connectedViewModel()
+        vm.onContinueAfterLogin()
+        vm.onLogInAgainAfterFirstSync()
+        assertEquals(OnboardingStep.FIRST_SYNC, vm.uiState.value.step)
     }
 
     @Test

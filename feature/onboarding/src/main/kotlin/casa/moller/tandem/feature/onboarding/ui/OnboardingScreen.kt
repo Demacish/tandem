@@ -93,6 +93,7 @@ internal fun OnboardingScreen(
                                     sync = state.firstSync,
                                     connected = state.connected,
                                     onRetry = actions::onRetryFirstSync,
+                                    onLogInAgain = actions::onLogInAgainAfterFirstSync,
                                     onContinueInBackground = actions::onContinueFirstSyncInBackground,
                                 )
 

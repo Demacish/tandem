@@ -227,6 +227,23 @@ class OnboardingViewModel @Inject constructor(
         startFirstSync()
     }
 
+    override fun onLogInAgainAfterFirstSync() {
+        val current = state.value
+        if (current.step != OnboardingStep.FIRST_SYNC || current.firstSync.error !is TandemError.Unauthorized) return
+        firstSyncJob?.cancel()
+        setState {
+            it.copy(
+                // The confirmed server is kept; after process death it may be gone: the server step.
+                step = if (it.server != null) OnboardingStep.LOGIN else OnboardingStep.SERVER,
+                firstSync = FirstSyncState(),
+                connected = null,
+                password = "",
+                token = "",
+                loginError = null,
+            )
+        }
+    }
+
     override fun onContinueFirstSyncInBackground() {
         if (state.value.step != OnboardingStep.FIRST_SYNC) return
         // Only stops following it here; the sync itself goes on (SyncRepository.firstSync).

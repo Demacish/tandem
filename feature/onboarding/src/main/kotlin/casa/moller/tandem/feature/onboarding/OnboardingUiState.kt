@@ -209,6 +209,12 @@ interface OnboardingActions {
     fun onRetryFirstSync()
 
     /**
+     * "Log in again" after Tandoor refused the new login during the first sync (a retry cannot
+     * help, the sync pauses until a new login): back to the login step of the same server.
+     */
+    fun onLogInAgainAfterFirstSync()
+
+    /**
      * "Continue in the background" while the first sync runs, or "Continue anyway" after it
      * failed: the intro ends and the sync goes on (or is retried) in the background.
      */

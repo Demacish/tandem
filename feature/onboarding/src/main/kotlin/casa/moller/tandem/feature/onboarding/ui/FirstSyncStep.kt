@@ -37,6 +37,7 @@ import casa.moller.tandem.core.designsystem.component.iconColor
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.onboarding.ConnectedSummary
@@ -52,7 +53,8 @@ internal const val FIRST_SYNC_PROGRESS_TAG = "onboarding:first-sync-progress"
  * The first sync after a login (plan 6.2 "Efter inloggning", Stitch intro_f_rsta_synk):
  * "Fetching 312 recipes…", overall progress, the phases with their state, and a way on. Leaving
  * early ("Continue in the background") never cancels the sync. After an error: what happened,
- * "Try again" and "Continue anyway".
+ * "Try again" and "Continue anyway". A refused login cannot be retried (the sync pauses until a
+ * new login), so it offers "Log in again" and promises no retry in the background.
  */
 @Composable
 internal fun ColumnScope.FirstSyncStep(
@@ -60,6 +62,7 @@ internal fun ColumnScope.FirstSyncStep(
     connected: ConnectedSummary?,
     onRetry: () -> Unit,
     onContinueInBackground: () -> Unit,
+    onLogInAgain: () -> Unit = {},
 ) {
     val spacing = TandemTheme.spacing
     val error = sync.error
@@ -101,19 +104,35 @@ internal fun ColumnScope.FirstSyncStep(
     }
     if (error != null) {
         val text = error.toErrorText()
+        val loginRefused = error is TandemError.Unauthorized
         CalloutCard(
             title = text.title,
-            body = stringResource(R.string.onboarding_sync_failed_body, text.body),
+            body = when {
+                // "The login on this device is no longer valid. What you saved offline is kept."
+                loginRefused -> text.body
+                // Its own text already says that Tandem tries again later.
+                error == TandemError.Blocked -> stringResource(R.string.onboarding_sync_failed_body_kept, text.body)
+                else -> stringResource(R.string.onboarding_sync_failed_body, text.body)
+            },
             icon = text.icon,
             tone = TandemTone.Warning,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
-        TandemPrimaryButton(
-            text = stringResource(DesignR.string.tandem_action_retry),
-            onClick = onRetry,
-            modifier = Modifier.fillMaxWidth(),
-            leadingIcon = TandemIcons.Refresh,
-        )
+        if (loginRefused) {
+            TandemPrimaryButton(
+                text = stringResource(R.string.onboarding_sync_log_in_again),
+                onClick = onLogInAgain,
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = TandemIcons.Key,
+            )
+        } else {
+            TandemPrimaryButton(
+                text = stringResource(DesignR.string.tandem_action_retry),
+                onClick = onRetry,
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = TandemIcons.Refresh,
+            )
+        }
         TandemTextButton(
             text = stringResource(R.string.onboarding_sync_continue_anyway),
             onClick = onContinueInBackground,

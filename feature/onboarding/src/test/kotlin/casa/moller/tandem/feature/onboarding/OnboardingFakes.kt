@@ -141,6 +141,7 @@ internal object NoOpActions : OnboardingActions {
     override fun onStartDemo() = Unit
     override fun onContinueAfterLogin() = Unit
     override fun onRetryFirstSync() = Unit
+    override fun onLogInAgainAfterFirstSync() = Unit
     override fun onContinueFirstSyncInBackground() = Unit
     override fun onBatteryTipDone() = Unit
 }

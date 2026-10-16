@@ -9,12 +9,15 @@
     </plurals>
     <string name="onboarding_sync_done_title">All set</string>
     <string name="onboarding_sync_failed_title">The first sync stopped</string>
-    <string name="onboarding_sync_body">Tandem saves your recipes and meal plan on this device, so they work in the kitchen even without a connection.</string>
-    <string name="onboarding_sync_body_server">Tandem saves your recipes and meal plan from %1$s on this device, so they work in the kitchen even without a connection.</string>
+    <string name="onboarding_sync_body">Tandem saves the recipe list and meal plan on this device. Recipes you download, have planned or opened recently can be read without a connection.</string>
+    <string name="onboarding_sync_body_server">Tandem saves the recipe list and meal plan from %1$s on this device. Recipes you download, have planned or opened recently can be read without a connection.</string>
     <string name="onboarding_sync_status">Sync status</string>
     <string name="onboarding_sync_percent">%1$d %%</string>
     <string name="onboarding_sync_recipes_progress">%1$d of %2$d recipes</string>
     <string name="onboarding_sync_failed_body">Nothing is lost: what was fetched is kept, and Tandem tries again in the background. %1$s</string>
+    <!-- For errors whose own text already says when Tandem tries again (blocked). -->
+    <string name="onboarding_sync_failed_body_kept">Nothing is lost: what was fetched is kept. %1$s</string>
+    <string name="onboarding_sync_log_in_again">Log in again</string>
 
     <string name="onboarding_sync_phase_server">Server and login</string>
     <string name="onboarding_sync_phase_reference">Keywords, units and foods</string>
