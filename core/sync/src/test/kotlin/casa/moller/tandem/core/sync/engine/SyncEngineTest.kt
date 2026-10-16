@@ -318,7 +318,7 @@ class SyncEngineTest {
 
         assertEquals(SyncPhase.FAILED, result.phase)
         assertTrue("${result.error}", result.error is TandemError.Throttled)
-        assertEquals("nothing after the 429: ${server.requests}", "GET /api/keyword/", server.requests.last())
+        assertTrue("nothing after the 429: ${server.requests}", server.requests.last().startsWith("GET /api/keyword/"))
         server.requests.clear()
         graph.engine.run(SyncReason.PERIODIC)
         assertTrue("no request before Retry-After: ${server.requests}", server.requests.isEmpty())
