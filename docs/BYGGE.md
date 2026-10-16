@@ -230,6 +230,16 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   kontodata, därför inte i `core:datastore`. Dra-för-att-uppdatera begär en synk
   (`SyncReason.USER_REFRESH`) och visar indikatorn tills synken är klar (högst 2 s om den aldrig
   startar). Offline tonas recept utan sparad detalj ned med molnikon.
+  Granskningen av 0.1.0 (fix-ui): listans indata har inga platshållarvärden (`onStart`), så när
+  skärmen prenumererar igen efter 5 s står den visade listan, layouten och scrollpositionen kvar
+  tills Room svarat. `RecipeListUiState.syncError` (synkens `lastError`, utom offline och
+  "Logga in igen") visar `ErrorState` med "Försök igen" i stället för "Inga recept än", och en
+  dra-för-att-uppdatera vars synk misslyckas ger snackbaren "Kunde inte synka: <fel>". Scaffolden
+  räknar tangentbordet (`WindowInsets.ime`) till innehållets insets. På expanded-fönster (från
+  840 dp) är nyckelordsväljaren en sidopanel (`KeywordPickerPanel`) bredvid recepten, eller i
+  deras ställe i den smala listpanelen; annars bottenark. Filter på livsmedel (plan 6.2) finns
+  inte än – `RecipeQuery` saknar fältet och lokala frågan behöver en `EXISTS` på ingredienserna;
+  det står i färdplanen som en senare version.
 - **Detalj** (`detail/`): `RecipeDetailViewModel` (assisted injection med recept-id) visar
   sparad kopia direkt, tyst uppdatering, "Visar sparad version" offline och felläge med
   "Försök igen" när inget finns sparat. Portioner sparas per recept i repositoryt;
@@ -241,6 +251,10 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   skärmen från sin locale med `RecipeDetailAction.SetNumberStyle`, så texten följer ett byte av
   appspråk. Tryck på en mängd växlar mellan enheterna i serverns `conversions`
   (`IngredientRow.Item.unitAt`, dubbletten av den egna enheten tas bort).
+  TalkBack: en ingrediensrad är en post "<mängd> <livsmedel>, <anteckning>" med kryssruta, och
+  enhetsbytet finns bara som radens egen åtgärd "Visa i annan enhet" (pillret går att trycka på
+  men är ingen egen post). Mängden läses via `core:domain`s `spokenNumbers` (`³⁄₁₆ tsk` →
+  `3/16 tsk`); `MarkdownText(spokenText = …)` gör samma sak för stegtexter med sådana bråk.
   "Öppna på webben" öppnar `<server>/recipe/<id>/` i en Custom Tab (skalet, `androidx.browser`,
   vanlig webbläsare som reserv).
 - **Steg och Markdown:** stegtexten är Markdown. Appen har en egen liten läsare i
@@ -268,8 +282,12 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   (`icon/TandemIconsRecipes.kt`, `import casa.moller.tandem.core.designsystem.icon.Search`),
   så att parallella ändringar inte krockar i samma rader.
 - **Surfplatta:** list-detalj enligt navigeringskontraktet; skalet skickar `selectedRecipeId`
-  till `RecipesRoute`, så det öppna receptet markeras i listan. Detaljen visar ingredienser och
-  steg sida vid sida när panelen är minst 720 dp bred.
+  till `RecipesRoute`, så det öppna receptet markeras i listan. Detaljen visar två paneler som
+  rullar var för sig när den är minst 720 dp bred: till vänster foto (högst 240 dp,
+  `cappedAspectRatio` i `core:ui`), portioner och ingredienser, till höger titel, fakta,
+  beskrivning och steg (plan 6.5: ingredienserna står kvar medan stegen rullar). Beskrivning och
+  stegtext har läsbar radlängd (`maxReadingWidth`). `tablet_detail_steps_scrolled_light` visar
+  stegpanelen rullad till slutet med ingredienserna kvar.
 - **Skärmbilder:** `RecipesScreenshotTest` (telefon 412×915, hög telefon, medium 700×1000 stående,
   surfplatta 1280×800 liggande; ljust/mörkt, engelska/svenska, textstorlek 2,0) och
   `RecipeComponentsScreenshotTest` i `core:ui` sparas i artefakten `screenshots`
@@ -284,13 +302,15 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   börjar från 15:00 (annars dagens sista måltid utan tid); övriga måltider idag och imorgon visas
   som rader, sedan karusellerna som har recept. `HomeRepository.refresh()` körs en gång när fliken
   öppnas och sedan bara vid dra-för-att-uppdatera/"Synka nu" (som också ber synken om
-  `USER_REFRESH`). Når den inte servern (`TandemError.isConnectivityProblem` i `:core:model`)
+  `USER_REFRESH`; synkens Idag-steg delar `homeMutex` och 2-minutersgolvet med `refreshHome`,
+  så matsedeln och karusellerna hämtas en gång per drag). Når den inte servern (`TandemError.isConnectivityProblem` i `:core:model`)
   visas det som hämtats senast med en offlineruta. Från 840 dp bredd: två kolumner
   (idag_surfplatta_*), annars en kolumn.
 - **Första synken (`:feature:onboarding`):** efter "Fortsätt" i ansluten-steget följer
   `OnboardingViewModel` `SyncRepository.firstSync()` (steg `FIRST_SYNC`). "Fortsätt i
   bakgrunden" avslutar bara bevakningen, inte synken. Vid fel: "Försök igen" eller "Fortsätt
-  ändå". På Samsung (`OnboardingConfig.showBatteryTip`, sätts i appens `OnboardingConfigModule`)
+  ändå"; nekar Tandoor inloggningen (`Unauthorized`) "Logga in igen" (tillbaka till
+  inloggningssteget) i stället för "Försök igen", utan löfte om nya försök i bakgrunden. På Samsung (`OnboardingConfig.showBatteryTip`, sätts i appens `OnboardingConfigModule`)
   kommer ett tips om batterioptimering med en länk till appens systeminställningar (bara en
   Intent, ingen behörighet). Introt avslutas med händelsen `OnboardingEvent.Finished`.
 - **Serverstatus (`:core:ui` `status/`, kopplat i skalet):** `LoginExpiredBanner` (Tandoor
@@ -445,8 +465,8 @@ den kod som skickas:
   "Offline: searching recipes on this device", receptet med bild ur diskcachen och de sparade
   portionerna (9, "168.75 g"). Nätet slås alltid på igen av testets yttersta regel (efter att
   ett fel har fångats med nätet avslaget). Demotestet startar demoläget,
-  kräver "Tonight" med middagen och dess bild på Idag, öppnar receptet (bild, "600 g",
-  "salmon fillet…") och att den falska servern inte fick en enda begäran. Att en bild verkligen
+  kräver "Tonight" med middagen och dess bild på Idag, öppnar receptet (bild, ingrediensraden
+  "600 g salmon fillet…" via radens beskrivning) och att den falska servern inte fick en enda begäran. Att en bild verkligen
   laddats syns utifrån genom testtaggen `recipe_image_loaded` (`RecipeImageTags` i `:core:ui`);
   appen exponerar testtaggar som resurs-id (`testTagsAsResourceId` i `TandemApp`).
 - **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 36,

@@ -11,7 +11,8 @@ språk (svenska och engelska), ingången till demoläget, lokal kraschlogg.
 ## Fas 1: Laga
 Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, laga).
 
-- ✅ Receptlista med sökning offline och mot servern, filter och sortering (0.1.0).
+- ✅ Receptlista med sökning offline och mot servern, filter (nyckelord, tid, betyg, nedladdade)
+  och sortering (0.1.0). Filter på livsmedel kommer i en senare version.
 - ✅ Receptvy: portioner, skalade mängder som i Tandoors webb, bråk, enhetsomräkning, steg,
   betyg (0.1.0).
 - ✅ Recept sparade för offline, med bilder (0.1.0).
@@ -22,7 +23,8 @@ Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, l
 - ✅ Versionskontroll av servern och säkert läge för otestade Tandoor-versioner (0.1.0).
 - ✅ Återställningsskärm i stället för kraschloop (0.1.0).
 - ✅ Demoläge med inbyggda exempelrecept, för den som inte har någon Tandoor (0.1.0).
-- Surfplatta: ✅ lista och recept sida vid sida (0.1.0); kokläge i två paneler (0.2.0).
+- Surfplatta: ✅ lista och recept sida vid sida, ingredienser och steg som rullar var för sig,
+  nyckelordsfiltret som sidopanel (0.1.0); kokläge i två paneler (0.2.0).
 - Fler inställningar och en nattlig kontroll mot nya Tandoor-versioner (0.2.0).
 
 ## Fas 2: Handla och planera

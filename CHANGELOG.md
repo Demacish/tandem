@@ -25,11 +25,11 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
   rubriker, "ingen mängd", plural och mallar som `{{ scale(100) }}` i stegtexten). Tryck på en
   mängd för att se den i en annan enhet när Tandoor har en omräkning. Bocka av ingredienser
   medan du läser. Länkade delrecept öppnas direkt; "Öppna på webben" öppnar receptet i Tandoor.
-- **Offline:** "Ladda ner offline" sparar ett recept med bild på telefonen. Fästa, planerade och
-  nyligen visade recept hämtas automatiskt. Utan nät visas *Offline*, sökningen går mot det som
+- **Offline:** "Ladda ner offline" sparar ett recept med bild på telefonen. Nedladdade, planerade
+  och nyligen visade recept hålls uppdaterade automatiskt. Utan nät visas *Offline*, sökningen går mot det som
   finns sparat och recept som inte är nedladdade är nedtonade.
 - **Idag:** kvällens måltid från matsedeln (*Ikväll*), resten av dagen och imorgon, och
-  karusellerna Fästa recept, Ofta lagade, Nya, Nyligen visade och Inte lagat på länge.
+  karusellerna Dina nedladdningar, Ofta lagade, Nya, Nyligen visade och Inte lagat på länge.
 - **Surfplatta:** receptlistan och receptet sida vid sida, ingredienser och steg i två kolumner.
 - **Serverversion:** appen kontrollerar Tandoors version och kör i *säkert läge* (läsning
   fungerar, ändringar väntar) på en version som inte är testad. Byter servern version får du en
@@ -42,6 +42,7 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
   kokhistorik, så att allt ovan går att prova utan Tandoor. *Återställ demodata* under Mer.
 - Appen visar vilka recept du har öppnat för Tandoor (som webbens "Nyligen visade").
 - **Utloggning** tar bort kontots recept och bilder från telefonen; betyget räknas ur din kokhistorik så att sortering och filter på betyg fungerar offline; *Logga in igen* går att avbryta.
+- **Tillgänglighet och surfplatta:** TalkBack läser en ingrediensrad som en post med mängden (bråk som 3/16) och receptkort med namnet först; texter bryts i stället för att klippas vid stor text; på surfplatta rullar ingredienser och steg var för sig och nyckelordsfiltret är en sidopanel; en misslyckad synk visas i receptlistan; Idag leder inte till den ännu tomma fliken Veckan.
 - **Release-röktest:** varje version loggar nu också in, väntar ut första synken, söker, skalar,
   laddar ner ett recept och läser det i flygplansläge, och provar demoläget, med just
   release-bygget på en Android-emulator innan den släpps.
