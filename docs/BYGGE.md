@@ -447,7 +447,10 @@ bara via `core:data`.
   DataStore-fil, en skadad fil, omstart (nytt larm, förfallen timer ringer, gammalt larm noteras
   bara), klockbyte och att en ny process lägger tillbaka larmen. `TimerPlatformTest`:
   `AndroidTimerSystem` (behörigheter, avstängd larmkanal, klockappens intent), systemhändelserna,
-  tjänstetypen och manifestet. `TimerStoreTest`: filformatet.
+  tjänstetypen och manifestet. `TimerStoreTest`: filformatet. I `:app` kontrollerar
+  `TimerPermissionsManifestTest` det sammanslagna manifestet per flavor (sideload: `USE_EXACT_ALARM`
+  och `USE_FULL_SCREEN_INTENT`, inte `SCHEDULE_EXACT_ALARM`; play tvärtom); CI kör sideload, och
+  play-bygget (`bundlePlayRelease`) prövas av Release-flödets manuella torrkörning.
 <!-- /Fas 1b timer -->
 
 <!-- fix-bygg: tillgänglighetskontroller -->

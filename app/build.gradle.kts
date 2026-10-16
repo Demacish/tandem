@@ -155,7 +155,7 @@ dependencies {
     implementation(projects.feature.onboarding)
     implementation(projects.feature.shell)
     // --- Phase 1 (grund lane): the app wires every module into the Hilt graph. The shell hosts
-    // feature:recipes and feature:home; feature:cook and core:timer are Phase 1b placeholders. ---
+    // feature:recipes and feature:home; core:timer binds the real TimerController (Phase 1b). ---
     implementation(projects.core.database)
     implementation(projects.core.sync)
     implementation(projects.core.timer)
