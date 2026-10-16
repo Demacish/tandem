@@ -24,6 +24,7 @@
     <string name="onboarding_server_label">Adress till din Tandoor</string>
     <string name="onboarding_server_hint">https:// läggs till om du utelämnar det. Kör Tandoor under en sökväg tar du med den, t.ex. exempel.se/tandoor.</string>
     <string name="onboarding_connect">Anslut</string>
+    <string name="onboarding_cancel_log_in_again">Avbryt</string>
     <string name="onboarding_checking">Kontrollerar servern…</string>
     <string name="onboarding_checking_button">Kontrollerar…</string>
     <string name="onboarding_untested_title">Tandoor %1$s är inte testad ännu</string>

@@ -41,14 +41,14 @@ sealed interface TandemError {
 
     /**
      * The token is missing, invalid, expired or revoked. Tandoor 2.6.13 answers all of these with
-     * 403 and a JSON body, never 401; a 401 comes from something in front of Tandoor.
+     * 403 and a JSON object with `detail`, never 401; a 401 comes from something in front of Tandoor.
      * Stops the sync queue and asks for a new login, but keeps the outbox (plan 4.1, 4.2).
      */
     data class Unauthorized(val source: UnauthorizedSource) : TandemError
 
     /**
-     * 403 without a JSON body: a firewall, CrowdSec or the reverse proxy blocked the request
-     * (plan 4.1). Not a login problem; the app pauses and tries again later.
+     * 403 without Tandoor's JSON `detail`: a firewall, CrowdSec or the reverse proxy blocked the
+     * request (plan 4.1). Not a login problem; the app pauses and tries again later.
      */
     data object Blocked : TandemError
 
@@ -132,7 +132,7 @@ enum class NotTandoorReason {
 }
 
 enum class UnauthorizedSource {
-    /** 403 with a JSON body from Tandoor itself. */
+    /** 403 with a JSON `detail` from Tandoor itself. */
     TANDOOR,
 
     /** 401: from a proxy or SSO in front of Tandoor (Tandoor itself never answers 401). */

@@ -51,6 +51,11 @@ data class AppUiState(
     val startOnboardingAtServer: Boolean = false,
     /** The server address the intro starts with ("Log in again"), null for an empty field. */
     val onboardingServerUrl: String? = null,
+    /**
+     * The intro was opened by "Log in again" while the account is still logged in: it offers
+     * "Cancel" (and system back on its first step) to return to the app unchanged.
+     */
+    val canCancelOnboarding: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     /** False until the stored theme has been read; [themeMode] is only a default before that. */
     val themeModeLoaded: Boolean = false,
@@ -86,22 +91,30 @@ class AppViewModel @Inject constructor(
         shellMessages.messages.map { AppMessage.FromShell(it) },
     )
 
-    val uiState: StateFlow<AppUiState> = combine(
-        session,
+    private val introFlags: Flow<IntroFlags> = combine(
         savedStateHandle.getStateFlow(KEY_HOLD_ONBOARDING, false),
         savedStateHandle.getStateFlow(KEY_START_AT_SERVER, false),
         savedStateHandle.getStateFlow<String?>(KEY_SERVER_URL, null),
+        savedStateHandle.getStateFlow(KEY_LOG_IN_AGAIN, false),
+    ) { hold, atServer, serverUrl, logInAgain -> IntroFlags(hold, atServer, serverUrl, logInAgain) }
+
+    val uiState: StateFlow<AppUiState> = combine(
+        session,
+        introFlags,
         appearanceRepository.themeMode,
-    ) { current, hold, atServer, serverUrl, theme ->
+    ) { current, flags, theme ->
         AppUiState(
-            destination = resolveDestination(current, hold),
+            destination = resolveDestination(current, flags.hold),
             session = current,
-            startOnboardingAtServer = atServer,
-            onboardingServerUrl = serverUrl,
+            startOnboardingAtServer = flags.atServer,
+            onboardingServerUrl = flags.serverUrl,
+            canCancelOnboarding = flags.logInAgain && flags.hold && current is Session.LoggedIn,
             themeMode = theme,
             themeModeLoaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppUiState())
+
+    private data class IntroFlags(val hold: Boolean, val atServer: Boolean, val serverUrl: String?, val logInAgain: Boolean)
 
     init {
         viewModelScope.launch {
@@ -141,19 +154,30 @@ class AppViewModel @Inject constructor(
         savedStateHandle[KEY_HOLD_ONBOARDING] = false
         savedStateHandle[KEY_START_AT_SERVER] = false
         savedStateHandle[KEY_SERVER_URL] = null
+        savedStateHandle[KEY_LOG_IN_AGAIN] = false
     }
 
     /**
      * "Log in again" after Tandoor refused the stored token (plan 4.1, 5.4): the intro opens at
      * the server step with the account's address filled in, while the account stays stored.
      * Logging in to the same user and space replaces only its token, so the stored recipes and
-     * the outbox are kept and the paused sync goes on; leaving the intro early (system back on
-     * the welcome step) keeps the old session as it was.
+     * the outbox are kept and the paused sync goes on. "Cancel" (or system back on the server
+     * step) calls [cancelLogInAgain] and returns to the app with the old session as it was.
      */
     fun logInAgain(serverUrl: String) {
         savedStateHandle[KEY_SERVER_URL] = serverUrl
         savedStateHandle[KEY_START_AT_SERVER] = true
+        savedStateHandle[KEY_LOG_IN_AGAIN] = true
         savedStateHandle[KEY_HOLD_ONBOARDING] = true
+    }
+
+    /**
+     * Leaves the intro opened by [logInAgain] without logging in: back to the app (offline
+     * recipes, Today) with the stored account and its outbox unchanged. Does nothing without a
+     * logged-in account, so an intro that must be completed can never be skipped.
+     */
+    fun cancelLogInAgain() {
+        if (session.value is Session.LoggedIn && savedStateHandle.get<Boolean>(KEY_LOG_IN_AGAIN) == true) releaseOnboarding()
     }
 
     /** "Connect your Tandoor" in demo mode: leave demo and open the intro at the server step. */
@@ -176,6 +200,7 @@ class AppViewModel @Inject constructor(
         const val KEY_HOLD_ONBOARDING = "app.holdOnboarding"
         const val KEY_START_AT_SERVER = "app.startAtServer"
         const val KEY_SERVER_URL = "app.onboardingServerUrl"
+        const val KEY_LOG_IN_AGAIN = "app.logInAgain"
 
         fun resolveDestination(session: Session?, holdOnboarding: Boolean): AppDestination = when (session) {
             null -> AppDestination.Loading

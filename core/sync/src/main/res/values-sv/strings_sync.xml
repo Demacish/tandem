@@ -5,6 +5,6 @@
 
     <string name="sync_notification_version_title">Tandoor har uppdaterats</string>
     <string name="sync_notification_version_text">Din server kör nu Tandoor %1$s (tidigare %2$s).</string>
-    <string name="sync_notification_version_safe_mode">Tandem är inte testad med den här versionen än. Läsning fungerar som vanligt; dina ändringar väntar tills du väljer att skicka dem.</string>
+    <string name="sync_notification_version_safe_mode">Tandem är inte testad med den här versionen än. Läsning fungerar som vanligt; dina ändringar väntar i enheten tills en testad version av Tandem är installerad.</string>
     <string name="sync_notification_version_writes_off">Den här versionen är nyare än Tandem stöder. Läsning fungerar; ändringar skickas inte förrän Tandem har uppdaterats.</string>
 </resources>

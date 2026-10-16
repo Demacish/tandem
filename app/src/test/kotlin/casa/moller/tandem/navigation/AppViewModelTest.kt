@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -79,6 +80,38 @@ class AppViewModelTest {
         vm.onOnboardingFinished()
         assertEquals(AppDestination.Shell, vm.destination())
         assertEquals(null, vm.uiState.value.onboardingServerUrl)
+    }
+
+    @Test
+    fun logInAgainCanBeCancelledBackToTheApp() {
+        sessions.state.value = LOGGED_IN
+        val vm = newViewModel()
+        assertFalse(vm.uiState.value.canCancelOnboarding)
+
+        vm.logInAgain("https://tandoor.example.com")
+        assertTrue("the intro offers Cancel", vm.uiState.value.canCancelOnboarding)
+
+        vm.cancelLogInAgain()
+        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals("the session is unchanged", LOGGED_IN, vm.uiState.value.session)
+        assertFalse(vm.uiState.value.canCancelOnboarding)
+        assertFalse(vm.uiState.value.startOnboardingAtServer)
+        assertEquals(null, vm.uiState.value.onboardingServerUrl)
+    }
+
+    @Test
+    fun theIntroCannotBeCancelledWithoutALoggedInAccount() {
+        val vm = newViewModel()
+        assertFalse(vm.uiState.value.canCancelOnboarding)
+
+        vm.cancelLogInAgain()
+        assertEquals(AppDestination.Onboarding, vm.destination())
+
+        // A first login (no "Log in again") is held in the intro and cannot be cancelled either.
+        sessions.state.value = LOGGED_IN
+        vm.cancelLogInAgain()
+        assertEquals(AppDestination.Onboarding, vm.destination())
+        assertFalse(vm.uiState.value.canCancelOnboarding)
     }
 
     @Test

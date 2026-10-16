@@ -91,6 +91,32 @@ class SyncGuardTest {
     }
 
     @Test
+    fun a429StopsEveryRequestUntilRetryAfter() {
+        guard.record(ACCOUNT, FINGERPRINT, TandemError.Throttled(120.seconds))
+
+        assertTrue(guard.check(ACCOUNT, background = true) is TandemError.Throttled)
+        assertTrue("also what the user starts", guard.check(ACCOUNT, background = false) is TandemError.Throttled)
+        assertEquals(SyncPause.BLOCKED, guard.pauseAt(guard.state.value, ACCOUNT, clock.nowMillis()))
+        clock.advance(119.seconds)
+        assertTrue(guard.check(ACCOUNT, background = false) is TandemError.Throttled)
+        clock.advance(1.seconds)
+        assertNull(guard.check(ACCOUNT, background = true))
+        assertNull(guard.pauseAt(guard.state.value, ACCOUNT, clock.nowMillis()))
+    }
+
+    @Test
+    fun a429WithoutRetryAfterUsesTheDefaultAndALongOneIsCapped() {
+        guard.record(ACCOUNT, FINGERPRINT, TandemError.Throttled(null))
+        assertEquals(clock.nowMillis() + SyncSchedule.THROTTLED_DEFAULT_PAUSE.inWholeMilliseconds, guard.state.value.throttledUntil)
+
+        guard.record(ACCOUNT, FINGERPRINT, TandemError.Throttled(86_400.seconds))
+        assertEquals(clock.nowMillis() + SyncSchedule.THROTTLED_MAX_PAUSE.inWholeMilliseconds, guard.state.value.throttledUntil)
+
+        guard.reset()
+        assertNull("another account starts with a clean slate", guard.check(ACCOUNT, background = true))
+    }
+
+    @Test
     fun anImportHoldsBackOnlyBackgroundRequests() {
         guard.importStarted()
         assertEquals(SyncGuard.IMPORT_ERROR, guard.check(ACCOUNT, background = true))

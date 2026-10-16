@@ -30,8 +30,10 @@ sealed interface IngredientRow {
      *   is the unit the recipe uses, then the server's `conversions` in server order (own
      *   conversions first, then base units), without repeats. Empty when the web shows no amount
      *   (`no_amount`, or an amount of 0).
-     * @property food the food in singular or plural for the scaled amount ("champinjoner"); for a
-     *   row without a food the imported `original_text`, else empty.
+     * @property food the food in singular or plural for the scaled amount ("champinjoner"). A row
+     *   without a food is empty like on the web when an amount is shown (`original_text` holds the
+     *   imported line WITH its amount, which would show the amount twice), and the imported
+     *   `original_text` when no amount is shown, so the row is not blank.
      * @property note the note ("riven"); empty when there is none. The web shows it as a tooltip.
      * @property noAmount Tandoor's `no_amount` ("salt till pastavattnet").
      * @property onHand the food is marked "have at home" on the server.
@@ -98,10 +100,10 @@ object IngredientDisplay {
         val shown = !ingredient.noAmount && ingredient.amount != 0.0
         val units = if (shown) unitAmounts(ingredient, factor, preferences, style) else emptyList()
         val food = ingredient.food
-        val foodText = if (food != null) {
-            PluralRule.name(food.name, food.pluralName, scaled, ingredient.noAmount)
-        } else {
-            ingredient.originalText?.trim().orEmpty()
+        val foodText = when {
+            food != null -> PluralRule.name(food.name, food.pluralName, scaled, ingredient.noAmount)
+            units.isEmpty() -> ingredient.originalText?.trim().orEmpty()
+            else -> ""
         }
         return IngredientRow.Item(
             id = ingredient.id,

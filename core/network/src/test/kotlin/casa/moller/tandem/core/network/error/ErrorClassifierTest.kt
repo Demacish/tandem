@@ -134,6 +134,10 @@ class ErrorClassifierTest {
         assertEquals(TandemError.Blocked, classify(403, "Forbidden", "text/plain"))
         assertEquals(TandemError.Blocked, classify(403, "<html><body>Access denied</body></html>", "text/html"))
         assertEquals(TandemError.Blocked, classify(403, "[]", "application/json"))
+        // A firewall, WAF or auth proxy with its own JSON is not Tandoor refusing the token.
+        assertEquals(TandemError.Blocked, classify(403, """{"message":"Forbidden"}""", "application/json"))
+        assertEquals(TandemError.Blocked, classify(403, """{"error":"blocked"}""", "application/json"))
+        assertEquals(TandemError.Blocked, classify(403, "{}", "application/json"))
     }
 
     @Test

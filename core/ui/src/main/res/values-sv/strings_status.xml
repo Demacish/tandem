@@ -13,7 +13,7 @@
     <string name="ui_safe_mode_reading_title">Läsning fungerar</string>
     <string name="ui_safe_mode_reading_body">Recept, matsedeln och allt som sparats för offline fungerar som vanligt.</string>
     <string name="ui_safe_mode_queued_title">Ändringar väntar i enheten</string>
-    <string name="ui_safe_mode_queued_body">Ändringar du gör i Tandem, till exempel kokloggar, sparas i enheten och skickas inte till servern än.</string>
+    <string name="ui_safe_mode_queued_body">Ändringar du gör i Tandem sparas i enheten och skickas inte till servern än.</string>
     <string name="ui_safe_mode_send_anyway_title">”Skicka ändå” kommer senare</string>
     <string name="ui_safe_mode_send_anyway_body">En senare version av Tandem låter dig skicka väntande ändringar ändå. Inget du sparat kastas bort.</string>
     <string name="ui_safe_mode_update_heading">Det här kan du göra</string>

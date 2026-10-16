@@ -140,9 +140,32 @@ class IngredientDisplayTest {
     fun headerAndFreeTextFallbacks() {
         val header = IngredientDisplay.row(Ingredient(id = 1, isHeader = true, note = " "), 1.0, decimals, NumberStyle.Swedish)
         assertEquals(IngredientRow.Header(1, ""), header)
+        // Without a food and with an amount the web shows only the amount (original_text repeats it).
         val freeText = Ingredient(id = 2, amount = 1.0, originalText = "en nypa salt ")
-        assertEquals("1 en nypa salt", (IngredientDisplay.row(freeText, 1.0, decimals, NumberStyle.Swedish) as IngredientRow.Item).text())
+        assertEquals("1", (IngredientDisplay.row(freeText, 1.0, decimals, NumberStyle.Swedish) as IngredientRow.Item).text())
         val onHand = Ingredient(id = 3, food = Food(3, "salt", onHand = true), amount = 1.0)
         assertTrue((IngredientDisplay.row(onHand, 1.0, decimals, NumberStyle.Swedish) as IngredientRow.Item).onHand)
+    }
+
+    @Test
+    fun aRowWithoutFoodShowsTheAmountOnceAndScalesIt() {
+        val cream = Ingredient(id = 4, amount = 2.0, unit = MeasurementUnit(1, "dl"), originalText = "2 dl grädde")
+
+        fun text(factor: Double) = (IngredientDisplay.row(cream, factor, decimals, NumberStyle.Swedish) as IngredientRow.Item).text()
+
+        assertEquals("2 dl", text(1.0))
+        assertEquals("4 dl", text(2.0))
+    }
+
+    @Test
+    fun aRowWithoutFoodOrAmountKeepsItsImportedText() {
+        val noAmount = Ingredient(id = 5, noAmount = true, originalText = "salt efter smak")
+        val zero = Ingredient(id = 6, amount = 0.0, originalText = " salt efter smak ")
+
+        listOf(noAmount, zero).forEach { ingredient ->
+            val item = IngredientDisplay.row(ingredient, 2.0, decimals, NumberStyle.Swedish) as IngredientRow.Item
+            assertEquals("salt efter smak", item.text())
+            assertEquals("salt efter smak", item.food)
+        }
     }
 }

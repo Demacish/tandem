@@ -33,6 +33,9 @@ import casa.moller.tandem.feature.onboarding.ui.OnboardingScreen
  * @param languageController per-app language for the picker on the welcome step.
  * @param crashNotice shown at the top of the welcome step: the app's "Tandem crashed last time"
  *   card while a crash log is stored (plan 4.2 p7); emits nothing otherwise.
+ * @param onCancel leaves the intro without logging in ("Log in again" while still logged in):
+ *   shown as "Cancel" on the server step and used by back on the server and welcome steps.
+ *   Null when the intro must be completed.
  */
 @Composable
 fun OnboardingFlow(
@@ -43,6 +46,7 @@ fun OnboardingFlow(
     serverUrl: String? = null,
     viewModel: OnboardingViewModel = hiltViewModel(),
     languageController: LanguageController = rememberLanguageController(),
+    onCancel: (() -> Unit)? = null,
     crashNotice: @Composable () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +72,14 @@ fun OnboardingFlow(
     ) {
         viewModel.onBack()
     }
+    // "Log in again": back on the first steps returns to the app instead (registered last, so it wins).
+    BackHandler(
+        enabled = onCancel != null &&
+            (state.step == OnboardingStep.WELCOME || state.step == OnboardingStep.SERVER) &&
+            !state.loginInProgress,
+    ) {
+        onCancel?.invoke()
+    }
 
     OnboardingScreen(
         state = state,
@@ -80,6 +92,7 @@ fun OnboardingFlow(
         onOpenBatterySettings = { openBatterySettings(context) },
         modifier = modifier,
         crashNotice = crashNotice,
+        onCancel = onCancel,
     )
 }
 

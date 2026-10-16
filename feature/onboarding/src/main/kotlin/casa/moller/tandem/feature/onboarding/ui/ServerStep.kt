@@ -63,13 +63,16 @@ internal const val SERVER_URL_FIELD_TAG = "onboarding_server_url"
 /**
  * Step 2: the server address, probe with progress, inline errors with what to do about them,
  * the compatibility warning (safe mode) or block, and "Don't have a Tandoor server?".
+ *
+ * @param onCancel "Log in again" while still logged in: the back arrow and a "Cancel" button
+ *   return to the app instead of the welcome step.
  */
 @Composable
-internal fun ColumnScope.ServerStep(state: OnboardingUiState, actions: OnboardingActions) {
+internal fun ColumnScope.ServerStep(state: OnboardingUiState, actions: OnboardingActions, onCancel: (() -> Unit)? = null) {
     var showGetTandoor by rememberSaveable { mutableStateOf(false) }
     val check = state.serverCheck
 
-    StepHeader(step = 2, onBack = actions::onBack)
+    StepHeader(step = 2, onBack = onCancel ?: actions::onBack)
     StepTitle(stringResource(R.string.onboarding_server_title))
     StepBody(stringResource(R.string.onboarding_server_body))
 
@@ -133,6 +136,14 @@ internal fun ColumnScope.ServerStep(state: OnboardingUiState, actions: Onboardin
         enabled = state.canConnect,
         trailingIcon = TandemIcons.ArrowForward,
     )
+
+    if (onCancel != null) {
+        TandemTextButton(
+            text = stringResource(R.string.onboarding_cancel_log_in_again),
+            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 
     CalloutCard(
         title = stringResource(R.string.onboarding_no_tandoor_title),

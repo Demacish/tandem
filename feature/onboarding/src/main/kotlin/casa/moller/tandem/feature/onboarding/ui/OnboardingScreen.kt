@@ -50,6 +50,7 @@ internal fun OnboardingScreen(
     onLanguageSelected: (AppLanguage) -> Unit,
     modifier: Modifier = Modifier,
     onOpenBatterySettings: () -> Unit = {},
+    onCancel: (() -> Unit)? = null,
     crashNotice: @Composable () -> Unit = {},
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -82,7 +83,7 @@ internal fun OnboardingScreen(
                                     crashNotice = crashNotice,
                                 )
 
-                                OnboardingStep.SERVER -> ServerStep(state, actions)
+                                OnboardingStep.SERVER -> ServerStep(state, actions, onCancel)
 
                                 OnboardingStep.LOGIN -> LoginStep(state, actions)
 

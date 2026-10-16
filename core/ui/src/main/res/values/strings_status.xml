@@ -14,7 +14,7 @@
     <string name="ui_safe_mode_reading_title">Reading works</string>
     <string name="ui_safe_mode_reading_body">Recipes, the meal plan and everything saved for offline use work as usual.</string>
     <string name="ui_safe_mode_queued_title">Changes wait on this device</string>
-    <string name="ui_safe_mode_queued_body">Changes you make in Tandem, such as cook logs, are kept on this device and are not sent to the server yet.</string>
+    <string name="ui_safe_mode_queued_body">Changes you make in Tandem are kept on this device and are not sent to the server yet.</string>
     <string name="ui_safe_mode_send_anyway_title">“Send anyway” comes later</string>
     <string name="ui_safe_mode_send_anyway_body">A later version of Tandem lets you send waiting changes anyway. Nothing you saved is thrown away.</string>
     <string name="ui_safe_mode_update_heading">What you can do</string>

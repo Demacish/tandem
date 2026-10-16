@@ -3,6 +3,8 @@ package casa.moller.tandem.core.sync.demo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.database.DatabaseKind
+import casa.moller.tandem.core.database.dao.RecipeIndexEntry
+import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.recipe.RecipeDisplay
 import casa.moller.tandem.core.model.error.Outcome
@@ -11,6 +13,7 @@ import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerStatus
+import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.account.ActiveSource
@@ -117,6 +120,22 @@ class DemoAndAccountsTest {
     }
 
     @Test
+    fun aLanguageChangeRewritesTheDemoAndKeepsWhatTheUserDid() = runBlocking {
+        useDemo()
+        graph.demoLocale = Locale.ENGLISH
+        graph.demo.ensureSeeded()
+        val english = graph.recipes.observeRecipes(RecipeQuery.All).first().map { it.name }.toSet()
+        val pinned = graph.recipes.observeRecipes(RecipeQuery.All).first().filter { it.pinned }.map { it.id }.toSet()
+
+        // The language picker: the new locale arrives with the configuration change.
+        graph.demo.ensureSeeded(Locale.forLanguageTag("sv-SE"))
+
+        val swedish = graph.recipes.observeRecipes(RecipeQuery.All).first()
+        assertNotEquals(english, swedish.map { it.name }.toSet())
+        assertEquals(pinned, swedish.filter { it.pinned }.map { it.id }.toSet())
+    }
+
+    @Test
     fun theDemoFollowsTheAppLanguage() = runBlocking {
         useDemo()
         graph.demo.ensureSeeded()
@@ -165,6 +184,7 @@ class DemoAndAccountsTest {
         graph.mirror.onSession(loggedIn)
         assertEquals(12, recipes.getRecipeIds(ACCOUNT_ID).size)
         assertEquals(1, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
+        assertEquals("the photos stay too", 0, graph.imageCache.clears.get())
 
         graph.accountStore.remove(ACCOUNT_ID)
         graph.mirror.onSession(Session.NoAccount)
@@ -172,6 +192,52 @@ class DemoAndAccountsTest {
         assertTrue(recipes.getRecipeIds(ACCOUNT_ID).isEmpty())
         assertEquals(0, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
         assertEquals(null, graph.real.accountDao().get(ACCOUNT_ID))
+        assertTrue("the image cache is emptied with the account", graph.imageCache.clears.get() >= 1)
+    }
+
+    @Test
+    fun rowsALateResponseWroteAfterTheLogoutAreRemovedAtTheNextSessionChange() = runBlocking {
+        graph.mirror.onSession(Session.LoggedIn(graph.account, "2.6.13", ServerCompatibility.SUPPORTED))
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        graph.accountStore.remove(ACCOUNT_ID)
+        graph.mirror.onSession(Session.NoAccount)
+        // A detail and a page that were on their way: written without a server_account row.
+        val recipes = graph.real.recipeDao()
+        recipes.applyIndex(ACCOUNT_ID, listOf(RecipeIndexEntry(1, "Sen pyttipanna")))
+        graph.real.syncStateDao().upsert(SyncStateEntity(accountId = ACCOUNT_ID, entity = "late"))
+        graph.real.outboxDao().enqueueViewLog(ACCOUNT_ID, 1, "{}", 1)
+        // Another stored account keeps its rows.
+        val other = graph.account.copy(id = OTHER_ACCOUNT)
+        graph.accountStore.upsert(other, "")
+        recipes.applyIndex(OTHER_ACCOUNT, listOf(RecipeIndexEntry(5, "Köttbullar")))
+        graph.imageCache.clears.set(0)
+
+        graph.mirror.onSession(Session.LoggedIn(other, "2.6.13", ServerCompatibility.SUPPORTED))
+
+        assertTrue(recipes.getRecipeIds(ACCOUNT_ID).isEmpty())
+        assertTrue(graph.real.syncStateDao().observe(ACCOUNT_ID).first().isEmpty())
+        assertEquals(0, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
+        assertEquals(listOf(5L), recipes.getRecipeIds(OTHER_ACCOUNT))
+        assertEquals(listOf(OTHER_ACCOUNT), graph.real.accountDao().getStoredAccountIds())
+        assertEquals(1, graph.imageCache.clears.get())
+    }
+
+    @Test
+    fun clearingAppDataAfterARecoveryEmptiesTheImageCache() = runBlocking {
+        graph.mirror.onSession(Session.LoggedIn(graph.account, "2.6.13", ServerCompatibility.SUPPORTED))
+        graph.accountStore.clearAll()
+
+        // Recovery: nothing is removed while the store may just be unreadable.
+        graph.health.report(RecoveryReason.ACCOUNTS_UNREADABLE)
+        graph.mirror.onSession(Session.NoAccount)
+        assertEquals(ACCOUNT_ID, graph.real.accountDao().get(ACCOUNT_ID)?.id)
+        assertEquals(0, graph.imageCache.clears.get())
+
+        // "Clear app data" acknowledges it; the session is NoAccount.
+        graph.health.acknowledge()
+        graph.mirror.onSession(Session.NoAccount)
+        assertEquals(null, graph.real.accountDao().get(ACCOUNT_ID))
+        assertEquals(1, graph.imageCache.clears.get())
     }
 
     @Test
@@ -191,5 +257,9 @@ class DemoAndAccountsTest {
     @Test
     fun theDemoDatabaseIsSeparateFromTheRealOne() {
         assertNotEquals(graph.databases.get(DatabaseKind.REAL), graph.databases.get(DatabaseKind.DEMO))
+    }
+
+    private companion object {
+        const val OTHER_ACCOUNT = "account-b"
     }
 }

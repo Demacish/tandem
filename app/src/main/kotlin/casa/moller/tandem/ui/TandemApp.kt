@@ -101,6 +101,7 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                     startAtServerStep = state.startOnboardingAtServer,
                     serverUrl = state.onboardingServerUrl,
                     crashNotice = crashNotice,
+                    onCancel = if (state.canCancelOnboarding) viewModel::cancelLogInAgain else null,
                 )
             }
             entry<AppDestination.Shell> {

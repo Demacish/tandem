@@ -624,13 +624,21 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
   måltidstyper, användarinställningar; högst 1/h vid start, var 6:e timme periodiskt) →
   receptindex `recipe/flat` (raderingar) och översikter `recipe/` med 100 per sida och
   `updatedon_gte` = senaste synkdag − 1 dag (allt vid första synken) → kokstatistik ur
-  `cook-log` → matsedel −14..+42 dagar och Idags karuseller (var 15:e minut) → detaljer för
-  fästa (äldre än 24 h), planerade (igår..+7) och nyligen visade recept, högst 40 per körning
-  och 2 åt gången med paus → bilder till diskcachen → outboxen. Dra-för-att-uppdatera och första
-  synken struntar i intervallen (utom de små tabellerna).
-- **Skydd (`guard/SyncGuard`, plan 4.1):** alla anrop går genom `RemoteCaller`. 401/JSON-403
-  stoppar kontots anrop tills en ny token laddas (outboxen behålls), 403 utan JSON pausar 5 min
-  och dubblar upp till 1 h, kretsbrytaren pausar bakgrundsanrop 5 min efter fler än 5 fel på
+  `cook-log` (antal, senast lagad och inloggade användarens eget snittbetyg avrundat som
+  servern, eftersom listorna saknar betyg; allt i en transaktion, recept utan loggposter
+  nollställs) → matsedel −14..+42 dagar och Idags karuseller (var 15:e minut, 2 min vid
+  dra-för-att-uppdatera; steget delar lås med Idags egen uppdatering så att inget hämtas två
+  gånger) → detaljer för fästa (äldre än 24 h), planerade (igår..+7) och nyligen visade recept,
+  högst 40 per körning och 2 åt gången med paus → bilder för fästa, planerade och nyligen visade
+  till diskcachen (bara laddade bilder bockas av; tillfälliga fel försöks igen nästa körning) →
+  outboxen. Dra-för-att-uppdatera och första synken struntar i intervallen (utom de små
+  tabellerna). En tid som ligger mer än 5 min i framtiden (klockan gick före) räknas som
+  förfallen, och `updatedon_gte` blir aldrig senare än i dag − 1.
+- **Skydd (`guard/SyncGuard`, plan 4.1):** alla anrop går genom `RemoteCaller`. 401 och 403 med
+  Tandoors JSON-`detail` stoppar kontots anrop tills en ny token laddas (outboxen behålls), annan
+  403 (brandvägg, proxy med egen JSON) pausar 5 min och dubblar upp till 1 h, 429 stoppar alla
+  anrop till `Retry-After` (5 min utan rubrik, högst 1 h; utkorgen försöker inte igen själv),
+  kretsbrytaren pausar bakgrundsanrop 5 min efter fler än 5 fel på
   60 s eller 5 svar 404/400 på 100 s, och en import (`ImportGate.whileImporting`) pausar
   bakgrunden. En JSON-403 på ett enskilt recept kontrolleras med ett billigt anrop innan den
   räknas som utloggning (annans privata recept ger också 403).
@@ -646,17 +654,23 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
   uppdatering alltid läser receptindexet), `tandem.sync.periodic`
   (`PeriodicSyncWorker`, 15 min, nätverk och ej låg batterinivå) och `tandem.sync.outbox`
   (`SyncOutboxWorker`, exponentiell backoff från 30 s). Taggar `tandem.sync` och
-  `tandem.outbox`. Arbetarnas klassnamn skyddas mot R8 i `core/sync/consumer-rules.pro`.
+  `tandem.outbox`. Arbetarnas klassnamn skyddas mot R8 i `core/sync/consumer-rules.pro`. Den
+  periodiska synkens första körning kommer en period efter inloggningen (introts `FIRST_SYNC`
+  gör första synken; annars gjordes allt två gånger).
 - **Versionsbyte (plan B18):** `AccountMirror` speglar kontot i `server_account`. När
   serverversionen skiljer sig från den sparade sänds `observeVersionChanges()` och en notis i
   kanalen "Server" (bara med `POST_NOTIFICATIONS`; annars bara bannern).
-- **Utloggning:** ett konto som inte längre finns får alla sina rader borttagna; ett utgånget
-  token tar inte bort något (skalet visar "Logga in igen"). Inloggning på ett riktigt konto
+- **Utloggning:** ett konto som inte längre finns får alla sina rader borttagna, i alla tabeller
+  och även rader med okända konto-id (ett svar som kom efter utloggningen; städas senast vid nästa
+  appstart via `AccountDao.getStoredAccountIds`), och bildcachen töms (även efter "Rensa
+  appdata"). Svar som kommer efter ett kontobyte skrivs inte. Ett utgånget token tar inte bort
+  något (skalet visar "Logga in igen", som går att avbryta). Inloggning på ett riktigt konto
   tömmer demodatabasen. "Återställ demodata" under Mer i demoläget anropar
-  `DemoDataRepository.resetDemoData()`.
+  `DemoDataRepository.resetDemoData()`. Byts appens språk i demoläget skrivs demodatan om på det
+  nya språket direkt (`SyncStarter`, konfigurationsändring).
 - **Bilder:** en enda Coil-`ImageLoader` (Coils singleton) med kontots bildklient från
-  `:core:network` (token bara till kontots origin), 250 MB diskcache i `noBackupFilesDir`, och
-  `file:///android_asset/demo/...` för demobilderna.
+  `:core:network` (token bara till kontots origin), 250 MB diskcache i `noBackupFilesDir` (töms
+  vid utloggning, `image/ImageCache`), och `file:///android_asset/demo/...` för demobilderna.
 - **Offline-chippet** i skalet visar "Offline" både när serverkollen inte nådde servern och när
   synken pausar för att nätet saknas (`SyncStatus.pause == OFFLINE`).
 - **Tester** (Robolectric, Room på fil, ny databas per test, HTTPS-MockWebServer med fixturerna i

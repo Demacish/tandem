@@ -102,14 +102,14 @@ internal class FakeScheduler : SyncScheduler {
     }
 }
 
-/** Records the requested URLs; URLs in [failing] fail temporarily (every other one is settled). */
+/** Records the requested URLs; URLs ending with one of [failing] fail temporarily (every other one is settled). */
 internal class FakeImagePrefetcher : ImagePrefetcher {
     val urls: MutableList<String> = CopyOnWriteArrayList()
     val failing: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override suspend fun prefetch(urls: List<String>): Set<String> {
         this.urls += urls
-        return urls.filterTo(LinkedHashSet()) { it !in failing }
+        return urls.filterTo(LinkedHashSet()) { url -> failing.none { url.endsWith(it) } }
     }
 }
 

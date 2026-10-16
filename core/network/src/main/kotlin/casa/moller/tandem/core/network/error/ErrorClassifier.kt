@@ -44,8 +44,8 @@ import retrofit2.HttpException
  * | 3xx to `/accounts/login/` | [NotTandoorReason.LOGIN_REDIRECT] (unknown `/api/` path) |
  * | other 3xx | [NotTandoorReason.REDIRECT] |
  * | 401 | [TandemError.Unauthorized] from a proxy (Tandoor never sends 401) |
- * | 403 + JSON object | [TandemError.Unauthorized] (missing/invalid/expired/revoked token) |
- * | 403 without JSON | [TandemError.Blocked] (firewall/CrowdSec, plan 4.1) |
+ * | 403 + JSON object with `detail` | [TandemError.Unauthorized] (missing/invalid/expired/revoked token) |
+ * | 403 otherwise | [TandemError.Blocked] (firewall, WAF or auth proxy with its own body, plan 4.1) |
  * | 404 + JSON object | [TandemError.NotFound] |
  * | 404 without JSON | [NotTandoorReason.UNEXPECTED_STATUS] |
  * | 400 | [TandemError.BadRequest] with DRF field errors |
@@ -98,6 +98,8 @@ class ErrorClassifier(private val clock: Clock = Clock.systemUTC()) {
     fun classifyHttp(status: Int, headers: Headers, contentType: MediaType?, bodyText: String?): TandemError? {
         val json = parseJsonOrNull(bodyText)
         val isJsonObject = json is JsonObject
+        // Tandoor's own refusals always carry `detail` (FACTS "Konsekvenser" 1); a proxy's JSON does not.
+        val hasDetail = (json as? JsonObject)?.get("detail") is JsonPrimitive
         return when {
             status in 200..299 ->
                 if (looksLikeHtml(contentType, bodyText)) {
@@ -119,7 +121,7 @@ class ErrorClassifier(private val clock: Clock = Clock.systemUTC()) {
             status == 401 -> TandemError.Unauthorized(UnauthorizedSource.PROXY)
 
             status == 403 ->
-                if (isJsonObject) TandemError.Unauthorized(UnauthorizedSource.TANDOOR) else TandemError.Blocked
+                if (hasDetail) TandemError.Unauthorized(UnauthorizedSource.TANDOOR) else TandemError.Blocked
 
             status == 404 ->
                 if (isJsonObject) {

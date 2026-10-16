@@ -9,7 +9,7 @@
     <string name="ui_status_offline">Offline</string>
     <string name="ui_status_offline_description">Offline: visar sparad data</string>
     <string name="ui_status_safe_mode">Säkert läge</string>
-    <string name="ui_status_safe_mode_description">Säkert läge: skrivskyddat</string>
+    <string name="ui_status_safe_mode_description">Säkert läge: ändringar väntar</string>
 
     <string name="ui_no_tandoor_title">Har du ingen Tandoor?</string>
     <string name="ui_no_tandoor_body">Tandoor är en gratis receptsamling som du driver själv. Prova Tandem i demoläget först, eller läs hur du sätter upp Tandoor.</string>

@@ -36,7 +36,7 @@ class CoreUiSwedishTest {
         composeRule.onNodeWithText("Anslut din Tandoor").assertIsDisplayed()
         composeRule.onNodeWithText("Har du ingen Tandoor?").assertIsDisplayed()
         // Status chips expose a longer description to TalkBack.
-        composeRule.onNodeWithContentDescription("Säkert läge: skrivskyddat").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Säkert läge: ändringar väntar").assertIsDisplayed()
         composeRule.onNodeWithTag(UI_SAMPLE_ROOT_TAG)
             .captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/ui/demo_banner_status_chips_light_sv.png")
     }

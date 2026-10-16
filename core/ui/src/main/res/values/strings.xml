@@ -11,7 +11,7 @@
     <string name="ui_status_offline">Offline</string>
     <string name="ui_status_offline_description">Offline: showing saved data</string>
     <string name="ui_status_safe_mode">Safe mode</string>
-    <string name="ui_status_safe_mode_description">Safe mode: read only</string>
+    <string name="ui_status_safe_mode_description">Safe mode: changes wait</string>
 
     <!-- "Don't have a Tandoor?" callout on the server step of the intro. -->
     <string name="ui_no_tandoor_title">Don\'t have a Tandoor?</string>

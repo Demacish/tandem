@@ -41,6 +41,7 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
 - **Demoläge** med 14 egna exempelrecept med bilder (på svenska och engelska), en matsedel och
   kokhistorik, så att allt ovan går att prova utan Tandoor. *Återställ demodata* under Mer.
 - Appen visar vilka recept du har öppnat för Tandoor (som webbens "Nyligen visade").
+- **Utloggning** tar bort kontots recept och bilder från telefonen; betyget räknas ur din kokhistorik så att sortering och filter på betyg fungerar offline; *Logga in igen* går att avbryta.
 - **Release-röktest:** varje version loggar nu också in, väntar ut första synken, söker, skalar,
   laddar ner ett recept och läser det i flygplansläge, och provar demoläget, med just
   release-bygget på en Android-emulator innan den släpps.

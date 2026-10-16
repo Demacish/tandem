@@ -29,6 +29,7 @@
     <string name="onboarding_server_placeholder" translatable="false">https://tandoor.example.com</string>
     <string name="onboarding_server_hint">https:// is added if you leave it out. If Tandoor runs under a path, include it, e.g. example.com/tandoor.</string>
     <string name="onboarding_connect">Connect</string>
+    <string name="onboarding_cancel_log_in_again">Cancel</string>
     <string name="onboarding_checking">Checking the server…</string>
     <string name="onboarding_checking_button">Checking…</string>
     <string name="onboarding_untested_title">Tandoor %1$s has not been tested yet</string>
