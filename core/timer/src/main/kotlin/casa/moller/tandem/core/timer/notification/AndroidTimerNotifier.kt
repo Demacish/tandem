@@ -22,7 +22,7 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.timer.R
 import casa.moller.tandem.core.timer.TimerIntents
-import casa.moller.tandem.core.timer.platform.AndroidTimerSystem
+import casa.moller.tandem.core.timer.platform.TimerSystem
 import casa.moller.tandem.core.timer.ring.TimerAlarmActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
@@ -51,7 +51,7 @@ import kotlin.time.Instant
 @Singleton
 internal class AndroidTimerNotifier @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val system: AndroidTimerSystem,
+    private val system: TimerSystem,
     private val clock: Clock,
 ) : TimerNotifier {
 

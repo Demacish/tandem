@@ -6,6 +6,11 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+- **Timers (grunden för kokläget):** flera timers samtidigt som ringer även med låst skärm och
+  utan nät, med "+1 min" och "Stopp" i notisen och en nedräkning i statusraden (Live Update på
+  Android 16). Timers överlever omstart av appen och telefonen. "ca 20–25 minuter" i ett steg
+  blir en timer på 25 minuter. Kan också lämnas till klockappen.
+
 ## [0.1.0] – 2026-10-16
 
 Första versionen med recept (Fas 1a, "läsa recept"): bläddra, sök och läs dina recept från

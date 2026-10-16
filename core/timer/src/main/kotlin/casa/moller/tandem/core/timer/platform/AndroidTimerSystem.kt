@@ -53,16 +53,13 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
         )
     }
 
-    /** `POST_NOTIFICATIONS` granted and the app's notifications switched on. */
-    fun notificationsAllowed(): Boolean =
+    override fun notificationsAllowed(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED &&
             notifications.areNotificationsEnabled()
 
-    /** Exact alarms may be scheduled (and the ringing service may be `systemExempted`). */
-    fun exactAlarmsAllowed(): Boolean = alarmManager.canScheduleExactAlarms()
+    override fun exactAlarmsAllowed(): Boolean = alarmManager.canScheduleExactAlarms()
 
-    /** The alarm may take over a locked screen (sideload, unless the user revoked it). */
-    fun fullScreenAllowed(): Boolean =
+    override fun fullScreenAllowed(): Boolean =
         Manifest.permission.USE_FULL_SCREEN_INTENT in declaredPermissions && notifications.canUseFullScreenIntent()
 
     private fun alarmChannelEnabled(): Boolean {

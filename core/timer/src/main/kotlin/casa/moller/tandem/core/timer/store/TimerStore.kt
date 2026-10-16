@@ -2,13 +2,19 @@ package casa.moller.tandem.core.timer.store
 
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.Serializer
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.model.timer.TimerState
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -33,6 +39,17 @@ internal interface TimerStore {
     /** Replaces the stored document. Throws `IOException` when the file cannot be written. */
     suspend fun write(timers: StoredTimers)
 }
+
+/** The timers DataStore: JSON, and an unreadable file is replaced by an empty document instead of failing every read. */
+internal fun timerDataStore(
+    scope: CoroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    produceFile: () -> File,
+): DataStore<StoredTimers> = DataStoreFactory.create(
+    serializer = StoredTimersSerializer,
+    corruptionHandler = ReplaceFileCorruptionHandler { StoredTimers() },
+    scope = scope,
+    produceFile = produceFile,
+)
 
 internal class DataStoreTimerStore(private val dataStore: DataStore<StoredTimers>) : TimerStore {
     override suspend fun read(): StoredTimers = dataStore.data.first()

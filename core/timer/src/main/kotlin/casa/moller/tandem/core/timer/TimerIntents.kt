@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.net.toUri
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.timer.alarm.TimerAlarmReceiver
 
@@ -64,7 +65,7 @@ object TimerIntents {
     internal fun receiverIntent(context: Context, action: String, timerId: Long?): Intent =
         Intent(context, TimerAlarmReceiver::class.java).apply {
             this.action = action
-            data = if (timerId == null) Uri.parse("$SCHEME://all") else timerUri(timerId)
+            data = if (timerId == null) "$SCHEME://all".toUri() else timerUri(timerId)
             if (timerId != null) putExtra(EXTRA_TIMER_ID, timerId)
         }
 
@@ -84,5 +85,5 @@ object TimerIntents {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_NO_CREATE,
         )
 
-    private fun timerUri(timerId: Long): Uri = Uri.parse("$SCHEME://timer/$timerId")
+    private fun timerUri(timerId: Long): Uri = "$SCHEME://timer/$timerId".toUri()
 }

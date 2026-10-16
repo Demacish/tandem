@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     sideload (Obtainium / GitHub Releases): the timer permissions Google Play restricts
-    (plan 8.1, 4.4; docs/BYGGE.md "Timers"). The shared ones are in core/timer's manifest.
+    (plan 8.1, 4.4; docs/BYGGE.md "Timers"). core/timer's manifest declares both exact-alarm
+    permissions; this build keeps USE_EXACT_ALARM (granted without asking, for apps whose core
+    function is an alarm or timer) and drops SCHEDULE_EXACT_ALARM.
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Exact alarms without asking (allowed for apps whose core function is an alarm or timer). -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        tools:node="remove" />
     <!-- The alarm takes over a locked screen (TimerAlarmActivity); the user can revoke it. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 </manifest>

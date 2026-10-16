@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.update
  *
  * Each lane that binds the real implementation (@Binds in its own module) DELETES the matching
  * module below in the same change, otherwise Hilt reports a duplicate binding:
- * - timer lane (core:timer): TemporaryFas1bTimerModule,
+ * - timer lane (core:timer): TemporaryFas1bTimerModule (removed: core:timer's TimerModule binds DefaultTimerController),
  * - cook-log lane (core:sync): TemporaryFas1bCookLogModule (removed: SyncModule binds OfflineFirstCookLogRepository),
  * - settings/diagnostics lane: TemporaryFas1bDiagnosticsModule.
  * The integration lane deletes this file. Nothing here may ship in 0.2.0.

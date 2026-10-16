@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    play: exact alarms only when the user allows them in the system settings (the app asks in
-    context; without it the alarm is inexact and the UI warns). No USE_EXACT_ALARM and no
-    USE_FULL_SCREEN_INTENT (Play restricts both); the alarm is a heads-up notification
+    play: exact alarms only when the user allows them in the system settings (SCHEDULE_EXACT_ALARM
+    from core/timer's manifest; the app asks in context, without it the alarm is inexact and the
+    UI warns). USE_EXACT_ALARM is removed and USE_FULL_SCREEN_INTENT never added, because Play
+    restricts both to alarm-clock apps; the alarm is a heads-up notification
     (plan 8.1, 4.4; docs/BYGGE.md "Timers").
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission
+        android:name="android.permission.USE_EXACT_ALARM"
+        tools:node="remove" />
 </manifest>

@@ -1,14 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Cook-mode timers (plan 8.1, 8.7; docs/BYGGE.md "Timers"). Only the permissions both flavors
-    share are declared here. The flavor-specific ones live in the app:
-    - app/src/sideload/AndroidManifest.xml: USE_EXACT_ALARM, USE_FULL_SCREEN_INTENT,
-    - app/src/play/AndroidManifest.xml: SCHEDULE_EXACT_ALARM (Play restricts the other two).
+    Cook-mode timers (plan 8.1, 8.7; docs/BYGGE.md "Timers"). The flavors pick their exact-alarm
+    permission in the app (this module declares both, because the systemExempted service needs
+    one of them):
+    - app/src/sideload/AndroidManifest.xml keeps USE_EXACT_ALARM, removes SCHEDULE_EXACT_ALARM and
+      adds USE_FULL_SCREEN_INTENT,
+    - app/src/play/AndroidManifest.xml keeps SCHEDULE_EXACT_ALARM and removes USE_EXACT_ALARM
+      (Play restricts it and the full-screen intent to alarm-clock apps).
     The code checks at run time what the build was granted (AndroidTimerSystem), so this module
     never needs to know the flavor.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Exact alarms: sideload keeps USE_EXACT_ALARM, play keeps SCHEDULE_EXACT_ALARM (see above). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Countdown and alarm notifications; asked for in context at the first timer, never at first start. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- The short service while an alarm rings (systemExempted: an app with exact alarms continuing an alarm). -->

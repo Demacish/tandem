@@ -1,8 +1,6 @@
 package casa.moller.tandem.core.timer.di
 
 import android.content.Context
-import androidx.datastore.core.DataStoreFactory
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStoreFile
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.timer.TimerController
@@ -19,9 +17,8 @@ import casa.moller.tandem.core.timer.platform.TimerSystem
 import casa.moller.tandem.core.timer.ring.AndroidRinger
 import casa.moller.tandem.core.timer.ring.Ringer
 import casa.moller.tandem.core.timer.store.DataStoreTimerStore
-import casa.moller.tandem.core.timer.store.StoredTimers
-import casa.moller.tandem.core.timer.store.StoredTimersSerializer
 import casa.moller.tandem.core.timer.store.TimerStore
+import casa.moller.tandem.core.timer.store.timerDataStore
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -66,13 +63,8 @@ internal object TimerStoreModule {
     /** `files/datastore/cook_timers.json`; an unreadable file is replaced by an empty one (see [TimerStore]). */
     @Provides
     @Singleton
-    fun provideTimerStore(@ApplicationContext context: Context): TimerStore = DataStoreTimerStore(
-        DataStoreFactory.create(
-            serializer = StoredTimersSerializer,
-            corruptionHandler = ReplaceFileCorruptionHandler { StoredTimers() },
-            produceFile = { context.dataStoreFile(DataStoreTimerStore.FILE_NAME) },
-        ),
-    )
+    fun provideTimerStore(@ApplicationContext context: Context): TimerStore =
+        DataStoreTimerStore(timerDataStore { context.dataStoreFile(DataStoreTimerStore.FILE_NAME) })
 
     @Provides
     fun provideTimerEngineConfig(): TimerEngineConfig = TimerEngineConfig()
@@ -86,7 +78,7 @@ internal interface TimerEntryPoint {
 
     fun notifier(): AndroidTimerNotifier
 
-    fun system(): AndroidTimerSystem
+    fun system(): TimerSystem
 
     @ApplicationScope
     fun scope(): CoroutineScope

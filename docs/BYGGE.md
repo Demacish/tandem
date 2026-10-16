@@ -58,7 +58,7 @@ kan installeras bredvid release-bygget.
 | `:core:database` | Android-bibliotek + Hilt + `tandem.android.room` | `core:{model,common}` |
 | `:core:sync` | Android-bibliotek + Hilt + WorkManager/hilt-work | `core:{data,network,database,datastore,domain,model,common}` |
 | `:core:testing` | Android-bibliotek, **bara för tester** | `core:{data,model}`; fakes, exempeldata, fixturer |
-| `:core:timer` | Android-bibliotek + Hilt (Fas 1b) | `core:{data,domain,model,common}`; implementerar `TimerController` |
+| `:core:timer` | Android-bibliotek + Hilt + serialization (Fas 1b) | `core:{data,domain,model,common}` (använder `data` och `model`); implementerar `TimerController`, se "Timers" |
 | `:core:network` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:datastore` | Android-bibliotek + Hilt + serialization | `core:{common,model}` |
 | `:core:designsystem` | Android-bibliotek + Compose | – |
@@ -235,8 +235,11 @@ vid första start, aldrig råa behörighetsnamn i UI:t.
 `StepTimerSuggestions().suggest(stepText, stepTimeMinutes, languageTag)` → `List<TimerSuggestion>`:
 `Step.time` först (om texten inte redan har exakt samma tid), sedan texttimers i textordning från
 `TimerDetector`. `stepText` är den **renderade** instruktionen (`StepDisplay.instruction`) och
-`textRange` pekar in i den. KDoc:en listar de svenska och engelska formerna; timerbanan
-kompletterar reglerna (`languageTag` bryter bara oavgjort).
+`textRange` pekar in i den. KDoc:en listar de svenska och engelska formerna; `languageTag` bryter
+bara oavgjort (`TimerDetector.detect(text, preferredLanguage)`). **Intervall** ("ca 20–25
+minuter", "mellan 10 och 12 minuter") kör till den **övre** gränsen och etiketten säger det
+("ca 20–25 minuter (25 min)"); `TimerSuggestion.minDuration` har den undre (timerbanans beslut,
+`maxDuration` finns kvar som läsbar egenskap = `duration`).
 
 ### Navigering
 
@@ -294,10 +297,12 @@ systeminställningarna hänger på id:t); en ny kanal får ett nytt id. Notis-id
 | `POST_PROMOTED_NOTIFICATIONS` | ✅ | ✅ | Live Update för nedräkningen (Android 16) |
 | `com.android.alarm.permission.SET_ALARM` + `<queries>` för `android.intent.action.SET_TIMER` | ✅ | ✅ | Läget "timer i klockappen" (`AlarmClock.ACTION_SET_TIMER`) och att se om en klockapp finns |
 
-Det flavor-specifika (`USE_EXACT_ALARM`, `USE_FULL_SCREEN_INTENT` resp. `SCHEDULE_EXACT_ALARM`)
-deklareras i `app/src/sideload/AndroidManifest.xml` resp. `app/src/play/AndroidManifest.xml`;
-resten i `:core:timer`s biblioteksmanifest. Fungerar `systemExempted` inte på emulatorn (API 36)
-byter timerbanan till `mediaPlayback` och skriver varför här.
+`:core:timer`s biblioteksmanifest deklarerar det gemensamma **och båda** exakta
+larmbehörigheterna (Android Lint kräver en av dem för en `systemExempted`-tjänst);
+`app/src/sideload/AndroidManifest.xml` tar bort `SCHEDULE_EXACT_ALARM` (`tools:node="remove"`) och
+lägger till `USE_FULL_SCREEN_INTENT`, `app/src/play/AndroidManifest.xml` tar bort
+`USE_EXACT_ALARM`. Fungerar `systemExempted` inte på en enhet byter timerbanan till
+`mediaPlayback` och skriver varför här (se "Timers").
 
 ### Vem bygger vad
 
@@ -360,6 +365,90 @@ borttagen) implementerar `CookLogRepository` offline först (plan 5.3/5.7, funkt
   tiden, listar den med samma tidpunkt och författare och svarar 400 på `recipe` för ett raderat
   recept (2.6.13 vid push, hela matrisen nattligen).
 <!-- /Fas 1b koklogg -->
+
+<!-- Fas 1b timer -->
+## Timers (`:core:timer`, Fas 1b)
+
+Den riktiga `TimerController` (plan 8.1, funktion #6/#7) är `engine/DefaultTimerController`,
+bunden i `di/TimerModule.kt` (grundens `TemporaryFas1bTimerModule` är borttagen). Features når den
+bara via `core:data`.
+
+- **Ett lås, en sanning:** varje ändring körs under en mutex: läs filen en gång, ändra med
+  `CookTimer`s övergångar, **spara först**, publicera `timers`, och ställ sedan in systemet
+  (larm, notiser, ringtjänst). En process som dödas direkt efter en ändring hittar den på disk.
+- **Lagring – DataStore, inte Room:** högst 8 små poster som alltid läses och skrivs som helhet
+  och som en mottagare måste kunna läsa snabbt efter omstart. En typad DataStore-fil
+  (`files/datastore/cook_timers.json`, JSON med stabila `@SerialName`, okända nycklar ignoreras,
+  en oläsbar fil ersätts med en tom) ger atomiska skrivningar utan databasschema: ingen
+  Room-migrering i `core:database` som krockar med andra banors versionsnummer, och timers hör
+  till enheten, inte till ett konto (inget för `deleteAccountData` att städa).
+- **Larm (`alarm/AndroidAlarmScheduler`):** en löpande timer har ett larm vid `endsAt`. Med
+  exakta larm `setAlarmClock` (skjuts aldrig upp av Doze, får starta ringtjänsten från
+  bakgrunden och visar timern i systemets klock-UI; `setExactAndAllowWhileIdle` är
+  kvoterad i Doze, så två timers nära varandra kunde ringa sent). Utan (play utan
+  `SCHEDULE_EXACT_ALARM`) `setAndAllowWhileIdle`, och `TimerCapabilities.alarmMayBeLate` låter
+  UI:t varna. En ringande timer har ett eget "tysta"-larm vid `endsAt + 5 min`.
+- **När det ringer:** alla förfallna timers blir RINGING. En timer som ringer mer än en minut sent
+  (telefonen var av, inexakt larm) ringer från nu och får sina fulla 5 minuter. Larmnotisen
+  (`timer_alarm`, larmljud med `USAGE_ALARM`, vibration, `FLAG_INSISTENT` så att ljudet upprepas)
+  har "+1 min" och "Stopp", och fullskärm till `ring/TimerAlarmActivity` (`showWhenLocked`,
+  `turnScreenOn`, knappar på 64 dp, vanliga vyer för snabb kallstart) när bygget får
+  (`canUseFullScreenIntent`, bara sideload). Play får en heads-up-notis. Efter 5 min tystnar
+  larmet av sig självt och lämnar en tyst notis "Ringde 18:45".
+- **Ringtjänsten (`ring/TimerRingingService`)** körs **bara medan något ringer**, aldrig under
+  nedräkningen: typ `systemExempted` när exakta larm är tillåtna (Android 14+, appar med exakta
+  larm som fortsätter ett larm i bakgrunden), annars `shortService` (systemet stoppar den efter
+  ca 3 min, `onTimeout`). Den håller ett partial wake lock, visar gruppsammanfattningen ("2 timers
+  ringer", "Stoppa alla") och stoppar sig själv senast efter 5,5 min. Ljudet kommer från
+  larmnotisen; **utan notisbehörighet** spelar tjänsten larmljudet och vibrationen själv, så en
+  timer ringer ändå. Går tjänsten inte att starta (play, inexakt larm från bakgrunden) ringer
+  notisen ensam. *Inte verifierat på en riktig enhet eller emulator ännu* (röktestet kör inga
+  timers); fungerar inte `systemExempted` byter vi till `mediaPlayback` och skriver varför här.
+- **Nedräkningen (`notification/AndroidTimerNotifier`):** en pågående, tyst notis per löpande eller
+  pausad timer (`timer_ongoing`): nedräknande kronometer till `endsAt`, "Klar 18:45", Pausa/+1 min
+  (pausad: "Pausad · 07:00 kvar", Fortsätt/Avbryt). Den ber om att bli *promoted ongoing*
+  (`setRequestPromotedOngoing`), vilket Android 16 visar som en Live Update med nedräkningen i
+  statusraden; äldre versioner visar samma notis. Notiserna tas bort när timern inte längre
+  löper. Kanalerna skapas precis innan något postas.
+- **Omstart, uppdatering, klockbyte (`alarm/TimerSystemEventReceiver`):** `BOOT_COMPLETED`,
+  `MY_PACKAGE_REPLACED`, `TIME_SET`, `TIMEZONE_CHANGED` och
+  `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED` (alla skyddade broadcasts; allt annat ignoreras)
+  lägger tillbaka alla larm och notiser. Varje ny process gör samma sak när motorn skapas. Vid en
+  manuell klockändring behåller en löpande timer sin återstående tid, mätt med
+  `SystemClock.elapsedRealtime` (ankare i minnet); efter en omstart gäller sparad `endsAt`.
+  Larmen läggs tillbaka efter första upplåsningen (`BOOT_COMPLETED`, filen ligger i
+  credential-skyddad lagring).
+- **Notisknappar** går till `alarm/TimerAlarmReceiver` (inte exporterad, bara våra egna
+  `PendingIntent`, unika per timer via `tandem-timer://timer/<id>`).
+- **Öppna appen från en timer:** `TimerIntents.openTimer(context, timer)` startar appens
+  startaktivitet med `ACTION_OPEN_TIMER` och `EXTRA_TIMER_ID`, `EXTRA_RECIPE_ID`,
+  `EXTRA_STEP_INDEX` (`CLEAR_TOP | SINGLE_TOP`, alltså `onNewIntent` i en körande app).
+  Integrationsbanan gör det till `CookKey(recipeId, startStep = stepIndex)` eller `TimersKey`.
+- **Klockappen:** `TimerMode.CLOCK_APP` skickar `AlarmClock.ACTION_SET_TIMER` med längd (1 s–24 h),
+  etikett och `EXTRA_SKIP_UI`; Tandem följer inte timern. Ingen klockapp →
+  `ClockAppUnavailable`.
+- **Behörighet i sammanhanget:** `onNotificationPermissionResult` sparar att frågan ställts
+  (`AppSettings.notificationPermissionAsked`) och postar notiserna för timers som redan löper.
+  `TimerCapabilities` läses vid körning (`platform/AndroidTimerSystem`): manifestet avgör vilka
+  behörigheter bygget har, så `:core:timer` behöver aldrig känna till flavorn.
+- **Manifest:** behörigheterna (båda exakta larmbehörigheterna, se tabellen ovan), mottagarna,
+  tjänsten (`systemExempted|shortService`) och aktiviteten ligger i
+  `core/timer/src/main/AndroidManifest.xml`; sideload tar bort `SCHEDULE_EXACT_ALARM` och lägger
+  till `USE_FULL_SCREEN_INTENT`, play tar bort `USE_EXACT_ALARM`. R8: AAPT2 behåller manifestets komponenter;
+  `core/timer/consumer-rules.pro` håller dessutom deras namn stabila, eftersom väntande larm och
+  notisknappar pekar på dem efter en uppdatering.
+- **Tester (Robolectric):** `DefaultTimerControllerTest` kör motorn med de riktiga Android-delarna
+  (`ShadowAlarmManager`, `ShadowNotificationManager`), `TestClock` och en falsk monoton klocka:
+  exakt larmklocka och nedräkningsnotis (kronometer, Live Update-begäran, knappar), kanalerna,
+  inexakt larm i play, pausa/fortsätt-matematik, +1 min (löpande och ringande), larmnotisen
+  (kanal, kategori, `FLAG_INSISTENT`, fullskärm bara när det är tillåtet, knappar), två timers som
+  ringer samtidigt och stoppas en i taget, "Stoppa alla", automatisk tystnad, sent larm, avbryt,
+  utan notisbehörighet, svaret på behörighetsfrågan, klockappen, en ny motor på samma
+  DataStore-fil, en skadad fil, omstart (nytt larm, förfallen timer ringer, gammalt larm noteras
+  bara), klockbyte och att en ny process lägger tillbaka larmen. `TimerPlatformTest`:
+  `AndroidTimerSystem` (behörigheter, avstängd larmkanal, klockappens intent), systemhändelserna,
+  tjänstetypen och manifestet. `TimerStoreTest`: filformatet.
+<!-- /Fas 1b timer -->
 
 <!-- fix-bygg: tillgänglighetskontroller -->
 ### Tillgänglighetskontroller (ATF) i UI-testerna

@@ -199,7 +199,18 @@ internal class DefaultTimerController @Inject constructor(
         silenced.forEach(notifier::showMissed)
     }
 
-    private fun ringDue(list: List<CookTimer>, now: Instant): List<CookTimer> = list.map { it.ring(now) }
+    /**
+     * Every due timer rings. One that rings late (the phone was off, or a play build's inexact
+     * alarm came late) rings from [now], so it gets its full ringing time before the auto-silence.
+     */
+    private fun ringDue(list: List<CookTimer>, now: Instant): List<CookTimer> = list.map { timer ->
+        val rung = timer.ring(now)
+        if (rung.state == TimerState.RINGING && timer.state == TimerState.RUNNING && rung.endsAt!! + LATE_RING <= now) {
+            rung.copy(endsAt = now)
+        } else {
+            rung
+        }
+    }
 
     private fun silenceExpired(list: List<CookTimer>, now: Instant): Change<List<CookTimer>> {
         val expired = list.filter { it.state == TimerState.RINGING && it.endsAt!! + config.ringTimeout <= now + AUTO_SILENCE_SLACK }
@@ -312,7 +323,8 @@ internal class DefaultTimerController @Inject constructor(
         val ringingBefore = before.filter { it.state == TimerState.RINGING }
         val ringingAfter = after.filter { it.state == TimerState.RINGING }
         if (ringingAfter.isEmpty()) {
-            if (force || ringingBefore.isNotEmpty()) ringer.stop()
+            // A new process has no service of its own to stop, so only on a change.
+            if (ringingBefore.isNotEmpty()) ringer.stop()
         } else if (force || ringingAfter != ringingBefore) {
             ringer.ring(ringingAfter)
         }
@@ -335,6 +347,9 @@ internal class DefaultTimerController @Inject constructor(
     private companion object {
         /** Wakes the in-process ticker just after the end, so the timer is due when it looks. */
         val TICK_MARGIN: Duration = 50.milliseconds
+
+        /** A timer that rings this much after its end counts as late ([ringDue]). */
+        val LATE_RING: Duration = 1.minutes
 
         /** An auto-silence alarm a moment early still silences (alarms are not that precise). */
         val AUTO_SILENCE_SLACK: Duration = 1.seconds
