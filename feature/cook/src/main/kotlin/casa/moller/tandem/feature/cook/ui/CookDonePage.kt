@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +37,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.StatusChip
+import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
+import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.Check
@@ -258,15 +259,20 @@ internal fun NotificationPromptDialog(onContinue: () -> Unit, onNotNow: () -> Un
         icon = { Icon(TandemIcons.NotificationsActive, contentDescription = null) },
         title = { Text(stringResource(R.string.cook_notifications_title)) },
         text = { Text(stringResource(R.string.cook_notifications_body)) },
+        // Filled and tonal: the primary text colour is too faint on the dialog's container (ATF).
         confirmButton = {
-            TextButton(onClick = onContinue, modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget)) {
-                Text(stringResource(R.string.cook_notifications_continue))
-            }
+            TandemPrimaryButton(
+                text = stringResource(R.string.cook_notifications_continue),
+                onClick = onContinue,
+                size = TandemButtonSize.Small,
+            )
         },
         dismissButton = {
-            TextButton(onClick = onNotNow, modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget)) {
-                Text(stringResource(R.string.cook_notifications_not_now))
-            }
+            TandemSecondaryButton(
+                text = stringResource(R.string.cook_notifications_not_now),
+                onClick = onNotNow,
+                size = TandemButtonSize.Small,
+            )
         },
     )
 }

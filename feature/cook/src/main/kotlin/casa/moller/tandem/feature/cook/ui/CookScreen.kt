@@ -56,9 +56,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.StatusChip
+import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
-import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.TextDecrease
@@ -494,7 +494,13 @@ internal fun AlarmWarnings(
             body = stringResource(R.string.cook_alarm_silent_body),
             icon = TandemIcons.Warning,
             tone = TandemTone.Warning,
-            actions = { TandemTextButton(text = stringResource(R.string.cook_open_settings), onClick = onOpenNotificationSettings) },
+            actions = {
+                TandemPrimaryButton(
+                    text = stringResource(R.string.cook_open_settings),
+                    onClick = onOpenNotificationSettings,
+                    size = TandemButtonSize.Small,
+                )
+            },
         )
     } else if (state.showLateAlarmWarning) {
         val canAsk = state.capabilities.exactAlarmsRequestable && !state.exactAlarmPromptDismissed
@@ -505,11 +511,17 @@ internal fun AlarmWarnings(
                 icon = TandemIcons.Warning,
                 tone = TandemTone.Warning,
                 actions = {
-                    TandemTextButton(
+                    // Filled and tonal: a text button's colour is too faint on the warning container.
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.cook_alarm_allow),
+                        onClick = onOpenExactAlarmSettings,
+                        size = TandemButtonSize.Small,
+                    )
+                    TandemSecondaryButton(
                         text = stringResource(R.string.cook_dismiss),
                         onClick = { onAction(CookAction.DismissExactAlarmPrompt) },
+                        size = TandemButtonSize.Small,
                     )
-                    TandemTextButton(text = stringResource(R.string.cook_alarm_allow), onClick = onOpenExactAlarmSettings)
                 },
             )
         } else {
