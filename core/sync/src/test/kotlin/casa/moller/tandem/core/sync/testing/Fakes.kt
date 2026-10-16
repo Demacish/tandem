@@ -4,13 +4,18 @@ import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
+import casa.moller.tandem.core.datastore.DiagnosticsStore
+import casa.moller.tandem.core.datastore.DiagnosticsTimings
 import casa.moller.tandem.core.datastore.SecureAccountStore
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.model.account.ServerAccount
+import casa.moller.tandem.core.model.diagnostics.ColdStartTiming
+import casa.moller.tandem.core.model.diagnostics.FullSyncTiming
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.network.http.TokenProvider
 import casa.moller.tandem.core.sync.account.ActiveSource
@@ -96,8 +101,8 @@ internal class FakeScheduler : SyncScheduler {
         calls += "outbox"
     }
 
-    override fun schedulePeriodic() {
-        calls += "periodic"
+    override fun schedulePeriodic(interval: SyncInterval) {
+        calls += if (interval == SyncInterval.DEFAULT) "periodic" else "periodic:$interval"
     }
 
     override fun cancelPeriodic() {
@@ -120,10 +125,16 @@ internal class FakeImagePrefetcher : ImagePrefetcher {
 internal class FakeImageCache(private val prefetched: PrefetchedImages) : ImageCache {
     val clears = AtomicInteger()
 
+    @Volatile
+    var size: Long = 0
+
     override suspend fun clear() {
         prefetched.clear()
         clears.incrementAndGet()
+        size = 0
     }
+
+    override suspend fun sizeBytes(): Long = size
 }
 
 /** Records the changes; [posted] says whether the system notification was allowed. */
@@ -147,6 +158,21 @@ internal class FakeSettingsStore(initial: AppSettings = AppSettings.Default) : S
 
     override suspend fun update(transform: (AppSettings) -> AppSettings) {
         state.update(transform)
+    }
+}
+
+/** The measured timings in memory (the real store is a Preferences DataStore file, tested in core:datastore). */
+internal class FakeDiagnosticsStore : DiagnosticsStore {
+    val state = MutableStateFlow(DiagnosticsTimings.None)
+
+    override val timings: Flow<DiagnosticsTimings> = state
+
+    override suspend fun recordColdStart(timing: ColdStartTiming) {
+        state.update { it.copy(lastColdStart = timing) }
+    }
+
+    override suspend fun recordFullSync(timing: FullSyncTiming) {
+        state.update { it.copy(lastFullSync = timing) }
     }
 }
 

@@ -3,16 +3,20 @@ package casa.moller.tandem.core.sync.di
 import android.content.Context
 import casa.moller.tandem.core.data.cooklog.CookLogRepository
 import casa.moller.tandem.core.data.demo.DemoDataRepository
+import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
 import casa.moller.tandem.core.data.home.HomeRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.data.sync.ImportGate
+import casa.moller.tandem.core.data.sync.OfflineStorageRepository
 import casa.moller.tandem.core.data.sync.PendingChangesExporter
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.sync.account.ActiveSourceProvider
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.data.DefaultDiagnosticsRepository
 import casa.moller.tandem.core.sync.data.DefaultImportGate
+import casa.moller.tandem.core.sync.data.DefaultOfflineStorageRepository
 import casa.moller.tandem.core.sync.data.DefaultPreferencesRepository
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.data.DefaultSyncRepository
@@ -72,6 +76,13 @@ internal abstract class SyncModule {
 
     @Binds
     abstract fun bindPendingChangesExporter(impl: RoomPendingChangesExporter): PendingChangesExporter
+
+    // --- Phase 1b (inställningar lane): Settings → Diagnostics and Sync and storage. ---
+    @Binds
+    abstract fun bindDiagnosticsRepository(impl: DefaultDiagnosticsRepository): DiagnosticsRepository
+
+    @Binds
+    abstract fun bindOfflineStorageRepository(impl: DefaultOfflineStorageRepository): OfflineStorageRepository
 
     @Binds
     abstract fun bindImportGate(impl: DefaultImportGate): ImportGate

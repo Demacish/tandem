@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.sync.platform
 
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.sync.SyncReason
 
 /**
@@ -13,8 +14,12 @@ internal interface SyncScheduler {
     /** Sends the outbox when there is a network, with exponential backoff on failures. */
     fun scheduleOutbox()
 
-    /** The periodic background sync every 15 minutes (plan 3.5), for a logged-in account. */
-    fun schedulePeriodic()
+    /**
+     * The periodic background sync for a logged-in account (plan 3.5), every [interval] (Settings →
+     * Sync, 15 minutes by default). [SyncInterval.MANUAL] has no periodic sync: callers use
+     * [cancelPeriodic] for it.
+     */
+    fun schedulePeriodic(interval: SyncInterval = SyncInterval.DEFAULT)
 
     /** No account (logged out or demo): no background sync. Queued rows stay in the database. */
     fun cancelPeriodic()

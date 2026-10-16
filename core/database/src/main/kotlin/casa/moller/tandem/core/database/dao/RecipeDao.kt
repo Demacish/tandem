@@ -136,6 +136,37 @@ abstract class RecipeDao {
     @Query("SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL ORDER BY recipe_id")
     abstract suspend fun getStoredDetailIds(accountId: String): List<Long>
 
+    // --- Phase 1b (inställningar lane): Settings → Sync and storage ("download all recipes",
+    // plan 6.2). Read-only queries, no schema change. ---
+
+    /** Recipes in the account's index (overviews). */
+    @Query("SELECT COUNT(*) FROM recipe_overview WHERE account_id = :accountId")
+    abstract fun observeRecipeCount(accountId: String): Flow<Int>
+
+    /** Recipes of the index whose detail is stored (available offline). */
+    @Query(
+        "SELECT COUNT(*) FROM recipe_detail d WHERE d.account_id = :accountId AND d.raw_json IS NOT NULL " +
+            "AND EXISTS (SELECT 1 FROM recipe_overview o WHERE o.account_id = d.account_id " +
+            "AND o.server_id = d.recipe_id)",
+    )
+    abstract fun observeDownloadedCount(accountId: String): Flow<Int>
+
+    /** Average size of a stored detail's JSON in bytes (UTF-8 length), 0 without any. */
+    @Query(
+        "SELECT COALESCE(AVG(LENGTH(CAST(raw_json AS BLOB))), 0) FROM recipe_detail " +
+            "WHERE account_id = :accountId AND raw_json IS NOT NULL",
+    )
+    abstract suspend fun getAverageDetailBytes(accountId: String): Double
+
+    /** Recipes of the index without a stored detail, by name (for "download all recipes"). */
+    @Query(
+        "SELECT o.server_id FROM recipe_overview o WHERE o.account_id = :accountId AND NOT EXISTS " +
+            "(SELECT 1 FROM recipe_detail d WHERE d.account_id = o.account_id AND d.recipe_id = o.server_id " +
+            "AND d.raw_json IS NOT NULL) " +
+            "ORDER BY o.server_id LIMIT :limit",
+    )
+    abstract suspend fun getIdsWithoutDetail(accountId: String, limit: Int): List<Long>
+
     /**
      * Recipes that must survive an index deletion although the server no longer lists them:
      * pinned recipes with unsent edits in the outbox (plan 3.5 "utom fästa som redigeras").
