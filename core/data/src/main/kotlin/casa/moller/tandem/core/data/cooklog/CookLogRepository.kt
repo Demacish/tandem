@@ -11,9 +11,10 @@ import kotlinx.coroutines.flow.Flow
  * sync sends it when it can. The real implementation lives in core:sync next to the outbox.
  *
  * - **Threading:** main-safe.
- * - **Outbox rules** (same as VIEW_LOG): safe mode pauses the row, 404 (recipe gone) drops it,
- *   400 marks it FAILED (shown on the recovery screen's export), 401/403/429 and the circuit
- *   breaker only pause. Never merged: two "Klart!" are two log entries.
+ * - **Outbox rules** (same as VIEW_LOG): safe mode pauses the row; a recipe that is gone (no
+ *   longer stored, 404, or Tandoor's 400 "Invalid pk" on `recipe`) drops it with the reason;
+ *   any other 400 marks it FAILED (shown on the recovery screen's export); 401/403/429 and the
+ *   circuit breaker only pause. Never merged: two "Klart!" are two log entries.
  * - **Demo mode:** stored in the demo database only, never sent.
  * - **Account:** the entry belongs to the account active when it was logged; logging out deletes
  *   unsent entries with the account's data (the recovery screen can export them first).

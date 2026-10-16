@@ -388,6 +388,11 @@ under `noSpace.*`. Observerat i körningarna 38009810699 och 38010760972 (2026-1
   **`created_at` är skrivbart** (bakåtdatering fungerade, `1999-10-17T18:00:00+02:00` tillbaka). [O]
 - `GET /api/cook-log/?recipe=<id>` → paginerat, **hela spacets** loggar för receptet (inte bara
   egna) [K], här 3. [O]
+- Appens kropp (Fas 1b: `{recipe, servings, rating, comment, created_at}`, `created_at` i UTC med
+  hela sekunder, `...Z`, tre dagar bakåt) → 201; `created_at` behålls som samma tidpunkt och
+  listas med samma tidpunkt och författare. [O] Ett **raderat recept** ger **400**
+  `{"recipe": ["Invalid pk \"<id>\" - object does not exist."]}`, inte 404. [O]
+  [S] Utkorgen släpper posten vid 400 på `recipe` (som vid 404); annan 400 blir FAILED.
 - `POST /api/view-log/` `{recipe}` → **201** `{id, recipe, created_by (id), created_at}`.
   Ett nytt anrop för samma recept inom 5 minuter ger **samma id** (och 201). [O/K]
   [S] Outboxen kan skicka visningar utan egen spärr; servern slår ihop dem.

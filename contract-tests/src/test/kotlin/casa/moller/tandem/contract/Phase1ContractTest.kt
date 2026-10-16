@@ -869,14 +869,16 @@ class Phase1ContractTest {
         verify("cookLog.app.listedSameInstant", listedAt == cookedAt.toInstant(), true)
         verify("cookLog.app.listedSameAuthor", match?.objAt("created_by")?.longAt("id") == author && author != null, true)
 
-        // A deleted recipe: the outbox drops the entry on 404 and keeps it as FAILED on 400.
+        // A recipe deleted on the server: 400 on the `recipe` field (not 404); the outbox drops
+        // such an entry (CookLogProblems.RECIPE_UNKNOWN) instead of keeping it as FAILED.
         temporaryRecipeId?.let { gone ->
             val orphan = buildJsonObject {
                 put("recipe", gone)
                 put("created_at", sentAt)
             }
             val answer = api("cook-log-create-deleted-recipe", "POST", "/api/cook-log/", orphan, record = false)
-            observe("cookLog.deletedRecipe.status", answer.status)
+            verify("cookLog.deletedRecipe.status", answer.status, 400)
+            verify("cookLog.deletedRecipe.fieldErrorOnRecipe", (answer.json as? JsonObject)?.containsKey("recipe"), true)
             observe("cookLog.deletedRecipe.body", answer.json)
         }
 

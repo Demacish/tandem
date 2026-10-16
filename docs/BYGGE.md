@@ -335,7 +335,8 @@ borttagen) implementerar `CookLogRepository` offline först (plan 5.3/5.7, funkt
   och synken hämtar kokloggen i nästa körning oavsett intervall.
 - **Skicka (`OutboxSender`):** 201 gör posten till serverns (SENT, id från svaret) och tar bort
   outbox-raden i samma transaktion. Recept som inte längre finns lagrat → DROPPED
-  (`recipe_gone`) utan anrop; 404 → DROPPED (`not_found`); receptet borttaget ur indexet →
+  (`recipe_gone`) utan anrop; 404 → DROPPED (`not_found`); 400 på fältet `recipe` ("Invalid pk",
+  så svarar Tandoor 2.6 för ett raderat recept) → DROPPED (`recipe_unknown`); receptet borttaget ur indexet →
   outbox-raden försvinner med receptet och posten blir DROPPED (`recipe_deleted`); 400 → posten
   och outbox-raden FAILED (finns kvar i "Väntande ändringar" och exporten, försöks inte igen
   automatiskt). 401/403, 429 och kretsbrytaren pausar som för VIEW_LOG (posten räknas fortfarande),
@@ -353,10 +354,11 @@ borttagen) implementerar `CookLogRepository` offline först (plan 5.3/5.7, funkt
   SENT/listan utan dubbelräkning, DROPPED/FAILED, indexradering, demoregler, avrundning),
   `TandemMigrationTest` (1 → 2), `AccountIsolationTest`, `OutboxDaoTest` och `CookLogRepositoryTest`
   (`:core:sync`, HTTPS-MockWebServer med `cook-log-create*.json`: offline → online med bevarat
-  datum, synkens avstämning, detaljhämtning, 404, 404-storm, 400 + export, 429, 403 + ny
+  datum, synkens avstämning, detaljhämtning, 404, 400 på `recipe`, 404-storm, 400 + export, 429, 403 + ny
   inloggning, tappat svar, säkert läge, demo, konton). Kontraktstestet `cookLogBackdatedAsTheAppSends`
   kontrollerar att Tandoor tar emot och lämnar tillbaka appens exakta kropp med `created_at` bakåt i
-  tiden (2.6.13 vid push, hela matrisen nattligen).
+  tiden, listar den med samma tidpunkt och författare och svarar 400 på `recipe` för ett raderat
+  recept (2.6.13 vid push, hela matrisen nattligen).
 <!-- /Fas 1b koklogg -->
 
 <!-- fix-bygg: tillgänglighetskontroller -->

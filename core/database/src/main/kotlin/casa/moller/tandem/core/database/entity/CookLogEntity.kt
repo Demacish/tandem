@@ -88,4 +88,10 @@ object CookLogProblems {
 
     /** `POST /api/cook-log/` answered 404 (the recipe was deleted on the server). */
     const val NOT_FOUND: String = "not_found"
+
+    /**
+     * `POST /api/cook-log/` answered 400 on the `recipe` field ("Invalid pk ... does not exist"),
+     * which is how Tandoor 2.6 reports a recipe deleted on the server (FACTS "Fas 1 f").
+     */
+    const val RECIPE_UNKNOWN: String = "recipe_unknown"
 }

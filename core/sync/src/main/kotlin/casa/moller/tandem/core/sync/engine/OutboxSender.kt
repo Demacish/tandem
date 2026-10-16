@@ -57,10 +57,11 @@ internal enum class DrainResult {
  *   and 5xx keep the row for a retry with backoff. 404 and 400 count in the circuit breaker
  *   (`SyncGuard`), which stops the drain after 5 within 100 s.
  * - **Cook log:** the same rules, applied to the `cook_log` entry in the same transaction as the
- *   outbox row (`CookLogDao`): 201 makes it the server's entry, a deleted recipe (not stored, or
- *   404) drops it with the reason, 400 marks it FAILED. `POST /api/cook-log/` is not idempotent,
- *   so a row that was attempted before first looks for its entry on the server (same recipe,
- *   author and `created_at`): an answer lost to a timeout never becomes a second entry.
+ *   outbox row (`CookLogDao`): 201 makes it the server's entry, a deleted recipe (not stored, 404,
+ *   or Tandoor's 400 on the `recipe` field) drops it with the reason, any other 400 marks it
+ *   FAILED. `POST /api/cook-log/` is not idempotent, so a row that was attempted before first
+ *   looks for its entry on the server (same recipe, author and `created_at`): an answer lost to a
+ *   timeout never becomes a second entry.
  */
 @Singleton
 internal class OutboxSender @Inject constructor(
@@ -145,10 +146,19 @@ internal class OutboxSender @Inject constructor(
         }
         val gone: suspend () -> Unit = { cookLog.markDropped(accountId, localId, row.id, CookLogProblems.NOT_FOUND, rules) }
         val rejected: suspend (String) -> Unit = { code -> cookLog.markRejected(accountId, localId, row.id, code, rules) }
+        val failed: suspend (TandemError) -> DrainResult? = { error ->
+            if (error is TandemError.BadRequest && FIELD_RECIPE in error.fieldErrors) {
+                // Tandoor answers 400 "Invalid pk" (not 404) for a recipe deleted on the server (FACTS "Fas 1 f").
+                cookLog.markDropped(accountId, localId, row.id, CookLogProblems.RECIPE_UNKNOWN, rules)
+                null
+            } else {
+                handleFailure(remote, row, error, gone, rejected)
+            }
+        }
         if (row.attempts > 0) {
             // The last attempt may have reached the server with its answer lost: look before posting.
             when (val found = findOnServer(remote, request)) {
-                is Outcome.Failure -> return handleFailure(remote, row, found.error, gone, rejected)
+                is Outcome.Failure -> return failed(found.error)
 
                 is Outcome.Success -> found.value?.let { existing ->
                     settleSent(remote, row, localId, existing, request)
@@ -162,7 +172,7 @@ internal class OutboxSender @Inject constructor(
                 null
             }
 
-            is Outcome.Failure -> handleFailure(remote, row, sent.error, gone, rejected)
+            is Outcome.Failure -> failed(sent.error)
         }
     }
 
@@ -270,5 +280,8 @@ internal class OutboxSender @Inject constructor(
         /** At most this many rows per drain; the next drain continues. */
         const val MAX_ROWS_PER_DRAIN = 50
         const val UNSUPPORTED = "tandem.sync.unsupported-outbox-op"
+
+        /** The cook log's `recipe` field (a 400 on it means the recipe does not exist). */
+        const val FIELD_RECIPE = "recipe"
     }
 }

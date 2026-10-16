@@ -219,6 +219,22 @@ class CookLogRepositoryTest {
     }
 
     @Test
+    fun tandoorsAnswer400ForADeletedRecipeDropsTheEntryLike404() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        // What Tandoor 2.6.13 answers for a recipe deleted on the server (contract test, FACTS "Fas 1 f").
+        answerPosts(400, """{"recipe":["Invalid pk \"2\" - object does not exist."]}""")
+        repository.logCooked(draft(2, rating = 5))
+
+        assertEquals(DrainResult.DONE, graph.outbox.drain(graph.remote))
+
+        val dropped = entries(2).single()
+        assertEquals(CookLogState.DROPPED, dropped.state)
+        assertEquals(CookLogProblems.RECIPE_UNKNOWN, dropped.problem)
+        assertEquals("not kept as a pending change", 0, pending())
+        assertNull(overview(2).timesCooked)
+    }
+
+    @Test
     fun manyAnswers404NeverBecomeAStorm() = runBlocking {
         graph.engine.run(SyncReason.FIRST_SYNC)
         answerPosts(404, """{"detail":"Not found."}""")

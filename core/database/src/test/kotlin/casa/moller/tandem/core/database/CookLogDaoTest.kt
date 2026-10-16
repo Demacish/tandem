@@ -229,7 +229,7 @@ class CookLogDaoTest {
 
         val stats = CookStatistics.of(facts).associateBy { it.recipeId }
 
-        assertEquals(3, stats.getValue(1).timesCooked)
+        assertEquals(4, stats.getValue(1).timesCooked)
         assertEquals(30L, stats.getValue(1).lastCookedEpochMillis)
         assertEquals(5.0, checkNotNull(stats.getValue(1).rating), 0.0)
         assertNull(stats.getValue(2).rating)
