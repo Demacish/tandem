@@ -1,6 +1,7 @@
 // Shared test doubles for Phase 1 (plan 5.2 "core:testing"): fakes of every core:data repository
 // interface with deterministic sample recipes, a MainDispatcherRule, and a loader for the
-// recorded Tandoor fixtures in api-schema/fixtures. TEST-ONLY: use it with testImplementation;
+// recorded Tandoor fixtures in api-schema/fixtures, and the ATF accessibility checks of the UI
+// tests (assertAccessible). TEST-ONLY: use it with testImplementation;
 // checkModuleGraph (ciLint) fails if a main configuration depends on it.
 plugins {
     id("tandem.android.library")
@@ -27,4 +28,11 @@ dependencies {
     // MainDispatcherRule is a JUnit 4 rule (Android modules run their unit tests on JUnit 4).
     api(libs.junit4)
     implementation(libs.kotlinx.serialization.json)
+    // --- fix-bygg (0.1.0 review): ATF accessibility checks for the Robolectric Compose UI tests
+    // (accessibility/AccessibilityChecks.kt, plan 5.6). Roborazzi's integration, because Compose's
+    // enableAccessibilityChecks() does not run under Robolectric. ---
+    api(platform(libs.androidx.compose.bom))
+    api(libs.androidx.compose.ui.test.junit4)
+    api(libs.roborazzi)
+    api(libs.roborazzi.accessibility.check)
 }

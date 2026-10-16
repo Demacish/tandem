@@ -175,6 +175,9 @@ dependencies {
     implementation(libs.bundles.navigation3)
     implementation(libs.bundles.compose.adaptive)
     implementation(libs.kotlinx.coroutines.android)
+
+    // --- fix-bygg (0.1.0 review): ATF accessibility checks (assertAccessible) in the UI tests. ---
+    testImplementation(projects.core.testing)
 }
 
 androidComponents {

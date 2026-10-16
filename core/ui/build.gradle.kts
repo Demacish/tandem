@@ -17,4 +17,7 @@ dependencies {
     // --- Phase 1 (recept-ui lane): recipe components (core:ui recipe/, markdown/). ---
     // RecipeImage loads photos with Coil's singleton ImageLoader (configured by the app).
     implementation(libs.coil.compose)
+
+    // --- fix-bygg (0.1.0 review): ATF accessibility checks (assertAccessible) in the UI tests. ---
+    testImplementation(projects.core.testing)
 }
