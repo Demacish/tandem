@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncProgress
 import casa.moller.tandem.core.model.sync.SyncReason
+import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.network.api.RecipeListQuery
 import casa.moller.tandem.core.network.api.RecipeSortOrder
 import casa.moller.tandem.core.network.api.TandoorApi
@@ -65,9 +66,16 @@ import kotlinx.datetime.plus
  *
  * @property running a sync run is in progress.
  * @property progress its current step, null when idle.
- * @property lastError why the last run failed, null after a successful one.
+ * @property lastError why the last run failed, null after a successful one; a run that was
+ *   cancelled or overtaken by an account change leaves a [SyncStop] marker.
+ * @property runsStarted runs started since the process started (`SyncStatus.runsStarted`).
  */
-internal data class EngineState(val running: Boolean = false, val progress: SyncProgress? = null, val lastError: TandemError? = null)
+internal data class EngineState(
+    val running: Boolean = false,
+    val progress: SyncProgress? = null,
+    val lastError: TandemError? = null,
+    val runsStarted: Long = 0,
+)
 
 /**
  * The sync of the active account (plan 3.5 "Synkstrategi", 3.6, 4.1, 5.3): Room is the single
@@ -149,8 +157,10 @@ internal class SyncEngine @Inject constructor(
         val remote = sources.current() as? ActiveSource.Remote ?: return SyncProgress(SyncPhase.DONE)
         return mutex.withLock {
             val run = SyncRun(remote, reason, onProgress)
-            mutableState.update { it.copy(running = true, progress = SyncProgress(SyncPhase.SERVER_CHECK)) }
-            var result = SyncProgress(SyncPhase.FAILED, error = TandemError.Unknown(CANCELLED))
+            mutableState.update { state ->
+                state.copy(running = true, progress = SyncProgress(SyncPhase.SERVER_CHECK), runsStarted = state.runsStarted + 1)
+            }
+            var result = SyncProgress(SyncPhase.FAILED, error = SyncStop.Cancelled)
             try {
                 result = try {
                     run.execute()
@@ -161,7 +171,7 @@ internal class SyncEngine @Inject constructor(
                 }
             } finally {
                 val failed = result.phase == SyncPhase.FAILED
-                mutableState.update { EngineState(running = false, progress = null, lastError = if (failed) result.error else null) }
+                mutableState.update { it.copy(running = false, progress = null, lastError = if (failed) result.error else null) }
             }
             result
         }
@@ -575,8 +585,6 @@ internal class SyncEngine @Inject constructor(
     }
 
     private companion object {
-        const val CANCELLED = "tandem.sync.cancelled"
-        const val SOURCE_CHANGED = "tandem.sync.source-changed"
-        val SOURCE_CHANGED_ERROR: TandemError = TandemError.Unknown(SOURCE_CHANGED)
+        val SOURCE_CHANGED_ERROR: TandemError = SyncStop.SourceChanged
     }
 }

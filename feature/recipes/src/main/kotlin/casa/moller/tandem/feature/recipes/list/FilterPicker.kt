@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.recipes.list
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,28 +40,42 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.Search
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
-import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.feature.recipes.R
 import java.text.Normalizer
 
+/** What a [FilterPickerSheet] / [FilterPickerPanel] picks: its texts differ, the behaviour does not. */
+enum class FilterPicker {
+    /** Keywords the recipes must all have (Tandoor `keywords_and`). */
+    KEYWORDS,
+
+    /** Foods the recipes must all contain (Tandoor `foods_and`, plan 6.2 "livsmedel"). */
+    FOODS,
+}
+
+/** One choice in a filter picker: a keyword or a food. */
+@Immutable
+data class FilterOption(val id: Long, val name: String)
+
 /**
- * Picks the keywords the recipe list must have (all of them, Tandoor `keywords_and`). Changes
- * apply at once; the sheet has a filter field for long keyword lists (case and accent
- * insensitive, "vardag" finds "Vardagsmiddag", "akta" finds "Äkta").
+ * Picks the keywords or foods the recipe list must have (all of them). Changes apply at once; the
+ * sheet has a filter field for long lists (case and accent insensitive, "vardag" finds
+ * "Vardagsmiddag", "akta" finds "Äkta"). Picked options come first, so they stay in reach in a
+ * long food list.
  *
  * A modal bottom sheet on compact and medium windows; on expanded windows the same content is a
- * side panel instead ([KeywordPickerPanel], plan 6.5).
+ * side panel instead ([FilterPickerPanel], plan 6.5).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun KeywordPickerSheet(
-    keywords: List<Keyword>,
+fun FilterPickerSheet(
+    picker: FilterPicker,
+    options: List<FilterOption>,
     selectedIds: Set<Long>,
     onToggle: (Long) -> Unit,
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // Opens fully expanded: the filter field and the first keywords are visible at once.
+    // Opens fully expanded: the filter field and the first options are visible at once.
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
@@ -67,18 +83,19 @@ fun KeywordPickerSheet(
     // The sheet's default window insets include the keyboard, so the filter field and the list
     // stay above it.
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        KeywordPickerContent(keywords = keywords, selectedIds = selectedIds, onToggle = onToggle, onClear = onClear)
+        FilterPickerContent(picker = picker, options = options, selectedIds = selectedIds, onToggle = onToggle, onClear = onClear)
     }
 }
 
 /**
- * The keyword picker as a side panel on expanded windows (plan 6.5: "filter som sidopanel i
+ * The filter picker as a side panel on expanded windows (plan 6.5: "filter som sidopanel i
  * stället för bottenark"): beside the recipes, or in place of them when the list pane is narrow.
  * The close button and system back close it; the list keeps its scroll position meanwhile.
  */
 @Composable
-fun KeywordPickerPanel(
-    keywords: List<Keyword>,
+fun FilterPickerPanel(
+    picker: FilterPicker,
+    options: List<FilterOption>,
     selectedIds: Set<Long>,
     onToggle: (Long) -> Unit,
     onClear: () -> Unit,
@@ -91,8 +108,9 @@ fun KeywordPickerPanel(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        KeywordPickerContent(
-            keywords = keywords,
+        FilterPickerContent(
+            picker = picker,
+            options = options,
             selectedIds = selectedIds,
             onToggle = onToggle,
             onClear = onClear,
@@ -105,10 +123,38 @@ fun KeywordPickerPanel(
     }
 }
 
+/** The texts of one picker. */
+private class PickerTexts(
+    @StringRes val title: Int,
+    @StringRes val clear: Int,
+    @StringRes val filterHint: Int,
+    @StringRes val empty: Int,
+    @StringRes val close: Int,
+)
+
+private fun FilterPicker.texts(): PickerTexts = when (this) {
+    FilterPicker.KEYWORDS -> PickerTexts(
+        title = R.string.recipes_keywords_title,
+        clear = R.string.recipes_keywords_clear,
+        filterHint = R.string.recipes_keywords_filter_hint,
+        empty = R.string.recipes_keywords_empty,
+        close = R.string.recipes_keywords_close,
+    )
+
+    FilterPicker.FOODS -> PickerTexts(
+        title = R.string.recipes_foods_title,
+        clear = R.string.recipes_foods_clear,
+        filterHint = R.string.recipes_foods_filter_hint,
+        empty = R.string.recipes_foods_empty,
+        close = R.string.recipes_foods_close,
+    )
+}
+
 /** Heading with "Clear" (and a close button in the side panel), the filter field and the check list. */
 @Composable
-private fun KeywordPickerContent(
-    keywords: List<Keyword>,
+private fun FilterPickerContent(
+    picker: FilterPicker,
+    options: List<FilterOption>,
     selectedIds: Set<Long>,
     onToggle: (Long) -> Unit,
     onClear: () -> Unit,
@@ -116,10 +162,18 @@ private fun KeywordPickerContent(
     onClose: (() -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
-    var filter by rememberSaveable { mutableStateOf("") }
-    val shown = remember(keywords, filter) {
+    val texts = picker.texts()
+    // Each picker has its own filter text (switching from keywords to foods starts empty).
+    var filter by rememberSaveable(picker) { mutableStateOf("") }
+    val keyed = remember(options) { options.map { it to it.name.searchKey() } }
+    // Picked options first, in the order of [options]; computed when the picker opens or the
+    // filter changes, not on every toggle, so a ticked row does not jump away under the finger.
+    val pickedWhenOpened = remember(picker, options.isEmpty()) { selectedIds }
+    val shown = remember(keyed, filter, pickedWhenOpened) {
         val key = filter.searchKey()
-        if (key.isBlank()) keywords else keywords.filter { key in it.name.searchKey() }
+        val matching = if (key.isBlank()) keyed.map { it.first } else keyed.filter { key in it.second }.map { it.first }
+        val (picked, others) = matching.partition { it.id in pickedWhenOpened }
+        picked + others
     }
     Column(modifier = modifier) {
         Row(
@@ -129,18 +183,18 @@ private fun KeywordPickerContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.recipes_keywords_title),
+                text = stringResource(texts.title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .weight(1f)
                     .semantics { heading() },
             )
             if (selectedIds.isNotEmpty()) {
-                TandemTextButton(text = stringResource(R.string.recipes_keywords_clear), onClick = onClear)
+                TandemTextButton(text = stringResource(texts.clear), onClick = onClear)
             }
             if (onClose != null) {
                 IconButton(onClick = onClose) {
-                    Icon(imageVector = TandemIcons.Close, contentDescription = stringResource(R.string.recipes_keywords_close))
+                    Icon(imageVector = TandemIcons.Close, contentDescription = stringResource(texts.close))
                 }
             }
         }
@@ -149,33 +203,33 @@ private fun KeywordPickerContent(
             onValueChange = { filter = it },
             singleLine = true,
             leadingIcon = { Icon(TandemIcons.Search, contentDescription = null) },
-            placeholder = { Text(stringResource(R.string.recipes_keywords_filter_hint)) },
+            placeholder = { Text(stringResource(texts.filterHint)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = spacing.xl, vertical = spacing.sm),
         )
-        if (keywords.isEmpty()) {
+        if (options.isEmpty()) {
             Text(
-                text = stringResource(R.string.recipes_keywords_empty),
+                text = stringResource(texts.empty),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = spacing.xl, vertical = spacing.lg),
             )
         }
         LazyColumn(modifier = Modifier.fillMaxWidth()) {
-            items(shown, key = { it.id }) { keyword ->
-                val checked = keyword.id in selectedIds
+            items(shown, key = { it.id }) { option ->
+                val checked = option.id in selectedIds
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = TandemTheme.sizes.minTouchTarget)
-                        .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle(keyword.id) })
+                        .toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle(option.id) })
                         .padding(horizontal = spacing.lg),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                 ) {
                     Checkbox(checked = checked, onCheckedChange = null)
-                    Text(text = keyword.name, style = MaterialTheme.typography.bodyLarge)
+                    Text(text = option.name, style = MaterialTheme.typography.bodyLarge)
                 }
             }
         }

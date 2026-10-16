@@ -5,6 +5,7 @@ import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.network.dto.RecipeDto
 import casa.moller.tandem.core.network.json.TandoorJson
 import casa.moller.tandem.core.sync.SyncSchedule
@@ -55,7 +56,7 @@ internal class DetailFetcher @Inject constructor(
 
     private suspend fun fetchNow(remote: ActiveSource.Remote, recipeId: Long, background: Boolean): Outcome<Unit> = catchingUnexpected {
         val response = caller.call(remote, background, confirmUnauthorized = true) { recipes.recipeJson(recipeId) }
-        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(TandemError.Unknown(SOURCE_CHANGED))
+        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
         val json = when (response) {
             is Outcome.Failure -> {
                 if (response.error == TandemError.NotFound) {
@@ -83,6 +84,5 @@ internal class DetailFetcher @Inject constructor(
 
     private companion object {
         const val DECODE_DETAIL = "recipe detail"
-        const val SOURCE_CHANGED = "tandem.sync.source-changed"
     }
 }

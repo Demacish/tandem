@@ -269,10 +269,18 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   "Logga in igen") visar `ErrorState` med "Försök igen" i stället för "Inga recept än", och en
   dra-för-att-uppdatera vars synk misslyckas ger snackbaren "Kunde inte synka: <fel>". Scaffolden
   räknar tangentbordet (`WindowInsets.ime`) till innehållets insets. På expanded-fönster (från
-  840 dp) är nyckelordsväljaren en sidopanel (`KeywordPickerPanel`) bredvid recepten, eller i
-  deras ställe i den smala listpanelen; annars bottenark. Filter på livsmedel (plan 6.2) finns
-  inte än – `RecipeQuery` saknar fältet och lokala frågan behöver en `EXISTS` på ingredienserna;
-  det står i färdplanen som en senare version.
+  840 dp) är nyckelords- och livsmedelsväljaren en sidopanel (`FilterPickerPanel`) bredvid
+  recepten, eller i deras ställe i den smala listpanelen; annars bottenark (`FilterPickerSheet`).
+  Komplettering 0.1.0: **livsmedelsfilter** (plan 6.2 "livsmedel"): `RecipeQuery.foodIds` kräver
+  en ingrediens av varje valt livsmedel – lokalt en `EXISTS` per livsmedel på `ingredient.food_id`
+  (bara recept med sparad detalj har ingredienser), på servern `foods_and` (kontraktstestet
+  `foods.and*`). Väljaren listar `RecipeRepository.observeFoods()`: livsmedelslistan från synken
+  plus livsmedel i sparade recept som listan saknar (`ReferenceDao.observeFilterFoods`; demoläget
+  har ingen livsmedelslista). Valda alternativ står först när väljaren öppnas. Dra-för-att-uppdatera
+  ersätter en pågående synk (`REPLACE`), som då slutar avbruten; indikatorn väntar därför på en
+  körning som startat **efter** begäran (`SyncStatus.runsStarted`), och interna stoppmarkörer
+  (`SyncStop`, `TandemError.isTransientSyncStop`: avbruten, kontot bytt) visas aldrig som "Kunde
+  inte synka" eller felläge.
 - **Detalj** (`detail/`): `RecipeDetailViewModel` (assisted injection med recept-id) visar
   sparad kopia direkt, tyst uppdatering, "Visar sparad version" offline och felläge med
   "Försök igen" när inget finns sparat. Portioner sparas per recept i repositoryt;
@@ -710,7 +718,8 @@ standardinitierare är borttagen i manifestet) och anropar `SyncStarter.start()`
 - **WorkManager (`work/`):** `tandem.sync.now` (`SyncWorker`, expedited, nätverkskrav; app-start,
   återupptagning, dra-för-att-uppdatera, kontobyte; en automatisk begäran medan en körning väntar
   eller pågår släpps (`KEEP`), dra-för-att-uppdatera ersätter den (`REPLACE`) så att användarens
-  uppdatering alltid läser receptindexet), `tandem.sync.periodic`
+  uppdatering alltid läser receptindexet; den ersatta körningen slutar med markören
+  `SyncStop.CANCELLED`, inget fel), `tandem.sync.periodic`
   (`PeriodicSyncWorker`, 15 min, nätverk och ej låg batterinivå) och `tandem.sync.outbox`
   (`SyncOutboxWorker`, exponentiell backoff från 30 s). Taggar `tandem.sync` och
   `tandem.outbox`. Arbetarnas klassnamn skyddas mot R8 i `core/sync/consumer-rules.pro`. Den

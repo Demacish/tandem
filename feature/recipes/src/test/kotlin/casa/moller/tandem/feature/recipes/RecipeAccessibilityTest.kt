@@ -34,7 +34,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * ATF accessibility checks (core:testing `assertAccessible`, plan 5.6 and Fas 1 "Klart när") of the
- * recipe list and the recipe detail: grid and rows, filters and the keyword sheet, offline (dimmed
+ * recipe list and the recipe detail: grid and rows, filters, the keyword and food pickers, offline (dimmed
  * recipes), the detail with ingredient rows, conversions and templates, light and dark, font scale 2
  * and the tablet list-detail.
  */
@@ -84,7 +84,13 @@ class RecipeAccessibilityTest {
 
     @Test
     fun searchWithFilters() = check {
-        val query = RecipeQuery(text = "svamp", keywordIds = setOf(SampleRecipes.Baking.id), maxTotalMinutes = 30, minRating = 4.0)
+        val query = RecipeQuery(
+            text = "svamp",
+            keywordIds = setOf(SampleRecipes.Baking.id),
+            foodIds = setOf(SampleRecipes.food("smör").id),
+            maxTotalMinutes = 30,
+            minRating = 4.0,
+        )
         ListScreen(listState(query) { copy(serverSearch = ServerSearch.DONE, serverOnlyCount = 0) })
     }
 
@@ -96,6 +102,25 @@ class RecipeAccessibilityTest {
         composeRule.setContent { TestFrame { ListScreen(listState()) } }
         val keywords = ApplicationProvider.getApplicationContext<Context>().getString(R.string.recipes_filter_keywords)
         composeRule.onNodeWithText(keywords).performClick()
+        composeRule.waitForIdle()
+        composeRule.assertAccessible()
+    }
+
+    @Test
+    fun foodSheet() {
+        composeRule.setContent { TestFrame { ListScreen(listState()) } }
+        val foods = ApplicationProvider.getApplicationContext<Context>().getString(R.string.recipes_filter_foods)
+        composeRule.onNodeWithText(foods).performClick()
+        composeRule.waitForIdle()
+        composeRule.assertAccessible()
+    }
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletFoodPanelDark() {
+        val butter = SampleRecipes.food("smör")
+        composeRule.setContent { TestFrame(darkTheme = true) { ListScreen(listState(RecipeQuery(foodIds = setOf(butter.id)))) } }
+        composeRule.onNodeWithText(butter.name).performClick()
         composeRule.waitForIdle()
         composeRule.assertAccessible()
     }

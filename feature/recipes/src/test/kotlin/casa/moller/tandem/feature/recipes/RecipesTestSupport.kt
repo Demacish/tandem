@@ -50,7 +50,8 @@ internal fun listState(
     transform: RecipeListUiState.() -> RecipeListUiState = { this },
 ): RecipeListUiState {
     val recipes = runBlocking { repository.observeRecipes(query).first() }
-    return RecipeListUiState(query = query, recipes = recipes, loaded = true, keywords = SampleRecipes.keywords).transform()
+    val foods = runBlocking { repository.observeFoods().first() }
+    return RecipeListUiState(query = query, recipes = recipes, loaded = true, keywords = SampleRecipes.keywords, foods = foods).transform()
 }
 
 /** Theme, app chrome and font scale around a screen under test. */

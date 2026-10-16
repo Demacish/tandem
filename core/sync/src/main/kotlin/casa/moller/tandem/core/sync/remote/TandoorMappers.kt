@@ -297,14 +297,16 @@ private const val HALF = 0.5
 // ---------------------------------------------------------------- recipe search
 
 /**
- * The server side of a recipe list query (plan 3.3): text, keywords (all must match), rating and
- * sort map to `GET /api/recipe/` filters; [RecipeQuery.maxTotalMinutes] and
- * [RecipeQuery.onlyOffline] have no server filter and are applied locally afterwards. Sorting by
+ * The server side of a recipe list query (plan 3.3): text, keywords and foods (all must match:
+ * `keywords_and`, `foods_and`), rating and sort map to `GET /api/recipe/` filters;
+ * [RecipeQuery.maxTotalMinutes] and [RecipeQuery.onlyOffline] have no server filter and are
+ * applied locally afterwards. Sorting by
  * times cooked uses `-lastcooked`, because `-times_cooked` answers 500 on 2.6 (FACTS "Fas 1 c").
  */
 internal fun RecipeQuery.toListQuery(): RecipeListQuery = RecipeListQuery(
     text = text.trim().takeIf { it.isNotEmpty() },
     keywordsAnd = keywordIds,
+    foodsAnd = foodIds,
     ratingAtLeast = minRating?.let { floor(it).toInt() }?.coerceIn(0, MAX_RATING),
     sortOrder = when (sort) {
         RecipeSort.NAME -> RecipeSortOrder.NAME

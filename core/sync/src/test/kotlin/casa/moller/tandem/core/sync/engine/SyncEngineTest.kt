@@ -12,6 +12,8 @@ import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncProgress
 import casa.moller.tandem.core.model.sync.SyncReason
+import casa.moller.tandem.core.model.sync.SyncStop
+import casa.moller.tandem.core.model.sync.isTransientSyncStop
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.testing.FakeClock
@@ -20,8 +22,12 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import casa.moller.tandem.core.sync.testing.waitUntil
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -356,6 +362,42 @@ class SyncEngineTest {
         assertTrue(storedRecipeIds().isEmpty())
         assertTrue(graph.real.syncStateDao().observe(ACCOUNT_ID).first().isEmpty())
         assertTrue(graph.real.accountDao().getStoredAccountIds().isEmpty())
+    }
+
+    /**
+     * Pull to refresh replaces a running sync (WorkManager REPLACE cancels it). The cancelled run
+     * leaves a [SyncStop] marker, not a failure, and every run counts in `runsStarted`, so the
+     * list can wait for the run that started after its request.
+     */
+    @Test
+    fun everyRunIsCountedAndACancelledRunLeavesAStopMarker() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        assertEquals(1L, graph.engine.state.value.runsStarted)
+        assertNull(graph.engine.state.value.lastError)
+
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        server.respond("GET", "/api/recipe/flat/") {
+            entered.countDown()
+            release.await(10, TimeUnit.SECONDS)
+            FakeTandoorServer.fixture("fas1/recipe-flat")
+        }
+        try {
+            val job = launch(Dispatchers.Default) { graph.engine.run(SyncReason.USER_REFRESH) }
+            waitUntil { entered.count == 0L }
+            assertTrue(graph.engine.state.value.running)
+            assertEquals(2L, graph.engine.state.value.runsStarted)
+            job.cancelAndJoin()
+        } finally {
+            release.countDown()
+        }
+
+        val state = graph.engine.state.value
+        assertFalse(state.running)
+        assertEquals(2L, state.runsStarted)
+        assertEquals(SyncStop.Cancelled, state.lastError)
+        assertTrue(checkNotNull(state.lastError).isTransientSyncStop)
+        waitUntil { graph.sync.status.value.runsStarted == 2L }
     }
 
     private fun throttled(): MockResponse = MockResponse.Builder()

@@ -10,6 +10,9 @@ import kotlin.time.Instant
  *
  * @property text free-text search; blank means "all recipes".
  * @property keywordIds only recipes that have ALL of these keywords (`keywords_and`).
+ * @property foodIds only recipes with an ingredient of EACH of these foods (`foods_and`, plan 6.2
+ *   "livsmedel"). Offline only recipes with a stored detail can match: the list rows carry no
+ *   ingredients.
  * @property maxTotalMinutes only recipes whose working + waiting time is at most this, e.g. 30.
  * @property minRating only recipes rated at least this (`rating_gte`), e.g. 4.0.
  * @property sort the order of the results.
@@ -19,6 +22,7 @@ import kotlin.time.Instant
 data class RecipeQuery(
     val text: String = "",
     val keywordIds: Set<Long> = emptySet(),
+    val foodIds: Set<Long> = emptySet(),
     val maxTotalMinutes: Int? = null,
     val minRating: Double? = null,
     val sort: RecipeSort = RecipeSort.NAME,
@@ -26,7 +30,7 @@ data class RecipeQuery(
 ) {
     /** True when nothing narrows the result (any sort): the list shows every recipe. */
     val isUnfiltered: Boolean
-        get() = text.isBlank() && keywordIds.isEmpty() && maxTotalMinutes == null && minRating == null && !onlyOffline
+        get() = text.isBlank() && keywordIds.isEmpty() && foodIds.isEmpty() && maxTotalMinutes == null && minRating == null && !onlyOffline
 
     companion object {
         /** Every recipe, by name. */

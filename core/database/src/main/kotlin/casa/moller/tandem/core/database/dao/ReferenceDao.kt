@@ -9,6 +9,7 @@ import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.MealTypeEntity
 import casa.moller.tandem.core.database.entity.UnitEntity
 import casa.moller.tandem.core.database.entity.UserPreferenceEntity
+import casa.moller.tandem.core.database.relation.FoodNameRow
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -41,6 +42,21 @@ abstract class ReferenceDao {
 
     @Query("SELECT * FROM food WHERE account_id = :accountId ORDER BY name")
     abstract suspend fun getFoods(accountId: String): List<FoodEntity>
+
+    /**
+     * Every food the recipe list can filter on (plan 6.2 "livsmedel"): the account's food list
+     * plus the foods of stored ingredients that the list does not have (the demo database has no
+     * food list). Unsorted: the caller sorts with a locale collator. Re-emits when either changes.
+     */
+    @Query(
+        "SELECT id, name, plural_name FROM food WHERE account_id = :accountId " +
+            "UNION ALL " +
+            "SELECT food_id AS id, MAX(food_name) AS name, MAX(food_plural_name) AS plural_name FROM ingredient " +
+            "WHERE account_id = :accountId AND food_id IS NOT NULL AND food_name IS NOT NULL " +
+            "AND food_id NOT IN (SELECT id FROM food WHERE account_id = :accountId) " +
+            "GROUP BY food_id",
+    )
+    abstract fun observeFilterFoods(accountId: String): Flow<List<FoodNameRow>>
 
     @Query("SELECT * FROM unit WHERE account_id = :accountId ORDER BY name")
     abstract suspend fun getUnits(accountId: String): List<UnitEntity>

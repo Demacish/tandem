@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.home.HomeSection
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.model.preferences.UserPreferences
+import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeDetailState
@@ -33,23 +34,27 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 
 /**
  * In-memory [RecipeRepository] over [SampleRecipes] (or your own data). Deterministic and
  * synchronous: every change to the public state flows is visible to observers at once.
  *
  * Search mimics the offline FTS: case- and diacritics-insensitive ("artsoppa" finds "Ärtsoppa"),
- * over name, description, keyword names and food names. [searchServer] returns
+ * over name, description, keyword names and food names; the food filter matches the ingredients
+ * of [details] only. [searchServer] returns
  * [searchServerResult] when set, otherwise the same local filtering.
  */
 class FakeRecipeRepository(
     details: List<Recipe> = SampleRecipes.details,
     overviews: List<RecipeOverview> = SampleRecipes.overviews,
     keywords: List<Keyword> = SampleRecipes.keywords,
+    foods: List<Food> = SampleRecipes.foods,
 ) : RecipeRepository {
     val overviews = MutableStateFlow(overviews)
     val details = MutableStateFlow(details.associateBy { it.id })
     val keywords = MutableStateFlow(keywords)
+    val foods = MutableStateFlow(foods)
     val servingsChoices = MutableStateFlow<Map<Long, Double>>(emptyMap())
 
     /** Detail states to emit instead of the derived one (loading, errors), by recipe id. */
@@ -110,6 +115,10 @@ class FakeRecipeRepository(
     override fun observeKeywords(): Flow<List<Keyword>> = keywords.map { list ->
         list.sortedWith(compareBy<Keyword, String>(swedishCollator) { it.name })
     }
+
+    override fun observeFoods(): Flow<List<Food>> = foods.map { list ->
+        list.sortedWith(compareBy<Food, String>(swedishCollator) { it.name })
+    }
 }
 
 /** In-memory [HomeRepository]: set [sections] and [upcomingMeals]; [refresh] returns [refreshResult]. */
@@ -153,6 +162,16 @@ class FakeSyncRepository(initial: SyncStatus = SyncStatus.Idle) : SyncRepository
     /** Sets the status that [status] emits. */
     fun setStatus(status: SyncStatus) {
         mutableStatus.value = status
+    }
+
+    /** A sync run starts, like the real engine: running, one more [SyncStatus.runsStarted], the last error kept. */
+    fun startRun() {
+        mutableStatus.update { it.copy(running = true, runsStarted = it.runsStarted + 1) }
+    }
+
+    /** The running run ends with [error] (null: success; `SyncStop.Cancelled`: cancelled). */
+    fun finishRun(error: TandemError? = null) {
+        mutableStatus.update { it.copy(running = false, lastError = error) }
     }
 
     override fun requestSync(reason: SyncReason) {
@@ -218,8 +237,11 @@ private fun List<RecipeOverview>.matching(query: RecipeQuery, details: Map<Long,
             recipe.keywords.forEach { append(' ').append(it.name) }
             details[recipe.id]?.ingredients?.forEach { ingredient -> ingredient.food?.let { append(' ').append(it.name) } }
         }.searchKey()
+        // Like the database: only a stored detail has ingredients to match.
+        val foodIds = details[recipe.id]?.ingredients.orEmpty().mapNotNull { it.food?.id }
         words.all { it in haystack } &&
             recipe.keywords.map { it.id }.containsAll(query.keywordIds) &&
+            foodIds.containsAll(query.foodIds) &&
             (maxMinutes == null || recipe.totalMinutes in 1..maxMinutes) &&
             (minRating == null || (recipe.rating ?: 0.0) >= minRating) &&
             (!query.onlyOffline || recipe.availableOffline)

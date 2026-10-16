@@ -17,8 +17,8 @@ Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslis
   minut när det finns nät, och när du öppnar appen.
 - **Recept:** alla dina recept i rutnät eller lista, med sökning direkt i telefonen (även på
   delar av ord och utan å/ä/ö, "kram" hittar "Krämig") och samtidigt på servern. Filter på
-  nyckelord, tid och betyg och "bara nedladdade", sortering på namn, nyast, betyg och senast
-  lagat. Dra nedåt för att uppdatera.
+  nyckelord, livsmedel (recept som innehåller alla valda), tid och betyg och "bara nedladdade",
+  sortering på namn, nyast, betyg och senast lagat. Dra nedåt för att uppdatera.
 - **Receptvyn:** bild, nyckelord, betyg, tider, hur ofta och när det lagades, beskrivning,
   ingredienser och steg. **Portionerna** går att ändra och minns per recept, och mängderna
   räknas om **exakt som i Tandoors webb** (med dina inställningar för bråk och decimaler,

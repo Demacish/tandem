@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.data.recipe
 
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.model.recipe.RecipeOverview
@@ -76,4 +77,10 @@ interface RecipeRepository {
 
     /** All stored keywords, by name, for the filter chips. Works offline. */
     fun observeKeywords(): Flow<List<Keyword>>
+
+    /**
+     * The foods the recipe list can filter on ([RecipeQuery.foodIds], plan 6.2 "livsmedel"), by
+     * name: the food list from the last sync plus the foods of stored recipes. Works offline.
+     */
+    fun observeFoods(): Flow<List<Food>>
 }

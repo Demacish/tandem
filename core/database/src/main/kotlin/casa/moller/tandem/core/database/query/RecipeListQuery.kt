@@ -16,6 +16,8 @@ import casa.moller.tandem.core.model.recipe.RecipeQuery
  *   description, keywords, ingredients; [FtsQuery]) or as a substring of the name, so "pasta"
  *   also finds "Svamppasta" (Swedish compound words). Text without a searchable word filters nothing.
  * - keywordIds: the recipe has ALL of them.
+ * - foodIds: the recipe has an ingredient of EACH of them (Tandoor `foods_and`). Only recipes with
+ *   a stored detail have ingredient rows; the server search finds the others when online.
  * - maxTotalMinutes: working + waiting time is known (> 0) and at most the limit.
  * - minRating: rating (unrated = 0) is at least the limit.
  * - onlyOffline: the detail is stored.
@@ -35,6 +37,14 @@ internal object RecipeListQuery {
                     "AND fk.recipe_id = o.server_id AND fk.keyword_id = ?)",
             )
             args += keywordId
+        }
+        query.foodIds.sorted().forEach { foodId ->
+            // The ingredient primary key starts with (account_id, recipe_id): an index lookup per recipe.
+            sql.append(
+                " AND EXISTS (SELECT 1 FROM ingredient fi WHERE fi.account_id = o.account_id " +
+                    "AND fi.recipe_id = o.server_id AND fi.food_id = ?)",
+            )
+            args += foodId
         }
         query.maxTotalMinutes?.let { max ->
             sql.append(" AND (o.working_minutes + o.waiting_minutes) BETWEEN 1 AND ?")

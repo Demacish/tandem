@@ -179,6 +179,34 @@ class RecipesPhoneScreenshotTest : RecipesScreenshotTest("phone") {
         captureScreenRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/phone_keyword_picker_light.png")
     }
 
+    /** Plan 6.2 "livsmedel": the food picker with one food picked (it comes first), and the chip showing its name. */
+    @OptIn(ExperimentalRoborazziApi::class)
+    @Test
+    fun foodPicker() {
+        val butter = SampleRecipes.food("smör")
+        composeRule.setContent { TestFrame { ListScreen(listState(RecipeQuery(foodIds = setOf(butter.id)))) } }
+        composeRule.onNodeWithText(butter.name).performClick()
+        composeRule.waitForIdle()
+        captureScreenRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/phone_food_picker_light.png")
+    }
+
+    @OptIn(ExperimentalRoborazziApi::class)
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun foodPickerSwedishDark() {
+        composeRule.setContent { TestFrame(darkTheme = true) { ListScreen(listState()) } }
+        composeRule.onNodeWithText(string(R.string.recipes_filter_foods)).performClick()
+        composeRule.waitForIdle()
+        captureScreenRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/phone_food_picker_dark_sv.png")
+    }
+
+    /** Two foods picked: the chip counts them, the list shows the recipes with both. */
+    @Test
+    fun listFilteredByFoods() = capture("list_food_filter_light") {
+        val foods = setOf(SampleRecipes.food("smör").id, SampleRecipes.food("kardemumma").id)
+        ListScreen(listState(RecipeQuery(foodIds = foods)) { copy(serverSearch = ServerSearch.DONE) })
+    }
+
     @Test
     fun detail() = capture("detail_light") { DetailWithFakes(SampleRecipes.MushroomPasta.id) }
 
@@ -368,6 +396,20 @@ class RecipesTabletScreenshotTest : RecipesScreenshotTest("tablet") {
         composeRule.onNodeWithContentDescription(string(R.string.recipes_keywords_close)).assertIsDisplayed()
         composeRule.onNodeWithText(SampleRecipes.MushroomPasta.name).assertIsDisplayed()
         composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/tablet_list_keyword_panel_light.png")
+    }
+
+    /** The food filter as a side panel too (plan 6.5), with its own close button. */
+    @Test
+    fun foodPanelBesideTheList() {
+        composeRule.setContent { TestFrame { ListScreen(listState()) } }
+        composeRule.onNodeWithText(string(R.string.recipes_filter_foods)).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription(string(R.string.recipes_foods_close)).assertIsDisplayed()
+        composeRule.onNodeWithText(SampleRecipes.MushroomPasta.name).assertIsDisplayed()
+        composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/tablet_list_food_panel_light.png")
+        composeRule.onNodeWithContentDescription(string(R.string.recipes_foods_close)).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText(string(R.string.recipes_filter_foods)).assertIsDisplayed()
     }
 
     /** In the narrow list pane beside a recipe, the panel takes the pane's place; the recipe stays open. */

@@ -24,7 +24,7 @@ val TandemIcons.ChevronRight: ImageVector
 val TandemIcons.Delete: ImageVector
     @Composable get() = ImageVector.vectorResource(R.drawable.tandem_ic_delete)
 
-/** A meal: placeholder for recipes without a photo. */
+/** A meal: placeholder for recipes without a photo; also the food filter chip of the recipe list. */
 val TandemIcons.Restaurant: ImageVector
     @Composable get() = ImageVector.vectorResource(R.drawable.tandem_ic_restaurant)
 

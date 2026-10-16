@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
@@ -28,6 +29,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -212,17 +214,57 @@ class RecipeListViewModelTest {
         assertEquals(RecipeQuery(sort = RecipeSort.RATING), viewModel.uiState.value.query)
     }
 
+    /** Plan 6.2 "livsmedel": recipes with every picked food, locally at once and on the server (`foods_and`). */
+    @Test
+    fun theFoodFilterNarrowsToRecipesWithEveryPickedFood() = runTest(mainDispatcher.dispatcher) {
+        val butter = SampleRecipes.food("smör")
+        val cardamom = SampleRecipes.food("kardemumma")
+        val viewModel = subscribed()
+        assertEquals(SampleRecipes.foods.size, viewModel.uiState.value.foods.size)
+
+        viewModel.onAction(RecipeListAction.ToggleFood(butter.id))
+        runCurrent()
+        val withButter = viewModel.uiState.value.recipes.map { it.id }.toSet()
+        assertEquals(setOf(SampleRecipes.MushroomPasta.id, SampleRecipes.CinnamonBuns.id), withButter)
+        assertEquals(listOf(butter), viewModel.uiState.value.selectedFoods)
+        assertTrue(viewModel.uiState.value.isFiltered)
+
+        viewModel.onAction(RecipeListAction.ToggleFood(cardamom.id))
+        advanceTimeBy(RecipeListViewModel.SEARCH_DEBOUNCE_MILLIS + 1)
+        runCurrent()
+        assertEquals(listOf(SampleRecipes.CinnamonBuns.id), viewModel.uiState.value.recipes.map { it.id })
+        assertEquals(setOf(butter.id, cardamom.id), repository.searchedQueries.last().foodIds)
+
+        viewModel.onAction(RecipeListAction.ToggleFood(cardamom.id))
+        runCurrent()
+        assertEquals(setOf(butter.id), viewModel.uiState.value.query.foodIds)
+        viewModel.onAction(RecipeListAction.ClearFoods)
+        runCurrent()
+        assertTrue(viewModel.uiState.value.query.foodIds.isEmpty())
+
+        viewModel.onAction(RecipeListAction.ToggleFood(butter.id))
+        viewModel.onAction(RecipeListAction.ClearFilters)
+        runCurrent()
+        assertEquals(RecipeQuery(), viewModel.uiState.value.query)
+    }
+
     @Test
     fun theQuerySurvivesProcessDeath() = runTest(mainDispatcher.dispatcher) {
         val handle = SavedStateHandle()
         val first = subscribed(newViewModel(handle))
         first.onAction(RecipeListAction.Search("bullar"))
         first.onAction(RecipeListAction.ToggleKeyword(SampleRecipes.Baking.id))
+        first.onAction(RecipeListAction.ToggleFood(SampleRecipes.food("smör").id))
         first.onAction(RecipeListAction.Sort(RecipeSort.NEWEST))
 
         val restored = subscribed(newViewModel(handle))
         assertEquals(
-            RecipeQuery(text = "bullar", keywordIds = setOf(SampleRecipes.Baking.id), sort = RecipeSort.NEWEST),
+            RecipeQuery(
+                text = "bullar",
+                keywordIds = setOf(SampleRecipes.Baking.id),
+                foodIds = setOf(SampleRecipes.food("smör").id),
+                sort = RecipeSort.NEWEST,
+            ),
             restored.uiState.value.query,
         )
     }
@@ -245,10 +287,10 @@ class RecipeListViewModelTest {
         assertEquals(listOf(SyncReason.USER_REFRESH), sync.requests)
         assertTrue(viewModel.uiState.value.refreshing)
 
-        sync.setStatus(SyncStatus(running = true))
+        sync.startRun()
         runCurrent()
         assertTrue(viewModel.uiState.value.refreshing)
-        sync.setStatus(SyncStatus.Idle)
+        sync.finishRun()
         runCurrent()
         assertFalse(viewModel.uiState.value.refreshing)
     }
@@ -335,9 +377,9 @@ class RecipeListViewModelTest {
         val viewModel = subscribed()
         viewModel.effects.test {
             viewModel.onAction(RecipeListAction.Refresh)
-            sync.setStatus(SyncStatus(running = true))
+            sync.startRun()
             runCurrent()
-            sync.setStatus(SyncStatus(lastError = TandemError.ServerError(502)))
+            sync.finishRun(TandemError.ServerError(502))
             runCurrent()
             assertEquals(RecipeListEffect.SyncFailed(TandemError.ServerError(502)), awaitItem())
         }
@@ -349,11 +391,72 @@ class RecipeListViewModelTest {
         val viewModel = subscribed()
         viewModel.effects.test {
             viewModel.onAction(RecipeListAction.Refresh)
-            sync.setStatus(SyncStatus(running = true))
+            sync.startRun()
             runCurrent()
-            sync.setStatus(SyncStatus.Idle)
+            sync.finishRun()
             runCurrent()
             expectNoEvents()
         }
+    }
+
+    /**
+     * Pull to refresh replaces a running sync (WorkManager REPLACE): that run ends cancelled. It is
+     * no failure, and the indicator waits for the run that starts after the request.
+     */
+    @Test
+    fun aSyncReplacedByPullToRefreshIsNoFailureAndTheIndicatorWaitsForTheNewRun() = runTest(mainDispatcher.dispatcher) {
+        repository.overviews.value = emptyList()
+        sync.startRun()
+        val viewModel = subscribed()
+        viewModel.effects.test {
+            viewModel.onAction(RecipeListAction.Refresh)
+            runCurrent()
+            sync.finishRun(SyncStop.Cancelled)
+            runCurrent()
+            assertTrue("still waiting for the requested run", viewModel.uiState.value.refreshing)
+            assertNull(viewModel.uiState.value.syncError)
+
+            sync.startRun()
+            runCurrent()
+            assertTrue(viewModel.uiState.value.refreshing)
+            sync.finishRun()
+            runCurrent()
+            assertFalse(viewModel.uiState.value.refreshing)
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun aPullToRefreshWhoseOwnRunIsCancelledSaysNothing() = runTest(mainDispatcher.dispatcher) {
+        repository.overviews.value = emptyList()
+        val viewModel = subscribed()
+        viewModel.effects.test {
+            viewModel.onAction(RecipeListAction.Refresh)
+            sync.startRun()
+            runCurrent()
+            sync.finishRun(SyncStop.Cancelled)
+            runCurrent()
+            assertFalse(viewModel.uiState.value.refreshing)
+            expectNoEvents()
+        }
+        assertNull("no ErrorState for a cancelled run", viewModel.uiState.value.syncError)
+    }
+
+    @Test
+    fun aStoppedSyncIsNoErrorState() = runTest(mainDispatcher.dispatcher) {
+        repository.overviews.value = emptyList()
+        val viewModel = subscribed()
+        sync.setStatus(SyncStatus(lastError = SyncStop.Cancelled, runsStarted = 1))
+        runCurrent()
+        assertNull(viewModel.uiState.value.syncError)
+
+        sync.setStatus(SyncStatus(lastError = SyncStop.SourceChanged, runsStarted = 2))
+        runCurrent()
+        assertNull(viewModel.uiState.value.syncError)
+
+        // A real unexpected failure is still shown.
+        sync.setStatus(SyncStatus(lastError = TandemError.Unknown("java.io.IOException"), runsStarted = 3))
+        runCurrent()
+        assertEquals(TandemError.Unknown("java.io.IOException"), viewModel.uiState.value.syncError)
     }
 }

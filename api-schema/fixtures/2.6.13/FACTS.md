@@ -309,6 +309,9 @@ under `noSpace.*`. Observerat i körningarna 38009810699 och 38010760972 (2026-1
   `Grönsakssoppa`; `champinjon` (bara ingrediens) gav inget. [O]
 - `keywords_or=<id>` tar med barn-nyckelord (`include_children` är `true` som standard);
   `include_children=false` stänger av det. [O] `books_or=<bok-id>` fungerar likadant. [O]
+- `foods_and=<id>` (upprepas per livsmedel) kräver en ingrediens av **varje** livsmedel:
+  `gul lök` gav svamppastan, köttbullarna och ärtsoppan, `gul lök` + `potatis` bara köttbullarna.
+  Appens livsmedelsfilter (plan 6.2) använder det. [O]
 - Sortering: `sort_order=-lastcooked` och `-rating` fungerar (null sist). **`sort_order=-times_cooked`
   ger 500** (HTML) trots att webben erbjuder den [O; K: ingen sådan annotering]. Använd
   `timescooked_gte=1&sort_order=-lastcooked` för "lagade" och räkna antal lokalt. [S]

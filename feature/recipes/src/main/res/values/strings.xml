@@ -20,6 +20,11 @@
         <item quantity="one">%1$d keyword</item>
         <item quantity="other">%1$d keywords</item>
     </plurals>
+    <string name="recipes_filter_foods">Ingredients</string>
+    <plurals name="recipes_filter_foods_count">
+        <item quantity="one">%1$d ingredient</item>
+        <item quantity="other">%1$d ingredients</item>
+    </plurals>
     <string name="recipes_filter_quick">Under %1$d min</string>
     <string name="recipes_filter_rating">Rating %1$d+</string>
     <string name="recipes_filter_offline">Downloaded</string>
@@ -37,6 +42,13 @@
     <string name="recipes_keywords_filter_hint">Find a keyword</string>
     <string name="recipes_keywords_empty">No keywords yet. Add them to your recipes in Tandoor.</string>
     <string name="recipes_keywords_close">Close keywords</string>
+
+    <!-- Food picker (plan 6.2 "livsmedel"): recipes that contain all picked ingredients. -->
+    <string name="recipes_foods_title">Ingredients</string>
+    <string name="recipes_foods_clear">Clear</string>
+    <string name="recipes_foods_filter_hint">Find an ingredient</string>
+    <string name="recipes_foods_empty">No ingredients yet. They are fetched with the next sync.</string>
+    <string name="recipes_foods_close">Close ingredients</string>
 
     <!-- Search status above the results. -->
     <plurals name="recipes_result_count">

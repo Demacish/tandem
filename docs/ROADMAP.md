@@ -11,8 +11,8 @@ språk (svenska och engelska), ingången till demoläget, lokal kraschlogg.
 ## Fas 1: Laga
 Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, laga).
 
-- ✅ Receptlista med sökning offline och mot servern, filter (nyckelord, tid, betyg, nedladdade)
-  och sortering (0.1.0). Filter på livsmedel kommer i en senare version.
+- ✅ Receptlista med sökning offline och mot servern, filter (nyckelord, livsmedel, tid, betyg,
+  nedladdade) och sortering (0.1.0).
 - ✅ Receptvy: portioner, skalade mängder som i Tandoors webb, bråk, enhetsomräkning, steg,
   betyg (0.1.0).
 - ✅ Recept sparade för offline, med bilder (0.1.0).

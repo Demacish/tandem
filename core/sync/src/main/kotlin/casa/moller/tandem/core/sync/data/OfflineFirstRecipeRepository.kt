@@ -12,6 +12,7 @@ import casa.moller.tandem.core.database.relation.RecipeListItem
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.model.recipe.RecipeOverview
@@ -290,6 +291,24 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
                 ActiveSource.None -> flowOf(emptyList<Keyword>())
             }
         }
+        .flowOn(Dispatchers.Default)
+
+    override fun observeFoods(): Flow<List<Food>> = sources.source
+        .flatMapLatest { source ->
+            when (source) {
+                is ActiveSource.Stored -> databases.get(source.kind).referenceDao().observeFilterFoods(source.accountId).map { rows ->
+                    val collator = Collator.getInstance(Locale.getDefault()).apply { strength = Collator.SECONDARY }
+                    rows.map { Food(id = it.id, name = it.name, pluralName = it.pluralName) }
+                        .distinctBy { it.id }
+                        .sortedWith(compareBy<Food, String>(collator) { it.name })
+                }
+
+                ActiveSource.Loading -> emptyFlow<List<Food>>()
+
+                ActiveSource.None -> flowOf(emptyList<Food>())
+            }
+        }
+        .distinctUntilChanged()
         .flowOn(Dispatchers.Default)
 
     private fun recipeDao(source: ActiveSource.Stored): RecipeDao = databases.get(source.kind).recipeDao()

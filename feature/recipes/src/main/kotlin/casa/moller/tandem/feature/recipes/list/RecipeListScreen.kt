@@ -71,6 +71,7 @@ import casa.moller.tandem.core.designsystem.icon.Check
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
 import casa.moller.tandem.core.designsystem.icon.GridView
+import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Search
 import casa.moller.tandem.core.designsystem.icon.Sell
 import casa.moller.tandem.core.designsystem.icon.Sort
@@ -78,6 +79,7 @@ import casa.moller.tandem.core.designsystem.icon.StarFilled
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.ViewAgenda
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.ErrorState
@@ -93,11 +95,11 @@ import casa.moller.tandem.feature.recipes.R
  * The recipe list (plan 6.2 "Receptlista", designs recept_alla_recept and
  * recept_s_k_filter_samlingar with the corrections in docs/design/README.md). Stateless.
  *
- * Search field, filter chips (keywords, under 30 min, rating 4+, only offline) and sort above a
+ * Search field, filter chips (keywords, foods, under 30 min, rating 4+, only offline) and sort above a
  * grid of photo cards or a list of rows; pull to refresh syncs. Offline, recipes without a
  * stored detail are dimmed with a cloud badge.
  *
- * The keyword picker is a bottom sheet on compact and medium windows and a side panel on
+ * The keyword and food pickers are a bottom sheet on compact and medium windows and a side panel on
  * expanded ones (plan 6.5): beside the recipes when the list is wide enough, otherwise in their
  * place inside the list pane, so the recipe open beside the list stays visible. The content
  * keeps clear of the keyboard (edge-to-edge: the window is not resized for it).
@@ -114,8 +116,12 @@ fun RecipeListScreen(
     selectedRecipeId: Long? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    var showKeywordPicker by rememberSaveable { mutableStateOf(false) }
-    val keywordPanel = isExpandedWindow()
+    var openPicker by rememberSaveable { mutableStateOf<FilterPicker?>(null) }
+    val asPanel = isExpandedWindow()
+    val keywordOptions = remember(state.keywords) { state.keywords.map { FilterOption(it.id, it.name) } }
+    val foodOptions = remember(state.foods) { state.foods.map { FilterOption(it.id, it.name) } }
+    // The chips open their picker, or close it when it is the side panel that is already open.
+    val onOpenPicker: (FilterPicker) -> Unit = { picker -> openPicker = if (asPanel && openPicker == picker) null else picker }
     // Hoisted, so the scroll position survives while the side panel replaces the grid.
     val gridState = rememberLazyGridState()
     Scaffold(
@@ -146,16 +152,18 @@ fun RecipeListScreen(
                 .padding(padding)
                 .consumeWindowInsets(padding),
         ) {
-            val panelOpen = keywordPanel && showKeywordPicker
+            val panel = openPicker.takeIf { asPanel }
+            val panelOpen = panel != null
             val panelBeside = maxWidth >= PANEL_BESIDE_MIN_WIDTH
             Row(modifier = Modifier.fillMaxSize()) {
-                if (panelOpen) {
-                    KeywordPickerPanel(
-                        keywords = state.keywords,
-                        selectedIds = state.query.keywordIds,
-                        onToggle = { onAction(RecipeListAction.ToggleKeyword(it)) },
-                        onClear = { onAction(RecipeListAction.ClearKeywords) },
-                        onDismiss = { showKeywordPicker = false },
+                if (panel != null) {
+                    FilterPickerPanel(
+                        picker = panel,
+                        options = if (panel == FilterPicker.KEYWORDS) keywordOptions else foodOptions,
+                        selectedIds = state.query.selectedIds(panel),
+                        onToggle = { onAction(panel.toggle(it)) },
+                        onClear = { onAction(panel.clear()) },
+                        onDismiss = { openPicker = null },
                         modifier = Modifier
                             .then(if (panelBeside) Modifier.width(PANEL_WIDTH) else Modifier.weight(1f))
                             .fillMaxHeight()
@@ -175,7 +183,7 @@ fun RecipeListScreen(
                             gridState = gridState,
                             onAction = onAction,
                             onOpenRecipe = onOpenRecipe,
-                            onOpenKeywordPicker = { showKeywordPicker = !(keywordPanel && showKeywordPicker) },
+                            onOpenPicker = onOpenPicker,
                             selectedRecipeId = selectedRecipeId,
                         )
                     }
@@ -183,15 +191,32 @@ fun RecipeListScreen(
             }
         }
     }
-    if (showKeywordPicker && !keywordPanel) {
-        KeywordPickerSheet(
-            keywords = state.keywords,
-            selectedIds = state.query.keywordIds,
-            onToggle = { onAction(RecipeListAction.ToggleKeyword(it)) },
-            onClear = { onAction(RecipeListAction.ClearKeywords) },
-            onDismiss = { showKeywordPicker = false },
+    val sheet = openPicker.takeIf { !asPanel }
+    if (sheet != null) {
+        FilterPickerSheet(
+            picker = sheet,
+            options = if (sheet == FilterPicker.KEYWORDS) keywordOptions else foodOptions,
+            selectedIds = state.query.selectedIds(sheet),
+            onToggle = { onAction(sheet.toggle(it)) },
+            onClear = { onAction(sheet.clear()) },
+            onDismiss = { openPicker = null },
         )
     }
+}
+
+private fun RecipeQuery.selectedIds(picker: FilterPicker): Set<Long> = when (picker) {
+    FilterPicker.KEYWORDS -> keywordIds
+    FilterPicker.FOODS -> foodIds
+}
+
+private fun FilterPicker.toggle(id: Long): RecipeListAction = when (this) {
+    FilterPicker.KEYWORDS -> RecipeListAction.ToggleKeyword(id)
+    FilterPicker.FOODS -> RecipeListAction.ToggleFood(id)
+}
+
+private fun FilterPicker.clear(): RecipeListAction = when (this) {
+    FilterPicker.KEYWORDS -> RecipeListAction.ClearKeywords
+    FilterPicker.FOODS -> RecipeListAction.ClearFoods
 }
 
 @Composable
@@ -218,7 +243,7 @@ private fun RecipeGrid(
     gridState: LazyGridState,
     onAction: (RecipeListAction) -> Unit,
     onOpenRecipe: (Long) -> Unit,
-    onOpenKeywordPicker: () -> Unit,
+    onOpenPicker: (FilterPicker) -> Unit,
     selectedRecipeId: Long?,
 ) {
     val spacing = TandemTheme.spacing
@@ -235,7 +260,7 @@ private fun RecipeGrid(
         fullWidth("search") {
             SearchField(text = state.query.text, onTextChange = { onAction(RecipeListAction.Search(it)) })
         }
-        fullWidth("filters") { FilterChips(state = state, onAction = onAction, onOpenKeywordPicker = onOpenKeywordPicker) }
+        fullWidth("filters") { FilterChips(state = state, onAction = onAction, onOpenPicker = onOpenPicker) }
         fullWidth("status") { StatusLine(state) }
         when {
             !state.loaded -> fullWidth("loading") { LoadingState() }
@@ -301,9 +326,10 @@ private fun SearchField(text: String, onTextChange: (String) -> Unit) {
 }
 
 @Composable
-private fun FilterChips(state: RecipeListUiState, onAction: (RecipeListAction) -> Unit, onOpenKeywordPicker: () -> Unit) {
+private fun FilterChips(state: RecipeListUiState, onAction: (RecipeListAction) -> Unit, onOpenPicker: (FilterPicker) -> Unit) {
     val query = state.query
     val selectedKeywords = state.selectedKeywords
+    val selectedFoods = state.selectedFoods
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -318,8 +344,19 @@ private fun FilterChips(state: RecipeListUiState, onAction: (RecipeListAction) -
                 else -> pluralStringResource(R.plurals.recipes_filter_keywords_count, selectedKeywords.size, selectedKeywords.size)
             },
             selected = query.keywordIds.isNotEmpty(),
-            onClick = onOpenKeywordPicker,
+            onClick = { onOpenPicker(FilterPicker.KEYWORDS) },
             icon = TandemIcons.Sell,
+            trailingIcon = TandemIcons.ExpandMore,
+        )
+        Chip(
+            label = when (selectedFoods.size) {
+                0 -> stringResource(R.string.recipes_filter_foods)
+                1 -> selectedFoods.single().name
+                else -> pluralStringResource(R.plurals.recipes_filter_foods_count, selectedFoods.size, selectedFoods.size)
+            },
+            selected = query.foodIds.isNotEmpty(),
+            onClick = { onOpenPicker(FilterPicker.FOODS) },
+            icon = TandemIcons.Restaurant,
             trailingIcon = TandemIcons.ExpandMore,
         )
         Chip(

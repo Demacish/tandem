@@ -105,6 +105,7 @@ internal class DefaultSyncRepository @Inject constructor(
             lastError = engineState.lastError,
             pendingChanges = pending,
             pause = pause,
+            runsStarted = engineState.runsStarted,
         )
     }
 

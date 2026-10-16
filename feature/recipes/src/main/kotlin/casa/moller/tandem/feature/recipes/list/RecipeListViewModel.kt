@@ -15,6 +15,7 @@ import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.model.sync.isTransientSyncStop
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.detail.isConnectionProblem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -50,7 +51,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * - **State:** the query survives rotation and process death ([SavedStateHandle]); the grid/list
  *   choice is remembered on the device ([RecipeListPreferences]).
  * - **Pull to refresh** asks for a sync (USER_REFRESH, never throttled) and shows the indicator
- *   until that sync has finished; a sync that fails says why (snackbar, plan 5.4).
+ *   until the run that started after the request has finished ([SyncStatus.runsStarted]); a sync
+ *   that fails says why (snackbar, plan 5.4). The run it replaced ends cancelled, which is no failure.
  * - **Sync errors** other than "offline" and "log in again" (which have their own notices) are
  *   in [RecipeListUiState.syncError], so an empty list explains itself instead of "no recipes".
  * - **Coming back** to the screen keeps the shown list (and its scroll position): the inputs
@@ -118,13 +120,15 @@ class RecipeListViewModel @Inject constructor(
         query,
         listing,
         recipes.observeKeywords(),
+        recipes.observeFoods(),
         status,
-    ) { current, list, keywords, flags ->
+    ) { current, list, keywords, foods, flags ->
         RecipeListUiState(
             query = current,
             recipes = list.recipes,
             loaded = list.loaded,
             keywords = keywords,
+            foods = foods,
             layout = flags.layout,
             serverSearch = flags.serverSearch,
             serverOnlyCount = list.serverOnlyCount,
@@ -148,6 +152,12 @@ class RecipeListViewModel @Inject constructor(
             }
 
             RecipeListAction.ClearKeywords -> updateQuery { it.copy(keywordIds = emptySet()) }
+
+            is RecipeListAction.ToggleFood -> updateQuery {
+                it.copy(foodIds = if (action.id in it.foodIds) it.foodIds - action.id else it.foodIds + action.id)
+            }
+
+            RecipeListAction.ClearFoods -> updateQuery { it.copy(foodIds = emptySet()) }
 
             RecipeListAction.ToggleQuick -> updateQuery {
                 it.copy(maxTotalMinutes = if (it.maxTotalMinutes == null) QUICK_MAX_MINUTES else null)
@@ -215,15 +225,18 @@ class RecipeListViewModel @Inject constructor(
     private fun refresh() {
         if (refreshing.value) return
         refreshing.value = true
+        // Remembered before asking: the request replaces a sync that is already running, and that
+        // run ends cancelled. The indicator waits for the run that starts after this request.
+        val runsBefore = sync.status.value.runsStarted
         sync.requestSync(SyncReason.USER_REFRESH)
         searchGeneration.update { it + 1 }
         if (sync.status.value.pause == SyncPause.OFFLINE) {
             effectChannel.trySend(RecipeListEffect.Message(R.string.recipes_refresh_offline))
         }
         viewModelScope.launch {
-            // The sync may be ignored (offline, demo mode, already running): stop after a moment.
-            val started = withTimeoutOrNull(SYNC_START_TIMEOUT_MILLIS) { sync.status.first { it.running } } != null
-            val error = if (started) sync.status.first { !it.running }.shownError() else null
+            // The sync may be ignored (offline, demo mode): stop after a moment.
+            val started = withTimeoutOrNull(SYNC_START_TIMEOUT_MILLIS) { sync.status.first { it.runsStarted > runsBefore } } != null
+            val error = if (started) sync.status.first { it.runsStarted > runsBefore && !it.running }.shownError() else null
             refreshing.value = false
             // The user asked: a failed sync gets an answer (plan 5.4), not just a stopped spinner.
             if (error != null) effectChannel.trySend(RecipeListEffect.SyncFailed(error))
@@ -242,9 +255,11 @@ class RecipeListViewModel @Inject constructor(
 
     internal companion object {
         /**
-         * Why the last sync failed, when the list should say so: not while a sync runs, and not
-         * for a missing network or a rejected login, which the offline notice and the shell's
-         * "Log in again" banner already cover.
+         * Why the last sync failed, when the list should say so: not while a sync runs, not for a
+         * missing network or a rejected login, which the offline notice and the shell's
+         * "Log in again" banner already cover, and not for a run that was only cancelled or
+         * overtaken by an account change ([isTransientSyncStop]: nothing failed, the next run
+         * tries again).
          */
         fun SyncStatus.shownError(): TandemError? {
             val error = lastError ?: return null
@@ -252,6 +267,7 @@ class RecipeListViewModel @Inject constructor(
                 running -> null
                 pause == SyncPause.OFFLINE || pause == SyncPause.UNAUTHORIZED -> null
                 error == TandemError.NetworkUnavailable || error is TandemError.Unauthorized -> null
+                error.isTransientSyncStop -> null
                 else -> error
             }
         }
@@ -265,6 +281,7 @@ class RecipeListViewModel @Inject constructor(
 
         private const val KEY_TEXT = "query_text"
         private const val KEY_KEYWORDS = "query_keywords"
+        private const val KEY_FOODS = "query_foods"
         private const val KEY_QUICK = "query_quick"
         private const val KEY_RATING = "query_rating"
         private const val KEY_OFFLINE = "query_offline"
@@ -273,6 +290,7 @@ class RecipeListViewModel @Inject constructor(
         fun SavedStateHandle.restoreQuery(): RecipeQuery = RecipeQuery(
             text = get<String>(KEY_TEXT).orEmpty(),
             keywordIds = get<LongArray>(KEY_KEYWORDS)?.toSet().orEmpty(),
+            foodIds = get<LongArray>(KEY_FOODS)?.toSet().orEmpty(),
             maxTotalMinutes = QUICK_MAX_MINUTES.takeIf { get<Boolean>(KEY_QUICK) == true },
             minRating = GOOD_MIN_RATING.takeIf { get<Boolean>(KEY_RATING) == true },
             sort = RecipeSort.entries.firstOrNull { it.name == get<String>(KEY_SORT) } ?: RecipeSort.NAME,
@@ -282,6 +300,7 @@ class RecipeListViewModel @Inject constructor(
         fun SavedStateHandle.saveQuery(query: RecipeQuery) {
             set(KEY_TEXT, query.text)
             set(KEY_KEYWORDS, query.keywordIds.toLongArray())
+            set(KEY_FOODS, query.foodIds.toLongArray())
             set(KEY_QUICK, query.maxTotalMinutes != null)
             set(KEY_RATING, query.minRating != null)
             set(KEY_OFFLINE, query.onlyOffline)

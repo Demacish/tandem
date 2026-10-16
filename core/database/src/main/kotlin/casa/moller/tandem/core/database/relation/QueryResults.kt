@@ -54,3 +54,13 @@ data class MealPlanRow(
     @Embedded(prefix = "mt_") val mealType: MealTypeEntity?,
     @Embedded(prefix = "r_") val recipe: RecipeOverviewEntity?,
 )
+
+/**
+ * A food for the recipe list's food filter: from the full food list, or from the stored
+ * ingredients when the food list does not have it (demo mode, or before the first full sync).
+ */
+data class FoodNameRow(
+    @ColumnInfo(name = "id") val id: Long,
+    @ColumnInfo(name = "name") val name: String,
+    @ColumnInfo(name = "plural_name") val pluralName: String?,
+)

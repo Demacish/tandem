@@ -41,6 +41,7 @@ class RecipeModelTest {
         assertFalse(RecipeQuery(text = "äppelpaj").isUnfiltered)
         assertFalse(RecipeQuery(onlyOffline = true).isUnfiltered)
         assertFalse(RecipeQuery(maxTotalMinutes = 30).isUnfiltered)
+        assertFalse(RecipeQuery(foodIds = setOf(1L)).isUnfiltered)
     }
 
     @Test

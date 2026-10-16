@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.recipes.list
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
@@ -43,6 +44,7 @@ enum class ServerSearch {
  *   stored yet ([serverOnlyCount] of them).
  * @property loaded the stored recipes were read at least once.
  * @property keywords every stored keyword, for the keyword picker.
+ * @property foods every stored food, for the food picker (plan 6.2 "livsmedel").
  * @property offline the device is offline: recipes without a stored detail are dimmed.
  * @property refreshing a pull to refresh runs.
  * @property syncing a sync runs (e.g. the first one after login).
@@ -56,6 +58,7 @@ data class RecipeListUiState(
     val recipes: List<RecipeOverview> = emptyList(),
     val loaded: Boolean = false,
     val keywords: List<Keyword> = emptyList(),
+    val foods: List<Food> = emptyList(),
     val layout: RecipeListLayout = RecipeListLayout.GRID,
     val serverSearch: ServerSearch = ServerSearch.IDLE,
     val serverOnlyCount: Int = 0,
@@ -64,13 +67,17 @@ data class RecipeListUiState(
     val syncing: Boolean = false,
     val syncError: TandemError? = null,
 ) {
-    /** Text, keywords, time, rating or "only offline" narrow the list. */
+    /** Text, keywords, foods, time, rating or "only offline" narrow the list. */
     val isFiltered: Boolean
         get() = !query.isUnfiltered
 
     /** The keywords picked in the filter, by name. */
     val selectedKeywords: List<Keyword>
         get() = keywords.filter { it.id in query.keywordIds }
+
+    /** The foods picked in the filter, by name. */
+    val selectedFoods: List<Food>
+        get() = foods.filter { it.id in query.foodIds }
 
     /** The recipe cannot be opened right now: offline and no stored detail (shown dimmed). */
     fun isDimmed(recipe: RecipeOverview): Boolean = offline && !recipe.availableOffline
@@ -92,6 +99,11 @@ sealed interface RecipeListAction {
     data class ToggleKeyword(val id: Long) : RecipeListAction
 
     data object ClearKeywords : RecipeListAction
+
+    /** Adds or removes a food of the food filter (recipes must contain all picked foods). */
+    data class ToggleFood(val id: Long) : RecipeListAction
+
+    data object ClearFoods : RecipeListAction
 
     data object ToggleQuick : RecipeListAction
 

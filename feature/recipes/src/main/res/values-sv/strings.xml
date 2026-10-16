@@ -18,6 +18,11 @@
         <item quantity="one">%1$d nyckelord</item>
         <item quantity="other">%1$d nyckelord</item>
     </plurals>
+    <string name="recipes_filter_foods">Livsmedel</string>
+    <plurals name="recipes_filter_foods_count">
+        <item quantity="one">%1$d livsmedel</item>
+        <item quantity="other">%1$d livsmedel</item>
+    </plurals>
     <string name="recipes_filter_quick">Under %1$d min</string>
     <string name="recipes_filter_rating">Betyg %1$d+</string>
     <string name="recipes_filter_offline">Nedladdade</string>
@@ -34,6 +39,13 @@
     <string name="recipes_keywords_filter_hint">Hitta ett nyckelord</string>
     <string name="recipes_keywords_empty">Inga nyckelord än. Lägg till dem på recepten i Tandoor.</string>
     <string name="recipes_keywords_close">Stäng nyckelord</string>
+
+    <!-- Livsmedelsväljaren (plan 6.2 "livsmedel"): recept som innehåller alla valda livsmedel. -->
+    <string name="recipes_foods_title">Livsmedel</string>
+    <string name="recipes_foods_clear">Rensa</string>
+    <string name="recipes_foods_filter_hint">Hitta ett livsmedel</string>
+    <string name="recipes_foods_empty">Inga livsmedel än. De hämtas med nästa synk.</string>
+    <string name="recipes_foods_close">Stäng livsmedel</string>
 
     <plurals name="recipes_result_count">
         <item quantity="one">%1$d recept</item>

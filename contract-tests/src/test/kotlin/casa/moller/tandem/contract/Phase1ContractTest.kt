@@ -573,6 +573,16 @@ class Phase1ContractTest {
         }
         listQuery("keywords-or-child", "keywords_or=$child").also { expectNames("keywords.orChild", it, listOf("Krämig svamppasta")) }
 
+        // foods_and (the app's food filter, plan 6.2 "livsmedel"): a recipe must have an ingredient of every food.
+        val onion = foodIds.getValue("gul lök")
+        val potato = foodIds.getValue("potatis")
+        listQuery("foods-and-onion", "foods_and=$onion").also {
+            expectNames("foods.andOnion", it, listOf("Krämig svamppasta", "Köttbullar med potatismos", "Ärtsoppa"))
+        }
+        listQuery("foods-and-onion-potato", "foods_and=$onion&foods_and=$potato").also {
+            expectNames("foods.andOnionPotato", it, listOf("Köttbullar med potatismos"))
+        }
+
         // sort_order=-times_cooked is offered by the web's search page but crashes in 2.6.13 (no such annotation).
         listQuery("sort-times-cooked", "sort_order=-times_cooked", record = true).also {
             verify("sort.minusTimesCooked.status", it.status, 500)

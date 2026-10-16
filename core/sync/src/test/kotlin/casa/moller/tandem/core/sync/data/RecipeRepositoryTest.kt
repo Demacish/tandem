@@ -15,6 +15,8 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import casa.moller.tandem.core.sync.testing.waitUntil
 import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
+import java.text.Collator
+import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.delay
@@ -190,6 +192,31 @@ class RecipeRepositoryTest {
         assertTrue(recipes.any { it.id == 2L })
         assertTrue(server.requestsTo("GET", "/api/recipe/").single().contains("query=svamp"))
         assertTrue(graph.real.recipeDao().getRecipeIds(ACCOUNT_ID).contains(2L))
+    }
+
+    /** Plan 6.2 "livsmedel": the food filter is `foods_and` on the server and the stored ingredients offline. */
+    @Test
+    fun theFoodFilterSearchesTheServerWithFoodsAndAndTheStoredIngredientsOffline() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        val foods = repository.observeFoods().first()
+        // The food list from the sync (38 foods in the recording), by name.
+        assertEquals(38, foods.size)
+        val collator = Collator.getInstance(Locale.getDefault()).apply { strength = Collator.SECONDARY }
+        assertEquals(foods.map { it.name }.sortedWith(collator), foods.map { it.name })
+        val onion = foods.single { it.name == "gul lök" }.id
+        val potato = foods.single { it.name == "potatis" }.id
+
+        server.requests.clear()
+        repository.searchServer(RecipeQuery(foodIds = setOf(potato, onion)))
+        val search = server.requestsTo("GET", "/api/recipe/").single()
+        assertTrue(search, search.contains("foods_and=$onion") && search.contains("foods_and=$potato"))
+
+        // Locally only stored details have ingredients (2 = svamppasta, 5 = köttbullar; both with onion).
+        graph.details.fetch(graph.remote, 2, isBackground = false)
+        graph.details.fetch(graph.remote, 5, isBackground = false)
+        val withOnion = repository.observeRecipes(RecipeQuery(foodIds = setOf(onion))).first().map { it.id }
+        assertTrue("$withOnion", withOnion.containsAll(listOf(2L, 5L)))
+        assertEquals(listOf(5L), repository.observeRecipes(RecipeQuery(foodIds = setOf(onion, potato))).first().map { it.id })
     }
 
     @Test

@@ -296,6 +296,15 @@ object SampleRecipes {
     /** The overview of the sample recipe [id]. */
     fun overview(id: Long): RecipeOverview = overviews.first { it.id == id }
 
+    /**
+     * The foods of [details] for the food filter, one per name (Tandoor's food names are unique per
+     * space; the samples use "salt" twice). "smör" is in MushroomPasta and CinnamonBuns.
+     */
+    val foods: List<Food> = details.flatMap { it.ingredients }.mapNotNull { it.food }.distinctBy { it.name }
+
+    /** A sample food by name, e.g. `food("smör")`. */
+    fun food(name: String): Food = foods.first { it.name == name }
+
     val Dinner = MealType(id = 1, name = "Middag", order = 1, time = LocalTime(18, 0), color = "#E8590C")
     val Lunch = MealType(id = 2, name = "Lunch", order = 0, time = LocalTime(12, 0))
 

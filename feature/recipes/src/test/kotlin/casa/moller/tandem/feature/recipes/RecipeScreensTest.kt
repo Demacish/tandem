@@ -17,6 +17,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.designsystem.R as DesignR
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.ui.R as UiR
 import casa.moller.tandem.feature.recipes.list.RecipeListAction
@@ -71,6 +72,27 @@ class RecipeScreensTest {
         composeRule.onNodeWithText(string(R.string.recipes_filter_keywords)).performClick()
         composeRule.onNodeWithText(SampleRecipes.Fika.name).performClick()
         assertEquals(listOf(RecipeListAction.ToggleKeyword(SampleRecipes.Fika.id)), actions)
+    }
+
+    @Test
+    fun theFoodPickerTogglesFoodsAndClears() {
+        val actions = mutableListOf<RecipeListAction>()
+        val butter = SampleRecipes.food("smör")
+        composeRule.setContent {
+            TestFrame {
+                RecipeListScreen(
+                    state = listState(RecipeQuery(foodIds = setOf(butter.id))),
+                    onAction = { actions += it },
+                    onOpenRecipe = {},
+                )
+            }
+        }
+        // One food picked: the chip shows its name.
+        composeRule.onNodeWithText(butter.name).performClick()
+        composeRule.onNodeWithText(string(R.string.recipes_foods_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(SampleRecipes.food("kardemumma").name).performClick()
+        composeRule.onNodeWithText(string(R.string.recipes_foods_clear)).performClick()
+        assertEquals(listOf(RecipeListAction.ToggleFood(SampleRecipes.food("kardemumma").id), RecipeListAction.ClearFoods), actions)
     }
 
     @Test

@@ -101,9 +101,14 @@ enum class SyncPause {
  * @property running a sync is running now.
  * @property progress progress of the running sync, null when idle.
  * @property lastSuccess when the last sync finished successfully, null when never.
- * @property lastError why the last sync failed, cleared by the next success.
+ * @property lastError why the last sync failed, cleared by the next success. A run that was only
+ *   cancelled or overtaken by an account change leaves a marker that is not a failure to show
+ *   ([isTransientSyncStop]).
  * @property pendingChanges changes waiting in the outbox ("3 changes waiting").
  * @property pause why syncing is paused, null when it is not.
+ * @property runsStarted how many sync runs have started (in this process); grows by one when a run
+ *   starts. Pull to refresh remembers it before asking, so it waits for a run that started after
+ *   the request, not for one that was already running (and may be cancelled by the request).
  */
 data class SyncStatus(
     val running: Boolean = false,
@@ -112,6 +117,7 @@ data class SyncStatus(
     val lastError: TandemError? = null,
     val pendingChanges: Int = 0,
     val pause: SyncPause? = null,
+    val runsStarted: Long = 0,
 ) {
     companion object {
         /** Nothing has happened yet. */
