@@ -243,10 +243,8 @@ private fun TodayMeals(state: HomeUiState, onAction: (HomeAction) -> Unit) {
     when {
         tonight != null -> TonightCard(entry = tonight, onOpenRecipe = openRecipe)
 
-        state.nothingPlannedToday -> NothingPlannedCard(
-            onPlanWeek = { onAction(HomeAction.OpenWeek) },
-            onBrowseRecipes = { onAction(HomeAction.OpenRecipes) },
-        )
+        // No "Plan the week" until the Week tab can plan (Phase 2): it shows a placeholder now.
+        state.nothingPlannedToday -> NothingPlannedCard(onBrowseRecipes = { onAction(HomeAction.OpenRecipes) })
     }
     if (state.alsoToday.isNotEmpty()) {
         MealGroup(
@@ -340,7 +338,10 @@ private fun HomeSectionType.texts(): Pair<Int, Int> = when (this) {
 @Composable
 private fun TodaySyncCard(state: HomeUiState, onAction: (HomeAction) -> Unit, modifier: Modifier = Modifier) {
     val locale = currentLocale()
-    val lastSynced = state.lastSynced?.let { instant -> remember(instant, locale, state.today) { formatSyncTime(instant, locale) } }
+    val syncTime = state.lastSynced?.let { instant -> remember(instant, locale, state.today) { formatSyncTime(instant, locale) } }
+    val lastSynced = syncTime?.let { (sameDay, text) ->
+        stringResource(if (sameDay) R.string.home_sync_last_today else R.string.home_sync_last_date, text)
+    }
     SyncStatusCard(
         lastSynced = lastSynced,
         running = state.syncRunning || state.refreshing,
@@ -349,8 +350,11 @@ private fun TodaySyncCard(state: HomeUiState, onAction: (HomeAction) -> Unit, mo
     )
 }
 
-/** "18:14" today, "5 Oct 2026, 18:14" on an earlier day, in the device's time zone. */
-private fun formatSyncTime(instant: Instant, locale: Locale): String {
+/**
+ * "18:14" today, "5 Oct 2026, 18:14" on an earlier day, in the device's time zone; first whether
+ * it was today ("at 18:14" / "kl. 18:14" versus "on …").
+ */
+private fun formatSyncTime(instant: Instant, locale: Locale): Pair<Boolean, String> {
     val zone = ZoneId.systemDefault()
     val time = java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds()).atZone(zone)
     val sameDay = time.toLocalDate() == java.time.LocalDate.now(zone)
@@ -359,7 +363,7 @@ private fun formatSyncTime(instant: Instant, locale: Locale): String {
     } else {
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
     }
-    return formatter.withLocale(locale).format(time)
+    return sameDay to formatter.withLocale(locale).format(time)
 }
 
 @Composable

@@ -26,8 +26,8 @@
     <string name="home_browse_recipes">Bläddra bland recept</string>
     <string name="home_empty_sections">Recept ni lagar ofta, nya recept och de du har tittat på visas här efter första synkningen.</string>
 
-    <string name="home_section_pinned">Fästa recept</string>
-    <string name="home_section_pinned_subtitle">Sparade i enheten</string>
+    <string name="home_section_pinned">Dina nedladdningar</string>
+    <string name="home_section_pinned_subtitle">Sparade med Ladda ner offline</string>
     <string name="home_section_often_cooked">Ofta lagade</string>
     <string name="home_section_often_cooked_subtitle">Hushållets favoriter</string>
     <string name="home_section_new">Nya</string>
@@ -38,7 +38,8 @@
     <string name="home_section_not_cooked_lately_subtitle">Dags för en gammal favorit?</string>
     <string name="home_all_recipes">Alla recept</string>
 
-    <string name="home_sync_last">Senast synkad med Tandoor %1$s</string>
+    <string name="home_sync_last_today">Senast synkad med Tandoor kl. %1$s</string>
+    <string name="home_sync_last_date">Senast synkad med Tandoor den %1$s</string>
     <string name="home_sync_never">Inte synkad med Tandoor än</string>
     <string name="home_sync_running">Synkar med Tandoor…</string>
     <string name="home_sync_now">Synka nu</string>

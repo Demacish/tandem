@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.home
 
 import android.content.Context
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -77,12 +78,15 @@ class TodayRouteTest {
     }
 
     @Test
-    fun nothingPlannedOffersToPlanTheWeek() {
+    fun nothingPlannedLeadsToTheRecipesNotToThePlaceholderWeek() {
         home.upcomingMeals.value = UpcomingMeals(today = SampleRecipes.Today)
         setContent()
         composeRule.onNodeWithText(string(R.string.home_nothing_planned_title)).assertIsDisplayed()
-        composeRule.onNode(hasText(string(R.string.home_plan_week)) and hasClickAction()).performClick()
-        assertEquals(1, openedWeek)
+        // The Week tab is a placeholder in 0.1.0: no "Plan the week" button leads there.
+        composeRule.onAllNodes(hasText(string(R.string.home_plan_week))).assertCountEquals(0)
+        composeRule.onNode(hasText(string(R.string.home_browse_recipes)) and hasClickAction()).performClick()
+        assertEquals(1, openedRecipesTab)
+        assertEquals(0, openedWeek)
     }
 
     @Test

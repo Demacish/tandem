@@ -29,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -38,7 +37,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
@@ -51,6 +49,7 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.recipe.RecipeImageTags
+import casa.moller.tandem.core.ui.recipe.cappedAspectRatio
 import casa.moller.tandem.feature.home.R
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
@@ -90,19 +89,6 @@ internal fun HomeRecipeImage(imageUrl: String?, modifier: Modifier = Modifier, p
 
 /** Tallest the "Tonight" photo gets; on wide columns it is cropped instead of growing. */
 private val TonightImageMaxHeight = 300.dp
-
-/**
- * Full width and [ratio] (width / height), but never taller than [maxHeight]. `heightIn` followed
- * by `aspectRatio` cannot express this: with a fixed width the ratio wins and the photo overflows
- * its slot into the text below (tablet two-column layout).
- */
-private fun Modifier.cappedAspectRatio(ratio: Float, maxHeight: Dp): Modifier = layout { measurable, constraints ->
-    val cap = maxHeight.roundToPx()
-    val width = if (constraints.hasBoundedWidth) constraints.maxWidth else (cap * ratio).toInt()
-    val height = (width / ratio).toInt().coerceAtMost(cap).coerceIn(constraints.minHeight, constraints.maxHeight)
-    val placeable = measurable.measure(Constraints.fixed(width, height))
-    layout(width, height) { placeable.place(0, 0) }
-}
 
 /**
  * "Tonight" (design idag_*: "Ikväll"): photo, meal type, name, description, time and servings.
@@ -325,9 +311,13 @@ internal fun HomeRecipeCard(recipe: RecipeOverview, width: Dp, onClick: () -> Un
     }
 }
 
-/** "Nothing planned today. Plan the week →" (plan 6.2), with a way to the recipes. */
+/**
+ * "Nothing planned today" (plan 6.2) with a way to the recipes. [onPlanWeek] adds "Plan the
+ * week →" once the Week tab can plan (Phase 2); until then the body points to Tandoor and
+ * "Browse recipes" is the main action, so the card never leads to a placeholder.
+ */
 @Composable
-internal fun NothingPlannedCard(onPlanWeek: () -> Unit, onBrowseRecipes: () -> Unit, modifier: Modifier = Modifier) {
+internal fun NothingPlannedCard(onBrowseRecipes: () -> Unit, modifier: Modifier = Modifier, onPlanWeek: (() -> Unit)? = null) {
     val spacing = TandemTheme.spacing
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -354,12 +344,20 @@ internal fun NothingPlannedCard(onPlanWeek: () -> Unit, onBrowseRecipes: () -> U
                 verticalArrangement = Arrangement.spacedBy(spacing.sm),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                TandemPrimaryButton(
-                    text = stringResource(R.string.home_plan_week),
-                    onClick = onPlanWeek,
-                    trailingIcon = TandemIcons.ArrowForward,
-                )
-                TandemTextButton(text = stringResource(R.string.home_browse_recipes), onClick = onBrowseRecipes)
+                if (onPlanWeek != null) {
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.home_plan_week),
+                        onClick = onPlanWeek,
+                        trailingIcon = TandemIcons.ArrowForward,
+                    )
+                    TandemTextButton(text = stringResource(R.string.home_browse_recipes), onClick = onBrowseRecipes)
+                } else {
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.home_browse_recipes),
+                        onClick = onBrowseRecipes,
+                        trailingIcon = TandemIcons.ArrowForward,
+                    )
+                }
             }
         }
     }
@@ -382,7 +380,8 @@ private fun IconBadge(icon: ImageVector) {
 /**
  * "Last synced with Tandoor at 18:14 · Sync now" (design idag_surfplatta_*).
  *
- * @param lastSynced already formatted ("at 18:14", "on 5 Oct 18:14"), null when never synced.
+ * @param lastSynced the whole line, e.g. "Last synced with Tandoor at 18:14" or "… on Oct 5,
+ *   2026, 18:14" (home_sync_last_today / home_sync_last_date); null when never synced.
  */
 @Composable
 internal fun SyncStatusCard(lastSynced: String?, running: Boolean, onSyncNow: () -> Unit, modifier: Modifier = Modifier) {
@@ -402,7 +401,7 @@ internal fun SyncStatusCard(lastSynced: String?, running: Boolean, onSyncNow: ()
             Text(
                 text = when {
                     running -> stringResource(R.string.home_sync_running)
-                    lastSynced != null -> stringResource(R.string.home_sync_last, lastSynced)
+                    lastSynced != null -> lastSynced
                     else -> stringResource(R.string.home_sync_never)
                 },
                 style = MaterialTheme.typography.bodyMedium,

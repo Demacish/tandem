@@ -30,8 +30,8 @@
     <string name="home_empty_sections">Recipes you cook often, new recipes and the ones you viewed show up here after the first sync.</string>
 
     <!-- Recipe carousels (plan 3.3 "Hemsektioner"). -->
-    <string name="home_section_pinned">Pinned</string>
-    <string name="home_section_pinned_subtitle">Saved on this device</string>
+    <string name="home_section_pinned">Your downloads</string>
+    <string name="home_section_pinned_subtitle">Saved with Download for offline use</string>
     <string name="home_section_often_cooked">Often cooked</string>
     <string name="home_section_often_cooked_subtitle">Your household\'s favourites</string>
     <string name="home_section_new">New</string>
@@ -43,7 +43,8 @@
     <string name="home_all_recipes">All recipes</string>
 
     <!-- Sync status card (design idag_surfplatta_*: "Senast synkad med Tandoor kl 18:14 · Synka nu"). -->
-    <string name="home_sync_last">Last synced with Tandoor %1$s</string>
+    <string name="home_sync_last_today">Last synced with Tandoor at %1$s</string>
+    <string name="home_sync_last_date">Last synced with Tandoor on %1$s</string>
     <string name="home_sync_never">Not synced with Tandoor yet</string>
     <string name="home_sync_running">Syncing with Tandoor…</string>
     <string name="home_sync_now">Sync now</string>
