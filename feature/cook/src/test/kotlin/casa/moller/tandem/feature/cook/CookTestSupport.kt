@@ -45,7 +45,7 @@ internal const val TABLET_PORTRAIT = "w800dp-h1280dp-port-hdpi"
 internal const val FOLDABLE = "w412dp-h915dp-port-xhdpi"
 
 /** Fakes behind a real [CookViewModel], so tests and screenshots show what the app computes. */
-internal class CookFakes(
+class CookFakes(
     val clock: TestClock = TestClock(),
     val recipes: FakeRecipeRepository = FakeRecipeRepository(),
     val preferences: FakePreferencesRepository = FakePreferencesRepository(),
@@ -55,7 +55,8 @@ internal class CookFakes(
     val sync: FakeSyncRepository = FakeSyncRepository(),
     val handle: SavedStateHandle = SavedStateHandle(),
 ) {
-    fun viewModel(key: CookKey): CookViewModel = CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock)
+    internal fun viewModel(key: CookKey): CookViewModel =
+        CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock)
 
     /** Starts a timer from step [stepIndex]'s first suggestion of the sample pasta, like a tap on its button. */
     fun startTimer(stepIndex: Int, label: String, duration: Duration) {

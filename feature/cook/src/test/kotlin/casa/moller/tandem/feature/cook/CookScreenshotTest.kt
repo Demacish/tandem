@@ -1,6 +1,8 @@
 package casa.moller.tandem.feature.cook
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -158,7 +160,8 @@ class CookPhoneScreenshotTest : CookScreenshotTest("phone") {
 
     @Test
     fun timerList() = capture("timers_light", fakes = CookFakes().withRingingTimer()) { fakes ->
-        TimersScreen(timers = fakes.timers.timers.value, onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
+        val timers by fakes.timers.timers.collectAsState()
+        TimersScreen(timers = timers, onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
     }
 
     @Test

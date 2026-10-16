@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -97,7 +98,8 @@ fun TimerStartButton(
     ) {
         Icon(TandemIcons.Timer, contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.icon))
         Spacer(Modifier.width(TandemTheme.spacing.sm))
-        Column {
+        // TalkBack reads the button's description, not the texts again.
+        Column(Modifier.clearAndSetSemantics { }) {
             Text(text = stringResource(R.string.ui_timer_start, durationText), style = MaterialTheme.typography.titleMedium)
             if (detail != null) {
                 Text(text = detail, style = MaterialTheme.typography.bodySmall)
@@ -341,7 +343,12 @@ private fun TimerButtons(timer: CookTimer, actions: TimerActions, colors: TimerC
                     contentColor = MaterialTheme.colorScheme.onError,
                 ),
             ) {
-                Text(text = stringResource(R.string.ui_timer_stop), style = MaterialTheme.typography.titleMedium)
+                // The button's description already says it ("Stoppa larmet för Ugnen").
+                Text(
+                    text = stringResource(R.string.ui_timer_stop),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.clearAndSetSemantics { },
+                )
             }
         }
 
@@ -368,7 +375,11 @@ private fun PlusOneMinuteButton(label: String, color: Color, onClick: () -> Unit
             .semantics { contentDescription = description },
         colors = ButtonDefaults.textButtonColors(contentColor = color),
     ) {
-        Text(text = stringResource(R.string.ui_timer_plus_one_minute), style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = stringResource(R.string.ui_timer_plus_one_minute),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.clearAndSetSemantics { },
+        )
     }
 }
 
