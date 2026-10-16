@@ -74,7 +74,9 @@ internal fun StepInstruction(
             }
             when (piece.kind) {
                 PieceKind.PARAGRAPH -> body(Modifier)
+
                 PieceKind.HEADING -> body(Modifier.semantics { heading() })
+
                 PieceKind.LIST_ITEM -> Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
                     Text(
                         text = piece.bullet.orEmpty(),

@@ -26,7 +26,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -130,7 +130,7 @@ fun CookScreen(
     val currentOnAction by rememberUpdatedState(onAction)
     LaunchedEffect(locale) { currentOnAction(CookAction.SetLocale(locale.toNumberStyle(), locale.toLanguageTag())) }
     KeepScreenOn()
-    val tabletop = currentWindowAdaptiveInfo().windowPosture.isTabletop
+    val tabletop = currentWindowAdaptiveInfoV2().windowPosture.isTabletop
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
