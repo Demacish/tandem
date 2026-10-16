@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cook mode (feature:cook, plan 6.2 "Kokläge", features #6-#8). Swedish in values-sv. -->
+<resources>
+    <string name="cook_title">Cook mode</string>
+    <string name="cook_close">Close cook mode</string>
+    <string name="cook_screen_on">The screen stays on</string>
+    <string name="cook_step_of">Step %1$d of %2$d</string>
+    <string name="cook_done_page">Done!</string>
+    <string name="cook_text_smaller">Smaller text</string>
+    <string name="cook_text_larger">Larger text</string>
+    <string name="cook_previous">Previous</string>
+    <string name="cook_next">Next</string>
+    <string name="cook_next_done">Done!</string>
+    <string name="cook_loading">Loading the recipe…</string>
+    <string name="cook_not_downloaded_title">The recipe is not downloaded</string>
+    <string name="cook_not_downloaded_body">Connect to the internet to open it in cook mode.</string>
+    <string name="cook_retry">Try again</string>
+    <string name="cook_setting_not_saved">Could not save the setting.</string>
+
+    <!-- A step page. -->
+    <string name="cook_step_heading">Step %1$d</string>
+    <string name="cook_step_template_broken">The amounts in this step are not scaled: Tandoor could not read its template.</string>
+    <string name="cook_step_recipe">Uses the recipe %1$s</string>
+    <string name="cook_step_recipe_unnamed">Uses another recipe</string>
+    <string name="cook_no_steps">This recipe has no steps. Here are all its ingredients.</string>
+    <string name="cook_timers_for_step">Timers</string>
+
+    <!-- Ingredients of the step (expandable on phones, a pane on tablets). -->
+    <string name="cook_ingredients_for_step">Ingredients for this step</string>
+    <string name="cook_ingredients_for_step_number">Ingredients for step %1$d</string>
+    <string name="cook_all_ingredients">All ingredients</string>
+    <plurals name="cook_ingredient_count">
+        <item quantity="one">%1$d ingredient</item>
+        <item quantity="other">%1$d ingredients</item>
+    </plurals>
+    <string name="cook_expanded">Expanded</string>
+    <string name="cook_collapsed">Collapsed</string>
+    <string name="cook_show_other_unit">Show in another unit</string>
+
+    <!-- Servings. %1$s is the number, e.g. "4" or "2.5". -->
+    <string name="cook_servings_label">Servings</string>
+    <plurals name="cook_servings">
+        <item quantity="one">%1$s serving</item>
+        <item quantity="other">%1$s servings</item>
+    </plurals>
+    <!-- %1$s the number, %2$s Tandoor's own servings text, e.g. "12 buns". -->
+    <string name="cook_servings_with_text">%1$s %2$s</string>
+    <string name="cook_fewer_servings">Fewer servings</string>
+    <string name="cook_more_servings">More servings</string>
+
+    <!-- Timers. -->
+    <string name="cook_active_timers">Active timers</string>
+    <string name="cook_timer_clock_app">The timer was started in the clock app.</string>
+    <string name="cook_timer_no_clock_app">No clock app could start the timer. Choose timers in Tandem under Settings.</string>
+    <string name="cook_timer_too_many">Too many timers at once. Remove one to start another.</string>
+
+    <!-- Notifications, asked in context at the first timer (plan 8.7). Never name the raw permission. -->
+    <string name="cook_notifications_title">Hear the timer with the screen locked?</string>
+    <string name="cook_notifications_body">Tandem needs to show notifications to ring when the timer is done, also when the screen is off or you are in another app.</string>
+    <string name="cook_notifications_continue">Continue</string>
+    <string name="cook_notifications_not_now">Not now</string>
+    <string name="cook_alarm_silent_title">Notifications are off</string>
+    <string name="cook_alarm_silent_body">The timer only rings while Tandem is open. Turn on notifications to hear it with the screen locked.</string>
+    <string name="cook_alarm_late_title">The timer may ring a little late</string>
+    <string name="cook_alarm_late_body">Tandem may not set exact alarms, so Android can delay the alarm by a few minutes.</string>
+    <string name="cook_alarm_allow">Allow</string>
+    <string name="cook_open_settings">Settings</string>
+    <string name="cook_dismiss">Not now</string>
+
+    <!-- "Done!" page (Stitch kokl_ge_klart, feature #8). -->
+    <string name="cook_done_title">Enjoy your meal!</string>
+    <string name="cook_done_badge">Cooking done</string>
+    <string name="cook_done_body">Save it in the cook log, and Tandoor keeps count of how often you cook it.</string>
+    <string name="cook_done_rating_title">How did it taste?</string>
+    <string name="cook_done_rating_none">No rating</string>
+    <string name="cook_done_rating_value">%1$d of 5 stars</string>
+    <plurals name="cook_done_star">
+        <item quantity="one">%1$d star</item>
+        <item quantity="other">%1$d stars</item>
+    </plurals>
+    <string name="cook_done_servings_label">Servings cooked</string>
+    <string name="cook_done_comment_label">Comment (optional)</string>
+    <string name="cook_done_comment_placeholder">What would you change next time?</string>
+    <string name="cook_done_save">Save in the cook log</string>
+    <string name="cook_done_leave">Close without saving</string>
+    <string name="cook_done_online">The entry is sent to your Tandoor.</string>
+    <string name="cook_done_offline">You are offline. The entry is saved now and sent to Tandoor when you are online again.</string>
+    <string name="cook_done_demo">Demo mode: the entry stays on this device.</string>
+    <string name="cook_done_saved">Saved in the cook log.</string>
+    <string name="cook_done_saved_offline">Saved. It is sent when you are online again.</string>
+    <string name="cook_done_saved_demo">Saved in the demo.</string>
+    <string name="cook_done_save_failed">Could not save the entry.</string>
+
+    <!-- All timers (TimersKey). -->
+    <string name="cook_timers_title">Timers</string>
+    <string name="cook_timers_empty_title">No timers running</string>
+    <string name="cook_timers_empty_body">Start a timer from a step in cook mode.</string>
+    <string name="cook_timers_clear_finished">Clear finished</string>
+    <string name="cook_back">Back</string>
+</resources>

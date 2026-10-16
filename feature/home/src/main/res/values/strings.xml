@@ -49,4 +49,7 @@
     <string name="home_sync_running">Syncing with Tandoor…</string>
     <string name="home_sync_now">Sync now</string>
     <string name="home_refresh_failed">Could not update. Showing what is saved on this device.</string>
+    <!-- Phase 1b (kokläge lane): cook mode for tonight's meal, at the planned servings. -->
+    <string name="home_start_cooking">Cook</string>
+    <string name="home_start_cooking_description">Cook %1$s</string>
 </resources>

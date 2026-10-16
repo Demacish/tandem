@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.ChevronRight
+import casa.moller.tandem.core.designsystem.icon.Cooking
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
@@ -93,9 +95,15 @@ private val TonightImageMaxHeight = 300.dp
 /**
  * "Tonight" (design idag_*: "Ikväll"): photo, meal type, name, description, time and servings.
  * The whole card opens the recipe; an entry with only a title is shown but not clickable.
+ * "Laga" (Phase 1b) opens cook mode at the planned servings.
  */
 @Composable
-internal fun TonightCard(entry: MealPlanEntry, onOpenRecipe: (Long) -> Unit, modifier: Modifier = Modifier) {
+internal fun TonightCard(
+    entry: MealPlanEntry,
+    onOpenRecipe: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    onStartCooking: ((recipeId: Long, servings: Double) -> Unit)? = null,
+) {
     val spacing = TandemTheme.spacing
     val recipe = entry.recipe
     val openLabel = stringResource(R.string.home_open_recipe)
@@ -143,6 +151,17 @@ internal fun TonightCard(entry: MealPlanEntry, onOpenRecipe: (Long) -> Unit, mod
                 )
             }
             MealMeta(entry = entry)
+            if (recipe != null && onStartCooking != null) {
+                val cookDescription = stringResource(R.string.home_start_cooking_description, entry.displayTitle)
+                TandemPrimaryButton(
+                    text = stringResource(R.string.home_start_cooking),
+                    onClick = { onStartCooking(recipe.id, entry.servings) },
+                    leadingIcon = TandemIcons.Cooking,
+                    modifier = Modifier
+                        .padding(top = spacing.xs)
+                        .semantics { contentDescription = cookDescription },
+                )
+            }
         }
     }
 }

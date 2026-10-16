@@ -241,7 +241,11 @@ private fun TodayMeals(state: HomeUiState, onAction: (HomeAction) -> Unit) {
     val openRecipe: (Long) -> Unit = { onAction(HomeAction.OpenRecipe(it)) }
     val tonight = state.tonight
     when {
-        tonight != null -> TonightCard(entry = tonight, onOpenRecipe = openRecipe)
+        tonight != null -> TonightCard(
+            entry = tonight,
+            onOpenRecipe = openRecipe,
+            onStartCooking = { id, servings -> onAction(HomeAction.StartCooking(id, servings)) },
+        )
 
         // No "Plan the week" until the Week tab can plan (Phase 2): it shows a placeholder now.
         state.nothingPlannedToday -> NothingPlannedCard(onBrowseRecipes = { onAction(HomeAction.OpenRecipes) })

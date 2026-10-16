@@ -21,8 +21,8 @@ import casa.moller.tandem.feature.home.ui.TodayScreen
  * @param onOpenRecipes switches to the Recipes tab (e.g. "All recipes" after a carousel).
  * @param onOpenWeek switches to the Week tab ("Plan the week", Phase 2 content).
  * @param viewModel injected by Hilt; tests pass one with fake repositories.
- *
- * Phase 1b adds `onStartCooking`.
+ * @param onStartCooking "Laga" on tonight's meal (Phase 1b): cook mode for the recipe at the
+ *   planned servings.
  */
 @Composable
 fun TodayRoute(
@@ -31,6 +31,7 @@ fun TodayRoute(
     onOpenWeek: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
+    onStartCooking: (recipeId: Long, servings: Double?) -> Unit = { _, _ -> },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -38,6 +39,7 @@ fun TodayRoute(
     val currentOpenRecipe by rememberUpdatedState(onOpenRecipe)
     val currentOpenRecipes by rememberUpdatedState(onOpenRecipes)
     val currentOpenWeek by rememberUpdatedState(onOpenWeek)
+    val currentStartCooking by rememberUpdatedState(onStartCooking)
 
     LaunchedEffect(viewModel, resources) {
         viewModel.effects.collect { effect ->
@@ -54,6 +56,7 @@ fun TodayRoute(
                 is HomeAction.OpenRecipe -> currentOpenRecipe(action.recipeId)
                 HomeAction.OpenRecipes -> currentOpenRecipes()
                 HomeAction.OpenWeek -> currentOpenWeek()
+                is HomeAction.StartCooking -> currentStartCooking(action.recipeId, action.servings)
                 HomeAction.Refresh -> viewModel.onAction(action)
             }
         },

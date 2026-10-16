@@ -44,4 +44,7 @@
     <string name="home_sync_running">Synkar med Tandoor…</string>
     <string name="home_sync_now">Synka nu</string>
     <string name="home_refresh_failed">Kunde inte uppdatera. Visar det som sparats i enheten.</string>
+    <!-- Fas 1b (kokläge-banan): kokläget för kvällens måltid, med de planerade portionerna. -->
+    <string name="home_start_cooking">Laga</string>
+    <string name="home_start_cooking_description">Laga %1$s</string>
 </resources>
