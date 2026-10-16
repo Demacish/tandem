@@ -8,7 +8,7 @@ import com.github.takahirom.roborazzi.RoborazziATFAccessibilityCheckOptions
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityChecker
 import com.github.takahirom.roborazzi.checkRoboAccessibility
 import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckPreset
-import com.google.android.apps.common.testing.accessibility.framework.AccessibilityViewCheckResult
+import com.google.android.apps.common.testing.accessibility.framework.AccessibilityViewCheckResult as CheckResult
 import com.google.android.apps.common.testing.accessibility.framework.checks.DuplicateSpeakableTextCheck
 import com.google.android.apps.common.testing.accessibility.framework.checks.ImageContrastCheck
 import com.google.android.apps.common.testing.accessibility.framework.checks.TextContrastCheck
@@ -59,7 +59,7 @@ object TandemAccessibility {
      * text" while nothing can be exported. WCAG 1.4.3 exempts inactive user interface components;
      * Material draws them at 38 % on purpose, so they read as unavailable.
      */
-    private val disabledControlContrast: Matcher<AccessibilityViewCheckResult> = result("contrast of a disabled control") {
+    private val disabledControlContrast: Matcher<CheckResult> = result("contrast of a disabled control") {
         (sourceCheckClass == TextContrastCheck::class.java || sourceCheckClass == ImageContrastCheck::class.java) &&
             element?.selfOrAncestorDisabled() == true
     }
@@ -70,7 +70,7 @@ object TandemAccessibility {
      * rows with the same text. Both toggle the same checked state, and each is read inside its own
      * section (Ingredients, or the step), so they are not two different controls with one name.
      */
-    private val repeatedIngredientCheckbox: Matcher<AccessibilityViewCheckResult> = result("a repeated ingredient checkbox") {
+    private val repeatedIngredientCheckbox: Matcher<CheckResult> = result("a repeated ingredient checkbox") {
         sourceCheckClass == DuplicateSpeakableTextCheck::class.java && element?.isCheckable() == true
     }
 
@@ -82,17 +82,14 @@ object TandemAccessibility {
         failureLevel = RoborazziATFAccessibilityChecker.CheckLevel.Warning,
     )
 
-    private fun ViewHierarchyElement.selfOrAncestorDisabled(): Boolean =
-        generateSequence(this) { it.parentView }.any { !it.isEnabled }
+    private fun ViewHierarchyElement.selfOrAncestorDisabled(): Boolean = generateSequence(this) { it.parentView }.any { !it.isEnabled }
 
-    private fun result(
-        description: String,
-        predicate: AccessibilityViewCheckResult.() -> Boolean,
-    ): Matcher<AccessibilityViewCheckResult> = object : TypeSafeMatcher<AccessibilityViewCheckResult>() {
-        override fun matchesSafely(item: AccessibilityViewCheckResult): Boolean = item.predicate()
+    private fun result(description: String, predicate: CheckResult.() -> Boolean): Matcher<CheckResult> =
+        object : TypeSafeMatcher<CheckResult>() {
+            override fun matchesSafely(item: CheckResult): Boolean = item.predicate()
 
-        override fun describeTo(out: Description) {
-            out.appendText(description)
+            override fun describeTo(out: Description) {
+                out.appendText(description)
+            }
         }
-    }
 }
