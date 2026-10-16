@@ -79,10 +79,10 @@ import casa.moller.tandem.core.ui.recipe.IngredientRow
 import casa.moller.tandem.core.ui.recipe.KeywordPill
 import casa.moller.tandem.core.ui.recipe.MarkdownText
 import casa.moller.tandem.core.ui.recipe.RatingStars
-import casa.moller.tandem.core.ui.recipe.cappedAspectRatio
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.core.ui.recipe.ServingsStepper
 import casa.moller.tandem.core.ui.recipe.StepCard
+import casa.moller.tandem.core.ui.recipe.cappedAspectRatio
 import casa.moller.tandem.core.ui.recipe.currentLocale
 import casa.moller.tandem.core.ui.recipe.formatMinutes
 import casa.moller.tandem.core.ui.recipe.formatRating

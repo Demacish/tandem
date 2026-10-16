@@ -117,7 +117,7 @@ fun RecipeTimeLabel(totalMinutes: Int, modifier: Modifier = Modifier, color: Col
     IconLabel(
         icon = TandemIcons.Schedule,
         text = text,
-        contentDescription = recipeTimeDescription(totalMinutes),
+        contentDescription = recipeTimeDescription(totalMinutes).orEmpty(),
         color = color,
         modifier = modifier,
     )

@@ -341,12 +341,16 @@ class RecipesTabletScreenshotTest : RecipesScreenshotTest("tablet") {
     @Test
     fun detailStepsScrolledKeepTheIngredientsInView() {
         composeRule.setContent {
-            TestFrame { DetailWithFakes(MUSHROOM_PASTA_FIXTURE_ID, fakes = remember { fixtureFakes(servings = 4.0, useFractions = false) }) }
+            TestFrame {
+                DetailWithFakes(MUSHROOM_PASTA_FIXTURE_ID, fakes = remember { fixtureFakes(servings = 4.0, useFractions = false) })
+            }
         }
         composeRule.waitForIdle()
         val ingredients = composeRule.onNodeWithText(string(R.string.recipe_detail_ingredients))
         ingredients.assertIsDisplayed()
-        composeRule.onNodeWithTag(DETAIL_STEP_PANE_TAG).performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy -> scrollBy(0f, 20_000f) }
+        composeRule.onNodeWithTag(DETAIL_STEP_PANE_TAG).performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy ->
+            scrollBy(0f, 20_000f)
+        }
         composeRule.waitForIdle()
         ingredients.assertIsDisplayed()
         composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/recipes/tablet_detail_steps_scrolled_light.png")

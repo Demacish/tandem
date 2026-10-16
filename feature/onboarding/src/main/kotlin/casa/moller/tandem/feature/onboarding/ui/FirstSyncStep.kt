@@ -110,8 +110,10 @@ internal fun ColumnScope.FirstSyncStep(
             body = when {
                 // "The login on this device is no longer valid. What you saved offline is kept."
                 loginRefused -> text.body
+
                 // Its own text already says that Tandem tries again later.
                 error == TandemError.Blocked -> stringResource(R.string.onboarding_sync_failed_body_kept, text.body)
+
                 else -> stringResource(R.string.onboarding_sync_failed_body, text.body)
             },
             icon = text.icon,
