@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.settings.AppearanceRepository
+import casa.moller.tandem.core.data.settings.SettingsRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.feature.shell.ShellMessage
@@ -59,6 +60,8 @@ data class AppUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     /** False until the stored theme has been read; [themeMode] is only a default before that. */
     val themeModeLoaded: Boolean = false,
+    /** Settings → Appearance → "Dynamisk färg" (Phase 1b), applied by the whole app at once. */
+    val dynamicColor: Boolean = false,
 )
 
 /** One-off messages shown as a toast. */
@@ -80,6 +83,7 @@ class AppViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     appearanceRepository: AppearanceRepository,
     shellMessages: ShellMessageQueue,
+    settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val session: StateFlow<Session?> =
@@ -102,7 +106,8 @@ class AppViewModel @Inject constructor(
         session,
         introFlags,
         appearanceRepository.themeMode,
-    ) { current, flags, theme ->
+        settingsRepository.settings.map { it.dynamicColor }.distinctUntilChanged(),
+    ) { current, flags, theme, dynamicColor ->
         AppUiState(
             destination = resolveDestination(current, flags.hold),
             session = current,
@@ -111,6 +116,7 @@ class AppViewModel @Inject constructor(
             canCancelOnboarding = flags.logInAgain && flags.hold && current is Session.LoggedIn,
             themeMode = theme,
             themeModeLoaded = true,
+            dynamicColor = dynamicColor,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppUiState())
 

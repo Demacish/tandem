@@ -9,6 +9,7 @@ import casa.moller.tandem.core.common.crash.CrashLogEnvironment
 import casa.moller.tandem.core.common.crash.CrashLogHandler
 import casa.moller.tandem.core.common.crash.CrashLogStore
 import casa.moller.tandem.core.sync.SyncStarter
+import casa.moller.tandem.diagnostics.ColdStart
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
 import javax.inject.Inject
@@ -38,6 +39,8 @@ class TandemApplication :
 
     override fun onCreate() {
         super.onCreate()
+        // Phase 1b: tells a launch from a process started for background work (cold start timing).
+        ColdStart.onApplicationCreated()
         // Phase 1 data layer (core:sync): image loader, account mirror, periodic sync, and a sync
         // request whenever the app comes to the foreground.
         syncStarter.start()

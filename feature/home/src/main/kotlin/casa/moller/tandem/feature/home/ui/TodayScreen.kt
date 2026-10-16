@@ -39,6 +39,7 @@ import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.LoadingState
+import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
@@ -80,6 +81,8 @@ fun TodayScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
+    ReportContentReady(ready = !state.loading)
     val spacing = TandemTheme.spacing
     Scaffold(
         modifier = modifier.fillMaxSize(),

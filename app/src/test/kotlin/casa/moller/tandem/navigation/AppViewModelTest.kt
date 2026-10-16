@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.testing.data.FakeSettingsRepository
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
 import kotlin.time.Instant
@@ -49,7 +50,8 @@ class AppViewModelTest {
     private val appearance = FakeAppearanceRepository()
     private val shellMessages = ShellMessageQueue()
 
-    private fun newViewModel(handle: SavedStateHandle = SavedStateHandle()) = AppViewModel(handle, sessions, appearance, shellMessages)
+    private fun newViewModel(handle: SavedStateHandle = SavedStateHandle()) =
+        AppViewModel(handle, sessions, appearance, shellMessages, FakeSettingsRepository())
 
     private fun AppViewModel.destination() = uiState.value.destination
 

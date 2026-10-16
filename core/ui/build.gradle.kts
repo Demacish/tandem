@@ -18,6 +18,10 @@ dependencies {
     // RecipeImage loads photos with Coil's singleton ImageLoader (configured by the app).
     implementation(libs.coil.compose)
 
+    // --- Phase 1b (inställningar lane): ReportContentReady (reportFullyDrawn for the cold start
+    // timing in Settings → Diagnostics). ---
+    implementation(libs.androidx.activity.compose)
+
     // --- fix-bygg (0.1.0 review): ATF accessibility checks (assertAccessible) in the UI tests. ---
     testImplementation(projects.core.testing)
 }

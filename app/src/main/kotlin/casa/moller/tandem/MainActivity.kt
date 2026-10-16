@@ -14,22 +14,37 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.diagnostics.ColdStart
 import casa.moller.tandem.navigation.AppDestination
 import casa.moller.tandem.navigation.AppViewModel
 import casa.moller.tandem.ui.TandemApp
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModels()
+
+    /** Settings → Diagnostics: where the cold start is stored (Phase 1b). */
+    @Inject
+    lateinit var diagnostics: DiagnosticsRepository
+
+    @Inject
+    @field:ApplicationScope
+    lateinit var applicationScope: CoroutineScope
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Before super.onCreate: switches from Theme.Tandem.Starting to Theme.Tandem.
         val splashScreen = installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        measureColdStart()
         // Keep the splash until the stored session is read, so the intro never flashes for a
         // user who is already logged in.
         splashScreen.setKeepOnScreenCondition { appViewModel.uiState.value.destination == AppDestination.Loading }
@@ -55,9 +70,23 @@ class MainActivity : ComponentActivity() {
                 )
                 onDispose {}
             }
-            TandemTheme(darkTheme = darkTheme) {
+            // Settings → Appearance (Phase 1b): theme and "Dynamisk färg" for the whole app at once.
+            TandemTheme(darkTheme = darkTheme, dynamicColor = state.dynamicColor) {
                 TandemApp(viewModel = appViewModel)
             }
+        }
+    }
+
+    /**
+     * The cold start up to the first screen with content (Today or the recipe list call
+     * `reportFullyDrawn` through core:ui's `ReportContentReady`), stored for Settings →
+     * Diagnostics. Only for the activity the process was started for ([ColdStart]).
+     */
+    private fun measureColdStart() {
+        if (!ColdStart.takeForFirstActivity()) return
+        fullyDrawnReporter.addOnReportDrawnListener {
+            val duration = ColdStart.elapsedSinceProcessStart() ?: return@addOnReportDrawnListener
+            applicationScope.launch { diagnostics.recordColdStart(duration) }
         }
     }
 

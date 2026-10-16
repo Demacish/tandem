@@ -84,6 +84,7 @@ import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
+import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.recipe.IconLabel
@@ -116,6 +117,8 @@ fun RecipeListScreen(
     selectedRecipeId: Long? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    // Phase 1b (inställningar lane): the cold start ends when the stored recipes are shown (Diagnostics).
+    ReportContentReady(ready = state.loaded)
     var openPicker by rememberSaveable { mutableStateOf<FilterPicker?>(null) }
     val asPanel = isExpandedWindow()
     val keywordOptions = remember(state.keywords) { state.keywords.map { FilterOption(it.id, it.name) } }
