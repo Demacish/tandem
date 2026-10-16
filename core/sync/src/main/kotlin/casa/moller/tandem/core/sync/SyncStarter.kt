@@ -8,6 +8,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.sync.SyncRepository
+import casa.moller.tandem.core.datastore.SettingsStore
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.account.AccountMirror
 import casa.moller.tandem.core.sync.account.ActiveSource
@@ -24,8 +26,11 @@ import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -37,6 +42,8 @@ import kotlinx.coroutines.launch
  * - follows the active source: a logged-in account gets the periodic sync and its outbox sent;
  *   demo mode seeds the demo database; logging out or demo mode cancel the periodic sync;
  *   switching to another account asks for an ACCOUNT_CHANGED sync;
+ * - follows Settings → Sync → Interval (Phase 1b): the periodic sync gets the chosen period at
+ *   once, and "manually" cancels it (start, resume and pull to refresh still sync);
  * - asks for a sync when the app comes to the foreground (APP_START once, then APP_RESUMED; the
  *   engine's throttles decide what is actually fetched);
  * - rewrites the demo data in the new language when the app language changes in demo mode (the
@@ -52,6 +59,7 @@ class SyncStarter @Inject internal constructor(
     private val guard: SyncGuard,
     private val syncRepository: SyncRepository,
     private val imageLoader: Provider<ImageLoader>,
+    private val settings: SettingsStore,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val started = AtomicBoolean(false)
@@ -94,6 +102,7 @@ class SyncStarter @Inject internal constructor(
                     previous = current
                 }
         }
+        scope.launch { followSyncInterval() }
         context.registerComponentCallbacks(configuration)
         try {
             ProcessLifecycleOwner.get().lifecycle.addObserver(foreground)
@@ -106,19 +115,32 @@ class SyncStarter @Inject internal constructor(
         if (previous != null) guard.reset()
         when (current) {
             is ActiveSource.Remote -> {
-                scheduler.schedulePeriodic()
+                // The periodic sync follows the account and the interval (followSyncInterval).
                 scheduler.scheduleOutbox()
                 if (previous is ActiveSource.Remote) syncRepository.requestSync(SyncReason.ACCOUNT_CHANGED)
             }
 
-            ActiveSource.Demo -> {
-                scheduler.cancelPeriodic()
-                demo.ensureSeeded()
-            }
+            ActiveSource.Demo -> demo.ensureSeeded()
 
-            ActiveSource.None -> scheduler.cancelPeriodic()
-
-            ActiveSource.Loading -> Unit
+            ActiveSource.None, ActiveSource.Loading -> Unit
         }
+    }
+
+    /**
+     * The periodic sync exists only for a logged-in account and an interval other than
+     * [SyncInterval.MANUAL]; a changed interval re-schedules it (WorkManager's UPDATE keeps the
+     * schedule and takes the new period). Logging out and demo mode cancel it.
+     */
+    private suspend fun followSyncInterval() {
+        val loggedIn = sources.source
+            .filter { it != ActiveSource.Loading }
+            .map { it is ActiveSource.Remote }
+            .distinctUntilChanged()
+        val interval = settings.settings.map { it.syncInterval }.distinctUntilChanged()
+        combine(loggedIn, interval) { remote, chosen -> if (remote) chosen else null }
+            .distinctUntilChanged()
+            .collect { chosen ->
+                if (chosen == null || chosen.minutes == null) scheduler.cancelPeriodic() else scheduler.schedulePeriodic(chosen)
+            }
     }
 }

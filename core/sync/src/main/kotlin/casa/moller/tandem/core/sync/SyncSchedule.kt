@@ -64,6 +64,13 @@ object SyncSchedule {
     /** At most this many images are prefetched per sync run. */
     const val MAX_IMAGE_PREFETCH_PER_RUN: Int = 60
 
+    /**
+     * "Download all recipes" (Settings → Sync, Phase 1b): at most this many further details (and
+     * as many images) per run, on top of the usual ones, still 2 at a time with a pause. About
+     * 300 recipes are done in one run; a larger collection continues in the next runs.
+     */
+    const val MAX_DOWNLOAD_ALL_PER_RUN: Int = 400
+
     /** Recipes per Today carousel. */
     const val HOME_SECTION_SIZE: Int = 20
 

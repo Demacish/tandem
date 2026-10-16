@@ -29,4 +29,13 @@ class DatastoreFilesTest {
         )
         assertEquals("app_settings.preferences_pb", DatastoreFiles.SETTINGS)
     }
+
+    @Test
+    fun diagnosticsLiveInFilesDatastore() {
+        assertEquals(
+            File(context.filesDir, "datastore/diagnostics.preferences_pb"),
+            DatastoreFiles.diagnosticsFile(context),
+        )
+        assertEquals("diagnostics.preferences_pb", DatastoreFiles.DIAGNOSTICS)
+    }
 }

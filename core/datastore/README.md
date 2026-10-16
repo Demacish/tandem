@@ -9,6 +9,7 @@ enhetstoken** (DataStore + Tink AEAD, nyckeln skyddad av Android Keystore).
 |---|---|---|
 | `SecureAccountStore` | `casa.moller.tandem.core.datastore` | `accounts: Flow<List<ServerAccount>>`, `upsert(account, token)`, `update(account)`, `token(accountId)`, `remove(accountId)`, `clearAll()` |
 | `SettingsStore` | `casa.moller.tandem.core.datastore` | `settings: Flow<AppSettings>`, `update { … }`, `setThemeMode`, `setOnboardingCompleted`, `setDemoMode`, `setActiveAccountId` |
+| `DiagnosticsStore` | `casa.moller.tandem.core.datastore` | `timings: Flow<DiagnosticsTimings>`, `recordColdStart`, `recordFullSync` (Inställningar → Diagnostik; skrivfel ignoreras) |
 | `StorageHealthMonitor` | `casa.moller.tandem.core.datastore` | `health: StateFlow<StorageHealth>`, `report(reason)`, `acknowledge()` |
 | `SecureStorageException` | `casa.moller.tandem.core.datastore` | Kastas av skrivningar i `SecureAccountStore` när något inte kunde sparas |
 | `DatastoreFiles` | `casa.moller.tandem.core.datastore` | Alla filnamn och nyckelalias nedan som konstanter |
@@ -29,6 +30,7 @@ dvs. `casa.moller.tandem` eller `casa.moller.tandem.dev`).
 | `files/datastore/secure_accounts.pb` | Konton + token som ett JSON-dokument, **helt krypterat** med Tink AES-256-GCM. Associated data: `casa.moller.tandem/datastore/secure_accounts.pb` | `file` |
 | `files/datastore/secure_accounts.pb.tmp` | DataStores tillfälliga fil under en skrivning (krypterad som ovan) | `file` |
 | `files/datastore/app_settings.preferences_pb` | Inställningar (tema, onboarding klar, demoläge, aktivt konto-id). Ingen hemlighet | `file` |
+| `files/datastore/diagnostics.preferences_pb` | Senast uppmätta kallstart och fulla synk (`DiagnosticsStore`, från 0.2.0): tider och antal recept. Ingen hemlighet | `file` |
 | `shared_prefs/tandem_secure_keyset.xml` | Tink-keysetet (nyckel `secure_accounts_keyset`), krypterat med Keystore-nyckeln | `sharedpref` |
 | Android Keystore-alias `tandem_secure_master_key` | AES-256-GCM-huvudnyckel som skyddar keysetet. Lämnar aldrig enheten | – |
 

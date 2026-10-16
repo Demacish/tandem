@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.sync.platform
 
+import android.os.SystemClock
 import java.time.Duration
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -18,6 +19,12 @@ internal interface SyncClock {
     /** Wall-clock time in epoch milliseconds. */
     fun nowMillis(): Long
 
+    /**
+     * Monotonic time in milliseconds for measuring durations (Settings → Diagnostics: the full
+     * sync's duration must not jump with a clock change). Defaults to [nowMillis] for test clocks.
+     */
+    fun elapsedMillis(): Long = nowMillis()
+
     /** The current calendar day. */
     fun today(): LocalDate
 
@@ -30,6 +37,8 @@ internal interface SyncClock {
 
 internal class SystemSyncClock @Inject constructor() : SyncClock {
     override fun nowMillis(): Long = System.currentTimeMillis()
+
+    override fun elapsedMillis(): Long = SystemClock.elapsedRealtime()
 
     override fun today(): LocalDate = java.time.LocalDate.now().toKotlinLocalDate()
 

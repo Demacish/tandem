@@ -19,6 +19,12 @@ object DatastoreFiles {
     /** File name of the settings store. */
     const val SETTINGS = "$SETTINGS_NAME.preferences_pb"
 
+    /** Name passed to `preferencesDataStoreFile` for the measured timings (`DiagnosticsStore`). */
+    const val DIAGNOSTICS_NAME = "diagnostics"
+
+    /** File name of the diagnostics store: `files/datastore/diagnostics.preferences_pb`. */
+    const val DIAGNOSTICS = "$DIAGNOSTICS_NAME.preferences_pb"
+
     /** SharedPreferences file holding the Tink keyset: `shared_prefs/tandem_secure_keyset.xml`. */
     const val KEYSET_PREFS = "tandem_secure_keyset"
 
@@ -40,4 +46,6 @@ object DatastoreFiles {
     internal fun secureAccountsFile(context: Context): File = context.dataStoreFile(SECURE_ACCOUNTS)
 
     internal fun settingsFile(context: Context): File = context.preferencesDataStoreFile(SETTINGS_NAME)
+
+    internal fun diagnosticsFile(context: Context): File = context.preferencesDataStoreFile(DIAGNOSTICS_NAME)
 }

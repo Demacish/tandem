@@ -19,6 +19,9 @@ import kotlinx.coroutines.withContext
 internal interface ImageCache {
     /** Empties the memory and disk cache and forgets which images were prefetched. Never throws. */
     suspend fun clear()
+
+    /** Bytes the disk cache uses now (Settings → Sync and storage); 0 when it cannot be read. Never throws. */
+    suspend fun sizeBytes(): Long
 }
 
 /** The image URLs the sync already prefetched in this process (so a run does not ask again). */
@@ -54,6 +57,16 @@ internal class CoilImageCache @Inject constructor(
             } catch (e: Exception) {
                 // Storage trouble: the next removal tries again.
             }
+        }
+    }
+
+    override suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) {
+        try {
+            imageLoader.get().diskCache?.size ?: 0L
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            0L
         }
     }
 }

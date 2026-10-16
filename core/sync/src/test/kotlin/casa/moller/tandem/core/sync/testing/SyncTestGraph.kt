@@ -64,6 +64,7 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val imageCache = FakeImageCache(prefetched)
     val notifier = FakeNotifier()
     val settings = FakeSettingsStore()
+    val diagnosticsStore = FakeDiagnosticsStore()
 
     val account = ServerAccount(
         id = ACCOUNT_ID,
@@ -105,6 +106,8 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
         network,
         clock,
         scope,
+        settings,
+        diagnosticsStore,
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)

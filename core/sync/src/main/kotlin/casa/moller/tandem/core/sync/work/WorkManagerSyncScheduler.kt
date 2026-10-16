@@ -12,6 +12,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.platform.SyncScheduler
@@ -27,7 +28,8 @@ import javax.inject.Singleton
  *   request while one is waiting or running is dropped (KEEP). Pull to refresh
  *   ([SyncReason.USER_REFRESH]) replaces it instead (REPLACE): an app start run that skips the
  *   hourly recipe index must not swallow the user's explicit refresh, which always reads it.
- * - `tandem.sync.periodic` ([PeriodicSyncWorker]): every 15 minutes with any network and a
+ * - `tandem.sync.periodic` ([PeriodicSyncWorker]): every 15 minutes (or the interval chosen under
+ *   Settings → Sync: 1 h, 6 h, none) with any network and a
  *   battery that is not low; no exact alarms and no foreground service, which keeps it friendly
  *   to Samsung's battery management (plan 4.4, question 13). The first run comes one period
  *   after it is scheduled (a login): the onboarding's FIRST_SYNC makes the first full sync, and a
@@ -65,8 +67,10 @@ internal class WorkManagerSyncScheduler @Inject constructor(@ApplicationContext 
         workManager.enqueueUniqueWork(SyncSchedule.WORK_OUTBOX, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
-    override fun schedulePeriodic() {
-        workManager.enqueueUniquePeriodicWork(SyncSchedule.WORK_PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, periodicRequest())
+    override fun schedulePeriodic(interval: SyncInterval) {
+        // MANUAL has no period; the starter cancels instead (see SyncScheduler).
+        val minutes = interval.minutes ?: return cancelPeriodic()
+        workManager.enqueueUniquePeriodicWork(SyncSchedule.WORK_PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, periodicRequest(minutes))
     }
 
     override fun cancelPeriodic() {
@@ -74,14 +78,19 @@ internal class WorkManagerSyncScheduler @Inject constructor(@ApplicationContext 
     }
 
     internal companion object {
-        /** The periodic sync's request (see the class comment: the first run one period later). */
-        fun periodicRequest(): PeriodicWorkRequest {
+        /**
+         * The periodic sync's request (see the class comment: the first run one period later).
+         * Phase 1b: the period is the "Sync → Interval" setting; UPDATE gives an existing schedule
+         * the new period without starting over.
+         */
+        fun periodicRequest(periodMinutes: Int = SyncSchedule.PERIODIC.inWholeMinutes.toInt()): PeriodicWorkRequest {
+            val minutes = periodMinutes.toLong().coerceAtLeast(SyncSchedule.PERIODIC.inWholeMinutes)
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .setRequiresBatteryNotLow(true)
                 .build()
-            return PeriodicWorkRequestBuilder<PeriodicSyncWorker>(SyncSchedule.PERIODIC.inWholeMinutes, TimeUnit.MINUTES)
-                .setInitialDelay(SyncSchedule.PERIODIC.inWholeMinutes, TimeUnit.MINUTES)
+            return PeriodicWorkRequestBuilder<PeriodicSyncWorker>(minutes, TimeUnit.MINUTES)
+                .setInitialDelay(minutes, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .addTag(SyncSchedule.TAG_SYNC)
                 .build()
