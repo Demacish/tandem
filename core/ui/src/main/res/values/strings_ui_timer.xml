@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Timer components (core:ui timer/: start buttons, the timer bar and timer cards). Phase 1b, cook mode. -->
+<resources>
+    <!-- Durations of timers. Units as on a kitchen timer; the same symbols in English and Swedish. -->
+    <string name="ui_timer_hours">%1$d h</string>
+    <string name="ui_timer_minutes">%1$d min</string>
+    <string name="ui_timer_seconds">%1$d s</string>
+
+    <!-- Start button of a detected timer: %1$s is the duration, e.g. "10 min". -->
+    <string name="ui_timer_start">Start %1$s</string>
+    <!-- What TalkBack says for a start button: %1$s duration, %2$s the words in the step, e.g. "about 20–25 minutes". -->
+    <string name="ui_timer_start_description">Start a %1$s timer, %2$s</string>
+
+    <!-- States. -->
+    <string name="ui_timer_ringing">Time is up!</string>
+    <string name="ui_timer_paused">Paused</string>
+    <string name="ui_timer_finished">Done</string>
+    <!-- TalkBack: %1$s is the timer's name, %2$s the time left, e.g. "7 min 39 s". -->
+    <string name="ui_timer_running_description">%1$s, %2$s left</string>
+    <string name="ui_timer_paused_description">%1$s, paused with %2$s left</string>
+    <string name="ui_timer_ringing_description">%1$s, time is up</string>
+    <string name="ui_timer_finished_description">%1$s, done</string>
+
+    <!-- Actions. %1$s is the timer's name (TalkBack). -->
+    <string name="ui_timer_plus_one_minute">+1 min</string>
+    <string name="ui_timer_plus_one_minute_for">Add one minute to %1$s</string>
+    <string name="ui_timer_pause_for">Pause %1$s</string>
+    <string name="ui_timer_resume_for">Resume %1$s</string>
+    <string name="ui_timer_cancel_for">Remove %1$s</string>
+    <string name="ui_timer_stop">Stop</string>
+    <string name="ui_timer_stop_for">Stop the alarm of %1$s</string>
+    <string name="ui_timer_open_step">Go to the step</string>
+
+    <!-- The bar and the list. -->
+    <string name="ui_timer_bar_title">Timers</string>
+    <plurals name="ui_timer_count">
+        <item quantity="one">%1$d timer</item>
+        <item quantity="other">%1$d timers</item>
+    </plurals>
+</resources>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Timerkomponenter (core:ui timer/: startknappar, timerraden och timerkort). Fas 1b, kokläget. -->
+<resources>
+    <string name="ui_timer_hours">%1$d h</string>
+    <string name="ui_timer_minutes">%1$d min</string>
+    <string name="ui_timer_seconds">%1$d s</string>
+
+    <string name="ui_timer_start">Starta %1$s</string>
+    <string name="ui_timer_start_description">Starta en timer på %1$s, %2$s</string>
+
+    <string name="ui_timer_ringing">Tiden är ute!</string>
+    <string name="ui_timer_paused">Pausad</string>
+    <string name="ui_timer_finished">Klar</string>
+    <string name="ui_timer_running_description">%1$s, %2$s kvar</string>
+    <string name="ui_timer_paused_description">%1$s, pausad med %2$s kvar</string>
+    <string name="ui_timer_ringing_description">%1$s, tiden är ute</string>
+    <string name="ui_timer_finished_description">%1$s, klar</string>
+
+    <string name="ui_timer_plus_one_minute">+1 min</string>
+    <string name="ui_timer_plus_one_minute_for">Lägg till en minut på %1$s</string>
+    <string name="ui_timer_pause_for">Pausa %1$s</string>
+    <string name="ui_timer_resume_for">Fortsätt %1$s</string>
+    <string name="ui_timer_cancel_for">Ta bort %1$s</string>
+    <string name="ui_timer_stop">Stoppa</string>
+    <string name="ui_timer_stop_for">Stoppa larmet för %1$s</string>
+    <string name="ui_timer_open_step">Gå till steget</string>
+
+    <string name="ui_timer_bar_title">Timers</string>
+    <plurals name="ui_timer_count">
+        <item quantity="one">%1$d timer</item>
+        <item quantity="other">%1$d timers</item>
+    </plurals>
+</resources>
