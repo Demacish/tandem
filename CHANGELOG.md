@@ -6,7 +6,7 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-## [0.1.0] – 2026-10-12
+## [0.1.0] – 2026-10-16
 
 Första versionen med recept (Fas 1a, "läsa recept"): bläddra, sök och läs dina recept från
 Tandoor, även utan nät. Kokläge, timers och "Klart!" kommer i 0.2; inköpslista och matsedel
