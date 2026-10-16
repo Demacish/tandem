@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -34,29 +35,52 @@ import casa.moller.tandem.core.ui.markdown.MarkdownInline
  * Renders a step instruction written in Markdown (see [Markdown] for what is
  * supported). Headings are TalkBack headings, links open in the browser through Compose's link
  * handling (only http, https and mailto links exist after parsing).
+ *
+ * @param spokenText what TalkBack should say for a paragraph, heading or list item whose text
+ *   it cannot read as written, e.g. scaled amounts with superscript/subscript fractions
+ *   (core:domain `spokenNumbers`, plan 6.6). Applied only where it changes the text, so ordinary
+ *   paragraphs and their links keep the default semantics.
  */
 @Composable
-fun MarkdownText(markdown: String, modifier: Modifier = Modifier, style: TextStyle = MaterialTheme.typography.bodyLarge) {
+fun MarkdownText(
+    markdown: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyLarge,
+    spokenText: ((String) -> String)? = null,
+) {
     val blocks = remember(markdown) { Markdown.parse(markdown) }
-    MarkdownText(blocks = blocks, modifier = modifier, style = style)
+    MarkdownText(blocks = blocks, modifier = modifier, style = style, spokenText = spokenText)
 }
 
-/** Renders already parsed Markdown [blocks]. */
+/** Renders already parsed Markdown [blocks]; [spokenText] as in the other overload. */
 @Composable
-fun MarkdownText(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier, style: TextStyle = MaterialTheme.typography.bodyLarge) {
+fun MarkdownText(
+    blocks: List<MarkdownBlock>,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyLarge,
+    spokenText: ((String) -> String)? = null,
+) {
     val linkColor = MaterialTheme.colorScheme.primary
     val codeBackground = MaterialTheme.colorScheme.surfaceContainerHighest
     val spacing = TandemTheme.spacing
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         blocks.forEach { block ->
             when (block) {
-                is MarkdownBlock.Paragraph -> Text(text = block.inlines.toAnnotatedString(linkColor, codeBackground), style = style)
+                is MarkdownBlock.Paragraph -> {
+                    val text = block.inlines.toAnnotatedString(linkColor, codeBackground)
+                    Text(text = text, style = style, modifier = Modifier.spoken(text.text, spokenText))
+                }
 
-                is MarkdownBlock.Heading -> Text(
-                    text = block.inlines.toAnnotatedString(linkColor, codeBackground),
-                    style = if (block.level <= 2) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.semantics { heading() },
-                )
+                is MarkdownBlock.Heading -> {
+                    val text = block.inlines.toAnnotatedString(linkColor, codeBackground)
+                    Text(
+                        text = text,
+                        style = if (block.level <= 2) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
+                        modifier = Modifier
+                            .semantics { heading() }
+                            .spoken(text.text, spokenText),
+                    )
+                }
 
                 is MarkdownBlock.ListBlock -> Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                     block.items.forEachIndexed { index, item ->
@@ -67,13 +91,20 @@ fun MarkdownText(blocks: List<MarkdownBlock>, modifier: Modifier = Modifier, sty
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.widthIn(min = 20.dp),
                             )
-                            Text(text = item.toAnnotatedString(linkColor, codeBackground), style = style)
+                            val text = item.toAnnotatedString(linkColor, codeBackground)
+                            Text(text = text, style = style, modifier = Modifier.spoken(text.text, spokenText))
                         }
                     }
                 }
             }
         }
     }
+}
+
+/** Sets [spokenText] of [text] as the content description, only when it differs from [text]. */
+private fun Modifier.spoken(text: String, spokenText: ((String) -> String)?): Modifier {
+    val spoken = spokenText?.invoke(text)
+    return if (spoken == null || spoken == text) this else semantics { contentDescription = spoken }
 }
 
 /** The inline Markdown as styled text with clickable links. */

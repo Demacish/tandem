@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.ui.recipe
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -63,7 +65,13 @@ fun currentLocale(): Locale {
     return if (locales.isEmpty) Locale.ROOT else locales[0]
 }
 
-/** Icon plus a short text, e.g. a clock and "25 min". TalkBack reads [contentDescription] or the text. */
+/**
+ * Icon plus a text, e.g. a clock and "25 min". TalkBack reads [contentDescription] or the text.
+ *
+ * The text wraps by default, so nothing is cut off at font scale 2.0 (plan 6.6: "Cooked 12
+ * times, last on Oct 1, 2026" must stay readable); the icon stays beside the first line. Pass
+ * [maxLines] only where a shortened value is acceptable.
+ */
 @Composable
 fun IconLabel(
     icon: ImageVector,
@@ -72,49 +80,78 @@ fun IconLabel(
     contentDescription: String = text,
     iconTint: Color = MaterialTheme.colorScheme.primary,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    maxLines: Int = Int.MAX_VALUE,
 ) {
+    val style = MaterialTheme.typography.labelLarge
+    // The icon is centred on the first line of the text, however many lines follow.
+    val lineHeight = with(LocalDensity.current) {
+        if (style.lineHeight.isSp) style.lineHeight.toDp() else TandemTheme.sizes.iconSmall
+    }
     Row(
         modifier = modifier.clearAndSetSemantics { this.contentDescription = contentDescription },
         horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Top,
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(TandemTheme.sizes.iconSmall))
+        Box(modifier = Modifier.heightIn(min = lineHeight), contentAlignment = Alignment.Center) {
+            Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(TandemTheme.sizes.iconSmall))
+        }
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
+            style = style,
             color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = maxLines,
+            overflow = if (maxLines == Int.MAX_VALUE) TextOverflow.Clip else TextOverflow.Ellipsis,
         )
     }
 }
 
-/** Total time of a recipe: clock icon and "25 min". Nothing when the time is unknown (0). */
+/**
+ * Total time of a recipe: clock icon and "25 min". Nothing when the time is unknown (0).
+ *
+ * @param color the text colour; onPrimaryContainer on a selected (primaryContainer) card.
+ */
 @Composable
-fun RecipeTimeLabel(totalMinutes: Int, modifier: Modifier = Modifier) {
+fun RecipeTimeLabel(totalMinutes: Int, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
     if (totalMinutes <= 0) return
     val text = formatMinutes(totalMinutes)
     IconLabel(
         icon = TandemIcons.Schedule,
         text = text,
-        contentDescription = stringResource(R.string.ui_recipe_total_time_description, text),
+        contentDescription = recipeTimeDescription(totalMinutes),
+        color = color,
         modifier = modifier,
     )
 }
 
-/** Compact rating: one filled star and "4,5". Nothing for unrated recipes. */
+/** "Total time 25 min" for TalkBack; null when the time is unknown (0). */
 @Composable
-fun RecipeRatingLabel(rating: Double?, modifier: Modifier = Modifier) {
+fun recipeTimeDescription(totalMinutes: Int): String? =
+    if (totalMinutes <= 0) null else stringResource(R.string.ui_recipe_total_time_description, formatMinutes(totalMinutes))
+
+/**
+ * Compact rating: one filled star and "4,5". Nothing for unrated recipes.
+ *
+ * @param color the text colour; onPrimaryContainer on a selected (primaryContainer) card.
+ */
+@Composable
+fun RecipeRatingLabel(rating: Double?, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurface) {
     if (rating == null || rating <= 0.0) return
-    val text = formatRating(rating, currentLocale())
     IconLabel(
         icon = TandemIcons.StarFilled,
-        text = text,
-        contentDescription = stringResource(R.string.ui_recipe_rating_description, text),
+        text = formatRating(rating, currentLocale()),
+        contentDescription = recipeRatingDescription(rating).orEmpty(),
         iconTint = TandemTheme.extendedColors.warning,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = color,
         modifier = modifier,
     )
+}
+
+/** "Rated 4,5 of 5" for TalkBack; null for unrated recipes. */
+@Composable
+fun recipeRatingDescription(rating: Double?): String? = if (rating == null || rating <= 0.0) {
+    null
+} else {
+    stringResource(R.string.ui_recipe_rating_description, formatRating(rating, currentLocale()))
 }
 
 /** "Downloaded": the recipe opens offline (plan 6.2, feature #5). Icon + text, never colour alone. */

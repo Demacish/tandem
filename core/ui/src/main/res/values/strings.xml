@@ -2,7 +2,7 @@
 <resources>
     <!-- Demo mode banner (plan 6.2, design "Idag i demoläge"). -->
     <string name="ui_demo_banner_title">Demo mode</string>
-    <string name="ui_demo_banner_body">You are exploring Tandem with sample recipes. Changes stay on this phone until you connect your own Tandoor server.</string>
+    <string name="ui_demo_banner_body">You are exploring Tandem with sample recipes. What you do here stays on this phone and is removed when you connect your own Tandoor.</string>
     <string name="ui_demo_banner_connect">Connect your Tandoor</string>
 
     <!-- Status chips. Short: they sit next to headings. -->

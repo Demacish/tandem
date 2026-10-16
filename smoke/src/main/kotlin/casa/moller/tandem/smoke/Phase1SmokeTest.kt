@@ -79,8 +79,9 @@ class Phase1SmokeTest {
     @Test
     fun passwordLogin_firstSync_searchScaleDownloadAndReadOffline() {
         val golden = Golden.load(instrumentation.context.assets.open(Golden.ASSET).bufferedReader().use { it.readText() })
-        val baseAmount = golden.amount(RECIPE_ID, servings = BASE_SERVINGS, food = GOLDEN_FOOD)
-        val scaledAmount = golden.amount(RECIPE_ID, servings = BASE_SERVINGS + 1, food = GOLDEN_FOOD)
+        // An ingredient row is one TalkBack item described "<amount> <food>[, <note>]" (plan 6.6).
+        val baseAmount = By.descStartsWith("${golden.amount(RECIPE_ID, servings = BASE_SERVINGS, food = GOLDEN_FOOD)} $GOLDEN_FOOD")
+        val scaledAmount = By.descStartsWith("${golden.amount(RECIPE_ID, servings = BASE_SERVINGS + 1, food = GOLDEN_FOOD)} $GOLDEN_FOOD")
 
         // Login and the real first sync (onboarding's first-sync step), then the shell.
         app.launch()
@@ -127,10 +128,10 @@ class Phase1SmokeTest {
         app.waitFor(By.res(RECIPE_IMAGE_LOADED))
         app.scrollTo(By.desc("More servings"))
         app.waitFor(By.text("$BASE_SERVINGS $SERVINGS_TEXT"))
-        app.scrollTo(By.text(baseAmount))
+        app.scrollTo(baseAmount)
         app.tapDescription("More servings")
         app.waitFor(By.text("${BASE_SERVINGS + 1} $SERVINGS_TEXT"))
-        app.scrollTo(By.text(scaledAmount))
+        app.scrollTo(scaledAmount)
         app.capture("phase1-detail-scaled")
 
         // Download for offline use (plan feature #5): the detail and its photo are kept.
@@ -161,7 +162,7 @@ class Phase1SmokeTest {
         app.waitFor(By.desc("Remove offline copy"))
         app.waitFor(By.res(RECIPE_IMAGE_LOADED))
         app.scrollTo(By.text("${BASE_SERVINGS + 1} $SERVINGS_TEXT"))
-        app.scrollTo(By.text(scaledAmount))
+        app.scrollTo(scaledAmount)
         app.capture("phase1-offline-detail")
         val recipeCalls = tandoor.requestsWhileOffline.filter { it.startsWith("GET /api/recipe") }
         assertEquals("Offline, recipes come from the device only: ${tandoor.requestsWhileOffline}", emptyList<String>(), recipeCalls)
@@ -183,8 +184,7 @@ class Phase1SmokeTest {
         app.tap(DEMO_TONIGHT)
         app.waitFor(By.desc("More servings"))
         app.waitFor(By.res(RECIPE_IMAGE_LOADED))
-        app.scrollTo(By.text(DEMO_AMOUNT))
-        app.waitFor(By.textStartsWith(DEMO_FOOD))
+        app.scrollTo(By.descStartsWith("$DEMO_AMOUNT $DEMO_FOOD"))
         app.capture("phase1-demo-recipe")
 
         assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())

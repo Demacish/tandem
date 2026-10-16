@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="ui_demo_banner_title">Demoläge</string>
-    <string name="ui_demo_banner_body">Du utforskar Tandem med exempelrecept. Ändringar sparas bara i telefonen tills du ansluter din egen Tandoor-server.</string>
+    <string name="ui_demo_banner_body">Du utforskar Tandem med exempelrecept. Det du gör här stannar i telefonen och tas bort när du ansluter din egen Tandoor.</string>
     <string name="ui_demo_banner_connect">Anslut din Tandoor</string>
 
     <string name="ui_status_demo">Demo</string>

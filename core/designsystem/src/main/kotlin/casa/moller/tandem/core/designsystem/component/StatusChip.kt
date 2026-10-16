@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 
@@ -23,6 +24,9 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
  * Non-interactive status pill ("Demo", "Offline", "Säkert läge", "Alla ingredienser hemma").
  * Icon + text + tone, so the state is never shown by colour alone (plan 6.6). TalkBack reads it
  * as one item with [label] (or [contentDescription] when the visible label is too terse).
+ *
+ * The pill is one line; a label too wide for it (large font scale) ends with "…" instead of
+ * being cut mid-glyph. Longer texts that must stay readable belong in a wrapping element.
  */
 @Composable
 fun StatusChip(
@@ -59,7 +63,7 @@ fun StatusChip(
                     modifier = Modifier.size(TandemTheme.sizes.iconSmall),
                 )
             }
-            Text(text = label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+            Text(text = label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

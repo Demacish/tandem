@@ -18,6 +18,30 @@ class TandemColorContrastTest {
     @Test
     fun darkSchemeTextRolesMeetWcagAa() = assertTextContrast("dark", TandemDarkColorScheme, TandemDarkExtendedColors)
 
+    /**
+     * Pairs the components actually draw, beyond the role pairs above (review of 0.1.0): the
+     * tappable amount pill of an ingredient (core:ui IngredientRow), amounts on the ingredient
+     * cards, and the texts of a recipe card that is open beside the list (primaryContainer).
+     */
+    @Test
+    fun componentUsagePairsMeetWcagAa() {
+        for ((name, c) in listOf("light" to TandemLightColorScheme, "dark" to TandemDarkColorScheme)) {
+            val pairs = listOf(
+                Triple("amount pill", c.onPrimaryContainer, c.primaryContainer),
+                Triple("amount pill, ticked off", c.onSurfaceVariant, c.surfaceContainerHighest),
+                Triple("amount on the ingredient card", c.primary, c.surfaceContainerLow),
+                Triple("amount in a step's ingredients", c.primary, c.surfaceContainer),
+                Triple("selected recipe card text", c.onPrimaryContainer, c.primaryContainer),
+                Triple("recipe card time", c.onSurfaceVariant, c.surfaceContainerLow),
+            )
+            val failures = pairs.mapNotNull { (usage, fg, bg) ->
+                val ratio = contrast(fg, bg)
+                if (ratio < AA_TEXT) "$usage = ${"%.2f".format(ratio)}" else null
+            }
+            assertTrue("$name scheme usage pairs below ${AA_TEXT}:1 -> $failures", failures.isEmpty())
+        }
+    }
+
     @Test
     fun outlineIsVisibleAgainstSurface() {
         // Non-text UI boundaries (text field borders, dividers): >= 3:1 (WCAG 1.4.11).

@@ -18,9 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -34,14 +35,18 @@ import casa.moller.tandem.core.ui.R
  * amount. Tapping the row strikes it through (session only, "Tryck för att bocka av"); tapping
  * the amount shows it in the next unit the server converted it to, when there is one.
  *
- * Accessibility (plan 6.6): the row is one toggleable item ("checked"/"not checked" is read by
- * TalkBack), the strike-through is not the only signal (the box is checked too), and the unit
- * switch is also a custom action, so it does not need a precise tap.
+ * Accessibility (plan 6.6 "mergeDescendants på rader"): the row is one TalkBack item that says
+ * the whole ingredient ("125 g champinjoner, skivade", then "checkbox, not checked"); the
+ * strike-through is not the only signal (the box is checked too). The tappable amount pill is
+ * not a second TalkBack stop: the unit switch is the row's custom action "Show in another unit",
+ * so it does not need a precise tap either.
  *
  * @param amountText the amount with its unit, e.g. "2 ½ dl"; null for "no amount" rows (salt).
  * @param name the food, e.g. "champinjoner"; already in plural when the amount is not 1.
  * @param note the free text after the food, e.g. "pressade".
  * @param onAmountClick switches the unit; null when the server sent no conversions.
+ * @param amountDescription [amountText] as TalkBack should say it, e.g. "3/16 tsk" for the
+ *   typographic "³⁄₁₆ tsk" (core:domain `spokenNumbers`); defaults to [amountText].
  */
 @Composable
 fun IngredientRow(
@@ -52,17 +57,22 @@ fun IngredientRow(
     modifier: Modifier = Modifier,
     note: String? = null,
     onAmountClick: (() -> Unit)? = null,
+    amountDescription: String? = amountText,
 ) {
     val spacing = TandemTheme.spacing
     val textColor = if (struck) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
     val decoration = if (struck) TextDecoration.LineThrough else null
     val otherUnit = stringResource(R.string.ui_recipe_show_other_unit)
+    val description = ingredientDescription(amountDescription, name, note)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = TandemTheme.sizes.minTouchTarget)
             .toggleable(value = struck, role = Role.Checkbox, onValueChange = { onToggle() })
+            // The row's own label replaces its children's texts (see the children's
+            // clearAndSetSemantics), so TalkBack says the amount, food and note in one stop.
             .semantics {
+                contentDescription = description
                 if (onAmountClick != null) {
                     customActions = listOf(
                         CustomAccessibilityAction(otherUnit) {
@@ -77,7 +87,12 @@ fun IngredientRow(
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         Checkbox(checked = struck, onCheckedChange = null, modifier = Modifier.padding(spacing.md))
-        Column(modifier = Modifier.weight(1f).padding(vertical = spacing.sm)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(vertical = spacing.sm)
+                .clearAndSetSemantics { },
+        ) {
             Text(text = name, style = MaterialTheme.typography.bodyLarge, color = textColor, textDecoration = decoration)
             if (!note.isNullOrBlank()) {
                 Text(
@@ -89,39 +104,58 @@ fun IngredientRow(
             }
         }
         if (amountText != null) {
-            Amount(text = amountText, struck = struck, onSwitchUnit = onAmountClick, actionLabel = otherUnit)
+            Amount(text = amountText, struck = struck, onSwitchUnit = onAmountClick)
         }
     }
 }
 
+/** "125 g champinjoner, skivade": what TalkBack says for one ingredient row. */
+internal fun ingredientDescription(amount: String?, name: String, note: String?): String = buildString {
+    if (!amount.isNullOrBlank()) append(amount).append(' ')
+    append(name)
+    if (!note.isNullOrBlank()) append(", ").append(note)
+}
+
+/**
+ * The amount at the end of the row. Hidden from TalkBack (the row says it, see [IngredientRow]).
+ * With [onSwitchUnit] it is a tonal pill (48 dp high target) that switches the unit on a tap.
+ *
+ * Colours (WCAG AA, TandemColorContrastTest "usage pairs"): plain amounts are primary on the
+ * ingredient card (surfaceContainerLow / surfaceContainer); the pill is onPrimaryContainer on
+ * primaryContainer, and onSurfaceVariant on surfaceContainerHighest once the row is ticked off.
+ */
 @Composable
-private fun Amount(text: String, struck: Boolean, onSwitchUnit: (() -> Unit)?, actionLabel: String) {
+private fun Amount(text: String, struck: Boolean, onSwitchUnit: (() -> Unit)?) {
     val style = MaterialTheme.typography.titleSmall.copy(
         fontWeight = FontWeight.SemiBold,
         textDecoration = if (struck) TextDecoration.LineThrough else null,
         textAlign = TextAlign.End,
     )
-    val color = if (struck) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
+    val colors = MaterialTheme.colorScheme
     if (onSwitchUnit == null) {
-        Text(text = text, style = style, color = color, modifier = Modifier.padding(horizontal = TandemTheme.spacing.sm))
+        Text(
+            text = text,
+            style = style,
+            color = if (struck) colors.onSurfaceVariant else colors.primary,
+            modifier = Modifier
+                .padding(horizontal = TandemTheme.spacing.sm)
+                .clearAndSetSemantics { },
+        )
     } else {
-        // A tonal pill shows that the amount itself can be tapped (48 dp high target).
         Surface(
             onClick = onSwitchUnit,
             shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            color = if (struck) colors.surfaceContainerHighest else colors.primaryContainer,
+            contentColor = if (struck) colors.onSurfaceVariant else colors.onPrimaryContainer,
+            // Still tappable, but not a TalkBack stop of its own: the row's custom action
+            // "Show in another unit" switches the unit (plan 6.6).
             modifier = Modifier
+                .clearAndSetSemantics { }
                 .heightIn(min = TandemTheme.sizes.minTouchTarget)
-                .widthIn(min = 48.dp)
-                .semantics {
-                    onClick(label = actionLabel) {
-                        onSwitchUnit()
-                        true
-                    }
-                },
+                .widthIn(min = 48.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = TandemTheme.spacing.md)) {
-                Text(text = text, style = style, color = color)
+                Text(text = text, style = style)
             }
         }
     }
