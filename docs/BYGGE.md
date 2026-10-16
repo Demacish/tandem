@@ -395,10 +395,16 @@ Taggar startar inte `pr.yml` eller `contract.yml` (de kör bara på grenar). `re
 torrkör på lane-grenar när byggkonfigurationen ändras, inte på `main`.
 
 `.github/workflows/smoke.yml` kör release-röktestet (nästa avsnitt) på en emulator: vid varje
-push till `main`, på lane-grenar bara när något som R8 ser eller själva testet ändras
-(`proguard-rules.pro`, `consumer-rules.pro`, `build-logic/`, `gradle/libs.versions.toml`,
-`app/build.gradle.kts`, `app/src/minified/`, `smoke/`, `scripts/ci/smoke-run.sh`, arbetsflödet),
-manuellt, och för varje `v*`-tagg via `release.yml`, som inte publicerar om det fallerar.
+push till `main`, vid varje push till en lane-gren **utom** när alla ändrade filer ligger på en
+kort lista som varken når den minifierade appen eller testet (`docs/`, `*.md`, `LICENSE`,
+`*/src/test/`, `contract-tests/`, `pr.yml`/`contract.yml`, OpenAPI-schemat,
+`api-schema/used-endpoints.txt` och skripten som bara körs för hand), manuellt, och för varje
+`v*`-tagg via `release.yml`, som inte publicerar om det fallerar. Listan är en undantagslista och
+inte en lista över vad som triggar: Fas 1 visade att R8-känslig kod (Retrofit-tjänster,
+`@Serializable`-DTO:er och navigeringsnycklar, Room-entiteter, `@HiltWorker`-arbetare,
+modulberoenden), fixturerna som den falska servern serverar och texterna som testet letar efter
+ligger överallt i `core/` och `feature/`. Jobbet *Decide whether to run* skriver ut de ändrade
+filerna och `run=true/false`.
 
 Kontraktstesterna i `:contract-tests` hoppas över om miljövariabeln `TANDOOR_URL` saknas.
 Ett eget arbetsflöde (`contract.yml`) startar en tillfällig Tandoor i Actions och sätter den.

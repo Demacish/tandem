@@ -319,7 +319,8 @@ jobs:
 
   # REQUIRED before publishing: the R8-minified app (same R8 configuration as this release) must
   # log in, survive a restart and log out on an emulator (smoke.yml, docs/RELEASE.md). Lane dry
-  # runs skip it here; smoke.yml runs on its own for the same changes.
+  # runs skip it here: smoke.yml runs on its own for every lane push that is not docs-, unit-test-
+  # or contract-only, which includes every change that triggers this dry run.
   smoke:
     name: Release smoke test
     needs: build

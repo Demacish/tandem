@@ -7,7 +7,8 @@ name: Release smoke test
 #
 # An emulator run takes minutes, so it does not run on every push:
 # - every push to main,
-# - lane pushes that change what R8 sees or the test itself (see `changes` below),
+# - every lane push, unless it changes ONLY files that cannot reach the minified app or the test
+#   (docs, Markdown, unit tests, contract tests, other workflows; see `changes` below),
 # - every v* tag: release.yml calls this workflow and publishes only if it passes,
 # - by hand (Actions -> Release smoke test -> Run workflow).
 on:
@@ -47,8 +48,13 @@ jobs:
           EVENT: ${{ github.event_name }}
           BEFORE: ${{ github.event.before }}
         run: |
-          # Lane pushes only run when something R8 sees, the smoke test or this workflow changed.
-          pattern='^(app/proguard-rules\.pro|.*consumer-rules\.pro|.*proguard-rules\.pro|build-logic/.*|gradle/libs\.versions\.toml|app/build\.gradle\.kts|app/src/minified/.*|smoke/.*|scripts/ci/smoke-run\.sh|\.github/workflows/(smoke|release)\.yml)$'
+          # Lane pushes run unless EVERY changed file is on this list of paths that cannot reach
+          # the minified app, its R8 input or the smoke test. An allow-list ("run only when X
+          # changed") missed Phase 1's R8-sensitive code (Retrofit services, @Serializable DTOs and
+          # navigation keys, Room entities, @HiltWorker workers, module dependencies), the fixtures
+          # FakeTandoor serves and the UI texts the test matches, so lanes reached main without the
+          # minified app ever running. Anything not listed here runs the emulator.
+          skip='^(docs/.*|.*\.md|LICENSE|.*/src/test/.*|contract-tests/.*|\.github/workflows/(pr|contract)\.yml|api-schema/tandoor-[^/]*\.yaml|api-schema/used-endpoints\.txt|scripts/demo-content/.*|scripts/render-launcher-icon\.py|scripts/create-signing-key\.sh)$'
           run=false
           if [ "$EVENT" != "push" ] || [ "$GITHUB_REF" = "refs/heads/main" ] || [ "$GITHUB_REF_TYPE" = "tag" ]; then
             run=true
@@ -62,7 +68,11 @@ jobs:
             fi
             changed="$(git diff --name-only "$base" HEAD)"
             printf '%s\n' "$changed"
-            printf '%s\n' "$changed" | grep -Eq "$pattern" && run=true
+            # Any changed path outside the skip list runs the test. No `grep -q`: it would stop
+            # reading early, and under `pipefail` the writer's SIGPIPE would turn a hit into a miss.
+            if printf '%s\n' "$changed" | sed '/^$/d' | grep -Ev "$skip" > /dev/null; then
+              run=true
+            fi
           fi
           echo "run=${run}" >> "$GITHUB_OUTPUT"
           echo "Run the release smoke test: ${run}" | tee -a "$GITHUB_STEP_SUMMARY"
