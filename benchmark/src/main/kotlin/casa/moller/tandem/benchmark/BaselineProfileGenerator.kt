@@ -37,7 +37,9 @@ class BaselineProfileGenerator {
     @Test
     fun generate() = rule.collect(
         packageName = DemoJourney.PACKAGE,
-        includeInStartupProfile = true,
+        // A plain baseline profile (…-baseline-prof.txt). A startup profile would only help with
+        // the androidx.baselineprofile Gradle plugin's DEX layout, which Tandem does not use.
+        includeInStartupProfile = false,
     ) {
         // Every round starts cold, on Today (the first one turns demo mode on).
         killProcess()

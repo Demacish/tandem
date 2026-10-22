@@ -78,7 +78,10 @@ grep -q '^OK (' "$OUT/instrumentation.txt" && ! grep -q -e 'FAILURES!!!' -e 'INS
   "$OUT/instrumentation.txt" && passed=true
 
 if [ "$MODE" = profile ]; then
-  profile="$(find "$OUT/device" -type f -name '*-baseline-prof*.txt' 2> /dev/null | grep -v -- '-startup-prof' | sort | tail -n 1)"
+  # The rule writes <Class>_<method>-baseline-prof.txt (and a time-stamped copy); a startup
+  # profile (-startup-prof) holds the same rules and is the fallback.
+  profile="$(find "$OUT/device" -type f -name '*-baseline-prof.txt' 2> /dev/null | sort | tail -n 1)"
+  [ -n "$profile" ] || profile="$(find "$OUT/device" -type f -name '*-startup-prof.txt' 2> /dev/null | sort | tail -n 1)"
   if [ -n "$profile" ] && [ -s "$profile" ]; then
     cp "$profile" "$OUT/baseline-prof.txt"
     echo "Baseline profile: $(wc -l < "$OUT/baseline-prof.txt") rules from $(basename "$profile")"
