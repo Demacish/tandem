@@ -7,8 +7,12 @@
     "helpers:pinGitHubActionDigests"
   ],
   "timezone": "Europe/Stockholm",
-  "schedule": ["before 7am on monday"],
-  "labels": ["dependencies"],
+  "schedule": [
+    "before 7am on monday"
+  ],
+  "labels": [
+    "dependencies"
+  ],
   "prConcurrentLimit": 8,
   "prHourlyLimit": 4,
   "rebaseWhen": "conflicted",
@@ -24,12 +28,17 @@
   "packageRules": [
     {
       "description": "AndroidX libraries, one PR (Compose has its own group below).",
-      "matchPackageNames": ["androidx.**"],
+      "matchPackageNames": [
+        "androidx.**"
+      ],
       "groupName": "AndroidX"
     },
     {
       "description": "Compose BOM, Material 3 (incl. Expressive pre-releases) and adaptive layouts move together.",
-      "matchPackageNames": ["androidx.compose.**", "androidx.compose:**"],
+      "matchPackageNames": [
+        "androidx.compose.**",
+        "androidx.compose:**"
+      ],
       "groupName": "Compose"
     },
     {
@@ -44,6 +53,18 @@
         "com.google.devtools.ksp",
         "com.google.devtools.ksp:**",
         "com.google.dagger:**",
+        "com.google.dagger.hilt.android"
+      ],
+      "groupName": "Build toolchain (AGP, Kotlin, KSP, Hilt)"
+    },
+    {
+      "description": "The same group for the Gradle plugin ids of the version catalog's [plugins] (matched by their id).",
+      "matchDepNames": [
+        "com.android.application",
+        "com.android.library",
+        "com.android.test",
+        "org.jetbrains.kotlin.*",
+        "com.google.devtools.ksp",
         "com.google.dagger.hilt.android"
       ],
       "groupName": "Build toolchain (AGP, Kotlin, KSP, Hilt)"
@@ -78,19 +99,38 @@
       "groupName": "Static analysis"
     },
     {
+      "description": "Static analysis plugins by id.",
+      "matchDepNames": [
+        "dev.detekt",
+        "org.jlleitschuh.gradle.ktlint"
+      ],
+      "groupName": "Static analysis"
+    },
+    {
       "description": "GitHub Actions: pinned by digest with the version as a comment (helpers:pinGitHubActionDigests).",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "GitHub Actions"
     },
     {
       "description": "Only patch-level test and CI updates merge themselves, after every check on the branch is green.",
-      "matchUpdateTypes": ["patch", "digest", "pin", "pinDigest"],
-      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": [
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
+      ],
+      "matchManagers": [
+        "github-actions"
+      ],
       "automerge": true
     },
     {
       "description": "Only patch-level test and CI updates merge themselves, after every check on the branch is green.",
-      "matchUpdateTypes": ["patch"],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "matchPackageNames": [
         "junit:junit",
         "org.junit:**",
@@ -106,7 +146,9 @@
     },
     {
       "description": "The Gradle wrapper is part of the toolchain: never merged without review.",
-      "matchManagers": ["gradle-wrapper"],
+      "matchManagers": [
+        "gradle-wrapper"
+      ],
       "groupName": "Gradle wrapper",
       "automerge": false
     }

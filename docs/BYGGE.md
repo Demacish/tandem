@@ -80,10 +80,11 @@ Alla moduler för Fas 1a och 1b finns redan i `settings.gradle.kts`. Nya beroend
 | `tandem.android.compose` | Compose-kompilatorn, Compose BOM, `compose-ui`-bundeln (material3 1.5.0-beta01), tooling, Compose UI-test och Roborazzi-bibliotek för tester |
 | `tandem.android.hilt` | KSP + Hilt (`hilt-android`, `ksp(hilt-compiler)`), ingen kapt |
 | `tandem.android.feature` | library + compose + hilt, plus `core:{data,domain,ui,designsystem,model,common}`, `hilt-lifecycle-viewmodel-compose`, lifecycle-compose och Navigation 3 |
-| `tandem.android.test` | `com.android.test` (test-APK mot en annan moduls APK) med samma SDK-nivåer och Java 17, ktlint. Registrerar `ciLint` (ktlint) |
+| `tandem.android.test` | `com.android.test` (test-APK mot en annan moduls APK: `:smoke`, `:benchmark`) med samma SDK-nivåer och Java 17, ktlint. Registrerar `ciLint` (ktlint + detekt) |
 | `tandem.jvm.library` | `org.jetbrains.kotlin.jvm`, Java 17, JUnit 5 (Jupiter) + Turbine + coroutines-test. Registrerar `ciTest` (`test`) och `ciLint` (ktlint) |
 | `tandem.android.room` | KSP + Room 3 (`androidx.room3`): runtime, paging, `ksp(room3-compiler)`, room3-testing för tester. Schemat exporteras till `<modul>/schemas/` (se Room) |
 | `tandem.module-graph` | Uppgiften `checkModuleGraph` (modulgrafens regler, se nedan). Läggs på automatiskt av application-, library- och JVM-pluginerna; `ciLint` beror på den |
+| `tandem.detekt` | detekt 2.0 (light mode) med Compose-reglerna, `config/detekt/detekt.yml` och `<modul>/detekt-baseline.xml`. Läggs på automatiskt av application-, library-, JVM- och test-pluginerna; `ciLint` beror på `detekt` (se "Fas 1b – CI") |
 
 Alla moduler får **ktlint** (`org.jlleitschuh.gradle.ktlint`, motorn ktlint 1.8.0, plan §5.6).
 Reglerna står i `.editorconfig` i roten: stilen `android_studio`, högst 140 tecken per rad, och
@@ -102,6 +103,8 @@ alltså av `pr.yml`). Den läser de projektberoenden modulen själv deklarerar o
 4. något annat än en testkonfiguration (`testImplementation` m.fl.) beror på `:core:testing`.
 
 Reglerna står i `build-logic/convention/src/main/kotlin/casa/moller/tandem/buildlogic/ModuleGraph.kt`.
+Reglernas egna tester (`ModuleGraphRulesTest`, bl.a. att `:feature:*` aldrig når `:core:timer` i
+någon konfiguration, inte heller i tester) körs i `pr.yml` som `:build-logic:convention:test`.
 
 Gemensamt för Android-moduler:
 - Lint: `abortOnError = true`, varningar är inte fel, men `MissingTranslation`,
@@ -560,10 +563,9 @@ samma **kryssruta** två gånger (Tandoor visar ett stegs ingredienser igen unde
 raderna delar samma bockade läge). Ett nytt fynd rättas i komponenten; undantag kräver en
 kommentar som säger varför fyndet är avsiktligt.
 
-Skärmbilderna (Roborazzi) **spelas bara in** (`roborazzi.test.record=true`) och granskas för
-hand. Jämförelse mot incheckade referensbilder (`verifyRoborazziDebug`) och en variant med
-pseudospråken en-XA (lång text) och ar-XB (höger-till-vänster, plan 5.6/6.7) kommer i slutet av
-Fas 1 (0.2.0).
+Skärmbilderna (Roborazzi) spelas in och granskas för hand så länge
+`tandem.screenshots.verify=false`; jämförelsen mot incheckade referensbilder och pseudospråken
+beskrivs under "Fas 1b – CI" → "Skärmbilder".
 <!-- /fix-bygg: tillgänglighetskontroller -->
 
 ## Navigering
@@ -868,8 +870,9 @@ som beror på portionerna räknas här, likadant som Tandoors webb (plan §10 Fa
    (nyckel efter katalog, wrapper och byggskript, med prefix-fallback). Bara körningen på `main`
    sparar cachen, så alla grenar kan läsa den; `contract.yml` och `release.yml` läser bara,
 3. visar och kontrollerar Kotlin-/KSP-/AGP-versionerna på byggets classpath,
-4. kör `./gradlew ciLint ciTest :app:assembleSideloadDebug` (`ciLint` = ktlint,
-   `checkModuleGraph` och Android Lint),
+4. kör `./gradlew --continue ciLint ciTest :app:assembleSideloadDebug :build-logic:convention:test`
+   (`ciLint` = ktlint, detekt, `checkModuleGraph` och Android Lint; `ciTest` = enhetstester och
+   skärmbilder, inspelade eller jämförda, se "Fas 1b – CI"),
 5. kontrollerar att Room-schemat i `core/database/schemas/` är incheckat (se Room),
 6. laddar upp rapporter vid fel och debug-APK:n som artefakt (3 dagar på grenar, 7 på `main`).
    Debug-APK:n signeras med den publika debug-nyckeln `app/debug.p12`, så en nyare installeras
@@ -881,8 +884,9 @@ torrkör på lane-grenar när byggkonfigurationen ändras, inte på `main`.
 `.github/workflows/smoke.yml` kör release-röktestet (nästa avsnitt) på en emulator: vid varje
 push till `main`, vid varje push till en lane-gren **utom** när alla ändrade filer ligger på en
 kort lista som varken når den minifierade appen eller testet (`docs/`, `*.md`, `LICENSE`,
-`*/src/test/`, `contract-tests/`, `pr.yml`/`contract.yml`, OpenAPI-schemat,
-`api-schema/used-endpoints.txt` och skripten som bara körs för hand), manuellt, och för varje
+`*/src/test/`, `contract-tests/`, de andra arbetsflödena utom `smoke.yml`/`release.yml`,
+OpenAPI-schemat, `api-schema/used-endpoints.txt`, skripten som bara körs för hand, detekts
+konfiguration och baslinjer, `renovate.json` och `:benchmark`), manuellt, och för varje
 `v*`-tagg via `release.yml`, som inte publicerar om det fallerar. Listan är en undantagslista och
 inte en lista över vad som triggar: Fas 1 visade att R8-känslig kod (Retrofit-tjänster,
 `@Serializable`-DTO:er och navigeringsnycklar, Room-entiteter, `@HiltWorker`-arbetare,
@@ -904,6 +908,148 @@ jämför med den incheckade filen. `ScalingGoldenTest` (körs i `ciTest`, utan s
 tabellen med en oberoende Kotlin-implementation. Förnya fixturerna genom att ladda ned
 artefakten från en grön `contract.yml`-körning och ersätta mappen i samma ändring som testet.
 <!-- /Fas 1 kontrakt -->
+
+<!-- Fas 1b ci -->
+## Fas 1b – CI (detekt, skärmbilder, Tandoor-bevakning, Renovate, prestanda)
+
+Plan §10 "I slutet" av Fas 1. Översikt över arbetsflödena:
+
+| Arbetsflöde | När | Gör |
+|---|---|---|
+| `pr.yml` | varje push | ktlint, **detekt**, modulgrafen, Android Lint, enhetstester, skärmbilder, build-logic-tester, debug-APK |
+| `smoke.yml` | push (utom undantagslistan), `main`, taggar | release-röktestet på emulator |
+| `contract.yml` | push av kontraktstester; anropas av `tandoor-watch.yml` | kontraktssviten mot en tillfällig Tandoor |
+| `tandoor-watch.yml` | varje natt 02:23 UTC, manuellt | nya Tandoor-versioner, kontraktssviten, ett ärende vid behov |
+| `benchmark.yml` | måndagar 03:17 UTC, manuellt | Macrobenchmark och baslinjeprofilen på emulator |
+| `screenshots.yml` | manuellt | spelar in referensbilderna och kontrollerar dem |
+
+Emulatorn körs bara i `smoke.yml` och `benchmark.yml`. Alla läser Gradle-cachen som `main`:s
+`pr.yml` skriver; ingen annan skriver den.
+
+### detekt
+
+`tandem.detekt` (alla moduler) kör detekt **2.0.0-alpha.6** (den enda linjen byggd på Kotlin 2.4,
+se katalogen) i *light mode*, utan typupplösning och utan kompilering, över hela `src/` (main,
+test, varianter), med Compose-reglerna `io.nlopez.compose.rules:detekt`. Bara den vanliga
+uppgiften `detekt` används (`detekt.android.disabled=true`). `ciLint` beror på den; rapporter
+(HTML, SARIF, checkstyle) hamnar i `build/reports/detekt/` och i artefakten `reports` vid fel.
+
+- **Regler:** detekts standard plus `config/detekt/detekt.yml`. Formatering är ktlints jobb;
+  regler som bara stör i Compose (långa parameterlistor, `@Composable` med stor bokstav, magiska
+  tal i `@Preview`, ...) är avstängda eller undantar `@Composable`/`@Preview`, och ett antal
+  Compose-korrekthetsregler (`RememberMissing`, `ModifierReused`, `MutableParams`, ...) är på.
+  Varje avvikelse i filen har en motivering.
+- **Baslinje:** `<modul>/detekt-baseline.xml` innehåller det som fanns när detekt infördes
+  (inklusive de parallella Fas 1b-banornas kod, mest `TooGenericExceptionCaught` i `:core:sync`:s
+  husstil "fånga allt utom `CancellationException` och gör det till ett `Outcome`"). **Ny kod ska
+  vara ren.** Lägg aldrig till ny kod i en baslinje.
+- **Undertrycka ett fynd:** bara där det sitter och med motivering, t.ex.
+
+  ```kotlin
+  // Kraschloggen ska fånga allt, även fel från tredjepartskod.
+  @Suppress("TooGenericExceptionCaught")
+  ```
+
+  Gäller samma sak i hela kodbasen ändras regeln i `detekt.yml` (med motivering) i stället.
+- **Ny baslinje** (bara när en regel slås på): `./gradlew detektBaseline` i CI (aldrig på
+  servern), ladda ned filerna och checka in dem.
+
+### Skärmbilder (Roborazzi: inspelning, jämförelse och pseudospråk)
+
+En enda Gradle-egenskap i `gradle.properties` styr: **`tandem.screenshots.verify`**.
+
+- `false` (nu): `ciTest` **spelar in** varje skärmbild (`recordRoborazzi<Variant>`) och `pr.yml`
+  laddar upp dem som artefakten `screenshots`.
+- `true`: `ciTest` **jämför** (`verifyRoborazzi<Variant>`) med referensbilderna i
+  `<modul>/src/test/screenshots/` (kopieras först till `build/outputs/roborazzi/`). En ändrad
+  eller **saknad** referensbild fäller testet och lämnar `<namn>_actual.png` och
+  `<namn>_compare.png` i artefakten `screenshots`.
+
+Referensbilder spelas bara in i CI (typsnitt och rendering skiljer mellan maskiner):
+**Actions → Screenshots → Run workflow** kör `updateRoborazziGoldens` i alla moduler, laddar upp
+`screenshot-goldens.tar` (artefakten `screenshot-goldens`, med sökvägar från roten) och kör sedan
+samma tester igen med `-Ptandem.screenshots.verify=true` mot de nya bilderna, så att körningen
+också visar att inspelning och jämförelse är överens på löparen.
+
+**Så slår integrationsbanan på jämförelsen** (när alla skärmar för 0.2.0 finns på `main`):
+
+1. Kör *Screenshots* på `main` (eller integrationsgrenen) och vänta på grönt.
+2. Ladda ned artefakten, granska bilderna, packa upp i roten: `tar -xf screenshot-goldens.tar`.
+3. Sätt `tandem.screenshots.verify=true` i `gradle.properties` och checka in båda i **samma**
+   ändring.
+
+Därefter: den som ändrar en skärm kör *Screenshots* på sin gren och checkar in de nya bilderna
+tillsammans med ändringen.
+
+**Pseudospråk** (plan 5.6/6.7): bibliotekens debug-bygge har `isPseudoLocalesEnabled`, så tester
+kan använda `@Config(qualifiers = "en-rXA-...")` (lång, accentuerad text) och
+`"ar-rXB-ldrtl-..."` (höger-till-vänster). `TodayPseudoLocaleScreenshotTest` (`:feature:home`),
+`RecipesPseudoLocaleScreenshotTest` (`:feature:recipes`) och `CookPseudoLocaleScreenshotTest`
+(`:feature:cook`) tar bilder av Idag, receptlistan/-vyn och kokläget (`*_en_xa.png`,
+`*_ar_xb.png`); varje test kontrollerar också att pseudospråket verkligen genererades. Appens
+`localeFilters` håller dem utanför alla APK:er.
+
+### Tandoor-bevakning (`tandoor-watch.yml`)
+
+Varje natt (och manuellt, med valfria extra taggar):
+
+1. `contract-tests/watch/discover.py` läser de publika taggarna för `vabene1111/recipes` på Docker
+   Hub (utan inloggning) och `TandoorVersionTable.TESTED` (`:core:network`). Matrisen blir 2.6.13
+   (referensen, de incheckade fixturerna), 2.6.15, den nyaste releasen av varje linje från 2.6
+   (t.ex. 2.7.x) och `latest`.
+2. `contract.yml` körs som återanvändbart arbetsflöde (`workflow_call` med `tags`) med hela
+   sviten: Fas 0, Fas 1 och webbens skalningstabell.
+3. `contract-tests/watch/report.py` jämför varje taggs observerade fakta (`observed-facts.json`)
+   med 2.6.13 i samma körning (UUID:er, sekunder och versionen räknas bort) och skriver tabellen
+   och diffen i jobbsammanfattningen.
+4. Bara på `main` och bara det jobbet har `issues: write` (`GITHUB_TOKEN`): en röd svit, en
+   release som är nyare än `TESTED` eller ett ändrat faktum öppnar eller uppdaterar **ett**
+   ärende, "Tandoor watch: upstream needs attention" (en kommentar bara när något nytt hänt, via
+   ett fingeravtryck); en helt grön natt stänger det.
+
+Ny Tandoor-version som är grön utan ändrade fakta: lägg till den i `TandoorVersionTable.TESTED` i
+nästa appversion. Push till grenar som ändrar bevakningen kör allt men rör inga ärenden.
+
+### Renovate (`renovate.json`)
+
+Renovates GitHub-app är installerad för repot (av ägaren); konfigurationen ligger i
+`renovate.json`. En gång i veckan (måndag före 07, svensk tid), bara versioner som är minst 14
+dagar gamla, grupperat: AndroidX, Compose (BOM, Material 3, adaptive), byggverktygen (AGP,
+Kotlin, KSP, Hilt – måste följas åt), testbibliotek, statisk analys, GitHub Actions och
+Gradle-wrappern. GitHub Actions pinnas med digest och versionen som kommentar. **Automerge** bara
+för patch-/digestuppdateringar av testbibliotek och Actions, och bara när CI är grönt
+(Renovate slår ihop själv med rebase, så `main` förblir linjär). Allt annat granskas för hand.
+Dependency Dashboard-ärendet visar vad som väntar. Fixturer och skript undantas.
+
+### Prestanda (`:benchmark`, `benchmark.yml`)
+
+`:benchmark` är som `:smoke` en självinstrumenterande test-APK mot `:app`:s minifierade
+sideload-bygge (paketet `casa.moller.tandem.minified`, som bara i den byggtypen är
+`profileable`, `app/src/minified/AndroidManifest.xml`). Allt i demoläget, utan nät:
+
+- `StartupBenchmark`: kallstart till Idag, `StartupMode.COLD`, 10 iterationer, med
+  baslinjeprofilen (`CompilationMode.Partial`) och utan kompilering (`CompilationMode.None`).
+- `RecipeListScrollBenchmark`: svep i receptlistan, bildtider (`FrameTimingMetric`).
+- `BaselineProfileGenerator`: kallstart, receptlistan och ett recept som baslinjeprofil.
+
+`benchmark.yml` (veckovis och manuellt, plus push som ändrar `benchmark/`) kör två jobb på var sin
+emulator (API 36): mätningarna, med median/min/max och P50–P99 i jobbsammanfattningen
+(`scripts/ci/benchmark-summary.py`), och generatorn mot ett minifierat bygge **utan** R8
+(`-Ptandem.baselineProfile.generate=true`, så profilen har riktiga klassnamn som AGP sedan mappar
+om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; checka in den som
+`app/src/main/baseline-prof.txt` (`androidx.profileinstaller` installerar den även vid
+sidladdning).
+
+**Emulatorns siffror är bara en trend** (programvaru-GPU, 2 vCPU, delad löpare). Kravet i plan
+§10 (kallstart under 1,5 s) mäts på telefonen: appen mäter själv sin kallstart och visar den
+senaste under **Mer → Diagnostik** (`DiagnosticsRepository.recordColdStart`).
+
+### CI-tid
+
+Gradle-cachen skrivs bara av `main`; emulatorjobben bygger först och stoppar Gradle innan
+emulatorn startar; `smoke.yml` hoppar över ändringar som inte når appen; kontraktsmatrisen på
+push kör bara 2.6.13; benchmark och bevakning körs schemalagt, inte vid varje push.
+<!-- /Fas 1b ci -->
 
 ## Release-röktest
 

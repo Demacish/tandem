@@ -54,7 +54,9 @@ jobs:
           # navigation keys, Room entities, @HiltWorker workers, module dependencies), the fixtures
           # FakeTandoor serves and the UI texts the test matches, so lanes reached main without the
           # minified app ever running. Anything not listed here runs the emulator.
-          skip='^(docs/.*|.*\.md|LICENSE|.*/src/test/.*|contract-tests/.*|\.github/workflows/(pr|contract)\.yml|api-schema/tandoor-[^/]*\.yaml|api-schema/used-endpoints\.txt|scripts/demo-content/.*|scripts/render-launcher-icon\.py|scripts/create-signing-key\.sh)$'
+          # Fas 1b (ci lane): detekt's config and baselines, Renovate's config, the other CI
+          # workflows and :benchmark (its own workflow, benchmark.yml) never reach the app either.
+          skip='^(docs/.*|.*\.md|LICENSE|.*/src/test/.*|contract-tests/.*|\.github/workflows/(pr|contract|tandoor-watch|benchmark|screenshots)\.yml|api-schema/tandoor-[^/]*\.yaml|api-schema/used-endpoints\.txt|scripts/demo-content/.*|scripts/render-launcher-icon\.py|scripts/create-signing-key\.sh|config/detekt/.*|.*/detekt-baseline\.xml|renovate\.json|benchmark/.*|scripts/ci/benchmark-.*)$'
           run=false
           if [ "$EVENT" != "push" ] || [ "$GITHUB_REF" = "refs/heads/main" ] || [ "$GITHUB_REF_TYPE" = "tag" ]; then
             run=true

@@ -1,0 +1,111 @@
+name: Screenshots
+
+# Records the Roborazzi goldens (docs/BYGGE.md "Skärmbilder"): every screenshot test of every
+# module on Robolectric, copied into <module>/src/test/screenshots/ by updateRoborazziGoldens and
+# uploaded as the "screenshot-goldens" artifact FOR REVIEW. Nothing is committed by CI: whoever
+# turns verification on (or changes a screen) looks at the images, unpacks the artifact at the
+# repository root and commits it together with tandem.screenshots.verify=true.
+#
+# The same job then verifies the fresh goldens (-Ptandem.screenshots.verify=true), so a run proves
+# that recording and verification agree on this runner image (deterministic rendering).
+#
+# Goldens are only ever recorded here, never on a laptop: fonts and rendering differ.
+on:
+  workflow_dispatch:
+  push:
+    # Changes to the recording itself are tried on their branch (workflow_dispatch only works for
+    # workflows that are already on main).
+    branches: ["**"]
+    paths:
+      - ".github/workflows/screenshots.yml"
+
+concurrency:
+  group: screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    name: Record and verify the goldens
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      - name: Restore Gradle cache (read only)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Record every screenshot and update the goldens
+        run: ./gradlew --stacktrace -Ptandem.screenshots.verify=false updateRoborazziGoldens
+
+      - name: Summary of the goldens
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Screenshot goldens"
+            echo
+            echo "| Module | Goldens | Changed vs the commit |"
+            echo "|---|---|---|"
+            for dir in $(find . -path '*/src/test/screenshots' -type d -not -path './build-logic/*' | sort); do
+              module="${dir#./}"; module="${module%/src/test/screenshots}"
+              count="$(find "$dir" -name '*.png' | wc -l)"
+              changed="$(git status --porcelain --untracked-files=all -- "$dir" | wc -l)"
+              echo "| \`${module}\` | ${count} | ${changed} |"
+            done
+            echo
+            echo "Download **screenshot-goldens**, review it, unpack \`screenshot-goldens.tar\` at the repository root"
+            echo "(\`tar -xf screenshot-goldens.tar\`) and commit it."
+          } >> "$GITHUB_STEP_SUMMARY"
+          # One archive with the full paths, so it unpacks into every module at once.
+          find . -path '*/src/test/screenshots/*' -name '*.png' -not -path './build-logic/*' | sort \
+            | tar -cf screenshot-goldens.tar -T -
+
+      - name: Upload the goldens for review
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshot-goldens
+          path: screenshot-goldens.tar
+          if-no-files-found: error
+          retention-days: 14
+
+      # The round trip: the goldens just recorded must verify on the same runner.
+      - name: Verify against the fresh goldens
+        run: ./gradlew --stacktrace --continue -Ptandem.screenshots.verify=true ciTest
+
+      - name: Upload the differences
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshot-differences
+          path: |
+            **/build/outputs/roborazzi/**/*_compare.png
+            **/build/outputs/roborazzi/**/*_actual.png
+            **/build/reports/tests/
+          if-no-files-found: ignore
+          retention-days: 7
