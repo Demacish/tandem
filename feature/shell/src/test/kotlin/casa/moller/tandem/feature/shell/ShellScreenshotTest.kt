@@ -126,7 +126,7 @@ abstract class ShellScreenshotTest(private val device: String) {
         setShell(CONNECTED_STATE, ShellTab.MORE)
         val logOut = ApplicationProvider.getApplicationContext<android.content.Context>()
             .getString(R.string.shell_log_out_of, "tandoor.example.com")
-        composeRule.onNodeWithText(logOut).performClick()
+        composeRule.onNodeWithText(logOut).performScrollTo().performClick()
         composeRule.onNode(isDialog()).assertExists()
         captureScreenRoboImage(path("logout_dialog_light"))
     }

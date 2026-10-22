@@ -22,7 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +41,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.designsystem.component.StatusChip
+import casa.moller.tandem.core.designsystem.component.TandemButtonSize
+import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
@@ -463,11 +464,16 @@ private fun LogoutDialog(tokenOrigin: TokenOrigin, onConfirm: (revokeToken: Bool
                 }
             }
         },
+        // Filled and tonal: a text button's colour is too faint on the dialog's surface (ATF contrast 4.2:1).
         confirmButton = {
-            TextButton(onClick = { onConfirm(canRevoke && revoke) }) { Text(stringResource(R.string.shell_logout_confirm)) }
+            TandemPrimaryButton(
+                text = stringResource(R.string.shell_logout_confirm),
+                onClick = { onConfirm(canRevoke && revoke) },
+                size = TandemButtonSize.Small,
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.shell_cancel)) }
+            TandemSecondaryButton(text = stringResource(R.string.shell_cancel), onClick = onDismiss, size = TandemButtonSize.Small)
         },
     )
 }

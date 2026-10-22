@@ -140,13 +140,7 @@ class ShellAccessibilityTest {
     @Test
     fun demoPlaceholderTabs() = check(DEMO_STATE, ShellTab.WEEK)
 
-    private fun check(
-        state: ShellUiState,
-        tab: ShellTab,
-        vararg pages: NavKey,
-        darkTheme: Boolean = false,
-        fontScale: Float = 1f,
-    ) {
+    private fun check(state: ShellUiState, tab: ShellTab, vararg pages: NavKey, darkTheme: Boolean = false, fontScale: Float = 1f) {
         set(state, tab, *pages, darkTheme = darkTheme, fontScale = fontScale)
         composeRule.assertAccessible()
     }

@@ -25,7 +25,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemButtonSize
+import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.containerColor
 import casa.moller.tandem.core.designsystem.component.contentColor
@@ -145,7 +146,12 @@ fun LoginExpiredBanner(onLogInAgain: () -> Unit, modifier: Modifier = Modifier, 
                 )
                 Text(text = stringResource(R.string.ui_login_expired_body), style = MaterialTheme.typography.bodySmall)
             }
-            TandemTextButton(text = stringResource(R.string.ui_login_expired_action), onClick = onLogInAgain)
+            // Filled: a text button's colour is too faint on the error container (ATF contrast 4.0:1).
+            TandemPrimaryButton(
+                text = stringResource(R.string.ui_login_expired_action),
+                onClick = onLogInAgain,
+                size = TandemButtonSize.Small,
+            )
         }
     }
 }

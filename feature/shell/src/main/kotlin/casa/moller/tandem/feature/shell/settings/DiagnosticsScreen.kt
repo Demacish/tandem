@@ -72,7 +72,8 @@ internal fun DiagnosticsScreen(
                 Timing(
                     title = stringResource(R.string.settings_diagnostics_full_sync),
                     value = fullSync?.let {
-                        pluralStringResource(R.plurals.settings_diagnostics_full_sync_value, it.recipeCount, seconds(it.duration), it.recipeCount)
+                        val duration = seconds(it.duration)
+                        pluralStringResource(R.plurals.settings_diagnostics_full_sync_value, it.recipeCount, duration, it.recipeCount)
                     },
                     withinTarget = fullSync?.let { it.duration < fullSyncTarget(it.recipeCount) },
                     measuredAt = fullSync?.let { formatDateTime(it.finishedAt) },
@@ -90,7 +91,9 @@ internal fun DiagnosticsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 TandemPrimaryButton(
-                    text = stringResource(if (state.exporting) R.string.settings_diagnostics_exporting else R.string.settings_diagnostics_export),
+                    text = stringResource(
+                        if (state.exporting) R.string.settings_diagnostics_exporting else R.string.settings_diagnostics_export,
+                    ),
                     onClick = { onAction(SettingsAction.ExportLog) },
                     enabled = !state.exporting,
                     leadingIcon = TandemIcons.Share,
