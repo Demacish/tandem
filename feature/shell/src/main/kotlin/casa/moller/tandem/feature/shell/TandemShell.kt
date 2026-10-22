@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -133,10 +134,11 @@ fun TandemShell(
         onPauseOrDispose { }
     }
     val navigation = rememberShellNavigationState()
+    val currentOnTimerRequestHandled by rememberUpdatedState(onTimerRequestHandled)
     LaunchedEffect(navigation, timerRequest) {
         if (timerRequest != null) {
             navigation.openTimer(timerRequest)
-            onTimerRequestHandled()
+            currentOnTimerRequestHandled()
         }
     }
     var language by remember(languageController) { mutableStateOf(languageController.current) }

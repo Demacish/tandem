@@ -9,6 +9,7 @@ import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import java.io.File
+import java.util.regex.Pattern
 
 /**
  * The app under test, driven like a user would: by the texts on screen (English, the emulator's
@@ -143,6 +144,16 @@ class TandemApp(val device: UiDevice) {
     /** Waits for a clickable element described as [description] (scrolling if needed) and clicks it. */
     fun tapDescription(description: String) {
         scrollToAny(clickableWithDescription(description)).click()
+    }
+
+    /** Phase 1b: waits for a clickable element whose description matches [description] and clicks it. */
+    fun tapDescriptionMatching(description: Pattern) {
+        scrollToAny(
+            listOf(
+                By.clickable(true).hasDescendant(By.desc(description), MAX_LABEL_DEPTH),
+                By.clickable(true).desc(description),
+            ),
+        ).click()
     }
 
     /** Waits until nothing matches [selector] any more. */

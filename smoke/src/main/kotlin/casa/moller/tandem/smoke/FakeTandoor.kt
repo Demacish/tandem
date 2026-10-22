@@ -50,6 +50,10 @@ import org.junit.rules.ExternalResource
  * recordings and filters the recipe list for `query` like Tandoor's search (case and diacritics
  * folded). While [offline] is set every request is answered by closing the connection: the
  * emulator's airplane mode does not cut localhost, so this is what takes the server away.
+ *
+ * Phase 1b (integration lane): Shakshuka's last step gets two short text timers
+ * ([TIMER_STEP_TEXT]), and `POST /api/cook-log/` answers 201 with the sent entry and records its
+ * body ([cookLogPosts]).
  */
 class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private val server = MockWebServer()
@@ -60,6 +64,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
     /** The `query` of every recipe search (`GET /api/recipe/?query=...`), decoded. */
     val searches: MutableList<String> = CopyOnWriteArrayList()
+
+    /** Phase 1b: the JSON body of every `POST /api/cook-log/` ("Klart!"), in order. */
+    val cookLogPosts: MutableList<String> = CopyOnWriteArrayList()
 
     /** `METHOD path` of the requests that arrived while [offline] was set (all were refused). */
     val requestsWhileOffline: MutableList<String> = CopyOnWriteArrayList()
@@ -163,8 +170,19 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
-            method == "GET" && RECIPE_PATH.matches(path) ->
-                fixture(RECIPES_BY_ID[RECIPE_PATH.find(path)!!.groupValues[1]] ?: "fas1/recipe-deleted-get")
+            method == "GET" && RECIPE_PATH.matches(path) -> {
+                val id = RECIPE_PATH.find(path)!!.groupValues[1]
+                val recording = RECIPES_BY_ID[id] ?: "fas1/recipe-deleted-get"
+                // Phase 1b: the cook-mode recipe gets two short timers in its last step.
+                if (id == TIMER_RECIPE_ID.toString()) fixture(recording, ::withShortTimers) else fixture(recording)
+            }
+
+            // --- Phase 1b (integration lane): "Klart!" from cook mode, sent by the outbox. ---
+            method == "POST" && path == "/api/cook-log/" -> {
+                val body = request.body?.utf8().orEmpty()
+                cookLogPosts += body
+                fixture("fas1/cook-log-create") { recorded -> echoCookLog(recorded, body) }
+            }
 
             method == "POST" && path == "/api/view-log/" -> fixture("fas1/view-log-create")
 
@@ -208,6 +226,27 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     }
 
     /**
+     * Shakshuka ([TIMER_RECIPE_ID]) with [TIMER_STEP_TEXT] added to its last step ("Eggs") and no
+     * step time, so cook mode offers exactly two short text timers there (core:domain's
+     * TimerDetector) and the smoke test can let both ring within a minute.
+     */
+    private fun withShortTimers(body: JsonElement): JsonElement {
+        val recipe = body.jsonObject
+        val steps = recipe.getValue("steps").jsonArray
+        val last = steps.last().jsonObject
+        val instruction = last.getValue("instruction").jsonPrimitive.content
+        val changed = JsonObject(last + mapOf("instruction" to JsonPrimitive("$instruction $TIMER_STEP_TEXT"), "time" to JsonPrimitive(0)))
+        return JsonObject(recipe + mapOf("steps" to JsonArray(steps.dropLast(1) + changed)))
+    }
+
+    /** Tandoor's 201 for `POST /api/cook-log/`: the recorded entry with what the app sent. */
+    private fun echoCookLog(recorded: JsonElement, sent: String): JsonElement {
+        val request = runCatching { json.parseToJsonElement(sent).jsonObject }.getOrDefault(JsonObject(emptyMap()))
+        val echoed = listOf("recipe", "servings", "rating", "comment", "created_at").mapNotNull { key -> request[key]?.let { key to it } }
+        return JsonObject(recorded.jsonObject + echoed.toMap() + mapOf("id" to JsonPrimitive(COOK_LOG_ID + cookLogPosts.size)))
+    }
+
+    /**
      * The recorded response of [name], without hop-by-hop and length headers, with this server's
      * address in place of the recorded one; [transform] may change a JSON body first.
      */
@@ -247,6 +286,14 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
         /** From `08-access-token-create`: this device's own token (id 2). */
         const val DEVICE_TOKEN = "tda_00000000_0000_0000_0000_000000000002"
+
+        /** fas1/recipe-shakshuka: 2 servings, steps "Sauce" and "Eggs" (the timers go in "Eggs"). */
+        const val TIMER_RECIPE_ID = 6
+        const val TIMER_RECIPE_NAME = "Shakshuka"
+
+        /** The two timers (core:domain TimerDetector, English rules): 50 s and 55 s. */
+        const val TIMER_STEP_TEXT = "Let the eggs set for 50 seconds, then warm the bread for 55 seconds."
+        private const val COOK_LOG_ID = 4200
 
         private const val CA_ASSET = "tandem-smoke-test-ca.pem"
         private const val FIXTURE_CHECK = "01-server-settings-no-auth.json"
