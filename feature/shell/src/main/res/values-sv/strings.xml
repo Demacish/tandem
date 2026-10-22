@@ -18,7 +18,6 @@
     <string name="shell_shopping_body">En senare version tar in Tandoors inköpslista: sorterad efter butikens avdelningar, delad med hushållet och användbar offline i butiken.</string>
 
     <!-- "Mer": konto och inställningar. -->
-    <string name="shell_more_section_app">Appen</string>
     <string name="shell_account_signed_in_as">Inloggad som %1$s</string>
     <string name="shell_account_server">Server</string>
     <string name="shell_account_space">Space</string>

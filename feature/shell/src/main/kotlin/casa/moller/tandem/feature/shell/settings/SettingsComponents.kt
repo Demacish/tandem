@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -34,6 +35,8 @@ import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.ui.EmptyState
+import casa.moller.tandem.feature.shell.R
 
 /**
  * Frame of a settings sub-screen: the top bar with a back arrow (also in the detail pane of a
@@ -173,5 +176,16 @@ internal fun StateChip(ok: Boolean, okText: String, notOkText: String, modifier:
         icon = if (ok) TandemIcons.CheckCircle else TandemIcons.Warning,
         tone = if (ok) TandemTone.Success else TandemTone.Warning,
         modifier = modifier,
+    )
+}
+
+/** The detail pane beside the More list before a page is picked (medium and expanded windows). */
+@Composable
+internal fun SettingsPanePlaceholder(modifier: Modifier = Modifier) {
+    EmptyState(
+        icon = TandemIcons.Settings,
+        title = stringResource(R.string.settings_pick_one),
+        body = stringResource(R.string.settings_pick_one_body),
+        modifier = modifier.fillMaxSize(),
     )
 }

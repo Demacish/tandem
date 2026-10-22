@@ -20,9 +20,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,15 +40,18 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.designsystem.component.StatusChip
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
+import casa.moller.tandem.core.designsystem.icon.Restaurant
+import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.server.ServerCompatibility
-import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.AppStatusChip
 import casa.moller.tandem.core.ui.DemoBanner
@@ -59,9 +59,18 @@ import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.shell.AccountSummary
 import casa.moller.tandem.feature.shell.R
+import casa.moller.tandem.feature.shell.SettingsSummary
 import casa.moller.tandem.feature.shell.ShellActions
 import casa.moller.tandem.feature.shell.ShellMode
 import casa.moller.tandem.feature.shell.ShellUiState
+import casa.moller.tandem.feature.shell.navigation.AboutKey
+import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
+import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
+import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
+import casa.moller.tandem.feature.shell.navigation.LanguageKey
+import casa.moller.tandem.feature.shell.navigation.PermissionsKey
+import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
+import casa.moller.tandem.feature.shell.settings.label
 import casa.moller.tandem.feature.shell.ui.GroupDivider
 import casa.moller.tandem.feature.shell.ui.SectionHeader
 import casa.moller.tandem.feature.shell.ui.SettingsGroup
@@ -69,21 +78,26 @@ import casa.moller.tandem.feature.shell.ui.SettingsRow
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
 
 /**
- * "Mer" in Phase 0 (plan 6.2 "Inställningar", design mer_inst_llningar with the corrections in
- * docs/design/README.md): the account with server address and the Tandoor version (checked again
- * by pull-to-refresh), language, theme, About and logout. In demo mode the account card is
- * replaced by the demo banner, and "Reset demo data" puts the sample recipes back. [crashNotice] (the app's "Tandem crashed last time" card, plan
- * 4.2 p7) comes first when there is a crash log.
+ * "Mer" (plan 6.2 "Inställningar", design mer_inst_llningar with the corrections in
+ * docs/design/README.md): the account with server address, space and the Tandoor version (checked
+ * again by pull-to-refresh), the settings sub-screens with a short summary each (Phase 1b: sync
+ * and storage, appearance, cook mode and timers, permissions, language), diagnostics, About and
+ * logout. [onOpenPage] opens a sub-screen's key; on wide windows the shell shows it beside this
+ * list (design mer_inst_llningar_surfplatta) and [selectedPage] is highlighted.
+ *
+ * In demo mode the account card is replaced by the demo banner, and "Reset demo data" puts the
+ * sample recipes back. [crashNotice] (the app's "Tandem crashed last time" card, plan 4.2 p7)
+ * comes first when there is a crash log.
  */
 @Composable
 internal fun MoreScreen(
     state: ShellUiState,
     actions: ShellActions,
     language: AppLanguage,
-    onOpenLanguage: () -> Unit,
-    onOpenAbout: () -> Unit,
+    onOpenPage: (NavKey) -> Unit,
     onConnectTandoor: () -> Unit,
     modifier: Modifier = Modifier,
+    selectedPage: NavKey? = null,
     crashNotice: @Composable () -> Unit = {},
 ) {
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
@@ -124,22 +138,65 @@ internal fun MoreScreen(
                         ShellMode.Unavailable -> Unit
                     }
 
-                    SectionHeader(stringResource(R.string.shell_more_section_app))
+                    // Phase 1b (inställningar lane): the settings sub-screens (plan 6.2 "Inställningar").
+                    SectionHeader(stringResource(R.string.settings_section))
                     SettingsGroup {
+                        SettingsRow(
+                            icon = TandemIcons.Sync,
+                            title = stringResource(R.string.settings_sync),
+                            supporting = syncSummary(state.settings),
+                            onClick = { onOpenPage(SyncSettingsKey) },
+                            selected = selectedPage == SyncSettingsKey,
+                        )
+                        GroupDivider()
+                        SettingsRow(
+                            icon = TandemIcons.DarkMode,
+                            title = stringResource(R.string.settings_appearance),
+                            supporting = stringResource(
+                                if (state.settings.dynamicColor) {
+                                    R.string.settings_appearance_summary_dynamic
+                                } else {
+                                    R.string.settings_appearance_summary_brand
+                                },
+                                stringResource(state.themeMode.label()),
+                            ),
+                            onClick = { onOpenPage(AppearanceSettingsKey) },
+                            selected = selectedPage == AppearanceSettingsKey,
+                        )
+                        GroupDivider()
+                        SettingsRow(
+                            icon = TandemIcons.Restaurant,
+                            title = stringResource(R.string.settings_cooking),
+                            supporting = stringResource(
+                                when (state.settings.timerMode) {
+                                    TimerMode.IN_APP -> R.string.settings_cooking_summary_in_app
+                                    TimerMode.CLOCK_APP -> R.string.settings_cooking_summary_clock_app
+                                },
+                            ),
+                            onClick = { onOpenPage(CookingSettingsKey) },
+                            selected = selectedPage == CookingSettingsKey,
+                        )
+                        GroupDivider()
+                        SettingsRow(
+                            icon = TandemIcons.Shield,
+                            title = stringResource(R.string.settings_permissions),
+                            supporting = stringResource(
+                                if (state.settings.timersNeedAttention) {
+                                    R.string.settings_permissions_summary_attention
+                                } else {
+                                    R.string.settings_permissions_summary_ok
+                                },
+                            ),
+                            onClick = { onOpenPage(PermissionsKey) },
+                            selected = selectedPage == PermissionsKey,
+                        )
+                        GroupDivider()
                         SettingsRow(
                             icon = TandemIcons.Language,
                             title = stringResource(R.string.shell_language),
                             supporting = languageLabel(language),
-                            onClick = onOpenLanguage,
-                        )
-                        GroupDivider()
-                        ThemeSetting(selected = state.themeMode, onSelect = actions::setThemeMode)
-                        GroupDivider()
-                        SettingsRow(
-                            icon = TandemIcons.Info,
-                            title = stringResource(R.string.shell_about),
-                            supporting = stringResource(R.string.shell_about_version, state.appVersion.name),
-                            onClick = onOpenAbout,
+                            onClick = { onOpenPage(LanguageKey) },
+                            selected = selectedPage == LanguageKey,
                         )
                     }
 
@@ -153,6 +210,25 @@ internal fun MoreScreen(
                                 onClick = actions::resetDemoData,
                             )
                         }
+                    }
+
+                    SectionHeader(stringResource(R.string.settings_section_about))
+                    SettingsGroup {
+                        SettingsRow(
+                            icon = TandemIcons.Science,
+                            title = stringResource(R.string.settings_diagnostics),
+                            supporting = stringResource(R.string.settings_diagnostics_summary),
+                            onClick = { onOpenPage(DiagnosticsKey) },
+                            selected = selectedPage == DiagnosticsKey,
+                        )
+                        GroupDivider()
+                        SettingsRow(
+                            icon = TandemIcons.Info,
+                            title = stringResource(R.string.shell_about),
+                            supporting = stringResource(R.string.shell_about_version, state.appVersion.name),
+                            onClick = { onOpenPage(AboutKey) },
+                            selected = selectedPage == AboutKey,
+                        )
                     }
 
                     if (connected != null) {
@@ -325,46 +401,15 @@ private fun CompatibilityChip(compatibility: ServerCompatibility) {
     }
 }
 
-/** Tema: System / Ljust / Mörkt as one segmented choice (plan 6.4). */
+/** "Every 15 minutes", with "all recipes offline" when they are all kept on the phone. */
 @Composable
-private fun ThemeSetting(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    val spacing = TandemTheme.spacing
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = spacing.lg, vertical = spacing.md),
-        verticalArrangement = Arrangement.spacedBy(spacing.md),
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(spacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(TandemIcons.DarkMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Text(
-                text = stringResource(R.string.shell_theme),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() },
-            )
-        }
-        val modes = ThemeMode.entries
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            modes.forEachIndexed { index, mode ->
-                SegmentedButton(
-                    selected = mode == selected,
-                    onClick = { onSelect(mode) },
-                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                    modifier = Modifier.weight(1f).heightIn(min = TandemTheme.sizes.minTouchTarget),
-                    label = { Text(text = stringResource(mode.label())) },
-                )
-            }
-        }
+private fun syncSummary(settings: SettingsSummary): String {
+    val interval = stringResource(settings.syncInterval.label())
+    return if (settings.downloadAllRecipes) {
+        stringResource(R.string.settings_sync_summary, interval, stringResource(R.string.settings_sync_summary_all_offline))
+    } else {
+        interval
     }
-}
-
-private fun ThemeMode.label(): Int = when (this) {
-    ThemeMode.SYSTEM -> R.string.shell_theme_system
-    ThemeMode.LIGHT -> R.string.shell_theme_light
-    ThemeMode.DARK -> R.string.shell_theme_dark
 }
 
 @Composable

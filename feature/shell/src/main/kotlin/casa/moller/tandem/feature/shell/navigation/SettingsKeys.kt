@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shell.navigation
 
+import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 // Phase 1b (grund lane): the settings sub-screens under "Mer" (plan 6.2 "Inställningar",
@@ -29,3 +30,17 @@ data object PermissionsKey : ShellKey
 /** Mer → Diagnostik: versions, cold start and full sync timings, "Exportera logg". */
 @Serializable
 data object DiagnosticsKey : ShellKey
+
+/**
+ * A page opened from the More list (Phase 1b): on wide windows it is a detail pane beside the
+ * list, and picking another row replaces it together with whatever was opened from it (About →
+ * Licenses → a licence text). The tab's first screen ([MoreKey]) is never one.
+ */
+internal val NavKey.isMorePage: Boolean
+    get() = when (this) {
+        AppearanceSettingsKey, CookingSettingsKey, SyncSettingsKey, PermissionsKey, DiagnosticsKey,
+        LanguageKey, AboutKey, LicensesKey, is LicenseTextKey,
+        -> true
+
+        else -> false
+    }

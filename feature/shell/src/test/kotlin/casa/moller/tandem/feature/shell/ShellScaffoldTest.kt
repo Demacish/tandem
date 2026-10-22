@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
@@ -32,22 +33,35 @@ import casa.moller.tandem.core.designsystem.R as DesignR
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.ui.R as UiR
 import casa.moller.tandem.core.ui.language.AppLanguage
+import casa.moller.tandem.feature.shell.navigation.AboutKey
+import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
+import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
+import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
+import casa.moller.tandem.feature.shell.navigation.LanguageKey
+import casa.moller.tandem.feature.shell.navigation.LicensesKey
 import casa.moller.tandem.feature.shell.navigation.MoreKey
+import casa.moller.tandem.feature.shell.navigation.PermissionsKey
 import casa.moller.tandem.feature.shell.navigation.RecipesKey
 import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigation.ShoppingKey
+import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
+import casa.moller.tandem.feature.shell.settings.FixedSettingsPages
+import casa.moller.tandem.feature.shell.settings.SettingsAction
+import casa.moller.tandem.feature.shell.settings.SystemSetting
+import casa.moller.tandem.feature.shell.status.SYNC_HELD_BACK_BANNER_TAG
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/** Behaviour of the shell: adaptive navigation, tabs, "Mer" pages, theme, logout and demo mode. */
+/** Behaviour of the shell: adaptive navigation, tabs, "Mer" and its settings pages, banners, logout and demo mode. */
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = PHONE)
 class ShellScaffoldTest {
@@ -56,6 +70,7 @@ class ShellScaffoldTest {
     val composeRule = createComposeRule()
 
     private val actions = RecordingActions()
+    private val settingsPages = FixedSettingsPages()
     private val languages = mutableListOf<AppLanguage>()
     private var connectClicks = 0
 
@@ -73,6 +88,7 @@ class ShellScaffoldTest {
                     onLanguageSelected = { languages += it },
                     onConnectTandoor = { connectClicks++ },
                     features = PlaceholderShellFeatures(state),
+                    settingsPages = settingsPages,
                 )
             }
         }
@@ -190,12 +206,12 @@ class ShellScaffoldTest {
         tab(R.string.shell_tab_more).performClick()
         composeRule.onNodeWithText(string(R.string.shell_account_signed_in_as, "anna")).assertIsDisplayed()
 
-        composeRule.onNodeWithText(string(R.string.shell_language)).performClick()
+        composeRule.onNodeWithText(string(R.string.shell_language)).performScrollTo().performClick()
         composeRule.onNodeWithText(string(R.string.shell_language_name_sv)).performClick()
         assertEquals(listOf(AppLanguage.SWEDISH), languages)
 
         composeRule.onNode(hasContentDescription(string(casa.moller.tandem.core.designsystem.R.string.tandem_action_back))).performClick()
-        composeRule.onNodeWithText(string(R.string.shell_about)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.shell_about)).performScrollTo().assertIsDisplayed()
         assertEquals(ShellTab.MORE, navigation.currentTab)
     }
 
@@ -208,11 +224,101 @@ class ShellScaffoldTest {
         composeRule.onNode(hasContentDescription(string(R.string.shell_compat_supported_description))).assertExists()
     }
 
+    // --- Phase 1b (inställningar lane): the settings sub-screens, the held-back sync banner ---
+
     @Test
-    fun themeChoiceIsSent() {
+    fun everySettingsRowOpensItsPageAndBackReturnsToMore() {
+        val navigation = navigationAt(ShellTab.MORE)
+        setShell(navigation = navigation)
+        val rows = listOf(
+            R.string.settings_sync to SyncSettingsKey,
+            R.string.settings_appearance to AppearanceSettingsKey,
+            R.string.settings_cooking to CookingSettingsKey,
+            R.string.settings_permissions to PermissionsKey,
+            R.string.shell_language to LanguageKey,
+            R.string.settings_diagnostics to DiagnosticsKey,
+            R.string.shell_about to AboutKey,
+        )
+        rows.forEach { (title, key) ->
+            composeRule.onNode(hasText(string(title)) and hasClickAction()).performScrollTo().performClick()
+            composeRule.waitForIdle()
+            assertEquals(listOf(MoreKey, key), navigation.stackOf(ShellTab.MORE))
+            composeRule.runOnIdle { navigation.goBack() }
+        }
+    }
+
+    @Test
+    fun theThemeIsChangedUnderAppearance() {
+        setShell(navigation = navigationAt(ShellTab.MORE, AppearanceSettingsKey))
+        composeRule.onNodeWithText(string(R.string.shell_theme_dark)).performClick()
+        assertEquals(listOf<SettingsAction>(SettingsAction.SetThemeMode(ThemeMode.DARK)), settingsPages.actions)
+    }
+
+    @Test
+    fun cookModeSettingsLinkToPermissionsAndBack() {
+        val navigation = navigationAt(ShellTab.MORE, CookingSettingsKey)
+        setShell(navigation = navigation)
+        composeRule.onNodeWithText(string(R.string.settings_permissions)).performScrollTo().performClick()
+        assertEquals(listOf(MoreKey, CookingSettingsKey, PermissionsKey), navigation.stackOf(ShellTab.MORE))
+        composeRule.onNode(hasContentDescription(string(casa.moller.tandem.core.designsystem.R.string.tandem_action_back))).performClick()
+        assertEquals(listOf(MoreKey, CookingSettingsKey), navigation.stackOf(ShellTab.MORE))
+    }
+
+    @Test
+    fun aPermissionRowOpensAndroidsSettings() {
+        setShell(navigation = navigationAt(ShellTab.MORE, PermissionsKey))
+        val notifications = string(R.string.settings_permission_notifications)
+        composeRule.onNode(hasContentDescription(string(R.string.settings_permission_open_description, notifications)))
+            .performScrollTo()
+            .performClick()
+        assertEquals(listOf(SystemSetting.NOTIFICATIONS), settingsPages.openedSystemSettings)
+    }
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun onATabletThePagesOpenBesideTheListAndAnotherRowReplacesThem() {
+        val navigation = navigationAt(ShellTab.MORE, AboutKey, LicensesKey)
+        setShell(navigation = navigation)
+        // The list and the open page side by side (design mer_inst_llningar_surfplatta).
+        composeRule.onNodeWithText("Anna Andersson").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.shell_licenses_fonts)).assertIsDisplayed()
+
+        composeRule.onNode(hasText(string(R.string.settings_diagnostics)) and hasClickAction()).performScrollTo().performClick()
+
+        assertEquals(listOf(MoreKey, DiagnosticsKey), navigation.stackOf(ShellTab.MORE))
+        composeRule.onNode(hasText(string(R.string.settings_diagnostics)) and hasClickAction()).assertIsSelected()
+        composeRule.onNodeWithText(string(R.string.settings_diagnostics_export)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun onATabletMoreWithoutAPageShowsAHint() {
         setShell(navigation = navigationAt(ShellTab.MORE))
-        composeRule.onNodeWithText(string(R.string.shell_theme_dark)).performScrollTo().performClick()
-        assertEquals(listOf(ThemeMode.DARK), actions.themes)
+        composeRule.onNodeWithText(string(R.string.settings_pick_one)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aHeldBackSyncIsShownOnEveryTabWithTryAgain() {
+        val navigation = navigationAt(ShellTab.TODAY)
+        setShell(state = CONNECTED_STATE.copy(syncHeldBack = SyncPause.CIRCUIT_BREAKER), navigation = navigation)
+        composeRule.onNodeWithText(string(R.string.sync_breaker_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.sync_retry)).performClick()
+        assertEquals(1, actions.syncRetries)
+
+        tab(R.string.shell_tab_recipes).performClick()
+        composeRule.onNodeWithTag(SYNC_HELD_BACK_BANNER_TAG).assertIsDisplayed()
+    }
+
+    @Test
+    fun aBlockedSyncSaysSo() {
+        setShell(state = CONNECTED_STATE.copy(syncHeldBack = SyncPause.BLOCKED))
+        composeRule.onNodeWithText(string(R.string.sync_blocked_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun logInAgainHidesTheHeldBackBanner() {
+        setShell(state = CONNECTED_STATE.copy(syncHeldBack = SyncPause.BLOCKED, loginExpired = true))
+        composeRule.onNodeWithTag(SYNC_HELD_BACK_BANNER_TAG).assertDoesNotExist()
     }
 
     @Test

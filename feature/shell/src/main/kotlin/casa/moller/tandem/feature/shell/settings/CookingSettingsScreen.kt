@@ -11,7 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import casa.moller.tandem.core.designsystem.component.CalloutCard
-import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemButtonSize
+import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -82,7 +83,12 @@ internal fun CookingSettingsScreen(
                 icon = TandemIcons.Warning,
                 tone = TandemTone.Warning,
                 actions = {
-                    TandemTextButton(text = stringResource(R.string.settings_open_permissions), onClick = onOpenPermissions)
+                    // Filled: a text button's colour is too faint on the warning container (ATF contrast).
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.settings_open_permissions),
+                        onClick = onOpenPermissions,
+                        size = TandemButtonSize.Small,
+                    )
                 },
             )
         }

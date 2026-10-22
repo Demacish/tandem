@@ -17,13 +17,20 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.RecoveryReason
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncProgress
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.model.timer.TimerCapabilities
+import casa.moller.tandem.core.model.timer.TimerMode
+import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.testing.data.FakeServerStatusRepository
+import casa.moller.tandem.core.testing.data.FakeSettingsRepository
+import casa.moller.tandem.core.testing.data.FakeTimerController
 import casa.moller.tandem.core.ui.AppStatus
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,10 +82,13 @@ class ShellViewModelTest {
 
     /** The sync's status; only its pause matters to the shell (the Offline chip). */
     private val syncStatus = MutableStateFlow(SyncStatus.Idle)
+    private val syncRequests = mutableListOf<SyncReason>()
     private val sync = object : SyncRepository {
         override val status: StateFlow<SyncStatus> = syncStatus
 
-        override fun requestSync(reason: SyncReason) = Unit
+        override fun requestSync(reason: SyncReason) {
+            syncRequests += reason
+        }
 
         override fun firstSync(): Flow<SyncProgress> = emptyFlow()
     }
@@ -96,8 +106,22 @@ class ShellViewModelTest {
     /** The server status; its version notice stands for the persisted store (it outlives ViewModels). */
     private val serverStatus = FakeServerStatusRepository()
 
-    private fun newViewModel() =
-        ShellViewModel(sessions, appearance, messages, buildInfo, applicationScope, sync, demoData, serverStatus) { nowMillis }
+    // Phase 1b (inställningar lane): the settings rows' summaries and the timer bar.
+    private val settings = FakeSettingsRepository()
+    private val timers = FakeTimerController()
+
+    private fun newViewModel() = ShellViewModel(
+        sessionRepository = sessions,
+        appearanceRepository = appearance,
+        messages = messages,
+        buildInfo = buildInfo,
+        applicationScope = applicationScope,
+        syncRepository = sync,
+        demoData = demoData,
+        serverStatus = serverStatus,
+        settingsRepository = settings,
+        timerController = timers,
+    ) { nowMillis }
 
     // --- komplettering-3: the in-app notice for a server update (plan B18 fallback) ---
 
@@ -363,22 +387,79 @@ class ShellViewModelTest {
     }
 
     @Test
-    fun themeChoiceIsStored() {
+    fun theThemeFollowsTheStore() {
         val vm = newViewModel()
-        vm.setThemeMode(ThemeMode.DARK)
-        assertEquals(ThemeMode.DARK, appearance.mode.value)
+        // Changed under Settings → Appearance (SettingsViewModel); More shows it in the row's summary.
+        appearance.mode.value = ThemeMode.DARK
         assertEquals(ThemeMode.DARK, vm.uiState.value.themeMode)
     }
 
+    // --- Phase 1b (inställningar lane): settings summaries, the held-back sync, the timer bar ---
+
     @Test
-    fun themeThatCannotBeSavedIsReported() = runTest {
-        appearance.result = Outcome.Failure(TandemError.Unknown("tandem.data.settings-not-saved"))
+    fun theSettingsRowsSummariseTheStoredSettings() {
         val vm = newViewModel()
-        messages.messages.test {
-            vm.setThemeMode(ThemeMode.LIGHT)
-            assertEquals(ShellMessage.SETTINGS_NOT_SAVED, awaitItem())
+        assertEquals(SettingsSummary(), vm.uiState.value.settings)
+
+        settings.state.value = settings.state.value.copy(
+            dynamicColor = true,
+            timerMode = TimerMode.CLOCK_APP,
+            syncInterval = SyncInterval.SIX_HOURS,
+            downloadAllRecipes = true,
+        )
+        timers.setCapabilities(TimerCapabilities.AllGranted.copy(exactAlarmsAllowed = false, exactAlarmsRequestable = true))
+
+        assertEquals(
+            SettingsSummary(
+                dynamicColor = true,
+                timerMode = TimerMode.CLOCK_APP,
+                syncInterval = SyncInterval.SIX_HOURS,
+                downloadAllRecipes = true,
+                timersNeedAttention = true,
+            ),
+            vm.uiState.value.settings,
+        )
+    }
+
+    @Test
+    fun aBlockedOrBreakerPausedSyncIsShownWithTryAgain() {
+        val vm = newViewModel()
+        syncStatus.value = SyncStatus.Idle.copy(pause = SyncPause.BLOCKED)
+        assertEquals(SyncPause.BLOCKED, vm.uiState.value.syncHeldBack)
+        syncStatus.value = SyncStatus.Idle.copy(pause = SyncPause.CIRCUIT_BREAKER)
+        assertEquals(SyncPause.CIRCUIT_BREAKER, vm.uiState.value.syncHeldBack)
+
+        vm.retrySync()
+
+        assertEquals(listOf(SyncReason.USER_REFRESH), syncRequests)
+    }
+
+    @Test
+    fun otherPausesAndDemoModeHaveNoHeldBackBanner() {
+        val vm = newViewModel()
+        listOf(SyncPause.OFFLINE, SyncPause.UNAUTHORIZED, SyncPause.SAFE_MODE, SyncPause.IMPORT_RUNNING).forEach { pause ->
+            syncStatus.value = SyncStatus.Idle.copy(pause = pause)
+            assertNull(pause.name, vm.uiState.value.syncHeldBack)
         }
-        assertEquals(ThemeMode.SYSTEM, vm.uiState.value.themeMode)
+        syncStatus.value = SyncStatus.Idle.copy(pause = SyncPause.CIRCUIT_BREAKER)
+        sessions.state.value = Session.Demo
+        assertNull(vm.uiState.value.syncHeldBack)
+        vm.retrySync()
+        assertTrue("no sync in demo mode", syncRequests.isEmpty())
+    }
+
+    @Test
+    fun theTimerBarFollowsTheTimersAndStopsARingingOne() = runTest {
+        val vm = newViewModel()
+        timers.start("Pasta", 10.minutes, recipeId = 7, stepIndex = 2)
+        assertEquals(listOf("Pasta"), vm.uiState.value.timers.map { it.label })
+
+        timers.advanceTimeBy(10.minutes)
+        assertEquals(TimerState.RINGING, vm.uiState.value.timers.single().state)
+
+        vm.stopTimer(vm.uiState.value.timers.single().id)
+
+        assertEquals(TimerState.FINISHED, vm.uiState.value.timers.single().state)
     }
 
     // --- Version check on resume (plan 3.6 point 3) ---

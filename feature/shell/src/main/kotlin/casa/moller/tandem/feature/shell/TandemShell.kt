@@ -67,10 +67,14 @@ import casa.moller.tandem.feature.shell.more.LicenseTextScreen
 import casa.moller.tandem.feature.shell.more.LicensesScreen
 import casa.moller.tandem.feature.shell.more.MoreScreen
 import casa.moller.tandem.feature.shell.navigation.AboutKey
+import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
+import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
+import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
 import casa.moller.tandem.feature.shell.navigation.LanguageKey
 import casa.moller.tandem.feature.shell.navigation.LicenseTextKey
 import casa.moller.tandem.feature.shell.navigation.LicensesKey
 import casa.moller.tandem.feature.shell.navigation.MoreKey
+import casa.moller.tandem.feature.shell.navigation.PermissionsKey
 import casa.moller.tandem.feature.shell.navigation.RecipesKey
 import casa.moller.tandem.feature.shell.navigation.RouteShellFeatures
 import casa.moller.tandem.feature.shell.navigation.SafeModeInfoKey
@@ -78,9 +82,14 @@ import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigation.ShoppingKey
+import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
+import casa.moller.tandem.feature.shell.navigation.isMorePage
 import casa.moller.tandem.feature.shell.navigation.rememberShellNavigationState
+import casa.moller.tandem.feature.shell.settings.RouteSettingsPages
+import casa.moller.tandem.feature.shell.settings.SettingsPages
+import casa.moller.tandem.feature.shell.settings.SettingsPanePlaceholder
 import casa.moller.tandem.feature.shell.status.ServerNotice
 import casa.moller.tandem.feature.shell.status.ServerStatusFrame
 import casa.moller.tandem.feature.shell.status.serverNotice
@@ -211,6 +220,7 @@ internal fun ShellScaffold(
     onConnectTandoor: () -> Unit,
     features: ShellFeatures,
     modifier: Modifier = Modifier,
+    settingsPages: SettingsPages = RouteSettingsPages,
     navigationSuiteType: NavigationSuiteType = shellNavigationSuiteType(currentShellWindowSize()),
     crashNotice: @Composable () -> Unit = {},
     onLogInAgain: (serverUrl: String) -> Unit = {},
@@ -313,38 +323,61 @@ internal fun ShellScaffold(
             }
             entry<WeekKey> { placeholder(ShellTab.WEEK) }
             entry<ShoppingKey> { placeholder(ShellTab.SHOPPING) }
-            entry<MoreKey> {
+            // More is the list pane of a list-detail scene (Phase 1b, design
+            // mer_inst_llningar_surfplatta): on medium/expanded windows its pages open beside it.
+            entry<MoreKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { SettingsPanePlaceholder() })) {
                 MoreScreen(
                     state = state,
                     actions = actions,
                     language = language,
-                    onOpenLanguage = { navigation.navigate(LanguageKey) },
-                    onOpenAbout = { navigation.navigate(AboutKey) },
+                    // A page picked in the list replaces the open one (and whatever was opened from it).
+                    onOpenPage = { page -> navigation.navigate(page, replace = { it.isMorePage }) },
                     onConnectTandoor = onConnectTandoor,
+                    selectedPage = navigation.stackOf(ShellTab.MORE).getOrNull(1),
                     crashNotice = crashNotice,
                 )
             }
-            entry<LanguageKey> {
+            // --- Phase 1b (inställningar lane): the settings sub-screens. ---
+            entry<SyncSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                settingsPages.Sync(onNavigateBack = { navigation.goBack() })
+            }
+            entry<AppearanceSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                settingsPages.Appearance(onNavigateBack = { navigation.goBack() })
+            }
+            entry<CookingSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                settingsPages.Cooking(
+                    onNavigateBack = { navigation.goBack() },
+                    onOpenPermissions = { navigation.navigate(PermissionsKey) },
+                    onOpenAppearance = { navigation.navigate(AppearanceSettingsKey) },
+                )
+            }
+            entry<PermissionsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                settingsPages.Permissions(onNavigateBack = { navigation.goBack() })
+            }
+            entry<DiagnosticsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                settingsPages.Diagnostics(onNavigateBack = { navigation.goBack() })
+            }
+            entry<LanguageKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 LanguageScreen(
                     language = language,
                     onLanguageSelected = onLanguageSelected,
                     onNavigateBack = { navigation.goBack() },
                 )
             }
-            entry<AboutKey> {
+            entry<AboutKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 AboutScreen(
                     version = state.appVersion,
                     onOpenLicenses = { navigation.navigate(LicensesKey) },
                     onNavigateBack = { navigation.goBack() },
                 )
             }
-            entry<LicensesKey> {
+            entry<LicensesKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 LicensesScreen(
                     onOpenLicense = { navigation.navigate(LicenseTextKey(it)) },
                     onNavigateBack = { navigation.goBack() },
                 )
             }
-            entry<LicenseTextKey> { key ->
+            entry<LicenseTextKey>(metadata = ListDetailSceneStrategy.detailPane()) { key ->
                 LicenseTextScreen(license = key.license, onNavigateBack = { navigation.goBack() })
             }
             // --- Phase 1 (idag-ui lane): what safe mode means (feature #2), from the banner. ---
@@ -368,6 +401,7 @@ internal fun ShellScaffold(
                 onCheckAgain = actions::refreshServerInfo,
                 onLogInAgain = { (state.mode as? ShellMode.Connected)?.let { onLogInAgain(it.account.serverUrl) } },
                 onDismissServerUpdate = actions::dismissServerUpdate,
+                onRetrySync = actions::retrySync,
             ) {
                 ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
             }

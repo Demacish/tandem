@@ -5,10 +5,7 @@
     <string name="settings_section_about">Om och hjälp</string>
     <string name="settings_sync">Synk och lagring</string>
     <string name="settings_sync_summary">%1$s · %2$s</string>
-    <plurals name="settings_sync_summary_downloaded">
-        <item quantity="one">%1$d av %2$d recept offline</item>
-        <item quantity="other">%1$d av %2$d recept offline</item>
-    </plurals>
+    <string name="settings_sync_summary_all_offline">alla recept offline</string>
     <string name="settings_appearance">Utseende</string>
     <string name="settings_appearance_summary_dynamic">%1$s · färger från bakgrundsbilden</string>
     <string name="settings_appearance_summary_brand">%1$s · Tandems färger</string>
@@ -22,18 +19,6 @@
     <string name="settings_diagnostics_summary">Versioner, starttid och ”Exportera logg”</string>
     <string name="settings_pick_one">Välj en inställning</string>
     <string name="settings_pick_one_body">Välj något till vänster för att ändra det här.</string>
-    <string name="settings_account_features">Funktioner på servern</string>
-    <string name="settings_feature_households">Hushåll</string>
-    <string name="settings_feature_cook_log">Koklogg</string>
-    <string name="settings_feature_view_log">Nyligen visade</string>
-    <string name="settings_feature_share_link">Delningslänkar</string>
-    <string name="settings_feature_ai_import">AI-import</string>
-    <string name="settings_feature_auto_plan">Planera veckan automatiskt</string>
-    <string name="settings_feature_ical">Kalenderlänk</string>
-    <string name="settings_feature_inventory">Skafferi</string>
-    <string name="settings_feature_recipe_index">Snabbt receptindex</string>
-    <string name="settings_on">På</string>
-    <string name="settings_off">Av</string>
 
     <!-- Utseende -->
     <string name="settings_theme_body">Gäller hela appen direkt.</string>

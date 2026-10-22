@@ -20,7 +20,6 @@
     <string name="shell_shopping_body">A later version brings Tandoor’s shopping list: sorted by store aisle, shared with your household and usable offline in the store.</string>
 
     <!-- "More": account and settings. -->
-    <string name="shell_more_section_app">App</string>
     <string name="shell_account_signed_in_as">Signed in as %1$s</string>
     <string name="shell_account_server">Server</string>
     <string name="shell_account_space">Space</string>

@@ -10,13 +10,18 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.data.settings.AppearanceRepository
+import casa.moller.tandem.core.data.settings.SettingsRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
+import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerVersionChange
-import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.model.sync.SyncReason
+import casa.moller.tandem.core.model.timer.CookTimer
+import casa.moller.tandem.core.model.timer.TimerCapabilities
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -45,13 +50,17 @@ interface ShellActions {
     /** Logs out; [revokeToken] also deletes this device's token on the server (plan 4.2 step 4). */
     fun logout(revokeToken: Boolean)
 
-    fun setThemeMode(mode: ThemeMode)
-
     /** "Reset demo data" in demo mode: the sample recipes as they were shipped. */
     fun resetDemoData()
 
     /** Closes the "Tandoor was updated" banner ([ShellUiState.serverUpdatedTo]). */
     fun dismissServerUpdate()
+
+    /** "Try again" on the banner of a held-back sync ([ShellUiState.syncHeldBack]): a sync the user asked for. */
+    fun retrySync()
+
+    /** "Stop" on the timer bar: the ringing timer [id] stops ringing. */
+    fun stopTimer(id: Long)
 }
 
 /**
@@ -68,13 +77,15 @@ interface ShellActions {
 @HiltViewModel
 class ShellViewModel internal constructor(
     private val sessionRepository: SessionRepository,
-    private val appearanceRepository: AppearanceRepository,
+    appearanceRepository: AppearanceRepository,
     private val messages: ShellMessageQueue,
     buildInfo: AppBuildInfo,
     private val applicationScope: CoroutineScope,
-    syncRepository: SyncRepository,
+    private val syncRepository: SyncRepository,
     private val demoData: DemoDataRepository,
     private val serverStatus: ServerStatusRepository,
+    settingsRepository: SettingsRepository,
+    private val timerController: TimerController,
     /** Monotonic time in milliseconds, for the resume throttle. */
     private val elapsedMillis: () -> Long,
 ) : ViewModel(),
@@ -90,6 +101,8 @@ class ShellViewModel internal constructor(
         syncRepository: SyncRepository,
         demoData: DemoDataRepository,
         serverStatus: ServerStatusRepository,
+        settingsRepository: SettingsRepository,
+        timerController: TimerController,
     ) : this(
         sessionRepository = sessionRepository,
         appearanceRepository = appearanceRepository,
@@ -99,6 +112,8 @@ class ShellViewModel internal constructor(
         syncRepository = syncRepository,
         demoData = demoData,
         serverStatus = serverStatus,
+        settingsRepository = settingsRepository,
+        timerController = timerController,
         elapsedMillis = { System.nanoTime() / NANOS_PER_MILLI },
     )
 
@@ -119,13 +134,20 @@ class ShellViewModel internal constructor(
     /** The server update shown in the banner until the user closes it (already marked as shown). */
     private val serverUpdate = MutableStateFlow<ServerVersionChange?>(null)
 
+    // Phase 1b (inställningar lane): the settings rows' summaries and the timer bar on every tab.
+    private val phase1b = combine(
+        settingsRepository.settings,
+        timerController.capabilities,
+        timerController.timers,
+    ) { settings, capabilities, timers -> Phase1b(settings.toSummary(capabilities), timers) }
+
     val uiState: StateFlow<ShellUiState> = combine(
-        session,
-        appearanceRepository.themeMode,
+        combine(session, appearanceRepository.themeMode) { current, theme -> current to theme },
         operations,
         syncPause,
         serverUpdate,
-    ) { current, theme, ops, pause, update ->
+        phase1b,
+    ) { (current, theme), ops, pause, update, extras ->
         val mode = current.toShellMode()
         ShellUiState(
             mode = mode,
@@ -140,6 +162,10 @@ class ShellViewModel internal constructor(
             resettingDemo = ops.resettingDemo,
             // Only for the account that is shown, and never next to the safe mode banner.
             serverUpdatedTo = update?.newVersion?.takeIf { mode is ShellMode.Connected && current.isTested },
+            settings = extras.settings,
+            // Only for the account that is shown: never in demo mode or while switching.
+            syncHeldBack = pause?.takeIf { it in HELD_BACK && mode is ShellMode.Connected },
+            timers = extras.timers,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
@@ -203,10 +229,13 @@ class ShellViewModel internal constructor(
         }
     }
 
-    override fun setThemeMode(mode: ThemeMode) {
-        viewModelScope.launch {
-            if (appearanceRepository.setThemeMode(mode) is Outcome.Failure) messages.post(ShellMessage.SETTINGS_NOT_SAVED)
-        }
+    override fun retrySync() {
+        if (session.value !is Session.LoggedIn) return
+        syncRepository.requestSync(SyncReason.USER_REFRESH)
+    }
+
+    override fun stopTimer(id: Long) {
+        viewModelScope.launch { timerController.stopRinging(id) }
     }
 
     override fun resetDemoData() {
@@ -226,6 +255,8 @@ class ShellViewModel internal constructor(
         val resettingDemo: Boolean = false,
     )
 
+    private data class Phase1b(val settings: SettingsSummary, val timers: List<CookTimer>)
+
     /** Logged in to a server that runs a tested version. */
     private val Session?.isTested: Boolean
         get() = this is Session.LoggedIn && compatibility == ServerCompatibility.SUPPORTED
@@ -234,6 +265,17 @@ class ShellViewModel internal constructor(
         /** Plan 3.6 point 3: at most one automatic version check per 15 minutes on resume. */
         const val RESUME_CHECK_INTERVAL_MILLIS: Long = 15 * 60 * 1000L
         private const val NANOS_PER_MILLI = 1_000_000L
+
+        /** Pauses the shell shows as "held back" with "Try again" (plan 4.1). */
+        private val HELD_BACK = setOf(SyncPause.BLOCKED, SyncPause.CIRCUIT_BREAKER)
+
+        private fun AppSettings.toSummary(capabilities: TimerCapabilities) = SettingsSummary(
+            dynamicColor = dynamicColor,
+            timerMode = timerMode,
+            syncInterval = syncInterval,
+            downloadAllRecipes = downloadAllRecipes,
+            timersNeedAttention = capabilities.alarmMayBeSilent || capabilities.alarmMayBeLate,
+        )
 
         fun messageFor(result: Outcome<TokenRevocation>): ShellMessage = when (result) {
             is Outcome.Failure -> ShellMessage.LOGOUT_FAILED

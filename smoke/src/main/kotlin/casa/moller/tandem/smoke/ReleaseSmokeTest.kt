@@ -102,7 +102,9 @@ class ReleaseSmokeTest {
         app.waitFor(By.text(ABOUT_TEXT))
 
         app.device.pressBack()
-        app.scrollTo(By.text(VERSION_TEXT))
+        // More keeps its scroll position, and About sits below the settings rows (0.2.0): the
+        // account card with the version may be above or below.
+        app.findInList(By.text(VERSION_TEXT))
         app.capture("password-restored-after-process-death")
 
         // Cold start: the account and the Tink-encrypted device token are read back from storage.

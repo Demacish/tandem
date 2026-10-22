@@ -5,7 +5,11 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.model.timer.CookTimer
+import casa.moller.tandem.core.model.timer.TimerMode
 
 /** What the shell shows; built by [ShellViewModel] from the session and the settings. */
 data class ShellUiState(
@@ -31,6 +35,17 @@ data class ShellUiState(
      * (plan B18): the shell shows "Tandoor was updated to 2.6.15" once, until it is closed.
      */
     val serverUpdatedTo: String? = null,
+    // --- Phase 1b (inställningar lane) ---
+    /** What the settings rows under "More" summarise. */
+    val settings: SettingsSummary = SettingsSummary(),
+    /**
+     * The sync of the shown account is held back ([SyncPause.BLOCKED] or
+     * [SyncPause.CIRCUIT_BREAKER], plan 4.1): the shell shows a banner with "Try again". Null
+     * otherwise, and always in demo mode.
+     */
+    val syncHeldBack: SyncPause? = null,
+    /** Every timer the app follows (running, paused, ringing, finished), for the timer bar on every tab. */
+    val timers: List<CookTimer> = emptyList(),
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo
@@ -38,6 +53,20 @@ data class ShellUiState(
     val isSafeMode: Boolean
         get() = (mode as? ShellMode.Connected)?.account?.compatibility?.isSafeMode == true
 }
+
+/**
+ * The settings under "More" in a few words (Phase 1b): each row's supporting text.
+ *
+ * @property timersNeedAttention the system may let a timer ring late or silently
+ *   (`TimerCapabilities.alarmMayBeLate` / `alarmMayBeSilent`); the permissions row says so.
+ */
+data class SettingsSummary(
+    val dynamicColor: Boolean = false,
+    val timerMode: TimerMode = TimerMode.IN_APP,
+    val syncInterval: SyncInterval = SyncInterval.DEFAULT,
+    val downloadAllRecipes: Boolean = false,
+    val timersNeedAttention: Boolean = false,
+)
 
 sealed interface ShellMode {
     /** Logged in to a Tandoor server. */

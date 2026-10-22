@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.shell.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
@@ -130,7 +132,8 @@ internal fun GroupDivider() {
 
 /**
  * One tappable settings row: icon, title, optional supporting text and a chevron. TalkBack reads
- * it as one button.
+ * it as one button. [selected] marks the page shown beside the list on wide windows (Phase 1b,
+ * design mer_inst_llningar_surfplatta): a tinted background, and TalkBack says "selected".
  */
 @Composable
 internal fun SettingsRow(
@@ -139,32 +142,40 @@ internal fun SettingsRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     supporting: String? = null,
+    selected: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
+            .then(if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier)
+            .semantics { this.selected = selected }
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = spacing.lg, vertical = spacing.md),
         horizontalArrangement = Arrangement.spacedBy(spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        val colors = MaterialTheme.colorScheme
+        Icon(icon, contentDescription = null, tint = if (selected) colors.onSecondaryContainer else colors.primary)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (selected) colors.onSecondaryContainer else colors.onSurface,
+            )
             if (supporting != null) {
                 Text(
                     text = supporting,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant,
                 )
             }
         }
         Icon(
             imageVector = TandemIcons.ArrowForward,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (selected) colors.onSecondaryContainer else colors.onSurfaceVariant,
             modifier = Modifier.size(TandemTheme.sizes.iconSmall + TandemTheme.spacing.xs),
         )
     }

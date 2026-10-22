@@ -8,10 +8,7 @@
     <string name="settings_section_about">About and help</string>
     <string name="settings_sync">Sync and storage</string>
     <string name="settings_sync_summary">%1$s · %2$s</string>
-    <plurals name="settings_sync_summary_downloaded">
-        <item quantity="one">%1$d of %2$d recipe offline</item>
-        <item quantity="other">%1$d of %2$d recipes offline</item>
-    </plurals>
+    <string name="settings_sync_summary_all_offline">all recipes offline</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_appearance_summary_dynamic">%1$s · colours from your wallpaper</string>
     <string name="settings_appearance_summary_brand">%1$s · Tandem colours</string>
@@ -25,18 +22,6 @@
     <string name="settings_diagnostics_summary">Versions, start time and “Export log”</string>
     <string name="settings_pick_one">Pick a setting</string>
     <string name="settings_pick_one_body">Choose something on the left to change it here.</string>
-    <string name="settings_account_features">Features on this server</string>
-    <string name="settings_feature_households">Households</string>
-    <string name="settings_feature_cook_log">Cook log</string>
-    <string name="settings_feature_view_log">Recently viewed</string>
-    <string name="settings_feature_share_link">Share links</string>
-    <string name="settings_feature_ai_import">AI import</string>
-    <string name="settings_feature_auto_plan">Plan the week automatically</string>
-    <string name="settings_feature_ical">Calendar link</string>
-    <string name="settings_feature_inventory">Pantry</string>
-    <string name="settings_feature_recipe_index">Fast recipe index</string>
-    <string name="settings_on">On</string>
-    <string name="settings_off">Off</string>
 
     <!-- Appearance (plan 6.4) -->
     <string name="settings_theme_body">Applies to the whole app at once.</string>

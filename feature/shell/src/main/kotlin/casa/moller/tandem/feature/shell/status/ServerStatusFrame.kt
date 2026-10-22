@@ -73,7 +73,8 @@ internal val ShellUiState.serverNotice: ServerNotice?
 
 /**
  * The hook between the shell and the server status UI of core:ui (docs/BYGGE.md "Serverstatus"):
- * the "Log in again" banner after Tandoor refused the token, the one-time "Tandoor was updated"
+ * the "Log in again" banner after Tandoor refused the token, the banner of a sync that is held
+ * back (Phase 1b: blocked or circuit breaker, [SyncHeldBackBanner]), the one-time "Tandoor was updated"
  * banner (plan B18, when no notification could be posted), the safe mode banner on top of the tab
  * content, and the blocking notice for a server that is too old in place of every tab but "More"
  * (where the user can log out or change server).
@@ -90,27 +91,34 @@ internal fun ServerStatusFrame(
     onCheckAgain: () -> Unit,
     onLogInAgain: () -> Unit,
     onDismissServerUpdate: () -> Unit = {},
+    onRetrySync: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val notice = state.serverNotice
     val current = navigation.currentKey
     val bannersAllowed = (current as? FullScreenDestination)?.hidesNavigationOnAllWidths != true
     val showLoginExpired = state.loginExpired && bannersAllowed
+    // Phase 1b (inställningar lane): a held-back sync; "Log in again" says more when both apply.
+    val heldBack = state.syncHeldBack?.takeIf { bannersAllowed && !showLoginExpired }
     val showSafeMode = notice is ServerNotice.SafeMode && current != SafeModeInfoKey && bannersAllowed
     // Never next to a safe mode or "too old" notice: one message per version change.
     val updatedTo = state.serverUpdatedTo?.takeIf { bannersAllowed && notice == null }
-    val showBanner = showLoginExpired || showSafeMode || updatedTo != null
+    val showBanner = showLoginExpired || heldBack != null || showSafeMode || updatedTo != null
     val bannerInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
     Column(modifier = Modifier.fillMaxSize()) {
         // The topmost banner keeps its text clear of the status bar.
         if (showLoginExpired) {
             LoginExpiredBanner(onLogInAgain = onLogInAgain, windowInsets = bannerInsets)
         }
+        if (heldBack != null) {
+            SyncHeldBackBanner(pause = heldBack, onRetry = onRetrySync, windowInsets = bannerInsets)
+        }
+        val belowTop = showLoginExpired || heldBack != null
         if (updatedTo != null) {
             ServerUpdatedBanner(
                 version = updatedTo,
                 onDismiss = onDismissServerUpdate,
-                windowInsets = if (showLoginExpired) WindowInsets(0) else bannerInsets,
+                windowInsets = if (belowTop) WindowInsets(0) else bannerInsets,
             )
         }
         if (notice is ServerNotice.SafeMode && showSafeMode) {
@@ -118,7 +126,7 @@ internal fun ServerStatusFrame(
                 version = notice.version,
                 compatibility = notice.compatibility,
                 onClick = onOpenSafeModeInfo,
-                windowInsets = if (showLoginExpired) WindowInsets(0) else bannerInsets,
+                windowInsets = if (belowTop || updatedTo != null) WindowInsets(0) else bannerInsets,
             )
         }
         Box(

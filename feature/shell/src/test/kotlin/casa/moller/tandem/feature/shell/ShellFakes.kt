@@ -111,7 +111,6 @@ internal class FakeAppearanceRepository : AppearanceRepository {
 
 internal class RecordingActions : ShellActions {
     val logouts = mutableListOf<Boolean>()
-    val themes = mutableListOf<ThemeMode>()
     var refreshes = 0
 
     override fun refreshServerInfo() {
@@ -124,10 +123,6 @@ internal class RecordingActions : ShellActions {
         logouts += revokeToken
     }
 
-    override fun setThemeMode(mode: ThemeMode) {
-        themes += mode
-    }
-
     var demoResets = 0
 
     override fun resetDemoData() {
@@ -138,6 +133,18 @@ internal class RecordingActions : ShellActions {
 
     override fun dismissServerUpdate() {
         serverUpdateDismissals++
+    }
+
+    // Phase 1b (inställningar lane)
+    var syncRetries = 0
+    val stoppedTimers = mutableListOf<Long>()
+
+    override fun retrySync() {
+        syncRetries++
+    }
+
+    override fun stopTimer(id: Long) {
+        stoppedTimers += id
     }
 }
 
