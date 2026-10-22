@@ -31,6 +31,10 @@ if (releaseSigningEnabled) {
 // block its updates with a signature mismatch. Real tag releases never set this property.
 val releaseDryRun = providers.gradleProperty("tandem.dryRun").orNull.toBoolean()
 
+// --- ci lane (Fas 1b): baseline profile generation (benchmark.yml, docs/BYGGE.md "Prestanda").
+// The generator needs real class names, so only that CI run builds "minified" without R8.
+val baselineProfileGeneration = providers.gradleProperty("tandem.baselineProfile.generate").orNull.toBoolean()
+
 // Optional pre-filled server address for LOCAL or private sideload builds only (plan 4.5: no
 // server is hard-coded). Empty unless set with -Ptandem.defaultServerUrl=https://... or in
 // ~/.gradle/gradle.properties; play builds never get one, and release.yml refuses to
@@ -123,6 +127,11 @@ android {
             versionNameSuffix = "-minified"
             // Library modules only have debug and release.
             matchingFallbacks += listOf("release")
+            // ci lane (Fas 1b): see baselineProfileGeneration above. Never set for the smoke test.
+            if (baselineProfileGeneration) {
+                isMinifyEnabled = false
+                isShrinkResources = false
+            }
         }
     }
 
@@ -175,6 +184,9 @@ dependencies {
     implementation(libs.bundles.navigation3)
     implementation(libs.bundles.compose.adaptive)
     implementation(libs.kotlinx.coroutines.android)
+    // --- ci lane (Fas 1b): installs the baseline profile (app/src/main/baseline-prof.txt) on
+    // sideloaded installs, where no store compiles it ahead of time. ---
+    implementation(libs.androidx.profileinstaller)
 
     // --- fix-bygg (0.1.0 review): ATF accessibility checks (assertAccessible) in the UI tests. ---
     testImplementation(projects.core.testing)

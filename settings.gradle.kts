@@ -44,3 +44,6 @@ include(":core:timer")
 include(":feature:recipes")
 include(":feature:home")
 include(":feature:cook")
+
+// --- ci lane (Fas 1b): Macrobenchmark and the baseline profile generator (benchmark.yml). ---
+include(":benchmark")

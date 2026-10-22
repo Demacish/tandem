@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        ci lane (Fas 1b): Macrobenchmark and the baseline profile generator (:benchmark) read the
+        minified build's traces and profiles from the shell. Only this CI build type is
+        profileable; release builds are not.
+    -->
+    <application>
+        <profileable android:shell="true" />
+    </application>
+</manifest>

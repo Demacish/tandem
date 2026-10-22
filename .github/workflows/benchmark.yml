@@ -1,0 +1,182 @@
+name: Benchmark
+
+# Macrobenchmark and the baseline profile (ci lane, Fas 1b; docs/BYGGE.md "Prestanda"), on an
+# Android emulator, in demo mode (no server, no network):
+# - "Benchmarks": cold start into Today (StartupMode.COLD, 10 iterations, with and without the
+#   baseline profile) and flinging the recipe list; medians in the job summary.
+# - "Baseline profile": BaselineProfileGenerator against a minified build without obfuscation;
+#   the "baseline-profile" artifact holds baseline-prof.txt to commit as
+#   app/src/main/baseline-prof.txt.
+#
+# Emulator numbers (software GPU, 2 vCPU, shared runner) are a TREND only. The number that counts
+# (plan §10: cold start < 1.5 s) comes from a phone: Mer -> Diagnostik shows the app's own
+# measurement of its last cold start.
+on:
+  schedule:
+    - cron: "17 3 * * 1" # weekly, Monday 03:17 UTC
+  workflow_dispatch:
+    inputs:
+      benchmarks:
+        description: "Run the benchmarks"
+        type: boolean
+        default: true
+      profile:
+        description: "Generate the baseline profile"
+        type: boolean
+        default: true
+  push:
+    # Changes to the benchmarks themselves are tried on their branch (workflow_dispatch only
+    # works for workflows that are already on main).
+    branches: ["**"]
+    paths:
+      - ".github/workflows/benchmark.yml"
+      - "benchmark/**"
+      - "scripts/ci/benchmark-*"
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: ${{ matrix.mode == 'benchmarks' && 'Benchmarks' || 'Baseline profile' }} (API 36 emulator)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [benchmarks, profile]
+    steps:
+      - name: Skip what was not asked for
+        id: wanted
+        env:
+          MODE: ${{ matrix.mode }}
+          WANT_BENCHMARKS: ${{ github.event_name != 'workflow_dispatch' || inputs.benchmarks }}
+          WANT_PROFILE: ${{ github.event_name != 'workflow_dispatch' || inputs.profile }}
+        run: |
+          if [ "$MODE" = benchmarks ]; then want="$WANT_BENCHMARKS"; else want="$WANT_PROFILE"; fi
+          echo "run=${want}" >> "$GITHUB_OUTPUT"
+          echo "${MODE}: ${want}"
+
+      - name: Checkout
+        if: steps.wanted.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate Gradle wrapper
+        if: steps.wanted.outputs.run == 'true'
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+
+      - name: Set up JDK 21 (Temurin)
+        if: steps.wanted.outputs.run == 'true'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        if: steps.wanted.outputs.run == 'true'
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      - name: Restore Gradle cache (read only)
+        if: steps.wanted.outputs.run == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      # Built before the emulator starts, and Gradle is stopped afterwards: the runner cannot hold
+      # Gradle and an emulator at the same time (as in smoke.yml).
+      - name: Build the minified app and the benchmark APK
+        if: steps.wanted.outputs.run == 'true'
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          extra=""
+          [ "$MODE" = profile ] && extra="-Ptandem.baselineProfile.generate=true"
+          ./gradlew --stacktrace $extra :app:assembleSideloadMinified :benchmark:assembleMinified
+          ./gradlew --stop
+
+      - name: Free disk space for the emulator
+        if: steps.wanted.outputs.run == 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell || true
+          df -h / | tail -n 1
+
+      - name: Enable KVM
+        if: steps.wanted.outputs.run == 'true'
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run on an emulator
+        if: steps.wanted.outputs.run == 'true'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          BENCHMARK_OUT: benchmark-results
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 3072M
+          disk-size: 4096M
+          enable-hw-keyboard: true
+          # Animations stay on: the benchmarks measure what a user sees.
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/ci/benchmark-run.sh ${{ matrix.mode }}
+
+      - name: Job summary
+        if: ${{ !cancelled() && steps.wanted.outputs.run == 'true' }}
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          if [ "$MODE" = benchmarks ]; then
+            python3 -I scripts/ci/benchmark-summary.py benchmark-results/device >> "$GITHUB_STEP_SUMMARY" || true
+          elif [ -s benchmark-results/baseline-prof.txt ]; then
+            new=benchmark-results/baseline-prof.txt
+            committed=app/src/main/baseline-prof.txt
+            {
+              echo "### Baseline profile"
+              echo
+              echo "Generated: $(wc -l < "$new") rules ($(grep -c '^L' "$new" || true) classes) from a cold start, the recipe list and a recipe."
+              if [ -f "$committed" ]; then
+                echo "Committed ($committed): $(wc -l < "$committed") rules; $(comm -13 <(sort "$committed") <(sort "$new") | wc -l) new, $(comm -23 <(sort "$committed") <(sort "$new") | wc -l) gone."
+              else
+                echo "Nothing committed yet: download the **baseline-profile** artifact and commit it as \`$committed\`."
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the baseline profile
+        if: ${{ !cancelled() && matrix.mode == 'profile' && steps.wanted.outputs.run == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: baseline-profile
+          path: benchmark-results/baseline-prof.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload results
+        if: ${{ !cancelled() && steps.wanted.outputs.run == 'true' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmark-${{ matrix.mode }}
+          path: |
+            benchmark-results/
+            !benchmark-results/device/**/*.perfetto-trace
+          if-no-files-found: warn
+          retention-days: 14
