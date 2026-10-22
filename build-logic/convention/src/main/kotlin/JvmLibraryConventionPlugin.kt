@@ -39,6 +39,8 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
                 useJUnitPlatform()
             }
             configureKtlint()
+            // detekt + Compose rules (ci lane, Fas 1b); `ciLint` depends on `detekt`.
+            pluginManager.apply("tandem.detekt")
             registerCiTasks(testTask = "test", lintTask = null)
         }
     }

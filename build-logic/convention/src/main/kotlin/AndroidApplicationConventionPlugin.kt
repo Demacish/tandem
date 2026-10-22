@@ -21,6 +21,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 defaultConfig.targetSdk = libs.intVersion("targetSdk")
             }
             configureKtlint()
+            // detekt + Compose rules (ci lane, Fas 1b); `ciLint` depends on `detekt`.
+            pluginManager.apply("tandem.detekt")
             // `checkModuleGraph`; app/build.gradle.kts makes its `ciLint` depend on it.
             pluginManager.apply("tandem.module-graph")
         }

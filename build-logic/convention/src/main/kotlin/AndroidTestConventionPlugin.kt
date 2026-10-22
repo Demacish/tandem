@@ -25,6 +25,8 @@ class AndroidTestConventionPlugin : Plugin<Project> {
                 compileOptions.targetCompatibility = TANDEM_JAVA_VERSION
             }
             configureKtlint()
+            // detekt + Compose rules (ci lane, Fas 1b); `ciLint` depends on `detekt`.
+            pluginManager.apply("tandem.detekt")
             tasks.register("ciLint") {
                 group = "verification"
                 description = "Runs ktlint for this module."

@@ -67,6 +67,15 @@ androidxTestCore = "1.7.0"
 androidxTestExtJunit = "1.3.0"
 androidxTestRunner = "1.7.0"
 uiautomator = "2.4.0"     # release smoke test (:smoke), black-box UI driver
+# --- ci lane (Fas 1b): detekt, macrobenchmark and baseline profiles (verified 2026-10-22). ---
+# PRE-RELEASE: detekt 2.0 is the only line built on Kotlin 2.4 (2.0.0-alpha.6 uses Kotlin 2.4.10)
+# with AGP 9 built-in Kotlin support; detekt 1.23.8 (Feb 2025) embeds Kotlin 2.0.21. Only the
+# light-mode `detekt` task is used (no type resolution), so a parser that knows our syntax is
+# what matters.
+detekt = "2.0.0-alpha.6"
+composeRulesDetekt = "0.6.7"  # io.nlopez.compose.rules for detekt 2.0.0-alpha.6 (0.6.8 is < 2 weeks old)
+benchmark = "1.5.0"           # androidx.benchmark: Macrobenchmark (:benchmark)
+profileinstaller = "1.4.1"    # installs the baseline profile on sideloaded (non-Play) installs
 
 [libraries]
 # Gradle plugins as libraries for build-logic (compileOnly in build-logic/convention)
@@ -78,6 +87,8 @@ hilt-gradlePlugin = { module = "com.google.dagger:hilt-android-gradle-plugin", v
 room3-gradlePlugin = { module = "androidx.room3:room3-gradle-plugin", version.ref = "room3" }
 roborazzi-gradlePlugin = { module = "io.github.takahirom.roborazzi:roborazzi-gradle-plugin", version.ref = "roborazzi" }
 ktlint-gradlePlugin = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintGradle" }
+# --- ci lane (Fas 1b) ---
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 
 # AndroidX core
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -178,6 +189,10 @@ androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "android
 androidx-test-ext-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
+# --- ci lane (Fas 1b): static analysis, cold start and scroll benchmarks, baseline profile ---
+compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRulesDetekt" }
+androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 
 [bundles]
 compose-ui = [
@@ -253,3 +268,5 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 room3 = { id = "androidx.room3", version.ref = "room3" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+# --- ci lane (Fas 1b) ---
+detekt = { id = "dev.detekt", version.ref = "detekt" }

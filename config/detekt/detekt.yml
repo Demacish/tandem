@@ -1,0 +1,211 @@
+# detekt for Tandem (plan 5.6 "Statiskt"; build-logic DetektConventionPlugin, docs/BYGGE.md "detekt").
+#
+# Only overrides of detekt's defaults (buildUponDefaultConfig = true) and the Compose rules. The goal
+# is a short list of rules that find real bugs without making noise in Compose code:
+# - formatting (line length, imports, modifier order, final newline) is ktlint's job (.editorconfig);
+# - rules that fight Compose (long @Composable functions with many parameters, PascalCase names,
+#   dp values) are off or ignore @Composable/@Preview;
+# - Compose correctness rules (remember, modifiers, mutable parameters) are on.
+#
+# A finding in new code: fix it, or suppress it where it is, with the reason next to it:
+#     // Collected at most once per sync; a List keeps the call site readable.
+#     @Suppress("ReturnCount")
+# Never add new code to a module's detekt-baseline.xml.
+#
+# Runs in light mode (no type resolution): rules that need types are skipped automatically.
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+comments:
+  active: true
+
+complexity:
+  active: true
+  # Composables are long and take many parameters (state, callbacks, modifier) by design.
+  LongMethod:
+    active: true
+    allowedLines: 80
+    ignoreAnnotated: ['Composable', 'Preview']
+  LongParameterList:
+    active: true
+    allowedFunctionParameters: 7
+    allowedConstructorParameters: 10
+    ignoreDefaultParameters: true
+    ignoreAnnotated: ['Composable', 'Preview', 'Inject', 'AssistedInject']
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 15
+    ignoreSimpleWhenEntries: true
+    ignoreAnnotated: ['Composable']
+  NestedBlockDepth:
+    active: true
+    allowedDepth: 5
+  # Repositories, DAOs, ViewModels and API interfaces legitimately have many functions.
+  TooManyFunctions:
+    active: false
+
+coroutines:
+  active: true
+
+empty-blocks:
+  active: true
+  EmptyFunctionBlock:
+    active: true
+    ignoreOverridden: true
+
+exceptions:
+  active: true
+  # Kept on: a `catch (e: Exception)` around suspending code also swallows CancellationException.
+  # Where catching everything is the point (crash log, recovery screen), suppress with a reason.
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    active: true
+
+naming:
+  active: true
+  FunctionNaming:
+    active: true
+    # Composables are PascalCase (as in .editorconfig for ktlint).
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    active: true
+    # Compose convention for CompositionLocals and shape/color tokens: `LocalAppChrome`, `Demo`.
+    constantPattern: '[A-Z][_A-Za-z0-9]*'
+
+performance:
+  active: true
+  # A micro-optimisation; vararg forwarding is clearer.
+  SpreadOperator:
+    active: false
+
+potential-bugs:
+  active: true
+
+style:
+  active: true
+  # Formatting is ktlint's job.
+  MaxLineLength:
+    active: false
+  WildcardImport:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  ModifierOrder:
+    active: false
+  # dp sizes, durations, HTTP status codes and version numbers read better inline.
+  MagicNumber:
+    active: false
+  # Early returns are the house style for guard clauses.
+  ReturnCount:
+    active: false
+  ThrowsCount:
+    active: false
+  # TODO and FIXME are allowed (they show up in review); STOPSHIP is not.
+  ForbiddenComment:
+    active: true
+    comments:
+      - reason: 'STOPSHIP must be resolved before the change is merged.'
+        value: 'STOPSHIP'
+  UnusedPrivateFunction:
+    active: true
+    # @Preview functions are used by the IDE only.
+    ignoreAnnotated: ['Preview', 'PreviewLightDark', 'PreviewScreenSizes', 'PreviewFontScale']
+  UnusedParameter:
+    active: true
+    allowedNames: 'ignored|expected|_.*'
+
+# Compose rules (io.nlopez.compose.rules, https://mrmans0n.github.io/compose-rules/). Every rule
+# is listed so that a new rules version never switches something on silently.
+Compose:
+  # --- on: correctness ---
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  CompositionLocalNaming:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ContentSlotReused:
+    active: true
+  InvalidReadOnlyComposable:
+    active: true
+  LambdaParameterInRestartableEffect:
+    active: true
+  # Tandem is Material 3 only.
+  Material2:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierComposed:
+    active: true
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  PreviewAnnotationNaming:
+    active: true
+  RememberContentMissing:
+    active: true
+  RememberMissing:
+    active: true
+  StaleRememberUpdatedStateInRemember:
+    active: true
+  UnnecessaryLaunchedEffect:
+    active: true
+  VarsWithoutStateBacking:
+    active: true
+  ViewModelForwarding:
+    active: true
+  # --- off: style preferences that would only make noise (or fight the house style) ---
+  ComposableNestingDepth:
+    active: false
+  ComposableParamOrder:
+    active: false
+  # LocalAppChrome and friends are deliberate (core:ui navigation chrome).
+  CompositionLocalAllowlist:
+    active: false
+  ConditionHoist:
+    active: false
+  ContentTrailingLambda:
+    active: false
+  DefaultsVisibility:
+    active: false
+  LambdaParameterEventTrailing:
+    active: false
+  MissingNonRestartableComposable:
+    active: false
+  MissingReadOnlyComposable:
+    active: false
+  ModifierMissing:
+    active: false
+  ModifierWithoutDefault:
+    active: false
+  MultipleEmitters:
+    active: false
+  ParameterNaming:
+    active: false
+  PreviewNaming:
+    active: false
+  PreviewPublic:
+    active: false
+  StateParam:
+    active: false
+  UnnecessaryComposable:
+    active: false
+  UnstableCollections:
+    active: false
+  # Routes take `hiltViewModel()` as a default parameter (docs/BYGGE.md "Navigering").
+  ViewModelInjection:
+    active: false

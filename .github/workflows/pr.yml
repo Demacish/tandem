@@ -75,7 +75,10 @@ jobs:
 
       - name: Lint, unit tests and sideload debug APK
         # --continue: report every failing module in one run instead of stopping at the first.
-        run: ./gradlew --stacktrace --continue ciLint ciTest :app:assembleSideloadDebug
+        # ciLint = ktlint, detekt, checkModuleGraph and Android Lint; ciTest = unit tests plus the
+        # Roborazzi screenshots (recorded, or verified when tandem.screenshots.verify=true);
+        # :build-logic:convention:test = the module graph rules' own tests.
+        run: ./gradlew --stacktrace --continue ciLint ciTest :app:assembleSideloadDebug :build-logic:convention:test
 
       # --- Phase 1 (grund lane): Room schemas (tandem.android.room, docs/BYGGE.md "Room") ---
       # The build above exports core/database/schemas/<database>/<version>.json. A new or changed
@@ -129,10 +132,11 @@ jobs:
           retention-days: 7
 
       - name: Upload screenshots
-        # Phase 0 records Roborazzi screenshots on every ciTest run: components, the intro and
-        # the shell on a compact phone (412x915 dp) and an expanded tablet (1280x800 dp), light
-        # and dark, English and Swedish. Files are named <device>_<screen>_<theme>[_sv].png per
-        # module. Golden comparison comes in Phase 1. Uploaded even when the build step fails.
+        # Every ciTest run records (or, with tandem.screenshots.verify=true, verifies) the Roborazzi
+        # screenshots: phone, tablet and foldable, light and dark, English and Swedish, font scale 2
+        # and the pseudo-locales en-XA/ar-XB. Files are named <device>_<screen>_<theme>[_sv].png per
+        # module; a failed verification leaves <name>_actual.png and <name>_compare.png next to
+        # them (docs/BYGGE.md "Skärmbilder"). Uploaded even when the build step fails.
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

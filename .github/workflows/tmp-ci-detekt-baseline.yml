@@ -1,0 +1,42 @@
+name: TEMP detekt baselines (ci lane)
+
+# Temporary (ci lane, Fas 1b): creates the first detekt baselines on the lane branch so they can be
+# committed as they are. Deleted again in the next commit.
+on:
+  push:
+    branches: ["fas1b/ci"]
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+      - name: Create the detekt baselines
+        run: ./gradlew --stacktrace --continue detektBaseline
+      - name: Upload the baselines
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: detekt-baselines
+          path: "**/detekt-baseline.xml"
+          retention-days: 3

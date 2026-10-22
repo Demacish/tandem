@@ -26,9 +26,20 @@ dependencies {
     compileOnly(libs.ktlint.gradlePlugin)
     // --- Phase 1 (grund lane): tandem.android.room configures the Room 3 Gradle plugin's DSL. ---
     compileOnly(libs.room3.gradlePlugin)
+    // --- ci lane (Fas 1b): detekt is configured by the convention plugins (tandem.detekt). ---
+    compileOnly(libs.detekt.gradlePlugin)
+
+    // Unit tests of the build logic itself (ModuleGraphRules), run by pr.yml as
+    // `./gradlew :build-logic:convention:test`.
+    testImplementation(platform(libs.junit5.bom))
+    testImplementation(libs.junit5.jupiter)
+    testRuntimeOnly(libs.junit5.platform.launcher)
 }
 
 tasks {
+    test {
+        useJUnitPlatform()
+    }
     validatePlugins {
         enableStricterValidation = true
         failOnWarning = true
@@ -82,6 +93,13 @@ gradlePlugin {
         register("moduleGraph") {
             id = "tandem.module-graph"
             implementationClass = "ModuleGraphConventionPlugin"
+        }
+        // --- ci lane (Fas 1b) ---
+        // detekt (+ Compose rules) with config/detekt/detekt.yml and a per-module baseline; part of
+        // every `ciLint`. Applied automatically by the application, library, JVM and test plugins.
+        register("detekt") {
+            id = "tandem.detekt"
+            implementationClass = "DetektConventionPlugin"
         }
     }
 }
