@@ -184,7 +184,7 @@ dependencies {
     implementation(libs.bundles.navigation3)
     implementation(libs.bundles.compose.adaptive)
     implementation(libs.kotlinx.coroutines.android)
-    // --- ci lane (Fas 1b): installs the baseline profile (app/src/main/baseline-prof.txt) on
+    // --- ci lane (Fas 1b): installs the baseline profile (app/src/main/baselineProfiles/baseline-prof.txt) on
     // sideloaded installs, where no store compiles it ahead of time. ---
     implementation(libs.androidx.profileinstaller)
 

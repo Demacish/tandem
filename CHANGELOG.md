@@ -29,6 +29,8 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   listan.
 - **Diagnostik:** versioner, uppmätt starttid och tid för den senaste fulla synken, och
   *Exportera logg* (utan lösenord, token, serveradress eller recept) via delningsmenyn.
+- **Snabbare start:** appen levereras med en baslinjeprofil, så Android kompilerar starten,
+  receptlistan och receptvyn i förväg redan vid installationen.
 - **Synkproblem syns:** när servern nekar appen en stund eller synken pausar efter många fel
   visas det överst med *Försök igen*.
 

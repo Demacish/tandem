@@ -19,7 +19,7 @@ import org.junit.runner.RunWith
  * Today, the recipe list (scrolled) and a recipe's detail, so ART compiles them ahead of time on
  * install. benchmark.yml runs it against a minified build WITHOUT obfuscation
  * (-Ptandem.baselineProfile.generate=true) and uploads the result as the "baseline-profile"
- * artifact; it is committed as app/src/main/baseline-prof.txt, which AGP rewrites with each
+ * artifact; it is committed as app/src/main/baselineProfiles/baseline-prof.txt, which AGP rewrites with each
  * build's R8 mapping.
  *
  * Only run by benchmark.yml (instrumentation argument `class`), never with the benchmarks.

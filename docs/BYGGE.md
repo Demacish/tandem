@@ -1037,8 +1037,12 @@ emulator (API 36): mätningarna, med median/min/max och P50–P99 i jobbsammanfa
 (`scripts/ci/benchmark-summary.py`), och generatorn mot ett minifierat bygge **utan** R8
 (`-Ptandem.baselineProfile.generate=true`, så profilen har riktiga klassnamn som AGP sedan mappar
 om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; checka in den som
-`app/src/main/baseline-prof.txt` (`androidx.profileinstaller` installerar den även vid
-sidladdning).
+`app/src/main/baselineProfiles/baseline-prof.txt` (`androidx.profileinstaller` installerar den
+även vid sidladdning). Den incheckade profilen kom från den första gröna körningen (oktober 2026,
+före integrationen av 0.2.0); förnya den när startvägen, listan eller receptvyn ändrats mycket
+(Actions → Benchmark → Run workflow, ladda ned, ersätt filen). Mätjobbet kontrollerar att
+profilen når AGP:s sammanslagna ART-profil (antalet regler för `casa/moller/tandem` står i
+sammanfattningen).
 
 **Emulatorns siffror är bara en trend** (programvaru-GPU, 2 vCPU, delad löpare). Kravet i plan
 §10 (kallstart under 1,5 s) mäts på telefonen: appen mäter själv sin kallstart och visar den

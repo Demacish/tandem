@@ -6,7 +6,7 @@ name: Benchmark
 #   baseline profile) and flinging the recipe list; medians in the job summary.
 # - "Baseline profile": BaselineProfileGenerator against a minified build without obfuscation;
 #   the "baseline-profile" artifact holds baseline-prof.txt to commit as
-#   app/src/main/baseline-prof.txt.
+#   app/src/main/baselineProfiles/baseline-prof.txt.
 #
 # Emulator numbers (software GPU, 2 vCPU, shared runner) are a TREND only. The number that counts
 # (plan §10: cold start < 1.5 s) comes from a phone: Mer -> Diagnostik shows the app's own
@@ -105,6 +105,16 @@ jobs:
           [ "$MODE" = profile ] && extra="-Ptandem.baselineProfile.generate=true"
           ./gradlew --stacktrace $extra :app:assembleSideloadMinified :benchmark:assembleMinified
           ./gradlew --stop
+          # The committed profile must reach the APK: AGP merges it with the libraries' profiles.
+          merged="$(find app/build/intermediates -path '*merged_art_profile*sideloadMinified*' -name '*.txt' | head -n 1)"
+          app_rules="$(grep -c 'casa/moller/tandem' "$merged" 2> /dev/null || true)"
+          echo "Merged ART profile: ${merged:-none}, ${app_rules:-0} rules for Tandem's own classes" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -z "$merged" ]; then
+            echo "::warning::No merged ART profile found under app/build/intermediates (AGP layout changed?)"
+          elif [ -f app/src/main/baselineProfiles/baseline-prof.txt ] && [ "${app_rules:-0}" -eq 0 ]; then
+            echo "::error::app/src/main/baselineProfiles/baseline-prof.txt did not reach the merged ART profile"
+            exit 1
+          fi
 
       - name: Free disk space for the emulator
         if: steps.wanted.outputs.run == 'true'
@@ -148,7 +158,7 @@ jobs:
             python3 -I scripts/ci/benchmark-summary.py benchmark-results/device >> "$GITHUB_STEP_SUMMARY" || true
           elif [ -s benchmark-results/baseline-prof.txt ]; then
             new=benchmark-results/baseline-prof.txt
-            committed=app/src/main/baseline-prof.txt
+            committed=app/src/main/baselineProfiles/baseline-prof.txt
             {
               echo "### Baseline profile"
               echo
