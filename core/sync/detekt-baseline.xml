@@ -9,6 +9,8 @@
     <ID>TooGenericExceptionCaught:AccountMirror.kt:AccountMirror$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CoilImagePrefetcher.kt:CoilImagePrefetcher$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ConnectivityMonitor.kt:ConnectivityMonitor$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:DefaultDiagnosticsRepository.kt:DefaultDiagnosticsRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DefaultOfflineStorageRepository.kt:DefaultOfflineStorageRepository$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DefaultServerStatusRepository.kt:DefaultServerStatusRepository$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ImageCache.kt:CoilImageCache$e: Exception</ID>
     <ID>TooGenericExceptionCaught:OfflineFirstRecipeRepository.kt:OfflineFirstRecipeRepository$e: Exception</ID>
