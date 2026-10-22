@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:OutboxSender.kt:OutboxSender$localId == null || recipeId == null || request == null || request.recipe != recipeId</ID>
+    <ID>CyclomaticComplexMethod:SyncEngine.kt:SyncEngine.SyncRun$private suspend fun syncReferenceData</ID>
+    <ID>CyclomaticComplexMethod:SyncEngine.kt:SyncEngine.SyncRun$suspend fun execute: SyncProgress</ID>
+    <ID>LoopWithTooManyJumpStatements:DemoSeeder.kt:DemoSeeder$for</ID>
+    <ID>TooGenericExceptionCaught:AccountMirror.kt:AccountMirror$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CoilImagePrefetcher.kt:CoilImagePrefetcher$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ConnectivityMonitor.kt:ConnectivityMonitor$e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:DefaultServerStatusRepository.kt:DefaultServerStatusRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ImageCache.kt:CoilImageCache$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:OfflineFirstRecipeRepository.kt:OfflineFirstRecipeRepository$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:RoomPendingChangesExporter.kt:RoomPendingChangesExporter$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:SyncEngine.kt:SyncEngine$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

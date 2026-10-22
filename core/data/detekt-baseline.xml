@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:DemoContentTest.kt:DemoContentTest$expected is JsonArray &amp;&amp; actual is JsonArray &amp;&amp; expected.isNotEmpty() &amp;&amp; actual.isNotEmpty()</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:DtoFixturesTest.kt:DtoFixturesTest$fixture.status !in 200..299 || body == null || body is JsonNull || name in notModelled</ID>
+    <ID>ComplexCondition:TandoorAuthenticator.kt:TandoorAuthenticator$loginTokenPolicy == LoginTokenPolicy.DELETE_IF_FRESH &amp;&amp; loginTokenId != null &amp;&amp; loginTokenId != deviceTokenId &amp;&amp; isFreshLoginToken(login.expires, now)</ID>
+    <ID>CyclomaticComplexMethod:TandoorAuthenticator.kt:TandoorAuthenticator$suspend fun login: Outcome&lt;DeviceCredentials&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:CapabilityResolver.kt:CapabilityResolver$for</ID>
+    <ID>TooGenericExceptionCaught:ApiCall.kt:e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CapabilityResolver.kt:CapabilityResolver$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ServerProbe.kt:ServerProbe$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

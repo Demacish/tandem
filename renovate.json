@@ -1,0 +1,114 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Tandem dependency updates (docs/BYGGE.md \"Renovate\"). Weekly, grouped, versions at least 14 days old; only patch-level test/CI updates merge themselves, and only after CI is green.",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "timezone": "Europe/Stockholm",
+  "schedule": ["before 7am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 8,
+  "prHourlyLimit": 4,
+  "rebaseWhen": "conflicted",
+  "minimumReleaseAge": "14 days",
+  "platformAutomerge": false,
+  "automergeType": "pr",
+  "automergeStrategy": "rebase",
+  "ignorePaths": [
+    "api-schema/**",
+    "contract-tests/web-scaling/**",
+    "scripts/**"
+  ],
+  "packageRules": [
+    {
+      "description": "AndroidX libraries, one PR (Compose has its own group below).",
+      "matchPackageNames": ["androidx.**"],
+      "groupName": "AndroidX"
+    },
+    {
+      "description": "Compose BOM, Material 3 (incl. Expressive pre-releases) and adaptive layouts move together.",
+      "matchPackageNames": ["androidx.compose.**", "androidx.compose:**"],
+      "groupName": "Compose"
+    },
+    {
+      "description": "The build toolchain: AGP's built-in Kotlin, the Compose compiler, KSP and Hilt's Kotlin metadata must agree (docs/BYGGE.md \"Versioner\").",
+      "matchPackageNames": [
+        "com.android.tools.build:**",
+        "com.android.application",
+        "com.android.library",
+        "com.android.test",
+        "org.jetbrains.kotlin:**",
+        "org.jetbrains.kotlin.**",
+        "com.google.devtools.ksp",
+        "com.google.devtools.ksp:**",
+        "com.google.dagger:**",
+        "com.google.dagger.hilt.android"
+      ],
+      "groupName": "Build toolchain (AGP, Kotlin, KSP, Hilt)"
+    },
+    {
+      "description": "Test libraries.",
+      "matchPackageNames": [
+        "junit:junit",
+        "org.junit:**",
+        "org.junit.**",
+        "org.robolectric:**",
+        "app.cash.turbine:**",
+        "io.github.takahirom.roborazzi:**",
+        "io.github.takahirom.roborazzi",
+        "androidx.test:**",
+        "androidx.test.**",
+        "androidx.benchmark:**",
+        "org.jetbrains.kotlinx:kotlinx-coroutines-test"
+      ],
+      "groupName": "Test libraries"
+    },
+    {
+      "description": "Static analysis.",
+      "matchPackageNames": [
+        "dev.detekt:**",
+        "dev.detekt",
+        "io.nlopez.compose.rules:**",
+        "org.jlleitschuh.gradle.ktlint",
+        "org.jlleitschuh.gradle:**",
+        "com.pinterest.ktlint:**"
+      ],
+      "groupName": "Static analysis"
+    },
+    {
+      "description": "GitHub Actions: pinned by digest with the version as a comment (helpers:pinGitHubActionDigests).",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Only patch-level test and CI updates merge themselves, after every check on the branch is green.",
+      "matchUpdateTypes": ["patch", "digest", "pin", "pinDigest"],
+      "matchManagers": ["github-actions"],
+      "automerge": true
+    },
+    {
+      "description": "Only patch-level test and CI updates merge themselves, after every check on the branch is green.",
+      "matchUpdateTypes": ["patch"],
+      "matchPackageNames": [
+        "junit:junit",
+        "org.junit:**",
+        "org.junit.**",
+        "org.robolectric:**",
+        "app.cash.turbine:**",
+        "io.github.takahirom.roborazzi:**",
+        "io.github.takahirom.roborazzi",
+        "androidx.test:**",
+        "androidx.test.**"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "The Gradle wrapper is part of the toolchain: never merged without review.",
+      "matchManagers": ["gradle-wrapper"],
+      "groupName": "Gradle wrapper",
+      "automerge": false
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:Markdown.kt:InlineParser$private fun parseUntil: List&lt;MarkdownInline&gt;</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>TooGenericExceptionCaught:CrashLogFormatter.kt:CrashLogFormatter$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CrashLogHandler.kt:CrashLogHandler$e: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CrashLogStore.kt:CrashLogStore$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

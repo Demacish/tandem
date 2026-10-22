@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:DefaultTimerController.kt:DefaultTimerController$name.isEmpty() || duration &lt; CookTimer.MIN_DURATION || (stepIndex != null &amp;&amp; stepIndex &lt; 0)</ID>
+    <ID>CyclomaticComplexMethod:DefaultTimerController.kt:DefaultTimerController$private fun applyEffects</ID>
+    <ID>TooGenericExceptionCaught:TimerRingingService.kt:TimerRingingService$e: RuntimeException</ID>
+  </CurrentIssues>
+</SmellBaseline>

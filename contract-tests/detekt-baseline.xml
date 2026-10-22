@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:Phase1ContractTest.kt:Phase1ContractTest$@Test @Order(62) fun recipeListFilters</ID>
+    <ID>CyclomaticComplexMethod:Phase1ContractTest.kt:Phase1ContractTest$@Test @Order(70) fun recipeDetails</ID>
+    <ID>ExplicitItLambdaMultipleParameters:Fas1Seed.kt:SeedRecipe${ index, it -&gt; it.toJson(index) }</ID>
+    <ID>LargeClass:Phase1ContractTest.kt:Phase1ContractTest</ID>
+  </CurrentIssues>
+</SmellBaseline>

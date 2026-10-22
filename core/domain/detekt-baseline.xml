@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:IngredientDisplay.kt:IngredientDisplay$name.isEmpty() || conversion.amount &lt;= 0.0 || !conversion.amount.isFinite() || !seen.add(name.lowercase())</ID>
+    <ID>ComplexCondition:TimerDetector.kt:RuleMatcher$next != null &amp;&amp; next.text == "-" &amp;&amp; next.start == token.end &amp;&amp; afterNext != null &amp;&amp; afterNext.form == NumberForm.SLASH_FRACTION &amp;&amp; afterNext.isProperFraction &amp;&amp; afterNext.start == next.end</ID>
+    <ID>ComplexCondition:TimerDetector.kt:RuleMatcher$token.text == "-" &amp;&amp; previous != null &amp;&amp; next != null &amp;&amp; next.kind == TokenKind.WORD &amp;&amp; previous.end == token.start &amp;&amp; token.end == next.start</ID>
+    <ID>ComplexCondition:TimerTokenizer.kt:TimerTokenizer$(next == '.' || next == ',') &amp;&amp; afterNext != null &amp;&amp; afterNext.isAsciiDigit()</ID>
+    <ID>ComplexCondition:TimerTokenizer.kt:TimerTokenizer$(next == '/' || next == FRACTION_SLASH) &amp;&amp; afterNext != null &amp;&amp; afterNext.isAsciiDigit()</ID>
+    <ID>LongMethod:TimerDetectorTest.kt:TimerDetectorTest.Companion$@JvmStatic fun swedishCases: List&lt;Case&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:TimerDetector.kt:RuleMatcher$while</ID>
+  </CurrentIssues>
+</SmellBaseline>

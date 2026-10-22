@@ -61,15 +61,21 @@ exceptions:
   # Where catching everything is the point (crash log, recovery screen), suppress with a reason.
   TooGenericExceptionCaught:
     active: true
+  # Off: turning an IOException/HttpException into an Outcome/DataProblem without its cause is the
+  # house style (core:network ErrorClassifier, core:sync); this rule flagged every such mapping.
   SwallowedException:
-    active: true
+    active: false
 
 naming:
   active: true
   FunctionNaming:
     active: true
-    # Composables are PascalCase (as in .editorconfig for ktlint).
-    ignoreAnnotated: ['Composable']
+    # Composables are PascalCase (as in .editorconfig for ktlint); test names may use underscores
+    # (the :smoke tests live in src/main, which the default test excludes do not cover).
+    ignoreAnnotated: ['Composable', 'Test']
+  # Off: a file is named after its main composable even when a small enum or state class comes first.
+  MatchingDeclarationName:
+    active: false
   TopLevelPropertyNaming:
     active: true
     # Compose convention for CompositionLocals and shape/color tokens: `LocalAppChrome`, `Demo`.
@@ -166,8 +172,6 @@ Compose:
     active: true
   VarsWithoutStateBacking:
     active: true
-  ViewModelForwarding:
-    active: true
   # --- off: style preferences that would only make noise (or fight the house style) ---
   ComposableNestingDepth:
     active: false
@@ -206,6 +210,9 @@ Compose:
     active: false
   UnstableCollections:
     active: false
-  # Routes take `hiltViewModel()` as a default parameter (docs/BYGGE.md "Navigering").
+  # Routes pass their ViewModel on as the screen's `actions` interface (house style), and take
+  # `hiltViewModel()` as a default parameter (docs/BYGGE.md "Navigering").
+  ViewModelForwarding:
+    active: false
   ViewModelInjection:
     active: false

@@ -5,8 +5,14 @@ name: Contract
 # is deleted with the runner. See contract-tests/ and api-schema/fixtures/<version>/FACTS.md.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "23 2 * * *" # nightly, 02:23 UTC
+  # The nightly matrix moved to tandoor-watch.yml (Fas 1b), which calls this workflow with the
+  # image tags it found on Docker Hub (2.6.13, 2.6.15, the newest release of every line, latest).
+  workflow_call:
+    inputs:
+      tags:
+        description: 'JSON array of vabene1111/recipes image tags, e.g. ["2.6.13", "latest"]'
+        type: string
+        required: true
   push:
     # Branches only (a tag push repeats a SHA that was already tested).
     branches: ["**"]
@@ -16,7 +22,9 @@ on:
       - ".github/workflows/contract.yml"
 
 concurrency:
-  group: contract-${{ github.ref }}
+  # github.workflow is the CALLER's name when tandoor-watch.yml calls this workflow, so the
+  # nightly watch and a push run on main never cancel each other.
+  group: contract-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -35,8 +43,8 @@ jobs:
         # (api-schema/fixtures/2.6.13/). 2.6.15 and latest only upload artifacts: a red run
         # there means upstream changed behaviour the app relies on, before users' servers pull it.
         # "latest" skips the exact version assertion (TANDOOR_EXPECTED_VERSION is empty).
-        # Pushes run the baseline only; the nightly schedule and manual runs run all three.
-        tandoor: ${{ fromJSON(github.event_name == 'push' && '["2.6.13"]' || '["2.6.13", "2.6.15", "latest"]') }}
+        # Pushes run the baseline only; manual runs all three; tandoor-watch.yml passes its own list.
+        tandoor: ${{ fromJSON(inputs.tags || (github.event_name == 'push' && '["2.6.13"]' || '["2.6.13", "2.6.15", "latest"]')) }}
     env:
       TANDOOR_IMAGE: vabene1111/recipes:${{ matrix.tandoor }}
       TANDOOR_TAG: ${{ matrix.tandoor }}
