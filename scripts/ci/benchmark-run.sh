@@ -58,10 +58,11 @@ logcat_pid=$!
 
 echo "::group::Instrumentation ($MODE)"
 # EMULATOR: Macrobenchmark refuses emulators unless told that the numbers are a trend only.
+# No additionalTestOutputDir: the default is $DEVICE_DIR already, and naming it again makes the
+# library `mv` every trace onto itself (and fail).
 adb shell am instrument -w \
   -e class "$classes" \
   -e androidx.benchmark.suppressErrors EMULATOR,LOW-BATTERY,UNLOCKED \
-  -e additionalTestOutputDir "$DEVICE_DIR" \
   "$TEST_PACKAGE/$RUNNER" 2>&1 | tr -d '\r' | tee "$OUT/instrumentation.txt"
 echo "::endgroup::"
 
