@@ -20,6 +20,17 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   visar steget upptill och timerna nedtill.
 - **"Klart!":** sista sidan sparar receptet i Tandoors koklogg med portioner, betyg och
   kommentar, även offline (skickas senare) och i demoläget.
+- **Inställningar:** Mer har fått egna sidor för *Synk och lagring* (hur ofta appen synkar i
+  bakgrunden, *Ladda ner alla recept* för offline med uppskattad storlek och förlopp, hur mycket
+  appen använder och *Rensa bildcache*), *Utseende* (tema som gäller direkt i hela appen,
+  dynamisk färg från bakgrundsbilden, textstorlek i kokläget, kokläget alltid mörkt), *Kokläge
+  och timers* (timers i Tandem eller i klockappen) och *Behörigheter* (vad appen får göra, med
+  en knapp till rätt ställe i Androids inställningar). På surfplattan visas sidorna bredvid
+  listan.
+- **Diagnostik:** versioner, uppmätt starttid och tid för den senaste fulla synken, och
+  *Exportera logg* (utan lösenord, token, serveradress eller recept) via delningsmenyn.
+- **Synkproblem syns:** när servern nekar appen en stund eller synken pausar efter många fel
+  visas det överst med *Försök igen*.
 
 ## [0.1.0] – 2026-10-16
 

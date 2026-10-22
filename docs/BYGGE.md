@@ -723,6 +723,86 @@ Receptlistan och receptvyn (plan 6.2, funktion #3–#5). Skärmarna är tillstå
   `ServerStatusScreenshotTest` och `RecoveryScreenshotTest` (telefon 412×915 dp, medium stående
   800×1280 dp, surfplatta liggande 1280×800 dp; ljust/mörkt, engelska/svenska, textskala 2).
 
+<!-- Fas 1b inställningar -->
+## Inställningar, diagnostik och skalet (Fas 1b)
+
+Plan 6.2 "Inställningar" och 1a:s öppna punkter i skalet. Allt UI ligger i `:feature:shell`;
+datadelen i `:core:datastore` och `:core:sync`.
+
+- **Mer** (`more/MoreScreen`): kontot (namn, server, space, Tandoor-version, "Logga ut"), sedan
+  raderna Synk och lagring, Utseende, Kokläge och timers, Behörigheter och Språk med en kort
+  sammanfattning var (`ShellUiState.settings`, `SettingsSummary`: `ShellViewModel` läser
+  `SettingsRepository` och `TimerController.capabilities`), och Diagnostik och Om Tandem. Temat
+  ligger inte längre direkt under Mer utan under Utseende. Hushållets namn visas inte (kontot
+  sparar bara space-namnet; namnet kräver ett nytt anrop).
+- **Undersidorna** (`settings/`): tillståndslösa `XScreen(state, onAction)` och en
+  `SettingsViewModel` per navigeringspost (`hiltViewModel()`, varje sida samlar bara sitt eget
+  `StateFlow`, `WhileSubscribed`). Varje ändring sparas direkt; ett misslyckat skrivande ger en
+  snackbar (`SettingsEffect.Message`). Skalet visar dem via `SettingsPages` (som `ShellFeatures`,
+  egen fil): produktionen `RouteSettingsPages`, testerna `FixedSettingsPages` med fasta
+  tillstånd, så skalets tester aldrig behöver Hilt.
+- **Surfplatta** (mer_inst_llningar_surfplatta): `MoreKey` är listpanel och alla Mer-sidor
+  (`NavKey.isMorePage`: inställningarna, Språk, Om, Licenser, licenstext) detaljpaneler i samma
+  `ListDetailSceneStrategy` som recepten. En rad i listan ersätter den öppna sidan (och det som
+  öppnats från den) och markeras (`SettingsRow(selected)`); innan något valts visas
+  `SettingsPanePlaceholder`. På telefon en sida i taget som förut.
+- **Utseende:** tema system/ljust/mörkt (`AppearanceRepository`, appen sätter
+  `UiModeManager.setApplicationNightMode`, gäller direkt i hela appen), "Dynamisk färg"
+  (`AppViewModel` → `TandemTheme(dynamicColor)` i `MainActivity`; minSdk 34 har alltid
+  Material You), kokläges textstorlek (`CookTextScale`, samma steg som A−/A+ i kokläget, med
+  ett provexempel) och "Kokläget alltid mörkt". Kokläget läser de två sista ur
+  `SettingsRepository`; `core:designsystem`s `TandemDarkTheme(enabled)` lägger ett mörkt tema
+  runt innehållet och behåller valet av dynamisk färg (`TandemThemeChoice`).
+- **Kokläge och timers ("Beteende"):** timer i Tandem eller i klockappen
+  (`SettingsRepository.setTimerMode`; klockappen går inte att välja utan klockapp). Varnar med
+  länk till behörigheterna när `TimerCapabilities.alarmMayBeSilent`/`alarmMayBeLate`.
+- **Synk och lagring:** senaste synk, paus, väntande ändringar och "Synka nu"; intervallet
+  15 min/1 h/6 h/"bara när jag öppnar appen" (`SyncStarter` följer `SyncInterval` och kontot:
+  `WorkManagerSyncScheduler.schedulePeriodic(interval)` med `UPDATE`, `MANUAL`, utloggning och
+  demoläget avbryter den periodiska synken). "Ladda ner alla recept" (`downloadAllRecipes`): varje
+  synk hämtar även detaljer och bilder för recept som saknar dem, högst
+  `SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN` (400) per körning och fortfarande två åt gången; att slå
+  på den startar en synk direkt. Förloppet och en uppskattning (genomsnittlig storlek per sparat
+  recept med bild) kommer från `OfflineStorageRepository` (`DefaultOfflineStorageRepository`:
+  antal, databasfilernas storlek, bildcachens storlek, mäts om medan sidan visas). "Rensa
+  bildcache" tömmer Coils minnes- och diskcache; bilder till sparade recept hämtas igen vid nästa
+  synk.
+- **Behörigheter** (k_kets_beh_righeter_systemguide med korrigeringarna): en översikt, aldrig ett
+  tvingat steg och aldrig råa behörighetsnamn. Rader för notiser, larmljudet (kanalen
+  `timer_alarm`), larm i rätt tid (exakta larm; i sideload alltid tillåtet), larm på låsskärmen
+  (bara sideload) och batterisparläge (bara på tillverkare som stoppar appar i bakgrunden,
+  `BatteryAdvice`). Varje rad öppnar rätt systemskärm (`SystemSetting`: appens notiser, kanalen,
+  `ACTION_REQUEST_SCHEDULE_EXACT_ALARM`, `ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT`, appens sida),
+  med appens sida som reserv. Läses om när skärmen visas igen (`refreshCapabilities`).
+- **Diagnostik:** versioner, uppmätt kallstart och senaste fulla synk mot målen i Fas 1 "Klart
+  när" (under 1,5 s; ungefär 300 recept på under 60 s), och "Exportera logg" via delningsarket
+  (`ACTION_SEND` text/plain, inget skickas av appen själv). `DefaultDiagnosticsRepository`
+  (`:core:sync`, ersätter den tillfälliga bindningen; `TemporaryFas1bModule.kt` är borttagen)
+  bygger loggen bara av värden appen själv valt: versioner, kapabiliteter, timerbehörigheter,
+  inställningar, synkstatus, utkorgen som antal per typ/läge och rader med försök (inga
+  kroppar), feltyper (`describe`, aldrig serverns fritext), mätningarna och den senaste
+  kraschloggen (tvättad när den skrevs). Fritext som ändå kommer med går genom
+  `CrashLogFormatter.redact`. Ingen serveradress, inget användar- eller space-namn, ingen token,
+  ingen e-post (`SettingsAndDiagnosticsTest` kontrollerar det).
+- **Mätningarna** sparas i en egen liten Preferences-fil (`DiagnosticsStore`,
+  `diagnostics.preferences_pb`). Kallstart: från `Process.getStartRequestedUptimeMillis` till
+  första skärmen med innehåll (Idag eller receptlistan anropar `reportFullyDrawn` via `core:ui`s
+  `ReportContentReady`), bara när processen startades för att visa appen (`ColdStart` i `:app`)
+  och högst 30 s. Full synk: en lyckad körning som läste alla översikter (första synken eller en
+  full omläsning), från start till klar, med antalet recept i indexet.
+- **Banner för hållen synk** (`status/SyncHeldBackBanner`, 1a:s öppna punkt): `SyncPause.BLOCKED`
+  ("Servern nekar Tandem just nu") och `CIRCUIT_BREAKER` ("Synken tar en kort paus") ovanför
+  flikarna med "Försök igen" (en synk som användaren bad om; den går förbi kretsbrytaren, en
+  blockering väntar på serverns tid). Aldrig i demoläget, aldrig tillsammans med "Logga in igen".
+- **Tester:** `SettingsViewModelTest`, `ShellViewModelTest` (sammanfattningar, hållen synk,
+  timerraden), `ShellScaffoldTest` (varje rad öppnar sin sida, länkar mellan sidor, surfplattans
+  list-detalj med vald rad, bannern), `SettingsScreenshotTest` (telefon, hög telefon, surfplatta;
+  ljust, mörkt, svenska, textstorlek 2) och ATF i `SettingsAccessibilityTest` (alla sidor och
+  lägen) och `ShellAccessibilityTest` (skalets Fas 0-skärmar: Mer, Språk, Om, Licenser,
+  licenstext, utloggningsdialogen, säkert läge och alla banners). I `:core:sync`
+  `SettingsAndDiagnosticsTest` (ladda ner allt, full synk, intervallet, lagring, loggens innehåll).
+<!-- /Fas 1b inställningar -->
+
 <!-- Fas 1 domain -->
 ## Receptvisning (`:core:domain`, Fas 1)
 
