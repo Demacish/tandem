@@ -11,7 +11,6 @@ import androidx.test.uiautomator.UiDevice
 import casa.moller.tandem.benchmark.DemoJourney.ensureDemoMode
 import casa.moller.tandem.benchmark.DemoJourney.flingDownAndUp
 import casa.moller.tandem.benchmark.DemoJourney.openRecipeList
-import casa.moller.tandem.benchmark.DemoJourney.recipeList
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
@@ -39,7 +38,7 @@ class RecipeListScrollBenchmark {
             openRecipeList()
         },
     ) {
-        flingDownAndUp(recipeList())
+        flingDownAndUp()
     }
 
     companion object {

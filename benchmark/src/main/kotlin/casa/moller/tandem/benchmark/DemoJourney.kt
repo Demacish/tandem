@@ -5,6 +5,7 @@ import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 
@@ -52,8 +53,8 @@ internal object DemoJourney {
         pressHome()
         startActivityAndWait()
         // The welcome screen, or the shell (its Recipes tab) on whatever tab was shown last.
-        val welcomeOrShell = waitForAny(By.text(WELCOME_TEXT), By.text(RECIPES_TAB))
-        if (welcomeOrShell.text == WELCOME_TEXT) {
+        waitForAny(By.text(WELCOME_TEXT), By.text(RECIPES_TAB))
+        if (device.hasObject(By.text(WELCOME_TEXT))) {
             tap(TRY_DEMO)
             waitForTodayContent()
         }
@@ -72,30 +73,45 @@ internal object DemoJourney {
     }
 
     /** The largest scrollable element on screen: the recipe list (or Today's content). */
-    fun MacrobenchmarkScope.recipeList(): UiObject2 {
+    fun MacrobenchmarkScope.recipeList(): UiObject2 = retryWhenStale {
         waitFor(By.scrollable(true))
         val list = device.findObjects(By.scrollable(true))
             .maxBy { it.visibleBounds.width().toLong() * it.visibleBounds.height() }
         // Stay clear of the system's edge gestures (back, home) while flinging.
         list.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
-        return list
+        list
     }
 
-    /** Flings [list] to the end and back to the top, waiting for the frames to settle. */
-    fun MacrobenchmarkScope.flingDownAndUp(list: UiObject2) {
-        repeat(FLINGS) {
-            list.fling(Direction.DOWN)
-            device.waitForIdle()
+    /**
+     * Flings the recipe list to the end and back to the top, waiting for the frames to settle.
+     * The list is looked up again for every fling: Compose replaces its node while images load.
+     */
+    fun MacrobenchmarkScope.flingDownAndUp() {
+        repeat(FLINGS) { fling(Direction.DOWN) }
+        repeat(FLINGS) { fling(Direction.UP) }
+    }
+
+    private fun MacrobenchmarkScope.fling(direction: Direction) {
+        retryWhenStale { recipeList().fling(direction) }
+        device.waitForIdle()
+    }
+
+    /** UiAutomator's node went away between finding and using it: find it again (a few times). */
+    private fun <T> retryWhenStale(block: () -> T): T {
+        repeat(STALE_RETRIES - 1) {
+            try {
+                return block()
+            } catch (e: StaleObjectException) {
+                SystemClock.sleep(POLL_MS)
+            }
         }
-        repeat(FLINGS) {
-            list.fling(Direction.UP)
-            device.waitForIdle()
-        }
+        return block()
     }
 
     /** Opens a recipe from the list and goes back (detail screen, image, scaling). */
     fun MacrobenchmarkScope.openAndCloseRecipe() {
-        tap(waitForAny(*DEMO_RECIPES.map { By.text(it) }.toTypedArray()).text)
+        waitForAny(*DEMO_RECIPES.map { By.text(it) }.toTypedArray())
+        tap(DEMO_RECIPES.first { device.hasObject(By.text(it)) })
         waitFor(By.desc("More servings"))
         device.pressBack()
         waitFor(By.scrollable(true))
@@ -106,12 +122,13 @@ internal object DemoJourney {
             By.clickable(true).hasDescendant(By.text(text), MAX_LABEL_DEPTH),
             By.clickable(true).text(text),
         )
-        val target = waitForAny(*selectors.toTypedArray()).let { first ->
+        waitForAny(*selectors.toTypedArray())
+        retryWhenStale {
             // The smallest match: the row itself, not a container around it.
             selectors.flatMap { device.findObjects(it) }
-                .minByOrNull { it.visibleBounds.width().toLong() * it.visibleBounds.height() } ?: first
+                .minByOrNull { it.visibleBounds.width().toLong() * it.visibleBounds.height() }
+                ?.click() ?: throw StaleObjectException()
         }
-        target.click()
         device.waitForIdle()
     }
 
@@ -129,5 +146,6 @@ internal object DemoJourney {
     }
 
     private const val FLINGS = 3
+    private const val STALE_RETRIES = 5
     private const val GESTURE_MARGIN_DIVISOR = 5
 }

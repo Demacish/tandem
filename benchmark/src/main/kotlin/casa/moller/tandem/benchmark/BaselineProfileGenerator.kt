@@ -43,8 +43,8 @@ class BaselineProfileGenerator {
         killProcess()
         ensureDemoMode()
         waitForTodayContent()
-        val list = openRecipeList()
-        flingDownAndUp(list)
+        openRecipeList()
+        flingDownAndUp()
         openAndCloseRecipe()
     }
 }
