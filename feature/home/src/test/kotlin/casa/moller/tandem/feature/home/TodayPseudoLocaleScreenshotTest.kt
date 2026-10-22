@@ -30,7 +30,7 @@ private const val RIGHT_TO_LEFT = "ar-rXB-ldrtl"
 /**
  * The Today tab in Android's pseudo-locales (plan 5.6/6.7): longer text (en-XA) on a phone and
  * right to left (ar-XB) on a phone and an expanded tablet. Recorded in CI like the other
- * screenshots (build/outputs/roborazzi/home/*_en_xa.png, *_ar_xb.png).
+ * screenshots (in build/outputs/roborazzi/home/, named ..._en_xa.png and ..._ar_xb.png).
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
