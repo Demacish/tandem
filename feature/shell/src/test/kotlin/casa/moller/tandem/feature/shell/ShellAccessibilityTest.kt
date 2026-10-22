@@ -140,6 +140,21 @@ class ShellAccessibilityTest {
     @Test
     fun demoPlaceholderTabs() = check(DEMO_STATE, ShellTab.WEEK)
 
+    // --- Phase 1b: the timer bar on every tab ---
+
+    @Test
+    fun timerBarRunningAndPaused() = check(CONNECTED_STATE.copy(timers = listOf(PASTA_TIMER, SAUCE_TIMER)), ShellTab.TODAY)
+
+    @Test
+    fun timerBarRingingDark() = check(CONNECTED_STATE.copy(timers = listOf(PASTA_TIMER, OVEN_TIMER)), ShellTab.MORE, darkTheme = true)
+
+    @Test
+    fun timerBarPausedFontScale2() = check(CONNECTED_STATE.copy(timers = listOf(SAUCE_TIMER)), ShellTab.RECIPES, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun timerBarTabletRinging() = check(CONNECTED_STATE.copy(timers = listOf(OVEN_TIMER, PASTA_TIMER, SAUCE_TIMER)), ShellTab.TODAY)
+
     private fun check(state: ShellUiState, tab: ShellTab, vararg pages: NavKey, darkTheme: Boolean = false, fontScale: Float = 1f) {
         set(state, tab, *pages, darkTheme = darkTheme, fontScale = fontScale)
         composeRule.assertAccessible()
@@ -151,16 +166,18 @@ class ShellAccessibilityTest {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale * density.fontScale)) {
                 TandemTheme(darkTheme = darkTheme) {
-                    ShellScaffold(
-                        state = state,
-                        navigation = navigation,
-                        actions = RecordingActions(),
-                        language = AppLanguage.SWEDISH,
-                        onLanguageSelected = {},
-                        onConnectTandoor = {},
-                        features = PlaceholderShellFeatures(state),
-                        settingsPages = FixedSettingsPages(),
-                    )
+                    FrozenTimers {
+                        ShellScaffold(
+                            state = state,
+                            navigation = navigation,
+                            actions = RecordingActions(),
+                            language = AppLanguage.SWEDISH,
+                            onLanguageSelected = {},
+                            onConnectTandoor = {},
+                            features = PlaceholderShellFeatures(state),
+                            settingsPages = FixedSettingsPages(),
+                        )
+                    }
                 }
             }
         }

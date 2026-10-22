@@ -152,10 +152,7 @@
     <string name="timer_hud_paused">%1$s · paused at %2$s</string>
     <string name="timer_hud_ringing">%1$s · time is up!</string>
     <string name="timer_hud_more">+%1$d</string>
-    <plurals name="timer_hud_more_description">
-        <item quantity="one">and %1$d more timer</item>
-        <item quantity="other">and %1$d more timers</item>
-    </plurals>
+    <string name="timer_hud_show_all">Show all %1$d timers</string>
     <string name="timer_hud_open">Open cook mode</string>
     <string name="timer_hud_stop">Stop</string>
     <string name="timer_hud_stop_description">Stop the alarm for %1$s</string>

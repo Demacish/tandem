@@ -149,10 +149,7 @@
     <string name="timer_hud_paused">%1$s · pausad vid %2$s</string>
     <string name="timer_hud_ringing">%1$s · tiden är ute!</string>
     <string name="timer_hud_more">+%1$d</string>
-    <plurals name="timer_hud_more_description">
-        <item quantity="one">och %1$d timer till</item>
-        <item quantity="other">och %1$d timers till</item>
-    </plurals>
+    <string name="timer_hud_show_all">Visa alla %1$d timers</string>
     <string name="timer_hud_open">Öppna kokläget</string>
     <string name="timer_hud_stop">Stopp</string>
     <string name="timer_hud_stop_description">Stoppa larmet för %1$s</string>

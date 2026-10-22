@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.shell
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
@@ -14,12 +15,18 @@ import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.timer.CookTimer
+import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.core.ui.timer.LocalTimerClock
+import casa.moller.tandem.core.ui.timer.LocalTimerTicks
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.ui.PlaceholderTab
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
@@ -211,4 +218,31 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
             onConnectTandoor = chrome.onConnectTandoor,
         )
     }
+}
+
+// --- Phase 1b (inställningar lane): timers for the timer bar, on a clock that does not tick. ---
+
+/** The timer bar's "now" in tests (core:testing's sample evening, 2000-01-15 18:00 UTC). */
+internal val HUD_NOW: Instant = TestClock().now()
+
+/** Started 2 min 21 s ago for 10 min: 7:39 left; cook mode's step 3 of recipe 101. */
+internal val PASTA_TIMER: CookTimer =
+    CookTimer.start(1, "Pasta", 10.minutes, HUD_NOW - 141.seconds, recipeId = 101, stepIndex = 2)
+
+/** Paused with 4:00 left; no recipe (a timer from the timer list). */
+internal val SAUCE_TIMER: CookTimer =
+    CookTimer.start(2, "Sås", 5.minutes, HUD_NOW - 1.minutes).pause(HUD_NOW)
+
+/** Rang a moment ago. */
+internal val OVEN_TIMER: CookTimer =
+    CookTimer.start(3, "Ugnen", 20.minutes, HUD_NOW - 20.minutes, recipeId = 103, stepIndex = 0).ring(HUD_NOW)
+
+/** [content] with the timer bar's clock fixed at [HUD_NOW] and no ticking (tests stay idle). */
+@Composable
+internal fun FrozenTimers(content: @Composable () -> Unit) {
+    CompositionLocalProvider(
+        LocalTimerClock provides TestClock(HUD_NOW),
+        LocalTimerTicks provides false,
+        content = content,
+    )
 }

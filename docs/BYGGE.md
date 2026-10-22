@@ -750,9 +750,10 @@ datadelen i `:core:datastore` och `:core:sync`.
   `UiModeManager.setApplicationNightMode`, gäller direkt i hela appen), "Dynamisk färg"
   (`AppViewModel` → `TandemTheme(dynamicColor)` i `MainActivity`; minSdk 34 har alltid
   Material You), kokläges textstorlek (`CookTextScale`, samma steg som A−/A+ i kokläget, med
-  ett provexempel) och "Kokläget alltid mörkt". Kokläget läser de två sista ur
-  `SettingsRepository`; `core:designsystem`s `TandemDarkTheme(enabled)` lägger ett mörkt tema
-  runt innehållet och behåller valet av dynamisk färg (`TandemThemeChoice`).
+  ett provexempel) och "Kokläget alltid mörkt". Kokläget läser de tre (även dynamisk färg) ur
+  `SettingsRepository` och lägger själv sitt mörka tema (`CookTheme` i `:feature:cook`).
+  `core:designsystem` har dessutom `TandemThemeChoice` (det närmaste temats val, så ett inre
+  `TandemTheme` ärver dynamisk färg) och `TandemDarkTheme(enabled)` för samma sak i andra skärmar.
 - **Kokläge och timers ("Beteende"):** timer i Tandem eller i klockappen
   (`SettingsRepository.setTimerMode`; klockappen går inte att välja utan klockapp). Varnar med
   länk till behörigheterna när `TimerCapabilities.alarmMayBeSilent`/`alarmMayBeLate`.
@@ -794,12 +795,25 @@ datadelen i `:core:datastore` och `:core:sync`.
   ("Servern nekar Tandem just nu") och `CIRCUIT_BREAKER` ("Synken tar en kort paus") ovanför
   flikarna med "Försök igen" (en synk som användaren bad om; den går förbi kretsbrytaren, en
   blockering väntar på serverns tid). Aldrig i demoläget, aldrig tillsammans med "Logga in igen".
+- **Timerraden på alla flikar** (`timer/ShellTimerHud`, plan 8.1 "Timer-HUD"): så länge en timer
+  löper, är pausad eller ringer visar skalet en smal rad under flikinnehållet (ovanför
+  bottenraden, eller ovanför systemets navigeringsfält när bottenraden är dold). Den visar den
+  mest brådskande timern (en som ringer, annars den äldsta, `core:ui`s `sortedForDisplay`) med
+  namn och nedräkning (`rememberTimerNow`, `formatRemaining`), "+2" för de andra (öppnar
+  `TimersKey`) och "Stopp" när den ringer (`ShellActions.stopTimer` → `TimerController.stopRinging`).
+  Ett tryck öppnar kokläget vid timerns recept och steg (`CookKey(recipeId, startStep =
+  stepIndex)`), en timer utan recept öppnar timerlistan. Raden visas inte i kokläget eller i
+  timerlistan, som visar timers själva. Timers kommer från `ShellUiState.timers`
+  (`TimerController.timers` via `ShellViewModel`). TalkBack läser timern som en knapp
+  (`timerDescription`), inte nedräkningen varje sekund. Tester fryser klockan (`FrozenTimers`:
+  `LocalTimerClock`, `LocalTimerTicks = false`).
 - **Tester:** `SettingsViewModelTest`, `ShellViewModelTest` (sammanfattningar, hållen synk,
   timerraden), `ShellScaffoldTest` (varje rad öppnar sin sida, länkar mellan sidor, surfplattans
-  list-detalj med vald rad, bannern), `SettingsScreenshotTest` (telefon, hög telefon, surfplatta;
+  list-detalj med vald rad, bannern, timerraden), `SettingsScreenshotTest` och
+  `TimerHudScreenshotTest` (telefon, hög telefon, surfplatta;
   ljust, mörkt, svenska, textstorlek 2) och ATF i `SettingsAccessibilityTest` (alla sidor och
   lägen) och `ShellAccessibilityTest` (skalets Fas 0-skärmar: Mer, Språk, Om, Licenser,
-  licenstext, utloggningsdialogen, säkert läge och alla banners). I `:core:sync`
+  licenstext, utloggningsdialogen, säkert läge, alla banners och timerraden). I `:core:sync`
   `SettingsAndDiagnosticsTest` (ladda ner allt, full synk, intervallet, lagring, loggens innehåll).
 <!-- /Fas 1b inställningar -->
 

@@ -55,6 +55,7 @@ import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.language.LanguageController
 import casa.moller.tandem.core.ui.language.rememberLanguageController
 import casa.moller.tandem.core.ui.navigation.AppChrome
+import casa.moller.tandem.core.ui.navigation.FullScreenDestination
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.status.SafeModeInfoScreen
 import casa.moller.tandem.core.ui.status.TANDEM_RELEASES_URL
@@ -93,6 +94,7 @@ import casa.moller.tandem.feature.shell.settings.SettingsPanePlaceholder
 import casa.moller.tandem.feature.shell.status.ServerNotice
 import casa.moller.tandem.feature.shell.status.ServerStatusFrame
 import casa.moller.tandem.feature.shell.status.serverNotice
+import casa.moller.tandem.feature.shell.timer.TimerHudFrame
 import casa.moller.tandem.feature.shell.ui.PlaceholderTab
 import casa.moller.tandem.feature.shell.ui.icon
 import casa.moller.tandem.feature.shell.ui.label
@@ -403,7 +405,21 @@ internal fun ShellScaffold(
                 onDismissServerUpdate = actions::dismissServerUpdate,
                 onRetrySync = actions::retrySync,
             ) {
-                ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
+                // Phase 1b (inställningar lane): the timer bar on every tab while timers run; not in
+                // cook mode or the timer list, which show the timers themselves.
+                val current = navigation.currentKey
+                TimerHudFrame(
+                    timers = state.timers,
+                    visible = current !is TimersKey && (current as? FullScreenDestination)?.hidesNavigationOnAllWidths != true,
+                    onOpenTimer = { timer ->
+                        val recipeId = timer.recipeId
+                        navigation.navigate(if (recipeId != null) CookKey(recipeId, startStep = timer.stepIndex ?: 0) else TimersKey)
+                    },
+                    onOpenAll = { navigation.navigate(TimersKey) },
+                    onStop = actions::stopTimer,
+                ) {
+                    ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)
+                }
             }
         }
     }

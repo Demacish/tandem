@@ -36,6 +36,8 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.ui.R as UiR
 import casa.moller.tandem.core.ui.language.AppLanguage
+import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
@@ -55,6 +57,7 @@ import casa.moller.tandem.feature.shell.settings.FixedSettingsPages
 import casa.moller.tandem.feature.shell.settings.SettingsAction
 import casa.moller.tandem.feature.shell.settings.SystemSetting
 import casa.moller.tandem.feature.shell.status.SYNC_HELD_BACK_BANNER_TAG
+import casa.moller.tandem.feature.shell.timer.TIMER_HUD_TAG
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -80,16 +83,18 @@ class ShellScaffoldTest {
     private fun setShell(state: ShellUiState = CONNECTED_STATE, navigation: ShellNavigationState = navigationAt(ShellTab.TODAY)) {
         composeRule.setContent {
             TandemTheme {
-                ShellScaffold(
-                    state = state,
-                    navigation = navigation,
-                    actions = actions,
-                    language = AppLanguage.SYSTEM,
-                    onLanguageSelected = { languages += it },
-                    onConnectTandoor = { connectClicks++ },
-                    features = PlaceholderShellFeatures(state),
-                    settingsPages = settingsPages,
-                )
+                FrozenTimers {
+                    ShellScaffold(
+                        state = state,
+                        navigation = navigation,
+                        actions = actions,
+                        language = AppLanguage.SYSTEM,
+                        onLanguageSelected = { languages += it },
+                        onConnectTandoor = { connectClicks++ },
+                        features = PlaceholderShellFeatures(state),
+                        settingsPages = settingsPages,
+                    )
+                }
             }
         }
     }
@@ -313,6 +318,52 @@ class ShellScaffoldTest {
     fun aBlockedSyncSaysSo() {
         setShell(state = CONNECTED_STATE.copy(syncHeldBack = SyncPause.BLOCKED))
         composeRule.onNodeWithText(string(R.string.sync_blocked_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theTimerBarIsOnEveryTabAndOpensCookModeAtTheTimersStep() {
+        val navigation = navigationAt(ShellTab.TODAY)
+        setShell(state = CONNECTED_STATE.copy(timers = listOf(SAUCE_TIMER, PASTA_TIMER)), navigation = navigation)
+        composeRule.onNodeWithTag(TIMER_HUD_TAG).assertIsDisplayed()
+        tab(R.string.shell_tab_more).performClick()
+        composeRule.onNodeWithTag(TIMER_HUD_TAG).assertIsDisplayed()
+
+        // The oldest running or paused timer leads; Pasta was started first.
+        composeRule.onNode(hasClickAction() and hasContentDescription("Pasta", substring = true)).performClick()
+
+        assertEquals(CookKey(101, startStep = 2), navigation.currentKey)
+        // Cook mode shows the timers itself.
+        composeRule.onNodeWithTag(TIMER_HUD_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun theOtherTimersOpenTheTimerList() {
+        val navigation = navigationAt(ShellTab.RECIPES)
+        setShell(state = CONNECTED_STATE.copy(timers = listOf(PASTA_TIMER, SAUCE_TIMER)), navigation = navigation)
+        composeRule.onNode(hasContentDescription(string(R.string.timer_hud_show_all, 2))).performClick()
+        assertEquals(TimersKey, navigation.currentKey)
+        composeRule.onNodeWithTag(TIMER_HUD_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun aTimerWithoutARecipeOpensTheTimerList() {
+        val navigation = navigationAt(ShellTab.TODAY)
+        setShell(state = CONNECTED_STATE.copy(timers = listOf(SAUCE_TIMER)), navigation = navigation)
+        composeRule.onNode(hasClickAction() and hasContentDescription("Sås", substring = true)).performClick()
+        assertEquals(TimersKey, navigation.currentKey)
+    }
+
+    @Test
+    fun aRingingTimerLeadsAndStopsFromTheBar() {
+        setShell(state = CONNECTED_STATE.copy(timers = listOf(PASTA_TIMER, OVEN_TIMER)))
+        composeRule.onNode(hasContentDescription(string(R.string.timer_hud_stop_description, "Ugnen"))).performClick()
+        assertEquals(listOf(OVEN_TIMER.id), actions.stoppedTimers)
+    }
+
+    @Test
+    fun noTimerBarWithoutTimersOrWithOnlyFinishedOnes() {
+        setShell(state = CONNECTED_STATE.copy(timers = listOf(OVEN_TIMER.stopRinging())))
+        composeRule.onNodeWithTag(TIMER_HUD_TAG).assertDoesNotExist()
     }
 
     @Test
