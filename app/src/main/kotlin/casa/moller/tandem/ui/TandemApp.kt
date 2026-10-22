@@ -109,6 +109,9 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                     onConnectTandoor = viewModel::connectFromDemo,
                     crashNotice = crashNotice,
                     onLogInAgain = viewModel::logInAgain,
+                    // Phase 1b: a tapped timer notification or lock-screen alarm (MainActivity).
+                    timerRequest = state.timerRequest,
+                    onTimerRequestHandled = viewModel::onTimerRequestHandled,
                 )
             }
             entry<AppDestination.Recovery> {

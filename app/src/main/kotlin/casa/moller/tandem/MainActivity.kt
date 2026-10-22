@@ -1,6 +1,7 @@
 package casa.moller.tandem
 
 import android.app.UiModeManager
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -21,6 +22,7 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.diagnostics.ColdStart
 import casa.moller.tandem.navigation.AppDestination
 import casa.moller.tandem.navigation.AppViewModel
+import casa.moller.tandem.navigation.TimerLaunch
 import casa.moller.tandem.ui.TandemApp
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -45,6 +47,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         measureColdStart()
+        // Phase 1b: opened from a timer notification or the lock-screen alarm. Only for a new
+        // activity: a recreated one (rotation, process death) has already opened it.
+        if (savedInstanceState == null) openTimerFrom(intent)
         // Keep the splash until the stored session is read, so the intro never flashes for a
         // user who is already logged in.
         splashScreen.setKeepOnScreenCondition { appViewModel.uiState.value.destination == AppDestination.Loading }
@@ -75,6 +80,20 @@ class MainActivity : ComponentActivity() {
                 TandemApp(viewModel = appViewModel)
             }
         }
+    }
+
+    /**
+     * A running app gets core:timer's `TimerIntents` here (`CLEAR_TOP | SINGLE_TOP`): the shell
+     * opens cook mode at the timer's step, or the timer list.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openTimerFrom(intent)
+    }
+
+    private fun openTimerFrom(intent: Intent?) {
+        TimerLaunch.requestFrom(intent)?.let(appViewModel::onOpenTimer)
     }
 
     /**

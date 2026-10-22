@@ -4,6 +4,7 @@ import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.internal.DefaultAccountRepository
 import casa.moller.tandem.core.data.internal.DefaultAppearanceRepository
 import casa.moller.tandem.core.data.internal.DefaultSettingsRepository
+import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.data.remote.NetworkTandoorRemote
 import casa.moller.tandem.core.data.remote.TandoorRemote
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -13,6 +14,7 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.Multibinds
 
 /**
  * Both repository interfaces are served by the same @Singleton [DefaultAccountRepository], so the
@@ -36,4 +38,8 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindTandoorRemote(impl: NetworkTandoorRemote): TandoorRemote
+
+    // --- Phase 1b (integration lane): the modules' notification channels, created at startup. ---
+    @Multibinds
+    abstract fun notificationChannelInstallers(): Set<NotificationChannelInstaller>
 }

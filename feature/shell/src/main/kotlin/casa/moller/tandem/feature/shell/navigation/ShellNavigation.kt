@@ -11,6 +11,8 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import casa.moller.tandem.core.ui.navigation.FullScreenDestination
+import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.navigation.TimersKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -121,6 +123,23 @@ class ShellNavigationState(
         val stack = stack(currentTab)
         while (stack.size > 1 && replace(stack.last())) stack.removeAt(stack.lastIndex)
         if (stack.last() != key) stack.add(key)
+    }
+
+    /**
+     * Opens what a tapped timer notification or the lock-screen alarm points at (Phase 1b
+     * integration): cook mode for the timer's recipe at its step, or the timer list for a timer
+     * without a recipe, on top of the current tab. Cook mode for the same recipe that is already
+     * on screen stays as it is (it shows its timers, and its page, servings and "Klart!" draft
+     * live in its entry); an open timer list is replaced instead of stacked.
+     */
+    fun openTimer(request: TimerOpenRequest) {
+        val recipeId = request.recipeId
+        val current = currentKey
+        when {
+            recipeId == null -> navigate(TimersKey)
+            current is CookKey && current.recipeId == recipeId -> Unit
+            else -> navigate(CookKey(recipeId, startStep = request.stepIndex ?: 0), replace = { it is TimersKey })
+        }
     }
 
     /**

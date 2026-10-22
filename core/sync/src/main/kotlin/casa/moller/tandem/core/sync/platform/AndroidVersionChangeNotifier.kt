@@ -8,6 +8,7 @@ import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
 import casa.moller.tandem.core.model.notification.TandemNotificationIds
 import casa.moller.tandem.core.model.server.ServerVersionChange
@@ -33,7 +34,7 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
         if (permission != PackageManager.PERMISSION_GRANTED) return false
         val enabled = manager.areNotificationsEnabled()
         // A channel the user switched off (importance NONE) shows nothing: tell in the app instead.
-        // A channel that does not exist yet is created below with the default importance.
+        // The app creates the channel at startup; one that is missing anyway is created below.
         val channelEnabled = manager.getNotificationChannelCompat(CHANNEL_ID)
             ?.let { it.importance != NotificationManagerCompat.IMPORTANCE_NONE } ?: true
         val post = VersionNotificationPolicy.shouldPost(
@@ -42,12 +43,7 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
             channelEnabled = channelEnabled,
         )
         if (!post) return false
-        manager.createNotificationChannel(
-            NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
-                .setName(context.getString(R.string.sync_notification_channel_server))
-                .setDescription(context.getString(R.string.sync_notification_channel_server_description))
-                .build(),
-        )
+        ensureChannel()
         val text = context.getString(R.string.sync_notification_version_text, change.newVersion, change.previousVersion)
         val detail = when (VersionNotificationPolicy.noticeFor(change)) {
             VersionNotice.UPDATED -> text
@@ -72,6 +68,19 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
         }
     }
 
+    /**
+     * The channel "Server" (idempotent: an existing channel only gets its name and description
+     * updated). Created by the app at startup ([ServerChannelInstaller]) and again before posting.
+     */
+    fun ensureChannel() {
+        NotificationManagerCompat.from(context).createNotificationChannel(
+            NotificationChannelCompat.Builder(CHANNEL_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                .setName(context.getString(R.string.sync_notification_channel_server))
+                .setDescription(context.getString(R.string.sync_notification_channel_server_description))
+                .build(),
+        )
+    }
+
     private fun openAppIntent(): PendingIntent? {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
         return PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -82,4 +91,13 @@ internal class AndroidVersionChangeNotifier @Inject constructor(@ApplicationCont
         val CHANNEL_ID: String = TandemNotificationChannel.SERVER.id
         const val NOTIFICATION_ID = TandemNotificationIds.SERVER_VERSION
     }
+}
+
+/**
+ * The channel "Server" for the app's startup (plan 8.7). `sync_problems` is not created: nothing
+ * posts in it yet (0.2.0), and an empty category in the system settings would only confuse.
+ */
+internal class ServerChannelInstaller @Inject constructor(private val notifier: AndroidVersionChangeNotifier) :
+    NotificationChannelInstaller {
+    override fun createChannels() = notifier.ensureChannel()
 }

@@ -3,6 +3,7 @@ package casa.moller.tandem.core.timer.di
 import android.content.Context
 import androidx.datastore.dataStoreFile
 import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.timer.alarm.AlarmScheduler
 import casa.moller.tandem.core.timer.alarm.AndroidAlarmScheduler
@@ -11,6 +12,7 @@ import casa.moller.tandem.core.timer.engine.MonotonicClock
 import casa.moller.tandem.core.timer.engine.SystemMonotonicClock
 import casa.moller.tandem.core.timer.engine.TimerEngineConfig
 import casa.moller.tandem.core.timer.notification.AndroidTimerNotifier
+import casa.moller.tandem.core.timer.notification.TimerChannelInstaller
 import casa.moller.tandem.core.timer.notification.TimerNotifier
 import casa.moller.tandem.core.timer.platform.AndroidTimerSystem
 import casa.moller.tandem.core.timer.platform.TimerSystem
@@ -27,6 +29,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 
@@ -55,6 +58,11 @@ internal abstract class TimerModule {
 
     @Binds
     abstract fun bindMonotonicClock(impl: SystemMonotonicClock): MonotonicClock
+
+    /** timer_alarm and timer_ongoing, created by the app at startup (Phase 1b integration). */
+    @Binds
+    @IntoSet
+    abstract fun bindChannelInstaller(impl: TimerChannelInstaller): NotificationChannelInstaller
 }
 
 @Module

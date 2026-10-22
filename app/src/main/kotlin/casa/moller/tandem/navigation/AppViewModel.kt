@@ -11,6 +11,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
+import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -62,6 +63,12 @@ data class AppUiState(
     val themeModeLoaded: Boolean = false,
     /** Settings → Appearance → "Dynamisk färg" (Phase 1b), applied by the whole app at once. */
     val dynamicColor: Boolean = false,
+    /**
+     * A tapped timer notification or lock-screen alarm (Phase 1b) that the shell has not opened
+     * yet. Saved, so a request that arrives while the splash is up or just before process death
+     * is still opened once.
+     */
+    val timerRequest: TimerOpenRequest? = null,
 )
 
 /** One-off messages shown as a toast. */
@@ -102,12 +109,17 @@ class AppViewModel @Inject constructor(
         savedStateHandle.getStateFlow(KEY_LOG_IN_AGAIN, false),
     ) { hold, atServer, serverUrl, logInAgain -> IntroFlags(hold, atServer, serverUrl, logInAgain) }
 
+    /** [TimerOpenRequest] as `[recipeId or -1, stepIndex or -1]` (Bundle-friendly). */
+    private val timerRequest: Flow<TimerOpenRequest?> =
+        savedStateHandle.getStateFlow<LongArray?>(KEY_TIMER_REQUEST, null).map { it?.toTimerRequest() }
+
     val uiState: StateFlow<AppUiState> = combine(
         session,
         introFlags,
         appearanceRepository.themeMode,
         settingsRepository.settings.map { it.dynamicColor }.distinctUntilChanged(),
-    ) { current, flags, theme, dynamicColor ->
+        timerRequest,
+    ) { current, flags, theme, dynamicColor, openTimer ->
         AppUiState(
             destination = resolveDestination(current, flags.hold),
             session = current,
@@ -117,6 +129,7 @@ class AppViewModel @Inject constructor(
             themeMode = theme,
             themeModeLoaded = true,
             dynamicColor = dynamicColor,
+            timerRequest = openTimer,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppUiState())
 
@@ -137,7 +150,11 @@ class AppViewModel @Inject constructor(
                     when (kind) {
                         // Whenever the app arrives at "no account" (first start, logout, leaving
                         // demo), keep the intro on screen until it reports that it is done.
-                        SessionKind.NO_ACCOUNT -> savedStateHandle[KEY_HOLD_ONBOARDING] = true
+                        // A timer request from before the logout has no shell to open in.
+                        SessionKind.NO_ACCOUNT -> {
+                            savedStateHandle[KEY_HOLD_ONBOARDING] = true
+                            savedStateHandle[KEY_TIMER_REQUEST] = null
+                        }
 
                         // The recovery screen replaced the intro (its ViewModel is gone), so the
                         // hold must not outlive it: after "Log in again" a stored account goes to
@@ -192,6 +209,20 @@ class AppViewModel @Inject constructor(
         viewModelScope.launch { sessionRepository.leaveDemo() }
     }
 
+    /**
+     * A timer notification or the lock-screen alarm opened the app (`MainActivity` reads
+     * core:timer's `TimerIntents.ACTION_OPEN_TIMER`): the shell opens cook mode at the timer's
+     * step, or the timer list, as soon as it is shown ([onTimerRequestHandled]).
+     */
+    fun onOpenTimer(request: TimerOpenRequest) {
+        savedStateHandle[KEY_TIMER_REQUEST] = longArrayOf(request.recipeId ?: NONE, request.stepIndex?.toLong() ?: NONE)
+    }
+
+    /** The shell opened [AppUiState.timerRequest]. */
+    fun onTimerRequestHandled() {
+        savedStateHandle[KEY_TIMER_REQUEST] = null
+    }
+
     /** "Log in again" on the recovery screen. */
     fun acknowledgeRecovery() = sessionRepository.acknowledgeRecovery()
 
@@ -207,6 +238,15 @@ class AppViewModel @Inject constructor(
         const val KEY_START_AT_SERVER = "app.startAtServer"
         const val KEY_SERVER_URL = "app.onboardingServerUrl"
         const val KEY_LOG_IN_AGAIN = "app.logInAgain"
+        const val KEY_TIMER_REQUEST = "app.timerRequest"
+        private const val NONE = -1L
+
+        private fun LongArray.toTimerRequest(): TimerOpenRequest? {
+            if (size != 2) return null
+            val recipeId = this[0].takeIf { it > 0 }
+            val step = this[1].takeIf { it in 0L..Int.MAX_VALUE.toLong() }?.toInt()
+            return TimerOpenRequest(recipeId, step)
+        }
 
         fun resolveDestination(session: Session?, holdOnboarding: Boolean): AppDestination = when (session) {
             null -> AppDestination.Loading

@@ -2,6 +2,8 @@ package casa.moller.tandem.feature.shell.navigation
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -116,5 +118,35 @@ class ShellNavigationStateTest {
         navigation.selectTab(ShellTab.MORE)
         navigation.navigate(AboutKey)
         assertFalse(navigation.hidesNavigation(compactWidth = true))
+    }
+
+    @Test
+    fun aTappedTimerOpensCookModeAtItsStepOnTheCurrentTab() {
+        navigation.selectTab(ShellTab.RECIPES)
+        navigation.navigate(RecipeDetailKey(6))
+        navigation.openTimer(TimerOpenRequest(recipeId = 6, stepIndex = 1))
+        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(6), CookKey(6, startStep = 1)), navigation.backStack)
+        assertTrue("cook mode hides the navigation", navigation.hidesNavigation(compactWidth = false))
+    }
+
+    @Test
+    fun aTimerOfTheOpenCookModeKeepsItAsItIs() {
+        navigation.navigate(CookKey(6, servings = 3.0, startStep = 0))
+        navigation.openTimer(TimerOpenRequest(recipeId = 6, stepIndex = 1))
+        assertEquals(
+            "no second cook mode, the open one keeps its page and draft",
+            listOf<NavKey>(TodayKey, CookKey(6, 3.0, 0)),
+            navigation.backStack,
+        )
+    }
+
+    @Test
+    fun aTimerWithoutARecipeOpensTheTimerListOnce() {
+        navigation.openTimer(TimerOpenRequest(recipeId = null, stepIndex = null))
+        navigation.openTimer(TimerOpenRequest(recipeId = null, stepIndex = null))
+        assertEquals(listOf<NavKey>(TodayKey, TimersKey), navigation.backStack)
+        // A recipe timer from the list replaces the list instead of stacking on it.
+        navigation.openTimer(TimerOpenRequest(recipeId = 2, stepIndex = null))
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(2, startStep = 0)), navigation.backStack)
     }
 }

@@ -16,6 +16,7 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
+import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,6 +67,30 @@ class AppViewModelTest {
             AppDestination.Recovery,
             AppViewModel.resolveDestination(Session.RecoveryNeeded(setOf(RecoveryReason.KEY_UNUSABLE)), true),
         )
+    }
+
+    @Test
+    fun aTimerRequestIsKeptUntilTheShellOpenedIt() {
+        sessions.state.value = LOGGED_IN
+        val handle = SavedStateHandle()
+        val vm = newViewModel(handle)
+        vm.onOpenTimer(TimerOpenRequest(recipeId = 6, stepIndex = 1))
+        assertEquals(TimerOpenRequest(6, 1), vm.uiState.value.timerRequest)
+        // Process death before the shell opened it: the request comes back once.
+        assertEquals(TimerOpenRequest(6, 1), newViewModel(handle).uiState.value.timerRequest)
+        vm.onTimerRequestHandled()
+        assertEquals(null, vm.uiState.value.timerRequest)
+        vm.onOpenTimer(TimerOpenRequest(recipeId = null, stepIndex = null))
+        assertEquals(TimerOpenRequest(null, null), vm.uiState.value.timerRequest)
+    }
+
+    @Test
+    fun aTimerRequestDoesNotOutliveALogout() {
+        sessions.state.value = LOGGED_IN
+        val vm = newViewModel()
+        vm.onOpenTimer(TimerOpenRequest(recipeId = 6, stepIndex = 0))
+        sessions.state.value = Session.NoAccount
+        assertEquals(null, vm.uiState.value.timerRequest)
     }
 
     @Test

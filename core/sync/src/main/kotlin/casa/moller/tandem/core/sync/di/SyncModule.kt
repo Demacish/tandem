@@ -5,6 +5,7 @@ import casa.moller.tandem.core.data.cooklog.CookLogRepository
 import casa.moller.tandem.core.data.demo.DemoDataRepository
 import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
 import casa.moller.tandem.core.data.home.HomeRepository
+import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
@@ -34,6 +35,7 @@ import casa.moller.tandem.core.sync.image.TandemImageLoader
 import casa.moller.tandem.core.sync.platform.AndroidVersionChangeNotifier
 import casa.moller.tandem.core.sync.platform.ConnectivityMonitor
 import casa.moller.tandem.core.sync.platform.NetworkStatus
+import casa.moller.tandem.core.sync.platform.ServerChannelInstaller
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.platform.SystemSyncClock
@@ -46,6 +48,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
 import javax.inject.Singleton
 
 /**
@@ -101,6 +104,11 @@ internal abstract class SyncModule {
 
     @Binds
     abstract fun bindVersionChangeNotifier(impl: AndroidVersionChangeNotifier): VersionChangeNotifier
+
+    /** The channel "Server", created by the app at startup (Phase 1b integration, plan 8.7). */
+    @Binds
+    @IntoSet
+    abstract fun bindServerChannelInstaller(impl: ServerChannelInstaller): NotificationChannelInstaller
 
     @Binds
     abstract fun bindSyncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler

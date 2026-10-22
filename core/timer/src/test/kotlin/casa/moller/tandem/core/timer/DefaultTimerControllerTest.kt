@@ -24,6 +24,7 @@ import casa.moller.tandem.core.timer.engine.DefaultTimerController
 import casa.moller.tandem.core.timer.engine.SystemEvent
 import casa.moller.tandem.core.timer.engine.TimerEngineConfig
 import casa.moller.tandem.core.timer.notification.AndroidTimerNotifier
+import casa.moller.tandem.core.timer.notification.TimerChannelInstaller
 import casa.moller.tandem.core.timer.ring.AndroidRinger
 import casa.moller.tandem.core.timer.ring.TimerRingingService
 import casa.moller.tandem.core.timer.store.DataStoreTimerStore
@@ -512,6 +513,20 @@ class DefaultTimerControllerTest {
         newEngine()
 
         assertEquals(timer.endsAt!!.toEpochMilliseconds(), ringAlarms().single().triggerAtMs)
+    }
+
+    @Test
+    fun theAppStartupCreatesBothTimerChannelsWithoutPostingAnything() {
+        // Phase 1b integration: TandemApplication runs every NotificationChannelInstaller once.
+        TimerChannelInstaller(AndroidTimerNotifier(context, system, clock)).createChannels()
+
+        val alarm = notificationManager.getNotificationChannel(TandemNotificationChannel.TIMER_ALARM.id)
+        val ongoing = notificationManager.getNotificationChannel(TandemNotificationChannel.TIMER_ONGOING.id)
+        assertEquals(NotificationManager.IMPORTANCE_HIGH, alarm.importance)
+        assertEquals(AudioAttributes.USAGE_ALARM, alarm.audioAttributes.usage)
+        assertEquals(NotificationManager.IMPORTANCE_LOW, ongoing.importance)
+        assertNull("the countdown is silent", ongoing.sound)
+        assertTrue("creating channels posts nothing", notificationManager.activeNotifications.isEmpty())
     }
 
     // --- helpers ---

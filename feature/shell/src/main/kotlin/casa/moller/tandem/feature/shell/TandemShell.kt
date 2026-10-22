@@ -84,6 +84,7 @@ import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigation.ShoppingKey
 import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
+import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
 import casa.moller.tandem.feature.shell.navigation.isMorePage
@@ -110,6 +111,8 @@ import casa.moller.tandem.feature.shell.ui.selectedIcon
  *   crash log is stored (plan 4.2 p7); emits nothing otherwise.
  * @param onLogInAgain "Log in again" on the banner after Tandoor refused the token: the app opens
  *   the intro at the server step for the same server (plan 4.1, 5.4).
+ * @param timerRequest a tapped timer notification or lock-screen alarm (Phase 1b): opened once
+ *   with [ShellNavigationState.openTimer], then [onTimerRequestHandled] is called.
  */
 @Composable
 fun TandemShell(
@@ -119,6 +122,8 @@ fun TandemShell(
     viewModel: ShellViewModel = hiltViewModel(),
     languageController: LanguageController = rememberLanguageController(),
     crashNotice: @Composable () -> Unit = {},
+    timerRequest: TimerOpenRequest? = null,
+    onTimerRequestHandled: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Plan 3.6 point 3: check the server version again when the app comes back to the
@@ -128,6 +133,12 @@ fun TandemShell(
         onPauseOrDispose { }
     }
     val navigation = rememberShellNavigationState()
+    LaunchedEffect(navigation, timerRequest) {
+        if (timerRequest != null) {
+            navigation.openTimer(timerRequest)
+            onTimerRequestHandled()
+        }
+    }
     var language by remember(languageController) { mutableStateOf(languageController.current) }
     ShellScaffold(
         state = state,
