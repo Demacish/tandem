@@ -183,8 +183,9 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
 
     private suspend fun StringBuilder.appendOutbox() {
         val database = databases.get(DatabaseKind.REAL)
-        val accounts = database.accountDao().observeAll().first()
-        val rows = accounts.flatMap { database.outboxDao().observeAll(it.id).first() }
+        // Every account with rows (also rows of a removed account that are still waiting).
+        val accounts = database.accountDao().getStoredAccountIds()
+        val rows = accounts.flatMap { database.outboxDao().observeAll(it).first() }
         if (rows.isEmpty()) {
             line("Rows", "0")
             return

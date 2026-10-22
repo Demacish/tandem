@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mer: inställningsraderna -->
+    <string name="settings_section">Inställningar</string>
+    <string name="settings_section_about">Om och hjälp</string>
+    <string name="settings_sync">Synk och lagring</string>
+    <string name="settings_sync_summary">%1$s · %2$s</string>
+    <plurals name="settings_sync_summary_downloaded">
+        <item quantity="one">%1$d av %2$d recept offline</item>
+        <item quantity="other">%1$d av %2$d recept offline</item>
+    </plurals>
+    <string name="settings_appearance">Utseende</string>
+    <string name="settings_appearance_summary_dynamic">%1$s · färger från bakgrundsbilden</string>
+    <string name="settings_appearance_summary_brand">%1$s · Tandems färger</string>
+    <string name="settings_cooking">Kokläge och timers</string>
+    <string name="settings_cooking_summary_in_app">Timers i Tandem</string>
+    <string name="settings_cooking_summary_clock_app">Timers i klockappen</string>
+    <string name="settings_permissions">Behörigheter</string>
+    <string name="settings_permissions_summary_ok">Timers kan ringa som de ska</string>
+    <string name="settings_permissions_summary_attention">Timers kan ringa sent eller tyst</string>
+    <string name="settings_diagnostics">Diagnostik</string>
+    <string name="settings_diagnostics_summary">Versioner, starttid och ”Exportera logg”</string>
+    <string name="settings_pick_one">Välj en inställning</string>
+    <string name="settings_pick_one_body">Välj något till vänster för att ändra det här.</string>
+    <string name="settings_account_features">Funktioner på servern</string>
+    <string name="settings_feature_households">Hushåll</string>
+    <string name="settings_feature_cook_log">Koklogg</string>
+    <string name="settings_feature_view_log">Nyligen visade</string>
+    <string name="settings_feature_share_link">Delningslänkar</string>
+    <string name="settings_feature_ai_import">AI-import</string>
+    <string name="settings_feature_auto_plan">Planera veckan automatiskt</string>
+    <string name="settings_feature_ical">Kalenderlänk</string>
+    <string name="settings_feature_inventory">Skafferi</string>
+    <string name="settings_feature_recipe_index">Snabbt receptindex</string>
+    <string name="settings_on">På</string>
+    <string name="settings_off">Av</string>
+
+    <!-- Utseende -->
+    <string name="settings_theme_body">Gäller hela appen direkt.</string>
+    <string name="settings_dynamic_color">Dynamisk färg</string>
+    <string name="settings_dynamic_color_body">Använd färger från bakgrundsbilden i stället för Tandems varma köksfärger.</string>
+    <string name="settings_cook_text_size">Textstorlek i kokläget</string>
+    <string name="settings_cook_text_size_body">Läggs ovanpå telefonens textstorlek. Du kan också ändra den i kokläget med A− och A+.</string>
+    <string name="settings_cook_text_size_value">%1$d %%</string>
+    <string name="settings_cook_text_size_preview">Koka pastan i 10 minuter.</string>
+    <string name="settings_cook_text_smaller">Mindre text i kokläget</string>
+    <string name="settings_cook_text_larger">Större text i kokläget</string>
+    <string name="settings_cook_always_dark">Kokläget alltid mörkt</string>
+    <string name="settings_cook_always_dark_body">En mörk skärm i köket, även när resten av appen är ljus.</string>
+
+    <!-- Kokläge och timers -->
+    <string name="settings_timers">Timers</string>
+    <string name="settings_timer_in_app">I Tandem</string>
+    <string name="settings_timer_in_app_body">Flera timers samtidigt, ”+1 min” och ett larm som ringer på låsskärmen. Rekommenderas.</string>
+    <string name="settings_timer_clock_app">I klockappen</string>
+    <string name="settings_timer_clock_app_body">Tandem lämnar varje timer till telefonens klockapp och följer den inte längre.</string>
+    <string name="settings_timer_no_clock_app">Ingen klockapp som kan ta emot timers hittades på telefonen.</string>
+    <string name="settings_timer_alarm_warning_title">Dina timers kanske inte ringer som de ska</string>
+    <string name="settings_timer_alarm_warning_silent">Tandem får inte visa notiser, eller så är larmnotiserna avstängda. En timer ringer då bara medan Tandem är öppen.</string>
+    <string name="settings_timer_alarm_warning_late">Tandem får inte ställa exakta larm, så Android kan försena en timer några minuter.</string>
+    <string name="settings_open_permissions">Kontrollera behörigheter</string>
+    <string name="settings_open_appearance">Textstorlek och mörkt kokläge</string>
+    <string name="settings_open_appearance_body">Under Utseende</string>
+
+    <!-- Synk och lagring -->
+    <string name="settings_sync_interval">Synka i bakgrunden</string>
+    <string name="settings_sync_interval_15">Var 15:e minut</string>
+    <string name="settings_sync_interval_60">Varje timme</string>
+    <string name="settings_sync_interval_360">Var 6:e timme</string>
+    <string name="settings_sync_interval_manual">Bara när jag öppnar appen</string>
+    <string name="settings_sync_interval_body">Tandem synkar alltid när du öppnar appen och när du drar nedåt för att uppdatera. Synk i bakgrunden väntar på nätverk och på att batteriet inte är nästan tomt.</string>
+    <string name="settings_sync_now">Synka nu</string>
+    <string name="settings_sync_running">Synkar…</string>
+    <string name="settings_sync_last">Senast synkad %1$s</string>
+    <string name="settings_sync_never">Inte synkad än</string>
+    <string name="settings_sync_paused">Synken är pausad: %1$s</string>
+    <string name="settings_pause_offline">inget nätverk</string>
+    <string name="settings_pause_unauthorized">logga in igen</string>
+    <string name="settings_pause_blocked">servern nekar Tandem en stund</string>
+    <string name="settings_pause_breaker">många fel, en kort paus</string>
+    <string name="settings_pause_safe_mode">säkert läge, ändringar väntar</string>
+    <string name="settings_pause_import">en import pågår</string>
+    <plurals name="settings_sync_pending">
+        <item quantity="one">%1$d ändring väntar på att skickas</item>
+        <item quantity="other">%1$d ändringar väntar på att skickas</item>
+    </plurals>
+    <string name="settings_download_all">Ladda ner alla recept</string>
+    <string name="settings_download_all_body">Spara alla recept med bild på telefonen, så att alla fungerar offline. Fästa, planerade och nyligen visade recept sparas alltid.</string>
+    <plurals name="settings_download_all_estimate">
+        <item quantity="one">Ungefär %1$s till för %2$d recept.</item>
+        <item quantity="other">Ungefär %1$s till för %2$d recept.</item>
+    </plurals>
+    <plurals name="settings_download_progress">
+        <item quantity="one">%1$d av %2$d recept nedladdat</item>
+        <item quantity="other">%1$d av %2$d recept nedladdade</item>
+    </plurals>
+    <plurals name="settings_download_done">
+        <item quantity="one">%1$d recept finns på telefonen.</item>
+        <item quantity="other">Alla %1$d recept finns på telefonen.</item>
+    </plurals>
+    <string name="settings_storage">Lagring på telefonen</string>
+    <string name="settings_storage_database">Recept och inställningar</string>
+    <string name="settings_storage_images">Receptbilder</string>
+    <string name="settings_storage_total">%1$s totalt</string>
+    <string name="settings_clear_image_cache">Rensa bildcache</string>
+    <string name="settings_clear_image_cache_body">Frigör utrymme. Bilder för recept du sparat offline hämtas igen vid nästa synk.</string>
+    <string name="settings_image_cache_cleared">Bildcachen är tömd.</string>
+    <string name="settings_image_cache_not_cleared">Bildcachen kunde inte tömmas.</string>
+    <string name="settings_demo_no_sync">Demoläget har ingen server, så det finns inget att synka eller ladda ner.</string>
+
+    <!-- Behörigheter -->
+    <string name="settings_permissions_intro">Tandem frågar om behörigheter när de behövs, till exempel vid din första timer. Här ser du vad som är tillåtet och kan ändra det i Androids inställningar.</string>
+    <string name="settings_permissions_privacy_title">Allt stannar hos dig</string>
+    <string name="settings_permissions_privacy_body">Tandem pratar bara med din egen Tandoor-server. Ingen position, inga kontakter, ingen spårning.</string>
+    <string name="settings_permission_notifications">Notiser</string>
+    <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, och nyheter om din server.</string>
+    <string name="settings_permission_alarm_channel">Larmljud för timers</string>
+    <string name="settings_permission_alarm_channel_body">Notistypen ”Timers (larm)” måste vara på, annars är en färdig timer tyst.</string>
+    <string name="settings_permission_exact">Larm i rätt tid</string>
+    <string name="settings_permission_exact_body">Låter en timer ringa på sekunden, även när telefonen sparar ström.</string>
+    <string name="settings_permission_exact_always">Alltid tillåtet i den här versionen av Tandem.</string>
+    <string name="settings_permission_full_screen">Larm på låsskärmen</string>
+    <string name="settings_permission_full_screen_body">En timer som ringer fyller skärmen, även när telefonen är låst.</string>
+    <string name="settings_permission_battery">Batterisparläge</string>
+    <string name="settings_permission_battery_body">Vissa telefoner stoppar appar i bakgrunden för att spara ström. Ställ in Tandem på ”Obegränsad” under Batteri så att synk och timers inte stoppas.</string>
+    <string name="settings_permission_allowed">Tillåtet</string>
+    <string name="settings_permission_not_allowed">Inte tillåtet</string>
+    <string name="settings_permission_unrestricted">Obegränsad</string>
+    <string name="settings_permission_restricted">Optimerad</string>
+    <string name="settings_permission_open">Öppna inställningar</string>
+    <string name="settings_permission_open_description">Öppna Androids inställningar för %1$s</string>
+
+    <!-- Diagnostik -->
+    <string name="settings_diagnostics_versions">Versioner</string>
+    <string name="settings_diagnostics_app">Tandem</string>
+    <string name="settings_diagnostics_app_value">%1$s (%2$d) · %3$s</string>
+    <string name="settings_diagnostics_android">Android</string>
+    <string name="settings_diagnostics_android_value">API-nivå %1$d</string>
+    <string name="settings_diagnostics_server">Tandoor</string>
+    <string name="settings_diagnostics_server_none">Ingen server (demoläge eller inte inloggad)</string>
+    <string name="settings_diagnostics_timings">Mätningar</string>
+    <string name="settings_diagnostics_timings_body">Uppmätt på den här telefonen. Målet är en start på under 1,5 sekunder och en full synk av ungefär 300 recept på under en minut.</string>
+    <string name="settings_diagnostics_cold_start">Start till de första recepten</string>
+    <string name="settings_diagnostics_full_sync">Senaste fulla synk</string>
+    <plurals name="settings_diagnostics_full_sync_value">
+        <item quantity="one">%1$s för %2$d recept</item>
+        <item quantity="other">%1$s för %2$d recept</item>
+    </plurals>
+    <string name="settings_diagnostics_not_measured">Inte mätt än</string>
+    <string name="settings_diagnostics_cold_start_hint">Mäts nästa gång Tandem startar från början och visar Idag eller dina recept.</string>
+    <string name="settings_diagnostics_full_sync_hint">Mäts vid första synken efter inloggning och när alla recept läses om.</string>
+    <string name="settings_diagnostics_measured_at">Uppmätt %1$s</string>
+    <string name="settings_diagnostics_within_target">Inom målet</string>
+    <string name="settings_diagnostics_over_target">Långsammare än målet</string>
+    <string name="settings_diagnostics_seconds">%1$s s</string>
+    <string name="settings_diagnostics_export">Exportera logg</string>
+    <string name="settings_diagnostics_export_body">En text med versioner, inställningar, synkstatus, väntande ändringar, feltyper, mätningarna och den senaste kraschen om det fanns någon. Den innehåller aldrig lösenord, token, din serveradress eller recept. Du väljer själv var den delas.</string>
+    <string name="settings_diagnostics_exporting">Förbereder loggen…</string>
+    <string name="settings_diagnostics_export_failed">Loggen kunde inte skapas.</string>
+    <string name="settings_diagnostics_share_title">Dela Tandems logg</string>
+
+    <!-- Timerraden på alla flikar -->
+    <string name="timer_hud_running">%1$s · %2$s</string>
+    <string name="timer_hud_paused">%1$s · pausad vid %2$s</string>
+    <string name="timer_hud_ringing">%1$s · tiden är ute!</string>
+    <string name="timer_hud_more">+%1$d</string>
+    <plurals name="timer_hud_more_description">
+        <item quantity="one">och %1$d timer till</item>
+        <item quantity="other">och %1$d timers till</item>
+    </plurals>
+    <string name="timer_hud_open">Öppna kokläget</string>
+    <string name="timer_hud_stop">Stopp</string>
+    <string name="timer_hud_stop_description">Stoppa larmet för %1$s</string>
+
+    <!-- Synken hålls tillbaka -->
+    <string name="sync_blocked_title">Servern nekar Tandem just nu</string>
+    <string name="sync_blocked_body">Tandoor, eller något framför den, stoppar synken en stund. Recepten på telefonen fungerar som vanligt, och Tandem försöker igen senare.</string>
+    <string name="sync_breaker_title">Synken tar en kort paus</string>
+    <string name="sync_breaker_body">Det blev många fel på kort tid, så Tandem väntar några minuter innan nästa försök. Recepten på telefonen fungerar som vanligt.</string>
+    <string name="sync_retry">Försök igen</string>
+</resources>

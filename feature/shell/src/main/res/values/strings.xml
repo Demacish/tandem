@@ -88,7 +88,7 @@
     <string name="shell_license_bricolage" translatable="false">Bricolage Grotesque</string>
     <string name="shell_license_dm_sans" translatable="false">DM Sans</string>
     <string name="shell_license_material_symbols" translatable="false">Material Symbols Rounded</string>
-    <string name="shell_license_libraries" translatable="false">AndroidX, Jetpack Compose, Kotlin, kotlinx, Dagger Hilt, OkHttp, Okio, Retrofit, Coil, Tink</string>
+    <string name="shell_license_libraries" translatable="false">AndroidX (Activity, Core, Lifecycle, Navigation 3, Room, WorkManager, DataStore, Browser, SplashScreen), Jetpack Compose, Material 3, Kotlin, kotlinx (coroutines, serialization, datetime), Dagger Hilt, OkHttp, Okio, Retrofit, Coil, Tink</string>
     <string name="shell_license_ofl" translatable="false">SIL Open Font License 1.1</string>
     <string name="shell_license_apache" translatable="false">Apache License 2.0</string>
 

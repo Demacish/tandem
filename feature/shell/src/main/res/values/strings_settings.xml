@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 1b (inställningar lane): the settings under "More" (plan 6.2 "Inställningar"),
+     diagnostics, the timer bar on every tab and the "sync held back" banner. Permissions are
+     described by what they do, never by their Android names (docs/design/README.md). -->
+<resources>
+    <!-- More: the settings rows -->
+    <string name="settings_section">Settings</string>
+    <string name="settings_section_about">About and help</string>
+    <string name="settings_sync">Sync and storage</string>
+    <string name="settings_sync_summary">%1$s · %2$s</string>
+    <plurals name="settings_sync_summary_downloaded">
+        <item quantity="one">%1$d of %2$d recipe offline</item>
+        <item quantity="other">%1$d of %2$d recipes offline</item>
+    </plurals>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_appearance_summary_dynamic">%1$s · colours from your wallpaper</string>
+    <string name="settings_appearance_summary_brand">%1$s · Tandem colours</string>
+    <string name="settings_cooking">Cook mode and timers</string>
+    <string name="settings_cooking_summary_in_app">Timers in Tandem</string>
+    <string name="settings_cooking_summary_clock_app">Timers in the clock app</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_permissions_summary_ok">Timers can ring as they should</string>
+    <string name="settings_permissions_summary_attention">Timers may ring late or silently</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_diagnostics_summary">Versions, start time and “Export log”</string>
+    <string name="settings_pick_one">Pick a setting</string>
+    <string name="settings_pick_one_body">Choose something on the left to change it here.</string>
+    <string name="settings_account_features">Features on this server</string>
+    <string name="settings_feature_households">Households</string>
+    <string name="settings_feature_cook_log">Cook log</string>
+    <string name="settings_feature_view_log">Recently viewed</string>
+    <string name="settings_feature_share_link">Share links</string>
+    <string name="settings_feature_ai_import">AI import</string>
+    <string name="settings_feature_auto_plan">Plan the week automatically</string>
+    <string name="settings_feature_ical">Calendar link</string>
+    <string name="settings_feature_inventory">Pantry</string>
+    <string name="settings_feature_recipe_index">Fast recipe index</string>
+    <string name="settings_on">On</string>
+    <string name="settings_off">Off</string>
+
+    <!-- Appearance (plan 6.4) -->
+    <string name="settings_theme_body">Applies to the whole app at once.</string>
+    <string name="settings_dynamic_color">Dynamic colour</string>
+    <string name="settings_dynamic_color_body">Use colours from your wallpaper instead of Tandem’s warm kitchen colours.</string>
+    <string name="settings_cook_text_size">Text size in cook mode</string>
+    <string name="settings_cook_text_size_body">Comes on top of your phone’s text size. You can also change it in cook mode with A− and A+.</string>
+    <string name="settings_cook_text_size_value">%1$d %%</string>
+    <string name="settings_cook_text_size_preview">Boil the pasta for 10 minutes.</string>
+    <string name="settings_cook_text_smaller">Smaller text in cook mode</string>
+    <string name="settings_cook_text_larger">Larger text in cook mode</string>
+    <string name="settings_cook_always_dark">Cook mode always dark</string>
+    <string name="settings_cook_always_dark_body">A dark screen in the kitchen, also when the rest of the app is light.</string>
+
+    <!-- Cook mode and timers ("Beteende") -->
+    <string name="settings_timers">Timers</string>
+    <string name="settings_timer_in_app">In Tandem</string>
+    <string name="settings_timer_in_app_body">Several timers at once, “+1 min”, and an alarm that rings on the lock screen. Recommended.</string>
+    <string name="settings_timer_clock_app">In the clock app</string>
+    <string name="settings_timer_clock_app_body">Tandem hands each timer to your phone’s clock app and does not follow it any further.</string>
+    <string name="settings_timer_no_clock_app">No clock app that can take timers was found on this phone.</string>
+    <string name="settings_timer_alarm_warning_title">Your timers may not ring as they should</string>
+    <string name="settings_timer_alarm_warning_silent">Tandem is not allowed to show notifications, or the alarm notifications are turned off. A timer then only rings while Tandem is open.</string>
+    <string name="settings_timer_alarm_warning_late">Tandem may not set exact alarms, so Android can delay a timer by a few minutes.</string>
+    <string name="settings_open_permissions">Check permissions</string>
+    <string name="settings_open_appearance">Text size and dark cook mode</string>
+    <string name="settings_open_appearance_body">Under Appearance</string>
+
+    <!-- Sync and storage (plan 6.2 "Synk") -->
+    <string name="settings_sync_interval">Sync in the background</string>
+    <string name="settings_sync_interval_15">Every 15 minutes</string>
+    <string name="settings_sync_interval_60">Every hour</string>
+    <string name="settings_sync_interval_360">Every 6 hours</string>
+    <string name="settings_sync_interval_manual">Only when I open the app</string>
+    <string name="settings_sync_interval_body">Tandem always syncs when you open the app and when you pull down to refresh. Background syncs wait for a network and a battery that is not low.</string>
+    <string name="settings_sync_now">Sync now</string>
+    <string name="settings_sync_running">Syncing…</string>
+    <string name="settings_sync_last">Last synced %1$s</string>
+    <string name="settings_sync_never">Not synced yet</string>
+    <string name="settings_sync_paused">Sync is paused: %1$s</string>
+    <string name="settings_pause_offline">no network</string>
+    <string name="settings_pause_unauthorized">log in again</string>
+    <string name="settings_pause_blocked">the server turns Tandem away for a while</string>
+    <string name="settings_pause_breaker">many errors, a short break</string>
+    <string name="settings_pause_safe_mode">safe mode, changes wait</string>
+    <string name="settings_pause_import">an import is running</string>
+    <plurals name="settings_sync_pending">
+        <item quantity="one">%1$d change waiting to be sent</item>
+        <item quantity="other">%1$d changes waiting to be sent</item>
+    </plurals>
+    <string name="settings_download_all">Download all recipes</string>
+    <string name="settings_download_all_body">Keep every recipe with its photo on the phone, so all of them work offline. Pinned, planned and recently viewed recipes are always kept.</string>
+    <plurals name="settings_download_all_estimate">
+        <item quantity="one">About %1$s more for %2$d recipe.</item>
+        <item quantity="other">About %1$s more for %2$d recipes.</item>
+    </plurals>
+    <plurals name="settings_download_progress">
+        <item quantity="one">%1$d of %2$d recipe downloaded</item>
+        <item quantity="other">%1$d of %2$d recipes downloaded</item>
+    </plurals>
+    <plurals name="settings_download_done">
+        <item quantity="one">%1$d recipe is on the phone.</item>
+        <item quantity="other">All %1$d recipes are on the phone.</item>
+    </plurals>
+    <string name="settings_storage">Storage on this phone</string>
+    <string name="settings_storage_database">Recipes and settings</string>
+    <string name="settings_storage_images">Recipe photos</string>
+    <string name="settings_storage_total">%1$s in total</string>
+    <string name="settings_clear_image_cache">Clear photo cache</string>
+    <string name="settings_clear_image_cache_body">Frees space. Photos of recipes you keep offline are downloaded again at the next sync.</string>
+    <string name="settings_image_cache_cleared">The photo cache is empty.</string>
+    <string name="settings_image_cache_not_cleared">The photo cache could not be cleared.</string>
+    <string name="settings_demo_no_sync">Demo mode has no server, so there is nothing to sync or download.</string>
+
+    <!-- Permissions overview (design k_kets_beh_righeter_systemguide with its corrections) -->
+    <string name="settings_permissions_intro">Tandem asks for permissions when it needs them, for example at your first timer. Here you can see what is allowed and change it in Android’s settings.</string>
+    <string name="settings_permissions_privacy_title">Everything stays with you</string>
+    <string name="settings_permissions_privacy_body">Tandem only talks to your own Tandoor server. No location, no contacts, no tracking.</string>
+    <string name="settings_permission_notifications">Notifications</string>
+    <string name="settings_permission_notifications_body">Timers counting down and ringing, and news about your server.</string>
+    <string name="settings_permission_alarm_channel">Alarm sound for timers</string>
+    <string name="settings_permission_alarm_channel_body">The notification type “Timers (alarm)” must be on, otherwise a finished timer is silent.</string>
+    <string name="settings_permission_exact">Alarms on time</string>
+    <string name="settings_permission_exact_body">Lets a timer ring on the second, even when the phone is saving power.</string>
+    <string name="settings_permission_exact_always">Always allowed in this version of Tandem.</string>
+    <string name="settings_permission_full_screen">Alarm on the lock screen</string>
+    <string name="settings_permission_full_screen_body">A ringing timer fills the screen, also when the phone is locked.</string>
+    <string name="settings_permission_battery">Battery saving</string>
+    <string name="settings_permission_battery_body">Some phones stop apps in the background to save power. Set Tandem to “Unrestricted” under Battery so syncs and timers are not stopped.</string>
+    <string name="settings_permission_allowed">Allowed</string>
+    <string name="settings_permission_not_allowed">Not allowed</string>
+    <string name="settings_permission_unrestricted">Unrestricted</string>
+    <string name="settings_permission_restricted">Optimised</string>
+    <string name="settings_permission_open">Open settings</string>
+    <string name="settings_permission_open_description">Open Android’s settings for %1$s</string>
+
+    <!-- Diagnostics (plan 6.2 "Övrigt", Phase 1 "Klart när") -->
+    <string name="settings_diagnostics_versions">Versions</string>
+    <string name="settings_diagnostics_app">Tandem</string>
+    <string name="settings_diagnostics_app_value">%1$s (%2$d) · %3$s</string>
+    <string name="settings_diagnostics_android">Android</string>
+    <string name="settings_diagnostics_android_value">API level %1$d</string>
+    <string name="settings_diagnostics_server">Tandoor</string>
+    <string name="settings_diagnostics_server_none">No server (demo mode or not logged in)</string>
+    <string name="settings_diagnostics_timings">Measurements</string>
+    <string name="settings_diagnostics_timings_body">Measured on this phone. Tandem aims for a start under 1.5 seconds and a full sync of about 300 recipes in under a minute.</string>
+    <string name="settings_diagnostics_cold_start">Start to the first recipes</string>
+    <string name="settings_diagnostics_full_sync">Last full sync</string>
+    <plurals name="settings_diagnostics_full_sync_value">
+        <item quantity="one">%1$s for %2$d recipe</item>
+        <item quantity="other">%1$s for %2$d recipes</item>
+    </plurals>
+    <string name="settings_diagnostics_not_measured">Not measured yet</string>
+    <string name="settings_diagnostics_cold_start_hint">Measured the next time Tandem starts from scratch and shows Today or your recipes.</string>
+    <string name="settings_diagnostics_full_sync_hint">Measured at the first sync after logging in, and when all recipes are read again.</string>
+    <string name="settings_diagnostics_measured_at">Measured %1$s</string>
+    <string name="settings_diagnostics_within_target">Within the goal</string>
+    <string name="settings_diagnostics_over_target">Slower than the goal</string>
+    <string name="settings_diagnostics_seconds">%1$s s</string>
+    <string name="settings_diagnostics_export">Export log</string>
+    <string name="settings_diagnostics_export_body">A text with versions, settings, sync status, waiting changes, error types, the measurements and the last crash, if there was one. It never contains passwords, tokens, your server address or recipes. You choose where to share it.</string>
+    <string name="settings_diagnostics_exporting">Preparing the log…</string>
+    <string name="settings_diagnostics_export_failed">The log could not be created.</string>
+    <string name="settings_diagnostics_share_title">Share the Tandem log</string>
+
+    <!-- The timer bar on every tab -->
+    <string name="timer_hud_running">%1$s · %2$s</string>
+    <string name="timer_hud_paused">%1$s · paused at %2$s</string>
+    <string name="timer_hud_ringing">%1$s · time is up!</string>
+    <string name="timer_hud_more">+%1$d</string>
+    <plurals name="timer_hud_more_description">
+        <item quantity="one">and %1$d more timer</item>
+        <item quantity="other">and %1$d more timers</item>
+    </plurals>
+    <string name="timer_hud_open">Open cook mode</string>
+    <string name="timer_hud_stop">Stop</string>
+    <string name="timer_hud_stop_description">Stop the alarm for %1$s</string>
+
+    <!-- The sync is held back (SyncPause BLOCKED / CIRCUIT_BREAKER, plan 4.1) -->
+    <string name="sync_blocked_title">The server is turning Tandem away right now</string>
+    <string name="sync_blocked_body">Tandoor, or something in front of it, refuses the sync for a while. Your recipes on the phone still work, and Tandem tries again later.</string>
+    <string name="sync_breaker_title">The sync takes a short break</string>
+    <string name="sync_breaker_body">There were many errors in a short time, so Tandem waits a few minutes before it tries again. Your recipes on the phone still work.</string>
+    <string name="sync_retry">Try again</string>
+</resources>
