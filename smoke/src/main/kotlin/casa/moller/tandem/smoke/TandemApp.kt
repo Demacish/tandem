@@ -8,6 +8,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.Until
 import java.io.File
 import java.util.regex.Pattern
 
@@ -118,6 +119,20 @@ class TandemApp(val device: UiDevice) {
     /** Waits for a clickable element labelled [text] (scrolling if needed) and clicks it. */
     fun tap(text: String) {
         scrollToAny(clickableWithText(text)).click()
+    }
+
+    /**
+     * Taps [text] until [expected] shows (at most [attempts] taps). On the CI emulator a tap now
+     * and then lands while a screen still settles and is lost (seen on "About Tandem" in More,
+     * 0.2.0 integration); the tap is only repeated while the button is still there.
+     */
+    fun tapUntil(text: String, expected: BySelector, attempts: Int = TAP_ATTEMPTS): UiObject2 {
+        tap(text)
+        repeat(attempts - 1) {
+            device.wait(Until.findObject(expected), TAP_SETTLE_MS)?.let { return it }
+            clickableWithText(text).firstNotNullOfOrNull { device.findObject(it) }?.click()
+        }
+        return waitFor(expected)
     }
 
     /** Waits until a clickable element labelled [text] is on screen, without scrolling. */
@@ -304,6 +319,8 @@ class TandemApp(val device: UiDevice) {
         private const val MAX_SCROLLS = 6
         private const val SWIPE_STEPS = 20
         private const val MAX_LABEL_DEPTH = 4
+        private const val TAP_ATTEMPTS = 3
+        private const val TAP_SETTLE_MS = 5_000L
 
         /** `/sdcard/Android/media/casa.moller.tandem.smoke/smoke`, pulled by scripts/ci/smoke-run.sh. */
         fun outputDir(): File {

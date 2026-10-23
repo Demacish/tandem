@@ -80,8 +80,7 @@ class ReleaseSmokeTest {
 
         // Navigation 3 back stack across process death: More -> About is saved when the app goes
         // to the background and restored (deserialized) when it comes back.
-        app.tap("About Tandem")
-        app.waitFor(By.text(ABOUT_TEXT))
+        app.tapUntil("About Tandem", By.text(ABOUT_TEXT))
         app.killInBackground()
         app.launch()
         app.waitFor(By.text(ABOUT_TEXT))
@@ -89,9 +88,8 @@ class ReleaseSmokeTest {
         // A Navigation 3 key with an argument: LicenseTextKey(BundledLicense) is restored through
         // its Companion, $$serializer and the enum serializer (data objects use INSTANCE). Also
         // proves that assets/licenses is in the release APK (no "could not be loaded").
-        app.tap("Licenses")
-        app.tap("DM Sans")
-        app.waitFor(By.textStartsWith(DM_SANS_LICENSE_TEXT))
+        app.tapUntil("Licenses", By.text("DM Sans"))
+        app.tapUntil("DM Sans", By.textStartsWith(DM_SANS_LICENSE_TEXT))
         app.killInBackground()
         app.launch()
         app.waitFor(By.textStartsWith(DM_SANS_LICENSE_TEXT))
