@@ -971,9 +971,9 @@ uppgiften `detekt` används (`detekt.android.disabled=true`). `ciLint` beror på
 
 En enda Gradle-egenskap i `gradle.properties` styr: **`tandem.screenshots.verify`**.
 
-- `false` (nu): `ciTest` **spelar in** varje skärmbild (`recordRoborazzi<Variant>`) och `pr.yml`
+- `false`: `ciTest` **spelar in** varje skärmbild (`recordRoborazzi<Variant>`) och `pr.yml`
   laddar upp dem som artefakten `screenshots`.
-- `true`: `ciTest` **jämför** (`verifyRoborazzi<Variant>`) med referensbilderna i
+- `true` (**på sedan 0.2.0**): `ciTest` **jämför** (`verifyRoborazzi<Variant>`) med referensbilderna i
   `<modul>/src/test/screenshots/` (kopieras först till `build/outputs/roborazzi/`). En ändrad
   eller **saknad** referensbild fäller testet och lämnar `<namn>_actual.png` och
   `<namn>_compare.png` i artefakten `screenshots`.
@@ -984,15 +984,19 @@ Referensbilder spelas bara in i CI (typsnitt och rendering skiljer mellan maskin
 samma tester igen med `-Ptandem.screenshots.verify=true` mot de nya bilderna, så att körningen
 också visar att inspelning och jämförelse är överens på löparen.
 
-**Så slår integrationsbanan på jämförelsen** (när alla skärmar för 0.2.0 finns på `main`):
+**Jämförelsen är på** (0.2.0): 368 referensbilder (ca 34 MB) i åtta moduler, inspelade av
+*Screenshots* på integrationsgrenen, granskade i urval och incheckade tillsammans med
+`tandem.screenshots.verify=true`. Roborazzis tröskel är standard (0): en enda ändrad pixel fäller
+`pr.yml`, vilket prövades med en avsiktligt ändrad pixel i en referensbild på en kastgren.
 
-1. Kör *Screenshots* på `main` (eller integrationsgrenen) och vänta på grönt.
-2. Ladda ned artefakten, granska bilderna, packa upp i roten: `tar -xf screenshot-goldens.tar`.
-3. Sätt `tandem.screenshots.verify=true` i `gradle.properties` och checka in båda i **samma**
-   ändring.
+**Den som ändrar en skärm** (eller ett typsnitt, en färg, ett bibliotek som ritar):
 
-Därefter: den som ändrar en skärm kör *Screenshots* på sin gren och checkar in de nya bilderna
-tillsammans med ändringen.
+1. Kör *Screenshots* på sin gren (Actions → Screenshots → Run workflow) och vänta på grönt.
+2. Ladda ned artefakten `screenshot-goldens`, granska de ändrade bilderna och packa upp i roten:
+   `tar -xf screenshot-goldens.tar` (ersätter alla referensbilder; `git status` visar vilka som
+   ändrats).
+3. Checka in bilderna i **samma** ändring som skärmen. En röd jämförelse lämnar
+   `<namn>_actual.png` och `<namn>_compare.png` i artefakten `screenshots`.
 
 **Pseudospråk** (plan 5.6/6.7): bibliotekens debug-bygge har `isPseudoLocalesEnabled`, så tester
 kan använda `@Config(qualifiers = "en-rXA-...")` (lång, accentuerad text) och
