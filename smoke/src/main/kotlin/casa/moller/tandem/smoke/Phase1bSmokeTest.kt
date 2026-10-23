@@ -140,8 +140,7 @@ class Phase1bSmokeTest {
     /** Shakshuka (two text timers in its last step) downloaded, then airplane mode. */
     private fun downloadTimerRecipeAndGoOffline() {
         app.tap("Recipes")
-        app.findInList(By.text(FakeTandoor.TIMER_RECIPE_NAME)).click()
-        app.waitFor(By.desc("Download for offline use"))
+        openRecipe(FakeTandoor.TIMER_RECIPE_NAME)
         app.tapDescription("Download for offline use")
         app.waitFor(By.desc("Remove offline copy"))
 
@@ -261,6 +260,18 @@ class Phase1bSmokeTest {
         assertTrue("Only the outbox posts: ${tandoor.requests}", tandoor.requests.count { it == "POST /api/cook-log/" } == 1)
     }
 
+    /**
+     * Opens a recipe from the list. A tap that lands while the list still settles after the swipe
+     * that found the card can be lost (seen once in CI): tapped again until the detail is open.
+     */
+    private fun openRecipe(name: String) {
+        repeat(OPEN_ATTEMPTS) {
+            runCatching { app.findInList(By.text(name)).click() }
+            if (app.device.wait(Until.hasObject(By.desc("Download for offline use")), OPEN_WAIT_MS) == true) return
+        }
+        app.waitFor(By.desc("Download for offline use"))
+    }
+
     /** The "Klart!" page, scrolled or not (its heading may be above the screen). */
     private fun onDonePage(): Boolean = DONE_PAGE_TEXTS.any { app.device.hasObject(By.text(it)) }
 
@@ -377,6 +388,8 @@ class Phase1bSmokeTest {
 
         const val DEMO_TONIGHT = "Baked salmon with dill potatoes"
         const val MAX_STEPS = 12
+        const val OPEN_ATTEMPTS = 3
+        const val OPEN_WAIT_MS = 7_000L
 
         /** feature:cook's "Klart!" page, top to bottom. */
         val DONE_PAGE_TEXTS = listOf("Enjoy your meal!", "How did it taste?", "Save in the cook log")
