@@ -190,7 +190,8 @@ class ReleaseSmokeTest {
      * 0.2.0 integration). So wait for More first, then search both ways.
      */
     private fun openedMoreShowsVersion() {
-        app.waitFor(By.text("About Tandem"))
+        // Any of More's own texts: which one is on screen depends on the kept scroll position.
+        app.waitFor(By.text(Pattern.compile("\\Q$VERSION_TEXT\\E|Sync and storage|About Tandem")))
         app.findInList(By.text(VERSION_TEXT))
     }
 
