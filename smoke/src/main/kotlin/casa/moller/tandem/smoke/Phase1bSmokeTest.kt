@@ -229,11 +229,12 @@ class Phase1bSmokeTest {
         app.waitFor(By.text("Step 2 of 2"))
         app.tap("Done!")
         app.waitFor(By.text("Enjoy your meal!"))
-        app.waitFor(By.text("You are offline. The entry is saved now and sent to Tandoor when you are online again."))
+        // The "Klart!" page scrolls: the stars, the comment and the offline note are further down.
+        app.scrollTo(By.clazz(EDIT_TEXT))
         app.tapDescription("4 stars")
         app.waitFor(By.text("4 of 5 stars"))
-        app.scrollTo(By.clazz(EDIT_TEXT))
         app.type(0, COMMENT)
+        app.scrollTo(By.text("You are offline. The entry is saved now and sent to Tandoor when you are online again."))
         app.capture("phase1b-klart")
         val savedAt = System.currentTimeMillis()
         device.expectToast("Saved. It is sent when you are online again.") { app.tap("Save in the cook log") }
@@ -257,6 +258,21 @@ class Phase1bSmokeTest {
             createdAt in (savedAt - CLOCK_SLACK_MS)..(savedAt + CLOCK_SLACK_MS),
         )
         assertTrue("Only the outbox posts: ${tandoor.requests}", tandoor.requests.count { it == "POST /api/cook-log/" } == 1)
+    }
+
+    /** The "Klart!" page, scrolled or not (its heading may be above the screen). */
+    private fun onDonePage(): Boolean = DONE_PAGE_TEXTS.any { app.device.hasObject(By.text(it)) }
+
+    /**
+     * "Next", or "Done!" on the last step, without scrolling: while the pager settles neither may
+     * be found at once, and a scroll gesture then would page or scroll the content instead.
+     */
+    private fun clickPageButton() {
+        val buttons = app.clickableWithText("Done!") + app.clickableWithText("Next")
+        device.waitUntil("\"Next\" or \"Done!\"") { onDonePage() || buttons.any { app.device.hasObject(it) } }
+        if (onDonePage()) return
+        buttons.firstNotNullOfOrNull { app.device.findObject(it) }?.click()
+        app.device.waitForIdle()
     }
 
     /** Finds [selector] in cook mode's side pane (landscape and tablet), scrolling it down if needed. */
@@ -294,12 +310,10 @@ class Phase1bSmokeTest {
 
         // Step to "Done!" and save: demo mode keeps the entry on the device.
         repeat(MAX_STEPS) {
-            if (app.device.hasObject(By.text("Enjoy your meal!"))) return@repeat
-            if (app.clickableWithText("Done!").any { app.device.hasObject(it) }) app.tap("Done!") else app.tap("Next")
-            app.device.waitForIdle()
+            if (!onDonePage()) clickPageButton()
         }
-        app.waitFor(By.text("Enjoy your meal!"))
-        app.waitFor(By.text("Demo mode: the entry stays on this device."))
+        app.waitFor(By.text("How did it taste?"))
+        app.scrollTo(By.text("Demo mode: the entry stays on this device."))
         device.expectToast("Saved in the demo.") { app.tap("Save in the cook log") }
         app.capture("phase1b-demo-saved")
         assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())
@@ -362,6 +376,9 @@ class Phase1bSmokeTest {
 
         const val DEMO_TONIGHT = "Baked salmon with dill potatoes"
         const val MAX_STEPS = 12
+
+        /** feature:cook's "Klart!" page, top to bottom. */
+        val DONE_PAGE_TEXTS = listOf("Enjoy your meal!", "How did it taste?", "Save in the cook log")
 
         const val MILLIS = 1_000L
         const val FIRST_SYNC_TIMEOUT_MS = 90_000L
