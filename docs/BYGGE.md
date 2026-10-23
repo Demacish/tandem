@@ -1055,11 +1055,25 @@ emulator (API 36): mätningarna, med median/min/max och P50–P99 i jobbsammanfa
 (`-Ptandem.baselineProfile.generate=true`, så profilen har riktiga klassnamn som AGP sedan mappar
 om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; checka in den som
 `app/src/main/baselineProfiles/baseline-prof.txt` (`androidx.profileinstaller` installerar den
-även vid sidladdning). Den incheckade profilen kom från den första gröna körningen (oktober 2026,
-före integrationen av 0.2.0); förnya den när startvägen, listan eller receptvyn ändrats mycket
+även vid sidladdning). Den incheckade profilen (35 473 regler, 5 713 för Tandems egna klasser)
+genererades efter integrationen av 0.2.0 (körning 40031229148 på integrationsgrenen); förnya den när startvägen, listan eller receptvyn ändrats mycket
 (Actions → Benchmark → Run workflow, ladda ned, ersätt filen). Mätjobbet kontrollerar att
 profilen når AGP:s sammanslagna ART-profil (antalet regler för `casa/moller/tandem` står i
 sammanfattningen).
+
+**Senaste mätningen (0.2.0-integrationen, 2026-10-23, körning 40031229148, emulator API 36):**
+
+| Mätning | median | min | max |
+|---|---|---|---|
+| Kallstart med baslinjeprofil, första bildrutan (`timeToInitialDisplayMs`) | 1 875 ms | 1 279 ms | 3 434 ms |
+| Kallstart med baslinjeprofil, Idag färdig (`timeToFullDisplayMs`) | 4 457 ms | 3 237 ms | 4 941 ms |
+| Kallstart utan kompilering, första bildrutan | 1 495 ms | 1 170 ms | 2 343 ms |
+| Kallstart utan kompilering, Idag färdig | 3 448 ms | 3 114 ms | 5 023 ms |
+
+Svep i receptlistan (5 iterationer, median 160 bildrutor): `frameDurationCpuMs` P50 97 ms, P90
+161 ms, P99 294 ms; `frameOverrunMs` P50 124 ms, P90 217 ms, P99 426 ms. Som i ci-banans
+körning är profilen inte snabbare på emulatorn och bildtiderna är långt över 16 ms: det är
+programvarurenderingen, inte appen, och siffrorna duger bara för att se trender mellan körningar.
 
 **Emulatorns siffror är bara en trend** (programvaru-GPU, 2 vCPU, delad löpare). Kravet i plan
 §10 (kallstart under 1,5 s) mäts på telefonen: appen mäter själv sin kallstart och visar den
