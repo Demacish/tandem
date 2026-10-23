@@ -111,7 +111,7 @@ class ReleaseSmokeTest {
         app.waitForClickable("More")
         assertFalse("A logged-in cold start must not show the intro", app.device.hasObject(By.text(WELCOME_TEXT)))
         app.tap("More")
-        app.scrollTo(By.text(VERSION_TEXT))
+        openedMoreShowsVersion()
         app.capture("password-after-cold-start")
 
         // Logout revokes this device's token (the dialog's default for a token Tandem created).
@@ -181,7 +181,17 @@ class ReleaseSmokeTest {
         app.tap("Continue")
         app.waitForClickable("More")
         app.tap("More")
-        app.scrollTo(By.text(VERSION_TEXT))
+        openedMoreShowsVersion()
+    }
+
+    /**
+     * The account card with the version is at the top of More. `scrollTo` only scrolls down: if
+     * it ran before More was drawn its swipe scrolled the new screen past the card (seen in CI,
+     * 0.2.0 integration). So wait for More first, then search both ways.
+     */
+    private fun openedMoreShowsVersion() {
+        app.waitFor(By.text("About Tandem"))
+        app.findInList(By.text(VERSION_TEXT))
     }
 
     /**
