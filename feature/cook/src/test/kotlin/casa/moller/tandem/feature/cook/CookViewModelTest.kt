@@ -257,6 +257,8 @@ class CookViewModelTest {
         runCurrent()
         assertEquals(1, timers.timers.value.size)
         assertTrue(timers.permissionResults.isEmpty())
+        // Never answered, but declined: cook mode says the alarm may be silent.
+        assertTrue(viewModel.uiState.value.showSilentAlarmWarning)
 
         viewModel.onAction(CookAction.StartTimer(0, suggestion))
         runCurrent()

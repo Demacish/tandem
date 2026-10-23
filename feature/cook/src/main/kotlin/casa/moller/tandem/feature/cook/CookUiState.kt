@@ -28,6 +28,8 @@ import casa.moller.tandem.core.model.timer.TimerSuggestion
  * @property alwaysDark the setting "Kokläge alltid mörkt".
  * @property notificationPrompt a timer waits for the in-context question about notifications
  *   (plan 8.7: asked at the first timer, never at first start).
+ * @property notificationPromptDeclined "Not now" on that question in this cook mode: not asked again,
+ *   and the alarm-may-be-silent warning shows although the system dialog was never answered.
  * @property done the "Klart!" page.
  * @property offline the device is offline: a cook log is saved and sent later.
  * @property demo demo mode: the cook log stays on the device.
@@ -53,6 +55,7 @@ data class CookUiState(
     val dynamicColor: Boolean = false,
     val exactAlarmPromptDismissed: Boolean = false,
     val notificationPrompt: PendingTimer? = null,
+    val notificationPromptDeclined: Boolean = false,
     val done: DoneState = DoneState(),
     val offline: Boolean = false,
     val demo: Boolean = false,
@@ -89,7 +92,9 @@ data class CookUiState(
 
     /** Notifications or the alarm channel are off: the alarm only rings while the app is open. */
     val showSilentAlarmWarning: Boolean
-        get() = activeTimers.isNotEmpty() && capabilities.alarmMayBeSilent && !capabilities.shouldAskForNotifications
+        get() = activeTimers.isNotEmpty() &&
+            capabilities.alarmMayBeSilent &&
+            (!capabilities.shouldAskForNotifications || notificationPromptDeclined)
 }
 
 /**

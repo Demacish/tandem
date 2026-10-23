@@ -54,7 +54,7 @@
     <!-- Step 3: login -->
     <string name="onboarding_server_connected">Connected to %1$s</string>
     <string name="onboarding_server_version">Tandoor %1$s</string>
-    <string name="onboarding_login_title">Log in</string>
+    <string name="onboarding_login_title">Log in to Tandoor</string>
     <string name="onboarding_login_body">Use your Tandoor username and password.</string>
     <string name="onboarding_username">Username</string>
     <string name="onboarding_password">Password</string>

@@ -6,7 +6,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.Until
 import java.io.File
 import java.time.OffsetDateTime
 import java.util.regex.Pattern
@@ -100,6 +103,42 @@ class Phase1bSmokeTest {
         app.shell("appops set ${TandemApp.PACKAGE} $FULL_SCREEN_OP allow")
 
         logIn()
+        downloadTimerRecipeAndGoOffline()
+
+        // Cook mode from the recipe (entry point "Börja laga"), stepped through to the last step.
+        app.tap("Start cooking")
+        app.waitFor(By.text("Step 1 of 2"))
+        app.tap("Next")
+        app.waitFor(By.text("Step 2 of 2"))
+        app.capture("phase1b-cook-step2")
+
+        val firstStarted = startTwoTimersAskingInContext()
+        rotateKeepsStepAndTimers()
+
+        // The power button. Both timers must still be running, or this would test nothing.
+        device.lockScreen()
+        val lockedAfter = SystemClock.elapsedRealtime() - firstStarted
+        assertTrue(
+            "Locked ${lockedAfter / MILLIS} s after the first start: too slow to test ringing while locked",
+            lockedAfter < FIRST_TIMER_SECONDS * MILLIS,
+        )
+        assertTrue("No alarm before the timers end", device.alarmNotifications().isEmpty())
+
+        bothAlarmsRingWhileLockedThenStop()
+
+        // Back in cook mode at the same step: "Done!" with 4 stars and a comment, still offline.
+        val savedAt = saveKlartOffline()
+        assertTrue("Nothing is sent offline: ${tandoor.cookLogPosts}", tandoor.cookLogPosts.isEmpty())
+
+        // The network comes back: the outbox sends the entry exactly once, with its date kept.
+        tandoor.offline = false
+        app.setNetworkEnabled(true)
+        networkTurnedOff = false
+        assertCookLogSentOnce(savedAt)
+    }
+
+    /** Shakshuka (two text timers in its last step) downloaded, then airplane mode. */
+    private fun downloadTimerRecipeAndGoOffline() {
         app.tap("Recipes")
         app.findInList(By.text(FakeTandoor.TIMER_RECIPE_NAME)).click()
         app.waitFor(By.desc("Download for offline use"))
@@ -111,16 +150,14 @@ class Phase1bSmokeTest {
         networkTurnedOff = true
         app.setNetworkEnabled(false)
         assertFalse("The emulator must be offline: ${app.networkReport()}", app.hasNetwork())
+    }
 
-        // Cook mode from the recipe (entry point "Börja laga"), stepped through to the last step.
-        app.tap("Start cooking")
-        app.waitFor(By.text("Step 1 of 2"))
-        app.tap("Next")
-        app.waitFor(By.text("Step 2 of 2"))
-        app.capture("phase1b-cook-step2")
-
-        // The first timer asks in context, never at first start (plan 8.7), and the system dialog
-        // follows "Continue". Only now is the permission granted, by the instrumentation.
+    /**
+     * The first timer asks in context, never at first start (plan 8.7), and the system dialog
+     * follows "Continue". Only now is the permission granted, by the instrumentation. The second
+     * timer starts at once without a second question. Returns when the first one started.
+     */
+    private fun startTwoTimersAskingInContext(): Long {
         assertFalse("Not granted before the first timer", device.hasPermission(POST_NOTIFICATIONS))
         app.tapDescriptionMatching(startTimer(FIRST_TIMER_SECONDS))
         app.waitFor(By.text("Hear the timer with the screen locked?"))
@@ -135,7 +172,6 @@ class Phase1bSmokeTest {
         val firstStarted = SystemClock.elapsedRealtime()
         app.waitFor(runningTimer(FIRST_TIMER_SECONDS))
 
-        // The second timer at once: no second question.
         app.tapDescriptionMatching(startTimer(SECOND_TIMER_SECONDS))
         app.waitFor(runningTimer(SECOND_TIMER_SECONDS))
         assertFalse(app.device.hasObject(By.text("Hear the timer with the screen locked?")))
@@ -143,27 +179,28 @@ class Phase1bSmokeTest {
             device.countdownNotifications().count { it.channel == ONGOING_CHANNEL } == 2
         }
         app.capture("phase1b-two-timers")
+        return firstStarted
+    }
 
-        // Rotation mid-cook (plan §10): the activity is recreated, the step and both timers stay.
+    /**
+     * Rotation mid-cook (plan §10): the activity is recreated, the step and both timers stay. In
+     * landscape the phone shows two panes and the timers are cards in the side pane, under the
+     * servings and the step's ingredients, so the side pane is scrolled to them.
+     */
+    private fun rotateKeepsStepAndTimers() {
         app.device.setOrientationLandscape()
         app.waitFor(By.text("Step 2 of 2"))
-        app.waitFor(runningTimer(FIRST_TIMER_SECONDS))
-        app.waitFor(runningTimer(SECOND_TIMER_SECONDS))
+        findInSidePane(runningTimer(FIRST_TIMER_SECONDS))
+        findInSidePane(runningTimer(SECOND_TIMER_SECONDS))
         app.capture("phase1b-landscape")
         app.device.setOrientationNatural()
         app.waitFor(By.text("Step 2 of 2"))
         app.waitFor(runningTimer(FIRST_TIMER_SECONDS))
+        app.waitFor(runningTimer(SECOND_TIMER_SECONDS))
+    }
 
-        // The power button. Both timers must still be running, or this would test nothing.
-        device.lockScreen()
-        val lockedAfter = SystemClock.elapsedRealtime() - firstStarted
-        assertTrue(
-            "Locked ${lockedAfter / MILLIS} s after the first start: too slow to test ringing while locked",
-            lockedAfter < FIRST_TIMER_SECONDS * MILLIS,
-        )
-        assertTrue("No alarm before the timers end", device.alarmNotifications().isEmpty())
-
-        // Both alarms ring on the locked screen, without network.
+    /** Both alarms ring on the locked screen, without network; "Stop" for both on the lock-screen alarm. */
+    private fun bothAlarmsRingWhileLockedThenStop() {
         device.waitUntil("both alarm notifications", ALARM_TIMEOUT_MS) { device.alarmNotifications().size == 2 }
         device.saveDumps("phase1b-ringing")
         val alarms = device.alarmNotifications()
@@ -177,7 +214,6 @@ class Phase1bSmokeTest {
         device.waitUntil("the screen is on for the alarm") { device.isInteractive() }
         app.capture("phase1b-alarm-on-locked-screen")
 
-        // "Stop" for both, on the lock-screen alarm.
         repeat(2) {
             app.waitFor(By.text("Stop")).click()
             app.device.waitForIdle()
@@ -186,8 +222,10 @@ class Phase1bSmokeTest {
         device.waitUntil("no alarm notification") { device.alarmNotifications().isEmpty() }
         device.waitUntil("the ringing service stopped") { !device.ringingServiceInForeground() }
         device.unlockScreen()
+    }
 
-        // Back in cook mode at the same step: "Done!" with 4 stars and a comment, still offline.
+    /** "Done!" with 4 stars and a comment while offline. Returns when "Save" was tapped. */
+    private fun saveKlartOffline(): Long {
         app.waitFor(By.text("Step 2 of 2"))
         app.tap("Done!")
         app.waitFor(By.text("Enjoy your meal!"))
@@ -200,12 +238,11 @@ class Phase1bSmokeTest {
         val savedAt = System.currentTimeMillis()
         device.expectToast("Saved. It is sent when you are online again.") { app.tap("Save in the cook log") }
         app.waitFor(By.desc("Remove offline copy"))
-        assertTrue("Nothing is sent offline: ${tandoor.cookLogPosts}", tandoor.cookLogPosts.isEmpty())
+        return savedAt
+    }
 
-        // The network comes back: the outbox sends the entry exactly once, with its date kept.
-        tandoor.offline = false
-        app.setNetworkEnabled(true)
-        networkTurnedOff = false
+    /** Exactly one `POST /api/cook-log/` with the "Klart!" body and the offline tap's `created_at`. */
+    private fun assertCookLogSentOnce(savedAt: Long) {
         device.waitUntil("POST /api/cook-log/ (${tandoor.requests})", COOK_LOG_TIMEOUT_MS) { tandoor.cookLogPosts.isNotEmpty() }
         SystemClock.sleep(SETTLE_MS)
         assertEquals("Exactly one cook log entry: ${tandoor.cookLogPosts}", 1, tandoor.cookLogPosts.size)
@@ -220,6 +257,15 @@ class Phase1bSmokeTest {
             createdAt in (savedAt - CLOCK_SLACK_MS)..(savedAt + CLOCK_SLACK_MS),
         )
         assertTrue("Only the outbox posts: ${tandoor.requests}", tandoor.requests.count { it == "POST /api/cook-log/" } == 1)
+    }
+
+    /** Finds [selector] in cook mode's side pane (landscape and tablet), scrolling it down if needed. */
+    private fun findInSidePane(selector: BySelector): UiObject2 {
+        app.device.findObject(selector)?.let { return it }
+        val pane = app.waitFor(By.res(SIDE_PANE))
+        return pane.scrollUntil(Direction.DOWN, Until.findObject(selector))
+            ?: app.device.findObject(selector)
+            ?: throw AssertionError("Not in the side pane: $selector")
     }
 
     @Test
@@ -310,6 +356,9 @@ class Phase1bSmokeTest {
 
         /** feature:shell TIMER_HUD_TAG (a resource id through testTagsAsResourceId). */
         const val TIMER_HUD = "shell_timer_hud"
+
+        /** feature:cook COOK_SIDE_PANE_TAG. */
+        const val SIDE_PANE = "cook:side-pane"
 
         const val DEMO_TONIGHT = "Baked salmon with dill potatoes"
         const val MAX_STEPS = 12

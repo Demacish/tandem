@@ -74,15 +74,31 @@ object TandemAccessibility {
         sourceCheckClass == DuplicateSpeakableTextCheck::class.java && element?.isCheckable() == true
     }
 
+    /**
+     * Text contrast INSIDE a text field (its value or floating label). ATF estimates the two
+     * colours from the element's box, which also holds the field's outline (`outline`, 4.3:1 on
+     * the white field, above the 3:1 WCAG 1.4.11 asks of a component's border) and the notch of
+     * the floating label; with a short value ("anna") or a 12 sp label at mdpi it takes the
+     * outline or antialiasing for the text colour. The real colours are fixed once in
+     * core:designsystem `TandemTextField`: value `onSurface` (13:1) and label `onSurfaceVariant`
+     * (6.6:1) on `surfaceContainerLowest`, light and dark. Found by the 0.2.0 onboarding checks.
+     */
+    private val textFieldContrast: Matcher<CheckResult> = result("text contrast measured inside a text field") {
+        sourceCheckClass == TextContrastCheck::class.java && element?.selfOrAncestorIsTextField() == true
+    }
+
     val options: RoborazziATFAccessibilityCheckOptions = RoborazziATFAccessibilityCheckOptions(
         checker = RoborazziATFAccessibilityChecker(
             preset = AccessibilityCheckPreset.LATEST,
-            suppressions = anyOf(disabledControlContrast, repeatedIngredientCheckbox),
+            suppressions = anyOf(disabledControlContrast, repeatedIngredientCheckbox, textFieldContrast),
         ),
         failureLevel = RoborazziATFAccessibilityChecker.CheckLevel.Warning,
     )
 
     private fun ViewHierarchyElement.selfOrAncestorDisabled(): Boolean = generateSequence(this) { it.parentView }.any { !it.isEnabled }
+
+    private fun ViewHierarchyElement.selfOrAncestorIsTextField(): Boolean =
+        generateSequence(this) { it.parentView }.any { it.className?.toString() == EDIT_TEXT_CLASS }
 
     private fun result(description: String, predicate: CheckResult.() -> Boolean): Matcher<CheckResult> =
         object : TypeSafeMatcher<CheckResult>() {
@@ -93,3 +109,5 @@ object TandemAccessibility {
             }
         }
 }
+
+private const val EDIT_TEXT_CLASS = "android.widget.EditText"

@@ -49,7 +49,7 @@
     <!-- Steg 3: logga in -->
     <string name="onboarding_server_connected">Ansluten till %1$s</string>
     <string name="onboarding_server_version">Tandoor %1$s</string>
-    <string name="onboarding_login_title">Logga in</string>
+    <string name="onboarding_login_title">Logga in på Tandoor</string>
     <string name="onboarding_login_body">Använd ditt användarnamn och lösenord i Tandoor.</string>
     <string name="onboarding_username">Användarnamn</string>
     <string name="onboarding_password">Lösenord</string>

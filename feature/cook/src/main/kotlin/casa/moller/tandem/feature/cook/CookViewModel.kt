@@ -99,8 +99,12 @@ class CookViewModel @AssistedInject constructor(
 
     private val saving = MutableStateFlow(false)
 
-    /** "Not now" on the notification question: not asked again while this cook mode is open. */
-    private var notificationPromptDeclined = false
+    /**
+     * "Not now" on the notification question: not asked again while this cook mode is open (also
+     * after a rotation), and cook mode warns that the alarm may be silent.
+     */
+    private val notificationPromptDeclined: Boolean
+        get() = savedStateHandle.get<Boolean>(KEY_PROMPT_DECLINED) == true
 
     private val settings: StateFlow<AppSettings> =
         settingsRepository.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings.Default)
@@ -117,7 +121,8 @@ class CookViewModel @AssistedInject constructor(
         timerController.capabilities,
         syncRepository.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged(),
         saving,
-    ) { timers, capabilities, offline, saving -> TimerSources(timers, capabilities, offline, saving) }
+        savedStateHandle.getStateFlow(KEY_PROMPT_DECLINED, false),
+    ) { timers, capabilities, offline, saving, declined -> TimerSources(timers, capabilities, offline, saving, declined) }
 
     private val sessionState: Flow<SessionState> = combine(
         savedStateHandle.getStateFlow(KEY_PAGE, key.startStep),
@@ -237,7 +242,7 @@ class CookViewModel @AssistedInject constructor(
     }
 
     private fun declineNotificationPrompt() {
-        notificationPromptDeclined = true
+        savedStateHandle[KEY_PROMPT_DECLINED] = true
         takePending()?.let(::launchTimer)
     }
 
@@ -338,6 +343,7 @@ class CookViewModel @AssistedInject constructor(
             dynamicColor = settings.dynamicColor,
             exactAlarmPromptDismissed = settings.exactAlarmPromptDismissed,
             notificationPrompt = done.pending,
+            notificationPromptDeclined = timers.promptDeclined,
             done = DoneState(
                 servings = done.logServings.takeIf { it > 0 } ?: CookLogDraft.servingsOf(servings?.current) ?: 1,
                 rating = done.rating,
@@ -395,6 +401,7 @@ class CookViewModel @AssistedInject constructor(
         val capabilities: TimerCapabilities,
         val offline: Boolean,
         val saving: Boolean,
+        val promptDeclined: Boolean,
     )
 
     private data class DoneInputs(val rating: Int?, val comment: String, val logServings: Int, val pending: PendingTimer?)
@@ -418,6 +425,7 @@ class CookViewModel @AssistedInject constructor(
         const val KEY_COMMENT = "cook_comment"
         const val KEY_LOG_SERVINGS = "cook_log_servings"
         const val KEY_PENDING = "cook_pending_timer"
+        const val KEY_PROMPT_DECLINED = "cook_notification_prompt_declined"
 
         private const val NO_SERVINGS = 0.0
         private const val NO_RATING = -1
