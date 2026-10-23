@@ -230,11 +230,12 @@ class Phase1bSmokeTest {
         app.tap("Done!")
         app.waitFor(By.text("Enjoy your meal!"))
         // The "Klart!" page scrolls: the stars, the comment and the offline note are further down.
+        // The note is an icon with a label, one TalkBack item: its text is the content description.
         app.scrollTo(By.clazz(EDIT_TEXT))
         app.tapDescription("4 stars")
         app.waitFor(By.text("4 of 5 stars"))
         app.type(0, COMMENT)
-        app.scrollTo(By.text("You are offline. The entry is saved now and sent to Tandoor when you are online again."))
+        app.scrollTo(By.desc("You are offline. The entry is saved now and sent to Tandoor when you are online again."))
         app.capture("phase1b-klart")
         val savedAt = System.currentTimeMillis()
         device.expectToast("Saved. It is sent when you are online again.") { app.tap("Save in the cook log") }
@@ -313,7 +314,7 @@ class Phase1bSmokeTest {
             if (!onDonePage()) clickPageButton()
         }
         app.waitFor(By.text("How did it taste?"))
-        app.scrollTo(By.text("Demo mode: the entry stays on this device."))
+        app.scrollTo(By.desc("Demo mode: the entry stays on this device."))
         device.expectToast("Saved in the demo.") { app.tap("Save in the cook log") }
         app.capture("phase1b-demo-saved")
         assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())
