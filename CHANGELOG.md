@@ -6,6 +6,12 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+## [0.2.0] – 2026-10-23
+
+Laga mat med Tandem (Fas 1b, "laga"): kokläge steg för steg, timers som larmar även med låst
+skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista och matsedel
+(flikarna Veckan och Handla) kommer i Fas 2.
+
 - **Timers (grunden för kokläget):** flera timers samtidigt som ringer även med låst skärm och
   utan nät, med "+1 min" och "Stopp" i notisen och en nedräkning i statusraden (Live Update på
   Android 16). Timers överlever omstart av appen och telefonen. "ca 20–25 minuter" i ett steg
@@ -17,7 +23,11 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   Skärmen hålls på, sidorna bläddras med svep, knappar eller tangentbordets pilar, och kokläget
   kan vara mörkt jämt. Första timern frågar om notiser med en förklaring. På surfplatta och i
   liggande läge står ingredienserna och timerna bredvid steget; en vikbar telefon på bordet
-  visar steget upptill och timerna nedtill.
+  visar steget upptill och timerna nedtill. Kan larmet bli tyst (notiser avstängda) eller sent
+  (exakta larm inte tillåtna) säger kokläget det och leder till rätt inställning.
+- **Från timern tillbaka till receptet:** tryck på en timernotis, på larmet eller på timerraden
+  som syns på alla flikar, så öppnas kokläget på timerns steg (eller timerlistan för en timer
+  utan recept). Steg och timers finns kvar när du vrider telefonen.
 - **"Klart!":** sista sidan sparar receptet i Tandoors koklogg med portioner, betyg och
   kommentar, även offline (skickas senare) och i demoläget.
 - **Inställningar:** Mer har fått egna sidor för *Synk och lagring* (hur ofta appen synkar i
@@ -33,6 +43,10 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   receptlistan och receptvyn i förväg redan vid installationen.
 - **Synkproblem syns:** när servern nekar appen en stund eller synken pausar efter många fel
   visas det överst med *Försök igen*.
+- **Release-röktest:** varje version provar nu också kokläget i release-bygget på en
+  Android-emulator: recept offline i flygplansläge, två timers samtidigt som båda larmar på låst
+  skärm, vridning mitt i, "Klart!" med betyg och kommentar som skickas exakt en gång när nätet
+  kommer tillbaka, och samma sak i demoläget utan server.
 
 ## [0.1.0] – 2026-10-16
 

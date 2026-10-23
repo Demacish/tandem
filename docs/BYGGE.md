@@ -261,12 +261,11 @@ minuter", "mellan 10 och 12 minuter") kör till den **övre** gränsen och etike
 `clockAppRequests`), `FakeCookLogRepository`, `FakeSettingsRepository`,
 `FakeDiagnosticsRepository` och `time.TestClock`.
 
-`app/.../di/TemporaryFas1bModule.kt` binder tillfälliga minnesimplementationer så att appen går
-att köra hela vägen: `TemporaryFas1bTimerModule`, `TemporaryFas1bCookLogModule` och
-`TemporaryFas1bDiagnosticsModule` (inga larm, inga notiser, ingen outbox, inget överlever
-processdöd). **Den bana som binder den riktiga implementationen tar bort motsvarande modul i
-samma ändring** (annars dubbelbindning i Hilt); integrationsbanan tar bort filen. Inget av det
-får följa med i 0.2.0.
+Under bygget av 0.2.0 band `app/.../di/TemporaryFas1bModule.kt` tillfälliga
+minnesimplementationer så att appen gick att köra innan banorna var klara. **Filen och alla tre
+modulerna är borttagna** (0.2.0): `TimerController` binds i `:core:timer` (`TimerModule`),
+`CookLogRepository` och `DiagnosticsRepository` i `:core:sync` (`SyncModule`),
+`SettingsRepository` i `:core:data` (`DataModule`). Inga tillfälliga bindningar finns kvar.
 
 ### Notiskanaler (plan 8.7, bestämda nu, byts aldrig)
 
@@ -279,7 +278,13 @@ får följa med i 0.2.0.
 | `shopping`, `import_done`, `meal_reminders` | reserverade för Fas 2–5 | standard | notis | skapas inte än |
 
 Varje modul skapar sina kanaler precis innan den postar, med värdena ur
-`TandemNotificationChannel` och egna översatta namn. Ett id byts aldrig (användarens val i
+`TandemNotificationChannel` och egna översatta namn. Dessutom skapar appen alla kanaler **en gång
+vid varje start** (0.2.0): varje modul som postar binder en `NotificationChannelInstaller`
+(`:core:data`, Hilt-set med `@IntoSet`; `:core:timer` för `timer_alarm`/`timer_ongoing`,
+`:core:sync` för `server`) och `TandemApplication` anropar alla utanför huvudtråden. Då finns
+kanalerna i systeminställningarna från första start och *Behörigheter* kan öppna larmkanalen
+innan något har ringt. Att skapa en befintlig kanal ändrar bara namnet, aldrig användarens val.
+`sync_problems` skapas inte än: inget postar i den. Ett id byts aldrig (användarens val i
 systeminställningarna hänger på id:t); en ny kanal får ett nytt id. Notis-id:n:
 `TandemNotificationIds` (server 1001, synkproblem 1101, ringtjänsten 2000, per timer
 3000–3999 nedräkning och 4000–4999 larm).
@@ -426,7 +431,13 @@ bara via `core:data`.
 - **Öppna appen från en timer:** `TimerIntents.openTimer(context, timer)` startar appens
   startaktivitet med `ACTION_OPEN_TIMER` och `EXTRA_TIMER_ID`, `EXTRA_RECIPE_ID`,
   `EXTRA_STEP_INDEX` (`CLEAR_TOP | SINGLE_TOP`, alltså `onNewIntent` i en körande app).
-  Integrationsbanan gör det till `CookKey(recipeId, startStep = stepIndex)` eller `TimersKey`.
+  `MainActivity` läser det i `onCreate` (bara en ny aktivitet, inte en återskapad) och
+  `onNewIntent`; `navigation/TimerLaunch` tolkar extras försiktigt (aktiviteten är exporterad:
+  ogiltiga id:n släpps, trasiga extras ger bara "öppna appen"). `AppViewModel` håller begäran i
+  `SavedStateHandle` tills skalet har öppnat den (och glömmer den vid utloggning), och
+  `ShellNavigationState.openTimer` lägger `CookKey(recipeId, startStep = stepIndex)` på den
+  aktuella fliken, eller `TimersKey` för en timer utan recept; ett redan öppet kokläge för samma
+  recept lämnas orört (sidan och Klart!-utkastet ligger i dess post).
 - **Klockappen:** `TimerMode.CLOCK_APP` skickar `AlarmClock.ACTION_SET_TIMER` med längd (1 s–24 h),
   etikett och `EXTRA_SKIP_UI`; Tandem följer inte timern. Ingen klockapp →
   `ClockAppUnavailable`.
@@ -522,9 +533,11 @@ Kokläget (plan 6.2 "Kokläge", 6.5, 8.1, funktion #6–#8). `CookRoute(key, onC
   (`TodayRoute(onStartCooking)`, matsedelns portioner). Skalet: `feature:cook` som beroende,
   `ShellFeatures.Cook/Timers`, `entry<CookKey>` och `entry<TimersKey>` på den flik kokläget
   öppnades från (`CookKey` döljer navigeringen på alla bredder).
-- **Kvar för integrationsbanan:** `TimerIntents.ACTION_OPEN_TIMER` från en timernotis →
-  `CookKey(recipeId, startStep = stepIndex)` eller `TimersKey`. Stegbilder visas inte: Tandoors
-  `Step.file` finns inte i `core:model`/databasen än.
+- **Från en timer:** notisen, larmet och timerraden i skalet öppnar kokläget vid timerns steg
+  (se "Öppna appen från en timer" under Timers). Stegbilder visas inte: Tandoors `Step.file`
+  finns inte i `core:model`/databasen än.
+- **"Inte nu"** på notisfrågan sparas i `SavedStateHandle` (frågan kommer inte igen i samma
+  kokläge, även efter rotation) och visar varningen "Notiser är avstängda" medan en timer går.
 - **Tester:** `CookViewModelTest` (sidor, portioner i ingredienser och mallar, sparat val, förslag,
   timers från knappar, två timers som ringer, notisfrågan, klockappen, varningar, textstorlek,
   Klart! online/offline/demo/fel, processdöd), `CookLogicTest` (`timerSpans`, layoutval),
@@ -1109,6 +1122,26 @@ den kod som skickas:
   "600 g salmon fillet…" via radens beskrivning) och att den falska servern inte fick en enda begäran. Att en bild verkligen
   laddats syns utifrån genom testtaggen `recipe_image_loaded` (`RecipeImageTags` i `:core:ui`);
   appen exponerar testtaggar som resurs-id (`testTagsAsResourceId` i `TandemApp`).
+- **Fas 1b (0.2.0, `Phase1bSmokeTest`, plan §10 "Klart när"):** `FakeTandoor` ger Shakshukas
+  sista steg två korta tider i texten ("50 seconds", "55 seconds") och svarar `POST
+  /api/cook-log/` med 201 och sparar kroppen. `offlineCookMode_twoTimersRingWhileLocked_klartIsSentOnceOnline`:
+  inloggning och första synk, Shakshuka nedladdad, flygplansläge, "Start cooking" från receptet,
+  båda stegen; den första timern visar frågan i sammanhanget och systemdialogen, och **först
+  därefter** ger instrumenteringen `POST_NOTIFICATIONS` (`pm grant`; före testet återkallas den
+  och dess flaggor rensas, som en ny installation); två timers samtidigt (två
+  nedräkningsnotiser på `timer_ongoing`); rotation till liggande (två paneler, timrarna i
+  sidopanelen) och tillbaka med samma steg och båda timrarna; strömknappen (`KEYCODE_SLEEP`).
+  Båda larmen måste komma **medan skärmlåset är på**: två larmnotiser på `timer_alarm` med
+  fullskärms-intent (sideload), ringtjänsten i förgrunden, fortfarande offline, larmaktiviteten
+  "Time's up" på låsskärmen och skärmen påslagen. "Stop" på båda, "Done!" med 4 stjärnor och en
+  kommentar offline (toasten "skickas när du är online"), inget skickat; nätet tillbaka och
+  **exakt en** `POST /api/cook-log/` med recept, portioner, betyg, kommentar och `created_at`
+  från när "Spara" trycktes. `demoMode_cookTonightWithATimer_klartStaysOnTheDevice`: demoläget,
+  "Cook" på Ikväll, en timer med "Not now" (varningen "Notifications are off" syns), stäng
+  kokläget, timerraden på Idag (`shell_timer_hud`) öppnar kokläget igen, Klart! sparas i demot
+  och den falska servern får inte en enda begäran. `DeviceState` läser notiser
+  (`dumpsys notification`), tjänster, skärm och skärmlås. Testets yttersta regel lämnar alltid
+  enheten upplåst, i naturlig orientering och med nät.
 - **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 36,
   `google_apis`, x86_64, KVM) med `reactivecircus/android-emulator-runner` och kör
   `scripts/ci/smoke-run.sh`. Steget fallerar om ett test fallerar, om appen kraschar, om ingen
