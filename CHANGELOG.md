@@ -6,7 +6,7 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-## [0.2.0] – 2026-10-23
+## [0.2.0] – 2026-10-24
 
 Laga mat med Tandem (Fas 1b, "laga"): kokläge steg för steg, timers som larmar även med låst
 skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista och matsedel
