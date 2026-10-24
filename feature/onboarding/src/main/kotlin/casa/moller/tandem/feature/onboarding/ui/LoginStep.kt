@@ -199,6 +199,9 @@ private fun LoginErrorCard(error: LoginError) {
         LoginError.NoSpace -> stringResource(R.string.onboarding_error_no_space_title) to
             stringResource(R.string.onboarding_error_no_space_body)
 
+        LoginError.PasswordLoginUnavailable -> stringResource(R.string.onboarding_error_password_unavailable_title) to
+            stringResource(R.string.onboarding_error_password_unavailable_body)
+
         LoginError.StorageFailed -> stringResource(R.string.onboarding_error_storage_title) to
             stringResource(R.string.onboarding_error_storage_body)
 

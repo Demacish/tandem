@@ -79,6 +79,8 @@
     <string name="onboarding_error_invalid_token_body">Den kan vara felskriven, ha gått ut eller ha tagits bort. Skapa en ny token i Tandoor under Inställningar → API.</string>
     <string name="onboarding_error_no_space_title">Ditt konto har inget space ännu</string>
     <string name="onboarding_error_no_space_body">Logga in i Tandoor i webbläsaren en gång för att skapa eller gå med i ett space och försök sedan igen.</string>
+    <string name="onboarding_error_password_unavailable_title">Servern tar inte emot lösenord från appar</string>
+    <string name="onboarding_error_password_unavailable_body">Tandoor 2.7 och senare låter inte längre appar logga in med lösenord. Välj ”Klistra in token i stället” och använd en API-token från Inställningar → API i Tandoor.</string>
     <string name="onboarding_error_storage_title">Inloggningen kunde inte sparas</string>
     <string name="onboarding_error_storage_body">Den säkra lagringen på enheten går inte att använda just nu, så Tandem kan inte hålla dig inloggad. Starta om telefonen och försök igen.</string>
 

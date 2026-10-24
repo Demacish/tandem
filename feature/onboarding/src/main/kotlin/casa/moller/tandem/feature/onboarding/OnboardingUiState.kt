@@ -61,6 +61,13 @@ sealed interface LoginError {
     /** The user exists but has no space on the server. */
     data object NoSpace : LoginError
 
+    /**
+     * The password login endpoint is gone: Tandoor 2.7 removed `POST /api-token-auth/` (it now
+     * answers with a redirect to the web login), or something in front of Tandoor sends it there.
+     * The pasted token still works, so the step points to it.
+     */
+    data object PasswordLoginUnavailable : LoginError
+
     /** The token could not be saved in encrypted storage on this device. */
     data object StorageFailed : LoginError
 

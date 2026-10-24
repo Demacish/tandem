@@ -1024,11 +1024,23 @@ Varje natt (och manuellt, med valfria extra taggar):
    ärende, "Tandoor watch: upstream needs attention" (en kommentar bara när något nytt hänt, via
    ett fingeravtryck); en helt grön natt stänger det.
 
-**Läge vid 0.2.0 (2026-10-24):** 2.6.13 och 2.6.15 gröna; 2.7.1 (även `latest`) röd. I 2.7.1
-svarar `POST /api-token-auth/` med 302 till `/account/login/?next=/api-token-auth/` i stället för
-en token, så sviten kan inte logga in (därav hundratals "ändrade" fakta) och appens inloggning med
-lösenord fungerar inte mot 2.7. 2.7 är inte i `TESTED`, så appen kör en sådan server i säkert läge;
-inloggning med inklistrad token är ännu inte prövad mot 2.7. Bevakningens ärende (#2) är öppet.
+**Läge vid 0.2.0 (2026-10-24):** 2.6.13 och 2.6.15 gröna; 2.7.1 (även `latest`) röd, och det är
+en verklig kontraktsändring, inte en flaky container. Tandoor 2.7.0 tog bort `api-token-auth`
+(uppströms commit "deprecate old token view"); vägen svarar nu 302 till
+`/account/login/?next=/api-token-auth/`. Tredjepartsklienter ska i stället logga in via allauth
+headless (`POST /_allauth/app/v1/auth/login` med JSON, svaret har `meta.session_token`, som skickas
+som `X-Session-Token`; inloggningen är begränsad till 3 per minut och IP). Bearer-token
+(`OAuth2Authentication`) godtas fortfarande, så enheter som redan är inloggade fortsätter fungera
+och inklistrad token bör fungera (ej prövat i sviten). Följder:
+
+- Sviten loggar in med `api-token-auth`, så mot 2.7 faller Fas 0:s inloggningstester och allt som
+  bygger på dem hoppas över (därav hundratals "ändrade" fakta i bevakningen).
+- Appen (0.2.0): lösenordsinloggning mot 2.7 ger `LoginError.PasswordLoginUnavailable` ("Servern
+  tar inte emot lösenord från appar", med vägen till inklistrad token) i stället för "inte
+  Tandoor". 2.7 är inte i `TESTED`, så appen kör servern i säkert läge.
+- Kvar till en senare version: inloggning via allauth headless i `TandoorAuthenticator`, en
+  2.7-gren i `Phase0ContractTest`, granskning av övriga ändrade fakta och sedan 2.7.x i `TESTED`.
+  Bevakningens ärende (#2) är öppet tills dess.
 
 Ny Tandoor-version som är grön utan ändrade fakta: lägg till den i `TandoorVersionTable.TESTED` i
 nästa appversion. Push till grenar som ändrar bevakningen kör allt men rör inga ärenden.

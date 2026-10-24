@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.model.error.InvalidUrlReason
+import casa.moller.tandem.core.model.error.NotTandoorReason
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.TlsErrorKind
@@ -380,6 +381,31 @@ class OnboardingViewModelTest {
             LoginError.Other(TandemError.Timeout),
             OnboardingViewModel.loginErrorFor(TandemError.Timeout, LoginMethod.PASSWORD),
         )
+    }
+
+    @Test
+    fun aMissingPasswordLoginEndpointPointsToTheToken() {
+        // Tandoor 2.7.1: POST /api-token-auth/ -> 302 to /account/login/?next=/api-token-auth/.
+        val redirect = TandemError.NotTandoor(NotTandoorReason.REDIRECT, 302)
+        assertEquals(LoginError.PasswordLoginUnavailable, OnboardingViewModel.loginErrorFor(redirect, LoginMethod.PASSWORD))
+        val loginRedirect = TandemError.NotTandoor(NotTandoorReason.LOGIN_REDIRECT, 302)
+        assertEquals(
+            LoginError.PasswordLoginUnavailable,
+            OnboardingViewModel.loginErrorFor(loginRedirect, LoginMethod.PASSWORD),
+        )
+        val htmlNotFound = TandemError.NotTandoor(NotTandoorReason.UNEXPECTED_STATUS, 404)
+        assertEquals(
+            LoginError.PasswordLoginUnavailable,
+            OnboardingViewModel.loginErrorFor(htmlNotFound, LoginMethod.PASSWORD),
+        )
+        assertEquals(
+            LoginError.PasswordLoginUnavailable,
+            OnboardingViewModel.loginErrorFor(TandemError.NotFound, LoginMethod.PASSWORD),
+        )
+        // The token login never used api-token-auth, and an HTML page stays "not Tandoor".
+        assertEquals(LoginError.Other(redirect), OnboardingViewModel.loginErrorFor(redirect, LoginMethod.TOKEN))
+        val html = TandemError.NotTandoor(NotTandoorReason.HTML_RESPONSE, 200)
+        assertEquals(LoginError.Other(html), OnboardingViewModel.loginErrorFor(html, LoginMethod.PASSWORD))
     }
 
     @Test

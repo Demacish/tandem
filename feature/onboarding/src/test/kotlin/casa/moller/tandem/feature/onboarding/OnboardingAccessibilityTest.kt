@@ -92,6 +92,9 @@ class OnboardingAccessibilityTest {
     fun loginWrongPasswordDark() = check(login.copy(loginError = LoginError.WrongCredentials), darkTheme = true)
 
     @Test
+    fun loginPasswordUnavailable() = check(login.copy(loginError = LoginError.PasswordLoginUnavailable))
+
+    @Test
     fun loginToken() = check(login.copy(loginMethod = LoginMethod.TOKEN, token = "tda_0123"))
 
     @Test

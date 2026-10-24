@@ -10,6 +10,7 @@ import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.InvalidUrlReason
+import casa.moller.tandem.core.model.error.NotTandoorReason
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
@@ -367,6 +368,21 @@ class OnboardingViewModel @Inject constructor(
             )
         }
 
+        private fun TandemError.meansNoPasswordLogin(): Boolean = when (this) {
+            TandemError.NotFound -> true
+
+            is TandemError.NotTandoor ->
+                reason == NotTandoorReason.LOGIN_REDIRECT ||
+                    reason == NotTandoorReason.REDIRECT ||
+                    httpStatus == HTTP_NOT_FOUND ||
+                    httpStatus == HTTP_METHOD_NOT_ALLOWED
+
+            else -> false
+        }
+
+        private const val HTTP_NOT_FOUND = 404
+        private const val HTTP_METHOD_NOT_ALLOWED = 405
+
         private inline fun <reified E : Enum<E>> enumOrNull(name: String?): E? =
             name?.let { value -> enumValues<E>().firstOrNull { it.name == value } }
 
@@ -376,21 +392,29 @@ class OnboardingViewModel @Inject constructor(
 
             DataProblem.SECURE_STORAGE -> LoginError.StorageFailed
 
-            else -> when (error) {
-                is TandemError.BadRequest ->
-                    if (method == LoginMethod.PASSWORD) LoginError.WrongCredentials else LoginError.InvalidToken
-
-                is TandemError.Throttled -> LoginError.Throttled(error.retryAfter)
-
-                is TandemError.Unauthorized ->
-                    if (method == LoginMethod.TOKEN && error.source == UnauthorizedSource.TANDOOR) {
-                        LoginError.InvalidToken
-                    } else {
-                        LoginError.Other(error)
-                    }
-
-                else -> LoginError.Other(error)
+            // The server step already saw Tandoor, so a redirect or 404 on api-token-auth means the
+            // endpoint is gone (Tandoor 2.7+), not a wrong address.
+            else -> if (method == LoginMethod.PASSWORD && error.meansNoPasswordLogin()) {
+                LoginError.PasswordLoginUnavailable
+            } else {
+                otherLoginError(error, method)
             }
+        }
+
+        private fun otherLoginError(error: TandemError, method: LoginMethod): LoginError = when (error) {
+            is TandemError.BadRequest ->
+                if (method == LoginMethod.PASSWORD) LoginError.WrongCredentials else LoginError.InvalidToken
+
+            is TandemError.Throttled -> LoginError.Throttled(error.retryAfter)
+
+            is TandemError.Unauthorized ->
+                if (method == LoginMethod.TOKEN && error.source == UnauthorizedSource.TANDOOR) {
+                    LoginError.InvalidToken
+                } else {
+                    LoginError.Other(error)
+                }
+
+            else -> LoginError.Other(error)
         }
     }
 }
