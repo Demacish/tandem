@@ -1024,6 +1024,12 @@ Varje natt (och manuellt, med valfria extra taggar):
    ärende, "Tandoor watch: upstream needs attention" (en kommentar bara när något nytt hänt, via
    ett fingeravtryck); en helt grön natt stänger det.
 
+**Läge vid 0.2.0 (2026-10-24):** 2.6.13 och 2.6.15 gröna; 2.7.1 (även `latest`) röd. I 2.7.1
+svarar `POST /api-token-auth/` med 302 till `/account/login/?next=/api-token-auth/` i stället för
+en token, så sviten kan inte logga in (därav hundratals "ändrade" fakta) och appens inloggning med
+lösenord fungerar inte mot 2.7. 2.7 är inte i `TESTED`, så appen kör en sådan server i säkert läge;
+inloggning med inklistrad token är ännu inte prövad mot 2.7. Bevakningens ärende (#2) är öppet.
+
 Ny Tandoor-version som är grön utan ändrade fakta: lägg till den i `TandoorVersionTable.TESTED` i
 nästa appversion. Push till grenar som ändrar bevakningen kör allt men rör inga ärenden.
 
@@ -1160,6 +1166,10 @@ den kod som skickas:
   och den falska servern får inte en enda begäran. `DeviceState` läser notiser
   (`dumpsys notification`), tjänster, skärm och skärmlås. Testets yttersta regel lämnar alltid
   enheten upplåst, i naturlig orientering och med nät.
+- **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
+  `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
+  kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt
+  rullningsläge (Mer). 0.2.0 krävde tre gröna körningar i rad på samma commit.
 - **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 36,
   `google_apis`, x86_64, KVM) med `reactivecircus/android-emulator-runner` och kör
   `scripts/ci/smoke-run.sh`. Steget fallerar om ett test fallerar, om appen kraschar, om ingen
