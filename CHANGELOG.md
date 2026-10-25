@@ -43,10 +43,11 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   receptlistan och receptvyn i förväg redan vid installationen.
 - **Synkproblem syns:** när servern nekar appen en stund eller synken pausar efter många fel
   visas det överst med *Försök igen*.
-- **Tandoor 2.7:** Tandem stöder ännu inte den nya lösenordsinloggningen i Tandoor 2.7.
-  Inloggningen säger det nu och visar vägen till *Klistra in token i stället*, i stället för ett
-  obegripligt fel. Appen är testad mot Tandoor 2.6 och kör en 2.7-server i säkert läge; fullt
-  stöd för 2.7 kommer i en senare version.
+- **Tandoor 2.7.1:** inloggning med lösenord fungerar mot Tandoor 2.7 (som tog bort den gamla
+  inloggningen för appar), och 2.7.1 är testad: appen kör den som 2.6, utan säkert läge.
+  Kräver servern ett steg till vid inloggningen (till exempel att e-postadressen bekräftas)
+  visar inloggningen vägen till *Klistra in token i stället*. Tandoor 2.7.0 nekar appar att
+  skriva och körs därför i säkert läge; uppgradera servern till 2.7.1.
 - **Release-röktest:** varje version provar nu också kokläget i release-bygget på en
   Android-emulator: recept offline i flygplansläge, två timers samtidigt som båda larmar på låst
   skärm, vridning mitt i, "Klart!" med betyg och kommentar som skickas exakt en gång när nätet
@@ -56,7 +57,8 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   stoppas, "Ringde 18:45" blir kvar, en timer över 24 h stannar i Tandem i klockappsläget, "en
   kvarts liter" blir ingen timer medan "ett dygn" och "30 s" blir det, och *Ladda ner alla
   recept* hämtar om recept som ändrats på servern och når alla bilder.
-- **Granskningsrättelser i kokläget och skalet:** stegbilder visas i kokläget (även offline);
+- **Granskningsrättelser i kokläget och skalet:** stegbilder visas i kokläget (även offline,
+  och för recept som laddades ned med 0.1.0: de hämtas om en gång vid första synken);
   ringande timers står alltid synliga bredvid ingredienserna; den vikbara telefonen lägger inget
   över vecket; alla knappar i kokläget är 64 dp; TalkBack säger varje nytt steg och varje
   startad timer; varningen om tyst larm säger rätt orsak och öppnar rätt inställning; "Klart!"

@@ -126,7 +126,9 @@ Gemensamt för Android-moduler:
   skickas med, och `1.json` är nu **fryst**. Varje ändring av en entitet kräver från och med nu
   en ny version (2, 3 …), en migrering i `TandemMigrations` och ett fall i
   `TandemMigrationTest`; `1.json` får aldrig skrivas om. Version 2 (0.2.0) lägger till
-  `cook_log` (`TandemMigrations.MIGRATION_1_2`, testad från en fil skapad ur `1.json`).
+  `cook_log` (`TandemMigrations.MIGRATION_1_2`, testad från en fil skapad ur `1.json`), version 3
+  (0.2.0) `step.image_url` och markerar detaljer med stegbild för ny hämtning (`MIGRATION_2_3`,
+  testad 1 → 3; synksidan i `SyncEngineTest`).
 - **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
   schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
   (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
@@ -589,8 +591,13 @@ Kokläget (plan 6.2 "Kokläge", 6.5, 8.1, funktion #6–#8). `CookRoute(key, onC
   `file_download` är en inloggad nedladdning av vilken fil som helst och används inte) blir
   `Step.imageUrl` → kolumnen `step.image_url` (Room-schema 3, `MIGRATION_2_3`) → `StepDisplay` →
   `CookStep`, och ritas under stegtexten. Synken hämtar stegbilderna för samma recept som
-  receptbilderna (fästa, planerade, senast visade; alla med "Ladda ner alla recept"). Steg som
-  sparades före schema 3 får sin bild när receptet hämtas på nytt.
+  receptbilderna (fästa, planerade, senast visade; alla med "Ladda ner alla recept"). Detaljer
+  som 0.1.0 sparade och vars server-JSON har en stegbild (`file.preview` ej tom) markerar
+  `MIGRATION_2_3` för ny hämtning (`TandemMigrations.MARK_DETAILS_WITH_STEP_PHOTOS`:
+  `fetched_at = NULL`, `raw_json` kvar så att receptet går att läsa offline); synken hämtar dem
+  en gång (`RecipeDao.getIdsMarkedForRefetch`, inom taket per körning) och mappningen fyller
+  `step.image_url`. URL:en kan inte fyllas i SQL: den går genom `MediaUrls.resolve` med kontots
+  bas-URL. Fakta: FACTS 2.6.13 "Fas 1 m" (`fas1/recipe-step-file.json`).
 - **"Inte nu"** på notisfrågan sparas i `SavedStateHandle` (frågan kommer inte igen i samma
   kokläge, även efter rotation) och visar varningen "Notiser är avstängda" medan en timer går.
 - **Tester:** `CookViewModelTest` (sidor, portioner i ingredienser och mallar, sparat val, förslag,
@@ -1094,23 +1101,31 @@ Varje natt (och manuellt, med valfria extra taggar):
    författaren `app/github-actions` (det äldsta vinner): repot är publikt, så vem som helst kan
    öppna ett ärende med samma titel, och det får aldrig ta över rapporten.
 
-**Läge vid 0.2.0 (2026-10-24):** 2.6.13 och 2.6.15 gröna; 2.7.1 (även `latest`) röd, och det är
-en verklig kontraktsändring, inte en flaky container. Tandoor 2.7.0 tog bort `api-token-auth`
-(uppströms commit "deprecate old token view"); vägen svarar nu 302 till
-`/account/login/?next=/api-token-auth/`. Tredjepartsklienter ska i stället logga in via allauth
-headless (`POST /_allauth/app/v1/auth/login` med JSON, svaret har `meta.session_token`, som skickas
-som `X-Session-Token`; inloggningen är begränsad till 3 per minut och IP). Bearer-token
-(`OAuth2Authentication`) godtas fortfarande, så enheter som redan är inloggade fortsätter fungera
-och inklistrad token bör fungera (ej prövat i sviten). Följder:
+<!-- Fas 1b komplettering-1 -->
+**Granskade skillnader per linje** (`contract-tests/watch/reviewed-changes.json`, `report.py
+--reviewed`): när en ny linje (t.ex. 2.7) läggs i `TESTED` skrivs varje faktum som skiljer sig
+från 2.6.13 in där, granskat mot appen: nyckel → förväntat nytt värde (normaliserad JSON-text
+som i diffen), `null` för ett faktum som försvunnit, `"*"` för ett värde som ändras med varje
+bygge (webbappens HTML med hashade filnamn). Rapporten visar dem i en hopfälld lista och de
+kräver ingen åtgärd; ett faktum som inte står där, eller får ett annat värde, gör det. Filen
+skrivs ur en körnings `contract-recordings-*`-artefakter (diffen mellan 2.6.13 och den nya
+taggen), aldrig för hand utan granskning.
 
-- Sviten loggar in med `api-token-auth`, så mot 2.7 faller Fas 0:s inloggningstester och allt som
-  bygger på dem hoppas över (därav hundratals "ändrade" fakta i bevakningen).
-- Appen (0.2.0): lösenordsinloggning mot 2.7 ger `LoginError.PasswordLoginUnavailable` ("Servern
-  tar inte emot lösenord från appar", med vägen till inklistrad token) i stället för "inte
-  Tandoor". 2.7 är inte i `TESTED`, så appen kör servern i säkert läge.
-- Kvar till en senare version: inloggning via allauth headless i `TandoorAuthenticator`, en
-  2.7-gren i `Phase0ContractTest`, granskning av övriga ändrade fakta och sedan 2.7.x i `TESTED`.
-  Bevakningens ärende (#2) är öppet tills dess.
+**Tandoor 2.7 (komplettering 2026-10-25):** 2.7.0 tog bort `api-token-auth` (302 till
+`/account/login/`). Appen loggar in via allauth headless (`TandoorAuthenticator`, se "Nätverk"),
+och sviten har en 2.7-gren i `Phase0ContractTest` (inloggning, enhetstoken med `X-Session-Token`,
+utloggning, konto utan space, spärren 3 per minut). Fixturerna och skillnaderna står i
+`api-schema/fixtures/2.7.1/` (`FACTS.md`); `DtoFixturesTest` avkodar dem också. 2.7.1 står i
+`TESTED`, och dess skillnader i `reviewed-changes.json` ("2.7"). **2.7.0 är inte testad med
+flit**: den nekar varje skrivning med token ("CSRF Failed", `SessionAuthentication` före
+OAuth2), så appen kör den i säkert läge; bevakningen testar bara den nyaste i varje linje, och
+en körning med `extra-tags=2.7.0` är röd av just det skälet.
+
+`contract.yml` körs också vid push som ändrar `core/network/**` eller `core/model/**` (det
+appen läser från Tandoor), inte bara `contract-tests/**` och `api-schema/**`. Sviten
+kompilerar inte mot `:core:network` (den är fristående med rå OkHttp), men en ändring i DTO:er
+eller modeller ska prövas mot en riktig server samtidigt som mot de incheckade fixturerna.
+<!-- /Fas 1b komplettering-1 -->
 
 Ny Tandoor-version som är grön utan ändrade fakta: lägg till den i `TandoorVersionTable.TESTED` i
 nästa appversion. Push till grenar som ändrar bevakningen kör allt men rör inga ärenden.
@@ -1361,13 +1376,24 @@ det; features aldrig (`checkModuleGraph`).
   `PagedResult.complete` är `false` om listan avbröts; då får synken inte tolka saknade poster
   som raderade.
 - **Versioner och kapabiliteter** (`capabilities/`): `TandoorVersionTable` har de testade
-  versionerna (2.6.0–2.6.15) och stödintervallet `>= 2.6.0 < 2.8.0`. `assess(version)` ger
+  versionerna (2.6.0–2.6.15 och 2.7.1; 2.7.0 med flit inte, se "Tandoor-bevakning") och
+  stödintervallet `>= 2.6.0 < 2.8.0`. `assess(version)` ger
   `ServerCompatibility` och en egen `writePolicy`: otestat inom intervallet ger säkert läge och
   pausad outbox, över intervallet stängs skrivningar av. `CapabilityResolver` bygger
   `Capabilities` av versionen och `space/current` (`ai_enabled`, `household_setup_completed`).
   Bara när versionen inte går att tolka görs högst 3 sonderingar mot list-endpoints
-  (`page_size=1`). En okänd sökväg ger då 302 till inloggningen, inte 404. Varje fel utom en
-  omdirigering stoppar sonderingen. Sökvägarna står i `api-schema/used-endpoints.txt`.
+  (`page_size=1`). En okänd sökväg ger då 302 till inloggningen (2.6) eller 200 med webbappens
+  HTML (2.7), inte 404. Varje fel utom en omdirigering stoppar sonderingen (HTML-vakten är ett
+  fel). Sökvägarna står i `api-schema/used-endpoints.txt`.
+- **Inloggning** (`auth/TandoorAuthenticator`): 2.6 loggar in med `api-token-auth`; från 2.7.0
+  (och när `api-token-auth` svarar omdirigering, 404 eller 405) med allauth headless
+  (`AllauthService`: `POST _allauth/app/v1/auth/login`, aldrig omförsök, 3 per minut och IP).
+  Sessionen (`meta.session_token`) skapar enhetstoken (`createAccessTokenWithSession`,
+  `X-Session-Token`) och loggas ut direkt (`DELETE _allauth/app/v1/auth/session`, svarar 401),
+  innan enhetstoken används. 403 + JSON på token-skapandet efter en godkänd inloggning = konto
+  utan space. 401 (ett steg till krävs) och 404/405 från allauth blir
+  `TandoorAuthenticator.PASSWORD_LOGIN_UNAVAILABLE` → `DataProblem.PASSWORD_LOGIN_UNAVAILABLE`
+  → "klistra in token i stället". R8-kontrollen i `smoke.yml` kräver båda inloggningarna.
 - **Bilder** (`image/`): `TandoorImageClientFactory.create(baseUrl, tokenProvider)` ger en
   OkHttp-klient per konto för Coil (`OkHttpNetworkFetcherFactory(callFactory = { client })`).
   Token skickas bara till kontots origin och bassökväg, och OkHttp tar bort den vid en
@@ -1381,8 +1407,9 @@ det; features aldrig (`checkModuleGraph`).
   JSON-svar i `api-schema/fixtures/2.6.13` med sin DTO. Den kontrollerar också att alla fält
   stämmer med fixturen och att varje deklarerat fält finns i någon fixtur, vilket fångar
   felstavade `@SerialName`. En ny fixtur kräver en rad i testets routetabell eller ett skäl i
-  `notModelled`. `UsedEndpointsTest` kräver att varje Retrofit-anrop står i
-  `used-endpoints.txt` och att varje rad där finns i OpenAPI-schemat.
+  `notModelled`; samma test går över `api-schema/fixtures/2.7.1` (2.7: allauth, decimaler).
+  `UsedEndpointsTest` kräver att varje Retrofit-anrop står i `used-endpoints.txt` och att varje
+  rad där finns i OpenAPI-schemat, utom allauths två (inte Tandoors schema; sviten prövar dem).
 <!-- /Fas 1 network -->
 
 ## Demoinnehåll (`:core:data`, Fas 1)
