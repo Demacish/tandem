@@ -237,7 +237,7 @@ class Phase1bSmokeTest {
         app.scrollTo(By.desc("You are offline. The entry is saved now and sent to Tandoor when you are online again."))
         app.capture("phase1b-klart")
         val savedAt = System.currentTimeMillis()
-        device.expectToast("Saved. It is sent when you are online again.") { app.tap("Save in the cook log") }
+        device.expectToast("Saved. The entry is sent when you are online again.") { app.tap("Save in the cook log") }
         app.waitFor(By.desc("Remove offline copy"))
         return savedAt
     }

@@ -45,9 +45,8 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   visas det överst med *Försök igen*.
 - **Tandoor 2.7:** Tandem stöder ännu inte den nya lösenordsinloggningen i Tandoor 2.7.
   Inloggningen säger det nu och visar vägen till *Klistra in token i stället*, i stället för ett
-  obegripligt fel. Appen
-  är testad mot Tandoor 2.6 och kör en 2.7-server i säkert läge; fullt stöd för 2.7 kommer i en
-  senare version.
+  obegripligt fel. Appen är testad mot Tandoor 2.6 och kör en 2.7-server i säkert läge; fullt
+  stöd för 2.7 kommer i en senare version.
 - **Release-röktest:** varje version provar nu också kokläget i release-bygget på en
   Android-emulator: recept offline i flygplansläge, två timers samtidigt som båda larmar på låst
   skärm, vridning mitt i, "Klart!" med betyg och kommentar som skickas exakt en gång när nätet
