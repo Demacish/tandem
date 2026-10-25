@@ -20,6 +20,10 @@ on:
       - "contract-tests/**"
       - "api-schema/**"
       - ".github/workflows/contract.yml"
+      # What the app reads from Tandoor (DTOs, mappers' inputs, the version table): a change
+      # there is checked against a real server too, not only against the committed fixtures.
+      - "core/network/**"
+      - "core/model/**"
 
 concurrency:
   # github.workflow is the CALLER's name when tandoor-watch.yml calls this workflow, so the

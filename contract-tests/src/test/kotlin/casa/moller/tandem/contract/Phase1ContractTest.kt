@@ -17,6 +17,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -888,6 +889,117 @@ class Phase1ContractTest {
         }
     }
 
+    // --- l. A step with a file (cook mode's step photo, 0.2.0) ---------------------------------
+
+    /**
+     * Cook mode shows a step's photo (`StepDto.filePreview`): the step's `file` is a
+     * `UserFileView` whose `preview` Tandoor fills only for an image (PIL can open it), else "".
+     * Uploads one PNG and one PDF as user files, attaches them to two steps of a new recipe, reads
+     * the detail (recorded as `recipe-step-file.json`, the fixture of `DtoFixturesTest`), checks
+     * the preview format and whether the preview and the download need a login, then deletes
+     * everything again. Runs after every list fact, so no other fact changes.
+     */
+    @Test
+    @Order(92)
+    fun stepWithAFile() {
+        val image = uploadUserFile("user-file-create-image", "Stegbild", "tandem-stegbild.png", tinyPng(0x2E7D32), PNG)
+        val pdf = uploadUserFile("user-file-create-pdf", "Receptblad", "tandem-receptblad.pdf", TINY_PDF, PDF)
+        verify("stepFile.upload.image.status", image.status, 201)
+        verify("stepFile.upload.pdf.status", pdf.status, 201)
+        val imageFile = image.json as? JsonObject ?: return
+        val pdfFile = pdf.json as? JsonObject ?: return
+        facts["stepFile.upload.fieldTypes"] = Facts.fieldTypes(imageFile)
+        observe("stepFile.upload.image.preview", imageFile.stringAt("preview"))
+        observe("stepFile.upload.pdf.preview", pdfFile.stringAt("preview"))
+
+        val recipe = stepFileRecipe(imageFile, pdfFile)
+        val created = api("recipe-create-step-file", "POST", "/api/recipe/", recipe, record = false)
+        verify("stepFile.recipeCreate.status", created.status, 201)
+        val id = (created.json as? JsonObject)?.longAt("id") ?: return
+        val detail = api("recipe-step-file", "GET", "/api/recipe/$id/")
+        verify("stepFile.detail.status", detail.status, 200)
+        val steps = (detail.json as? JsonObject)?.arrAt("steps").objects()
+        val withImage = steps.getOrNull(0)?.objAt("file")
+        val withPdf = steps.getOrNull(1)?.objAt("file")
+        facts["stepFile.file.fieldTypes"] = withImage?.let { Facts.fieldTypes(it) }
+        verify("stepFile.withoutFile.file", steps.getOrNull(2)?.get("file"), JsonNull)
+        val preview = withImage?.stringAt("preview")
+        observe("stepFile.image.preview", preview)
+        verify("stepFile.image.previewIsAbsoluteHttps", preview?.startsWith("$PUBLIC_ORIGIN/media/"), true)
+        verify("stepFile.pdf.preview", withPdf?.stringAt("preview"), "")
+        observe("stepFile.image.fileDownload", withImage?.stringAt("file_download"))
+        verify("stepFile.pdf.fileDownloadIsAbsoluteHttps", withPdf?.stringAt("file_download")?.startsWith("$PUBLIC_ORIGIN/"), true)
+
+        // The preview is a media file: like recipe images, it must load without the token.
+        if (preview != null) {
+            val anonymous = directHttp.call("media-step-file-no-auth", "GET", pathOf(preview), record = false, recordBodyText = false)
+            observe("stepFile.preview.noAuth", describe(anonymous, includeBody = false))
+            verify("stepFile.preview.noAuth.status", anonymous.status, 200)
+            verify("stepFile.preview.noAuth.contentType", anonymous.contentType, "image/png")
+        }
+        // file_download is an API view (any file type), not what cook mode shows.
+        withPdf?.stringAt("file_download")?.let { download ->
+            val anonymous = directHttp.call("step-file-download-no-auth", "GET", pathOf(download), record = false, recordBodyText = false)
+            observe("stepFile.download.noAuth", describe(anonymous, includeBody = false))
+            observe("stepFile.download.noAuth.location", anonymous.header("Location"))
+        }
+
+        observe("stepFile.cleanup.recipe", api("recipe-delete-step-file", "DELETE", "/api/recipe/$id/", record = false).status)
+        for (file in listOf(imageFile, pdfFile)) {
+            observe(
+                "stepFile.cleanup.file.${file.stringAt("name")}",
+                api("user-file-delete", "DELETE", "/api/user-file/${file.longAt("id")}/", record = false).status,
+            )
+        }
+    }
+
+    /** Three steps: the image, the PDF, no file. A file is referenced by id (UserFileView is read-only). */
+    private fun stepFileRecipe(image: JsonObject, pdf: JsonObject): JsonObject {
+        fun step(instruction: String, order: Int, file: JsonObject?) = buildJsonObject {
+            put("instruction", instruction)
+            put("order", order)
+            put("ingredients", JsonArray(emptyList()))
+            put(
+                "file",
+                file?.let {
+                    buildJsonObject {
+                        put("id", it.longAt("id"))
+                        put("name", it.stringAt("name"))
+                    }
+                } ?: JsonNull,
+            )
+        }
+        return buildJsonObject {
+            put("name", STEP_FILE_RECIPE)
+            put("servings", 2)
+            put("internal", true)
+            put("keywords", JsonArray(emptyList()))
+            put(
+                "steps",
+                JsonArray(
+                    listOf(
+                        step("Lägg upp som på bilden.", 0, image),
+                        step("Skriv ut receptbladet.", 1, pdf),
+                        step("Servera.", 2, null),
+                    ),
+                ),
+            )
+        }
+    }
+
+    private fun uploadUserFile(name: String, fileName: String, uploadName: String, bytes: ByteArray, type: MediaType): Exchange {
+        val body = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("name", fileName)
+            .addFormDataPart("file", uploadName, bytes.toRequestBody(type))
+            .build()
+        val recordBody = buildJsonObject {
+            put("name", fileName)
+            put("file", "<multipart file $uploadName, $type, ${bytes.size} bytes>")
+        }
+        return http.call(name, "POST", "/api/user-file/", bearer = env.fas1Token, body = body, recordBody = recordBody, record = false)
+    }
+
     // --- Baseline ---------------------------------------------------------------------------------
 
     @Test
@@ -1023,6 +1135,11 @@ class Phase1ContractTest {
     private companion object {
         val JSON = "application/json".toMediaType()
         val PNG = "image/png".toMediaType()
+        val PDF = "application/pdf".toMediaType()
+
+        /** Smallest file Tandoor accepts as `.pdf` that PIL cannot open as an image. */
+        val TINY_PDF: ByteArray = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n".toByteArray()
+        const val STEP_FILE_RECIPE = "Stegbild"
         const val IMAGE_SIZE = 8
         const val SMALL_PAUSE_MS = 50L
 

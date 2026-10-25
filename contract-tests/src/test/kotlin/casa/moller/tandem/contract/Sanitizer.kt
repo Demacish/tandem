@@ -24,8 +24,17 @@ import kotlinx.serialization.json.JsonPrimitive
  *   when they are whole minutes (meal-plan times such as `18:00:00`) and zeroed otherwise.
  */
 internal class Sanitizer(secrets: List<String>, private val runToday: LocalDate? = null) {
-    private val secrets = secrets.filter { it.length >= MIN_SECRET_LENGTH }
+    private val secrets = secrets.filter { it.length >= MIN_SECRET_LENGTH }.toMutableList()
     private val fakeByReal = LinkedHashMap<String, String>()
+
+    /**
+     * Adds a secret that only became known during the run (Tandoor 2.7+: an allauth session
+     * token). Values under [SECRET_KEYS] are redacted anyway; this also catches the value in
+     * free text and facts.
+     */
+    fun addSecret(secret: String) {
+        if (secret.length >= MIN_SECRET_LENGTH && secret !in secrets) secrets += secret
+    }
 
     fun fakeTokenFor(realToken: String): String {
         if (realToken.startsWith(FAKE_PREFIX)) return realToken
@@ -51,7 +60,11 @@ internal class Sanitizer(secrets: List<String>, private val runToday: LocalDate?
     }
 
     fun sanitize(element: JsonElement): JsonElement = when (element) {
-        is JsonObject -> JsonObject(element.mapValues { (_, value) -> sanitize(value) })
+        is JsonObject -> JsonObject(
+            element.mapValues { (key, value) ->
+                if (key in SECRET_KEYS && value is JsonPrimitive && value.isString) JsonPrimitive(REDACTED) else sanitize(value)
+            },
+        )
 
         is JsonArray -> JsonArray(element.map { sanitize(it) })
 
@@ -68,6 +81,16 @@ internal class Sanitizer(secrets: List<String>, private val runToday: LocalDate?
         const val REDACTED = "<redacted>"
         const val FAKE_PREFIX = "tda_00000000_0000_0000_0000_"
         const val MASK_PREFIX = "tda_************_******_***********"
+
+        /**
+         * JSON keys whose string value is always a secret: allauth headless (Tandoor 2.7+) returns
+         * the session token as `meta.session_token` (and `access_token`/`refresh_token` with the
+         * JWT strategy, which Tandoor does not use).
+         */
+        val SECRET_KEYS: Set<String> = setOf("session_token", "access_token", "refresh_token")
+
+        /** Request headers whose value is always a secret (allauth's app client, Tandoor 2.7+). */
+        val SECRET_HEADERS: Set<String> = setOf("x-session-token")
 
         /** A real Tandoor token: `tda_` + UUID with `_` instead of `-` (serializer.py). */
         val TOKEN = Regex("tda_[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}")

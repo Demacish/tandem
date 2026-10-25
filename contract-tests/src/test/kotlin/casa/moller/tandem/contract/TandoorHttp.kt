@@ -107,6 +107,9 @@ internal class TandoorHttp(
         return exchange
     }
 
+    /** Writes an exchange made with `record = false`, e.g. once its secrets are known to the sanitizer. */
+    fun record(exchange: Exchange) = record(exchange, recordBodyText = true)
+
     private fun record(exchange: Exchange, recordBodyText: Boolean) {
         counter += 1
         check(numbered || recordedNames.add(exchange.name)) { "recording name used twice: ${exchange.name}" }
@@ -152,7 +155,11 @@ internal class TandoorHttp(
             .forEach { (name, values) ->
                 val clean = values.map { value ->
                     // Keep only the cookie name; values and expiry dates are secret or volatile.
-                    if (name == "set-cookie") value.substringBefore('=') + "=" + Sanitizer.REDACTED else sanitizer.sanitize(value)
+                    when (name) {
+                        "set-cookie" -> value.substringBefore('=') + "=" + Sanitizer.REDACTED
+                        in Sanitizer.SECRET_HEADERS -> Sanitizer.REDACTED
+                        else -> sanitizer.sanitize(value)
+                    }
                 }
                 put(name, JsonPrimitive(clean.joinToString(", ")))
             }

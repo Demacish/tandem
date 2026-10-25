@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -43,9 +44,20 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
  * is recorded, sanitized, under `build/contract-recordings/<tag>/`; `observed-facts.json` holds
  * the summary that `api-schema/fixtures/<version>/FACTS.md` is written from.
  *
+ * **Tandoor 2.7+** removed `api-token-auth` ("deprecate old token view"). From 2.7 on the same
+ * steps run against allauth headless' app API instead (the login the app uses there, see
+ * `TandoorAuthenticator`): `POST /_allauth/app/v1/auth/login` gives a session token
+ * (`meta.session_token`), which is sent as `X-Session-Token` to create the device token and is
+ * then logged out (`DELETE /_allauth/app/v1/auth/session`). The facts of that branch are under
+ * `login.allauth.*`, `logout.*` and the same keys as 2.6 where the step is the same. allauth
+ * allows 3 logins per minute and IP (`ACCOUNT_RATE_LIMITS`), so its logins are paced.
+ *
  * Skipped unless TANDOOR_URL is set. Never run against a production server: it revokes tokens and
- * deliberately exhausts the 10/day login throttle.
+ * deliberately exhausts the login throttle.
  */
+// LargeClass: one ordered scenario against one server whose steps share state (tokens, ids), with
+// a branch per login mechanism (2.6 api-token-auth, 2.7 allauth); splitting it would scatter that state.
+@Suppress("LargeClass")
 @EnabledIfEnvironmentVariable(named = "TANDOOR_URL", matches = ".+")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -61,6 +73,15 @@ class Phase0ContractTest {
     private var userId: Long? = null
     private var deviceToken: String? = null
     private var deviceTokenId: Long? = null
+
+    /** Tandoor 2.7+: password login through allauth headless (`api-token-auth` is gone). */
+    private var allauth = false
+
+    /** Tandoor 2.7+: the allauth session token of the login (stands in for the login token). */
+    private var loginSession: String? = null
+
+    /** When each allauth login was sent (epoch millis), for the 3 per minute limit. */
+    private val allauthLogins = ArrayDeque<Long>()
 
     @BeforeAll
     fun setUp() {
@@ -92,6 +113,8 @@ class Phase0ContractTest {
         facts["serverSettings.version"] = version
         assertTrue(!version.isNullOrBlank(), "server-settings/current has no version: $body")
         if (env.expectedVersion.isNotBlank()) assertEquals(env.expectedVersion, version, "version")
+        allauth = usesAllauthLogin(version)
+        facts["login.mechanism"] = if (allauth) "allauth-app" else "api-token-auth"
     }
 
     @Test
@@ -108,11 +131,36 @@ class Phase0ContractTest {
         assertEquals(200, ex.status, ex.toString())
     }
 
-    // --- b. api-token-auth ---------------------------------------------------------------------
+    // --- b. api-token-auth (2.6) / allauth headless (2.7+) ------------------------------------
+
+    /**
+     * Tandoor 2.7+: `api-token-auth` answers a redirect to the web login page. The app reads that
+     * redirect (and 404/405) as "this server has no token login" and uses allauth instead.
+     */
+    @Test
+    @Order(19)
+    fun legacyTokenLoginIsGone() {
+        assumeTrue(allauth, "api-token-auth exists before Tandoor 2.7")
+        val ex = http.call(
+            "login-legacy-gone",
+            "POST",
+            "/api-token-auth/",
+            body = jsonBody(credentials(env.password)),
+            recordBody = recordedCredentials(),
+        )
+        facts["login.legacy"] = describe(ex, includeBody = false)
+        facts["login.legacy.location"] = ex.header("Location")
+        assertTrue(ex.status in 300..399, ex.toString())
+        assertTrue(ex.header("Location").orEmpty().contains("/login"), "Location: ${ex.header("Location")}")
+    }
 
     @Test
     @Order(20)
     fun loginWithJson() {
+        if (allauth) {
+            allauthLoginWithJson()
+            return
+        }
         val ex = login("login-json", jsonBody(credentials(env.password)), recordedCredentials())
         facts["login.json"] = describe(ex, includeBody = false)
         assertEquals(200, ex.status, ex.toString())
@@ -134,9 +182,36 @@ class Phase0ContractTest {
         assertEquals("read write app", body.string("scope"), "scope")
     }
 
+    /** Tandoor 2.7+: the app's login, `POST /_allauth/app/v1/auth/login` with JSON. */
+    private fun allauthLoginWithJson() {
+        val ex = allauthLogin("login-json", jsonBody(credentials(env.password)), recordedCredentials())
+        facts["login.allauth"] = describe(ex, includeBody = false)
+        assertEquals(200, ex.status, ex.toString())
+        val body = ex.jsonObject
+        facts["login.allauth.fieldTypes"] = Facts.fieldTypes(body)
+        val meta = body["meta"] as? JsonObject
+        val data = body["data"] as? JsonObject
+        val user = data?.get("user") as? JsonObject
+        facts["login.allauth.metaFieldTypes"] = meta?.let { Facts.fieldTypes(it) }
+        facts["login.allauth.dataFieldTypes"] = data?.let { Facts.fieldTypes(it) }
+        facts["login.allauth.userFieldTypes"] = user?.let { Facts.fieldTypes(it) }
+        facts["login.allauth.isAuthenticated"] = meta?.get("is_authenticated")
+        facts["login.allauth.status.field"] = body["status"]
+        val session = meta?.string("session_token")
+        assertTrue(!session.isNullOrBlank(), "meta.session_token missing: ${sanitizer.sanitize(body)}")
+        sanitizer.addSecret(session!!)
+        facts["login.allauth.sessionTokenLength"] = session.length
+        loginSession = session
+        userId = user?.long("id")
+        facts["login.allauth.userIdPresent"] = userId != null
+        assertNotNull(userId, "data.user.id missing: ${sanitizer.sanitize(body)}")
+        assertEquals(true, (meta?.get("is_authenticated") as? JsonPrimitive)?.content?.toBooleanStrictOrNull(), "meta.is_authenticated")
+    }
+
     @Test
     @Order(21)
     fun loginWithFormEncoding() {
+        assumeFalse(allauth, "the app sends JSON only; allauth's app API reads JSON bodies")
         val form = FormBody.Builder().add("username", env.username).add("password", env.password).build()
         checkAlternativeLogin("login-form", form)
     }
@@ -144,6 +219,7 @@ class Phase0ContractTest {
     @Test
     @Order(22)
     fun loginWithMultipart() {
+        assumeFalse(allauth, "the app sends JSON only; allauth's app API reads JSON bodies")
         val multipart = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("username", env.username)
@@ -166,7 +242,7 @@ class Phase0ContractTest {
     @Test
     @Order(23)
     fun loginWithWrongPassword() {
-        val ex = login(
+        val ex = passwordLogin(
             "login-wrong-password",
             jsonBody(credentials("wrong-$WRONG_PASSWORD_SUFFIX")),
             recordedCredentials("wrong-$WRONG_PASSWORD_SUFFIX"),
@@ -179,7 +255,7 @@ class Phase0ContractTest {
     @Order(24)
     fun loginWithMissingFields() {
         val empty = buildJsonObject { }
-        val ex = login("login-missing-fields", jsonBody(empty), empty)
+        val ex = passwordLogin("login-missing-fields", jsonBody(empty), empty)
         facts["login.missingFields"] = describe(ex)
         assertEquals(400, ex.status, ex.toString())
     }
@@ -189,7 +265,7 @@ class Phase0ContractTest {
     @Test
     @Order(30)
     fun createDeviceToken() {
-        val login = requireLoginToken()
+        val login = requireLoginCredential()
         val expires = OffsetDateTime.now(ZoneOffset.UTC).plusYears(1).truncatedTo(ChronoUnit.SECONDS)
         val request = buildJsonObject {
             put("scope", "read write")
@@ -199,9 +275,10 @@ class Phase0ContractTest {
             "access-token-create",
             "POST",
             "/api/access-token/",
-            bearer = login,
+            authorization = loginAuthorization(),
             body = jsonBody(request),
             recordBody = request,
+            extraHeaders = loginHeaders(),
         )
         facts["deviceToken.create"] = describe(ex, includeBody = false)
         assertEquals(201, ex.status, ex.toString())
@@ -284,12 +361,14 @@ class Phase0ContractTest {
         facts["userSpace.space"] = firstUserSpace?.get("space")
         facts["userSpace.active"] = firstUserSpace?.get("active")
 
+        requireLoginCredential()
         val withLoginToken = http.call(
             "space-current-login-token",
             "GET",
             "/api/space/current/",
-            bearer = requireLoginToken(),
+            authorization = loginAuthorization(),
             record = false,
+            extraHeaders = loginHeaders(),
         )
         facts["space.current.withLoginToken.status"] = withLoginToken.status
     }
@@ -312,6 +391,10 @@ class Phase0ContractTest {
         val credentials = buildJsonObject {
             put("username", env.noSpaceUsername)
             put("password", env.noSpacePassword)
+        }
+        if (allauth) {
+            allauthAccountWithoutASpace(credentials)
+            return
         }
         val login = login("login-no-space", jsonBody(credentials), recordedCredentials(), record = false)
         facts["noSpace.login"] = describe(login, includeBody = false)
@@ -364,6 +447,42 @@ class Phase0ContractTest {
         // asks it before the space read succeeded. If this changes, update FACTS.md h.
         assertEquals(500, preference.status, preference.toString())
         assertEquals(204, cleanup.status, cleanup.toString())
+    }
+
+    /**
+     * Tandoor 2.7+: the password is accepted (a session token), but `ScopeMiddleware` refuses
+     * every `/api/` request of a user without an active UserSpace with 403 + JSON, also the token
+     * create. Right after a successful login that 403 can only mean "no space", which is what the
+     * app reports.
+     */
+    private fun allauthAccountWithoutASpace(credentials: JsonObject) {
+        val login = allauthLogin("login-no-space", jsonBody(credentials), recordedCredentials(), record = false)
+        facts["noSpace.login"] = describe(login, includeBody = false)
+        assertEquals(200, login.status, login.toString())
+        val session = (login.jsonObject["meta"] as? JsonObject)?.string("session_token")
+        assertTrue(!session.isNullOrBlank(), "meta.session_token missing")
+        sanitizer.addSecret(session!!)
+        val headers = mapOf(SESSION_HEADER to session)
+        val request = buildJsonObject {
+            put("scope", "read write")
+            put("expires", OffsetDateTime.now(ZoneOffset.UTC).plusYears(1).truncatedTo(ChronoUnit.SECONDS).toString())
+        }
+        val create = http.call(
+            "no-space-access-token-create",
+            "POST",
+            "/api/access-token/",
+            body = jsonBody(request),
+            recordBody = request,
+            record = false,
+            extraHeaders = headers,
+        )
+        val space = http.call("no-space-space-current", "GET", "/api/space/current/", record = false, extraHeaders = headers)
+        facts["noSpace.accessTokenCreate"] = describe(create)
+        facts["noSpace.spaceCurrent"] = describe(space)
+        val logout = http.call("no-space-logout", "DELETE", ALLAUTH_SESSION, record = false, extraHeaders = headers)
+        facts["noSpace.logoutStatus"] = logout.status
+        assertTokenRejected(create)
+        assertTokenRejected(space)
     }
 
     // --- e. Invalid and missing tokens ---------------------------------------------------------
@@ -472,7 +591,9 @@ class Phase0ContractTest {
         // Observed in 2.6.13: an unknown /api/ path is NOT a JSON 404 but a redirect to the web
         // login page (HTML). Clients must not follow redirects blindly on API calls.
         assertEquals(302, path.status, path.toString())
-        assertTrue(path.header("Location").orEmpty().startsWith("/accounts/login/"), "Location: ${path.header("Location")}")
+        // 2.6: /accounts/login/ (allauth's page); 2.7: the new web app's /account/login/.
+        val loginPage = if (allauth) "/account/login/" else "/accounts/login/"
+        assertTrue(path.header("Location").orEmpty().startsWith(loginPage), "Location: ${path.header("Location")}")
     }
 
     // --- f. Revocation and token reuse ---------------------------------------------------------
@@ -480,6 +601,10 @@ class Phase0ContractTest {
     @Test
     @Order(60)
     fun revokingTheLoginTokenLeavesTheDeviceTokenWorking() {
+        if (allauth) {
+            loggingOutTheSessionLeavesTheDeviceTokenWorking()
+            return
+        }
         val device = requireDeviceToken()
         val login = requireLoginToken()
         val delete = http.call("revoke-login-token", "DELETE", "/api/access-token/$loginTokenId/", bearer = device)
@@ -494,9 +619,34 @@ class Phase0ContractTest {
         assertEquals(200, stillWorks.status, stillWorks.toString())
     }
 
+    /**
+     * Tandoor 2.7+: what the app does after creating the device token. allauth answers a logout
+     * with 401 (the response describes the now unauthenticated state); the session token is then
+     * refused like an invalid token, and the device token keeps working.
+     */
+    private fun loggingOutTheSessionLeavesTheDeviceTokenWorking() {
+        val device = requireDeviceToken()
+        val session = requireLoginCredential()
+        val headers = mapOf(SESSION_HEADER to session)
+        val logout = http.call("logout-session", "DELETE", ALLAUTH_SESSION, extraHeaders = headers)
+        facts["logout.session"] = describe(logout)
+        assertEquals(401, logout.status, logout.toString())
+
+        val revoked = http.call("logged-out-session-get", "GET", "/api/space/current/", extraHeaders = headers)
+        facts["logout.sessionUse"] = describe(revoked)
+        val stillWorks = http.call("device-token-after-logout", "GET", "/api/space/current/", bearer = device)
+        facts["revokeLoginToken.deviceTokenStillWorks"] = stillWorks.status == 200
+        assertTokenRejected(revoked)
+        assertEquals(200, stillWorks.status, stillWorks.toString())
+    }
+
     @Test
     @Order(61)
     fun loginAfterTheLoginTokenWasRevoked() {
+        if (allauth) {
+            loginAgainAfterLogout()
+            return
+        }
         val device = requireDeviceToken()
         val ex = login("login-after-login-token-revoked", jsonBody(credentials(env.password)), recordedCredentials())
         assertEquals(200, ex.status, ex.toString())
@@ -511,6 +661,26 @@ class Phase0ContractTest {
         // login token is gone, a password login hands out the DEVICE token in plaintext. Plan 3.1
         // step 4 (deleting the login token) must therefore not be implemented as written.
         assertEquals(device, token, "login after revoking the login token returns the device token")
+    }
+
+    /** Tandoor 2.7+: every login is a new session (no token reuse as with `api-token-auth`). */
+    private fun loginAgainAfterLogout() {
+        requireDeviceToken()
+        val ex = allauthLogin("login-after-logout", jsonBody(credentials(env.password)), recordedCredentials())
+        assertEquals(200, ex.status, ex.toString())
+        val session = (ex.jsonObject["meta"] as? JsonObject)?.string("session_token")
+        assertTrue(!session.isNullOrBlank(), "meta.session_token missing")
+        sanitizer.addSecret(session!!)
+        facts["loginAfterRevoke.returnsNewSession"] = session != loginSession
+        val logout = http.call(
+            "logout-after-login-again",
+            "DELETE",
+            ALLAUTH_SESSION,
+            record = false,
+            extraHeaders = mapOf(SESSION_HEADER to session),
+        )
+        facts["loginAfterRevoke.logoutStatus"] = logout.status
+        assertNotEquals(loginSession, session, "a new login gives a new session")
     }
 
     @Test
@@ -542,6 +712,10 @@ class Phase0ContractTest {
     @Test
     @Order(90)
     fun loginThrottle() {
+        if (allauth) {
+            allauthLoginThrottle()
+            return
+        }
         val before = loginCalls
         var throttled: Exchange? = null
         var allowed = loginCalls
@@ -569,11 +743,97 @@ class Phase0ContractTest {
         assertNotNull(recorded.header("Retry-After"), "Retry-After header")
     }
 
+    /**
+     * Tandoor 2.7+: `ACCOUNT_RATE_LIMITS["login"] = "3/m/ip"`, every attempt counts. Waits until
+     * the window of the earlier logins has passed, then sends wrong passwords until the 429.
+     */
+    private fun allauthLoginThrottle() {
+        allauthLogins.lastOrNull()?.let { last ->
+            val wait = last + RATE_WINDOW.toMillis() - System.currentTimeMillis()
+            if (wait > 0) Thread.sleep(wait)
+        }
+        allauthLogins.clear()
+        var throttled: Exchange? = null
+        var allowed = 0
+        var attempts = 0
+        while (throttled == null && attempts < MAX_THROTTLE_ATTEMPTS) {
+            attempts += 1
+            val ex = allauthLogin(
+                "login-throttle",
+                jsonBody(credentials("wrong-$WRONG_PASSWORD_SUFFIX")),
+                recordedCredentials("wrong-$WRONG_PASSWORD_SUFFIX"),
+                record = false,
+                paced = false,
+            )
+            if (ex.status == 429) throttled = ex else allowed += 1
+        }
+        facts["throttle.allowedLoginCallsBefore429"] = allowed
+        assertNotNull(throttled, "no 429 after $attempts allauth logins")
+        val recorded = allauthLogin(
+            "login-throttled",
+            jsonBody(credentials("wrong-$WRONG_PASSWORD_SUFFIX")),
+            recordedCredentials("wrong-$WRONG_PASSWORD_SUFFIX"),
+            paced = false,
+        )
+        facts["throttle.response"] = describe(recorded)
+        facts["throttle.retryAfterHeader"] = recorded.header("Retry-After")
+        assertEquals(429, recorded.status, recorded.toString())
+        assertEquals(3, allowed, "allauth allows 3 logins per minute and IP (ACCOUNT_RATE_LIMITS)")
+    }
+
     // --- Helpers --------------------------------------------------------------------------------
 
     private fun login(name: String, body: RequestBody, recordBody: JsonElement, record: Boolean = true): Exchange {
         loginCalls += 1
         return http.call(name, "POST", "/api-token-auth/", body = body, recordBody = recordBody, record = record)
+    }
+
+    /** The password login of this server version: `api-token-auth` (2.6) or allauth (2.7+). */
+    private fun passwordLogin(name: String, body: RequestBody, recordBody: JsonElement, record: Boolean = true): Exchange =
+        if (allauth) allauthLogin(name, body, recordBody, record) else login(name, body, recordBody, record)
+
+    /**
+     * `POST /_allauth/app/v1/auth/login`. With [paced], waits so that at most 3 logins fall into
+     * any minute (allauth's limit for every attempt, success or not).
+     */
+    private fun allauthLogin(
+        name: String,
+        body: RequestBody,
+        recordBody: JsonElement,
+        record: Boolean = true,
+        paced: Boolean = true,
+    ): Exchange {
+        if (paced) {
+            val now = System.currentTimeMillis()
+            while (allauthLogins.isNotEmpty() && allauthLogins.first() < now - RATE_WINDOW.toMillis()) allauthLogins.removeFirst()
+            if (allauthLogins.size >= ALLAUTH_LOGINS_PER_MINUTE) {
+                val wait = allauthLogins.first() + RATE_WINDOW.toMillis() - now
+                if (wait > 0) Thread.sleep(wait)
+                allauthLogins.removeFirst()
+            }
+        }
+        allauthLogins.addLast(System.currentTimeMillis())
+        loginCalls += 1
+        val ex = http.call(name, "POST", ALLAUTH_LOGIN, body = body, recordBody = recordBody, record = false)
+        // The session token must be known to the sanitizer before the exchange is written.
+        ((ex.json as? JsonObject)?.get("meta") as? JsonObject)?.string("session_token")?.let { sanitizer.addSecret(it) }
+        if (record) http.record(ex)
+        return ex
+    }
+
+    /** `Authorization` for the login credential: the login token (2.6), none with allauth. */
+    private fun loginAuthorization(): String? = if (allauth) null else loginToken?.let { "Bearer $it" }
+
+    /** Extra headers for the login credential: `X-Session-Token` with allauth (2.7+). */
+    private fun loginHeaders(): Map<String, String> =
+        if (allauth) loginSession?.let { mapOf(SESSION_HEADER to it) }.orEmpty() else emptyMap()
+
+    /** The login token (2.6) or the allauth session token (2.7+). */
+    private fun requireLoginCredential(): String = if (allauth) {
+        assumeTrue(loginSession != null, "login failed in an earlier step")
+        loginSession!!
+    } else {
+        requireLoginToken()
     }
 
     private fun credentials(password: String) = buildJsonObject {
@@ -635,5 +895,22 @@ class Phase0ContractTest {
         const val MISSING_ID = 999_999
         const val MAX_THROTTLE_ATTEMPTS = 15
         val MASK_DELAY: Duration = Duration.ofSeconds(16)
+
+        /** allauth headless, app client (Tandoor 2.7+). */
+        const val ALLAUTH_LOGIN = "/_allauth/app/v1/auth/login"
+        const val ALLAUTH_SESSION = "/_allauth/app/v1/auth/session"
+        const val SESSION_HEADER = "X-Session-Token"
+        const val ALLAUTH_LOGINS_PER_MINUTE = 3
+
+        /** allauth's rate window (one minute) plus a margin for the server's clock. */
+        val RATE_WINDOW: Duration = Duration.ofSeconds(62)
+
+        /** True from Tandoor 2.7.0 on (`api-token-auth` removed), also for `2.7.1-dev` and the like. */
+        fun usesAllauthLogin(version: String?): Boolean {
+            val parts = Regex("^(\\d+)\\.(\\d+)").find(version.orEmpty())?.groupValues ?: return false
+            val major = parts[1].toInt()
+            val minor = parts[2].toInt()
+            return major > 2 || (major == 2 && minor >= 7)
+        }
     }
 }

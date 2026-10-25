@@ -87,4 +87,19 @@ class SanitizerTest {
         val json = Json.parseToJsonElement("""{"id":3,"active":true,"household":null}""")
         assertEquals(json, Sanitizer(emptyList()).sanitize(json))
     }
+
+    @Test
+    fun allauthSessionTokensAreRedacted() {
+        val session = "k3x9q0wz7m2v8b1n5c4l6p0r"
+        val json = Json.parseToJsonElement(
+            """{"status":200,"meta":{"is_authenticated":true,"session_token":"$session"},"data":{"user":{"id":1}}}""",
+        )
+        val sanitizer = Sanitizer(emptyList())
+        val clean = sanitizer.sanitize(json).jsonObject
+        assertEquals(Sanitizer.REDACTED, clean["meta"]!!.jsonObject["session_token"]!!.jsonPrimitive.content)
+        assertEquals("1", clean["data"]!!.jsonObject["user"]!!.jsonObject["id"]!!.jsonPrimitive.content)
+        // Once known, the value is redacted wherever it appears (facts, free text).
+        sanitizer.addSecret(session)
+        assertFalse(sanitizer.sanitize("X-Session-Token: $session").contains(session))
+    }
 }
