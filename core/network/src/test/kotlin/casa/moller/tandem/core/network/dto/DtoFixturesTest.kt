@@ -100,14 +100,14 @@ class DtoFixturesTest {
         var decoded = 0
         for (name in names) {
             val fixture = Fixture.load(name, version)
-            val body = fixture.body
+            val body = fixture.body?.takeUnless { it is JsonNull }
             val path = fixture.path.substringBefore('?')
             val route = routes.firstOrNull { it.method == fixture.method && it.path.matches(path) }
             // Phase 2 (grund lane): a `fas2/` fixture of an endpoint without a DTO yet waits for the
             // lane that adds the DTO and its route here (docs/BYGGE.md "Fas 2 – kontrakt"); the ones
             // with a route (recipes, books, meal plans, foods, preferences) are checked already.
-            val waitsForItsLane = route == null && name.startsWith(PHASE_2_DIR)
-            if (fixture.status !in 200..299 || body == null || body is JsonNull || name in notModelled || waitsForItsLane) continue
+            val skipped = name in notModelled || (route == null && name.startsWith(PHASE_2_DIR))
+            if (body == null || fixture.status !in 200..299 || skipped) continue
             assertNotNull("No DTO for $name (${fixture.method} $path): add a route or a notModelled reason", route)
             @Suppress("UNCHECKED_CAST")
             val serializer = route!!.serializer as KSerializer<Any?>
