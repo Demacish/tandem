@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (grund lane): placeholders until the shopping lane builds the screens. -->
+    <string name="shopping_title">Shopping</string>
+    <string name="shopping_store_mode_title">Store mode</string>
+    <string name="shopping_list_choice_title">Lists and stores</string>
+    <string name="shopping_history_title">Bought before</string>
+    <string name="shopping_placeholder_body">Tandoor’s shopping list comes here: sorted by aisle, shared with your household and usable offline.</string>
+</resources>

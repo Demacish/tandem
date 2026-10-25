@@ -49,7 +49,7 @@ class TandemMigrationTest {
 
     @Test
     fun everyVersionHasAMigration() {
-        assertEquals(3, TandemDatabase.VERSION)
+        assertEquals(4, TandemDatabase.VERSION)
         assertEquals((1 until TandemDatabase.VERSION).toList(), TandemMigrations.ALL.map { it.startVersion })
     }
 
@@ -136,6 +136,64 @@ class TandemMigrationTest {
             assertNotNull("the stored copy stays readable offline", recipes.getDetailRow(ACCOUNT_A, 2)?.rawJson)
             assertEquals(FETCHED_AT, recipes.getDetailRow(ACCOUNT_A, 3)?.fetchedAtEpochMillis)
             assertEquals(FETCHED_AT, recipes.getDetailRow(ACCOUNT_A, 4)?.fetchedAtEpochMillis)
+        } finally {
+            database.close()
+        }
+    }
+
+    /**
+     * 0.2.0 -> 0.3.0 (Phase 2): the new tables exist and are empty, the new columns start empty
+     * (`delta_count` 0), and what 0.2.0 stored (a meal, a queued "Klart!") stays and is sent.
+     */
+    @Test
+    fun versionThreeMigratesToFourWithEmptyPhase2Tables() = runTest {
+        helper.createDatabase(3).apply {
+            execSQL(
+                "INSERT INTO meal_plan (account_id, local_id, server_id, title, servings, note, from_date, to_date, meal_type_id, " +
+                    "shopping) VALUES ('$ACCOUNT_A', 5, 5, 'Rester', 1.0, '', '2026-10-25', '2026-10-25', 1, 0)",
+            )
+            execSQL(
+                "INSERT INTO outbox (account_id, op, entity, server_id, payload, attempts, created_at, state) " +
+                    "VALUES ('$ACCOUNT_A', 'COOK_LOG', 'recipe', 2, '{}', 0, 1, 'PENDING')",
+            )
+            execSQL("INSERT INTO sync_state (account_id, entity, last_date) VALUES ('$ACCOUNT_A', 'recipe', '2026-10-24')")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(4, TandemMigrations.ALL).close()
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            val queued = database.outboxDao().nextReady(ACCOUNT_A)
+            assertEquals("COOK_LOG", queued?.op)
+            assertNull(queued?.refs)
+            assertNull(queued?.batchKey)
+            assertEquals(1, database.mealPlanDao().getRange(ACCOUNT_A, "2026-10-25", "2026-10-25").size)
+            assertEquals(0, database.syncStateDao().get(ACCOUNT_A, "recipe")?.deltaCount)
+            assertEquals(emptyList<Any>(), database.shoppingDao().getEntries(ACCOUNT_A))
+            assertEquals(emptyList<Any>(), database.idRewriteDao().getMappings(ACCOUNT_A))
+            assertEquals(-1L, database.idRewriteDao().nextLocalId(ACCOUNT_A, "shopping_entry"))
+        } finally {
+            database.close()
+        }
+    }
+
+    /** 0.1.0 straight to 0.3.0: every migration in a row, the queued view is still sent. */
+    @Test
+    fun versionOneMigratesToFour() = runTest {
+        helper.createDatabase(1).apply {
+            execSQL(
+                "INSERT INTO outbox (account_id, op, entity, server_id, payload, attempts, created_at, state) " +
+                    "VALUES ('$ACCOUNT_A', 'VIEW_LOG', 'recipe', 2, '{}', 0, 1, 'PENDING')",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(4, TandemMigrations.ALL).close()
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            assertEquals(2L, database.outboxDao().nextReady(ACCOUNT_A)?.serverId)
         } finally {
             database.close()
         }

@@ -22,10 +22,13 @@ import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.timer.LocalTimerClock
 import casa.moller.tandem.core.ui.timer.LocalTimerTicks
 import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
+import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.ui.PlaceholderTab
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
+import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
@@ -212,6 +215,68 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     override fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?) {
         ShellScreenScaffold(title = "Timers", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Timers", modifier = Modifier.padding(padding))
+        }
+    }
+
+    // --- Phase 2 (grund lane): Handla and Veckan keep their placeholder tabs (and screenshots). ---
+
+    @Composable
+    override fun Shopping(
+        listId: Long?,
+        supermarketId: Long?,
+        onOpenStoreMode: (StoreModeKey) -> Unit,
+        onOpenListChoice: () -> Unit,
+        onOpenHistory: () -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+    ) {
+        Placeholder(ShellTab.SHOPPING)
+    }
+
+    @Composable
+    override fun StoreMode(key: StoreModeKey, onClose: () -> Unit) = Page("Store mode", onClose)
+
+    @Composable
+    override fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit) =
+        Page("Lists and stores", onDismiss)
+
+    @Composable
+    override fun ShoppingHistory(onBack: () -> Unit) = Page("Bought before", onBack)
+
+    @Composable
+    override fun Week(
+        weekStart: String?,
+        onOpenRecipe: (Long) -> Unit,
+        onPlanMeal: (PlanMealKey) -> Unit,
+        onWeekShopping: (WeekShoppingKey) -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    ) {
+        Placeholder(ShellTab.WEEK)
+    }
+
+    @Composable
+    override fun PlanMeal(key: PlanMealKey, onDone: () -> Unit) = Page("Plan a meal ${key.date}", onDone)
+
+    @Composable
+    override fun WeekShopping(key: WeekShoppingKey, onDone: () -> Unit, onOpenShoppingList: () -> Unit) =
+        Page("Shop for the week ${key.weekStart}", onDone)
+
+    @Composable
+    override fun Books(onOpenBook: (Long) -> Unit, onOpenFavorites: () -> Unit, onOpenWantToCook: () -> Unit, onBack: () -> Unit) =
+        Page("Books", onBack)
+
+    @Composable
+    override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) = Page("Book $bookId", onBack)
+
+    @Composable
+    override fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) = Page("Favourites", onBack)
+
+    @Composable
+    override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit) = Page("Want to cook", onBack)
+
+    @Composable
+    private fun Page(title: String, onBack: () -> Unit) {
+        ShellScreenScaffold(title = title, state = state, onNavigateBack = onBack) { padding ->
+            Text(text = title, modifier = Modifier.padding(padding))
         }
     }
 

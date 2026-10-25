@@ -171,6 +171,9 @@ dependencies {
     implementation(projects.feature.recipes)
     implementation(projects.feature.home)
     implementation(projects.feature.cook)
+    // --- grund lane (Fas 2): the Handla and Veckan tabs (hosted by the shell). ---
+    implementation(projects.feature.shopping)
+    implementation(projects.feature.mealplan)
     // --- sync lane (Phase 1): WorkManager runs core:sync's @HiltWorker workers through the
     // HiltWorkerFactory that TandemApplication provides (Configuration.Provider). ---
     implementation(libs.androidx.work.runtime)

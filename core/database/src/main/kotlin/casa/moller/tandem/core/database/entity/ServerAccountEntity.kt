@@ -21,6 +21,10 @@ import androidx.room3.PrimaryKey
  * @property groupLevel `guest`, `user` or `admin`, when known.
  * @property tokenId server id of the device token (not the token itself), when known.
  * @property updatedAtEpochMillis when this row was last written.
+ * @property householdName (schema 4) the household's name (`/api/user-space/all_personal/`
+ *   `household.name`; `/api/household/` is admin-only, FACTS "Fas 2"), when known.
+ * @property shoppingMinAutosyncSeconds (schema 4) the server's `shopping_min_autosync_interval`
+ *   (a STRING such as "5" in server-settings, parsed), the floor for list polling (plan 3.5).
  */
 @Entity(tableName = "server_account")
 data class ServerAccountEntity(
@@ -35,4 +39,6 @@ data class ServerAccountEntity(
     @ColumnInfo(name = "group_level") val groupLevel: String? = null,
     @ColumnInfo(name = "token_id") val tokenId: Long? = null,
     @ColumnInfo(name = "updated_at") val updatedAtEpochMillis: Long = 0,
+    @ColumnInfo(name = "household_name") val householdName: String? = null,
+    @ColumnInfo(name = "shopping_min_autosync_seconds") val shoppingMinAutosyncSeconds: Int? = null,
 )

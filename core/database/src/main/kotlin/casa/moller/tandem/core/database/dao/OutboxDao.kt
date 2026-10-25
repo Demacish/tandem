@@ -8,6 +8,8 @@ import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
+import casa.moller.tandem.core.database.outbox.OutboxMerge
+import casa.moller.tandem.core.database.outbox.OutboxRefs
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -31,15 +33,7 @@ abstract class OutboxDao {
     abstract suspend fun get(id: Long): OutboxEntity?
 
     /** The next row to send for [accountId], or null when nothing is ready. */
-    @Query(
-        "SELECT * FROM outbox o WHERE o.account_id = :accountId AND o.state = 'PENDING' " +
-            "AND (o.depends_on IS NULL OR NOT EXISTS (SELECT 1 FROM outbox dep WHERE dep.id = o.depends_on)) " +
-            "AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.account_id = o.account_id AND p.id < o.id " +
-            "AND p.entity = o.entity AND ((o.server_id IS NOT NULL AND p.server_id = o.server_id) " +
-            "OR (o.local_id IS NOT NULL AND p.local_id = o.local_id)) " +
-            "AND NOT (p.state = 'FAILED' AND p.op IN ('VIEW_LOG', 'COOK_LOG'))) " +
-            "ORDER BY o.id LIMIT 1",
-    )
+    @Query("SELECT * FROM outbox o WHERE o.account_id = :accountId AND o.state = 'PENDING' AND " + READY + " ORDER BY o.id LIMIT 1")
     abstract suspend fun nextReady(accountId: String): OutboxEntity?
 
     /** Claims a PENDING row for sending; returns 1 when claimed, 0 when it was not PENDING any more. */
@@ -144,4 +138,102 @@ abstract class OutboxDao {
 
     @Query("SELECT id FROM outbox WHERE depends_on IN (:ids)")
     abstract suspend fun getDependents(ids: List<Long>): List<Long>
+
+    // ---------------------------------------------------------------- Phase 2 (schema 4, grund lane)
+
+    /**
+     * Queues [row] with the merge rules of [OutboxMerge] (plan 3.5/5.7; docs/BYGGE.md "Fas 2 –
+     * kontrakt"): a PATCH after an unsent CREATE becomes part of the CREATE, check + uncheck cancel,
+     * a DELETE of an object that never reached the server removes everything queued for it, and so
+     * on. A row for an object that has no server id yet carries only `local_id`; once it has one,
+     * only `server_id` (resolve stale temporary ids with [IdRewriteDao.resolve] first).
+     *
+     * When the change merges into an older row, that row keeps its place in the queue, gets the
+     * merged payload, the union of both rows' [OutboxEntity.refs] and, if it had none, the new
+     * row's `depends_on`.
+     *
+     * @return the id of the row that carries the change, or null when the change cancelled out.
+     */
+    @Transaction
+    open suspend fun enqueue(row: OutboxEntity): Long? {
+        val unsent = getUnsentFor(row.accountId, row.entity, row.localId, row.serverId)
+        return when (val decision = OutboxMerge.decide(row, unsent)) {
+            OutboxMerge.Decision.Insert -> insert(row)
+
+            is OutboxMerge.Decision.Update -> {
+                val existing = unsent.first { it.id == decision.id }
+                val refs = OutboxRefs.encode(OutboxRefs.decode(existing.refs) + OutboxRefs.decode(row.refs))
+                val dependsOn = existing.dependsOn ?: row.dependsOn
+                updateMerged(decision.id, decision.payload, decision.batchKey, refs, dependsOn, row.createdAtEpochMillis)
+                decision.id
+            }
+
+            is OutboxMerge.Decision.Cancel -> {
+                deleteWithDependents(decision.ids)
+                null
+            }
+
+            is OutboxMerge.Decision.Replace -> {
+                deleteWithDependents(decision.ids)
+                insert(row)
+            }
+        }
+    }
+
+    /**
+     * Up to [limit] ready rows with [batchKey], in send order (e.g. every pending BULK_CHECK with
+     * `checked = true`, sent as one `POST /api/shopping-list-entry/bulk/`). Same readiness rules as
+     * [nextReady].
+     */
+    @Query(
+        "SELECT * FROM outbox o WHERE o.account_id = :accountId AND o.state = 'PENDING' AND o.batch_key = :batchKey AND " +
+            READY + " ORDER BY o.id LIMIT :limit",
+    )
+    abstract suspend fun nextReadyBatch(accountId: String, batchKey: String, limit: Int): List<OutboxEntity>
+
+    /** Unsent rows (PENDING or PAUSED) of one object, oldest first: what [enqueue] merges with. */
+    @Query(
+        "SELECT * FROM outbox WHERE account_id = :accountId AND entity = :entity AND state IN ('PENDING', 'PAUSED') " +
+            "AND ((:localId IS NOT NULL AND local_id = :localId) OR (:serverId IS NOT NULL AND server_id = :serverId)) ORDER BY id",
+    )
+    abstract suspend fun getUnsentFor(accountId: String, entity: String, localId: Long?, serverId: Long?): List<OutboxEntity>
+
+    /** Every unsent row of [entity] (e.g. to keep a sync from overwriting objects with local changes). */
+    @Query("SELECT * FROM outbox WHERE account_id = :accountId AND entity = :entity ORDER BY id")
+    abstract suspend fun getAllFor(accountId: String, entity: String): List<OutboxEntity>
+
+    /** Removes the rows [ids] and every row that (transitively) depends on them; returns the ids removed. */
+    @Transaction
+    open suspend fun deleteWithDependents(ids: List<Long>): List<Long> {
+        val removed = mutableListOf<Long>()
+        var level = ids
+        while (level.isNotEmpty()) {
+            removed += level
+            level = getDependents(level).filter { it !in removed }
+        }
+        if (removed.isNotEmpty()) deleteRows(removed)
+        return removed
+    }
+
+    @Query(
+        "UPDATE outbox SET payload = :payload, batch_key = :batchKey, refs = :refs, depends_on = :dependsOn, " +
+            "updated_at = :nowEpochMillis WHERE id = :id",
+    )
+    abstract suspend fun updateMerged(id: Long, payload: String, batchKey: String?, refs: String?, dependsOn: Long?, nowEpochMillis: Long)
+
+    @Query("DELETE FROM outbox WHERE id IN (:ids)")
+    abstract suspend fun deleteRows(ids: List<Long>)
+
+    private companion object {
+        /**
+         * When a row `o` is ready: its `depends_on` row is gone (sent), and no older row for the same
+         * object is still in the outbox, except a FAILED log row (`VIEW_LOG`, `COOK_LOG`).
+         */
+        const val READY: String =
+            "(o.depends_on IS NULL OR NOT EXISTS (SELECT 1 FROM outbox dep WHERE dep.id = o.depends_on)) " +
+                "AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.account_id = o.account_id AND p.id < o.id " +
+                "AND p.entity = o.entity AND ((o.server_id IS NOT NULL AND p.server_id = o.server_id) " +
+                "OR (o.local_id IS NOT NULL AND p.local_id = o.local_id)) " +
+                "AND NOT (p.state = 'FAILED' AND p.op IN ('VIEW_LOG', 'COOK_LOG')))"
+    }
 }

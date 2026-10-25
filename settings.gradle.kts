@@ -47,3 +47,8 @@ include(":feature:cook")
 
 // --- ci lane (Fas 1b): Macrobenchmark and the baseline profile generator (benchmark.yml). ---
 include(":benchmark")
+
+// --- grund lane (Fas 2, 0.3.0 "handla & planera"): the shopping list and the meal plan. Books
+// live in :feature:recipes (plan 6.1). Declared up front so the lanes never edit this file. ---
+include(":feature:shopping")
+include(":feature:mealplan")

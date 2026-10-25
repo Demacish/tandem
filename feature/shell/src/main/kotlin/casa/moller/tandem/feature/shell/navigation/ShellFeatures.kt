@@ -7,9 +7,23 @@ import casa.moller.tandem.feature.cook.CookRoute
 import casa.moller.tandem.feature.cook.TimersRoute
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.home.TodayRoute
+import casa.moller.tandem.feature.mealplan.PlanMealRoute
+import casa.moller.tandem.feature.mealplan.WeekRoute
+import casa.moller.tandem.feature.mealplan.WeekShoppingRoute
+import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
+import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.recipes.RecipeDetailPanePlaceholder
 import casa.moller.tandem.feature.recipes.RecipeDetailRoute
 import casa.moller.tandem.feature.recipes.RecipesRoute
+import casa.moller.tandem.feature.recipes.books.BookDetailRoute
+import casa.moller.tandem.feature.recipes.books.BooksRoute
+import casa.moller.tandem.feature.recipes.books.FavoritesRoute
+import casa.moller.tandem.feature.recipes.books.WantToCookRoute
+import casa.moller.tandem.feature.shopping.ShoppingHistoryRoute
+import casa.moller.tandem.feature.shopping.ShoppingListChoiceRoute
+import casa.moller.tandem.feature.shopping.ShoppingRoute
+import casa.moller.tandem.feature.shopping.StoreModeRoute
+import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 
 /**
  * The feature screens the shell hosts (navigation contract, docs/BYGGE.md "Navigering"). Each
@@ -64,6 +78,66 @@ internal interface ShellFeatures {
      */
     @Composable
     fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?)
+
+    // --- Phase 2 (grund lane): Handla, Veckan and books (feature:shopping, feature:mealplan,
+    // feature:recipes). The lanes fill the routes; the shell's tests show placeholders. ---
+
+    /** The shopping list: the Handla tab root (`listId`/`supermarketId` null) or a `ShoppingListKey`. */
+    @Composable
+    fun Shopping(
+        listId: Long?,
+        supermarketId: Long?,
+        onOpenStoreMode: (StoreModeKey) -> Unit,
+        onOpenListChoice: () -> Unit,
+        onOpenHistory: () -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+    )
+
+    /** Store mode (full screen on every width). */
+    @Composable
+    fun StoreMode(key: StoreModeKey, onClose: () -> Unit)
+
+    /** The list / store chooser. */
+    @Composable
+    fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit)
+
+    /** The local shopping history. */
+    @Composable
+    fun ShoppingHistory(onBack: () -> Unit)
+
+    /** The week agenda: the Veckan tab root (`weekStart` null) or a `WeekAgendaKey`. */
+    @Composable
+    fun Week(
+        weekStart: String?,
+        onOpenRecipe: (Long) -> Unit,
+        onPlanMeal: (PlanMealKey) -> Unit,
+        onWeekShopping: (WeekShoppingKey) -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    )
+
+    /** The plan-meal sheet. */
+    @Composable
+    fun PlanMeal(key: PlanMealKey, onDone: () -> Unit)
+
+    /** "Handla för veckan"; [onOpenShoppingList] switches to the Handla tab. */
+    @Composable
+    fun WeekShopping(key: WeekShoppingKey, onDone: () -> Unit, onOpenShoppingList: () -> Unit)
+
+    /** All recipe books. */
+    @Composable
+    fun Books(onOpenBook: (Long) -> Unit, onOpenFavorites: () -> Unit, onOpenWantToCook: () -> Unit, onBack: () -> Unit)
+
+    /** One book. */
+    @Composable
+    fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit)
+
+    /** Everyone's favourites. */
+    @Composable
+    fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit)
+
+    /** "Vill laga"; [onPlanMeal] opens the plan-meal sheet for a recipe. */
+    @Composable
+    fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit)
 }
 
 /** The real feature routes. */
@@ -118,5 +192,88 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?) {
         TimersRoute(onBack = onBack, onOpenCook = onOpenCook, activeSource = activeSource)
+    }
+
+    // --- Phase 2 (grund lane) ---
+
+    @Composable
+    override fun Shopping(
+        listId: Long?,
+        supermarketId: Long?,
+        onOpenStoreMode: (StoreModeKey) -> Unit,
+        onOpenListChoice: () -> Unit,
+        onOpenHistory: () -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+    ) {
+        ShoppingRoute(
+            onOpenStoreMode = onOpenStoreMode,
+            onOpenListChoice = onOpenListChoice,
+            onOpenHistory = onOpenHistory,
+            onOpenRecipe = onOpenRecipe,
+            listId = listId,
+            supermarketId = supermarketId,
+        )
+    }
+
+    @Composable
+    override fun StoreMode(key: StoreModeKey, onClose: () -> Unit) {
+        StoreModeRoute(key = key, onClose = onClose)
+    }
+
+    @Composable
+    override fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit) {
+        ShoppingListChoiceRoute(onChosen = onChosen, onDismiss = onDismiss)
+    }
+
+    @Composable
+    override fun ShoppingHistory(onBack: () -> Unit) {
+        ShoppingHistoryRoute(onBack = onBack)
+    }
+
+    @Composable
+    override fun Week(
+        weekStart: String?,
+        onOpenRecipe: (Long) -> Unit,
+        onPlanMeal: (PlanMealKey) -> Unit,
+        onWeekShopping: (WeekShoppingKey) -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+    ) {
+        WeekRoute(
+            onOpenRecipe = onOpenRecipe,
+            onPlanMeal = onPlanMeal,
+            onWeekShopping = onWeekShopping,
+            onStartCooking = onStartCooking,
+            weekStart = weekStart,
+        )
+    }
+
+    @Composable
+    override fun PlanMeal(key: PlanMealKey, onDone: () -> Unit) {
+        PlanMealRoute(key = key, onDone = onDone)
+    }
+
+    @Composable
+    override fun WeekShopping(key: WeekShoppingKey, onDone: () -> Unit, onOpenShoppingList: () -> Unit) {
+        WeekShoppingRoute(key = key, onDone = onDone, onOpenShoppingList = onOpenShoppingList)
+    }
+
+    @Composable
+    override fun Books(onOpenBook: (Long) -> Unit, onOpenFavorites: () -> Unit, onOpenWantToCook: () -> Unit, onBack: () -> Unit) {
+        BooksRoute(onOpenBook = onOpenBook, onOpenFavorites = onOpenFavorites, onOpenWantToCook = onOpenWantToCook, onBack = onBack)
+    }
+
+    @Composable
+    override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) {
+        BookDetailRoute(bookId = bookId, onOpenRecipe = onOpenRecipe, onBack = onBack)
+    }
+
+    @Composable
+    override fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) {
+        FavoritesRoute(onOpenRecipe = onOpenRecipe, onBack = onBack)
+    }
+
+    @Composable
+    override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit) {
+        WantToCookRoute(onOpenRecipe = onOpenRecipe, onPlanMeal = onPlanMeal, onBack = onBack)
     }
 }

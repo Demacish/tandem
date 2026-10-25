@@ -18,6 +18,8 @@ import androidx.room3.Index
  * @property shopping the server's read-only `shopping`.
  * @property baseSnapshot reserved for the conflict check of later phases (JSON of the values at
  *   the last fetch, plan 3.5); null in Phase 1.
+ * @property recipeName (schema 4) the server's `recipe_name` (absent without a recipe), so the
+ *   meal has a name before its recipe overview is stored.
  */
 @Entity(
     tableName = "meal_plan",
@@ -43,4 +45,5 @@ data class MealPlanEntity(
     @ColumnInfo(name = "shopping") val shopping: Boolean = false,
     @ColumnInfo(name = "created_by") val createdBy: Long? = null,
     @ColumnInfo(name = "base_snapshot") val baseSnapshot: String? = null,
+    @ColumnInfo(name = "recipe_name") val recipeName: String? = null,
 )

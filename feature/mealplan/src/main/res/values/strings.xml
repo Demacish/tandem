@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (grund lane): placeholders until the meal plan lane builds the screens. -->
+    <string name="mealplan_title">Week</string>
+    <string name="mealplan_plan_meal_title">Plan a meal</string>
+    <string name="mealplan_week_shopping_title">Shop for the week</string>
+    <string name="mealplan_placeholder_body">The week’s meal plan from Tandoor comes here: plan, move and put meals on the shopping list.</string>
+</resources>

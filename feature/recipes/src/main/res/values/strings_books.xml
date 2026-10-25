@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (grund lane): books, favourites and "Vill laga" (own file so the books lane does not collide with recipe strings). -->
+    <string name="books_title">Recipe books</string>
+    <string name="books_favorites_title">Favourites</string>
+    <string name="books_want_to_cook_title">Want to cook</string>
+    <string name="books_placeholder_body">Your Tandoor recipe books come here, with everyone’s favourites and the shared “Want to cook” list.</string>
+</resources>

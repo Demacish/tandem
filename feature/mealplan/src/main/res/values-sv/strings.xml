@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (grund lane): placeholders until the meal plan lane builds the screens. -->
+    <string name="mealplan_title">Veckan</string>
+    <string name="mealplan_plan_meal_title">Planera måltid</string>
+    <string name="mealplan_week_shopping_title">Handla för veckan</string>
+    <string name="mealplan_placeholder_body">Här kommer veckans matsedel från Tandoor: planera, flytta och lägg måltider på inköpslistan.</string>
+</resources>

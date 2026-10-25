@@ -50,6 +50,11 @@ abstract class AccountDao {
             "UNION SELECT account_id FROM user_preference UNION SELECT account_id FROM home_section " +
             "UNION SELECT account_id FROM home_section_recipe UNION SELECT account_id FROM sync_state " +
             "UNION SELECT account_id FROM outbox UNION SELECT account_id FROM cook_log " +
+            "UNION SELECT account_id FROM shopping_entry UNION SELECT account_id FROM shopping_list_recipe " +
+            "UNION SELECT account_id FROM shopping_list UNION SELECT account_id FROM shopping_history " +
+            "UNION SELECT account_id FROM supermarket UNION SELECT account_id FROM supermarket_category " +
+            "UNION SELECT account_id FROM supermarket_category_relation UNION SELECT account_id FROM recipe_book " +
+            "UNION SELECT account_id FROM recipe_book_entry UNION SELECT account_id FROM id_mapping " +
             "UNION SELECT id FROM server_account",
     )
     abstract suspend fun getStoredAccountIds(): List<String>
@@ -71,7 +76,23 @@ abstract class AccountDao {
         deleteSyncStates(accountId)
         deleteOutbox(accountId)
         deleteCookLog(accountId)
+        // Phase 2 (schema 4)
+        deletePhase2Tables(accountId)
         deleteAccount(accountId)
+    }
+
+    /** Phase 2 (schema 4): every new account-scoped table. */
+    private suspend fun deletePhase2Tables(accountId: String) {
+        deleteShoppingEntries(accountId)
+        deleteShoppingListRecipes(accountId)
+        deleteShoppingLists(accountId)
+        deleteShoppingHistory(accountId)
+        deleteSupermarkets(accountId)
+        deleteSupermarketCategories(accountId)
+        deleteSupermarketCategoryRelations(accountId)
+        deleteRecipeBooks(accountId)
+        deleteRecipeBookEntries(accountId)
+        deleteIdMappings(accountId)
     }
 
     // ---------------------------------------------------------------- building blocks (Room)
@@ -126,4 +147,34 @@ abstract class AccountDao {
 
     @Query("DELETE FROM server_account WHERE id = :accountId")
     abstract suspend fun deleteAccount(accountId: String)
+
+    @Query("DELETE FROM shopping_entry WHERE account_id = :accountId")
+    abstract suspend fun deleteShoppingEntries(accountId: String)
+
+    @Query("DELETE FROM shopping_list_recipe WHERE account_id = :accountId")
+    abstract suspend fun deleteShoppingListRecipes(accountId: String)
+
+    @Query("DELETE FROM shopping_list WHERE account_id = :accountId")
+    abstract suspend fun deleteShoppingLists(accountId: String)
+
+    @Query("DELETE FROM shopping_history WHERE account_id = :accountId")
+    abstract suspend fun deleteShoppingHistory(accountId: String)
+
+    @Query("DELETE FROM supermarket WHERE account_id = :accountId")
+    abstract suspend fun deleteSupermarkets(accountId: String)
+
+    @Query("DELETE FROM supermarket_category WHERE account_id = :accountId")
+    abstract suspend fun deleteSupermarketCategories(accountId: String)
+
+    @Query("DELETE FROM supermarket_category_relation WHERE account_id = :accountId")
+    abstract suspend fun deleteSupermarketCategoryRelations(accountId: String)
+
+    @Query("DELETE FROM recipe_book WHERE account_id = :accountId")
+    abstract suspend fun deleteRecipeBooks(accountId: String)
+
+    @Query("DELETE FROM recipe_book_entry WHERE account_id = :accountId")
+    abstract suspend fun deleteRecipeBookEntries(accountId: String)
+
+    @Query("DELETE FROM id_mapping WHERE account_id = :accountId")
+    abstract suspend fun deleteIdMappings(accountId: String)
 }

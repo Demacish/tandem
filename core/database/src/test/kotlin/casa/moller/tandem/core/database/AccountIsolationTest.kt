@@ -176,6 +176,17 @@ class AccountIsolationTest {
             "sync_state",
             "outbox",
             "cook_log",
+            // Phase 2 (schema 4)
+            "shopping_entry",
+            "shopping_list_recipe",
+            "shopping_list",
+            "shopping_history",
+            "supermarket",
+            "supermarket_category",
+            "supermarket_category_relation",
+            "recipe_book",
+            "recipe_book_entry",
+            "id_mapping",
         )
     }
 }

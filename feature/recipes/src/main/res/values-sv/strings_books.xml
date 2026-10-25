@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 2 (grundbanan): böcker, favoriter och "Vill laga". -->
+    <string name="books_title">Receptböcker</string>
+    <string name="books_favorites_title">Favoriter</string>
+    <string name="books_want_to_cook_title">Vill laga</string>
+    <string name="books_placeholder_body">Här kommer dina receptböcker från Tandoor, med allas favoriter och den gemensamma listan ”Vill laga”.</string>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (grund lane): placeholders until the shopping lane builds the screens. -->
+    <string name="shopping_title">Handla</string>
+    <string name="shopping_store_mode_title">Butiksläge</string>
+    <string name="shopping_list_choice_title">Listor och butiker</string>
+    <string name="shopping_history_title">Köpt tidigare</string>
+    <string name="shopping_placeholder_body">Här kommer inköpslistan från Tandoor: sorterad efter butikens gångar, delad med hushållet och användbar offline.</string>
+</resources>

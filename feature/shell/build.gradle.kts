@@ -16,6 +16,9 @@ dependencies {
     implementation(projects.feature.home)
     // --- Phase 1b (kokläge lane): cook mode and the timer list (CookKey, TimersKey). ---
     implementation(projects.feature.cook)
+    // --- grund lane (Fas 2): the Handla and Veckan tabs and their pages; books are in feature:recipes. ---
+    implementation(projects.feature.shopping)
+    implementation(projects.feature.mealplan)
     // --- Phase 1 (recept-ui lane): web pages ("Open on the web", recipe sources) open in a
     // Custom Tab, with the system browser as fallback. ---
     implementation(libs.androidx.browser)

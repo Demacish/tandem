@@ -62,7 +62,14 @@ import casa.moller.tandem.core.ui.status.SafeModeInfoScreen
 import casa.moller.tandem.core.ui.status.TANDEM_RELEASES_URL
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
+import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
+import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
+import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
+import casa.moller.tandem.feature.recipes.navigation.BooksKey
+import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
+import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import casa.moller.tandem.feature.shell.more.AboutScreen
 import casa.moller.tandem.feature.shell.more.LanguageScreen
 import casa.moller.tandem.feature.shell.more.LicenseTextScreen
@@ -97,10 +104,14 @@ import casa.moller.tandem.feature.shell.status.ServerNotice
 import casa.moller.tandem.feature.shell.status.ServerStatusFrame
 import casa.moller.tandem.feature.shell.status.serverNotice
 import casa.moller.tandem.feature.shell.timer.TimerHudFrame
-import casa.moller.tandem.feature.shell.ui.PlaceholderTab
 import casa.moller.tandem.feature.shell.ui.icon
 import casa.moller.tandem.feature.shell.ui.label
 import casa.moller.tandem.feature.shell.ui.selectedIcon
+import casa.moller.tandem.feature.shopping.navigation.ShoppingHistoryKey
+import casa.moller.tandem.feature.shopping.navigation.ShoppingListChoiceKey
+import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
+import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import java.time.LocalDate
 
 /**
  * The app after the intro (logged in or demo mode): five tabs in a [NavigationSuiteScaffold]
@@ -291,13 +302,24 @@ internal fun ShellScaffold(
         navigationSuiteType = navigationSuiteType,
         state = suiteState,
     ) {
-        val placeholder: @Composable (ShellTab) -> Unit = { tab ->
-            PlaceholderTab(
-                tab = tab,
-                state = state,
-                showDemoBanner = !demoBannerDismissed,
-                onDismissDemoBanner = { demoBannerDismissed = true },
-                onConnectTandoor = onConnectTandoor,
+        // --- Phase 2 (grund lane): the Handla list at the tab root and for a ShoppingListKey. ---
+        val shopping: @Composable (Long?, Long?) -> Unit = { listId, supermarketId ->
+            features.Shopping(
+                listId = listId,
+                supermarketId = supermarketId,
+                onOpenStoreMode = { navigation.navigate(it, replace = { key -> key is StoreModeKey }) },
+                onOpenListChoice = { navigation.navigate(ShoppingListChoiceKey) },
+                onOpenHistory = { navigation.navigate(ShoppingHistoryKey) },
+                onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
+            )
+        }
+        val week: @Composable (String?) -> Unit = { weekStart ->
+            features.Week(
+                weekStart = weekStart,
+                onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
+                onPlanMeal = { navigation.navigate(it, replace = { key -> key is PlanMealKey }) },
+                onWeekShopping = { navigation.navigate(it, replace = { key -> key is WeekShoppingKey }) },
+                onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
             )
         }
         val entryProvider = entryProvider<NavKey> {
@@ -348,8 +370,58 @@ internal fun ShellScaffold(
                     activeSource = state.timerSource,
                 )
             }
-            entry<WeekKey> { placeholder(ShellTab.WEEK) }
-            entry<ShoppingKey> { placeholder(ShellTab.SHOPPING) }
+            // --- Phase 2 (grund lane): Handla, Veckan and books; the lanes fill the routes. ---
+            entry<WeekKey> { week(null) }
+            entry<WeekAgendaKey> { key -> week(key.weekStart) }
+            entry<PlanMealKey> { key -> features.PlanMeal(key = key, onDone = { navigation.goBack() }) }
+            entry<WeekShoppingKey> { key ->
+                features.WeekShopping(
+                    key = key,
+                    onDone = { navigation.goBack() },
+                    onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+                )
+            }
+            entry<ShoppingKey> { shopping(null, null) }
+            entry<ShoppingListKey> { key -> shopping(key.listId, key.supermarketId) }
+            entry<StoreModeKey> { key -> features.StoreMode(key = key, onClose = { navigation.goBack() }) }
+            entry<ShoppingListChoiceKey> {
+                features.ShoppingListChoice(
+                    onChosen = { listId, supermarketId ->
+                        navigation.goBack()
+                        if (listId != null || supermarketId != null) {
+                            navigation.navigate(ShoppingListKey(listId, supermarketId), replace = { it is ShoppingListKey })
+                        }
+                    },
+                    onDismiss = { navigation.goBack() },
+                )
+            }
+            entry<ShoppingHistoryKey> { features.ShoppingHistory(onBack = { navigation.goBack() }) }
+            entry<BooksKey> {
+                features.Books(
+                    onOpenBook = { navigation.navigate(BookDetailKey(it)) },
+                    onOpenFavorites = { navigation.navigate(FavoritesKey) },
+                    onOpenWantToCook = { navigation.navigate(WantToCookKey) },
+                    onBack = { navigation.goBack() },
+                )
+            }
+            entry<BookDetailKey> { key ->
+                features.BookDetail(
+                    bookId = key.bookId,
+                    onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
+                    onBack = { navigation.goBack() },
+                )
+            }
+            entry<FavoritesKey> {
+                features.Favorites(onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) }, onBack = { navigation.goBack() })
+            }
+            entry<WantToCookKey> {
+                features.WantToCook(
+                    onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
+                    // The plan-meal sheet for today; the sheet lets the user pick the day.
+                    onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
+                    onBack = { navigation.goBack() },
+                )
+            }
             // More is the list pane of a list-detail scene (Phase 1b, design
             // mer_inst_llningar_surfplatta): on medium/expanded windows its pages open beside it.
             entry<MoreKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { SettingsPanePlaceholder() })) {

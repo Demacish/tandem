@@ -29,6 +29,15 @@ enum class DataProblem(val detail: String) {
      * pastes a token instead.
      */
     PASSWORD_LOGIN_UNAVAILABLE("tandem.data.password-login-unavailable"),
+
+    /**
+     * Phase 2 (#42): the active user is a guest (read-only mode, `SpacePermissions.readOnly`):
+     * repositories refuse writes before anything is stored or queued.
+     */
+    READ_ONLY("tandem.data.read-only"),
+
+    /** Phase 2 (plan 3.7): a write to a recipe book someone else owns (the server would answer 403). */
+    NOT_OWNER("tandem.data.not-owner"),
     ;
 
     fun toError(): TandemError = TandemError.Unknown(detail)

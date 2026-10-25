@@ -32,6 +32,8 @@ data class MealType(val id: Long, val name: String, val order: Int = 0, val time
  * @property toDate last day of the entry (same as [fromDate] for a single day).
  * @property mealType the meal type.
  * @property onShoppingList Tandoor's read-only `shopping`: there are shopping list entries for it.
+ * @property pending (Phase 2) a change of this meal waits in the outbox; a meal created offline
+ *   also has a negative [id] until it is sent.
  */
 data class MealPlanEntry(
     val id: Long,
@@ -43,6 +45,7 @@ data class MealPlanEntry(
     val toDate: LocalDate = fromDate,
     val mealType: MealType,
     val onShoppingList: Boolean = false,
+    val pending: Boolean = false,
 ) {
     /** What to call the meal: its own title, else the recipe's name. */
     val displayTitle: String

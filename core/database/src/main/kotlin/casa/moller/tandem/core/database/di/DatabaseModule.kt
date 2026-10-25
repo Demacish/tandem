@@ -6,10 +6,14 @@ import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.dao.AccountDao
 import casa.moller.tandem.core.database.dao.HomeSectionDao
+import casa.moller.tandem.core.database.dao.IdRewriteDao
 import casa.moller.tandem.core.database.dao.MealPlanDao
 import casa.moller.tandem.core.database.dao.OutboxDao
+import casa.moller.tandem.core.database.dao.RecipeBookDao
 import casa.moller.tandem.core.database.dao.RecipeDao
 import casa.moller.tandem.core.database.dao.ReferenceDao
+import casa.moller.tandem.core.database.dao.ShoppingDao
+import casa.moller.tandem.core.database.dao.SupermarketDao
 import casa.moller.tandem.core.database.dao.SyncStateDao
 import dagger.Module
 import dagger.Provides
@@ -65,4 +69,18 @@ object DatabaseModule {
 
     @Provides
     fun provideSyncStateDao(database: TandemDatabase): SyncStateDao = database.syncStateDao()
+
+    // --- Phase 2 (schema 4, grund lane) ---
+
+    @Provides
+    fun provideShoppingDao(database: TandemDatabase): ShoppingDao = database.shoppingDao()
+
+    @Provides
+    fun provideSupermarketDao(database: TandemDatabase): SupermarketDao = database.supermarketDao()
+
+    @Provides
+    fun provideRecipeBookDao(database: TandemDatabase): RecipeBookDao = database.recipeBookDao()
+
+    @Provides
+    fun provideIdRewriteDao(database: TandemDatabase): IdRewriteDao = database.idRewriteDao()
 }
