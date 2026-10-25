@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.shopping.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
@@ -184,16 +186,26 @@ internal fun ShoppingEntryRow(
     }
 }
 
-/** The round check mark: an outline when open, a filled check when checked (never colour alone). */
+/** The round check mark: an empty ring when open, a filled check when checked (never colour alone). */
 @Composable
 private fun CheckMark(checked: Boolean, large: Boolean) {
     val size = if (large) 32.dp else 24.dp
-    Icon(
-        imageVector = if (checked) TandemIcons.CheckCircleFilled else TandemIcons.CheckCircle,
-        contentDescription = null,
-        tint = if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-        modifier = Modifier.size(size),
-    )
+    if (checked) {
+        Icon(
+            imageVector = TandemIcons.CheckCircleFilled,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(size),
+        )
+    } else {
+        // The ring of Material's 24 dp icons: a 20 dp circle with a 2 dp stroke.
+        Box(
+            modifier = Modifier
+                .size(size)
+                .padding(size / 12)
+                .border(width = size / 12, color = MaterialTheme.colorScheme.outline, shape = CircleShape),
+        )
+    }
 }
 
 /**
