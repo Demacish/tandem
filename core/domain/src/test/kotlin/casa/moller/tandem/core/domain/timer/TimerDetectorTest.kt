@@ -194,6 +194,15 @@ class TimerDetectorTest {
             case("Koka tre timmar.", t("tre timmar", 10800)),
             case("Koka fem till sju minuter.", t("fem till sju minuter", 300, 420)),
             case("Grädda 40 min. Låt sedan stå över natten.", t("40 min", 2400)),
+            // fix-data (0.2.0 review): days, "s" after digits, "1h30", genitives before a noun.
+            case("Marinera ett dygn.", t("ett dygn", 86_400)),
+            case("Låt dra 2 dygn i kylen.", t("2 dygn", 172_800)),
+            case("Mixa 30 s.", t("30 s", 30)),
+            case("Mixa 30s.", t("30s", 30)),
+            case("Koka 1 min 30 s.", t("1 min 30 s", 90)),
+            case("Koka 1h30.", t("1h30", 5400)),
+            case("Koka en kvart.", t("en kvart", 900)),
+            case("Räkna med en kvarts koktid.", t("en kvarts", 900)),
         )
 
         @JvmStatic
@@ -264,6 +273,11 @@ class TimerDetectorTest {
             case("Braise 2 hrs 15 mins.", t("2 hrs 15 mins", 8100)),
             case("Rest 90 seconds.", t("90 seconds", 90)),
             case("Bake 40 minutes, then leave overnight.", t("40 minutes", 2400)),
+            // fix-data (0.2.0 review): days and "s" after digits.
+            case("Marinate for 2 days.", t("2 days", 172_800)),
+            case("Marinate for two days.", t("two days", 172_800)),
+            case("Rest 1 day.", t("1 day", 86_400)),
+            case("Blend 45 s.", t("45 s", 45)),
         )
 
         @JvmStatic
@@ -299,6 +313,11 @@ class TimerDetectorTest {
             case("Ät kl 18 eller kl. 19.30."),
             case("Servera 18:30."),
             case("Ugnen ska vara 175 grader varmluft."),
+            // fix-data (0.2.0 review): a genitive unit before a measure word is an amount, not a time.
+            case("Tillsätt en kvarts liter grädde."),
+            case("Häll i en kvarts kopp mjölk."),
+            case("Tillsätt s och p."),
+            case("Ett recept från 1970s."),
             // English
             case("Preheat the oven to 350°F."),
             case("Bake at 200 degrees."),
@@ -318,6 +337,9 @@ class TimerDetectorTest {
             case("Bake at 200 degrees for a while."),
             case("Add 2 cups of stock."),
             case("Serve at 6:30."),
+            // fix-data (0.2.0 review): "day" alone and "s" after a year are no timers.
+            case("Make it a day ahead."),
+            case("A classic from the 1970s."),
             // An unknown hyphenated word after a number word is no range.
             case("Bake twenty-something minutes."),
             case("Mix thirty-ish minutes."),

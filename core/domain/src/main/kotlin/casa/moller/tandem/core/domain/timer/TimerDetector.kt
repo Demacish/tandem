@@ -107,6 +107,9 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
     private class UnitMatch(val seconds: Long, val end: Int)
 
     private val units = rules.units.mapKeys { it.key.lowercase() }
+    private val numericUnits = rules.numericUnits.mapKeys { it.key.lowercase() }
+    private val genitiveUnits = rules.genitiveUnits.mapTo(HashSet()) { it.lowercase() }
+    private val measureWords = rules.measureWords.mapTo(HashSet()) { it.lowercase() }
     private val numberWords = phrases(rules.numberWords)
     private val quantityTails = phrases(rules.quantityTails)
     private val rangeConnectors = phrases(rules.rangeConnectors.associateWith { true })
@@ -190,6 +193,12 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
                 end = partUnit.end
                 continue
             }
+            // "1h30": minutes glued to an hour given as "h".
+            if (partQuantity != null && partUnit == null && isGluedMinutesAfterHours(tokens, end, lastUnit)) {
+                total += partQuantity.value * MINUTE_SECONDS
+                end = partQuantity.end
+                break
+            }
             longest(tokens, end, quantityTails)?.let { (afterTail, extra) ->
                 total += extra * lastUnit
                 end = afterTail
@@ -234,11 +243,19 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
         return Quantity(value, end)
     }
 
-    /** A unit word at [i], or a unit glued on with a hyphen ("10-minute", "half-hour"). */
+    /**
+     * A unit word at [i], or a unit glued on with a hyphen ("10-minute", "half-hour"). A unit of
+     * [numericUnits] needs a number in digits right before it ("30 s"); a genitive unit followed
+     * by a measure word is no duration ("en kvarts liter").
+     */
     private fun unit(tokens: List<Token>, i: Int): UnitMatch? {
         val token = tokens.getOrNull(i) ?: return null
         if (token.kind == TokenKind.WORD) {
-            return units[token.text]?.let { UnitMatch(it, i + 1) }
+            val seconds = units[token.text]
+                ?: numericUnits[token.text]?.takeIf { isPlainNumber(tokens.getOrNull(i - 1)) }
+                ?: return null
+            if (token.text in genitiveUnits && isMeasureWord(tokens.getOrNull(i + 1))) return null
+            return UnitMatch(seconds, i + 1)
         }
         val previous = tokens.getOrNull(i - 1)
         val next = tokens.getOrNull(i + 1)
@@ -248,6 +265,19 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
             return units[next.text]?.let { UnitMatch(it, i + 2) }
         }
         return null
+    }
+
+    /** Digits below 1000 ("30 s", not the "1970s"). */
+    private fun isPlainNumber(token: Token?): Boolean = token != null && token.kind == TokenKind.NUMBER && token.value < MAX_PLAIN_NUMBER
+
+    private fun isMeasureWord(token: Token?): Boolean = token != null && token.kind == TokenKind.WORD && token.text in measureWords
+
+    /** True for the "30" of "1h30": an integer below 60 glued to an "h" that ends a duration in hours. */
+    private fun isGluedMinutesAfterHours(tokens: List<Token>, i: Int, lastUnit: Long): Boolean {
+        val unitToken = tokens.getOrNull(i - 1) ?: return false
+        val minutes = tokens.getOrNull(i) ?: return false
+        return lastUnit == HOUR_SECONDS && unitToken.text == "h" && minutes.form == NumberForm.INTEGER &&
+            minutes.value < MINUTES_PER_HOUR && minutes.start == unitToken.end
     }
 
     /** True when [connectorStart] is a lone "-" touching a word on both sides ("thirty-five"). */
@@ -286,4 +316,11 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
         entries.map { (text, value) -> Phrase(TimerTokenizer.tokenize(text).map { it.text }, value) }
             .filter { it.words.isNotEmpty() }
             .sortedByDescending { it.words.size }
+
+    private companion object {
+        const val MINUTE_SECONDS = 60L
+        const val HOUR_SECONDS = 3600L
+        const val MINUTES_PER_HOUR = 60.0
+        const val MAX_PLAIN_NUMBER = 1000.0
+    }
 }

@@ -8,6 +8,11 @@ package casa.moller.tandem.core.domain.timer
  * written as "-".
  *
  * @property units unit word -> seconds per unit ("min" -> 60, "kvart" -> 900).
+ * @property numericUnits units that only count right after a number written in digits below 1000
+ *   ("30 s", "2 day"), because the word alone is too common ("s", "a day ahead", "the 1970s").
+ * @property genitiveUnits unit forms that describe the next noun ("en kvarts liter", "10 minuters
+ *   vila"): they are no duration when the next word is one of [measureWords].
+ * @property measureWords volume, weight and other measure words ("liter", "kopp", "cup").
  * @property numberWords quantities written as words ("två" -> 2, "en halv" -> 0.5).
  * @property quantityTails added to the quantity before or after the unit
  *   ("en och en halv timme", "an hour and a half" -> +0.5).
@@ -22,6 +27,9 @@ package casa.moller.tandem.core.domain.timer
 data class TimerLanguageRules(
     val languageTag: String,
     val units: Map<String, Long>,
+    val numericUnits: Map<String, Long> = emptyMap(),
+    val genitiveUnits: Set<String> = emptySet(),
+    val measureWords: Set<String> = emptySet(),
     val numberWords: Map<String, Double> = emptyMap(),
     val quantityTails: Map<String, Double> = emptyMap(),
     val rangeConnectors: Set<String> = setOf("-"),
@@ -34,6 +42,7 @@ data class TimerLanguageRules(
         private const val SECOND = 1L
         private const val MINUTE = 60L
         private const val HOUR = 3600L
+        private const val DAY = 24 * HOUR
 
         // Declared before the rule sets below, which use them while the companion is initialized.
         private val SWEDISH_ONES = mapOf(
@@ -73,6 +82,12 @@ data class TimerLanguageRules(
                 "kvart" to 15 * MINUTE, "kvarts" to 15 * MINUTE, "kvartstimme" to 15 * MINUTE,
                 "halvtimme" to 30 * MINUTE, "halvtimmes" to 30 * MINUTE,
                 "h" to HOUR, "tim" to HOUR, "timme" to HOUR, "timmar" to HOUR, "timmes" to HOUR, "timmars" to HOUR,
+                "dygn" to DAY, "dygns" to DAY,
+            ),
+            numericUnits = mapOf("s" to SECOND),
+            genitiveUnits = setOf("sekunders", "minuters", "kvarts", "halvtimmes", "timmes", "timmars", "dygns"),
+            measureWords = setOf(
+                "l", "liter", "dl", "cl", "ml", "kopp", "koppar", "tsk", "msk", "krm", "kg", "g", "hg", "st", "burk", "paket",
             ),
             numberWords = mapOf(
                 "tio" to 10.0, "elva" to 11.0, "tolv" to 12.0, "tretton" to 13.0, "fjorton" to 14.0,
@@ -98,8 +113,9 @@ data class TimerLanguageRules(
             units = mapOf(
                 "sec" to SECOND, "secs" to SECOND, "second" to SECOND, "seconds" to SECOND,
                 "min" to MINUTE, "mins" to MINUTE, "minute" to MINUTE, "minutes" to MINUTE,
-                "h" to HOUR, "hr" to HOUR, "hrs" to HOUR, "hour" to HOUR, "hours" to HOUR,
+                "h" to HOUR, "hr" to HOUR, "hrs" to HOUR, "hour" to HOUR, "hours" to HOUR, "days" to DAY,
             ),
+            numericUnits = mapOf("s" to SECOND, "day" to DAY),
             numberWords = mapOf(
                 "a" to 1.0, "an" to 1.0, "ten" to 10.0, "eleven" to 11.0, "twelve" to 12.0,
                 "thirteen" to 13.0, "fourteen" to 14.0, "fifteen" to 15.0, "sixteen" to 16.0,
