@@ -22,6 +22,13 @@ enum class DataProblem(val detail: String) {
 
     /** A non-secret setting (e.g. the theme) could not be written to the settings file. */
     SETTINGS_NOT_SAVED("tandem.data.settings-not-saved"),
+
+    /**
+     * The server takes no password from the app: allauth (Tandoor 2.7+) wants a step the app
+     * cannot do (e-mail verification, a second factor) or the server has no app login. The user
+     * pastes a token instead.
+     */
+    PASSWORD_LOGIN_UNAVAILABLE("tandem.data.password-login-unavailable"),
     ;
 
     fun toError(): TandemError = TandemError.Unknown(detail)

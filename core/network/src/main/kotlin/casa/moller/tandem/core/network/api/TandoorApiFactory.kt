@@ -18,6 +18,8 @@ class TandoorApi internal constructor(
     /** Normalized base URL with trailing slash. */
     val baseUrl: String,
     val auth: AuthService,
+    /** Tandoor 2.7+: password login through allauth headless. */
+    val allauth: AllauthService,
     val users: UserService,
     val space: SpaceService,
     val server: ServerService,
@@ -61,6 +63,7 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
         return TandoorApi(
             baseUrl = url.toString(),
             auth = retrofit.create(AuthService::class.java),
+            allauth = retrofit.create(AllauthService::class.java),
             users = retrofit.create(UserService::class.java),
             space = retrofit.create(SpaceService::class.java),
             server = retrofit.create(ServerService::class.java),

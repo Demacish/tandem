@@ -11,7 +11,11 @@ import kotlinx.serialization.Serializable
 data class CookLogDto(
     val id: Long? = null,
     val recipe: Long? = null,
-    val servings: Int? = null,
+    /**
+     * A whole number in 2.6 (`8`); Tandoor 2.7 made `CookLog.servings` a DecimalField and answers
+     * `8.0` (FACTS 2.7.1 "fas1"), which an `Int` would refuse. Rounded where it is stored.
+     */
+    val servings: Double? = null,
     /** 1-5, or null. */
     val rating: Int? = null,
     val comment: String? = null,

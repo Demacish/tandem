@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.data.remote
 
+import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.model.error.InvalidUrlReason
@@ -28,7 +29,16 @@ internal class NetworkTandoorRemote @Inject constructor(
     override suspend fun probe(url: String): Outcome<ServerInfo> = serverProbe.probe(url).map { it.toServerInfo() }
 
     override suspend fun login(server: ServerInfo, username: String, password: String): Outcome<RemoteCredentials> = requireUsableBaseUrl {
-        authenticator.login(server.toTandoorServer(), username, password).map { it.toRemoteCredentials() }
+        when (val result = authenticator.login(server.toTandoorServer(), username, password)) {
+            is Outcome.Success -> Outcome.Success(result.value.toRemoteCredentials())
+
+            is Outcome.Failure ->
+                if (result.error == TandoorAuthenticator.PASSWORD_LOGIN_UNAVAILABLE) {
+                    Outcome.Failure(DataProblem.PASSWORD_LOGIN_UNAVAILABLE.toError())
+                } else {
+                    result
+                }
+        }
     }
 
     override suspend fun loginWithToken(server: ServerInfo, token: String): Outcome<RemoteCredentials> = requireUsableBaseUrl {

@@ -29,7 +29,7 @@
     <string name="onboarding_checking_button">Kontrollerar…</string>
     <string name="onboarding_untested_title">Tandoor %1$s är inte testad ännu</string>
     <string name="onboarding_unrecognized_title">Okänd Tandoor-version ”%1$s”</string>
-    <string name="onboarding_untested_body">Tandem är testad med Tandoor 2.6. Du kan fortsätta, men appen startar i säkert läge: du kan läsa allt, och ändringar hålls kvar tills en testad version av Tandem finns.</string>
+    <string name="onboarding_untested_body">Tandem är testad med Tandoor 2.6 och 2.7.1. Du kan fortsätta, men appen startar i säkert läge: du kan läsa allt, och ändringar hålls kvar tills en testad version av Tandem finns.</string>
     <string name="onboarding_continue_safe_mode">Fortsätt i säkert läge</string>
     <string name="onboarding_too_old_title">Tandoor %1$s är för gammal</string>
     <string name="onboarding_too_old_body">Tandem kräver Tandoor 2.0 eller senare. Be den som sköter servern att uppdatera den och försök sedan igen.</string>
@@ -79,8 +79,8 @@
     <string name="onboarding_error_invalid_token_body">Den kan vara felskriven, ha gått ut eller ha tagits bort. Skapa en ny token i Tandoor under Inställningar → API.</string>
     <string name="onboarding_error_no_space_title">Ditt konto har inget space ännu</string>
     <string name="onboarding_error_no_space_body">Logga in i Tandoor i webbläsaren en gång för att skapa eller gå med i ett space och försök sedan igen.</string>
-    <string name="onboarding_error_password_unavailable_title">Lösenordsinloggning mot Tandoor 2.7 stöds inte än</string>
-    <string name="onboarding_error_password_unavailable_body">Tandem kan ännu inte logga in med lösenord på Tandoor 2.7 och senare. Välj ”Klistra in token i stället” och använd en API-token från Inställningar → API i Tandoor.</string>
+    <string name="onboarding_error_password_unavailable_title">Servern tar inte emot lösenord från appar</string>
+    <string name="onboarding_error_password_unavailable_body">Inloggningen kräver ett steg som bara fungerar i webbläsaren här (till exempel att bekräfta e-postadressen eller en andra faktor), eller så saknar servern inloggning för appar. Välj ”Klistra in token i stället” och använd en API-token från Inställningar → API i Tandoor.</string>
     <string name="onboarding_error_storage_title">Inloggningen kunde inte sparas</string>
     <string name="onboarding_error_storage_body">Den säkra lagringen på enheten går inte att använda just nu, så Tandem kan inte hålla dig inloggad. Starta om telefonen och försök igen.</string>
 

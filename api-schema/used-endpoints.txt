@@ -8,6 +8,13 @@ GET /api/access-token/
 POST /api/access-token/
 DELETE /api/access-token/{id}/
 
+# --- allauth headless, app client (Tandoor 2.7+, which removed api-token-auth) ---
+# Not in Tandoor's OpenAPI schema: django-allauth serves its own specification. UsedEndpointsTest
+# skips paths below /_allauth/ in its schema check; the contract suite (Phase0ContractTest, 2.7
+# branch) is what checks them.
+POST /_allauth/app/v1/auth/login
+DELETE /_allauth/app/v1/auth/session
+
 # --- Fas 0: server probe, version and capabilities (plan 3.6) ---
 GET /api/server-settings/current/
 GET /api/space/current/

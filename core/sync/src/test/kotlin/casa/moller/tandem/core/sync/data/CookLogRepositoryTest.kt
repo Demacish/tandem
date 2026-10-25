@@ -361,7 +361,7 @@ class CookLogRepositoryTest {
     @Test
     fun safeModeHoldsTheEntryUntilTheVersionIsTestedAgain() = runBlocking {
         graph.engine.run(SyncReason.FIRST_SYNC)
-        val untested = graph.remote.copy(account = graph.account.copy(serverVersion = "2.7.1"))
+        val untested = graph.remote.copy(account = graph.account.copy(serverVersion = "2.7.3"))
         graph.sources.source.value = untested
         repository.logCooked(draft(2))
         assertEquals(1, overview(2).timesCooked)

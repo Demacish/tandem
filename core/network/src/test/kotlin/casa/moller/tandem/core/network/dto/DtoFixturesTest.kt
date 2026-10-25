@@ -20,7 +20,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Every DTO against EVERY recorded fixture in `api-schema/fixtures/2.6.13` (Phase 0 and `fas1/`):
+ * Every DTO against EVERY recorded fixture in `api-schema/fixtures/2.6.13` and `2.7.1` (Phase 0
+ * and `fas1/`; Tandoor 2.7 logs in through allauth and sends some numbers as decimals):
  *
  * 1. Each successful JSON response is routed by method and path to its DTO and decoded with
  *    [TandoorJson]; a new fixture without a route (or an explicit [notModelled] reason) fails.
@@ -39,6 +40,7 @@ class DtoFixturesTest {
     private val routes = listOf(
         Route("GET", "/api/server-settings/current/", ServerSettingsDto.serializer()),
         Route("POST", "/api-token-auth/", TokenAuthResponseDto.serializer()),
+        Route("POST", "/_allauth/app/v1/auth/login", AllauthResponseDto.serializer()),
         Route("POST", "/api/access-token/", AccessTokenDto.serializer()),
         Route("GET", "/api/access-token/", ListSerializer(AccessTokenDto.serializer())),
         Route("GET", "/api/user/\\d+/", UserDto.serializer()),
@@ -72,9 +74,8 @@ class DtoFixturesTest {
         Route("POST", "/api/view-log/", ViewLogDto.serializer()),
     )
 
-    /** Successful JSON fixtures that no DTO models, and why. */
+    /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */
     private val notModelled = mapOf(
-        "14-user-space-all-personal" to "user-space is not used by the app",
         "fas1/seed-keyword-move" to "seeding only ({msg}); the app never moves keywords",
         "fas1/recipe-image-put" to "image upload belongs to import (Phase 3)",
         "fas1/seed-unit-conversion-create" to "the app reads conversions from the ingredients",
@@ -83,15 +84,22 @@ class DtoFixturesTest {
     )
 
     @Test
-    fun everySuccessfulJsonFixtureDecodesWithItsDto() {
-        val names = Fixture.allNames()
+    fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() =
+        checkFixtures("2.6.13", notModelled + ("14-user-space-all-personal" to USER_SPACE_UNUSED))
+
+    @Test
+    fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() =
+        checkFixtures("2.7.1", notModelled + ("13-user-space-all-personal" to USER_SPACE_UNUSED))
+
+    private fun checkFixtures(version: String, notModelled: Map<String, String>) {
+        val names = Fixture.allNames(version)
         assertTrue("Fixtures not found: $names", names.size > 100)
         assertTrue("Stale notModelled entries: ${notModelled.keys - names.toSet()}", names.containsAll(notModelled.keys))
 
         val check = Check()
         var decoded = 0
         for (name in names) {
-            val fixture = Fixture.load(name)
+            val fixture = Fixture.load(name, version)
             val body = fixture.body
             if (fixture.status !in 200..299 || body == null || body is JsonNull || name in notModelled) continue
             val path = fixture.path.substringBefore('?')
@@ -171,5 +179,9 @@ class DtoFixturesTest {
         private fun fail(message: String) {
             problems += message
         }
+    }
+
+    private companion object {
+        const val USER_SPACE_UNUSED = "user-space is not used by the app"
     }
 }

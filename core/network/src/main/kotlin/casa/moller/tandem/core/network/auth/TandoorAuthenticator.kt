@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.network.auth
 
+import casa.moller.tandem.core.model.error.NotTandoorReason
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
@@ -8,19 +9,25 @@ import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.api.TandoorApiFactory
 import casa.moller.tandem.core.network.dto.AccessTokenCreateRequestDto
 import casa.moller.tandem.core.network.dto.AccessTokenDto
+import casa.moller.tandem.core.network.dto.AllauthLoginRequestDto
 import casa.moller.tandem.core.network.dto.TokenAuthRequestDto
 import casa.moller.tandem.core.network.dto.UserDto
 import casa.moller.tandem.core.network.error.ErrorClassifier
 import casa.moller.tandem.core.network.error.apiCall
 import casa.moller.tandem.core.network.http.MutableTokenProvider
+import casa.moller.tandem.core.network.http.TandemIOException
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.network.probe.TandoorServer
+import casa.moller.tandem.core.network.probe.TandoorVersion
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneOffset
 import javax.inject.Inject
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
+import retrofit2.HttpException
 
 /**
  * Login per plan 3.1 / 4.2, adjusted to the contract facts of Tandoor 2.6.13:
@@ -32,6 +39,17 @@ import kotlinx.serialization.SerializationException
  * 3. Only the device token is returned; the login token is forgotten.
  * 4. The login token is deleted only with [LoginTokenPolicy.DELETE_IF_FRESH] and only if it was
  *    created by this login (`expires` about 5 years ahead). Default is [LoginTokenPolicy.KEEP].
+ *
+ * **Tandoor 2.7+** removed `api-token-auth` (it redirects to the web login). There, step 1 is
+ * allauth headless' app login (`POST /_allauth/app/v1/auth/login`, 3 per minute and IP): its
+ * `meta.session_token` creates the device token (`X-Session-Token`), and the session is logged
+ * out right after (best effort), before the device token is used. Which login a server gets
+ * follows its version ([usesAllauth]); a server whose `api-token-auth` turns out to be gone (a
+ * redirect, 404 or 405, e.g. a development build without a parseable version) is tried once
+ * more with allauth. When neither
+ * works (allauth wants a step the app cannot do, such as e-mail verification or a second factor,
+ * or the server has no app login) the failure is [PASSWORD_LOGIN_UNAVAILABLE]: the user pastes
+ * a token instead.
  *
  * Then the space (`GET /api/space/current/`) and the user (`GET /api/user-preference/`) are read
  * with the device token. If the space read fails, the new device token is revoked again (best
@@ -62,10 +80,22 @@ class TandoorAuthenticator internal constructor(
     ): Outcome<DeviceCredentials> {
         val tokens = MutableTokenProvider()
         val api = apiFactory.create(server.baseUrl, tokens, retryOnConnectionFailure = false)
+        val now = clock.instant()
+        val requestedExpiry = now.atOffset(ZoneOffset.UTC).plusYears(1).toInstant()
+        val request = AccessTokenCreateRequestDto(scope = DEVICE_TOKEN_SCOPE, expires = TandoorDates.format(requestedExpiry))
+
+        val allauth = AllauthAttempt(api, tokens, server, username, password, request, requestedExpiry)
+        if (usesAllauth(server.version)) return allauthLogin(allauth)
 
         // Step 1: the (possibly shared) login token.
         val login = when (val r = call { api.auth.login(TokenAuthRequestDto(username, password)) }) {
-            is Outcome.Failure -> return r
+            is Outcome.Failure ->
+                return if (r.error.meansTokenLoginIsGone()) {
+                    allauthLogin(allauth)
+                } else {
+                    r
+                }
+
             is Outcome.Success -> r.value
         }
         val loginToken = login.token.trim()
@@ -74,37 +104,129 @@ class TandoorAuthenticator internal constructor(
 
         // Step 2: this device's own token, created with the login token.
         tokens.token = loginToken
-        val now = clock.instant()
-        val requestedExpiry = now.atOffset(ZoneOffset.UTC).plusYears(1).toInstant()
-        val device = when (
-            val r = call {
-                api.auth.createAccessToken(
-                    AccessTokenCreateRequestDto(scope = DEVICE_TOKEN_SCOPE, expires = TandoorDates.format(requestedExpiry)),
-                )
-            }
-        ) {
+        val device = when (val r = call { api.auth.createAccessToken(request) }) {
             is Outcome.Failure -> return r
-            is Outcome.Success -> r.value
-        }
-        val deviceToken = device.token.trim()
-        val deviceTokenId = device.id
-        if (deviceToken.isEmpty() || isMasked(deviceToken) || deviceTokenId == null) {
-            return decodeError("access-token: plaintext token or id missing")
+            is Outcome.Success -> newDeviceToken(r.value, requestedExpiry) ?: return decodeError(DEVICE_TOKEN_MISSING)
         }
 
         // Step 3: from here on only the device token is used.
-        tokens.token = deviceToken
+        tokens.token = device.token
 
         // Step 4: optionally delete the login token if this login created it.
         val loginTokenId = login.id
         if (loginTokenPolicy == LoginTokenPolicy.DELETE_IF_FRESH &&
-            loginTokenId != null && loginTokenId != deviceTokenId &&
+            loginTokenId != null && loginTokenId != device.id &&
             isFreshLoginToken(login.expires, now)
         ) {
             // Failure is harmless: the token simply stays, as with KEEP.
             call { api.auth.deleteAccessToken(loginTokenId) }
         }
+        return readAccount(api, server, username, userId, device)
+    }
 
+    /** What the allauth login needs; the password lives only as long as the login call. */
+    private class AllauthAttempt(
+        val api: TandoorApi,
+        val tokens: MutableTokenProvider,
+        val server: TandoorServer,
+        val username: String,
+        val password: String,
+        val request: AccessTokenCreateRequestDto,
+        val requestedExpiry: Instant,
+    ) {
+        override fun toString(): String = "AllauthAttempt(username=$username, password=<redacted>)"
+    }
+
+    /** A device token as created: plaintext token, id and expiry. */
+    private class NewDeviceToken(val token: String, val id: Long, val expires: Instant) {
+        override fun toString(): String = "NewDeviceToken(id=$id, token=<redacted>, expires=$expires)"
+    }
+
+    /** The plaintext token and id of a create response (both are needed), else null. */
+    private fun newDeviceToken(device: AccessTokenDto, requestedExpiry: Instant): NewDeviceToken? {
+        val token = device.token.trim()
+        val id = device.id
+        if (token.isEmpty() || isMasked(token) || id == null) return null
+        return NewDeviceToken(token, id, TandoorDates.parseInstantOrNull(device.expires) ?: requestedExpiry)
+    }
+
+    /**
+     * Tandoor 2.7+: allauth's app login, the device token created with its session, then the
+     * session logged out. A 403 + JSON on the token create right after an accepted password is
+     * Tandoor refusing an account without a space (FACTS 2.7 "noSpace"): the result then has
+     * `spaceId = null` and no token, and the data layer reports "no space".
+     */
+    private suspend fun allauthLogin(attempt: AllauthAttempt): Outcome<DeviceCredentials> {
+        val api = attempt.api
+        val credentials = AllauthLoginRequestDto(attempt.username, attempt.password)
+        val response = when (val r = call { allauthCall { api.allauth.login(credentials) } }) {
+            is Outcome.Failure -> return r
+            is Outcome.Success -> r.value
+        }
+        val session = response.meta?.sessionToken?.trim()
+        if (session.isNullOrEmpty() || response.meta?.isAuthenticated == false) {
+            return decodeError("allauth login: session_token missing")
+        }
+        val userId = response.data?.user?.id
+        val created = try {
+            if (userId == null) null else call { api.auth.createAccessTokenWithSession(session, attempt.request) }
+        } finally {
+            // The session is only needed for the token: end it right away, also after a failure
+            // (best effort; an unended session expires on the server). allauth answers 401.
+            withContext(NonCancellable) { call { api.allauth.logout(session) } }
+        }
+        if (userId == null || created == null) return decodeError("allauth login: user.id missing")
+        val device = when (created) {
+            is Outcome.Success -> newDeviceToken(created.value, attempt.requestedExpiry) ?: return decodeError(DEVICE_TOKEN_MISSING)
+
+            is Outcome.Failure ->
+                return if (created.error.isRefusedByTandoor()) {
+                    Outcome.Success(noSpaceCredentials(api, attempt.server, userId, attempt.username))
+                } else {
+                    created
+                }
+        }
+        // From here on only the device token is used.
+        attempt.tokens.token = device.token
+        return readAccount(api, attempt.server, attempt.username, userId, device)
+    }
+
+    /** An accepted password of an account without a space: nothing was created, nothing to revoke. */
+    private fun noSpaceCredentials(api: TandoorApi, server: TandoorServer, userId: Long, username: String) = DeviceCredentials(
+        baseUrl = api.baseUrl,
+        token = "",
+        tokenId = null,
+        expires = null,
+        userId = userId,
+        username = username,
+        displayName = username,
+        spaceId = null,
+        spaceName = null,
+        serverVersion = server.version,
+    )
+
+    /**
+     * allauth's own refusals become typed errors: 401 means the login needs another step (a
+     * pending flow such as e-mail verification or a second factor), and 404, 405 or a redirect
+     * means the server has no app login. Both are [PASSWORD_LOGIN_UNAVAILABLE]. 400 (wrong or
+     * missing credentials) and 429 (3 per minute) are classified as usual.
+     */
+    private suspend fun <T> allauthCall(block: suspend () -> T): T = try {
+        block()
+    } catch (e: HttpException) {
+        val code = e.code()
+        if (code in NO_APP_LOGIN_STATUSES || code in HTTP_REDIRECTS) throw TandemIOException(PASSWORD_LOGIN_UNAVAILABLE)
+        throw e
+    }
+
+    /** The space and the user, read with the new device token (both login paths). */
+    private suspend fun readAccount(
+        api: TandoorApi,
+        server: TandoorServer,
+        username: String,
+        userId: Long,
+        device: NewDeviceToken,
+    ): Outcome<DeviceCredentials> {
         // The token response already says who logged in; the user read only adds the display name.
         val loginUser = UserDto(id = userId, username = username)
         val space = when (val r = call { api.space.currentSpace() }) {
@@ -116,7 +238,7 @@ class TandoorAuthenticator internal constructor(
                     // read because the account has no space (or no group) yet.
                     null
                 } else {
-                    call { api.auth.deleteAccessToken(deviceTokenId) }
+                    call { api.auth.deleteAccessToken(device.id) }
                     return r
                 }
         }
@@ -126,9 +248,9 @@ class TandoorAuthenticator internal constructor(
         return Outcome.Success(
             DeviceCredentials(
                 baseUrl = api.baseUrl,
-                token = deviceToken,
-                tokenId = deviceTokenId,
-                expires = TandoorDates.parseInstantOrNull(device.expires) ?: requestedExpiry,
+                token = device.token,
+                tokenId = device.id,
+                expires = device.expires,
                 userId = user.id ?: userId,
                 username = user.username.ifBlank { username },
                 displayName = user.displayName.ifBlank { user.username.ifBlank { username } },
@@ -241,6 +363,20 @@ class TandoorAuthenticator internal constructor(
         api.users.userPreferences().firstNotNullOfOrNull { it.user }
     }
 
+    /**
+     * `api-token-auth` is gone (Tandoor 2.7+ redirects it to the web login): a redirect, or 404 /
+     * 405. The server step already saw Tandoor, so this is not a wrong address.
+     */
+    private fun TandemError.meansTokenLoginIsGone(): Boolean = when (this) {
+        TandemError.NotFound -> true
+
+        is TandemError.NotTandoor ->
+            reason == NotTandoorReason.LOGIN_REDIRECT || reason == NotTandoorReason.REDIRECT ||
+                httpStatus == HTTP_NOT_FOUND || httpStatus == HTTP_METHOD_NOT_ALLOWED
+
+        else -> false
+    }
+
     /** 403 + JSON: Tandoor itself refused (FACTS e), as opposed to a proxy (401) or firewall. */
     private fun TandemError.isRefusedByTandoor(): Boolean = this is TandemError.Unauthorized && source == UnauthorizedSource.TANDOOR
 
@@ -260,6 +396,28 @@ class TandoorAuthenticator internal constructor(
 
     companion object {
         const val DEVICE_TOKEN_SCOPE: String = "read write"
+
+        /** First Tandoor version without `api-token-auth`, where the password login uses allauth. */
+        val ALLAUTH_LOGIN_FROM: TandoorVersion = TandoorVersion(2, 7, 0)
+
+        /**
+         * The password login cannot work for this server (allauth wants a step the app cannot do,
+         * or there is no app login at all): the user should paste a token. Reported as
+         * `TandemError.Unknown` with this detail; `core:data` turns it into its `DataProblem`.
+         */
+        const val PASSWORD_LOGIN_UNAVAILABLE_DETAIL: String = "tandem.network.password-login-unavailable"
+        val PASSWORD_LOGIN_UNAVAILABLE: TandemError = TandemError.Unknown(PASSWORD_LOGIN_UNAVAILABLE_DETAIL)
+
+        private const val HTTP_NOT_FOUND = 404
+        private const val HTTP_METHOD_NOT_ALLOWED = 405
+        private const val DEVICE_TOKEN_MISSING = "access-token: plaintext token or id missing"
+
+        /** allauth: 401 = a pending step (verify the e-mail, a second factor); 404/405 = no app login. */
+        private val NO_APP_LOGIN_STATUSES = setOf(401, HTTP_NOT_FOUND, HTTP_METHOD_NOT_ALLOWED)
+        private val HTTP_REDIRECTS = 300..399
+
+        /** True from [ALLAUTH_LOGIN_FROM] on; an unparseable version tries `api-token-auth` first. */
+        fun usesAllauth(version: String?): Boolean = TandoorVersion.parse(version)?.let { it >= ALLAUTH_LOGIN_FROM } == true
 
         /**
          * `userId` of a pasted token whose account has no space: no endpoint names the user then.

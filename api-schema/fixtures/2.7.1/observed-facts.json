@@ -1,0 +1,511 @@
+{
+  "tandoorTag": "2.7.1",
+  "serverSettings.noAuth": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "serverSettings.fieldTypes": {
+    "shopping_min_autosync_interval": "string",
+    "disable_external_connectors": "boolean",
+    "terms_url": "string",
+    "privacy_url": "string",
+    "imprint_url": "string",
+    "hosted": "boolean",
+    "debug": "boolean",
+    "version": "string",
+    "email": "boolean",
+    "unauthenticated_theme_from_space": "number",
+    "force_theme_from_space": "number",
+    "enable_signup": "boolean",
+    "socialaccount_only": "boolean",
+    "logo_color_32": "null",
+    "logo_color_128": "null",
+    "logo_color_144": "null",
+    "logo_color_180": "null",
+    "logo_color_192": "null",
+    "logo_color_512": "null",
+    "logo_color_svg": "null",
+    "custom_space_theme": "null",
+    "nav_logo": "null",
+    "nav_bg_color": "null"
+  },
+  "serverSettings.version": "2.7.1",
+  "login.mechanism": "allauth-app",
+  "serverSettings.invalidToken": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "login.legacy": {
+    "status": 302,
+    "contentType": "text/html; charset=utf-8",
+    "isJson": false,
+    "wwwAuthenticate": null
+  },
+  "login.legacy.location": "/account/login/?next=/api-token-auth/",
+  "login.allauth": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "login.allauth.fieldTypes": {
+    "status": "number",
+    "data": "object",
+    "meta": "object"
+  },
+  "login.allauth.metaFieldTypes": {
+    "is_authenticated": "boolean",
+    "session_token": "<redacted>"
+  },
+  "login.allauth.dataFieldTypes": {
+    "user": "object",
+    "methods": "array"
+  },
+  "login.allauth.userFieldTypes": {
+    "id": "number",
+    "display": "string",
+    "email": "string",
+    "has_usable_password": "boolean",
+    "username": "string"
+  },
+  "login.allauth.isAuthenticated": true,
+  "login.allauth.status.field": 200,
+  "login.allauth.sessionTokenLength": 32,
+  "login.allauth.userIdPresent": true,
+  "login.wrongPassword": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "status": 400,
+      "errors": [
+        {
+          "message": "The username and/or password you specified are not correct.",
+          "code": "username_password_mismatch",
+          "param": "password"
+        }
+      ]
+    }
+  },
+  "login.missingFields": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "status": 400,
+      "errors": [
+        {
+          "message": "This field is required.",
+          "code": "required",
+          "param": "password"
+        }
+      ]
+    }
+  },
+  "deviceToken.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "deviceToken.fieldTypes": {
+    "id": "number",
+    "token": "string",
+    "expires": "string",
+    "scope": "string",
+    "created": "string",
+    "updated": "string"
+  },
+  "deviceToken.tokenIsPlaintextInCreateResponse": true,
+  "deviceToken.scope": "read write",
+  "deviceToken.expiresSent": "2000-01-01T00:00:00Z",
+  "deviceToken.expiresReturned": "2000-01-01T00:00:00+02:00",
+  "deviceToken.expiresInDays": 364,
+  "accessTokenList.isArray": true,
+  "accessTokenList.fresh": [
+    {
+      "id": 1,
+      "scope": "read write",
+      "plaintext": true,
+      "masked": false,
+      "token": "tda_00000000_0000_0000_0000_000000000001"
+    }
+  ],
+  "accessTokenList.after16s": [
+    {
+      "id": 1,
+      "scope": "read write",
+      "plaintext": false,
+      "masked": true,
+      "token": "tda_************_******_***********0001"
+    }
+  ],
+  "user.byId": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "user.fieldTypes": {
+    "id": "number",
+    "username": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "display_name": "string",
+    "is_staff": "boolean",
+    "is_superuser": "boolean",
+    "is_active": "boolean"
+  },
+  "userPreference.list": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "userPreference.isArray": true,
+  "userPreference.count": 1,
+  "userPreference.fieldTypes": {
+    "user": "object",
+    "image": "null",
+    "theme": "string",
+    "nav_bg_color": "string",
+    "nav_text_color": "string",
+    "nav_show_logo": "boolean",
+    "default_unit": "string",
+    "default_page": "string",
+    "use_fractions": "boolean",
+    "use_kj": "boolean",
+    "nav_sticky": "boolean",
+    "ingredient_decimals": "number",
+    "comments": "boolean",
+    "shopping_auto_sync": "number",
+    "mealplan_autoadd_shopping": "boolean",
+    "food_inherit_default": "array",
+    "default_delay": "number",
+    "mealplan_autoinclude_related": "boolean",
+    "mealplan_autoexclude_onhand": "boolean",
+    "shopping_recent_days": "number",
+    "csv_delim": "string",
+    "csv_prefix": "string",
+    "shopping_update_food_lists": "boolean",
+    "default_meal_type": "null",
+    "filter_to_supermarket": "boolean",
+    "shopping_add_onhand": "boolean",
+    "left_handed": "boolean",
+    "show_step_ingredients": "boolean",
+    "food_children_exist": "boolean"
+  },
+  "userPreference.userField": {
+    "id": 1,
+    "username": "contract-admin",
+    "first_name": "",
+    "last_name": "",
+    "display_name": "contract-admin",
+    "is_staff": true,
+    "is_superuser": true,
+    "is_active": true
+  },
+  "space.current": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "space.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "created_by": "object",
+    "created_at": "string",
+    "message": "string",
+    "max_recipes": "number",
+    "max_file_storage_mb": "number",
+    "max_users": "number",
+    "allow_sharing": "boolean",
+    "demo": "boolean",
+    "food_inherit": "array",
+    "user_count": "number",
+    "recipe_count": "number",
+    "file_size_mb": "number",
+    "image": "null",
+    "nav_logo": "null",
+    "space_theme": "string",
+    "custom_space_theme": "null",
+    "nav_bg_color": "string",
+    "nav_text_color": "string",
+    "logo_color_32": "null",
+    "logo_color_128": "null",
+    "logo_color_144": "null",
+    "logo_color_180": "null",
+    "logo_color_192": "null",
+    "logo_color_512": "null",
+    "logo_color_svg": "null",
+    "ai_credits_monthly": "number",
+    "ai_credits_balance": "number",
+    "ai_monthly_credits_used": "number",
+    "ai_enabled": "boolean",
+    "ai_default_provider": "null",
+    "space_setup_completed": "boolean",
+    "household_setup_completed": "boolean"
+  },
+  "space.id": 1,
+  "space.householdSetupCompleted": false,
+  "userSpace.allPersonal": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "userSpace.fieldTypes": {
+    "id": "number",
+    "user": "object",
+    "space": "number",
+    "groups": "array",
+    "household": "null",
+    "active": "boolean",
+    "internal_note": "null",
+    "invite_link": "null",
+    "created_at": "string",
+    "updated_at": "string"
+  },
+  "userSpace.household": null,
+  "userSpace.groups": [
+    {
+      "id": 3,
+      "name": "admin"
+    }
+  ],
+  "userSpace.space": 1,
+  "userSpace.active": true,
+  "space.current.withLoginToken.status": 200,
+  "noSpace.login": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "noSpace.accessTokenCreate": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "noSpace.spaceCurrent": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "noSpace.accessTokenList": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "noSpace.logoutStatus": 401,
+  "invalidToken.missing.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.missing.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.unknownWellFormed.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.unknownWellFormed.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.garbage.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.garbage.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.emptyBearer.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.emptyBearer.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.statuses": [
+    403
+  ],
+  "invalidToken.acceptLanguageSv": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "invalidToken.acceptLanguageSv.contentLanguage": "sv",
+  "expiredToken.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null
+  },
+  "expiredToken.use": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "expiredToken.deleteStatus": 204,
+  "notFound.recipe": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "No Recipe matches the given query."
+    }
+  },
+  "notFound.accessToken": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "No AccessToken matches the given query."
+    }
+  },
+  "notFound.unknownPath": {
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "isJson": false,
+    "wwwAuthenticate": null,
+    "body": "\n\n\n\n\n\n\n\n\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <base href=\"/\">\n    <title>Tandoor</title>\n    <meta name=\"description\" content=\"Tandoor Recipe Manager\">\n    <meta charset=\"utf-8\">\n    <meta name"
+  },
+  "notFound.unknownPath.location": null,
+  "logout.session": {
+    "status": 401,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "status": 401,
+      "data": {
+        "flows": [
+          {
+            "id": "login"
+          }
+        ]
+      },
+      "meta": {
+        "is_authenticated": false
+      }
+    }
+  },
+  "logout.sessionUse": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "revokeLoginToken.deviceTokenStillWorks": true,
+  "loginAfterRevoke.returnsNewSession": true,
+  "loginAfterRevoke.logoutStatus": 401,
+  "revokeDeviceToken.delete": {
+    "status": 204,
+    "contentType": null,
+    "isJson": false,
+    "wwwAuthenticate": null,
+    "body": ""
+  },
+  "revokeDeviceToken.get": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "revokeDeviceToken.post": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "detail": "Authentication credentials were not provided or access is forbidden."
+    }
+  },
+  "throttle.allowedLoginCallsBefore429": 3,
+  "throttle.response": {
+    "status": 429,
+    "contentType": "application/json",
+    "isJson": true,
+    "wwwAuthenticate": null,
+    "body": {
+      "status": 429
+    }
+  },
+  "throttle.retryAfterHeader": null
+}

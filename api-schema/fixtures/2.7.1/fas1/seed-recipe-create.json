@@ -1,0 +1,830 @@
+{
+  "name": "seed-recipe-create",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Krämig svamppasta",
+      "description": "Snabb vardagspasta med champinjoner och grädde.",
+      "servings": 4,
+      "servings_text": "portioner",
+      "working_time": 20,
+      "waiting_time": 10,
+      "internal": true,
+      "private": false,
+      "source_url": "https://exempel.se/recept/kramig-svamppasta",
+      "keywords": [
+        {
+          "name": "Pasta"
+        },
+        {
+          "name": "Vegetariskt"
+        }
+      ],
+      "steps": [
+        {
+          "name": "Förbered",
+          "instruction": "Skiva {{ ingredients[0].food }} och hacka {{ ingredients[1] }}.\nPressa {{ ingredients[2] }}.",
+          "time": 10,
+          "order": 0,
+          "show_as_header": true,
+          "show_ingredients_table": true,
+          "ingredients": [
+            {
+              "food": {
+                "name": "champinjon"
+              },
+              "unit": {
+                "name": "g"
+              },
+              "amount": 250,
+              "note": "gärna blandade svampar",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "gul lök"
+              },
+              "unit": {
+                "name": "st"
+              },
+              "amount": 1,
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "vitlöksklyfta"
+              },
+              "unit": null,
+              "amount": 2,
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false
+            }
+          ]
+        },
+        {
+          "name": "Koka pastan",
+          "instruction": "Koka pastan i {{ scale(3) }} liter saltat vatten.",
+          "time": 12,
+          "order": 1,
+          "show_as_header": true,
+          "show_ingredients_table": true,
+          "ingredients": [
+            {
+              "food": {
+                "name": "pasta"
+              },
+              "unit": {
+                "name": "g"
+              },
+              "amount": 400,
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "salt"
+              },
+              "unit": null,
+              "amount": 0,
+              "note": "till pastavattnet",
+              "order": 1,
+              "is_header": false,
+              "no_amount": true
+            }
+          ]
+        },
+        {
+          "name": "Sås",
+          "instruction": "Häll i {{ ingredients[0] }} och låt puttra.\n\nRör ner {{ ingredients[1].amount }} {{ ingredients[1].unit }} {{ ingredients[1].food }} (*{{ ingredients[1].note }}*) och smaka av med {{ ingredients[2].food }}.",
+          "time": 8,
+          "order": 2,
+          "show_as_header": true,
+          "show_ingredients_table": true,
+          "ingredients": [
+            {
+              "food": {
+                "name": "vispgrädde"
+              },
+              "unit": {
+                "name": "dl"
+              },
+              "amount": 2.5,
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "parmesan"
+              },
+              "unit": {
+                "name": "g"
+              },
+              "amount": 50,
+              "note": "riven",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "svartpeppar"
+              },
+              "unit": null,
+              "amount": 0,
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": true
+            },
+            {
+              "food": {
+                "name": "salt"
+              },
+              "unit": {
+                "name": "tsk"
+              },
+              "amount": 0.25,
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 2,
+      "name": "Krämig svamppasta",
+      "description": "Snabb vardagspasta med champinjoner och grädde.",
+      "image": null,
+      "keywords": [
+        {
+          "id": 2,
+          "name": "Pasta",
+          "label": "Pasta",
+          "description": "",
+          "parent": 1,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Huvudrätt > Pasta"
+        },
+        {
+          "id": 3,
+          "name": "Vegetariskt",
+          "label": "Vegetariskt",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Vegetariskt"
+        }
+      ],
+      "steps": [
+        {
+          "id": 1,
+          "name": "Förbered",
+          "instruction": "Skiva {{ ingredients[0].food }} och hacka {{ ingredients[1] }}.\nPressa {{ ingredients[2] }}.",
+          "ingredients": [
+            {
+              "id": 1,
+              "food": {
+                "id": 1,
+                "name": "champinjon",
+                "plural_name": "champinjoner",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "champinjon",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 250.0,
+              "conversions": [
+                {
+                  "food": "champinjon",
+                  "unit": "g",
+                  "amount": 250.0
+                },
+                {
+                  "food": "champinjon",
+                  "unit": "kg",
+                  "amount": 0.25
+                }
+              ],
+              "note": "gärna blandade svampar",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 2,
+              "food": {
+                "id": 2,
+                "name": "gul lök",
+                "plural_name": "gula lökar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "gul lök",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 8,
+                "name": "st",
+                "plural_name": "st",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "gul lök",
+                  "unit": "st",
+                  "amount": 1.0
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 3,
+              "food": {
+                "id": 3,
+                "name": "vitlöksklyfta",
+                "plural_name": "vitlöksklyftor",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vitlöksklyfta",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 2.0,
+              "conversions": [],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Skiva <plural-name singular=\"champinjon\" plural=\"champinjoner\" v-bind:amount=\"250.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> och hacka <scalable-number v-bind:number=\"1.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> st <plural-name singular=\"gul lök\" plural=\"gula lökar\" v-bind:amount=\"1.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name>.<br>\nPressa <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"vitlöksklyfta\" plural=\"vitlöksklyftor\" v-bind:amount=\"2.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name>.</p>",
+          "time": 10,
+          "order": 0,
+          "show_as_header": true,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 2,
+          "name": "Koka pastan",
+          "instruction": "Koka pastan i {{ scale(3) }} liter saltat vatten.",
+          "ingredients": [
+            {
+              "id": 4,
+              "food": {
+                "id": 13,
+                "name": "pasta",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "pasta",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 400.0,
+              "conversions": [
+                {
+                  "food": "pasta",
+                  "unit": "g",
+                  "amount": 400.0
+                },
+                {
+                  "food": "pasta",
+                  "unit": "kg",
+                  "amount": 0.4
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 5,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "till pastavattnet",
+              "order": 1,
+              "is_header": false,
+              "no_amount": true,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Koka pastan i <scalable-number v-bind:number=\"3.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> liter saltat vatten.</p>",
+          "time": 12,
+          "order": 1,
+          "show_as_header": true,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 3,
+          "name": "Sås",
+          "instruction": "Häll i {{ ingredients[0] }} och låt puttra.\n\nRör ner {{ ingredients[1].amount }} {{ ingredients[1].unit }} {{ ingredients[1].food }} (*{{ ingredients[1].note }}*) och smaka av med {{ ingredients[2].food }}.",
+          "ingredients": [
+            {
+              "id": 6,
+              "food": {
+                "id": 15,
+                "name": "vispgrädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vispgrädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.5,
+              "conversions": [
+                {
+                  "food": "vispgrädde",
+                  "unit": "dl",
+                  "amount": 2.5
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "ml",
+                  "amount": 250.0
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "cup",
+                  "amount": 1.0566875
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "l",
+                  "amount": 0.25
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "msk",
+                  "amount": 16.907
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "tsk",
+                  "amount": 50.721
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 7,
+              "food": {
+                "id": 16,
+                "name": "parmesan",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "parmesan",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 50.0,
+              "conversions": [
+                {
+                  "food": "parmesan",
+                  "unit": "g",
+                  "amount": 50.0
+                },
+                {
+                  "food": "parmesan",
+                  "unit": "kg",
+                  "amount": 0.05
+                }
+              ],
+              "note": "riven",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 8,
+              "food": {
+                "id": 17,
+                "name": "svartpeppar",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "svartpeppar",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": true,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 9,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 0.25,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "tsk",
+                  "amount": 0.25
+                },
+                {
+                  "food": "salt",
+                  "unit": "cup",
+                  "amount": 0.005208333333333333
+                },
+                {
+                  "food": "salt",
+                  "unit": "l",
+                  "amount": 0.0012322312257250449
+                },
+                {
+                  "food": "salt",
+                  "unit": "ml",
+                  "amount": 1.232231225725045
+                },
+                {
+                  "food": "salt",
+                  "unit": "msk",
+                  "amount": 0.08333333333333333
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 2,
+                  "name": "Krämig svamppasta"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Häll i <scalable-number v-bind:number=\"2.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl vispgrädde och låt puttra.</p>\n<p>Rör ner <scalable-number v-bind:number=\"50.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g parmesan (<em>riven</em>) och smaka av med svartpeppar.</p>",
+          "time": 8,
+          "order": 2,
+          "show_as_header": true,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 20,
+      "waiting_time": 10,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": "https://exempel.se/recept/kramig-svamppasta",
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

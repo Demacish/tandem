@@ -392,6 +392,8 @@ class OnboardingViewModel @Inject constructor(
 
             DataProblem.SECURE_STORAGE -> LoginError.StorageFailed
 
+            DataProblem.PASSWORD_LOGIN_UNAVAILABLE -> LoginError.PasswordLoginUnavailable
+
             // The server step already saw Tandoor, so a redirect or 404 on api-token-auth means the
             // endpoint is gone (Tandoor 2.7+), not a wrong address.
             else -> if (method == LoginMethod.PASSWORD && error.meansNoPasswordLogin()) {

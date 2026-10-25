@@ -107,7 +107,7 @@ object ApiSchema {
     }
 }
 
-/** One recorded exchange from `api-schema/fixtures/2.6.13`, read in place. */
+/** One recorded exchange from `api-schema/fixtures/<version>` (2.6.13, or 2.7.1 for Tandoor 2.7), read in place. */
 class Fixture(val name: String, private val root: JsonObject) {
     private val request = root.getValue("request").jsonObject
     private val response = root.getValue("response").jsonObject
@@ -143,9 +143,9 @@ class Fixture(val name: String, private val root: JsonObject) {
         private val SKIPPED_HEADERS = setOf("content-length", "transfer-encoding", "connection")
         private val json = Json { ignoreUnknownKeys = true }
 
-        /** `fas1/recipe-flat` or `13-space-current`, below `api-schema/fixtures/2.6.13/`. */
-        fun load(name: String): Fixture {
-            val file = File(fixtureDir(), "$name.json")
+        /** `fas1/recipe-flat` or `13-space-current`, below `api-schema/fixtures/<version>/` (2.6.13 by default). */
+        fun load(name: String, version: String = "2.6.13"): Fixture {
+            val file = File(fixtureDir(version), "$name.json")
             require(file.isFile) { "Missing fixture $file" }
             return Fixture(name, json.parseToJsonElement(file.readText()).jsonObject)
         }

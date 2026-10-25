@@ -45,3 +45,39 @@ data class AccessTokenDto(
 ) {
     override fun toString(): String = "AccessTokenDto(id=$id, token=<redacted>, expires=$expires, scope=$scope)"
 }
+
+// --- allauth headless, app client (Tandoor 2.7+, where api-token-auth is gone) ----------------
+
+/** Body of `POST /_allauth/app/v1/auth/login`. The password only lives as long as this object. */
+@Serializable
+data class AllauthLoginRequestDto(val username: String, val password: String) {
+    override fun toString(): String = "AllauthLoginRequestDto(username=$username, password=<redacted>)"
+}
+
+/**
+ * allauth headless' response envelope (`{status, data, meta}`, FACTS 2.7 "login.allauth"). A
+ * successful login has `meta.session_token`, which is sent as `X-Session-Token`. Only the fields
+ * the app needs are read; the user's e-mail address is never decoded.
+ */
+@Serializable
+data class AllauthResponseDto(
+    val status: Int? = null,
+    val data: AllauthDataDto? = null,
+    val meta: AllauthMetaDto? = null,
+) {
+    override fun toString(): String = "AllauthResponseDto(status=$status, data=$data, meta=$meta)"
+}
+
+@Serializable
+data class AllauthDataDto(val user: AllauthUserDto? = null)
+
+@Serializable
+data class AllauthUserDto(val id: Long? = null, val username: String? = null, val display: String? = null)
+
+@Serializable
+data class AllauthMetaDto(
+    @SerialName("is_authenticated") val isAuthenticated: Boolean? = null,
+    @SerialName("session_token") val sessionToken: String? = null,
+) {
+    override fun toString(): String = "AllauthMetaDto(isAuthenticated=$isAuthenticated, sessionToken=<redacted>)"
+}

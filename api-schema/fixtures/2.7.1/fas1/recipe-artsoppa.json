@@ -1,0 +1,537 @@
+{
+  "name": "recipe-artsoppa",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/7/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 7,
+      "name": "Ärtsoppa",
+      "description": "Privat recept: bara skaparen ser det.",
+      "image": null,
+      "keywords": [
+        {
+          "id": 5,
+          "name": "Husmanskost",
+          "label": "Husmanskost",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Husmanskost"
+        },
+        {
+          "id": 6,
+          "name": "Soppa",
+          "label": "Soppa",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Soppa"
+        }
+      ],
+      "steps": [
+        {
+          "id": 13,
+          "name": "Blötlägg",
+          "instruction": "Blötlägg {{ ingredients[0] }} över natten.",
+          "ingredients": [
+            {
+              "id": 46,
+              "food": {
+                "id": 9,
+                "name": "gul ärta",
+                "plural_name": "gula ärtor",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "gul ärta",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 5.0,
+              "conversions": [
+                {
+                  "food": "gul ärta",
+                  "unit": "dl",
+                  "amount": 5.0
+                },
+                {
+                  "food": "gul ärta",
+                  "unit": "ml",
+                  "amount": 500.0
+                },
+                {
+                  "food": "gul ärta",
+                  "unit": "cup",
+                  "amount": 2.113375
+                },
+                {
+                  "food": "gul ärta",
+                  "unit": "l",
+                  "amount": 0.5
+                },
+                {
+                  "food": "gul ärta",
+                  "unit": "msk",
+                  "amount": 33.814
+                },
+                {
+                  "food": "gul ärta",
+                  "unit": "tsk",
+                  "amount": 101.442
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 7,
+                  "name": "Ärtsoppa"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Blötlägg <scalable-number v-bind:number=\"5.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> dl <plural-name singular=\"gul ärta\" plural=\"gula ärtor\" v-bind:amount=\"5.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> över natten.</p>",
+          "time": 720,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 14,
+          "name": "Koka",
+          "instruction": "Koka ärtorna i {{ ingredients[0] }} med {{ ingredients[1] }}.",
+          "ingredients": [
+            {
+              "id": 47,
+              "food": {
+                "id": 31,
+                "name": "vatten",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vatten",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 4,
+                "name": "l",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "l",
+                "open_data_slug": null
+              },
+              "amount": 1.5,
+              "conversions": [
+                {
+                  "food": "vatten",
+                  "unit": "l",
+                  "amount": 1.5
+                },
+                {
+                  "food": "vatten",
+                  "unit": "cup",
+                  "amount": 6.340125
+                },
+                {
+                  "food": "vatten",
+                  "unit": "ml",
+                  "amount": 1500.0
+                },
+                {
+                  "food": "vatten",
+                  "unit": "msk",
+                  "amount": 101.442
+                },
+                {
+                  "food": "vatten",
+                  "unit": "tsk",
+                  "amount": 304.326
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 7,
+                  "name": "Ärtsoppa"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 48,
+              "food": {
+                "id": 32,
+                "name": "rimmat fläsk",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "rimmat fläsk",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 300.0,
+              "conversions": [
+                {
+                  "food": "rimmat fläsk",
+                  "unit": "g",
+                  "amount": 300.0
+                },
+                {
+                  "food": "rimmat fläsk",
+                  "unit": "kg",
+                  "amount": 0.3
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 7,
+                  "name": "Ärtsoppa"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 49,
+              "food": {
+                "id": 2,
+                "name": "gul lök",
+                "plural_name": "gula lökar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "gul lök",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 1.0,
+              "conversions": [],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 7,
+                  "name": "Ärtsoppa"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 50,
+              "food": {
+                "id": 33,
+                "name": "timjan",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "timjan",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "timjan",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "timjan",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "timjan",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "timjan",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "timjan",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 7,
+                  "name": "Ärtsoppa"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 51,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 6,
+                "name": "msk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tbsp",
+                "open_data_slug": null
+              },
+              "amount": 0.5,
+              "conversions": [
+                {
+                  "food": "salt",
+                  "unit": "msk",
+                  "amount": 0.5
+                },
+                {
+                  "food": "salt",
+                  "unit": "cup",
+                  "amount": 0.03125
+                },
+                {
+                  "food": "salt",
+                  "unit": "l",
+                  "amount": 0.007393387354350269
+                },
+                {
+                  "food": "salt",
+                  "unit": "ml",
+                  "amount": 7.39338735435027
+                },
+                {
+                  "food": "salt",
+                  "unit": "tsk",
+                  "amount": 1.4999999999999998
+                }
+              ],
+              "note": "",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 7,
+                  "name": "Ärtsoppa"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Koka ärtorna i <scalable-number v-bind:number=\"1.5\" v-bind:factor=\"ingredient_factor\"></scalable-number> l vatten med <scalable-number v-bind:number=\"300.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g rimmat fläsk.</p>",
+          "time": 120,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 120,
+      "waiting_time": 720,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 6,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": true,
+      "shared": []
+    }
+  }
+}

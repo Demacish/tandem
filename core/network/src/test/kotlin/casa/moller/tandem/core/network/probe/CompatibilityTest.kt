@@ -34,6 +34,8 @@ class CompatibilityTest {
             "2.6.99" to Compatibility.UNTESTED_NEWER,
             "2.7.0" to Compatibility.UNTESTED_NEWER,
             "2.7.0-beta1" to Compatibility.UNTESTED_NEWER,
+            "2.7.1" to Compatibility.SUPPORTED,
+            "2.7.2" to Compatibility.UNTESTED_NEWER,
             "2.8.0" to Compatibility.UNTESTED_NEWER,
             "3.0.0" to Compatibility.UNTESTED_NEWER,
             "2.5.3" to Compatibility.UNTESTED_OLDER,

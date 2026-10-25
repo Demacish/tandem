@@ -1,0 +1,26 @@
+{
+  "name": "not-found-unknown-path",
+  "request": {
+    "method": "GET",
+    "path": "/api/this-endpoint-does-not-exist/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-language": "en",
+      "content-type": "text/html; charset=utf-8",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": false,
+    "bodyText": "\n\n\n\n\n\n\n\n\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <base href=\"/\">\n    <title>Tandoor</title>\n    <meta name=\"description\" content=\"Tandoor Recipe Manager\">\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=5, minimal-ui, shrink-to-fit=no\">\n    <meta name=\"robots\" content=\"noindex,nofollow\"/>\n    <meta name=\"apple-mobile-web-app-capable\" content=\"yes\"/>\n\n    <link rel=\"manifest\" crossorigin=\"use-credentials\" href=\"/manifest.json\">\n\n    <link rel=\"icon\" href=\"/static/assets/logo_color_svg.d7c2e31a63b7.svg\">\n    <link rel=\"icon\" href=\"/static/assets/logo_color_32.b7d9707eac91.png\" sizes=\"32x32\">\n    <link rel=\"icon\" href=\"/static/assets/logo_color_128.a90db52449d9.png\" sizes=\"128x128\">\n    <link rel=\"icon\" href=\"/static/assets/logo_color_192.c9b9177ff941.png\" sizes=\"192x192\">\n    <link rel=\"apple-touch-icon\" href=\"/static/assets/logo_color_180.0fcae5e85a72.png\" sizes=\"180x180\">\n\n    <meta name=\"msapplication-TileColor\" content=\"#ddbf86\">\n    <meta name=\"msapplication-TileImage\" content=\"/static/assets/logo_color_144.f09537dbf142.png\">\n\n    <meta name=\"theme-color\" content=\"#ddbf86\">\n\n    <meta name=\"apple-mobile-web-app-capable\" content=\"yes\"/>\n\n    \n\n    <style>\n        \n    </style>\n\n</head>\n<body>\n\n<div id=\"app\"></div>\n\n\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/ripple-CeGB3d9x.3ba9fc624e34.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/position-KetB1dC_.443065fc3376.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VOverlay-CKBxglwy.b98729efffd0.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VAvatar-_OUjgGcO.4b7cb0eecf0b.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VChip-Hpg9IuyM.8dc9d3e18964.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VBtn-CURymOBv.0f09cbcdb99d.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VDivider-BeM1gRhl.727c640d6c8d.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VPagination-COmo1aFR.8938be9379ca.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VList-DGtn9PZI.d8be7d15293d.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VTextField-j0TpvUy_.42df5f015009.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VCheckboxBtn-CgKG0efP.b4b9ba2feaa9.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VMenu-DI_OZMqw.5907af14604a.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VSheet-B7Vm5FyN.5b804e048dff.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VSelect-YOYgv_cE.6d6398d0de13.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VTable-DthgrCD7.5b58cdd483ec.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VDataTable-C3mY9AKS.09b01b8b47e5.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VCard-CSJpUMri.111de28a9d51.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VContainer-CUd91tkX.b8593c93f733.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VRow-Dd63ltWq.7697449c2023.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VSpacer-izdAGX-2.f53482a6eb1a.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VDialog-BK-qqu9O.48b30de94227.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VCheckbox-QyI_t4QG.80a3ce408d11.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VAutocomplete-BnHJd-1b.0428536b2b05.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/VTooltip-wD2djnd2.9d23e43db043.css\" />\n<link  rel=\"stylesheet\" href=\"/static/vue3/assets/main-CJn7u7fK.843b94e599c5.css\" />\n<script type=\"module\" crossorigin=\"\" src=\"/static/vue3/assets/main-D2EdcXHo.7ba19c511ea1.js\"></script>\n<link href=\"/static/vue3/assets/vue.esm-bundler-D4HOsG7p.e2cdbb3c8ff9.js\" type=\"text/javascript\" crossorigin=\"anonymous\" rel=\"modulepreload\" as=\"script\" />\n<link href=\"/static/vue3/assets/useApi-CUWMwLLw-Dsd9akXf.64a4a1abfbef.js\" type=\"text/javascript\" crossorigin=\"anonymous\" rel=\"modulepreload\" as=\"script\" />\n<link href=\"/static/vue3/assets/MessageStore-DvoyTIfH.c4de926fed54.j"
+  }
+}

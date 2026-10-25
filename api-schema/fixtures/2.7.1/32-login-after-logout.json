@@ -1,0 +1,54 @@
+{
+  "name": "login-after-logout",
+  "request": {
+    "method": "POST",
+    "path": "/_allauth/app/v1/auth/login",
+    "headers": {
+      "accept": "application/json",
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "username": "<username>",
+      "password": "<password>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "cache-control": "max-age=0, no-cache, no-store, must-revalidate, private",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "expires": "Sun, 25 Oct 2026 09:54:37 GMT",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "status": 200,
+      "data": {
+        "user": {
+          "id": 1,
+          "display": "contract-admin",
+          "email": "<redacted>",
+          "has_usable_password": true,
+          "username": "contract-admin"
+        },
+        "methods": [
+          {
+            "method": "password",
+            "at": 1.7929220776561744E9,
+            "username": "contract-admin"
+          }
+        ]
+      },
+      "meta": {
+        "is_authenticated": true,
+        "session_token": "<redacted>"
+      }
+    }
+  }
+}

@@ -49,11 +49,11 @@ class TandoorAuthenticatorTest {
     private val freshLoginExpiry = "2031-10-08T06:00:05.123456Z"
     private val oldLoginExpiry = "2030-01-01T00:00:00.000000Z"
 
-    private fun server(path: String = "/") = TandoorServer(
+    private fun server(path: String = "/", version: String = "2.6.13") = TandoorServer(
         baseUrl = tandoor.url(path),
-        version = "2.6.13",
+        version = version,
         compatibility = Compatibility.SUPPORTED,
-        settings = ServerSettingsDto(version = "2.6.13"),
+        settings = ServerSettingsDto(version = version),
     )
 
     private fun login(expires: String): MockResponse =
@@ -485,5 +485,184 @@ class TandoorAuthenticatorTest {
             assertTrue(bad, (result as Outcome.Failure).error is TandemError.BadRequest)
         }
         assertEquals(0, tandoor.server.requestCount)
+    }
+
+    // --- Tandoor 2.7+: allauth headless ---
+
+    private val session = "s3ss10nt0k3nfr0m4llauth0000000001"
+
+    private fun allauthLoggedIn(): MockResponse = jsonResponse(
+        200,
+        """{"status":200,"data":{"user":{"id":1,"display":"contract-admin","has_usable_password":true,""" +
+            """"email":"contract@example.invalid","username":"contract-admin"},"methods":[{"method":"password",""" +
+            """"at":1761400000.0,"username":"contract-admin"}]},"meta":{"is_authenticated":true,"session_token":"$session"}}""",
+    )
+
+    /** allauth's answer to a logout: 401, the now unauthenticated state. */
+    private fun allauthLoggedOut(): MockResponse = jsonResponse(
+        401,
+        """{"status":401,"data":{"flows":[{"id":"login"},{"id":"signup"}]},"meta":{"is_authenticated":false}}""",
+    )
+
+    private fun refused(): MockResponse =
+        jsonResponse(403, """{"detail":"Authentication credentials were not provided or access is forbidden."}""")
+
+    @Test
+    fun tandoor27LogsInWithAllauthCreatesTheDeviceTokenWithTheSessionAndLogsOut() = runBlocking {
+        tandoor.enqueue(
+            allauthLoggedIn(),
+            deviceTokenCreated(),
+            allauthLoggedOut(),
+            Fixture.load("13-space-current").toMockResponse(),
+            Fixture.load("12-user-preference-list").toMockResponse(),
+        )
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "hunter2")
+
+        val credentials = (result as Outcome.Success).value
+        assertEquals(deviceToken, credentials.token)
+        assertEquals(2L, credentials.tokenId)
+        assertEquals(1L, credentials.userId)
+        assertEquals(1L, credentials.spaceId)
+        assertEquals("2.7.1", credentials.serverVersion)
+        assertFalse(credentials.toString().contains(session))
+
+        // 1. allauth's app login: JSON, no token, no session yet.
+        val login = tandoor.takeRequest()
+        assertEquals("POST /_allauth/app/v1/auth/login", login.line())
+        assertNull(login.headers["Authorization"])
+        assertNull(login.headers["X-Session-Token"])
+        assertEquals(JsonPrimitive("anna"), login.bodyJson()["username"])
+        assertEquals(JsonPrimitive("hunter2"), login.bodyJson()["password"])
+        // 2. the device token, created with the session (no Authorization header at all).
+        val create = tandoor.takeRequest()
+        assertEquals("POST /api/access-token/", create.line())
+        assertEquals(session, create.headers["X-Session-Token"])
+        assertNull(create.headers["Authorization"])
+        assertEquals(JsonPrimitive("read write"), create.bodyJson()["scope"])
+        // 3. the session is ended before the device token is used anywhere.
+        val logout = tandoor.takeRequest()
+        assertEquals("DELETE /_allauth/app/v1/auth/session", logout.line())
+        assertEquals(session, logout.headers["X-Session-Token"])
+        assertNull(logout.headers["Authorization"])
+        // 4. everything else with the device token only.
+        for (expected in listOf("GET /api/space/current/", "GET /api/user-preference/")) {
+            val request = tandoor.takeRequest()
+            assertEquals(expected, request.line())
+            assertEquals("Bearer $deviceToken", request.headers["Authorization"])
+            assertNull(request.headers["X-Session-Token"])
+        }
+        assertEquals(5, tandoor.server.requestCount)
+    }
+
+    @Test
+    fun tandoor27WrongPasswordIsABadRequestAndNothingElseIsSent() = runBlocking {
+        tandoor.enqueue(
+            jsonResponse(
+                400,
+                """{"status":400,"errors":[{"message":"The username and/or password you specified are not correct.",""" +
+                    """"code":"username_password_mismatch","param":"password"}]}""",
+            ),
+        )
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "wrong")
+
+        assertTrue((result as Outcome.Failure).error is TandemError.BadRequest)
+        assertEquals(1, tandoor.server.requestCount)
+    }
+
+    @Test
+    fun tandoor27ThrottledLogin() = runBlocking {
+        tandoor.enqueue(jsonResponse(429, """{"status":429}"""))
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "hunter2")
+
+        assertTrue((result as Outcome.Failure).error is TandemError.Throttled)
+        assertEquals(1, tandoor.server.requestCount)
+    }
+
+    @Test
+    fun tandoor27LoginThatNeedsAnotherStepMeansPasteAToken() = runBlocking {
+        // allauth: the password is right but a flow is pending (here: verify the e-mail address).
+        tandoor.enqueue(
+            jsonResponse(
+                401,
+                """{"status":401,"data":{"flows":[{"id":"login"},{"id":"verify_email","is_pending":true}]},""" +
+                    """"meta":{"is_authenticated":false}}""",
+            ),
+        )
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "hunter2")
+
+        assertEquals(TandoorAuthenticator.PASSWORD_LOGIN_UNAVAILABLE, (result as Outcome.Failure).error)
+        assertEquals(1, tandoor.server.requestCount)
+    }
+
+    @Test
+    fun tandoor27WithoutAnAppLoginMeansPasteAToken() = runBlocking {
+        tandoor.enqueue(jsonResponse(404, """{"status":404}"""))
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "hunter2")
+
+        assertEquals(TandoorAuthenticator.PASSWORD_LOGIN_UNAVAILABLE, (result as Outcome.Failure).error)
+    }
+
+    @Test
+    fun tandoor27AccountWithoutASpaceIsRefusedAtTheTokenAndHasNoToken() = runBlocking {
+        tandoor.enqueue(allauthLoggedIn(), refused(), allauthLoggedOut())
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "hunter2")
+
+        val credentials = (result as Outcome.Success).value
+        assertNull(credentials.spaceId)
+        assertNull(credentials.tokenId)
+        assertEquals("", credentials.token)
+        assertEquals(1L, credentials.userId)
+        assertEquals(
+            listOf("POST /_allauth/app/v1/auth/login", "POST /api/access-token/", "DELETE /_allauth/app/v1/auth/session"),
+            List(3) { tandoor.takeRequest().line() },
+        )
+    }
+
+    @Test
+    fun tandoor27SessionIsLoggedOutAlsoWhenTheTokenCannotBeCreated() = runBlocking {
+        tandoor.enqueue(allauthLoggedIn(), emptyResponse(500), allauthLoggedOut())
+
+        val result = authenticator.login(server(version = "2.7.1"), "anna", "hunter2")
+
+        assertEquals(TandemError.ServerError(500), (result as Outcome.Failure).error)
+        assertEquals(
+            listOf("POST /_allauth/app/v1/auth/login", "POST /api/access-token/", "DELETE /_allauth/app/v1/auth/session"),
+            List(3) { tandoor.takeRequest().line() },
+        )
+    }
+
+    @Test
+    fun aServerWhoseTokenLoginIsGoneIsTriedWithAllauth() = runBlocking {
+        // An unparseable version (a development build) tries api-token-auth first; 2.7 redirects it.
+        tandoor.enqueue(
+            emptyResponse(302, "Location" to "/account/login/?next=/api-token-auth/"),
+            allauthLoggedIn(),
+            deviceTokenCreated(),
+            allauthLoggedOut(),
+            Fixture.load("13-space-current").toMockResponse(),
+            Fixture.load("12-user-preference-list").toMockResponse(),
+        )
+
+        val result = authenticator.login(server(version = "develop"), "anna", "hunter2")
+
+        assertEquals(deviceToken, (result as Outcome.Success).value.token)
+        assertEquals("POST /api-token-auth/", tandoor.takeRequest().line())
+        assertEquals("POST /_allauth/app/v1/auth/login", tandoor.takeRequest().line())
+    }
+
+    @Test
+    fun theLoginMechanismFollowsTheVersion() {
+        assertFalse(TandoorAuthenticator.usesAllauth("2.6.15"))
+        assertFalse(TandoorAuthenticator.usesAllauth("develop"))
+        assertFalse(TandoorAuthenticator.usesAllauth(null))
+        assertTrue(TandoorAuthenticator.usesAllauth("2.7.0"))
+        assertTrue(TandoorAuthenticator.usesAllauth("2.7.1"))
+        assertTrue(TandoorAuthenticator.usesAllauth("3.0.0"))
     }
 }

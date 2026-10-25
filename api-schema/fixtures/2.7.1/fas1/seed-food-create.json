@@ -1,0 +1,59 @@
+{
+  "name": "seed-food-create",
+  "request": {
+    "method": "POST",
+    "path": "/api/food/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "champinjon",
+      "plural_name": "champinjoner"
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "location": "",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 1,
+      "name": "champinjon",
+      "plural_name": "champinjoner",
+      "description": "",
+      "recipe": null,
+      "url": "",
+      "properties": [],
+      "properties_food_amount": 100.0,
+      "properties_food_unit": null,
+      "fdc_id": null,
+      "food_onhand": false,
+      "supermarket_category": null,
+      "parent": null,
+      "numchild": 0,
+      "inherit_fields": [],
+      "full_name": "champinjon",
+      "ignore_shopping": false,
+      "substitute": [],
+      "substitute_siblings": false,
+      "substitute_children": false,
+      "substitute_onhand": false,
+      "child_inherit_fields": [],
+      "open_data_slug": null,
+      "shopping_lists": []
+    }
+  }
+}

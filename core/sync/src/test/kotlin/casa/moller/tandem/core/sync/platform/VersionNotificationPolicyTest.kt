@@ -26,7 +26,7 @@ class VersionNotificationPolicyTest {
         assertFalse(VersionNotificationPolicy.needsInAppNotice(tested, notificationPosted = true))
         // An untested version has the safe mode banner; one that is too old its blocking notice.
         listOf(
-            change("2.7.1", ServerCompatibility.UNTESTED_NEWER),
+            change("2.7.3", ServerCompatibility.UNTESTED_NEWER),
             change("2.5.0", ServerCompatibility.UNTESTED_OLDER),
             change("dev", ServerCompatibility.UNRECOGNIZED),
             change("1.5.0", ServerCompatibility.TOO_OLD),
@@ -36,7 +36,7 @@ class VersionNotificationPolicyTest {
     @Test
     fun noticeFollowsTheNewVersion() {
         assertEquals(VersionNotice.UPDATED, VersionNotificationPolicy.noticeFor(change("2.6.15")))
-        assertEquals(VersionNotice.SAFE_MODE, VersionNotificationPolicy.noticeFor(change("2.7.1")))
+        assertEquals(VersionNotice.SAFE_MODE, VersionNotificationPolicy.noticeFor(change("2.7.3")))
         assertEquals(VersionNotice.WRITES_OFF, VersionNotificationPolicy.noticeFor(change("2.8.0")))
     }
 

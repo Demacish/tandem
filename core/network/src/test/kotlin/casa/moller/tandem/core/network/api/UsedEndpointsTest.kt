@@ -2,6 +2,7 @@ package casa.moller.tandem.core.network.api
 
 import casa.moller.tandem.core.network.testing.ApiSchema
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.http.DELETE
@@ -53,7 +54,8 @@ class UsedEndpointsTest {
     @Test
     fun everyListedEndpointExistsInTheSchema() {
         val operations = schemaOperations(File(schemaDir, "tandoor-2.6.13.yaml"))
-        val unknown = listed - operations
+        // allauth headless (Tandoor 2.7+) is not part of Tandoor's schema; the contract suite checks it.
+        val unknown = listed.filterNot { it.substringAfter(' ').startsWith(ALLAUTH_PREFIX) }.toSet() - operations
         assertTrue("Not in tandoor-2.6.13.yaml: $unknown", unknown.isEmpty())
     }
 
@@ -71,7 +73,16 @@ class UsedEndpointsTest {
         return operations
     }
 
+    @Test
+    fun allauthEndpointsAreOnlyTheAppLogin() {
+        assertEquals(
+            setOf("POST /_allauth/app/v1/auth/login", "DELETE /_allauth/app/v1/auth/session"),
+            listed.filter { it.substringAfter(' ').startsWith(ALLAUTH_PREFIX) }.toSet(),
+        )
+    }
+
     private companion object {
+        const val ALLAUTH_PREFIX = "/_allauth/"
         val PATH_LINE = Regex("^ {2}/\\S*:$")
         val METHOD_LINE = Regex("^ {4}(get|post|put|patch|delete):$")
     }

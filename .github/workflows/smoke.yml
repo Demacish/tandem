@@ -189,8 +189,17 @@ jobs:
           ' "$mapping" || { echo "::error::AuthService.login(TokenAuthRequestDto) was removed by R8"; failed=1; }
           grep -q '^casa\.moller\.tandem\.core\.network\.dto\.TokenAuthRequestDto -> ' "$mapping" \
             || { echo "::error::TokenAuthRequestDto was removed by R8"; failed=1; }
+          # Tandoor 2.7+: the password login through allauth headless (no api-token-auth there).
+          awk '
+            /^casa\.moller\.tandem\.core\.network\.api\.AllauthService -> / { inside = 1; next }
+            /^[^ #]/ { inside = 0 }
+            inside && /login\(casa\.moller\.tandem\.core\.network\.dto\.AllauthLoginRequestDto,kotlin\.coroutines\.Continuation\)/ { found = 1 }
+            END { exit found ? 0 : 1 }
+          ' "$mapping" || { echo "::error::AllauthService.login(AllauthLoginRequestDto) was removed by R8"; failed=1; }
+          grep -q '^casa\.moller\.tandem\.core\.network\.dto\.AllauthLoginRequestDto -> ' "$mapping" \
+            || { echo "::error::AllauthLoginRequestDto was removed by R8"; failed=1; }
           [ "$failed" -eq 0 ] || exit 1
-          echo "All ${checked} service interfaces, AuthService.login and TokenAuthRequestDto are in the mapping."
+          echo "All ${checked} service interfaces, both password logins and their request bodies are in the mapping."
 
       - name: Upload smoke test results
         if: failure()

@@ -1,0 +1,31 @@
+{
+  "name": "login-legacy-gone",
+  "request": {
+    "method": "POST",
+    "path": "/api-token-auth/",
+    "headers": {
+      "accept": "application/json",
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "username": "<username>",
+      "password": "<password>"
+    }
+  },
+  "response": {
+    "status": 302,
+    "headers": {
+      "content-language": "en",
+      "content-type": "text/html; charset=utf-8",
+      "cross-origin-opener-policy": "same-origin",
+      "location": "/account/login/?next=/api-token-auth/",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": false,
+    "bodyText": ""
+  }
+}

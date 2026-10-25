@@ -13,6 +13,7 @@ import casa.moller.tandem.core.database.entity.MealPlanEntity
 import casa.moller.tandem.core.database.entity.MealTypeEntity
 import casa.moller.tandem.core.database.entity.RecipeOverviewEntity
 import casa.moller.tandem.core.database.entity.UnitEntity
+import casa.moller.tandem.core.model.cooklog.CookLogDraft
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Ingredient
@@ -300,7 +301,8 @@ internal fun CookLogDto.toEntity(accountId: String): CookLogEntity? {
         localId = serverId,
         serverId = serverId,
         recipeId = recipe ?: return null,
-        servings = servings,
+        // Tandoor 2.7 sends a decimal (8.0, or 2.5 typed in the web): half up, at least 1, like "Klart!".
+        servings = CookLogDraft.servingsOf(servings),
         rating = rating,
         comment = comment,
         createdBy = createdBy?.id,

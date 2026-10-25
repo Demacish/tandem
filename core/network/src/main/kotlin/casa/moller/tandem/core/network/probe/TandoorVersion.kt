@@ -27,7 +27,7 @@ data class TandoorVersion(val major: Int, val minor: Int, val patch: Int) : Comp
  * [ServerCompatibility]; both come from [TandoorVersionTable].
  */
 enum class Compatibility {
-    /** A tested version (2.6.0 to 2.6.15): everything enabled. */
+    /** A tested version (2.6.0 to 2.6.15, 2.7.1): everything enabled. */
     SUPPORTED,
 
     /**

@@ -1,0 +1,345 @@
+{
+  "name": "recipe-patch",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/8/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "description": "Beskrivningen ändrades med PATCH av kontraktstestet."
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 8,
+      "name": "Grönsakssoppa",
+      "description": "Beskrivningen ändrades med PATCH av kontraktstestet.",
+      "image": null,
+      "keywords": [
+        {
+          "id": 3,
+          "name": "Vegetariskt",
+          "label": "Vegetariskt",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Vegetariskt"
+        },
+        {
+          "id": 6,
+          "name": "Soppa",
+          "label": "Soppa",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Soppa"
+        }
+      ],
+      "steps": [
+        {
+          "id": 15,
+          "name": "Koka",
+          "instruction": "Koka {{ ingredients[0] }} och {{ ingredients[1] }} i {{ scale(20) }} min. Smaka av.",
+          "ingredients": [
+            {
+              "id": 52,
+              "food": {
+                "id": 5,
+                "name": "ekologisk morot",
+                "plural_name": "ekologiska morötter",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "ekologisk morot",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 5.0,
+              "conversions": [],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 8,
+                  "name": "Grönsakssoppa"
+                }
+              ]
+            },
+            {
+              "id": 53,
+              "food": {
+                "id": 4,
+                "name": "potatis",
+                "plural_name": "potatisar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "potatis",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 2.0,
+              "conversions": [],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 8,
+                  "name": "Grönsakssoppa"
+                }
+              ]
+            },
+            {
+              "id": 54,
+              "food": {
+                "id": 31,
+                "name": "vatten",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vatten",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 4,
+                "name": "l",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "l",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "vatten",
+                  "unit": "l",
+                  "amount": 1.0
+                },
+                {
+                  "food": "vatten",
+                  "unit": "cup",
+                  "amount": 4.22675
+                },
+                {
+                  "food": "vatten",
+                  "unit": "ml",
+                  "amount": 1000.0
+                },
+                {
+                  "food": "vatten",
+                  "unit": "msk",
+                  "amount": 67.628
+                },
+                {
+                  "food": "vatten",
+                  "unit": "tsk",
+                  "amount": 202.884
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 8,
+                  "name": "Grönsakssoppa"
+                }
+              ]
+            },
+            {
+              "id": 55,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 6,
+                "name": "msk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tbsp",
+                "open_data_slug": null
+              },
+              "amount": 2.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "msk",
+                  "amount": 2.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "cup",
+                  "amount": 0.125
+                },
+                {
+                  "food": "smör",
+                  "unit": "l",
+                  "amount": 0.029573549417401077
+                },
+                {
+                  "food": "smör",
+                  "unit": "ml",
+                  "amount": 29.57354941740108
+                },
+                {
+                  "food": "smör",
+                  "unit": "tsk",
+                  "amount": 5.999999999999999
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 8,
+                  "name": "Grönsakssoppa"
+                }
+              ]
+            }
+          ],
+          "instructions_markdown": "<p>Koka <scalable-number v-bind:number=\"5.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"ekologisk morot\" plural=\"ekologiska morötter\" v-bind:amount=\"5.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> och <scalable-number v-bind:number=\"2.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> <plural-name singular=\"potatis\" plural=\"potatisar\" v-bind:amount=\"2.0\" v-bind:factor=\"ingredient_factor\" :no-amount=\"false\"></plural-name> i <scalable-number v-bind:number=\"20.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> min. Smaka av.</p>",
+          "time": 25,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 15,
+      "waiting_time": 25,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}
