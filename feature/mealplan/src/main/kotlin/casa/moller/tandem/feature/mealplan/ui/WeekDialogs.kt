@@ -189,6 +189,8 @@ internal fun ConflictDialog(state: ConflictState, format: MealPlanFormat, onActi
     val title = state.mealTitle.ifBlank { stringResource(R.string.mealplan_untitled) }
     AlertDialog(
         onDismissRequest = {},
+        // The theme's dialog surface gives the primary-coloured buttons too little contrast (ATF).
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         title = { Text(stringResource(R.string.mealplan_conflict_title)) },
         text = {
             Text(
