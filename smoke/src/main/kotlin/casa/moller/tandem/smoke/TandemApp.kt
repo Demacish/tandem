@@ -171,6 +171,16 @@ class TandemApp(val device: UiDevice) {
         ).click()
     }
 
+    /** Waits for a clickable element whose text matches [text] (e.g. "Start 5 min" in "Adjust the time") and clicks it. */
+    fun tapTextMatching(text: Pattern) {
+        scrollToAny(
+            listOf(
+                By.clickable(true).hasDescendant(By.text(text), MAX_LABEL_DEPTH),
+                By.clickable(true).text(text),
+            ),
+        ).click()
+    }
+
     /** Waits until nothing matches [selector] any more. */
     fun waitUntilGone(selector: BySelector, timeoutMs: Long = UI_TIMEOUT_MS) {
         val deadline = SystemClock.uptimeMillis() + timeoutMs

@@ -309,6 +309,8 @@ class Phase1bSmokeTest {
         app.tapDescription("Cook $DEMO_TONIGHT")
         app.waitFor(By.text(Pattern.compile("Step 1 of \\d+")))
         app.tapDescriptionMatching(Pattern.compile("Start .*"))
+        app.waitFor(By.text("Adjust the time"))
+        app.tapTextMatching(Pattern.compile("Start .+"))
         app.waitFor(By.text("Hear the timer with the screen locked?"))
         app.tap("Not now")
         app.waitFor(By.desc(Pattern.compile(".* left")))
