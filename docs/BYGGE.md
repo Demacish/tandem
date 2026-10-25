@@ -560,7 +560,9 @@ ingredient]}`, BULK_CHECK en rad per post (batch `shopping_entry:checked=…`), 
 enhet, livsmedel, listor (`shopping_lists`) och "köp senare" (`delay_until`, ångra =
 `1970-01-01T00:00:00Z`), DELETE. Ett recept på listan är ett listrecept (CREATE, `mealplan` i
 `refs` om måltiden också är ny) och en CREATE per vald ingrediens som `depends_on` listreceptet
-med `list_recipe` i `refs`; mängderna skalas med portionerna. Gäster får `READ_ONLY` innan något
+med `list_recipe` i `refs`; mängderna skalas med portionerna. En ändring av ett objekt vars CREATE
+väntar osänd slås ihop med den (en avbockning köas då som PATCH `{checked}`, utan tillfälligt id i
+payloaden) och får `depends_on` bara när CREATE redan skickas. Gäster får `READ_ONLY` innan något
 sparas; demoläget skriver bara demodatabasen.
 
 **Avsändare** (`ShoppingOutboxHandlers.kt`, bundna med `@IntoMap`): `shopping_entry`,
@@ -618,9 +620,12 @@ fönsterregeln, bulk, köp senare, recept på listan, rensa avbockade, 404 utanf
 (transaktionen, frågorna, 3 → 4 med en köad "Klart!"), `ShoppingServicesTest`,
 `LocalIngredientParserTest`, `DemoShoppingContentTest`.
 
-**Inte prövat mot en riktig server** (kontraktssviten): `POST /api/shopping-list-entry/` med
-`list_recipe` och `ingredient`, `POST /api/shopping-list-recipe/` med `mealplan`, PATCH av en
-posts `food`/`unit` med namn.
+**Kontrakt:** `ShoppingWritesContractTest` (eget steg i `contract.yml` efter Fas 2, spelar inte in
+något) prövar skrivningarna exakt som outboxen skickar dem mot 2.6.13 och 2.7.1: en post med
+`list_recipe` och `ingredient` hör till listreceptet, ett listrecept med `mealplan` hör till
+måltiden (`?mealplan=`), PATCH av en posts livsmedel och enhet med namn (och enheten bort med
+`null`), `updated_after` i den `Z`-form appen skickar, och att posterna försvinner med sitt
+listrecept.
 <!-- /Fas 2 inköp-data -->
 
 <!-- Fas 1b koklogg -->
