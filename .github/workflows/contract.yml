@@ -271,11 +271,27 @@ jobs:
               token = AccessToken.objects.create(
                   user=guest, token="tda_" + str(uuid.uuid4()).replace("-", "_"),
                   expires=timezone.now() + timedelta(days=1), scope="read write")
-              print(token.token)
+              # Checked entries completed 30, 10 and 3 days ago (the window rule; the API cannot set completed_at).
+              archived = []
+              try:
+                  from cookbook.models import Food, ShoppingListEntry
+                  for name, days in (("kaffe", 30), ("te", 10), ("kakao", 3)):
+                      food = Food.objects.filter(name=name, space=space).first() or Food.add_root(name=name, space=space)
+                      entry = ShoppingListEntry.objects.create(food=food, amount=1, checked=True, created_by=owner, space=space)
+                      ShoppingListEntry.objects.filter(pk=entry.pk).update(completed_at=timezone.now() - timedelta(days=days))
+                      archived.append(str(entry.pk))
+              except Exception as error:
+                  print("no archived entries:", type(error).__name__, error, file=sys.stderr)
+              print(token.token, ",".join(archived) or "-")
           ' | tail -n 1)"
-          [ -n "$token" ] || { echo "::error::guest token creation failed"; exit 1; }
-          echo "::add-mask::${token}"
-          echo "TANDOOR_GUEST_TOKEN=${token}" >> "$GITHUB_ENV"
+          read -r guest_token archived_ids <<< "$token"
+          [ -n "$guest_token" ] || { echo "::error::guest token creation failed"; exit 1; }
+          echo "::add-mask::${guest_token}"
+          echo "Archived entries: ${archived_ids}"
+          {
+            echo "TANDOOR_GUEST_TOKEN=${guest_token}"
+            echo "TANDOOR_ARCHIVED_ENTRY_IDS=${archived_ids}"
+          } >> "$GITHUB_ENV"
 
       - name: Contract tests (Fas 2)
         run: >-

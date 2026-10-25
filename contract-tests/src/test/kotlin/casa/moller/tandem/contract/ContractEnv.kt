@@ -70,6 +70,14 @@ internal object ContractEnv {
      */
     val guestToken: String = System.getenv("TANDOOR_GUEST_TOKEN").orEmpty()
 
+    /**
+     * Ids of three checked shopping list entries of [username] that contract.yml created in the
+     * database with `completed_at` 30, 10 and 3 days back (the API always sets `completed_at` to
+     * now), for the window rule of the list (plan 3.5). Comma-separated in TANDOOR_ARCHIVED_ENTRY_IDS.
+     */
+    val archivedEntryIds: List<Long> =
+        System.getenv("TANDOOR_ARCHIVED_ENTRY_IDS").orEmpty().split(',').mapNotNull { it.trim().toLongOrNull() }
+
     /** Fas 2 recordings: `<recordDir>/fas2/<name>.json` (committed to api-schema/fixtures/<tag>/fas2/). */
     val fas2RecordDir: File = File(recordDir, "fas2")
 }

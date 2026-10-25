@@ -218,12 +218,14 @@ class Phase2ContractTest {
             if (index == 0) observe("supermarketCategory.create", describe(created, includeBody = false))
             idOf(created)?.let { categoryIds[name] = it }
         }
-        val store = api(
-            "supermarket-create",
-            "POST",
-            "/api/supermarket/",
-            obj("name" to STORE, "description" to "", "shopping_lists" to emptyList<Any>()),
+        // SupermarketSerializer.create passes every field to get_or_create, so `shopping_lists` (a
+        // many-to-many field) in the body makes it fail [K]: create the store without it.
+        val withLists = obj("name" to "$STORE (listor)", "description" to "", "shopping_lists" to emptyList<Any>())
+        observe(
+            "supermarket.createWithShoppingLists.status",
+            api("store-lists", "POST", "/api/supermarket/", withLists, record = false).status,
         )
+        val store = api("supermarket-create", "POST", "/api/supermarket/", obj("name" to STORE, "description" to ""))
         observe("supermarket.create", describe(store, includeBody = false))
         objOf(store)?.let { observe("supermarket.fieldTypes", Facts.fieldTypes(it)) }
         val storeId = idOf(store)
@@ -352,6 +354,7 @@ class Phase2ContractTest {
             val raw = api("raw-plus", "GET", "/api/shopping-list-entry/?updated_after=$t0", record = false)
             observe("shopping.updatedAfter.rawPlus", describe(raw, includeBody = raw.status != 200))
             observe("shopping.updatedAfter.rawPlus.count", objOf(raw)?.longAt("count"))
+            observe("shopping.updatedAfter.rawPlus.returnsEverything", objOf(raw)?.longAt("count") == objOf(fullList())?.longAt("count"))
             val dateOnly = api("date-only", "GET", "/api/shopping-list-entry/?updated_after=$today", record = false)
             observe("shopping.updatedAfter.dateOnly", describe(dateOnly, includeBody = dateOnly.status != 200))
             val utc = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(30).truncatedTo(ChronoUnit.SECONDS)
@@ -419,19 +422,23 @@ class Phase2ContractTest {
             observe("shopping.delayNull.value", objOf(clear)?.get("delay_until"))
         }
 
-        // The window rule (plan 3.5): checked entries older than min(shopping_recent_days, 14) days drop out of the list.
-        for ((label, days) in listOf("old" to OLD_DAYS, "recent" to RECENT_DAYS)) {
-            val id = idOf(create("window-$label", obj("food" to obj("name" to "kaffe"), "amount" to 1), record = false)) ?: continue
-            val completed = isoOffset(ZonedDateTime.now(zone).minusDays(days))
-            val body = obj("checked" to true, "completed_at" to completed)
-            val patch = patchEntry("shopping-list-entry-patch-completed-at-$label", id, body, record = label == "old")
-            observe("shopping.window.$label.patch.status", patch.status)
-            observe(
-                "shopping.window.$label.completedAtKept",
-                objOf(patch)?.stringAt("completed_at")?.take(DATE_LENGTH) == completed.take(DATE_LENGTH),
-            )
-            observe("shopping.window.$label.listed", id in idsOf(fullList()))
-            observe("shopping.window.$label.getStatus", getEntry("window-get", id, record = false).status)
+        // The window rule (plan 3.5): the list leaves out checked entries completed before
+        // midnight (UTC) min(shopping_recent_days, 14) days ago. completed_at cannot be set through
+        // the API (the serializer sets it), so contract.yml created three checked entries completed
+        // 30, 10 and 3 days ago.
+        val archived = env.archivedEntryIds
+        val owner = ownerId
+        if (archived.size == ARCHIVED_ENTRIES && owner != null) {
+            observe("shopping.window.recentDays7.listed30d10d3d", archived.map { it in idsOf(fullList()) })
+            val wide = api("recent-days-20", "PATCH", "/api/user-preference/$owner/", obj("shopping_recent_days" to 20), record = false)
+            observe("shopping.window.patchRecentDays.status", wide.status)
+            observe("shopping.window.recentDays20.listed30d10d3d", archived.map { it in idsOf(fullList()) })
+            api("recent-days-7", "PATCH", "/api/user-preference/$owner/", obj("shopping_recent_days" to 7), record = false)
+            observe("shopping.window.agedOut.detailStatus", getEntry("shopping-list-entry-get-aged-out", archived.first()).status)
+            val since = timestampNow()
+            observe("shopping.window.agedOut.updatedAfterNow", since?.let { archived.first() in idsOf(listAfter("aged-out", it)) })
+        } else {
+            observe("shopping.window.skipped", "archived entries: $archived")
         }
 
         // Deleted rows: what the outbox meets when someone else deleted an entry (plan 3.5, 5.4).
@@ -561,12 +568,18 @@ class Phase2ContractTest {
                 "listRecipe.bulkCreateEntries.lists",
                 entries.map { e -> e.arrAt("shopping_lists").objects().map { it.stringAt("name") } },
             )
-            // servings 0 + list_recipe removes the list recipe (plan 3.3 "Recept → inköp").
-            val removeBody = obj("ingredients" to emptyList<Any>(), "servings" to 0, "list_recipe" to createdId)
-            val remove = api("recipe-shopping-put-servings-0", "PUT", "/api/recipe/$recipe/shopping/", removeBody)
-            observe("recipeShopping.putServings0", describe(remove, includeBody = remove.status != NO_CONTENT))
+            // "servings 0 + list_recipe deletes" (the schema's help text) fails: the view tests
+            // `if servings and servings <= 0`, so 0 goes on to edit [K]; a negative number deletes.
+            val zeroBody = obj("ingredients" to emptyList<Any>(), "servings" to 0, "list_recipe" to createdId)
+            val zero = api("recipe-shopping-put-servings-0", "PUT", "/api/recipe/$recipe/shopping/", zeroBody)
+            observe("recipeShopping.putServings0", describe(zero, includeBody = false))
+            val removeBody = obj("ingredients" to emptyList<Any>(), "servings" to -1, "list_recipe" to createdId)
+            val remove = api("recipe-shopping-put-delete", "PUT", "/api/recipe/$recipe/shopping/", removeBody)
+            observe("recipeShopping.putNegativeServings", describe(remove))
             val remaining = idsOf(fullList())
-            observe("recipeShopping.putServings0.entriesRemain", entries.mapNotNull { it.longAt("id") }.count { it in remaining })
+            observe("recipeShopping.putNegativeServings.entriesRemain", entries.mapNotNull { it.longAt("id") }.count { it in remaining })
+            val gone = api("list-recipe-after-delete", "GET", "/api/shopping-list-recipe/$createdId/", record = false)
+            observe("recipeShopping.putNegativeServings.listRecipeStatus", gone.status)
         }
     }
 
@@ -743,6 +756,19 @@ class Phase2ContractTest {
             api("autoadd-off", "PATCH", "/api/user-preference/$owner/", obj("mealplan_autoadd_shopping" to false), record = false)
         }
 
+        // recipe/{id}/shopping/ also takes `mealplan` (RecipeShoppingEditor) [K].
+        val linked = api("mp-linked", "POST", "/api/meal-plan/", mealPlanOn(recipeRef, 12, dinnerRef), record = false)
+        idOf(linked)?.let { id ->
+            val body = obj("ingredients" to emptyList<Any>(), "servings" to 2, "mealplan" to id)
+            val put = api("recipe-shopping-put-mealplan", "PUT", "/api/recipe/$recipe/shopping/", body)
+            observe("recipeShopping.mealplan.status", put.status)
+            observe("recipeShopping.mealplan.entries", entryCountOfMealPlan(id))
+            observe(
+                "recipeShopping.mealplan.shoppingFlag",
+                objOf(api("mp-linked-get", "GET", "/api/meal-plan/$id/", record = false))?.get("shopping"),
+            )
+        }
+
         // An entry with mealplan_id creates or reuses the meal's list recipe (plan 3.3 (b)).
         if (plainId == null) return
         val first = create(
@@ -792,11 +818,14 @@ class Phase2ContractTest {
         observe("recipeBook.sharedMember.createdBy.type", listed?.get("created_by")?.let { Facts.typeOf(it) })
         val memberEntries = api("member-entries", "GET", "/api/recipe-book-entry/?book=$bookId", token = env.readerToken, record = false)
         observe("recipeBook.sharedMember.entries", objOf(memberEntries)?.longAt("count"))
+        // Another recipe than the one in the book (the same one gives 400 "unique set" before any permission check).
+        val other = (api("flat", "GET", "/api/recipe/flat/", record = false).json as? JsonArray).objects()
+            .mapNotNull { it.longAt("id") }.firstOrNull { it != recipe }
         val memberAdd = api(
             "recipe-book-entry-create-as-shared-member",
             "POST",
             "/api/recipe-book-entry/",
-            obj("book" to bookId, "recipe" to recipe),
+            obj("book" to bookId, "recipe" to (other ?: recipe)),
             token = env.readerToken,
         )
         observe("recipeBook.sharedMember.addEntry", describe(memberAdd))
@@ -1066,9 +1095,7 @@ class Phase2ContractTest {
         const val NO_CONTENT = 204
         const val SMALL_PAUSE_MS = 1100L
         const val MAX_TEXT = 200
-        const val DATE_LENGTH = 10
-        const val OLD_DAYS = 30L
-        const val RECENT_DAYS = 3L
+        const val ARCHIVED_ENTRIES = 3
         const val DEFAULT_AUTO_SYNC = 5
         const val RECIPE = "Potatisgratäng"
         const val STORE = "Testbutiken"
