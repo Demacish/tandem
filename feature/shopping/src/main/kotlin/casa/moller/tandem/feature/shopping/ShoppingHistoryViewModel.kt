@@ -30,10 +30,8 @@ data class ShoppingHistoryUiState(
 
 /** The local shopping history; "Lägg till igen" puts a food back on the list. */
 @HiltViewModel
-class ShoppingHistoryViewModel @Inject constructor(
-    private val shopping: ShoppingRepository,
-    permissions: SpacePermissionsRepository,
-) : ViewModel() {
+class ShoppingHistoryViewModel @Inject constructor(private val shopping: ShoppingRepository, permissions: SpacePermissionsRepository) :
+    ViewModel() {
 
     private val effectChannel = Channel<ShoppingEffect>(Channel.BUFFERED)
 

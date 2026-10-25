@@ -97,8 +97,11 @@ internal fun ShoppingRoute(
         onAction = { action ->
             when (action) {
                 ShoppingAction.OpenStoreMode -> onOpenStoreMode(StoreModeKey(currentState.selectedListId, null))
+
                 ShoppingAction.OpenStoreChoice -> onOpenListChoice()
+
                 ShoppingAction.OpenHistory -> onOpenHistory()
+
                 is ShoppingAction.OpenRecipe -> {
                     viewModel.onAction(ShoppingAction.CloseEdit)
                     onOpenRecipe(action.recipeId)
@@ -107,7 +110,8 @@ internal fun ShoppingRoute(
                 ShoppingAction.Share -> {
                     val title = currentState.lists.firstOrNull { it.id == currentState.selectedListId }?.name
                         ?: resources.getString(R.string.shopping_title)
-                    context.shareText(shareText(title, currentState.grouped.sections, currentState.amountStyle, locale, resources), resources)
+                    val text = shareText(title, currentState.grouped.sections, currentState.amountStyle, locale, resources)
+                    context.shareText(text, resources)
                 }
 
                 else -> viewModel.onAction(action)
@@ -141,9 +145,11 @@ fun StoreModeRoute(key: StoreModeKey, onClose: () -> Unit, modifier: Modifier = 
         onAction = { action ->
             when (action) {
                 StoreModeAction.Close -> onClose()
+
                 StoreModeAction.Share -> {
                     val title = currentState.store?.name ?: resources.getString(R.string.shopping_title)
-                    context.shareText(shareText(title, currentState.sections, currentState.amountStyle, locale, resources), resources)
+                    val text = shareText(title, currentState.sections, currentState.amountStyle, locale, resources)
+                    context.shareText(text, resources)
                 }
 
                 else -> viewModel.onAction(action)

@@ -60,11 +60,7 @@ fun shoppingRowTag(id: Long): String = "shopping:row:$id"
  * @property onLater swipe to the start: "köp senare", or "köp nu" for a delayed entry.
  * @property onEdit long press: the edit sheet.
  */
-internal class RowActions(
-    val onToggle: (() -> Unit)? = null,
-    val onLater: (() -> Unit)? = null,
-    val onEdit: (() -> Unit)? = null,
-)
+internal class RowActions(val onToggle: (() -> Unit)? = null, val onLater: (() -> Unit)? = null, val onEdit: (() -> Unit)? = null)
 
 /**
  * One entry on the list (plan 6.2, 6.6, Stitch ink_pslista_*): check mark, food, recipe label and
@@ -129,8 +125,18 @@ internal fun ShoppingEntryRow(
                         role = Role.Checkbox
                         toggleableState = ToggleableState(entry.checked)
                         customActions = listOfNotNull(
-                            actions.onLater?.let { later -> CustomAccessibilityAction(laterLabel) { later(); true } },
-                            actions.onEdit?.let { edit -> CustomAccessibilityAction(editLabel) { edit(); true } },
+                            actions.onLater?.let { later ->
+                                CustomAccessibilityAction(laterLabel) {
+                                    later()
+                                    true
+                                }
+                            },
+                            actions.onEdit?.let { edit ->
+                                CustomAccessibilityAction(editLabel) {
+                                    edit()
+                                    true
+                                }
+                            },
                         )
                     }
                 }

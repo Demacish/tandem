@@ -36,13 +36,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -127,6 +128,7 @@ fun ShoppingScreen(
     val format = remember(locale, state.amountStyle) { ShoppingFormat(locale, state.amountStyle) }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val wide = maxWidth >= SidePaneMinWidth
+        val showAddButton = !wide && state.canEdit && !state.loading
         Scaffold(
             topBar = {
                 TandemTopAppBar(
@@ -135,7 +137,7 @@ fun ShoppingScreen(
                 )
             },
             floatingActionButton = {
-                if (!wide && state.canEdit && !state.loading && !state.grouped.isEmpty) {
+                if (showAddButton && !state.grouped.isEmpty) {
                     ExtendedFloatingActionButton(
                         text = { Text(stringResource(R.string.shopping_add_fab)) },
                         icon = { Icon(TandemIcons.Add, contentDescription = null) },
@@ -171,7 +173,7 @@ fun ShoppingScreen(
             }
         }
         if (!wide && state.addSheetOpen) {
-            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val sheetState = rememberExpandedSheetState()
             ModalBottomSheet(onDismissRequest = { onAction(ShoppingAction.CloseAdd) }, sheetState = sheetState) {
                 AddItemPanel(
                     state = state.add,
@@ -187,7 +189,7 @@ fun ShoppingScreen(
         }
         val edit = state.edit
         if (edit != null) {
-            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            val sheetState = rememberExpandedSheetState()
             ModalBottomSheet(onDismissRequest = { onAction(ShoppingAction.CloseEdit) }, sheetState = sheetState) {
                 EditEntryPanel(
                     state = edit,
@@ -219,6 +221,14 @@ fun ShoppingScreen(
         }
     }
 }
+
+/** A sheet that opens fully expanded (the field and the first suggestions at once). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberExpandedSheetState() = rememberBottomSheetState(
+    initialValue = SheetValue.Hidden,
+    enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+)
 
 @Composable
 private fun TopBarActions(state: ShoppingUiState, onAction: (ShoppingAction) -> Unit) {
@@ -271,7 +281,13 @@ private fun TopBarActions(state: ShoppingUiState, onAction: (ShoppingAction) -> 
 
 /** The list: notices, (phones) chips and the add field, then aisles, "Köp senare" and "Avbockat". */
 @Composable
-private fun ShoppingList(state: ShoppingUiState, format: ShoppingFormat, onAction: (ShoppingAction) -> Unit, phone: Boolean, modifier: Modifier) {
+private fun ShoppingList(
+    state: ShoppingUiState,
+    format: ShoppingFormat,
+    onAction: (ShoppingAction) -> Unit,
+    phone: Boolean,
+    modifier: Modifier,
+) {
     val spacing = TandemTheme.spacing
     val horizontal = if (phone) spacing.screenHorizontal else spacing.xl
     val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
@@ -283,7 +299,13 @@ private fun ShoppingList(state: ShoppingUiState, format: ShoppingFormat, onActio
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().testTag(SHOPPING_LIST_TAG),
-            contentPadding = PaddingValues(start = horizontal, end = horizontal, top = spacing.sm, bottom = if (phone) 96.dp else spacing.xxl),
+            contentPadding = PaddingValues(
+                start = horizontal,
+                end = horizontal,
+                top = spacing.sm,
+                // Room for the "+ Vara" button on phones.
+                bottom = if (phone) 96.dp else spacing.xxl,
+            ),
             verticalItemSpacing = spacing.md,
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
@@ -322,14 +344,15 @@ private fun ShoppingList(state: ShoppingUiState, format: ShoppingFormat, onActio
             grouped.sections.forEach { section ->
                 item(key = section.key) {
                     val title = section.name ?: other
+                    val checkAll = { onAction(ShoppingAction.CheckSection(section.key)) }
                     AisleCard(
                         section = section,
                         title = title,
-                        onCheckAll = if (state.canEdit && section.entries.size > 1) ({ onAction(ShoppingAction.CheckSection(section.key)) }) else null,
+                        onCheckAll = if (state.canEdit && section.entries.size > 1) checkAll else null,
                         modifier = Modifier.testTag(shoppingSectionTag(section.key)),
                     ) {
                         section.entries.forEach { entry ->
-                            ShoppingEntryRow(entry = entry, format = format, categoryName = title, delayed = false, actions = rowActions(state, entry, onAction))
+                            ShoppingEntryRow(entry, format, title, delayed = false, actions = rowActions(state, entry, onAction))
                         }
                     }
                 }
@@ -371,7 +394,8 @@ private fun ShoppingList(state: ShoppingUiState, format: ShoppingFormat, onActio
                         },
                     ) {
                         grouped.checked.forEach { entry ->
-                            ShoppingEntryRow(entry, format, categoryOf(entry), delayed = false, actions = rowActions(state, entry, onAction))
+                            val actions = rowActions(state, entry, onAction)
+                            ShoppingEntryRow(entry, format, categoryOf(entry), delayed = false, actions = actions)
                         }
                     }
                 }
@@ -381,16 +405,15 @@ private fun ShoppingList(state: ShoppingUiState, format: ShoppingFormat, onActio
 }
 
 /** A row's actions: none for a guest; check, "köp senare" (not for checked rows) and edit otherwise. */
-private fun rowActions(state: ShoppingUiState, entry: ShoppingEntry, onAction: (ShoppingAction) -> Unit): RowActions =
-    if (!state.canEdit) {
-        RowActions()
-    } else {
-        RowActions(
-            onToggle = { onAction(ShoppingAction.ToggleChecked(entry.id)) },
-            onLater = if (entry.checked) null else ({ onAction(ShoppingAction.ToggleLater(entry.id)) }),
-            onEdit = { onAction(ShoppingAction.OpenEdit(entry.id)) },
-        )
-    }
+private fun rowActions(state: ShoppingUiState, entry: ShoppingEntry, onAction: (ShoppingAction) -> Unit): RowActions {
+    if (!state.canEdit) return RowActions()
+    val later = { onAction(ShoppingAction.ToggleLater(entry.id)) }
+    return RowActions(
+        onToggle = { onAction(ShoppingAction.ToggleChecked(entry.id)) },
+        onLater = if (entry.checked) null else later,
+        onEdit = { onAction(ShoppingAction.OpenEdit(entry.id)) },
+    )
+}
 
 /** Named lists ("Alla", "Veckohandling") and the store the list is sorted by. */
 @Composable

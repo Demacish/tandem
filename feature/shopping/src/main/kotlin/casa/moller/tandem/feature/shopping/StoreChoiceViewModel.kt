@@ -23,11 +23,7 @@ import kotlinx.coroutines.launch
  *
  * @property selectedId the store the list is sorted by, null = by category name.
  */
-data class StoreChoiceUiState(
-    val loading: Boolean = true,
-    val stores: List<Supermarket> = emptyList(),
-    val selectedId: Long? = null,
-)
+data class StoreChoiceUiState(val loading: Boolean = true, val stores: List<Supermarket> = emptyList(), val selectedId: Long? = null)
 
 /** One-off effects of [StoreChoiceViewModel]. */
 sealed interface StoreChoiceEffect {

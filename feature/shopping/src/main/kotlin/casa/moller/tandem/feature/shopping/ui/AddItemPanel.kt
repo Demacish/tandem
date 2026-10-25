@@ -103,9 +103,8 @@ internal fun AddItemPanel(
         val chips = if (state.text.isBlank()) state.recent else state.suggestions
         if (chips.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-                SmallHeading(
-                    stringResource(if (state.text.isBlank()) R.string.shopping_add_recent_title else R.string.shopping_add_suggestions_title),
-                )
+                val heading = if (state.text.isBlank()) R.string.shopping_add_recent_title else R.string.shopping_add_suggestions_title
+                SmallHeading(stringResource(heading))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
                     chips.forEach { name ->
                         val description = stringResource(R.string.shopping_add_food_description, name)

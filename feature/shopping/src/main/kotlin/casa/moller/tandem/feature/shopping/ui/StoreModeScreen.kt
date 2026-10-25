@@ -127,12 +127,13 @@ fun StoreModeScreen(
                         AisleHeader(section = section, title = section.name ?: other)
                     }
                     items(section.entries, key = { it.id }) { entry ->
+                        val check = RowActions(onToggle = { onAction(StoreModeAction.Check(entry.id)) })
                         ShoppingEntryRow(
                             entry = entry,
                             format = format,
                             categoryName = section.name ?: other,
                             delayed = false,
-                            actions = if (state.readOnly) RowActions() else RowActions(onToggle = { onAction(StoreModeAction.Check(entry.id)) }),
+                            actions = if (state.readOnly) RowActions() else check,
                             large = true,
                             modifier = Modifier
                                 .widthIn(max = TandemTheme.sizes.maxReadingWidth)
