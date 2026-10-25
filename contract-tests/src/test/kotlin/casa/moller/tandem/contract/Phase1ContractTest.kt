@@ -897,8 +897,8 @@ class Phase1ContractTest {
      * Uploads one PNG and one PDF as user files, attaches them to two steps of a new recipe, reads
      * the detail (recorded as `recipe-step-file.json`, the fixture of `DtoFixturesTest`), checks
      * the preview format and whether the preview and the download need a login, then deletes the
-     * recipe again. Runs after every list fact, so no other fact changes; the scaling table skips
-     * the recipe (no ingredients).
+     * recipe again. Runs after every list fact, so no other fact changes; the scaling table
+     * (`web-scaling/golden.mjs`, `NOT_SCALED`) skips this recording.
      */
     @Test
     @Order(92)

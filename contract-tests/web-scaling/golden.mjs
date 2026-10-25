@@ -246,6 +246,7 @@ function servingsCases(base) {
 
 // --- 4. Build the table -----------------------------------------------------------------------
 
+const NOT_SCALED = new Set(["recipe-step-file.json"]);
 const recipes = [];
 for (const file of fs.readdirSync(recordingsDir).sort()) {
     if (!file.endsWith(".json")) continue;
@@ -254,8 +255,8 @@ for (const file of fs.readdirSync(recordingsDir).sort()) {
     const response = recording.response ?? {};
     if (request.method !== "GET" || !/^\/api\/recipe\/\d+\/$/.test(request.path ?? "") || response.status !== 200) continue;
     const recipe = response.body;
-    // Nothing to scale (e.g. the step-file recipe of Phase1ContractTest.stepWithAFile): not part of the table.
-    if (!(recipe.steps ?? []).some((step) => (step.ingredients ?? []).length > 0)) continue;
+    // Recordings that are not about scaling (Phase1ContractTest.stepWithAFile's step photos).
+    if (NOT_SCALED.has(file)) continue;
     const base = recipe.servings;
     const cases = servingsCases(base).map((servings) => {
         const factor = servings / (base != undefined ? Math.max(base, 1) : 1);
