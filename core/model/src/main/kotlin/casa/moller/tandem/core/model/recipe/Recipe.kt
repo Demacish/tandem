@@ -89,6 +89,9 @@ enum class NutritionPresence {
  * @property showIngredientsTable Tandoor's `show_ingredients_table`: show this step's ingredients
  *   next to its text.
  * @property stepRecipe a recipe used as a sub-recipe in this step (`step_recipe`), if any.
+ * @property imageUrl the step's photo (Tandoor `file.preview`, an absolute URL like the recipe
+ *   image), null when the step has no file or the file is no image. Cook mode shows it under the
+ *   step text (plan 6.2 "Stegbild om den finns").
  */
 data class Step(
     val id: Long,
@@ -100,6 +103,7 @@ data class Step(
     val showAsHeader: Boolean = false,
     val showIngredientsTable: Boolean = true,
     val stepRecipe: StepRecipeRef? = null,
+    val imageUrl: String? = null,
 )
 
 /**

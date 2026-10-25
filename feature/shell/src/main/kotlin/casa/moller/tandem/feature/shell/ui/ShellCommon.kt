@@ -150,7 +150,9 @@ internal fun SettingsRow(
             .fillMaxWidth()
             .heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
             .then(if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier)
-            .semantics { this.selected = selected }
+            // Only a selected row says "selected": on phones (and before a pick) no row has the
+            // property, else TalkBack reads "not selected" on every row (fix-ui, 0.2.0 review).
+            .then(if (selected) Modifier.semantics { this.selected = true } else Modifier)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = spacing.lg, vertical = spacing.md),
         horizontalArrangement = Arrangement.spacedBy(spacing.lg),

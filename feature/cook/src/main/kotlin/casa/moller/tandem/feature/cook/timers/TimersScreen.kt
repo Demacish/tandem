@@ -24,6 +24,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.Timer
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.timer.CookTimer
+import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.timer.TimerActions
@@ -73,14 +74,18 @@ class TimersViewModel @Inject constructor(private val timerController: TimerCont
 /**
  * Every timer of the device as cards (plan 8.1 "Timer-HUD"), ringing ones first; a timer of a
  * recipe opens cook mode at its step. "Rensa klara" removes the finished ones.
+ *
+ * @param activeSource the app's source now (core:model `TimerSource`): a timer started in demo
+ *   mode or for another account still runs here, but does not open that recipe id in this source.
  */
 @Composable
 fun TimersScreen(
     timers: List<CookTimer>,
     onAction: (TimersAction) -> Unit,
     onBack: () -> Unit,
-    onOpenCook: (recipeId: Long, step: Int) -> Unit,
+    onOpenCook: (CookTimer) -> Unit,
     modifier: Modifier = Modifier,
+    activeSource: String? = null,
 ) {
     val now by rememberTimerNow()
     val actions = remember(onAction) {
@@ -130,14 +135,14 @@ fun TimersScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 items(timers.sortedForDisplay(), key = { it.id }) { timer ->
-                    val recipeId = timer.recipeId
-                    val step = timer.stepIndex
+                    val opensCook = timer.recipeId != null && TimerSource.matches(timer, activeSource)
+                    val step = timer.stepIndex?.takeIf { opensCook }
                     TimerCard(
                         timer = timer,
                         now = now,
                         actions = actions,
                         overline = step?.let { stringResource(R.string.cook_step_heading, it + 1) },
-                        onOpen = if (recipeId != null) ({ onOpenCook(recipeId, step ?: 0) }) else null,
+                        onOpen = if (opensCook) ({ onOpenCook(timer) }) else null,
                         modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth),
                     )
                 }

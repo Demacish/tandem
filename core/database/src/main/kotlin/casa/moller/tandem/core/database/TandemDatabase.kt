@@ -86,9 +86,10 @@ abstract class TandemDatabase : RoomDatabase() {
 
     companion object {
         /**
-         * Schema version. 1 = 0.1.0 (frozen); 2 = 0.2.0 adds `cook_log` ([TandemMigrations.MIGRATION_1_2]).
+         * Schema version. 1 = 0.1.0 (frozen); 2 = 0.2.0 adds `cook_log` ([TandemMigrations.MIGRATION_1_2]);
+         * 3 = 0.2.0 adds the step's photo ([TandemMigrations.MIGRATION_2_3]).
          */
-        const val VERSION: Int = 2
+        const val VERSION: Int = 3
 
         /** File name of the real database (the whole database folder is excluded from backup, data_extraction_rules.xml). */
         const val FILE_NAME: String = "tandem.db"

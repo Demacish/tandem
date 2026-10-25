@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.shell.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.CookRoute
 import casa.moller.tandem.feature.cook.TimersRoute
 import casa.moller.tandem.feature.cook.navigation.CookKey
@@ -50,13 +51,19 @@ internal interface ShellFeatures {
 
     // --- Phase 1b (kokläge lane): cook mode and the timer list (feature:cook). ---
 
-    /** Cook mode (full screen on every width). */
+    /**
+     * Cook mode (full screen on every width). [pageRequest] is a step the open cook mode should
+     * turn to (a tapped timer of it), handled once with [onPageRequestHandled].
+     */
     @Composable
-    fun Cook(key: CookKey, onClose: () -> Unit)
+    fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit)
 
-    /** All timers; [onOpenCook] opens cook mode at a timer's recipe and step. */
+    /**
+     * All timers; [onOpenCook] opens cook mode at a timer's recipe and step, offered only for
+     * timers of [activeSource] (core:model `TimerSource`).
+     */
     @Composable
-    fun Timers(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit)
+    fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?)
 }
 
 /** The real feature routes. */
@@ -104,12 +111,12 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Cook(key: CookKey, onClose: () -> Unit) {
-        CookRoute(key = key, onClose = onClose)
+    override fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit) {
+        CookRoute(key = key, onClose = onClose, pageRequest = pageRequest, onPageRequestHandled = onPageRequestHandled)
     }
 
     @Composable
-    override fun Timers(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit) {
-        TimersRoute(onBack = onBack, onOpenCook = onOpenCook)
+    override fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?) {
+        TimersRoute(onBack = onBack, onOpenCook = onOpenCook, activeSource = activeSource)
     }
 }

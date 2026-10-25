@@ -39,5 +39,15 @@ object TandemMigrations {
         }
     }
 
-    val ALL: List<Migration> = listOf(MIGRATION_1_2)
+    /**
+     * 0.2.0 (fix-ui): the step's photo (`step.image_url`, cook mode's "Stegbild om den finns").
+     * Stored steps get NULL; the photo appears when the recipe's detail is fetched again.
+     */
+    val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("ALTER TABLE `step` ADD COLUMN `image_url` TEXT")
+        }
+    }
+
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3)
 }

@@ -288,12 +288,13 @@ sealed interface CookEffect {
     /** A short message (snackbar). */
     data class Message(@StringRes val text: Int) : CookEffect
 
-    /**
-     * Something TalkBack should say without moving focus (no visible message): [text] with
-     * [argument], e.g. "Timer started: Pastan · 10 min".
-     */
-    data class Announce(@StringRes val text: Int, val argument: String) : CookEffect
-
     /** The cook log was saved: say [message] and leave cook mode. */
     data class Finished(@StringRes val message: Int) : CookEffect
 }
+
+/**
+ * Something TalkBack should say without moving focus and without a visible message
+ * ([CookViewModel.announcements]): [text] with [argument], e.g. "Timer started: Pastan · 10 min".
+ * Its own stream, so it never waits behind a snackbar or gets in the way of other effects.
+ */
+data class CookAnnouncement(@StringRes val text: Int, val argument: String)

@@ -5,6 +5,7 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.SyncPause
@@ -46,6 +47,23 @@ data class ShellUiState(
     val syncHeldBack: SyncPause? = null,
     /** Every timer the app follows (running, paused, ringing, finished), for the timer bar on every tab. */
     val timers: List<CookTimer> = emptyList(),
+    // --- fix-ui (0.2.0 review) ---
+    /**
+     * Where the shown recipes come from (core:model `TimerSource`: demo mode or the account's id),
+     * null without one. A timer of another source opens the timer list, never cook mode here.
+     */
+    val timerSource: String? = null,
+    /**
+     * Changes of the shown account that wait in the outbox (cook log, "recently viewed"),
+     * `SyncStatus.pendingChanges`; a logout deletes them, so the logout dialog warns (plan 4.2 p4).
+     * Always 0 in demo mode.
+     */
+    val pendingChanges: Int = 0,
+    /**
+     * The optional features Tandem found on the server (plan 3.6 capability map, §6.2
+     * "Konto/server": kapabiliteter); empty in demo mode and before the first check.
+     */
+    val serverFeatures: Set<ServerFeature> = emptySet(),
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo

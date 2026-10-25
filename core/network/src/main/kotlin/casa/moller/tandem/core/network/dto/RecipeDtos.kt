@@ -189,6 +189,16 @@ data class StepDto(
     val hasBrokenTemplate: Boolean
         get() = instructionsMarkdown.trimStart().startsWith(BROKEN_TEMPLATE_PREFIX)
 
+    /**
+     * The step file's image link (`file.preview`, `UserFileView`): Tandoor fills it only when the
+     * file is an image, else it is "". `file_download` is not used: it is an authenticated download
+     * of any file type, not an image to show. Null without a file.
+     */
+    fun filePreview(): String? = ((file as? JsonObject)?.get("preview") as? JsonPrimitive)
+        ?.takeIf { it.isString }
+        ?.contentOrNull
+        ?.takeIf { it.isNotBlank() }
+
     /** The sub-recipe's name from [stepRecipeData], or null. */
     fun stepRecipeName(): String? = ((stepRecipeData as? JsonObject)?.get("name") as? JsonPrimitive)
         ?.takeIf { it.isString }

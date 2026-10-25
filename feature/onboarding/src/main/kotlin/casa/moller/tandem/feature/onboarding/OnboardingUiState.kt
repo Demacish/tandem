@@ -64,7 +64,9 @@ sealed interface LoginError {
     /**
      * The password login endpoint is gone: Tandoor 2.7 removed `POST /api-token-auth/` (it now
      * answers with a redirect to the web login), or something in front of Tandoor sends it there.
-     * The pasted token still works, so the step points to it.
+     * Tandoor 2.7 still lets apps log in with a password through its new (allauth) login, which
+     * Tandem does not support yet: the text calls it Tandem's limitation, not the server's. The
+     * pasted token still works, so the step points to it.
      */
     data object PasswordLoginUnavailable : LoginError
 

@@ -14,7 +14,10 @@ import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.server.Capabilities
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
+import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.SyncInterval
@@ -25,6 +28,7 @@ import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
+import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.testing.data.FakeServerStatusRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
@@ -537,4 +541,46 @@ class ShellViewModelTest {
     private companion object {
         const val MINUTE = 60_000L
     }
+
+    // --- fix-ui (0.2.0 review) ---
+
+    @Test
+    fun unsentChangesOfTheShownAccountReachTheState() {
+        val vm = newViewModel()
+        syncStatus.value = SyncStatus.Idle.copy(pendingChanges = 3)
+        assertEquals(3, vm.uiState.value.pendingChanges)
+
+        syncStatus.value = SyncStatus.Idle.copy(pendingChanges = 0)
+        assertEquals(0, vm.uiState.value.pendingChanges)
+
+        // Demo mode has no outbox to lose.
+        syncStatus.value = SyncStatus.Idle.copy(pendingChanges = 2)
+        sessions.state.value = Session.Demo
+        assertEquals(0, vm.uiState.value.pendingChanges)
+    }
+
+    @Test
+    fun theTimerSourceIsTheAccountOrDemoMode() {
+        val vm = newViewModel()
+        assertEquals(ACCOUNT.id, vm.uiState.value.timerSource)
+
+        sessions.state.value = Session.Demo
+        assertEquals(TimerSource.DEMO, vm.uiState.value.timerSource)
+
+        sessions.state.value = Session.NoAccount
+        assertNull(vm.uiState.value.timerSource)
+    }
+
+    @Test
+    fun theServersFeaturesAreShownForTheAccountOnly() {
+        val vm = newViewModel()
+        serverStatus.status.value = ServerStatus.Unknown.copy(
+            capabilities = Capabilities("2.6.13", setOf(ServerFeature.COOK_LOG, ServerFeature.HOUSEHOLDS)),
+        )
+        assertEquals(setOf(ServerFeature.COOK_LOG, ServerFeature.HOUSEHOLDS), vm.uiState.value.serverFeatures)
+
+        serverStatus.status.value = ServerStatus.Demo
+        assertEquals(emptySet<ServerFeature>(), vm.uiState.value.serverFeatures)
+    }
 }
+

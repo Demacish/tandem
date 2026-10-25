@@ -16,12 +16,14 @@ import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.model.timer.TimerCapabilities
+import casa.moller.tandem.core.model.timer.TimerSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -135,11 +137,17 @@ class ShellViewModel internal constructor(
     private val serverUpdate = MutableStateFlow<ServerVersionChange?>(null)
 
     // Phase 1b (inställningar lane): the settings rows' summaries and the timer bar on every tab.
+    // fix-ui (0.2.0 review): the server's features for the account card and the outbox count
+    // for the logout dialog.
     private val phase1b = combine(
         settingsRepository.settings,
         timerController.capabilities,
         timerController.timers,
-    ) { settings, capabilities, timers -> Phase1b(settings.toSummary(capabilities), timers) }
+        serverStatus.observeStatus().map { if (it.isDemo) emptySet() else it.capabilities.features }.distinctUntilChanged(),
+        syncRepository.status.map { it.pendingChanges }.distinctUntilChanged(),
+    ) { settings, capabilities, timers, features, pending ->
+        Phase1b(settings.toSummary(capabilities), timers, features, pending)
+    }
 
     val uiState: StateFlow<ShellUiState> = combine(
         combine(session, appearanceRepository.themeMode) { current, theme -> current to theme },
@@ -166,6 +174,9 @@ class ShellViewModel internal constructor(
             // Only for the account that is shown: never in demo mode or while switching.
             syncHeldBack = pause?.takeIf { it in HELD_BACK && mode is ShellMode.Connected },
             timers = extras.timers,
+            timerSource = current.timerSource,
+            pendingChanges = extras.pendingChanges.takeIf { mode is ShellMode.Connected } ?: 0,
+            serverFeatures = extras.serverFeatures.takeIf { mode is ShellMode.Connected }.orEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
@@ -255,7 +266,20 @@ class ShellViewModel internal constructor(
         val resettingDemo: Boolean = false,
     )
 
-    private data class Phase1b(val settings: SettingsSummary, val timers: List<CookTimer>)
+    private data class Phase1b(
+        val settings: SettingsSummary,
+        val timers: List<CookTimer>,
+        val serverFeatures: Set<ServerFeature>,
+        val pendingChanges: Int,
+    )
+
+    /** The source the shown recipes belong to (core:model `TimerSource`). */
+    private val Session?.timerSource: String?
+        get() = when (this) {
+            is Session.LoggedIn -> TimerSource.of(demoMode = false, accountId = account.id)
+            Session.Demo -> TimerSource.of(demoMode = true, accountId = null)
+            else -> null
+        }
 
     /** Logged in to a server that runs a tested version. */
     private val Session?.isTested: Boolean

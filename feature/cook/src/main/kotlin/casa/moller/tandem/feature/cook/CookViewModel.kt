@@ -96,6 +96,11 @@ class CookViewModel @AssistedInject constructor(
     /** One-off events: messages, the notification dialog, leaving after "Klart!". */
     val effects: Flow<CookEffect> = effectChannel.receiveAsFlow()
 
+    private val announcementChannel = Channel<CookAnnouncement>(Channel.BUFFERED)
+
+    /** What TalkBack says without a visible message (a timer started, fix-ui 0.2.0 review). */
+    val announcements: Flow<CookAnnouncement> = announcementChannel.receiveAsFlow()
+
     /** Until the screen reports its locale: the process default (the app's language at start). */
     private val locale = MutableStateFlow(LocaleInfo(Locale.getDefault().toNumberStyle(), Locale.getDefault().toLanguageTag()))
 
@@ -283,7 +288,7 @@ class CookViewModel @AssistedInject constructor(
             val message = when (result) {
                 // TalkBack hears that the timer runs (the new row in the timer bar is not announced).
                 is TimerStartResult.Started -> {
-                    effectChannel.trySend(CookEffect.Announce(R.string.cook_timer_started, pending.label))
+                    announcementChannel.trySend(CookAnnouncement(R.string.cook_timer_started, pending.label))
                     null
                 }
 
@@ -405,6 +410,7 @@ class CookViewModel @AssistedInject constructor(
                 suggestions = timerSuggestions(step.instruction, step.timeMinutes, locale.languageTag),
                 hasBrokenTemplate = step.hasBrokenTemplate,
                 stepRecipeName = step.stepRecipe?.let { it.name ?: "" },
+                imageUrl = step.imageUrl,
             )
         }
     }

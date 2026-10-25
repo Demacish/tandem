@@ -2,9 +2,12 @@ package casa.moller.tandem.feature.shell.navigation
 
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -149,4 +152,83 @@ class ShellNavigationStateTest {
         navigation.openTimer(TimerOpenRequest(recipeId = 2, stepIndex = null))
         assertEquals(listOf<NavKey>(TodayKey, CookKey(2, startStep = 0)), navigation.backStack)
     }
+
+    // --- fix-ui (0.2.0 review): one cook session per recipe, the timer's step, the timer's source ---
+
+    @Test
+    fun aTimerOfTheOpenCookModeTurnsItToTheTimersStep() {
+        navigation.navigate(CookKey(6, servings = 3.0, startStep = 0))
+        navigation.openTimer(TimerOpenRequest(recipeId = 6, stepIndex = 3))
+
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(6, 3.0, 0)), navigation.backStack)
+        assertEquals(CookPageRequest(recipeId = 6, step = 3), navigation.cookPageRequest)
+        navigation.onCookPageRequestHandled(recipeId = 7)
+        assertEquals("another recipe's entry does not clear it", CookPageRequest(6, 3), navigation.cookPageRequest)
+        navigation.onCookPageRequestHandled(recipeId = 6)
+        assertEquals(null, navigation.cookPageRequest)
+    }
+
+    @Test
+    fun aTimerOfACookModeLowerInTheStackReturnsToItInsteadOfASecondSession() {
+        navigation.navigate(CookKey(1))
+        navigation.navigate(CookKey(2, startStep = 1))
+        navigation.openTimer(TimerOpenRequest(recipeId = 1, stepIndex = 2))
+
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(1)), navigation.backStack)
+        assertEquals(CookPageRequest(1, 2), navigation.cookPageRequest)
+    }
+
+    @Test
+    fun theTimerListOnTopOfCookModeGoesAwayWhenItsTimerIsOpened() {
+        navigation.navigate(CookKey(1))
+        navigation.navigate(TimersKey)
+        navigation.openTimerOf(timer(recipeId = 1, stepIndex = 0), activeSource = null)
+
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(1)), navigation.backStack)
+        assertEquals(CookPageRequest(1, 0), navigation.cookPageRequest)
+    }
+
+    @Test
+    fun noKeyIsEverTwiceOnTheStack() {
+        navigation.navigate(CookKey(1))
+        navigation.openTimer(TimerOpenRequest(recipeId = 1, stepIndex = 0))
+        navigation.openTimer(TimerOpenRequest(recipeId = 1, stepIndex = null))
+
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(1)), navigation.backStack)
+        assertEquals(navigation.backStack.size, navigation.backStack.toSet().size)
+    }
+
+    @Test
+    fun cookModeInTodaysStackIsReusedFromAnotherTab() {
+        navigation.navigate(CookKey(4))
+        navigation.selectTab(ShellTab.RECIPES)
+        navigation.navigate(RecipeDetailKey(9))
+        navigation.openTimer(TimerOpenRequest(recipeId = 4, stepIndex = 1))
+
+        assertEquals(ShellTab.TODAY, navigation.currentTab)
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(4)), navigation.backStack)
+    }
+
+    @Test
+    fun aTimerOfAnotherSourceOpensTheTimerListNotThisSourcesRecipe() {
+        // Started on demo recipe 7, opened after logging in to a real account.
+        navigation.openTimer(TimerOpenRequest(recipeId = 7, stepIndex = 0, sourceKey = "demo"), activeSource = "account-1")
+        assertEquals(listOf<NavKey>(TodayKey, TimersKey), navigation.backStack)
+
+        navigation.openTimerOf(timer(recipeId = 7, stepIndex = 0, sourceKey = "demo"), activeSource = "account-1")
+        assertEquals("the list is not stacked twice", listOf<NavKey>(TodayKey, TimersKey), navigation.backStack)
+
+        navigation.openTimer(TimerOpenRequest(recipeId = 7, stepIndex = 0, sourceKey = "account-1"), activeSource = "account-1")
+        assertEquals(listOf<NavKey>(TodayKey, CookKey(7, startStep = 0)), navigation.backStack)
+    }
+
+    private fun timer(recipeId: Long?, stepIndex: Int?, sourceKey: String? = null): CookTimer = CookTimer.start(
+        id = 1,
+        label = "Pasta",
+        duration = 10.minutes,
+        now = Instant.fromEpochSeconds(0),
+        recipeId = recipeId,
+        stepIndex = stepIndex,
+        sourceKey = sourceKey,
+    )
 }

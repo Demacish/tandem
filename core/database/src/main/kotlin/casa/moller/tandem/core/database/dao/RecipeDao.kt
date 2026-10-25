@@ -167,6 +167,17 @@ abstract class RecipeDao {
     )
     abstract suspend fun getIdsWithoutDetail(accountId: String, limit: Int): List<Long>
 
+    /** The step photos of [recipeIds] (fix-ui, 0.2.0: cook mode's step images offline). */
+    @Query(
+        "SELECT DISTINCT image_url FROM step WHERE account_id = :accountId AND image_url IS NOT NULL " +
+            "AND recipe_id IN (:recipeIds)",
+    )
+    abstract suspend fun getStepImageUrls(accountId: String, recipeIds: List<Long>): List<String>
+
+    /** The step photos of every stored recipe ("Ladda ner alla recept", fix-ui 0.2.0). */
+    @Query("SELECT DISTINCT image_url FROM step WHERE account_id = :accountId AND image_url IS NOT NULL")
+    abstract suspend fun getAllStepImageUrls(accountId: String): List<String>
+
     /**
      * Stored details that are older than their recipe (fix-data, 0.2.0 review): the overview's
      * server `updated_at` (from the incremental sync) is later than when the detail was fetched,

@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -52,6 +54,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.AppStatusChip
@@ -249,6 +252,9 @@ internal fun MoreScreen(
     if (confirmLogout && connected != null) {
         LogoutDialog(
             tokenOrigin = connected.account.tokenOrigin,
+            pendingChanges = state.pendingChanges,
+            canSendNow = !state.syncOffline && !state.loginExpired && !state.isSafeMode,
+            onSendFirst = actions::retrySync,
             onConfirm = { revoke ->
                 confirmLogout = false
                 actions.logout(revoke)
@@ -305,6 +311,9 @@ private fun AccountCard(account: AccountSummary, state: ShellUiState, onCheckAga
                 )
                 CompatibilityChip(account.compatibility)
             }
+            if (state.serverFeatures.isNotEmpty()) {
+                ServerFeatures(features = state.serverFeatures)
+            }
             if (account.compatibility.isSafeMode) {
                 Text(
                     text = stringResource(R.string.shell_safe_mode_note),
@@ -342,6 +351,35 @@ private fun AccountCard(account: AccountSummary, state: ShellUiState, onCheckAga
     }
 }
 
+/**
+ * What Tandem found on the server (plan 3.6 capability map, §6.2 "Konto/server" kapabiliteter):
+ * the optional features in plain words, so a missing one (e.g. AI import switched off in the
+ * space) explains a hidden button. Never the API's own names.
+ */
+@Composable
+private fun ServerFeatures(features: Set<ServerFeature>) {
+    val names = ServerFeature.entries.filter { it in features }.map { stringResource(it.label()) }
+    DetailLine(
+        icon = TandemIcons.CheckCircle,
+        label = stringResource(R.string.shell_account_features),
+        value = names.joinToString(", "),
+        maxLines = Int.MAX_VALUE,
+    )
+}
+
+/** A server feature in the user's words. */
+internal fun ServerFeature.label(): Int = when (this) {
+    ServerFeature.RECIPE_INDEX -> R.string.shell_feature_recipe_index
+    ServerFeature.VIEW_LOG -> R.string.shell_feature_view_log
+    ServerFeature.COOK_LOG -> R.string.shell_feature_cook_log
+    ServerFeature.SHARE_LINK -> R.string.shell_feature_share_link
+    ServerFeature.HOUSEHOLDS -> R.string.shell_feature_households
+    ServerFeature.AI_IMPORT -> R.string.shell_feature_ai_import
+    ServerFeature.AUTO_PLAN -> R.string.shell_feature_auto_plan
+    ServerFeature.ICAL -> R.string.shell_feature_ical
+    ServerFeature.INVENTORY -> R.string.shell_feature_inventory
+}
+
 /** First letter of the name on a tomato circle; decorative (the name is next to it). */
 @Composable
 private fun Avatar(name: String, modifier: Modifier = Modifier) {
@@ -362,7 +400,7 @@ private fun Avatar(name: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun DetailLine(icon: ImageVector, label: String, value: String) {
+private fun DetailLine(icon: ImageVector, label: String, value: String, maxLines: Int = 2) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -373,7 +411,7 @@ private fun DetailLine(icon: ImageVector, label: String, value: String) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = value, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(text = value, style = MaterialTheme.typography.bodyLarge, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -422,8 +460,21 @@ internal fun languageLabel(language: AppLanguage): String = stringResource(
     },
 )
 
+/**
+ * "Log out?" (plan 4.2 step 4). With [pendingChanges] waiting in the outbox (cook log entries with
+ * their rating and comment, "recently viewed") it says how many and that logging out deletes them
+ * (fix-ui, 0.2.0 review), and offers "Send first" while a sync could send them ([canSendNow]); the
+ * dialog stays open and the count goes down as they are sent. Logging out stays possible.
+ */
 @Composable
-private fun LogoutDialog(tokenOrigin: TokenOrigin, onConfirm: (revokeToken: Boolean) -> Unit, onDismiss: () -> Unit) {
+private fun LogoutDialog(
+    tokenOrigin: TokenOrigin,
+    pendingChanges: Int,
+    canSendNow: Boolean,
+    onSendFirst: () -> Unit,
+    onConfirm: (revokeToken: Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
     // A token Tandem created: revoked by default (plan 4.2 step 4), only this device's token.
     // A pasted token belongs to the user and may be in use elsewhere: the app never deletes it,
     // so there is no checkbox, only a note.
@@ -436,7 +487,12 @@ private fun LogoutDialog(tokenOrigin: TokenOrigin, onConfirm: (revokeToken: Bool
         title = { Text(stringResource(R.string.shell_logout_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-                Text(stringResource(R.string.shell_logout_body))
+                if (pendingChanges > 0) {
+                    PendingChangesWarning(count = pendingChanges, canSendNow = canSendNow, onSendFirst = onSendFirst)
+                    Text(stringResource(R.string.shell_logout_body_pending))
+                } else {
+                    Text(stringResource(R.string.shell_logout_body))
+                }
                 if (canRevoke) {
                     Row(
                         modifier = Modifier
@@ -477,3 +533,42 @@ private fun LogoutDialog(tokenOrigin: TokenOrigin, onConfirm: (revokeToken: Bool
         },
     )
 }
+
+/** "2 changes have not been sent" with what logging out does to them, and "Send first". */
+@Composable
+private fun PendingChangesWarning(count: Int, canSendNow: Boolean, onSendFirst: () -> Unit) {
+    val spacing = TandemTheme.spacing
+    Surface(
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = Modifier.testTag(LOGOUT_PENDING_TAG),
+    ) {
+        Column(modifier = Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            Row(
+                modifier = Modifier.semantics(mergeDescendants = true) {},
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                Icon(TandemIcons.Warning, contentDescription = null)
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                    Text(
+                        text = pluralStringResource(R.plurals.shell_logout_pending, count, count),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(text = stringResource(R.string.shell_logout_pending_body), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (canSendNow) {
+                TandemPrimaryButton(
+                    text = stringResource(R.string.shell_logout_send_first),
+                    onClick = onSendFirst,
+                    size = TandemButtonSize.Small,
+                    leadingIcon = TandemIcons.Sync,
+                )
+            }
+        }
+    }
+}
+
+/** Test tag of the logout dialog's warning about unsent changes. */
+internal const val LOGOUT_PENDING_TAG = "shell_logout_pending"

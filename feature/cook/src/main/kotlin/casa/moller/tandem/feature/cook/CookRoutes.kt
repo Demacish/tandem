@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import casa.moller.tandem.core.designsystem.theme.TandemDarkTheme
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
+import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.timers.TimersScreen
 import casa.moller.tandem.feature.cook.timers.TimersViewModel
@@ -71,15 +72,16 @@ fun CookRoute(
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onAction(CookAction.NotificationPermissionResult(granted))
     }
+    // No visible message (the timer bar shows the new timer); only TalkBack says it.
+    LaunchedEffect(viewModel, view) {
+        viewModel.announcements.collect { view.announce(resources.getString(it.text, it.argument)) }
+    }
     LaunchedEffect(viewModel, snackbarHostState) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 CookEffect.RequestNotificationPermission -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
 
                 is CookEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
-
-                // No visible message (the timer bar shows the new timer); only TalkBack says it.
-                is CookEffect.Announce -> view.announce(resources.getString(effect.text, effect.argument))
 
                 is CookEffect.Finished -> {
                     // The screen goes away right after, so a toast (announced by TalkBack) instead of a snackbar.
@@ -112,13 +114,21 @@ fun CookRoute(
  * All timers of the device (plan 8.1 "Löpande timers syns i alla skärmar"), from cook mode or a
  * notification of a timer without a recipe.
  *
- * @param onOpenCook opens cook mode at a timer's recipe and step.
+ * @param onOpenCook opens cook mode at the timer's recipe and step.
+ * @param activeSource the app's source now (core:model `TimerSource`); only timers of it open cook mode.
  */
 @Composable
-fun TimersRoute(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit, modifier: Modifier = Modifier) {
+fun TimersRoute(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?, modifier: Modifier = Modifier) {
     val viewModel: TimersViewModel = hiltViewModel()
     val timers by viewModel.timers.collectAsStateWithLifecycle()
-    TimersScreen(timers = timers, onAction = viewModel::onAction, onBack = onBack, onOpenCook = onOpenCook, modifier = modifier)
+    TimersScreen(
+        timers = timers,
+        onAction = viewModel::onAction,
+        onBack = onBack,
+        onOpenCook = onOpenCook,
+        activeSource = activeSource,
+        modifier = modifier,
+    )
 }
 
 /**

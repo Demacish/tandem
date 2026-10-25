@@ -85,6 +85,14 @@ class AppViewModelTest {
     }
 
     @Test
+    fun aTimerRequestKeepsItsSourceAcrossProcessDeath() {
+        sessions.state.value = LOGGED_IN
+        val handle = SavedStateHandle()
+        newViewModel(handle).onOpenTimer(TimerOpenRequest(recipeId = 6, stepIndex = 1, sourceKey = "demo"))
+        assertEquals(TimerOpenRequest(6, 1, "demo"), newViewModel(handle).uiState.value.timerRequest)
+    }
+
+    @Test
     fun aTimerRequestDoesNotOutliveALogout() {
         sessions.state.value = LOGGED_IN
         val vm = newViewModel()

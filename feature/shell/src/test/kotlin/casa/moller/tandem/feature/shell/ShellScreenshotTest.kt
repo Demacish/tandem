@@ -199,6 +199,23 @@ internal fun navigationAt(tab: ShellTab, vararg pages: NavKey): ShellNavigationS
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = PHONE)
 class ShellPhoneScreenshotTest : ShellScreenshotTest("phone") {
+    // --- fix-ui (0.2.0 review): unsent changes at logout, the server's features ---
+
+    @Test
+    fun logoutDialogUnsentChanges() = captureLogoutDialog("logout_dialog_unsent_light", CONNECTED_STATE.copy(pendingChanges = 2))
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun logoutDialogUnsentChangesSwedish() =
+        captureLogoutDialog("logout_dialog_unsent_light_sv", CONNECTED_STATE.copy(pendingChanges = 1))
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun moreServerFeaturesSwedish() = capture("more_features_light_sv", FEATURES_STATE, ShellTab.MORE)
+
+    @Test
+    fun moreServerFeaturesDark() = capture("more_features_dark", FEATURES_STATE, ShellTab.MORE, darkTheme = true)
+
     @Test
     @Config(qualifiers = PHONE_SV)
     fun moreSwedish() = capture("more_light_sv", CONNECTED_STATE, ShellTab.MORE)

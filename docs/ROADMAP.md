@@ -38,6 +38,8 @@ Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, l
 - Böcker, Favoriter och "Vill laga".
 - Skrivskyddat läge för gäster.
 - Byta mellan konton och servrar i appen (ett aktivt konto per enhet).
+- Hushållets namn på kontokortet under Mer (0.2.0 visar server, space, version och serverns
+  funktioner; hushållet kommer med hushållsstödet).
 
 ## Fas 3: Skapa och fånga
 - Skapa och redigera recept i appen, lika komplett som i Tandoors webb: ingredienser med

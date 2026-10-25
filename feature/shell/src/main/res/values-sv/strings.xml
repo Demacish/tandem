@@ -43,6 +43,24 @@
     <!-- Utloggning (plan 4.2 punkt 4). -->
     <string name="shell_logout_title">Logga ut?</string>
     <string name="shell_logout_body">Inloggningen tas bort från den här enheten. Dina recept och övriga data på servern påverkas inte, och du kan logga in igen när du vill.</string>
+    <!-- fix-ui (0.2.0 review) -->
+    <string name="shell_logout_body_pending">Inloggningen tas bort från den här enheten. Dina recept på servern påverkas inte, och du kan logga in igen när du vill.</string>
+    <plurals name="shell_logout_pending">
+        <item quantity="one">%1$d ändring har inte skickats</item>
+        <item quantity="other">%1$d ändringar har inte skickats</item>
+    </plurals>
+    <string name="shell_logout_pending_body">Till exempel poster i kokloggen med betyg och kommentar. Om du loggar ut raderas de från enheten.</string>
+    <string name="shell_logout_send_first">Skicka först</string>
+    <string name="shell_account_features">Funktioner på servern</string>
+    <string name="shell_feature_recipe_index">Snabb receptsynk</string>
+    <string name="shell_feature_view_log">Senast visade</string>
+    <string name="shell_feature_cook_log">Kokloggen</string>
+    <string name="shell_feature_share_link">Delningslänkar</string>
+    <string name="shell_feature_households">Hushåll</string>
+    <string name="shell_feature_ai_import">AI-import</string>
+    <string name="shell_feature_auto_plan">Automatisk matsedel</string>
+    <string name="shell_feature_ical">Matsedel i kalendern</string>
+    <string name="shell_feature_inventory">Skafferi</string>
     <string name="shell_logout_revoke">Återkalla den här enhetens token</string>
     <string name="shell_logout_revoke_body">Bara den token som Tandem skapade för den här enheten raderas på servern. Dina andra enheter förblir inloggade.</string>
     <string name="shell_logout_pasted_token_note">Du loggade in med en token som du klistrade in. Tandem låter den finnas kvar på servern, eftersom andra appar eller enheter kan använda den. Radera den i Tandoor under Inställningar → API om du inte behöver den längre.</string>

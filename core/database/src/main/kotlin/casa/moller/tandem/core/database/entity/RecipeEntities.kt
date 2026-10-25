@@ -118,6 +118,7 @@ data class RecipeDetailEntity(
  * @property stepOrder the server's `order`.
  * @property stepRecipeId `step_recipe`, if the step embeds another recipe.
  * @property stepRecipeName that recipe's name, if sent.
+ * @property imageUrl the step's photo (schema 3, 0.2.0), null without one.
  */
 @Entity(tableName = "step", primaryKeys = ["account_id", "recipe_id", "position"])
 data class StepEntity(
@@ -133,6 +134,7 @@ data class StepEntity(
     @ColumnInfo(name = "show_ingredients_table") val showIngredientsTable: Boolean = true,
     @ColumnInfo(name = "step_recipe_id") val stepRecipeId: Long? = null,
     @ColumnInfo(name = "step_recipe_name") val stepRecipeName: String? = null,
+    @ColumnInfo(name = "image_url") val imageUrl: String? = null,
 )
 
 /**

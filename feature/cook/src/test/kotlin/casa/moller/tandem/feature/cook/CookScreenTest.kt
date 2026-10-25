@@ -37,6 +37,7 @@ import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.ui.COOK_PAGER_TAG
 import casa.moller.tandem.feature.cook.ui.COOK_SIDE_PANE_TAG
 import casa.moller.tandem.feature.cook.ui.COOK_SIDE_TIMERS_TAG
+import casa.moller.tandem.feature.cook.ui.COOK_STEP_IMAGE_TAG
 import casa.moller.tandem.feature.cook.ui.COOK_STEP_OF_TAG
 import casa.moller.tandem.feature.cook.ui.COOK_TABLETOP_CONTROLS_TAG
 import casa.moller.tandem.feature.cook.ui.COOK_TABLETOP_UPPER_TAG
@@ -356,6 +357,12 @@ class CookScreenTest {
         // IconLabel speaks its text as the content description.
         composeRule.onNodeWithContentDescription("Safe mode", substring = true).performScrollTo().assertIsDisplayed()
         assertEquals(0, composeRule.onAllNodesWithContentDescription("The entry is sent to your Tandoor.").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun theStepsPhotoIsShownUnderItsText() {
+        show(CookFakes().withStepImage(), key = CookKey(pasta.id, startStep = 1))
+        composeRule.onNodeWithTag(COOK_STEP_IMAGE_TAG).performScrollTo().assertIsDisplayed()
     }
 
     private companion object {

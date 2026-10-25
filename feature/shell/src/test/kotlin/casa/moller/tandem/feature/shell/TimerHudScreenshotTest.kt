@@ -2,7 +2,9 @@ package casa.moller.tandem.feature.shell
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import androidx.navigation3.runtime.NavKey
@@ -12,6 +14,7 @@ import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.settings.FixedSettingsPages
+import casa.moller.tandem.feature.shell.timer.TIMER_HUD_STATUS_TAG
 import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -53,6 +56,29 @@ abstract class TimerHudScreenshotTest(private val device: String) {
     @Test
     fun recipeDetailRunning() = capture("recipe_detail_timer_running_light", running, ShellTab.TODAY, RecipeDetailKey(103))
 
+    // fix-ui (0.2.0 review): a real label never pushes the time out of the bar.
+    @Test
+    fun longLabelRunningFontScale2() {
+        capture(
+            "today_timer_long_label_font_scale_2_light",
+            CONNECTED_STATE.copy(timers = listOf(LONG_TIMER, SAUCE_TIMER)),
+            ShellTab.TODAY,
+            fontScale = 2f,
+        )
+        composeRule.onNodeWithTag(TIMER_HUD_STATUS_TAG, useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun longLabelRingingFontScale2() {
+        capture(
+            "today_timer_long_label_ringing_font_scale_2_light",
+            CONNECTED_STATE.copy(timers = listOf(LONG_RINGING_TIMER, LONG_TIMER)),
+            ShellTab.TODAY,
+            fontScale = 2f,
+        )
+        composeRule.onNodeWithTag(TIMER_HUD_STATUS_TAG, useUnmergedTree = true).assertIsDisplayed()
+    }
+
     @Test
     fun todayRunningFontScale2() = capture("today_timer_running_font_scale_2_light", ringing, ShellTab.TODAY, fontScale = 2f)
 
@@ -91,6 +117,15 @@ abstract class TimerHudScreenshotTest(private val device: String) {
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = PHONE)
 class TimerHudPhoneScreenshotTest : TimerHudScreenshotTest("phone") {
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun longLabelFontScale2Swedish() = capture(
+        "today_timer_long_label_font_scale_2_light_sv",
+        CONNECTED_STATE.copy(timers = listOf(LONG_TIMER, SAUCE_TIMER)),
+        ShellTab.TODAY,
+        fontScale = 2f,
+    )
+
     @Test
     @Config(qualifiers = PHONE_SV)
     fun todayRunningSwedish() =

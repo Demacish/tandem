@@ -43,8 +43,9 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   receptlistan och receptvyn i förväg redan vid installationen.
 - **Synkproblem syns:** när servern nekar appen en stund eller synken pausar efter många fel
   visas det överst med *Försök igen*.
-- **Tandoor 2.7:** Tandoor 2.7 tar inte längre emot lösenord från appar. Inloggningen säger det
-  nu och visar vägen till *Klistra in token i stället*, i stället för ett obegripligt fel. Appen
+- **Tandoor 2.7:** Tandem stöder ännu inte den nya lösenordsinloggningen i Tandoor 2.7.
+  Inloggningen säger det nu och visar vägen till *Klistra in token i stället*, i stället för ett
+  obegripligt fel. Appen
   är testad mot Tandoor 2.6 och kör en 2.7-server i säkert läge; fullt stöd för 2.7 kommer i en
   senare version.
 - **Release-röktest:** varje version provar nu också kokläget i release-bygget på en
@@ -56,6 +57,13 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   stoppas, "Ringde 18:45" blir kvar, en timer över 24 h stannar i Tandem i klockappsläget, "en
   kvarts liter" blir ingen timer medan "ett dygn" och "30 s" blir det, och *Ladda ner alla
   recept* hämtar om recept som ändrats på servern och når alla bilder.
+- **Granskningsrättelser i kokläget och skalet:** stegbilder visas i kokläget (även offline);
+  ringande timers står alltid synliga bredvid ingredienserna; den vikbara telefonen lägger inget
+  över vecket; alla knappar i kokläget är 64 dp; TalkBack säger varje nytt steg och varje
+  startad timer; varningen om tyst larm säger rätt orsak och öppnar rätt inställning; "Klart!"
+  säger när posten väntar (offline, säkert läge, logga in igen); utloggningen varnar för
+  ändringar som inte har skickats; kontokortet visar serverns funktioner; timerraden kortar
+  aldrig av tiden, och en timer från demoläget öppnar aldrig ett annat kontos recept.
 
 ## [0.1.0] – 2026-10-16
 

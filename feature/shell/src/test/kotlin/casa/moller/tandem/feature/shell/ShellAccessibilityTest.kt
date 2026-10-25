@@ -3,8 +3,13 @@ package casa.moller.tandem.feature.shell
 import android.content.Context
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -15,9 +20,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.testing.accessibility.assertAccessible
 import casa.moller.tandem.core.ui.language.AppLanguage
+import casa.moller.tandem.feature.shell.more.LOGOUT_PENDING_TAG
 import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.BundledLicense
 import casa.moller.tandem.feature.shell.navigation.LanguageKey
@@ -150,6 +157,38 @@ class ShellAccessibilityTest {
 
     @Test
     fun timerBarPausedFontScale2() = check(CONNECTED_STATE.copy(timers = listOf(SAUCE_TIMER)), ShellTab.RECIPES, fontScale = 2f)
+
+    // --- fix-ui (0.2.0 review) ---
+
+    @Test
+    fun timerBarLongLabelFontScale2() =
+        check(CONNECTED_STATE.copy(timers = listOf(LONG_RINGING_TIMER, LONG_TIMER)), ShellTab.TODAY, fontScale = 2f)
+
+    @Test
+    fun logoutDialogWithUnsentChanges() {
+        set(CONNECTED_STATE.copy(pendingChanges = 2), ShellTab.MORE)
+        val logOut = ApplicationProvider.getApplicationContext<Context>().getString(R.string.shell_log_out_of, "tandoor.example.com")
+        composeRule.onNodeWithText(logOut).performScrollTo().performClick()
+        composeRule.onNodeWithTag(LOGOUT_PENDING_TAG).assertExists()
+        composeRule.assertAccessible()
+    }
+
+    @Test
+    fun moreWithServerFeaturesDark() =
+        check(
+            CONNECTED_STATE.copy(serverFeatures = setOf(ServerFeature.COOK_LOG, ServerFeature.AI_IMPORT)),
+            ShellTab.MORE,
+            darkTheme = true,
+        )
+
+    @Test
+    fun phoneSettingsRowsAreNotAnnouncedAsNotSelected() {
+        set(CONNECTED_STATE, ShellTab.MORE)
+        // Navigation bar items are tabs (they may say "selected"); a settings row is a button.
+        val rowWithSelectedState = SemanticsMatcher.keyIsDefined(SemanticsProperties.Selected) and
+            SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+        composeRule.onAllNodes(rowWithSelectedState).assertCountEquals(0)
+    }
 
     @Test
     @Config(qualifiers = TABLET)

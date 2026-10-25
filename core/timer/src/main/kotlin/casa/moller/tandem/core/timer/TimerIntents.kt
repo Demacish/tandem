@@ -29,6 +29,12 @@ object TimerIntents {
     /** [CookTimer.stepIndex] (Int, 0-based); absent when the timer has no step. */
     const val EXTRA_STEP_INDEX: String = "casa.moller.tandem.extra.STEP_INDEX"
 
+    /**
+     * [CookTimer.sourceKey] (String: demo mode or an account id, core:model `TimerSource`);
+     * absent for a timer without one. The app opens cook mode only for the active source.
+     */
+    const val EXTRA_SOURCE_KEY: String = "casa.moller.tandem.extra.SOURCE_KEY"
+
     // Broadcasts to TimerAlarmReceiver (only our own explicit PendingIntents).
     internal const val ACTION_RING = "casa.moller.tandem.timer.RING"
     internal const val ACTION_AUTO_SILENCE = "casa.moller.tandem.timer.AUTO_SILENCE"
@@ -56,6 +62,7 @@ object TimerIntents {
                 putExtra(EXTRA_TIMER_ID, timer.id)
                 timer.recipeId?.let { putExtra(EXTRA_RECIPE_ID, it) }
                 timer.stepIndex?.let { putExtra(EXTRA_STEP_INDEX, it) }
+                timer.sourceKey?.let { putExtra(EXTRA_SOURCE_KEY, it) }
             }
         }
     }

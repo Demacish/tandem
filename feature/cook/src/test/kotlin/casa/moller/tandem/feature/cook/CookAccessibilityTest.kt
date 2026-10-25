@@ -143,15 +143,20 @@ class CookAccessibilityTest {
     @Test
     fun timerList() = check(fakes = timerRinging()) { fakes ->
         val timers by fakes.timers.timers.collectAsState()
-        TimersScreen(timers = timers, onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
+        TimersScreen(timers = timers, onAction = {}, onBack = {}, onOpenCook = {})
     }
 
     @Test
     fun timerListEmptyDark() = check(darkTheme = true) {
-        TimersScreen(timers = emptyList(), onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
+        TimersScreen(timers = emptyList(), onAction = {}, onBack = {}, onOpenCook = {})
     }
 
     // --- fix-ui (0.2.0 review): pinned timers, compact windows, the fold, causes and states. ---
+
+    @Test
+    fun stepWithImage() = check(fakes = CookFakes().withStepImage()) {
+        CookWithFakes(key = CookKey(pasta.id, startStep = 1), fakes = it)
+    }
 
     @Test
     fun alarmChannelOff() = check(

@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
@@ -154,19 +155,90 @@ class CookPhoneScreenshotTest : CookScreenshotTest("phone") {
     @Test
     fun timerList() = capture("timers_light", fakes = CookFakes().withRingingTimer()) { fakes ->
         val timers by fakes.timers.timers.collectAsState()
-        TimersScreen(timers = timers, onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
+        TimersScreen(timers = timers, onAction = {}, onBack = {}, onOpenCook = {})
     }
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun timerListEmptySwedish() = capture("timers_empty_light_sv") {
-        TimersScreen(timers = emptyList(), onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
+        TimersScreen(timers = emptyList(), onAction = {}, onBack = {}, onOpenCook = {})
     }
 
     @Test
     fun foldableTabletop() = capture("tabletop_light", fakes = CookFakes().withTimers()) {
         CookWithFakes(key = CookKey(pasta.id, startStep = 1), fakes = it, layout = CookLayout.TABLETOP)
     }
+
+    // --- fix-ui (0.2.0 review) ---
+
+    /** The step's photo under its text. */
+    @Test
+    fun stepWithImage() = capture("step_image_light", fakes = CookFakes().withStepImage()) {
+        CookWithFakes(key = CookKey(pasta.id, startStep = 1), fakes = it)
+    }
+
+    /** "Föregående" never breaks inside the word. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun stepFontScale2Swedish() = capture("step_font2_light_sv", fontScale = 2f) { CookWithFakes(fakes = it) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun alarmChannelOffSwedish() = capture(
+        "alarm_channel_off_light_sv",
+        fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(alarmChannelEnabled = false))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+        },
+    ) { CookWithFakes(fakes = it) }
+
+    @Test
+    fun notificationsOff() = capture(
+        "notifications_off_light",
+        fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(notificationsAllowed = false))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+        },
+    ) { CookWithFakes(fakes = it) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun doneSafeModeSwedish() = capture(
+        "done_safe_mode_light_sv",
+        fakes = CookFakes().apply { sync.setStatus(SyncStatus.Idle.copy(pause = SyncPause.SAFE_MODE)) },
+    ) { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
+
+    @Test
+    fun recipeGone() = capture("recipe_gone_light", fakes = CookFakes().withoutDetail(TandemError.NotFound)) {
+        CookWithFakes(fakes = it)
+    }
+}
+
+/** A foldable half open on the table, with its fold where the window reports it. */
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = FOLDABLE)
+class CookFoldableScreenshotTest : CookScreenshotTest("foldable") {
+
+    @Test
+    fun tabletopAroundTheFold() = capture("tabletop_fold_light", fakes = CookFakes().withTimers()) {
+        CookWithFakes(key = CookKey(pasta.id, startStep = 1), fakes = it, layout = CookLayout.TABLETOP, fold = FOLDABLE_FOLD)
+    }
+}
+
+/** Split screen: a short phone window with a warning and two timers. */
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = PHONE_SHORT)
+class CookShortPhoneScreenshotTest : CookScreenshotTest("phone_short") {
+
+    @Test
+    fun warningAndTwoTimers() = capture(
+        "step_warning_timers_light",
+        fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(exactAlarmsAllowed = false, exactAlarmsRequestable = true))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+            startTimer(1, "Pastan · 8–10 minuter (10 min)", 10.minutes)
+        },
+    ) { CookWithFakes(fakes = it) }
 }
 
 @RunWith(AndroidJUnit4::class)
@@ -204,6 +276,13 @@ class CookTabletScreenshotTest : CookScreenshotTest("tablet") {
 
     @Test
     fun fontScale2() = capture("step_font2_light", fontScale = 2f, fakes = CookFakes().withTimers()) { CookWithFakes(fakes = it) }
+
+    /** fix-ui: the ringing timer stays in view beside many ingredients. */
+    @Test
+    fun ringingBesideManyIngredients() = capture(
+        "ringing_many_ingredients_light",
+        fakes = CookFakes().withManyIngredients().withRingingTimer(),
+    ) { CookWithFakes(fakes = it) }
 }
 
 @RunWith(AndroidJUnit4::class)
@@ -228,4 +307,11 @@ class CookPhoneLandscapeScreenshotTest : CookScreenshotTest("phone_landscape") {
 
     @Test
     fun twoPanes() = capture("step_light", fakes = CookFakes().withTimers()) { CookWithFakes(fakes = it) }
+
+    /** fix-ui: the ringing timer stays in view beside many ingredients. */
+    @Test
+    fun ringingBesideManyIngredients() = capture(
+        "ringing_many_ingredients_light",
+        fakes = CookFakes().withManyIngredients().withRingingTimer(),
+    ) { CookWithFakes(fakes = it) }
 }

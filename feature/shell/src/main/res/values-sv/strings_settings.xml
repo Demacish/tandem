@@ -41,7 +41,8 @@
     <string name="settings_timer_clock_app_body">Tandem lämnar varje timer till telefonens klockapp och följer den inte längre.</string>
     <string name="settings_timer_no_clock_app">Ingen klockapp som kan ta emot timers hittades på telefonen.</string>
     <string name="settings_timer_alarm_warning_title">Dina timers kanske inte ringer som de ska</string>
-    <string name="settings_timer_alarm_warning_silent">Tandem får inte visa notiser, eller så är larmnotiserna avstängda. En timer ringer då bara medan Tandem är öppen.</string>
+    <string name="settings_timer_alarm_warning_silent">Tandem får inte visa notiser. En färdig timer ringer ändå, men larmet går bara att stänga av i Tandem, inte från låsskärmen.</string>
+    <string name="settings_timer_alarm_warning_channel_off">Larmljudet för timers är avstängt i notisinställningarna. En färdig timer blir tyst.</string>
     <string name="settings_timer_alarm_warning_late">Tandem får inte ställa exakta larm, så Android kan försena en timer några minuter.</string>
     <string name="settings_open_permissions">Kontrollera behörigheter</string>
     <string name="settings_open_appearance">Textstorlek och mörkt kokläge</string>
@@ -145,10 +146,10 @@
     <string name="settings_diagnostics_share_title">Dela Tandems logg</string>
 
     <!-- Timerraden på alla flikar -->
-    <string name="timer_hud_running">%1$s · %2$s</string>
-    <string name="timer_hud_paused">%1$s · pausad vid %2$s</string>
-    <string name="timer_hud_ringing">%1$s · tiden är ute!</string>
-    <string name="timer_hud_more">+%1$d</string>
+    <string name="timer_hud_running">· %1$s</string>
+    <string name="timer_hud_paused">· pausad vid %1$s</string>
+    <string name="timer_hud_ringing">· tiden är ute!</string>
+    <string name="timer_hud_more">Alla (%1$d)</string>
     <string name="timer_hud_show_all">Visa alla %1$d timers</string>
     <string name="timer_hud_open">Öppna kokläget</string>
     <string name="timer_hud_stop">Stopp</string>

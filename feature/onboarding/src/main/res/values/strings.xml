@@ -85,8 +85,8 @@
     <string name="onboarding_error_invalid_token_body">It may be mistyped, expired or deleted. Create a new token in Tandoor under Settings → API.</string>
     <string name="onboarding_error_no_space_title">Your account has no space yet</string>
     <string name="onboarding_error_no_space_body">Log in to Tandoor in the browser once to create or join a space, then try again.</string>
-    <string name="onboarding_error_password_unavailable_title">This server doesn’t accept passwords from apps</string>
-    <string name="onboarding_error_password_unavailable_body">Tandoor 2.7 and later no longer let apps log in with a password. Choose “Paste a token instead” and use an API token from Settings → API in Tandoor.</string>
+    <string name="onboarding_error_password_unavailable_title">Password sign-in to Tandoor 2.7 isn’t supported yet</string>
+    <string name="onboarding_error_password_unavailable_body">Tandem can’t yet sign in with a password on Tandoor 2.7 and later. Choose “Paste a token instead” and use an API token from Settings → API in Tandoor.</string>
     <string name="onboarding_error_storage_title">The login could not be saved</string>
     <string name="onboarding_error_storage_body">Secure storage on this device is not available right now, so Tandem cannot keep you logged in. Restart the phone and try again.</string>
 

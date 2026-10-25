@@ -74,7 +74,13 @@ internal fun CookingSettingsScreen(
         val capabilities = state.capabilities
         if (state.timerMode == TimerMode.IN_APP && (capabilities.alarmMayBeSilent || capabilities.alarmMayBeLate)) {
             val reasons = buildList {
-                if (capabilities.alarmMayBeSilent) add(stringResource(R.string.settings_timer_alarm_warning_silent))
+                // By cause, as core:timer behaves (fix-ui, 0.2.0 review): without notifications the
+                // alarm still rings but can only be stopped in Tandem; a switched-off alarm channel
+                // makes a finished timer silent.
+                when {
+                    !capabilities.notificationsAllowed -> add(stringResource(R.string.settings_timer_alarm_warning_silent))
+                    !capabilities.alarmChannelEnabled -> add(stringResource(R.string.settings_timer_alarm_warning_channel_off))
+                }
                 if (capabilities.alarmMayBeLate) add(stringResource(R.string.settings_timer_alarm_warning_late))
             }
             CalloutCard(

@@ -125,7 +125,7 @@ internal fun RecipeDto.toRecipe(images: ImageResolver): Recipe? {
         rating = rating,
         lastCooked = tandoorInstant(lastCooked),
         keywords = keywords.mapNotNull { it.toKeyword() },
-        steps = steps.mapIndexed { index, step -> step.toStep(index) },
+        steps = steps.mapIndexed { index, step -> step.toStep(index, images) },
         sourceUrl = sourceUrl?.takeIf { it.isNotBlank() },
         isPrivate = isPrivate,
         showIngredientOverview = showIngredientOverview,
@@ -143,7 +143,7 @@ private fun RecipeDto.nutritionPresence(): NutritionPresence = when {
     else -> NutritionPresence.NONE
 }
 
-private fun StepDto.toStep(index: Int): Step = Step(
+private fun StepDto.toStep(index: Int, images: ImageResolver): Step = Step(
     id = id ?: -(index + 1L),
     name = name,
     instruction = instruction,
@@ -153,6 +153,7 @@ private fun StepDto.toStep(index: Int): Step = Step(
     showAsHeader = showAsHeader,
     showIngredientsTable = showIngredientsTable,
     stepRecipe = stepRecipe?.let { StepRecipeRef(recipeId = it, name = stepRecipeName()) },
+    imageUrl = images.resolve(filePreview()),
 )
 
 private fun IngredientDto.toIngredient(position: Int): Ingredient = Ingredient(

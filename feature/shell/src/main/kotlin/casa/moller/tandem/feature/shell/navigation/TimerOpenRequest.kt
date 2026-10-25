@@ -7,8 +7,10 @@ package casa.moller.tandem.feature.shell.navigation
  *
  * @property recipeId the timer's recipe, or null for a timer without one (the timer list opens).
  * @property stepIndex the 0-based step the timer belongs to, or null.
+ * @property sourceKey where [recipeId] belongs (core:model `TimerSource`: demo mode or an account
+ *   id), null when unknown; a timer of another source opens the timer list instead of cook mode.
  */
-data class TimerOpenRequest(val recipeId: Long?, val stepIndex: Int?) {
+data class TimerOpenRequest(val recipeId: Long?, val stepIndex: Int?, val sourceKey: String? = null) {
     init {
         require(recipeId == null || recipeId > 0) { "recipeId must be positive" }
         require(stepIndex == null || stepIndex >= 0) { "stepIndex must not be negative" }

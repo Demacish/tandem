@@ -14,6 +14,7 @@ import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
+import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.model.timer.TimerSuggestion
 import casa.moller.tandem.core.model.timer.TimerSuggestionSource
@@ -490,4 +491,82 @@ class CookViewModelTest {
             source = TimerSuggestionSource.STEP_TIME,
         )
     }
+
+    // --- fix-ui (0.2.0 review) ---
+
+    @Test
+    fun durationsAreFoundInTheVisibleTextNotInTheMarkdown() = runTest(mainDispatcher.dispatcher) {
+        repository.details.value = repository.details.value + (
+            pasta.id to pasta.copy(
+                steps = listOf(
+                    pasta.steps[0].copy(instruction = "Koka **10** minuter.", timeMinutes = 0),
+                    pasta.steps[1].copy(instruction = "Koka i 10\nminuter.", timeMinutes = 0),
+                ),
+            )
+        )
+        val steps = viewModel().uiState.value.steps
+
+        // "**10** min": no unit right after the number in the source, but on screen there is.
+        assertEquals(listOf(10.minutes), steps[0].suggestions.map { it.duration })
+        // A soft line break inside the duration: found, and the label has no line break.
+        val acrossTheBreak = steps[1].suggestions.single()
+        assertEquals(10.minutes, acrossTheBreak.duration)
+        assertFalse(acrossTheBreak.label, acrossTheBreak.label.contains('\n'))
+    }
+
+    @Test
+    fun theStepsPhotoReachesCookMode() = runTest(mainDispatcher.dispatcher) {
+        val photo = "https://example.com/media/step.jpg"
+        repository.details.value = repository.details.value + (
+            pasta.id to pasta.copy(steps = pasta.steps.mapIndexed { i, step -> if (i == 1) step.copy(imageUrl = photo) else step })
+        )
+        assertEquals(listOf(null, photo, null), viewModel().uiState.value.steps.map { it.imageUrl })
+    }
+
+    @Test
+    fun doneSaysTheEntryWaitsWhileTheSyncIsHeldBack() = runTest(mainDispatcher.dispatcher) {
+        val cases = mapOf(
+            SyncPause.SAFE_MODE to CookLogSendState.SAFE_MODE,
+            SyncPause.UNAUTHORIZED to CookLogSendState.NEEDS_LOGIN,
+            SyncPause.BLOCKED to CookLogSendState.HELD,
+            SyncPause.CIRCUIT_BREAKER to CookLogSendState.HELD,
+            SyncPause.OFFLINE to CookLogSendState.OFFLINE,
+        )
+        cases.forEach { (pause, expected) ->
+            sync.setStatus(SyncStatus.Idle.copy(pause = pause))
+            assertEquals(pause.name, expected, viewModel().uiState.value.sendState)
+        }
+
+        sync.setStatus(SyncStatus.Idle.copy(pause = SyncPause.SAFE_MODE))
+        val viewModel = viewModel()
+        viewModel.effects.test {
+            viewModel.onAction(CookAction.SaveCookLog)
+            runCurrent()
+            assertEquals(CookEffect.Finished(R.string.cook_done_saved_later), awaitItem())
+        }
+    }
+
+    @Test
+    fun aStartedTimerIsAnnouncedAndKnowsItsSource() = runTest(mainDispatcher.dispatcher) {
+        settings.state.value = AppSettings.Default.copy(activeAccountId = "account-1")
+        val viewModel = viewModel()
+
+        viewModel.announcements.test {
+            viewModel.onAction(CookAction.StartTimer(0, viewModel.uiState.value.steps[0].suggestions.single()))
+            runCurrent()
+            assertEquals(R.string.cook_timer_started, awaitItem().text)
+        }
+        assertEquals("account-1", timers.timers.value.single().sourceKey)
+    }
+
+    @Test
+    fun aDemoTimerBelongsToTheDemo() = runTest(mainDispatcher.dispatcher) {
+        settings.state.value = AppSettings.Default.copy(demoMode = true, activeAccountId = "account-1")
+        val viewModel = viewModel()
+
+        viewModel.onAction(CookAction.StartTimer(0, viewModel.uiState.value.steps[0].suggestions.single()))
+        runCurrent()
+        assertEquals(TimerSource.DEMO, timers.timers.value.single().sourceKey)
+    }
 }
+

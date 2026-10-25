@@ -12,8 +12,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Ingredient
+import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.testing.data.FakeCookLogRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
@@ -85,6 +87,22 @@ class CookFakes(
             steps = pasta.steps.mapIndexed { index, step -> if (index == 0) step.copy(ingredients = step.ingredients + extra) else step },
         )
         recipes.details.value = recipes.details.value + (pasta.id to busy)
+    }
+
+    /** The pasta's second step with a photo (Tandoor `Step.file`, drawn under the text). */
+    fun withStepImage(): CookFakes = apply {
+        val pasta = SampleRecipes.MushroomPasta
+        val withPhoto = pasta.copy(
+            steps = pasta.steps.mapIndexed { index, step -> if (index == 1) step.copy(imageUrl = "https://example.com/media/pasta.jpg") else step },
+        )
+        recipes.details.value = recipes.details.value + (pasta.id to withPhoto)
+    }
+
+    /** No stored detail, and fetching it fails with [error] (deleted, offline, refused login...). */
+    fun withoutDetail(error: TandemError): CookFakes = apply {
+        val id = SampleRecipes.MushroomPasta.id
+        recipes.details.value = recipes.details.value - id
+        recipes.detailOverrides.value = mapOf(id to RecipeDetailState(recipeId = id, error = error))
     }
 
     /** One timer ringing (the mushrooms, step 1) and one running (the pasta, step 2). */

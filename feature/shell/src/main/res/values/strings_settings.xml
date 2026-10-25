@@ -44,7 +44,8 @@
     <string name="settings_timer_clock_app_body">Tandem hands each timer to your phone’s clock app and does not follow it any further.</string>
     <string name="settings_timer_no_clock_app">No clock app that can take timers was found on this phone.</string>
     <string name="settings_timer_alarm_warning_title">Your timers may not ring as they should</string>
-    <string name="settings_timer_alarm_warning_silent">Tandem is not allowed to show notifications, or the alarm notifications are turned off. A timer then only rings while Tandem is open.</string>
+    <string name="settings_timer_alarm_warning_silent">Tandem is not allowed to show notifications. A finished timer still rings, but you can only stop the alarm in Tandem, not from the lock screen.</string>
+    <string name="settings_timer_alarm_warning_channel_off">The alarm sound for timers is turned off in the notification settings. A finished timer stays silent.</string>
     <string name="settings_timer_alarm_warning_late">Tandem may not set exact alarms, so Android can delay a timer by a few minutes.</string>
     <string name="settings_open_permissions">Check permissions</string>
     <string name="settings_open_appearance">Text size and dark cook mode</string>
@@ -148,10 +149,10 @@
     <string name="settings_diagnostics_share_title">Share the Tandem log</string>
 
     <!-- The timer bar on every tab -->
-    <string name="timer_hud_running">%1$s · %2$s</string>
-    <string name="timer_hud_paused">%1$s · paused at %2$s</string>
-    <string name="timer_hud_ringing">%1$s · time is up!</string>
-    <string name="timer_hud_more">+%1$d</string>
+    <string name="timer_hud_running">· %1$s</string>
+    <string name="timer_hud_paused">· paused at %1$s</string>
+    <string name="timer_hud_ringing">· time is up!</string>
+    <string name="timer_hud_more">All (%1$d)</string>
     <string name="timer_hud_show_all">Show all %1$d timers</string>
     <string name="timer_hud_open">Open cook mode</string>
     <string name="timer_hud_stop">Stop</string>

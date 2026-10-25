@@ -43,6 +43,18 @@ class TimerLaunchTest {
     }
 
     @Test
+    fun theTimersSourceComesAlong() {
+        // fix-ui (0.2.0 review): demo mode or the account, so the shell never opens another source's recipe.
+        val intent = Intent(TimerIntents.ACTION_OPEN_TIMER)
+            .putExtra(TimerIntents.EXTRA_RECIPE_ID, 6L)
+            .putExtra(TimerIntents.EXTRA_SOURCE_KEY, "demo")
+        assertEquals(TimerOpenRequest(recipeId = 6, stepIndex = null, sourceKey = "demo"), TimerLaunch.requestFrom(intent))
+        // Without a recipe the source does not matter; a blank one is no source.
+        assertEquals(TimerOpenRequest(null, null), TimerLaunch.requestOf(recipeId = null, stepIndex = null, sourceKey = "demo"))
+        assertEquals(TimerOpenRequest(6, null), TimerLaunch.requestOf(recipeId = 6, stepIndex = null, sourceKey = " "))
+    }
+
+    @Test
     fun aTimerWithoutARecipeOpensTheTimerList() {
         val intent = Intent(TimerIntents.ACTION_OPEN_TIMER).putExtra(TimerIntents.EXTRA_TIMER_ID, 7L)
         assertEquals(TimerOpenRequest(recipeId = null, stepIndex = null), TimerLaunch.requestFrom(intent))

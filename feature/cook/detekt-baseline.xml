@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues/>
-  <CurrentIssues>
-    <ID>ContentSlotReused:CookRoutes.kt:content: @Composable () -&gt; Unit</ID>
-    <ID>ForEachOnRange:CookDonePage.kt:1..MAX_STARS</ID>
-    <ID>LambdaParameterInRestartableEffect:CookTestSupport.kt:onClose: () -&gt; Unit = {}</ID>
-  </CurrentIssues>
-</SmellBaseline>

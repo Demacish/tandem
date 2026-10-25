@@ -155,6 +155,7 @@ fun StepEntity.toModel(ingredients: List<Ingredient>): Step = Step(
     showAsHeader = showAsHeader,
     showIngredientsTable = showIngredientsTable,
     stepRecipe = stepRecipeId?.let { StepRecipeRef(recipeId = it, name = stepRecipeName) },
+    imageUrl = imageUrl,
 )
 
 fun IngredientEntity.toModel(): Ingredient = Ingredient(
@@ -301,6 +302,7 @@ fun Recipe.toDetailWrite(accountId: String, rawJson: String, fetchedAtEpochMilli
             showIngredientsTable = step.showIngredientsTable,
             stepRecipeId = step.stepRecipe?.recipeId,
             stepRecipeName = step.stepRecipe?.name,
+            imageUrl = step.imageUrl,
         )
     }
     val ingredientRows = orderedSteps.flatMapIndexed { stepPosition, step ->

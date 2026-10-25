@@ -538,6 +538,33 @@ Kokläget (plan 6.2 "Kokläge", 6.5, 8.1, funktion #6–#8). `CookRoute(key, onC
   pil höger/vänster, Page Down/Up och mellanslag (Skift+mellanslag bakåt), via en `focusTarget`
   utan semantik. Alla tryckytor i kokläget är minst 64 dp. Volymknapparna som bläddrare (plan 8.1
   "Handsfree") är inte med.
+- **Rättelser från 0.2.0-granskningen (fix-ui):**
+  - *Två paneler:* sidopanelen delas i en rullande övre del (portioner, ingredienser) och en fast
+    nedre del med timers (ringande först, högst 60 % av panelen, rullar inuti) och varningar, så
+    "Stopp" och "+1 min" alltid syns. Kortare paneler än 560 dp (telefon liggande) visar timerna
+    som rader.
+  - *Bordsläge:* det vågräta gångjärnet läses från `windowPosture.hingeList` (fönsterpixlar) och
+    räknas om till kolumnens läge (`onGloballyPositioned`), så övre delen (rubrik och steg) slutar
+    vid gångjärnets överkant och knapparna börjar under det (`tabletopSplit`). Utan gångjärn delas
+    skärmen jämnt. `CookScreen(fold = …)` låter testerna ge ett eget gångjärn.
+  - *Korta fönster (delad skärm):* varningar och timerraden delar ett område på högst 40 % (33 %
+    under 480 dp) som rullar inuti, så steget behåller plats och Föregående/Nästa mäts alltid i
+    full höjd; under 480 dp blir varningarna en rad. Vid teckenskala 1,5+ i en smal panel staplas
+    Föregående/Nästa utan ikoner.
+  - *Fönsterflaggor:* skärm-på och ljusa systemikoner räknas per fönster (`CookWindowState`), så
+    när ett kokläge ersätter ett annat (Navigation 3 håller kvar det gamla under övergången)
+    stänger det gamla inte av dem för det nya. "Kokläge alltid mörkt" har ett enda anrop av
+    innehållet (`TandemDarkTheme`), så inställningen byter färger utan att kasta tillståndet.
+  - *Tyst larm efter orsak:* utan notiser ringer larmet ändå (tjänsten spelar ljudet) men kan
+    bara stoppas i Tandem → appens notisinställningar; avstängd larmkanal → en färdig timer blir
+    tyst → kanalens egen sida (`ACTION_CHANNEL_NOTIFICATION_SETTINGS`, `timer_alarm`).
+  - *TalkBack:* "Steg 3 av 6: <namn>" är en artig live-region, en startad timer läses upp
+    (`CookEffect.Announce`), paus/fortsätt är samma knapp så fokus stannar.
+  - *Tidsdetektering* läser den synliga texten (`stepPlainText`, utan Markdown-tecken, radbrytningar
+    som mellanslag), så "Koka **10** minuter" hittas och etiketter aldrig får radbrytningar.
+  - *"Klart!"* visar var posten tar vägen efter synkens paus (`CookLogSendState`: nu, offline,
+    säkert läge, logga in igen, synken pausar) och felsidan skiljer offline, borttaget recept,
+    nekad inloggning och övriga fel.
 - **"Klart!" (Stitch kokl_ge_klart, utan snabbintryck och "Dela bild", som Tandoor saknar):**
   portioner (hela, `servingsOf`, ändringsbara), 1–5 stjärnor (radiogrupp, samma stjärna igen tar
   bort betyget), kommentar och "Spara i kokloggen" → `CookLogRepository.logCooked` med
@@ -552,8 +579,17 @@ Kokläget (plan 6.2 "Kokläge", 6.5, 8.1, funktion #6–#8). `CookRoute(key, onC
   `ShellFeatures.Cook/Timers`, `entry<CookKey>` och `entry<TimersKey>` på den flik kokläget
   öppnades från (`CookKey` döljer navigeringen på alla bredder).
 - **Från en timer:** notisen, larmet och timerraden i skalet öppnar kokläget vid timerns steg
-  (se "Öppna appen från en timer" under Timers). Stegbilder visas inte: Tandoors `Step.file`
-  finns inte i `core:model`/databasen än.
+  (se "Öppna appen från en timer" under Timers). Är kokläget för samma recept redan öppet
+  (var som helst i den visade stacken) visas det i stället för ett nytt, och det bläddrar till
+  timerns steg (`ShellNavigationState.openCook` + `CookPageRequest`); portioner och "Klart!"
+  behålls. En timer från en annan källa (demoläget eller ett annat konto, `CookTimer.sourceKey`
+  / `TimerSource`) öppnar timerlistan, aldrig samma recept-id i den aktiva källan.
+- **Stegbilder** (fix-ui, 0.2.0): Tandoors `Step.file.preview` (bara satt för bilder;
+  `file_download` är en inloggad nedladdning av vilken fil som helst och används inte) blir
+  `Step.imageUrl` → kolumnen `step.image_url` (Room-schema 3, `MIGRATION_2_3`) → `StepDisplay` →
+  `CookStep`, och ritas under stegtexten. Synken hämtar stegbilderna för samma recept som
+  receptbilderna (fästa, planerade, senast visade; alla med "Ladda ner alla recept"). Steg som
+  sparades före schema 3 får sin bild när receptet hämtas på nytt.
 - **"Inte nu"** på notisfrågan sparas i `SavedStateHandle` (frågan kommer inte igen i samma
   kokläge, även efter rotation) och visar varningen "Notiser är avstängda" medan en timer går.
 - **Tester:** `CookViewModelTest` (sidor, portioner i ingredienser och mallar, sparat val, förslag,
@@ -766,8 +802,14 @@ datadelen i `:core:datastore` och `:core:sync`.
   raderna Synk och lagring, Utseende, Kokläge och timers, Behörigheter och Språk med en kort
   sammanfattning var (`ShellUiState.settings`, `SettingsSummary`: `ShellViewModel` läser
   `SettingsRepository` och `TimerController.capabilities`), och Diagnostik och Om Tandem. Temat
-  ligger inte längre direkt under Mer utan under Utseende. Hushållets namn visas inte (kontot
-  sparar bara space-namnet; namnet kräver ett nytt anrop).
+  ligger inte längre direkt under Mer utan under Utseende. Kontokortet visar också *Funktioner på
+  servern* (`ShellUiState.serverFeatures` från `ServerStatus.capabilities`, med egna namn, aldrig
+  API-namnen; fix-ui). Hushållets namn visas inte än (kontot sparar bara space-namnet; namnet
+  kräver `/api/user-space/` i `core:network`), se ROADMAP. **Logga ut** med ändringar i outboxen
+  (`ShellUiState.pendingChanges` = `SyncStatus.pendingChanges`) säger "N ändringar har inte
+  skickats" och att utloggningen raderar dem (plan 4.2 p4), med "Skicka först" (`retrySync`)
+  när en synk kan skicka dem; utloggningen är fortfarande möjlig. Bara en vald rad har
+  `selected` i semantiken (annars läser TalkBack "inte vald" på varje rad).
 - **Undersidorna** (`settings/`): tillståndslösa `XScreen(state, onAction)` och en
   `SettingsViewModel` per navigeringspost (`hiltViewModel()`, varje sida samlar bara sitt eget
   `StateFlow`, `WhileSubscribed`). Varje ändring sparas direkt; ett misslyckat skrivande ger en
@@ -837,10 +879,12 @@ datadelen i `:core:datastore` och `:core:sync`.
   löper, är pausad eller ringer visar skalet en smal rad under flikinnehållet (ovanför
   bottenraden, eller ovanför systemets navigeringsfält när bottenraden är dold). Den visar den
   mest brådskande timern (en som ringer, annars den äldsta, `core:ui`s `sortedForDisplay`) med
-  namn och nedräkning (`rememberTimerNow`, `formatRemaining`), "+2" för de andra (öppnar
-  `TimersKey`) och "Stopp" när den ringer (`ShellActions.stopTimer` → `TimerController.stopRinging`).
-  Ett tryck öppnar kokläget vid timerns recept och steg (`CookKey(recipeId, startStep =
-  stepIndex)`), en timer utan recept öppnar timerlistan. Raden visas inte i kokläget eller i
+  namn och nedräkning (`rememberTimerNow`, `formatRemaining`; namnet kortas, tiden aldrig, med
+  tabellsiffror), "Alla (3)" för timerlistan (`TimersKey`, inte medan timern ringer, så inget
+  liknar larmets "+1 min") och "Stopp" när den ringer (`ShellActions.stopTimer` →
+  `TimerController.stopRinging`). Ett tryck öppnar kokläget vid timerns recept och steg
+  (`ShellNavigationState.openTimerOf` → `openCook`: ett redan öppet kokläge för receptet återanvänds
+  och bläddrar dit), en timer utan recept eller från en annan källa öppnar timerlistan. Raden visas inte i kokläget eller i
   timerlistan, som visar timers själva. Timers kommer från `ShellUiState.timers`
   (`TimerController.timers` via `ShellViewModel`). TalkBack läser timern som en knapp
   (`timerDescription`), inte nedräkningen varje sekund. Tester fryser klockan (`FrozenTimers`:

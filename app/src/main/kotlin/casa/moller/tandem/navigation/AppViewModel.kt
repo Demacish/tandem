@@ -110,8 +110,10 @@ class AppViewModel @Inject constructor(
     ) { hold, atServer, serverUrl, logInAgain -> IntroFlags(hold, atServer, serverUrl, logInAgain) }
 
     /** [TimerOpenRequest] as `[recipeId or -1, stepIndex or -1]` (Bundle-friendly). */
-    private val timerRequest: Flow<TimerOpenRequest?> =
-        savedStateHandle.getStateFlow<LongArray?>(KEY_TIMER_REQUEST, null).map { it?.toTimerRequest() }
+    private val timerRequest: Flow<TimerOpenRequest?> = combine(
+        savedStateHandle.getStateFlow<LongArray?>(KEY_TIMER_REQUEST, null),
+        savedStateHandle.getStateFlow<String?>(KEY_TIMER_REQUEST_SOURCE, null),
+    ) { ids, source -> ids?.toTimerRequest()?.copy(sourceKey = source) }
 
     val uiState: StateFlow<AppUiState> = combine(
         session,
@@ -215,12 +217,15 @@ class AppViewModel @Inject constructor(
      * step, or the timer list, as soon as it is shown ([onTimerRequestHandled]).
      */
     fun onOpenTimer(request: TimerOpenRequest) {
+        // The source first: the request is complete when the ids arrive.
+        savedStateHandle[KEY_TIMER_REQUEST_SOURCE] = request.sourceKey
         savedStateHandle[KEY_TIMER_REQUEST] = longArrayOf(request.recipeId ?: NONE, request.stepIndex?.toLong() ?: NONE)
     }
 
     /** The shell opened [AppUiState.timerRequest]. */
     fun onTimerRequestHandled() {
         savedStateHandle[KEY_TIMER_REQUEST] = null
+        savedStateHandle[KEY_TIMER_REQUEST_SOURCE] = null
     }
 
     /** "Log in again" on the recovery screen. */
@@ -239,6 +244,7 @@ class AppViewModel @Inject constructor(
         const val KEY_SERVER_URL = "app.onboardingServerUrl"
         const val KEY_LOG_IN_AGAIN = "app.logInAgain"
         const val KEY_TIMER_REQUEST = "app.timerRequest"
+        const val KEY_TIMER_REQUEST_SOURCE = "app.timerRequestSource"
         private const val NONE = -1L
 
         private fun LongArray.toTimerRequest(): TimerOpenRequest? {

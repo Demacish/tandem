@@ -42,6 +42,7 @@ data class RecipeDisplayModel(
  * @property showAsHeader Tandoor's `show_as_header`.
  * @property showIngredientsTable Tandoor's `show_ingredients_table`: show [ingredients] with the step.
  * @property stepRecipe a sub-recipe used in this step, if any.
+ * @property imageUrl the step's photo, if any (core:model `Step.imageUrl`).
  */
 data class StepDisplay(
     val id: Long,
@@ -54,6 +55,7 @@ data class StepDisplay(
     val showAsHeader: Boolean,
     val showIngredientsTable: Boolean,
     val stepRecipe: StepRecipeRef?,
+    val imageUrl: String? = null,
 )
 
 /** The one call the recipe UI makes: [build]. */
@@ -81,6 +83,7 @@ object RecipeDisplay {
                 showAsHeader = step.showAsHeader,
                 showIngredientsTable = step.showIngredientsTable,
                 stepRecipe = step.stepRecipe,
+                imageUrl = step.imageUrl,
             )
         }
         return RecipeDisplayModel(

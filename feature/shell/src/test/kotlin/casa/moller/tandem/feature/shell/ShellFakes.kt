@@ -14,6 +14,7 @@ import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.testing.time.TestClock
@@ -54,6 +55,11 @@ internal val CONNECTED_STATE = ShellUiState(
 )
 
 internal val DEMO_STATE = CONNECTED_STATE.copy(mode = ShellMode.Demo)
+
+/** The account card with what Tandem found on the server (fix-ui, 0.2.0 review). */
+internal val FEATURES_STATE = CONNECTED_STATE.copy(
+    serverFeatures = setOf(ServerFeature.RECIPE_INDEX, ServerFeature.VIEW_LOG, ServerFeature.COOK_LOG, ServerFeature.HOUSEHOLDS),
+)
 
 /** Logged in with a token the user pasted (it is never revoked by the app). */
 internal val PASTED_STATE = CONNECTED_STATE.copy(
@@ -194,14 +200,16 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     }
 
     @Composable
-    override fun Cook(key: CookKey, onClose: () -> Unit) {
+    override fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit) {
         ShellScreenScaffold(title = "Cook ${key.recipeId}", state = state, onNavigateBack = onClose) { padding ->
-            Text(text = "Cook mode ${key.recipeId}", modifier = Modifier.padding(padding))
+            // The step a tapped timer asked for stays visible, so tests can see it arrived.
+            val page = pageRequest?.let { " at step ${it + 1}" }.orEmpty()
+            Text(text = "Cook mode ${key.recipeId}$page", modifier = Modifier.padding(padding))
         }
     }
 
     @Composable
-    override fun Timers(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> Unit) {
+    override fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?) {
         ShellScreenScaffold(title = "Timers", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Timers", modifier = Modifier.padding(padding))
         }
@@ -236,6 +244,20 @@ internal val SAUCE_TIMER: CookTimer =
 /** Rang a moment ago. */
 internal val OVEN_TIMER: CookTimer =
     CookTimer.start(3, "Ugnen", 20.minutes, HUD_NOW - 20.minutes, recipeId = 103, stepIndex = 0).ring(HUD_NOW)
+
+/** A real cook-mode label (step name · the text's words), running with 7:39 left. */
+internal val LONG_TIMER: CookTimer = CookTimer.start(
+    4,
+    "Krämig svamppasta med parmesan · ca 20–25 minuter (25 min)",
+    25.minutes,
+    HUD_NOW - (17.minutes + 21.seconds),
+    recipeId = 101,
+    stepIndex = 1,
+)
+
+/** The same kind of label, ringing. */
+internal val LONG_RINGING_TIMER: CookTimer =
+    CookTimer.start(5, "Pastan · 8–10 minuter (10 min)", 10.minutes, HUD_NOW - 10.minutes, recipeId = 101, stepIndex = 2).ring(HUD_NOW)
 
 /** [content] with the timer bar's clock fixed at [HUD_NOW] and no ticking (tests stay idle). */
 @Composable

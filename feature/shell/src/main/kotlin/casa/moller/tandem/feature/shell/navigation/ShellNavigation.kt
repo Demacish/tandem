@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
+import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.navigation.FullScreenDestination
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
@@ -126,20 +127,78 @@ class ShellNavigationState(
     }
 
     /**
-     * Opens what a tapped timer notification or the lock-screen alarm points at (Phase 1b
-     * integration): cook mode for the timer's recipe at its step, or the timer list for a timer
-     * without a recipe, on top of the current tab. Cook mode for the same recipe that is already
-     * on screen stays as it is (it shows its timers, and its page, servings and "Klart!" draft
-     * live in its entry); an open timer list is replaced instead of stacked.
+     * A page an already open cook mode should turn to ([openCook]): read by that cook entry
+     * (`CookRoute`'s page request) and cleared with [onCookPageRequestHandled]. Not saved: it is
+     * handled as soon as the entry is shown.
      */
-    fun openTimer(request: TimerOpenRequest) {
+    var cookPageRequest: CookPageRequest? by mutableStateOf(null)
+        private set
+
+    /**
+     * Opens what a tapped timer notification or the lock-screen alarm points at (Phase 1b
+     * integration): cook mode for the timer's recipe at its step ([openCook]), or the timer list
+     * for a timer without a recipe or of another source than [activeSource] (fix-ui, 0.2.0
+     * review: a demo timer must not open the real account's recipe with the same id, see
+     * core:model `TimerSource`). An open timer list is replaced instead of stacked.
+     */
+    fun openTimer(request: TimerOpenRequest, activeSource: String? = null) {
         val recipeId = request.recipeId
-        val current = currentKey
-        when {
-            recipeId == null -> navigate(TimersKey)
-            current is CookKey && current.recipeId == recipeId -> Unit
-            else -> navigate(CookKey(recipeId, startStep = request.stepIndex ?: 0), replace = { it is TimersKey })
+        val sameSource = request.sourceKey == null || request.sourceKey == activeSource
+        if (recipeId == null || !sameSource) {
+            navigate(TimersKey, replace = { it is TimersKey })
+        } else {
+            openCook(recipeId, request.stepIndex)
         }
+    }
+
+    /**
+     * A timer tapped in the app (the timer bar on every tab, the timer list): like [openTimer]
+     * for a notification, with the timer's own recipe, step and source.
+     */
+    fun openTimerOf(timer: CookTimer, activeSource: String?) {
+        val request = TimerOpenRequest(
+            recipeId = timer.recipeId?.takeIf { it > 0 },
+            stepIndex = timer.stepIndex?.takeIf { it >= 0 },
+            sourceKey = timer.sourceKey,
+        )
+        openTimer(request, activeSource)
+    }
+
+    /**
+     * Cook mode for [recipeId], at [step] when given (a timer's step), without ever holding two
+     * cook sessions for one recipe (fix-ui, 0.2.0 review): when the shown stack (the current
+     * tab's, or Today's below it) already has cook mode for the recipe, everything above it is
+     * removed and the open session turns to [step] ([cookPageRequest]), keeping its servings,
+     * page state and "Klart!" draft. Otherwise a new cook mode opens at [step] (an open timer
+     * list on top is replaced).
+     */
+    fun openCook(recipeId: Long, step: Int?) {
+        val isRecipe: (NavKey) -> Boolean = { it is CookKey && it.recipeId == recipeId }
+        val tab = when {
+            stack(currentTab).any(isRecipe) -> currentTab
+            stack(ShellTab.TODAY).any(isRecipe) -> ShellTab.TODAY
+            else -> null
+        }
+        if (tab == null) {
+            navigate(CookKey(recipeId, startStep = step ?: 0), replace = { it is TimersKey })
+            return
+        }
+        if (tab != currentTab) {
+            currentTab = tab
+            onTabChanged(tab)
+        }
+        val stack = stack(tab)
+        while (!isRecipe(stack.last())) stack.removeAt(stack.lastIndex)
+        // A second entry for the same recipe further down (stacked before this rule) is dropped too.
+        for (index in stack.lastIndex - 1 downTo 1) {
+            if (isRecipe(stack[index])) stack.removeAt(index)
+        }
+        if (step != null) cookPageRequest = CookPageRequest(recipeId, step)
+    }
+
+    /** The cook entry of [recipeId] turned to the requested page. */
+    fun onCookPageRequestHandled(recipeId: Long) {
+        if (cookPageRequest?.recipeId == recipeId) cookPageRequest = null
     }
 
     /**
@@ -179,6 +238,9 @@ class ShellNavigationState(
 
     private fun stack(tab: ShellTab): MutableList<NavKey> = stacks.getValue(tab)
 }
+
+/** A page ([step], 0-based) the open cook mode of [recipeId] should show ([ShellNavigationState.openCook]). */
+data class CookPageRequest(val recipeId: Long, val step: Int)
 
 /** Remembers the shell's back stacks and selected tab, saved across process death. */
 @Composable

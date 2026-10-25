@@ -45,6 +45,24 @@
     <!-- Logout (plan 4.2 step 4). -->
     <string name="shell_logout_title">Log out?</string>
     <string name="shell_logout_body">Your login is removed from this device. Your recipes and other data on the server are not affected, and you can log in again at any time.</string>
+    <!-- fix-ui (0.2.0 review): unsent changes at logout (plan 4.2 step 4) and the server's features. -->
+    <string name="shell_logout_body_pending">Your login is removed from this device. Your recipes on the server are not affected, and you can log in again at any time.</string>
+    <plurals name="shell_logout_pending">
+        <item quantity="one">%1$d change has not been sent</item>
+        <item quantity="other">%1$d changes have not been sent</item>
+    </plurals>
+    <string name="shell_logout_pending_body">For example cook log entries with their rating and comment. Logging out deletes them from this device.</string>
+    <string name="shell_logout_send_first">Send first</string>
+    <string name="shell_account_features">Features on this server</string>
+    <string name="shell_feature_recipe_index">Fast recipe sync</string>
+    <string name="shell_feature_view_log">Recently viewed</string>
+    <string name="shell_feature_cook_log">Cook log</string>
+    <string name="shell_feature_share_link">Share links</string>
+    <string name="shell_feature_households">Households</string>
+    <string name="shell_feature_ai_import">AI import</string>
+    <string name="shell_feature_auto_plan">Automatic meal plan</string>
+    <string name="shell_feature_ical">Meal plan calendar</string>
+    <string name="shell_feature_inventory">Pantry</string>
     <string name="shell_logout_revoke">Revoke this device’s token</string>
     <string name="shell_logout_revoke_body">Only the token Tandem created for this device is deleted on the server. Your other devices stay logged in.</string>
     <string name="shell_logout_pasted_token_note">You signed in with a token you pasted. Tandem leaves it on the server, because other apps or devices may use it. Delete it in Tandoor under Settings → API if you no longer need it.</string>

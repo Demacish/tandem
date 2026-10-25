@@ -640,12 +640,15 @@ internal class SyncEngine @Inject constructor(
             val pinned = recipes.observePinned(accountId).first()
             val planned = recipes.getListItems(accountId, plannedRecipeIds())
             val viewed = recipes.getListItems(accountId, recentlyViewed)
-            val usualCandidates = (pinned + planned + viewed).mapNotNull { it.overview.imageUrl }
+            val usualRecipes = pinned + planned + viewed
+            // fix-ui (0.2.0): the step photos of the same recipes, so cook mode shows them offline.
+            val usualCandidates = (usualRecipes.mapNotNull { it.overview.imageUrl } + stepImages(usualRecipes.map { it.overview.serverId }))
                 .distinct()
                 .filter { it !in prefetched }
             // "Download all recipes": the photo of every recipe kept offline, after the usual ones.
             val everythingCandidates = if (downloadAll) {
-                recipes.getAllOverviews(accountId).mapNotNull { it.imageUrl }.filter { it !in prefetched }
+                (recipes.getAllOverviews(accountId).mapNotNull { it.imageUrl } + recipes.getAllStepImageUrls(accountId))
+                    .filter { it !in prefetched }
             } else {
                 emptyList()
             }
@@ -662,6 +665,9 @@ internal class SyncEngine @Inject constructor(
             progress(SyncPhase.IMAGES, done = 0, total = urls.size)
             prefetched.addAll(images.prefetch(urls))
         }
+
+        private suspend fun stepImages(recipeIds: List<Long>): List<String> =
+            if (recipeIds.isEmpty()) emptyList() else database.recipeDao().getStepImageUrls(accountId, recipeIds.distinct())
     }
 
     private companion object {

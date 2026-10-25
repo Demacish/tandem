@@ -100,7 +100,7 @@ internal fun TimerHudFrame(
 
 /**
  * One slim row: the most urgent timer (a ringing one, else the oldest) with its name and
- * countdown, "+2" for the other timers (opens the timer list) and "Stop" while it rings. Tapping
+ * countdown, "All (3)" for the timer list when there are more, and "Stop" (alone) while it rings. Tapping
  * the timer opens cook mode at its recipe and step. TalkBack reads the timer as one button
  * ("Pasta · 10 min, 7 min 39 s left"); the countdown itself is not announced every second.
  *
@@ -160,18 +160,32 @@ internal fun ShellTimerHud(
                     contentDescription = null,
                     modifier = Modifier.size(TandemTheme.sizes.icon),
                 )
+                // The name may be cut short, the time never (fix-ui, 0.2.0 review): it is what the
+                // bar is for. Both are drawn only; the button's description says them.
                 Text(
-                    text = hudText(primary, now),
+                    text = primary.label,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    // The button's description says it (and does not change every second).
-                    modifier = Modifier.clearAndSetSemantics { },
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clearAndSetSemantics { },
+                )
+                Text(
+                    text = hudStatus(primary, now),
+                    style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = "tnum"),
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier
+                        .testTag(TIMER_HUD_STATUS_TAG)
+                        .clearAndSetSemantics { },
                 )
             }
-            if (timers.size > 1) {
-                val others = timers.size - 1
+            // "All (3)": the timer list. Not while the timer rings: then "Stop" stands alone, and
+            // nothing next to it looks like the alarm's "+1 min" (plan 8.1).
+            if (timers.size > 1 && !ringing) {
                 val allDescription = stringResource(R.string.timer_hud_show_all, timers.size)
                 TextButton(
                     onClick = onOpenAll,
@@ -180,7 +194,12 @@ internal fun ShellTimerHud(
                         .heightIn(min = TandemTheme.sizes.minTouchTarget)
                         .semantics { contentDescription = allDescription },
                 ) {
-                    Text(text = stringResource(R.string.timer_hud_more, others), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = stringResource(R.string.timer_hud_more, timers.size),
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
                 }
             }
             if (ringing) {
@@ -200,10 +219,13 @@ internal fun ShellTimerHud(
     }
 }
 
-/** "Pasta · 7:39", "Pasta · paused at 7:39", "Pasta · time is up!". */
+/** After the name: "· 7:39", "· paused at 7:39", "· time is up!". */
 @Composable
-private fun hudText(timer: CookTimer, now: Instant): String = when (timer.state) {
-    TimerState.RUNNING -> stringResource(R.string.timer_hud_running, timer.label, formatRemaining(timer.remaining(now)))
-    TimerState.PAUSED -> stringResource(R.string.timer_hud_paused, timer.label, formatRemaining(timer.remaining(now)))
-    TimerState.RINGING, TimerState.FINISHED -> stringResource(R.string.timer_hud_ringing, timer.label)
+private fun hudStatus(timer: CookTimer, now: Instant): String = when (timer.state) {
+    TimerState.RUNNING -> stringResource(R.string.timer_hud_running, formatRemaining(timer.remaining(now)))
+    TimerState.PAUSED -> stringResource(R.string.timer_hud_paused, formatRemaining(timer.remaining(now)))
+    TimerState.RINGING, TimerState.FINISHED -> stringResource(R.string.timer_hud_ringing)
 }
+
+/** Test tag of the timer bar's time (never shortened). */
+internal const val TIMER_HUD_STATUS_TAG = "shell_timer_hud_status"

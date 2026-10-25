@@ -135,9 +135,12 @@ fun TandemShell(
     }
     val navigation = rememberShellNavigationState()
     val currentOnTimerRequestHandled by rememberUpdatedState(onTimerRequestHandled)
-    LaunchedEffect(navigation, timerRequest) {
-        if (timerRequest != null) {
-            navigation.openTimer(timerRequest)
+    // Waits until the shell knows its source (demo or which account), so a timer of another
+    // source opens the timer list, not that source's recipe id here (fix-ui, 0.2.0 review).
+    val sourceKnown = state.mode !is ShellMode.Unavailable
+    LaunchedEffect(navigation, timerRequest, sourceKnown) {
+        if (timerRequest != null && sourceKnown) {
+            navigation.openTimer(timerRequest, activeSource = state.timerSource)
             currentOnTimerRequestHandled()
         }
     }
@@ -329,11 +332,20 @@ internal fun ShellScaffold(
                 )
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---
-            entry<CookKey> { key -> features.Cook(key = key, onClose = { navigation.goBack() }) }
+            entry<CookKey> { key ->
+                features.Cook(
+                    key = key,
+                    onClose = { navigation.goBack() },
+                    // fix-ui (0.2.0 review): a timer of this open cook mode turns it to the timer's step.
+                    pageRequest = navigation.cookPageRequest?.takeIf { it.recipeId == key.recipeId }?.step,
+                    onPageRequestHandled = { navigation.onCookPageRequestHandled(key.recipeId) },
+                )
+            }
             entry<TimersKey> {
                 features.Timers(
                     onBack = { navigation.goBack() },
-                    onOpenCook = { recipeId, step -> navigation.navigate(CookKey(recipeId, startStep = step)) },
+                    onOpenCook = { timer -> navigation.openTimerOf(timer, state.timerSource) },
+                    activeSource = state.timerSource,
                 )
             }
             entry<WeekKey> { placeholder(ShellTab.WEEK) }
@@ -424,11 +436,8 @@ internal fun ShellScaffold(
                 TimerHudFrame(
                     timers = state.timers,
                     visible = current !is TimersKey && (current as? FullScreenDestination)?.hidesNavigationOnAllWidths != true,
-                    onOpenTimer = { timer ->
-                        val recipeId = timer.recipeId
-                        navigation.navigate(if (recipeId != null) CookKey(recipeId, startStep = timer.stepIndex ?: 0) else TimersKey)
-                    },
-                    onOpenAll = { navigation.navigate(TimersKey) },
+                    onOpenTimer = { timer -> navigation.openTimerOf(timer, state.timerSource) },
+                    onOpenAll = { navigation.navigate(TimersKey, replace = { it is TimersKey }) },
                     onStop = actions::stopTimer,
                 ) {
                     ShellNavDisplay(navigation = navigation, entryProvider = entryProvider, sceneStrategy = listDetail)

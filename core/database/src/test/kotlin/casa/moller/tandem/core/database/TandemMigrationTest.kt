@@ -46,7 +46,7 @@ class TandemMigrationTest {
 
     @Test
     fun everyVersionHasAMigration() {
-        assertEquals(2, TandemDatabase.VERSION)
+        assertEquals(3, TandemDatabase.VERSION)
         assertEquals((1 until TandemDatabase.VERSION).toList(), TandemMigrations.ALL.map { it.startVersion })
     }
 
@@ -73,6 +73,31 @@ class TandemMigrationTest {
             assertEquals(2L, database.outboxDao().nextReady(ACCOUNT_A)?.serverId)
             assertEquals(listOf(-1L), database.cookLogDao().getEntries(ACCOUNT_A).map { it.localId })
             assertFalse("no server list yet: only adds to the stored counts", database.cookLogDao().isComplete(ACCOUNT_A))
+        } finally {
+            database.close()
+        }
+    }
+
+    @Test
+    fun versionTwoMigratesToThreeAndKeepsTheSteps() = runTest {
+        helper.createDatabase(2).apply {
+            execSQL(
+                "INSERT INTO step (account_id, recipe_id, position, step_id, name, instruction, time_minutes, step_order, " +
+                    "show_as_header, show_ingredients_table) VALUES ('$ACCOUNT_A', 2, 0, 11, 'Koka', 'Koka 10 min', 10, 0, 0, 1)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(3, TandemMigrations.ALL).apply {
+            // The new column exists and starts empty; a fetched detail fills it.
+            execSQL("UPDATE step SET image_url = 'https://example.com/media/step.jpg' WHERE step_id = 11")
+            close()
+        }
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            assertEquals(listOf("https://example.com/media/step.jpg"), database.recipeDao().getStepImageUrls(ACCOUNT_A, listOf(2L)))
+            assertEquals(emptyList<String>(), database.recipeDao().getStepImageUrls(ACCOUNT_A, listOf(3L)))
         } finally {
             database.close()
         }

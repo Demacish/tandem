@@ -348,7 +348,8 @@ internal fun CookSidePane(
     val spacing = TandemTheme.spacing
     val step = state.currentStep
     BoxWithConstraints(modifier) {
-        val shortPane = maxHeight < SidePaneCardsMinHeight
+        val paneHeight = maxHeight
+        val shortPane = paneHeight < SidePaneCardsMinHeight
         Column(Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -377,7 +378,7 @@ internal fun CookSidePane(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = maxHeight * TIMER_SECTION_SHARE)
+                        .heightIn(max = paneHeight * TIMER_SECTION_SHARE)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = spacing.lg, vertical = spacing.md)
                         .testTag(COOK_SIDE_TIMERS_TAG),
