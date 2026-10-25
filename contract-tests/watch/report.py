@@ -7,7 +7,7 @@ Inputs (from .github/workflows/tandoor-watch.yml):
   --recordings the downloaded contract-recordings-<tag> artifacts
   --run-url    link to the workflow run
 
-For every tag it compares the contract run's observed facts (observed-facts.json, Fas 0 and Fas 1)
+For every tag it compares the contract run's observed facts (observed-facts.json, Fas 0, 1 and 2)
 with the 2.6.13 baseline OF THE SAME RUN, after removing what differs on every run (image UUIDs,
 the throttle's remaining seconds, the tag and version themselves). Writes Markdown to --out and
 `attention=true|false` plus `fingerprint=<hash>` to --github-output: attention means a red
@@ -61,10 +61,15 @@ def normalized(path):
 
 
 def facts_of(recordings, tag):
-    """observed-facts.json of Fas 0 and Fas 1, keys prefixed with fas0./fas1."""
+    """observed-facts.json of Fas 0, Fas 1 and Fas 2, keys prefixed with fas0./fas1./fas2."""
     base = os.path.join(recordings, f"contract-recordings-{tag}", tag)
     merged, found = {}, False
-    for phase, path in (("fas0", os.path.join(base, "observed-facts.json")), ("fas1", os.path.join(base, "fas1", "observed-facts.json"))):
+    phases = (
+        ("fas0", os.path.join(base, "observed-facts.json")),
+        ("fas1", os.path.join(base, "fas1", "observed-facts.json")),
+        ("fas2", os.path.join(base, "fas2", "observed-facts.json")),
+    )
+    for phase, path in phases:
         facts = normalized(path)
         if facts is not None:
             found = True

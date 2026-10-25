@@ -56,6 +56,8 @@ internal class Sanitizer(secrets: List<String>, private val runToday: LocalDate?
 
     private fun shiftDate(value: String): String {
         val date = runCatching { LocalDate.parse(value) }.getOrNull() ?: return value
+        // Sentinels such as Tandoor's "not delayed" `1970-01-01` (Fas 2, `delay_until`) stay as they are.
+        if (date.year < SENTINEL_YEAR_LIMIT) return value
         return SHIFTED_TODAY.plusDays(ChronoUnit.DAYS.between(runToday, date)).toString()
     }
 
@@ -78,6 +80,9 @@ internal class Sanitizer(secrets: List<String>, private val runToday: LocalDate?
 
     companion object {
         private const val MIN_SECRET_LENGTH = 6
+
+        /** Dates before this year are sentinels (the Unix epoch), never run-specific: not shifted. */
+        private const val SENTINEL_YEAR_LIMIT = 1990
         const val REDACTED = "<redacted>"
         const val FAKE_PREFIX = "tda_00000000_0000_0000_0000_"
         const val MASK_PREFIX = "tda_************_******_***********"

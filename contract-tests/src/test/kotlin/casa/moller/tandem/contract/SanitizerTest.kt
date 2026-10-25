@@ -83,6 +83,15 @@ class SanitizerTest {
     }
 
     @Test
+    fun fas2KeepsTheEpochSentinel() {
+        val sanitizer = Sanitizer(emptyList(), runToday = LocalDate.of(2026, 10, 11))
+        val json = Json.parseToJsonElement("""{"delay_until":"1970-01-01T00:00:00Z","completed_at":"2026-10-11T09:00:00Z"}""")
+        val clean = sanitizer.sanitize(json).jsonObject
+        assertEquals("1970-01-01T00:00:00Z", clean["delay_until"]!!.jsonPrimitive.content)
+        assertEquals("2000-01-15T09:00:00Z", clean["completed_at"]!!.jsonPrimitive.content)
+    }
+
+    @Test
     fun numbersAndBooleansAreUntouched() {
         val json = Json.parseToJsonElement("""{"id":3,"active":true,"household":null}""")
         assertEquals(json, Sanitizer(emptyList()).sanitize(json))

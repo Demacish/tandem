@@ -47,8 +47,9 @@ jobs:
         # (api-schema/fixtures/2.6.13/). 2.6.15 and latest only upload artifacts: a red run
         # there means upstream changed behaviour the app relies on, before users' servers pull it.
         # "latest" skips the exact version assertion (TANDOOR_EXPECTED_VERSION is empty).
-        # Pushes run the baseline only; manual runs all three; tandoor-watch.yml passes its own list.
-        tandoor: ${{ fromJSON(inputs.tags || (github.event_name == 'push' && '["2.6.13"]' || '["2.6.13", "2.6.15", "latest"]')) }}
+        # Pushes run the baseline and 2.7.1 (Fas 2: both lines must work, plan §10); manual runs
+        # add 2.6.15 and latest; tandoor-watch.yml passes its own list.
+        tandoor: ${{ fromJSON(inputs.tags || (github.event_name == 'push' && '["2.6.13", "2.7.1"]' || '["2.6.13", "2.6.15", "2.7.1", "latest"]')) }}
     env:
       TANDOOR_IMAGE: vabene1111/recipes:${{ matrix.tandoor }}
       TANDOOR_TAG: ${{ matrix.tandoor }}
@@ -237,6 +238,50 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase1ContractTest'
 
+      # Fas 2 (0.3.0 "handla & planera"): shopping lists are shared per household, so the contract
+      # user and the other member are put into one household; a guest member (group "guest",
+      # read-only, plan #42) gets a token. Created in the database like the Fas 1 tokens.
+      - name: Create the Fas 2 household and a guest member
+        run: |
+          token="$(docker exec -w /opt/recipes \
+            -e CONTRACT_USERNAME="$TANDOOR_USERNAME" -e READER_USERNAME="$TANDOOR_READER_USERNAME" \
+            tandoor /opt/recipes/venv/bin/python manage.py shell -c '
+          import os, sys, uuid
+          from datetime import timedelta
+          from django.contrib.auth.models import Group, User
+          from django.utils import timezone
+          from django_scopes import scopes_disabled
+          from oauth2_provider.models import AccessToken
+          from cookbook.models import UserSpace
+
+          with scopes_disabled():
+              owner = User.objects.get(username=os.environ["CONTRACT_USERNAME"])
+              reader = User.objects.get(username=os.environ["READER_USERNAME"])
+              space = owner.userspace_set.get(active=True).space
+              try:
+                  from cookbook.models import Household
+                  household = Household.objects.create(space=space, name="Contract Household")
+                  updated = UserSpace.objects.filter(space=space, user__in=[owner, reader]).update(household=household)
+                  print("household", household.id, "members", updated, file=sys.stderr)
+              except Exception as error:
+                  print("no household:", type(error).__name__, error, file=sys.stderr)
+              guest = User.objects.create_user("contract-guest")
+              member = UserSpace.objects.create(space=space, user=guest, active=True)
+              member.groups.add(Group.objects.get(name="guest"))
+              token = AccessToken.objects.create(
+                  user=guest, token="tda_" + str(uuid.uuid4()).replace("-", "_"),
+                  expires=timezone.now() + timedelta(days=1), scope="read write")
+              print(token.token)
+          ' | tail -n 1)"
+          [ -n "$token" ] || { echo "::error::guest token creation failed"; exit 1; }
+          echo "::add-mask::${token}"
+          echo "TANDOOR_GUEST_TOKEN=${token}" >> "$GITHUB_ENV"
+
+      - name: Contract tests (Fas 2)
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase2ContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)
@@ -265,7 +310,7 @@ jobs:
           [ -d "$RECORDINGS" ] || { echo "No recordings"; exit 0; }
           leaked=0
           for value in "$TANDOOR_PASSWORD" "$TANDOOR_NOSPACE_PASSWORD" "$TANDOOR_SECRET_KEY" "$TANDOOR_DB_PASSWORD" \
-            "$TANDOOR_READER_PASSWORD" "${TANDOOR_FAS1_TOKEN:-}" "${TANDOOR_READER_TOKEN:-}"; do
+            "$TANDOOR_READER_PASSWORD" "${TANDOOR_FAS1_TOKEN:-}" "${TANDOOR_READER_TOKEN:-}" "${TANDOOR_GUEST_TOKEN:-}"; do
             if [ -n "$value" ] && grep -rqF -- "$value" "$RECORDINGS"; then leaked=1; fi
           done
           # Real tokens look like tda_<8 hex>_...; recordings may only contain the fake

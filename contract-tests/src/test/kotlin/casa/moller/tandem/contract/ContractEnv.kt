@@ -60,4 +60,16 @@ internal object ContractEnv {
 
     /** Fas 1 recordings: `<recordDir>/fas1/<name>.json` (committed to api-schema/fixtures/<tag>/fas1/). */
     val fas1RecordDir: File = File(recordDir, "fas1")
+
+    // --- Fas 2 (Phase2ContractTest) ---------------------------------------------------------
+
+    /**
+     * A token of a third member of the contract space in the group `guest` (read-only, plan #42),
+     * created by contract.yml after Phase1ContractTest together with a household that holds the
+     * contract user and the [readerToken] member. Phase2ContractTest is skipped unless it is set.
+     */
+    val guestToken: String = System.getenv("TANDOOR_GUEST_TOKEN").orEmpty()
+
+    /** Fas 2 recordings: `<recordDir>/fas2/<name>.json` (committed to api-schema/fixtures/<tag>/fas2/). */
+    val fas2RecordDir: File = File(recordDir, "fas2")
 }
