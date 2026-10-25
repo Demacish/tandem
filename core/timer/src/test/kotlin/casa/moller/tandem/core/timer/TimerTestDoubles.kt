@@ -5,17 +5,30 @@ import casa.moller.tandem.core.timer.engine.MonotonicClock
 import casa.moller.tandem.core.timer.platform.TimerSystem
 import casa.moller.tandem.core.timer.store.StoredTimers
 import casa.moller.tandem.core.timer.store.TimerStore
+import java.io.IOException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 
-/** The timers "file" in memory; a new engine on the same instance is a new process. */
+/**
+ * The timers "file" in memory; a new engine on the same instance is a new process. [failReads] and
+ * [failWrites] make it behave like an unreadable file or a full disk (`IOException`).
+ */
 internal class MemoryTimerStore(var stored: StoredTimers = StoredTimers()) : TimerStore {
     var writes: Int = 0
         private set
+    var reads: Int = 0
+        private set
+    var failReads: Boolean = false
+    var failWrites: Boolean = false
 
-    override suspend fun read(): StoredTimers = stored
+    override suspend fun read(): StoredTimers {
+        reads++
+        if (failReads) throw IOException("unreadable")
+        return stored
+    }
 
     override suspend fun write(timers: StoredTimers) {
+        if (failWrites) throw IOException("No space left on device")
         stored = timers
         writes++
     }
@@ -36,13 +49,14 @@ internal class FakeTimerSystem(
     var exactAlarms: Boolean = true,
     var fullScreen: Boolean = true,
     var clockApp: Boolean = true,
+    var alarmChannelAudible: Boolean = true,
 ) : TimerSystem {
     val clockAppTimers = mutableListOf<Pair<String, Duration>>()
 
     override fun capabilities(notificationPermissionAsked: Boolean): TimerCapabilities = TimerCapabilities(
         notificationsAllowed = notifications,
         notificationPermissionAsked = notificationPermissionAsked,
-        alarmChannelEnabled = true,
+        alarmChannelEnabled = alarmChannelAudible,
         exactAlarmsAllowed = exactAlarms,
         exactAlarmsRequestable = !exactAlarms,
         fullScreenAlarmAllowed = fullScreen,
@@ -54,6 +68,8 @@ internal class FakeTimerSystem(
     override fun exactAlarmsAllowed(): Boolean = exactAlarms
 
     override fun fullScreenAllowed(): Boolean = fullScreen
+
+    override fun alarmNotificationAudible(): Boolean = notifications && alarmChannelAudible
 
     override fun startClockAppTimer(label: String, duration: Duration): Boolean {
         if (!clockApp) return false

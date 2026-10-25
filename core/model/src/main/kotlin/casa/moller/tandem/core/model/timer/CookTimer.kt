@@ -169,7 +169,8 @@ sealed interface TimerStartResult {
  *   ([casa.moller.tandem.core.model.settings.AppSettings.notificationPermissionAsked]); after a
  *   denial the UI links to the system settings instead of asking again.
  * @property alarmChannelEnabled the channel [casa.moller.tandem.core.model.notification.TandemNotificationChannel.TIMER_ALARM]
- *   is not switched off.
+ *   can sound: not switched off, not lowered below "default" (the shade's "Silent") and with a
+ *   sound. Otherwise the alarm notification is silent (the ringing service still plays the alarm).
  * @property exactAlarmsAllowed exact alarms can be scheduled (always in the sideload build with
  *   `USE_EXACT_ALARM`; in the play build only after the user allowed `SCHEDULE_EXACT_ALARM`).
  * @property exactAlarmsRequestable the user can allow exact alarms in the system settings (play build).

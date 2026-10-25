@@ -3,9 +3,11 @@ package casa.moller.tandem.core.timer.alarm
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.timer.TimerIntents
 import casa.moller.tandem.core.timer.di.TimerEntryPoint
 import casa.moller.tandem.core.timer.engine.DefaultTimerController
+import casa.moller.tandem.core.timer.store.TimerSnapshot
 import kotlinx.coroutines.launch
 
 /**
@@ -19,7 +21,12 @@ internal class TimerAlarmReceiver : BroadcastReceiver() {
         val pending = goAsync()
         entryPoint.scope().launch {
             try {
-                handle(entryPoint.engine(), intent.action, intent.getLongExtra(TimerIntents.EXTRA_TIMER_ID, NO_ID).takeIf { it != NO_ID })
+                handle(
+                    engine = entryPoint.engine(),
+                    action = intent.action,
+                    timerId = intent.getLongExtra(TimerIntents.EXTRA_TIMER_ID, NO_ID).takeIf { it != NO_ID },
+                    snapshot = TimerSnapshot.decode(intent.getStringExtra(TimerIntents.EXTRA_TIMER_SNAPSHOT)),
+                )
             } finally {
                 pending.finish()
             }
@@ -29,10 +36,10 @@ internal class TimerAlarmReceiver : BroadcastReceiver() {
     companion object {
         private const val NO_ID = -1L
 
-        /** What a broadcast does; also called directly by the tests. */
-        suspend fun handle(engine: DefaultTimerController, action: String?, timerId: Long?) {
+        /** What a broadcast does; also called directly by the tests. [snapshot]: the timer a ring alarm was set for. */
+        suspend fun handle(engine: DefaultTimerController, action: String?, timerId: Long?, snapshot: CookTimer? = null) {
             when (action) {
-                TimerIntents.ACTION_RING -> engine.onAlarm()
+                TimerIntents.ACTION_RING -> engine.onAlarm(snapshot?.takeIf { it.id == timerId })
                 TimerIntents.ACTION_AUTO_SILENCE -> engine.onAutoSilence()
                 TimerIntents.ACTION_STOP_ALL -> engine.stopAllRinging()
                 else -> handleTimerAction(engine, action, timerId ?: return)

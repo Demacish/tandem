@@ -45,7 +45,7 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
         return TimerCapabilities(
             notificationsAllowed = notificationsAllowed(),
             notificationPermissionAsked = notificationPermissionAsked,
-            alarmChannelEnabled = alarmChannelEnabled(),
+            alarmChannelEnabled = alarmChannelAudible(),
             exactAlarmsAllowed = exact,
             exactAlarmsRequestable = !exact && Manifest.permission.SCHEDULE_EXACT_ALARM in declaredPermissions,
             fullScreenAlarmAllowed = fullScreenAllowed(),
@@ -62,17 +62,27 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
     override fun fullScreenAllowed(): Boolean =
         Manifest.permission.USE_FULL_SCREEN_INTENT in declaredPermissions && notifications.canUseFullScreenIntent()
 
-    private fun alarmChannelEnabled(): Boolean {
-        // A channel that does not exist yet is created with high importance before the first alarm.
+    override fun alarmNotificationAudible(): Boolean = notificationsAllowed() && alarmChannelAudible()
+
+    /**
+     * True when an alarm notification on `timer_alarm` makes a sound: the channel does not exist
+     * yet (it is created with high importance and the alarm sound before the first alarm), or its
+     * importance is at least "default" and it still has a sound. A user who long-presses an alarm
+     * and picks "Silent" lowers the channel to "low"; setting the sound to "None" keeps the
+     * importance. Either way the alarm would ring without a sound, so the UI warns
+     * ([TimerCapabilities.alarmMayBeSilent]) and the ringing service plays the sound itself.
+     */
+    private fun alarmChannelAudible(): Boolean {
         val channel = notifications.getNotificationChannelCompat(TandemNotificationChannel.TIMER_ALARM.id) ?: return true
-        return channel.importance != NotificationManagerCompat.IMPORTANCE_NONE
+        return channel.importance >= NotificationManagerCompat.IMPORTANCE_DEFAULT && channel.sound != null
     }
 
     private fun clockAppAvailable(): Boolean =
         context.packageManager.resolveActivity(clockIntent(), PackageManager.MATCH_DEFAULT_ONLY) != null
 
     override fun startClockAppTimer(label: String, duration: Duration): Boolean {
-        val seconds = duration.inWholeSeconds.coerceIn(1L, MAX_CLOCK_APP_SECONDS).toInt()
+        // The engine keeps longer timers in Tandem (TimerSystem.MAX_CLOCK_APP_DURATION); this is only a safety net.
+        val seconds = duration.inWholeSeconds.coerceIn(1L, TimerSystem.MAX_CLOCK_APP_DURATION.inWholeSeconds).toInt()
         val intent = clockIntent()
             .putExtra(AlarmClock.EXTRA_LENGTH, seconds)
             .putExtra(AlarmClock.EXTRA_MESSAGE, label)
@@ -90,9 +100,4 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
     }
 
     private fun clockIntent(): Intent = Intent(AlarmClock.ACTION_SET_TIMER)
-
-    private companion object {
-        /** `AlarmClock.EXTRA_LENGTH` takes 1..86400 seconds. */
-        const val MAX_CLOCK_APP_SECONDS = 86_400L
-    }
 }

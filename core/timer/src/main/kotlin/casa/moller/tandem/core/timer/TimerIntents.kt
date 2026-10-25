@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.core.net.toUri
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.timer.alarm.TimerAlarmReceiver
+import casa.moller.tandem.core.timer.store.TimerSnapshot
 
 /**
  * How a timer notification, the alarm's "show" button in the system clock UI and the lock-screen
@@ -37,6 +38,9 @@ object TimerIntents {
     internal const val ACTION_PAUSE = "casa.moller.tandem.timer.PAUSE"
     internal const val ACTION_RESUME = "casa.moller.tandem.timer.RESUME"
     internal const val ACTION_CANCEL = "casa.moller.tandem.timer.CANCEL"
+
+    /** The ringing timer itself on [ACTION_RING] ([casa.moller.tandem.core.timer.store.TimerSnapshot]). */
+    internal const val EXTRA_TIMER_SNAPSHOT = "casa.moller.tandem.timer.extra.SNAPSHOT"
 
     private const val SCHEME = "tandem-timer"
 
@@ -73,6 +77,14 @@ object TimerIntents {
         context,
         0,
         receiverIntent(context, action, timerId),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    /** [ACTION_RING] for [timer], carrying the timer itself (extras do not change which PendingIntent it is). */
+    internal fun ringPendingIntent(context: Context, timer: CookTimer): PendingIntent = PendingIntent.getBroadcast(
+        context,
+        0,
+        receiverIntent(context, ACTION_RING, timer.id).putExtra(EXTRA_TIMER_SNAPSHOT, TimerSnapshot.encode(timer)),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 

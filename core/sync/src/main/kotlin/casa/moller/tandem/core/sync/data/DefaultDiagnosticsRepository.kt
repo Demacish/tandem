@@ -165,7 +165,8 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
     private fun StringBuilder.appendTimers(capabilities: TimerCapabilities, count: Int) {
         line("Notifications allowed", capabilities.notificationsAllowed.yesNo())
         line("Notification permission asked", capabilities.notificationPermissionAsked.yesNo())
-        line("Alarm channel on", capabilities.alarmChannelEnabled.yesNo())
+        line("Alarm channel can sound", capabilities.alarmChannelEnabled.yesNo())
+        line("Alarm may be silent", capabilities.alarmMayBeSilent.yesNo())
         line("Exact alarms allowed", capabilities.exactAlarmsAllowed.yesNo())
         line("Exact alarms requestable", capabilities.exactAlarmsRequestable.yesNo())
         line("Full-screen alarm allowed", capabilities.fullScreenAlarmAllowed.yesNo())

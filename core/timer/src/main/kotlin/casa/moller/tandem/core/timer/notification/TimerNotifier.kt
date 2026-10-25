@@ -21,6 +21,9 @@ internal interface TimerNotifier {
 
     fun cancelAlarm(timerId: Long)
 
-    /** The notification of the foreground service while [ringing] timers ring (the group summary of the alarms). */
+    /** Posts the alarm of a still RINGING timer again, so its sound starts again after another alarm stopped. */
+    fun realertAlarm(timer: CookTimer)
+
+    /** The (silent) notification of the foreground service while [ringing] timers ring; never a group summary. */
     fun ringingServiceNotification(ringing: List<CookTimer>): Notification
 }

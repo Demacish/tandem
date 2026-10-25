@@ -26,4 +26,9 @@
     <string name="timer_action_stop_for">Stoppa %1$s</string>
 
     <string name="timer_alarm_title">Tiden är ute</string>
+    <string name="timer_alarm_window_title_one">%1$s: tiden är ute</string>
+    <plurals name="timer_alarm_window_title">
+        <item quantity="one">%d timer: tiden är ute</item>
+        <item quantity="other">%d timers: tiden är ute</item>
+    </plurals>
 </resources>

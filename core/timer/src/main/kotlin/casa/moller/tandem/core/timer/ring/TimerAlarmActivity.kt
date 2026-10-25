@@ -3,6 +3,7 @@ package casa.moller.tandem.core.timer.ring
 import android.app.Activity
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,6 +28,9 @@ import kotlinx.coroutines.launch
 internal class TimerAlarmActivity : Activity() {
 
     private val scope = MainScope()
+
+    /** One row per ringing timer, kept while the timer rings, so TalkBack focus stays on its buttons. */
+    private val rowsById = LinkedHashMap<Long, View>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,21 +58,39 @@ internal class TimerAlarmActivity : Activity() {
         super.onDestroy()
     }
 
+    /**
+     * Updates the rows in place (fix-data, 0.2.0 review): a row is added for a timer that starts
+     * ringing and removed for one that stops; the others keep their views. The window title says
+     * what rings, so TalkBack announces "Pasta: time's up" when the alarm opens over the lock screen.
+     */
     private fun render(rows: LinearLayout, ringing: List<CookTimer>, engine: DefaultTimerController) {
-        rows.removeAllViews()
+        val ids = ringing.mapTo(HashSet()) { it.id }
+        rowsById.keys.filter { it !in ids }.forEach { id -> rowsById.remove(id)?.let(rows::removeView) }
         val inflater = LayoutInflater.from(this)
-        for (timer in ringing) {
-            val row = inflater.inflate(R.layout.timer_alarm_row, rows, false)
-            row.findViewById<TextView>(R.id.timer_alarm_label).text = timer.label
-            row.findViewById<Button>(R.id.timer_alarm_plus_one).apply {
-                contentDescription = getString(R.string.timer_action_plus_one_minute_for, timer.label)
-                setOnClickListener { scope.launch { engine.addOneMinute(timer.id) } }
+        ringing.forEachIndexed { index, timer ->
+            val row = rowsById.getOrPut(timer.id) {
+                inflater.inflate(R.layout.timer_alarm_row, rows, false).also { rows.addView(it, index.coerceAtMost(rows.childCount)) }
             }
-            row.findViewById<Button>(R.id.timer_alarm_stop).apply {
-                contentDescription = getString(R.string.timer_action_stop_for, timer.label)
-                setOnClickListener { scope.launch { engine.stopRinging(timer.id) } }
-            }
-            rows.addView(row)
+            bind(row, timer, engine)
+        }
+        val title = if (ringing.size == 1) {
+            getString(R.string.timer_alarm_window_title_one, ringing.single().label)
+        } else {
+            resources.getQuantityString(R.plurals.timer_alarm_window_title, ringing.size, ringing.size)
+        }
+        setTitle(title)
+        window.decorView.accessibilityPaneTitle = title
+    }
+
+    private fun bind(row: View, timer: CookTimer, engine: DefaultTimerController) {
+        row.findViewById<TextView>(R.id.timer_alarm_label).text = timer.label
+        row.findViewById<Button>(R.id.timer_alarm_plus_one).apply {
+            contentDescription = getString(R.string.timer_action_plus_one_minute_for, timer.label)
+            setOnClickListener { scope.launch { engine.addOneMinute(timer.id) } }
+        }
+        row.findViewById<Button>(R.id.timer_alarm_stop).apply {
+            contentDescription = getString(R.string.timer_action_stop_for, timer.label)
+            setOnClickListener { scope.launch { engine.stopRinging(timer.id) } }
         }
     }
 }

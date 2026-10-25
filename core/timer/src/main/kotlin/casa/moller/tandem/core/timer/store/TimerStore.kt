@@ -127,6 +127,29 @@ internal data class StoredTimer(
     }
 }
 
+/**
+ * One timer as the extra of its ring alarm (fix-data, 0.2.0 review): if the timer never reached
+ * the file (a failed write) or the file was lost, the alarm still knows what to ring
+ * ([casa.moller.tandem.core.timer.engine.DefaultTimerController.onAlarm]).
+ */
+internal object TimerSnapshot {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    fun encode(timer: CookTimer): String = json.encodeToString(StoredTimer.serializer(), StoredTimer.of(timer))
+
+    /** The timer, or null for a missing or unreadable snapshot. */
+    fun decode(text: String?): CookTimer? {
+        if (text.isNullOrEmpty()) return null
+        return try {
+            json.decodeFromString(StoredTimer.serializer(), text).toTimer()
+        } catch (e: SerializationException) {
+            null
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+    }
+}
+
 /** JSON on disk; an unreadable file becomes a [CorruptionException], which the store replaces with an empty document. */
 internal object StoredTimersSerializer : Serializer<StoredTimers> {
     private val json = Json {

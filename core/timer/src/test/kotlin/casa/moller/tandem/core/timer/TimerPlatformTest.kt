@@ -18,6 +18,7 @@ import casa.moller.tandem.core.timer.alarm.TimerAlarmReceiver
 import casa.moller.tandem.core.timer.alarm.TimerSystemEventReceiver
 import casa.moller.tandem.core.timer.engine.SystemEvent
 import casa.moller.tandem.core.timer.platform.AndroidTimerSystem
+import casa.moller.tandem.core.timer.platform.TimerSystem
 import casa.moller.tandem.core.timer.ring.TimerAlarmActivity
 import casa.moller.tandem.core.timer.ring.TimerRingingService
 import kotlin.time.Duration.Companion.hours
@@ -71,6 +72,52 @@ class TimerPlatformTest {
 
         assertFalse(capabilities.alarmChannelEnabled)
         assertTrue(capabilities.alarmMayBeSilent)
+        assertFalse("the ringing service plays the alarm itself", AndroidTimerSystem(context).alarmNotificationAudible())
+    }
+
+    @Test
+    fun anAlarmChannelSetToSilentIsReportedAndTheServicePlaysTheSound() {
+        // The user long-pressed an alarm and picked "Silent": the channel drops to low importance.
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(TandemNotificationChannel.TIMER_ALARM.id, "Timers", NotificationManager.IMPORTANCE_LOW),
+        )
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        val system = AndroidTimerSystem(context)
+
+        val capabilities = system.capabilities(notificationPermissionAsked = true)
+
+        assertTrue(capabilities.notificationsAllowed)
+        assertFalse(capabilities.alarmChannelEnabled)
+        assertTrue("cook mode, settings and permissions warn", capabilities.alarmMayBeSilent)
+        assertFalse("the ringing service plays the alarm itself", system.alarmNotificationAudible())
+    }
+
+    @Test
+    fun anAlarmChannelWithoutASoundIsReported() {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val noSound = NotificationChannel(TandemNotificationChannel.TIMER_ALARM.id, "Timers", NotificationManager.IMPORTANCE_HIGH)
+        noSound.setSound(null, null)
+        manager.createNotificationChannel(noSound)
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        val system = AndroidTimerSystem(context)
+
+        assertTrue(system.capabilities(notificationPermissionAsked = true).alarmMayBeSilent)
+        assertFalse(system.alarmNotificationAudible())
+    }
+
+    @Test
+    fun aMissingOrUntouchedAlarmChannelSounds() {
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        val system = AndroidTimerSystem(context)
+        assertTrue("created high with the alarm sound before the first alarm", system.alarmNotificationAudible())
+
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(TandemNotificationChannel.TIMER_ALARM.id, "Timers", NotificationManager.IMPORTANCE_HIGH),
+        )
+        assertTrue(system.alarmNotificationAudible())
+        assertFalse(system.capabilities(notificationPermissionAsked = true).alarmMayBeSilent)
     }
 
     @Test
@@ -94,9 +141,10 @@ class TimerPlatformTest {
         assertEquals("Ägg", intent.getStringExtra(AlarmClock.EXTRA_MESSAGE))
         assertTrue(intent.getBooleanExtra(AlarmClock.EXTRA_SKIP_UI, false))
 
-        // The clock app takes at most 24 h.
+        // The clock app takes at most 24 h (the engine keeps longer timers in Tandem; this is the safety net).
         assertTrue(system.startClockAppTimer("Surdeg", 30.hours))
         assertEquals(86_400, shadowOf(context).nextStartedActivity.getIntExtra(AlarmClock.EXTRA_LENGTH, -1))
+        assertEquals(86_400L, TimerSystem.MAX_CLOCK_APP_DURATION.inWholeSeconds)
     }
 
     @Test

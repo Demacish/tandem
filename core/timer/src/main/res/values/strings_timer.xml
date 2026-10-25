@@ -33,4 +33,10 @@
     <string name="timer_action_stop_for">Stop %1$s</string>
 
     <string name="timer_alarm_title">Time\'s up</string>
+    <!-- Window title of the lock-screen alarm (TalkBack reads it when it opens). %1$s is the timer's name. -->
+    <string name="timer_alarm_window_title_one">%1$s: time\'s up</string>
+    <plurals name="timer_alarm_window_title">
+        <item quantity="one">%d timer: time\'s up</item>
+        <item quantity="other">%d timers: time\'s up</item>
+    </plurals>
 </resources>

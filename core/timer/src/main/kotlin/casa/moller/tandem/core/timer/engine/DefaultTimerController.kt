@@ -77,6 +77,10 @@ internal enum class SystemEvent {
  *   `endsAt` counts.
  * - **Without the notification permission** timers still run and ring: [timers] shows RINGING, the
  *   ringing service plays the alarm itself, and the UI tells the user ([TimerCapabilities]).
+ * - **Storage trouble** (fix-data, 0.2.0 review): a file that cannot be read is tried again
+ *   ([ensureLoaded]) and never overwritten while it is unread; a write that fails is tried again
+ *   with the next change. Each ring alarm also carries the timer itself, so an alarm whose timer
+ *   never reached the file still rings in a new process ([onAlarm]).
  */
 @Singleton
 internal class DefaultTimerController @Inject constructor(
@@ -100,6 +104,7 @@ internal class DefaultTimerController @Inject constructor(
 
     // Guarded by mutex.
     private var loaded = false
+    private var unsaved = false
     private var nextId = 1L
     private val monotonicEnds = HashMap<Long, Duration>()
     private var tickerJob: Job? = null
@@ -128,7 +133,9 @@ internal class DefaultTimerController @Inject constructor(
         if (name.isEmpty() || duration < CookTimer.MIN_DURATION || (stepIndex != null && stepIndex < 0)) {
             return TimerStartResult.Invalid
         }
-        if (settings.settings.first().timerMode == TimerMode.CLOCK_APP) {
+        // The clock app takes at most 24 h; a longer timer (e.g. "Marinera 48 timmar") runs in Tandem
+        // instead of ringing a day early in the clock app.
+        if (settings.settings.first().timerMode == TimerMode.CLOCK_APP && duration <= TimerSystem.MAX_CLOCK_APP_DURATION) {
             val handed = system.startClockAppTimer(name, duration)
             return if (handed) TimerStartResult.HandedToClockApp else TimerStartResult.ClockAppUnavailable
         }
@@ -167,16 +174,26 @@ internal class DefaultTimerController @Inject constructor(
     }
 
     /** The timers once they are loaded from disk ([timers] starts empty in a new process). */
-    suspend fun loadedTimers(): List<CookTimer> = mutex.withLock {
-        ensureLoaded()
-        mutableTimers.value
-    }
+    suspend fun loadedTimers(): List<CookTimer> = mutate { list, _ -> Change(list, list) }
 
     /** "Stoppa alla" on the ringing service's notification. */
     suspend fun stopAllRinging() = mutate { list, _ -> Change(list.map { it.stopRinging() }, Unit) }
 
-    /** A timer's alarm fired (or the in-process ticker): every due timer rings, the rest are re-armed. */
-    suspend fun onAlarm() = mutate(force = true) { list, now -> Change(ringDue(list, now), Unit) }
+    /**
+     * A timer's alarm fired (or the in-process ticker): every due timer rings, the rest are re-armed.
+     *
+     * @param scheduled the timer the alarm was set for (from the alarm's intent). When the stored
+     *   timers lack it (its write failed, or the file was lost), it is added back so it still rings.
+     */
+    suspend fun onAlarm(scheduled: CookTimer? = null) = mutate(force = true) { list, now ->
+        val restored = if (scheduled != null && scheduled.state == TimerState.RUNNING && list.none { it.id == scheduled.id }) {
+            nextId = maxOf(nextId, scheduled.id + 1)
+            (list + scheduled).sortedWith(compareBy({ it.createdAt }, { it.id }))
+        } else {
+            list
+        }
+        Change(ringDue(restored, now), Unit)
+    }
 
     /** The auto-silence alarm: timers that rang for [TimerEngineConfig.ringTimeout] stop and leave a quiet notice. */
     suspend fun onAutoSilence() {
@@ -238,35 +255,61 @@ internal class DefaultTimerController @Inject constructor(
     }
 
     private suspend fun <R> mutate(force: Boolean = false, transform: (List<CookTimer>, Instant) -> Change<R>): R = mutex.withLock {
-        ensureLoaded()
+        // The first load in this process puts every stored alarm and notification back.
+        val justLoaded = ensureLoaded()
         val now = clock.now()
         val before = mutableTimers.value
         val change = transform(before, now)
         val after = change.timers
-        if (after != before) persist(after)
+        // Never while the file is unread: an empty list must not replace timers that are on disk.
+        if (loaded && (after != before || unsaved)) persist(after)
         mutableTimers.value = after
-        applyEffects(before, after, now, force)
+        applyEffects(before, after, now, force || justLoaded)
         change.result
     }
 
-    private suspend fun ensureLoaded() {
-        if (loaded) return
-        val stored = try {
-            store.read()
-        } catch (e: IOException) {
-            StoredTimers()
+    /**
+     * Loads the stored timers once per process; returns true when this call loaded them. A read
+     * that fails is tried again a few times; if the file stays unreadable, the engine goes on with
+     * the timers in memory, does not write, and reads again on the next call. Timers started in the
+     * meantime are kept next to the stored ones (they get ids far above the stored ones).
+     */
+    private suspend fun ensureLoaded(): Boolean {
+        if (loaded) return false
+        val stored = readWithRetry() ?: run {
+            nextId = maxOf(nextId, UNREAD_FIRST_ID)
+            return false
         }
         val restored = stored.toTimers()
-        nextId = maxOf(stored.nextId, (restored.maxOfOrNull { it.id } ?: 0L) + 1)
-        mutableTimers.value = restored
+        val storedIds = restored.mapTo(HashSet()) { it.id }
+        val memoryOnly = mutableTimers.value.filter { it.id !in storedIds }
+        val merged = (restored + memoryOnly).sortedWith(compareBy({ it.createdAt }, { it.id }))
+        nextId = maxOf(nextId, stored.nextId, (merged.maxOfOrNull { it.id } ?: 0L) + 1)
+        mutableTimers.value = merged
         loaded = true
+        unsaved = memoryOnly.isNotEmpty()
+        return true
     }
 
+    private suspend fun readWithRetry(): StoredTimers? {
+        repeat(READ_ATTEMPTS) { attempt ->
+            try {
+                return store.read()
+            } catch (e: IOException) {
+                if (attempt < READ_ATTEMPTS - 1) delay(READ_RETRY_DELAY * (attempt + 1))
+            }
+        }
+        return null
+    }
+
+    /** Writes [timers]; a failure (e.g. a full disk) is remembered and the next change writes again. */
     private suspend fun persist(timers: List<CookTimer>) {
-        try {
+        unsaved = try {
             store.write(StoredTimers.of(nextId, timers))
+            false
         } catch (e: IOException) {
-            // The timers keep running in this process; the next change writes the file again.
+            // The timers keep running in this process, and their alarms carry them (onAlarm).
+            true
         }
     }
 
@@ -320,15 +363,22 @@ internal class DefaultTimerController @Inject constructor(
                 }
             }
         }
-        val ringingBefore = before.filter { it.state == TimerState.RINGING }
-        val ringingAfter = after.filter { it.state == TimerState.RINGING }
+        applyRinging(before.filter { it.state == TimerState.RINGING }, after.filter { it.state == TimerState.RINGING }, force)
+        restartTicker(after, now)
+    }
+
+    /** The ringing service, and the sound of the alarms that still ring when another one stopped. */
+    private fun applyRinging(ringingBefore: List<CookTimer>, ringingAfter: List<CookTimer>, force: Boolean) {
         if (ringingAfter.isEmpty()) {
             // A new process has no service of its own to stop, so only on a change.
             if (ringingBefore.isNotEmpty()) ringer.stop()
-        } else if (force || ringingAfter != ringingBefore) {
-            ringer.ring(ringingAfter)
+            return
         }
-        restartTicker(after, now)
+        if (force || ringingAfter != ringingBefore) ringer.ring(ringingAfter)
+        // Android plays one notification sound at a time: the alarm that stopped may have been the
+        // one sounding, so the newest one that still rings is posted again and sounds again.
+        val stillRinging = ringingAfter.mapTo(HashSet()) { it.id }
+        if (ringingBefore.any { it.id !in stillRinging }) notifier.realertAlarm(ringingAfter.maxBy { it.endsAt!! })
     }
 
     private fun restartTicker(timers: List<CookTimer>, now: Instant) {
@@ -353,5 +403,12 @@ internal class DefaultTimerController @Inject constructor(
 
         /** An auto-silence alarm a moment early still silences (alarms are not that precise). */
         val AUTO_SILENCE_SLACK: Duration = 1.seconds
+
+        /** Reads of the timers file before the engine goes on without it ([ensureLoaded]). */
+        const val READ_ATTEMPTS = 3
+        val READ_RETRY_DELAY: Duration = 100.milliseconds
+
+        /** Ids of timers started while the file was unreadable: far above any stored id. */
+        const val UNREAD_FIRST_ID = 1_000_000L
     }
 }

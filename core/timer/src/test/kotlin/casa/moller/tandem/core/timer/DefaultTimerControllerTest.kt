@@ -29,6 +29,7 @@ import casa.moller.tandem.core.timer.ring.AndroidRinger
 import casa.moller.tandem.core.timer.ring.TimerRingingService
 import casa.moller.tandem.core.timer.store.DataStoreTimerStore
 import casa.moller.tandem.core.timer.store.StoredTimers
+import casa.moller.tandem.core.timer.store.TimerSnapshot
 import casa.moller.tandem.core.timer.store.TimerStore
 import casa.moller.tandem.core.timer.store.timerDataStore
 import java.io.File
@@ -42,13 +43,17 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,6 +82,13 @@ class DefaultTimerControllerTest {
         // The sideload build: USE_EXACT_ALARM is granted, notifications were allowed at the first timer.
         ShadowAlarmManager.setCanScheduleExactAlarms(true)
         shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        // Robolectric records service starts without running the service: say it runs, so stops are sent.
+        TimerRingingService.running = true
+    }
+
+    @After
+    fun tearDown() {
+        TimerRingingService.running = false
     }
 
     // --- start, countdown notification, scheduling ---
@@ -259,11 +271,12 @@ class DefaultTimerControllerTest {
         assertEquals(listOf(TimerState.FINISHED, TimerState.RINGING), engine.timers.value.map { it.state })
         assertNull(notificationOrNull(TandemNotificationIds.timerAlarm(pasta.id)))
         assertNotNull("the other one still rings", notificationOrNull(TandemNotificationIds.timerAlarm(sauce.id)))
-        assertNull("the service keeps running", shadowOf(context).nextStoppedService)
+        assertFalse("the service keeps running", TimerRingingService.ACTION_STOP in serviceCommands())
 
         engine.stopRinging(sauce.id)
         assertNull(notificationOrNull(TandemNotificationIds.timerAlarm(sauce.id)))
-        assertEquals(TimerRingingService::class.java.name, shadowOf(context).nextStoppedService?.component?.className)
+        assertEquals(TimerRingingService.ACTION_STOP, serviceCommands().last())
+        assertNull("never stopped from outside", shadowOf(context).nextStoppedService)
 
         engine.clearFinished()
         assertEquals(emptyList<CookTimer>(), engine.timers.value)
@@ -301,7 +314,7 @@ class DefaultTimerControllerTest {
         assertNotNull(notification(TandemNotificationIds.timerOngoing(timer.id)))
         assertEquals((clock.now() + 1.minutes).toEpochMilliseconds(), ringAlarms().single().triggerAtMs)
         assertTrue(autoSilenceAlarms().isEmpty())
-        assertEquals(TimerRingingService::class.java.name, shadowOf(context).nextStoppedService?.component?.className)
+        assertEquals(TimerRingingService.ACTION_STOP, serviceCommands().last())
     }
 
     @Test
@@ -318,7 +331,10 @@ class DefaultTimerControllerTest {
         val notice = notification(TandemNotificationIds.timerAlarm(timer.id))
         assertEquals(0, notice.flags and Notification.FLAG_INSISTENT)
         assertTrue(notice.extras.getCharSequence(Notification.EXTRA_TEXT).toString().startsWith("Rang at "))
-        assertEquals(TimerRingingService::class.java.name, shadowOf(context).nextStoppedService?.component?.className)
+        assertEquals(TimerRingingService.ACTION_STOP, serviceCommands().last())
+        // The notice is in the alarms' group, which has no app summary: the service stopping cannot take it along.
+        assertEquals(AndroidTimerNotifier.ALARM_GROUP, notice.group)
+        assertTrue(notificationManager.activeNotifications.none { it.notification.flags and Notification.FLAG_GROUP_SUMMARY != 0 })
     }
 
     @Test
@@ -529,7 +545,123 @@ class DefaultTimerControllerTest {
         assertTrue("creating channels posts nothing", notificationManager.activeNotifications.isEmpty())
     }
 
+    // --- fix-data (0.2.0 review) ---
+
+    @Test
+    fun stoppingTheAlarmThatSoundsPostsTheOtherOneAgain() = runTest {
+        val engine = newEngine()
+        val pasta = engine.startTimer("Pasta", 8.minutes)
+        val sauce = engine.startTimer("Sås", 9.minutes)
+        clock.advanceBy(8.minutes)
+        engine.onAlarm()
+        clock.advanceBy(1.minutes)
+        engine.onAlarm()
+        // Android plays one notification sound at a time: the sauce's alarm took over the pasta's.
+        val pastaAlarm = notification(TandemNotificationIds.timerAlarm(pasta.id))
+
+        engine.stopRinging(sauce.id)
+
+        val again = notification(TandemNotificationIds.timerAlarm(pasta.id))
+        assertNotSame("posted again, so its sound starts again", pastaAlarm, again)
+        assertTrue(again.flags and Notification.FLAG_INSISTENT != 0)
+        assertEquals(TimerState.RINGING, engine.timers.value.first { it.id == pasta.id }.state)
+    }
+
+    @Test
+    fun theRingingServiceNotificationIsNoGroupSummaryAndNeverAlerts() {
+        val timer = CookTimer.start(1L, "Pasta", 1.minutes, clock.now()).ring(clock.now() + 1.minutes)
+        val service = AndroidTimerNotifier(context, system, clock).ringingServiceNotification(listOf(timer))
+
+        assertEquals(0, service.flags and Notification.FLAG_GROUP_SUMMARY)
+        assertNotEquals("removing it must not take the alarms along", AndroidTimerNotifier.ALARM_GROUP, service.group)
+        assertEquals("silent", Notification.GROUP_ALERT_SUMMARY, service.groupAlertBehavior)
+        assertEquals(TandemNotificationChannel.TIMER_ALARM.id, service.channelId)
+    }
+
+    @Test
+    fun aStopIsACommandToTheServiceAndNothingWhenItDoesNotRun() {
+        val ringer = AndroidRinger(context)
+        TimerRingingService.running = false
+        ringer.stop()
+        assertTrue("no service in this process: nothing to stop", serviceCommands().isEmpty())
+
+        TimerRingingService.running = true
+        ringer.stop()
+        assertEquals(listOf(TimerRingingService.ACTION_STOP), serviceCommands())
+        assertNull("never stopService from outside (it can come before startForeground)", shadowOf(context).nextStoppedService)
+    }
+
+    @Test
+    fun clockAppModeKeepsTimersLongerThanADayInTandem() = runTest {
+        settings.state.value = AppSettings.Default.copy(timerMode = TimerMode.CLOCK_APP)
+        val engine = newEngine()
+
+        val result = engine.start("Marinera", 48.hours)
+
+        assertTrue("the clock app takes at most 24 h", result is TimerStartResult.Started)
+        assertTrue(system.clockAppTimers.isEmpty())
+        assertEquals((clock.now() + 48.hours).toEpochMilliseconds(), ringAlarms().single().triggerAtMs)
+        assertEquals(TimerStartResult.HandedToClockApp, engine.start("Ägg", 6.minutes))
+    }
+
+    @Test
+    fun aTimerWhoseWriteFailedStillRingsInANewProcess() = runTest {
+        store.failWrites = true
+        val first = newEngine()
+        val timer = first.startTimer("Pasta", 10.minutes, recipeId = 3L, stepIndex = 1)
+        assertEquals("the disk is full", emptyList<Any>(), store.stored.timers)
+        val snapshot = shadowOf(ringAlarms().single().operationIntent()).savedIntent.getStringExtra(TimerIntents.EXTRA_TIMER_SNAPSHOT)
+
+        // The process dies; the alarm fires into a new one whose file lacks the timer.
+        clock.advanceBy(10.minutes)
+        val second = newEngine(MemoryTimerStore())
+        TimerAlarmReceiver.handle(second, TimerIntents.ACTION_RING, timer.id, TimerSnapshot.decode(snapshot))
+
+        val ringing = second.timers.value.single()
+        assertEquals(timer.id, ringing.id)
+        assertEquals(TimerState.RINGING, ringing.state)
+        assertEquals(3L, ringing.recipeId)
+        assertNotNull(notification(TandemNotificationIds.timerAlarm(timer.id)))
+    }
+
+    @Test
+    fun aFailedWriteIsWrittenAgainWithTheNextChange() = runTest {
+        store.failWrites = true
+        val engine = newEngine()
+        engine.startTimer("Pasta", 10.minutes)
+        store.failWrites = false
+
+        engine.startTimer("Sås", 20.minutes)
+
+        assertEquals(listOf("Pasta", "Sås"), store.stored.toTimers().map { it.label })
+    }
+
+    @Test
+    fun anUnreadableFileIsNeverOverwrittenAndReadAgainLater() = runTest {
+        val stored = CookTimer.start(1L, "Långkok", 3.hours, clock.now())
+        store.stored = StoredTimers.of(nextId = 2L, timers = listOf(stored))
+        store.failReads = true
+        val engine = newEngine()
+        advanceUntilIdle()
+
+        val started = engine.startTimer("Ägg", 6.minutes)
+        assertEquals("nothing written while the file is unread", 0, store.writes)
+        assertEquals(listOf(stored), store.stored.toTimers())
+        assertTrue("tried more than once", store.reads > 1)
+
+        store.failReads = false
+        val all = engine.loadedTimers()
+
+        assertEquals(listOf("Långkok", "Ägg"), all.map { it.label })
+        assertTrue("no id clash with the stored timer", started.id != stored.id)
+        assertEquals(listOf("Långkok", "Ägg"), store.stored.toTimers().map { it.label })
+    }
+
     // --- helpers ---
+
+    /** The commands sent to the ringing service since the last call (their actions). */
+    private fun serviceCommands(): List<String?> =
+        generateSequence { shadowOf(context).nextStartedService }.map { it.action }.toList()
 
     private fun TestScope.newEngine(timerStore: TimerStore = store): DefaultTimerController {
         val engine = DefaultTimerController(

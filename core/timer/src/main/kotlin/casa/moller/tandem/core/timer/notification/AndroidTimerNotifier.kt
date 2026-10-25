@@ -43,8 +43,13 @@ import kotlin.time.Instant
  *   timer (id [TandemNotificationIds.timerAlarm]), insistent (the sound repeats until it is
  *   stopped or silenced), with "+1 min" and "Stop", and a full-screen intent to
  *   [TimerAlarmActivity] when the build may use it (sideload); otherwise a heads-up.
- * - **Ringing service** ([TandemNotificationIds.TIMER_RINGING_SERVICE]): the group summary of the
- *   alarms ("2 timers are ringing", "Stop all"); it never alerts itself.
+ * - **Ringing service** ([TandemNotificationIds.TIMER_RINGING_SERVICE]): "2 timers are ringing",
+ *   "Stop all"; silent, on its own and deliberately NOT the summary of the alarms' group (plan
+ *   8.1): when an app removes a group summary, Android removes the group's children too, so the
+ *   service stopping would take the still ringing alarms and the "Rang at 18:45" notices with it.
+ * - **One sound at a time:** Android plays one notification sound at a time, so when a second
+ *   alarm posts, its sound replaces the first one's, and cancelling it leaves the first one silent.
+ *   [realertAlarm] posts a still ringing alarm again whenever another one stops.
  *
  * Every post checks `POST_NOTIFICATIONS` first; without it nothing is shown (the timers still run).
  */
@@ -101,6 +106,10 @@ internal class AndroidTimerNotifier @Inject constructor(
         val id = TandemNotificationIds.timerAlarm(timer.id)
         // Posting again would restart the sound and the heads-up; one alarm per ring is enough.
         if (isShown(id)) return
+        postAlarm(id, timer)
+    }
+
+    private fun postAlarm(id: Int, timer: CookTimer) {
         val builder = alarmBuilder(timer)
             .setContentText(context.getString(R.string.timer_notification_ringing))
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -130,6 +139,15 @@ internal class AndroidTimerNotifier @Inject constructor(
 
     override fun cancelAlarm(timerId: Long) = manager.cancel(TandemNotificationIds.timerAlarm(timerId))
 
+    override fun realertAlarm(timer: CookTimer) {
+        val id = TandemNotificationIds.timerAlarm(timer.id)
+        // Not through showAlarm: the system removes a cancelled notification asynchronously, so
+        // isShown could still see it and the alarm would vanish. The system handles the cancel and
+        // the new post in order, so the new post is a fresh alarm that sounds again.
+        manager.cancel(id)
+        postAlarm(id, timer)
+    }
+
     override fun ringingServiceNotification(ringing: List<CookTimer>): Notification {
         ensureChannels()
         return NotificationCompat.Builder(context, ALARM_CHANNEL)
@@ -140,10 +158,8 @@ internal class AndroidTimerNotifier @Inject constructor(
             .setContentText(ringing.joinToString(", ") { it.label })
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setGroup(ALARM_GROUP)
-            .setGroupSummary(true)
-            // The children (one per timer) ring; the summary never alerts.
-            .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+            // Never a group summary (see the class comment); the alarms themselves ring, this one never alerts.
+            .setSilent(true)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -234,7 +250,7 @@ internal class AndroidTimerNotifier @Inject constructor(
         val ALARM_CHANNEL: String = TandemNotificationChannel.TIMER_ALARM.id
         val ONGOING_CHANNEL: String = TandemNotificationChannel.TIMER_ONGOING.id
 
-        /** All alarm notifications form one group, with the ringing service's notification as summary. */
+        /** The alarms and the "Rang at" notices form one group without an app summary (see the class comment). */
         const val ALARM_GROUP = "casa.moller.tandem.timer.ALARMS"
 
         private const val SORT_KEY_DIGITS = 20

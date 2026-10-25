@@ -28,7 +28,7 @@ internal class AndroidAlarmScheduler @Inject constructor(@ApplicationContext pri
 
     override fun scheduleRing(timer: CookTimer): Boolean {
         val at = timer.endsAt?.toEpochMilliseconds() ?: return false
-        val operation = TimerIntents.receiverPendingIntent(context, TimerIntents.ACTION_RING, timer.id)
+        val operation = TimerIntents.ringPendingIntent(context, timer)
         if (alarmManager.canScheduleExactAlarms()) {
             val show = TimerIntents.openTimerPendingIntent(context, timer) ?: operation
             try {
