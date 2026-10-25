@@ -6,6 +6,11 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+- **Grunden för "handla & planera" (Fas 2):** flikarna Handla och Veckan har fått egna moduler
+  och sidor (inköpslistan, butiksläget, listval, historik, veckan, planera måltid, "Handla för
+  veckan", receptböcker, favoriter och "Vill laga") som fylls i av kommande ändringar. Databasen
+  uppgraderas till version 4 när appen uppdateras; inget som redan är sparat ändras.
+
 ## [0.2.0] – 2026-10-24
 
 Laga mat med Tandem (Fas 1b, "laga"): kokläge steg för steg, timers som larmar även med låst

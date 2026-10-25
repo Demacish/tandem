@@ -18,6 +18,9 @@ internal class Facts {
         facts[key] = toJson(value)
     }
 
+    /** The recorded fact, or null when [key] was never recorded. */
+    operator fun get(key: String): JsonElement? = facts[key]
+
     fun write(file: File, sanitizer: Sanitizer) {
         file.parentFile.mkdirs()
         val json = sanitizer.sanitize(JsonObject(facts))

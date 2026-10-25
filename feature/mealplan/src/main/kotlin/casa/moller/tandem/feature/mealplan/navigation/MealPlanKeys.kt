@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class WeekAgendaKey(val weekStart: String? = null) : NavKey {
     init {
-        require(weekStart == null || runCatching { LocalDate.parse(weekStart) }.isSuccess) { "weekStart is yyyy-MM-dd" }
+        require(runCatching { weekStart?.let { LocalDate.parse(it) } }.isSuccess) { "weekStart is yyyy-MM-dd" }
     }
 }
 
@@ -29,12 +29,7 @@ data class WeekAgendaKey(val weekStart: String? = null) : NavKey {
  * @property date `yyyy-MM-dd`.
  */
 @Serializable
-data class PlanMealKey(
-    val date: String,
-    val mealTypeId: Long? = null,
-    val mealPlanId: Long? = null,
-    val recipeId: Long? = null,
-) : NavKey {
+data class PlanMealKey(val date: String, val mealTypeId: Long? = null, val mealPlanId: Long? = null, val recipeId: Long? = null) : NavKey {
     init {
         require(runCatching { LocalDate.parse(date) }.isSuccess) { "date is yyyy-MM-dd" }
     }

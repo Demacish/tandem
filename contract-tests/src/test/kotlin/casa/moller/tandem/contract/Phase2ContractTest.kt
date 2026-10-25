@@ -40,8 +40,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
  * recordings go to `build/contract-recordings/<tag>/fas2/` with the same date shift (the run day
  * is 2000-01-15) and are committed to `api-schema/fixtures/<version>/fas2/`.
  *
- * Checks are soft as in Fas 1: [verify] records the fact and collects a mismatch, the last step
- * fails with all of them; [observe] only records (the nightly tandoor-watch diff catches changes).
+ * Checks are soft as in Fas 1: [observe] records every fact, and the last step compares the facts in
+ * `EXPECTED` (what the app relies on) and fails with all mismatches together; tandoor-watch's
+ * nightly diff catches changes of the other facts.
  * Every step tolerates the failure of an earlier one (ids may be missing), so one run shows every
  * difference of a new version.
  *
@@ -181,12 +182,11 @@ class Phase2ContractTest {
         recipeId = idOf(created)
         val ingredients = objOf(created)?.arrAt("steps").objects().flatMap { it.arrAt("ingredients").objects() }
         for (ingredient in ingredients) {
-            val food = ingredient.objAt("food") ?: continue
-            val name = food.stringAt("name") ?: continue
+            val food = ingredient.objAt("food")
+            val name = food?.stringAt("name") ?: continue
             ingredient.longAt("id")?.let { ingredientIds[name] = it }
-            food.longAt("id")?.let { foodIds[name] = it }
-            val unit = ingredient.objAt("unit") ?: continue
-            unit.longAt("id")?.let { unitIds[unit.stringAt("name").orEmpty()] = it }
+            food?.longAt("id")?.let { foodIds[name] = it }
+            ingredient.objAt("unit")?.let { unit -> unit.longAt("id")?.let { unitIds[unit.stringAt("name").orEmpty()] = it } }
         }
 
         val list = api(
@@ -292,7 +292,7 @@ class Phase2ContractTest {
     @Order(40)
     fun shoppingEntries() {
         val empty = api("shopping-list-entry-list", "GET", "/api/shopping-list-entry/?page_size=200")
-        verify("shopping.list.status", empty.status, 200)
+        observe("shopping.list.status", empty.status)
         observe("shopping.list.keys", objOf(empty)?.keys?.toList())
         observe("shopping.list.timestamp.format", objOf(empty)?.stringAt("timestamp")?.let { shape(it) })
         val t0 = objOf(empty)?.stringAt("timestamp")
@@ -601,10 +601,11 @@ class Phase2ContractTest {
                 "amount" to result["amount"],
                 "unit" to result.objAt("unit")?.stringAt("name"),
                 "food" to result.objAt("food")?.stringAt("name"),
-                "foodId" to result.objAt("food")?.get("id"),
                 "note" to result["note"],
             )
             observe("parser.sample.$text", summary)
+            // The parser returns the food with an id: it created (or found) it on the server.
+            observe("parser.sample.$text.foodHasId", result.objAt("food")?.longAt("id") != null)
         }
         val guest = api(
             "parser-guest",
@@ -917,32 +918,8 @@ class Phase2ContractTest {
             "objects" to """{"keywords_or":[{"id":$keywordId,"name":"$WANT_TO_COOK"}]}""",
         )
         for ((label, search) in searches) {
-            val filterBody = obj("name" to "Vill laga ($label)", "search" to search, "shared" to emptyList<Any>())
-            val filter = api("custom-filter-create-$label", "POST", "/api/custom-filter/", filterBody, record = label == "ids")
-            observe("wantToCook.filter.$label.create", describe(filter, includeBody = filter.status != CREATED))
-            val filterId = idOf(filter) ?: continue
-            val list = api("recipe-list-filter-$label", "GET", "/api/recipe/?filter=$filterId&page_size=100", record = label == "ids")
-            observe("wantToCook.filter.$label.status", list.status)
-            observe("wantToCook.filter.$label.recipes", pageOrArray(list.json).map { it.stringAt("name") })
-            if (label != "ids") continue
-            val sharedWith = listOfNotNull(readerId).map { obj("id" to it) }
-            val smart = api("recipe-book-create-smart", "POST", "/api/recipe-book/", bookBody("Vill laga", sharedWith, objOf(filter)))
-            observe("wantToCook.smartBook.create", describe(smart, includeBody = smart.status != CREATED))
-            observe("wantToCook.smartBook.filter.keys", objOf(smart)?.objAt("filter")?.keys?.sorted())
-            val smartId = idOf(smart) ?: continue
-            observe(
-                "wantToCook.smartBook.entries",
-                objOf(api("smart-entries", "GET", "/api/recipe-book-entry/?book=$smartId", record = false))?.longAt("count"),
-            )
-            val asMember = api(
-                "filter-member",
-                "GET",
-                "/api/recipe/?filter=$filterId&page_size=100",
-                token = env.readerToken,
-                record = false,
-            )
-            observe("wantToCook.smartBook.memberRecipes", describe(asMember, includeBody = false))
-            observe("wantToCook.smartBook.memberRecipes.names", pageOrArray(asMember.json).map { it.stringAt("name") })
+            val filter = customFilter(label, search) ?: continue
+            if (label == "ids") smartBook(filter)
         }
         val byKeyword = api("keywords-or", "GET", "/api/recipe/?keywords_or=$keywordId&page_size=100", record = false)
         observe("wantToCook.keywordsOr.recipes", pageOrArray(byKeyword.json).map { it.stringAt("name") })
@@ -951,11 +928,43 @@ class Phase2ContractTest {
         observe("wantToCook.remove.keywords", objOf(remove)?.arrAt("keywords").objects().map { it.stringAt("name") })
     }
 
+    /** A `CustomFilter` with [search] and the recipe list through it; the filter, or null when it was refused. */
+    private fun customFilter(label: String, search: String): JsonObject? {
+        val filterBody = obj("name" to "Vill laga ($label)", "search" to search, "shared" to emptyList<Any>())
+        val filter = api("custom-filter-create-$label", "POST", "/api/custom-filter/", filterBody, record = label == "ids")
+        observe("wantToCook.filter.$label.create", describe(filter, includeBody = filter.status != CREATED))
+        val filterId = idOf(filter) ?: return null
+        val list = api("recipe-list-filter-$label", "GET", "/api/recipe/?filter=$filterId&page_size=100", record = label == "ids")
+        observe("wantToCook.filter.$label.status", list.status)
+        observe("wantToCook.filter.$label.recipes", pageOrArray(list.json).map { it.stringAt("name") })
+        return objOf(filter)
+    }
+
+    /** The "Vill laga" smart book on [filter], shared with the other member, and what that member sees. */
+    private fun smartBook(filter: JsonObject) {
+        val filterId = filter.longAt("id")
+        val sharedWith = listOfNotNull(readerId).map { obj("id" to it) }
+        val smart = api("recipe-book-create-smart", "POST", "/api/recipe-book/", bookBody("Vill laga", sharedWith, filter))
+        observe("wantToCook.smartBook.create", describe(smart, includeBody = smart.status != CREATED))
+        observe("wantToCook.smartBook.filter.keys", objOf(smart)?.objAt("filter")?.keys?.sorted())
+        val smartId = idOf(smart) ?: return
+        val entries = api("smart-entries", "GET", "/api/recipe-book-entry/?book=$smartId", record = false)
+        observe("wantToCook.smartBook.entries", objOf(entries)?.longAt("count"))
+        val asMember = api("filter-member", "GET", "/api/recipe/?filter=$filterId&page_size=100", token = env.readerToken, record = false)
+        observe("wantToCook.smartBook.memberRecipes", describe(asMember, includeBody = false))
+        observe("wantToCook.smartBook.memberRecipes.names", pageOrArray(asMember.json).map { it.stringAt("name") })
+    }
+
     // --- Baseline -------------------------------------------------------------------------------
 
     @Test
     @Order(99)
     fun everyFactMatchesTheBaseline() {
+        for ((key, expected) in EXPECTED) {
+            val described = (facts[key.removeSuffix(".status")] as? JsonObject)?.get("status")
+            val observed = facts[key] ?: described.takeIf { key.endsWith(".status") }
+            if (observed != Facts.toJson(expected)) mismatches += "$key: expected ${Facts.toJson(expected)}, observed $observed"
+        }
         assertTrue(mismatches.isEmpty(), "Observed facts differ from the 2.6.13 baseline:\n" + mismatches.joinToString("\n"))
     }
 
@@ -1070,13 +1079,6 @@ class Phase2ContractTest {
     /** Whole seconds with the zone's offset, as the web app sends date-times. */
     private fun isoOffset(time: ZonedDateTime): String = time.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-    private fun verify(key: String, observed: Any?, expected: Any?) {
-        facts[key] = observed
-        val observedJson = Facts.toJson(observed)
-        val expectedJson = Facts.toJson(expected)
-        if (observedJson != expectedJson) mismatches += "$key: expected $expectedJson, observed $observedJson"
-    }
-
     private fun observe(key: String, value: Any?) {
         facts[key] = value
     }
@@ -1123,6 +1125,118 @@ class Phase2ContractTest {
             "filter_to_supermarket",
             "default_meal_type",
             "shopping_update_food_lists",
+        )
+
+        private val PAGE_KEYS = listOf("count", "next", "previous", "timestamp", "results")
+
+        private fun parsed(amount: Double, unit: String?, food: String, note: String = ""): Map<String, Any?> =
+            mapOf("amount" to amount, "unit" to unit, "food" to food, "note" to note)
+
+        /**
+         * The facts the app relies on (api-schema/fixtures/<version>/FACTS.md "Fas 2"), the same in
+         * 2.6.13 and 2.7.1. A key ending in `.status` also matches the status of a recorded response
+         * description. Every other fact is only recorded; tandoor-watch compares it between versions.
+         */
+        val EXPECTED: Map<String, Any?> = linkedMapOf(
+            "serverSettings.shoppingMinAutosyncInterval.type" to "string",
+            "userPreference.shopping_share" to "<absent>",
+            "userPreference.patchOtherUser.status" to 404,
+            "userSpace.guest.groups" to listOf("guest"),
+            "userSpace.owner.household.keys" to listOf("created_at", "id", "name", "updated_at"),
+            "household.list.reader.status" to 403,
+            "shoppingList.list.keys" to PAGE_KEYS,
+            "supermarket.createWithShoppingLists.status" to 500,
+            "supermarket.create.status" to 201,
+            "supermarket.list.categoryOrder" to listOf("Grönsaker=0", "Mejeri=1", "Övrigt=10"),
+            "food.patchCategory.status" to 200,
+            "food.get.foodOnhand" to true,
+            "food.get.foodOnhand.reader" to true,
+            "shopping.list.keys" to PAGE_KEYS,
+            "shopping.create.status" to 201,
+            "shopping.entry.food.keys" to listOf("id", "name", "plural_name", "shopping_lists", "supermarket_category"),
+            "shopping.createExistingFood.sameFoodId" to true,
+            "shopping.createNoFood.status" to 500,
+            "shopping.createNoAmount.status" to 400,
+            "shopping.createZeroAmount.status" to 201,
+            "shopping.updatedAfter.t0.includesCreated" to true,
+            "shopping.updatedAfter.rawPlus.returnsEverything" to true,
+            "shopping.patchChecked.seenByUpdatedAfter" to true,
+            "shopping.bulkCheck.status" to 200,
+            "shopping.bulkCheck.seenByUpdatedAfter" to true,
+            "shopping.bulkCheck.completedAtSet" to true,
+            "shopping.bulkUncheck.seenByUpdatedAfter" to true,
+            "shopping.bulkUncheck.completedAt" to null,
+            "shopping.bulkListsAdd.seenByUpdatedAfter" to false,
+            "shopping.patchLists.seenByUpdatedAfter" to true,
+            "shopping.delay.listed" to true,
+            "shopping.delayNull.status" to 200,
+            "shopping.window.recentDays7.listed30d10d3d" to listOf(false, false, true),
+            "shopping.window.recentDays20.listed30d10d3d" to listOf(false, true, true),
+            "shopping.window.agedOut.detailStatus" to 200,
+            "shopping.delete.status" to 204,
+            "shopping.deleted.get.status" to 404,
+            "shopping.deleted.patch.status" to 404,
+            "shopping.deleted.delete.status" to 404,
+            "shopping.deleted.bulk.status" to 200,
+            "shopping.deleted.bulkMixed.otherChecked" to true,
+            "shopping.householdMember.seesOwnersEntries" to true,
+            "shopping.householdMember.ownerSeesMembersEntry" to true,
+            "shopping.guest.create.status" to 201,
+            "shopping.guest.bulk.status" to 403,
+            "recipeShopping.entries.foods" to listOf("grädde=6.0", "potatis=2.0"),
+            "recipeShopping.putServings.foods" to listOf("grädde=3.0", "potatis=1.0"),
+            "listRecipe.patchServings.foods" to listOf("grädde=1.5", "potatis=0.5"),
+            "listRecipe.delete.entriesRemain" to 0,
+            "listRecipe.bulkCreateEntries.created" to listOf("mjölk=1.5"),
+            "recipeShopping.putServings0.status" to 500,
+            "recipeShopping.putNegativeServings.entriesRemain" to 0,
+            "recipeShopping.mealplan.status" to 500,
+            "parser.sample.2 dl grädde" to parsed(2.0, "dl", "grädde"),
+            "parser.sample.mjölk" to parsed(0.0, null, "mjölk"),
+            "parser.sample.6 ägg" to parsed(6.0, null, "ägg"),
+            "parser.sample.1 1/2 tsk salt" to parsed(1.5, "tsk", "salt"),
+            "parser.sample.1,5 kg potatis" to parsed(1.5, "kg", "potatis"),
+            "parser.sample.ca 200 g smör, rumsvarmt" to parsed(200.0, "g", "ca smör", "rumsvarmt"),
+            "parser.sample.1 paket smör" to parsed(1.0, "paket", "smör"),
+            "parser.sample.½ citron" to parsed(0.5, null, "citron"),
+            "parser.sample.ca 200 g smör, rumsvarmt.foodHasId" to true,
+            "mealType.create.status" to 201,
+            "mealPlan.dateOnly.status" to 201,
+            "mealPlan.lateUtc.listedOnDay3" to false,
+            "mealPlan.lateUtc.listedOnDay4" to true,
+            "mealPlan.twoDays.listedOnFirstDay" to false,
+            "mealPlan.twoDays.listedOnSecondDay" to true,
+            "mealPlan.patchFields.status" to 200,
+            "mealPlan.addShopping.shoppingFlag" to true,
+            "mealPlan.addShopping.entries" to listOf("grädde=3.0", "mjölk=2.0", "potatis=1.0", "smör=1.0"),
+            "mealPlan.noAddShopping.entries" to 0,
+            "mealPlan.autoAdd.entries" to 0,
+            "mealPlan.autoAddAndAddShopping.entries" to 4,
+            "mealPlan.autoAddWithAddShoppingFalse.entries" to 0,
+            "shopping.mealplanId.sameListRecipe" to true,
+            "mealPlan.afterMealplanIdEntries.shoppingFlag" to true,
+            "mealPlan.delete.entriesRemain" to 0,
+            "mealPlan.deleted.get.status" to 404,
+            "mealPlan.deleted.patch.status" to 404,
+            "mealPlan.deleted.delete.status" to 404,
+            "mealPlan.householdMember.seesSame" to true,
+            "mealPlan.guest.create.status" to 201,
+            "recipeBook.createShared.status" to 201,
+            "recipeBook.sharedMember.listed" to true,
+            "recipeBook.sharedMember.addEntry.status" to 201,
+            "recipeBook.sharedMember.deleteEntry.status" to 403,
+            "recipeBook.sharedMember.patchBook.status" to 403,
+            "recipeBook.ownerSeesMembersSharedBook" to true,
+            "recipeBook.deletedEntry.get.status" to 404,
+            "recipeBook.guest.create.status" to 201,
+            "recipeBook.deleted.get.status" to 404,
+            "wantToCook.memberPatch.status" to 200,
+            "wantToCook.memberPatch.sameKeywordId" to true,
+            "wantToCook.guestPatch.status" to 403,
+            "wantToCook.filter.ids.recipes" to listOf(RECIPE),
+            "wantToCook.filter.objects.status" to 500,
+            "wantToCook.smartBook.memberRecipes.names" to listOf(RECIPE),
+            "wantToCook.remove.keywords" to emptyList<String>(),
         )
 
         val PARSER_SAMPLES = listOf(

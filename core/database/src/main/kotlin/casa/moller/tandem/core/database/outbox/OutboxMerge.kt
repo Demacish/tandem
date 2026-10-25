@@ -63,9 +63,9 @@ object OutboxMerge {
 
     private fun decideDelete(unsent: List<OutboxEntity>, create: OutboxEntity?): Decision {
         val pendingDelete = unsent.lastOrNull { it.op == OutboxOps.DELETE }
+        // Deleted twice offline: the first DELETE stays, unchanged.
         return when {
             create != null -> Decision.Cancel(unsent.map { it.id })
-            // Deleted twice offline: the first DELETE stays, unchanged.
             pendingDelete != null -> Decision.Update(pendingDelete.id, pendingDelete.payload, pendingDelete.batchKey)
             unsent.isEmpty() -> Decision.Insert
             else -> Decision.Replace(unsent.map { it.id })

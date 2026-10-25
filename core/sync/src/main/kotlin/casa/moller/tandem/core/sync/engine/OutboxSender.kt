@@ -6,6 +6,7 @@ import casa.moller.tandem.core.database.entity.CookLogEntity
 import casa.moller.tandem.core.database.entity.CookLogProblems
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.outbox.OutboxRefs
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.isConnectivityProblem
@@ -70,6 +71,8 @@ internal class OutboxSender @Inject constructor(
     private val caller: RemoteCaller,
     private val network: NetworkStatus,
     private val clock: SyncClock,
+    // Phase 2 (grund lane): the lanes' senders by outbox entity (OutboxHandlerModule).
+    private val handlers: Map<String, @JvmSuppressWildcards OutboxHandler>,
 ) {
     private val mutex = Mutex()
 
@@ -90,6 +93,11 @@ internal class OutboxSender @Inject constructor(
             if (outbox.markInFlight(row.id) != 1) return@repeat
             if (row.op == OutboxOps.COOK_LOG) {
                 sendCookLog(remote, row, storedRecipes)?.let { return@withLock it }
+                return@repeat
+            }
+            val handler = handlers[row.entity]?.takeIf { row.op != OutboxOps.VIEW_LOG }
+            if (handler != null) {
+                sendWithHandler(remote, handler, row)?.let { return@withLock it }
                 return@repeat
             }
             val result = send(remote, row, storedRecipes) ?: run {
@@ -122,6 +130,41 @@ internal class OutboxSender @Inject constructor(
 
         // Nothing else is queued yet: such a row (from a newer app version) is marked FAILED and kept.
         else -> Outcome.Failure(TandemError.Unknown(UNSUPPORTED))
+    }
+
+    /**
+     * Phase 2: one row of an entity with an [OutboxHandler]: resolves the payload's temporary ids
+     * (a row whose reference has no server id yet waits for the next drain), sends it and applies
+     * the result; returns how the drain ends, or null to go on with the next row.
+     */
+    private suspend fun sendWithHandler(remote: ActiveSource.Remote, handler: OutboxHandler, row: OutboxEntity): DrainResult? {
+        val database = databases.get(remote.kind)
+        val outbox = database.outboxDao()
+        val ids = database.idRewriteDao()
+        val mapping = ids.getMappings(remote.accountId).associate { (it.entity to it.localId) to it.serverId }
+        val payload = OutboxRefs.resolve(row.payload, row.refs) { entity, localId -> mapping[entity to localId] }
+        if (payload == null) {
+            outbox.markRetry(row.id, WAITING_FOR_ID)
+            return DrainResult.RETRY
+        }
+        return when (val result = handler.send(remote, row, payload)) {
+            OutboxResult.Sent, OutboxResult.Dropped -> {
+                outbox.markDone(row.id)
+                null
+            }
+
+            is OutboxResult.Created -> {
+                val localId = row.localId
+                if (localId != null && localId < 0) {
+                    ids.completeCreate(remote.accountId, row.id, row.entity, localId, result.serverId, clock.nowMillis())
+                } else {
+                    outbox.markDone(row.id)
+                }
+                null
+            }
+
+            is OutboxResult.Failed -> handleFailure(remote, row, result.error)
+        }
     }
 
     /**
@@ -285,6 +328,9 @@ internal class OutboxSender @Inject constructor(
         /** At most this many rows per drain; the next drain continues. */
         const val MAX_ROWS_PER_DRAIN = 50
         const val UNSUPPORTED = "tandem.sync.unsupported-outbox-op"
+
+        /** A payload points at an object whose CREATE has not been answered yet (should not happen: `depends_on`). */
+        const val WAITING_FOR_ID = "tandem.sync.waiting-for-server-id"
 
         /** The cook log's `recipe` field (a 400 on it means the recipe does not exist). */
         const val FIELD_RECIPE = "recipe"

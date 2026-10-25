@@ -89,7 +89,7 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val guard = SyncGuard(clock)
     val caller = RemoteCaller(guard, sources)
     val details = DetailFetcher(sources, databases, caller, clock)
-    val outbox = OutboxSender(databases, caller, network, clock)
+    val outbox = OutboxSender(databases, caller, network, clock, handlers = emptyMap())
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(

@@ -52,8 +52,8 @@ kan installeras bredvid release-bygget.
 | Modul | Typ | Får bero på |
 |---|---|---|
 | `:app` | applikation | allt den kopplar ihop |
-| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook` | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer` och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
-| `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes` och `feature:home`: skalet är navigationsvärden (se Navigering) |
+| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook`, `:feature:shopping`, `:feature:mealplan` (Fas 2) | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer` och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
+| `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes`, `feature:home`, `feature:cook`, `feature:shopping` och `feature:mealplan`: skalet är navigationsvärden (se Navigering) |
 | `:core:data` | Android-bibliotek + Hilt | `core:{network,datastore,model,common}`; repository-gränssnitten för Fas 1 |
 | `:core:database` | Android-bibliotek + Hilt + `tandem.android.room` | `core:{model,common}` |
 | `:core:sync` | Android-bibliotek + Hilt + WorkManager/hilt-work | `core:{data,network,database,datastore,domain,model,common}` |
@@ -67,7 +67,7 @@ kan installeras bredvid release-bygget.
 | `:contract-tests` | ren Kotlin/JVM | – (pratar HTTP med en tillfällig Tandoor) |
 | `:smoke` | `tandem.android.test` (test-APK) | – (svart låda: rör bara `:app`s minifierade APK via skärmen) |
 
-Alla moduler för Fas 1a och 1b finns redan i `settings.gradle.kts`. Nya beroenden läggs i modulens egen
+Alla moduler för Fas 1a, 1b och 2 finns redan i `settings.gradle.kts`. Nya beroenden läggs i modulens egen
 `build.gradle.kts`; använd typsäkra projektreferenser (`projects.core.model`) och katalogen
 (`libs.…`).
 
@@ -128,7 +128,8 @@ Gemensamt för Android-moduler:
   `TandemMigrationTest`; `1.json` får aldrig skrivas om. Version 2 (0.2.0) lägger till
   `cook_log` (`TandemMigrations.MIGRATION_1_2`, testad från en fil skapad ur `1.json`), version 3
   (0.2.0) `step.image_url` och markerar detaljer med stegbild för ny hämtning (`MIGRATION_2_3`,
-  testad 1 → 3; synksidan i `SyncEngineTest`).
+  testad 1 → 3; synksidan i `SyncEngineTest`), version 4 (0.3.0) hela Fas 2 (`MIGRATION_3_4`,
+  se "Fas 2 – kontrakt"; testad 3 → 4 och 1 → 4).
 - **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
   schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
   (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
@@ -325,6 +326,211 @@ lägger till `USE_FULL_SCREEN_INTENT`, `app/src/play/AndroidManifest.xml` tar bo
 | CI | – | `tandoor-watch.yml`, Roborazzi-jämförelse, pseudospråk |
 | Integration | allt ovan | kopplar ihop, tar bort `TemporaryFas1bModule.kt` |
 <!-- /Fas 1b kontrakt -->
+
+<!-- Fas 2 kontrakt -->
+## Fas 2 – kontrakt (0.3.0 "handla & planera")
+
+Grunden för 0.3.0 (inköpslista, butiker, matsedel, "Handla för veckan", böcker, favoriter, "Vill
+laga", gästläge, kontobyte) lades först, så att fem banor kan bygga parallellt mot samma typer,
+tabeller och nycklar. Allt nedan finns på `main`; de riktiga implementationerna kommer från
+banorna. Fakta om servern: `api-schema/fixtures/2.6.13/FACTS.md` och `2.7.1/FACTS.md`, avsnitten
+"Fas 2" (inspelade av `Phase2ContractTest`, se "Fas 2 – fakta" nedan).
+
+### Rena typer (`:core:model`, `:core:domain`)
+
+| Paket | Typer |
+|---|---|
+| `model.shopping` | `ShoppingEntry` (id negativt = bara på enheten, `isDelayed(now)`, `pending`), `ShoppingFood`, `ShoppingUnit`, `ShoppingRecipeLabel` (listrecept/måltid), `ShoppingList` (Tandoors namngivna listor), `ShoppingFilter`, `ShoppingEntryDraft`, `RecipeShoppingRequest`, `ShoppingChange` (Added/Checked/Removed), `ShoppingHistoryItem`, `ParsedIngredient`, `Supermarket` + `Aisle` + `SupermarketCategory` |
+| `model.mealplan` | (finns) `MealType`, `MealPlanEntry` (+ `pending`); nya `MealPlanDraft` (`addToShopping`), `MealPlanUpdate` (`move` sätter båda datumen), `MealPlanConflict`, `MealTypeDraft`, `MealPlanDay`, `MealPlanWeek` (måndag först, `startOf`), `WeekShoppingPreview`/`WeekShoppingMeal`/`WeekShoppingIngredient`/`WeekShoppingSelection` |
+| `model.book` | `RecipeBook` (`isOwn`, `canEdit`), `RecipeBookKind` BOOK/SMART/FAVORITES/WANT_TO_COOK, `RecipeBookEntry`, `RecipeBookStatus`, `WantToCook` (nyckelordet `vill-laga`, `filterSearch(id)`) |
+| `model.account` | `SpaceRole` (`of(gruppnamn)`), `SpacePermissions` (`readOnly` för gäst utom i demoläget), `Household`, `AccountSummary` |
+| `model.sync` | `ForegroundTarget` (ShoppingList, MealPlan(vecka)), `ForegroundSyncState`, `ForegroundPolling.intervalFor(serverns golv)` = max(golvet, 20 s), aldrig under 15 s |
+| `domain.shopping` | `ShoppingWindowRule`: listans fönster (midnatt UTC − min(`shopping_recent_days`, 14) dagar), `missingEntry(...)` → KEEP/DELETED/AGED_OUT, `canDetectDeletions` (komplett svar under 1000 rader) |
+
+### Gränssnitt (`:core:data`) och vem som implementerar
+
+Alla är main-safe, följer det aktiva kontot, fungerar offline (skrivningar sparas direkt och köas)
+och har en demoväg utan nät. **Gäst** (`SpacePermissions.readOnly`): varje skrivning ger
+`DataProblem.READ_ONLY` innan något sparas; **någon annans bok**: `DataProblem.NOT_OWNER`.
+
+| Gränssnitt | Bana | Innehåll |
+|---|---|---|
+| `shopping.ShoppingRepository` | inköp (`:core:sync`) | `observeEntries(filter)`, `observeLists`, `observePendingCount`, `observeChanges`, `add`/`addAll`, `addRecipe`, `setChecked`, `setDelayed`, `update`, `setLists`, `remove`, `removeListRecipe`, `clearChecked`, `refresh(full)`, `shareText`, `observeSuggestions`, `observeHistory` |
+| `shopping.SupermarketRepository` | inköp | butiker med gångordning, kategorier, vald butik per enhet, `setFoodCategory`, `setFoodOnHand`, `reorderAisles` |
+| `shopping.IngredientParser` | inköp | `parse(lines)` (servern, lokalt offline), `parseLocally(line)`; Tandoors parser **skapar livsmedel**, anropa den bara för text som läggs till |
+| `mealplan.MealPlanRepository` | matsedel | `observeWeek`, `observeMeal`, `observeMealTypes`, `create`, `update`, `delete`, `createMealType`, `observeConflicts`/`resolveConflict`, `refresh`, `weekShoppingPreview`, `addWeekToShopping` |
+| `book.RecipeBookRepository` | böcker | `observeBooks`/`observeBook`/`observeRecipes`, `observeFavorites` (allas, sammanslagna), `observeWantToCook`, `observeStatus`, `createBook`, `addToBook`, `removeFromBook`, `setFavorite` (egen favoritbok, skapas vid behov), `setWantToCook`, `refresh` |
+| `account.AccountDirectory` | hushåll/konto | (utökar `AccountRepository` som eget gränssnitt) `observeAccounts`, `switchTo`, `observeHousehold`, `refreshHousehold` |
+| `permissions.SpacePermissionsRepository` | hushåll/konto | `permissions` (grupp ur `/api/user-space/all_personal/`) |
+| `sync.ForegroundSync` | synk | `keepFresh(target)`: samla medan skärmen är STARTED; pollar listan/matsedeln enligt fönsterregeln nedan |
+
+`:core:sync` har kroken `engine/OutboxHandler` (+ `OutboxResult` Sent/Created/Dropped/Failed):
+varje bana binder sin avsändare per outbox-entitet med `@IntoMap @StringKey(OutboxEntities.X)` i
+en egen Hilt-modul (kartan deklareras i `di/OutboxHandlerModule`), så ingen bana behöver ändra
+`OutboxSender`. `OutboxSender` sköter säkert läge, ordning, `refs`, id-omskrivningen efter en
+CREATE och felreglerna (404 = raderat: släpps; 400 = FAILED med beroende rader; 401/403/429 och
+kretsbrytaren stoppar; offline/5xx försöker igen).
+
+### Room-schema 4 (`MIGRATION_3_4`, hela fasens enda migrering)
+
+Tabellerna och migreringen är **slutliga för Fas 2**: banorna lägger till frågor i DAO:erna men
+ingen tabell, kolumn eller version. Behövs ändå en ändring blir den 4 → 5 och samordnas här först.
+`4.json` är incheckad; `TandemMigrationTest` prövar 3 → 4 och 1 → 4.
+
+| Tabell | Nyckel | Innehåll |
+|---|---|---|
+| `shopping_entry` | `(account_id, local_id)`, unik `server_id` | livsmedel (id, namn, plural, gång), enhet, mängd, ordning, `checked`, `completed_at`/`delay_until`/`created_at`/`updated_at` (epoch ms), vem (id, namn), `list_recipe_id`, `ingredient_id`, `meal_plan_id`, recept (id, namn), `shopping_list_ids` (JSON), `fetched_at` |
+| `shopping_list_recipe` | som ovan | namn, recept, måltid, portioner, skapare |
+| `shopping_list` | `(account_id, id)` | Tandoors namngivna listor |
+| `shopping_history` | `(account_id, entry_id)` | avbockade rader som åldrats ut (fönsterregeln), för "brukar köpa" |
+| `supermarket`, `supermarket_category`, `supermarket_category_relation` | `(account_id, id)` | butiker, gångar, gångordning per butik (`relation_order`) |
+| `recipe_book` | `(account_id, local_id)`, unik `server_id` | namn, ägare (id, namn), delad med (JSON), filter (id, `search`), ordning, `kind` (`RecipeBookKinds`) |
+| `recipe_book_entry` | som ovan | `book_id` (server- eller lokalt id), `recipe_id` |
+| `id_mapping` | `(account_id, entity, local_id)` | tillfälligt id → server-id (rensas inte i Fas 2) |
+
+Nya kolumner: `outbox.refs`, `outbox.batch_key`, `outbox.updated_at`;
+`server_account.household_name`, `server_account.shopping_min_autosync_seconds`;
+`meal_plan.recipe_name`; `sync_state.delta_count` (default 0). Nya DAO:er: `ShoppingDao`,
+`SupermarketDao`, `RecipeBookDao` (skelett) och `IdRewriteDao`; alla nya tabeller rensas av
+`AccountDao.deleteAccountData`. Små tabeller (butiker, kategorier, listor, böcker) läses om helt
+(plan 3.5); de har bara server-id (ingen skapas offline i Fas 2 utom böcker och poster).
+
+### Outboxen: typer, beroenden och id-omskrivning (plan 5.7)
+
+**Nyckelregeln:** serverposter har `local_id = server_id`. Ett objekt som skapas offline får ett
+negativt id från `IdRewriteDao.nextLocalId` (aldrig återanvänt: lägre än allt tabellen, outboxen
+och `id_mapping` haft), sparas med `server_id = null` och köas som `CREATE` med bara `local_id`.
+Senare rader för samma objekt bär samma `local_id`; har objektet ett server-id bär raden bara
+`server_id`. Rader för **andra** objekt som pekar på det (en post i ett nytt listrecept, en
+måltid med en ny måltidstyp, en post i en ny bok) skriver det negativa id:t i payloaden, anger
+fältet i `refs` (`OutboxRefs.encode(mapOf("list_recipe" to "shopping_list_recipe"))`, punkt för
+nästlade fält, `meal_type.id`; en array som `ids` löses element för element) och sätter
+`depends_on` till CREATE-raden.
+
+**När CREATE besvaras** anropar avsändaren `IdRewriteDao.completeCreate` (via
+`OutboxResult.Created`), som i **en** transaktion: sparar `id_mapping`, ger väntande rader för
+objektet `server_id`, nycklar om den lokala raden till `local_id = server_id` (en kopia av samma
+serverrad som en synk hunnit lagra tas bort), skriver om referenser i andra tabeller
+(`shopping_entry.list_recipe_id`/`meal_plan_id`, `shopping_list_recipe.meal_plan_id`,
+`meal_plan.meal_type_id`, `recipe_book_entry.book_id`) och tar bort CREATE-raden, vilket släpper
+de beroende raderna. Payloadens referenser löses först precis före sändning (`OutboxRefs.resolve`
+mot `id_mapping`). En skärm eller nyckel som håller ett gammalt negativt id löser det med
+`IdRewriteDao.current`/`resolve`.
+
+**Ordning:** lägsta `id` först; en rad väntar så länge dess `depends_on`-rad finns kvar (även
+FAILED) och så länge en äldre rad för samma objekt finns. `OutboxDao.markFailed` (400) markerar
+raden och alla som beror på den. `nextReadyBatch(batchKey)` ger redo rader med samma
+`batch_key` (BULK_CHECK med samma värde → ett `POST .../bulk/`).
+
+**Sammanslagning** (`OutboxDao.enqueue`, reglerna i `OutboxMerge`, gäller bara osända rader,
+PENDING/PAUSED): PATCH efter CREATE → en CREATE med slutvärdena; PATCH efter PATCH → en PATCH
+(första `base_snapshot` står kvar); DELETE efter CREATE → allt för objektet och allt som beror på
+det försvinner, inget skickas; DELETE efter PATCH/BULK_CHECK → bara DELETE; BULK_CHECK efter
+CREATE → `checked` i CREATE; BULK_CHECK/RECIPE_KEYWORDS efter samma op → sista värdet, och
+tillbaka till `base_snapshot` (bocka av och på igen) tar ut varandra. CREATE, VIEW_LOG och
+COOK_LOG slås aldrig ihop här.
+
+| op | entitet | Anrop | Payload / `refs` / batch | Särskilt |
+|---|---|---|---|---|
+| CREATE | `shopping_entry` | `POST /api/shopping-list-entry/` | `{food:{name[,id]}, unit:{name}\|null, amount, shopping_lists:[{id}], list_recipe?, mealplan_id?}`; refs `list_recipe`, `mealplan_id` | `amount` krävs (400 utan), `food: null` ger 500; svaret har `id` → `Created` |
+| PATCH | `shopping_entry` | `PATCH .../{id}/` | ändrade fält; `shopping_lists:[{id}]` för flytt (bumpar `updated_at`), `delay_until` (ångra = `1970-01-01T00:00:00Z`) | `completed_at` går inte att sätta (servern sätter den) |
+| BULK_CHECK | `shopping_entry` | `POST .../bulk/` `{ids, checked}` | en rad per post, `base_snapshot {"checked": före}`, batch `shopping_entry:checked=true\|false`; refs `ids` | ett okänt/raderat id ger ändå 200 (ingen 404): inget att rensa |
+| DELETE | `shopping_entry` | `DELETE .../{id}/` | – | 404 om redan raderad |
+| CREATE | `shopping_list_recipe` | `POST /api/shopping-list-recipe/` `{recipe, servings, name, mealplan?}`, sedan posterna som egna CREATE med `list_recipe` | refs `mealplan` | `recipe/{id}/shopping/` svarar bara `{msg}` (inga id) och kan inte kopplas till en måltid (500): använd inte för offline |
+| PATCH/DELETE | `shopping_list_recipe` | `PATCH`/`DELETE .../{id}/` | `servings` skalar posterna; DELETE tar bort posterna | `PUT recipe/{id}/shopping/` med `servings: 0` ger 500; negativt tar bort |
+| CREATE/PATCH/DELETE | `meal_plan` | `/api/meal-plan/` | `{title, recipe:{id,name}\|null, servings, note, from_date, to_date, meal_type:{id,name}, addshopping?}`; refs `meal_type.id`; PATCH med `base_snapshot` (fältjämförelse före sändning, plan 3.5) | flytt = båda datumen; DELETE tar bort måltidens poster |
+| CREATE | `meal_type` | `POST /api/meal-type/` | `{name, time?, color?, order}` | delas av hela spacet |
+| CREATE/DELETE | `recipe_book` | `/api/recipe-book/` | `{name, description, shared:[{id}], filter}` (`shared` krävs) | bara egna böcker |
+| CREATE/DELETE | `recipe_book_entry` | `POST /api/recipe-book-entry/` `{book, recipe}`, `DELETE .../{id}/` | refs `book` | 400 "unique set" om receptet redan finns |
+| RECIPE_KEYWORDS | `recipe` | `PATCH /api/recipe/{id}/` `{keywords:[...hela listan]}` | `{"keywords": {"vill-laga": true}}`, `base_snapshot` med före-värdet | läs receptet färskt före sändning; gäst får 403 |
+| PATCH | `food` | `PATCH /api/food/{id}/` | `supermarket_category:{id,name}\|null`, `food_onhand` | gång och "har hemma" gäller hela spacet/hushållet |
+| PATCH | `supermarket_category_relation` | `PATCH .../{id}/` `{order}` | – | butikens lista sorteras på `order` |
+| PATCH | `user_preference` | `PATCH /api/user-preference/{user}/` | t.ex. `shopping_add_onhand` | `server_id` = användar-id; någon annans → 404 |
+
+### Synk: fönsterregeln och polling (plan 3.5)
+
+- **Inköpslistan:** delta med `updated_after=<serverns senaste timestamp>` (**URL-kodat**: ett
+  okodat `+` i offseten blir mellanslag och Tandoor svarar då med hela listan) och `page_size=200`;
+  var 10:e gång (`sync_state.delta_count`) och vid start en full omläsning. En lagrad rad som saknas
+  i en full omläsning avgörs av `ShoppingWindowRule.missingEntry`: osänd/ändrad → behåll;
+  oavbockad → raderad (outbox-raderna släpps utan att skickas); avbockad minst en dag inne i
+  fönstret → raderad; äldre → `shopping_history`. Ett svar med 1000 rader (eller ofullständigt)
+  raderar ingenting. Outboxen töms **före** omläsningen.
+- **Polling medan listan är öppen:** `ForegroundSync.keepFresh(ShoppingList)` var
+  `ForegroundPolling.intervalFor(server_account.shopping_min_autosync_seconds)` (20 s med
+  Tandoors standard "5"), aldrig i demoläget eller när `SyncGuard` pausar. Två telefoner ser
+  varandras avbockningar inom 30 s (Fas 2 "Klart när").
+- **Matsedeln:** fönstret −14..+42 dagar läses om och jämförs (finns sedan Fas 1,
+  `MealPlanDao.replaceWindow` lämnar poster med osända rader); med Veckan öppen högst var 60:e s.
+- **Små tabeller** (butiker, kategorier, listor, böcker och poster): full omläsning med de andra
+  små tabellerna (start högst 1/h, var 6:e timme).
+
+### Navigering och moduler
+
+| Modul | Nycklar | Routes (platshållare tills banan bygger skärmen) |
+|---|---|---|
+| `:feature:shopping` (ny) | `ShoppingListKey(listId?, supermarketId?)`, `StoreModeKey(listId?, supermarketId?)` (helskärm på alla bredder), `ShoppingListChoiceKey`, `ShoppingHistoryKey` | `ShoppingRoute`, `StoreModeRoute`, `ShoppingListChoiceRoute`, `ShoppingHistoryRoute` |
+| `:feature:mealplan` (ny) | `WeekAgendaKey(weekStart?)`, `PlanMealKey(date, mealTypeId?, mealPlanId?, recipeId?)`, `WeekShoppingKey(weekStart)`; datum som `yyyy-MM-dd`-strängar | `WeekRoute`, `PlanMealRoute`, `WeekShoppingRoute` |
+| `:feature:recipes` | `BooksKey`, `BookDetailKey(bookId)`, `FavoritesKey`, `WantToCookKey` | `books/BookRoutes.kt`: `BooksRoute`, `BookDetailRoute`, `FavoritesRoute`, `WantToCookRoute` (strängar i `strings_books.xml`) |
+
+Skalet: flikarnas rötter är fortfarande `WeekKey` och `ShoppingKey`; `ShellFeatures` har en
+funktion per route och `TandemShell` en `entry` per nyckel (recept → `RecipeDetailKey`, "Laga" →
+`CookKey`, "Handla för veckan" → `WeekShoppingKey`, listan efter → Handla-fliken). Ingången till
+böckerna (chips i Recept, raden under Mer) lägger böckernas bana till. Skalets tester visar
+fortfarande `PlaceholderTab` för Handla och Veckan, så dess referensbilder är oförändrade.
+Nyckeltester: `ShoppingKeysTest`, `MealPlanKeysTest`, `BookKeysTest`.
+
+### Fakes (`:core:testing`) och tillfälliga bindningar (`:app`)
+
+`Fas2Fakes.kt`: `FakeShoppingRepository`, `FakeSupermarketRepository`, `FakeIngredientParser`,
+`FakeMealPlanRepository`, `FakeRecipeBookRepository`, `FakeAccountDirectory`,
+`FakeSpacePermissionsRepository`, `FakeForegroundSync`, `SampleShopping` och `sampleMeal`
+(negativa id för nya objekt, `readOnly`, `failure`). `Fas2FakesTest` prövar dem.
+
+`app/.../di/TemporaryFas2Module.kt` binder tomma stand-ins (inget visas, varje skrivning ger
+`TandemError.Unknown("tandem.temporary.fas2")`) i fem moduler; **varje bana tar bort sin modul i
+samma ändring som den binder den riktiga** (annars dubbel Hilt-bindning), integrationen tar bort
+filen.
+
+### Fas 2 – fakta (2.6.13 och 2.7.1 beter sig likadant)
+
+`Phase2ContractTest` körs i `contract.yml` efter Fas 1 (push kör nu **2.6.13 och 2.7.1**). Steget
+före lägger kontraktsanvändaren och den andra medlemmen i ett hushåll, skapar en gästmedlem och
+tre avbockade poster 30/10/3 dagar bakåt (API:t kan inte sätta `completed_at`). Testet jämför
+`EXPECTED` (det appen bygger på) och fäller körningen vid avvikelse; resten spelas in och
+jämförs nattligen av `tandoor-watch` (`report.py` läser nu också `fas2/observed-facts.json`).
+Inspelningarna ligger i `api-schema/fixtures/<version>/fas2/`. Det viktigaste:
+
+- Inköpslistan: posten har `food` (`FoodShopping` med nästlad `supermarket_category`), `unit`,
+  `amount` (decimal), `created_by` (helt användarobjekt), `list_recipe_data` (med `meal_plan_data`).
+  PATCH av `checked` och bulk bumpar `updated_at`; bulkens `shopping_lists_add` gör det **inte**,
+  PATCH av `shopping_lists` gör det. Fönstret: midnatt UTC − min(dagar, 14).
+- `mealplan_autoadd_shopping` gör **ingenting** på servern när en måltid skapas via API:t: bara
+  `addshopping: true` lägger på listan (då med `shopping: true`). Appen följer webben: rutan
+  "Lägg på listan" startar som inställningen och skickar `addshopping` när den är ikryssad.
+- Tidszon: en måltid listas under serverns lokala datum för `to_date`; ett rent datum får
+  måltidstypens tid; 23:30Z blir nästa dag. PATCH av bara `from_date` lämnar `to_date`.
+- Böcker: en delad medlem kan **lägga till** poster i någon annans bok (201) men inte ta bort
+  (403) eller ändra boken (403). Appen visar ändå skrivknappar bara för egna böcker (plan 3.7).
+  `CustomFilter.search` måste vara id:n (`{"keywords_or":[8]}`), objekt ger 500 i receptlistan.
+- Gäst: listan, matsedeln och böckerna går att skapa poster i (201), bulk och receptändringar ger
+  403. Appen är ändå skrivskyddad för gäster (#42).
+- 404-kroppar: `{"detail": "No <Modell> matches the given query."}` för GET/PATCH/DELETE av en
+  raderad post, lista recept, måltid, bok eller bokpost.
+- `shopping_min_autosync_interval` är en **sträng** ("5"); `shopping_share` finns inte i 2.6/2.7.
+  Hushållet läses ur `/api/user-space/all_personal/` (`/api/household/` ger 403 för icke-admin).
+
+### Vem bygger vad
+
+| Bana | Bygger på | Levererar (tar bort) |
+|---|---|---|
+| Inköp (`:feature:shopping`, `:core:sync`, `:core:network`) | `ShoppingRepository`, `SupermarketRepository`, `IngredientParser`, `shopping_*`/`supermarket*`-tabellerna, `OutboxHandler` för `shopping_entry`, `shopping_list_recipe`, `food`, `supermarket_category_relation` | Listan grupperad efter gångordning, "köp senare", fritext, butiksläge, dela som text, listval, "Lägg på listan" i receptdetaljen (#9–#14); DTO:er och tjänster för sina endpoints (egna filer) med rader i `DtoFixturesTest`; `TemporaryFas2ShoppingModule` |
+| Matsedel (`:feature:mealplan`, `:core:sync`, `:core:network`) | `MealPlanRepository`, `meal_plan`/`meal_type`, `OutboxHandler` för `meal_plan`, `meal_type` | Veckan (agenda, veckorutnät på surfplatta), planera/flytta/radera, konfliktdialogen, "Handla för veckan" utan dubbletter (#15–#16); `TemporaryFas2MealPlanModule` |
+| Böcker (`:feature:recipes`, `:core:sync`, `:core:network`) | `RecipeBookRepository`, `recipe_book*`, `WantToCook`, `OutboxHandler` för `recipe_book`, `recipe_book_entry`, `recipe` (RECIPE_KEYWORDS) | Böcker, Favoriter per person, "Vill laga", knapparna i receptdetaljen, chips i Recept, raden under Mer (#17); `TemporaryFas2BookModule` |
+| Hushåll och konton (`:feature:shell`, `:core:data`, `:core:sync`) | `AccountDirectory`, `SpacePermissionsRepository`, `server_account.household_name`, `SpaceRole` | Kontobyte (Stitch `konto_servrar`), hushållets namn på kontokortet, gästläget i hela appen (#42), `OutboxHandler` för `user_preference`; `TemporaryFas2AccountModule` |
+| Synk (`:core:sync`) | `ForegroundSync`, `ShoppingWindowRule`, `OutboxDao.enqueue/nextReadyBatch`, `IdRewriteDao`, `sync_state.delta_count` | Delta + full omläsning med fönsterregeln och arkivering, polling, små tabeller (butiker, listor, böcker), rensning före tömning, demoinnehåll för Fas 2; `TemporaryFas2SyncModule` |
+| Integration | allt ovan | kopplar ihop, tar bort `TemporaryFas2Module.kt`, röktest för Fas 2 |
+<!-- /Fas 2 kontrakt -->
 
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)

@@ -58,10 +58,12 @@ object OutboxRefs {
 
     private fun resolveValue(value: JsonElement, entity: String, lookup: (String, Long) -> Long?): JsonElement? = when (value) {
         is JsonArray -> JsonArray(value.map { resolveValue(it, entity, lookup) ?: return null })
+
         is JsonPrimitive -> {
             val id = value.longOrNull
             if (id == null || id >= 0) value else lookup(entity, id)?.let { JsonPrimitive(it) }
         }
+
         else -> value
     }
 }

@@ -432,10 +432,7 @@ class FakeRecipeBookRepository(
 }
 
 /** [AccountDirectory] over a fixed list of accounts; [switchTo] marks another one active. */
-class FakeAccountDirectory(
-    accounts: List<AccountSummary> = emptyList(),
-    household: Household? = SampleShopping.household,
-) : AccountDirectory {
+class FakeAccountDirectory(accounts: List<AccountSummary> = emptyList(), household: Household? = null) : AccountDirectory {
     val accounts = MutableStateFlow(accounts)
     val household = MutableStateFlow(household)
     val switches = mutableListOf<String>()
