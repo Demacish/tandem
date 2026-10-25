@@ -356,9 +356,10 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         val requests = selection.ingredientIdsByMeal.filterValues { it.isNotEmpty() }.mapNotNull { (mealId, ingredientIds) ->
             val localId = database.idRewriteDao().current(source.accountId, OutboxEntities.MEAL_PLAN, mealId)
             val meal = database.mealPlanDao().get(source.accountId, localId)
-            val recipeId = meal?.recipeId
             // Never twice (plan 6.2 step 2): a meal with entries on the list is skipped.
-            if (meal == null || recipeId == null || meal.shopping || meal.localId in onList) {
+            val onTheList = meal != null && (meal.shopping || meal.localId in onList)
+            val recipeId = meal?.recipeId?.takeUnless { onTheList }
+            if (meal == null || recipeId == null) {
                 null
             } else {
                 RecipeShoppingRequest(recipeId, meal.servings, ingredientIds, mealPlanId = meal.localId)

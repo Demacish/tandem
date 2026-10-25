@@ -185,7 +185,7 @@ internal fun Resources.messageText(message: WeekMessage, format: MealPlanFormat)
     is WeekMessage.Moved -> getString(
         R.string.mealplan_msg_moved,
         message.title.ifBlank { getString(R.string.mealplan_untitled) },
-        format.fullDay(message.date),
+        format.fullDayInText(message.date),
     )
 }
 

@@ -76,7 +76,7 @@ internal fun MoveMealPanel(
             modifier = Modifier.semantics { heading() },
         )
         Text(
-            text = stringResource(R.string.mealplan_move_from, format.fullDay(state.meal.fromDate)),
+            text = stringResource(R.string.mealplan_move_from, format.fullDayInText(state.meal.fromDate)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

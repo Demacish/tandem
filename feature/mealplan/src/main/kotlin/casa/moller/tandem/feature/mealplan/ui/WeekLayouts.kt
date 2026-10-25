@@ -6,9 +6,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -278,29 +278,33 @@ internal fun DaySection(
     Column(modifier = modifier.fillMaxWidth().testTag(dayTag(day.date)), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             val headingText = if (isToday) stringResource(R.string.mealplan_today_heading, dayName) else dayName
-            Text(
-                text = dayName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .semantics {
+            FlowRow(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = dayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.semantics {
                         heading()
                         contentDescription = headingText
                     },
-            )
-            if (isToday) {
-                StatusChip(
-                    label = stringResource(R.string.mealplan_today),
-                    tone = TandemTone.Accent,
-                    modifier = Modifier.clearAndSetSemantics {},
                 )
+                if (isToday) {
+                    StatusChip(
+                        label = stringResource(R.string.mealplan_today),
+                        tone = TandemTone.Accent,
+                        modifier = Modifier.clearAndSetSemantics {},
+                    )
+                }
             }
-            Spacer(modifier = Modifier.weight(1f))
             if (!state.readOnly) {
                 IconButton(onClick = { onAction(WeekAction.PlanMeal(day.date)) }) {
-                    Icon(TandemIcons.Add, contentDescription = stringResource(R.string.mealplan_plan_on_day, dayName))
+                    val label = stringResource(R.string.mealplan_plan_on_day, format.fullDayInText(day.date))
+                    Icon(TandemIcons.Add, contentDescription = label)
                 }
             }
         }
@@ -426,7 +430,7 @@ private fun GridCell(
             IconButton(onClick = { onAction(WeekAction.PlanMeal(day.date, type.id)) }) {
                 Icon(
                     imageVector = TandemIcons.Add,
-                    contentDescription = stringResource(R.string.mealplan_plan_on_day_type, type.name, format.fullDay(day.date)),
+                    contentDescription = stringResource(R.string.mealplan_plan_on_day_type, type.name, format.fullDayInText(day.date)),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

@@ -91,7 +91,7 @@ class WeekScreenTest {
     @Test
     fun plusPlansAMealOnItsDay() {
         show(MealPlanSamples.state())
-        val saturday = string(R.string.mealplan_plan_on_day, format.fullDay(day(5)))
+        val saturday = string(R.string.mealplan_plan_on_day, format.fullDayInText(day(5)))
         composeRule.onNodeWithTag(WEEK_AGENDA_TAG).performScrollToNode(hasContentDescription(saturday))
         composeRule.onNodeWithContentDescription(saturday).performClick()
         assertEquals(WeekAction.PlanMeal(day(5)), actions.last())
@@ -101,7 +101,7 @@ class WeekScreenTest {
     fun aGuestHasNoPlanOrChangeControls() {
         show(MealPlanSamples.state(readOnly = true))
         composeRule.onNodeWithText(string(R.string.mealplan_read_only)).assertIsDisplayed()
-        val plus = composeRule.onAllNodesWithContentDescription(string(R.string.mealplan_plan_on_day, format.fullDay(day(5))))
+        val plus = composeRule.onAllNodesWithContentDescription(string(R.string.mealplan_plan_on_day, format.fullDayInText(day(5))))
         assertTrue("no + for guests", plus.fetchSemanticsNodes().isEmpty())
         assertEquals(listOf(string(R.string.mealplan_cook)), customActions(todayDinner.id))
     }
@@ -122,7 +122,7 @@ class WeekScreenTest {
         show(MealPlanSamples.state())
         composeRule.onNodeWithTag(WEEK_GRID_TAG).assertIsDisplayed()
         (0..6).forEach { composeRule.onNodeWithTag(dayTag(day(it))).assertIsDisplayed() }
-        val saturdayDinner = string(R.string.mealplan_plan_on_day_type, MealPlanSamples.dinner.name, format.fullDay(day(5)))
+        val saturdayDinner = string(R.string.mealplan_plan_on_day_type, MealPlanSamples.dinner.name, format.fullDayInText(day(5)))
         composeRule.onNodeWithContentDescription(saturdayDinner).performClick()
         assertEquals(WeekAction.PlanMeal(day(5), MealPlanSamples.dinner.id), actions.last())
     }

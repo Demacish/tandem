@@ -309,7 +309,11 @@ private fun KindChooser(state: PlanMealUiState, onAction: (PlanMealAction) -> Un
 @Composable
 private fun ChosenRecipe(recipe: RecipeOverview, onChange: () -> Unit) {
     val spacing = TandemTheme.spacing
-    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
         Row(
             modifier = Modifier.padding(spacing.md),
             verticalAlignment = Alignment.CenterVertically,

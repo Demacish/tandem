@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -118,7 +119,7 @@ internal fun MealCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = if (isToday) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = if (isToday) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
         Column {
@@ -219,9 +220,8 @@ internal fun MealTile(
                             format.servings(meal.servings, resources)
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (meal.pending) PendingLabel()
+                    if (meal.pending) PendingLabel(color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }
@@ -305,12 +305,8 @@ private fun MealTexts(meal: MealPlanEntry, format: MealPlanFormat, modifier: Mod
 }
 
 @Composable
-private fun PendingLabel() {
-    Text(
-        text = stringResource(R.string.mealplan_pending),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+private fun PendingLabel(color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+    Text(text = stringResource(R.string.mealplan_pending), style = MaterialTheme.typography.labelMedium, color = color)
 }
 
 @Composable

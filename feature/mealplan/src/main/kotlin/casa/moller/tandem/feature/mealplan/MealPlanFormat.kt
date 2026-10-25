@@ -26,6 +26,9 @@ internal class MealPlanFormat(private val locale: Locale) {
     /** "Måndag 21 oktober" / "Monday, October 21": day headings and TalkBack. */
     fun fullDay(date: LocalDate): String = fullDay.format(date.toJavaLocalDate()).capitalized()
 
+    /** The same inside a sentence: "flyttades till torsdag 22 oktober", "Thursday, October 22". */
+    fun fullDayInText(date: LocalDate): String = fullDay.format(date.toJavaLocalDate())
+
     /** "mån 21 okt." / "Mon, Oct 21": compact chips. */
     fun shortDay(date: LocalDate): String = shortDay.format(date.toJavaLocalDate())
 
