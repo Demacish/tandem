@@ -7,6 +7,7 @@ import casa.moller.tandem.core.domain.scaling.WebAmountFormat
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.shopping.ParsedIngredient
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
+import casa.moller.tandem.core.model.shopping.ShoppingHistoryItem
 import java.util.Locale
 
 /**
@@ -46,6 +47,10 @@ class ShoppingFormat(private val locale: Locale, private val style: AmountStyle 
         val head = listOfNotNull(amount(item.amount), item.unitName?.takeIf { it.isNotBlank() }, item.foodName).joinToString(" ")
         return if (item.note.isBlank()) head else "$head (${item.note})"
     }
+
+    /** "2 l mjölk" for an archived entry ("Köpt tidigare"). */
+    fun history(item: ShoppingHistoryItem): String =
+        listOfNotNull(amount(item.amount), item.unitName?.takeIf { it.isNotBlank() }, item.foodName).joinToString(" ")
 
     /**
      * "Dela som text" (#13): the title, then every aisle in walking order with its entries, plain

@@ -1,30 +1,50 @@
-// Placeholder routes (Phase 2 grund lane): the parameters are the contract with feature:shell and
-// are used once the lane builds the real screens.
-@file:Suppress("UnusedParameter")
-
 package casa.moller.tandem.feature.shopping
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.content.res.Resources
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.dataProblem
+import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.error.isConnectivityProblem
+import casa.moller.tandem.core.model.shopping.ShoppingChange
+import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
-import casa.moller.tandem.feature.shopping.ui.ShoppingPlaceholderScreen
+import casa.moller.tandem.feature.shopping.ui.ShoppingHistoryScreen
+import casa.moller.tandem.feature.shopping.ui.ShoppingScreen
+import casa.moller.tandem.feature.shopping.ui.StoreChoiceScreen
+import casa.moller.tandem.feature.shopping.ui.StoreModeScreen
+import java.util.Locale
+import kotlinx.coroutines.launch
 
-// Phase 2 (grund lane): the routes feature:shell shows for the Handla tab (docs/BYGGE.md "Fas 2 –
-// kontrakt", navigation pattern "Navigering"). The signatures are the contract with the shell;
-// the shopping lane replaces the placeholder bodies with the real screens (ViewModels via
-// hiltViewModel(), stateless XScreen(state, onAction)).
+// Phase 2 (inköp-ui lane): the routes feature:shell shows for the Handla tab (docs/BYGGE.md "Fas 2
+// – kontrakt", navigation pattern "Navigering"). Each route gets its ViewModel from Hilt, shows a
+// stateless XScreen(state, onAction) and turns navigation actions into the shell's callbacks.
 
 /**
- * The shopping list (Handla tab root, or a [casa.moller.tandem.feature.shopping.navigation.ShoppingListKey]).
+ * The shopping list (Handla tab root, or a [ShoppingListKey]).
  *
  * @param listId the named list to show, null = every entry (the tab root).
  * @param supermarketId the store to sort by, null = the device's chosen store.
  * @param onOpenStoreMode "Butiksläge" with the list and store shown.
- * @param onOpenListChoice the list / store chooser.
+ * @param onOpenListChoice the store chooser ([casa.moller.tandem.feature.shopping.navigation.ShoppingListChoiceKey]).
  * @param onOpenHistory the local history.
- * @param onOpenRecipe a recipe label on an entry.
+ * @param onOpenRecipe the recipe an entry came from (edit sheet).
  */
 @Composable
 fun ShoppingRoute(
@@ -36,49 +56,220 @@ fun ShoppingRoute(
     listId: Long? = null,
     supermarketId: Long? = null,
 ) {
-    ShoppingPlaceholderScreen(
-        title = stringResource(R.string.shopping_title),
-        body = stringResource(R.string.shopping_placeholder_body),
-        icon = TandemIcons.ShoppingCart,
+    val key = ShoppingListKey(listId, supermarketId)
+    val viewModel = hiltViewModel<ShoppingViewModel, ShoppingViewModel.Factory>(
+        key = "shopping-$listId-$supermarketId",
+        creationCallback = { factory -> factory.create(key) },
+    )
+    ShoppingRoute(
+        viewModel = viewModel,
+        onOpenStoreMode = onOpenStoreMode,
+        onOpenListChoice = onOpenListChoice,
+        onOpenHistory = onOpenHistory,
+        onOpenRecipe = onOpenRecipe,
         modifier = modifier,
+    )
+}
+
+/** [ShoppingRoute] with a given [viewModel] (tests pass one built on fakes). */
+@Composable
+internal fun ShoppingRoute(
+    viewModel: ShoppingViewModel,
+    onOpenStoreMode: (StoreModeKey) -> Unit,
+    onOpenListChoice: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onOpenRecipe: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val resources = LocalResources.current
+    val locale = LocalConfiguration.current.locales[0]
+    val currentState by rememberUpdatedState(state)
+    LaunchedEffect(viewModel, snackbarHostState, resources) {
+        viewModel.effects.collect { effect ->
+            launch { snackbarHostState.show(effect, resources) { viewModel.onAction(ShoppingAction.Undo) } }
+        }
+    }
+    ShoppingScreen(
+        state = state,
+        onAction = { action ->
+            when (action) {
+                ShoppingAction.OpenStoreMode -> onOpenStoreMode(StoreModeKey(currentState.selectedListId, null))
+                ShoppingAction.OpenStoreChoice -> onOpenListChoice()
+                ShoppingAction.OpenHistory -> onOpenHistory()
+                is ShoppingAction.OpenRecipe -> {
+                    viewModel.onAction(ShoppingAction.CloseEdit)
+                    onOpenRecipe(action.recipeId)
+                }
+
+                ShoppingAction.Share -> {
+                    val title = currentState.lists.firstOrNull { it.id == currentState.selectedListId }?.name
+                        ?: resources.getString(R.string.shopping_title)
+                    context.shareText(shareText(title, currentState.grouped.sections, currentState.amountStyle, locale, resources), resources)
+                }
+
+                else -> viewModel.onAction(action)
+            }
+        },
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
     )
 }
 
 /** Store mode (full screen on every width); [onClose] goes back to the list. */
 @Composable
 fun StoreModeRoute(key: StoreModeKey, onClose: () -> Unit, modifier: Modifier = Modifier) {
-    ShoppingPlaceholderScreen(
-        title = stringResource(R.string.shopping_store_mode_title),
-        body = stringResource(R.string.shopping_placeholder_body),
-        icon = TandemIcons.ShoppingCart,
-        onNavigateBack = onClose,
+    val viewModel = hiltViewModel<StoreModeViewModel, StoreModeViewModel.Factory>(
+        key = "store-mode-${key.listId}-${key.supermarketId}",
+        creationCallback = { factory -> factory.create(key) },
+    )
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val resources = LocalResources.current
+    val locale = LocalConfiguration.current.locales[0]
+    val currentState by rememberUpdatedState(state)
+    LaunchedEffect(viewModel, snackbarHostState, resources) {
+        viewModel.effects.collect { effect ->
+            launch { snackbarHostState.show(effect, resources) { viewModel.onAction(StoreModeAction.Undo) } }
+        }
+    }
+    StoreModeScreen(
+        state = state,
+        onAction = { action ->
+            when (action) {
+                StoreModeAction.Close -> onClose()
+                StoreModeAction.Share -> {
+                    val title = currentState.store?.name ?: resources.getString(R.string.shopping_title)
+                    context.shareText(shareText(title, currentState.sections, currentState.amountStyle, locale, resources), resources)
+                }
+
+                else -> viewModel.onAction(action)
+            }
+        },
         modifier = modifier,
+        snackbarHostState = snackbarHostState,
     )
 }
 
 /**
- * Choosing the named list and store. [onChosen] gets the list (null = all) and store (null = by
- * category name); the shell then shows the list with them. [onDismiss] closes without a choice.
+ * Choosing the store the list is sorted by (the key's name is the grund lane's; the named lists
+ * are chips on the list itself). [onChosen] is called with (null, null) once the choice is saved
+ * on the device, so the shell goes back to the list, which follows the device's store.
+ * [onDismiss] closes without a choice.
  */
 @Composable
 fun ShoppingListChoiceRoute(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
-    ShoppingPlaceholderScreen(
-        title = stringResource(R.string.shopping_list_choice_title),
-        body = stringResource(R.string.shopping_placeholder_body),
-        icon = TandemIcons.ShoppingCart,
-        onNavigateBack = onDismiss,
+    val viewModel: StoreChoiceViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    val currentOnChosen by rememberUpdatedState(onChosen)
+    LaunchedEffect(viewModel, snackbarHostState, resources) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                StoreChoiceEffect.Chosen -> currentOnChosen(null, null)
+                is StoreChoiceEffect.Failed -> snackbarHostState.showSnackbar(resources.errorText(effect.error))
+            }
+        }
+    }
+    StoreChoiceScreen(
+        state = state,
+        onChoose = viewModel::choose,
+        onBack = onDismiss,
         modifier = modifier,
+        snackbarHostState = snackbarHostState,
     )
 }
 
 /** The local history of bought items. */
 @Composable
 fun ShoppingHistoryRoute(onBack: () -> Unit, modifier: Modifier = Modifier) {
-    ShoppingPlaceholderScreen(
-        title = stringResource(R.string.shopping_history_title),
-        body = stringResource(R.string.shopping_placeholder_body),
-        icon = TandemIcons.ShoppingCart,
-        onNavigateBack = onBack,
+    val viewModel: ShoppingHistoryViewModel = hiltViewModel()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
+    LaunchedEffect(viewModel, snackbarHostState, resources) {
+        viewModel.effects.collect { effect -> launch { snackbarHostState.show(effect, resources) {} } }
+    }
+    ShoppingHistoryScreen(
+        state = state,
+        onAddAgain = viewModel::addAgain,
+        onBack = onBack,
         modifier = modifier,
+        snackbarHostState = snackbarHostState,
     )
+}
+
+/** "Dela som text" (#13): the aisles still to buy as plain text, with plain fractions any app can show. */
+internal fun shareText(title: String, sections: List<ShoppingSection>, style: AmountStyle, locale: Locale, resources: Resources): String =
+    ShoppingFormat(locale, style, plainFractions = true).shareText(title, sections, resources.getString(R.string.shopping_other_category))
+
+/** Opens Android's share sheet with [text]. */
+private fun Context.shareText(text: String, resources: Resources) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+    try {
+        startActivity(Intent.createChooser(send, resources.getString(R.string.shopping_share_chooser)))
+    } catch (ignored: ActivityNotFoundException) {
+        // No app can take text (practically impossible on a phone): nothing to share with.
+    }
+}
+
+/** Shows [effect] as a snackbar; "Ångra" calls [onUndo]. A new message replaces the one shown. */
+private suspend fun SnackbarHostState.show(effect: ShoppingEffect, resources: Resources, onUndo: () -> Unit) {
+    val (text, undoable) = when (effect) {
+        is ShoppingEffect.Show -> resources.messageText(effect.message) to effect.undoable
+        is ShoppingEffect.Failed -> resources.errorText(effect.error) to false
+        is ShoppingEffect.OtherChange -> resources.changeText(effect.change) to false
+    }
+    currentSnackbarData?.dismiss()
+    val result = showSnackbar(
+        message = text,
+        actionLabel = if (undoable) resources.getString(R.string.shopping_undo) else null,
+        duration = if (undoable) SnackbarDuration.Long else SnackbarDuration.Short,
+    )
+    if (result == SnackbarResult.ActionPerformed) onUndo()
+}
+
+internal fun Resources.messageText(message: ShoppingMessage): String = when (message) {
+    is ShoppingMessage.Checked -> if (message.count == 1) {
+        getString(R.string.shopping_msg_checked, message.name)
+    } else {
+        getQuantityString(R.plurals.shopping_msg_checked_many, message.count, message.count)
+    }
+
+    is ShoppingMessage.Unchecked -> getString(R.string.shopping_msg_unchecked, message.name)
+
+    is ShoppingMessage.Delayed -> getString(R.string.shopping_msg_delayed, message.name)
+
+    is ShoppingMessage.Undelayed -> getString(R.string.shopping_msg_undelayed, message.name)
+
+    is ShoppingMessage.Added -> if (message.count == 1) {
+        getString(R.string.shopping_msg_added, message.name)
+    } else {
+        getQuantityString(R.plurals.shopping_msg_added_many, message.count, message.count)
+    }
+
+    is ShoppingMessage.Removed -> getString(R.string.shopping_msg_removed, message.name)
+
+    is ShoppingMessage.ClearedChecked -> getQuantityString(R.plurals.shopping_msg_cleared, message.count, message.count)
+
+    ShoppingMessage.Saved -> getString(R.string.shopping_msg_saved)
+}
+
+internal fun Resources.changeText(change: ShoppingChange): String = when (change) {
+    is ShoppingChange.Added -> change.by?.let { getString(R.string.shopping_change_added_by, it, change.foodName) }
+        ?: getString(R.string.shopping_change_added, change.foodName)
+
+    is ShoppingChange.Checked -> getString(R.string.shopping_change_checked, change.foodName)
+
+    is ShoppingChange.Removed -> getString(R.string.shopping_change_removed, change.foodName)
+}
+
+internal fun Resources.errorText(error: TandemError): String = when {
+    error.dataProblem() == DataProblem.READ_ONLY -> getString(R.string.shopping_error_read_only)
+    error.isConnectivityProblem -> getString(R.string.shopping_error_refresh)
+    else -> getString(R.string.shopping_error_save)
 }

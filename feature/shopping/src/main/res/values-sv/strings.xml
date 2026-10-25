@@ -1,9 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Phase 2 (grund lane): placeholders until the shopping lane builds the screens. -->
+    <!-- Phase 2 (inköp-ui lane): the Handla tab, store mode, store choice and history. -->
     <string name="shopping_title">Handla</string>
     <string name="shopping_store_mode_title">Butiksläge</string>
-    <string name="shopping_list_choice_title">Listor och butiker</string>
+    <string name="shopping_list_choice_title">Välj butik</string>
     <string name="shopping_history_title">Köpt tidigare</string>
-    <string name="shopping_placeholder_body">Här kommer inköpslistan från Tandoor: sorterad efter butikens gångar, delad med hushållet och användbar offline.</string>
+
+    <!-- Top bar and chips -->
+    <string name="shopping_share">Dela som text</string>
+    <string name="shopping_share_chooser">Dela inköpslistan</string>
+    <string name="shopping_more">Fler val</string>
+    <string name="shopping_clear_checked_menu">Ta bort avbockade varor</string>
+    <plurals name="shopping_pending">
+        <item quantity="one">%d väntar</item>
+        <item quantity="other">%d väntar</item>
+    </plurals>
+    <plurals name="shopping_pending_description">
+        <item quantity="one">%d ändring väntar på att synkas</item>
+        <item quantity="other">%d ändringar väntar på att synkas</item>
+    </plurals>
+    <string name="shopping_lists_heading">Listor</string>
+    <string name="shopping_lists_all">Alla</string>
+    <string name="shopping_store_heading">Butik</string>
+    <string name="shopping_store_chip">Butik: %1$s</string>
+    <string name="shopping_store_by_category">Sorterad efter kategori</string>
+    <string name="shopping_store_choose">Välj butik</string>
+    <string name="shopping_progress">%1$d av %2$d avbockade</string>
+
+    <!-- Sections and rows -->
+    <string name="shopping_other_category">Övrigt</string>
+    <plurals name="shopping_section_count">
+        <item quantity="one">%d vara</item>
+        <item quantity="other">%d varor</item>
+    </plurals>
+    <string name="shopping_section_title_count">%1$s (%2$d)</string>
+    <string name="shopping_check_all">Bocka av alla</string>
+    <string name="shopping_check_all_description">Bocka av alla i %1$s</string>
+    <string name="shopping_later_title">Köp senare</string>
+    <string name="shopping_checked_title">Avbockat</string>
+    <string name="shopping_section_expanded">utfälld</string>
+    <string name="shopping_section_collapsed">hopfälld</string>
+    <string name="shopping_clear_checked">Rensa</string>
+    <string name="shopping_clear_checked_description">Ta bort alla avbockade varor</string>
+    <string name="shopping_row_checked">avbockad</string>
+    <string name="shopping_row_unchecked">inte avbockad</string>
+    <string name="shopping_row_later">köp senare</string>
+    <string name="shopping_row_pending">väntar på synk</string>
+    <string name="shopping_row_added_by">tillagd av %1$s</string>
+    <string name="shopping_action_later">Köp senare</string>
+    <string name="shopping_action_now">Köp nu</string>
+    <string name="shopping_action_edit">Ändra</string>
+    <string name="shopping_action_check">Bocka av</string>
+    <string name="shopping_action_uncheck">Avmarkera</string>
+    <string name="shopping_all_done_title">Allt är avbockat</string>
+    <string name="shopping_all_done_body">Snyggt jobbat. Rensa de avbockade varorna när du är klar.</string>
+
+    <!-- Clear checked -->
+    <string name="shopping_clear_confirm_title">Ta bort avbockade varor?</string>
+    <plurals name="shopping_clear_confirm_body">
+        <item quantity="one">%d avbockad vara tas bort från listan för hela hushållet.</item>
+        <item quantity="other">%d avbockade varor tas bort från listan för hela hushållet.</item>
+    </plurals>
+    <string name="shopping_clear_confirm">Ta bort</string>
+    <string name="shopping_cancel">Avbryt</string>
+
+    <!-- Empty, guest and sync states -->
+    <string name="shopping_empty_title">Inköpslistan är tom</string>
+    <string name="shopping_empty_body">Lägg till varor här, eller planera veckan och lägg recepten på listan.</string>
+    <string name="shopping_empty_body_guest">Det finns inget på listan just nu.</string>
+    <string name="shopping_guest_title">Skrivskyddat</string>
+    <string name="shopping_guest_body">Du är gäst i det här utrymmet: du kan se listan men inte ändra den.</string>
+    <string name="shopping_offline_title">Offline</string>
+    <string name="shopping_offline_body">Ändringarna sparas på enheten och synkas när nätet är tillbaka.</string>
+    <string name="shopping_paused_title">Synken är pausad</string>
+    <string name="shopping_paused_body">Servern håller tillbaka anrop en stund. Ändringarna sparas och skickas senare.</string>
+    <string name="shopping_login_title">Inloggningen har gått ut</string>
+    <string name="shopping_login_body">Ändringarna sparas och skickas när du har loggat in igen under Inställningar.</string>
+    <string name="shopping_safe_mode_title">Säkert läge</string>
+    <string name="shopping_safe_mode_body">Den här Tandoor-versionen är inte testad än: listan läses, men ändringarna väntar.</string>
+    <string name="shopping_try_again">Försök igen</string>
+
+    <!-- Add (free text, #11) -->
+    <string name="shopping_add_field_hint">Lägg till vara…</string>
+    <string name="shopping_add_fab">Vara</string>
+    <string name="shopping_add_title">Lägg på listan</string>
+    <string name="shopping_add_label">Varor</string>
+    <string name="shopping_add_placeholder">t.ex. 2 dl grädde</string>
+    <string name="shopping_add_help">Flera på en gång: en per rad eller med komma emellan.</string>
+    <string name="shopping_add_preview_title">Läggs till som</string>
+    <string name="shopping_add_suggestions_title">Förslag</string>
+    <string name="shopping_add_recent_title">Köpt nyligen</string>
+    <string name="shopping_add_button">Lägg till</string>
+    <plurals name="shopping_add_button_count">
+        <item quantity="one">Lägg till %d vara</item>
+        <item quantity="other">Lägg till %d varor</item>
+    </plurals>
+    <string name="shopping_add_food_description">Lägg till %1$s</string>
+    <string name="shopping_add_close">Stäng</string>
+
+    <!-- Edit -->
+    <string name="shopping_edit_title">Ändra vara</string>
+    <string name="shopping_edit_food">Vara</string>
+    <string name="shopping_edit_amount">Mängd</string>
+    <string name="shopping_edit_amount_error">Skriv ett tal, t.ex. 1,5</string>
+    <string name="shopping_edit_unit">Enhet</string>
+    <string name="shopping_edit_category">Avdelning</string>
+    <string name="shopping_edit_category_note">Gäller %1$s överallt, för hela hushållet.</string>
+    <string name="shopping_edit_category_unsynced">Avdelningen går att välja när varan har synkats.</string>
+    <string name="shopping_edit_save">Spara</string>
+    <string name="shopping_edit_delete">Ta bort från listan</string>
+    <string name="shopping_edit_from_recipe">Från %1$s</string>
+    <string name="shopping_edit_open_recipe">Öppna receptet</string>
+
+    <!-- Messages -->
+    <string name="shopping_undo">Ångra</string>
+    <string name="shopping_msg_checked">%1$s avbockad</string>
+    <plurals name="shopping_msg_checked_many">
+        <item quantity="one">%d vara avbockad</item>
+        <item quantity="other">%d varor avbockade</item>
+    </plurals>
+    <string name="shopping_msg_unchecked">%1$s är tillbaka på listan</string>
+    <string name="shopping_msg_delayed">%1$s flyttad till Köp senare</string>
+    <string name="shopping_msg_undelayed">%1$s är tillbaka på listan</string>
+    <string name="shopping_msg_added">%1$s tillagd</string>
+    <plurals name="shopping_msg_added_many">
+        <item quantity="one">%d vara tillagd</item>
+        <item quantity="other">%d varor tillagda</item>
+    </plurals>
+    <string name="shopping_msg_removed">%1$s borttagen</string>
+    <plurals name="shopping_msg_cleared">
+        <item quantity="one">%d avbockad vara borttagen</item>
+        <item quantity="other">%d avbockade varor borttagna</item>
+    </plurals>
+    <string name="shopping_msg_saved">Ändringen är sparad</string>
+    <string name="shopping_change_added_by">%1$s lade till %2$s</string>
+    <string name="shopping_change_added">%1$s lades till</string>
+    <string name="shopping_change_checked">%1$s bockades av</string>
+    <string name="shopping_change_removed">%1$s togs bort</string>
+    <string name="shopping_error_read_only">Du är gäst: listan går inte att ändra.</string>
+    <string name="shopping_error_save">Ändringen kunde inte sparas.</string>
+    <string name="shopping_error_refresh">Kunde inte nå Tandoor. Visar den sparade listan.</string>
+
+    <!-- Store mode (#13) -->
+    <string name="shopping_store_mode_progress">%1$d av %2$d i korgen</string>
+    <string name="shopping_store_mode_screen_on">Skärmen hålls tänd</string>
+    <string name="shopping_store_mode_done_title">Allt är i korgen</string>
+    <string name="shopping_store_mode_done_body">Det finns inget mer att köpa på den här listan.</string>
+    <string name="shopping_store_mode_done">Klar</string>
+
+    <!-- Store choice (#10) -->
+    <string name="shopping_store_none_title">Ingen butik</string>
+    <string name="shopping_store_none_body">Avdelningarna i bokstavsordning</string>
+    <plurals name="shopping_store_aisles">
+        <item quantity="one">%d avdelning</item>
+        <item quantity="other">%d avdelningar</item>
+    </plurals>
+    <string name="shopping_store_empty">Det finns inga butiker i Tandoor än. Lägg till butiker och deras avdelningsordning i Tandoor, så sorteras listan i den ordning du går genom butiken.</string>
+
+    <!-- History (plan 8.2) -->
+    <string name="shopping_history_empty_title">Ingen historik än</string>
+    <string name="shopping_history_empty_body">Avbockade varor som försvinner från Tandoors lista sparas här på enheten.</string>
+    <string name="shopping_history_add_again">Lägg till %1$s igen</string>
 </resources>

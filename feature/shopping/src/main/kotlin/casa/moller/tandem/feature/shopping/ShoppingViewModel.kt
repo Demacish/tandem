@@ -334,7 +334,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
         val food = edit.food.trim().takeIf { it.isNotEmpty() && it != entry.food.name }
         val unit = edit.unit.trim().takeIf { it.isNotEmpty() && it != entry.unit?.name }
         val newAmount = amount.takeIf { it != entry.amount }
-        val foodId = entry.food.id
+        // The aisle belongs to the food (for the whole space): only for the food the entry already had.
+        val aisleFood = entry.food.id?.takeIf { food == null && edit.categoryId != entry.food.categoryId }
         editing { it.copy(saving = true) }
         viewModelScope.launch {
             val updated = if (food != null || unit != null || newAmount != null) {
@@ -342,9 +343,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
             } else {
                 Outcome.Success(Unit)
             }
-            // The aisle belongs to the food (for the whole space): only for the food the entry already had.
-            val moved = if (updated is Outcome.Success && foodId != null && edit.categoryId != entry.food.categoryId && food == null) {
-                supermarkets.setFoodCategory(foodId, edit.categoryId)
+            val moved = if (updated is Outcome.Success && aisleFood != null) {
+                supermarkets.setFoodCategory(aisleFood, edit.categoryId)
             } else {
                 Outcome.Success(Unit)
             }

@@ -1,9 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Phase 2 (grund lane): placeholders until the shopping lane builds the screens. -->
+    <!-- Phase 2 (inköp-ui lane): the Handla tab, store mode, store choice and history. -->
     <string name="shopping_title">Shopping</string>
     <string name="shopping_store_mode_title">Store mode</string>
-    <string name="shopping_list_choice_title">Lists and stores</string>
+    <string name="shopping_list_choice_title">Choose store</string>
     <string name="shopping_history_title">Bought before</string>
-    <string name="shopping_placeholder_body">Tandoor’s shopping list comes here: sorted by aisle, shared with your household and usable offline.</string>
+
+    <!-- Top bar and chips -->
+    <string name="shopping_share">Share as text</string>
+    <string name="shopping_share_chooser">Share shopping list</string>
+    <string name="shopping_more">More options</string>
+    <string name="shopping_clear_checked_menu">Remove checked items</string>
+    <plurals name="shopping_pending">
+        <item quantity="one">%d waiting</item>
+        <item quantity="other">%d waiting</item>
+    </plurals>
+    <plurals name="shopping_pending_description">
+        <item quantity="one">%d change waiting to sync</item>
+        <item quantity="other">%d changes waiting to sync</item>
+    </plurals>
+    <string name="shopping_lists_heading">Lists</string>
+    <string name="shopping_lists_all">All</string>
+    <string name="shopping_store_heading">Store</string>
+    <string name="shopping_store_chip">Store: %1$s</string>
+    <string name="shopping_store_by_category">Sorted by category</string>
+    <string name="shopping_store_choose">Choose store</string>
+    <string name="shopping_progress">%1$d of %2$d checked</string>
+
+    <!-- Sections and rows -->
+    <string name="shopping_other_category">Other</string>
+    <plurals name="shopping_section_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="shopping_section_title_count">%1$s (%2$d)</string>
+    <string name="shopping_check_all">Check all</string>
+    <string name="shopping_check_all_description">Check all in %1$s</string>
+    <string name="shopping_later_title">Buy later</string>
+    <string name="shopping_checked_title">Checked</string>
+    <string name="shopping_section_expanded">expanded</string>
+    <string name="shopping_section_collapsed">collapsed</string>
+    <string name="shopping_clear_checked">Clear</string>
+    <string name="shopping_clear_checked_description">Remove all checked items</string>
+    <string name="shopping_row_checked">checked</string>
+    <string name="shopping_row_unchecked">not checked</string>
+    <string name="shopping_row_later">buy later</string>
+    <string name="shopping_row_pending">waiting to sync</string>
+    <string name="shopping_row_added_by">added by %1$s</string>
+    <string name="shopping_action_later">Buy later</string>
+    <string name="shopping_action_now">Buy now</string>
+    <string name="shopping_action_edit">Edit</string>
+    <string name="shopping_action_check">Check</string>
+    <string name="shopping_action_uncheck">Uncheck</string>
+    <string name="shopping_all_done_title">Everything is checked</string>
+    <string name="shopping_all_done_body">Nice work. Clear the checked items when you are done.</string>
+
+    <!-- Clear checked -->
+    <string name="shopping_clear_confirm_title">Remove checked items?</string>
+    <plurals name="shopping_clear_confirm_body">
+        <item quantity="one">%d checked item is removed from the list for the whole household.</item>
+        <item quantity="other">%d checked items are removed from the list for the whole household.</item>
+    </plurals>
+    <string name="shopping_clear_confirm">Remove</string>
+    <string name="shopping_cancel">Cancel</string>
+
+    <!-- Empty, guest and sync states -->
+    <string name="shopping_empty_title">The shopping list is empty</string>
+    <string name="shopping_empty_body">Add items here, or plan the week and put the recipes on the list.</string>
+    <string name="shopping_empty_body_guest">There is nothing on the list right now.</string>
+    <string name="shopping_guest_title">Read only</string>
+    <string name="shopping_guest_body">You are a guest in this space: you can see the list but not change it.</string>
+    <string name="shopping_offline_title">Offline</string>
+    <string name="shopping_offline_body">Changes are saved on this device and synced when the network is back.</string>
+    <string name="shopping_paused_title">Sync paused</string>
+    <string name="shopping_paused_body">The server is holding requests back for a while. Changes are kept and sent later.</string>
+    <string name="shopping_login_title">Login expired</string>
+    <string name="shopping_login_body">Changes are kept and sent after you log in again in Settings.</string>
+    <string name="shopping_safe_mode_title">Safe mode</string>
+    <string name="shopping_safe_mode_body">This Tandoor version has not been tested yet: the list is read, and changes wait.</string>
+    <string name="shopping_try_again">Try again</string>
+
+    <!-- Add (free text, #11) -->
+    <string name="shopping_add_field_hint">Add item…</string>
+    <string name="shopping_add_fab">Item</string>
+    <string name="shopping_add_title">Add to the list</string>
+    <string name="shopping_add_label">Items</string>
+    <string name="shopping_add_placeholder">e.g. 2 dl cream</string>
+    <string name="shopping_add_help">Several at once: one per line or separated by commas.</string>
+    <string name="shopping_add_preview_title">Will be added as</string>
+    <string name="shopping_add_suggestions_title">Suggestions</string>
+    <string name="shopping_add_recent_title">Bought recently</string>
+    <string name="shopping_add_button">Add</string>
+    <plurals name="shopping_add_button_count">
+        <item quantity="one">Add %d item</item>
+        <item quantity="other">Add %d items</item>
+    </plurals>
+    <string name="shopping_add_food_description">Add %1$s</string>
+    <string name="shopping_add_close">Close</string>
+
+    <!-- Edit -->
+    <string name="shopping_edit_title">Edit item</string>
+    <string name="shopping_edit_food">Item</string>
+    <string name="shopping_edit_amount">Amount</string>
+    <string name="shopping_edit_amount_error">Enter a number, e.g. 1.5</string>
+    <string name="shopping_edit_unit">Unit</string>
+    <string name="shopping_edit_category">Aisle</string>
+    <string name="shopping_edit_category_note">Applies to %1$s everywhere, for the whole household.</string>
+    <string name="shopping_edit_category_unsynced">The aisle can be chosen once the item has been synced.</string>
+    <string name="shopping_edit_save">Save</string>
+    <string name="shopping_edit_delete">Remove from the list</string>
+    <string name="shopping_edit_from_recipe">From %1$s</string>
+    <string name="shopping_edit_open_recipe">Open recipe</string>
+
+    <!-- Messages -->
+    <string name="shopping_undo">Undo</string>
+    <string name="shopping_msg_checked">%1$s checked</string>
+    <plurals name="shopping_msg_checked_many">
+        <item quantity="one">%d item checked</item>
+        <item quantity="other">%d items checked</item>
+    </plurals>
+    <string name="shopping_msg_unchecked">%1$s is back on the list</string>
+    <string name="shopping_msg_delayed">%1$s moved to Buy later</string>
+    <string name="shopping_msg_undelayed">%1$s is back on the list</string>
+    <string name="shopping_msg_added">%1$s added</string>
+    <plurals name="shopping_msg_added_many">
+        <item quantity="one">%d item added</item>
+        <item quantity="other">%d items added</item>
+    </plurals>
+    <string name="shopping_msg_removed">%1$s removed</string>
+    <plurals name="shopping_msg_cleared">
+        <item quantity="one">%d checked item removed</item>
+        <item quantity="other">%d checked items removed</item>
+    </plurals>
+    <string name="shopping_msg_saved">Change saved</string>
+    <string name="shopping_change_added_by">%1$s added %2$s</string>
+    <string name="shopping_change_added">%1$s was added</string>
+    <string name="shopping_change_checked">%1$s was checked</string>
+    <string name="shopping_change_removed">%1$s was removed</string>
+    <string name="shopping_error_read_only">You are a guest: the list cannot be changed.</string>
+    <string name="shopping_error_save">The change could not be saved.</string>
+    <string name="shopping_error_refresh">Could not reach Tandoor. Showing the saved list.</string>
+
+    <!-- Store mode (#13) -->
+    <string name="shopping_store_mode_progress">%1$d of %2$d in the cart</string>
+    <string name="shopping_store_mode_screen_on">The screen stays on</string>
+    <string name="shopping_store_mode_done_title">Everything is in the cart</string>
+    <string name="shopping_store_mode_done_body">Nothing left to buy on this list.</string>
+    <string name="shopping_store_mode_done">Done</string>
+
+    <!-- Store choice (#10) -->
+    <string name="shopping_store_none_title">No store</string>
+    <string name="shopping_store_none_body">Aisles in alphabetical order</string>
+    <plurals name="shopping_store_aisles">
+        <item quantity="one">%d aisle</item>
+        <item quantity="other">%d aisles</item>
+    </plurals>
+    <string name="shopping_store_empty">No stores in Tandoor yet. Add stores and their aisle order in Tandoor to sort the list the way you walk through the store.</string>
+
+    <!-- History (plan 8.2) -->
+    <string name="shopping_history_empty_title">No history yet</string>
+    <string name="shopping_history_empty_body">Checked items that leave Tandoor’s list are kept here on this device.</string>
+    <string name="shopping_history_add_again">Add %1$s again</string>
 </resources>
