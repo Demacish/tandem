@@ -246,6 +246,8 @@ internal fun MealPlanDto.toEntity(accountId: String): MealPlanEntity? {
         mealTypeId = mealType?.id ?: 0,
         shopping = shopping,
         createdBy = createdBy,
+        // Phase 2 (matsedel lane): the name before the recipe's overview is stored (absent without a recipe).
+        recipeName = recipeName ?: recipe?.name,
     )
 }
 

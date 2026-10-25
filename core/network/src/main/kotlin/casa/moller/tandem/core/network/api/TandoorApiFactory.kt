@@ -28,6 +28,8 @@ class TandoorApi internal constructor(
     /** Phase 1: keywords, foods, units, meal types and recipe books. */
     val taxonomy: TaxonomyService,
     val mealPlans: MealPlanService,
+    /** Phase 2 (matsedel lane): planning, moving and removing meals, new meal types. */
+    val mealPlanEdits: MealPlanEditService,
     val preferences: PreferenceService,
     /** Phase 1: cook log and view log. */
     val logs: LogService,
@@ -76,6 +78,7 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             recipes = retrofit.create(RecipeService::class.java),
             taxonomy = retrofit.create(TaxonomyService::class.java),
             mealPlans = retrofit.create(MealPlanService::class.java),
+            mealPlanEdits = retrofit.create(MealPlanEditService::class.java),
             preferences = retrofit.create(PreferenceService::class.java),
             logs = retrofit.create(LogService::class.java),
             shopping = retrofit.create(ShoppingService::class.java),

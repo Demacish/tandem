@@ -33,12 +33,27 @@ abstract class ReferenceDao {
         if (units.isNotEmpty()) insertUnits(units.map { it.copy(accountId = accountId) }.distinctBy { it.id })
     }
 
-    /** Replaces the account's meal types with the full list from the server. */
+    /**
+     * Replaces the account's meal types with the full list from the server. Meal types created on
+     * this device that have not reached the server yet (negative id, Phase 2) stay.
+     */
     @Transaction
     open suspend fun replaceMealTypes(accountId: String, mealTypes: List<MealTypeEntity>) {
-        deleteMealTypes(accountId)
-        if (mealTypes.isNotEmpty()) insertMealTypes(mealTypes.map { it.copy(accountId = accountId) }.distinctBy { it.id })
+        deleteServerMealTypes(accountId)
+        val rows = mealTypes.map { it.copy(accountId = accountId) }.filter { it.id >= 0 }.distinctBy { it.id }
+        if (rows.isNotEmpty()) insertMealTypes(rows)
     }
+
+    /** Phase 2 (matsedel lane): the account's meal types, by order. */
+    @Query("SELECT * FROM meal_type WHERE account_id = :accountId ORDER BY type_order, id")
+    abstract suspend fun getMealTypes(accountId: String): List<MealTypeEntity>
+
+    /** Phase 2 (matsedel lane): a meal type created on this device (negative id until it is sent). */
+    @Upsert
+    abstract suspend fun upsertMealType(row: MealTypeEntity)
+
+    @Query("DELETE FROM meal_type WHERE account_id = :accountId AND id >= 0")
+    abstract suspend fun deleteServerMealTypes(accountId: String)
 
     @Query("SELECT * FROM food WHERE account_id = :accountId ORDER BY name")
     abstract suspend fun getFoods(accountId: String): List<FoodEntity>

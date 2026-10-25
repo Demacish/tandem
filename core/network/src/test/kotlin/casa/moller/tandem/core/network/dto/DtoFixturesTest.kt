@@ -65,6 +65,9 @@ class DtoFixturesTest {
         Route("POST", "/api/meal-type/", MealTypeDto.serializer()),
         Route("GET", "/api/meal-plan/", PageDto.serializer(MealPlanDto.serializer())),
         Route("POST", "/api/meal-plan/", MealPlanDto.serializer()),
+        // Phase 2 (matsedel lane): one meal, and its PATCH answer.
+        Route("GET", "/api/meal-plan/\\d+/", MealPlanDto.serializer()),
+        Route("PATCH", "/api/meal-plan/\\d+/", MealPlanDto.serializer()),
         Route("GET", "/api/recipe-book/", PageDto.serializer(RecipeBookDto.serializer())),
         Route("POST", "/api/recipe-book/", RecipeBookDto.serializer()),
         Route("GET", "/api/recipe-book-entry/", PageDto.serializer(RecipeBookEntryDto.serializer())),

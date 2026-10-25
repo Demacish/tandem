@@ -45,6 +45,14 @@ GET /api/recipe-book-entry/
 GET /api/meal-plan/
 GET /api/meal-type/
 
+# --- Fas 2 (matsedel lane): planning, moving and removing meals, new meal types ---
+# Sent through the outbox; a PATCH first reads the meal to compare fields (plan 3.5, FACTS "Fas 2 f").
+GET /api/meal-plan/{id}/
+POST /api/meal-plan/
+PATCH /api/meal-plan/{id}/
+DELETE /api/meal-plan/{id}/
+POST /api/meal-type/
+
 # --- Fas 1: cook log and view log (sent through the outbox) ---
 GET /api/cook-log/
 POST /api/cook-log/

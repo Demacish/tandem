@@ -32,6 +32,7 @@ import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.image.PrefetchedImages
+import casa.moller.tandem.core.sync.mealplan.MealPlanWindowReader
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
@@ -142,6 +143,8 @@ internal class SyncEngine @Inject constructor(
     private val shopping: ShoppingSyncStep,
     // Phase 2 (böcker lane): the role (guest mode) and the books, with the small tables.
     private val books: BookSyncStep,
+    // Phase 2 (matsedel lane): the meal plan window, shared with Veckan's own refresh.
+    private val mealPlanWindow: MealPlanWindowReader,
 ) {
     private val mutex = Mutex()
     private val homeMutex = Mutex()
@@ -506,17 +509,9 @@ internal class SyncEngine @Inject constructor(
 
         suspend fun syncMealPlanAndHome(): Outcome<Unit> {
             val today = clock.today()
-            val from = today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY)
-            val to = today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
-            val plan = fetchAll { page -> mealPlans.mealPlans(from, to, page) }
-            if (plan is Outcome.Success && plan.value.complete) {
-                val entries = plan.value.items
-                val plannedRecipes = entries.mapNotNull { it.recipe?.toOverviewWrite(accountId, imageResolver) }
-                database.recipeDao().upsertOverviews(accountId, plannedRecipes)
-                val rows = entries.mapNotNull { it.toEntity(accountId) }
-                database.mealPlanDao().replaceWindow(accountId, from.toString(), to.toString(), rows)
-                updateSyncState(SyncKeys.MEAL_PLAN) { it.copy(windowFrom = from.toString(), windowTo = to.toString()) }
-            }
+            // Phase 2 (matsedel lane): the same read as Veckan's refresh, which also drops queued
+            // changes of meals deleted elsewhere before the outbox is sent (no 404).
+            val plan = mealPlanWindow.read(remote, background)
             if (stopReason() == null) syncHomeSections(today)
             if (plan is Outcome.Failure) return plan
             if (sourceChanged()) return Outcome.Failure(SOURCE_CHANGED_ERROR)

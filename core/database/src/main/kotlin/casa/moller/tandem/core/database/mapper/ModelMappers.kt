@@ -96,18 +96,20 @@ fun MealTypeEntity.toModel(): MealType = MealType(
  * A planned meal. A meal type that is not stored yet becomes a nameless placeholder with the
  * right id; the entry keeps its server id (or its negative local id when created offline).
  */
-fun MealPlanRow.toModel(): MealPlanEntry {
+fun MealPlanRow.toModel(pending: Boolean = false): MealPlanEntry {
     val from = LocalDate.parse(entry.fromDate)
     return MealPlanEntry(
         id = entry.serverId ?: entry.localId,
         title = entry.title,
-        recipe = recipe?.toModel(),
+        // Phase 2: a recipe whose overview is not stored yet still has its name (`recipe_name`).
+        recipe = recipe?.toModel() ?: entry.recipeId?.let { RecipeOverview(id = it, name = entry.recipeName.orEmpty()) },
         servings = entry.servings,
         note = entry.note,
         fromDate = from,
         toDate = runCatching { LocalDate.parse(entry.toDate) }.getOrDefault(from),
         mealType = mealType?.toModel() ?: MealType(id = entry.mealTypeId, name = ""),
         onShoppingList = entry.shopping,
+        pending = pending,
     )
 }
 

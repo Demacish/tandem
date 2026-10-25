@@ -35,6 +35,11 @@ import casa.moller.tandem.core.sync.engine.OutboxSender
 import casa.moller.tandem.core.sync.engine.SyncEngine
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.PrefetchedImages
+import casa.moller.tandem.core.sync.mealplan.MealPlanOutboxHandler
+import casa.moller.tandem.core.sync.mealplan.MealPlanSync
+import casa.moller.tandem.core.sync.mealplan.MealPlanWindowReader
+import casa.moller.tandem.core.sync.mealplan.MealTypeOutboxHandler
+import casa.moller.tandem.core.sync.mealplan.OfflineFirstMealPlanRepository
 import casa.moller.tandem.core.sync.permissions.DefaultSpacePermissionsRepository
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.remote.RemoteCaller
@@ -148,8 +153,14 @@ internal class SyncTestGraph(
             OutboxEntities.RECIPE_BOOK to RecipeBookOutboxHandler(databases, caller),
             OutboxEntities.RECIPE_BOOK_ENTRY to RecipeBookEntryOutboxHandler(databases, caller),
             OutboxEntities.RECIPE to RecipeKeywordsOutboxHandler(databases, caller, details, bookNames),
+            // Phase 2 (matsedel lane): meals and meal types.
+            OutboxEntities.MEAL_PLAN to MealPlanOutboxHandler(databases, caller, clock),
+            OutboxEntities.MEAL_TYPE to MealTypeOutboxHandler(caller),
         ),
     )
+
+    // Phase 2 (matsedel lane): the meal plan window, shared by the engine and Veckan's refresh.
+    val mealPlanWindow = MealPlanWindowReader(sources, databases, caller, clock)
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
@@ -170,6 +181,7 @@ internal class SyncTestGraph(
         diagnosticsStore,
         ShoppingSyncStep(shoppingReader, shoppingTables, databases),
         BookSyncStep(roleSync, bookSync),
+        mealPlanWindow,
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
@@ -206,6 +218,10 @@ internal class SyncTestGraph(
         network,
     )
     val spacePermissions = DefaultSpacePermissionsRepository(sources, databases)
+
+    // Phase 2 (matsedel lane): the meal plan repository and its refresh.
+    val mealPlanSync = MealPlanSync(mealPlanWindow, outbox, scheduler, network)
+    val mealPlans = OfflineFirstMealPlanRepository(sources, databases, permissions, scheduler, clock, mealPlanSync, { shopping })
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

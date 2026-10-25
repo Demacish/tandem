@@ -59,6 +59,64 @@ abstract class MealPlanDao {
     )
     abstract suspend fun deleteServerEntriesInWindow(accountId: String, fromDate: String, toDate: String)
 
+    // ---------------------------------------------------------------- Phase 2 (matsedel lane)
+
+    /** Runs [block] in one transaction (a local change and its outbox row, plan 5.7). */
+    @Transaction
+    open suspend fun inTransaction(block: suspend () -> Unit) {
+        block()
+    }
+
+    /** One stored meal by its local id (= server id for server rows, negative when created offline). */
+    @Query("SELECT * FROM meal_plan WHERE account_id = :accountId AND local_id = :localId")
+    abstract suspend fun get(accountId: String, localId: Long): MealPlanEntity?
+
+    /**
+     * One meal with meal type and recipe, null while it is not stored. [id] may be a temporary id
+     * that has since been rewritten to its server id (`id_mapping`): the meal is followed across
+     * the rewrite.
+     */
+    @Query(
+        SELECT_ROWS + "WHERE m.account_id = :accountId AND (m.local_id = :id OR m.local_id = (SELECT im.server_id FROM id_mapping im " +
+            "WHERE im.account_id = :accountId AND im.entity = 'meal_plan' AND im.local_id = :id)) LIMIT 1",
+    )
+    abstract fun observeRow(accountId: String, id: Long): Flow<MealPlanRow?>
+
+    @Query("DELETE FROM meal_plan WHERE account_id = :accountId AND local_id = :localId")
+    abstract suspend fun delete(accountId: String, localId: Long)
+
+    /** The server's own values after it answered (`from_date`/`to_date` as sent, `shopping`); the user's fields stay. */
+    @Query(
+        "UPDATE meal_plan SET from_raw = :fromRaw, to_raw = :toRaw, shopping = :shopping " +
+            "WHERE account_id = :accountId AND local_id = :localId",
+    )
+    abstract suspend fun updateServerValues(accountId: String, localId: Long, fromRaw: String?, toRaw: String?, shopping: Boolean)
+
+    /**
+     * Meals deleted on another device while this one had unsent changes for them (plan 3.5: a full
+     * window read no longer lists them): their unsent outbox rows are dropped WITHOUT a request (no
+     * 404) and the meals are removed, in one transaction.
+     */
+    @Transaction
+    open suspend fun deleteGone(accountId: String, serverIds: List<Long>) {
+        if (serverIds.isEmpty()) return
+        deleteUnsentRowsOf(accountId, serverIds)
+        deleteByServerIds(accountId, serverIds)
+    }
+
+    @Query(
+        "DELETE FROM outbox WHERE account_id = :accountId AND entity = 'meal_plan' AND server_id IN (:serverIds) " +
+            "AND state != 'IN_FLIGHT'",
+    )
+    abstract suspend fun deleteUnsentRowsOf(accountId: String, serverIds: List<Long>)
+
+    @Query("DELETE FROM meal_plan WHERE account_id = :accountId AND server_id IN (:serverIds)")
+    abstract suspend fun deleteByServerIds(accountId: String, serverIds: List<Long>)
+
+    /** Meals with entries on the stored shopping list ("Handla för veckan": "redan på listan"). */
+    @Query("SELECT DISTINCT meal_plan_id FROM shopping_entry WHERE account_id = :accountId AND meal_plan_id IS NOT NULL")
+    abstract suspend fun getMealIdsOnShoppingList(accountId: String): List<Long>
+
     private companion object {
         const val SELECT_ROWS: String =
             "SELECT m.*, " +
