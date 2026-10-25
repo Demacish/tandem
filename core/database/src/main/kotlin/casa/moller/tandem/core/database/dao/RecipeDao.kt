@@ -168,6 +168,21 @@ abstract class RecipeDao {
     abstract suspend fun getIdsWithoutDetail(accountId: String, limit: Int): List<Long>
 
     /**
+     * Stored details that are older than their recipe (fix-data, 0.2.0 review): the overview's
+     * server `updated_at` (from the incremental sync) is later than when the detail was fetched,
+     * minus [toleranceMillis] for the difference between the server's and the device's clock. A
+     * detail fetched without a time counts too. Newest changes first. Read-only, no schema change;
+     * a refreshed copy is fetched again only while it is younger than the tolerance after the change.
+     */
+    @Query(
+        "SELECT d.recipe_id FROM recipe_detail d JOIN recipe_overview o ON o.account_id = d.account_id " +
+            "AND o.server_id = d.recipe_id WHERE d.account_id = :accountId AND d.raw_json IS NOT NULL " +
+            "AND o.updated_at IS NOT NULL AND (d.fetched_at IS NULL OR o.updated_at + :toleranceMillis > d.fetched_at) " +
+            "ORDER BY o.updated_at DESC, d.recipe_id LIMIT :limit",
+    )
+    abstract suspend fun getIdsWithStaleDetail(accountId: String, toleranceMillis: Long, limit: Int): List<Long>
+
+    /**
      * Recipes that must survive an index deletion although the server no longer lists them:
      * pinned recipes with unsent edits in the outbox (plan 3.5 "utom fästa som redigeras").
      */

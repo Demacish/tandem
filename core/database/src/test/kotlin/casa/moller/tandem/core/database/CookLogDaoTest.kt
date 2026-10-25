@@ -160,6 +160,49 @@ class CookLogDaoTest {
     }
 
     @Test
+    fun aPostWhoseAnswerWasLostIsCountedOnceWhileTheOutboxIsHeldBack() = runTest {
+        database.store(ACCOUNT_A, TestRecipes.MushroomPasta)
+        dao.reconcile(ACCOUNT_A, emptyList(), 1_000L, 1_000L, real)
+        log(recipeId = 1, rating = 4, at = 5_000L)
+        val outboxId = checkNotNull(database.outboxDao().nextReady(ACCOUNT_A)).id
+        // Sent once, the answer was lost; then safe mode holds the row back.
+        database.outboxDao().markInFlight(outboxId)
+        database.outboxDao().markRetry(outboxId, "timeout")
+        database.outboxDao().pauseAll(ACCOUNT_A)
+
+        // The next sync lists the entry the POST created (the server stores whole seconds).
+        dao.reconcile(ACCOUNT_A, listOf(server(9, recipeId = 1, rating = 4, at = 5_000L)), 6_000L, 6_000L, real)
+
+        assertEquals("counted once", 1, overview(1).overview.timesCooked)
+        assertEquals(4.0, checkNotNull(overview(1).overview.rating), 0.0)
+        assertEquals(listOf(9L), dao.getEntries(ACCOUNT_A).map { it.localId })
+        assertNull("nothing left to send", database.outboxDao().get(outboxId))
+        assertEquals(0, dao.observePendingCount(ACCOUNT_A).first())
+    }
+
+    @Test
+    fun anUnattemptedOrDifferentEntryIsNotSettledByAList() = runTest {
+        database.store(ACCOUNT_A, TestRecipes.MushroomPasta)
+        dao.reconcile(ACCOUNT_A, emptyList(), 1_000L, 1_000L, real)
+        log(recipeId = 1, rating = null, at = 5_000L)
+        val outboxId = checkNotNull(database.outboxDao().nextReady(ACCOUNT_A)).id
+        database.outboxDao().markInFlight(outboxId)
+        database.outboxDao().markRetry(outboxId, "timeout")
+
+        // Another member's entry at the same second, and an own one a second later: not this one.
+        dao.reconcile(
+            ACCOUNT_A,
+            listOf(server(9, recipeId = 1, rating = null, by = OTHER, at = 5_000L), server(10, recipeId = 1, rating = null, at = 6_000L)),
+            7_000L,
+            7_000L,
+            real,
+        )
+
+        assertEquals(3, overview(1).overview.timesCooked)
+        assertEquals(outboxId, database.outboxDao().get(outboxId)?.id)
+    }
+
+    @Test
     fun droppedAndRejectedEntriesStopCountingAndKeepTheirReason() = runTest {
         database.store(ACCOUNT_A, TestRecipes.MushroomPasta)
         dao.reconcile(ACCOUNT_A, emptyList(), 1_000L, 1_000L, real)

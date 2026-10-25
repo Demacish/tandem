@@ -9,9 +9,12 @@ import coil3.request.ErrorResult
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * [ImagePrefetcher] with the app's [ImageLoader]: fills the disk cache, skips the memory cache.
@@ -49,6 +52,19 @@ internal class CoilImagePrefetcher @Inject constructor(
             }
         }
         return settled
+    }
+
+    override suspend fun cached(urls: List<String>): Set<String> = withContext(Dispatchers.IO) {
+        try {
+            // A network image's disk cache key is its URL (no custom key is set, see prefetch).
+            val diskCache = imageLoader.get().diskCache ?: return@withContext emptySet()
+            urls.filterTo(LinkedHashSet()) { url -> diskCache.openSnapshot(url)?.use { true } ?: false }
+        } catch (e: IOException) {
+            emptySet()
+        } catch (e: IllegalStateException) {
+            // The cache was closed or cleared at the same time: nothing counts as cached.
+            emptySet()
+        }
     }
 
     /** A client error a retry cannot fix (deleted, forbidden...); 408 and 429 are temporary. */

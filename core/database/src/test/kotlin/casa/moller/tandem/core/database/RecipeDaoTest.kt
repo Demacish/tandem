@@ -18,6 +18,7 @@ import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.recipe.RecipeSort
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -198,6 +199,27 @@ class RecipeDaoTest {
         // The detail has no `new` flag: storing it again keeps is_new.
         database.store(ACCOUNT_A, TestRecipes.MushroomPasta)
         assertTrue(checkNotNull(dao.observeListItem(ACCOUNT_A, 1).first()).overview.isNew)
+    }
+
+    @Test
+    fun detailsOlderThanTheirRecipeAreStale() = runTest {
+        TestRecipes.All.take(3).forEach { database.store(ACCOUNT_A, it, fetchedAtEpochMillis = 100_000L) }
+        fun edited(id: Long, name: String, at: Long) =
+            RecipeOverview(id = id, name = name, updatedAt = Instant.fromEpochMilliseconds(at)).toOverviewWrite(ACCOUNT_A)
+
+        // Recipe 1 was edited on the web after its detail was fetched, recipe 2 long before; 3 has no time.
+        dao.upsertOverviews(ACCOUNT_A, listOf(edited(1, "Krämig svamppasta", 400_000L), edited(2, "Ärtsoppa", 10_000L)))
+        assertEquals(listOf(1L), dao.getIdsWithStaleDetail(ACCOUNT_A, toleranceMillis = 60_000L, limit = 10))
+
+        // A change shortly before the fetch may be after it on the server's clock: stale too, newest first.
+        dao.upsertOverviews(ACCOUNT_A, listOf(edited(2, "Ärtsoppa", 50_000L)))
+        assertEquals(listOf(1L, 2L), dao.getIdsWithStaleDetail(ACCOUNT_A, toleranceMillis = 60_000L, limit = 10))
+        assertEquals(listOf(1L), dao.getIdsWithStaleDetail(ACCOUNT_A, toleranceMillis = 60_000L, limit = 1))
+
+        // Fetched again: up to date.
+        database.store(ACCOUNT_A, TestRecipes.MushroomPasta, fetchedAtEpochMillis = 500_000L)
+        assertEquals(listOf(2L), dao.getIdsWithStaleDetail(ACCOUNT_A, toleranceMillis = 60_000L, limit = 10))
+        assertEquals(emptyList<Long>(), dao.getIdsWithStaleDetail(ACCOUNT_B, toleranceMillis = 60_000L, limit = 10))
     }
 
     @Test

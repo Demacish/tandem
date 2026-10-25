@@ -156,6 +156,11 @@ abstract class CookLogDao {
      * `serverId`), requested at [listRequestedAtEpochMillis], and recomputes the statistics of
      * every recipe in one transaction. Entries this device sent before the list was requested
      * and that the list lacks were deleted on the server (e.g. on the web) and are removed.
+     *
+     * A local entry whose POST was attempted but whose answer was lost (timeout, process killed)
+     * and that the list already has ([CookLogKey]) is settled here like [markSent]: its outbox row
+     * goes and the list's copy counts, once (fix-data, 0.2.0 review). Otherwise it would count
+     * twice for as long as the outbox is held back (safe mode, "Log in again", 429, the breaker).
      */
     @Transaction
     open suspend fun reconcile(
@@ -180,6 +185,7 @@ abstract class CookLogDao {
             }
         }
         if (rows.isNotEmpty()) upsertEntries(rows.distinctBy { it.localId })
+        settleAnsweredPosts(accountId, rows, rules)
         upsertSyncState(SyncStateEntity(accountId = accountId, entity = SyncEntities.COOK_LOG, lastFullRelistEpochMillis = nowEpochMillis))
         replaceAllStats(accountId, rules)
     }
@@ -214,6 +220,20 @@ abstract class CookLogDao {
     /** The entry a `COOK_LOG` outbox row sends, if it still exists. */
     @Query("SELECT * FROM cook_log WHERE account_id = :accountId AND outbox_id = :outboxId")
     abstract suspend fun getEntryForOutbox(accountId: String, outboxId: Long): CookLogEntity?
+
+    /** See [reconcile]: attempted local entries the server's list already has lose their outbox row and stop counting. */
+    private suspend fun settleAnsweredPosts(accountId: String, serverRows: List<CookLogEntity>, rules: CookStatsRules) {
+        val attempted = getAttemptedPendingEntries(accountId)
+        if (attempted.isEmpty()) return
+        val unclaimed = serverRows.map { it to CookLogKey.of(it) }.toMutableList()
+        for (local in attempted) {
+            val key = CookLogKey(local.recipeId, local.createdBy ?: rules.ownUserId, local.cookedAtEpochMillis)
+            val match = unclaimed.firstOrNull { (_, serverKey) -> key.matches(serverKey) } ?: continue
+            unclaimed.remove(match)
+            deleteEntry(accountId, local.localId)
+            local.outboxId?.let { deleteOutboxRow(it) }
+        }
+    }
 
     // ---------------------------------------------------------------- statistics
 
@@ -295,6 +315,13 @@ abstract class CookLogDao {
 
     @Query("UPDATE outbox SET state = 'FAILED', last_error = :error WHERE id = :id")
     abstract suspend fun failOutboxRow(id: Long, error: String?)
+
+    /** PENDING entries whose outbox row was sent at least once and waits now (not while it is being sent). */
+    @Query(
+        "SELECT c.* FROM cook_log c JOIN outbox o ON o.id = c.outbox_id WHERE c.account_id = :accountId " +
+            "AND c.state = 'PENDING' AND o.attempts > 0 AND o.state IN ('PENDING', 'PAUSED') ORDER BY c.local_id DESC",
+    )
+    abstract suspend fun getAttemptedPendingEntries(accountId: String): List<CookLogEntity>
 
     @Query("SELECT * FROM cook_log WHERE account_id = :accountId AND state IN ($COUNTED)")
     abstract suspend fun getAllCountedEntries(accountId: String): List<CookLogEntity>

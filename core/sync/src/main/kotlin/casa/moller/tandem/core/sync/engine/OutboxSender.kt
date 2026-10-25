@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.sync.engine
 
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.dao.CookLogKey
 import casa.moller.tandem.core.database.entity.CookLogEntity
 import casa.moller.tandem.core.database.entity.CookLogProblems
 import casa.moller.tandem.core.database.entity.OutboxEntity
@@ -215,13 +216,16 @@ internal class OutboxSender @Inject constructor(
         return when (listed) {
             is Outcome.Failure -> listed
 
-            is Outcome.Success -> Outcome.Success(
-                listed.value.items.firstOrNull { entry ->
-                    entry.recipe == request.recipe &&
-                        entry.createdBy?.id == remote.account.userId &&
-                        TandoorDates.parseInstantOrNull(entry.createdAt) == cookedAt
-                },
-            )
+            is Outcome.Success -> {
+                // The same rule as CookLogDao.reconcile (CookLogKey): recipe, author, created_at to the second.
+                val own = CookLogKey(request.recipe, remote.account.userId, cookedAt.toEpochMilli())
+                Outcome.Success(
+                    listed.value.items.firstOrNull { entry ->
+                        val recipe = entry.recipe ?: return@firstOrNull false
+                        own.matches(CookLogKey(recipe, entry.createdBy?.id, TandoorDates.parseInstantOrNull(entry.createdAt)?.toEpochMilli()))
+                    },
+                )
+            }
         }
     }
 

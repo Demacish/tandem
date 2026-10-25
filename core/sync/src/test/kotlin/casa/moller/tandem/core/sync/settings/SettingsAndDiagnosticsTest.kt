@@ -16,12 +16,23 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import casa.moller.tandem.core.sync.work.WorkManagerSyncScheduler
 import casa.moller.tandem.core.testing.data.FakeTimerController
+import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
 import casa.moller.tandem.core.testing.time.TestClock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -52,6 +63,24 @@ class SettingsAndDiagnosticsTest {
     }
 
     private suspend fun storedDetails(): Set<Long> = graph.real.recipeDao().getStoredDetailIds(ACCOUNT_ID).toSet()
+
+    /** `recipe-list-default` with new `updated_at` values for some recipes. */
+    private fun recipeListWith(vararg updatedAt: Pair<Long, String>): String {
+        val changes = updatedAt.toMap()
+        val body = Json.parseToJsonElement(TandoorFixtures.exchange("fas1/recipe-list-default").body.orEmpty()).jsonObject
+        val results = body.getValue("results").jsonArray.map { element ->
+            val recipe = element.jsonObject
+            changes[recipe.getValue("id").jsonPrimitive.long]?.let { JsonObject(recipe + ("updated_at" to JsonPrimitive(it))) } ?: recipe
+        }
+        return JsonObject(body + ("results" to JsonArray(results))).toString()
+    }
+
+    /** `recipe-flat` with one more recipe. */
+    private fun flatWith(id: Long, name: String): String {
+        val flat = Json.parseToJsonElement(TandoorFixtures.exchange("fas1/recipe-flat").body.orEmpty()).jsonArray
+        val extra = JsonObject(mapOf("id" to JsonPrimitive(id), "name" to JsonPrimitive(name), "image" to JsonNull))
+        return JsonArray(flat + extra).toString()
+    }
 
     @Test
     fun downloadAllFetchesEveryRecipeAndItsPhoto() = runBlocking {
@@ -90,6 +119,107 @@ class SettingsAndDiagnosticsTest {
 
         graph.engine.run(SyncReason.USER_REFRESH)
 
+        assertEquals(first, graph.diagnosticsStore.state.value.lastFullSync)
+    }
+
+    // --- fix-data (0.2.0 review) ---
+
+    @Test
+    fun downloadAllFetchesAgainWhatChangedOnTheServer() = runBlocking {
+        graph.settings.state.value = graph.settings.state.value.copy(downloadAllRecipes = true)
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        val pyttipanna = graph.server.requestsTo("GET", "/api/recipe/1/").size
+        val pasta = graph.server.requestsTo("GET", "/api/recipe/2/").size
+        // A household member edits recipe 1 on the web a minute after it was stored.
+        val editedAt = java.time.Instant.ofEpochMilli(graph.clock.nowMillis() + 60_000L).toString()
+        graph.server.respond("GET", "/api/recipe/") { request ->
+            when {
+                HOME_QUERIES.any { request.url.queryParameter(it) != null } -> FakeTandoorServer.json(200, FakeTandoorServer.EMPTY_PAGE)
+                request.url.queryParameter("updatedon_gte") != null -> FakeTandoorServer.json(200, recipeListWith(1L to editedAt))
+                else -> FakeTandoorServer.fixture("fas1/recipe-list-default")
+            }
+        }
+        graph.clock.advance(2.hours)
+
+        graph.engine.run(SyncReason.USER_REFRESH)
+
+        assertEquals("the changed recipe is fetched again", pyttipanna + 1, graph.server.requestsTo("GET", "/api/recipe/1/").size)
+        assertEquals("the others are up to date", pasta, graph.server.requestsTo("GET", "/api/recipe/2/").size)
+
+        graph.clock.advance(2.hours)
+        graph.engine.run(SyncReason.USER_REFRESH)
+        assertEquals("once is enough", pyttipanna + 1, graph.server.requestsTo("GET", "/api/recipe/1/").size)
+    }
+
+    @Test
+    fun withoutDownloadAllAnUnpinnedChangedRecipeIsNotFetched() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        // Stored once (not pinned, not planned, not viewed), then changed on the web.
+        graph.details.fetch(graph.remote, 1L, isBackground = false)
+        assertTrue(1L in storedDetails())
+        val editedAt = java.time.Instant.ofEpochMilli(graph.clock.nowMillis() + 60_000L).toString()
+        graph.server.respond("GET", "/api/recipe/") { request ->
+            when {
+                HOME_QUERIES.any { request.url.queryParameter(it) != null } -> FakeTandoorServer.json(200, FakeTandoorServer.EMPTY_PAGE)
+                else -> FakeTandoorServer.json(200, recipeListWith(1L to editedAt))
+            }
+        }
+        val before = graph.server.requestsTo("GET", "/api/recipe/1/").size
+        graph.clock.advance(2.hours)
+
+        graph.engine.run(SyncReason.USER_REFRESH)
+
+        assertEquals(before, graph.server.requestsTo("GET", "/api/recipe/1/").size)
+    }
+
+    @Test
+    fun aNewProcessSkipsPhotosThatAreInTheDiskCache() = runBlocking {
+        graph.settings.state.value = graph.settings.state.value.copy(downloadAllRecipes = true)
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        val photos = graph.real.recipeDao().getAllOverviews(ACCOUNT_ID).mapNotNull { it.imageUrl }.distinct()
+        assertTrue("the fixtures have photos", photos.size >= 2)
+        // A periodic run in a new process: nothing in memory, the disk cache has every photo but one.
+        graph.prefetched.clear()
+        graph.images.urls.clear()
+        graph.images.diskCache += photos.drop(1)
+        graph.clock.advance(2.hours)
+
+        graph.engine.run(SyncReason.PERIODIC)
+
+        assertEquals(listOf(photos.first()), graph.images.urls.toList())
+    }
+
+    @Test
+    fun theFullSyncTimingLeavesOutTheDownloadAllWork() = runBlocking {
+        graph.settings.state.value = graph.settings.state.value.copy(downloadAllRecipes = true)
+        // Every detail takes 10 s on the (fake) clock.
+        FakeTandoorServer.RECIPES.forEach { (id, fixture) ->
+            graph.server.respond("GET", "/api/recipe/$id/") {
+                synchronized(graph.clock) { graph.clock.advance(10.seconds) }
+                FakeTandoorServer.fixture(fixture)
+            }
+        }
+        val startedAt = graph.clock.nowMillis()
+
+        graph.engine.run(SyncReason.FIRST_SYNC)
+
+        assertTrue("the details were fetched", graph.clock.nowMillis() - startedAt >= 110_000L)
+        val timing = checkNotNull(graph.diagnosticsStore.state.value.lastFullSync)
+        assertTrue("index, overviews and the usual details only: ${timing.duration}", timing.duration < 10.seconds)
+    }
+
+    @Test
+    fun aReReadBecauseARecipeBecameVisibleKeepsTheFirstSyncTiming() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        val first = checkNotNull(graph.diagnosticsStore.state.value.lastFullSync)
+        // A recipe is shared with the user: it is in the index but not among the changed overviews.
+        graph.server.respond("GET", "/api/recipe/flat/") { FakeTandoorServer.json(200, flatWith(13L, "Delat recept")) }
+        graph.clock.advance(2.hours)
+
+        val result = graph.engine.run(SyncReason.USER_REFRESH)
+
+        assertEquals(SyncPhase.DONE, result.phase)
+        assertTrue("the shared recipe is in the index", 13L in graph.real.recipeDao().getRecipeIds(ACCOUNT_ID))
         assertEquals(first, graph.diagnosticsStore.state.value.lastFullSync)
     }
 
@@ -209,4 +339,9 @@ class SettingsAndDiagnosticsTest {
         crashLogs = crashes,
         clock = TestClock(),
     )
+
+    private companion object {
+        /** Today's carousel queries (FakeTandoorServer answers them with an empty page). */
+        val HOME_QUERIES = listOf("timescooked_gte", "new", "viewedon_gte", "cookedon_lte")
+    }
 }

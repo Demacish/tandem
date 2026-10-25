@@ -110,10 +110,14 @@ internal data class EngineState(
  * when it was written) as due, so a corrected clock never stops the sync for days.
  *
  * Phase 1b (inställningar lane): with "Download all recipes" on (Settings → Sync), step 5 also
- * fetches recipes without a stored detail, and their images, up to
- * [SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN] per run. A successful run that read every overview (the
- * first sync, or a full re-read) is stored as the "full sync" timing for Settings → Diagnostics
- * (Phase 1 "Klart när": ~300 recipes under 60 s).
+ * fetches recipes without a stored detail, and stored details that are older than their recipe's
+ * `updated_at` (fix-data, 0.2.0 review: an edit on the web reaches the offline copy), and their
+ * images, up to [SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN] per run. Images already in the disk cache
+ * are skipped, also in a new process. A successful run that read every overview for the first
+ * time (no earlier sync date) is stored as the "full sync" timing for Settings → Diagnostics
+ * (Phase 1 "Klart när": ~300 recipes under 60 s; plan §10 "index + översikter + detaljer för
+ * fästa"): measured from the run's start to the end of the usual details, without the
+ * download-all details and the images.
  */
 @Singleton
 internal class SyncEngine @Inject constructor(
@@ -185,8 +189,10 @@ internal class SyncEngine @Inject constructor(
                 val failed = result.phase == SyncPhase.FAILED
                 mutableState.update { it.copy(running = false, progress = null, lastError = if (failed) result.error else null) }
             }
-            run.fullIndexRecipes?.takeIf { result.phase == SyncPhase.DONE }?.let { recipes ->
-                val duration = (clock.elapsedMillis() - startedAt).coerceAtLeast(0).milliseconds
+            val recipes = run.fullIndexRecipes
+            val fullSyncDone = run.fullSyncElapsedMillis
+            if (result.phase == SyncPhase.DONE && recipes != null && fullSyncDone != null) {
+                val duration = (fullSyncDone - startedAt).coerceAtLeast(0).milliseconds
                 diagnostics.recordFullSync(FullSyncTiming(duration, recipes, Instant.fromEpochMilliseconds(clock.nowMillis())))
             }
             result
@@ -222,8 +228,12 @@ internal class SyncEngine @Inject constructor(
         /** Steps that ignore their "at most every ..." limit for this run. */
         private val forced = reason == SyncReason.FIRST_SYNC || reason == SyncReason.ACCOUNT_CHANGED || reason == SyncReason.USER_REFRESH
 
-        /** Recipes in the index when this run read every overview (a "full sync"), else null. */
+        /** Recipes in the index when this run read every overview for the first time (a "full sync"), else null. */
         var fullIndexRecipes: Int? = null
+            private set
+
+        /** [SyncClock.elapsedMillis] when the full sync's part was done (index, overviews, usual details). */
+        var fullSyncElapsedMillis: Long? = null
             private set
 
         /** Settings → Sync → "Download all recipes", read once when the run starts. */
@@ -274,8 +284,13 @@ internal class SyncEngine @Inject constructor(
             stopReason()?.let { return failed(it) }
 
             val viewed = recentlyViewedIds()
-            prefetchDetails(viewed)
+            prefetchDetails(usualDetailIds(viewed))
             stopReason()?.let { return failed(it) }
+            if (fullIndexRecipes != null) fullSyncElapsedMillis = clock.elapsedMillis()
+            if (downloadAll) {
+                prefetchDetails(downloadAllDetailIds())
+                stopReason()?.let { return failed(it) }
+            }
             prefetchImages(viewed)
 
             progress(SyncPhase.OUTBOX)
@@ -433,7 +448,9 @@ internal class SyncEngine @Inject constructor(
             // A recipe became visible without being changed (e.g. shared): read every overview.
             val fetched = if (missed) fetchOverviews(since = null, total = entries.size) else first
             if (fetched is Outcome.Failure) return fetched
-            if (since == null || missed) fullIndexRecipes = entries.size
+            // Only the first complete read is the "full sync" of plan §10; a re-read because a recipe
+            // became visible (often together with download-all work) is a different measurement.
+            if (since == null) fullIndexRecipes = entries.size
             updateSyncState(SyncKeys.RECIPES) { it.copy(lastDate = startedOn.toString()) }
             markDone(SyncKeys.RECIPE_INDEX)
             return Outcome.Success(Unit)
@@ -559,7 +576,8 @@ internal class SyncEngine @Inject constructor(
             return (viewedLocally + viewedOnServer).distinct()
         }
 
-        private suspend fun prefetchDetails(recentlyViewed: List<Long>) {
+        /** Pinned (older than 24 h), planned and recently viewed recipes, at most [SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN]. */
+        private suspend fun usualDetailIds(recentlyViewed: List<Long>): List<Long> {
             val recipes = database.recipeDao()
             val now = clock.nowMillis()
             val staleBefore = now - SyncSchedule.PINNED_DETAIL_MAX_AGE.inWholeMilliseconds
@@ -575,13 +593,29 @@ internal class SyncEngine @Inject constructor(
             val viewed = recentlyViewed.filter { it !in stored }
             // Only recipes the index knows: an id from stale data must not become a 404 (plan 4.1).
             val known = recipes.getRecipeIds(accountId).toHashSet()
-            val usual = (pinned + planned + viewed).distinct()
+            return (pinned + planned + viewed).distinct()
                 .filter { it in known }
                 .take(SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN)
-            // "Download all recipes": every recipe of the index without a stored detail, after the
-            // usual ones, in batches per run (the rest follow in the next run).
-            val everything = if (downloadAll) recipes.getIdsWithoutDetail(accountId, SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN) else emptyList()
-            val ids = (usual + everything).distinct()
+        }
+
+        /**
+         * "Download all recipes": every recipe of the index without a stored detail, then stored
+         * details older than their recipe's `updated_at` (changed on the server since), in batches
+         * of [SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN] per run (the rest follow in the next run).
+         */
+        private suspend fun downloadAllDetailIds(): List<Long> {
+            val recipes = database.recipeDao()
+            val cap = SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN
+            val missing = recipes.getIdsWithoutDetail(accountId, cap)
+            val stale = if (missing.size < cap) {
+                recipes.getIdsWithStaleDetail(accountId, SyncSchedule.CLOCK_SKEW_TOLERANCE.inWholeMilliseconds, cap - missing.size)
+            } else {
+                emptyList()
+            }
+            return (missing + stale).distinct()
+        }
+
+        private suspend fun prefetchDetails(ids: List<Long>) {
             if (ids.isEmpty()) return
             progress(SyncPhase.RECIPE_DETAILS, done = 0, total = ids.size)
             val done = AtomicInteger()
@@ -606,20 +640,25 @@ internal class SyncEngine @Inject constructor(
             val pinned = recipes.observePinned(accountId).first()
             val planned = recipes.getListItems(accountId, plannedRecipeIds())
             val viewed = recipes.getListItems(accountId, recentlyViewed)
-            val usual = (pinned + planned + viewed).mapNotNull { it.overview.imageUrl }
+            val usualCandidates = (pinned + planned + viewed).mapNotNull { it.overview.imageUrl }
                 .distinct()
                 .filter { it !in prefetched }
-                .take(SyncSchedule.MAX_IMAGE_PREFETCH_PER_RUN)
             // "Download all recipes": the photo of every recipe kept offline, after the usual ones.
-            val everything = if (downloadAll) {
-                recipes.getAllOverviews(accountId).mapNotNull { it.imageUrl }
-                    .filter { it !in prefetched }
-                    .take(SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN)
+            val everythingCandidates = if (downloadAll) {
+                recipes.getAllOverviews(accountId).mapNotNull { it.imageUrl }.filter { it !in prefetched }
             } else {
                 emptyList()
             }
+            val candidates = (usualCandidates + everythingCandidates).distinct()
+            if (candidates.isEmpty() || (background && guard.state.value.importsRunning > 0)) return
+            // The in-memory set is empty in a new process (a periodic run often is one): images that
+            // are already in the disk cache are skipped, so every run reaches the ones still missing.
+            val cached = images.cached(candidates)
+            prefetched.addAll(cached)
+            val usual = usualCandidates.filter { it !in cached }.take(SyncSchedule.MAX_IMAGE_PREFETCH_PER_RUN)
+            val everything = everythingCandidates.filter { it !in cached }.take(SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN)
             val urls = (usual + everything).distinct()
-            if (urls.isEmpty() || (background && guard.state.value.importsRunning > 0)) return
+            if (urls.isEmpty()) return
             progress(SyncPhase.IMAGES, done = 0, total = urls.size)
             prefetched.addAll(images.prefetch(urls))
         }

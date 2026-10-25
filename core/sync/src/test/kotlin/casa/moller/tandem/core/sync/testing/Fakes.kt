@@ -110,15 +110,21 @@ internal class FakeScheduler : SyncScheduler {
     }
 }
 
-/** Records the requested URLs; URLs ending with one of [failing] fail temporarily (every other one is settled). */
+/**
+ * Records the requested URLs; URLs ending with one of [failing] fail temporarily (every other one
+ * is settled). [diskCache] stands for Coil's disk cache: what [cached] reports.
+ */
 internal class FakeImagePrefetcher : ImagePrefetcher {
     val urls: MutableList<String> = CopyOnWriteArrayList()
     val failing: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    val diskCache: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override suspend fun prefetch(urls: List<String>): Set<String> {
         this.urls += urls
         return urls.filterTo(LinkedHashSet()) { url -> failing.none { url.endsWith(it) } }
     }
+
+    override suspend fun cached(urls: List<String>): Set<String> = urls.filterTo(LinkedHashSet()) { it in diskCache }
 }
 
 /** Counts how often the image caches were emptied (and empties the shared prefetch memory like the real one). */

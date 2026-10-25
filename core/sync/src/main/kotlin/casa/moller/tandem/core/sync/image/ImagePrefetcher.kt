@@ -10,4 +10,11 @@ internal interface ImagePrefetcher {
      *   pause after repeated 4xx) are left out, so a later sync run tries them again.
      */
     suspend fun prefetch(urls: List<String>): Set<String>
+
+    /**
+     * The URLs of [urls] that are in the disk cache already (fix-data, 0.2.0 review), so a sync
+     * run in a new process does not load the same images again and reaches the missing ones.
+     * Never throws; an unreadable cache counts as empty.
+     */
+    suspend fun cached(urls: List<String>): Set<String>
 }
