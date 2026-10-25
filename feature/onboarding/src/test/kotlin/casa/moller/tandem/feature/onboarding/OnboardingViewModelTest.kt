@@ -409,6 +409,15 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun anAllauthLoginThatNeedsTheBrowserPointsToTheToken() {
+        // Tandoor 2.7+: allauth wants another step (e-mail, second factor) or the server has no app login.
+        assertEquals(
+            LoginError.PasswordLoginUnavailable,
+            OnboardingViewModel.loginErrorFor(DataProblem.PASSWORD_LOGIN_UNAVAILABLE.toError(), LoginMethod.PASSWORD),
+        )
+    }
+
+    @Test
     fun backFromLoginForgetsPasswordAndToken() {
         val vm = newViewModel().atLoginStep()
         vm.onUsernameChange("anna")
