@@ -74,9 +74,9 @@ internal fun CookingSettingsScreen(
         val capabilities = state.capabilities
         if (state.timerMode == TimerMode.IN_APP && (capabilities.alarmMayBeSilent || capabilities.alarmMayBeLate)) {
             val reasons = buildList {
-                // By cause, as core:timer behaves (fix-ui, 0.2.0 review): without notifications the
-                // alarm still rings but can only be stopped in Tandem; a switched-off alarm channel
-                // makes a finished timer silent.
+                // By cause, as core:timer behaves (0.2.0 review): the ringing service always plays
+                // the alarm, but without notifications it can only be stopped in Tandem, and with a
+                // muted or blocked alarm channel it is not shown over the lock screen.
                 when {
                     !capabilities.notificationsAllowed -> add(stringResource(R.string.settings_timer_alarm_warning_silent))
                     !capabilities.alarmChannelEnabled -> add(stringResource(R.string.settings_timer_alarm_warning_channel_off))

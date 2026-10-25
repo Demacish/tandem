@@ -69,8 +69,8 @@
     <string name="cook_notifications_not_now">Not now</string>
     <string name="cook_alarm_silent_title">Notifications are off</string>
     <string name="cook_alarm_silent_body">The timer still rings, but without a notification you can only stop the alarm here in Tandem. Turn on notifications to stop it from the lock screen.</string>
-    <string name="cook_alarm_channel_off_title">The timer alarm sound is off</string>
-    <string name="cook_alarm_channel_off_body">A finished timer stays silent. Turn on the notification type “Timers (alarm)”.</string>
+    <string name="cook_alarm_channel_off_title">The timer alarm is muted</string>
+    <string name="cook_alarm_channel_off_body">The timer still rings, but the alarm is not shown over the lock screen. Turn the notification type “Timers (alarm)” back on, with sound, to stop it from there.</string>
     <string name="cook_alarm_late_title">The timer may ring a little late</string>
     <string name="cook_alarm_late_body">Tandem may not set exact alarms, so Android can delay the alarm by a few minutes.</string>
     <string name="cook_alarm_allow">Allow</string>

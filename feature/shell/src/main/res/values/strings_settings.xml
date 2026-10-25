@@ -45,7 +45,7 @@
     <string name="settings_timer_no_clock_app">No clock app that can take timers was found on this phone.</string>
     <string name="settings_timer_alarm_warning_title">Your timers may not ring as they should</string>
     <string name="settings_timer_alarm_warning_silent">Tandem is not allowed to show notifications. A finished timer still rings, but you can only stop the alarm in Tandem, not from the lock screen.</string>
-    <string name="settings_timer_alarm_warning_channel_off">The alarm sound for timers is turned off in the notification settings. A finished timer stays silent.</string>
+    <string name="settings_timer_alarm_warning_channel_off">The timer alarm notifications are muted or turned off in the notification settings. A finished timer still rings, but the alarm is not shown over the lock screen.</string>
     <string name="settings_cooking_permissions_body">Notifications, the alarm sound and exact alarms for timers</string>
     <string name="settings_timer_alarm_warning_late">Tandem may not set exact alarms, so Android can delay a timer by a few minutes.</string>
     <string name="settings_open_permissions">Check permissions</string>
@@ -105,7 +105,7 @@
     <string name="settings_permission_notifications">Notifications</string>
     <string name="settings_permission_notifications_body">Timers counting down and ringing, and news about your server.</string>
     <string name="settings_permission_alarm_channel">Alarm sound for timers</string>
-    <string name="settings_permission_alarm_channel_body">The notification type “Timers (alarm)” must be on, otherwise a finished timer is silent.</string>
+    <string name="settings_permission_alarm_channel_body">The notification type “Timers (alarm)” must be on, with sound, so a finished timer is shown over the lock screen.</string>
     <string name="settings_permission_exact">Alarms on time</string>
     <string name="settings_permission_exact_body">Lets a timer ring on the second, even when the phone is saving power.</string>
     <string name="settings_permission_exact_always">Always allowed in this version of Tandem.</string>

@@ -101,7 +101,9 @@ data class CookUiState(
      *   service plays the sound itself), but there is no notification or lock-screen alarm to stop
      *   it, so it can only be stopped in Tandem (or stops itself after 5 minutes).
      * - [SilentAlarmCause.ALARM_CHANNEL_OFF]: notifications are allowed but the "Timers (alarm)"
-     *   channel is switched off: a finished timer is silent, also while Tandem is open.
+     *   channel cannot sound (blocked, set to "Silent" or without a sound). The ringing service
+     *   still plays the alarm, but no alarm is shown over the lock screen; the channel's own
+     *   settings page fixes it.
      */
     val silentAlarmCause: SilentAlarmCause?
         get() = when {

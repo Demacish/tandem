@@ -42,7 +42,7 @@
     <string name="settings_timer_no_clock_app">Ingen klockapp som kan ta emot timers hittades på telefonen.</string>
     <string name="settings_timer_alarm_warning_title">Dina timers kanske inte ringer som de ska</string>
     <string name="settings_timer_alarm_warning_silent">Tandem får inte visa notiser. En färdig timer ringer ändå, men larmet går bara att stänga av i Tandem, inte från låsskärmen.</string>
-    <string name="settings_timer_alarm_warning_channel_off">Larmljudet för timers är avstängt i notisinställningarna. En färdig timer blir tyst.</string>
+    <string name="settings_timer_alarm_warning_channel_off">Larmnotiserna för timers är tystade eller avstängda i notisinställningarna. En färdig timer ringer ändå, men larmet visas inte över låsskärmen.</string>
     <string name="settings_cooking_permissions_body">Notiser, larmljud och exakta larm för timers</string>
     <string name="settings_timer_alarm_warning_late">Tandem får inte ställa exakta larm, så Android kan försena en timer några minuter.</string>
     <string name="settings_open_permissions">Kontrollera behörigheter</string>
@@ -102,7 +102,7 @@
     <string name="settings_permission_notifications">Notiser</string>
     <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, och nyheter om din server.</string>
     <string name="settings_permission_alarm_channel">Larmljud för timers</string>
-    <string name="settings_permission_alarm_channel_body">Notistypen ”Timers (larm)” måste vara på, annars är en färdig timer tyst.</string>
+    <string name="settings_permission_alarm_channel_body">Notistypen ”Timers (larm)” måste vara på, med ljud, så att en färdig timer visas över låsskärmen.</string>
     <string name="settings_permission_exact">Larm i rätt tid</string>
     <string name="settings_permission_exact_body">Låter en timer ringa på sekunden, även när telefonen sparar ström.</string>
     <string name="settings_permission_exact_always">Alltid tillåtet i den här versionen av Tandem.</string>

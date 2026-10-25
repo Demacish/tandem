@@ -555,9 +555,10 @@ Kokläget (plan 6.2 "Kokläge", 6.5, 8.1, funktion #6–#8). `CookRoute(key, onC
     när ett kokläge ersätter ett annat (Navigation 3 håller kvar det gamla under övergången)
     stänger det gamla inte av dem för det nya. "Kokläge alltid mörkt" har ett enda anrop av
     innehållet (`TandemDarkTheme`), så inställningen byter färger utan att kasta tillståndet.
-  - *Tyst larm efter orsak:* utan notiser ringer larmet ändå (tjänsten spelar ljudet) men kan
-    bara stoppas i Tandem → appens notisinställningar; avstängd larmkanal → en färdig timer blir
-    tyst → kanalens egen sida (`ACTION_CHANNEL_NOTIFICATION_SETTINGS`, `timer_alarm`).
+  - *Varning efter orsak:* ringtjänsten spelar larmet själv när notisen inte kan låta (fix-data),
+    så varningen säger vad som faktiskt saknas. Utan notiser ringer larmet men kan bara stoppas i
+    Tandem → appens notisinställningar; tystad eller avstängd larmkanal → larmet visas inte över
+    låsskärmen → kanalens egen sida (`ACTION_CHANNEL_NOTIFICATION_SETTINGS`, `timer_alarm`).
   - *TalkBack:* "Steg 3 av 6: <namn>" är en artig live-region, en startad timer läses upp
     (`CookEffect.Announce`), paus/fortsätt är samma knapp så fokus stannar.
   - *Tidsdetektering* läser den synliga texten (`stepPlainText`, utan Markdown-tecken, radbrytningar
