@@ -1,8 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Phase 2 (grund lane): placeholders until the meal plan lane builds the screens. -->
+    <!-- Phase 2 (matsedel lane): the Veckan tab, the plan-meal page and "Handla för veckan" (plan 6.2, 6.7). -->
     <string name="mealplan_title">Week</string>
     <string name="mealplan_plan_meal_title">Plan a meal</string>
+    <string name="mealplan_edit_meal_title">Change meal</string>
     <string name="mealplan_week_shopping_title">Shop for the week</string>
-    <string name="mealplan_placeholder_body">The week’s meal plan from Tandoor comes here: plan, move and put meals on the shopping list.</string>
+
+    <!-- Week header -->
+    <string name="mealplan_week_number">Week %1$d</string>
+    <string name="mealplan_range_same_month">%1$s–%2$s %3$s</string>
+    <string name="mealplan_range">%1$s – %2$s</string>
+    <string name="mealplan_previous_week">Previous week</string>
+    <string name="mealplan_next_week">Next week</string>
+    <string name="mealplan_this_week">Today</string>
+    <string name="mealplan_this_week_description">Go to this week</string>
+    <plurals name="mealplan_planned_days">
+        <item quantity="one">%1$d of 7 days planned</item>
+        <item quantity="other">%1$d of 7 days planned</item>
+    </plurals>
+    <string name="mealplan_today">Today</string>
+    <string name="mealplan_today_heading">%1$s, today</string>
+
+    <!-- Days and meals -->
+    <string name="mealplan_plan_on_day">Plan a meal on %1$s</string>
+    <string name="mealplan_plan_on_day_type">Plan %1$s on %2$s</string>
+    <string name="mealplan_nothing_planned">Nothing planned</string>
+    <string name="mealplan_empty_week_title">Empty week</string>
+    <string name="mealplan_empty_week_body">Nothing is planned this week yet. Add a meal to a day with +.</string>
+    <string name="mealplan_empty_week_guest">Nothing is planned this week.</string>
+    <string name="mealplan_without_recipe">No recipe</string>
+    <plurals name="mealplan_servings">
+        <item quantity="one">%1$s serving</item>
+        <item quantity="other">%1$s servings</item>
+    </plurals>
+    <string name="mealplan_minutes">%1$d min</string>
+    <string name="mealplan_hours_minutes">%1$d h %2$d min</string>
+    <string name="mealplan_pending">Waiting to sync</string>
+    <string name="mealplan_on_shopping_list">On the shopping list</string>
+    <string name="mealplan_more_for">More for %1$s</string>
+    <string name="mealplan_open_recipe">Open recipe</string>
+    <string name="mealplan_show_actions">Show actions</string>
+    <string name="mealplan_cook">Cook</string>
+    <string name="mealplan_cook_description">Cook %1$s</string>
+    <string name="mealplan_edit">Change</string>
+    <string name="mealplan_move">Move</string>
+    <string name="mealplan_delete">Remove</string>
+    <string name="mealplan_meal_type_column">Meal</string>
+    <string name="mealplan_week_shopping_card_body">Put the week\'s ingredients on the shopping list</string>
+    <string name="mealplan_read_only">Guest: you can see the plan but not change it.</string>
+
+    <!-- Moving a meal -->
+    <string name="mealplan_move_title">Move %1$s</string>
+    <string name="mealplan_move_from">Now on %1$s</string>
+    <string name="mealplan_day_heading">Day</string>
+    <string name="mealplan_meal_type_heading">Meal</string>
+    <string name="mealplan_other_date">Other date…</string>
+    <string name="mealplan_pick_date">Pick a date</string>
+    <string name="mealplan_cancel">Cancel</string>
+    <string name="mealplan_ok">OK</string>
+
+    <!-- Snackbars -->
+    <string name="mealplan_undo">Undo</string>
+    <string name="mealplan_msg_removed">%1$s was removed</string>
+    <string name="mealplan_msg_moved">%1$s moved to %2$s</string>
+    <string name="mealplan_error_read_only">Guests cannot change the meal plan</string>
+    <string name="mealplan_error_refresh">Could not update the meal plan. It is shown as last saved.</string>
+    <string name="mealplan_error_save">Could not save the change</string>
+    <string name="mealplan_untitled">Meal</string>
+
+    <!-- Conflicts (plan 3.5) -->
+    <string name="mealplan_conflict_title">Changed in two places</string>
+    <string name="mealplan_conflict_body">%1$s: %2$s was changed on another device while you changed it here.\n\nYours: %3$s\nTheirs: %4$s</string>
+    <string name="mealplan_conflict_keep_mine">Keep mine</string>
+    <string name="mealplan_conflict_take_theirs">Take theirs</string>
+    <string name="mealplan_conflict_empty">(empty)</string>
+    <string name="mealplan_field_day">the day</string>
+    <string name="mealplan_field_meal_type">the meal type</string>
+    <string name="mealplan_field_recipe">the recipe</string>
+    <string name="mealplan_field_title">the title</string>
+    <string name="mealplan_field_servings">the servings</string>
+    <string name="mealplan_field_note">the note</string>
+
+    <!-- Plan-meal page -->
+    <string name="mealplan_kind_recipe">Recipe</string>
+    <string name="mealplan_kind_title">Title only</string>
+    <string name="mealplan_kind_heading">What</string>
+    <string name="mealplan_search_recipes">Search your recipes</string>
+    <string name="mealplan_no_recipes_found">No recipes found</string>
+    <string name="mealplan_chosen_recipe">Chosen recipe</string>
+    <string name="mealplan_change_recipe">Change recipe</string>
+    <string name="mealplan_choose_recipe">Choose a recipe</string>
+    <string name="mealplan_title_label">Title</string>
+    <string name="mealplan_title_optional">Own title (optional)</string>
+    <string name="mealplan_title_hint">E.g. Leftovers or Eating out</string>
+    <string name="mealplan_title_missing">Write a title</string>
+    <string name="mealplan_recipe_missing">Choose a recipe or switch to title only</string>
+    <string name="mealplan_type_missing">Choose a meal type</string>
+    <string name="mealplan_note_label">Note</string>
+    <string name="mealplan_servings_label">Servings</string>
+    <string name="mealplan_add_to_shopping">Put the ingredients on the shopping list</string>
+    <string name="mealplan_add_to_shopping_hint">Tandoor adds the recipe\'s ingredients for these servings.</string>
+    <string name="mealplan_new_meal_type">New meal type</string>
+    <string name="mealplan_new_meal_type_name">Name</string>
+    <string name="mealplan_new_meal_type_hint">E.g. Snack</string>
+    <string name="mealplan_add">Add</string>
+    <string name="mealplan_save_new">Add to the plan (%1$s)</string>
+    <string name="mealplan_save">Save</string>
+    <string name="mealplan_delete_meal">Remove from the plan</string>
+    <string name="mealplan_meal_gone">This meal is no longer in the plan.</string>
+
+    <!-- "Handla för veckan" (#16) -->
+    <string name="mealplan_week_shopping_intro">Choose the meals whose ingredients go on the shopping list. Things you have at home start unticked.</string>
+    <string name="mealplan_week_shopping_empty">No meals with recipes this week.</string>
+    <string name="mealplan_week_shopping_already">Already on the list</string>
+    <string name="mealplan_week_shopping_auto_add">Tandoor puts new meals on the list by itself (your setting). Meals already on the list are not added again.</string>
+    <string name="mealplan_week_shopping_on_hand">At home</string>
+    <string name="mealplan_week_shopping_no_ingredients">The recipe is not downloaded yet. Open it once while online to choose its ingredients.</string>
+    <plurals name="mealplan_week_shopping_add">
+        <item quantity="one">Add %1$d meal to the list</item>
+        <item quantity="other">Add %1$d meals to the list</item>
+    </plurals>
+    <string name="mealplan_week_shopping_meal_label">%1$s, %2$s</string>
+    <string name="mealplan_week_shopping_ingredients">Ingredients of %1$s</string>
+    <plurals name="mealplan_week_shopping_chosen">
+        <item quantity="one">%1$d of %2$d ingredient</item>
+        <item quantity="other">%1$d of %2$d ingredients</item>
+    </plurals>
 </resources>

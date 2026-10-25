@@ -628,6 +628,113 @@ måltiden (`?mealplan=`), PATCH av en posts livsmedel och enhet med namn (och en
 listrecept.
 <!-- /Fas 2 inköp-data -->
 
+<!-- Fas 2 matsedel -->
+## Matsedeln – data, synk och Veckan (`:core:sync`, `:feature:mealplan`, Fas 2)
+
+Matsedelsbanan (funktion #15 och #16, plan 3.5, 5.7, 6.2 "Veckan", 8.3). Datadelen ligger i
+`core/sync/.../mealplan/` och binds i `di/MealPlanModule.kt` (repositoryt och outbox-avsändarna
+för `meal_plan` och `meal_type`); appens `TemporaryFas2MealPlanModule` är borttagen.
+
+**Datum (bara dagar, `core:domain` `MealPlanDates`):** Tandoor svarar med datum-tider i serverns
+offset; dagen är datumet i svaret (`2026-10-25T00:30:00+02:00` → 25 oktober), oavsett telefonens
+zon. Appen skickar **naiva** serverlokala datum-tider (`2026-10-26T00:30:00`, ingen offset): Django
+läser dem i serverns zon, så en måltid stannar på sin dag även över sommartidens slut (en offset
+från en annan dag hade flyttat en måltid nära midnatt till grannen). En ny måltid skickar midnatt
+(Tandoor sätter måltidstypens tid, samma form som kontraktsinspelningen), en flyttad behåller sin
+tid på dagen. En flytt skickar **alltid båda** datumen och behåller måltidens längd
+(`PATCH {from_date}` ensam lämnar `to_date`, FACTS "Fas 2 f"); en `to_date` före `from_date`
+visas som en dag. `MealPlanDatesTest` prövar inspelningarna från 2.6.13 och 2.7.1 och en server i
+Europe/Stockholm över båda sommartidsskiftena.
+
+**Fönstret (`MealPlanWindowReader`, plan 3.5):** −14..+42 dagar med `?from_date&to_date`, som
+filtrerar på serverlokalt datum för `to_date`; lagrade servermåltider vars `to_date` ligger i
+fönstret ersätts (`MealPlanDao.replaceWindow`), måltider med osända ändringar lämnas som
+användaren lämnade dem. Samma läsning används av synkkörningens steg 4 (`SyncEngine`) och av
+`MealPlanRepository.refresh()` (dra-för-att-uppdatera i Veckan och `ForegroundSync` var 60:e s
+medan Veckan syns), som läser fönstret först och sedan tömmer outboxen. **Raderad någon
+annanstans:** en måltid med osända rader som ett komplett svar inte längre listar fast dess
+senast kända server-`to_date` (`to_raw`, för en lokalt raderad måltid DELETE-radens `to_date`)
+ligger i fönstret tas bort med sina outbox-rader **utan** anrop, så tömningen efteråt aldrig
+möter en 404 (`MealPlanDao.deleteGone`).
+
+**Offline först (`OfflineFirstMealPlanRepository`):** skapa, ändra, flytta, ta bort och nya
+måltidstyper skrivs i `meal_plan`/`meal_type` och köas med `OutboxDao.enqueue` i en transaktion
+(`MealPlanDao.inTransaction`); negativa id från `IdRewriteDao.nextLocalId`. En måltid med en ny
+måltidstyp har `refs` `{"meal_type.id": "meal_type"}` och `depends_on` på typens CREATE. Skapa +
+flytta + ändra offline blir **en** POST med slutvärdena; skapa + ta bort skickar ingenting.
+`observeMeal(id)` följer ett tillfälligt id över omskrivningen (`MealPlanDao.observeRow` slår upp
+`id_mapping`). `ReferenceDao.replaceMealTypes` lämnar osända (negativa) måltidstyper kvar.
+`meal_plan.recipe_name` (schema 4) ger namnet innan receptets översikt finns lokalt.
+Gäster får `DataProblem.READ_ONLY` innan något sparas; demoläget skriver i demodatabasen och köar
+inget.
+
+**Fältjämförelse före PATCH (`MealPlanOutboxHandler`, plan 3.5):** PATCH-raden bär bara de
+ändrade fälten och i `base_snapshot` samma fält som de var (datum som `yyyy-MM-dd`). Före sändning
+läses måltiden (`GET /api/meal-plan/{id}/`, `MealPlan` saknar `updated_at`) och varje fält
+jämförs (`MealPlanPayloads.compare`): oförändrat på servern → skickas; redan användarens värde →
+utelämnas; ändrat av någon annan → **konflikt**. Övriga fält skickas aldrig, så en anteckning
+eller portioner som ändrats på webben skrivs inte över. De två datumen räknas som ett fält.
+Konfliktfälten väntar i en egen outbox-rad (`FAILED`, `last_error = tandem.mealplan.conflict`,
+payload = användarens värden, `base_snapshot` = serverns), som `observeConflicts()` visar och
+`resolveConflict` löser: "Behåll min" köar fälten igen med serverns värde som bas, "Ta deras"
+skriver serverns värde lokalt. En 404 (raderad mellan läsning och sändning) är ett väntat svar
+(`expectedNotFound`, utanför kretsbrytaren). En POST som försöks igen letar först efter måltiden
+på sin dag (POST är inte idempotent); en måltidstyp på namn.
+
+**"Handla för veckan" (#16):** `weekShoppingPreview` tar veckans måltider med recept, markerar
+dem som redan har poster på den lagrade listan (`shopping_entry.meal_plan_id`) eller `shopping`
+som "redan på listan" (aldrig valbara) och ger ingredienserna ur den lagrade receptdetaljen,
+skalade till måltidens portioner, med "har hemma" bortvalt. `addWeekToShopping` anropar
+`ShoppingRepository.addRecipe` med `mealPlanId` per måltid (inköpsbanans listrecept + poster,
+kopplade till måltiden) och hoppar över måltider som redan finns på listan. Ett recept utan
+lagrad detalj har inga ingredienser att välja (öppna det en gång online).
+
+**Nätverk:** `TandoorApi.mealPlanEdits` (`MealPlanEditService`: en måltid, skapa, PATCH, DELETE,
+ny måltidstyp); läsningen av fönstret är Fas 1:s `MealPlanService`. Rader i `used-endpoints.txt`
+och `DtoFixturesTest` (GET/PATCH av en måltid).
+
+### Veckan (`:feature:mealplan`)
+
+| Route (nyckel) | ViewModel | Skärm |
+|---|---|---|
+| `WeekRoute` (`WeekKey`, `WeekAgendaKey`) | `WeekViewModel` (assisted, veckans måndag) | `WeekScreen` |
+| `PlanMealRoute` (`PlanMealKey`) | `PlanMealViewModel` (assisted) | `PlanMealScreen` |
+| `WeekShoppingRoute` (`WeekShoppingKey`) | `WeekShoppingViewModel` (assisted) | `WeekShoppingScreen` |
+
+- **Veckan:** veckonummer och datum, föregående/nästa vecka, "Idag" utanför den här veckan,
+  "5 av 7 dagar planerade". Den visade veckan hålls färsk medan skärmen syns
+  (`ForegroundSync.keepFresh(MealPlan(vecka))`). Veckan och vald dag ligger i `SavedStateHandle`.
+- **Layout (plan 6.5, efter fönstrets storlek):** under 600 dp en agenda (en del per dag, rullad
+  så att idag står först); från 600 dp två paneler (veckans dagar med måltidernas namn bredvid
+  den valda dagen, idag som standard; surfplatta stående och telefon liggande); från 840 × 560 dp
+  veckorutnätet (dagar som kolumner, måltidstyper som rader, "+" i tomma celler; rutnätet rullar i
+  sidled hellre än att klippa söndagen, docs/design/README.md).
+- **Måltider:** foto, måltidstyp, namn, tid, portioner, anteckning, "på inköpslistan" och "väntar
+  på att synkas". Ett tryck öppnar receptet (en måltid utan recept öppnar "Ändra"); menyn och
+  TalkBacks egna åtgärder har "Laga" (dagens måltider, kokläget med måltidens portioner), "Ändra",
+  "Flytta" och "Ta bort". Ta bort och flytta visar "Ångra" (ta bort planerar måltiden igen med
+  samma värden; Tandoor har då redan tagit bort dess poster på inköpslistan). Flytta är ett
+  bottenark med två veckors dagar, "Annat datum…" (datumväljare) och måltidstyp (dra och släpp
+  kommer i Fas 3). En konflikt visas som dialogen "Ändrad på två ställen".
+- **Planera måltid:** en egen sida på alla bredder (innehållet i läsbar bredd på surfplatta):
+  dag, måltidstyp (eller "Ny måltidstyp"), recept ur de lagrade recepten eller bara en titel,
+  portioner, anteckning och "Lägg ingredienserna på inköpslistan" (bara nya måltider med recept;
+  startar som `mealplan_autoadd_shopping` och skickar `addshopping` exakt när den är ikryssad).
+  "Ändra" sparar bara det som ändrats; en måltid med recept kan byta recept men inte bli "bara
+  titel" (`MealPlanUpdate` kan inte ta bort ett recept).
+- **Lägen:** tom vecka, gäst (#42: inga planera-, ändra- eller flyttakontroller alls), demo
+  (skalets banner, exempelveckan ur demoinnehållet), offline (statuschippet; ändringar väntar).
+- **Tester:** `MealPlanDatesTest` (`:core:domain`), `MealPlanSyncTest` (`:core:sync`, en
+  tillståndsfull `FakeMealPlanTandoor` i Europe/Stockholm med inspelningarnas form från både
+  2.6.13 och 2.7.1: dagar från webben, sommartid, `to_date`-filtret, offline skapa/flytta/ta bort
+  med tillfälliga id även för en ny måltidstyp, fältjämförelse och konflikter, raderat någon
+  annanstans utan 404, synkkörningen och Idags "Ikväll", gäst, demo), `WeekViewModelTest`,
+  `PlanMealViewModelTest`, `WeekShoppingViewModelTest`, `WeekScreenTest` (semantik, åtgärder,
+  gäst, rutnät och två paneler, routen med ångra), `MealPlanAccessibilityTest` (ATF) och
+  `MealPlanScreenshotTest`/`MealPlanPseudoLocaleScreenshotTest`
+  (`feature/mealplan/src/test/screenshots/mealplan/`). Skärmarna och lägena står i `MealPlanShot`.
+<!-- /Fas 2 matsedel -->
+
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)
 

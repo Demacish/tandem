@@ -39,6 +39,15 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 - **Gästläge:** är du gäst i hushållets Tandoor är appen skrivskyddad: recept, matsedel,
   inköpslista och kokläge fungerar, men inga ändringar sparas eller skickas, och en banderoll
   förklarar vad en gäst kan göra.
+- **Veckan:** veckans matsedel från Tandoor, dag för dag med idag först, eller som ett
+  veckorutnät på surfplatta. Planera en måltid med ett recept eller bara en titel ("Rester"),
+  välj dag, måltidstyp, portioner och anteckning, och lägg ingredienserna på inköpslistan om du
+  vill. Flytta en måltid till en annan dag eller måltidstyp, ändra eller ta bort den och ångra
+  direkt; dagens måltid kan lagas direkt. Allt fungerar offline och skickas när nätet finns.
+  Måltider hamnar på samma dag i appen och på webben, även kring sommartidens slut. Ändrar någon
+  annan samma måltid under tiden skickas bara det du ändrade, och har ni ändrat samma sak får du
+  välja vems ändring som gäller. "Handla för veckan" lägger veckans ingredienser på listan utan
+  att något kommer med två gånger. Gäster ser matsedeln utan att kunna ändra den.
 
 ## [0.2.0] – 2026-10-24
 

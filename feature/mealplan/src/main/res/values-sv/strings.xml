@@ -1,8 +1,129 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Phase 2 (grund lane): placeholders until the meal plan lane builds the screens. -->
+    <!-- Phase 2 (matsedel lane): fliken Veckan, sidan "Planera måltid" och "Handla för veckan" (plan 6.2, 6.7). -->
     <string name="mealplan_title">Veckan</string>
     <string name="mealplan_plan_meal_title">Planera måltid</string>
+    <string name="mealplan_edit_meal_title">Ändra måltid</string>
     <string name="mealplan_week_shopping_title">Handla för veckan</string>
-    <string name="mealplan_placeholder_body">Här kommer veckans matsedel från Tandoor: planera, flytta och lägg måltider på inköpslistan.</string>
+
+    <!-- Veckohuvudet -->
+    <string name="mealplan_week_number">Vecka %1$d</string>
+    <string name="mealplan_range_same_month">%1$s–%2$s %3$s</string>
+    <string name="mealplan_range">%1$s – %2$s</string>
+    <string name="mealplan_previous_week">Föregående vecka</string>
+    <string name="mealplan_next_week">Nästa vecka</string>
+    <string name="mealplan_this_week">Idag</string>
+    <string name="mealplan_this_week_description">Gå till den här veckan</string>
+    <plurals name="mealplan_planned_days">
+        <item quantity="one">%1$d av 7 dagar planerad</item>
+        <item quantity="other">%1$d av 7 dagar planerade</item>
+    </plurals>
+    <string name="mealplan_today">Idag</string>
+    <string name="mealplan_today_heading">%1$s, idag</string>
+
+    <!-- Dagar och måltider -->
+    <string name="mealplan_plan_on_day">Planera måltid på %1$s</string>
+    <string name="mealplan_plan_on_day_type">Planera %1$s på %2$s</string>
+    <string name="mealplan_nothing_planned">Inget planerat</string>
+    <string name="mealplan_empty_week_title">Tom vecka</string>
+    <string name="mealplan_empty_week_body">Inget är planerat den här veckan än. Lägg till en måltid på en dag med +.</string>
+    <string name="mealplan_empty_week_guest">Inget är planerat den här veckan.</string>
+    <string name="mealplan_without_recipe">Inget recept</string>
+    <plurals name="mealplan_servings">
+        <item quantity="one">%1$s portion</item>
+        <item quantity="other">%1$s portioner</item>
+    </plurals>
+    <string name="mealplan_minutes">%1$d min</string>
+    <string name="mealplan_hours_minutes">%1$d tim %2$d min</string>
+    <string name="mealplan_pending">Väntar på att synkas</string>
+    <string name="mealplan_on_shopping_list">På inköpslistan</string>
+    <string name="mealplan_more_for">Fler val för %1$s</string>
+    <string name="mealplan_open_recipe">Öppna receptet</string>
+    <string name="mealplan_show_actions">Visa val</string>
+    <string name="mealplan_cook">Laga</string>
+    <string name="mealplan_cook_description">Laga %1$s</string>
+    <string name="mealplan_edit">Ändra</string>
+    <string name="mealplan_move">Flytta</string>
+    <string name="mealplan_delete">Ta bort</string>
+    <string name="mealplan_meal_type_column">Måltid</string>
+    <string name="mealplan_week_shopping_card_body">Lägg veckans ingredienser på inköpslistan</string>
+    <string name="mealplan_read_only">Gäst: du kan se matsedeln men inte ändra den.</string>
+
+    <!-- Flytta en måltid -->
+    <string name="mealplan_move_title">Flytta %1$s</string>
+    <string name="mealplan_move_from">Nu på %1$s</string>
+    <string name="mealplan_day_heading">Dag</string>
+    <string name="mealplan_meal_type_heading">Måltid</string>
+    <string name="mealplan_other_date">Annat datum…</string>
+    <string name="mealplan_pick_date">Välj datum</string>
+    <string name="mealplan_cancel">Avbryt</string>
+    <string name="mealplan_ok">OK</string>
+
+    <!-- Snackbarer -->
+    <string name="mealplan_undo">Ångra</string>
+    <string name="mealplan_msg_removed">%1$s togs bort</string>
+    <string name="mealplan_msg_moved">%1$s flyttades till %2$s</string>
+    <string name="mealplan_error_read_only">Gäster kan inte ändra matsedeln</string>
+    <string name="mealplan_error_refresh">Kunde inte uppdatera matsedeln. Den visas som den senast sparades.</string>
+    <string name="mealplan_error_save">Kunde inte spara ändringen</string>
+    <string name="mealplan_untitled">Måltid</string>
+
+    <!-- Konflikter (plan 3.5) -->
+    <string name="mealplan_conflict_title">Ändrad på två ställen</string>
+    <string name="mealplan_conflict_body">%1$s: %2$s ändrades på en annan enhet samtidigt som du ändrade här.\n\nDin: %3$s\nDeras: %4$s</string>
+    <string name="mealplan_conflict_keep_mine">Behåll min</string>
+    <string name="mealplan_conflict_take_theirs">Ta deras</string>
+    <string name="mealplan_conflict_empty">(tomt)</string>
+    <string name="mealplan_field_day">dagen</string>
+    <string name="mealplan_field_meal_type">måltidstypen</string>
+    <string name="mealplan_field_recipe">receptet</string>
+    <string name="mealplan_field_title">titeln</string>
+    <string name="mealplan_field_servings">portionerna</string>
+    <string name="mealplan_field_note">anteckningen</string>
+
+    <!-- Sidan "Planera måltid" -->
+    <string name="mealplan_kind_recipe">Recept</string>
+    <string name="mealplan_kind_title">Bara titel</string>
+    <string name="mealplan_kind_heading">Vad</string>
+    <string name="mealplan_search_recipes">Sök bland dina recept</string>
+    <string name="mealplan_no_recipes_found">Inga recept hittades</string>
+    <string name="mealplan_chosen_recipe">Valt recept</string>
+    <string name="mealplan_change_recipe">Byt recept</string>
+    <string name="mealplan_choose_recipe">Välj ett recept</string>
+    <string name="mealplan_title_label">Titel</string>
+    <string name="mealplan_title_optional">Egen titel (valfri)</string>
+    <string name="mealplan_title_hint">T.ex. Rester eller Äta ute</string>
+    <string name="mealplan_title_missing">Skriv en titel</string>
+    <string name="mealplan_recipe_missing">Välj ett recept eller byt till bara titel</string>
+    <string name="mealplan_type_missing">Välj en måltidstyp</string>
+    <string name="mealplan_note_label">Anteckning</string>
+    <string name="mealplan_servings_label">Portioner</string>
+    <string name="mealplan_add_to_shopping">Lägg ingredienserna på inköpslistan</string>
+    <string name="mealplan_add_to_shopping_hint">Tandoor lägger till receptets ingredienser för de här portionerna.</string>
+    <string name="mealplan_new_meal_type">Ny måltidstyp</string>
+    <string name="mealplan_new_meal_type_name">Namn</string>
+    <string name="mealplan_new_meal_type_hint">T.ex. Mellanmål</string>
+    <string name="mealplan_add">Lägg till</string>
+    <string name="mealplan_save_new">Lägg till i matsedeln (%1$s)</string>
+    <string name="mealplan_save">Spara</string>
+    <string name="mealplan_delete_meal">Ta bort från matsedeln</string>
+    <string name="mealplan_meal_gone">Måltiden finns inte längre i matsedeln.</string>
+
+    <!-- "Handla för veckan" (#16) -->
+    <string name="mealplan_week_shopping_intro">Välj måltiderna vars ingredienser ska på inköpslistan. Det du har hemma är bortvalt från början.</string>
+    <string name="mealplan_week_shopping_empty">Inga måltider med recept den här veckan.</string>
+    <string name="mealplan_week_shopping_already">Redan på listan</string>
+    <string name="mealplan_week_shopping_auto_add">Tandoor lägger själv nya måltider på listan (din inställning). Måltider som redan finns på listan läggs inte till igen.</string>
+    <string name="mealplan_week_shopping_on_hand">Har hemma</string>
+    <string name="mealplan_week_shopping_no_ingredients">Receptet är inte nedladdat än. Öppna det en gång med nätet på för att kunna välja ingredienserna.</string>
+    <plurals name="mealplan_week_shopping_add">
+        <item quantity="one">Lägg %1$d måltid på listan</item>
+        <item quantity="other">Lägg %1$d måltider på listan</item>
+    </plurals>
+    <string name="mealplan_week_shopping_meal_label">%1$s, %2$s</string>
+    <string name="mealplan_week_shopping_ingredients">Ingredienserna i %1$s</string>
+    <plurals name="mealplan_week_shopping_chosen">
+        <item quantity="one">%1$d av %2$d ingrediens</item>
+        <item quantity="other">%1$d av %2$d ingredienser</item>
+    </plurals>
 </resources>
