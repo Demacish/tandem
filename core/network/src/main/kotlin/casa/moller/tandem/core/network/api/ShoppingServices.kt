@@ -12,7 +12,6 @@ import casa.moller.tandem.core.network.dto.SupermarketCategoryDto
 import casa.moller.tandem.core.network.dto.SupermarketCategoryRelationDto
 import casa.moller.tandem.core.network.dto.SupermarketDto
 import kotlinx.serialization.json.JsonObject
-import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -50,9 +49,9 @@ interface ShoppingService {
     @PATCH("api/shopping-list-entry/{id}/")
     suspend fun patchEntry(@Path("id") id: Long, @Body body: JsonObject): ShoppingListEntryDto
 
-    /** `204`; 404 when it was already deleted. */
+    /** `204` (empty body); 404 (an HttpException, so a typed NotFound) when it was already deleted. */
     @DELETE("api/shopping-list-entry/{id}/")
-    suspend fun deleteEntry(@Path("id") id: Long): Response<Unit>
+    suspend fun deleteEntry(@Path("id") id: Long)
 
     /** `{ids, checked}` → 200; deleted ids are ignored (never a 404). Bumps `updated_at`. */
     @POST("api/shopping-list-entry/bulk/")
@@ -68,18 +67,24 @@ interface ShoppingService {
 
     /** `204`; the server deletes the recipe's entries too. */
     @DELETE("api/shopping-list-recipe/{id}/")
-    suspend fun deleteListRecipe(@Path("id") id: Long): Response<Unit>
+    suspend fun deleteListRecipe(@Path("id") id: Long)
 
     /** The named lists (`{id, name, description, color}`), a small table. */
     @GET("api/shopping-list/")
-    suspend fun lists(@Query("page") page: Int?, @Query("page_size") pageSize: Int = TaxonomyService.MAX_PAGE_SIZE): PageDto<ShoppingListDto>
+    suspend fun lists(
+        @Query("page") page: Int?,
+        @Query("page_size") pageSize: Int = TaxonomyService.MAX_PAGE_SIZE,
+    ): PageDto<ShoppingListDto>
 }
 
 /** Stores, aisles, a food's aisle and "har hemma", and the ingredient parser (FACTS "Fas 2" d, e). */
 interface SupermarketService {
     /** Every store with `category_to_supermarket` (its aisle order). */
     @GET("api/supermarket/")
-    suspend fun supermarkets(@Query("page") page: Int?, @Query("page_size") pageSize: Int = TaxonomyService.MAX_PAGE_SIZE): PageDto<SupermarketDto>
+    suspend fun supermarkets(
+        @Query("page") page: Int?,
+        @Query("page_size") pageSize: Int = TaxonomyService.MAX_PAGE_SIZE,
+    ): PageDto<SupermarketDto>
 
     @GET("api/supermarket-category/")
     suspend fun categories(

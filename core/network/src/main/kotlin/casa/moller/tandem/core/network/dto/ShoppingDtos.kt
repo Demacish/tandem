@@ -66,23 +66,14 @@ data class ShoppingListRecipeDto(
 
 /** A named shopping list (`/api/shopping-list/`), e.g. "Veckohandling". */
 @Serializable
-data class ShoppingListDto(
-    val id: Long? = null,
-    val name: String = "",
-    val description: String = "",
-    val color: String? = null,
-)
+data class ShoppingListDto(val id: Long? = null, val name: String = "", val description: String = "", val color: String? = null)
 
 /**
  * `POST /api/shopping-list-entry/bulk/` `{ids, checked}` → 200 with the same fields and the
  * server's `timestamp`. An unknown or deleted id is ignored (still 200, FACTS "Fas 2 b").
  */
 @Serializable
-data class ShoppingBulkCheckDto(
-    val ids: List<Long> = emptyList(),
-    val checked: Boolean = false,
-    val timestamp: String? = null,
-)
+data class ShoppingBulkCheckDto(val ids: List<Long> = emptyList(), val checked: Boolean = false, val timestamp: String? = null)
 
 /** A store (`/api/supermarket/`) with its aisle order (`category_to_supermarket`, sorted by `order`). */
 @Serializable
@@ -115,10 +106,7 @@ data class SupermarketCategoryRelationDto(
 
 /** `POST /api/ingredient-parser/post/`: one line ([ingredient]) or several ([ingredients]) in one call. */
 @Serializable
-data class IngredientParserRequestDto(
-    val ingredient: String? = null,
-    val ingredients: List<String>? = null,
-)
+data class IngredientParserRequestDto(val ingredient: String? = null, val ingredients: List<String>? = null)
 
 /** The parser's answer: [ingredient] for a single line, [ingredients] (in order) for several. */
 @Serializable
@@ -143,8 +131,4 @@ data class ParsedIngredientDto(
 
 /** The food of a parsed line (`{id, name, plural_name}`). */
 @Serializable
-data class ParsedFoodDto(
-    val id: Long? = null,
-    val name: String = "",
-    @SerialName("plural_name") val pluralName: String? = null,
-)
+data class ParsedFoodDto(val id: Long? = null, val name: String = "", @SerialName("plural_name") val pluralName: String? = null)

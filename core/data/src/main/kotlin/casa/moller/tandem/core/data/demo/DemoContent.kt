@@ -9,6 +9,10 @@ import casa.moller.tandem.core.network.dto.RecipeBookEntryDto
 import casa.moller.tandem.core.network.dto.RecipeDto
 import casa.moller.tandem.core.network.dto.RecipeFlatDto
 import casa.moller.tandem.core.network.dto.RecipeOverviewDto
+import casa.moller.tandem.core.network.dto.ShoppingListDto
+import casa.moller.tandem.core.network.dto.ShoppingListEntryDto
+import casa.moller.tandem.core.network.dto.SupermarketCategoryDto
+import casa.moller.tandem.core.network.dto.SupermarketDto
 import casa.moller.tandem.core.network.dto.UserPreferenceDto
 import casa.moller.tandem.core.network.dto.ViewLogDto
 import casa.moller.tandem.core.network.json.TandoorJson
@@ -134,6 +138,23 @@ class DemoContent(private val assets: DemoAssets) {
     fun userPreferences(locale: Locale): UserPreferenceDto =
         decode(UserPreferenceDto.serializer(), load(languageFile(locale, "user-preference.json")))
 
+    // --- Phase 2 (inköp-data lane): the shopping list (scripts/demo-content/generate_demo_shopping.py) ---
+
+    /** The demo shopping list (`GET /api/shopping-list-entry/` results): manual entries and tomorrow's dinner. */
+    fun shoppingEntries(locale: Locale, today: LocalDate): List<ShoppingListEntryDto> =
+        list(ShoppingListEntryDto.serializer(), languageFile(locale, "shopping-list-entries.json"), today)
+
+    /** The named lists ("Veckohandling", "Helgen"). */
+    fun shoppingLists(locale: Locale): List<ShoppingListDto> =
+        list(ShoppingListDto.serializer(), languageFile(locale, "shopping-lists.json"))
+
+    /** Two stores with their own aisle order. */
+    fun supermarkets(locale: Locale): List<SupermarketDto> = list(SupermarketDto.serializer(), languageFile(locale, "supermarkets.json"))
+
+    /** The aisles. */
+    fun supermarketCategories(locale: Locale): List<SupermarketCategoryDto> =
+        list(SupermarketCategoryDto.serializer(), languageFile(locale, "supermarket-categories.json"))
+
     private fun <T> list(serializer: KSerializer<T>, file: String, today: LocalDate? = null): List<T> {
         val json = load(file)
         val shifted = if (today == null) json else shiftDates(json, daysSinceReference(today))
@@ -175,7 +196,7 @@ class DemoContent(private val assets: DemoAssets) {
         private const val VIEW_LOG_FILE = "view-log.json"
 
         /** The JSON keys whose values are Tandoor dates or date-times (FACTS "Fas 1"). */
-        private val DATE_KEYS = setOf("created_at", "updated_at", "from_date", "to_date", "last_cooked")
+        private val DATE_KEYS = setOf("created_at", "updated_at", "from_date", "to_date", "last_cooked", "completed_at", "delay_until")
         private val DATE_PREFIX = Regex("^\\d{4}-\\d{2}-\\d{2}")
 
         /** The asset path (relative to [ASSET_ROOT]) of a demo image URI, or null for any other URI. */

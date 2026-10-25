@@ -40,6 +40,7 @@ import casa.moller.tandem.core.sync.remote.toEntity
 import casa.moller.tandem.core.sync.remote.toIndexEntry
 import casa.moller.tandem.core.sync.remote.toModel
 import casa.moller.tandem.core.sync.remote.toOverviewWrite
+import casa.moller.tandem.core.sync.shopping.ShoppingSyncStep
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -136,6 +137,8 @@ internal class SyncEngine @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     private val settings: SettingsStore,
     private val diagnostics: DiagnosticsStore,
+    // Phase 2 (inköp-data lane): the shopping list and its small tables.
+    private val shopping: ShoppingSyncStep,
 ) {
     private val mutex = Mutex()
     private val homeMutex = Mutex()
@@ -270,6 +273,10 @@ internal class SyncEngine @Inject constructor(
             // turn while no complete cook log is stored (first run after the update to 0.2.0).
             if (referenceDue || !database.cookLogDao().isComplete(accountId)) syncCookStatistics()
             if (referenceDue) markDone(SyncKeys.REFERENCE_DATA)
+            stopReason()?.let { return failed(it) }
+
+            // Phase 2 (inköp-data lane): the shopping list (plan 3.5: full at start, else a delta).
+            shopping.run(remote, background, smallTables = referenceDue, full = reason in SHOPPING_FULL_READ)
             stopReason()?.let { return failed(it) }
 
             // Serialized with Today's refresh (refreshHome) and checked again inside the lock:
@@ -677,5 +684,8 @@ internal class SyncEngine @Inject constructor(
 
     private companion object {
         val SOURCE_CHANGED_ERROR: TandemError = SyncStop.SourceChanged
+
+        /** Runs that read the whole shopping list (plan 3.5 "vid start"); the others read a delta. */
+        val SHOPPING_FULL_READ: Set<SyncReason> = setOf(SyncReason.FIRST_SYNC, SyncReason.APP_START, SyncReason.ACCOUNT_CHANGED)
     }
 }

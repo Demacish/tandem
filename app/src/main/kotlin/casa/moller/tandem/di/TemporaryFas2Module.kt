@@ -4,10 +4,6 @@ import casa.moller.tandem.core.data.account.AccountDirectory
 import casa.moller.tandem.core.data.book.RecipeBookRepository
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
-import casa.moller.tandem.core.data.shopping.IngredientParser
-import casa.moller.tandem.core.data.shopping.ShoppingRepository
-import casa.moller.tandem.core.data.shopping.SupermarketRepository
-import casa.moller.tandem.core.data.sync.ForegroundSync
 import casa.moller.tandem.core.model.account.AccountSummary
 import casa.moller.tandem.core.model.account.Household
 import casa.moller.tandem.core.model.account.SpacePermissions
@@ -26,26 +22,12 @@ import casa.moller.tandem.core.model.mealplan.MealTypeDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
 import casa.moller.tandem.core.model.recipe.RecipeOverview
-import casa.moller.tandem.core.model.shopping.ParsedIngredient
-import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
-import casa.moller.tandem.core.model.shopping.ShoppingChange
-import casa.moller.tandem.core.model.shopping.ShoppingEntry
-import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
-import casa.moller.tandem.core.model.shopping.ShoppingFilter
-import casa.moller.tandem.core.model.shopping.ShoppingHistoryItem
-import casa.moller.tandem.core.model.shopping.ShoppingList
-import casa.moller.tandem.core.model.shopping.Supermarket
-import casa.moller.tandem.core.model.shopping.SupermarketCategory
-import casa.moller.tandem.core.model.sync.ForegroundSyncState
-import casa.moller.tandem.core.model.sync.ForegroundTarget
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
-import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -72,19 +54,6 @@ private fun <T> notYet(): Outcome<T> = Outcome.Failure(TandemError.Unknown("tand
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface TemporaryFas2ShoppingModule {
-    @Binds
-    fun bindShoppingRepository(impl: TemporaryShoppingRepository): ShoppingRepository
-
-    @Binds
-    fun bindSupermarketRepository(impl: TemporarySupermarketRepository): SupermarketRepository
-
-    @Binds
-    fun bindIngredientParser(impl: TemporaryIngredientParser): IngredientParser
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
 internal interface TemporaryFas2MealPlanModule {
     @Binds
     fun bindMealPlanRepository(impl: TemporaryMealPlanRepository): MealPlanRepository
@@ -105,73 +74,6 @@ internal interface TemporaryFas2AccountModule {
 
     @Binds
     fun bindSpacePermissionsRepository(impl: TemporarySpacePermissionsRepository): SpacePermissionsRepository
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-internal interface TemporaryFas2SyncModule {
-    @Binds
-    fun bindForegroundSync(impl: TemporaryForegroundSync): ForegroundSync
-}
-
-internal class TemporaryShoppingRepository @Inject constructor() : ShoppingRepository {
-    override fun observeEntries(filter: ShoppingFilter): Flow<List<ShoppingEntry>> = flowOf(emptyList())
-
-    override fun observeLists(): Flow<List<ShoppingList>> = flowOf(emptyList())
-
-    override fun observePendingCount(): Flow<Int> = flowOf(0)
-
-    override fun observeChanges(): Flow<ShoppingChange> = emptyFlow()
-
-    override suspend fun add(draft: ShoppingEntryDraft): Outcome<Long> = notYet()
-
-    override suspend fun addAll(drafts: List<ShoppingEntryDraft>): Outcome<List<Long>> = notYet()
-
-    override suspend fun addRecipe(request: RecipeShoppingRequest): Outcome<Unit> = notYet()
-
-    override suspend fun setChecked(ids: Collection<Long>, checked: Boolean): Outcome<Unit> = notYet()
-
-    override suspend fun setDelayed(ids: Collection<Long>, until: Instant?): Outcome<Unit> = notYet()
-
-    override suspend fun update(id: Long, amount: Double?, unitName: String?, foodName: String?): Outcome<Unit> = notYet()
-
-    override suspend fun setLists(ids: Collection<Long>, listIds: Set<Long>): Outcome<Unit> = notYet()
-
-    override suspend fun remove(ids: Collection<Long>): Outcome<Unit> = notYet()
-
-    override suspend fun removeListRecipe(listRecipeId: Long): Outcome<Unit> = notYet()
-
-    override suspend fun clearChecked(): Outcome<Unit> = notYet()
-
-    override suspend fun refresh(full: Boolean): Outcome<Unit> = Outcome.Success(Unit)
-
-    override suspend fun shareText(filter: ShoppingFilter): Outcome<String> = Outcome.Success("")
-
-    override fun observeSuggestions(query: String, limit: Int): Flow<List<String>> = flowOf(emptyList())
-
-    override fun observeHistory(): Flow<List<ShoppingHistoryItem>> = flowOf(emptyList())
-}
-
-internal class TemporarySupermarketRepository @Inject constructor() : SupermarketRepository {
-    override fun observeSupermarkets(): Flow<List<Supermarket>> = flowOf(emptyList())
-
-    override fun observeCategories(): Flow<List<SupermarketCategory>> = flowOf(emptyList())
-
-    override fun observeSelectedSupermarket(): Flow<Long?> = flowOf(null)
-
-    override suspend fun selectSupermarket(id: Long?): Outcome<Unit> = notYet()
-
-    override suspend fun setFoodCategory(foodId: Long, categoryId: Long?): Outcome<Unit> = notYet()
-
-    override suspend fun setFoodOnHand(foodId: Long, onHand: Boolean): Outcome<Unit> = notYet()
-
-    override suspend fun reorderAisles(supermarketId: Long, relationIdsInOrder: List<Long>): Outcome<Unit> = notYet()
-}
-
-internal class TemporaryIngredientParser @Inject constructor() : IngredientParser {
-    override suspend fun parse(lines: List<String>): Outcome<List<ParsedIngredient>> = notYet()
-
-    override fun parseLocally(line: String): ParsedIngredient? = null
 }
 
 internal class TemporaryMealPlanRepository @Inject constructor() : MealPlanRepository {
@@ -240,8 +142,4 @@ internal class TemporaryAccountDirectory @Inject constructor() : AccountDirector
 
 internal class TemporarySpacePermissionsRepository @Inject constructor() : SpacePermissionsRepository {
     override val permissions: Flow<SpacePermissions> = flowOf(SpacePermissions())
-}
-
-internal class TemporaryForegroundSync @Inject constructor() : ForegroundSync {
-    override fun keepFresh(target: ForegroundTarget): Flow<ForegroundSyncState> = flowOf(ForegroundSyncState())
 }

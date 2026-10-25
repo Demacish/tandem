@@ -112,6 +112,8 @@ internal class AccountMirror @Inject constructor(
                 groupLevel = kept?.groupLevel,
                 tokenId = account.tokenId,
                 updatedAtEpochMillis = clock.nowMillis(),
+                // Phase 2 (inköp-data lane): the polling floor read with the shopping tables stays.
+                shoppingMinAutosyncSeconds = kept?.shoppingMinAutosyncSeconds,
             ),
         )
         decision.versionChange?.let { change ->

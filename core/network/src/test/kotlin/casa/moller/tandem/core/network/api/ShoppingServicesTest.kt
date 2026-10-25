@@ -110,7 +110,8 @@ class ShoppingServicesTest {
         for (version in VERSIONS) {
             tandoor.enqueue(Fixture.load("fas2/supermarket-list", version).toMockResponse())
             val store = api.supermarkets.supermarkets(page = null).results.single()
-            assertEquals(listOf("Grönsaker", "Mejeri", "Övrigt"), store.categoryToSupermarket.sortedBy { it.order }.map { it.category?.name })
+            val aisles = store.categoryToSupermarket.sortedBy { it.order }.map { it.category?.name }
+            assertEquals(listOf("Grönsaker", "Mejeri", "Övrigt"), aisles)
             tandoor.takeRequest()
         }
     }

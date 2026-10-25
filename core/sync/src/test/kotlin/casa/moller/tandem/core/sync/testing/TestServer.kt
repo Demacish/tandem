@@ -129,6 +129,11 @@ internal class FakeTandoorServer {
             "GET /api/meal-plan/" to "fas1/meal-plan-list",
             "GET /api/cook-log/" to "fas1/cook-log-list-recipe",
             "POST /api/view-log/" to "fas1/view-log-create",
+            // Phase 2 (inköp-data lane): every sync run reads the shopping list and its small tables.
+            "GET /api/shopping-list-entry/" to "fas2/shopping-list-entry-list",
+            "GET /api/shopping-list/" to "fas2/shopping-list-list",
+            "GET /api/supermarket/" to "fas2/supermarket-list",
+            "GET /api/supermarket-category/" to "fas2/supermarket-category-list",
         )
 
         /** Recipe id -> recorded `GET /api/recipe/{id}/`; 12 was deleted (404). */

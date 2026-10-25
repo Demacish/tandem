@@ -7,6 +7,7 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.ServerCompatibility
@@ -27,6 +28,20 @@ import casa.moller.tandem.core.sync.engine.SyncEngine
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.PrefetchedImages
 import casa.moller.tandem.core.sync.remote.RemoteCaller
+import casa.moller.tandem.core.sync.shopping.AisleOrderOutboxHandler
+import casa.moller.tandem.core.sync.shopping.DefaultIngredientParser
+import casa.moller.tandem.core.sync.shopping.DefaultSupermarketRepository
+import casa.moller.tandem.core.sync.shopping.DroppedChanges
+import casa.moller.tandem.core.sync.shopping.FoodOutboxHandler
+import casa.moller.tandem.core.sync.shopping.OfflineFirstShoppingRepository
+import casa.moller.tandem.core.sync.shopping.ShoppingChangeBus
+import casa.moller.tandem.core.sync.shopping.ShoppingEntryOutboxHandler
+import casa.moller.tandem.core.sync.shopping.ShoppingListRecipeOutboxHandler
+import casa.moller.tandem.core.sync.shopping.ShoppingReader
+import casa.moller.tandem.core.sync.shopping.ShoppingSync
+import casa.moller.tandem.core.sync.shopping.ShoppingSyncStep
+import casa.moller.tandem.core.sync.shopping.ShoppingTables
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import java.io.File
 import java.util.Locale
 import kotlin.time.Instant
@@ -42,7 +57,12 @@ import kotlinx.coroutines.withTimeout
  * file databases, an HTTPS fake Tandoor with the recorded fixtures, and fake clock, network,
  * scheduler and image loader.
  */
-internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer().also { it.start() }) {
+internal class SyncTestGraph(
+    val server: FakeTandoorServer = FakeTandoorServer().also { it.start() },
+    // Phase 2 (inköp-data lane): a second "phone" needs its own database files and account id.
+    private val databasePrefix: String = "",
+    accountId: String = ACCOUNT_ID,
+) {
     val context: Context = ApplicationProvider.getApplicationContext()
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -53,8 +73,8 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
      * that Room no longer creates tables in ("no such table"). A file keeps its tables.
      */
     val databases = TandemDatabaseFactory { kind ->
-        context.deleteDatabase(kind.fileName)
-        TandemDatabase.build(context, kind.fileName)
+        context.deleteDatabase(databasePrefix + kind.fileName)
+        TandemDatabase.build(context, databasePrefix + kind.fileName)
     }
     val clock = FakeClock()
     val network = FakeNetwork()
@@ -67,7 +87,7 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val diagnosticsStore = FakeDiagnosticsStore()
 
     val account = ServerAccount(
-        id = ACCOUNT_ID,
+        id = accountId,
         baseUrl = server.baseUrl.trimEnd('/'),
         username = "cook",
         userId = 1,
@@ -89,7 +109,24 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
     val guard = SyncGuard(clock)
     val caller = RemoteCaller(guard, sources)
     val details = DetailFetcher(sources, databases, caller, clock)
-    val outbox = OutboxSender(databases, caller, network, clock, handlers = emptyMap())
+    // Phase 2 (inköp-data lane): the shopping list's reader, small tables and outbox senders.
+    val shoppingChanges = ShoppingChangeBus()
+    val droppedChanges = DroppedChanges()
+    val shoppingReader = ShoppingReader(databases, caller, sources, clock, shoppingChanges, droppedChanges)
+    val shoppingTables = ShoppingTables(databases, caller, sources)
+    val outbox = OutboxSender(
+        databases,
+        caller,
+        network,
+        clock,
+        handlers = mapOf(
+            OutboxEntities.SHOPPING_ENTRY to ShoppingEntryOutboxHandler(databases, caller, shoppingReader, droppedChanges, clock),
+            OutboxEntities.SHOPPING_LIST_RECIPE to
+                ShoppingListRecipeOutboxHandler(databases, caller, shoppingReader, droppedChanges, clock),
+            OutboxEntities.FOOD to FoodOutboxHandler(databases, caller, droppedChanges, clock),
+            OutboxEntities.SUPERMARKET_CATEGORY_RELATION to AisleOrderOutboxHandler(caller, droppedChanges, clock),
+        ),
+    )
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
@@ -108,11 +145,29 @@ internal class SyncTestGraph(val server: FakeTandoorServer = FakeTandoorServer()
         scope,
         settings,
         diagnosticsStore,
+        ShoppingSyncStep(shoppingReader, shoppingTables, databases),
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
     val cookLogs = OfflineFirstCookLogRepository(sources, databases, scheduler, clock)
     val sync = DefaultSyncRepository(sources, databases, engine, scheduler, demo, guard, network, clock, scope)
+
+    // Phase 2 (inköp-data lane): the shopping repositories, the parser and foreground polling.
+    val permissions = FakeSpacePermissionsRepository()
+    val shoppingSync = ShoppingSync(shoppingReader, outbox, scheduler, network)
+    val shopping = OfflineFirstShoppingRepository(
+        sources,
+        databases,
+        permissions,
+        scheduler,
+        clock,
+        shoppingSync,
+        shoppingChanges,
+        details,
+        network,
+    )
+    val supermarkets = DefaultSupermarketRepository(sources, databases, permissions, scheduler, clock)
+    val parser = DefaultIngredientParser(sources, databases, caller, network, permissions)
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

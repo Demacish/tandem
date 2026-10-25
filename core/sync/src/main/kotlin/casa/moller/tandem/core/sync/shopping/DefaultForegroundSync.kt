@@ -1,0 +1,120 @@
+package casa.moller.tandem.core.sync.shopping
+
+import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.data.mealplan.MealPlanRepository
+import casa.moller.tandem.core.data.sync.ForegroundSync
+import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.server.WritePolicy
+import casa.moller.tandem.core.model.sync.ForegroundPolling
+import casa.moller.tandem.core.model.sync.ForegroundSyncState
+import casa.moller.tandem.core.model.sync.ForegroundTarget
+import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.platform.NetworkStatus
+import casa.moller.tandem.core.sync.platform.SyncClock
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.shareIn
+
+/**
+ * [ForegroundSync] (plan 3.5, 8.6; Phase 2 "Klart när": two phones see each other's checks within
+ * 30 s while the list is open). One poller per target, shared by every collector and stopped when
+ * the last one leaves (the screen left STARTED: no polling in the background):
+ *
+ * - **Shopping list:** [ShoppingSync.refresh] (outbox, then a delta; every 10th a full read with the
+ *   window rule) every `ForegroundPolling.intervalFor(shopping_min_autosync_interval)` (20 s with
+ *   Tandoor's default "5"), starting at once.
+ * - **Meal plan:** `MealPlanRepository.refresh()` (the meal plan lane's window read) every
+ *   [MEAL_PLAN_INTERVAL].
+ * - **Paused** (nothing is requested, [ForegroundSyncState.paused] says why) while offline, after a
+ *   rejected token, while blocked or throttled (403 without Tandoor's JSON, 429), while the circuit
+ *   breaker is open and while an import runs. **Safe mode** (an untested server version) still
+ *   reads; the outbox holds the changes (`OutboxSender`). Never in demo mode or without an account.
+ */
+@Singleton
+internal class DefaultForegroundSync(
+    private val sources: ActiveSources,
+    private val sync: ShoppingSync,
+    private val mealPlans: Provider<MealPlanRepository>,
+    private val databases: TandemDatabaseFactory,
+    private val guard: SyncGuard,
+    private val network: NetworkStatus,
+    private val clock: SyncClock,
+    private val scope: CoroutineScope,
+    private val wait: suspend (Duration) -> Unit,
+) : ForegroundSync {
+    @Inject
+    constructor(
+        sources: ActiveSources,
+        sync: ShoppingSync,
+        mealPlans: Provider<MealPlanRepository>,
+        databases: TandemDatabaseFactory,
+        guard: SyncGuard,
+        network: NetworkStatus,
+        clock: SyncClock,
+        @ApplicationScope scope: CoroutineScope,
+    ) : this(sources, sync, mealPlans, databases, guard, network, clock, scope, { delay(it) })
+
+    private val pollers = ConcurrentHashMap<ForegroundTarget, Flow<ForegroundSyncState>>()
+
+    override fun keepFresh(target: ForegroundTarget): Flow<ForegroundSyncState> = pollers.getOrPut(target) {
+        poll(target).shareIn(scope, SharingStarted.WhileSubscribed(), replay = 1)
+    }
+
+    private fun poll(target: ForegroundTarget): Flow<ForegroundSyncState> = flow {
+        var lastPollAt: Instant? = null
+        while (true) {
+            val remote = sources.current() as? ActiveSource.Remote
+            val interval = remote?.let { intervalFor(target, it) } ?: ForegroundPolling.DEFAULT_INTERVAL
+            val pause = remote?.let { pauseFor(it) }
+            val polls = remote != null && (pause == null || pause == SyncPause.SAFE_MODE)
+            if (polls && remote != null && pollOnce(target, remote) is Outcome.Success) {
+                lastPollAt = Instant.fromEpochMilliseconds(clock.nowMillis())
+            }
+            emit(ForegroundSyncState(active = polls, interval = interval, lastPollAt = lastPollAt, paused = pause))
+            wait(interval)
+        }
+    }
+
+    private suspend fun pollOnce(target: ForegroundTarget, remote: ActiveSource.Remote): Outcome<Unit> = catchingUnexpected {
+        when (target) {
+            ForegroundTarget.ShoppingList -> sync.refresh(remote, background = true)
+            is ForegroundTarget.MealPlan -> mealPlans.get().refresh()
+        }
+    }
+
+    /** Why [remote] is not polled now; [SyncPause.SAFE_MODE] still reads. */
+    internal fun pauseFor(remote: ActiveSource.Remote): SyncPause? = when {
+        !network.online.value -> SyncPause.OFFLINE
+        else -> guard.pauseAt(guard.state.value, remote.accountId, clock.nowMillis())
+            ?: SyncPause.SAFE_MODE.takeIf { remote.writePolicy != WritePolicy.SEND }
+    }
+
+    /** The time between polls of [target]: the server's floor for the list (stored by [ShoppingTables]). */
+    internal suspend fun intervalFor(target: ForegroundTarget, remote: ActiveSource.Remote): Duration = when (target) {
+        ForegroundTarget.ShoppingList -> ForegroundPolling.intervalFor(
+            databases.get(remote.kind).shoppingDao().getMinAutosyncSeconds(remote.accountId),
+        )
+
+        is ForegroundTarget.MealPlan -> MEAL_PLAN_INTERVAL
+    }
+
+    companion object {
+        /** The meal plan while Veckan is visible: at most every 60 s (plan 3.5). */
+        val MEAL_PLAN_INTERVAL: Duration = 60.seconds
+    }
+}

@@ -170,6 +170,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
+            // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
+            method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
+
             method == "GET" && RECIPE_PATH.matches(path) -> {
                 val id = RECIPE_PATH.find(path)!!.groupValues[1]
                 val recording = RECIPES_BY_ID[id] ?: "fas1/recipe-deleted-get"
@@ -311,6 +314,12 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/meal-type/" to "fas1/meal-type-list",
             "/api/meal-plan/" to "fas1/meal-plan-list",
             "/api/cook-log/" to "fas1/cook-log-list-recipe",
+        )
+        private val PHASE2_LISTS = mapOf(
+            "/api/shopping-list-entry/" to "fas2/shopping-list-entry-list",
+            "/api/shopping-list/" to "fas2/shopping-list-list",
+            "/api/supermarket/" to "fas2/supermarket-list",
+            "/api/supermarket-category/" to "fas2/supermarket-category-list",
         )
         private val RECIPES_BY_ID = mapOf(
             "1" to "fas1/recipe-pyttipanna",

@@ -99,6 +99,8 @@ internal class DemoSeeder(
                     ),
                 )
             }
+            // Phase 2 (inköp-data lane): the shopping list, seeded once (it keeps the user's changes).
+            DemoShopping.ensureSeeded(database, content, currentLocale, today, clock.nowMillis())
             Outcome.Success(Unit)
         }
     }

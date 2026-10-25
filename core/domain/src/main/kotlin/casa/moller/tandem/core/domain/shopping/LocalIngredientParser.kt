@@ -14,15 +14,21 @@ import casa.moller.tandem.core.model.shopping.ParsedIngredient
  */
 object LocalIngredientParser {
     /** Common Swedish and English units (case-insensitive), used together with the server's units. */
-    val BUILT_IN_UNITS: Set<String> = setOf(
-        "g", "hg", "kg", "mg", "ml", "cl", "dl", "l", "krm", "tsk", "msk", "st", "pkt", "paket", "förp", "burk", "burkar",
-        "flaska", "flaskor", "påse", "påsar", "klyfta", "klyftor", "knippe", "knippen", "skiva", "skivor", "nypa", "kruka",
-        "tsp", "tbsp", "cup", "cups", "oz", "lb", "lbs", "pcs", "pc", "pack", "packs", "can", "cans", "bag", "bags", "bunch",
-        "clove", "cloves", "slice", "slices", "pinch", "bottle", "bottles", "jar", "jars",
-    )
+    val BUILT_IN_UNITS: Set<String> by lazy { UNIT_NAMES.split(' ').toSet() }
+
+    private const val UNIT_NAMES: String =
+        "g hg kg mg ml cl dl l krm tsk msk st pkt paket förp burk burkar flaska flaskor påse påsar klyfta klyftor " +
+            "knippe knippen skiva skivor nypa kruka tsp tbsp cup cups oz lb lbs pcs pc pack packs can cans bag bags bunch " +
+            "clove cloves slice slices pinch bottle bottles jar jars"
 
     private val UNICODE_FRACTIONS = mapOf(
-        '½' to 0.5, '⅓' to 1.0 / 3, '⅔' to 2.0 / 3, '¼' to 0.25, '¾' to 0.75, '⅕' to 0.2, '⅛' to 0.125,
+        '½' to 0.5,
+        '⅓' to 1.0 / 3,
+        '⅔' to 2.0 / 3,
+        '¼' to 0.25,
+        '¾' to 0.75,
+        '⅕' to 0.2,
+        '⅛' to 0.125,
     )
     private val NUMBER = Regex("^(\\d+(?:[.,]\\d+)?)?([½⅓⅔¼¾⅕⅛])?$")
     private val FRACTION = Regex("^(\\d+)/(\\d+)$")
