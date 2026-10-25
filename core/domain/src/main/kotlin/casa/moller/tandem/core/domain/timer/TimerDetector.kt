@@ -194,9 +194,10 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
                 continue
             }
             // "1h30": minutes glued to an hour given as "h".
-            if (partQuantity != null && partUnit == null && isGluedMinutesAfterHours(tokens, end, lastUnit)) {
-                total += partQuantity.value * MINUTE_SECONDS
-                end = partQuantity.end
+            val glued = if (partUnit == null) gluedMinutesAfterHours(tokens, end, lastUnit) else null
+            if (glued != null) {
+                total += glued.value * MINUTE_SECONDS
+                end = glued.end
                 break
             }
             longest(tokens, end, quantityTails)?.let { (afterTail, extra) ->
@@ -272,12 +273,13 @@ internal class RuleMatcher(val rules: TimerLanguageRules) {
 
     private fun isMeasureWord(token: Token?): Boolean = token != null && token.kind == TokenKind.WORD && token.text in measureWords
 
-    /** True for the "30" of "1h30": an integer below 60 glued to an "h" that ends a duration in hours. */
-    private fun isGluedMinutesAfterHours(tokens: List<Token>, i: Int, lastUnit: Long): Boolean {
-        val unitToken = tokens.getOrNull(i - 1) ?: return false
-        val minutes = tokens.getOrNull(i) ?: return false
-        return lastUnit == HOUR_SECONDS && unitToken.text == "h" && minutes.form == NumberForm.INTEGER &&
-            minutes.value < MINUTES_PER_HOUR && minutes.start == unitToken.end
+    /** The "30" of "1h30" at [i]: an integer below 60 glued to an "h" that ends a duration in hours. */
+    private fun gluedMinutesAfterHours(tokens: List<Token>, i: Int, lastUnit: Long): Quantity? {
+        val unitToken = tokens.getOrNull(i - 1) ?: return null
+        val minutes = tokens.getOrNull(i) ?: return null
+        val glued = lastUnit == HOUR_SECONDS && unitToken.text == "h" && minutes.kind == TokenKind.NUMBER &&
+            minutes.form == NumberForm.INTEGER && minutes.value < MINUTES_PER_HOUR && minutes.start == unitToken.end
+        return if (glued) Quantity(minutes.value, i + 1) else null
     }
 
     /** True when [connectorStart] is a lone "-" touching a word on both sides ("thirty-five"). */

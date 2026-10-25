@@ -46,6 +46,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -53,7 +54,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -660,8 +660,7 @@ class DefaultTimerControllerTest {
     // --- helpers ---
 
     /** The commands sent to the ringing service since the last call (their actions). */
-    private fun serviceCommands(): List<String?> =
-        generateSequence { shadowOf(context).nextStartedService }.map { it.action }.toList()
+    private fun serviceCommands(): List<String?> = generateSequence { shadowOf(context).nextStartedService }.map { it.action }.toList()
 
     private fun TestScope.newEngine(timerStore: TimerStore = store): DefaultTimerController {
         val engine = DefaultTimerController(

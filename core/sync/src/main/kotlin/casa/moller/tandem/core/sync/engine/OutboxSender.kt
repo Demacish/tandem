@@ -222,7 +222,8 @@ internal class OutboxSender @Inject constructor(
                 Outcome.Success(
                     listed.value.items.firstOrNull { entry ->
                         val recipe = entry.recipe ?: return@firstOrNull false
-                        own.matches(CookLogKey(recipe, entry.createdBy?.id, TandoorDates.parseInstantOrNull(entry.createdAt)?.toEpochMilli()))
+                        val createdAt = TandoorDates.parseInstantOrNull(entry.createdAt)?.toEpochMilli()
+                        own.matches(CookLogKey(recipe, entry.createdBy?.id, createdAt))
                     },
                 )
             }
