@@ -161,7 +161,7 @@ class OnboardingFlowTest {
         setContent()
         connectTo()
 
-        composeRule.onNodeWithText(string(R.string.onboarding_untested_title, "2.7.1"))
+        composeRule.onNodeWithText(string(R.string.onboarding_untested_title, "2.7.3"))
             .performScrollTo()
             .assertIsDisplayed()
         button(R.string.onboarding_continue_safe_mode).scrollAndClick()

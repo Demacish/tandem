@@ -102,7 +102,7 @@ class OnboardingAccessibilityTest {
 
     @Test
     fun connectedSafeMode() = check(
-        OnboardingUiState(step = OnboardingStep.CONNECTED, connected = connected.copy(serverVersion = "2.7.1", safeMode = true)),
+        OnboardingUiState(step = OnboardingStep.CONNECTED, connected = connected.copy(serverVersion = "2.7.3", safeMode = true)),
     )
 
     @Test

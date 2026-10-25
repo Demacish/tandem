@@ -11,6 +11,7 @@ import casa.moller.tandem.core.network.dto.AccessTokenCreateRequestDto
 import casa.moller.tandem.core.network.dto.AccessTokenDto
 import casa.moller.tandem.core.network.dto.AllauthLoginRequestDto
 import casa.moller.tandem.core.network.dto.TokenAuthRequestDto
+import casa.moller.tandem.core.network.dto.TokenAuthResponseDto
 import casa.moller.tandem.core.network.dto.UserDto
 import casa.moller.tandem.core.network.error.ErrorClassifier
 import casa.moller.tandem.core.network.error.apiCall
@@ -114,15 +115,16 @@ class TandoorAuthenticator internal constructor(
 
         // Step 4: optionally delete the login token if this login created it.
         val loginTokenId = login.id
-        if (loginTokenPolicy == LoginTokenPolicy.DELETE_IF_FRESH &&
-            loginTokenId != null && loginTokenId != device.id &&
-            isFreshLoginToken(login.expires, now)
-        ) {
+        if (loginTokenPolicy == LoginTokenPolicy.DELETE_IF_FRESH && loginTokenId != null && isOwnFreshLoginToken(login, device, now)) {
             // Failure is harmless: the token simply stays, as with KEEP.
             call { api.auth.deleteAccessToken(loginTokenId) }
         }
         return readAccount(api, server, username, userId, device)
     }
+
+    /** The login token is another token than the device token, and this login created it. */
+    private fun isOwnFreshLoginToken(login: TokenAuthResponseDto, device: NewDeviceToken, now: Instant): Boolean =
+        login.id != device.id && isFreshLoginToken(login.expires, now)
 
     /** What the allauth login needs; the password lives only as long as the login call. */
     private class AllauthAttempt(

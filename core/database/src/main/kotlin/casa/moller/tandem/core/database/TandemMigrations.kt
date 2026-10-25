@@ -58,12 +58,13 @@ object TandemMigrations {
      * Marks stored details whose raw JSON has a step file with a non-empty `preview` (an image;
      * other files have "") for a new fetch: `fetched_at = NULL` with `raw_json` kept, which only
      * this migration writes (a removed detail clears both). `raw_json` is kotlinx.serialization's
-     * compact form (`"preview":"https://…"`); the spaced form is matched too. `_` is one character
-     * of any kind, so `"preview":""` does not match.
+     * compact form (`"preview":"https://…"`); the spaced form is matched too. GLOB, not LIKE: the
+     * character after the opening quote must not be a quote (`[^"]`), so `"preview":""` (a file
+     * that is not an image) does not match.
      */
     const val MARK_DETAILS_WITH_STEP_PHOTOS: String =
         "UPDATE `recipe_detail` SET `fetched_at` = NULL WHERE `raw_json` IS NOT NULL AND " +
-            "(`raw_json` LIKE '%\"preview\":\"_%' OR `raw_json` LIKE '%\"preview\": \"_%')"
+            "(`raw_json` GLOB '*\"preview\":\"[^\"]*' OR `raw_json` GLOB '*\"preview\": \"[^\"]*')"
 
     val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3)
 }

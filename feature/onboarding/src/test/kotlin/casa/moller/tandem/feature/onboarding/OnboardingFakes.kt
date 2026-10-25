@@ -26,7 +26,7 @@ internal val SUPPORTED_SERVER = ServerInfo(
 
 internal val NEWER_SERVER = ServerInfo(
     baseUrl = "https://tandoor.example.com/",
-    version = "2.7.1",
+    version = "2.7.3",
     compatibility = ServerCompatibility.UNTESTED_NEWER,
 )
 

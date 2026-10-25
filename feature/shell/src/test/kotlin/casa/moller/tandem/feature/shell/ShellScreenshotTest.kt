@@ -80,7 +80,7 @@ abstract class ShellScreenshotTest(private val device: String) {
     fun moreSafeModeWithFailedCheck() = capture(
         "more_safe_mode_check_failed_light",
         CONNECTED_STATE.copy(
-            mode = LOGGED_IN.copy(serverVersion = "2.7.1", compatibility = ServerCompatibility.UNTESTED_NEWER).toShellMode(),
+            mode = LOGGED_IN.copy(serverVersion = "2.7.3", compatibility = ServerCompatibility.UNTESTED_NEWER).toShellMode(),
             refreshError = TandemError.Timeout,
         ),
         ShellTab.MORE,

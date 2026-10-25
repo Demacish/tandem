@@ -56,7 +56,7 @@ class ShellAccessibilityTest {
     val composeRule = createComposeRule()
 
     private val safeMode = CONNECTED_STATE.copy(
-        mode = LOGGED_IN.copy(serverVersion = "2.7.1", compatibility = ServerCompatibility.UNTESTED_NEWER).toShellMode(),
+        mode = LOGGED_IN.copy(serverVersion = "2.7.3", compatibility = ServerCompatibility.UNTESTED_NEWER).toShellMode(),
         refreshError = TandemError.Timeout,
     )
 

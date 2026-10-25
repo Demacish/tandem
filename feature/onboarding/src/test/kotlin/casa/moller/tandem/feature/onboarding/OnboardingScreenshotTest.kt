@@ -111,7 +111,7 @@ class OnboardingScreenshotTest {
         "connected_safe_mode_light",
         OnboardingUiState(
             step = OnboardingStep.CONNECTED,
-            connected = ConnectedSummary("tandoor.example.com", "2.7.1", "Anna", safeMode = true),
+            connected = ConnectedSummary("tandoor.example.com", "2.7.3", "Anna", safeMode = true),
         ),
     )
 

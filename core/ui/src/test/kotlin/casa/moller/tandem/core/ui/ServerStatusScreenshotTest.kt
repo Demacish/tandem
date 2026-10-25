@@ -45,7 +45,7 @@ class ServerStatusScreenshotTest {
     @Config(qualifiers = "sv-w412dp-h915dp-port-xhdpi")
     fun bannersSwedish() {
         capture("status_banners_light_sv") { StatusBannersSample() }
-        composeRule.onNodeWithText("Tandoor 2.7.1 är inte testad ännu").assertIsDisplayed()
+        composeRule.onNodeWithText("Tandoor 2.7.3 är inte testad ännu").assertIsDisplayed()
         composeRule.onNodeWithText("Offline: visar det som sparats i enheten").assertIsDisplayed()
     }
 
@@ -70,10 +70,10 @@ class ServerStatusScreenshotTest {
         var clicks = 0
         composeRule.setContent {
             UiSampleSurface(darkTheme = false) {
-                SafeModeBanner(version = "2.7.1", compatibility = ServerCompatibility.UNTESTED_NEWER, onClick = { clicks++ })
+                SafeModeBanner(version = "2.7.3", compatibility = ServerCompatibility.UNTESTED_NEWER, onClick = { clicks++ })
             }
         }
-        composeRule.onNodeWithText("Tandoor 2.7.1 is not tested yet").performClick()
+        composeRule.onNodeWithText("Tandoor 2.7.3 is not tested yet").performClick()
         assertEquals(1, clicks)
     }
 

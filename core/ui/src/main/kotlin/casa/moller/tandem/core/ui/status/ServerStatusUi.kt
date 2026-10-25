@@ -46,7 +46,7 @@ import casa.moller.tandem.core.ui.R
  */
 
 /**
- * Slim, non-blocking banner above the tab content while the app runs in safe mode ("Tandoor 2.7.1
+ * Slim, non-blocking banner above the tab content while the app runs in safe mode ("Tandoor 2.7.3
  * is not tested yet – Tandem runs in safe mode"). The whole banner is one button that opens the
  * explanation ([SafeModeInfoScreen]); it never hides content or asks for a decision.
  *
@@ -158,7 +158,7 @@ fun LoginExpiredBanner(onLogInAgain: () -> Unit, modifier: Modifier = Modifier, 
 
 /**
  * The headline for a server version the app runs in safe mode for (also used by the explanation
- * screen): "Tandoor 2.7.1 is not tested yet".
+ * screen): "Tandoor 2.7.3 is not tested yet".
  */
 @Composable
 fun safeModeHeadline(version: String?, compatibility: ServerCompatibility): String {

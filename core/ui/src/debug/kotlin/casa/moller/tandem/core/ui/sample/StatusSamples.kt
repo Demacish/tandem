@@ -21,7 +21,7 @@ import casa.moller.tandem.core.ui.status.ServerTooOldNotice
 @Composable
 fun StatusBannersSample() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SafeModeBanner(version = "2.7.1", compatibility = ServerCompatibility.UNTESTED_NEWER, onClick = {})
+        SafeModeBanner(version = "2.7.3", compatibility = ServerCompatibility.UNTESTED_NEWER, onClick = {})
         SafeModeBanner(version = "2.5.3", compatibility = ServerCompatibility.UNTESTED_OLDER, onClick = {})
         SafeModeBanner(version = null, compatibility = ServerCompatibility.UNRECOGNIZED, onClick = {})
         OfflineNotice()
@@ -37,7 +37,7 @@ fun ServerTooOldSample() {
 /** The explanation screen for an untested newer server. */
 @Composable
 fun SafeModeInfoSample() {
-    SafeModeInfoScreen(version = "2.7.1", compatibility = ServerCompatibility.UNTESTED_NEWER, onBack = {}, onOpenReleases = {})
+    SafeModeInfoScreen(version = "2.7.3", compatibility = ServerCompatibility.UNTESTED_NEWER, onBack = {}, onOpenReleases = {})
 }
 
 @ThemePreviews

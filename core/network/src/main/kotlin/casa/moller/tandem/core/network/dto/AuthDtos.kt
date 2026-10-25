@@ -60,11 +60,7 @@ data class AllauthLoginRequestDto(val username: String, val password: String) {
  * the app needs are read; the user's e-mail address is never decoded.
  */
 @Serializable
-data class AllauthResponseDto(
-    val status: Int? = null,
-    val data: AllauthDataDto? = null,
-    val meta: AllauthMetaDto? = null,
-) {
+data class AllauthResponseDto(val status: Int? = null, val data: AllauthDataDto? = null, val meta: AllauthMetaDto? = null) {
     override fun toString(): String = "AllauthResponseDto(status=$status, data=$data, meta=$meta)"
 }
 

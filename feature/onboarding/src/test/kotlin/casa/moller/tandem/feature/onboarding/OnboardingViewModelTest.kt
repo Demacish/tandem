@@ -317,7 +317,7 @@ class OnboardingViewModelTest {
     @Test
     fun untestedServerLoginIsMarkedAsSafeMode() {
         accounts.probeResult = Outcome.Success(NEWER_SERVER)
-        accounts.loginResult = Outcome.Success(ACCOUNT.copy(serverVersion = "2.7.1"))
+        accounts.loginResult = Outcome.Success(ACCOUNT.copy(serverVersion = "2.7.3"))
         val vm = newViewModel().atServerStep()
         vm.onConnect()
         vm.onContinueInSafeMode()
@@ -327,7 +327,7 @@ class OnboardingViewModelTest {
         vm.onLogin()
 
         assertEquals(true, vm.uiState.value.connected?.safeMode)
-        assertEquals("2.7.1", vm.uiState.value.connected?.serverVersion)
+        assertEquals("2.7.3", vm.uiState.value.connected?.serverVersion)
     }
 
     @Test
