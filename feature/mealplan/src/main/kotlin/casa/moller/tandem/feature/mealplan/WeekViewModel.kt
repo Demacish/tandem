@@ -131,23 +131,36 @@ class WeekViewModel @AssistedInject internal constructor(
     fun onAction(action: WeekAction) {
         when (action) {
             WeekAction.PreviousWeek -> showWeek(currentWeek().minus(MealPlanWeek.DAYS, DateTimeUnit.DAY))
+
             WeekAction.NextWeek -> showWeek(currentWeek().plus(MealPlanWeek.DAYS, DateTimeUnit.DAY))
+
             WeekAction.ThisWeek -> {
                 showWeek(MealPlanWeek.startOf(today()))
                 savedStateHandle[KEY_DAY] = today().toString()
             }
+
             WeekAction.Refresh -> refresh()
+
             is WeekAction.SelectDay -> savedStateHandle[KEY_DAY] = action.date.toString()
+
             is WeekAction.Delete -> delete(action.meal)
+
             WeekAction.Undo -> takeBack()
+
             is WeekAction.StartMove -> if (canWrite()) {
                 transient.update { it.copy(move = MoveMealState(action.meal, action.meal.fromDate, action.meal.mealType.id)) }
             }
+
             is WeekAction.MoveDate -> transient.update { state -> state.copy(move = state.move?.copy(date = action.date)) }
+
             is WeekAction.MoveMealType -> transient.update { state -> state.copy(move = state.move?.copy(mealTypeId = action.mealTypeId)) }
+
             WeekAction.ConfirmMove -> confirmMove()
+
             WeekAction.CancelMove -> transient.update { it.copy(move = null) }
+
             is WeekAction.ResolveConflict -> resolveConflict(action.keepMine)
+
             else -> Unit // Navigation (plan, edit, recipe, cook, "Handla för veckan") is the route's.
         }
     }

@@ -178,6 +178,7 @@ internal class MealTypeOutboxHandler @Inject constructor(private val caller: Rem
         }
         return when (val sent = caller.call(remote, background = true) { mealPlanEdits.createMealType(body) }) {
             is Outcome.Failure -> OutboxResult.Failed(sent.error)
+
             is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }
                 ?: OutboxResult.Failed(TandemError.Decode("meal-type-without-id"))
         }

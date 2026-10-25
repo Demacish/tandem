@@ -129,13 +129,17 @@ class WeekShoppingViewModel @AssistedInject internal constructor(
     fun onAction(action: WeekShoppingAction) {
         when (action) {
             is WeekShoppingAction.ToggleMeal -> meal(action.mealId) { if (it.canSelect) it.copy(selected = !it.selected) else it }
+
             is WeekShoppingAction.ToggleIngredient -> meal(action.mealId) { state ->
                 val id = action.ingredientId
                 val chosen = if (id in state.chosen) state.chosen - id else state.chosen + id
                 state.copy(chosen = chosen, selected = chosen.isNotEmpty() && state.canSelect)
             }
+
             is WeekShoppingAction.Expand -> meal(action.mealId) { it.copy(expanded = !it.expanded) }
+
             WeekShoppingAction.Add -> add()
+
             WeekShoppingAction.Close -> Unit // The route closes the page.
         }
     }

@@ -353,14 +353,19 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         if (source is ActiveSource.Remote && readOnly()) return@catchingUnexpected Outcome.Failure(DataProblem.READ_ONLY.toError())
         val database = databases.get(source.kind)
         val onList = database.mealPlanDao().getMealIdsOnShoppingList(source.accountId).toSet()
-        for ((mealId, ingredientIds) in selection.ingredientIdsByMeal) {
-            if (ingredientIds.isEmpty()) continue
+        val requests = selection.ingredientIdsByMeal.filterValues { it.isNotEmpty() }.mapNotNull { (mealId, ingredientIds) ->
             val localId = database.idRewriteDao().current(source.accountId, OutboxEntities.MEAL_PLAN, mealId)
-            val meal = database.mealPlanDao().get(source.accountId, localId) ?: continue
-            val recipeId = meal.recipeId ?: continue
+            val meal = database.mealPlanDao().get(source.accountId, localId)
+            val recipeId = meal?.recipeId
             // Never twice (plan 6.2 step 2): a meal with entries on the list is skipped.
-            if (meal.shopping || meal.localId in onList) continue
-            val added = shopping.get().addRecipe(RecipeShoppingRequest(recipeId, meal.servings, ingredientIds, mealPlanId = meal.localId))
+            if (meal == null || recipeId == null || meal.shopping || meal.localId in onList) {
+                null
+            } else {
+                RecipeShoppingRequest(recipeId, meal.servings, ingredientIds, mealPlanId = meal.localId)
+            }
+        }
+        for (request in requests) {
+            val added = shopping.get().addRecipe(request)
             if (added is Outcome.Failure) return@catchingUnexpected added
         }
         Outcome.Success(Unit)
@@ -477,10 +482,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
                 MealPlanPayloads.FROM_DATE -> MealPlanDates.serverDay(text)?.let { result.copy(fromDate = "$it", fromRaw = text) } ?: result
                 MealPlanPayloads.TO_DATE -> MealPlanDates.serverDay(text)?.let { result.copy(toDate = "$it", toRaw = text) } ?: result
                 MealPlanPayloads.MEAL_TYPE -> objectId?.let { result.copy(mealTypeId = it) } ?: result
-                MealPlanPayloads.RECIPE -> result.copy(
-                    recipeId = objectId,
-                    recipeName = ((value as? JsonObject)?.get("name") as? JsonPrimitive)?.contentOrNull,
-                )
+                MealPlanPayloads.RECIPE -> result.copy(recipeId = objectId, recipeName = nameOf(value))
                 MealPlanPayloads.TITLE -> result.copy(title = text.orEmpty())
                 MealPlanPayloads.NOTE -> result.copy(note = text.orEmpty())
                 MealPlanPayloads.SERVINGS -> (value as? JsonPrimitive)?.doubleOrNull?.let { result.copy(servings = it) } ?: result
@@ -489,6 +491,8 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         }
         return if (result.toDate < result.fromDate) result.copy(toDate = result.fromDate) else result
     }
+
+    private fun nameOf(value: JsonElement): String? = ((value as? JsonObject)?.get("name") as? JsonPrimitive)?.contentOrNull
 
     private companion object {
         /** The 7 days from [start], each with the meals on it, by meal type order. */

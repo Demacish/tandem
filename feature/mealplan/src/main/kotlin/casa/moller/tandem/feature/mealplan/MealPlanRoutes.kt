@@ -181,6 +181,7 @@ private suspend fun SnackbarHostState.show(effect: WeekEffect, resources: Resour
 
 internal fun Resources.messageText(message: WeekMessage, format: MealPlanFormat): String = when (message) {
     is WeekMessage.Removed -> getString(R.string.mealplan_msg_removed, message.title.ifBlank { getString(R.string.mealplan_untitled) })
+
     is WeekMessage.Moved -> getString(
         R.string.mealplan_msg_moved,
         message.title.ifBlank { getString(R.string.mealplan_untitled) },

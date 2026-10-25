@@ -108,6 +108,7 @@ fun PlanMealScreen(
     ) { padding ->
         when {
             state.loading -> LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
+
             else -> Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
                 PlanMealForm(
                     state = state,

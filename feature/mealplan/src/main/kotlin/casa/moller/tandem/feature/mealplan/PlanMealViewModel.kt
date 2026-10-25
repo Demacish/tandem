@@ -252,33 +252,49 @@ class PlanMealViewModel @AssistedInject internal constructor(
     private suspend fun pickRecipe(id: Long) {
         val detail = withTimeoutOrNull(RECIPE_WAIT_MILLIS) { recipes.observeRecipe(id).firstOrNull { !it.isEmpty } }
         val overview = detail?.overview ?: detail?.recipe?.let { RecipeOverview(it.id, it.name, imageUrl = it.imageUrl) } ?: return
-        form.update { state ->
-            state.copy(recipe = overview, kind = MealKind.RECIPE, servings = detail.recipe?.servings?.toDouble() ?: state.servings)
-        }
+        val servings = detail?.recipe?.servings?.toDouble()
+        form.update { state -> state.copy(recipe = overview, kind = MealKind.RECIPE, servings = servings ?: state.servings) }
     }
 
     fun onAction(action: PlanMealAction) {
         when (action) {
             is PlanMealAction.SetDate -> form.update { it.copy(date = action.date) }
+
             is PlanMealAction.SetMealType -> form.update { it.copy(mealTypeId = action.id) }
+
             is PlanMealAction.SetKind -> form.update { state -> if (action.kind in state.kinds) state.copy(kind = action.kind) else state }
+
             is PlanMealAction.Query -> form.update { it.copy(query = action.text) }
+
             is PlanMealAction.PickRecipe -> {
                 form.update { it.copy(recipe = action.recipe, query = "") }
                 viewModelScope.launch { servingsOf(action.recipe.id)?.let { servings -> form.update { it.copy(servings = servings) } } }
             }
+
             PlanMealAction.ClearRecipe -> form.update { it.copy(recipe = null) }
+
             is PlanMealAction.Title -> form.update { it.copy(title = action.text) }
+
             is PlanMealAction.Note -> form.update { it.copy(note = action.text) }
+
             PlanMealAction.MoreServings -> form.update { it.copy(servings = it.servings + 1) }
+
             PlanMealAction.FewerServings -> form.update { it.copy(servings = (it.servings - 1).coerceAtLeast(MIN_SERVINGS)) }
+
             is PlanMealAction.AddToShopping -> form.update { it.copy(addToShopping = action.add) }
+
             PlanMealAction.OpenNewMealType -> form.update { it.copy(newMealType = "") }
+
             is PlanMealAction.NewMealTypeName -> form.update { it.copy(newMealType = action.name) }
+
             PlanMealAction.CreateMealType -> createMealType()
+
             PlanMealAction.CancelNewMealType -> form.update { it.copy(newMealType = null) }
+
             PlanMealAction.Save -> save()
+
             PlanMealAction.Delete -> delete()
+
             PlanMealAction.Close -> Unit // The route closes the page.
         }
     }
