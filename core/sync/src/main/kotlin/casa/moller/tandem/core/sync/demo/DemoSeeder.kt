@@ -16,6 +16,7 @@ import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.DEMO_ACCOUNT_ID
+import casa.moller.tandem.core.sync.book.DemoBooks
 import casa.moller.tandem.core.sync.engine.cookStatsRules
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.ImageResolver
@@ -101,6 +102,8 @@ internal class DemoSeeder(
             }
             // Phase 2 (inköp-data lane): the shopping list, seeded once (it keeps the user's changes).
             DemoShopping.ensureSeeded(database, content, currentLocale, today, clock.nowMillis())
+            // Phase 2 (böcker lane): the books, favourites and "Vill laga", seeded once as well.
+            DemoBooks.ensureSeeded(database, content, currentLocale, today, clock.nowMillis())
             Outcome.Success(Unit)
         }
     }

@@ -13,6 +13,7 @@ import casa.moller.tandem.core.network.json.TandoorJson
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.engine.cookStatsRules
+import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import javax.inject.Inject
@@ -53,6 +54,10 @@ internal class OfflineFirstCookLogRepository @Inject constructor(
         when (val source = sources.current()) {
             is ActiveSource.Stored -> {
                 val remote = source as? ActiveSource.Remote
+                // Phase 2 (böcker lane, #42): a guest logs nothing (read-only mode, the outbox is not used).
+                if (remote != null && isGuest(databases.get(remote.kind), remote.accountId)) {
+                    return@catchingUnexpected Outcome.Failure(DataProblem.READ_ONLY.toError())
+                }
                 val cookedAtMillis = draft.cookedAt.epochSeconds * MILLIS_PER_SECOND
                 val entry = CookLogEntity(
                     accountId = source.accountId,

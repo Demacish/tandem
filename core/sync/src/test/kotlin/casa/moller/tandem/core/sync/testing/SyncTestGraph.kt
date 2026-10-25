@@ -16,6 +16,14 @@ import casa.moller.tandem.core.network.api.TandoorApiFactory
 import casa.moller.tandem.core.network.capabilities.CapabilityResolver
 import casa.moller.tandem.core.sync.account.AccountMirror
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.book.BookNames
+import casa.moller.tandem.core.sync.book.BookSync
+import casa.moller.tandem.core.sync.book.BookSyncStep
+import casa.moller.tandem.core.sync.book.OfflineFirstRecipeBookRepository
+import casa.moller.tandem.core.sync.book.RecipeBookEntryOutboxHandler
+import casa.moller.tandem.core.sync.book.RecipeBookOutboxHandler
+import casa.moller.tandem.core.sync.book.RecipeKeywordsOutboxHandler
+import casa.moller.tandem.core.sync.book.SmartBookResults
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.data.DefaultSyncRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
@@ -27,6 +35,8 @@ import casa.moller.tandem.core.sync.engine.OutboxSender
 import casa.moller.tandem.core.sync.engine.SyncEngine
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.PrefetchedImages
+import casa.moller.tandem.core.sync.permissions.DefaultSpacePermissionsRepository
+import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.shopping.AisleOrderOutboxHandler
 import casa.moller.tandem.core.sync.shopping.DefaultIngredientParser
@@ -112,6 +122,12 @@ internal class SyncTestGraph(
     val caller = RemoteCaller(guard, sources)
     val details = DetailFetcher(sources, databases, caller, clock)
 
+    // Phase 2 (böcker lane): the books' reader and the role.
+    val bookNames = TestBookNames()
+    val smartBooks = SmartBookResults()
+    val bookSync = BookSync(databases, caller, sources, smartBooks)
+    val roleSync = SpaceRoleSync(databases, caller, sources)
+
     // Phase 2 (inköp-data lane): the shopping list's reader, small tables and outbox senders.
     val shoppingChanges = ShoppingChangeBus()
     val droppedChanges = DroppedChanges()
@@ -128,6 +144,10 @@ internal class SyncTestGraph(
                 ShoppingListRecipeOutboxHandler(databases, caller, shoppingReader, droppedChanges, clock),
             OutboxEntities.FOOD to FoodOutboxHandler(databases, caller, droppedChanges, clock),
             OutboxEntities.SUPERMARKET_CATEGORY_RELATION to AisleOrderOutboxHandler(caller, droppedChanges, clock),
+            // Phase 2 (böcker lane).
+            OutboxEntities.RECIPE_BOOK to RecipeBookOutboxHandler(databases, caller),
+            OutboxEntities.RECIPE_BOOK_ENTRY to RecipeBookEntryOutboxHandler(databases, caller),
+            OutboxEntities.RECIPE to RecipeKeywordsOutboxHandler(databases, caller, details, bookNames),
         ),
     )
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
@@ -149,6 +169,7 @@ internal class SyncTestGraph(
         settings,
         diagnosticsStore,
         ShoppingSyncStep(shoppingReader, shoppingTables, databases),
+        BookSyncStep(roleSync, bookSync),
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
@@ -172,6 +193,20 @@ internal class SyncTestGraph(
     val supermarkets = DefaultSupermarketRepository(sources, databases, permissions, scheduler, clock)
     val parser = DefaultIngredientParser(sources, databases, caller, network, permissions)
 
+    // Phase 2 (böcker lane): books, favourites, "Vill laga" and the real role detection.
+    val books = OfflineFirstRecipeBookRepository(
+        sources,
+        databases,
+        permissions,
+        scheduler,
+        clock,
+        bookSync,
+        smartBooks,
+        bookNames,
+        network,
+    )
+    val spacePermissions = DefaultSpacePermissionsRepository(sources, databases)
+
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)
 
@@ -194,6 +229,12 @@ internal class SyncTestGraph(
             return File(path)
         }
     }
+}
+
+/** The names of the books Tandem creates, in Swedish (the app's resources are not needed). */
+internal class TestBookNames : BookNames {
+    override val favoritesWord: String = "Favoriter"
+    override val wantToCook: String = "Vill laga"
 }
 
 /** Polls [condition] in real time (Room and the server run on their own threads). */

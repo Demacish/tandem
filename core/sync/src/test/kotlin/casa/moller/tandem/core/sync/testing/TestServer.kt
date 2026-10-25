@@ -142,6 +142,10 @@ internal class FakeTandoorServer {
             "GET /api/shopping-list/" to "fas2/shopping-list-list",
             "GET /api/supermarket/" to "fas2/supermarket-list",
             "GET /api/supermarket-category/" to "fas2/supermarket-category-list",
+            // Phase 2 (böcker lane): the role and the books are read with the small tables.
+            "GET /api/user-space/all_personal/" to "14-user-space-all-personal",
+            "GET /api/recipe-book/" to "fas1/recipe-book-list",
+            "GET /api/recipe-book-entry/" to "fas1/recipe-book-entry-list",
         )
 
         /** Recipe id -> recorded `GET /api/recipe/{id}/`; 12 was deleted (404). */

@@ -1,14 +1,9 @@
 package casa.moller.tandem.di
 
 import casa.moller.tandem.core.data.account.AccountDirectory
-import casa.moller.tandem.core.data.book.RecipeBookRepository
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
-import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.model.account.AccountSummary
 import casa.moller.tandem.core.model.account.Household
-import casa.moller.tandem.core.model.account.SpacePermissions
-import casa.moller.tandem.core.model.book.RecipeBook
-import casa.moller.tandem.core.model.book.RecipeBookStatus
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
@@ -21,7 +16,6 @@ import casa.moller.tandem.core.model.mealplan.MealType
 import casa.moller.tandem.core.model.mealplan.MealTypeDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
-import casa.moller.tandem.core.model.recipe.RecipeOverview
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -44,8 +38,9 @@ import kotlinx.datetime.plus
  * duplicate binding:
  * - shopping lane: TemporaryFas2ShoppingModule (ShoppingRepository, SupermarketRepository, IngredientParser),
  * - meal plan lane: TemporaryFas2MealPlanModule,
- * - books lane: TemporaryFas2BookModule,
- * - household/guest lane: TemporaryFas2AccountModule (AccountDirectory, SpacePermissionsRepository),
+ * - books lane: TemporaryFas2BookModule (removed: core:sync BookModule binds RecipeBookRepository and,
+ *   with the guest mode #42, SpacePermissionsRepository),
+ * - household lane: TemporaryFas2AccountModule (AccountDirectory),
  * - sync lane: TemporaryFas2SyncModule (ForegroundSync).
  * The integration lane deletes this file. Nothing here may ship in 0.3.0.
  */
@@ -61,19 +56,9 @@ internal interface TemporaryFas2MealPlanModule {
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface TemporaryFas2BookModule {
-    @Binds
-    fun bindRecipeBookRepository(impl: TemporaryRecipeBookRepository): RecipeBookRepository
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
 internal interface TemporaryFas2AccountModule {
     @Binds
     fun bindAccountDirectory(impl: TemporaryAccountDirectory): AccountDirectory
-
-    @Binds
-    fun bindSpacePermissionsRepository(impl: TemporarySpacePermissionsRepository): SpacePermissionsRepository
 }
 
 internal class TemporaryMealPlanRepository @Inject constructor() : MealPlanRepository {
@@ -104,32 +89,6 @@ internal class TemporaryMealPlanRepository @Inject constructor() : MealPlanRepos
     override suspend fun addWeekToShopping(selection: WeekShoppingSelection): Outcome<Unit> = notYet()
 }
 
-internal class TemporaryRecipeBookRepository @Inject constructor() : RecipeBookRepository {
-    override fun observeBooks(): Flow<List<RecipeBook>> = flowOf(emptyList())
-
-    override fun observeBook(id: Long): Flow<RecipeBook?> = flowOf(null)
-
-    override fun observeRecipes(bookId: Long): Flow<List<RecipeOverview>> = flowOf(emptyList())
-
-    override fun observeFavorites(): Flow<List<RecipeOverview>> = flowOf(emptyList())
-
-    override fun observeWantToCook(): Flow<List<RecipeOverview>> = flowOf(emptyList())
-
-    override fun observeStatus(recipeId: Long): Flow<RecipeBookStatus> = flowOf(RecipeBookStatus(recipeId))
-
-    override suspend fun createBook(name: String, description: String): Outcome<Long> = notYet()
-
-    override suspend fun addToBook(bookId: Long, recipeId: Long): Outcome<Unit> = notYet()
-
-    override suspend fun removeFromBook(bookId: Long, recipeId: Long): Outcome<Unit> = notYet()
-
-    override suspend fun setFavorite(recipeId: Long, favorite: Boolean): Outcome<Unit> = notYet()
-
-    override suspend fun setWantToCook(recipeId: Long, wantToCook: Boolean): Outcome<Unit> = notYet()
-
-    override suspend fun refresh(): Outcome<Unit> = Outcome.Success(Unit)
-}
-
 internal class TemporaryAccountDirectory @Inject constructor() : AccountDirectory {
     override fun observeAccounts(): Flow<List<AccountSummary>> = flowOf(emptyList())
 
@@ -138,8 +97,4 @@ internal class TemporaryAccountDirectory @Inject constructor() : AccountDirector
     override fun observeHousehold(): Flow<Household?> = flowOf(null)
 
     override suspend fun refreshHousehold(): Outcome<Household?> = Outcome.Success(null)
-}
-
-internal class TemporarySpacePermissionsRepository @Inject constructor() : SpacePermissionsRepository {
-    override val permissions: Flow<SpacePermissions> = flowOf(SpacePermissions())
 }

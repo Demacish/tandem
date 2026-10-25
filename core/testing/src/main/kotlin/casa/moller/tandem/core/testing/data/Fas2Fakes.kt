@@ -383,6 +383,10 @@ class FakeRecipeBookRepository(
         recipesOf(list.filter { it.kind == RecipeBookKind.FAVORITES }.flatMap { byBook[it.id].orEmpty() })
     }
 
+    override fun observeFavoriteIds(): Flow<Set<Long>> = combine(books, entries) { list, byBook ->
+        list.filter { it.kind == RecipeBookKind.FAVORITES && it.isOwn }.flatMap { byBook[it.id].orEmpty() }.toSet()
+    }
+
     override fun observeWantToCook(): Flow<List<RecipeOverview>> = wantToCook.map { recipesOf(it) }
 
     override fun observeStatus(recipeId: Long): Flow<RecipeBookStatus> = combine(books, entries, wantToCook) { list, byBook, want ->

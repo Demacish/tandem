@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (böcker lane): names of the books Tandem creates in Tandoor (plan 3.7). They are seen on the Tandoor web too. -->
+    <!-- The word before the owner's name in a person's favourites book, e.g. "Favourites (Anna)". -->
+    <string name="sync_book_favorites_word">Favourites</string>
+    <!-- The shared smart book of recipes marked "Want to cook". -->
+    <string name="sync_book_want_to_cook_name">Want to cook</string>
+</resources>

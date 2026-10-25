@@ -33,6 +33,12 @@ interface RecipeBookRepository {
     /** Every member's favourites, merged (each recipe once). */
     fun observeFavorites(): Flow<List<RecipeOverview>>
 
+    /**
+     * The recipes in the active user's OWN favourites book (the hearts on recipe cards; books
+     * lane). Empty without such a book.
+     */
+    fun observeFavoriteIds(): Flow<Set<Long>>
+
     /** The recipes with the "Vill laga" keyword. */
     fun observeWantToCook(): Flow<List<RecipeOverview>>
 

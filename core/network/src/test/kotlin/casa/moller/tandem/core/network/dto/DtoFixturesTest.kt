@@ -90,6 +90,9 @@ class DtoFixturesTest {
         Route("POST", "/api/supermarket-category-relation/", SupermarketCategoryRelationDto.serializer()),
         Route("PATCH", "/api/supermarket-category-relation/\\d+/", SupermarketCategoryRelationDto.serializer()),
         Route("POST", "/api/ingredient-parser/post/", IngredientParserResponseDto.serializer()),
+        // --- Phase 2 (böcker lane): saved filters (smart books) and the user's role. ---
+        Route("POST", "/api/custom-filter/", CustomFilterDto.serializer()),
+        Route("GET", "/api/user-space/all_personal/", ListSerializer(UserSpaceDto.serializer())),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */
@@ -103,11 +106,11 @@ class DtoFixturesTest {
 
     @Test
     fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() =
-        checkFixtures("2.6.13", notModelled + ("14-user-space-all-personal" to USER_SPACE_UNUSED))
+        checkFixtures("2.6.13", notModelled)
 
     @Test
     fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() =
-        checkFixtures("2.7.1", notModelled + ("13-user-space-all-personal" to USER_SPACE_UNUSED))
+        checkFixtures("2.7.1", notModelled)
 
     private fun checkFixtures(version: String, notModelled: Map<String, String>) {
         val names = Fixture.allNames(version)
@@ -204,8 +207,6 @@ class DtoFixturesTest {
     }
 
     private companion object {
-        const val USER_SPACE_UNUSED = "user-space is not used by the app"
-
         /** Phase 2 recordings (`api-schema/fixtures/<version>/fas2/`). */
         const val PHASE_2_DIR = "fas2/"
     }

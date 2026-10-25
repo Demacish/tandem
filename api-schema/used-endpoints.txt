@@ -74,3 +74,17 @@ GET /api/supermarket-category/
 PATCH /api/supermarket-category-relation/{id}/
 PATCH /api/food/{id}/
 POST /api/ingredient-parser/post/
+
+# --- Fas 2 (böcker lane): books, favourites, "Vill laga" and the user's role (plan 3.7, #17, #42) ---
+# Writes go through the outbox, only for own books (plan 3.7). "Vill laga" is the recipe's keyword
+# list (PATCH with the whole list, FACTS "Fas 2 g"); its smart book uses a saved filter. The space's
+# users are who an own favourites book is shared with; the role comes from all_personal
+# (/api/household/ is admin-only, FACTS "Fas 2 a").
+POST /api/recipe-book/
+DELETE /api/recipe-book/{id}/
+POST /api/recipe-book-entry/
+DELETE /api/recipe-book-entry/{id}/
+POST /api/custom-filter/
+PATCH /api/recipe/{id}/
+GET /api/user/
+GET /api/user-space/all_personal/

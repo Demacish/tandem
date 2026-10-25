@@ -20,6 +20,16 @@ abstract class AccountDao {
     @Query("SELECT * FROM server_account ORDER BY id")
     abstract fun observeAll(): Flow<List<ServerAccountEntity>>
 
+    // --- Phase 2 (böcker lane, guest mode #42): the user's group in the space. ---
+
+    /** `guest`, `user` or `admin` (Tandoor's group), null while unknown. */
+    @Query("SELECT group_level FROM server_account WHERE id = :accountId")
+    abstract fun observeGroupLevel(accountId: String): Flow<String?>
+
+    /** Stores the group read from `/api/user-space/all_personal/`; `AccountMirror` keeps it. */
+    @Query("UPDATE server_account SET group_level = :groupLevel WHERE id = :accountId")
+    abstract suspend fun setGroupLevel(accountId: String, groupLevel: String?)
+
     /**
      * Deletes every row of [accountId] in every table (the account mirror included), in one
      * transaction. Other accounts are untouched. Use `TandemDatabase.clearAllTables()` to wipe

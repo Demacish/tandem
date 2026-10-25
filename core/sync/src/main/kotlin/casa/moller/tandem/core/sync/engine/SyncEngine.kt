@@ -27,6 +27,7 @@ import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.book.BookSyncStep
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
@@ -139,6 +140,8 @@ internal class SyncEngine @Inject constructor(
     private val diagnostics: DiagnosticsStore,
     // Phase 2 (inköp-data lane): the shopping list and its small tables.
     private val shopping: ShoppingSyncStep,
+    // Phase 2 (böcker lane): the role (guest mode) and the books, with the small tables.
+    private val books: BookSyncStep,
 ) {
     private val mutex = Mutex()
     private val homeMutex = Mutex()
@@ -277,6 +280,10 @@ internal class SyncEngine @Inject constructor(
 
             // Phase 2 (inköp-data lane): the shopping list (plan 3.5: full at start, else a delta).
             shopping.run(remote, background, smallTables = referenceDue, full = reason in SHOPPING_FULL_READ)
+            stopReason()?.let { return failed(it) }
+
+            // Phase 2 (böcker lane): the role (guest mode #42) and the books (plan 3.5 "Små tabeller").
+            books.run(remote, background, smallTables = referenceDue)
             stopReason()?.let { return failed(it) }
 
             // Serialized with Today's refresh (refreshHome) and checked again inside the lock:

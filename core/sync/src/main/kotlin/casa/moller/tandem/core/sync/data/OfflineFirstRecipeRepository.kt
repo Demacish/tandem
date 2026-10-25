@@ -26,6 +26,7 @@ import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
+import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
@@ -266,7 +267,8 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
             val now = clock.nowMillis()
             val database = databases.get(source.kind)
             database.recipeDao().markViewed(source.accountId, id, now)
-            if (source is ActiveSource.Remote) {
+            // Phase 2 (böcker lane, #42): nothing is queued for a guest (read-only mode).
+            if (source is ActiveSource.Remote && !isGuest(database, source.accountId)) {
                 val payload = buildJsonObject { put(FIELD_RECIPE, id) }.toString()
                 database.outboxDao().enqueueViewLog(source.accountId, id, payload, now)
                 scheduler.scheduleOutbox()

@@ -22,6 +22,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Downloads one recipe detail (`GET /api/recipe/{id}/`) and stores it in one transaction with its
@@ -67,6 +68,15 @@ internal class DetailFetcher @Inject constructor(
 
             is Outcome.Success -> response.value
         }
+        store(remote, recipeId, json)
+    }
+
+    /**
+     * Stores [json] (a full recipe as `GET /api/recipe/{id}/` answers it, or the answer of a recipe
+     * PATCH, Phase 2 "Vill laga") as recipe [recipeId]'s detail, in one transaction.
+     */
+    suspend fun store(remote: ActiveSource.Remote, recipeId: Long, json: JsonObject): Outcome<Unit> = catchingUnexpected {
+        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
         val dto = try {
             TandoorJson.decodeFromJsonElement(RecipeDto.serializer(), json)
         } catch (e: SerializationException) {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 2 (böckerbanan): namnen på böckerna Tandem skapar i Tandoor (plan 3.7). De syns också på webben. -->
+    <string name="sync_book_favorites_word">Favoriter</string>
+    <string name="sync_book_want_to_cook_name">Vill laga</string>
+</resources>
