@@ -293,7 +293,7 @@ class CookScreenTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("The timer alarm sound is off").assertIsDisplayed()
+        composeRule.onNodeWithText("The timer alarm is muted").assertIsDisplayed()
         composeRule.onNodeWithText("Settings").performClick()
         assertEquals("channel", opened)
     }
@@ -332,7 +332,7 @@ class CookScreenTest {
             },
         )
         composeRule.onNodeWithText("The recipe is no longer in Tandoor").assertIsDisplayed()
-        composeRule.onNodeWithText("Close cook mode").assertIsDisplayed()
+        composeRule.onNodeWithText("Go back").assertIsDisplayed()
         assertEquals(0, composeRule.onAllNodesWithText("Try again").fetchSemanticsNodes().size)
     }
 

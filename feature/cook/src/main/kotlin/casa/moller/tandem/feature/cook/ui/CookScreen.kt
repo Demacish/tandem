@@ -228,7 +228,8 @@ private fun MissingRecipe(state: CookUiState, onAction: (CookAction) -> Unit, on
     val error = state.error
     val retry = { onAction(CookAction.Retry) }
     val close: @Composable ColumnScope.() -> Unit = {
-        TandemSecondaryButton(text = stringResource(R.string.cook_close), onClick = onClose, size = TandemButtonSize.Kitchen)
+        // Not "Close cook mode" again: the header's ✕ already says that (one speakable text per action).
+        TandemSecondaryButton(text = stringResource(R.string.cook_go_back), onClick = onClose, size = TandemButtonSize.Kitchen)
     }
     when {
         state.loading || error == null -> LoadingState(modifier = Modifier.fillMaxSize(), message = stringResource(R.string.cook_loading))

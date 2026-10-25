@@ -17,6 +17,7 @@
     <string name="cook_not_downloaded_title">The recipe is not downloaded</string>
     <string name="cook_not_downloaded_body">Connect to the internet to open it in cook mode.</string>
     <string name="cook_retry">Try again</string>
+    <string name="cook_go_back">Go back</string>
     <string name="cook_recipe_gone_title">The recipe is no longer in Tandoor</string>
     <string name="cook_recipe_gone_body">It was deleted or is no longer shared with you.</string>
     <string name="cook_recipe_login_title">Log in again to open the recipe</string>

@@ -16,6 +16,7 @@
     <string name="cook_not_downloaded_title">Receptet är inte nedladdat</string>
     <string name="cook_not_downloaded_body">Anslut till internet för att öppna det i kokläget.</string>
     <string name="cook_retry">Försök igen</string>
+    <string name="cook_go_back">Gå tillbaka</string>
     <string name="cook_recipe_gone_title">Receptet finns inte längre i Tandoor</string>
     <string name="cook_recipe_gone_body">Det har tagits bort eller delas inte längre med dig.</string>
     <string name="cook_recipe_login_title">Logga in igen för att öppna receptet</string>
