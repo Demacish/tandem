@@ -41,13 +41,29 @@ object TandemMigrations {
 
     /**
      * 0.2.0 (fix-ui): the step's photo (`step.image_url`, cook mode's "Stegbild om den finns").
-     * Stored steps get NULL; the photo appears when the recipe's detail is fetched again.
+     * Stored steps get NULL. A detail stored by 0.1.0 whose server JSON has a step photo (a step
+     * `file` with a non-empty `preview`, FACTS "Fas 1 m") is marked for a new fetch with
+     * [MARK_DETAILS_WITH_STEP_PHOTOS]: the next sync fetches it again (`RecipeDao.getIdsMarkedForRefetch`)
+     * and the normal mapping fills the column. The URL cannot be filled here: it goes through
+     * `MediaUrls.resolve` with the account's base URL, which the database does not know.
      */
     val MIGRATION_2_3: Migration = object : Migration(2, 3) {
         override suspend fun migrate(connection: SQLiteConnection) {
             connection.execSQL("ALTER TABLE `step` ADD COLUMN `image_url` TEXT")
+            connection.execSQL(MARK_DETAILS_WITH_STEP_PHOTOS)
         }
     }
+
+    /**
+     * Marks stored details whose raw JSON has a step file with a non-empty `preview` (an image;
+     * other files have "") for a new fetch: `fetched_at = NULL` with `raw_json` kept, which only
+     * this migration writes (a removed detail clears both). `raw_json` is kotlinx.serialization's
+     * compact form (`"preview":"https://…"`); the spaced form is matched too. `_` is one character
+     * of any kind, so `"preview":""` does not match.
+     */
+    const val MARK_DETAILS_WITH_STEP_PHOTOS: String =
+        "UPDATE `recipe_detail` SET `fetched_at` = NULL WHERE `raw_json` IS NOT NULL AND " +
+            "(`raw_json` LIKE '%\"preview\":\"_%' OR `raw_json` LIKE '%\"preview\": \"_%')"
 
     val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3)
 }

@@ -95,8 +95,8 @@ internal data class EngineState(
  * 4. **Meal plan** (-14..+42 days) and **Today's carousels** (plan 3.3 queries): every 15 minutes
  *    (2 minutes on pull to refresh), serialized with Today's own refresh ([refreshHome]).
  * 5. **Details** of pinned (older than 24 h), planned (yesterday..+7) and recently viewed recipes
- *    (missing ones): at most [SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN] per run, 2 at a time with a
- *    pause, then the **images** of pinned, planned and recently viewed recipes into the disk
+ *    (missing ones), and once those the upgrade to 0.2.0 marked (step photos): at most
+ *    [SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN] per run, 2 at a time with a pause, then the **images** of pinned, planned and recently viewed recipes into the disk
  *    cache (an image that failed temporarily is tried again in the next run).
  * 6. **Outbox** ([OutboxSender]).
  *
@@ -576,7 +576,11 @@ internal class SyncEngine @Inject constructor(
             return (viewedLocally + viewedOnServer).distinct()
         }
 
-        /** Pinned (older than 24 h), planned and recently viewed recipes, at most [SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN]. */
+        /**
+         * Pinned (older than 24 h), planned and recently viewed recipes, then details the 0.2.0
+         * migration marked for a new fetch (step photos, `getIdsMarkedForRefetch`), at most
+         * [SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN]; the rest of the marked ones follow in later runs.
+         */
         private suspend fun usualDetailIds(recentlyViewed: List<Long>): List<Long> {
             val recipes = database.recipeDao()
             val now = clock.nowMillis()
@@ -591,9 +595,10 @@ internal class SyncEngine @Inject constructor(
             }
             val stored = recipes.getStoredDetailIds(accountId).toHashSet()
             val viewed = recentlyViewed.filter { it !in stored }
+            val marked = recipes.getIdsMarkedForRefetch(accountId, SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN)
             // Only recipes the index knows: an id from stale data must not become a 404 (plan 4.1).
             val known = recipes.getRecipeIds(accountId).toHashSet()
-            return (pinned + planned + viewed).distinct()
+            return (pinned + planned + viewed + marked).distinct()
                 .filter { it in known }
                 .take(SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN)
         }

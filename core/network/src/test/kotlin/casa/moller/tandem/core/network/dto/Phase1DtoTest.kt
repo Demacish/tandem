@@ -116,6 +116,45 @@ class Phase1DtoTest {
         assertTrue(decode("fas1/recipe-artsoppa", RecipeDto.serializer()).isPrivate)
     }
 
+    /**
+     * A step's file is a `UserFileView` (FACTS "Fas 1 m", fixture `fas1/recipe-step-file`): only an
+     * image has a `preview`, an absolute URL built from the proxy's Host; any other file has "".
+     */
+    @Test
+    fun stepFilePreviewIsTheImageLinkOnly() {
+        val recipe = decode("fas1/recipe-step-file", RecipeDto.serializer())
+        val (image, pdf, none) = recipe.steps
+        val preview = image.filePreview()
+        assertTrue("$preview", preview!!.startsWith("https://tandoor.example.com/media/"))
+        assertTrue("$preview", preview.endsWith(".png"))
+        assertNull("a PDF has preview \"\"", pdf.filePreview())
+        assertNull("no file", none.filePreview())
+    }
+
+    @Test
+    fun stepFilePreviewKeepsRelativeAndAbsoluteValuesAndIgnoresOddShapes() {
+        fun preview(file: String): String? =
+            TandoorJson.decodeFromString(StepDto.serializer(), """{"id": 1, "instruction": "", "file": $file}""").filePreview()
+
+        // As Tandoor sends it: an absolute URL (build_absolute_uri) ...
+        assertEquals(
+            "https://tandoor.example.com/media/files/a.png",
+            preview(
+                """{"id": 1, "name": "Bild", "file_download": "https://tandoor.example.com/api/download-file/1/", """ +
+                    """"preview": "https://tandoor.example.com/media/files/a.png"}""",
+            ),
+        )
+        // ... or a relative path (resolved later against the account's base URL by MediaUrls).
+        assertEquals("/media/files/a.png", preview("""{"id": 1, "preview": "/media/files/a.png"}"""))
+        assertNull(preview("""{"id": 2, "name": "Receptblad", "preview": ""}"""))
+        assertNull(preview("""{"id": 2, "preview": "   "}"""))
+        assertNull(preview("""{"id": 2, "preview": null}"""))
+        assertNull(preview("""{"id": 2, "preview": 5}"""))
+        assertNull(preview("""{"id": 2}"""))
+        assertNull(preview("null"))
+        assertNull(preview("\"files/a.png\""))
+    }
+
     @Test
     fun brokenTemplatesAndSubRecipesAreRead() {
         val step = TandoorJson.decodeFromString(

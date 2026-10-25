@@ -1,6 +1,8 @@
 package casa.moller.tandem.core.sync.engine
 
+import androidx.room3.useWriterConnection
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.database.TandemMigrations
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.database.dao.RecipeIndexEntry
 import casa.moller.tandem.core.database.entity.OutboxEntities
@@ -21,6 +23,7 @@ import casa.moller.tandem.core.sync.testing.FakeTandoorServer
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import casa.moller.tandem.core.sync.testing.waitUntil
+import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -36,6 +39,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import mockwebserver3.MockResponse
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -172,6 +181,63 @@ class SyncEngineTest {
         server.requests.clear()
         graph.engine.run(SyncReason.USER_REFRESH)
         assertTrue(server.requests.none { it.matches(Regex("GET /api/recipe/\\d+/")) })
+    }
+
+    /**
+     * The upgrade from 0.1.0 (schema 1, no `step.image_url`): a stored detail whose server JSON has
+     * a step photo is marked by MIGRATION_2_3 and fetched once more, also when the recipe is not
+     * pinned, planned or viewed; the normal mapping then stores the photo.
+     */
+    @Test
+    fun detailsTheUpgradeMarkedAreFetchedAgainAndGetTheirStepPhotos() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        val recipes = graph.real.recipeDao()
+        recipes.setPinned(ACCOUNT_ID, PANNKAKOR, true)
+        graph.engine.run(SyncReason.USER_REFRESH)
+        recipes.setPinned(ACCOUNT_ID, PANNKAKOR, false)
+        assertEquals(emptyList<String>(), recipes.getStepImageUrls(ACCOUNT_ID, listOf(PANNKAKOR)))
+
+        // What 0.1.0 left behind: the server's JSON (with the step file) but no image_url column.
+        val withPhoto = pannkakorWithStepPhoto()
+        server.respond("GET", "/api/recipe/$PANNKAKOR/") { FakeTandoorServer.json(200, withPhoto) }
+        graph.real.useWriterConnection { connection ->
+            connection.usePrepared("UPDATE recipe_detail SET raw_json = ? WHERE account_id = ? AND recipe_id = ?") { statement ->
+                statement.bindText(1, withPhoto)
+                statement.bindText(2, ACCOUNT_ID)
+                statement.bindLong(3, PANNKAKOR)
+                statement.step()
+            }
+            connection.usePrepared(TandemMigrations.MARK_DETAILS_WITH_STEP_PHOTOS) { it.step() }
+        }
+        assertEquals(listOf(PANNKAKOR), recipes.getIdsMarkedForRefetch(ACCOUNT_ID, 10))
+
+        server.requests.clear()
+        graph.engine.run(SyncReason.USER_REFRESH)
+
+        assertEquals(1, server.requestsTo("GET", "/api/recipe/$PANNKAKOR/").size)
+        assertEquals(listOf(STEP_PHOTO), recipes.getStepImageUrls(ACCOUNT_ID, listOf(PANNKAKOR)))
+        assertEquals(emptyList<Long>(), recipes.getIdsMarkedForRefetch(ACCOUNT_ID, 10))
+
+        // Fetched once: the next run leaves it alone.
+        server.requests.clear()
+        graph.engine.run(SyncReason.USER_REFRESH)
+        assertEquals(0, server.requestsTo("GET", "/api/recipe/$PANNKAKOR/").size)
+    }
+
+    /** The recorded pannkakor detail with an image file on its step (shape of FACTS "Fas 1 m"). */
+    private fun pannkakorWithStepPhoto(): String {
+        val body = Json.parseToJsonElement(TandoorFixtures.exchange("fas1/recipe-pannkakor").body!!).jsonObject
+        val file = JsonObject(
+            mapOf(
+                "id" to JsonPrimitive(1),
+                "name" to JsonPrimitive("Stegbild"),
+                "file_download" to JsonPrimitive("https://tandoor.example.com/api/download-file/1/"),
+                "preview" to JsonPrimitive(STEP_PHOTO),
+                "file_size_kb" to JsonPrimitive(1),
+            ),
+        )
+        val steps = body.getValue("steps").jsonArray.map { JsonObject(it.jsonObject + ("file" to file)) }
+        return JsonObject(body + ("steps" to JsonArray(steps))).toString()
     }
 
     @Test
@@ -408,6 +474,10 @@ class SyncEngineTest {
         .build()
 
     private companion object {
+        /** fas1/recipe-pannkakor: neither pinned nor planned (meal-plan-list plans 2 and 6). */
+        const val PANNKAKOR = 3L
+        const val STEP_PHOTO = "https://tandoor.example.com/media/files/0000_stegbild.png"
+
         /** Recipe 3: own 5, 4 and one unrated entry; recipe 4: only another member rated it. */
         val COOK_LOG = """
             {"count":5,"next":null,"previous":null,"results":[

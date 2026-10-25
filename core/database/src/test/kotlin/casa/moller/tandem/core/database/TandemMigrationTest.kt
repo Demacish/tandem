@@ -2,6 +2,7 @@ package casa.moller.tandem.core.database
 
 import android.content.Context
 import androidx.room3.testing.MigrationTestHelper
+import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.AndroidSQLiteDriver
 import androidx.sqlite.execSQL
 import androidx.test.core.app.ApplicationProvider
@@ -13,6 +14,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -103,6 +106,55 @@ class TandemMigrationTest {
         }
     }
 
+    /**
+     * 0.1.0 -> 0.2.0: details whose stored server JSON has a step photo are marked for a new fetch
+     * (fetched_at NULL, raw JSON kept); a PDF on a step (preview "") or no file changes nothing.
+     */
+    @Test
+    fun versionOneMigratesToThreeAndMarksDetailsWithStepPhotos() = runTest {
+        helper.createDatabase(1).apply {
+            for (id in listOf(2, 3, 4)) {
+                execSQL(
+                    "INSERT INTO recipe_overview (account_id, server_id, name, working_minutes, waiting_minutes, is_new, is_private, " +
+                        "search_name) VALUES ('$ACCOUNT_A', $id, 'Recept $id', 0, 0, 0, 0, 'recept $id')",
+                )
+            }
+            val photo = """{"id":1,"name":"Stegbild","preview":"https://tandoor.example.com/media/files/a.png"}"""
+            insertDetail(this, 2, stepJson(file = photo))
+            insertDetail(this, 3, stepJson(file = """{"id":2,"name":"Receptblad","preview":""}"""))
+            insertDetail(this, 4, stepJson(file = "null"))
+            close()
+        }
+
+        helper.runMigrationsAndValidate(3, TandemMigrations.ALL).close()
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            val recipes = database.recipeDao()
+            assertEquals(listOf(2L), recipes.getIdsMarkedForRefetch(ACCOUNT_A, 10))
+            assertNull(recipes.getDetailRow(ACCOUNT_A, 2)?.fetchedAtEpochMillis)
+            assertNotNull("the stored copy stays readable offline", recipes.getDetailRow(ACCOUNT_A, 2)?.rawJson)
+            assertEquals(FETCHED_AT, recipes.getDetailRow(ACCOUNT_A, 3)?.fetchedAtEpochMillis)
+            assertEquals(FETCHED_AT, recipes.getDetailRow(ACCOUNT_A, 4)?.fetchedAtEpochMillis)
+        } finally {
+            database.close()
+        }
+    }
+
+    /** A detail row of schema 1 with [rawJson] (single quotes would end the SQL literal). */
+    private fun insertDetail(connection: SQLiteConnection, recipeId: Int, rawJson: String) {
+        require('\'' !in rawJson)
+        connection.execSQL(
+            "INSERT INTO recipe_detail (account_id, recipe_id, raw_json, servings, servings_text, working_minutes, waiting_minutes, " +
+                "diameter, diameter_text, show_ingredient_overview, nutrition, fetched_at, pinned) VALUES ('$ACCOUNT_A', $recipeId, " +
+                "'$rawJson', 2, '', 0, 0, 0, '', 1, 'NONE', $FETCHED_AT, 0)",
+        )
+    }
+
+    /** kotlinx.serialization's compact JSON, as DetailFetcher stores it. */
+    private fun stepJson(file: String): String =
+        """{"id":7,"name":"Recept","steps":[{"id":11,"instruction":"Koka","ingredients":[],"file":$file}],"servings":2}"""
+
     @Test
     fun committedSchemaOneOpensWithTheCurrentCode() = runTest {
         helper.createDatabase(1).apply {
@@ -129,5 +181,6 @@ class TandemMigrationTest {
 
     private companion object {
         const val TEST_DB = "migration-test.db"
+        const val FETCHED_AT = 1_760_000_000_000L
     }
 }

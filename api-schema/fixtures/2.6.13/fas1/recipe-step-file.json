@@ -1,0 +1,141 @@
+{
+  "name": "recipe-step-file",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/13/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 13,
+      "name": "Stegbild",
+      "description": null,
+      "image": null,
+      "keywords": [],
+      "steps": [
+        {
+          "id": 22,
+          "name": "",
+          "instruction": "Lägg upp som på bilden.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Lägg upp som på bilden.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": true,
+          "file": {
+            "id": 1,
+            "name": "Stegbild",
+            "file_download": "https://tandoor.example.com/api/download-file/1/",
+            "preview": "https://tandoor.example.com/media/files/b39e6e22-4cb3-48f4-ae90-120838c41125.png",
+            "file_size_kb": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00"
+          },
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 23,
+          "name": "",
+          "instruction": "Skriv ut receptbladet.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Skriv ut receptbladet.</p>",
+          "time": 0,
+          "order": 1,
+          "show_as_header": true,
+          "file": {
+            "id": 2,
+            "name": "Receptblad",
+            "file_download": "https://tandoor.example.com/api/download-file/2/",
+            "preview": "",
+            "file_size_kb": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00"
+          },
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 24,
+          "name": "",
+          "instruction": "Servera.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Servera.</p>",
+          "time": 0,
+          "order": 2,
+          "show_as_header": true,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 0,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 2,
+      "file_path": "",
+      "servings_text": "",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

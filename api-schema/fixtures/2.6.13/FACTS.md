@@ -252,6 +252,7 @@ under `noSpace.*`. Observerat i körningarna 38009810699 och 38010760972 (2026-1
 | `recipe-book-create.json`, `recipe-book-entry-create.json`, `recipe-book-list.json`, `recipe-book-entry-list.json` | Receptböcker |
 | `keyword-list.json`, `food-list.json`, `unit-list.json`, `unit-conversion-list.json` | Små tabeller (`page_size=100`) |
 | `user-preference.json`, `space-current.json` | Som i Fas 0, nu med data |
+| `recipe-step-file.json` | Recept med en PNG och en PDF som stegfiler (`file` = UserFileView), se "Fas 1 m" |
 | `scaling-golden.json` | Webbens skalning/visning för varje recept, se "Skalning" |
 | `observed-facts.json` | Maskinläsbar sammanfattning, `mismatches: []` |
 
@@ -498,6 +499,25 @@ U+2044 `⁄`, blanktecken hopslagna och trimmade (`1 1⁄2`).
   `recipe-<slug>.json` med en **oberoende Kotlin-implementation** av punkterna ovan
   (`WebScalingReference`, skriven från beskrivningen) och kräver exakt likhet. Appens
   `:core:domain` ska testas mot samma fil.
+
+## Fas 1 m. Stegfiler (kokläge, 0.2.0)
+
+Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 med samma fakta).
+
+- `POST /api/user-file/` (multipart `name` + `file`, `.png` resp. `.pdf`) → **201**
+  `{id, name, file_download, preview, file_size_kb, created_by, created_at}`. [O]
+- Ett steg pekar på filen med `"file": {"id": <id>, "name": …}` i receptets `steps` (`UserFileView`
+  är skrivskyddad: bara id:t används). Ett steg utan fil har `"file": null`. [O]
+- I `GET /api/recipe/{id}/` är `steps[].file` en **UserFileView** med samma fält. `preview` är
+  **bara ifylld för bilder** (PIL kan öppna filen): en **absolut** URL byggd av `Host` +
+  `X-Forwarded-Proto`, `https://tandoor.example.com/media/files/<uuid>.png`; en PDF har
+  `"preview": ""`. `file_download` är alltid absolut (`…/api/download-file/<id>/`). [O]
+- `GET /media/files/…png` **utan token**: 200 `image/png` (som receptbilderna, "Fas 1 e").
+  `file_download` utan token: **403**. [O]
+- En fil som ett steg använder går inte att radera (`DELETE /api/user-file/{id}/` → 500
+  `ProtectedError`), inte ens direkt efter att receptet raderats. [O]
+  [S] Kokläget visar `preview` (via `MediaUrls.resolve`, som receptbilden) och aldrig
+  `file_download` (inloggad nedladdning av valfri filtyp). Tom `preview` = ingen stegbild.
 
 ## Fas 1: konsekvenser för appen [S]
 

@@ -167,6 +167,18 @@ abstract class RecipeDao {
     )
     abstract suspend fun getIdsWithoutDetail(accountId: String, limit: Int): List<Long>
 
+    /**
+     * Stored details marked for a new fetch: raw JSON kept but no fetch time, which only
+     * `TandemMigrations.MARK_DETAILS_WITH_STEP_PHOTOS` writes (0.1.0 details whose steps have a
+     * photo the old schema could not keep). Only recipes the index still lists.
+     */
+    @Query(
+        "SELECT d.recipe_id FROM recipe_detail d JOIN recipe_overview o ON o.account_id = d.account_id " +
+            "AND o.server_id = d.recipe_id WHERE d.account_id = :accountId AND d.raw_json IS NOT NULL " +
+            "AND d.fetched_at IS NULL ORDER BY d.recipe_id LIMIT :limit",
+    )
+    abstract suspend fun getIdsMarkedForRefetch(accountId: String, limit: Int): List<Long>
+
     /** The step photos of [recipeIds] (fix-ui, 0.2.0: cook mode's step images offline). */
     @Query(
         "SELECT DISTINCT image_url FROM step WHERE account_id = :accountId AND image_url IS NOT NULL " +
