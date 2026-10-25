@@ -1,0 +1,79 @@
+{
+  "name": "recipe-book-create-smart",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe-book/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Vill laga",
+      "description": "",
+      "shared": [
+        {
+          "id": 3
+        }
+      ],
+      "filter": {
+        "id": 1,
+        "name": "Vill laga (ids)",
+        "search": "{\"keywords_or\":[8]}",
+        "shared": [],
+        "created_by": 1
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 5,
+      "name": "Vill laga",
+      "description": "",
+      "shared": [
+        {
+          "id": 3,
+          "username": "contract-reader",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-reader",
+          "is_staff": false,
+          "is_superuser": false,
+          "is_active": true
+        }
+      ],
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "filter": {
+        "id": 1,
+        "name": "Vill laga (ids)",
+        "search": "{\"keywords_or\":[8]}",
+        "shared": [],
+        "created_by": 1
+      },
+      "order": 0
+    }
+  }
+}

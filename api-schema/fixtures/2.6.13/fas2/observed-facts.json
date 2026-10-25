@@ -1,0 +1,1106 @@
+{
+  "tandoorTag": "2.6.13",
+  "runDay": "2000-01-15",
+  "serverSettings.shoppingMinAutosyncInterval": "5",
+  "serverSettings.shoppingMinAutosyncInterval.type": "string",
+  "userPreference.fieldTypes": {
+    "user": "object",
+    "image": "null",
+    "theme": "string",
+    "nav_bg_color": "string",
+    "nav_text_color": "string",
+    "nav_show_logo": "boolean",
+    "default_unit": "string",
+    "default_page": "string",
+    "use_fractions": "boolean",
+    "use_kj": "boolean",
+    "nav_sticky": "boolean",
+    "ingredient_decimals": "number",
+    "comments": "boolean",
+    "shopping_auto_sync": "number",
+    "mealplan_autoadd_shopping": "boolean",
+    "food_inherit_default": "array",
+    "default_delay": "number",
+    "mealplan_autoinclude_related": "boolean",
+    "mealplan_autoexclude_onhand": "boolean",
+    "shopping_recent_days": "number",
+    "csv_delim": "string",
+    "csv_prefix": "string",
+    "shopping_update_food_lists": "boolean",
+    "default_meal_type": "null",
+    "filter_to_supermarket": "boolean",
+    "shopping_add_onhand": "boolean",
+    "left_handed": "boolean",
+    "show_step_ingredients": "boolean",
+    "food_children_exist": "boolean"
+  },
+  "userPreference.mealplan_autoadd_shopping": false,
+  "userPreference.mealplan_autoexclude_onhand": true,
+  "userPreference.mealplan_autoinclude_related": true,
+  "userPreference.shopping_auto_sync": 5,
+  "userPreference.shopping_share": "<absent>",
+  "userPreference.default_delay": 4.0,
+  "userPreference.shopping_recent_days": 7,
+  "userPreference.shopping_add_onhand": false,
+  "userPreference.filter_to_supermarket": false,
+  "userPreference.default_meal_type": null,
+  "userPreference.shopping_update_food_lists": true,
+  "userPreference.patch.status": 200,
+  "userPreference.patch.shoppingAutoSync": 10,
+  "userPreference.patchOtherUser": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No UserPreference matches the given query."
+    }
+  },
+  "userSpace.owner.status": 200,
+  "userSpace.owner.groups": [
+    "admin"
+  ],
+  "userSpace.owner.household.type": "object",
+  "userSpace.owner.household.keys": [
+    "created_at",
+    "id",
+    "name",
+    "updated_at"
+  ],
+  "household.list.owner": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "household.list.owner.names": [
+    "Contract Household"
+  ],
+  "userSpace.reader.status": 200,
+  "userSpace.reader.groups": [
+    "user"
+  ],
+  "userSpace.reader.household.type": "object",
+  "userSpace.reader.household.keys": [
+    "created_at",
+    "id",
+    "name",
+    "updated_at"
+  ],
+  "household.list.reader": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "household.list.reader.names": [],
+  "userSpace.guest.status": 200,
+  "userSpace.guest.groups": [
+    "guest"
+  ],
+  "userSpace.guest.household.type": "null",
+  "userSpace.guest.household.keys": null,
+  "household.list.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "household.list.guest.names": [],
+  "space.current.guest.status": 200,
+  "shoppingList.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "shoppingList.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "description": "string",
+    "color": "string"
+  },
+  "shoppingList.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "supermarketCategory.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "supermarket.createWithShoppingLists.status": 500,
+  "supermarket.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "supermarket.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "description": "string",
+    "shopping_lists": "array",
+    "category_to_supermarket": "array",
+    "open_data_slug": "null"
+  },
+  "supermarketCategoryRelation.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 3,
+      "category": {
+        "id": 1,
+        "name": "Grönsaker",
+        "description": "",
+        "open_data_slug": null
+      },
+      "supermarket": 1,
+      "order": 0
+    }
+  },
+  "supermarketCategoryRelation.patch": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "supermarketCategoryRelation.patch.order": 10,
+  "supermarket.list.categoryOrder": [
+    "Grönsaker=0",
+    "Mejeri=1",
+    "Övrigt=10"
+  ],
+  "supermarket.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "supermarketCategoryRelation.list": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.patchCategory": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.patchCategory.value": {
+    "id": 2,
+    "name": "Mejeri",
+    "description": "",
+    "open_data_slug": null
+  },
+  "food.patchOnHand": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.patchOnHand.value": true,
+  "food.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "plural_name": "null",
+    "description": "string",
+    "shopping": "string",
+    "recipe": "null",
+    "url": "string",
+    "properties": "array",
+    "properties_food_amount": "number",
+    "properties_food_unit": "null",
+    "fdc_id": "null",
+    "food_onhand": "boolean",
+    "supermarket_category": "null",
+    "parent": "null",
+    "numchild": "number",
+    "inherit_fields": "array",
+    "full_name": "string",
+    "ignore_shopping": "boolean",
+    "substitute": "array",
+    "substitute_siblings": "boolean",
+    "substitute_children": "boolean",
+    "substitute_onhand": "boolean",
+    "child_inherit_fields": "array",
+    "open_data_slug": "null",
+    "shopping_lists": "array"
+  },
+  "food.get.foodOnhand": true,
+  "food.get.foodOnhand.reader": true,
+  "shopping.list.status": 200,
+  "shopping.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "shopping.list.timestamp.format": "9999-99-99T00:00:00.000000+99:99",
+  "shopping.create.status": 201,
+  "shopping.entry.fieldTypes": {
+    "id": "number",
+    "list_recipe": "null",
+    "shopping_lists": "array",
+    "food": "object",
+    "unit": "object",
+    "amount": "number",
+    "order": "number",
+    "checked": "boolean",
+    "ingredient": "null",
+    "list_recipe_data": "null",
+    "created_by": "object",
+    "created_at": "string",
+    "updated_at": "string",
+    "completed_at": "null",
+    "delay_until": "null"
+  },
+  "shopping.entry.food.keys": [
+    "id",
+    "name",
+    "plural_name",
+    "shopping_lists",
+    "supermarket_category"
+  ],
+  "shopping.entry.unit.keys": [
+    "base_unit",
+    "description",
+    "id",
+    "name",
+    "open_data_slug",
+    "plural_name"
+  ],
+  "shopping.entry.createdBy.keys": [
+    "display_name",
+    "first_name",
+    "id",
+    "is_active",
+    "is_staff",
+    "is_superuser",
+    "last_name",
+    "username"
+  ],
+  "shopping.entry.listRecipeData": null,
+  "shopping.entry.order": 0,
+  "shopping.entry.amount": 2.0,
+  "shopping.entry.updatedAt.format": "9999-99-99T00:00:00.000000+99:99",
+  "shopping.entry.delayUntil": null,
+  "shopping.entry.completedAt": null,
+  "shopping.createExistingFood.status": 201,
+  "shopping.createExistingFood.sameFoodId": true,
+  "shopping.entry.food.supermarketCategory": {
+    "id": 2,
+    "name": "Mejeri",
+    "description": "",
+    "open_data_slug": null
+  },
+  "shopping.createFreeText.status": 201,
+  "shopping.createFreeText.unit": null,
+  "shopping.createNoFood": {
+    "status": 500,
+    "contentType": "text/html",
+    "isJson": false,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "shopping.createNoAmount": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "amount": [
+        "This field is required."
+      ]
+    }
+  },
+  "shopping.createZeroAmount.status": 201,
+  "shopping.createInList.status": 201,
+  "shopping.createInList.lists": [
+    "Veckohandling"
+  ],
+  "shopping.updatedAfter.t0.includesCreated": true,
+  "shopping.updatedAfter.rawPlus": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "shopping.updatedAfter.rawPlus.count": 6,
+  "shopping.updatedAfter.rawPlus.returnsEverything": true,
+  "shopping.updatedAfter.dateOnly": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "shopping.updatedAfter.zulu.status": 200,
+  "shopping.updatedAfter.zulu.count": 6,
+  "shopping.patchChecked.status": 200,
+  "shopping.patchChecked.completedAt.format": "9999-99-99T00:00:00.000000+99:99",
+  "shopping.patchChecked.seenByUpdatedAfter": true,
+  "shopping.list.includesCheckedRecent": true,
+  "shopping.bulkCheck": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "ids": [
+        5,
+        6
+      ],
+      "checked": true,
+      "shopping_lists_remove_all": false,
+      "timestamp": "2000-01-15T00:00:00.000000Z"
+    }
+  },
+  "shopping.bulkCheck.seenByUpdatedAfter": true,
+  "shopping.bulkCheck.completedAtSet": true,
+  "shopping.bulkUncheck.status": 200,
+  "shopping.bulkUncheck.seenByUpdatedAfter": true,
+  "shopping.bulkUncheck.completedAt": null,
+  "shopping.bulkUncheck.checked": false,
+  "shopping.bulkListsAdd.status": 200,
+  "shopping.bulkListsAdd.seenByUpdatedAfter": false,
+  "shopping.patchLists.status": 200,
+  "shopping.patchLists.lists": [
+    "Veckohandling"
+  ],
+  "shopping.patchLists.seenByUpdatedAfter": true,
+  "shopping.delay.status": 200,
+  "shopping.delay.value.format": "9999-99-99T00:00:00+99:99",
+  "shopping.delay.listed": true,
+  "shopping.undelay.status": 200,
+  "shopping.undelay.value": "1970-01-01T01:00:00+01:00",
+  "shopping.delayNull.status": 200,
+  "shopping.delayNull.value": null,
+  "shopping.window.recentDays7.listed30d10d3d": [
+    false,
+    false,
+    true
+  ],
+  "shopping.window.patchRecentDays.status": 200,
+  "shopping.window.recentDays20.listed30d10d3d": [
+    false,
+    true,
+    true
+  ],
+  "shopping.window.agedOut.detailStatus": 200,
+  "shopping.window.agedOut.updatedAfterNow": false,
+  "shopping.delete.status": 204,
+  "shopping.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No ShoppingListEntry matches the given query."
+    }
+  },
+  "shopping.deleted.patch": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No ShoppingListEntry matches the given query."
+    }
+  },
+  "shopping.deleted.delete": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No ShoppingListEntry matches the given query."
+    }
+  },
+  "shopping.deleted.bulk": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "ids": [
+        4
+      ],
+      "checked": true,
+      "shopping_lists_remove_all": false,
+      "timestamp": "2000-01-15T00:00:00.000000Z"
+    }
+  },
+  "shopping.deleted.bulkMixed.status": 200,
+  "shopping.deleted.bulkMixed.otherChecked": true,
+  "shopping.householdMember.status": 200,
+  "shopping.householdMember.seesOwnersEntries": true,
+  "shopping.householdMember.create.status": 201,
+  "shopping.householdMember.ownerSeesMembersEntry": true,
+  "shopping.householdMember.createdByMember": true,
+  "shopping.guest.list": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "shopping.guest.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 11,
+      "list_recipe": null,
+      "shopping_lists": [],
+      "food": {
+        "id": 45,
+        "name": "godis",
+        "plural_name": null,
+        "supermarket_category": null,
+        "shopping_lists": []
+      },
+      "unit": null,
+      "amount": 1.0,
+      "order": 0,
+      "checked": false,
+      "ingredient": null,
+      "list_recipe_data": null,
+      "created_by": {
+        "id": 4,
+        "username": "contract-guest",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-guest",
+        "is_staff": false,
+        "is_superuser": false,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "completed_at": null,
+      "delay_until": null
+    }
+  },
+  "shopping.guest.bulk": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have the required permissions to view this page!"
+    }
+  },
+  "shopping.final.count": 6,
+  "recipeShopping.put": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "msg": "Potatisgratäng was added to the shopping list."
+    }
+  },
+  "recipeShopping.entries.foods": [
+    "grädde=6.0",
+    "potatis=2.0"
+  ],
+  "recipeShopping.entries.ingredientSet": true,
+  "listRecipe.data.keys": [
+    "created_by",
+    "id",
+    "meal_plan_data",
+    "mealplan",
+    "name",
+    "recipe",
+    "recipe_data",
+    "servings"
+  ],
+  "listRecipe.data.servings": 8.0,
+  "listRecipe.data.mealPlanData": "null",
+  "listRecipe.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "recipeShopping.putServings.status": 200,
+  "recipeShopping.putServings.foods": [
+    "grädde=3.0",
+    "potatis=1.0"
+  ],
+  "listRecipe.patchServings.status": 200,
+  "listRecipe.patchServings.foods": [
+    "grädde=1.5",
+    "potatis=0.5"
+  ],
+  "listRecipe.delete.status": 204,
+  "listRecipe.delete.entriesRemain": 0,
+  "listRecipe.delete.entryGet": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No ShoppingListEntry matches the given query."
+    }
+  },
+  "listRecipe.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No ShoppingListRecipe matches the given query."
+    }
+  },
+  "listRecipe.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 2,
+      "name": "",
+      "recipe": 14,
+      "recipe_data": {
+        "id": 14,
+        "name": "Potatisgratäng",
+        "description": "",
+        "image": null,
+        "keywords": [],
+        "working_time": 20,
+        "waiting_time": 60,
+        "created_by": {
+          "id": 1,
+          "username": "contract-admin",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-admin",
+          "is_staff": true,
+          "is_superuser": true,
+          "is_active": true
+        },
+        "created_at": "2000-01-15T00:00:00.000000+01:00",
+        "updated_at": "2000-01-15T00:00:00.000000+01:00",
+        "internal": true,
+        "private": false,
+        "servings": 4,
+        "servings_text": "portioner",
+        "rating": null,
+        "last_cooked": null,
+        "new": true
+      },
+      "meal_plan_data": null,
+      "mealplan": null,
+      "servings": 2.0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      }
+    }
+  },
+  "listRecipe.bulkCreateEntries": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "entries": [
+        {
+          "amount": 1.5,
+          "unit_id": 5,
+          "food_id": 19,
+          "ingredient_id": 75
+        }
+      ],
+      "shopping_lists_ids": [
+        1
+      ]
+    }
+  },
+  "listRecipe.bulkCreateEntries.created": [
+    "mjölk=1.5"
+  ],
+  "listRecipe.bulkCreateEntries.lists": [
+    [
+      "Veckohandling"
+    ]
+  ],
+  "recipeShopping.putServings0": {
+    "status": 500,
+    "contentType": "text/html",
+    "isJson": false
+  },
+  "recipeShopping.putNegativeServings": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "msg": "Potatisgratäng was added to the shopping list."
+    }
+  },
+  "recipeShopping.putNegativeServings.entriesRemain": 0,
+  "recipeShopping.putNegativeServings.listRecipeStatus": 404,
+  "parser.single": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "parser.single.ingredient": {
+    "id": null,
+    "food": {
+      "id": 42,
+      "name": "grädde",
+      "plural_name": null
+    },
+    "unit": {
+      "id": 5,
+      "name": "dl",
+      "plural_name": "dl",
+      "description": null,
+      "base_unit": null,
+      "open_data_slug": null
+    },
+    "amount": 2.0,
+    "note": "",
+    "order": 0,
+    "is_header": false,
+    "no_amount": false,
+    "original_text": "2 dl grädde",
+    "checked": false
+  },
+  "parser.many.status": 200,
+  "parser.many.count": 8,
+  "parser.result.keys": [
+    "amount",
+    "checked",
+    "food",
+    "id",
+    "is_header",
+    "no_amount",
+    "note",
+    "order",
+    "original_text",
+    "unit"
+  ],
+  "parser.sample.2 dl grädde": {
+    "amount": 2.0,
+    "unit": "dl",
+    "food": "grädde",
+    "note": ""
+  },
+  "parser.sample.2 dl grädde.foodHasId": true,
+  "parser.sample.mjölk": {
+    "amount": 0.0,
+    "unit": null,
+    "food": "mjölk",
+    "note": ""
+  },
+  "parser.sample.mjölk.foodHasId": true,
+  "parser.sample.6 ägg": {
+    "amount": 6.0,
+    "unit": null,
+    "food": "ägg",
+    "note": ""
+  },
+  "parser.sample.6 ägg.foodHasId": true,
+  "parser.sample.1 1/2 tsk salt": {
+    "amount": 1.5,
+    "unit": "tsk",
+    "food": "salt",
+    "note": ""
+  },
+  "parser.sample.1 1/2 tsk salt.foodHasId": true,
+  "parser.sample.1,5 kg potatis": {
+    "amount": 1.5,
+    "unit": "kg",
+    "food": "potatis",
+    "note": ""
+  },
+  "parser.sample.1,5 kg potatis.foodHasId": true,
+  "parser.sample.ca 200 g smör, rumsvarmt": {
+    "amount": 200.0,
+    "unit": "g",
+    "food": "ca smör",
+    "note": "rumsvarmt"
+  },
+  "parser.sample.ca 200 g smör, rumsvarmt.foodHasId": true,
+  "parser.sample.1 paket smör": {
+    "amount": 1.0,
+    "unit": "paket",
+    "food": "smör",
+    "note": ""
+  },
+  "parser.sample.1 paket smör.foodHasId": true,
+  "parser.sample.½ citron": {
+    "amount": 0.5,
+    "unit": null,
+    "food": "citron",
+    "note": ""
+  },
+  "parser.sample.½ citron.foodHasId": true,
+  "parser.guest.status": 200,
+  "mealType.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 3,
+      "name": "Frukost",
+      "order": 2,
+      "time": "07:30:00",
+      "color": null,
+      "created_by": 1
+    }
+  },
+  "mealPlan.dateOnly": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "mealPlan.dateOnly.dates": [
+    "2000-01-18T18:00:00+01:00",
+    "2000-01-18T18:00:00+01:00"
+  ],
+  "mealPlan.lateUtc.dates": [
+    "2000-01-19T00:30:00+01:00",
+    "2000-01-19T00:30:00+01:00"
+  ],
+  "mealPlan.lateUtc.listedOnDay3": false,
+  "mealPlan.lateUtc.listedOnDay4": true,
+  "mealPlan.twoDays.dates": [
+    "2000-01-20T18:00:00+01:00",
+    "2000-01-21T18:00:00+01:00"
+  ],
+  "mealPlan.twoDays.listedOnFirstDay": false,
+  "mealPlan.twoDays.listedOnSecondDay": true,
+  "mealPlan.moveFromOnly": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "mealPlan.moveFromOnly.dates": [
+    "2000-01-19T18:00:00+01:00",
+    "2000-01-18T18:00:00+01:00"
+  ],
+  "mealPlan.moveBoth.dates": [
+    "2000-01-19T18:00:00+01:00",
+    "2000-01-19T18:00:00+01:00"
+  ],
+  "mealPlan.patchFields.status": 200,
+  "mealPlan.patchFields.mealType": "Frukost",
+  "mealPlan.patchFields.servings": 3.0,
+  "mealPlan.fieldTypes": {
+    "id": "number",
+    "title": "string",
+    "recipe": "null",
+    "servings": "number",
+    "note": "string",
+    "note_markdown": "string",
+    "from_date": "string",
+    "to_date": "string",
+    "meal_type": "object",
+    "created_by": "number",
+    "meal_type_name": "string",
+    "shopping": "boolean"
+  },
+  "mealPlan.householdMember.seesSame": true,
+  "mealPlan.guest.list.status": 200,
+  "mealPlan.guest.list.count": 0,
+  "mealPlan.guest.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 7,
+      "title": "Gäst",
+      "recipe": null,
+      "servings": 1.0,
+      "note": "",
+      "note_markdown": "",
+      "from_date": "2000-01-15T18:00:00+01:00",
+      "to_date": "2000-01-15T18:00:00+01:00",
+      "meal_type": {
+        "id": 1,
+        "name": "Middag",
+        "order": 0,
+        "time": "18:00:00",
+        "color": "#C2185B",
+        "created_by": 1
+      },
+      "created_by": 4,
+      "meal_type_name": "Middag",
+      "shopping": false
+    }
+  },
+  "mealPlan.addShopping.status": 201,
+  "mealPlan.addShopping.shoppingFlag": true,
+  "mealPlan.addShopping.entries": [
+    "grädde=3.0",
+    "mjölk=2.0",
+    "potatis=1.0",
+    "smör=1.0"
+  ],
+  "mealPlan.addShopping.entries.mealPlanDataId": true,
+  "mealPlan.addShopping.getShoppingFlag": true,
+  "mealPlan.noAddShopping.shoppingFlag": false,
+  "mealPlan.noAddShopping.entries": 0,
+  "userPreference.autoadd.status": 200,
+  "mealPlan.autoAdd.shoppingFlag": false,
+  "mealPlan.autoAdd.entries": 0,
+  "mealPlan.autoAddAndAddShopping.entries": 4,
+  "mealPlan.autoAddWithAddShoppingFalse.entries": 0,
+  "recipeShopping.mealplan.status": 500,
+  "recipeShopping.mealplan.entries": 0,
+  "recipeShopping.mealplan.shoppingFlag": false,
+  "shopping.mealplanId.status": 201,
+  "shopping.mealplanId.listRecipe": "number",
+  "shopping.mealplanId.sameListRecipe": true,
+  "mealPlan.afterMealplanIdEntries.shoppingFlag": true,
+  "mealPlan.delete.status": 204,
+  "mealPlan.delete.entriesRemain": 0,
+  "mealPlan.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No MealPlan matches the given query."
+    }
+  },
+  "mealPlan.deleted.patch": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No MealPlan matches the given query."
+    }
+  },
+  "mealPlan.deleted.delete": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No MealPlan matches the given query."
+    }
+  },
+  "recipeBook.createShared": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipeBook.createShared.sharedWithMember": [
+    true
+  ],
+  "recipeBook.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "description": "string",
+    "shared": "array",
+    "created_by": "object",
+    "filter": "null",
+    "order": "number"
+  },
+  "recipeBook.sharedMember.listed": true,
+  "recipeBook.sharedMember.createdBy.type": "object",
+  "recipeBook.sharedMember.entries": 1,
+  "recipeBook.sharedMember.addEntry": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "book": 2,
+      "book_content": {
+        "id": 2,
+        "name": "Favoriter (contract-admin)",
+        "description": "",
+        "shared": [
+          {
+            "id": 3,
+            "username": "contract-reader",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-reader",
+            "is_staff": false,
+            "is_superuser": false,
+            "is_active": true
+          }
+        ],
+        "created_by": {
+          "id": 1,
+          "username": "contract-admin",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-admin",
+          "is_staff": true,
+          "is_superuser": true,
+          "is_active": true
+        },
+        "filter": null,
+        "order": 0
+      },
+      "recipe": 8,
+      "recipe_content": {
+        "id": 8,
+        "name": "Grönsakssoppa",
+        "description": "Beskrivningen ändrades med PATCH av kontraktstestet.",
+        "image": null,
+        "keywords": [
+          {
+            "id": 3,
+            "label": "Vegetariskt"
+          },
+          {
+            "id": 6,
+            "label": "Soppa"
+          }
+        ],
+        "working_time": 15,
+        "waiting_time": 25,
+        "created_by": {
+          "id": 1,
+          "username": "contract-admin",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-admin",
+          "is_staff": true,
+          "is_superuser": true,
+          "is_active": true
+        },
+        "created_at": "2000-01-15T00:00:00.000000+01:00",
+        "updated_at": "2000-01-15T00:00:00.000000+01:00",
+        "internal": true,
+        "private": false,
+        "servings": 4,
+        "servings_text": "portioner",
+        "rating": null,
+        "last_cooked": null,
+        "new": true
+      }
+    }
+  },
+  "recipeBook.sharedMember.deleteEntry": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "recipeBook.sharedMember.patchBook": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "recipeBook.memberCreate.status": 201,
+  "recipeBook.ownerSeesMembersSharedBook": true,
+  "recipeBook.entriesByRecipe.count": 1,
+  "recipeBook.entries.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "recipeBook.deleteEntry.status": 204,
+  "recipeBook.deletedEntry.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No RecipeBookEntry matches the given query."
+    }
+  },
+  "recipeBook.deletedEntry.delete": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No RecipeBookEntry matches the given query."
+    }
+  },
+  "recipeBook.guest.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "name": "Gästbok",
+      "description": "",
+      "shared": [],
+      "created_by": {
+        "id": 4,
+        "username": "contract-guest",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-guest",
+        "is_staff": false,
+        "is_superuser": false,
+        "is_active": true
+      },
+      "filter": null,
+      "order": 0
+    }
+  },
+  "recipeBook.guest.list": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipeBook.delete.status": 204,
+  "recipeBook.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No RecipeBook matches the given query."
+    }
+  },
+  "wantToCook.keyword.status": 201,
+  "wantToCook.memberPatch.status": 200,
+  "wantToCook.memberPatch.keywords": [
+    "vill-laga"
+  ],
+  "wantToCook.memberPatch.sameKeywordId": true,
+  "wantToCook.guestPatch": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "wantToCook.filter.ids.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "wantToCook.filter.ids.status": 200,
+  "wantToCook.filter.ids.recipes": [
+    "Potatisgratäng"
+  ],
+  "wantToCook.smartBook.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "wantToCook.smartBook.filter.keys": [
+    "created_by",
+    "id",
+    "name",
+    "search",
+    "shared"
+  ],
+  "wantToCook.smartBook.entries": 0,
+  "wantToCook.smartBook.memberRecipes": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "wantToCook.smartBook.memberRecipes.names": [
+    "Potatisgratäng"
+  ],
+  "wantToCook.filter.objects.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "wantToCook.filter.objects.status": 500,
+  "wantToCook.filter.objects.recipes": [],
+  "wantToCook.keywordsOr.recipes": [
+    "Potatisgratäng"
+  ],
+  "wantToCook.remove.keywords": [],
+  "mismatches": []
+}

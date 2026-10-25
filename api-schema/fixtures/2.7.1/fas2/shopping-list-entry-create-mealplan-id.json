@@ -1,0 +1,138 @@
+{
+  "name": "shopping-list-entry-create-mealplan-id",
+  "request": {
+    "method": "POST",
+    "path": "/api/shopping-list-entry/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "food": {
+        "name": "grädde"
+      },
+      "amount": 3,
+      "mealplan_id": 9
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 23,
+      "list_recipe": 5,
+      "shopping_lists": [],
+      "food": {
+        "id": 42,
+        "name": "grädde",
+        "plural_name": null,
+        "supermarket_category": {
+          "id": 2,
+          "name": "Mejeri",
+          "description": "",
+          "open_data_slug": null
+        },
+        "shopping_lists": []
+      },
+      "unit": null,
+      "amount": 3.0,
+      "order": 0,
+      "checked": false,
+      "ingredient": null,
+      "list_recipe_data": {
+        "id": 5,
+        "name": "",
+        "recipe": null,
+        "recipe_data": null,
+        "meal_plan_data": {
+          "id": 9,
+          "title": "",
+          "recipe": {
+            "id": 14,
+            "name": "Potatisgratäng",
+            "description": "",
+            "image": null,
+            "keywords": [],
+            "working_time": 20,
+            "waiting_time": 60,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "portioner",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 4.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-01-23T18:00:00+01:00",
+          "to_date": "2000-01-23T18:00:00+01:00",
+          "meal_type": {
+            "id": 1,
+            "name": "Middag",
+            "order": 0,
+            "time": "18:00:00",
+            "color": "#C2185B",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Potatisgratäng",
+          "meal_type_name": "Middag",
+          "shopping": true
+        },
+        "mealplan": 9,
+        "servings": 1.0,
+        "created_by": {
+          "id": 1,
+          "username": "contract-admin",
+          "first_name": "",
+          "last_name": "",
+          "display_name": "contract-admin",
+          "is_staff": true,
+          "is_superuser": true,
+          "is_active": true
+        }
+      },
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "completed_at": null,
+      "delay_until": null
+    }
+  }
+}

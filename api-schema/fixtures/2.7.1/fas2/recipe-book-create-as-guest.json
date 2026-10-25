@@ -1,0 +1,52 @@
+{
+  "name": "recipe-book-create-as-guest",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe-book/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000003",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Gästbok",
+      "description": "",
+      "shared": [],
+      "filter": null
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "name": "Gästbok",
+      "description": "",
+      "shared": [],
+      "created_by": {
+        "id": 4,
+        "username": "contract-guest",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-guest",
+        "is_staff": false,
+        "is_superuser": false,
+        "is_active": true
+      },
+      "filter": null,
+      "order": 0
+    }
+  }
+}

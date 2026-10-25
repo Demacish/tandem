@@ -1,0 +1,34 @@
+{
+  "name": "user-preference-patch-other-user",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/user-preference/3/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "shopping_auto_sync": 10
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "allow": "GET, PATCH",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "detail": "No UserPreference matches the given query."
+    }
+  }
+}

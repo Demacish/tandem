@@ -1,0 +1,42 @@
+{
+  "name": "supermarket-category-relation-patch",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/supermarket-category-relation/1/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "order": 10
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 1,
+      "category": {
+        "id": 3,
+        "name": "Övrigt",
+        "description": "",
+        "open_data_slug": null
+      },
+      "supermarket": 1,
+      "order": 10
+    }
+  }
+}

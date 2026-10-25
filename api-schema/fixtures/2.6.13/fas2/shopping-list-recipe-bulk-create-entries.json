@@ -1,0 +1,54 @@
+{
+  "name": "shopping-list-recipe-bulk-create-entries",
+  "request": {
+    "method": "POST",
+    "path": "/api/shopping-list-recipe/2/bulk_create_entries/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "entries": [
+        {
+          "amount": 1.5,
+          "unit_id": 5,
+          "food_id": 19,
+          "ingredient_id": 75
+        }
+      ],
+      "shopping_lists_ids": [
+        1
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "POST, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "entries": [
+        {
+          "amount": 1.5,
+          "unit_id": 5,
+          "food_id": 19,
+          "ingredient_id": 75
+        }
+      ],
+      "shopping_lists_ids": [
+        1
+      ]
+    }
+  }
+}

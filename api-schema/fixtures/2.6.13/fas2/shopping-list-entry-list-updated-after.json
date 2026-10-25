@@ -1,0 +1,221 @@
+{
+  "name": "shopping-list-entry-list-updated-after",
+  "request": {
+    "method": "GET",
+    "path": "/api/shopping-list-entry/?page_size=200&updated_after=2026-10-25T16%3A48%3A25.297119%2B00%3A00",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 5,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-15T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 4,
+          "list_recipe": null,
+          "shopping_lists": [],
+          "food": {
+            "id": 19,
+            "name": "mjölk",
+            "plural_name": null,
+            "supermarket_category": null,
+            "shopping_lists": []
+          },
+          "unit": {
+            "id": 4,
+            "name": "l",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "l",
+            "open_data_slug": null
+          },
+          "amount": 2.0,
+          "order": 0,
+          "checked": false,
+          "ingredient": null,
+          "list_recipe_data": null,
+          "created_by": {
+            "id": 1,
+            "username": "contract-admin",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-admin",
+            "is_staff": true,
+            "is_superuser": true,
+            "is_active": true
+          },
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "completed_at": null,
+          "delay_until": null
+        },
+        {
+          "id": 5,
+          "list_recipe": null,
+          "shopping_lists": [],
+          "food": {
+            "id": 42,
+            "name": "grädde",
+            "plural_name": null,
+            "supermarket_category": {
+              "id": 2,
+              "name": "Mejeri",
+              "description": "",
+              "open_data_slug": null
+            },
+            "shopping_lists": []
+          },
+          "unit": null,
+          "amount": 1.0,
+          "order": 0,
+          "checked": false,
+          "ingredient": null,
+          "list_recipe_data": null,
+          "created_by": {
+            "id": 1,
+            "username": "contract-admin",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-admin",
+            "is_staff": true,
+            "is_superuser": true,
+            "is_active": true
+          },
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "completed_at": null,
+          "delay_until": null
+        },
+        {
+          "id": 6,
+          "list_recipe": null,
+          "shopping_lists": [],
+          "food": {
+            "id": 43,
+            "name": "tandkräm",
+            "plural_name": null,
+            "supermarket_category": null,
+            "shopping_lists": []
+          },
+          "unit": null,
+          "amount": 1.0,
+          "order": 0,
+          "checked": false,
+          "ingredient": null,
+          "list_recipe_data": null,
+          "created_by": {
+            "id": 1,
+            "username": "contract-admin",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-admin",
+            "is_staff": true,
+            "is_superuser": true,
+            "is_active": true
+          },
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "completed_at": null,
+          "delay_until": null
+        },
+        {
+          "id": 8,
+          "list_recipe": null,
+          "shopping_lists": [],
+          "food": {
+            "id": 14,
+            "name": "salt",
+            "plural_name": null,
+            "supermarket_category": null,
+            "shopping_lists": []
+          },
+          "unit": null,
+          "amount": 0.0,
+          "order": 0,
+          "checked": false,
+          "ingredient": null,
+          "list_recipe_data": null,
+          "created_by": {
+            "id": 1,
+            "username": "contract-admin",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-admin",
+            "is_staff": true,
+            "is_superuser": true,
+            "is_active": true
+          },
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "completed_at": null,
+          "delay_until": null
+        },
+        {
+          "id": 9,
+          "list_recipe": null,
+          "shopping_lists": [
+            {
+              "id": 1,
+              "name": "Veckohandling",
+              "description": "",
+              "color": "#2E7D32"
+            }
+          ],
+          "food": {
+            "id": 18,
+            "name": "ägg",
+            "plural_name": null,
+            "supermarket_category": null,
+            "shopping_lists": []
+          },
+          "unit": {
+            "id": 8,
+            "name": "st",
+            "plural_name": "st",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "amount": 6.0,
+          "order": 0,
+          "checked": false,
+          "ingredient": null,
+          "list_recipe_data": null,
+          "created_by": {
+            "id": 1,
+            "username": "contract-admin",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-admin",
+            "is_staff": true,
+            "is_superuser": true,
+            "is_active": true
+          },
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "completed_at": null,
+          "delay_until": null
+        }
+      ]
+    }
+  }
+}

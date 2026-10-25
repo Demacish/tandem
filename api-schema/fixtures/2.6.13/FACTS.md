@@ -540,3 +540,183 @@ Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 
    kroppen är `You do not have permission…` och andra anrop fungerar).
 8. **Matsedel:** läs `?from_date&to_date` (datum, filtrerar på `to_date`), tolka `from_date` i
    serverns offset; poster utan recept saknar `recipe_name`.
+
+# Fas 2: inköp, butiker, matsedel, böcker, hushåll och gäst
+
+> **Källa:** `Phase2ContractTest` i [`contract.yml`](../../../.github/workflows/contract.yml) mot
+> samma tillfälliga 2.6.13-server, **efter** Fas 1. Inspelad 2026-10-25. Filerna ligger i
+> [`fas2/`](fas2/). Sista steget jämför testets `EXPECTED` (det appen bygger på, raderna nedan med
+> **[O]**) och fäller `contract.yml` vid avvikelse; allt annat står i
+> [`fas2/observed-facts.json`](fas2/observed-facts.json) och jämförs nattligen av `tandoor-watch`.
+> 2.7.1 gav **exakt samma fakta** (se [`../2.7.1/FACTS.md`](../2.7.1/FACTS.md)).
+
+## Fas 2: upplägg
+
+- Före testet lägger arbetsflödet kontraktsanvändaren (`tda_…0001`, admin) och den andra medlemmen
+  (`tda_…0002`, gruppen `user`) i hushållet "Contract Household" och skapar en gästmedlem
+  (`tda_…0003`, gruppen `guest`, inget hushåll). Det skapar också tre avbockade poster med
+  `completed_at` 30, 10 och 3 dagar bakåt direkt i databasen (API:t kan inte sätta den, se nedan).
+- Testet seedar receptet *Potatisgratäng* (1 kg potatis, 3 dl grädde, 2 dl mjölk, 1 msk smör,
+  4 portioner), listan *Veckohandling*, butiken *Testbutiken* med gångarna Grönsaker, Mejeri,
+  Övrigt och måltidstypen *Frukost* 07:30. Datum flyttas som i Fas 1 (körningsdagen = 2000-01-15),
+  utom `1970-01-01` (Tandoors "inte fördröjd"), som står kvar.
+
+## Fas 2: filerna i `fas2/`
+
+| Filer | Visar |
+|---|---|
+| `server-settings`, `user-preference`, `user-preference-patch*`, `user-space-owner`, `user-space-guest`, `household-list-owner` | Inställningar, roller och hushåll (a) |
+| `shopping-list-create`, `shopping-list-list` | Namngivna listor |
+| `shopping-list-entry-list`, `-list-updated-after`, `-list-as-guest`, `-list-mealplan` | Listan, delta, gästen, en måltids poster |
+| `shopping-list-entry-create*` | Skapa: livsmedel+enhet, befintligt livsmedel, fritext, i en lista, med `mealplan_id`, utan livsmedel (500), utan mängd (400), som gäst |
+| `shopping-list-entry-patch-*`, `-get`, `-get-aged-out` | Bocka av, listor, köp senare och ångra, försök att sätta `completed_at`, utåldrad post |
+| `shopping-list-entry-bulk-*` | Bulk av/på, `shopping_lists_add`, raderat id (200) |
+| `shopping-list-entry-delete`, `-deleted-*`, `-of-deleted-list-recipe` | Radering och 404-kropparna |
+| `recipe-shopping-put*`, `shopping-list-recipe-*` | Recept → lista, listrecept, `bulk_create_entries`, radering (0 = 500, negativt), `mealplan` (500) |
+| `supermarket-*`, `food-*` | Butiker, gångar, gångordning, livsmedlets gång och "har hemma" |
+| `ingredient-parser-single`, `-many` | Parsern |
+| `meal-type-create`, `meal-plan-*` | Rent datum, sen UTC-tid, två dagar, flytt, fält, `addshopping`, autoadd, radering och 404, gäst |
+| `recipe-book-*`, `recipe-book-entry-*`, `custom-filter-create-ids`, `recipe-list-filter-ids`, `recipe-patch-keywords-*` | Delad bok (ägare/medlem/gäst), poster, smart bok, "Vill laga" |
+| `observed-facts.json` | Alla fakta, `mismatches: []` |
+
+## Fas 2 a. Användarinställningar, roller och hushåll
+
+- `shopping_min_autosync_interval` i server-settings är en **sträng** (`"5"`). [O]
+  `user-preference` har `shopping_auto_sync` (heltal, s), `mealplan_autoadd_shopping`,
+  `mealplan_autoexclude_onhand`, `mealplan_autoinclude_related`, `default_delay` (decimal, timmar,
+  `4.0`), `shopping_recent_days` (7), `shopping_add_onhand`, `filter_to_supermarket`,
+  `default_meal_type`, `shopping_update_food_lists`; **`shopping_share` finns inte** (ersatt av
+  hushåll). [O] `PATCH /api/user-preference/{egen id}/` → 200; en annans id → **404**. [O]
+- `GET /api/user-space/all_personal/` ger gruppen (`groups: [{id, name}]`: `admin`, `user`,
+  `guest`) och hushållet som objekt `{id, name, created_at, updated_at}` (eller `null`). [O]
+  `GET /api/household/` → 200 för admin, **403** för en vanlig medlem och en gäst. [O]
+  [S] Hushållets namn och rollen läses ur `all_personal`.
+
+## Fas 2 b. Inköpslistan (`/api/shopping-list-entry/`)
+
+- Listan är DRF-paginerad med `timestamp` (serverns tid, mikrosekunder och offset). [O]
+- **Skapa:** `{food: {name}, unit: {name} | null, amount}` → 201. Livsmedel och enhet skapas eller
+  återanvänds på namn (`{id, name}` ger samma id). Utan `amount` → **400** `{"amount": ["This field
+  is required."]}`; `food: null` → **500** (HTML); `amount: 0` → 201. [O]
+- **Posten:** `id, list_recipe, shopping_lists [{id,name,description,color}], food {id, name,
+  plural_name, supermarket_category (objekt eller null), shopping_lists}, unit {id, name,
+  plural_name, description, base_unit, open_data_slug} | null, amount (decimal, 2.0), order,
+  checked, ingredient, list_recipe_data, created_by (helt användarobjekt), created_at, updated_at,
+  completed_at, delay_until`. [O]
+- **`updated_after`:** `>=` på `updated_at`. **Måste URL-kodas:** ett okodat `+` i offseten blir
+  mellanslag, tolkningen misslyckas tyst och Tandoor svarar med **hela** listan. [O/K] Ett rent
+  datum fungerar inte heller (ignoreras); `Z`-form fungerar. [O]
+- **Avbockning:** `PATCH {checked: true}` sätter `completed_at` och bumpar `updated_at` (syns med
+  `updated_after`). `POST .../bulk/` `{ids, checked}` → 200 med `timestamp`; bumpar `updated_at`,
+  `checked: false` nollar `completed_at`. [O] `completed_at` **går inte att sätta** via API:t:
+  serializern sätter den när `checked` slår om (och tar bort den annars). [K]
+- **Flytt mellan listor:** bulkens `shopping_lists_add` bumpar **inte** `updated_at` (andra
+  telefoner ser den inte med `updated_after`); `PATCH {shopping_lists: [{id}]}` gör det. [O]
+- **Köp senare:** `PATCH {delay_until: "<ISO>"}` → 200; en fördröjd post **finns kvar i listan**
+  (appen döljer den själv). Ångra med `1970-01-01T00:00:00Z` (svaret: `1970-01-01T01:00:00+01:00`)
+  eller `null`. [O]
+- **Fönsterregeln:** listan ger oavbockade poster och poster avbockade efter midnatt (UTC) för
+  `min(shopping_recent_days, 14)` dagar sedan, högst 1000. Med 7 dagar syntes 3-dagarsposten men
+  inte 10- eller 30-dagarsposten; med 20 (= 14) syntes 10- och 3-dagarsposten. Detaljen
+  `GET .../{id}/` på en utåldrad post → 200. [O/K]
+- **Radering:** `DELETE` → 204; sedan GET, PATCH och DELETE → **404**
+  `{"detail": "No ShoppingListEntry matches the given query."}`. **Bulk med ett raderat id → 200**
+  (tyst); övriga id i samma anrop bockas av. [O]
+- **Hushållet:** medlemmar i samma hushåll ser varandras poster (`created_by` = den som lade
+  till). [O] **Gästen** kan skapa egna poster (201) men inte använda bulk (**403**). [O]
+- **Namngivna listor** (`/api/shopping-list/`): `{id, name, description, color}`, paginerade. [O]
+
+## Fas 2 c. Recept och måltider på listan (`shopping-list-recipe`)
+
+- `PUT /api/recipe/{id}/shopping/` `{ingredients: [id…], servings}` → 200 `{msg}` (inga id).
+  Posterna skalas (`servings` / receptets portioner) och får `ingredient`, `list_recipe` och
+  `list_recipe_data` `{id, name, recipe, recipe_data, mealplan, meal_plan_data, servings,
+  created_by}`. [O] Samma anrop med `list_recipe` och nya portioner skalar om posterna. [O]
+- `servings: 0` + `list_recipe` (schemats beskrivning av radering) → **500**: vyn testar
+  `if servings and servings <= 0`, så 0 går vidare som ändring. Ett **negativt** värde tar bort
+  listreceptet och dess poster. [O/K] `mealplan` i samma anrop → **500**. [O]
+- `POST /api/shopping-list-recipe/` `{recipe, servings, name}` → 201 (helt objekt med id);
+  `POST .../{id}/bulk_create_entries/` `{entries: [{amount, unit_id, food_id, ingredient_id}],
+  shopping_lists_ids}` → 200 (ekar kroppen, inga id). `PATCH {servings}` skalar posterna;
+  `DELETE` → 204 och **posterna försvinner** (sedan 404 på dem). [O]
+- [S] Offline: skapa listreceptet (id i svaret), sedan varje post som egen CREATE med
+  `list_recipe` (id i svaret), så id-omskrivningen fungerar.
+
+## Fas 2 d. Butiker, gångar och livsmedel
+
+- `POST /api/supermarket-category/` `{name, description}` → 201 `{id, name, description,
+  open_data_slug}`. [O]
+- `POST /api/supermarket/` **med** `shopping_lists` → **500** (get_or_create med ett M2M-fält [K]);
+  utan → 201 `{id, name, description, shopping_lists, category_to_supermarket, open_data_slug}`. [O]
+- `POST /api/supermarket-category-relation/` `{supermarket, category: {id, name}, order}` → 201;
+  `PATCH {order}` → 200. Butikens `category_to_supermarket` är sorterad på `order`. [O]
+- `PATCH /api/food/{id}/` `{supermarket_category: {id, name}}` sätter gången (listans poster visar
+  den nästlat); `{food_onhand: true}` → 200, och en annan medlem i hushållet ser också `true`. [O]
+
+## Fas 2 e. Ingrediensparsern (`POST /api/ingredient-parser/post/`)
+
+- `{ingredient: "2 dl grädde"}` → `{ingredient: {id: null, food: {id, name, plural_name}, unit,
+  amount, note, order, is_header, no_amount, original_text, checked}, ingredients: []}`;
+  `{ingredients: [...]}` tolkar flera i ett anrop. [O]
+- Resultat: "2 dl grädde" → 2 dl grädde; "mjölk" → 0, ingen enhet; "6 ägg" → 6, ingen enhet;
+  "1 1/2 tsk salt" → 1,5 tsk; "1,5 kg potatis" → 1,5 kg; "ca 200 g smör, rumsvarmt" → 200 g
+  **"ca smör"**, anteckning "rumsvarmt"; "1 paket smör" → 1 paket; "½ citron" → 0,5 citron. [O]
+- **Parsern skapar livsmedel** (och enheter) den inte känner: "ca smör" och "citron" fick id. [O]
+  [S] Anropa den bara för text som läggs på listan, aldrig medan användaren skriver.
+
+## Fas 2 f. Matsedeln
+
+- `from_date` som **rent datum** (`2000-01-18`) → 201 med måltidstypens tid (18:00). [O]
+- `23:30Z` blir 00:30 nästa dag i serverns zon och listas under **den** dagen (`?from_date=&to_date=`
+  filtrerar på serverns lokala datum för `to_date`). En måltid över två dagar listas bara på
+  den sista. [O]
+- `PATCH {from_date}` ensam **lämnar `to_date`** (som då kan ligga före); flytta med båda. [O]
+  `PATCH {title, servings, meal_type: {id, name}}` → 200. [O]
+- **`addshopping: true`** vid skapande lägger receptets ingredienser på listan (i måltidens
+  portioner), kopplade till måltiden (`?mealplan=<id>` ger dem, `meal_plan_data.id`), och
+  `shopping` blir `true`. [O]
+- **`mealplan_autoadd_shopping` gör ingenting via API:t:** med inställningen på gav en ny måltid
+  utan `addshopping` 0 poster, med `addshopping: true` 4, med `false` 0. [O/K] (Webben skickar
+  `addshopping` efter inställningen.)
+- `POST /api/shopping-list-entry/` med `mealplan_id` skapar eller återanvänder måltidens
+  listrecept (samma `list_recipe` för två poster) och sätter `shopping: true`. [O/K]
+- `DELETE` → 204 och **måltidens poster försvinner**; sedan GET, PATCH, DELETE → 404
+  `{"detail": "No MealPlan matches the given query."}`. [O]
+- Medlemmar i samma hushåll ser samma matsedel. Gästen (inget hushåll) ser 0 och **kan skapa**
+  måltider (201). [O] `POST /api/meal-type/` `{name, time: "07:30", order}` → 201 (`"07:30:00"`). [O]
+
+## Fas 2 g. Böcker, favoriter och "Vill laga"
+
+- `POST /api/recipe-book/` `{name, description, shared: [{id}], filter: null}` → 201; `created_by`
+  är ett helt användarobjekt, `shared` användarobjekt. [O]
+- **Delad medlem:** ser boken och dess poster; `POST /api/recipe-book-entry/` i någon annans bok
+  → **201** (!), men `DELETE .../{id}/` → **403** och `PATCH` av boken → **403**
+  `{"detail": "You do not have permission to perform this action."}`. Samma recept två gånger →
+  400 `{"non_field_errors": ["The fields recipe, book must make a unique set."]}`. [O]
+  [S] Appen visar ändå skrivknappar **bara för egna böcker** (plan 3.7): den som lägger till kan
+  inte ta bort.
+- En medlems egen bok som delas med ägaren syns för ägaren. `GET /api/recipe-book-entry/?recipe=`
+  filtrerar på recept. `DELETE` av post/bok → 204, sedan 404 (`No RecipeBookEntry…`,
+  `No RecipeBook…`). [O]
+- **"Vill laga":** en vanlig medlem kan `PATCH /api/recipe/{id}/` `{keywords: [...]}` på
+  ägarens recept (200); nyckelordet återanvänds på namn; hela listan utan det tar bort det. Gästen
+  → **403**. [O] `POST /api/custom-filter/` `{name, search: "{\"keywords_or\":[<id>]}", shared}`
+  → 201, och `GET /api/recipe/?filter=<id>` ger recepten med nyckelordet (även för en medlem som
+  boken delats med). `search` med objekt (`[{"id":…}]`) → **500** i receptlistan. En bok med
+  `filter` (smart bok) har 0 poster. [O]
+- Gästen kan skapa en egen bok (201). [O]
+
+## Fas 2: konsekvenser för appen [S]
+
+1. Koda `updated_after` och använd serverns `timestamp`; full omläsning med fönsterregeln
+   (`ShoppingWindowRule`), ingen raderingsdetektering vid 1000 rader.
+2. Bocka av med bulk (en rad per post i outboxen, batchad); flytta listor med PATCH.
+3. "Köp senare" filtreras i appen; ångra med `1970-01-01T00:00:00Z`.
+4. Recept → lista offline via `shopping-list-recipe` + poster med `list_recipe`, inte
+   `recipe/{id}/shopping/` (inga id, ingen matsedelskoppling, radering med 0 trasig).
+5. Skicka `addshopping` exakt när användaren kryssat i "Lägg på listan" (förvalt =
+   `mealplan_autoadd_shopping`); "Handla för veckan" kontrollerar `?mealplan=` och `shopping`.
+6. Flytta måltider med båda datumen; tolka datum i serverns zon.
+7. Skrivknappar bara för egna böcker; "Vill laga" via receptets nyckelord (inte gäst).
+8. Gästläget är appens beslut (servern tillåter delar).
+9. 404 på en raderad rad betyder "raderad någon annanstans"; bulk ger aldrig 404.

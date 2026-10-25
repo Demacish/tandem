@@ -1,0 +1,404 @@
+{
+  "name": "recipe-patch-keywords-as-member",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/14/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000002",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "keywords": [
+        {
+          "name": "vill-laga"
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 14,
+      "name": "Potatisgratäng",
+      "description": "",
+      "image": null,
+      "keywords": [
+        {
+          "id": 8,
+          "name": "vill-laga",
+          "label": "vill-laga",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "vill-laga"
+        }
+      ],
+      "steps": [
+        {
+          "id": 25,
+          "name": "",
+          "instruction": "Skiva potatisen, varva med grädde och mjölk och grädda.",
+          "ingredients": [
+            {
+              "id": 73,
+              "food": {
+                "id": 4,
+                "name": "potatis",
+                "plural_name": "potatisar",
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "potatis",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 2,
+                "name": "kg",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "kg",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "potatis",
+                  "unit": "kg",
+                  "amount": 1.0
+                },
+                {
+                  "food": "potatis",
+                  "unit": "g",
+                  "amount": 1000.0
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 14,
+                  "name": "Potatisgratäng"
+                }
+              ]
+            },
+            {
+              "id": 74,
+              "food": {
+                "id": 42,
+                "name": "grädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": {
+                  "id": 2,
+                  "name": "Mejeri",
+                  "description": "",
+                  "open_data_slug": null
+                },
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "grädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 3.0,
+              "conversions": [
+                {
+                  "food": "grädde",
+                  "unit": "dl",
+                  "amount": 3.0
+                },
+                {
+                  "food": "grädde",
+                  "unit": "ml",
+                  "amount": 300.0
+                },
+                {
+                  "food": "grädde",
+                  "unit": "cup",
+                  "amount": 1.268025
+                },
+                {
+                  "food": "grädde",
+                  "unit": "l",
+                  "amount": 0.3
+                },
+                {
+                  "food": "grädde",
+                  "unit": "msk",
+                  "amount": 20.2884
+                },
+                {
+                  "food": "grädde",
+                  "unit": "tsk",
+                  "amount": 60.865199999999994
+                }
+              ],
+              "note": "",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 14,
+                  "name": "Potatisgratäng"
+                }
+              ]
+            },
+            {
+              "id": 75,
+              "food": {
+                "id": 19,
+                "name": "mjölk",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "mjölk",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.0,
+              "conversions": [
+                {
+                  "food": "mjölk",
+                  "unit": "dl",
+                  "amount": 2.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "ml",
+                  "amount": 200.0
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "cup",
+                  "amount": 0.84535
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "l",
+                  "amount": 0.2
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "msk",
+                  "amount": 13.5256
+                },
+                {
+                  "food": "mjölk",
+                  "unit": "tsk",
+                  "amount": 40.5768
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 14,
+                  "name": "Potatisgratäng"
+                }
+              ]
+            },
+            {
+              "id": 76,
+              "food": {
+                "id": 20,
+                "name": "smör",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "smör",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 6,
+                "name": "msk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tbsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "smör",
+                  "unit": "msk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "smör",
+                  "unit": "cup",
+                  "amount": 0.0625
+                },
+                {
+                  "food": "smör",
+                  "unit": "l",
+                  "amount": 0.014786774708700538
+                },
+                {
+                  "food": "smör",
+                  "unit": "ml",
+                  "amount": 14.78677470870054
+                },
+                {
+                  "food": "smör",
+                  "unit": "tsk",
+                  "amount": 2.9999999999999996
+                }
+              ],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 14,
+                  "name": "Potatisgratäng"
+                }
+              ]
+            }
+          ],
+          "instructions_markdown": "<p>Skiva potatisen, varva med grädde och mjölk och grädda.</p>",
+          "time": 60,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 20,
+      "waiting_time": 60,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

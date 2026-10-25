@@ -1,0 +1,71 @@
+{
+  "name": "user-preference-patch",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/user-preference/1/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "shopping_auto_sync": 10
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PATCH",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "user": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "image": null,
+      "theme": "TANDOOR",
+      "nav_bg_color": "#ddbf86",
+      "nav_text_color": "DARK",
+      "nav_show_logo": true,
+      "default_unit": "g",
+      "default_page": "SEARCH",
+      "use_fractions": false,
+      "use_kj": false,
+      "nav_sticky": true,
+      "ingredient_decimals": 2,
+      "comments": true,
+      "shopping_auto_sync": 10,
+      "mealplan_autoadd_shopping": false,
+      "food_inherit_default": [],
+      "default_delay": 4.0,
+      "mealplan_autoinclude_related": true,
+      "mealplan_autoexclude_onhand": true,
+      "shopping_recent_days": 7,
+      "csv_delim": ",",
+      "csv_prefix": "",
+      "shopping_update_food_lists": true,
+      "default_meal_type": null,
+      "filter_to_supermarket": false,
+      "shopping_add_onhand": false,
+      "left_handed": false,
+      "show_step_ingredients": true,
+      "food_children_exist": false
+    }
+  }
+}

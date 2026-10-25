@@ -79,3 +79,13 @@
   auth classes for DRF"). [K]
 - [S] 2.7.0 står **inte** i `TandoorVersionTable.TESTED`: appen kör den i säkert läge (outboxen
   pausad), så "Klart!" och visningar väntar tills servern uppgraderas.
+
+## Fas 2
+
+- `Phase2ContractTest` gav **exakt samma fakta** som 2.6.13 (`fas2/observed-facts.json` skiljer
+  sig bara i `tandoorTag`; varje inspelat svar har samma kropp): inköpslistan, fönsterregeln,
+  listrecepten, butikerna, parsern, matsedeln (datum, `addshopping`, autoadd som inte gör något via
+  API:t), böckerna, "Vill laga" och gästen beter sig likadant. Se
+  [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md) "Fas 2". Inspelningarna ligger i [`fas2/`](fas2/). [O]
+- Push kör nu kontraktssviten mot både 2.6.13 och 2.7.1, och `EXPECTED` (det appen bygger på)
+  gäller för båda. [S]

@@ -1,0 +1,208 @@
+{
+  "name": "ingredient-parser-many",
+  "request": {
+    "method": "POST",
+    "path": "/api/ingredient-parser/post/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "ingredients": [
+        "2 dl grädde",
+        "mjölk",
+        "6 ägg",
+        "1 1/2 tsk salt",
+        "1,5 kg potatis",
+        "ca 200 g smör, rumsvarmt",
+        "1 paket smör",
+        "½ citron"
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "POST, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "ingredient": null,
+      "ingredients": [
+        {
+          "id": null,
+          "food": {
+            "id": 42,
+            "name": "grädde",
+            "plural_name": null
+          },
+          "unit": {
+            "id": 5,
+            "name": "dl",
+            "plural_name": "dl",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "amount": 2.0,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "2 dl grädde",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 19,
+            "name": "mjölk",
+            "plural_name": null
+          },
+          "unit": null,
+          "amount": 0.0,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "mjölk",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 18,
+            "name": "ägg",
+            "plural_name": null
+          },
+          "unit": null,
+          "amount": 6.0,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "6 ägg",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 14,
+            "name": "salt",
+            "plural_name": null
+          },
+          "unit": {
+            "id": 7,
+            "name": "tsk",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "tsp",
+            "open_data_slug": null
+          },
+          "amount": 1.5,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "1 1/2 tsk salt",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 4,
+            "name": "potatis",
+            "plural_name": "potatisar"
+          },
+          "unit": {
+            "id": 2,
+            "name": "kg",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "kg",
+            "open_data_slug": null
+          },
+          "amount": 1.5,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "1,5 kg potatis",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 46,
+            "name": "ca smör",
+            "plural_name": null
+          },
+          "unit": {
+            "id": 1,
+            "name": "g",
+            "plural_name": null,
+            "description": null,
+            "base_unit": "g",
+            "open_data_slug": null
+          },
+          "amount": 200.0,
+          "note": "rumsvarmt",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "ca 200 g smör, rumsvarmt",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 20,
+            "name": "smör",
+            "plural_name": null
+          },
+          "unit": {
+            "id": 13,
+            "name": "paket",
+            "plural_name": null,
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "amount": 1.0,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "1 paket smör",
+          "checked": false
+        },
+        {
+          "id": null,
+          "food": {
+            "id": 47,
+            "name": "citron",
+            "plural_name": null
+          },
+          "unit": null,
+          "amount": 0.5,
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": "½ citron",
+          "checked": false
+        }
+      ]
+    }
+  }
+}
