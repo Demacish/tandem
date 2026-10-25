@@ -112,6 +112,11 @@ class CookScreenTest {
 
         composeRule.onNodeWithContentDescription("Start a 5 min timer", substring = true).performScrollTo().performClick()
         composeRule.waitForIdle()
+        // "Justera tiden" asks first; nothing runs until "Start".
+        composeRule.onNodeWithText("Adjust the time").assertIsDisplayed()
+        assertEquals(emptyList<Any>(), fakes.timers.timers.value)
+        composeRule.onNodeWithText("Start 5 min").performClick()
+        composeRule.waitForIdle()
 
         val timer = fakes.timers.timers.value.single()
         assertEquals(5.minutes, timer.duration)
@@ -122,6 +127,35 @@ class CookScreenTest {
         composeRule.onNodeWithContentDescription("Pause ${timer.label}").performClick()
         composeRule.waitForIdle()
         assertEquals(TimerState.PAUSED, fakes.timers.timers.value.single().state)
+    }
+
+    @Test
+    fun theTimeCanBeChangedBeforeTheTimerStarts() {
+        val fakes = show()
+
+        composeRule.onNodeWithContentDescription("Start a 5 min timer", substring = true).performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("1 min longer").performClick()
+        composeRule.onNodeWithContentDescription("1 min longer").performClick()
+        composeRule.onNodeWithContentDescription("1 min shorter").performClick()
+        composeRule.onNodeWithText("Start 6 min").performClick()
+        composeRule.waitForIdle()
+
+        val timer = fakes.timers.timers.value.single()
+        assertEquals(6.minutes, timer.duration)
+        assertTrue("the label says the chosen time: ${timer.label}", timer.label.endsWith("6 min"))
+    }
+
+    @Test
+    fun cancellingTheTimeStartsNothing() {
+        val fakes = show()
+
+        composeRule.onNodeWithContentDescription("Start a 5 min timer", substring = true).performScrollTo().performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.waitForIdle()
+
+        assertEquals(emptyList<Any>(), fakes.timers.timers.value)
     }
 
     @Test

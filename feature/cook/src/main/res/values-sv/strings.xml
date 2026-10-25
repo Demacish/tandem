@@ -55,6 +55,12 @@
     <string name="cook_timer_no_clock_app">Ingen klockapp kunde starta timern. Välj timers i Tandem under Inställningar.</string>
     <string name="cook_timer_started">Timern har startat: %1$s</string>
     <string name="cook_timer_too_many">För många timers samtidigt. Ta bort en för att starta en ny.</string>
+    <string name="cook_timer_adjust_title">Justera tiden</string>
+    <string name="cook_timer_adjust_recipe">Receptet säger: %1$s</string>
+    <string name="cook_timer_adjust_shorter">%1$s kortare</string>
+    <string name="cook_timer_adjust_longer">%1$s längre</string>
+    <string name="cook_timer_adjust_start">Starta %1$s</string>
+    <string name="cook_timer_adjust_cancel">Avbryt</string>
 
     <string name="cook_notifications_title">Vill du höra timern när skärmen är låst?</string>
     <string name="cook_notifications_body">Tandem behöver få visa notiser för att kunna larma när timern är klar, även när skärmen är släckt eller du är i en annan app.</string>

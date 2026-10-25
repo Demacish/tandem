@@ -14,8 +14,12 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
 
 - **Timers (grunden för kokläget):** flera timers samtidigt som ringer även med låst skärm och
   utan nät, med "+1 min" och "Stopp" i notisen och en nedräkning i statusraden (Live Update på
-  Android 16). Timers överlever omstart av appen och telefonen. "ca 20–25 minuter" i ett steg
-  blir en timer på 25 minuter. Kan också lämnas till klockappen.
+  Android 16). På Samsung visar notisen en egen nedräkning, eftersom One UI annars bara visar
+  klockslaget då timern är klar. Timers överlever omstart av appen och telefonen. Kan också
+  lämnas till klockappen.
+- **Justera tiden:** en timerknapp eller en tid i texten frågar först efter tiden. − och + ändrar
+  den (10 s, 1 min eller 5 min åt gången beroende på längden), och "ca 20–25 minuter" erbjuder
+  båda tiderna; 25 minuter är förvalt.
 - **Kokläge:** "Börja laga" i receptet och "Laga" på kvällens måltid under Idag öppnar ett steg
   per sida med stegets ingredienser i de valda portionerna (går att ändra), stegtexten i stor
   stil (A−/A+) och knappar för stegets tider; en tid i texten går också att trycka på. Aktiva

@@ -9,8 +9,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import android.os.Build
+import android.os.SystemClock
 import android.text.format.DateFormat
 import android.text.format.DateUtils
+import android.widget.RemoteViews
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -37,8 +40,9 @@ import kotlin.time.Instant
  * - **Countdown** (`timer_ongoing`, low, silent): one ongoing notification per running or paused
  *   timer (id [TandemNotificationIds.timerOngoing]). A running timer shows a counting-down
  *   chronometer to `endsAt` and asks to be a promoted ongoing notification, which Android 16
- *   shows as a Live Update (status bar chip with the countdown); older versions ignore the
- *   request and show the same notification. Actions: Pause and "+1 min", or Resume and Cancel.
+ *   shows as a Live Update (status bar chip with the countdown). On Samsung and before Android 16
+ *   it shows its own Chronometer content instead ([useCustomCountdown]). Actions: Pause and
+ *   "+1 min", or Resume and Cancel.
  * - **Alarm** (`timer_alarm`, high, alarm sound with `USAGE_ALARM`, vibration): one per ringing
  *   timer (id [TandemNotificationIds.timerAlarm]), insistent (the sound repeats until it is
  *   stopped or silenced), with "+1 min" and "Stop", and a full-screen intent to
@@ -76,13 +80,20 @@ internal class AndroidTimerNotifier @Inject constructor(
         when (timer.state) {
             TimerState.RUNNING -> {
                 val endsAt = timer.endsAt ?: return
+                val endsText = context.getString(R.string.timer_notification_running, clockTime(endsAt))
                 builder.setWhen(endsAt.toEpochMilliseconds())
                     .setShowWhen(true)
                     .setUsesChronometer(true)
                     .setChronometerCountDown(true)
-                    .setContentText(context.getString(R.string.timer_notification_running, clockTime(endsAt)))
+                    .setContentText(endsText)
+                if (useCustomCountdown()) {
+                    builder.setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                        .setCustomContentView(countdownView(timer.label, endsAt, endsText))
+                } else {
                     // Android 16 Live Update: ongoing + title + standard style + this request.
-                    .setRequestPromotedOngoing(true)
+                    builder.setRequestPromotedOngoing(true)
+                }
+                builder
                     .addAction(0, context.getString(R.string.timer_action_pause), action(TimerIntents.ACTION_PAUSE, timer.id))
                     .addAction(0, context.getString(R.string.timer_action_plus_one_minute), plusOneMinute(timer.id))
             }
@@ -98,6 +109,27 @@ internal class AndroidTimerNotifier @Inject constructor(
             TimerState.RINGING, TimerState.FINISHED -> return
         }
         post(TandemNotificationIds.timerOngoing(timer.id), builder.build())
+    }
+
+    /**
+     * Samsung's One UI draws a countdown notification's `when` as the clock time ("18:45") in the
+     * shade, on the lock screen and in the Now Bar, not as a running chronometer, and Android
+     * before 16 has no Live Update. There the notification gets its own content with a
+     * Chronometer widget (as the clock apps do); it cannot be promoted, since a Live Update must
+     * use the standard style. Android 16+ on other devices keeps the Live Update.
+     */
+    private fun useCustomCountdown(): Boolean =
+        Build.MANUFACTURER.equals("samsung", ignoreCase = true) || Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA
+
+    private fun countdownView(label: String, endsAt: Instant, endsText: String): RemoteViews {
+        // The Chronometer counts against elapsedRealtime, so the base is "now" plus the time left.
+        val left = (endsAt - clock.now()).inWholeMilliseconds.coerceAtLeast(0)
+        return RemoteViews(context.packageName, R.layout.timer_notification_countdown).apply {
+            setTextViewText(R.id.timer_notification_title, label)
+            setChronometer(R.id.timer_notification_countdown, SystemClock.elapsedRealtime() + left, null, true)
+            setChronometerCountDown(R.id.timer_notification_countdown, true)
+            setTextViewText(R.id.timer_notification_ends, endsText)
+        }
     }
 
     override fun cancelOngoing(timerId: Long) = manager.cancel(TandemNotificationIds.timerOngoing(timerId))

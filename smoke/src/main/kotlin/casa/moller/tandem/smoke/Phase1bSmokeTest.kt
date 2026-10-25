@@ -159,6 +159,7 @@ class Phase1bSmokeTest {
     private fun startTwoTimersAskingInContext(): Long {
         assertFalse("Not granted before the first timer", device.hasPermission(POST_NOTIFICATIONS))
         app.tapDescriptionMatching(startTimer(FIRST_TIMER_SECONDS))
+        confirmTime(FIRST_TIMER_SECONDS)
         app.waitFor(By.text("Hear the timer with the screen locked?"))
         app.capture("phase1b-notification-question")
         app.tap("Continue")
@@ -172,6 +173,7 @@ class Phase1bSmokeTest {
         app.waitFor(runningTimer(FIRST_TIMER_SECONDS))
 
         app.tapDescriptionMatching(startTimer(SECOND_TIMER_SECONDS))
+        confirmTime(SECOND_TIMER_SECONDS)
         app.waitFor(runningTimer(SECOND_TIMER_SECONDS))
         assertFalse(app.device.hasObject(By.text("Hear the timer with the screen locked?")))
         device.waitUntil("two countdown notifications (timer_ongoing)") {
@@ -346,6 +348,12 @@ class Phase1bSmokeTest {
         app.waitFor(By.text("You’re connected"))
         app.tap("Continue")
         app.waitForClickable("Recipes", FIRST_SYNC_TIMEOUT_MS)
+    }
+
+    /** "Adjust the time" opens first; its "Start 50 s" starts the timer with the suggested time. */
+    private fun confirmTime(seconds: Int) {
+        app.waitFor(By.text("Adjust the time"))
+        app.tap("Start $seconds s")
     }
 
     /** A timer start button: "Start a 50 s timer, 50 seconds" (core:ui ui_timer_start_description). */

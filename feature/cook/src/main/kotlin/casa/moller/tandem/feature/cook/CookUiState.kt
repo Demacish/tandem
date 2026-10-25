@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.model.timer.TimerSuggestion
+import kotlin.time.Duration
 
 /**
  * What cook mode shows (plan 6.2 "Kokläge", features #6–#8), built by [CookViewModel].
@@ -233,8 +234,17 @@ sealed interface CookAction {
 
     data object SmallerText : CookAction
 
-    /** A timer chip or a duration in the text was tapped. */
-    data class StartTimer(val stepIndex: Int, val suggestion: TimerSuggestion) : CookAction
+    /**
+     * Start a timer from [suggestion]. Cook mode's screen first asks for the time (the dialog
+     * "Justera tiden") and then sends [duration], the chosen time, with [durationText] for the
+     * label; without them the suggestion starts as it is.
+     */
+    data class StartTimer(
+        val stepIndex: Int,
+        val suggestion: TimerSuggestion,
+        val duration: Duration? = null,
+        val durationText: String? = null,
+    ) : CookAction
 
     data class PauseTimer(val id: Long) : CookAction
 

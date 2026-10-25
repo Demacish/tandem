@@ -177,7 +177,7 @@ class CookViewModel @AssistedInject constructor(
             is CookAction.SwitchUnit -> switchUnit(action.id)
             CookAction.LargerText -> setTextScale(CookTextScale.larger(uiState.value.textScale))
             CookAction.SmallerText -> setTextScale(CookTextScale.smaller(uiState.value.textScale))
-            is CookAction.StartTimer -> startTimer(action.stepIndex, action.suggestion)
+            is CookAction.StartTimer -> startTimer(action)
             is CookAction.PauseTimer -> viewModelScope.launch { timerController.pause(action.id) }
             is CookAction.ResumeTimer -> viewModelScope.launch { timerController.resume(action.id) }
             is CookAction.AddMinute -> viewModelScope.launch { timerController.addOneMinute(action.id) }
@@ -240,13 +240,20 @@ class CookViewModel @AssistedInject constructor(
         }
     }
 
-    private fun startTimer(stepIndex: Int, suggestion: TimerSuggestion) {
+    private fun startTimer(action: CookAction.StartTimer) {
         val state = uiState.value
-        val step = state.steps.getOrNull(stepIndex) ?: return
+        val step = state.steps.getOrNull(action.stepIndex) ?: return
+        val duration = action.duration ?: action.suggestion.duration
+        // A changed time is the label's time ("Koka pastan · 22 min"), not the recipe's words.
+        val label = if (action.durationText != null && duration != action.suggestion.duration) {
+            timerLabel(step.name, state.recipeName, action.durationText)
+        } else {
+            timerLabel(step.name, state.recipeName, action.suggestion)
+        }
         val pending = PendingTimer(
-            stepIndex = stepIndex,
-            label = timerLabel(step.name, state.recipeName, suggestion),
-            durationSeconds = suggestion.duration.inWholeSeconds,
+            stepIndex = action.stepIndex,
+            label = label,
+            durationSeconds = duration.inWholeSeconds.coerceAtLeast(1),
         )
         val askFirst = settings.value.timerMode == TimerMode.IN_APP &&
             timerController.capabilities.value.shouldAskForNotifications &&
@@ -474,9 +481,12 @@ class CookViewModel @AssistedInject constructor(
         const val MAX_COMMENT_LENGTH = 2_000
 
         /** "Svampen · 5 min": the step's name (or the recipe's), then the duration as the step says it. */
-        fun timerLabel(stepName: String, recipeName: String, suggestion: TimerSuggestion): String {
+        fun timerLabel(stepName: String, recipeName: String, suggestion: TimerSuggestion): String =
+            timerLabel(stepName, recipeName, suggestion.label)
+
+        fun timerLabel(stepName: String, recipeName: String, what: String): String {
             val owner = stepName.ifBlank { recipeName }.trim()
-            return if (owner.isEmpty()) suggestion.label else "$owner · ${suggestion.label}"
+            return if (owner.isEmpty()) what else "$owner · $what"
         }
 
         /** Where a cook log saved now goes, from the sync's pause (plan 4.1). */

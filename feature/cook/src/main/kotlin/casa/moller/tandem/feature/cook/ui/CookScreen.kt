@@ -34,8 +34,11 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -88,6 +91,7 @@ import casa.moller.tandem.feature.cook.CookAction
 import casa.moller.tandem.feature.cook.CookUiState
 import casa.moller.tandem.feature.cook.R
 import casa.moller.tandem.feature.cook.SilentAlarmCause
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /**
@@ -169,6 +173,22 @@ fun CookScreen(
         onOpenAlarmChannelSettings = onOpenAlarmChannelSettings,
         onOpenExactAlarmSettings = onOpenExactAlarmSettings,
     )
+    // "Justera tiden": the step and suggestion whose timer is being set up, and the chosen
+    // seconds (kept across rotation). A tapped timer asks here before it starts.
+    var adjustStepIndex by rememberSaveable { mutableIntStateOf(NO_ADJUST) }
+    var adjustSuggestion by rememberSaveable { mutableIntStateOf(0) }
+    var adjustSeconds by rememberSaveable { mutableLongStateOf(0L) }
+    val stepAction: (CookAction) -> Unit = { action ->
+        val index = (action as? CookAction.StartTimer)?.takeIf { it.duration == null }
+            ?.let { start -> state.steps.getOrNull(start.stepIndex)?.suggestions?.indexOf(start.suggestion) }
+        if (action is CookAction.StartTimer && index != null && index >= 0) {
+            adjustStepIndex = action.stepIndex
+            adjustSuggestion = index
+            adjustSeconds = action.suggestion.duration.inWholeSeconds
+        } else {
+            onAction(action)
+        }
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -185,7 +205,7 @@ fun CookScreen(
             when {
                 state.hasDetail -> CookContent(
                     state = state,
-                    onAction = onAction,
+                    onAction = stepAction,
                     onClose = onClose,
                     layout = chosen,
                     largeText = maxWidth >= LargeStepTextMinWidth,
@@ -200,6 +220,18 @@ fun CookScreen(
                 }
             }
         }
+    }
+    state.steps.getOrNull(adjustStepIndex)?.suggestions?.getOrNull(adjustSuggestion)?.let { suggestion ->
+        TimerAdjustDialog(
+            suggestion = suggestion,
+            duration = adjustSeconds.seconds,
+            onChange = { adjustSeconds = it.inWholeSeconds },
+            onStart = { text ->
+                onAction(CookAction.StartTimer(adjustStepIndex, suggestion, adjustSeconds.seconds, text))
+                adjustStepIndex = NO_ADJUST
+            },
+            onDismiss = { adjustStepIndex = NO_ADJUST },
+        )
     }
     state.notificationPrompt?.let {
         NotificationPromptDialog(
@@ -750,3 +782,5 @@ internal const val COOK_TABLETOP_CONTROLS_TAG = "cook:tabletop-controls"
 internal const val COOK_TABLETOP_UPPER_TAG = "cook:tabletop-upper"
 internal const val COOK_BOTTOM_TIMERS_TAG = "cook:bottom-timers"
 internal const val COOK_STEP_OF_TAG = "cook:step-of"
+
+private const val NO_ADJUST = -1

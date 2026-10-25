@@ -59,6 +59,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowAlarmManager
+import org.robolectric.shadows.ShadowBuild
 
 /**
  * The real engine with the real Android alarm scheduler, notifier and ringer under Robolectric
@@ -121,6 +122,21 @@ class DefaultTimerControllerTest {
         assertNull("no alarm notification while counting down", notificationOrNull(TandemNotificationIds.timerAlarm(timer.id)))
         assertNull("no service during the countdown", shadowOf(context).peekNextStartedService())
         assertEquals(1, store.stored.timers.size)
+    }
+
+    @Test
+    fun onSamsungTheCountdownHasItsOwnChronometerInsteadOfALiveUpdate() = runTest {
+        // One UI shows the standard chronometer as the clock time it ends ("18:45").
+        ShadowBuild.setManufacturer("samsung")
+        val engine = newEngine()
+        val timer = engine.startTimer("Koka pastan", 10.minutes)
+
+        val countdown = notification(TandemNotificationIds.timerOngoing(timer.id))
+        assertNotNull("own content with a Chronometer", countdown.contentView)
+        assertEquals(R.layout.timer_notification_countdown, countdown.contentView.layoutId)
+        assertFalse("a custom view cannot be a Live Update", NotificationCompat.isRequestPromotedOngoing(countdown))
+        assertEquals("Koka pastan", countdown.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals(listOf("Pause", "+1 min"), countdown.actions.map { it.title.toString() })
     }
 
     @Test

@@ -62,6 +62,12 @@
     <!-- TalkBack only, after a timer was started: %1$s is its name, e.g. "The pasta · 10 min". -->
     <string name="cook_timer_started">Timer started: %1$s</string>
     <string name="cook_timer_too_many">Too many timers at once. Remove one to start another.</string>
+    <string name="cook_timer_adjust_title">Adjust the time</string>
+    <string name="cook_timer_adjust_recipe">The recipe says: %1$s</string>
+    <string name="cook_timer_adjust_shorter">%1$s shorter</string>
+    <string name="cook_timer_adjust_longer">%1$s longer</string>
+    <string name="cook_timer_adjust_start">Start %1$s</string>
+    <string name="cook_timer_adjust_cancel">Cancel</string>
 
     <!-- Notifications, asked in context at the first timer (plan 8.7). Never name the raw permission. -->
     <string name="cook_notifications_title">Hear the timer with the screen locked?</string>
