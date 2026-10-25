@@ -106,6 +106,7 @@ jobs:
             --discover artifacts/tandoor-watch-discover/discover.json \
             --jobs jobs.json \
             --recordings artifacts \
+            --reviewed contract-tests/watch/reviewed-changes.json \
             --run-url "$RUN_URL" \
             --out report.md \
             --github-output "$GITHUB_OUTPUT"

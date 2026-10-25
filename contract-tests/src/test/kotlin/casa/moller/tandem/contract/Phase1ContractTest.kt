@@ -856,11 +856,13 @@ class Phase1ContractTest {
         val entry = created.json as? JsonObject ?: return
         val returnedAt = entry.stringAt("created_at")?.let { ZonedDateTime.parse(it).toInstant() }
         verify("cookLog.app.createdAtInstantKept", returnedAt == cookedAt.toInstant(), true)
+        // Compared as numbers: 2.6 answers `3`, 2.7 (CookLog.servings is a DecimalField) `3.0`.
         verify(
             "cookLog.app.fieldsKept",
-            listOf(entry.longAt("servings"), entry.longAt("rating"), entry.stringAt("comment")),
-            listOf(3L, 4L, "Lagad offline"),
+            listOf(entry.doubleAt("servings"), entry.longAt("rating"), entry.stringAt("comment")),
+            listOf(3.0, 4L, "Lagad offline"),
         )
+        observe("cookLog.app.servingsAsSent", entry["servings"])
 
         val id = entry.longAt("id")
         val author = entry.objAt("created_by")?.longAt("id")

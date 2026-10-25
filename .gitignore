@@ -43,3 +43,6 @@ google-services.json
 *.pk8
 *.key
 *.der
+
+# Python bytecode (contract-tests/watch/*.py)
+__pycache__/

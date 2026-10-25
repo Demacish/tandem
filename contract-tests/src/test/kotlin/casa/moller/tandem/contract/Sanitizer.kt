@@ -83,11 +83,11 @@ internal class Sanitizer(secrets: List<String>, private val runToday: LocalDate?
         const val MASK_PREFIX = "tda_************_******_***********"
 
         /**
-         * JSON keys whose string value is always a secret: allauth headless (Tandoor 2.7+) returns
-         * the session token as `meta.session_token` (and `access_token`/`refresh_token` with the
-         * JWT strategy, which Tandoor does not use).
+         * JSON keys whose string value is always a secret or personal: allauth headless (Tandoor
+         * 2.7+) returns the session token as `meta.session_token` (and `access_token`/`refresh_token`
+         * with the JWT strategy, which Tandoor does not use) and the user's `email`.
          */
-        val SECRET_KEYS: Set<String> = setOf("session_token", "access_token", "refresh_token")
+        val SECRET_KEYS: Set<String> = setOf("session_token", "access_token", "refresh_token", "email")
 
         /** Request headers whose value is always a secret (allauth's app client, Tandoor 2.7+). */
         val SECRET_HEADERS: Set<String> = setOf("x-session-token")

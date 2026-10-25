@@ -11,7 +11,13 @@ For every tag it compares the contract run's observed facts (observed-facts.json
 with the 2.6.13 baseline OF THE SAME RUN, after removing what differs on every run (image UUIDs,
 the throttle's remaining seconds, the tag and version themselves). Writes Markdown to --out and
 `attention=true|false` plus `fingerprint=<hash>` to --github-output: attention means a red
-contract run, a release newer than every tested version, or a changed fact.
+contract run, a release newer than every tested version, or a changed fact that nobody reviewed.
+
+--reviewed (contract-tests/watch/reviewed-changes.json) lists, per release line ("2.7"), the facts
+that differ from 2.6.13 and were reviewed against the app when the line was added to
+TandoorVersionTable.TESTED: key -> the expected new value (normalized JSON text as in the diff),
+null for a fact that is gone, or "*" for a value that changes with every build (HTML pages with
+hashed asset names). Such a difference is shown but needs no attention; any other one does.
 """
 
 import argparse
@@ -76,18 +82,41 @@ def server_version(recordings, tag):
 
 
 def diff(reference, observed):
+    return [line for _, line in keyed_diff(reference, observed)]
+
+
+def keyed_diff(reference, observed):
+    """(key, diff line) for every fact that differs; keys may contain spaces (food names)."""
     lines = []
     for key in sorted(set(reference) | set(observed)):
         before, after = reference.get(key), observed.get(key)
         if before == after:
             continue
         if before is None:
-            lines.append(f"+ {key} = {after}")
+            lines.append((key, f"+ {key} = {after}"))
         elif after is None:
-            lines.append(f"- {key} (was {before})")
+            lines.append((key, f"- {key} (was {before})"))
         else:
-            lines.append(f"~ {key}: {before} -> {after}")
+            lines.append((key, f"~ {key}: {before} -> {after}"))
     return lines
+
+
+def line_of(version):
+    """`2.7.1` -> `2.7`; None for an unparseable version."""
+    match = re.match(r"^(\d+)\.(\d+)", version or "")
+    return f"{match.group(1)}.{match.group(2)}" if match else None
+
+
+def split_reviewed(reference, observed, reviewed):
+    """(new diff lines, reviewed diff lines) of one tag; [reviewed] is the line's key -> expected map."""
+    new, accepted = [], []
+    for key, line in keyed_diff(reference, observed):
+        after = observed.get(key)
+        if key in reviewed and (reviewed[key] == "*" or reviewed[key] == after):
+            accepted.append(line)
+        else:
+            new.append(line)
+    return new, accepted
 
 
 def job_results(jobs):
@@ -107,7 +136,13 @@ def main():
     parser.add_argument("--run-url", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--github-output")
+    parser.add_argument("--reviewed", help="reviewed-changes.json (facts reviewed per release line)")
     args = parser.parse_args()
+
+    reviewed_lines = {}
+    if args.reviewed:
+        with open(args.reviewed, encoding="utf-8") as file:
+            reviewed_lines = {line: entry.get("facts", {}) for line, entry in json.load(file).items() if not line.startswith("_")}
 
     with open(args.discover, encoding="utf-8") as file:
         discovered = json.load(file)
@@ -119,16 +154,30 @@ def main():
     for tag in discovered["tags"]:
         result = results.get(tag, "missing")
         observed = facts_of(args.recordings, tag)
+        version = server_version(args.recordings, tag)
+        accepted = []
         if tag == BASELINE:
             changes = []
         elif reference is None or observed is None:
             changes = ["(no observed facts to compare)"]
         else:
-            changes = diff(reference, observed)
-        version = server_version(args.recordings, tag)
-        rows.append(f"| `{tag}` | {version} | {'✅' if result == 'success' else '❌ ' + result} | {len(changes) if tag != BASELINE else 'reference'} |")
+            changes, accepted = split_reviewed(reference, observed, reviewed_lines.get(line_of(version), {}))
+        if tag == BASELINE:
+            counted = "reference"
+        elif accepted:
+            counted = f"{len(changes)} (+{len(accepted)} reviewed for {line_of(version)})"
+        else:
+            counted = str(len(changes))
+        rows.append(f"| `{tag}` | {version} | {'✅' if result == 'success' else '❌ ' + result} | {counted} |")
         if result != "success":
             reasons.append(f"contract tests {result} against {tag}")
+        if accepted:
+            shown = accepted[:MAX_DIFF_LINES]
+            more = f"\n… and {len(accepted) - MAX_DIFF_LINES} more" if len(accepted) > MAX_DIFF_LINES else ""
+            details.append(
+                f"<details><summary><code>{tag}</code>: {len(accepted)} differences reviewed for {line_of(version)} "
+                "(contract-tests/watch/reviewed-changes.json)</summary>\n\n```diff\n" + "\n".join(shown) + more + "\n```\n</details>\n"
+            )
         if changes:
             reasons.append(f"observed facts changed in {tag} ({len(changes)})")
             shown = changes[:MAX_DIFF_LINES]
@@ -158,11 +207,12 @@ def main():
         lines += [
             "A new release that is green with no changed facts can be added to `TandoorVersionTable.TESTED`",
             "(`:core:network`) in the next app version. A red run or a changed fact needs a look at",
-            "the contract-recordings artifact of the run before anyone upgrades a server.",
+            "the contract-recordings artifact of the run before anyone upgrades a server; once the app",
+            "handles a new line, its reviewed differences go into contract-tests/watch/reviewed-changes.json.",
             "",
         ]
     else:
-        lines += ["Everything is green, every release is tested and no observed fact changed.", ""]
+        lines += ["Everything is green, every release is tested and no observed fact changed without a review.", ""]
     lines += details
     report = "\n".join(lines)
     with open(args.out, "w", encoding="utf-8") as file:
