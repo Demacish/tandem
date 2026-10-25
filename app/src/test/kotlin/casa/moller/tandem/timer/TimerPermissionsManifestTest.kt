@@ -16,8 +16,8 @@ import org.robolectric.annotation.Config
  * The timer permissions in the app's MERGED manifest (plan 8.1, 4.4; docs/BYGGE.md "Timers"):
  * core:timer declares both exact-alarm permissions and each flavor removes the one that does not
  * apply. core:timer's own tests only see the library manifest, so this checks that the flavor
- * manifests really take effect. CI runs the sideload variant; the play branch documents (and checks
- * when testPlayDebugUnitTest runs) the other one.
+ * manifests really take effect. CI's `:app:ciTest` runs it for both flavors (testPlayDebugUnitTest
+ * runs only this test), so a restricted permission reaching the play build fails the PR.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class)

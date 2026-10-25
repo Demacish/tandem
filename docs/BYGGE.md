@@ -406,11 +406,27 @@ bara via `core:data`.
 - **Ringtjänsten (`ring/TimerRingingService`)** körs **bara medan något ringer**, aldrig under
   nedräkningen: typ `systemExempted` när exakta larm är tillåtna (Android 14+, appar med exakta
   larm som fortsätter ett larm i bakgrunden), annars `shortService` (systemet stoppar den efter
-  ca 3 min, `onTimeout`). Den håller ett partial wake lock, visar gruppsammanfattningen ("2 timers
-  ringer", "Stoppa alla") och stoppar sig själv senast efter 5,5 min. Ljudet kommer från
-  larmnotisen; **utan notisbehörighet** spelar tjänsten larmljudet och vibrationen själv, så en
-  timer ringer ändå. Går tjänsten inte att starta (play, inexakt larm från bakgrunden) ringer
-  notisen ensam. *Inte verifierat på en riktig enhet eller emulator ännu* (röktestet kör inga
+  ca 3 min, `onTimeout`). Den håller ett partial wake lock, visar en egen tyst notis ("2 timers
+  ringer", "Stoppa alla") och stoppar sig själv senast efter 5,5 min (då tystar den först det som
+  ringt för länge via motorn). Ljudet kommer från larmnotisen; **när den inte kan låta**
+  (`TimerSystem.alarmNotificationAudible`: ingen notisbehörighet, eller kanalen `timer_alarm`
+  avstängd, sänkt under "standard" – skuggans "Tyst" – eller utan ljud) spelar tjänsten
+  larmljudet och vibrationen själv, och `TimerCapabilities.alarmMayBeSilent` varnar i kokläget,
+  inställningarna och Behörigheter. Går tjänsten inte att starta (play, inexakt larm från
+  bakgrunden) ringer notisen ensam.
+  - *Granskningsfixar 0.2.0 (fix-data):* tjänstens notis är **ingen gruppsammanfattning** (tar
+    appen bort en sammanfattning tar systemet barnen med sig, alltså larmen och "Ringde 18:45").
+    Den ligger kvar på `timer_alarm` (kanaltabellen 8.7 är fast) men är tyst; tystar användaren
+    kanalen via den märks det ovan. Tjänsten **stoppas aldrig utifrån** (`stopService` direkt efter
+    `startForegroundService` kan krascha appen innan `startForeground`): `AndroidRinger.stop`
+    skickar ett startkommando och tjänsten stoppar sig själv med sitt start-id när inget ringer.
+    Android spelar **ett notisljud åt gången**: när ett av två ringande larm stoppas postas det
+    nyaste som fortfarande ringer om (`realertAlarm`, avbryt + ny post), så att dess ljud börjar
+    igen. Låsskärmslarmet uppdaterar raderna på plats (TalkBack-fokus stannar) och sätter
+    fönstertiteln "Pasta: tiden är ute". En skrivning som misslyckas (full disk) görs om vid nästa
+    ändring, en fil som inte går att läsa skrivs aldrig över och läses igen, och varje ringlarm
+    bär sin timer (`EXTRA_TIMER_SNAPSHOT`), så att den ringer även i en ny process vars fil saknar
+    den. *Inte verifierat på en riktig enhet eller emulator ännu* (röktestet kör inga
   timers); fungerar inte `systemExempted` byter vi till `mediaPlayback` och skriver varför här.
 - **Nedräkningen (`notification/AndroidTimerNotifier`):** en pågående, tyst notis per löpande eller
   pausad timer (`timer_ongoing`): nedräknande kronometer till `endsAt`, "Klar 18:45", Pausa/+1 min
@@ -440,7 +456,8 @@ bara via `core:data`.
   recept lämnas orört (sidan och Klart!-utkastet ligger i dess post).
 - **Klockappen:** `TimerMode.CLOCK_APP` skickar `AlarmClock.ACTION_SET_TIMER` med längd (1 s–24 h),
   etikett och `EXTRA_SKIP_UI`; Tandem följer inte timern. Ingen klockapp →
-  `ClockAppUnavailable`.
+  `ClockAppUnavailable`. En timer över 24 h (`TimerSystem.MAX_CLOCK_APP_DURATION`, t.ex.
+  "Marinera 48 timmar") körs i Tandem i stället, så att den inte ringer ett dygn för tidigt.
 - **Behörighet i sammanhanget:** `onNotificationPermissionResult` sparar att frågan ställts
   (`AppSettings.notificationPermissionAsked`) och postar notiserna för timers som redan löper.
   `TimerCapabilities` läses vid körning (`platform/AndroidTimerSystem`): manifestet avgör vilka
@@ -463,8 +480,9 @@ bara via `core:data`.
   `AndroidTimerSystem` (behörigheter, avstängd larmkanal, klockappens intent), systemhändelserna,
   tjänstetypen och manifestet. `TimerStoreTest`: filformatet. I `:app` kontrollerar
   `TimerPermissionsManifestTest` det sammanslagna manifestet per flavor (sideload: `USE_EXACT_ALARM`
-  och `USE_FULL_SCREEN_INTENT`, inte `SCHEDULE_EXACT_ALARM`; play tvärtom); CI kör sideload, och
-  play-bygget (`bundlePlayRelease`) prövas av Release-flödets manuella torrkörning.
+  och `USE_FULL_SCREEN_INTENT`, inte `SCHEDULE_EXACT_ALARM`; play tvärtom). CI kör båda:
+  `:app:ciTest` kör alla appens tester i sideload och dessutom `testPlayDebugUnitTest`, filtrerat
+  till just det testet (Release-flödets torrkörning bygger play men granskar inte manifestet).
 <!-- /Fas 1b timer -->
 
 <!-- Fas 1b kokläge -->
@@ -776,7 +794,9 @@ datadelen i `:core:datastore` och `:core:sync`.
   15 min/1 h/6 h/"bara när jag öppnar appen" (`SyncStarter` följer `SyncInterval` och kontot:
   `WorkManagerSyncScheduler.schedulePeriodic(interval)` med `UPDATE`, `MANUAL`, utloggning och
   demoläget avbryter den periodiska synken). "Ladda ner alla recept" (`downloadAllRecipes`): varje
-  synk hämtar även detaljer och bilder för recept som saknar dem, högst
+  synk hämtar även detaljer och bilder för recept som saknar dem (och, sedan granskningen av
+  0.2.0, detaljer som är äldre än receptets `updated_at` på servern, med 5 min marginal för
+  klockskillnad; bilder som redan ligger i Coils diskcache hoppas över även i en ny process), högst
   `SyncSchedule.MAX_DOWNLOAD_ALL_PER_RUN` (400) per körning och fortfarande två åt gången; att slå
   på den startar en synk direkt. Förloppet och en uppskattning (genomsnittlig storlek per sparat
   recept med bild) kommer från `OfflineStorageRepository` (`DefaultOfflineStorageRepository`:
@@ -804,8 +824,11 @@ datadelen i `:core:datastore` och `:core:sync`.
   `diagnostics.preferences_pb`). Kallstart: från `Process.getStartRequestedUptimeMillis` till
   första skärmen med innehåll (Idag eller receptlistan anropar `reportFullyDrawn` via `core:ui`s
   `ReportContentReady`), bara när processen startades för att visa appen (`ColdStart` i `:app`)
-  och högst 30 s. Full synk: en lyckad körning som läste alla översikter (första synken eller en
-  full omläsning), från start till klar, med antalet recept i indexet.
+  och högst 30 s. Full synk: en lyckad körning som läste alla översikter **för första gången**
+  (inget tidigare synkdatum, alltså första synken eller ett nytt konto), från start till slutet av
+  de vanliga detaljerna (index, översikter, fästa/planerade/visade detaljer), med antalet recept i
+  indexet. "Ladda ner alla"-detaljer, bilder och utkorgen räknas inte, och en senare omläsning
+  (ett recept blev synligt) skriver inte över värdet (granskningen av 0.2.0).
 - **Banner för hållen synk** (`status/SyncHeldBackBanner`, 1a:s öppna punkt): `SyncPause.BLOCKED`
   ("Servern nekar Tandem just nu") och `CIRCUIT_BREAKER` ("Synken tar en kort paus") ovanför
   flikarna med "Försök igen" (en synk som användaren bad om; den går förbi kretsbrytaren, en

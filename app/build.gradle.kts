@@ -203,8 +203,15 @@ androidComponents {
 // CI entry points (see .github/workflows/pr.yml): the sideload debug variant is the reference.
 tasks.register("ciTest") {
     group = "verification"
-    description = "Runs the app unit tests for the sideload debug variant."
-    dependsOn("testSideloadDebugUnitTest")
+    description = "Runs the app unit tests for the sideload debug variant, and the play variant's manifest test."
+    dependsOn("testSideloadDebugUnitTest", "testPlayDebugUnitTest")
+}
+
+// --- fix-data (0.2.0 review): the play build must never ask for USE_EXACT_ALARM or
+// USE_FULL_SCREEN_INTENT (plan 8.1, 4.4). The play variant runs only the merged-manifest test
+// (TimerPermissionsManifestTest); every other app test runs on sideload. ---
+tasks.withType<Test>().matching { it.name == "testPlayDebugUnitTest" }.configureEach {
+    filter.includeTestsMatching("*TimerPermissionsManifestTest")
 }
 tasks.register("ciLint") {
     group = "verification"

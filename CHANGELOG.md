@@ -51,6 +51,11 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   Android-emulator: recept offline i flygplansläge, två timers samtidigt som båda larmar på låst
   skärm, vridning mitt i, "Klart!" med betyg och kommentar som skickas exakt en gång när nätet
   kommer tillbaka, och samma sak i demoläget utan server.
+- **Larm och synk efter granskningen:** ett larm låter även om larmkanalen satts till "Tyst"
+  eller saknar ljud (och kokläget varnar), när två larm ringer tystnar inte det ena när det andra
+  stoppas, "Ringde 18:45" blir kvar, en timer över 24 h stannar i Tandem i klockappsläget, "en
+  kvarts liter" blir ingen timer medan "ett dygn" och "30 s" blir det, och *Ladda ner alla
+  recept* hämtar om recept som ändrats på servern och når alla bilder.
 
 ## [0.1.0] – 2026-10-16
 
