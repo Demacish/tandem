@@ -298,6 +298,13 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase2ContractTest'
 
+      # Fas 2 (inköp-data lane): the shopping list's writes exactly as the app's outbox sends them.
+      # A step of its own after Phase2ContractTest, so it can never change that test's facts.
+      - name: Contract tests (Fas 2, the app's shopping writes)
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.ShoppingWritesContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)

@@ -61,7 +61,8 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
     private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val checked = (body["checked"] as? JsonPrimitive)?.booleanOrNull == true
-        val createBody = JsonObject(body - "checked")
+        // `checked` is sent with a bulk call after the create; `ids` never belongs in a create body.
+        val createBody = JsonObject(body - "checked" - "ids")
         val existing = if (row.attempts > 0) findLostCreate(remote, createBody) else null
         val created = existing ?: when (val sent = caller.call(remote, background = true) { shopping.createEntry(createBody) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)

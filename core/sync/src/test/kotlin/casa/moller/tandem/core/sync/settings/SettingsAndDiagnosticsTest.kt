@@ -338,6 +338,7 @@ class SettingsAndDiagnosticsTest {
         databases = graph.databases,
         crashLogs = crashes,
         clock = TestClock(),
+        dropped = graph.droppedChanges,
     )
 
     private companion object {

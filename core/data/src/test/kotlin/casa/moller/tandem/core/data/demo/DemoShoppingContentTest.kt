@@ -108,8 +108,8 @@ class DemoShoppingContentTest {
         if (expected is JsonObject && actual is JsonObject) {
             assertEquals("keys of $label", expected.keys, actual.keys)
             for (key in expected.keys) assertSameShape("$label.$key", expected.getValue(key), actual.getValue(key))
-        } else if (expected is JsonArray && actual is JsonArray && expected.isNotEmpty() && actual.isNotEmpty()) {
-            assertSameShape("$label[0]", expected[0], actual[0])
+        } else if (expected is JsonArray && actual is JsonArray) {
+            if (expected.isNotEmpty() && actual.isNotEmpty()) assertSameShape("$label[0]", expected[0], actual[0])
         }
     }
 

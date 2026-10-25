@@ -8,6 +8,7 @@ import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.ShoppingEntryEntity
 import casa.moller.tandem.core.database.entity.ShoppingListRecipeEntity
 import casa.moller.tandem.core.model.error.Outcome
@@ -217,14 +218,20 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         for (entry in context.entries(ids)) {
             if (entry.checked == checked) continue
             context.save(entry.copy(checked = checked, completedAt = if (checked) context.now else null, updatedAt = context.now))
-            context.queue(
-                entry,
-                OutboxOps.BULK_CHECK,
-                ShoppingPayloads.check(entry.serverId ?: entry.localId, checked),
-                baseSnapshot = ShoppingPayloads.checkSnapshot(!checked),
-                refs = ShoppingPayloads.checkRefs(entry.serverId ?: entry.localId),
-                batchKey = ShoppingPayloads.checkBatchKey(checked),
-            )
+            if (context.hasUnsentCreate(entry)) {
+                // Not on the server yet: the check becomes part of its CREATE (sent with a bulk call
+                // right after it, see ShoppingEntryOutboxHandler); no temporary id in a payload.
+                context.queue(entry, OutboxOps.PATCH, ShoppingPayloads.checkSnapshot(checked))
+            } else {
+                context.queue(
+                    entry,
+                    OutboxOps.BULK_CHECK,
+                    ShoppingPayloads.check(entry.serverId ?: entry.localId, checked),
+                    baseSnapshot = ShoppingPayloads.checkSnapshot(!checked),
+                    refs = ShoppingPayloads.checkRefs(entry.serverId ?: entry.localId),
+                    batchKey = ShoppingPayloads.checkBatchKey(checked),
+                )
+            }
         }
     }
 
@@ -436,7 +443,7 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
                         localId = listRecipe.localId,
                         payload = ShoppingPayloads.createListRecipe(request.recipeId, request.servings, "", mealPlanId),
                         refs = ShoppingPayloads.createListRecipeRefs(mealPlanId),
-                        dependsOn = mealPlanId?.takeIf { it < 0 }?.let { createRowOf(OutboxEntities.MEAL_PLAN, it) },
+                        dependsOn = mealPlanId?.takeIf { it < 0 }?.let { createRowOf(OutboxEntities.MEAL_PLAN, it)?.id },
                         createdAtEpochMillis = now,
                     ),
                 )
@@ -484,7 +491,7 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
                     baseSnapshot = baseSnapshot,
                     refs = refs,
                     batchKey = batchKey,
-                    dependsOn = if (serverId == null) createRowOf(OutboxEntities.SHOPPING_ENTRY, entry.localId) else null,
+                    dependsOn = if (serverId == null) sendingCreateOf(OutboxEntities.SHOPPING_ENTRY, entry.localId) else null,
                     createdAtEpochMillis = now,
                 ),
             )
@@ -501,7 +508,7 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
                     localId = if (serverId == null) listRecipe.localId else null,
                     serverId = serverId,
                     payload = payload,
-                    dependsOn = if (serverId == null) createRowOf(OutboxEntities.SHOPPING_LIST_RECIPE, listRecipe.localId) else null,
+                    dependsOn = if (serverId == null) sendingCreateOf(OutboxEntities.SHOPPING_LIST_RECIPE, listRecipe.localId) else null,
                     createdAtEpochMillis = now,
                 ),
             )
@@ -514,7 +521,25 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         }
 
         /** The CREATE row of temporary id [localId] (any state), if it is still in the outbox. */
-        private suspend fun createRowOf(entity: String, localId: Long): Long? =
-            database.outboxDao().getAllFor(accountId, entity).firstOrNull { it.op == OutboxOps.CREATE && it.localId == localId }?.id
+        private suspend fun createRowOf(entity: String, localId: Long): OutboxEntity? =
+            database.outboxDao().getAllFor(accountId, entity).firstOrNull { it.op == OutboxOps.CREATE && it.localId == localId }
+
+        /** True while [entry] never reached the server and its CREATE waits unsent (a change merges into it). */
+        suspend fun hasUnsentCreate(entry: ShoppingEntryEntity): Boolean {
+            if (!remote || entry.serverId != null) return false
+            return createRowOf(OutboxEntities.SHOPPING_ENTRY, entry.localId)?.state?.let { it in UNSENT } == true
+        }
+
+        /**
+         * The CREATE a change of an offline object must wait for: only one being sent (or failed). An
+         * unsent CREATE takes the change itself (`OutboxMerge`), and depending on it would block it.
+         */
+        private suspend fun sendingCreateOf(entity: String, localId: Long): Long? =
+            createRowOf(entity, localId)?.takeIf { it.state !in UNSENT }?.id
+    }
+
+    private companion object {
+        /** States of an outbox row that `OutboxDao.enqueue` merges with. */
+        val UNSENT: Set<OutboxState> = setOf(OutboxState.PENDING, OutboxState.PAUSED)
     }
 }

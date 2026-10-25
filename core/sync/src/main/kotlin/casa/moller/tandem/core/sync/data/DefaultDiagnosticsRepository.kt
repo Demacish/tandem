@@ -22,6 +22,7 @@ import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
+import casa.moller.tandem.core.sync.shopping.DroppedChanges
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
@@ -60,6 +61,8 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val crashLogs: CrashLogStore,
     private val clock: Clock,
+    // Phase 2 (inköp-data lane): shopping changes dropped instead of sent, with the reason.
+    private val dropped: DroppedChanges,
 ) : DiagnosticsRepository {
 
     override fun observeDiagnostics(): Flow<DiagnosticsSnapshot> = combine(store.timings, serverStatus.observeStatus()) { timings, server ->
@@ -118,6 +121,7 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
             section("Timers") { appendTimers(timer, timers.timers.value.size) }
             section("Sync") { appendSync(sync) }
             section("Outbox") { appendOutbox() }
+            section("Dropped shopping changes") { appendDropped() }
             section("Last crash") { appendCrash() }
         }
     }
@@ -180,6 +184,18 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         line("Last error", sync.lastError?.let(::describe) ?: "none")
         line("Paused", sync.pause?.name ?: "no")
         line("Pending changes", sync.pendingChanges.toString())
+    }
+
+    /** Per operation, entity and reason (deleted elsewhere before sending, or a 404); no ids, no names. */
+    private fun StringBuilder.appendDropped() {
+        val recent = dropped.recent.value
+        if (recent.isEmpty()) {
+            line("Since start", "0")
+            return
+        }
+        recent.groupingBy { "${it.op} ${it.entity} (${it.reason})" }.eachCount().toSortedMap().forEach { (kind, count) ->
+            line(kind, count.toString())
+        }
     }
 
     private suspend fun StringBuilder.appendOutbox() {
