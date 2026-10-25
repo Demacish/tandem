@@ -31,6 +31,9 @@ class TandoorApi internal constructor(
     val preferences: PreferenceService,
     /** Phase 1: cook log and view log. */
     val logs: LogService,
+    // --- Phase 2 (inköp-data lane): the shopping list, stores, aisles and the ingredient parser. ---
+    val shopping: ShoppingService,
+    val supermarkets: SupermarketService,
     /** Capability probes; see `CapabilityResolver`. */
     internal val probes: CapabilityProbeService,
     /** The client with this server's [AuthInterceptor]; for raw calls in tests and later image loading. */
@@ -72,6 +75,8 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             mealPlans = retrofit.create(MealPlanService::class.java),
             preferences = retrofit.create(PreferenceService::class.java),
             logs = retrofit.create(LogService::class.java),
+            shopping = retrofit.create(ShoppingService::class.java),
+            supermarkets = retrofit.create(SupermarketService::class.java),
             probes = retrofit.create(CapabilityProbeService::class.java),
             httpClient = client,
         )

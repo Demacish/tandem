@@ -72,6 +72,24 @@ class DtoFixturesTest {
         Route("GET", "/api/cook-log/", PageDto.serializer(CookLogDto.serializer())),
         Route("POST", "/api/cook-log/", CookLogDto.serializer()),
         Route("POST", "/api/view-log/", ViewLogDto.serializer()),
+        // --- Phase 2 (inköp-data lane): the shopping list, stores, aisles and the parser. ---
+        Route("GET", "/api/shopping-list-entry/", PageDto.serializer(ShoppingListEntryDto.serializer())),
+        Route("POST", "/api/shopping-list-entry/", ShoppingListEntryDto.serializer()),
+        Route("GET", "/api/shopping-list-entry/\\d+/", ShoppingListEntryDto.serializer()),
+        Route("PATCH", "/api/shopping-list-entry/\\d+/", ShoppingListEntryDto.serializer()),
+        Route("POST", "/api/shopping-list-entry/bulk/", ShoppingBulkCheckDto.serializer()),
+        Route("POST", "/api/shopping-list-recipe/", ShoppingListRecipeDto.serializer()),
+        Route("PATCH", "/api/shopping-list-recipe/\\d+/", ShoppingListRecipeDto.serializer()),
+        Route("GET", "/api/shopping-list/", PageDto.serializer(ShoppingListDto.serializer())),
+        Route("POST", "/api/shopping-list/", ShoppingListDto.serializer()),
+        Route("GET", "/api/supermarket/", PageDto.serializer(SupermarketDto.serializer())),
+        Route("POST", "/api/supermarket/", SupermarketDto.serializer()),
+        Route("GET", "/api/supermarket-category/", PageDto.serializer(SupermarketCategoryDto.serializer())),
+        Route("POST", "/api/supermarket-category/", SupermarketCategoryDto.serializer()),
+        Route("GET", "/api/supermarket-category-relation/", PageDto.serializer(SupermarketCategoryRelationDto.serializer())),
+        Route("POST", "/api/supermarket-category-relation/", SupermarketCategoryRelationDto.serializer()),
+        Route("PATCH", "/api/supermarket-category-relation/\\d+/", SupermarketCategoryRelationDto.serializer()),
+        Route("POST", "/api/ingredient-parser/post/", IngredientParserResponseDto.serializer()),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */

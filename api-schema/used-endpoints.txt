@@ -56,3 +56,21 @@ POST /api/view-log/
 GET /api/view-log/
 GET /api/household/
 GET /api/inventory-location/
+
+# --- Fas 2 (inköp-data lane): the shopping list, stores, aisles, foods and the parser ---
+# The list is read with updated_after (URL-encoded server timestamp) and in full with the window
+# rule (plan 3.5, FACTS "Fas 2 b"); writes go through the outbox (docs/BYGGE.md "Fas 2 – kontrakt").
+GET /api/shopping-list-entry/
+POST /api/shopping-list-entry/
+PATCH /api/shopping-list-entry/{id}/
+DELETE /api/shopping-list-entry/{id}/
+POST /api/shopping-list-entry/bulk/
+POST /api/shopping-list-recipe/
+PATCH /api/shopping-list-recipe/{id}/
+DELETE /api/shopping-list-recipe/{id}/
+GET /api/shopping-list/
+GET /api/supermarket/
+GET /api/supermarket-category/
+PATCH /api/supermarket-category-relation/{id}/
+PATCH /api/food/{id}/
+POST /api/ingredient-parser/post/
