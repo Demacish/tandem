@@ -48,6 +48,7 @@ import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
+import casa.moller.tandem.core.designsystem.icon.CollectionsBookmark
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
@@ -61,6 +62,7 @@ import casa.moller.tandem.core.ui.AppStatusChip
 import casa.moller.tandem.core.ui.DemoBanner
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.toErrorText
+import casa.moller.tandem.feature.recipes.navigation.BooksKey
 import casa.moller.tandem.feature.shell.AccountSummary
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.SettingsSummary
@@ -140,6 +142,17 @@ internal fun MoreScreen(
                         ShellMode.Demo -> DemoBanner(onConnect = onConnectTandoor)
 
                         ShellMode.Unavailable -> Unit
+                    }
+
+                    // Phase 2 (books lane): Mer → Receptböcker (plan 6.1 "Mer: Böcker").
+                    SettingsGroup {
+                        SettingsRow(
+                            icon = TandemIcons.CollectionsBookmark,
+                            title = stringResource(R.string.shell_more_books),
+                            supporting = stringResource(R.string.shell_more_books_supporting),
+                            onClick = { onOpenPage(BooksKey) },
+                            selected = selectedPage == BooksKey,
+                        )
                     }
 
                     // Phase 1b (inställningar lane): the settings sub-screens (plan 6.2 "Inställningar").

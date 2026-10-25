@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.cooklog.CookLogRepository
+import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.settings.SettingsRepository
@@ -81,6 +82,8 @@ class CookViewModel @AssistedInject constructor(
     private val cookLog: CookLogRepository,
     syncRepository: SyncRepository,
     private val clock: Clock,
+    // Phase 2 (books lane, #42): a guest's "Klart!" saves nothing.
+    permissions: SpacePermissionsRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -158,7 +161,8 @@ class CookViewModel @AssistedInject constructor(
         timerSources,
         sessionState,
         settingsRepository.settings,
-    ) { recipe, timers, session, app -> buildState(recipe, timers, session, app) }
+        permissions.permissions.map { it.readOnly }.distinctUntilChanged(),
+    ) { recipe, timers, session, app, readOnly -> buildState(recipe, timers, session, app).copy(readOnly = readOnly) }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),

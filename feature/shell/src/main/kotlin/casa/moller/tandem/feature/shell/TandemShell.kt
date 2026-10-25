@@ -65,6 +65,10 @@ import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
+import casa.moller.tandem.feature.recipes.books.BookPanePlaceholder
+import casa.moller.tandem.feature.recipes.books.FAVORITES_SELECTION
+import casa.moller.tandem.feature.recipes.books.RecipeCollection
+import casa.moller.tandem.feature.recipes.books.WANT_TO_COOK_SELECTION
 import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
@@ -95,6 +99,7 @@ import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
+import casa.moller.tandem.feature.shell.navigation.isBookPage
 import casa.moller.tandem.feature.shell.navigation.isMorePage
 import casa.moller.tandem.feature.shell.navigation.rememberShellNavigationState
 import casa.moller.tandem.feature.shell.settings.RouteSettingsPages
@@ -329,6 +334,8 @@ internal fun ShellScaffold(
                     onOpenRecipes = { navigation.selectTab(ShellTab.RECIPES) },
                     onOpenWeek = { navigation.selectTab(ShellTab.WEEK) },
                     onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                    // Phase 2 (books lane): "Visa alla" on the "Vill laga" row.
+                    onOpenWantToCook = { navigation.navigate(WantToCookKey) },
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {
@@ -339,6 +346,15 @@ internal fun ShellScaffold(
                         navigation.navigate(RecipeDetailKey(id, inListDetail = true), replace = { it is RecipeDetailKey })
                     },
                     selectedRecipeId = (selected as? RecipeDetailKey)?.recipeId,
+                    // Phase 2 (books lane): the collections row; on wide windows beside the list.
+                    onOpenCollection = { collection ->
+                        val key = when (collection) {
+                            RecipeCollection.FAVORITES -> FavoritesKey
+                            RecipeCollection.WANT_TO_COOK -> WantToCookKey
+                            RecipeCollection.BOOKS -> BooksKey
+                        }
+                        navigation.navigate(key, replace = { it is RecipeDetailKey || it.isBookPage })
+                    },
                 )
             }
             entry<RecipeDetailKey>(
@@ -396,25 +412,35 @@ internal fun ShellScaffold(
                 )
             }
             entry<ShoppingHistoryKey> { features.ShoppingHistory(onBack = { navigation.goBack() }) }
-            entry<BooksKey> {
+            // Phase 2 (books lane): the books are a list-detail scene of their own on wide windows
+            // (Stitch receptbok_master_detail_surfplatta): a picked book replaces the open one.
+            entry<BooksKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { BookPanePlaceholder() })) {
+                val open = navigation.stackOf(navigation.currentTab).lastOrNull { it.isBookPage }
+                val replaceOpen: (NavKey) -> Boolean = { key -> key.isBookPage || key is RecipeDetailKey }
                 features.Books(
-                    onOpenBook = { navigation.navigate(BookDetailKey(it)) },
-                    onOpenFavorites = { navigation.navigate(FavoritesKey) },
-                    onOpenWantToCook = { navigation.navigate(WantToCookKey) },
+                    onOpenBook = { navigation.navigate(BookDetailKey(it), replace = replaceOpen) },
+                    onOpenFavorites = { navigation.navigate(FavoritesKey, replace = replaceOpen) },
+                    onOpenWantToCook = { navigation.navigate(WantToCookKey, replace = replaceOpen) },
                     onBack = { navigation.goBack() },
+                    selectedBookId = when (open) {
+                        is BookDetailKey -> open.bookId
+                        FavoritesKey -> FAVORITES_SELECTION
+                        WantToCookKey -> WANT_TO_COOK_SELECTION
+                        else -> null
+                    },
                 )
             }
-            entry<BookDetailKey> { key ->
+            entry<BookDetailKey>(metadata = ListDetailSceneStrategy.detailPane()) { key ->
                 features.BookDetail(
                     bookId = key.bookId,
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                     onBack = { navigation.goBack() },
                 )
             }
-            entry<FavoritesKey> {
+            entry<FavoritesKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 features.Favorites(onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) }, onBack = { navigation.goBack() })
             }
-            entry<WantToCookKey> {
+            entry<WantToCookKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 features.WantToCook(
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                     // The plan-meal sheet for today; the sheet lets the user pick the day.

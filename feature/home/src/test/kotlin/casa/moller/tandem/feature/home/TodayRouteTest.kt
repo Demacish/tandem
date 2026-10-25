@@ -18,6 +18,8 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.testing.data.FakeHomeRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeBookRepository
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.home.ui.TODAY_LIST_TAG
@@ -52,6 +54,7 @@ class TodayRouteTest {
                     onOpenRecipes = { openedRecipesTab++ },
                     onOpenWeek = { openedWeek++ },
                     viewModel = viewModel,
+                    booksViewModel = TodayBooksViewModel(FakeRecipeBookRepository(), FakeSpacePermissionsRepository()),
                 )
             }
         }

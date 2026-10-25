@@ -26,4 +26,7 @@
     <!-- Steps. -->
     <string name="ui_recipe_step_number">Step %1$d</string>
     <string name="ui_recipe_step_number_title">Step %1$d: %2$s</string>
+    <!-- Phase 2 (books lane, #17): the heart on a recipe card (a toggle: TalkBack adds on/off) and its text when it cannot be changed (guest). -->
+    <string name="ui_recipe_favorite">Favourite</string>
+    <string name="ui_recipe_favorite_description">A favourite</string>
 </resources>

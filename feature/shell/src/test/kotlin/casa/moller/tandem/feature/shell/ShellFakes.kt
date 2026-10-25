@@ -24,6 +24,7 @@ import casa.moller.tandem.core.ui.timer.LocalTimerTicks
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
+import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.ui.PlaceholderTab
@@ -175,12 +176,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenRecipes: () -> Unit,
         onOpenWeek: () -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenWantToCook: () -> Unit,
     ) {
         Placeholder(ShellTab.TODAY)
     }
 
     @Composable
-    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?) {
+    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?, onOpenCollection: (RecipeCollection) -> Unit) {
         Placeholder(ShellTab.RECIPES)
     }
 
@@ -261,8 +263,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         Page("Shop for the week ${key.weekStart}", onDone)
 
     @Composable
-    override fun Books(onOpenBook: (Long) -> Unit, onOpenFavorites: () -> Unit, onOpenWantToCook: () -> Unit, onBack: () -> Unit) =
-        Page("Books", onBack)
+    override fun Books(
+        onOpenBook: (Long) -> Unit,
+        onOpenFavorites: () -> Unit,
+        onOpenWantToCook: () -> Unit,
+        onBack: () -> Unit,
+        selectedBookId: Long?,
+    ) = Page("Books", onBack)
 
     @Composable
     override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) = Page("Book $bookId", onBack)

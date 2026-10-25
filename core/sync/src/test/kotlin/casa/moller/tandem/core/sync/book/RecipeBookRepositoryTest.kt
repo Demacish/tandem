@@ -279,7 +279,7 @@ class RecipeBookRepositoryTest {
     // ------------------------------------------------------------------ demo mode
 
     @Test
-    fun demoModeHasFavouritesSharedBooksAndWantToCookWithoutTheNetwork() = runBlocking {
+    fun demoModeHasFavouritesSharedBooksAndWantToCookWithoutTheNetwork(): Unit = runBlocking {
         val graph = SyncTestGraph()
         try {
             graph.sources.source.value = ActiveSource.Demo

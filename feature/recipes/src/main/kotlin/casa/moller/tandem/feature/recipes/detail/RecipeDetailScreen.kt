@@ -109,7 +109,8 @@ internal val TwoPaneMinWidth = 720.dp
  *   holds the photo (height capped), the servings picker and the ingredients, so they stay in
  *   view while the right pane (title, facts, description, steps) scrolls through the steps.
  *
- * No shopping, planning or favourite actions yet (Phase 2); "Börja laga" opens cook mode (Phase 1b).
+ * "Börja laga" opens cook mode (Phase 1b); [bookActions] (Phase 2, books lane) shows "Favorit",
+ * "Vill laga" and "Lägg i bok" under the title.
  *
  * Amounts and step texts arrive ready to show (core:domain `RecipeDisplay`, web parity); the
  * screen only reports how numbers are written in its locale ([RecipeDetailAction.SetNumberStyle]).
@@ -131,6 +132,7 @@ fun RecipeDetailScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onStartCooking: (() -> Unit)? = null,
+    bookActions: (@Composable () -> Unit)? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val scrollState = rememberScrollState()
@@ -177,6 +179,7 @@ fun RecipeDetailScreen(
                 onOpenRecipe = onOpenRecipe,
                 onStartCooking = onStartCooking,
                 modifier = contentModifier,
+                bookActions = bookActions,
             )
         }
     }
@@ -245,11 +248,12 @@ private fun DetailContent(
     onOpenRecipe: (Long) -> Unit,
     onStartCooking: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    bookActions: (@Composable () -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     BoxWithConstraints(modifier = modifier) {
         if (maxWidth >= TwoPaneMinWidth && state.hasDetail) {
-            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe, onStartCooking)
+            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe, onStartCooking, bookActions)
         } else {
             Column(
                 modifier = Modifier
@@ -265,6 +269,7 @@ private fun DetailContent(
                 Notices(state)
                 HeaderImage(state, Modifier.fillMaxWidth().aspectRatio(PHOTO_ASPECT_RATIO))
                 Header(state)
+                bookActions?.invoke()
                 if (!state.hasDetail) {
                     MissingDetail(state = state, onAction = onAction)
                 } else {
@@ -292,6 +297,7 @@ private fun TwoPaneContent(
     onOpenUrl: (String) -> Unit,
     onOpenRecipe: (Long) -> Unit,
     onStartCooking: (() -> Unit)?,
+    bookActions: (@Composable () -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     Row(
@@ -328,6 +334,7 @@ private fun TwoPaneContent(
             }
             Notices(state)
             Header(state)
+            bookActions?.invoke()
             Steps(state, onAction, onOpenRecipe)
             Source(state, onOpenUrl)
         }

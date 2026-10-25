@@ -320,6 +320,10 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/shopping-list/" to "fas2/shopping-list-list",
             "/api/supermarket/" to "fas2/supermarket-list",
             "/api/supermarket-category/" to "fas2/supermarket-category-list",
+            // Phase 2 (böcker lane): the role (guest mode) and the books are read with the small tables.
+            "/api/user-space/all_personal/" to "14-user-space-all-personal",
+            "/api/recipe-book/" to "fas1/recipe-book-list",
+            "/api/recipe-book-entry/" to "fas1/recipe-book-entry-list",
         )
         private val RECIPES_BY_ID = mapOf(
             "1" to "fas1/recipe-pyttipanna",

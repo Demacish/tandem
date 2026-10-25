@@ -291,4 +291,3 @@ internal class FakeBookTandoor(private val version: String) {
         private val RECIPE = Regex("^/api/recipe/(\\d+)/$")
     }
 }
-

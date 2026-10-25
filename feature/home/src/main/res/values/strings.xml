@@ -52,4 +52,8 @@
     <!-- Phase 1b (kokläge lane): cook mode for tonight's meal, at the planned servings. -->
     <string name="home_start_cooking">Cook</string>
     <string name="home_start_cooking_description">Cook %1$s</string>
+    <!-- Phase 2 (books lane): the "Want to cook" row (plan 3.7 B, 8.3). -->
+    <string name="home_section_want_to_cook">Want to cook</string>
+    <string name="home_section_want_to_cook_subtitle">What you want to cook soon</string>
+    <string name="home_want_to_cook_all">Show all</string>
 </resources>

@@ -107,4 +107,8 @@
     <!-- komplettering-3: servern uppdaterades och ingen notis kunde visas (plan B18). Visas en gång. -->
     <string name="shell_server_updated_title">Tandoor uppdaterades till %1$s</string>
     <string name="shell_server_updated_body">Tandem är testad med den här versionen. Allt fungerar som vanligt.</string>
+
+    <!-- Phase 2 (books lane): Mer → Receptböcker. -->
+    <string name="shell_more_books">Receptböcker</string>
+    <string name="shell_more_books_supporting">Favoriter, Vill laga och dina böcker</string>
 </resources>

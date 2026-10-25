@@ -1,8 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Phase 2 (grund lane): books, favourites and "Vill laga" (own file so the books lane does not collide with recipe strings). -->
+    <!-- Phase 2: books, favourites and "Want to cook" (plan 3.7, 6.2, #17; own file so the books lane does not collide with recipe strings). -->
     <string name="books_title">Recipe books</string>
     <string name="books_favorites_title">Favourites</string>
     <string name="books_want_to_cook_title">Want to cook</string>
-    <string name="books_placeholder_body">Your Tandoor recipe books come here, with everyone’s favourites and the shared “Want to cook” list.</string>
+    <plurals name="books_recipe_count">
+        <item quantity="one">%d recipe</item>
+        <item quantity="other">%d recipes</item>
+    </plurals>
+    <string name="books_favorites_supporting">Everyone’s favourites in the household</string>
+    <string name="books_want_to_cook_supporting">What you want to cook soon</string>
+    <string name="books_section_own">My books</string>
+    <string name="books_section_shared">Shared with me</string>
+    <string name="books_own_empty">You have no books of your own yet. Create one here, or put a recipe in a new book from the recipe.</string>
+    <!-- %1$s = the owner's name -->
+    <string name="books_shared_from">From %1$s · read only</string>
+    <string name="books_shared_read_only">Shared with you · read only</string>
+    <string name="books_smart">Smart book</string>
+    <string name="books_new">New book</string>
+    <string name="books_new_title">New recipe book</string>
+    <string name="books_new_name">Name</string>
+    <string name="books_new_create">Create</string>
+    <string name="books_cancel">Cancel</string>
+
+    <!-- One book -->
+    <string name="books_shared_by_title">Shared by %1$s</string>
+    <string name="books_shared_by_body">Only %1$s can add or remove recipes in this book. You can read it and cook from it.</string>
+    <string name="books_shared_by_someone_title">Shared with you</string>
+    <string name="books_shared_by_someone_body">Only the owner can add or remove recipes in this book. You can read it and cook from it.</string>
+    <string name="books_favorites_info_title">Everyone’s favourites</string>
+    <string name="books_favorites_info_body">The favourites of everyone in the household. Your heart puts a recipe in your own favourites book; only the others can take theirs out.</string>
+    <string name="books_want_to_cook_info_title">A shared queue</string>
+    <string name="books_want_to_cook_info_body">The recipes you want to cook soon. Everyone in the household can add and remove them, and the list is on the Tandoor web too.</string>
+    <string name="books_smart_info_title">Smart book</string>
+    <string name="books_smart_info_body">Tandoor picks the recipes with the book’s filter. Change the filter on the web.</string>
+    <string name="books_empty_book_title">No recipes yet</string>
+    <string name="books_empty_book_body">Open a recipe and tap “Add to book”.</string>
+    <string name="books_empty_shared_body">There are no recipes in this book yet.</string>
+    <string name="books_empty_smart_body">No recipe matches the filter, or the book needs a connection the first time it is opened.</string>
+    <string name="books_empty_favorites_title">No favourites yet</string>
+    <string name="books_empty_favorites_body">Tap the heart on a recipe and it lands here.</string>
+    <string name="books_empty_want_to_cook_title">Nothing in the queue</string>
+    <string name="books_empty_want_to_cook_body">Mark a recipe with “Want to cook” and it lands here.</string>
+    <string name="books_missing_title">The book is gone</string>
+    <string name="books_missing_body">It may have been deleted in Tandoor.</string>
+    <!-- %1$s = recipe name (TalkBack labels of the row buttons) -->
+    <string name="books_remove_from_book">Remove %1$s from the book</string>
+    <string name="books_remove_favorite">Remove %1$s from favourites</string>
+    <string name="books_remove_want_to_cook">Remove %1$s from Want to cook</string>
+    <string name="books_plan">Plan %1$s</string>
+
+    <!-- The recipe detail's buttons -->
+    <string name="books_action_favorite">Favourite</string>
+    <string name="books_action_want_to_cook">Want to cook</string>
+    <string name="books_action_add_to_book">Add to book</string>
+    <!-- %1$s = names, e.g. "Alex" or "Alex, Kim" -->
+    <string name="books_favorite_of">A favourite of %1$s</string>
+    <string name="books_sheet_title">Add to book</string>
+    <string name="books_sheet_empty">You have no books of your own yet.</string>
+    <string name="books_sheet_only_own">Only your own books are shown. A shared book can only be changed by its owner.</string>
+    <string name="books_sheet_create">Create and add</string>
+
+    <!-- Messages -->
+    <string name="books_added">Added to the book</string>
+    <string name="books_removed">Removed</string>
+    <string name="books_favorite_added">Saved in your favourites</string>
+    <string name="books_favorite_removed">Removed from your favourites</string>
+    <string name="books_want_to_cook_added">Added to Want to cook</string>
+    <string name="books_want_to_cook_removed">Removed from Want to cook</string>
+    <string name="books_error_read_only">You are a guest and cannot change anything.</string>
+    <string name="books_error_not_owner">Only the owner of the book can change it.</string>
+    <string name="books_error_failed">The change could not be saved.</string>
+
+    <!-- The Recipes tab's collections row -->
+    <string name="books_collection_books">Books</string>
+    <string name="books_pane_empty_title">Pick a book</string>
+    <string name="books_pane_empty_body">Its recipes open here.</string>
 </resources>

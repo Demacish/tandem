@@ -1,6 +1,9 @@
 package casa.moller.tandem.feature.shell.navigation
 
 import androidx.navigation3.runtime.NavKey
+import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
+import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
+import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import kotlinx.serialization.Serializable
 
 // Phase 1b (grund lane): the settings sub-screens under "Mer" (plan 6.2 "Inställningar",
@@ -44,3 +47,11 @@ internal val NavKey.isMorePage: Boolean
 
         else -> false
     }
+
+/**
+ * Phase 2 (books lane): a page opened from the books list (one book, Favoriter, Vill laga). On wide
+ * windows it is the detail pane beside the books (or beside the recipe list when it was opened from
+ * the Recipes tab's collections row), and picking another one replaces it.
+ */
+internal val NavKey.isBookPage: Boolean
+    get() = this is BookDetailKey || this == FavoritesKey || this == WantToCookKey

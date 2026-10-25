@@ -18,6 +18,7 @@ import casa.moller.tandem.feature.recipes.RecipesRoute
 import casa.moller.tandem.feature.recipes.books.BookDetailRoute
 import casa.moller.tandem.feature.recipes.books.BooksRoute
 import casa.moller.tandem.feature.recipes.books.FavoritesRoute
+import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.WantToCookRoute
 import casa.moller.tandem.feature.shopping.ShoppingHistoryRoute
 import casa.moller.tandem.feature.shopping.ShoppingListChoiceRoute
@@ -37,14 +38,21 @@ import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 internal interface ShellFeatures {
     /** The Today tab's first screen (feature:home); [onStartCooking] is tonight's "Laga" (Phase 1b). */
     @Composable
-    fun Today(onOpenRecipe: (Long) -> Unit, onOpenRecipes: () -> Unit, onOpenWeek: () -> Unit, onStartCooking: (Long, Double?) -> Unit)
+    fun Today(
+        onOpenRecipe: (Long) -> Unit,
+        onOpenRecipes: () -> Unit,
+        onOpenWeek: () -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
+        onOpenWantToCook: () -> Unit,
+    )
 
     /**
      * The Recipes tab's first screen and list pane (feature:recipes). [selectedRecipeId] is the
-     * recipe open in the detail pane beside it (highlighted), null when none.
+     * recipe open in the detail pane beside it (highlighted), null when none. [onOpenCollection]
+     * (Phase 2, books lane) opens Favoriter, Vill laga or the books from the collections row.
      */
     @Composable
-    fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?)
+    fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?, onOpenCollection: (RecipeCollection) -> Unit)
 
     /**
      * A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows.
@@ -123,9 +131,15 @@ internal interface ShellFeatures {
     @Composable
     fun WeekShopping(key: WeekShoppingKey, onDone: () -> Unit, onOpenShoppingList: () -> Unit)
 
-    /** All recipe books. */
+    /** All recipe books; [selectedBookId] is the book open beside them on wide windows (books lane). */
     @Composable
-    fun Books(onOpenBook: (Long) -> Unit, onOpenFavorites: () -> Unit, onOpenWantToCook: () -> Unit, onBack: () -> Unit)
+    fun Books(
+        onOpenBook: (Long) -> Unit,
+        onOpenFavorites: () -> Unit,
+        onOpenWantToCook: () -> Unit,
+        onBack: () -> Unit,
+        selectedBookId: Long?,
+    )
 
     /** One book. */
     @Composable
@@ -148,18 +162,20 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenRecipes: () -> Unit,
         onOpenWeek: () -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenWantToCook: () -> Unit,
     ) {
         TodayRoute(
             onOpenRecipe = onOpenRecipe,
             onOpenRecipes = onOpenRecipes,
             onOpenWeek = onOpenWeek,
             onStartCooking = onStartCooking,
+            onOpenWantToCook = onOpenWantToCook,
         )
     }
 
     @Composable
-    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?) {
-        RecipesRoute(onOpenRecipe = onOpenRecipe, selectedRecipeId = selectedRecipeId)
+    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?, onOpenCollection: (RecipeCollection) -> Unit) {
+        RecipesRoute(onOpenRecipe = onOpenRecipe, selectedRecipeId = selectedRecipeId, onOpenCollection = onOpenCollection)
     }
 
     @Composable
@@ -258,8 +274,20 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Books(onOpenBook: (Long) -> Unit, onOpenFavorites: () -> Unit, onOpenWantToCook: () -> Unit, onBack: () -> Unit) {
-        BooksRoute(onOpenBook = onOpenBook, onOpenFavorites = onOpenFavorites, onOpenWantToCook = onOpenWantToCook, onBack = onBack)
+    override fun Books(
+        onOpenBook: (Long) -> Unit,
+        onOpenFavorites: () -> Unit,
+        onOpenWantToCook: () -> Unit,
+        onBack: () -> Unit,
+        selectedBookId: Long?,
+    ) {
+        BooksRoute(
+            onOpenBook = onOpenBook,
+            onOpenFavorites = onOpenFavorites,
+            onOpenWantToCook = onOpenWantToCook,
+            onBack = onBack,
+            selectedBookId = selectedBookId,
+        )
     }
 
     @Composable

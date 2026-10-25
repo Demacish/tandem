@@ -23,6 +23,8 @@ import casa.moller.tandem.feature.home.ui.TodayScreen
  * @param viewModel injected by Hilt; tests pass one with fake repositories.
  * @param onStartCooking "Laga" on tonight's meal (Phase 1b): cook mode for the recipe at the
  *   planned servings.
+ * @param onOpenWantToCook Phase 2 (books lane): "Visa alla" on the "Vill laga" row.
+ * @param booksViewModel Phase 2 (books lane): the "Vill laga" row and the guest banner.
  */
 @Composable
 fun TodayRoute(
@@ -32,8 +34,11 @@ fun TodayRoute(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     onStartCooking: (recipeId: Long, servings: Double?) -> Unit = { _, _ -> },
+    onOpenWantToCook: () -> Unit = {},
+    booksViewModel: TodayBooksViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val books by booksViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val currentOpenRecipe by rememberUpdatedState(onOpenRecipe)
@@ -62,5 +67,7 @@ fun TodayRoute(
         },
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        books = books,
+        onOpenWantToCook = onOpenWantToCook,
     )
 }

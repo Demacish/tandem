@@ -28,7 +28,7 @@ class BookServicesTest {
     private val api by lazy { TandoorApiFactory(testClient()).create(tandoor.url("/"), { "tda_device_token" }) }
 
     @Test
-    fun theRoleAndTheHouseholdComeFromAllPersonal() = runBlocking {
+    fun theRoleAndTheHouseholdComeFromAllPersonal(): Unit = runBlocking {
         for (version in VERSIONS) {
             tandoor.enqueue(Fixture.load("fas2/user-space-guest", version).toMockResponse())
             val guest = api.userSpaces.allPersonal().single()
@@ -46,7 +46,7 @@ class BookServicesTest {
     }
 
     @Test
-    fun aBookIsCreatedWithItsSharedUsers() = runBlocking {
+    fun aBookIsCreatedWithItsSharedUsers(): Unit = runBlocking {
         for (version in VERSIONS) {
             tandoor.enqueue(Fixture.load("fas2/recipe-book-create-shared", version).toMockResponse())
             val text = """{"name":"Favoriter (contract-admin)","description":"","shared":[{"id":3}],"filter":null}"""
@@ -62,7 +62,7 @@ class BookServicesTest {
     }
 
     @Test
-    fun entriesAreCreatedListedByRecipeAndDeleted() = runBlocking {
+    fun entriesAreCreatedListedByRecipeAndDeleted(): Unit = runBlocking {
         tandoor.enqueue(Fixture.load("fas2/recipe-book-entry-create-as-shared-member").toMockResponse())
         val created = api.books.createEntry(Json.parseToJsonElement("""{"book":2,"recipe":8}""").jsonObject)
         assertEquals(2L, created.book)
@@ -84,7 +84,7 @@ class BookServicesTest {
     }
 
     @Test
-    fun wantToCookPatchesTheWholeKeywordList() = runBlocking {
+    fun wantToCookPatchesTheWholeKeywordList(): Unit = runBlocking {
         for (version in VERSIONS) {
             tandoor.enqueue(Fixture.load("fas2/recipe-patch-keywords-as-member", version).toMockResponse())
             val payload = Json.parseToJsonElement("""{"keywords":[{"name":"vill-laga"}]}""").jsonObject
@@ -99,7 +99,7 @@ class BookServicesTest {
     }
 
     @Test
-    fun aSavedFilterKeepsItsSearchAsAString() = runBlocking {
+    fun aSavedFilterKeepsItsSearchAsAString(): Unit = runBlocking {
         for (version in VERSIONS) {
             tandoor.enqueue(Fixture.load("fas2/custom-filter-create-ids", version).toMockResponse())
             val filter = api.books.createFilter(

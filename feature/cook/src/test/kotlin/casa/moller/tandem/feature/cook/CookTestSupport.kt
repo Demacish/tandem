@@ -20,6 +20,7 @@ import casa.moller.tandem.core.testing.data.FakeCookLogRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.FakeTimerController
 import casa.moller.tandem.core.testing.data.SampleRecipes
@@ -70,7 +71,7 @@ class CookFakes(
     val handle: SavedStateHandle = SavedStateHandle(),
 ) {
     internal fun viewModel(key: CookKey): CookViewModel =
-        CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock)
+        CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock, FakeSpacePermissionsRepository())
 
     /** Starts a timer from step [stepIndex]'s first suggestion of the sample pasta, like a tap on its button. */
     fun startTimer(stepIndex: Int, label: String, duration: Duration) {

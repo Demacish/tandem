@@ -105,12 +105,10 @@ class DtoFixturesTest {
     )
 
     @Test
-    fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() =
-        checkFixtures("2.6.13", notModelled)
+    fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() = checkFixtures("2.6.13", notModelled)
 
     @Test
-    fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() =
-        checkFixtures("2.7.1", notModelled)
+    fun everySuccessfulJsonFixtureOfTandoor271DecodesWithItsDto() = checkFixtures("2.7.1", notModelled)
 
     private fun checkFixtures(version: String, notModelled: Map<String, String>) {
         val names = Fixture.allNames(version)

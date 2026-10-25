@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phase 2 (#42): read-only mode for guests, shared by every screen with editing controls. -->
+    <string name="ui_read_only_title">You are a guest: read only</string>
+    <string name="ui_read_only_body">You can browse recipes, the plan and the shopping list and cook with timers. Changes are switched off for guests in this Tandoor.</string>
+    <string name="ui_read_only_more">What can I do?</string>
+    <string name="ui_read_only_short">Guests can look but not change anything.</string>
+    <!-- The sheet "What can I do as a guest?" -->
+    <string name="ui_read_only_sheet_title">What a guest can do</string>
+    <string name="ui_read_only_can">You can</string>
+    <string name="ui_read_only_cannot">Switched off for guests</string>
+    <string name="ui_read_only_can_recipes">Browse and search every recipe</string>
+    <string name="ui_read_only_can_cook">Cook with cook mode and timers</string>
+    <string name="ui_read_only_can_plan">See the week plan and the shopping list</string>
+    <string name="ui_read_only_cannot_shopping">Add or check off items on the shopping list</string>
+    <string name="ui_read_only_cannot_plan">Plan, move or remove meals</string>
+    <string name="ui_read_only_cannot_books">Books, favourites and “Want to cook”</string>
+    <string name="ui_read_only_cannot_log">Save “Done!”, ratings and comments</string>
+    <string name="ui_read_only_full_access">To change things, ask whoever runs your Tandoor to give your account the group “user”.</string>
+    <string name="ui_read_only_done">OK</string>
+    <!-- TalkBack state of a row in the sheet. -->
+    <string name="ui_read_only_allowed">allowed</string>
+    <string name="ui_read_only_locked">switched off</string>
+</resources>

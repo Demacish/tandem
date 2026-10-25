@@ -107,8 +107,10 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
                     val book = snapshot.book(id)
                     when {
                         book == null -> flowOf(emptyList<RecipeOverview>())
+
                         storedKind(book.kind) == RecipeBookKind.SMART && SmartFilter.parse(book.filterSearch)?.localOnly != true ->
                             smartRecipes(source, book)
+
                         else -> items(source, snapshot.recipeIdsOf(book))
                     }
                 }
@@ -159,7 +161,9 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
                 bookSync.sync(source, background = false)
                 Outcome.Success(Unit)
             }
+
             ActiveSource.Demo -> Outcome.Success(Unit)
+
             ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
     }
@@ -319,7 +323,9 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
         /** The recipes of [book] that the device can name (entries, or the smart filter evaluated here). */
         fun recipeIdsOf(book: RecipeBookEntity): List<Long> = when (storedKind(book.kind)) {
             RecipeBookKind.BOOK, RecipeBookKind.FAVORITES -> entries.filter { it.bookId == book.localId }.map { it.recipeId }
+
             RecipeBookKind.WANT_TO_COOK -> wantToCook.toList()
+
             RecipeBookKind.SMART -> SmartFilter.parse(book.filterSearch)
                 ?.takeIf { it.localOnly }
                 ?.let { filter -> keywordsByRecipe.filterValues { filter.matches(it) }.keys.toList() }

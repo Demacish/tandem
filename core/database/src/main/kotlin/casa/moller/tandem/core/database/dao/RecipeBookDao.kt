@@ -155,7 +155,4 @@ abstract class RecipeBookDao {
 }
 
 /** One `recipe_keyword` link. */
-data class RecipeKeywordRow(
-    @ColumnInfo(name = "recipe_id") val recipeId: Long,
-    @ColumnInfo(name = "keyword_id") val keywordId: Long,
-)
+data class RecipeKeywordRow(@ColumnInfo(name = "recipe_id") val recipeId: Long, @ColumnInfo(name = "keyword_id") val keywordId: Long)

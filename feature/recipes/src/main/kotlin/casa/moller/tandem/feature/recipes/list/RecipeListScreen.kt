@@ -89,8 +89,12 @@ import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.recipe.IconLabel
 import casa.moller.tandem.core.ui.recipe.RecipeCard
+import casa.moller.tandem.core.ui.recipe.RecipeFavorite
 import casa.moller.tandem.core.ui.recipe.RecipeListItem
 import casa.moller.tandem.feature.recipes.R
+import casa.moller.tandem.feature.recipes.books.RecipeCollection
+import casa.moller.tandem.feature.recipes.books.RecipeCollectionsRow
+import casa.moller.tandem.feature.recipes.books.RecipeCollectionsState
 
 /**
  * The recipe list (plan 6.2 "Receptlista", designs recept_alla_recept and
@@ -116,6 +120,9 @@ fun RecipeListScreen(
     modifier: Modifier = Modifier,
     selectedRecipeId: Long? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    collections: RecipeCollectionsState? = null,
+    onOpenCollection: (RecipeCollection) -> Unit = {},
+    onToggleFavorite: (Long) -> Unit = {},
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored recipes are shown (Diagnostics).
     ReportContentReady(ready = state.loaded)
@@ -188,6 +195,7 @@ fun RecipeListScreen(
                             onOpenRecipe = onOpenRecipe,
                             onOpenPicker = onOpenPicker,
                             selectedRecipeId = selectedRecipeId,
+                            books = collections?.let { BookHooks(it, onOpenCollection, onToggleFavorite) },
                         )
                     }
                 }
@@ -248,6 +256,7 @@ private fun RecipeGrid(
     onOpenRecipe: (Long) -> Unit,
     onOpenPicker: (FilterPicker) -> Unit,
     selectedRecipeId: Long?,
+    books: BookHooks? = null,
 ) {
     val spacing = TandemTheme.spacing
     val columns = if (state.layout == RecipeListLayout.GRID) GridCells.Adaptive(GRID_MIN_CELL) else GridCells.Adaptive(LIST_MIN_CELL)
@@ -263,6 +272,8 @@ private fun RecipeGrid(
         fullWidth("search") {
             SearchField(text = state.query.text, onTextChange = { onAction(RecipeListAction.Search(it)) })
         }
+        // Phase 2 (books lane): Favoriter, Vill laga and Böcker above the filters (Stitch recept_s_k_filter_samlingar).
+        if (books != null) fullWidth("collections") { RecipeCollectionsRow(state = books.state, onOpen = books.onOpen) }
         fullWidth("filters") { FilterChips(state = state, onAction = onAction, onOpenPicker = onOpenPicker) }
         fullWidth("status") { StatusLine(state) }
         when {
@@ -277,6 +288,7 @@ private fun RecipeGrid(
                         onClick = { onOpenRecipe(recipe.id) },
                         dimmed = state.isDimmed(recipe),
                         selected = recipe.id == selectedRecipeId,
+                        favorite = books?.favoriteOf(recipe.id),
                     )
                 } else {
                     RecipeListItem(
@@ -284,11 +296,21 @@ private fun RecipeGrid(
                         onClick = { onOpenRecipe(recipe.id) },
                         dimmed = state.isDimmed(recipe),
                         selected = recipe.id == selectedRecipeId,
+                        favorite = books?.favoriteOf(recipe.id),
                     )
                 }
             }
         }
     }
+}
+
+/** Phase 2 (books lane): the collections row and the hearts, when the route provides them. */
+private class BookHooks(val state: RecipeCollectionsState, val onOpen: (RecipeCollection) -> Unit, val onToggleFavorite: (Long) -> Unit) {
+    fun favoriteOf(recipeId: Long): RecipeFavorite =
+        RecipeFavorite(
+            isFavorite = recipeId in state.favoriteIds,
+            onToggle = if (state.readOnly) null else ({ onToggleFavorite(recipeId) }),
+        )
 }
 
 private fun LazyGridScope.fullWidth(key: String, content: @Composable () -> Unit) {

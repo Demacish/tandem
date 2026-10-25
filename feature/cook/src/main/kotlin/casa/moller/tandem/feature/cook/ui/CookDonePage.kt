@@ -50,6 +50,7 @@ import casa.moller.tandem.core.designsystem.icon.Star
 import casa.moller.tandem.core.designsystem.icon.StarFilled
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.ui.readonly.ReadOnlyNote
 import casa.moller.tandem.core.ui.recipe.IconLabel
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.cook.CookAction
@@ -81,6 +82,18 @@ internal fun CookDonePage(state: CookUiState, onAction: (CookAction) -> Unit, on
             verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             DoneHero(state)
+            if (state.readOnly) {
+                // Phase 2 (books lane, #42): a guest cooks, but nothing is saved in Tandoor.
+                ReadOnlyNote(text = stringResource(R.string.cook_done_guest))
+                TandemPrimaryButton(
+                    text = stringResource(R.string.cook_done_leave),
+                    onClick = onClose,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = TandemTheme.sizes.kitchenTouchTarget),
+                )
+                return@Column
+            }
             Card {
                 // The recipe's own servings text ("12 bullar") like on the step pages, else "4 portioner".
                 val servingsText = state.servings?.text.orEmpty()

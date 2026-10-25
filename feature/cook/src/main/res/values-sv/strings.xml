@@ -109,4 +109,6 @@
     <string name="cook_timers_empty_body">Starta en timer från ett steg i kokläget.</string>
     <string name="cook_timers_clear_finished">Rensa klara</string>
     <string name="cook_back">Tillbaka</string>
+    <!-- Phase 2 (#42): the "Done!" page of a guest. -->
+    <string name="cook_done_guest">Du är gäst: det du lagar sparas inte i Tandoor.</string>
 </resources>

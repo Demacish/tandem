@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 2 (#42): skrivskyddat läge för gäster, gemensamt för alla skärmar med redigering. -->
+    <string name="ui_read_only_title">Du är gäst: skrivskyddat</string>
+    <string name="ui_read_only_body">Du kan bläddra bland recepten, se matsedeln och inköpslistan och laga mat med timers. Ändringar är avstängda för gäster i den här Tandoor.</string>
+    <string name="ui_read_only_more">Vad kan jag göra?</string>
+    <string name="ui_read_only_short">Gäster kan titta men inte ändra något.</string>
+    <string name="ui_read_only_sheet_title">Det här kan en gäst göra</string>
+    <string name="ui_read_only_can">Du kan</string>
+    <string name="ui_read_only_cannot">Avstängt för gäster</string>
+    <string name="ui_read_only_can_recipes">Bläddra och söka bland alla recept</string>
+    <string name="ui_read_only_can_cook">Laga mat med kokläget och timers</string>
+    <string name="ui_read_only_can_plan">Se veckans matsedel och inköpslistan</string>
+    <string name="ui_read_only_cannot_shopping">Lägga till eller bocka av varor på inköpslistan</string>
+    <string name="ui_read_only_cannot_plan">Planera, flytta eller ta bort måltider</string>
+    <string name="ui_read_only_cannot_books">Böcker, favoriter och ”Vill laga”</string>
+    <string name="ui_read_only_cannot_log">Spara ”Klart!”, betyg och kommentarer</string>
+    <string name="ui_read_only_full_access">Vill du kunna ändra? Be den som sköter er Tandoor att ge ditt konto gruppen ”user”.</string>
+    <string name="ui_read_only_done">OK</string>
+    <string name="ui_read_only_allowed">tillåtet</string>
+    <string name="ui_read_only_locked">avstängt</string>
+</resources>

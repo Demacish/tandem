@@ -119,4 +119,6 @@
     <string name="cook_timers_empty_body">Start a timer from a step in cook mode.</string>
     <string name="cook_timers_clear_finished">Clear finished</string>
     <string name="cook_back">Back</string>
+    <!-- Phase 2 (#42): the "Done!" page of a guest. -->
+    <string name="cook_done_guest">You are a guest: what you cook is not saved in Tandoor.</string>
 </resources>

@@ -17,6 +17,10 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.toErrorText
+import casa.moller.tandem.feature.recipes.books.BookRecipesEffect
+import casa.moller.tandem.feature.recipes.books.RecipeBookButtonsRoute
+import casa.moller.tandem.feature.recipes.books.RecipeCollection
+import casa.moller.tandem.feature.recipes.books.RecipeCollectionsViewModel
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailEffect
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailScreen
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
@@ -33,13 +37,29 @@ import casa.moller.tandem.feature.recipes.list.RecipeListViewModel
  *
  * @param selectedRecipeId the recipe open in the detail pane beside the list, highlighted in
  *   the list (wide windows); null when none is open.
+ * @param onOpenCollection Phase 2: opens Favoriter, Vill laga or the books from the collections row.
  */
 @Composable
-fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Modifier, selectedRecipeId: Long? = null) {
+fun RecipesRoute(
+    onOpenRecipe: (recipeId: Long) -> Unit,
+    modifier: Modifier = Modifier,
+    selectedRecipeId: Long? = null,
+    onOpenCollection: (RecipeCollection) -> Unit = {},
+) {
     val viewModel: RecipeListViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    // Phase 2 (books lane): the collections row and the hearts (their own ViewModel).
+    val collections: RecipeCollectionsViewModel = hiltViewModel()
+    val collectionsState by collections.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
+    LaunchedEffect(collections, snackbarHostState) {
+        collections.effects.collect { effect ->
+            when (effect) {
+                is BookRecipesEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+            }
+        }
+    }
     // The error's title is a composable text (core:ui toErrorText), so a failed sync is shown
     // from composition: the effect stores it, the LaunchedEffect below shows the snackbar.
     var syncFailure by remember { mutableStateOf<SyncFailure?>(null) }
@@ -65,6 +85,9 @@ fun RecipesRoute(onOpenRecipe: (recipeId: Long) -> Unit, modifier: Modifier = Mo
         modifier = modifier,
         selectedRecipeId = selectedRecipeId,
         snackbarHostState = snackbarHostState,
+        collections = collectionsState,
+        onOpenCollection = onOpenCollection,
+        onToggleFavorite = collections::toggleFavorite,
     )
 }
 
@@ -112,6 +135,8 @@ fun RecipeDetailRoute(
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         onStartCooking = onStartCooking?.let { start -> { start(recipeId, state.servings?.current) } },
+        // Phase 2 (books lane): "Favorit", "Vill laga" and "Lägg i bok" under the title.
+        bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState) },
     )
 }
 

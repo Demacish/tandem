@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,6 +33,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.icon.DownloadForOfflineFilled
+import casa.moller.tandem.core.designsystem.icon.Favorite
+import casa.moller.tandem.core.designsystem.icon.FavoriteFilled
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.recipe.RecipeOverview
@@ -58,6 +61,7 @@ fun RecipeCard(
     modifier: Modifier = Modifier,
     dimmed: Boolean = false,
     selected: Boolean = false,
+    favorite: RecipeFavorite? = null,
 ) {
     val spacing = TandemTheme.spacing
     val colors = cardTextColors(selected)
@@ -71,27 +75,34 @@ fun RecipeCard(
         ),
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
-        Box(
-            modifier = Modifier
-                .padding(spacing.sm)
-                .clip(MaterialTheme.shapes.medium)
-                .clearAndSetSemantics { },
-        ) {
-            RecipeImage(
-                imageUrl = recipe.imageUrl,
-                dimmed = dimmed,
+        Box {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(IMAGE_ASPECT_RATIO),
-            )
-            recipe.keywords.firstOrNull()?.let { keyword ->
-                ImageLabel(text = keyword.name, modifier = Modifier.align(Alignment.BottomStart).padding(spacing.sm))
+                    .padding(spacing.sm)
+                    .clip(MaterialTheme.shapes.medium)
+                    .clearAndSetSemantics { },
+            ) {
+                RecipeImage(
+                    imageUrl = recipe.imageUrl,
+                    dimmed = dimmed,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(IMAGE_ASPECT_RATIO),
+                )
+                recipe.keywords.firstOrNull()?.let { keyword ->
+                    ImageLabel(text = keyword.name, modifier = Modifier.align(Alignment.BottomStart).padding(spacing.sm))
+                }
+                if (recipe.availableOffline && !dimmed) {
+                    // Phase 2: the heart takes the top end corner when it is shown.
+                    val corner = if (favorite == null) Alignment.TopEnd else Alignment.BottomEnd
+                    OfflineIcon(Modifier.align(corner).padding(spacing.sm))
+                }
+                if (dimmed) {
+                    NotDownloadedBadge(Modifier.align(Alignment.Center))
+                }
             }
-            if (recipe.availableOffline && !dimmed) {
-                OfflineIcon(Modifier.align(Alignment.TopEnd).padding(spacing.sm))
-            }
-            if (dimmed) {
-                NotDownloadedBadge(Modifier.align(Alignment.Center))
+            if (favorite != null) {
+                FavoriteToggle(favorite = favorite, onPhoto = true, modifier = Modifier.align(Alignment.TopEnd).padding(spacing.xs))
             }
         }
         Column(
@@ -128,6 +139,7 @@ fun RecipeListItem(
     modifier: Modifier = Modifier,
     dimmed: Boolean = false,
     selected: Boolean = false,
+    favorite: RecipeFavorite? = null,
 ) {
     val spacing = TandemTheme.spacing
     val colors = cardTextColors(selected)
@@ -186,6 +198,7 @@ fun RecipeListItem(
                     RecipeRatingLabel(recipe.rating, color = colors.content)
                 }
             }
+            if (favorite != null) FavoriteToggle(favorite = favorite, onPhoto = false)
             // The card's state description says the same for TalkBack.
             Box(modifier = Modifier.clearAndSetSemantics { }) {
                 when {
@@ -221,6 +234,48 @@ private fun Modifier.recipeCardSemantics(description: String, state: String?, se
     contentDescription = description
     this.selected = selected
     if (state != null) stateDescription = state
+}
+
+/**
+ * Phase 2 (books lane, #17): the heart on a recipe card or row. [isFavorite] = in the user's OWN
+ * favourites; [onToggle] null shows a filled heart without a button (a guest, #42) and nothing
+ * when it is not a favourite.
+ */
+data class RecipeFavorite(val isFavorite: Boolean, val onToggle: (() -> Unit)?)
+
+/**
+ * The heart: a 48 dp toggle button ("Favorit", on/off for TalkBack), on a round light surface
+ * when it lies on the photo ([onPhoto]).
+ */
+@Composable
+private fun FavoriteToggle(favorite: RecipeFavorite, onPhoto: Boolean, modifier: Modifier = Modifier) {
+    val onToggle = favorite.onToggle
+    if (onToggle == null && !favorite.isFavorite) return
+    val icon: @Composable () -> Unit = {
+        Surface(
+            shape = CircleShape,
+            color = if (onPhoto) MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.92f) else Color.Transparent,
+        ) {
+            Icon(
+                imageVector = if (favorite.isFavorite) TandemIcons.FavoriteFilled else TandemIcons.Favorite,
+                contentDescription = if (onToggle == null) stringResource(R.string.ui_recipe_favorite_description) else null,
+                tint = if (favorite.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(TandemTheme.spacing.xs)
+                    .size(TandemTheme.sizes.iconSmall),
+            )
+        }
+    }
+    if (onToggle == null) {
+        Box(modifier = modifier.size(48.dp), contentAlignment = Alignment.Center) { icon() }
+        return
+    }
+    val label = stringResource(R.string.ui_recipe_favorite)
+    IconToggleButton(
+        checked = favorite.isFavorite,
+        onCheckedChange = { onToggle() },
+        modifier = modifier.semantics { contentDescription = label },
+    ) { icon() }
 }
 
 /** Text colours of a card: on surfaceContainerLow, or on primaryContainer while [selected] (WCAG AA). */

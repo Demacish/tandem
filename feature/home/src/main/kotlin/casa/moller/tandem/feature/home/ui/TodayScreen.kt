@@ -37,17 +37,20 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.home.HomeSection
 import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
+import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.core.ui.readonly.ReadOnlyBanner
 import casa.moller.tandem.core.ui.status.OfflineNotice
 import casa.moller.tandem.feature.home.DayPart
 import casa.moller.tandem.feature.home.HomeAction
 import casa.moller.tandem.feature.home.HomeUiState
 import casa.moller.tandem.feature.home.R
+import casa.moller.tandem.feature.home.TodayBooksState
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -80,6 +83,8 @@ fun TodayScreen(
     onAction: (HomeAction) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    books: TodayBooksState = TodayBooksState(),
+    onOpenWantToCook: () -> Unit = {},
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
     ReportContentReady(ready = !state.loading)
@@ -111,7 +116,13 @@ fun TodayScreen(
             ) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val twoColumns = maxWidth >= TwoColumnMinWidth
-                    TodayContent(state = state, onAction = onAction, twoColumns = twoColumns)
+                    TodayContent(
+                        state = state,
+                        onAction = onAction,
+                        twoColumns = twoColumns,
+                        books = books,
+                        onOpenWantToCook = onOpenWantToCook,
+                    )
                 }
             }
         }
@@ -119,7 +130,13 @@ fun TodayScreen(
 }
 
 @Composable
-private fun TodayContent(state: HomeUiState, onAction: (HomeAction) -> Unit, twoColumns: Boolean) {
+private fun TodayContent(
+    state: HomeUiState,
+    onAction: (HomeAction) -> Unit,
+    twoColumns: Boolean,
+    books: TodayBooksState,
+    onOpenWantToCook: () -> Unit,
+) {
     val spacing = TandemTheme.spacing
     val horizontal = if (twoColumns) spacing.xxl else spacing.screenHorizontal
     val isDemo = LocalAppChrome.current.status == AppStatus.Demo
@@ -144,6 +161,8 @@ private fun TodayContent(state: HomeUiState, onAction: (HomeAction) -> Unit, two
                 verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
                 AppChromeDemoBanner()
+                // Phase 2 (books lane, #42): a guest sees once, at the top, why nothing can be changed.
+                if (books.readOnly) ReadOnlyBanner()
                 if (state.offline) OfflineNotice()
             }
         }
@@ -173,6 +192,21 @@ private fun TodayContent(state: HomeUiState, onAction: (HomeAction) -> Unit, two
                     TodayMeals(state = state, onAction = onAction)
                     TomorrowMeals(meals = state.tomorrow, onOpenRecipe = openRecipe)
                 }
+            }
+        }
+        // Phase 2 (books lane): "Vill laga" before the other carousels (plan 8.3: the queue to plan from).
+        if (books.wantToCook.isNotEmpty()) {
+            item(key = "want-to-cook") {
+                RecipeRow(
+                    title = stringResource(R.string.home_section_want_to_cook),
+                    subtitle = stringResource(R.string.home_section_want_to_cook_subtitle),
+                    recipes = books.wantToCook,
+                    horizontal = horizontal,
+                    cardWidth = if (twoColumns) 240.dp else 168.dp,
+                    onOpenRecipe = openRecipe,
+                    allText = stringResource(R.string.home_want_to_cook_all),
+                    onOpenAll = onOpenWantToCook,
+                )
             }
         }
         state.sections.forEachIndexed { index, section ->
@@ -288,8 +322,32 @@ private fun MealGroup(title: String, label: String, meals: List<MealPlanEntry>, 
 /** One carousel: heading, subtitle, "All recipes" on the first one, and a row of cards. */
 @Composable
 private fun SectionCarousel(section: HomeSection, horizontal: Dp, cardWidth: Dp, onOpenRecipe: (Long) -> Unit, onOpenAll: (() -> Unit)?) {
-    val spacing = TandemTheme.spacing
     val texts = section.type.texts()
+    RecipeRow(
+        title = stringResource(texts.first),
+        subtitle = stringResource(texts.second),
+        recipes = section.recipes,
+        horizontal = horizontal,
+        cardWidth = cardWidth,
+        onOpenRecipe = onOpenRecipe,
+        allText = stringResource(R.string.home_all_recipes),
+        onOpenAll = onOpenAll,
+    )
+}
+
+/** A heading with a subtitle and an optional "all" button, then a row of recipe cards. */
+@Composable
+private fun RecipeRow(
+    title: String,
+    subtitle: String,
+    recipes: List<RecipeOverview>,
+    horizontal: Dp,
+    cardWidth: Dp,
+    onOpenRecipe: (Long) -> Unit,
+    allText: String,
+    onOpenAll: (() -> Unit)?,
+) {
+    val spacing = TandemTheme.spacing
     Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         Row(
             modifier = Modifier
@@ -299,19 +357,19 @@ private fun SectionCarousel(section: HomeSection, horizontal: Dp, cardWidth: Dp,
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(texts.first),
+                    text = title,
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.semantics { heading() },
                 )
                 Text(
-                    text = stringResource(texts.second),
+                    text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (onOpenAll != null) {
                 TandemTextButton(
-                    text = stringResource(R.string.home_all_recipes),
+                    text = allText,
                     onClick = onOpenAll,
                     trailingIcon = TandemIcons.ArrowForward,
                 )
@@ -321,7 +379,7 @@ private fun SectionCarousel(section: HomeSection, horizontal: Dp, cardWidth: Dp,
             contentPadding = PaddingValues(horizontal = horizontal),
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
-            items(section.recipes, key = { it.id }) { recipe ->
+            items(recipes, key = { it.id }) { recipe ->
                 HomeRecipeCard(recipe = recipe, width = cardWidth, onClick = { onOpenRecipe(recipe.id) })
             }
         }

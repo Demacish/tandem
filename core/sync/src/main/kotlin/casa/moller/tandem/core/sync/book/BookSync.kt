@@ -66,11 +66,11 @@ internal class BookSync @Inject constructor(
                 reapplyQueued(database, accountId)
             }
         }
-        for (book in dao.getBooks(accountId)) {
-            if (book.kind != RecipeBookKinds.SMART) continue
-            val filterId = book.filterId ?: continue
-            if (SmartFilter.parse(book.filterSearch)?.localOnly == true) continue
-            val recipes = fetchSmart(remote, background, filterId)
+        val serverSmart = dao.getBooks(accountId).filter { book ->
+            book.kind == RecipeBookKinds.SMART && book.filterId != null && SmartFilter.parse(book.filterSearch)?.localOnly != true
+        }
+        for (book in serverSmart) {
+            val recipes = fetchSmart(remote, background, book.filterId ?: continue)
             if (recipes is Outcome.Success && sameSource(remote)) smart.put(accountId, book.localId, recipes.value)
         }
     }
@@ -92,8 +92,7 @@ internal class BookSync @Inject constructor(
     /** Applies queued deletes of books and entries to the stored rows again (after a re-read). */
     suspend fun reapplyQueued(database: TandemDatabase, accountId: String) {
         val dao = database.recipeBookDao()
-        for (row in dao.getOutbox(accountId)) {
-            if (row.op != OutboxOps.DELETE) continue
+        for (row in dao.getOutbox(accountId).filter { it.op == OutboxOps.DELETE }) {
             val id = row.serverId ?: row.localId ?: continue
             when (row.entity) {
                 OutboxEntities.RECIPE_BOOK_ENTRY -> dao.deleteEntries(accountId, listOf(id))
@@ -137,10 +136,7 @@ internal class SmartBookResults @Inject constructor() {
  * tables, the user's role in the space (guest mode #42, [SpaceRoleSync])
  * and the books ([BookSync]).
  */
-internal class BookSyncStep @Inject constructor(
-    private val roles: SpaceRoleSync,
-    private val books: BookSync,
-) {
+internal class BookSyncStep @Inject constructor(private val roles: SpaceRoleSync, private val books: BookSync) {
     suspend fun run(remote: ActiveSource.Remote, background: Boolean, smallTables: Boolean) {
         if (!smallTables) return
         roles.sync(remote, background)

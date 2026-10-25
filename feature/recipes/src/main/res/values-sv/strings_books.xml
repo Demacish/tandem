@@ -1,8 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Fas 2 (grundbanan): böcker, favoriter och "Vill laga". -->
+    <!-- Fas 2: böcker, favoriter och "Vill laga" (plan 3.7, 6.2, #17). -->
     <string name="books_title">Receptböcker</string>
     <string name="books_favorites_title">Favoriter</string>
     <string name="books_want_to_cook_title">Vill laga</string>
-    <string name="books_placeholder_body">Här kommer dina receptböcker från Tandoor, med allas favoriter och den gemensamma listan ”Vill laga”.</string>
+    <plurals name="books_recipe_count">
+        <item quantity="one">%d recept</item>
+        <item quantity="other">%d recept</item>
+    </plurals>
+    <string name="books_favorites_supporting">Allas favoriter i hushållet</string>
+    <string name="books_want_to_cook_supporting">Det ni vill laga snart</string>
+    <string name="books_section_own">Mina böcker</string>
+    <string name="books_section_shared">Delade med mig</string>
+    <string name="books_own_empty">Du har inga egna böcker än. Skapa en här, eller lägg ett recept i en ny bok från receptet.</string>
+    <string name="books_shared_from">Från %1$s · bara läsning</string>
+    <string name="books_shared_read_only">Delad med dig · bara läsning</string>
+    <string name="books_smart">Smart bok</string>
+    <string name="books_new">Ny bok</string>
+    <string name="books_new_title">Ny receptbok</string>
+    <string name="books_new_name">Namn</string>
+    <string name="books_new_create">Skapa</string>
+    <string name="books_cancel">Avbryt</string>
+
+    <string name="books_shared_by_title">Delad av %1$s</string>
+    <string name="books_shared_by_body">Bara %1$s kan lägga till eller ta bort recept i den här boken. Du kan läsa den och laga från den.</string>
+    <string name="books_shared_by_someone_title">Delad med dig</string>
+    <string name="books_shared_by_someone_body">Bara den som äger boken kan lägga till eller ta bort recept i den. Du kan läsa den och laga från den.</string>
+    <string name="books_favorites_info_title">Allas favoriter</string>
+    <string name="books_favorites_info_body">Favoriterna från alla i hushållet. Ditt hjärta lägger receptet i din egen favoritbok; de andras favoriter kan bara de själva ta bort.</string>
+    <string name="books_want_to_cook_info_title">En gemensam kö</string>
+    <string name="books_want_to_cook_info_body">Recepten ni vill laga snart. Alla i hushållet kan lägga till och ta bort, och listan syns också på webben.</string>
+    <string name="books_smart_info_title">Smart bok</string>
+    <string name="books_smart_info_body">Tandoor väljer recepten med bokens filter. Filtret ändrar du på webben.</string>
+    <string name="books_empty_book_title">Inga recept än</string>
+    <string name="books_empty_book_body">Öppna ett recept och tryck på ”Lägg i bok”.</string>
+    <string name="books_empty_shared_body">Det finns inga recept i boken än.</string>
+    <string name="books_empty_smart_body">Inget recept passar filtret, eller så behöver boken en anslutning första gången den öppnas.</string>
+    <string name="books_empty_favorites_title">Inga favoriter än</string>
+    <string name="books_empty_favorites_body">Tryck på hjärtat på ett recept så hamnar det här.</string>
+    <string name="books_empty_want_to_cook_title">Ingenting i kön</string>
+    <string name="books_empty_want_to_cook_body">Markera ett recept med ”Vill laga” så hamnar det här.</string>
+    <string name="books_missing_title">Boken finns inte längre</string>
+    <string name="books_missing_body">Den kan ha tagits bort i Tandoor.</string>
+    <string name="books_remove_from_book">Ta bort %1$s ur boken</string>
+    <string name="books_remove_favorite">Ta bort %1$s från favoriterna</string>
+    <string name="books_remove_want_to_cook">Ta bort %1$s från Vill laga</string>
+    <string name="books_plan">Planera %1$s</string>
+
+    <string name="books_action_favorite">Favorit</string>
+    <string name="books_action_want_to_cook">Vill laga</string>
+    <string name="books_action_add_to_book">Lägg i bok</string>
+    <string name="books_favorite_of">Favorit hos %1$s</string>
+    <string name="books_sheet_title">Lägg i bok</string>
+    <string name="books_sheet_empty">Du har inga egna böcker än.</string>
+    <string name="books_sheet_only_own">Bara dina egna böcker visas. En delad bok kan bara ägaren ändra.</string>
+    <string name="books_sheet_create">Skapa och lägg till</string>
+
+    <string name="books_added">Lades i boken</string>
+    <string name="books_removed">Borttaget</string>
+    <string name="books_favorite_added">Sparat bland dina favoriter</string>
+    <string name="books_favorite_removed">Borttaget från dina favoriter</string>
+    <string name="books_want_to_cook_added">Tillagt i Vill laga</string>
+    <string name="books_want_to_cook_removed">Borttaget från Vill laga</string>
+    <string name="books_error_read_only">Du är gäst och kan inte ändra något.</string>
+    <string name="books_error_not_owner">Bara den som äger boken kan ändra den.</string>
+    <string name="books_error_failed">Ändringen kunde inte sparas.</string>
+
+    <string name="books_collection_books">Böcker</string>
+    <string name="books_pane_empty_title">Välj en bok</string>
+    <string name="books_pane_empty_body">Bokens recept visas här.</string>
 </resources>

@@ -135,6 +135,7 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
         return when (val sent = caller.call(remote, background = true) { books.createEntry(body) }) {
             is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }
                 ?: OutboxResult.Failed(TandemError.Decode("entry-without-id"))
+
             is Outcome.Failure -> failedCreate(remote, row, bookId, recipeId, sent.error)
         }
     }
@@ -262,4 +263,3 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
 
     private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
-

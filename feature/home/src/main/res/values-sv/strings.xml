@@ -47,4 +47,8 @@
     <!-- Fas 1b (kokläge-banan): kokläget för kvällens måltid, med de planerade portionerna. -->
     <string name="home_start_cooking">Laga</string>
     <string name="home_start_cooking_description">Laga %1$s</string>
+    <!-- Phase 2 (books lane): the "Want to cook" row (plan 3.7 B, 8.3). -->
+    <string name="home_section_want_to_cook">Vill laga</string>
+    <string name="home_section_want_to_cook_subtitle">Det ni vill laga snart</string>
+    <string name="home_want_to_cook_all">Visa alla</string>
 </resources>

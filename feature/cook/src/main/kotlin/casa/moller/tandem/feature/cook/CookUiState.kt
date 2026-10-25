@@ -35,6 +35,7 @@ import kotlin.time.Duration
  * @property sendState whether a saved cook log goes to Tandoor now or waits, and why
  *   ([CookLogSendState], from the sync's pause).
  * @property demo demo mode: the cook log stays on the device.
+ * @property readOnly Phase 2 (#42): a guest; "Klart!" saves nothing (no rating, comment or log).
  */
 @Immutable
 data class CookUiState(
@@ -60,6 +61,7 @@ data class CookUiState(
     val done: DoneState = DoneState(),
     val sendState: CookLogSendState = CookLogSendState.NOW,
     val demo: Boolean = false,
+    val readOnly: Boolean = false,
 ) {
     /** The device is offline: a cook log is saved and sent later. */
     val offline: Boolean

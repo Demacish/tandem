@@ -23,6 +23,7 @@ import casa.moller.tandem.core.testing.data.FakeCookLogRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.FakeTimerController
 import casa.moller.tandem.core.testing.data.SampleRecipes
@@ -58,7 +59,8 @@ class CookViewModelTest {
     private val pasta = SampleRecipes.MushroomPasta
 
     private fun TestScope.viewModel(key: CookKey = CookKey(pasta.id), handle: SavedStateHandle = SavedStateHandle()): CookViewModel {
-        val viewModel = CookViewModel(key, handle, repository, preferences, settings, timers, cookLog, sync, clock)
+        val permissions = FakeSpacePermissionsRepository()
+        val viewModel = CookViewModel(key, handle, repository, preferences, settings, timers, cookLog, sync, clock, permissions)
         viewModel.onAction(CookAction.SetLocale(NumberStyle.English, "sv"))
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
