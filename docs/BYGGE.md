@@ -532,6 +532,97 @@ Inspelningarna ligger i `api-schema/fixtures/<version>/fas2/`. Det viktigaste:
 | Integration | allt ovan | kopplar ihop, tar bort `TemporaryFas2Module.kt`, röktest för Fas 2 |
 <!-- /Fas 2 kontrakt -->
 
+<!-- Fas 2 inköp-data -->
+## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
+
+Inköpsbanans datadel (funktion #9 med datadelen av #10–#14, plan 3.5, 5.7, 8.2). Allt ligger i
+`core/sync/.../shopping/` och binds i `di/ShoppingModule.kt`, som ersätter appens
+`TemporaryFas2ShoppingModule` och `TemporaryFas2SyncModule` (borttagna):
+
+| Gränssnitt (`:core:data`) | Implementation |
+|---|---|
+| `ShoppingRepository` | `OfflineFirstShoppingRepository` |
+| `SupermarketRepository` | `DefaultSupermarketRepository` (vald butik per enhet och konto i `sync_state`, nyckeln `shopping_selected_supermarket`, id i `hash`) |
+| `IngredientParser` | `DefaultIngredientParser` (servern online; `core:domain` `LocalIngredientParser` offline, i demoläget, för gäster och vid serverfel) |
+| `ForegroundSync` | `DefaultForegroundSync` (listan och matsedeln, se nedan) |
+
+**Nätverk:** `TandoorApi.shopping` (`ShoppingService`: listan med `updated_after`, skapa, PATCH,
+DELETE, bulk, listrecept, namngivna listor) och `TandoorApi.supermarkets` (`SupermarketService`:
+butiker, gångar, gångordning, livsmedel, parsern). Skrivningarnas kropp är outboxens JSON
+(`JsonObject`), så det som slagits ihop offline skickas exakt som det sparats. DTO:er i
+`dto/ShoppingDtos.kt`, rader i `used-endpoints.txt` och `DtoFixturesTest` (båda versionerna).
+
+**Offline först:** varje ändring skrivs i `shopping_entry`/`shopping_list_recipe` och köas med
+`OutboxDao.enqueue` i **en** transaktion (`ShoppingDao.inTransaction`, som andra DAO:er anropas
+inom; Room binder transaktionens anslutning till korutinen). Payloaderna står i
+`ShoppingPayloads`: CREATE `{food:{name[,id]}, unit, amount, shopping_lists[, list_recipe,
+ingredient]}`, BULK_CHECK en rad per post (batch `shopping_entry:checked=…`), PATCH för mängd,
+enhet, livsmedel, listor (`shopping_lists`) och "köp senare" (`delay_until`, ångra =
+`1970-01-01T00:00:00Z`), DELETE. Ett recept på listan är ett listrecept (CREATE, `mealplan` i
+`refs` om måltiden också är ny) och en CREATE per vald ingrediens som `depends_on` listreceptet
+med `list_recipe` i `refs`; mängderna skalas med portionerna. Gäster får `READ_ONLY` innan något
+sparas; demoläget skriver bara demodatabasen.
+
+**Avsändare** (`ShoppingOutboxHandlers.kt`, bundna med `@IntoMap`): `shopping_entry`,
+`shopping_list_recipe`, `food` och `supermarket_category_relation`.
+- En `checked` som slagits in i en CREATE skickas inte med den (Tandoor sätter `completed_at`
+  bara när `checked` slår om); posten bockas av med ett bulkanrop direkt efter, eller med en ny
+  BULK_CHECK-rad om det misslyckas (och användaren inte bockat av eller på igen).
+- **PATCH och DELETE av en post kontrolleras först** mot en full läsning av listan (högst en per
+  minut, `ShoppingReader.stillOnServerLocked`): en post som saknas i ett komplett svar under 1000
+  rader släpps **utan anrop** (`DroppedChanges.DELETED_ELSEWHERE`). Så töms outboxen utan en enda
+  404 när partnern raderat raderna (Fas 2 "Klart när"). Nya poster från egna CREATE och deltan
+  räknas som kända.
+- En 404 som ändå kommer (raderad mellan läsningen och sändningen, listrecept, livsmedel, gång)
+  är ett väntat svar: raden är klar, posten tas bort lokalt med det som köats för den, skälet
+  hamnar i `DroppedChanges.NOT_FOUND`, och `RemoteCaller(expectedNotFound = true)` låter
+  kretsbrytaren vara. Allt annat följer `OutboxSender`s regler (400 FAILED, 401/403/429 stoppar,
+  säkert läge PAUSED, offline/5xx försöker igen).
+- `POST` av en post är inte idempotent: en rad som försökts förut letar först efter en egen ny
+  post med samma livsmedel, enhet och mängd.
+
+**Läsningar** (`ShoppingReader`, med ett lås som avsändarna också håller, så att en läsning
+aldrig jämförs med en ändring som skickas samtidigt):
+- Delta med `updated_after` = serverns senaste `timestamp` − 2 s (överlapp), `page_size` 200;
+  var 10:e läsning (`sync_state.delta_count`), den första och vid start/inloggning
+  (`SyncEngine`, `APP_START`/`FIRST_SYNC`/`ACCOUNT_CHANGED`) en full läsning.
+- En post med rader i outboxen behåller sitt lokala läge tills ändringen är skickad.
+- Fönsterregeln vid en full, komplett läsning (`ShoppingWindowRule`): saknade oavbockade och
+  nyligen avbockade poster raderas lokalt, och deras köade ändringar släpps osända (plan 3.5);
+  äldre avbockade flyttas till `shopping_history`. Listrecept som ingen post pekar på tas bort.
+- Andra medlemmars ändringar (ny post, avbockning, borttagning) går till `observeChanges()`,
+  aldrig vid kontots första läsning.
+- **Små tabeller** (`ShoppingTables`, med motorns övriga små tabeller): namngivna listor,
+  butiker med gångordning, gångar och `shopping_min_autosync_interval` (en sträng) till
+  `server_account.shopping_min_autosync_seconds` (`AccountMirror` behåller värdet). Köade
+  ändringar av livsmedel och gångordning läggs på igen efter omläsningen.
+- `SyncEngine` kör `ShoppingSyncStep` efter de små tabellerna och före outboxen.
+
+**Polling** (`DefaultForegroundSync.keepFresh`): en poller per mål, delad av alla som samlar och
+stoppad när den sista slutar (skärmen lämnade STARTED). Listan: `ShoppingSync.refresh` (outboxen,
+sedan läsningen) var `ForegroundPolling.intervalFor(golvet)` = 20 s med Tandoors "5". Matsedeln:
+`MealPlanRepository.refresh()` var 60:e s. Pausar (inget anrop, `paused` säger varför) offline,
+efter avvisad token, blockerad/429 (`BLOCKED`), kretsbrytare och import; säkert läge läser men
+skickar inte. Aldrig i demoläget.
+
+**Demo:** `scripts/demo-content/generate_demo_shopping.py` skriver `<språk>/shopping-list-entries.json`,
+`shopping-lists.json`, `supermarkets.json` och `supermarket-categories.json` (efter
+`generate_demo_content.py`); `DemoContent` läser dem och `DemoShopping` fyller demodatabasen en
+gång per innehållsversion och språk, så det användaren gör i demoläget står kvar.
+
+**Tester:** `ShoppingSyncTest` (Robolectric, en tillståndsfull Tandoor i de inspelade formerna
+för **2.6.13 och 2.7.1**, `FakeShoppingTandoor`): 20 ändringar offline med skapa + bocka av samma
+vara, partnern raderar 15 rader (inga 404 i serverns logg), två telefoner med `updated_after` och
+fönsterregeln, bulk, köp senare, recept på listan, rensa avbockade, 404 utanför kretsbrytaren,
+429, säkert läge, polling, gäst, konton och demo. `ShoppingOrderingTest`, `ShoppingDaoTest`
+(transaktionen, frågorna, 3 → 4 med en köad "Klart!"), `ShoppingServicesTest`,
+`LocalIngredientParserTest`, `DemoShoppingContentTest`.
+
+**Inte prövat mot en riktig server** (kontraktssviten): `POST /api/shopping-list-entry/` med
+`list_recipe` och `ingredient`, `POST /api/shopping-list-recipe/` med `mealplan`, PATCH av en
+posts `food`/`unit` med namn.
+<!-- /Fas 2 inköp-data -->
+
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)
 

@@ -18,6 +18,15 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   Butiksläget har stor text, stora rader och tänd skärm, och listan kan delas som text. Offline
   sparas allt och antalet väntande ändringar syns; gäster ser listan utan att kunna ändra den. På
   surfplatta står "Lägg till", listor och butiker i en sidopanel bredvid listan.
+- **Inköpslistan offline och i synk:** det du lägger till, bockar av, ändrar, flyttar mellan
+  listor eller skjuter upp ("köp senare") sparas direkt på telefonen och skickas när nätet finns,
+  i rätt ordning, också för en vara som skapades och bockades av utan nät. En vara som någon
+  annan i hushållet har tagit bort under tiden släpps tyst, utan felanrop mot servern. Medan
+  listan är öppen hämtas ändringar från andra telefoner var 20:e sekund (eller serverns längre
+  intervall), och listan läses om helt med jämna mellanrum så att borttagna varor försvinner;
+  avbockade varor som Tandoor inte längre visar sparas i en lokal historik. Butiker med sin
+  gångordning, varors gång och "har hemma" följer med. Demoläget har en exempellista med två
+  butiker.
 
 ## [0.2.0] – 2026-10-24
 

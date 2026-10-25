@@ -126,6 +126,7 @@ class ShoppingSyncTest {
         val cheese = tandoor.seed("ost")
         val coffee = tandoor.seed("kaffe")
         read()
+        tandoor.calls.clear()
         offline()
         val until = Instant.fromEpochMilliseconds(graph.clock.millis) + 4.hours
 
@@ -562,7 +563,7 @@ class ShoppingSyncTest {
         assertTrue("demo mode sends nothing: ${graph.server.requests}", graph.server.requests.isEmpty())
         assertTrue(graph.real.shoppingDao().getEntries(ACCOUNT_ID).isEmpty())
         val text = (repo.shareText() as Outcome.Success).value
-        assertTrue(text, text.lines().none { it.endsWith("mjölk") } && text.lines().any { it.endsWith("kaffe") })
+        assertTrue(text, "2 l mjölk" !in text.lines() && "1 påse kaffe" in text.lines())
     }
 
     private fun foregroundOf(graph: SyncTestGraph, wait: suspend (Duration) -> Unit = {}) = DefaultForegroundSync(
