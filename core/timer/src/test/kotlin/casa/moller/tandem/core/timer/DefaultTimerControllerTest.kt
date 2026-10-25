@@ -625,6 +625,62 @@ class DefaultTimerControllerTest {
     }
 
     @Test
+    fun aCancelledTimerIsNotBroughtBackByARingAlarmAlreadyOnItsWay() = runTest {
+        val engine = newEngine()
+        val timer = engine.startTimer("Kaffe", 4.minutes, recipeId = 3L, stepIndex = 0)
+        val snapshot = ringSnapshot()
+
+        // The alarm fired and its broadcast waits for the engine while the user cancels the timer.
+        engine.cancel(timer.id)
+        clock.advanceBy(4.minutes)
+        TimerAlarmReceiver.handle(engine, TimerIntents.ACTION_RING, timer.id, TimerSnapshot.decode(snapshot))
+
+        assertEquals("cancelled stays cancelled", emptyList<CookTimer>(), engine.timers.value)
+        assertTrue("no alarm armed again", ringAlarms().isEmpty())
+        assertTrue(autoSilenceAlarms().isEmpty())
+        assertNull("it does not ring", notificationOrNull(TandemNotificationIds.timerAlarm(timer.id)))
+        assertNull(notificationOrNull(TandemNotificationIds.timerOngoing(timer.id)))
+        assertTrue("no ringing service", serviceCommands().isEmpty())
+        assertEquals(emptyList<Any>(), store.stored.timers)
+    }
+
+    @Test
+    fun aClearedTimerIsNotBroughtBackByARingAlarm() = runTest {
+        val engine = newEngine()
+        val timer = engine.startTimer("Pasta", 1.minutes)
+        val snapshot = ringSnapshot()
+        clock.advanceBy(1.minutes)
+        TimerAlarmReceiver.handle(engine, TimerIntents.ACTION_RING, timer.id)
+        engine.stopRinging(timer.id)
+        engine.clearFinished()
+        serviceCommands()
+
+        TimerAlarmReceiver.handle(engine, TimerIntents.ACTION_RING, timer.id, TimerSnapshot.decode(snapshot))
+
+        assertEquals(emptyList<CookTimer>(), engine.timers.value)
+        assertNull(notificationOrNull(TandemNotificationIds.timerAlarm(timer.id)))
+        assertTrue(ringAlarms().isEmpty())
+        assertTrue(serviceCommands().isEmpty())
+    }
+
+    @Test
+    fun aTimerCancelledInAnEarlierProcessIsNotBroughtBackByItsAlarm() = runTest {
+        val first = newEngine()
+        val timer = first.startTimer("Ägg", 6.minutes)
+        val snapshot = ringSnapshot()
+        first.cancel(timer.id)
+
+        // A new process: the file was written without the timer, so the stale alarm is not a lost timer.
+        clock.advanceBy(6.minutes)
+        val second = newEngine()
+        TimerAlarmReceiver.handle(second, TimerIntents.ACTION_RING, timer.id, TimerSnapshot.decode(snapshot))
+
+        assertEquals(emptyList<CookTimer>(), second.timers.value)
+        assertNull(notificationOrNull(TandemNotificationIds.timerAlarm(timer.id)))
+        assertTrue(ringAlarms().isEmpty())
+    }
+
+    @Test
     fun aFailedWriteIsWrittenAgainWithTheNextChange() = runTest {
         store.failWrites = true
         val engine = newEngine()
@@ -696,6 +752,10 @@ class DefaultTimerControllerTest {
         shadowOf(alarmManager).scheduledAlarms.filter { shadowOf(it.operationIntent()).savedIntent.action == action }
 
     private fun ringAlarms() = alarms(TimerIntents.ACTION_RING)
+
+    /** The timer snapshot in the single ring alarm, as the receiver gets it. */
+    private fun ringSnapshot(): String? =
+        shadowOf(ringAlarms().single().operationIntent()).savedIntent.getStringExtra(TimerIntents.EXTRA_TIMER_SNAPSHOT)
 
     private fun autoSilenceAlarms() = alarms(TimerIntents.ACTION_AUTO_SILENCE)
 

@@ -56,7 +56,8 @@ skärm och utan nät, och "Klart!" som skriver i Tandoors koklogg. Inköpslista 
   eller saknar ljud (och kokläget varnar), när två larm ringer tystnar inte det ena när det andra
   stoppas, "Ringde 18:45" blir kvar, en timer över 24 h stannar i Tandem i klockappsläget, "en
   kvarts liter" blir ingen timer medan "ett dygn" och "30 s" blir det, och *Ladda ner alla
-  recept* hämtar om recept som ändrats på servern och når alla bilder.
+  recept* hämtar om recept som ändrats på servern och når alla bilder. En timer som avbryts
+  eller rensas kommer aldrig tillbaka och ringer, inte ens om dess larm redan var på väg.
 - **Granskningsrättelser i kokläget och skalet:** stegbilder visas i kokläget (även offline,
   och för recept som laddades ned med 0.1.0: de hämtas om en gång vid första synken);
   ringande timers står alltid synliga bredvid ingredienserna; den vikbara telefonen lägger inget

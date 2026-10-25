@@ -428,7 +428,14 @@ bara via `core:data`.
     fönstertiteln "Pasta: tiden är ute". En skrivning som misslyckas (full disk) görs om vid nästa
     ändring, en fil som inte går att läsa skrivs aldrig över och läses igen, och varje ringlarm
     bär sin timer (`EXTRA_TIMER_SNAPSHOT`), så att den ringer även i en ny process vars fil saknar
-    den. *Inte verifierat på en riktig enhet eller emulator ännu* (röktestet kör inga
+    den. *Borttaget förblir borttaget (komplettering 0.2.0):* ett larm som redan avfyrats kan vänta
+    på motorns lås medan användaren avbryter timern, och dess ögonblicksbild får då inte väcka den
+    igen. `DefaultTimerController.mayRestore` återställer därför bara en LÖPANDE timer som saknas,
+    vars id inte tagits bort i processen (gravstenar i minnet för allt som `cancel`, `clearFinished`
+    eller annat tagit bort) och som aldrig fanns i en fil processen läst eller skrivit (id ≥ filens
+    `next_id`; varje skrivning innehåller hela listan, så en fil med högre `next_id` utan timern
+    betyder att den togs bort, även i en tidigare process). En förlorad fil läses som tom med
+    `next_id` 1, så dess timers ringer ändå. *Inte verifierat på en riktig enhet eller emulator ännu* (röktestet kör inga
   timers); fungerar inte `systemExempted` byter vi till `mediaPlayback` och skriver varför här.
 - **Nedräkningen (`notification/AndroidTimerNotifier`):** en pågående, tyst notis per löpande eller
   pausad timer (`timer_ongoing`): nedräknande kronometer till `endsAt`, "Klar 18:45", Pausa/+1 min

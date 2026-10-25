@@ -81,6 +81,8 @@ internal enum class SystemEvent {
  *   ([ensureLoaded]) and never overwritten while it is unread; a write that fails is tried again
  *   with the next change. Each ring alarm also carries the timer itself, so an alarm whose timer
  *   never reached the file still rings in a new process ([onAlarm]).
+ * - **Removed stays removed** (komplettering, 0.2.0): a timer that was cancelled or cleared is
+ *   never brought back by a ring alarm that was already on its way ([onAlarm], [mayRestore]).
  */
 @Singleton
 internal class DefaultTimerController @Inject constructor(
@@ -106,6 +108,13 @@ internal class DefaultTimerController @Inject constructor(
     private var loaded = false
     private var unsaved = false
     private var nextId = 1L
+
+    /** `next_id` of the last file this process read or wrote; 0 while no file was read. */
+    private var persistedNextId = 0L
+
+    /** Ids removed in this process (cancel, clearFinished, any other removal): never restored ([mayRestore]). */
+    private val removedIds = HashSet<Long>()
+
     private val monotonicEnds = HashMap<Long, Duration>()
     private var tickerJob: Job? = null
 
@@ -183,10 +192,11 @@ internal class DefaultTimerController @Inject constructor(
      * A timer's alarm fired (or the in-process ticker): every due timer rings, the rest are re-armed.
      *
      * @param scheduled the timer the alarm was set for (from the alarm's intent). When the stored
-     *   timers lack it (its write failed, or the file was lost), it is added back so it still rings.
+     *   timers lack it (its write failed, or the file was lost), it is added back so it still rings,
+     *   unless it was removed on purpose ([mayRestore]).
      */
     suspend fun onAlarm(scheduled: CookTimer? = null) = mutate(force = true) { list, now ->
-        val restored = if (scheduled != null && scheduled.state == TimerState.RUNNING && list.none { it.id == scheduled.id }) {
+        val restored = if (scheduled != null && mayRestore(scheduled, list)) {
             nextId = maxOf(nextId, scheduled.id + 1)
             (list + scheduled).sortedWith(compareBy({ it.createdAt }, { it.id }))
         } else {
@@ -194,6 +204,22 @@ internal class DefaultTimerController @Inject constructor(
         }
         Change(ringDue(restored, now), Unit)
     }
+
+    /**
+     * Whether [scheduled] (the snapshot in a ring alarm) is a timer that got lost and must still
+     * ring, rather than one the user removed. A cancel cancels the alarm too, but an alarm that
+     * already fired can wait for [mutex] while the cancel runs, and its broadcast then carries the
+     * removed timer (komplettering, 0.2.0: a cancelled timer must never come back and ring). So it
+     * is restored only when it is RUNNING and missing, was not removed in this process, and was
+     * never in a file this process read or wrote: every write holds the whole list, so a file
+     * whose `next_id` is above the id and that lacks the timer means it was removed (in an earlier
+     * process too). A lost file reads as empty with `next_id` 1, so its timers still ring.
+     */
+    private fun mayRestore(scheduled: CookTimer, list: List<CookTimer>): Boolean =
+        scheduled.state == TimerState.RUNNING &&
+            list.none { it.id == scheduled.id } &&
+            scheduled.id !in removedIds &&
+            scheduled.id >= persistedNextId
 
     /** The auto-silence alarm: timers that rang for [TimerEngineConfig.ringTimeout] stop and leave a quiet notice. */
     suspend fun onAutoSilence() {
@@ -261,6 +287,8 @@ internal class DefaultTimerController @Inject constructor(
         val before = mutableTimers.value
         val change = transform(before, now)
         val after = change.timers
+        val kept = after.mapTo(HashSet()) { it.id }
+        before.filterNot { it.id in kept }.mapTo(removedIds) { it.id }
         // Never while the file is unread: an empty list must not replace timers that are on disk.
         if (loaded && (after != before || unsaved)) persist(after)
         mutableTimers.value = after
@@ -287,6 +315,7 @@ internal class DefaultTimerController @Inject constructor(
         nextId = maxOf(nextId, stored.nextId, (merged.maxOfOrNull { it.id } ?: 0L) + 1)
         mutableTimers.value = merged
         loaded = true
+        persistedNextId = stored.nextId
         unsaved = memoryOnly.isNotEmpty()
         return true
     }
@@ -306,6 +335,7 @@ internal class DefaultTimerController @Inject constructor(
     private suspend fun persist(timers: List<CookTimer>) {
         unsaved = try {
             store.write(StoredTimers.of(nextId, timers))
+            persistedNextId = nextId
             false
         } catch (e: IOException) {
             // The timers keep running in this process, and their alarms carry them (onAlarm).
