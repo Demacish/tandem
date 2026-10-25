@@ -2,7 +2,7 @@
   "name": "media-image-get-no-auth",
   "request": {
     "method": "GET",
-    "path": "/media/recipes/601325a2-07f1-465c-bbd0-2a5e039ced48_2.png",
+    "path": "/media/recipes/13471cb0-8898-444d-a89c-718e2eecd9da_2.png",
     "headers": {
       "accept": "application/json"
     }
@@ -13,8 +13,8 @@
       "accept-ranges": "bytes",
       "content-disposition": "attachment; filename=\"\"",
       "content-type": "image/png",
-      "etag": "\"6addd225-4d\"",
-      "last-modified": "Sun, 25 Oct 2026 09:55:49 GMT",
+      "etag": "\"6addd5fc-4d\"",
+      "last-modified": "Sun, 25 Oct 2026 10:12:12 GMT",
       "server": "nginx"
     },
     "isJson": false,

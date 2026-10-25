@@ -60,7 +60,7 @@
     "image",
     "image_url"
   ],
-  "image.put.image": "/media/recipes/601325a2-07f1-465c-bbd0-2a5e039ced48_2.png",
+  "image.put.image": "/media/recipes/13471cb0-8898-444d-a89c-718e2eecd9da_2.png",
   "cookLog.create.fieldTypes": {
     "id": "number",
     "recipe": "number",
@@ -153,7 +153,7 @@
   ],
   "flat.count": 12,
   "flat.containsPrivateOwnRecipe": true,
-  "flat.image": "/media/recipes/601325a2-07f1-465c-bbd0-2a5e039ced48_2.png",
+  "flat.image": "/media/recipes/13471cb0-8898-444d-a89c-718e2eecd9da_2.png",
   "flat.imageIsRelative": true,
   "flat.imageNullWithoutImage": null,
   "flat.orderOfNames": [
@@ -280,7 +280,7 @@
     "last_cooked": "null",
     "new": "boolean"
   },
-  "list.overview.image": "https://tandoor.example.com/media/recipes/601325a2-07f1-465c-bbd0-2a5e039ced48_2.png",
+  "list.overview.image": "https://tandoor.example.com/media/recipes/13471cb0-8898-444d-a89c-718e2eecd9da_2.png",
   "list.overview.imageIsAbsoluteHttps": true,
   "list.overview.ratingWithoutSort": null,
   "list.overview.lastCookedWithoutSort": null,
@@ -646,7 +646,7 @@
     "base_unit": "string",
     "open_data_slug": "null"
   },
-  "detail.image": "https://tandoor.example.com/media/recipes/601325a2-07f1-465c-bbd0-2a5e039ced48_2.png",
+  "detail.image": "https://tandoor.example.com/media/recipes/13471cb0-8898-444d-a89c-718e2eecd9da_2.png",
   "detail.imageIsAbsoluteHttps": true,
   "detail.rating": 4.0,
   "detail.lastCooked": null,
@@ -1070,10 +1070,11 @@
   "cookLog.app.status": 201,
   "cookLog.app.createdAtInstantKept": true,
   "cookLog.app.fieldsKept": [
-    null,
+    3.0,
     4,
     "Lagad offline"
   ],
+  "cookLog.app.servingsAsSent": 3.0,
   "cookLog.app.listedSameInstant": true,
   "cookLog.app.listedSameAuthor": true,
   "cookLog.deletedRecipe.status": 400,
@@ -1095,7 +1096,7 @@
     "created_by": "object",
     "created_at": "string"
   },
-  "stepFile.upload.image.preview": "https://tandoor.example.com/media/files/59770433-8540-48a5-beb0-65f7ef470f17.png",
+  "stepFile.upload.image.preview": "https://tandoor.example.com/media/files/d8e061c5-25b9-4339-b1ed-b69268ad89eb.png",
   "stepFile.upload.pdf.preview": "",
   "stepFile.recipeCreate.status": 201,
   "stepFile.detail.status": 200,
@@ -1109,7 +1110,7 @@
     "created_at": "string"
   },
   "stepFile.withoutFile.file": null,
-  "stepFile.image.preview": "https://tandoor.example.com/media/files/59770433-8540-48a5-beb0-65f7ef470f17.png",
+  "stepFile.image.preview": "https://tandoor.example.com/media/files/d8e061c5-25b9-4339-b1ed-b69268ad89eb.png",
   "stepFile.image.previewIsAbsoluteHttps": true,
   "stepFile.pdf.preview": "",
   "stepFile.image.fileDownload": "https://tandoor.example.com/api/download-file/1/",
@@ -1128,7 +1129,5 @@
   },
   "stepFile.download.noAuth.location": null,
   "stepFile.cleanup.recipe": 204,
-  "mismatches": [
-    "cookLog.app.fieldsKept: expected [3,4,\"Lagad offline\"], observed [null,4,\"Lagad offline\"]"
-  ]
+  "mismatches": []
 }

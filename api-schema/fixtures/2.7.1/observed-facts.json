@@ -15,7 +15,7 @@
     "hosted": "boolean",
     "debug": "boolean",
     "version": "string",
-    "email": "boolean",
+    "email": "<redacted>",
     "unauthenticated_theme_from_space": "number",
     "force_theme_from_space": "number",
     "enable_signup": "boolean",
@@ -68,7 +68,7 @@
   "login.allauth.userFieldTypes": {
     "id": "number",
     "display": "string",
-    "email": "string",
+    "email": "<redacted>",
     "has_usable_password": "boolean",
     "username": "string"
   },
