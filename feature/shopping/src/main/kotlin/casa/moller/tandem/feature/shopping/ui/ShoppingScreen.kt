@@ -518,7 +518,8 @@ private fun SyncNoticeCard(notice: ShoppingSyncNotice, pendingCount: Int, onActi
         title = stringResource(title),
         body = stringResource(body) + pending,
         icon = if (notice == ShoppingSyncNotice.OFFLINE) TandemIcons.CloudOff else TandemIcons.Warning,
-        tone = if (notice == ShoppingSyncNotice.OFFLINE) TandemTone.Neutral else TandemTone.Warning,
+        // Neutral also when paused: the action's text is readable on it (saffron is for the app chip).
+        tone = TandemTone.Neutral,
         actions = if (notice == ShoppingSyncNotice.OFFLINE || notice == ShoppingSyncNotice.PAUSED) {
             {
                 TandemTextButton(

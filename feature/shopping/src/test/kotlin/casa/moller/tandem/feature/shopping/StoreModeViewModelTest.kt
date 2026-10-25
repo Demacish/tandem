@@ -14,6 +14,7 @@ import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.shopping.ShoppingSamples.eggs
 import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -42,6 +43,7 @@ class StoreModeViewModelTest {
         shopping = shopping,
     )
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun TestScope.open(vm: StoreModeViewModel): MutableList<ShoppingEffect> {
         val effects = mutableListOf<ShoppingEffect>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }

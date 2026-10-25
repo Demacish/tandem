@@ -31,6 +31,7 @@ import casa.moller.tandem.feature.shopping.ShoppingSamples.onions
 import casa.moller.tandem.feature.shopping.ShoppingSamples.potato
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
 import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -70,6 +71,7 @@ class ShoppingViewModelTest {
     )
 
     /** Starts collecting the state (as the screen does) and the effects. */
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun TestScope.open(vm: ShoppingViewModel): MutableList<ShoppingEffect> {
         val effects = mutableListOf<ShoppingEffect>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }

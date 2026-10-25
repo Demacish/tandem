@@ -107,8 +107,7 @@ class StoreModeViewModel @AssistedInject internal constructor(
         when (action) {
             is StoreModeAction.Check -> check(action.id)
             StoreModeAction.Undo -> takeBack()
-            // Handled by the route.
-            StoreModeAction.Share, StoreModeAction.Close -> Unit
+            StoreModeAction.Share, StoreModeAction.Close -> Unit // Handled by the route.
         }
     }
 

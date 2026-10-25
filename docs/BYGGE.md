@@ -1121,6 +1121,65 @@ datadelen i `:core:datastore` och `:core:sync`.
 <!-- /Fas 1b inställningar -->
 
 <!-- Fas 1 domain -->
+<!-- Fas 2 inköp-ui -->
+## Handla (`:feature:shopping`, Fas 2)
+
+Fliken Handla (plan 6.2 "Handla", #10, #11, #13, #14, gästläget #42; Stitch `ink_pslista_*`,
+`butiksl_ge`, `ink_pslista_handla_surfplatta`). Bygger bara på gränssnitten i `:core:data`
+(`ShoppingRepository`, `SupermarketRepository`, `IngredientParser`, `SpacePermissionsRepository`,
+`ForegroundSync`, `SyncRepository`, `PreferencesRepository`); implementationerna kommer från
+inköpets databana.
+
+| Route (nyckel) | ViewModel | Skärm |
+|---|---|---|
+| `ShoppingRoute` (`ShoppingKey`, `ShoppingListKey`) | `ShoppingViewModel` (assisted, `ShoppingListKey`) | `ShoppingScreen` |
+| `StoreModeRoute` (`StoreModeKey`) | `StoreModeViewModel` (assisted) | `StoreModeScreen` |
+| `ShoppingListChoiceRoute` (`ShoppingListChoiceKey`) | `StoreChoiceViewModel` | `StoreChoiceScreen` |
+| `ShoppingHistoryRoute` (`ShoppingHistoryKey`) | `ShoppingHistoryViewModel` | `ShoppingHistoryScreen` |
+
+- **Data:** `ShoppingSource` slår ihop listan, butikerna, kategorierna, behörigheten, inställningarna
+  och synkläget. Att samla den startar `ForegroundSync.keepFresh(ShoppingList)`, så listan pollas
+  bara medan listan eller butiksläget syns (`WhileSubscribed` + `collectAsStateWithLifecycle`).
+  En "köp senare"-rad flyttar tillbaka till sin gång när tiden har gått, utan databasändring.
+- **Ordning (`ShoppingGrouping`, ren):** ej avbockade rader per kategori i den valda butikens
+  gångordning, sedan kategorier som butiken saknar (efter namn) och sist "Övrigt" (ingen eller okänd
+  kategori). Utan butik: efter kategorinamn. Inom en gång efter livsmedlets namn. Fördröjda rader
+  hamnar i "Köp senare" (först förfallna först), avbockade i "Avbockat" (senast först, hopfällt).
+- **Butik:** nyckelns `supermarketId` gäller tills användaren väljer butik; valet sparas per enhet
+  (`SupermarketRepository.selectSupermarket`, också för gäster). `ShoppingListChoiceKey` visar bara
+  butiksvalet och anropar `onChosen(null, null)` när valet är sparat; de namngivna listorna är chips
+  på själva listan (valet ligger i `SavedStateHandle`, nya rader hamnar på den valda listan).
+- **Rader:** en rad är **en** nod för TalkBack ("2 dl grädde, Mejeri, avbockad"); tryck eller svep
+  åt slutet bockar av, svep åt början = "köp senare"/"köp nu", lång tryckning = ändra. "Köp senare"
+  och "Ändra" finns också som TalkBack-åtgärder. Ändringar visar en snackbar med "Ångra" (bocka av,
+  bocka av alla i en gång, köp senare, lägg till, ta bort; ta bort lägger tillbaka varan som en ny
+  rad utan receptetikett).
+- **Lägg till (#11):** fältet tolkas lokalt (`IngredientParser.parseLocally`) medan man skriver och
+  förhandsvisas; Tandoors parser (som skapar livsmedel) anropas först vid "Lägg till", och misslyckas
+  den används den lokala tolkningen. Flera varor per rad, komma eller semikolon (decimalkomma
+  stannar). Förslag (`observeSuggestions`) för varan som skrivs och "Köpt nyligen" ur historiken.
+  Bottenark på telefon, fast sidopanel på bredare fönster.
+- **Ändra:** livsmedel, mängd och enhet (`ShoppingRepository.update`) och livsmedlets gång
+  (`SupermarketRepository.setFoodCategory`, gäller hela spacet; inte för ett livsmedel som skapats
+  offline). Gränssnittet har ingen anteckning per rad, så den går inte att ändra.
+- **Köp senare (#14):** nu + Tandoors `default_delay` timmar; "köp nu" ångrar med `null`.
+- **Butiksläge (#13):** bara det som är kvar att köpa, rader på minst 64 dp med stor text, gångarnas
+  rubriker står kvar överst (`stickyHeader`) och skärmen hålls tänd medan det visas.
+- **Dela som text:** byggs i appen ur samma gruppering som skärmen (rubrik, gångar, "- 2 dl grädde",
+  vanliga bråk), inte med `ShoppingRepository.shareText`, och öppnar Androids delningsark.
+- **Lägen:** tomt (med "Köpt nyligen"), offline/pausad/inloggning/säkert läge med antal väntande
+  ändringar, gäst (inga redigeringskontroller alls, skrivningar ignoreras i ViewModel också), demo
+  (skalets banner; demodatan kommer från repositoryt).
+- **Surfplatta (plan 6.5):** från 600 dp fönsterbredd en sidopanel (lägg till, listor, butiker,
+  butiksläge, historik) bredvid listan; från 640 dp listbredd står gångarna i två kolumner
+  (staggered grid). Gäller båda orienteringarna och telefon i liggande läge.
+- **Tester:** `ShoppingGroupingTest` (ordning, delning av fritext, format, delningstext),
+  `ShoppingViewModelTest` och `StoreModeViewModelTest` (fakes ur `:core:testing`),
+  `ShoppingScreenTest` (semantik, åtgärder, gäst, surfplatta, routen med ångra),
+  `ShoppingAccessibilityTest` (ATF) och `ShoppingScreenshotTest`/`ShoppingPseudoLocaleScreenshotTest`
+  (`feature/shopping/src/test/screenshots/shopping/`). Skärmarna och lägena står i `ShoppingShot`.
+<!-- /Fas 2 inköp-ui -->
+
 ## Receptvisning (`:core:domain`, Fas 1)
 
 Ren Kotlin (JVM, JUnit 5) utan Android-typer. Allt som receptvyn och senare kokläget visar och

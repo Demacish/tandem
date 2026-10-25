@@ -10,6 +10,14 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   och sidor (inköpslistan, butiksläget, listval, historik, veckan, planera måltid, "Handla för
   veckan", receptböcker, favoriter och "Vill laga") som fylls i av kommande ändringar. Databasen
   uppgraderas till version 4 när appen uppdateras; inget som redan är sparat ändras.
+- **Handla:** inköpslistan grupperad efter butikens gångar (välj butik och lista), avbockade
+  varor samlas hopfällda längst ned och "Köp senare" har en egen del. Bocka av med ett tryck eller
+  svep, eller alla i en avdelning på en gång, och ångra direkt. Lägg till varor med fritext ("2 dl
+  grädde, mjölk") och se hur de tolkas innan de läggs till, även offline; förslag och nyss köpta
+  varor läggs till med ett tryck. Lång tryckning ändrar mängd, enhet, vara och avdelning.
+  Butiksläget har stor text, stora rader och tänd skärm, och listan kan delas som text. Offline
+  sparas allt och antalet väntande ändringar syns; gäster ser listan utan att kunna ändra den. På
+  surfplatta står "Lägg till", listor och butiker i en sidopanel bredvid listan.
 
 ## [0.2.0] – 2026-10-24
 

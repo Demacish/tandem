@@ -114,6 +114,7 @@ internal fun ShoppingEntryRow(
     ) {
         Row(
             modifier = Modifier
+                .testTag(shoppingRowTag(entry.id))
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .heightIn(min = minHeight)
@@ -140,7 +141,6 @@ internal fun ShoppingEntryRow(
                         )
                     }
                 }
-                .testTag(shoppingRowTag(entry.id))
                 .padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),

@@ -74,8 +74,8 @@ internal fun AisleCard(
                 )
                 Text(
                     text = pluralStringResource(R.plurals.shopping_section_count, section.entries.size, section.entries.size),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
             if (onCheckAll != null) {

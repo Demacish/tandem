@@ -180,8 +180,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
             is ShoppingAction.EditCategory -> editing { it.copy(categoryId = action.categoryId) }
             ShoppingAction.SaveEdit -> saveEdit()
             ShoppingAction.DeleteEdited -> deleteEdited()
-            // Navigation and sharing (OpenStoreMode, OpenStoreChoice, OpenHistory, OpenRecipe, Share) are the route's.
-            else -> Unit
+            else -> Unit // Navigation and sharing (store mode, store choice, history, recipe, share) are the route's.
         }
     }
 
