@@ -215,11 +215,10 @@ internal class DefaultTimerController @Inject constructor(
      * whose `next_id` is above the id and that lacks the timer means it was removed (in an earlier
      * process too). A lost file reads as empty with `next_id` 1, so its timers still ring.
      */
-    private fun mayRestore(scheduled: CookTimer, list: List<CookTimer>): Boolean =
-        scheduled.state == TimerState.RUNNING &&
-            list.none { it.id == scheduled.id } &&
-            scheduled.id !in removedIds &&
-            scheduled.id >= persistedNextId
+    private fun mayRestore(scheduled: CookTimer, list: List<CookTimer>): Boolean = scheduled.state == TimerState.RUNNING &&
+        list.none { it.id == scheduled.id } &&
+        scheduled.id !in removedIds &&
+        scheduled.id >= persistedNextId
 
     /** The auto-silence alarm: timers that rang for [TimerEngineConfig.ringTimeout] stop and leave a quiet notice. */
     suspend fun onAutoSilence() {
