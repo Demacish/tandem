@@ -161,8 +161,7 @@ class ShellAccessibilityTest {
     // --- fix-ui (0.2.0 review) ---
 
     @Test
-    fun timerBarLongLabelFontScale2() =
-        check(CONNECTED_STATE.copy(timers = listOf(LONG_RINGING_TIMER, LONG_TIMER)), ShellTab.TODAY, fontScale = 2f)
+    fun timerBarLongLabelFontScale2() = check(CONNECTED_STATE.copy(timers = listOf(LONG_RINGING_TIMER, LONG_TIMER)), ShellTab.TODAY, fontScale = 2f)
 
     @Test
     fun logoutDialogWithUnsentChanges() {
@@ -174,12 +173,11 @@ class ShellAccessibilityTest {
     }
 
     @Test
-    fun moreWithServerFeaturesDark() =
-        check(
-            CONNECTED_STATE.copy(serverFeatures = setOf(ServerFeature.COOK_LOG, ServerFeature.AI_IMPORT)),
-            ShellTab.MORE,
-            darkTheme = true,
-        )
+    fun moreWithServerFeaturesDark() = check(
+        CONNECTED_STATE.copy(serverFeatures = setOf(ServerFeature.COOK_LOG, ServerFeature.AI_IMPORT)),
+        ShellTab.MORE,
+        darkTheme = true,
+    )
 
     @Test
     fun phoneSettingsRowsAreNotAnnouncedAsNotSelected() {

@@ -139,18 +139,17 @@ data class CookTimer(
             recipeId: Long? = null,
             stepIndex: Int? = null,
             sourceKey: String? = null,
-        ): CookTimer =
-            CookTimer(
-                id = id,
-                label = label,
-                recipeId = recipeId,
-                stepIndex = stepIndex,
-                sourceKey = sourceKey,
-                duration = duration,
-                state = TimerState.RUNNING,
-                endsAt = now + duration,
-                createdAt = now,
-            )
+        ): CookTimer = CookTimer(
+            id = id,
+            label = label,
+            recipeId = recipeId,
+            stepIndex = stepIndex,
+            sourceKey = sourceKey,
+            duration = duration,
+            state = TimerState.RUNNING,
+            endsAt = now + duration,
+            createdAt = now,
+        )
     }
 }
 

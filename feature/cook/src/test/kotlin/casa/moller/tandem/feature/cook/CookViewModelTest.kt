@@ -496,14 +496,13 @@ class CookViewModelTest {
 
     @Test
     fun durationsAreFoundInTheVisibleTextNotInTheMarkdown() = runTest(mainDispatcher.dispatcher) {
-        repository.details.value = repository.details.value + (
-            pasta.id to pasta.copy(
-                steps = listOf(
-                    pasta.steps[0].copy(instruction = "Koka **10** minuter.", timeMinutes = 0),
-                    pasta.steps[1].copy(instruction = "Koka i 10\nminuter.", timeMinutes = 0),
-                ),
-            )
+        val markdown = pasta.copy(
+            steps = listOf(
+                pasta.steps[0].copy(instruction = "Koka **10** minuter.", timeMinutes = 0),
+                pasta.steps[1].copy(instruction = "Koka i 10\nminuter.", timeMinutes = 0),
+            ),
         )
+        repository.details.value = repository.details.value + (pasta.id to markdown)
         val steps = viewModel().uiState.value.steps
 
         // "**10** min": no unit right after the number in the source, but on screen there is.
@@ -517,9 +516,8 @@ class CookViewModelTest {
     @Test
     fun theStepsPhotoReachesCookMode() = runTest(mainDispatcher.dispatcher) {
         val photo = "https://example.com/media/step.jpg"
-        repository.details.value = repository.details.value + (
-            pasta.id to pasta.copy(steps = pasta.steps.mapIndexed { i, step -> if (i == 1) step.copy(imageUrl = photo) else step })
-        )
+        val withPhoto = pasta.copy(steps = pasta.steps.mapIndexed { i, step -> if (i == 1) step.copy(imageUrl = photo) else step })
+        repository.details.value = repository.details.value + (pasta.id to withPhoto)
         assertEquals(listOf(null, photo, null), viewModel().uiState.value.steps.map { it.imageUrl })
     }
 
@@ -569,4 +567,3 @@ class CookViewModelTest {
         assertEquals(TimerSource.DEMO, timers.timers.value.single().sourceKey)
     }
 }
-

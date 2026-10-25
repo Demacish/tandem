@@ -103,13 +103,9 @@ internal fun CookingSettingsScreen(
             SettingsRow(
                 icon = TandemIcons.Shield,
                 title = stringResource(R.string.settings_permissions),
-                supporting = stringResource(
-                    if (capabilities.alarmMayBeSilent || capabilities.alarmMayBeLate) {
-                        R.string.settings_permissions_summary_attention
-                    } else {
-                        R.string.settings_permissions_summary_ok
-                    },
-                ),
+                // What the page holds, not the same status as the row under Mer: on a tablet both
+                // are on screen, and the warning above already says what is wrong.
+                supporting = stringResource(R.string.settings_cooking_permissions_body),
                 onClick = onOpenPermissions,
             )
             GroupDivider()

@@ -206,8 +206,7 @@ class ShellPhoneScreenshotTest : ShellScreenshotTest("phone") {
 
     @Test
     @Config(qualifiers = PHONE_SV)
-    fun logoutDialogUnsentChangesSwedish() =
-        captureLogoutDialog("logout_dialog_unsent_light_sv", CONNECTED_STATE.copy(pendingChanges = 1))
+    fun logoutDialogUnsentChangesSwedish() = captureLogoutDialog("logout_dialog_unsent_light_sv", CONNECTED_STATE.copy(pendingChanges = 1))
 
     @Test
     @Config(qualifiers = PHONE_SV)

@@ -43,6 +43,7 @@
     <string name="settings_timer_alarm_warning_title">Dina timers kanske inte ringer som de ska</string>
     <string name="settings_timer_alarm_warning_silent">Tandem får inte visa notiser. En färdig timer ringer ändå, men larmet går bara att stänga av i Tandem, inte från låsskärmen.</string>
     <string name="settings_timer_alarm_warning_channel_off">Larmljudet för timers är avstängt i notisinställningarna. En färdig timer blir tyst.</string>
+    <string name="settings_cooking_permissions_body">Notiser, larmljud och exakta larm för timers</string>
     <string name="settings_timer_alarm_warning_late">Tandem får inte ställa exakta larm, så Android kan försena en timer några minuter.</string>
     <string name="settings_open_permissions">Kontrollera behörigheter</string>
     <string name="settings_open_appearance">Textstorlek och mörkt kokläge</string>

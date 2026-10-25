@@ -93,7 +93,9 @@ class CookFakes(
     fun withStepImage(): CookFakes = apply {
         val pasta = SampleRecipes.MushroomPasta
         val withPhoto = pasta.copy(
-            steps = pasta.steps.mapIndexed { index, step -> if (index == 1) step.copy(imageUrl = "https://example.com/media/pasta.jpg") else step },
+            steps = pasta.steps.mapIndexed { index, step ->
+                if (index == 1) step.copy(imageUrl = "https://example.com/media/pasta.jpg") else step
+            },
         )
         recipes.details.value = recipes.details.value + (pasta.id to withPhoto)
     }

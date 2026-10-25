@@ -108,18 +108,7 @@ internal fun CookDonePage(state: CookUiState, onAction: (CookAction) -> Unit, on
                     state.sendState == CookLogSendState.OFFLINE -> TandemIcons.CloudOff
                     else -> TandemIcons.Schedule
                 },
-                text = stringResource(
-                    when {
-                        state.demo -> R.string.cook_done_demo
-                        else -> when (state.sendState) {
-                            CookLogSendState.NOW -> R.string.cook_done_online
-                            CookLogSendState.OFFLINE -> R.string.cook_done_offline
-                            CookLogSendState.SAFE_MODE -> R.string.cook_done_safe_mode
-                            CookLogSendState.NEEDS_LOGIN -> R.string.cook_done_needs_login
-                            CookLogSendState.HELD -> R.string.cook_done_held
-                        }
-                    },
-                ),
+                text = stringResource(if (state.demo) R.string.cook_done_demo else state.sendState.text()),
                 iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.testTag(COOK_DONE_SEND_STATE_TAG),
             )
@@ -294,6 +283,15 @@ internal fun NotificationPromptDialog(onContinue: () -> Unit, onNotNow: () -> Un
             )
         },
     )
+}
+
+/** Where a saved entry goes, in the app's 0.1.0 terms (plan 4.1). */
+private fun CookLogSendState.text(): Int = when (this) {
+    CookLogSendState.NOW -> R.string.cook_done_online
+    CookLogSendState.OFFLINE -> R.string.cook_done_offline
+    CookLogSendState.SAFE_MODE -> R.string.cook_done_safe_mode
+    CookLogSendState.NEEDS_LOGIN -> R.string.cook_done_needs_login
+    CookLogSendState.HELD -> R.string.cook_done_held
 }
 
 private const val MAX_STARS = 5

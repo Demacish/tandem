@@ -476,8 +476,10 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
                     val step = state.currentStep
                     val announcement = when {
                         state.isDonePage -> stringResource(R.string.cook_done_page)
+
                         step != null && step.name.isNotBlank() ->
                             stringResource(R.string.cook_step_of_named, state.page + 1, state.steps.size, step.name)
+
                         else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
                     }
                     Text(

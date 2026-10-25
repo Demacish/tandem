@@ -583,4 +583,3 @@ class ShellViewModelTest {
         assertEquals(emptySet<ServerFeature>(), vm.uiState.value.serverFeatures)
     }
 }
-

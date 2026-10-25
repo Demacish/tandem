@@ -166,4 +166,3 @@ private fun Context.openSettings(intent: Intent) {
     val fallback = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri())
     runCatching { startActivity(intent) }.recoverCatching { startActivity(fallback) }
 }
-
