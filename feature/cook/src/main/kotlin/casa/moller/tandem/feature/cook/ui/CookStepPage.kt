@@ -2,9 +2,11 @@ package casa.moller.tandem.feature.cook.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -19,7 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -29,6 +34,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
 import casa.moller.tandem.core.designsystem.icon.FormatListBulleted
@@ -43,8 +49,10 @@ import casa.moller.tandem.core.model.timer.TimerSuggestionSource
 import casa.moller.tandem.core.ui.recipe.IconLabel
 import casa.moller.tandem.core.ui.recipe.IngredientHeader
 import casa.moller.tandem.core.ui.recipe.IngredientRow
+import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.core.ui.timer.KitchenIconButton
 import casa.moller.tandem.core.ui.timer.TimerActions
+import casa.moller.tandem.core.ui.timer.TimerBarItem
 import casa.moller.tandem.core.ui.timer.TimerCard
 import casa.moller.tandem.core.ui.timer.TimerStartButton
 import casa.moller.tandem.core.ui.timer.sortedForDisplay
@@ -93,6 +101,18 @@ internal fun CookStepPage(
         } else if (state.steps.size == 1 && step.ingredients.isNotEmpty()) {
             Text(text = stringResource(R.string.cook_no_steps), style = MaterialTheme.typography.bodyLarge)
         }
+        step.imageUrl?.let { url ->
+            // Decorative: the step's text says what to do; the photo only shows how it looks.
+            RecipeImage(
+                imageUrl = url,
+                modifier = Modifier
+                    .widthIn(max = TandemTheme.sizes.maxReadingWidth)
+                    .fillMaxWidth()
+                    .aspectRatio(STEP_IMAGE_ASPECT_RATIO)
+                    .clip(MaterialTheme.shapes.large)
+                    .testTag(COOK_STEP_IMAGE_TAG),
+            )
+        }
         if (step.hasBrokenTemplate) {
             IconLabel(
                 icon = TandemIcons.Info,
@@ -135,13 +155,13 @@ private fun StepTitle(step: CookStep) {
     }
 }
 
-/** The step text in cook mode: [TandemTheme.extendedTypography.cookStep] (28 sp, 34 sp on wide windows) × A−/A+. */
+/**
+ * The step text in cook mode: `cookStep` (28 sp, 34 sp on wide windows) × A−/A+, the same style
+ * Settings → Appearance previews.
+ */
 @Composable
-private fun cookTextStyle(scale: Float, largeText: Boolean): TextStyle {
-    val base = TandemTheme.extendedTypography.cookStep
-    val boost = if (largeText) LARGE_TEXT_FACTOR else 1f
-    return base.copy(fontSize = base.fontSize * scale * boost, lineHeight = base.lineHeight * scale * boost)
-}
+private fun cookTextStyle(scale: Float, largeText: Boolean): TextStyle =
+    TandemTheme.extendedTypography.cookStepScaled(scale, wide = largeText)
 
 /** The step's timers as big start buttons (Stitch "Starta 5 min"). */
 @Composable
@@ -244,6 +264,9 @@ internal fun CookIngredientRows(rows: List<DisplayRow>, state: CookUiState, onAc
                         struck = row.id in state.struckIngredientIds,
                         onToggle = { onAction(CookAction.ToggleIngredient(row.id)) },
                         onAmountClick = if (row.canCycleUnits) ({ onAction(CookAction.SwitchUnit(row.id)) }) else null,
+                        // The unit pill is as tall as the 64 dp row (plan 6.6: a tap just above
+                        // or below it switches the unit, it does not tick the row off).
+                        amountMinHeight = TandemTheme.sizes.kitchenTouchTarget,
                         modifier = Modifier.heightIn(min = TandemTheme.sizes.kitchenTouchTarget),
                     )
                 }
@@ -305,8 +328,12 @@ internal fun StepperRow(
 }
 
 /**
- * Two panes (plan 6.5, Stitch kokl_ge_surfplatta_*): servings, the current step's ingredients and
- * the active timers on the left, so they stay in view while the step changes on the right.
+ * Two panes (plan 6.5, Stitch kokl_ge_surfplatta_*): servings and the current step's ingredients
+ * on the left, scrolling on their own, and below them the active timers, pinned to the bottom of
+ * the pane so they stay in view while the step changes on the right (plan 6.5 "i liggande läge
+ * hela tiden synligt"). Ringing timers come first. The timer section takes at most
+ * [TIMER_SECTION_SHARE] of the pane and scrolls inside; a short pane (phone in landscape) shows
+ * the timers as compact rows instead of cards.
  */
 @Composable
 internal fun CookSidePane(
@@ -315,50 +342,64 @@ internal fun CookSidePane(
     timerActions: TimerActions,
     onOpenTimer: (CookTimer) -> Unit,
     onAction: (CookAction) -> Unit,
-    onOpenNotificationSettings: () -> Unit,
-    onOpenExactAlarmSettings: () -> Unit,
+    warningActions: WarningActions,
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
     val step = state.currentStep
-    Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(spacing.lg),
-    ) {
-        state.servings?.let { CookServingsControl(servings = it, onAction = onAction) }
-        if (step != null && step.ingredients.isNotEmpty()) {
-            Column {
-                PaneHeading(
-                    text = if (state.steps.size == 1) {
-                        stringResource(R.string.cook_all_ingredients)
-                    } else {
-                        stringResource(R.string.cook_ingredients_for_step_number, step.number)
-                    },
-                )
-                CookIngredientRows(rows = step.ingredients, state = state, onAction = onAction)
+    BoxWithConstraints(modifier) {
+        val shortPane = maxHeight < SidePaneCardsMinHeight
+        Column(Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(spacing.lg),
+            ) {
+                state.servings?.let { CookServingsControl(servings = it, onAction = onAction) }
+                if (step != null && step.ingredients.isNotEmpty()) {
+                    Column {
+                        PaneHeading(
+                            text = if (state.steps.size == 1) {
+                                stringResource(R.string.cook_all_ingredients)
+                            } else {
+                                stringResource(R.string.cook_ingredients_for_step_number, step.number)
+                            },
+                        )
+                        CookIngredientRows(rows = step.ingredients, state = state, onAction = onAction)
+                    }
+                }
             }
-        }
-        if (state.timers.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                PaneHeading(text = stringResource(R.string.cook_active_timers))
-                AlarmWarnings(
-                    state = state,
-                    onAction = onAction,
-                    onOpenNotificationSettings = onOpenNotificationSettings,
-                    onOpenExactAlarmSettings = onOpenExactAlarmSettings,
-                )
-                state.timers.sortedForDisplay().forEach { timer ->
-                    TimerCard(
-                        timer = timer,
-                        now = now,
-                        actions = timerActions,
-                        overline = timer.stepIndex?.takeIf { timer.recipeId == state.recipeId }?.let {
-                            stringResource(R.string.cook_step_heading, it + 1)
-                        },
-                        onOpen = { onOpenTimer(timer) },
-                    )
+            if (state.timers.isNotEmpty()) {
+                HorizontalDivider()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxHeight * TIMER_SECTION_SHARE)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = spacing.lg, vertical = spacing.md)
+                        .testTag(COOK_SIDE_TIMERS_TAG),
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
+                    PaneHeading(text = stringResource(R.string.cook_active_timers))
+                    state.timers.sortedForDisplay().forEach { timer ->
+                        if (shortPane) {
+                            TimerBarItem(timer = timer, now = now, actions = timerActions, onOpen = { onOpenTimer(timer) })
+                        } else {
+                            TimerCard(
+                                timer = timer,
+                                now = now,
+                                actions = timerActions,
+                                overline = timer.stepIndex?.takeIf { timer.recipeId == state.recipeId }?.let {
+                                    stringResource(R.string.cook_step_heading, it + 1)
+                                },
+                                onOpen = { onOpenTimer(timer) },
+                            )
+                        }
+                    }
+                    AlarmWarnings(state = state, onAction = onAction, actions = warningActions, compact = shortPane)
                 }
             }
         }
@@ -376,8 +417,18 @@ private fun PaneHeading(text: String) {
     )
 }
 
-/** Wide windows start the step text this much larger (34 sp instead of 28 sp). */
-private const val LARGE_TEXT_FACTOR = 34f / 28f
+/** A step photo's shape (Tandoor's images are mostly landscape). */
+private const val STEP_IMAGE_ASPECT_RATIO = 4f / 3f
+
+/** At most this share of the side pane goes to the timers; the ingredients keep the rest. */
+private const val TIMER_SECTION_SHARE = 0.6f
+
+/** Side panes at least this tall show timers as cards; shorter ones (phones in landscape) as rows. */
+private val SidePaneCardsMinHeight = 560.dp
+
+/** Test tags. */
+internal const val COOK_SIDE_TIMERS_TAG = "cook:side-timers"
+internal const val COOK_STEP_IMAGE_TAG = "cook:step-image"
 
 /** Any quantity that selects the "other" plural form in English and Swedish. */
 private const val PLURAL_OTHER = 2

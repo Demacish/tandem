@@ -106,7 +106,23 @@ internal val TandemTypography: Typography = Typography().let { base ->
  * - [overline]: small upper-case labels like "STEG 2 AV 3" or "TORSDAG 24 OKTOBER".
  */
 @Immutable
-data class TandemExtendedTypography(val cookStep: TextStyle, val overline: TextStyle)
+data class TandemExtendedTypography(val cookStep: TextStyle, val overline: TextStyle) {
+    /**
+     * The step text exactly as cook mode draws it: [cookStep] times the A−/A+ [scale]
+     * (`CookTextScale`), and on [wide] windows (840 dp and up, plan 6.5 "extra stor text som
+     * standard") 34 sp instead of 28 sp before scaling. Settings → Appearance previews the size
+     * with the same style, so what the user picks is what cook mode shows.
+     */
+    fun cookStepScaled(scale: Float, wide: Boolean = false): TextStyle {
+        val factor = scale * (if (wide) WIDE_COOK_STEP_FACTOR else 1f)
+        return cookStep.copy(fontSize = cookStep.fontSize * factor, lineHeight = cookStep.lineHeight * factor)
+    }
+
+    private companion object {
+        /** 34 sp instead of 28 sp. */
+        const val WIDE_COOK_STEP_FACTOR = 34f / 28f
+    }
+}
 
 internal val TandemExtendedTypographyDefault = TandemExtendedTypography(
     cookStep = TextStyle(

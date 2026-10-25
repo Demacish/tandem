@@ -31,7 +31,8 @@ import casa.moller.tandem.core.model.timer.TimerSuggestion
  * @property notificationPromptDeclined "Not now" on that question in this cook mode: not asked again,
  *   and the alarm-may-be-silent warning shows although the system dialog was never answered.
  * @property done the "Klart!" page.
- * @property offline the device is offline: a cook log is saved and sent later.
+ * @property sendState whether a saved cook log goes to Tandoor now or waits, and why
+ *   ([CookLogSendState], from the sync's pause).
  * @property demo demo mode: the cook log stays on the device.
  */
 @Immutable
@@ -52,14 +53,17 @@ data class CookUiState(
     val capabilities: TimerCapabilities = TimerCapabilities.AllGranted,
     val textScale: Float = CookTextScale.DEFAULT,
     val alwaysDark: Boolean = false,
-    val dynamicColor: Boolean = false,
     val exactAlarmPromptDismissed: Boolean = false,
     val notificationPrompt: PendingTimer? = null,
     val notificationPromptDeclined: Boolean = false,
     val done: DoneState = DoneState(),
-    val offline: Boolean = false,
+    val sendState: CookLogSendState = CookLogSendState.NOW,
     val demo: Boolean = false,
 ) {
+    /** The device is offline: a cook log is saved and sent later. */
+    val offline: Boolean
+        get() = sendState == CookLogSendState.OFFLINE
+
     /** The "Klart!" page comes after the last step. */
     val donePage: Int
         get() = steps.size
@@ -90,22 +94,60 @@ data class CookUiState(
     val showLateAlarmWarning: Boolean
         get() = activeTimers.isNotEmpty() && capabilities.alarmMayBeLate
 
-    /** Notifications or the alarm channel are off: the alarm only rings while the app is open. */
+    /**
+     * Why a running timer's alarm may not be seen or heard (core:timer's behaviour, plan 8.1/8.7),
+     * null when nothing is wrong or the in-context question is still to come:
+     * - [SilentAlarmCause.NOTIFICATIONS_OFF]: no notifications. The alarm still RINGS (the ringing
+     *   service plays the sound itself), but there is no notification or lock-screen alarm to stop
+     *   it, so it can only be stopped in Tandem (or stops itself after 5 minutes).
+     * - [SilentAlarmCause.ALARM_CHANNEL_OFF]: notifications are allowed but the "Timers (alarm)"
+     *   channel is switched off: a finished timer is silent, also while Tandem is open.
+     */
+    val silentAlarmCause: SilentAlarmCause?
+        get() = when {
+            activeTimers.isEmpty() -> null
+
+            !capabilities.notificationsAllowed ->
+                SilentAlarmCause.NOTIFICATIONS_OFF.takeIf { !capabilities.shouldAskForNotifications || notificationPromptDeclined }
+
+            !capabilities.alarmChannelEnabled -> SilentAlarmCause.ALARM_CHANNEL_OFF
+
+            else -> null
+        }
+
+    /** A [silentAlarmCause] warning is shown under the timers. */
     val showSilentAlarmWarning: Boolean
-        get() = activeTimers.isNotEmpty() &&
-            capabilities.alarmMayBeSilent &&
-            (!capabilities.shouldAskForNotifications || notificationPromptDeclined)
+        get() = silentAlarmCause != null
 }
+
+/** Why a timer's alarm may be silent or hard to stop ([CookUiState.silentAlarmCause]). */
+enum class SilentAlarmCause { NOTIFICATIONS_OFF, ALARM_CHANNEL_OFF }
+
+/**
+ * What happens to a cook log saved now ("Klart!", plan 4.1 terms of 0.1.0), from the sync's pause.
+ *
+ * - [NOW]: sent to Tandoor right away.
+ * - [OFFLINE]: no network; sent when the device is online again.
+ * - [SAFE_MODE]: the server runs an untested version; the outbox waits (plan 3.6).
+ * - [NEEDS_LOGIN]: Tandoor refused the token; sent after "Logga in igen".
+ * - [HELD]: the sync is held back for a while (blocked, circuit breaker, an import); sent later
+ *   by itself.
+ */
+enum class CookLogSendState { NOW, OFFLINE, SAFE_MODE, NEEDS_LOGIN, HELD }
 
 /**
  * One step page.
  *
  * @property index 0-based, the page and the timers' `stepIndex`.
  * @property instruction Markdown with the templates rendered for the chosen servings (core:domain
- *   `RecipeDisplay`, web parity); the timer suggestions' text ranges index into it.
+ *   `RecipeDisplay`, web parity).
+ * @property imageUrl the step's photo (Tandoor `Step.file`, an image), shown under the text; null
+ *   when the step has none.
  * @property ingredients the step's ingredients, scaled.
  * @property suggestions the timer chips: `Step.time` first, then the durations in the text
- *   (core:domain `StepTimerSuggestions`).
+ *   (core:domain `StepTimerSuggestions`). Detection reads the VISIBLE text, i.e. [instruction]
+ *   without its Markdown markers ([stepPlainText]), so "**10** min" is found too; the text ranges
+ *   index into that plain text.
  * @property stepRecipeName the name of a recipe the step uses (Tandoor `step_recipe`), if any.
  */
 @Immutable
@@ -118,6 +160,7 @@ data class CookStep(
     val suggestions: List<TimerSuggestion>,
     val hasBrokenTemplate: Boolean = false,
     val stepRecipeName: String? = null,
+    val imageUrl: String? = null,
 )
 
 /** Servings of cook mode, like the detail's servings picker. */
@@ -244,6 +287,12 @@ sealed interface CookEffect {
 
     /** A short message (snackbar). */
     data class Message(@StringRes val text: Int) : CookEffect
+
+    /**
+     * Something TalkBack should say without moving focus (no visible message): [text] with
+     * [argument], e.g. "Timer started: Pastan · 10 min".
+     */
+    data class Announce(@StringRes val text: Int, val argument: String) : CookEffect
 
     /** The cook log was saved: say [message] and leave cook mode. */
     data class Finished(@StringRes val message: Int) : CookEffect

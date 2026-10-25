@@ -3,12 +3,14 @@ package casa.moller.tandem.feature.cook.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -28,11 +30,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,11 +49,16 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -65,6 +74,7 @@ import casa.moller.tandem.core.designsystem.icon.TextDecrease
 import casa.moller.tandem.core.designsystem.icon.TextIncrease
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.format.toNumberStyle
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
@@ -77,6 +87,7 @@ import casa.moller.tandem.core.ui.timer.rememberTimerNow
 import casa.moller.tandem.feature.cook.CookAction
 import casa.moller.tandem.feature.cook.CookUiState
 import casa.moller.tandem.feature.cook.R
+import casa.moller.tandem.feature.cook.SilentAlarmCause
 import kotlin.time.Instant
 
 /**
@@ -105,15 +116,33 @@ internal fun cookLayoutFor(width: Dp, tabletop: Boolean): CookLayout = when {
 }
 
 /**
+ * A horizontal fold in window coordinates (pixels, like `WindowAdaptiveInfo.windowPosture`'s
+ * hinge bounds): the tabletop layout ends the upper half at [top] and starts the controls at
+ * [bottom], so no line of the step lies on the crease (plan 6.5 "Gångjärnet respekteras").
+ */
+@Immutable
+data class FoldBounds(val top: Float, val bottom: Float) {
+    init {
+        require(bottom >= top) { "bottom is below top" }
+    }
+
+    val height: Float
+        get() = bottom - top
+}
+
+/**
  * Cook mode (plan 6.2 "Kokläge", 6.3 wireframe, Stitch kokl_ge_*), stateless: [state] in,
  * [onAction] out. Full screen on every width; the screen stays on while it is shown.
  *
  * Keyboard (plan 6.5): arrow keys, Page Up/Down and space (Shift+space back) turn the pages.
  *
  * @param onClose leaves cook mode (✕ and "Close without saving").
- * @param onOpenNotificationSettings the app's notification settings (alarm may be silent).
+ * @param onOpenNotificationSettings the app's notification settings (notifications are off).
+ * @param onOpenAlarmChannelSettings the "Timers (alarm)" channel's settings (its sound is off).
  * @param onOpenExactAlarmSettings the system page that allows exact alarms (play build).
  * @param layout forces a layout (tests, previews); null decides from the window.
+ * @param fold forces the fold of the tabletop layout (tests); null reads the window's horizontal
+ *   hinge, and without one the halves split the screen evenly.
  */
 @Composable
 fun CookScreen(
@@ -123,14 +152,23 @@ fun CookScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onOpenNotificationSettings: () -> Unit = {},
+    onOpenAlarmChannelSettings: () -> Unit = {},
     onOpenExactAlarmSettings: () -> Unit = {},
     layout: CookLayout? = null,
+    fold: FoldBounds? = null,
 ) {
     val locale = currentLocale()
     val currentOnAction by rememberUpdatedState(onAction)
     LaunchedEffect(locale) { currentOnAction(CookAction.SetLocale(locale.toNumberStyle(), locale.toLanguageTag())) }
     KeepScreenOn()
-    val tabletop = currentWindowAdaptiveInfoV2().windowPosture.isTabletop
+    val posture = currentWindowAdaptiveInfoV2().windowPosture
+    val tabletop = posture.isTabletop
+    val windowFold = posture.hingeList.firstOrNull { !it.isVertical }?.bounds?.let { FoldBounds(it.top, it.bottom) }
+    val warningActions = WarningActions(
+        onOpenNotificationSettings = onOpenNotificationSettings,
+        onOpenAlarmChannelSettings = onOpenAlarmChannelSettings,
+        onOpenExactAlarmSettings = onOpenExactAlarmSettings,
+    )
     Scaffold(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -151,13 +189,14 @@ fun CookScreen(
                     onClose = onClose,
                     layout = chosen,
                     largeText = maxWidth >= LargeStepTextMinWidth,
-                    onOpenNotificationSettings = onOpenNotificationSettings,
-                    onOpenExactAlarmSettings = onOpenExactAlarmSettings,
+                    availableHeight = maxHeight,
+                    fold = fold ?: windowFold,
+                    warningActions = warningActions,
                 )
 
                 else -> Column(Modifier.fillMaxSize()) {
                     CookHeader(state = state, onAction = onAction, onClose = onClose, showScreenOn = false, progress = null)
-                    MissingRecipe(state = state, onAction = onAction)
+                    MissingRecipe(state = state, onAction = onAction, onClose = onClose)
                 }
             }
         }
@@ -170,32 +209,62 @@ fun CookScreen(
     }
 }
 
-/** Keeps the display on while cook mode is shown (plan 6.2 "Skärmen hålls på"). */
-@Composable
-private fun KeepScreenOn() {
-    val view = LocalView.current
-    DisposableEffect(view) {
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = false }
-    }
-}
+/** Where the warnings' buttons lead (system settings pages, opened by the route). */
+@Immutable
+internal class WarningActions(
+    val onOpenNotificationSettings: () -> Unit = {},
+    val onOpenAlarmChannelSettings: () -> Unit = {},
+    val onOpenExactAlarmSettings: () -> Unit = {},
+)
 
+/**
+ * No stored recipe yet: loading, or why it cannot be shown. Offline (or no network) asks for a
+ * connection; a recipe deleted in Tandoor says so without a retry that could never succeed; a
+ * refused login points to "Logga in igen" (the shell's banner, after closing cook mode); anything
+ * else is the app's usual error text with "Try again" (as the 0.1.0 recipe detail).
+ */
 @Composable
-private fun MissingRecipe(state: CookUiState, onAction: (CookAction) -> Unit) {
+private fun MissingRecipe(state: CookUiState, onAction: (CookAction) -> Unit, onClose: () -> Unit) {
     val error = state.error
+    val retry = { onAction(CookAction.Retry) }
+    val close: @Composable ColumnScope.() -> Unit = {
+        TandemSecondaryButton(text = stringResource(R.string.cook_close), onClick = onClose, size = TandemButtonSize.Kitchen)
+    }
     when {
         state.loading || error == null -> LoadingState(modifier = Modifier.fillMaxSize(), message = stringResource(R.string.cook_loading))
 
         else -> Column(Modifier.verticalScroll(rememberScrollState())) {
-            ErrorState(
-                title = stringResource(R.string.cook_not_downloaded_title),
-                body = stringResource(R.string.cook_not_downloaded_body),
-                icon = TandemIcons.CloudOff,
-                onRetry = { onAction(CookAction.Retry) },
-            )
+            when {
+                state.offline || error.isNoConnection -> ErrorState(
+                    title = stringResource(R.string.cook_not_downloaded_title),
+                    body = stringResource(R.string.cook_not_downloaded_body),
+                    icon = TandemIcons.CloudOff,
+                    onRetry = retry,
+                )
+
+                error == TandemError.NotFound -> ErrorState(
+                    title = stringResource(R.string.cook_recipe_gone_title),
+                    body = stringResource(R.string.cook_recipe_gone_body),
+                    icon = TandemIcons.Info,
+                    secondaryAction = close,
+                )
+
+                error is TandemError.Unauthorized -> ErrorState(
+                    title = stringResource(R.string.cook_recipe_login_title),
+                    body = stringResource(R.string.cook_recipe_login_body),
+                    icon = TandemIcons.Info,
+                    secondaryAction = close,
+                )
+
+                else -> ErrorState(error = error, onRetry = retry)
+            }
         }
     }
 }
+
+/** Errors that mean "no connection": the recipe can be fetched once the device is online. */
+private val TandemError.isNoConnection: Boolean
+    get() = this == TandemError.NetworkUnavailable || this == TandemError.UnknownHost || this == TandemError.Timeout
 
 @Composable
 private fun CookContent(
@@ -204,8 +273,9 @@ private fun CookContent(
     onClose: () -> Unit,
     layout: CookLayout,
     largeText: Boolean,
-    onOpenNotificationSettings: () -> Unit,
-    onOpenExactAlarmSettings: () -> Unit,
+    availableHeight: Dp,
+    fold: FoldBounds?,
+    warningActions: WarningActions,
 ) {
     val pagerState = rememberPagerState(initialPage = state.page) { state.pageCount }
     PagerSync(pagerState = pagerState, page = state.page, onAction = onAction)
@@ -245,9 +315,27 @@ private fun CookContent(
             }
         }
     }
+    val header: @Composable () -> Unit = {
+        CookHeader(state = state, onAction = onAction, onClose = onClose, showScreenOn = layout == CookLayout.TWO_PANE, progress = progress)
+    }
+    val bottomArea: @Composable (Dp) -> Unit = { maxScroll ->
+        BottomArea(
+            state = state,
+            now = now,
+            timerActions = timerActions,
+            onOpenTimer = openTimer,
+            onAction = onAction,
+            warningActions = warningActions,
+            maxScrollHeight = maxScroll,
+            compactHeight = availableHeight < CompactHeight,
+        )
+    }
+    // Where this column starts in the window, to place the tabletop halves around the fold.
+    var windowTop by remember { mutableFloatStateOf(Float.NaN) }
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .onGloballyPositioned { windowTop = it.positionInWindow().y }
             .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 when (event.key) {
@@ -261,46 +349,50 @@ private fun CookContent(
             // A focus target without semantics: receives the keys, is no extra TalkBack stop.
             .focusTarget(),
     ) {
-        CookHeader(state = state, onAction = onAction, onClose = onClose, showScreenOn = layout == CookLayout.TWO_PANE, progress = progress)
         when (layout) {
             CookLayout.PHONE -> {
+                header()
                 pages(Modifier.weight(1f), true)
-                BottomArea(
-                    state = state,
-                    now = now,
-                    timerActions = timerActions,
-                    onOpenTimer = openTimer,
-                    onAction = onAction,
-                    onOpenNotificationSettings = onOpenNotificationSettings,
-                    onOpenExactAlarmSettings = onOpenExactAlarmSettings,
-                )
+                bottomArea(availableHeight * bottomShare(availableHeight))
             }
 
-            CookLayout.TWO_PANE -> Row(Modifier.weight(1f)) {
-                CookSidePane(
-                    state = state,
-                    now = now,
-                    timerActions = timerActions,
-                    onOpenTimer = openTimer,
-                    onAction = onAction,
-                    onOpenNotificationSettings = onOpenNotificationSettings,
-                    onOpenExactAlarmSettings = onOpenExactAlarmSettings,
-                    modifier = Modifier
-                        .weight(SIDE_PANE_WEIGHT)
-                        .fillMaxHeight()
-                        .testTag(COOK_SIDE_PANE_TAG),
-                )
-                VerticalDivider(Modifier.fillMaxHeight())
-                Column(Modifier.weight(STEP_PANE_WEIGHT)) {
-                    pages(Modifier.weight(1f), false)
-                    PageButtons(state = state, onAction = onAction, modifier = Modifier.padding(TandemTheme.spacing.lg))
+            CookLayout.TWO_PANE -> {
+                header()
+                Row(Modifier.weight(1f)) {
+                    CookSidePane(
+                        state = state,
+                        now = now,
+                        timerActions = timerActions,
+                        onOpenTimer = openTimer,
+                        onAction = onAction,
+                        warningActions = warningActions,
+                        modifier = Modifier
+                            .weight(SIDE_PANE_WEIGHT)
+                            .fillMaxHeight()
+                            .testTag(COOK_SIDE_PANE_TAG),
+                    )
+                    VerticalDivider(Modifier.fillMaxHeight())
+                    Column(Modifier.weight(STEP_PANE_WEIGHT)) {
+                        pages(Modifier.weight(1f), false)
+                        PageButtons(state = state, onAction = onAction, modifier = Modifier.padding(TandemTheme.spacing.lg))
+                    }
                 }
             }
 
             CookLayout.TABLETOP -> {
-                // Upper half: the step. Lower half (below the fold): timers and buttons.
-                pages(Modifier.weight(1f), true)
-                HorizontalDivider()
+                // Upper half (header and step) ends at the fold, the controls start below it.
+                val density = LocalDensity.current
+                val split = tabletopSplit(fold = fold, windowTop = windowTop, height = with(density) { availableHeight.toPx() })
+                val upper = if (split != null) Modifier.height(with(density) { split.upper.toDp() }) else Modifier.weight(1f)
+                Column(upper.testTag(COOK_TABLETOP_UPPER_TAG)) {
+                    header()
+                    pages(Modifier.weight(1f), true)
+                }
+                if (split != null) {
+                    Spacer(Modifier.height(with(density) { split.gap.toDp() }))
+                } else {
+                    HorizontalDivider()
+                }
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -308,21 +400,34 @@ private fun CookContent(
                         .testTag(COOK_TABLETOP_CONTROLS_TAG),
                     verticalArrangement = Arrangement.Bottom,
                 ) {
-                    BottomArea(
-                        state = state,
-                        now = now,
-                        timerActions = timerActions,
-                        onOpenTimer = openTimer,
-                        onAction = onAction,
-                        onOpenNotificationSettings = onOpenNotificationSettings,
-                        onOpenExactAlarmSettings = onOpenExactAlarmSettings,
-                        timerBarMaxHeight = TABLETOP_TIMER_BAR_HEIGHT,
-                    )
+                    bottomArea(TABLETOP_TIMER_BAR_HEIGHT + TandemTheme.sizes.kitchenTouchTarget)
                 }
             }
         }
     }
 }
+
+/** The tabletop halves in pixels: the upper part (header and step) and the gap of the fold. */
+internal data class TabletopSplit(val upper: Float, val gap: Float)
+
+/**
+ * Where the tabletop layout splits a column of [height] px that starts at [windowTop] in the
+ * window: the upper part ends at the fold's top, the gap is the fold. Null (split evenly
+ * instead) without a fold, before the column was placed, or when the fold lies outside the
+ * column or leaves no room on one side.
+ */
+internal fun tabletopSplit(fold: FoldBounds?, windowTop: Float, height: Float): TabletopSplit? {
+    if (fold == null || windowTop.isNaN()) return null
+    val upper = fold.top - windowTop
+    val gap = fold.height
+    return TabletopSplit(upper = upper, gap = gap).takeIf { upper > 0f && upper + gap < height }
+}
+
+/** How much of a phone's height the warnings and the timer bar may take: less on short windows. */
+private fun bottomShare(height: Dp): Float = if (height < CompactHeight) COMPACT_BOTTOM_SHARE else BOTTOM_SHARE
+
+/** Windows shorter than this (split screen, small phones in landscape) get the compact warnings. */
+internal val CompactHeight = 480.dp
 
 /**
  * Keeps the pager and the ViewModel's page in step: a swipe settles → [CookAction.GoToPage];
@@ -339,7 +444,11 @@ private fun PagerSync(pagerState: PagerState, page: Int, onAction: (CookAction) 
     }
 }
 
-/** ✕, recipe name and "Steg 3 av 6", A−/A+, then the progress bar. */
+/**
+ * ✕, recipe name and "Steg 3 av 6", A−/A+, then the progress bar. "Steg 3 av 6" is a polite live
+ * region that says the step's name too, so TalkBack announces every page turn (the focus stays
+ * on "Next").
+ */
 @Composable
 private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClose: () -> Unit, showScreenOn: Boolean, progress: Float?) {
     val spacing = TandemTheme.spacing
@@ -364,6 +473,13 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
                     modifier = Modifier.semantics { heading() },
                 )
                 if (state.hasDetail) {
+                    val step = state.currentStep
+                    val announcement = when {
+                        state.isDonePage -> stringResource(R.string.cook_done_page)
+                        step != null && step.name.isNotBlank() ->
+                            stringResource(R.string.cook_step_of_named, state.page + 1, state.steps.size, step.name)
+                        else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+                    }
                     Text(
                         text = if (state.isDonePage) {
                             stringResource(R.string.cook_done_page)
@@ -372,6 +488,12 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
                         },
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .testTag(COOK_STEP_OF_TAG)
+                            .semantics {
+                                contentDescription = announcement
+                                liveRegion = LiveRegionMode.Polite
+                            },
                     )
                 }
             }
@@ -410,7 +532,13 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
     }
 }
 
-/** Phone and tabletop: warnings, the timer bar and the page buttons. */
+/**
+ * Phone and tabletop: warnings, the timer bar and the page buttons. The warnings and the timer
+ * bar share one region of at most [maxScrollHeight] that scrolls inside, so the step above keeps
+ * room and the 64 dp page buttons are always measured at full height (split screen, plan 6.5).
+ *
+ * @param compactHeight a short window: the warnings are one line each ([AlarmWarnings]).
+ */
 @Composable
 private fun BottomArea(
     state: CookUiState,
@@ -418,9 +546,9 @@ private fun BottomArea(
     timerActions: TimerActions,
     onOpenTimer: (CookTimer) -> Unit,
     onAction: (CookAction) -> Unit,
-    onOpenNotificationSettings: () -> Unit,
-    onOpenExactAlarmSettings: () -> Unit,
-    timerBarMaxHeight: Dp = PHONE_TIMER_BAR_HEIGHT,
+    warningActions: WarningActions,
+    maxScrollHeight: Dp,
+    compactHeight: Boolean,
 ) {
     val spacing = TandemTheme.spacing
     Column(
@@ -429,108 +557,168 @@ private fun BottomArea(
             .padding(horizontal = spacing.lg, vertical = spacing.sm),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
-        AlarmWarnings(
-            state = state,
-            onAction = onAction,
-            onOpenNotificationSettings = onOpenNotificationSettings,
-            onOpenExactAlarmSettings = onOpenExactAlarmSettings,
-        )
-        TimerBar(
-            timers = state.timers,
-            now = now,
-            actions = timerActions,
-            onOpen = onOpenTimer,
-            maxHeight = timerBarMaxHeight,
-            modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
-        )
+        if (state.timers.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxScrollHeight)
+                    .verticalScroll(rememberScrollState())
+                    .testTag(COOK_BOTTOM_TIMERS_TAG),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                AlarmWarnings(state = state, onAction = onAction, actions = warningActions, compact = compactHeight)
+                TimerBar(
+                    timers = state.timers,
+                    now = now,
+                    actions = timerActions,
+                    onOpen = onOpenTimer,
+                    maxHeight = PHONE_TIMER_BAR_HEIGHT,
+                    modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
+                )
+            }
+        }
         PageButtons(state = state, onAction = onAction)
     }
 }
 
-/** "Föregående" and "Nästa" (64 dp, plan 6.6); on the last step "Klart!". */
+/**
+ * "Föregående" and "Nästa" (64 dp, plan 6.6); on the last step "Klart!". With a large font
+ * (scale 1.5 and up) on a narrow pane they are stacked, full width and without icons, so
+ * "Föregående" never breaks inside the word.
+ */
 @Composable
 internal fun PageButtons(state: CookUiState, onAction: (CookAction) -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
-    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
-        TandemSecondaryButton(
-            text = stringResource(R.string.cook_previous),
-            onClick = { onAction(CookAction.Previous) },
-            enabled = state.page > 0,
-            leadingIcon = TandemIcons.ArrowBack,
-            modifier = Modifier
-                .weight(1f)
-                .heightIn(min = TandemTheme.sizes.kitchenTouchTarget),
-        )
-        if (!state.isDonePage) {
+    val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val stacked = largeFont && maxWidth < StackedButtonsMaxWidth
+        val previous: @Composable (Modifier) -> Unit = { buttonModifier ->
+            TandemSecondaryButton(
+                text = stringResource(R.string.cook_previous),
+                onClick = { onAction(CookAction.Previous) },
+                enabled = state.page > 0,
+                leadingIcon = TandemIcons.ArrowBack.takeUnless { stacked },
+                size = TandemButtonSize.Kitchen,
+                modifier = buttonModifier,
+            )
+        }
+        val next: @Composable (Modifier) -> Unit = { buttonModifier ->
             TandemPrimaryButton(
                 text = stringResource(if (state.page == state.donePage - 1) R.string.cook_next_done else R.string.cook_next),
                 onClick = { onAction(CookAction.Next) },
-                trailingIcon = TandemIcons.ArrowForward,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = TandemTheme.sizes.kitchenTouchTarget),
+                trailingIcon = TandemIcons.ArrowForward.takeUnless { stacked },
+                size = TandemButtonSize.Kitchen,
+                modifier = buttonModifier,
             )
+        }
+        if (stacked) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                if (!state.isDonePage) next(Modifier.fillMaxWidth())
+                previous(Modifier.fillMaxWidth())
+            }
         } else {
-            Spacer(Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+                previous(Modifier.weight(1f))
+                if (!state.isDonePage) {
+                    next(Modifier.weight(1f))
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
         }
     }
 }
 
 /**
- * The alarm may be silent (notifications off) or late (play build without exact alarms): said
- * while a timer runs, with a way to the system setting (plan 8.1/8.7, 4.4). Never the raw
- * permission names (docs/design/README.md).
+ * The alarm may be silent or hard to stop (notifications off, or the alarm channel off) or late
+ * (play build without exact alarms): said while a timer runs, with a way to the right system
+ * setting (plan 8.1/8.7, 4.4). Never the raw permission names (docs/design/README.md). Every
+ * button is 64 dp (cook mode, plan 6.6).
+ *
+ * @param compact a short window: one line per warning with its main button (the late alarm's
+ *   "Not now" is left out; the warning still turns into one line after "Not now" elsewhere).
  */
 @Composable
-internal fun AlarmWarnings(
-    state: CookUiState,
-    onAction: (CookAction) -> Unit,
-    onOpenNotificationSettings: () -> Unit,
-    onOpenExactAlarmSettings: () -> Unit,
-) {
-    if (state.showSilentAlarmWarning) {
-        CalloutCard(
+internal fun AlarmWarnings(state: CookUiState, onAction: (CookAction) -> Unit, actions: WarningActions, compact: Boolean = false) {
+    when (state.silentAlarmCause) {
+        SilentAlarmCause.NOTIFICATIONS_OFF -> Warning(
             title = stringResource(R.string.cook_alarm_silent_title),
             body = stringResource(R.string.cook_alarm_silent_body),
+            action = stringResource(R.string.cook_open_settings),
+            onAction = actions.onOpenNotificationSettings,
+            compact = compact,
+        )
+
+        SilentAlarmCause.ALARM_CHANNEL_OFF -> Warning(
+            title = stringResource(R.string.cook_alarm_channel_off_title),
+            body = stringResource(R.string.cook_alarm_channel_off_body),
+            action = stringResource(R.string.cook_open_settings),
+            onAction = actions.onOpenAlarmChannelSettings,
+            compact = compact,
+        )
+
+        null -> if (state.showLateAlarmWarning) {
+            val canAsk = state.capabilities.exactAlarmsRequestable && !state.exactAlarmPromptDismissed
+            if (canAsk) {
+                Warning(
+                    title = stringResource(R.string.cook_alarm_late_title),
+                    body = stringResource(R.string.cook_alarm_late_body),
+                    action = stringResource(R.string.cook_alarm_allow),
+                    onAction = actions.onOpenExactAlarmSettings,
+                    compact = compact,
+                    dismiss = stringResource(R.string.cook_dismiss),
+                    onDismiss = { onAction(CookAction.DismissExactAlarmPrompt) },
+                )
+            } else {
+                IconLabel(
+                    icon = TandemIcons.Warning,
+                    text = stringResource(R.string.cook_alarm_late_title),
+                    iconTint = TandemTheme.extendedColors.warning,
+                )
+            }
+        }
+    }
+}
+
+/** One warning: a card with its text and buttons, or one line with the main button ([compact]). */
+@Composable
+private fun Warning(
+    title: String,
+    body: String,
+    action: String,
+    onAction: () -> Unit,
+    compact: Boolean,
+    dismiss: String? = null,
+    onDismiss: () -> Unit = {},
+) {
+    if (compact) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.sm),
+        ) {
+            IconLabel(
+                icon = TandemIcons.Warning,
+                text = title,
+                iconTint = TandemTheme.extendedColors.warning,
+                modifier = Modifier.weight(1f),
+            )
+            TandemPrimaryButton(text = action, onClick = onAction, size = TandemButtonSize.Kitchen)
+        }
+    } else {
+        CalloutCard(
+            title = title,
+            body = body,
             icon = TandemIcons.Warning,
             tone = TandemTone.Warning,
             actions = {
-                TandemPrimaryButton(
-                    text = stringResource(R.string.cook_open_settings),
-                    onClick = onOpenNotificationSettings,
-                    size = TandemButtonSize.Small,
-                )
+                // Filled and tonal: a text button's colour is too faint on the warning container.
+                TandemPrimaryButton(text = action, onClick = onAction, size = TandemButtonSize.Kitchen)
+                if (dismiss != null) {
+                    TandemSecondaryButton(text = dismiss, onClick = onDismiss, size = TandemButtonSize.Kitchen)
+                }
             },
         )
-    } else if (state.showLateAlarmWarning) {
-        val canAsk = state.capabilities.exactAlarmsRequestable && !state.exactAlarmPromptDismissed
-        if (canAsk) {
-            CalloutCard(
-                title = stringResource(R.string.cook_alarm_late_title),
-                body = stringResource(R.string.cook_alarm_late_body),
-                icon = TandemIcons.Warning,
-                tone = TandemTone.Warning,
-                actions = {
-                    // Filled and tonal: a text button's colour is too faint on the warning container.
-                    TandemPrimaryButton(
-                        text = stringResource(R.string.cook_alarm_allow),
-                        onClick = onOpenExactAlarmSettings,
-                        size = TandemButtonSize.Small,
-                    )
-                    TandemSecondaryButton(
-                        text = stringResource(R.string.cook_dismiss),
-                        onClick = { onAction(CookAction.DismissExactAlarmPrompt) },
-                        size = TandemButtonSize.Small,
-                    )
-                },
-            )
-        } else {
-            IconLabel(
-                icon = TandemIcons.Warning,
-                text = stringResource(R.string.cook_alarm_late_title),
-                iconTint = TandemTheme.extendedColors.warning,
-            )
-        }
     }
 }
 
@@ -541,8 +729,21 @@ private const val STEP_PANE_WEIGHT = 0.62f
 private val PHONE_TIMER_BAR_HEIGHT = 168.dp
 private val TABLETOP_TIMER_BAR_HEIGHT = 240.dp
 
+/** The warnings and the timer bar take at most this share of a phone's height (less when it is short). */
+private const val BOTTOM_SHARE = 0.4f
+private const val COMPACT_BOTTOM_SHARE = 0.33f
+
+/** From this font scale the page buttons may be stacked. */
+private const val LARGE_FONT_SCALE = 1.5f
+
+/** Panes narrower than this stack the page buttons at a large font scale. */
+private val StackedButtonsMaxWidth = 480.dp
+
 /** Test tags. */
 internal const val COOK_PAGER_TAG = "cook:pager"
 internal const val COOK_SIDE_PANE_TAG = "cook:side-pane"
 internal const val COOK_TIMER_BAR_TAG = "cook:timer-bar"
 internal const val COOK_TABLETOP_CONTROLS_TAG = "cook:tabletop-controls"
+internal const val COOK_TABLETOP_UPPER_TAG = "cook:tabletop-upper"
+internal const val COOK_BOTTOM_TIMERS_TAG = "cook:bottom-timers"
+internal const val COOK_STEP_OF_TAG = "cook:step-of"

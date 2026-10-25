@@ -21,7 +21,7 @@
     <string name="ui_timer_pause_for">Pausa %1$s</string>
     <string name="ui_timer_resume_for">Fortsätt %1$s</string>
     <string name="ui_timer_cancel_for">Ta bort %1$s</string>
-    <string name="ui_timer_stop">Stoppa</string>
+    <string name="ui_timer_stop">Stopp</string>
     <string name="ui_timer_stop_for">Stoppa larmet för %1$s</string>
     <string name="ui_timer_open_step">Gå till steget</string>
 

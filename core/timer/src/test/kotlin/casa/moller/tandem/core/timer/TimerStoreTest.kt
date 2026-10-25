@@ -21,7 +21,7 @@ class TimerStoreTest {
     @Test
     fun everyStateSurvivesTheRoundTrip() = runTest {
         val now = clock.now()
-        val running = CookTimer.start(1L, "Pasta", 10.minutes, now, recipeId = 4L, stepIndex = 2)
+        val running = CookTimer.start(1L, "Pasta", 10.minutes, now, recipeId = 4L, stepIndex = 2, sourceKey = "account-1")
         val paused = CookTimer.start(2L, "Sås", 20.minutes, now).pause(now + 5.minutes)
         val ringing = CookTimer.start(3L, "Ägg", 6.minutes, now).ring(now + 6.minutes)
         val finished = ringing.copy(id = 4L).stopRinging()

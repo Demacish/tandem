@@ -42,8 +42,16 @@ interface TimerController {
      * @param label shown in cook mode, the notification and the alarm (e.g. "Koka pastan").
      * @param recipeId the recipe cook mode runs, so the notification can open it again.
      * @param stepIndex the 0-based step the timer belongs to.
+     * @param sourceKey where [recipeId] belongs (`TimerSource.of`: demo mode or the active
+     *   account), stored with the timer so it never opens another source's recipe.
      */
-    suspend fun start(label: String, duration: Duration, recipeId: Long? = null, stepIndex: Int? = null): TimerStartResult
+    suspend fun start(
+        label: String,
+        duration: Duration,
+        recipeId: Long? = null,
+        stepIndex: Int? = null,
+        sourceKey: String? = null,
+    ): TimerStartResult
 
     suspend fun pause(id: Long)
 

@@ -63,16 +63,17 @@ fun TandemTheme(
 
 /**
  * Cook mode's "Kokläge alltid mörkt" (plan 6.4 "Kokläget kan tvingas mörkt", Settings →
- * Appearance): [content] in the dark theme when [enabled], else in the surrounding theme
- * unchanged. Keeps the surrounding dynamic colour choice.
+ * Appearance): [content] in the dark theme when [enabled], else in the surrounding theme's
+ * choice. Keeps the surrounding dynamic colour choice.
+ *
+ * [content] has ONE call site whatever [enabled] is: switching it (or the setting arriving after
+ * the first frame) recolours the content instead of throwing its state away (pager position,
+ * effects, saveable state; detekt's ContentSlotReused).
  */
 @Composable
 fun TandemDarkTheme(enabled: Boolean, content: @Composable () -> Unit) {
-    if (enabled && !LocalTandemThemeChoice.current.darkTheme) {
-        TandemTheme(darkTheme = true, content = content)
-    } else {
-        content()
-    }
+    val outer = LocalTandemThemeChoice.current
+    TandemTheme(darkTheme = enabled || outer.darkTheme, dynamicColor = outer.dynamicColor, content = content)
 }
 
 /** What the closest [TandemTheme] was asked for: dark or light, brand or dynamic colours. */

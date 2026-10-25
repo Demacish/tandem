@@ -5,6 +5,7 @@
     <string name="cook_close">Stäng kokläget</string>
     <string name="cook_screen_on">Skärmen hålls vaken</string>
     <string name="cook_step_of">Steg %1$d av %2$d</string>
+    <string name="cook_step_of_named">Steg %1$d av %2$d: %3$s</string>
     <string name="cook_done_page">Klart!</string>
     <string name="cook_text_smaller">Mindre text</string>
     <string name="cook_text_larger">Större text</string>
@@ -15,6 +16,10 @@
     <string name="cook_not_downloaded_title">Receptet är inte nedladdat</string>
     <string name="cook_not_downloaded_body">Anslut till internet för att öppna det i kokläget.</string>
     <string name="cook_retry">Försök igen</string>
+    <string name="cook_recipe_gone_title">Receptet finns inte längre i Tandoor</string>
+    <string name="cook_recipe_gone_body">Det har tagits bort eller delas inte längre med dig.</string>
+    <string name="cook_recipe_login_title">Logga in igen för att öppna receptet</string>
+    <string name="cook_recipe_login_body">Tandoor tar inte längre emot Tandems inloggning. Stäng kokläget och välj ”Logga in igen”.</string>
     <string name="cook_setting_not_saved">Inställningen kunde inte sparas.</string>
 
     <string name="cook_step_heading">Steg %1$d</string>
@@ -47,6 +52,7 @@
     <string name="cook_active_timers">Aktiva timers</string>
     <string name="cook_timer_clock_app">Timern startades i klockappen.</string>
     <string name="cook_timer_no_clock_app">Ingen klockapp kunde starta timern. Välj timers i Tandem under Inställningar.</string>
+    <string name="cook_timer_started">Timern har startat: %1$s</string>
     <string name="cook_timer_too_many">För många timers samtidigt. Ta bort en för att starta en ny.</string>
 
     <string name="cook_notifications_title">Vill du höra timern när skärmen är låst?</string>
@@ -54,7 +60,9 @@
     <string name="cook_notifications_continue">Fortsätt</string>
     <string name="cook_notifications_not_now">Inte nu</string>
     <string name="cook_alarm_silent_title">Notiserna är avstängda</string>
-    <string name="cook_alarm_silent_body">Timern larmar bara medan Tandem är öppet. Slå på notiserna för att höra den när skärmen är låst.</string>
+    <string name="cook_alarm_silent_body">Timern ringer ändå, men utan notis kan du bara stänga av larmet här i Tandem. Slå på notiserna för att kunna stoppa det från låsskärmen.</string>
+    <string name="cook_alarm_channel_off_title">Larmljudet för timers är avstängt</string>
+    <string name="cook_alarm_channel_off_body">En färdig timer blir tyst. Slå på notistypen ”Timers (larm)”.</string>
     <string name="cook_alarm_late_title">Timern kan larma lite för sent</string>
     <string name="cook_alarm_late_body">Tandem får inte ställa exakta larm, så Android kan skjuta upp larmet några minuter.</string>
     <string name="cook_alarm_allow">Tillåt</string>
@@ -64,6 +72,7 @@
     <string name="cook_done_title">Smaklig måltid!</string>
     <string name="cook_done_badge">Färdiglagat</string>
     <string name="cook_done_body">Spara i kokloggen, så håller Tandoor räkningen på hur ofta du lagar receptet.</string>
+    <string name="cook_done_body_demo">Spara i kokloggen så räknas måltiden i demot.</string>
     <string name="cook_done_rating_title">Hur smakade det?</string>
     <string name="cook_done_rating_none">Inget betyg</string>
     <string name="cook_done_rating_value">%1$d av 5 stjärnor</string>
@@ -79,8 +88,12 @@
     <string name="cook_done_online">Posten skickas till din Tandoor.</string>
     <string name="cook_done_offline">Du är offline. Posten sparas nu och skickas till Tandoor när du är online igen.</string>
     <string name="cook_done_demo">Demoläge: posten sparas bara på den här enheten.</string>
+    <string name="cook_done_safe_mode">Säkert läge: posten sparas på enheten och skickas när Tandem får synka med den här Tandoor-versionen igen.</string>
+    <string name="cook_done_needs_login">Tandoor tar inte längre emot inloggningen. Posten sparas och skickas när du har loggat in igen.</string>
+    <string name="cook_done_held">Synken pausar en stund. Posten sparas och skickas av sig själv senare.</string>
     <string name="cook_done_saved">Sparat i kokloggen.</string>
-    <string name="cook_done_saved_offline">Sparat. Det skickas när du är online igen.</string>
+    <string name="cook_done_saved_offline">Sparat. Posten skickas när du är online igen.</string>
+    <string name="cook_done_saved_later">Sparat. Posten skickas till Tandoor senare.</string>
     <string name="cook_done_saved_demo">Sparat i demot.</string>
     <string name="cook_done_save_failed">Posten kunde inte sparas.</string>
 

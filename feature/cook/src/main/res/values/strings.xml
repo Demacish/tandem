@@ -5,6 +5,8 @@
     <string name="cook_close">Close cook mode</string>
     <string name="cook_screen_on">The screen stays on</string>
     <string name="cook_step_of">Step %1$d of %2$d</string>
+    <!-- What TalkBack says when the page turns: %3$s is the step's name, e.g. "Step 2 of 3: The pasta". -->
+    <string name="cook_step_of_named">Step %1$d of %2$d: %3$s</string>
     <string name="cook_done_page">Done!</string>
     <string name="cook_text_smaller">Smaller text</string>
     <string name="cook_text_larger">Larger text</string>
@@ -15,6 +17,10 @@
     <string name="cook_not_downloaded_title">The recipe is not downloaded</string>
     <string name="cook_not_downloaded_body">Connect to the internet to open it in cook mode.</string>
     <string name="cook_retry">Try again</string>
+    <string name="cook_recipe_gone_title">The recipe is no longer in Tandoor</string>
+    <string name="cook_recipe_gone_body">It was deleted or is no longer shared with you.</string>
+    <string name="cook_recipe_login_title">Log in again to open the recipe</string>
+    <string name="cook_recipe_login_body">Tandoor no longer accepts Tandem’s login. Close cook mode and choose “Log in again”.</string>
     <string name="cook_setting_not_saved">Could not save the setting.</string>
 
     <!-- A step page. -->
@@ -52,6 +58,8 @@
     <string name="cook_active_timers">Active timers</string>
     <string name="cook_timer_clock_app">The timer was started in the clock app.</string>
     <string name="cook_timer_no_clock_app">No clock app could start the timer. Choose timers in Tandem under Settings.</string>
+    <!-- TalkBack only, after a timer was started: %1$s is its name, e.g. "The pasta · 10 min". -->
+    <string name="cook_timer_started">Timer started: %1$s</string>
     <string name="cook_timer_too_many">Too many timers at once. Remove one to start another.</string>
 
     <!-- Notifications, asked in context at the first timer (plan 8.7). Never name the raw permission. -->
@@ -60,7 +68,9 @@
     <string name="cook_notifications_continue">Continue</string>
     <string name="cook_notifications_not_now">Not now</string>
     <string name="cook_alarm_silent_title">Notifications are off</string>
-    <string name="cook_alarm_silent_body">The timer only rings while Tandem is open. Turn on notifications to hear it with the screen locked.</string>
+    <string name="cook_alarm_silent_body">The timer still rings, but without a notification you can only stop the alarm here in Tandem. Turn on notifications to stop it from the lock screen.</string>
+    <string name="cook_alarm_channel_off_title">The timer alarm sound is off</string>
+    <string name="cook_alarm_channel_off_body">A finished timer stays silent. Turn on the notification type “Timers (alarm)”.</string>
     <string name="cook_alarm_late_title">The timer may ring a little late</string>
     <string name="cook_alarm_late_body">Tandem may not set exact alarms, so Android can delay the alarm by a few minutes.</string>
     <string name="cook_alarm_allow">Allow</string>
@@ -71,6 +81,7 @@
     <string name="cook_done_title">Enjoy your meal!</string>
     <string name="cook_done_badge">Cooking done</string>
     <string name="cook_done_body">Save it in the cook log, and Tandoor keeps count of how often you cook it.</string>
+    <string name="cook_done_body_demo">Save it in the cook log and the demo keeps count.</string>
     <string name="cook_done_rating_title">How did it taste?</string>
     <string name="cook_done_rating_none">No rating</string>
     <string name="cook_done_rating_value">%1$d of 5 stars</string>
@@ -86,8 +97,12 @@
     <string name="cook_done_online">The entry is sent to your Tandoor.</string>
     <string name="cook_done_offline">You are offline. The entry is saved now and sent to Tandoor when you are online again.</string>
     <string name="cook_done_demo">Demo mode: the entry stays on this device.</string>
+    <string name="cook_done_safe_mode">Safe mode: the entry is saved on this device and sent when Tandem may sync with this Tandoor version again.</string>
+    <string name="cook_done_needs_login">Tandoor no longer accepts the login. The entry is saved and sent after “Log in again”.</string>
+    <string name="cook_done_held">The sync is paused for a while. The entry is saved and sent by itself later.</string>
     <string name="cook_done_saved">Saved in the cook log.</string>
-    <string name="cook_done_saved_offline">Saved. It is sent when you are online again.</string>
+    <string name="cook_done_saved_offline">Saved. The entry is sent when you are online again.</string>
+    <string name="cook_done_saved_later">Saved. The entry is sent to Tandoor later.</string>
     <string name="cook_done_saved_demo">Saved in the demo.</string>
     <string name="cook_done_save_failed">Could not save the entry.</string>
 

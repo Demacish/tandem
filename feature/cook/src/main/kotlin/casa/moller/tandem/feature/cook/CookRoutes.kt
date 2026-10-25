@@ -1,17 +1,15 @@
 package casa.moller.tandem.feature.cook
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.provider.Settings
+import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,15 +19,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.core.net.toUri
-import androidx.core.view.WindowCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.designsystem.theme.TandemDarkTheme
+import casa.moller.tandem.core.model.notification.TandemNotificationChannel
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.timers.TimersScreen
 import casa.moller.tandem.feature.cook.timers.TimersViewModel
 import casa.moller.tandem.feature.cook.ui.CookScreen
+import casa.moller.tandem.feature.cook.ui.DarkSystemBars
 
 /**
  * Cook mode for [key] (plan 6.2 "Kokläge", features #6–#8). Full screen on every width
@@ -40,9 +39,18 @@ import casa.moller.tandem.feature.cook.ui.CookScreen
  * detail's and Today's "Laga" (and from a timer notification) and shows this route.
  *
  * @param onClose leaves cook mode (✕, system back is the shell's, and after "Klart!" was saved).
+ * @param pageRequest a page this open cook mode should show now (0-based step), e.g. a tapped
+ *   notification of one of its timers while it is open on another step; null for none. Cook mode
+ *   keeps its servings and "Klart!" draft and turns to that page, then calls [onPageRequestHandled].
  */
 @Composable
-fun CookRoute(key: CookKey, onClose: () -> Unit, modifier: Modifier = Modifier) {
+fun CookRoute(
+    key: CookKey,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    pageRequest: Int? = null,
+    onPageRequestHandled: () -> Unit = {},
+) {
     val viewModel = hiltViewModel<CookViewModel, CookViewModel.Factory>(
         key = "cook-${key.recipeId}",
         creationCallback = { factory -> factory.create(key) },
@@ -52,6 +60,14 @@ fun CookRoute(key: CookKey, onClose: () -> Unit, modifier: Modifier = Modifier) 
     val context = LocalContext.current
     val resources = LocalResources.current
     val currentOnClose by rememberUpdatedState(onClose)
+    val view = LocalView.current
+    val currentOnPageRequestHandled by rememberUpdatedState(onPageRequestHandled)
+    LaunchedEffect(viewModel, pageRequest) {
+        if (pageRequest != null) {
+            viewModel.onAction(CookAction.GoToPage(pageRequest))
+            currentOnPageRequestHandled()
+        }
+    }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onAction(CookAction.NotificationPermissionResult(granted))
     }
@@ -61,6 +77,9 @@ fun CookRoute(key: CookKey, onClose: () -> Unit, modifier: Modifier = Modifier) 
                 CookEffect.RequestNotificationPermission -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
 
                 is CookEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+
+                // No visible message (the timer bar shows the new timer); only TalkBack says it.
+                is CookEffect.Announce -> view.announce(resources.getString(effect.text, effect.argument))
 
                 is CookEffect.Finished -> {
                     // The screen goes away right after, so a toast (announced by TalkBack) instead of a snackbar.
@@ -75,7 +94,7 @@ fun CookRoute(key: CookKey, onClose: () -> Unit, modifier: Modifier = Modifier) 
         viewModel.onAction(CookAction.RefreshCapabilities)
         onPauseOrDispose { }
     }
-    CookTheme(alwaysDark = state.alwaysDark, dynamicColor = state.dynamicColor) {
+    CookTheme(alwaysDark = state.alwaysDark) {
         CookScreen(
             state = state,
             onAction = viewModel::onAction,
@@ -83,6 +102,7 @@ fun CookRoute(key: CookKey, onClose: () -> Unit, modifier: Modifier = Modifier) 
             modifier = modifier,
             snackbarHostState = snackbarHostState,
             onOpenNotificationSettings = { context.openSettings(notificationSettingsIntent(context)) },
+            onOpenAlarmChannelSettings = { context.openSettings(alarmChannelSettingsIntent(context)) },
             onOpenExactAlarmSettings = { context.openSettings(exactAlarmSettingsIntent(context)) },
         )
     }
@@ -101,33 +121,31 @@ fun TimersRoute(onBack: () -> Unit, onOpenCook: (recipeId: Long, step: Int) -> U
     TimersScreen(timers = timers, onAction = viewModel::onAction, onBack = onBack, onOpenCook = onOpenCook, modifier = modifier)
 }
 
-/** "Kokläge alltid mörkt": a dark theme (and light system bar icons) around cook mode only. */
+/**
+ * "Kokläge alltid mörkt": a dark theme (and light system bar icons) around cook mode only. One
+ * call site for [content] whatever the setting, so turning it on (or the settings arriving) never
+ * throws cook mode's state away; the surrounding theme's dark/light and dynamic colour choice
+ * stays otherwise (core:designsystem `TandemDarkTheme`).
+ */
 @Composable
-private fun CookTheme(alwaysDark: Boolean, dynamicColor: Boolean, content: @Composable () -> Unit) {
-    if (!alwaysDark) {
-        content()
-        return
-    }
-    TandemTheme(darkTheme = true, dynamicColor = dynamicColor) {
-        val view = LocalView.current
-        DisposableEffect(view) {
-            val window = view.context.findActivity()?.window
-            val controller = window?.let { WindowCompat.getInsetsController(it, view) }
-            val lightStatus = controller?.isAppearanceLightStatusBars
-            val lightNavigation = controller?.isAppearanceLightNavigationBars
-            controller?.isAppearanceLightStatusBars = false
-            controller?.isAppearanceLightNavigationBars = false
-            onDispose {
-                lightStatus?.let { controller.isAppearanceLightStatusBars = it }
-                lightNavigation?.let { controller.isAppearanceLightNavigationBars = it }
-            }
-        }
-        content()
-    }
+private fun CookTheme(alwaysDark: Boolean, content: @Composable () -> Unit) {
+    DarkSystemBars(enabled = alwaysDark)
+    TandemDarkTheme(enabled = alwaysDark, content = content)
 }
 
 private fun notificationSettingsIntent(context: Context): Intent =
     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+
+/** The "Timers (alarm)" channel's own page (its sound was switched off). */
+private fun alarmChannelSettingsIntent(context: Context): Intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+    .putExtra(Settings.EXTRA_CHANNEL_ID, TandemNotificationChannel.TIMER_ALARM.id)
+
+/** TalkBack says [text] (announceForAccessibility is deprecated from API 36, there is no polite alternative without a visible node). */
+@Suppress("DEPRECATION")
+private fun View.announce(text: String) {
+    announceForAccessibility(text)
+}
 
 /** Play build: the system page where the user allows exact alarms for Tandem (plan 4.4). */
 private fun exactAlarmSettingsIntent(context: Context): Intent =
@@ -139,8 +157,3 @@ private fun Context.openSettings(intent: Intent) {
     runCatching { startActivity(intent) }.recoverCatching { startActivity(fallback) }
 }
 
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}

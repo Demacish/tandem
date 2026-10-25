@@ -5,6 +5,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
@@ -148,4 +150,48 @@ class CookAccessibilityTest {
     fun timerListEmptyDark() = check(darkTheme = true) {
         TimersScreen(timers = emptyList(), onAction = {}, onBack = {}, onOpenCook = { _, _ -> })
     }
+
+    // --- fix-ui (0.2.0 review): pinned timers, compact windows, the fold, causes and states. ---
+
+    @Test
+    fun alarmChannelOff() = check(
+        fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(alarmChannelEnabled = false))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+        },
+    ) { CookWithFakes(fakes = it) }
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun landscapeManyIngredientsRinging() = check(fakes = CookFakes().withManyIngredients().withRingingTimer()) {
+        CookWithFakes(fakes = it)
+    }
+
+    @Test
+    @Config(qualifiers = PHONE_SHORT)
+    fun shortWindowWithWarningAndTwoTimers() = check(
+        fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(exactAlarmsAllowed = false, exactAlarmsRequestable = true))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+            startTimer(1, "Pastan · 8–10 minuter (10 min)", 10.minutes)
+        },
+    ) { CookWithFakes(fakes = it) }
+
+    @Test
+    fun tabletopWithFold() = check(fakes = timersRunning()) {
+        CookWithFakes(fakes = it, layout = CookLayout.TABLETOP, fold = FOLDABLE_FOLD)
+    }
+
+    @Test
+    fun recipeGone() = check(
+        fakes = CookFakes().apply {
+            recipes.details.value = recipes.details.value - pasta.id
+            recipes.detailOverrides.value = mapOf(pasta.id to RecipeDetailState(recipeId = pasta.id, error = TandemError.NotFound))
+        },
+    ) { CookWithFakes(fakes = it) }
+
+    @Test
+    fun doneSafeMode() = check(
+        fakes = CookFakes().apply { sync.setStatus(SyncStatus.Idle.copy(pause = SyncPause.SAFE_MODE)) },
+    ) { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
 }

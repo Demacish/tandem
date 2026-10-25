@@ -59,13 +59,6 @@ abstract class CookScreenshotTest(private val device: String) {
         val mushrooms = timers.timers.value.last().id
         runBlocking { timers.pause(mushrooms) }
     }
-
-    /** One timer ringing, one running. */
-    protected fun CookFakes.withRingingTimer(): CookFakes = apply {
-        startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
-        startTimer(1, "Pastan · 8–10 minuter (10 min)", 10.minutes)
-        timers.advanceTimeBy(5.minutes)
-    }
 }
 
 @RunWith(AndroidJUnit4::class)

@@ -42,7 +42,8 @@ import casa.moller.tandem.core.ui.recipe.toAnnotatedString
  * The tappable words are a convenience for touch: they are not separate TalkBack items, the
  * timer buttons below the text start the same timers with 64 dp targets and a full label.
  *
- * @param suggestions the step's timer suggestions; only TEXT ones have a range in [markdown].
+ * @param suggestions the step's timer suggestions; only TEXT ones have a range, which indexes the
+ *   step's visible text ([stepPlainText] of [markdown], see [CookViewModel]'s detection).
  * @param onTimerTap the index in [suggestions] of the tapped duration.
  */
 @Composable
@@ -57,11 +58,9 @@ internal fun StepInstruction(
     val codeBackground = MaterialTheme.colorScheme.surfaceContainerHighest
     val timerColor = MaterialTheme.colorScheme.tertiary
     val pieces = remember(markdown, linkColor, codeBackground) { renderPieces(Markdown.parse(markdown), linkColor, codeBackground) }
-    val spans = remember(pieces, suggestions, markdown) {
-        val matches = suggestions.mapIndexedNotNull { index, suggestion ->
-            suggestion.textRange?.let { range -> TimerMatch(index, markdown.substring(range.first, range.last + 1)) }
-        }
-        timerSpans(pieces.map { it.text.text }, matches)
+    val spans = remember(pieces, suggestions) {
+        val matches = suggestions.mapIndexedNotNull { index, suggestion -> suggestion.textRange?.let { TimerMatch(index, it) } }
+        timerSpans(pieces.map { it.text.text.length }, matches)
     }
     val spacing = TandemTheme.spacing
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(spacing.md)) {
@@ -157,39 +156,39 @@ private fun renderPieces(
     }
 }
 
-/** A detected duration, as written in the step's Markdown source. */
-internal data class TimerMatch(val suggestionIndex: Int, val text: String)
+/**
+ * The text a step shows, without its Markdown markers: the pieces [StepInstruction] draws (each
+ * paragraph, heading and list item, the same text as their `AnnotatedString`s), joined by "\n".
+ * Cook mode's timer detection reads this, so "Koka **10** minuter" is found like plain text, and
+ * the suggestions' text ranges index into it ([timerSpans]).
+ */
+internal fun stepPlainText(markdown: String): String = Markdown.plainText(Markdown.parse(markdown))
+
+/** A detected duration: [range] in the step's plain text ([stepPlainText]). */
+internal data class TimerMatch(val suggestionIndex: Int, val range: IntRange)
 
 /** Where [TimerMatch] [suggestionIndex] is in the visible text of one piece: characters [start] until [end]. */
 internal data class TimerSpan(val suggestionIndex: Int, val start: Int, val end: Int)
 
 /**
- * Finds the detected durations in the visible text (Markdown markers removed), in order: each
- * match is looked for after the previous one, in the same piece or a later one. The detector
- * reads the Markdown source, so a duration that crosses a marker ("**8**–10 min") is not found
- * and simply not tappable (its timer button still exists).
+ * Places the detected durations in the pieces: the plain text is the pieces joined by one "\n"
+ * each ([stepPlainText]), so piece `i` starts after the lengths of the pieces before it plus one
+ * separator each. A duration that would cross from one piece into the next (only possible
+ * across a paragraph break) is not tappable; its timer button still exists.
  *
+ * @param pieceLengths the length of each piece's visible text, in order.
  * @return the spans by piece index.
  */
-internal fun timerSpans(pieceTexts: List<String>, matches: List<TimerMatch>): Map<Int, List<TimerSpan>> {
+internal fun timerSpans(pieceLengths: List<Int>, matches: List<TimerMatch>): Map<Int, List<TimerSpan>> {
+    val starts = pieceLengths.runningFold(0) { start, length -> start + length + 1 }
     val result = mutableMapOf<Int, MutableList<TimerSpan>>()
-    var piece = 0
-    var offset = 0
     matches.forEach { match ->
-        if (match.text.isBlank()) return@forEach
-        var searchPiece = piece
-        var searchOffset = offset
-        while (searchPiece < pieceTexts.size) {
-            val found = pieceTexts[searchPiece].indexOf(match.text, searchOffset)
-            if (found >= 0) {
-                result.getOrPut(searchPiece) { mutableListOf() } += TimerSpan(match.suggestionIndex, found, found + match.text.length)
-                piece = searchPiece
-                offset = found + match.text.length
-                return@forEach
-            }
-            searchPiece++
-            searchOffset = 0
-        }
+        val first = match.range.first
+        val end = match.range.last + 1
+        val piece = pieceLengths.indices.firstOrNull { first >= starts[it] && first < starts[it] + pieceLengths[it] } ?: return@forEach
+        val pieceStart = starts[piece]
+        if (end > pieceStart + pieceLengths[piece]) return@forEach
+        result.getOrPut(piece) { mutableListOf() } += TimerSpan(match.suggestionIndex, first - pieceStart, end - pieceStart)
     }
     return result
 }

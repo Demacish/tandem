@@ -128,7 +128,7 @@ internal class DefaultTimerController @Inject constructor(
         scope.launch { reconcile() }
     }
 
-    override suspend fun start(label: String, duration: Duration, recipeId: Long?, stepIndex: Int?): TimerStartResult {
+    override suspend fun start(label: String, duration: Duration, recipeId: Long?, stepIndex: Int?, sourceKey: String?): TimerStartResult {
         val name = label.trim()
         if (name.isEmpty() || duration < CookTimer.MIN_DURATION || (stepIndex != null && stepIndex < 0)) {
             return TimerStartResult.Invalid
@@ -143,7 +143,7 @@ internal class DefaultTimerController @Inject constructor(
             if (list.count { it.state != TimerState.FINISHED } >= CookTimer.MAX_PARALLEL_TIMERS) {
                 Change(list, TimerStartResult.TooManyTimers(CookTimer.MAX_PARALLEL_TIMERS))
             } else {
-                val timer = CookTimer.start(nextId++, name, duration, now, recipeId, stepIndex)
+                val timer = CookTimer.start(nextId++, name, duration, now, recipeId, stepIndex, sourceKey)
                 Change(list + timer, TimerStartResult.Started(timer))
             }
         }

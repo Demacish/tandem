@@ -52,6 +52,9 @@ enum class TimerMode {
  * @property label what the user sees ("Koka pastan", "10 min"); never empty.
  * @property recipeId the recipe the timer was started from, or null for a free timer.
  * @property stepIndex the 0-based step of [recipeId] it belongs to (cook mode jumps back to it).
+ * @property sourceKey where [recipeId] comes from ([TimerSource]: an account id or demo mode), so
+ *   a timer started in demo mode or for another account never opens cook mode for the active
+ *   account's recipe with the same id; null for a free timer or one stored before 0.2.0.
  * @property duration the total length, including every "+1 min".
  * @property state see [TimerState].
  * @property endsAt RUNNING: when it rings; RINGING/FINISHED: when it rang; PAUSED: null.
@@ -63,6 +66,7 @@ data class CookTimer(
     val label: String,
     val recipeId: Long? = null,
     val stepIndex: Int? = null,
+    val sourceKey: String? = null,
     val duration: Duration,
     val state: TimerState,
     val endsAt: Instant?,
@@ -127,12 +131,21 @@ data class CookTimer(
         val ONE_MINUTE: Duration = 1.minutes
 
         /** A new RUNNING timer started at [now]. */
-        fun start(id: Long, label: String, duration: Duration, now: Instant, recipeId: Long? = null, stepIndex: Int? = null): CookTimer =
+        fun start(
+            id: Long,
+            label: String,
+            duration: Duration,
+            now: Instant,
+            recipeId: Long? = null,
+            stepIndex: Int? = null,
+            sourceKey: String? = null,
+        ): CookTimer =
             CookTimer(
                 id = id,
                 label = label,
                 recipeId = recipeId,
                 stepIndex = stepIndex,
+                sourceKey = sourceKey,
                 duration = duration,
                 state = TimerState.RUNNING,
                 endsAt = now + duration,
@@ -214,4 +227,23 @@ data class TimerCapabilities(
         /** A fresh install of the sideload build before the first timer: only notifications are missing. */
         val FreshInstall: TimerCapabilities = AllGranted.copy(notificationsAllowed = false, notificationPermissionAsked = false)
     }
+}
+
+/**
+ * Where a cook-mode timer's recipe id belongs ([CookTimer.sourceKey]): recipe ids are per server
+ * (and demo mode has its own), so the shell opens cook mode for a timer only when its source is
+ * the active one, and the timer list otherwise.
+ */
+object TimerSource {
+    /** Demo mode's recipes (`tandem-demo.db`). */
+    const val DEMO: String = "demo"
+
+    /** The source of the app as it is now: [DEMO] in demo mode, else the active account's id (null: none). */
+    fun of(demoMode: Boolean, accountId: String?): String? = if (demoMode) DEMO else accountId
+
+    /**
+     * True when [timer]'s recipe may be opened while [activeSource] is active: same source, or a
+     * timer without a recorded source (free timers, timers stored before 0.2.0).
+     */
+    fun matches(timer: CookTimer, activeSource: String?): Boolean = timer.sourceKey == null || timer.sourceKey == activeSource
 }

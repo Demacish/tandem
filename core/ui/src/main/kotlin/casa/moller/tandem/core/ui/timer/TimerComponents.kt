@@ -234,7 +234,11 @@ fun TimerCard(
             )
             LinearProgressIndicator(
                 progress = { timer.progress(now) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // TimerInfo already says the time left; the bar is decoration for TalkBack
+                    // (otherwise a bare percentage without the timer's name, changing every second).
+                    .clearAndSetSemantics { },
                 color = colors.accent,
                 trackColor = colors.content.copy(alpha = TRACK_ALPHA),
             )
@@ -315,19 +319,17 @@ private fun TimerButtons(timer: CookTimer, actions: TimerActions, colors: TimerC
         PlusOneMinuteButton(label = label, color = colors.content, onClick = { actions.onAddMinute(id) })
     }
     when (timer.state) {
-        TimerState.RUNNING -> KitchenIconButton(
-            icon = TandemIcons.Pause,
-            description = stringResource(R.string.ui_timer_pause_for, label),
-            color = colors.content,
-            onClick = { actions.onPause(id) },
-        )
-
-        TimerState.PAUSED -> KitchenIconButton(
-            icon = TandemIcons.PlayArrow,
-            description = stringResource(R.string.ui_timer_resume_for, label),
-            color = colors.content,
-            onClick = { actions.onResume(id) },
-        )
+        // One call site for pause and resume: the button node survives the toggle, so TalkBack
+        // focus stays on it and reads the new description.
+        TimerState.RUNNING, TimerState.PAUSED -> {
+            val running = timer.state == TimerState.RUNNING
+            KitchenIconButton(
+                icon = if (running) TandemIcons.Pause else TandemIcons.PlayArrow,
+                description = stringResource(if (running) R.string.ui_timer_pause_for else R.string.ui_timer_resume_for, label),
+                color = colors.content,
+                onClick = { if (running) actions.onPause(id) else actions.onResume(id) },
+            )
+        }
 
         TimerState.RINGING -> {
             val stopFor = stringResource(R.string.ui_timer_stop_for, label)

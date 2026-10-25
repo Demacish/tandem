@@ -26,7 +26,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.R
 
@@ -47,6 +49,9 @@ import casa.moller.tandem.core.ui.R
  * @param onAmountClick switches the unit; null when the server sent no conversions.
  * @param amountDescription [amountText] as TalkBack should say it, e.g. "3/16 tsk" for the
  *   typographic "³⁄₁₆ tsk" (core:domain `spokenNumbers`); defaults to [amountText].
+ * @param amountMinHeight the tappable amount pill's minimum height; unspecified means 48 dp
+ *   (`minTouchTarget`). Cook mode passes 64 dp (`kitchenTouchTarget`, plan 6.6), so a tap just
+ *   above or below the pill switches the unit instead of ticking the row off.
  */
 @Composable
 fun IngredientRow(
@@ -58,6 +63,7 @@ fun IngredientRow(
     note: String? = null,
     onAmountClick: (() -> Unit)? = null,
     amountDescription: String? = amountText,
+    amountMinHeight: Dp = Dp.Unspecified,
 ) {
     val spacing = TandemTheme.spacing
     val textColor = if (struck) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
@@ -104,7 +110,12 @@ fun IngredientRow(
             }
         }
         if (amountText != null) {
-            Amount(text = amountText, struck = struck, onSwitchUnit = onAmountClick)
+            Amount(
+                text = amountText,
+                struck = struck,
+                onSwitchUnit = onAmountClick,
+                minHeight = if (amountMinHeight.isSpecified) amountMinHeight else TandemTheme.sizes.minTouchTarget,
+            )
         }
     }
 }
@@ -118,14 +129,14 @@ internal fun ingredientDescription(amount: String?, name: String, note: String?)
 
 /**
  * The amount at the end of the row. Hidden from TalkBack (the row says it, see [IngredientRow]).
- * With [onSwitchUnit] it is a tonal pill (48 dp high target) that switches the unit on a tap.
+ * With [onSwitchUnit] it is a tonal pill (at least [minHeight] high) that switches the unit on a tap.
  *
  * Colours (WCAG AA, TandemColorContrastTest "usage pairs"): plain amounts are primary on the
  * ingredient card (surfaceContainerLow / surfaceContainer); the pill is onPrimaryContainer on
  * primaryContainer, and onSurfaceVariant on surfaceContainerHighest once the row is ticked off.
  */
 @Composable
-private fun Amount(text: String, struck: Boolean, onSwitchUnit: (() -> Unit)?) {
+private fun Amount(text: String, struck: Boolean, onSwitchUnit: (() -> Unit)?, minHeight: Dp) {
     val style = MaterialTheme.typography.titleSmall.copy(
         fontWeight = FontWeight.SemiBold,
         textDecoration = if (struck) TextDecoration.LineThrough else null,
@@ -151,7 +162,7 @@ private fun Amount(text: String, struck: Boolean, onSwitchUnit: (() -> Unit)?) {
             // "Show in another unit" switches the unit (plan 6.6).
             modifier = Modifier
                 .clearAndSetSemantics { }
-                .heightIn(min = TandemTheme.sizes.minTouchTarget)
+                .heightIn(min = minHeight)
                 .widthIn(min = 48.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = TandemTheme.spacing.md)) {

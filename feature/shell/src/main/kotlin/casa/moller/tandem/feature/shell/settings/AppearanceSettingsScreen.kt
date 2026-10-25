@@ -25,8 +25,6 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.isSpecified
 import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.Remove
 import casa.moller.tandem.core.designsystem.icon.Restaurant
@@ -120,7 +118,8 @@ internal fun ThemeMode.label(): Int = when (this) {
 
 /**
  * Cook mode's text size: A− and A+ (the same steps as in cook mode) around the value and a sample
- * sentence drawn at that size, so the effect is visible before cooking.
+ * sentence drawn in cook mode's own step style at that size (`cookStepScaled`, as on a phone),
+ * so the effect is visible before cooking.
  */
 @Composable
 private fun CookTextSize(scale: Float, onChange: (Float) -> Unit) {
@@ -169,19 +168,14 @@ private fun CookTextSize(scale: Float, onChange: (Float) -> Unit) {
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
         ) {
-            val base = MaterialTheme.typography.bodyLarge
             Text(
                 text = stringResource(R.string.settings_cook_text_size_preview),
-                style = base.copy(
-                    fontSize = base.fontSize.scaled(current),
-                    lineHeight = base.lineHeight.scaled(current),
-                ),
+                // Exactly cook mode's step text (28 sp × the scale), not the body text.
+                style = TandemTheme.extendedTypography.cookStepScaled(current),
                 modifier = Modifier.padding(spacing.lg),
             )
         }
     }
 }
-
-private fun TextUnit.scaled(factor: Float): TextUnit = if (isSpecified) this * factor else this
 
 private const val PERCENT = 100

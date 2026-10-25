@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -52,6 +53,7 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.recipe.IconLabel
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.cook.CookAction
+import casa.moller.tandem.feature.cook.CookLogSendState
 import casa.moller.tandem.feature.cook.CookUiState
 import casa.moller.tandem.feature.cook.R
 
@@ -80,9 +82,15 @@ internal fun CookDonePage(state: CookUiState, onAction: (CookAction) -> Unit, on
         ) {
             DoneHero(state)
             Card {
+                // The recipe's own servings text ("12 bullar") like on the step pages, else "4 portioner".
+                val servingsText = state.servings?.text.orEmpty()
                 StepperRow(
                     label = stringResource(R.string.cook_done_servings_label),
-                    valueText = pluralStringResource(R.plurals.cook_servings, done.servings, done.servings.toString()),
+                    valueText = if (servingsText.isNotBlank()) {
+                        stringResource(R.string.cook_servings_with_text, done.servings.toString(), servingsText)
+                    } else {
+                        pluralStringResource(R.plurals.cook_servings, done.servings, done.servings.toString())
+                    },
                     onDecrease = { onAction(CookAction.DecreaseLogServings) },
                     onIncrease = { onAction(CookAction.IncreaseLogServings) },
                     decreaseEnabled = done.canDecreaseServings,
@@ -92,20 +100,28 @@ internal fun CookDonePage(state: CookUiState, onAction: (CookAction) -> Unit, on
             }
             Card { RatingPicker(rating = done.rating, onRate = { onAction(CookAction.SetRating(it)) }) }
             CommentField(initial = done.comment, onChange = { onAction(CookAction.SetComment(it)) })
+            // Where the entry goes, in the app's 0.1.0 terms: sent now, or saved and sent later (and why).
             IconLabel(
                 icon = when {
                     state.demo -> TandemIcons.Info
-                    state.offline -> TandemIcons.CloudOff
-                    else -> TandemIcons.CheckCircle
+                    state.sendState == CookLogSendState.NOW -> TandemIcons.CheckCircle
+                    state.sendState == CookLogSendState.OFFLINE -> TandemIcons.CloudOff
+                    else -> TandemIcons.Schedule
                 },
                 text = stringResource(
                     when {
                         state.demo -> R.string.cook_done_demo
-                        state.offline -> R.string.cook_done_offline
-                        else -> R.string.cook_done_online
+                        else -> when (state.sendState) {
+                            CookLogSendState.NOW -> R.string.cook_done_online
+                            CookLogSendState.OFFLINE -> R.string.cook_done_offline
+                            CookLogSendState.SAFE_MODE -> R.string.cook_done_safe_mode
+                            CookLogSendState.NEEDS_LOGIN -> R.string.cook_done_needs_login
+                            CookLogSendState.HELD -> R.string.cook_done_held
+                        }
                     },
                 ),
                 iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag(COOK_DONE_SEND_STATE_TAG),
             )
             TandemPrimaryButton(
                 text = stringResource(R.string.cook_done_save),
@@ -163,7 +179,8 @@ private fun DoneHero(state: CookUiState) {
                 Text(text = state.recipeName, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f, fill = false))
             }
             Text(
-                text = stringResource(R.string.cook_done_body),
+                // Demo mode keeps count in the demo only; Tandoor never hears of it.
+                text = stringResource(if (state.demo) R.string.cook_done_body_demo else R.string.cook_done_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -197,7 +214,8 @@ private fun RatingPicker(rating: Int?, onRate: (Int) -> Unit) {
             modifier = Modifier.semantics { heading() },
         )
         Row(modifier = Modifier.selectableGroup()) {
-            (1..MAX_STARS).forEach { stars ->
+            repeat(MAX_STARS) { index ->
+                val stars = index + 1
                 val filled = rating != null && stars <= rating
                 val description = pluralStringResource(R.plurals.cook_done_star, stars, stars)
                 Box(
@@ -264,19 +282,22 @@ internal fun NotificationPromptDialog(onContinue: () -> Unit, onNotNow: () -> Un
             TandemPrimaryButton(
                 text = stringResource(R.string.cook_notifications_continue),
                 onClick = onContinue,
-                size = TandemButtonSize.Small,
+                // 64 dp like every target in cook mode (plan 6.6), also in this dialog.
+                size = TandemButtonSize.Kitchen,
             )
         },
         dismissButton = {
             TandemSecondaryButton(
                 text = stringResource(R.string.cook_notifications_not_now),
                 onClick = onNotNow,
-                size = TandemButtonSize.Small,
+                size = TandemButtonSize.Kitchen,
             )
         },
     )
 }
 
 private const val MAX_STARS = 5
+
+internal const val COOK_DONE_SEND_STATE_TAG = "cook:done-send-state"
 private val STAR_SIZE = 40.dp
 private val RECIPE_THUMBNAIL = 56.dp

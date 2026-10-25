@@ -17,22 +17,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * Button heights. [Medium] (56 dp) is the default: large touch targets for the kitchen
- * (plan 6.6). [Small] (40 dp visual) still gets a 48 dp touch target from Material.
+ * (plan 6.6). [Small] (40 dp visual) still gets a 48 dp touch target from Material. [Kitchen]
+ * (64 dp, `TandemSizes.kitchenTouchTarget`) is for every button in cook mode (plan 6.2/6.6: wet
+ * hands), also in its warnings and dialogs.
  */
 enum class TandemButtonSize {
     Small,
     Medium,
+    Kitchen,
     ;
 
     internal val height: Dp
         get() = when (this) {
             Small -> ButtonDefaults.MinHeight
             Medium -> ButtonDefaults.MediumContainerHeight
+            Kitchen -> KitchenButtonHeight
         }
 }
+
+/** Same as `TandemSizes.kitchenTouchTarget` (plan 6.6). */
+private val KitchenButtonHeight: Dp = 64.dp
 
 /**
  * Main call to action: tomato pill ("Laga mat", "Anslut", "Logga in"). Use at most one per

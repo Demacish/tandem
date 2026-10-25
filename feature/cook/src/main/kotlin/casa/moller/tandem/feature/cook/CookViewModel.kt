@@ -29,9 +29,11 @@ import casa.moller.tandem.core.model.sync.isTransientSyncStop
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
+import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerStartResult
 import casa.moller.tandem.core.model.timer.TimerSuggestion
 import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.ui.stepPlainText
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -119,10 +121,10 @@ class CookViewModel @AssistedInject constructor(
     private val timerSources: Flow<TimerSources> = combine(
         timerController.timers,
         timerController.capabilities,
-        syncRepository.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged(),
+        syncRepository.status.map { it.pause.toSendState() }.distinctUntilChanged(),
         saving,
         savedStateHandle.getStateFlow(KEY_PROMPT_DECLINED, false),
-    ) { timers, capabilities, offline, saving, declined -> TimerSources(timers, capabilities, offline, saving, declined) }
+    ) { timers, capabilities, sendState, saving, declined -> TimerSources(timers, capabilities, sendState, saving, declined) }
 
     private val sessionState: Flow<SessionState> = combine(
         savedStateHandle.getStateFlow(KEY_PAGE, key.startStep),
@@ -144,9 +146,19 @@ class CookViewModel @AssistedInject constructor(
         SessionState(page, servings.takeIf { it > 0.0 }, open, rows.first, rows.second, done)
     }
 
-    val uiState: StateFlow<CookUiState> = combine(recipeSources, timerSources, sessionState, settings) { recipe, timers, session, app ->
-        buildState(recipe, timers, session, app)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), CookUiState(recipeId = recipeId, page = key.startStep))
+    // The settings repository itself, not [settings]: the first state waits for the stored
+    // settings, so "Kokläge alltid mörkt" never starts in the light theme for a frame.
+    val uiState: StateFlow<CookUiState> = combine(
+        recipeSources,
+        timerSources,
+        sessionState,
+        settingsRepository.settings,
+    ) { recipe, timers, session, app -> buildState(recipe, timers, session, app) }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+            CookUiState(recipeId = recipeId, page = key.startStep),
+        )
 
     fun onAction(action: CookAction) {
         when (action) {
@@ -266,11 +278,21 @@ class CookViewModel @AssistedInject constructor(
                 duration = pending.durationSeconds.seconds,
                 recipeId = recipeId,
                 stepIndex = pending.stepIndex,
+                sourceKey = TimerSource.of(demoMode = settings.value.demoMode, accountId = settings.value.activeAccountId),
             )
             val message = when (result) {
-                is TimerStartResult.Started, TimerStartResult.Invalid -> null
+                // TalkBack hears that the timer runs (the new row in the timer bar is not announced).
+                is TimerStartResult.Started -> {
+                    effectChannel.trySend(CookEffect.Announce(R.string.cook_timer_started, pending.label))
+                    null
+                }
+
+                TimerStartResult.Invalid -> null
+
                 TimerStartResult.HandedToClockApp -> R.string.cook_timer_clock_app
+
                 TimerStartResult.ClockAppUnavailable -> R.string.cook_timer_no_clock_app
+
                 is TimerStartResult.TooManyTimers -> R.string.cook_timer_too_many
             }
             message?.let { effectChannel.trySend(CookEffect.Message(it)) }
@@ -301,8 +323,9 @@ class CookViewModel @AssistedInject constructor(
                     timerController.clearFinished()
                     val message = when {
                         state.demo -> R.string.cook_done_saved_demo
-                        state.offline -> R.string.cook_done_saved_offline
-                        else -> R.string.cook_done_saved
+                        state.sendState == CookLogSendState.OFFLINE -> R.string.cook_done_saved_offline
+                        state.sendState == CookLogSendState.NOW -> R.string.cook_done_saved
+                        else -> R.string.cook_done_saved_later
                     }
                     effectChannel.trySend(CookEffect.Finished(message))
                 }
@@ -340,7 +363,6 @@ class CookViewModel @AssistedInject constructor(
             capabilities = timers.capabilities,
             textScale = CookTextScale.coerce(settings.cookTextScale),
             alwaysDark = settings.cookModeAlwaysDark,
-            dynamicColor = settings.dynamicColor,
             exactAlarmPromptDismissed = settings.exactAlarmPromptDismissed,
             notificationPrompt = done.pending,
             notificationPromptDeclined = timers.promptDeclined,
@@ -350,7 +372,7 @@ class CookViewModel @AssistedInject constructor(
                 comment = done.comment,
                 saving = timers.saving,
             ),
-            offline = timers.offline,
+            sendState = timers.sendState,
             demo = settings.demoMode,
         )
     }
@@ -380,11 +402,22 @@ class CookViewModel @AssistedInject constructor(
                 name = step.name,
                 instruction = step.instruction,
                 ingredients = step.ingredients,
-                suggestions = suggestions.suggest(step.instruction, step.timeMinutes, locale.languageTag),
+                suggestions = timerSuggestions(step.instruction, step.timeMinutes, locale.languageTag),
                 hasBrokenTemplate = step.hasBrokenTemplate,
                 stepRecipeName = step.stepRecipe?.let { it.name ?: "" },
             )
         }
+    }
+
+    /**
+     * The step's timer chips, detected in the text the user SEES ([stepPlainText]: no Markdown
+     * markers, so "Koka **10** minuter" is found), with line breaks read as spaces; the text ranges
+     * index into that plain text (same length). Labels never hold a line break or double spaces
+     * (they become chip texts, timer names and notification titles).
+     */
+    private fun timerSuggestions(instruction: String, timeMinutes: Int, languageTag: String): List<TimerSuggestion> {
+        val text = stepPlainText(instruction).replace('\n', ' ')
+        return suggestions.suggest(text, timeMinutes, languageTag).map { it.copy(label = it.label.collapseWhitespace()) }
     }
 
     private data class LocaleInfo(val style: NumberStyle, val languageTag: String)
@@ -399,7 +432,7 @@ class CookViewModel @AssistedInject constructor(
     private data class TimerSources(
         val timers: List<CookTimer>,
         val capabilities: TimerCapabilities,
-        val offline: Boolean,
+        val sendState: CookLogSendState,
         val saving: Boolean,
         val promptDeclined: Boolean,
     )
@@ -439,6 +472,19 @@ class CookViewModel @AssistedInject constructor(
             val owner = stepName.ifBlank { recipeName }.trim()
             return if (owner.isEmpty()) suggestion.label else "$owner · ${suggestion.label}"
         }
+
+        /** Where a cook log saved now goes, from the sync's pause (plan 4.1). */
+        fun SyncPause?.toSendState(): CookLogSendState = when (this) {
+            null -> CookLogSendState.NOW
+            SyncPause.OFFLINE -> CookLogSendState.OFFLINE
+            SyncPause.SAFE_MODE -> CookLogSendState.SAFE_MODE
+            SyncPause.UNAUTHORIZED -> CookLogSendState.NEEDS_LOGIN
+            SyncPause.BLOCKED, SyncPause.CIRCUIT_BREAKER, SyncPause.IMPORT_RUNNING -> CookLogSendState.HELD
+        }
+
+        private val WHITESPACE = Regex("\\s+")
+
+        fun String.collapseWhitespace(): String = trim().replace(WHITESPACE, " ")
 
         /** Ingredient id / unit index pairs, flattened (a Bundle-friendly LongArray). */
         fun LongArray.toUnitChoices(): Map<Long, Int> = (0 until size / 2).associate { this[it * 2] to this[it * 2 + 1].toInt() }
