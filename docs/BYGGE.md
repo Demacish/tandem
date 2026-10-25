@@ -436,7 +436,7 @@ COOK_LOG slås aldrig ihop här.
 | PATCH | `shopping_entry` | `PATCH .../{id}/` | ändrade fält; `shopping_lists:[{id}]` för flytt (bumpar `updated_at`), `delay_until` (ångra = `1970-01-01T00:00:00Z`) | `completed_at` går inte att sätta (servern sätter den) |
 | BULK_CHECK | `shopping_entry` | `POST .../bulk/` `{ids, checked}` | en rad per post, `base_snapshot {"checked": före}`, batch `shopping_entry:checked=true\|false`; refs `ids` | ett okänt/raderat id ger ändå 200 (ingen 404): inget att rensa |
 | DELETE | `shopping_entry` | `DELETE .../{id}/` | – | 404 om redan raderad |
-| CREATE | `shopping_list_recipe` | `POST /api/shopping-list-recipe/` `{recipe, servings, name, mealplan?}`, sedan posterna som egna CREATE med `list_recipe` | refs `mealplan` | `recipe/{id}/shopping/` svarar bara `{msg}` (inga id) och kan inte kopplas till en måltid (500): använd inte för offline |
+| CREATE | `shopping_list_recipe` | `POST /api/shopping-list-recipe/` `{recipe, servings, name, mealplan?}` (`mealplan` enligt schemat, inte prövat i sviten), sedan posterna som egna CREATE med `list_recipe` | refs `mealplan` | `recipe/{id}/shopping/` svarar bara `{msg}` (inga id) och kan inte kopplas till en måltid (500): använd inte för offline |
 | PATCH/DELETE | `shopping_list_recipe` | `PATCH`/`DELETE .../{id}/` | `servings` skalar posterna; DELETE tar bort posterna | `PUT recipe/{id}/shopping/` med `servings: 0` ger 500; negativt tar bort |
 | CREATE/PATCH/DELETE | `meal_plan` | `/api/meal-plan/` | `{title, recipe:{id,name}\|null, servings, note, from_date, to_date, meal_type:{id,name}, addshopping?}`; refs `meal_type.id`; PATCH med `base_snapshot` (fältjämförelse före sändning, plan 3.5) | flytt = båda datumen; DELETE tar bort måltidens poster |
 | CREATE | `meal_type` | `POST /api/meal-type/` | `{name, time?, color?, order}` | delas av hela spacet |
@@ -579,7 +579,7 @@ borttagen) implementerar `CookLogRepository` offline först (plan 5.3/5.7, funkt
   inloggning, tappat svar, säkert läge, demo, konton). Kontraktstestet `cookLogBackdatedAsTheAppSends`
   kontrollerar att Tandoor tar emot och lämnar tillbaka appens exakta kropp med `created_at` bakåt i
   tiden, listar den med samma tidpunkt och författare och svarar 400 på `recipe` för ett raderat
-  recept (2.6.13 vid push, hela matrisen nattligen).
+  recept (2.6.13 och 2.7.1 vid push, hela matrisen nattligen).
 <!-- /Fas 1b koklogg -->
 
 <!-- Fas 1b timer -->
@@ -1407,7 +1407,7 @@ senaste under **Mer → Diagnostik** (`DiagnosticsRepository.recordColdStart`).
 
 Gradle-cachen skrivs bara av `main`; emulatorjobben bygger först och stoppar Gradle innan
 emulatorn startar; `smoke.yml` hoppar över ändringar som inte når appen; kontraktsmatrisen på
-push kör bara 2.6.13; benchmark och bevakning körs schemalagt, inte vid varje push.
+push kör 2.6.13 och 2.7.1 (Fas 2); benchmark och bevakning körs schemalagt, inte vid varje push.
 <!-- /Fas 1b ci -->
 
 ## Release-röktest
