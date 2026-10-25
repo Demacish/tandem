@@ -115,6 +115,27 @@ jobs:
             echo "::error::app/src/main/baselineProfiles/baseline-prof.txt did not reach the merged ART profile"
             exit 1
           fi
+          # ...and the R8-rewritten binary profile must be packaged in the APK that is measured
+          # (the benchmarks also use BaselineProfileMode.Require on the device).
+          apk="$(find app/build/outputs/apk/sideload/minified -name '*.apk' | head -n 1)"
+          if [ -z "$apk" ]; then
+            echo "::error::No APK under app/build/outputs/apk/sideload/minified"
+            exit 1
+          fi
+          listing="$(unzip -l "$apk")"
+          prof_size="$(printf '%s\n' "$listing" | awk '$4 == "assets/dexopt/baseline.prof" { print $1 }')"
+          profm_size="$(printf '%s\n' "$listing" | awk '$4 == "assets/dexopt/baseline.profm" { print $1 }')"
+          echo "APK $(basename "$apk"): assets/dexopt/baseline.prof ${prof_size:-missing} bytes, baseline.profm ${profm_size:-missing} bytes" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$MODE" = benchmarks ] && [ -f app/src/main/baselineProfiles/baseline-prof.txt ]; then
+            if [ -z "$prof_size" ] || [ -z "$profm_size" ]; then
+              echo "::error::The minified APK has no assets/dexopt/baseline.prof(m): the baseline profile is not packaged"
+              exit 1
+            fi
+            if [ "$prof_size" -lt 1024 ]; then
+              echo "::error::assets/dexopt/baseline.prof is only ${prof_size} bytes: the rewritten profile matches (almost) no classes"
+              exit 1
+            fi
+          fi
 
       - name: Free disk space for the emulator
         if: steps.wanted.outputs.run == 'true'

@@ -15,7 +15,7 @@
   ],
   "prConcurrentLimit": 8,
   "prHourlyLimit": 4,
-  "rebaseWhen": "conflicted",
+  "rebaseWhen": "auto",
   "minimumReleaseAge": "14 days",
   "platformAutomerge": false,
   "automergeType": "pr",

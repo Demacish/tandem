@@ -19,7 +19,8 @@ import org.junit.runner.RunWith
 /**
  * Flinging the demo recipe list (14 recipes with photos) down and up again: frame durations and
  * overruns (FrameTimingMetric), median and P90/P99 in benchmark.yml's job summary. A trend on
- * an emulator with a software GPU, not an absolute number.
+ * an emulator with a software GPU, not an absolute number. With the shipped baseline profile
+ * ([BaselineProfileMode.Require]: fails if the APK has none, see [StartupBenchmark]).
  */
 @RunWith(AndroidJUnit4::class)
 class RecipeListScrollBenchmark {
@@ -30,7 +31,7 @@ class RecipeListScrollBenchmark {
     fun scrollRecipeList() = rule.measureRepeated(
         packageName = DemoJourney.PACKAGE,
         metrics = listOf(FrameTimingMetric()),
-        compilationMode = CompilationMode.Partial(BaselineProfileMode.UseIfAvailable),
+        compilationMode = CompilationMode.Partial(BaselineProfileMode.Require),
         startupMode = StartupMode.WARM,
         iterations = ITERATIONS,
         setupBlock = {

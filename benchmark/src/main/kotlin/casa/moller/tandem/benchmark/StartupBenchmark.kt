@@ -21,8 +21,11 @@ import org.junit.runner.RunWith
  * timeToInitialDisplayMs and timeToFullDisplayMs goes to benchmark.yml's job summary.
  *
  * Two compilation modes: [coldStartWithBaselineProfile] is what a user gets after installing
- * (the shipped baseline profile, if there is one), [coldStartWithoutCompilation] is the worst
- * case (no AOT compilation at all). The gap between them is what the profile buys.
+ * (the shipped baseline profile), [coldStartWithoutCompilation] is the worst case (no AOT
+ * compilation at all). The gap between them is what the profile buys.
+ *
+ * [BaselineProfileMode.Require]: the run fails when the APK carries no installable profile,
+ * instead of quietly measuring without one (benchmark.yml also checks assets/dexopt/ in the APK).
  *
  * On an emulator these numbers are a trend only; the real number comes from a phone (Mer ->
  * Diagnostik shows the last cold start, measured by the app itself).
@@ -35,7 +38,7 @@ class StartupBenchmark {
     private var demoModeOn = false
 
     @Test
-    fun coldStartWithBaselineProfile() = coldStart(CompilationMode.Partial(BaselineProfileMode.UseIfAvailable))
+    fun coldStartWithBaselineProfile() = coldStart(CompilationMode.Partial(BaselineProfileMode.Require))
 
     @Test
     fun coldStartWithoutCompilation() = coldStart(CompilationMode.None())

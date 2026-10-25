@@ -1045,7 +1045,9 @@ Varje natt (och manuellt, med valfria extra taggar):
 4. Bara på `main` och bara det jobbet har `issues: write` (`GITHUB_TOKEN`): en röd svit, en
    release som är nyare än `TESTED` eller ett ändrat faktum öppnar eller uppdaterar **ett**
    ärende, "Tandoor watch: upstream needs attention" (en kommentar bara när något nytt hänt, via
-   ett fingeravtryck); en helt grön natt stänger det.
+   ett fingeravtryck); en helt grön natt stänger det. Ärendet hittas på exakt titel **och**
+   författaren `app/github-actions` (det äldsta vinner): repot är publikt, så vem som helst kan
+   öppna ett ärende med samma titel, och det får aldrig ta över rapporten.
 
 **Läge vid 0.2.0 (2026-10-24):** 2.6.13 och 2.6.15 gröna; 2.7.1 (även `latest`) röd, och det är
 en verklig kontraktsändring, inte en flaky container. Tandoor 2.7.0 tog bort `api-token-auth`
@@ -1076,7 +1078,11 @@ dagar gamla, grupperat: AndroidX, Compose (BOM, Material 3, adaptive), byggverkt
 Kotlin, KSP, Hilt – måste följas åt), testbibliotek, statisk analys, GitHub Actions och
 Gradle-wrappern. GitHub Actions pinnas med digest och versionen som kommentar. **Automerge** bara
 för patch-/digestuppdateringar av testbibliotek och Actions, och bara när CI är grönt
-(Renovate slår ihop själv med rebase, så `main` förblir linjär). Allt annat granskas för hand.
+(Renovate slår ihop själv med rebase, så `main` förblir linjär). `rebaseWhen` är `auto`: en
+automerge-gren som ligger efter `main` rebasas först och slås ihop först när CI är grönt mot det
+**aktuella** `main` (med `conflicted` slogs den ihop på en bas den aldrig testats mot). Grenar
+utan automerge rebasas bara vid konflikt, så att de inte kör om röktestet varje gång `main` rör
+sig. Allt annat granskas för hand.
 Dependency Dashboard-ärendet visar vad som väntar. Fixturer och skript undantas.
 
 ### Prestanda (`:benchmark`, `benchmark.yml`)
@@ -1086,7 +1092,7 @@ sideload-bygge (paketet `casa.moller.tandem.minified`, som bara i den byggtypen 
 `profileable`, `app/src/minified/AndroidManifest.xml`). Allt i demoläget, utan nät:
 
 - `StartupBenchmark`: kallstart till Idag, `StartupMode.COLD`, 10 iterationer, med
-  baslinjeprofilen (`CompilationMode.Partial`) och utan kompilering (`CompilationMode.None`).
+  baslinjeprofilen (`CompilationMode.Partial(BaselineProfileMode.Require)`) och utan kompilering (`CompilationMode.None`).
 - `RecipeListScrollBenchmark`: svep i receptlistan, bildtider (`FrameTimingMetric`).
 - `BaselineProfileGenerator`: kallstart, receptlistan och ett recept som baslinjeprofil.
 
@@ -1100,7 +1106,11 @@ om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; che
 genererades efter integrationen av 0.2.0 (körning 40031229148 på integrationsgrenen); förnya den när startvägen, listan eller receptvyn ändrats mycket
 (Actions → Benchmark → Run workflow, ladda ned, ersätt filen). Mätjobbet kontrollerar att
 profilen når AGP:s sammanslagna ART-profil (antalet regler för `casa/moller/tandem` står i
-sammanfattningen).
+sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i APK:n som mäts:
+`assets/dexopt/baseline.prof` och `baseline.profm` måste finnas och `baseline.prof` vara minst
+1 KB (storlekarna står i sammanfattningen), annars blir jobbet rött. På enheten kör
+`StartupBenchmark` och `RecipeListScrollBenchmark` med `BaselineProfileMode.Require`, så en
+APK utan installerbar profil fäller mätningen i stället för att tyst mäta utan profil.
 
 **Senaste mätningen (0.2.0-integrationen, 2026-10-23, körning 40031229148, emulator API 36):**
 
