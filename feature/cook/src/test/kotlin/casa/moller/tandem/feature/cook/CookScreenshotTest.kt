@@ -120,6 +120,13 @@ class CookPhoneScreenshotTest : CookScreenshotTest("phone") {
     @Test
     fun doneDark() = capture("done_dark", darkTheme = true) { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
 
+    /** Phase 2 (books lane, #42): a guest cooks, but "Klart!" saves nothing in Tandoor. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun doneGuestSwedish() = capture("done_guest_light_sv", fakes = CookFakes().apply { permissions.setGuest(true) }) {
+        CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it)
+    }
+
     @Test
     fun doneFontScale2() = capture("done_font2_light", fontScale = 2f) {
         CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it)

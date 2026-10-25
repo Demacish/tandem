@@ -59,10 +59,29 @@ class TodayScreenshotTest {
     val composeRule = createComposeRule()
 
     private val loaded = sampleHomeState()
+    private val wantToCook = TodayBooksState(wantToCook = SampleRecipes.overviews.takeLast(3))
+    private val guest = TodayBooksState(wantToCook = SampleRecipes.overviews.take(2), readOnly = true)
     private val nothingPlanned = sampleHomeState(meals = UpcomingMeals(today = SampleRecipes.Today)).copy(sections = emptyList())
 
     @Test
     fun phone() = capture("phone_today_light", loaded)
+
+    // --- Phase 2 (books lane): the "Vill laga" row and the guest's read-only banner (#42). ---
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun phoneWantToCook() = capture("phone_today_want_to_cook_light_sv", loaded, books = wantToCook)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneGuest() = capture("phone_today_guest_light_sv", loaded, books = TodayBooksState(readOnly = true))
+
+    @Test
+    fun phoneGuestDarkFontScale2() = capture("phone_today_guest_font2_dark", loaded, darkTheme = true, fontScale = 2f, books = guest)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletWantToCook() = capture("tablet_today_want_to_cook_dark", loaded, darkTheme = true, books = wantToCook)
 
     @Test
     fun phoneDark() = capture("phone_today_dark", loaded, darkTheme = true)
@@ -138,12 +157,13 @@ class TodayScreenshotTest {
         darkTheme: Boolean = false,
         fontScale: Float? = null,
         chrome: AppChrome = AppChrome(),
+        books: TodayBooksState = TodayBooksState(),
     ) {
         composeRule.setContent {
             WithFontScale(fontScale) {
                 TandemTheme(darkTheme = darkTheme) {
                     CompositionLocalProvider(LocalAppChrome provides chrome) {
-                        TodayScreen(state = state, onAction = {})
+                        TodayScreen(state = state, onAction = {}, books = books)
                     }
                 }
             }

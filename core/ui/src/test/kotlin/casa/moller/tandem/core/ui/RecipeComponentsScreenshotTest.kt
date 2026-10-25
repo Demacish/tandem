@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import casa.moller.tandem.core.ui.sample.IngredientsSample
+import casa.moller.tandem.core.ui.sample.ReadOnlySample
 import casa.moller.tandem.core.ui.sample.RecipeCardsSample
+import casa.moller.tandem.core.ui.sample.RecipeFavoritesSample
 import casa.moller.tandem.core.ui.sample.RecipeListItemsSample
 import casa.moller.tandem.core.ui.sample.RecipeMetaSample
 import casa.moller.tandem.core.ui.sample.StepCardSample
@@ -30,6 +32,13 @@ class RecipeComponentsScreenshotTest(private val theme: String) {
 
     @Test
     fun recipeCards() = capture("recipe_cards") { RecipeCardsSample() }
+
+    /** Phase 2 (books lane): the hearts (#17) and the guest's read-only pieces (#42). */
+    @Test
+    fun recipeFavorites() = capture("recipe_favorites") { RecipeFavoritesSample() }
+
+    @Test
+    fun readOnly() = capture("read_only") { ReadOnlySample() }
 
     @Test
     fun recipeListItems() = capture("recipe_list_items") { RecipeListItemsSample() }

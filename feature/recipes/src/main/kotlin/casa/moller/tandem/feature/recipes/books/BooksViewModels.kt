@@ -286,10 +286,8 @@ class RecipeBookButtonsViewModel @AssistedInject constructor(
 
 /** The collections row and the hearts of the recipe list. */
 @HiltViewModel
-class RecipeCollectionsViewModel @Inject constructor(
-    private val books: RecipeBookRepository,
-    permissions: SpacePermissionsRepository,
-) : ViewModel() {
+class RecipeCollectionsViewModel @Inject constructor(private val books: RecipeBookRepository, permissions: SpacePermissionsRepository) :
+    ViewModel() {
     private val effectChannel = Channel<BookRecipesEffect>(Channel.BUFFERED)
     val effects: Flow<BookRecipesEffect> = effectChannel.receiveAsFlow()
 

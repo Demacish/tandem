@@ -306,11 +306,10 @@ private fun RecipeGrid(
 
 /** Phase 2 (books lane): the collections row and the hearts, when the route provides them. */
 private class BookHooks(val state: RecipeCollectionsState, val onOpen: (RecipeCollection) -> Unit, val onToggleFavorite: (Long) -> Unit) {
-    fun favoriteOf(recipeId: Long): RecipeFavorite =
-        RecipeFavorite(
-            isFavorite = recipeId in state.favoriteIds,
-            onToggle = if (state.readOnly) null else ({ onToggleFavorite(recipeId) }),
-        )
+    fun favoriteOf(recipeId: Long): RecipeFavorite = RecipeFavorite(
+        isFavorite = recipeId in state.favoriteIds,
+        onToggle = if (state.readOnly) null else ({ onToggleFavorite(recipeId) }),
+    )
 }
 
 private fun LazyGridScope.fullWidth(key: String, content: @Composable () -> Unit) {

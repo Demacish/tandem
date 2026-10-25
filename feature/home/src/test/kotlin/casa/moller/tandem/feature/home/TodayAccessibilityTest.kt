@@ -66,13 +66,29 @@ class TodayAccessibilityTest {
     @Config(qualifiers = TABLET)
     fun tabletDark() = check(loaded, darkTheme = true)
 
-    private fun check(state: HomeUiState, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
+    // --- Phase 2 (books lane): the "Vill laga" row and the guest's read-only banner (#42). ---
+
+    private val wantToCookGuest = TodayBooksState(wantToCook = SampleRecipes.overviews.take(3), readOnly = true)
+
+    @Test
+    fun wantToCookAndGuest() = check(loaded, books = wantToCookGuest)
+
+    @Test
+    fun wantToCookAndGuestDarkFontScale2() = check(loaded, darkTheme = true, fontScale = 2f, books = wantToCookGuest)
+
+    private fun check(
+        state: HomeUiState,
+        darkTheme: Boolean = false,
+        fontScale: Float = 1f,
+        chrome: AppChrome = AppChrome(),
+        books: TodayBooksState = TodayBooksState(),
+    ) {
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale * density.fontScale)) {
                 TandemTheme(darkTheme = darkTheme) {
                     CompositionLocalProvider(LocalAppChrome provides chrome) {
-                        TodayScreen(state = state, onAction = {})
+                        TodayScreen(state = state, onAction = {}, books = books)
                     }
                 }
             }

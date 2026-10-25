@@ -69,9 +69,11 @@ class CookFakes(
     val cookLog: FakeCookLogRepository = FakeCookLogRepository(),
     val sync: FakeSyncRepository = FakeSyncRepository(),
     val handle: SavedStateHandle = SavedStateHandle(),
+    // Phase 2 (books lane, #42): a guest's "Klart!" saves nothing.
+    val permissions: FakeSpacePermissionsRepository = FakeSpacePermissionsRepository(),
 ) {
     internal fun viewModel(key: CookKey): CookViewModel =
-        CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock, FakeSpacePermissionsRepository())
+        CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock, permissions)
 
     /** Starts a timer from step [stepIndex]'s first suggestion of the sample pasta, like a tap on its button. */
     fun startTimer(stepIndex: Int, label: String, duration: Duration) {

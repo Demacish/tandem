@@ -47,6 +47,7 @@ class TodayRouteTest {
 
     private fun setContent() {
         val viewModel = HomeViewModel(home, sync, currentHour = { 18 })
+        val books = TodayBooksViewModel(FakeRecipeBookRepository(), FakeSpacePermissionsRepository())
         composeRule.setContent {
             TandemTheme {
                 TodayRoute(
@@ -54,7 +55,7 @@ class TodayRouteTest {
                     onOpenRecipes = { openedRecipesTab++ },
                     onOpenWeek = { openedWeek++ },
                     viewModel = viewModel,
-                    booksViewModel = TodayBooksViewModel(FakeRecipeBookRepository(), FakeSpacePermissionsRepository()),
+                    booksViewModel = books,
                 )
             }
         }

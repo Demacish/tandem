@@ -101,6 +101,11 @@ class CookAccessibilityTest {
     fun doneFontScale2() = check(fontScale = 2f) { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
 
     @Test
+    fun doneGuestDark() = check(darkTheme = true, fakes = CookFakes().apply { permissions.setGuest(true) }) {
+        CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it)
+    }
+
+    @Test
     fun notificationQuestion() = check(
         fakes = CookFakes().apply {
             timers.setCapabilities(TimerCapabilities.FreshInstall)

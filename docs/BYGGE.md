@@ -1276,6 +1276,93 @@ inköpets databana.
   (`feature/shopping/src/test/screenshots/shopping/`). Skärmarna och lägena står i `ShoppingShot`.
 <!-- /Fas 2 inköp-ui -->
 
+<!-- Fas 2 böcker -->
+## Böcker, favoriter och Vill laga (`:feature:recipes`, `:core:sync`, Fas 2)
+
+Funktion #17 (plan 3.7, 6.2 "Böcker/Favoriter", B17) och gästläget #42 (plan 8.6). Stitch
+`receptbok_master_detail_surfplatta`, `recept_s_k_filter_samlingar`, `tandem_g_stl_ge_skrivskyddat`.
+
+**Data (`core/sync/.../book/`, bundet i `di/BookModule.kt`, som ersätter appens
+`TemporaryFas2BookModule` och tar `SpacePermissionsRepository` ur `TemporaryFas2AccountModule`):**
+
+| Gränssnitt | Implementation |
+|---|---|
+| `RecipeBookRepository` | `OfflineFirstRecipeBookRepository` (+ `observeFavoriteIds()`: egna favoriter, hjärtan) |
+| `SpacePermissionsRepository` | `DefaultSpacePermissionsRepository` (`server_account.group_level`) |
+
+- **Vilken bok är vad** (`core:domain` `RecipeBookRules`, rent): favoriter = en bok utan filter som
+  heter "Favoriter"/"Favorites"/"Favourites", ev. med ägaren i parentes, eller har Kitshns
+  `#KTSHNFAV` i beskrivningen; "Vill laga" = en smart bok vars filter bara söker nyckelordet
+  `vill-laga` (eller heter "Vill laga"/"Want to cook"); annan bok med filter = smart; resten vanlig.
+  `SmartFilter` utvärderar ett filter med bara `keywords_or`/`keywords_and` på enheten.
+- **Bara egna böcker ändras** (plan 3.7): en skrivning till någon annans bok eller en smart bok ger
+  `DataProblem.NOT_OWNER` innan något sparas (servern skulle svara 403; FACTS: en delad medlem kan
+  *lägga till* men inte ta bort, appen skriver ändå aldrig). Gäst: `READ_ONLY`.
+- **Favoriter per person:** "Favorit" lägger receptet i användarens egen favoritbok; finns ingen
+  skapas "Favoriter (<namn>)" (namnet ur `core:sync` `strings_books.xml`) offline med tillfälligt id,
+  och posten `depends_on` bokens CREATE med `book` i `refs`. Bokens CREATE bär appens nyckel
+  `tandem_share_with_space`: avsändaren läser `GET /api/user/` och skickar `shared` = spacets andra
+  användare (nyckeln skickas aldrig). Vyn Favoriter slår ihop allas favoritböcker.
+- **Vill laga:** `RECIPE_KEYWORDS` på receptet (`{"keywords":{"vill-laga":true}}`, `base_snapshot`
+  med motsatsen, så att av och på igen tar ut varandra). Avsändaren läser receptet färskt, skickar
+  **hela** nyckelordslistan med eller utan `{name: "vill-laga"}` (servern återanvänder nyckelordet
+  på namn) och sparar svaret som receptets detalj. Första gången skapas också filtret
+  (`POST /api/custom-filter/` med nyckelordets **id**) och den smarta boken "Vill laga" (filtret som
+  servern svarade), delade med spacet, om ingen syns än. Listan i appen = recept med nyckelordet,
+  med köade ändringar ovanpå.
+- **Läsning** (`BookSync`, med de små tabellerna i `SyncEngine` efter inköpslistan, via
+  `BookSyncStep`): rollen (`SpaceRoleSync`: `user-space/all_personal`, spacets post, `group_level`
+  admin/user/guest), sedan alla synliga böcker och poster; serverraderna ersätts, lokalt skapade
+  rader står kvar och köade DELETE läggs på igen. Smarta böcker som inte går att utvärdera lokalt
+  läses med `GET /api/recipe/?filter=<id>` (högst 5 × 100) och hålls i minnet (`SmartBookResults`).
+- **Avsändare** (`BookOutboxHandlers.kt`): `recipe_book` (CREATE/DELETE; en CREATE som försökts förut
+  letar först efter en egen bok med samma namn), `recipe_book_entry` (CREATE; 400 "unique set" eller
+  ett förlorat svar blir den befintliga posten via `?recipe=`; 400 på `book`/`recipe` = borta,
+  posten släpps; DELETE 404 = redan borta) och `recipe` (`RECIPE_KEYWORDS`).
+- **Gästläget (#42):** rollen läses vid första synken efter inloggning och sedan med de små
+  tabellerna. En gäst köar ingenting: alla Fas 2-repositorier ger `READ_ONLY`, `logCooked` också,
+  och `markViewed` sparar bara lokalt (ingen `VIEW_LOG`). Demoläget är aldrig skrivskyddat.
+- **Demo:** `DemoBooks` (efter `DemoShopping`) gör demoinnehållets "Favoriter" till demoanvändarens
+  favoritbok, "Vill laga" till den smarta boken på nyckelordet (recepten får nyckelordet) och lägger
+  till Alex favoritbok, delad och skrivskyddad. Seedas en gång per version och språk.
+
+**Gemensamma gästdelar (`core:ui` `readonly/ReadOnly.kt`) – för alla banor:** `ReadOnlyBanner()`
+(en gång överst på en skärm med redigering; `compact = true` för listor), `ReadOnlySheet` /
+`ReadOnlySheetContent` ("Det här kan en gäst göra", öppnas från bannern) och `ReadOnlyNote(text)`
+(en rad med lås i stället för en kontroll). Skärmarna **döljer** skrivkontrollerna när
+`SpacePermissions.readOnly`; ViewModels ignorerar skrivningar också. Används på Idag, i böckerna,
+i receptets knappar och på Klart!-sidan (`CookUiState.readOnly`: varken betyg, kommentar eller
+koklogg). Handla har sin egen gästruta sedan inköpsbanan.
+
+**Skärmar (`feature/recipes/.../books/`):**
+
+| Route (nyckel) | ViewModel | Skärm |
+|---|---|---|
+| `BooksRoute` (`BooksKey`) | `BooksViewModel` | `BooksScreen`: Favoriter och Vill laga, Mina böcker, Delade med mig (lås, "Från Alex · bara läsning"), "Ny bok" |
+| `BookDetailRoute` (`BookDetailKey`), `FavoritesRoute`, `WantToCookRoute` | `BookRecipesViewModel` (assisted, `BookSource`) | `BookRecipesScreen`: förklaring (delad bok: varför den är skrivskyddad), rader med ta bort och i Vill laga "Planera" |
+| `RecipeBookButtonsRoute` (i `RecipeDetailRoute`, slot `bookActions`) | `RecipeBookButtonsViewModel` (assisted, recept-id) | `RecipeBookButtons`: Favorit, Vill laga, Lägg i bok (ark med egna böcker och ny bok), "Favorit hos Alex" |
+| i `RecipesRoute` | `RecipeCollectionsViewModel` | `RecipeCollectionsRow` ovanför filtren och hjärtat på korten (`core:ui` `RecipeFavorite`) |
+
+Idag: `TodayBooksViewModel` (`:feature:home`) ger raden "Vill laga" (före karusellerna, "Visa alla"
+→ `WantToCookKey`) och gästbannern. Mer: raden Receptböcker → `BooksKey`.
+
+**Navigering och surfplatta:** `BooksKey` är listpanel och `BookDetailKey`/`FavoritesKey`/
+`WantToCookKey` detaljpanel i skalets `ListDetailSceneStrategy` (`isBookPage`; en ny bok ersätter den
+öppna). Öppnas en samling från receptlistans chips står den bredvid receptlistan. `ShellFeatures`
+fick `onOpenWantToCook` (Today), `onOpenCollection` (Recipes) och `selectedBookId` (Books).
+
+**Tester:** `RecipeBookRepositoryTest` (Robolectric, `FakeBookTandoor` i de inspelade formerna för
+**2.6.13 och 2.7.1**: delad bok aldrig skriven, favoritbok offline med id-omskrivning och delning,
+"unique set", köade ändringar efter omläsning, Vill laga med hela listan och den smarta boken, gäst,
+demo), `RecipeBookRulesTest`, `BookServicesTest`, `DtoFixturesTest` (custom-filter, all_personal),
+`BooksViewModelsTest`, `BooksScreenshotTest`/`BooksAccessibilityTest` (`BookShot`, referensbilder i
+`feature/recipes/src/test/screenshots/books/`), Idag, Klart! och `core:ui` (hjärtan, gästdelar).
+**Kontrakt:** `BookWritesContractTest` (eget steg i `contract.yml`) prövar som vanlig medlem mot
+2.6.13 och 2.7.1: `GET /api/user/` är en lista, en egen favoritbok delad med spacet syns för
+ägaren, poster (`?recipe=`, "unique set", 204/404), nyckelordslistan och den smarta boken med
+filtret som servern svarade, och rollerna i `all_personal`.
+<!-- /Fas 2 böcker -->
+
 ## Receptvisning (`:core:domain`, Fas 1)
 
 Ren Kotlin (JVM, JUnit 5) utan Android-typer. Allt som receptvyn och senare kokläget visar och

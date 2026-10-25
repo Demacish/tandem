@@ -13,7 +13,9 @@ import casa.moller.tandem.core.ui.sample.EmptyStateSample
 import casa.moller.tandem.core.ui.sample.ErrorStateSample
 import casa.moller.tandem.core.ui.sample.IngredientsSample
 import casa.moller.tandem.core.ui.sample.LoadingStateSample
+import casa.moller.tandem.core.ui.sample.ReadOnlySample
 import casa.moller.tandem.core.ui.sample.RecipeCardsSample
+import casa.moller.tandem.core.ui.sample.RecipeFavoritesSample
 import casa.moller.tandem.core.ui.sample.RecipeListItemsSample
 import casa.moller.tandem.core.ui.sample.RecipeMetaSample
 import casa.moller.tandem.core.ui.sample.SafeModeInfoSample
@@ -79,6 +81,13 @@ class CoreUiAccessibilityTest(private val theme: String) {
 
     @Test
     fun demo() = check { DemoSample() }
+
+    /** Phase 2 (books lane): the hearts (#17) and the guest's read-only pieces (#42). */
+    @Test
+    fun recipeFavorites() = check { RecipeFavoritesSample() }
+
+    @Test
+    fun readOnly() = check { ReadOnlySample() }
 
     /**
      * The gate itself: Roborazzi skips ATF silently (only a log line) on API < 34 or with legacy

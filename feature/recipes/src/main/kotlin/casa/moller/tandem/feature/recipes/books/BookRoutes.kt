@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -39,11 +40,12 @@ fun BooksRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
+    val currentOpenBook by rememberUpdatedState(onOpenBook)
     LaunchedEffect(viewModel, snackbarHostState) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is BooksEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
-                is BooksEffect.Created -> onOpenBook(effect.bookId)
+                is BooksEffect.Created -> currentOpenBook(effect.bookId)
             }
         }
     }

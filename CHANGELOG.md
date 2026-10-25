@@ -27,6 +27,18 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   avbockade varor som Tandoor inte längre visar sparas i en lokal historik. Butiker med sin
   gångordning, varors gång och "har hemma" följer med. Demoläget har en exempellista med två
   butiker.
+- **Receptböcker, favoriter och "Vill laga":** Recept-fliken har Favoriter, Vill laga och
+  Böcker överst, och Mer har raden Receptböcker. Favoriter är din egen favoritbok i Tandoor
+  ("Favoriter (namn)"), som skapas första gången du trycker på hjärtat och delas för läsning
+  med de andra i hushållet; vyn Favoriter visar allas. "Vill laga" är en gemensam kö som alla
+  kan fylla på (nyckelordet `vill-laga` på receptet, med en smart bok för webben) och syns som en
+  rad på Idag. I receptet finns Favorit, Vill laga och Lägg i bok; bara dina egna böcker kan
+  ändras, och en bok som någon annan delat med dig förklarar varför den är skrivskyddad. Allt
+  fungerar offline och skickas senare. På surfplatta står böckerna bredvid den öppna boken.
+  Kitshns favoritbok (`#KTSHNFAV`) räknas som favoriter.
+- **Gästläge:** är du gäst i hushållets Tandoor är appen skrivskyddad: recept, matsedel,
+  inköpslista och kokläge fungerar, men inga ändringar sparas eller skickas, och en banderoll
+  förklarar vad en gäst kan göra.
 
 ## [0.2.0] – 2026-10-24
 
