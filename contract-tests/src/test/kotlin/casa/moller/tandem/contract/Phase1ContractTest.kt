@@ -896,8 +896,9 @@ class Phase1ContractTest {
      * `UserFileView` whose `preview` Tandoor fills only for an image (PIL can open it), else "".
      * Uploads one PNG and one PDF as user files, attaches them to two steps of a new recipe, reads
      * the detail (recorded as `recipe-step-file.json`, the fixture of `DtoFixturesTest`), checks
-     * the preview format and whether the preview and the download need a login, then deletes
-     * everything again. Runs after every list fact, so no other fact changes.
+     * the preview format and whether the preview and the download need a login, then deletes the
+     * recipe again. Runs after every list fact, so no other fact changes; the scaling table skips
+     * the recipe (no ingredients).
      */
     @Test
     @Order(92)
@@ -944,13 +945,9 @@ class Phase1ContractTest {
             observe("stepFile.download.noAuth.location", anonymous.header("Location"))
         }
 
+        // The user files stay: a deleted recipe leaves its steps behind for a while, and they still
+        // protect the files (500 ProtectedError on DELETE /api/user-file/). The server is thrown away.
         observe("stepFile.cleanup.recipe", api("recipe-delete-step-file", "DELETE", "/api/recipe/$id/", record = false).status)
-        for (file in listOf(imageFile, pdfFile)) {
-            observe(
-                "stepFile.cleanup.file.${file.stringAt("name")}",
-                api("user-file-delete", "DELETE", "/api/user-file/${file.longAt("id")}/", record = false).status,
-            )
-        }
     }
 
     /** Three steps: the image, the PDF, no file. A file is referenced by id (UserFileView is read-only). */

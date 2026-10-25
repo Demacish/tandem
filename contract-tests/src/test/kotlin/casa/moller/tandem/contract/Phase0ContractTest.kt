@@ -477,8 +477,12 @@ class Phase0ContractTest {
             extraHeaders = headers,
         )
         val space = http.call("no-space-space-current", "GET", "/api/space/current/", record = false, extraHeaders = headers)
+        // 2.6 answered the token list without a space (the pasted-token login used that to tell
+        // "no space" from "invalid token"); 2.7 refuses it like everything else below /api/.
+        val tokenList = http.call("no-space-access-token-list", "GET", "/api/access-token/", record = false, extraHeaders = headers)
         facts["noSpace.accessTokenCreate"] = describe(create)
         facts["noSpace.spaceCurrent"] = describe(space)
+        facts["noSpace.accessTokenList"] = describe(tokenList, includeBody = false)
         val logout = http.call("no-space-logout", "DELETE", ALLAUTH_SESSION, record = false, extraHeaders = headers)
         facts["noSpace.logoutStatus"] = logout.status
         assertTokenRejected(create)
@@ -588,12 +592,18 @@ class Phase0ContractTest {
         assertEquals(404, recipe.status, recipe.toString())
         assertEquals(404, token.status, token.toString())
         assertTrue(recipe.json is JsonObject && recipe.jsonObject.string("detail") != null, "JSON {detail}: $recipe")
-        // Observed in 2.6.13: an unknown /api/ path is NOT a JSON 404 but a redirect to the web
-        // login page (HTML). Clients must not follow redirects blindly on API calls.
-        assertEquals(302, path.status, path.toString())
-        // 2.6: /accounts/login/ (allauth's page); 2.7: the new web app's /account/login/.
-        val loginPage = if (allauth) "/account/login/" else "/accounts/login/"
-        assertTrue(path.header("Location").orEmpty().startsWith(loginPage), "Location: ${path.header("Location")}")
+        if (allauth) {
+            // Observed in 2.7.0/2.7.1: an unknown /api/ path answers 200 with the web app's HTML
+            // page. The app's HtmlResponseGuardInterceptor turns that into NotTandoor(HTML_RESPONSE),
+            // and a capability probe stops there (CapabilityResolver).
+            assertEquals(200, path.status, path.toString())
+            assertTrue(path.contentType.orEmpty().startsWith("text/html"), "Content-Type: ${path.contentType}")
+        } else {
+            // Observed in 2.6.13: an unknown /api/ path is NOT a JSON 404 but a redirect to the web
+            // login page (HTML). Clients must not follow redirects blindly on API calls.
+            assertEquals(302, path.status, path.toString())
+            assertTrue(path.header("Location").orEmpty().startsWith("/accounts/login/"), "Location: ${path.header("Location")}")
+        }
     }
 
     // --- f. Revocation and token reuse ---------------------------------------------------------

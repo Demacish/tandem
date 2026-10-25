@@ -254,6 +254,8 @@ for (const file of fs.readdirSync(recordingsDir).sort()) {
     const response = recording.response ?? {};
     if (request.method !== "GET" || !/^\/api\/recipe\/\d+\/$/.test(request.path ?? "") || response.status !== 200) continue;
     const recipe = response.body;
+    // Nothing to scale (e.g. the step-file recipe of Phase1ContractTest.stepWithAFile): not part of the table.
+    if (!(recipe.steps ?? []).some((step) => (step.ingredients ?? []).length > 0)) continue;
     const base = recipe.servings;
     const cases = servingsCases(base).map((servings) => {
         const factor = servings / (base != undefined ? Math.max(base, 1) : 1);
