@@ -87,8 +87,7 @@ internal fun ShoppingListRecipeDto.toEntity(accountId: String): ShoppingListReci
 }
 
 /** The small label of a recipe or meal on the list: the recipe's name, else the list recipe's own name. */
-private fun ShoppingListRecipeDto.labelName(): String? =
-    recipeData?.name?.takeIf { it.isNotBlank() } ?: name.takeIf { it.isNotBlank() }
+private fun ShoppingListRecipeDto.labelName(): String? = recipeData?.name?.takeIf { it.isNotBlank() } ?: name.takeIf { it.isNotBlank() }
 
 internal fun ShoppingListDto.toEntity(accountId: String): ShoppingListEntity? =
     id?.let { ShoppingListEntity(accountId = accountId, id = it, name = name, description = description, color = color) }

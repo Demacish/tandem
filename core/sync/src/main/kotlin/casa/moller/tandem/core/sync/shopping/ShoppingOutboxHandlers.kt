@@ -69,7 +69,8 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
         }
         val serverId = created.id ?: return OutboxResult.Failed(TandemError.Decode("shopping-entry-without-id"))
         reader.noteCreated(remote.accountId, serverId)
-        storeAnswer(remote, row, created)
+        // The user's check stays on the device while it is sent right after.
+        storeAnswer(remote, row, if (checked) created.copy(checked = true) else created)
         if (checked && !created.checked) checkAfterCreate(remote, row, serverId)
         return OutboxResult.Created(serverId)
     }

@@ -100,6 +100,7 @@ internal class DefaultForegroundSync(
     /** Why [remote] is not polled now; [SyncPause.SAFE_MODE] still reads. */
     internal fun pauseFor(remote: ActiveSource.Remote): SyncPause? = when {
         !network.online.value -> SyncPause.OFFLINE
+
         else -> guard.pauseAt(guard.state.value, remote.accountId, clock.nowMillis())
             ?: SyncPause.SAFE_MODE.takeIf { remote.writePolicy != WritePolicy.SEND }
     }

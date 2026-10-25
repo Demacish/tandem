@@ -201,41 +201,36 @@ internal class ShoppingReader @Inject constructor(
         val rows = outbox.getAllFor(accountId, OutboxEntities.SHOPPING_ENTRY)
         val recentDays = database.referenceDao().getUserPreference(accountId)?.shoppingRecentDays ?: DEFAULT_RECENT_DAYS
         val nowInstant = Instant.fromEpochMilliseconds(now)
-        val deleted = mutableListOf<ShoppingEntryEntity>()
-        val agedOut = mutableListOf<ShoppingEntryEntity>()
-        for (entry in stored) {
-            val serverId = entry.serverId ?: continue
-            if (serverId in onServer) continue
-            val queued = rows.filter { it.serverId == serverId }
-            // A queued change of an entry that is gone is not a reason to keep it (plan 3.5): judge
-            // it like any other, and drop the change unsent when the entry was deleted.
-            val verdict = ShoppingWindowRule.missingEntry(
-                onServer = true,
-                hasUnsentChanges = false,
-                checked = entry.checked,
-                completedAt = entry.completedAt?.let { Instant.fromEpochMilliseconds(it) },
-                now = nowInstant,
-                recentDays = recentDays,
-            )
-            when {
-                verdict == ShoppingWindowRule.Verdict.DELETED -> deleted += entry
-                // Aged out with a change still to send: kept, the change goes out (the entry exists).
-                verdict == ShoppingWindowRule.Verdict.AGED_OUT && queued.isEmpty() -> agedOut += entry
-            }
-        }
-        for (entry in deleted) {
-            val serverId = entry.serverId ?: continue
-            val queued = rows.filter { it.serverId == serverId && it.state != OutboxState.IN_FLIGHT }
-            if (queued.isNotEmpty()) {
-                outbox.deleteWithDependents(queued.map { it.id })
-                queued.forEach { dropped.record(DroppedChange(it.entity, it.op, serverId, DroppedChanges.DELETED_ELSEWHERE, now)) }
-            }
+        // A queued change of an entry that is gone is not a reason to keep it (plan 3.5): it is
+        // judged like any other, and its changes are dropped unsent when it was deleted.
+        val verdicts = stored.filter { entry -> entry.serverId?.let { it !in onServer } == true }
+            .associateWith { verdictOf(it, nowInstant, recentDays) }
+        val queuedIds = rows.mapNotNullTo(HashSet()) { it.serverId }
+        val deleted = verdicts.filterValues { it == ShoppingWindowRule.Verdict.DELETED }.keys.toList()
+        // Aged out with a change still to send: kept, the change goes out (the entry exists).
+        val agedOut = verdicts.filter { (entry, verdict) -> verdict == ShoppingWindowRule.Verdict.AGED_OUT && entry.serverId !in queuedIds }
+            .keys
+            .toList()
+        val unsent = rows.filter { row -> row.state != OutboxState.IN_FLIGHT && deleted.any { it.serverId == row.serverId } }
+        if (unsent.isNotEmpty()) {
+            outbox.deleteWithDependents(unsent.map { it.id })
+            unsent.forEach { dropped.record(DroppedChange(it.entity, it.op, it.serverId, DroppedChanges.DELETED_ELSEWHERE, now)) }
         }
         if (deleted.isNotEmpty()) dao.deleteEntries(accountId, deleted.map { it.localId })
         if (agedOut.isNotEmpty()) dao.archive(accountId, agedOut.map { it.toHistory(now) }, agedOut.map { it.localId })
         removeOrphanListRecipes(remote, database)
         return deleted.map { ShoppingChange.Removed(it.foodName) }
     }
+
+    private fun verdictOf(entry: ShoppingEntryEntity, now: Instant, recentDays: Int): ShoppingWindowRule.Verdict =
+        ShoppingWindowRule.missingEntry(
+            onServer = true,
+            hasUnsentChanges = false,
+            checked = entry.checked,
+            completedAt = entry.completedAt?.let { Instant.fromEpochMilliseconds(it) },
+            now = now,
+            recentDays = recentDays,
+        )
 
     /** Server list recipes no entry points to any more (deleted with their entries) and nothing queued for. */
     private suspend fun removeOrphanListRecipes(remote: ActiveSource.Remote, database: TandemDatabase) {

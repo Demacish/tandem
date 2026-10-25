@@ -91,7 +91,7 @@ internal class DefaultIngredientParser @Inject constructor(
             foodName = name,
             note = note,
             unitId = unit?.id,
-            foodId = food.id,
+            foodId = food?.id,
             fromServer = true,
         )
     }

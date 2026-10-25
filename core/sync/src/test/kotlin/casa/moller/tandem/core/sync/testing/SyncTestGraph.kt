@@ -62,6 +62,8 @@ internal class SyncTestGraph(
     // Phase 2 (inköp-data lane): a second "phone" needs its own database files and account id.
     private val databasePrefix: String = "",
     accountId: String = ACCOUNT_ID,
+    serverVersion: String = "2.6.13",
+    userId: Long = 1,
 ) {
     val context: Context = ApplicationProvider.getApplicationContext()
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -90,9 +92,9 @@ internal class SyncTestGraph(
         id = accountId,
         baseUrl = server.baseUrl.trimEnd('/'),
         username = "cook",
-        userId = 1,
+        userId = userId,
         spaceId = 1,
-        serverVersion = "2.6.13",
+        serverVersion = serverVersion,
         addedAt = Instant.fromEpochMilliseconds(0),
     )
     val api: TandoorApi = TandoorApiFactory(TestTls.httpClient()).create(server.baseUrl, { sources.token })
@@ -109,6 +111,7 @@ internal class SyncTestGraph(
     val guard = SyncGuard(clock)
     val caller = RemoteCaller(guard, sources)
     val details = DetailFetcher(sources, databases, caller, clock)
+
     // Phase 2 (inköp-data lane): the shopping list's reader, small tables and outbox senders.
     val shoppingChanges = ShoppingChangeBus()
     val droppedChanges = DroppedChanges()

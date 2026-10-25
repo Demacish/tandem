@@ -59,6 +59,13 @@ internal class FakeTandoorServer {
     /** The highest number of recipe detail requests that were in progress at the same time. */
     val maxParallelDetails = AtomicInteger()
 
+    /**
+     * Phase 2 (inköp-data lane): answers requests before the recorded routes (e.g. a stateful
+     * shopping list, `FakeShoppingTandoor`); null = not handled.
+     */
+    @Volatile
+    var handler: ((RecordedRequest) -> MockResponse?)? = null
+
     /** Milliseconds each recipe detail answer is held back (to observe parallelism). */
     @Volatile
     var detailDelayMillis: Long = 0
@@ -92,6 +99,7 @@ internal class FakeTandoorServer {
         val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()
         requests += "${request.method} $path$query"
         overrides["${request.method} $path"]?.let { return it(request) }
+        handler?.invoke(request)?.let { return it }
         val detail = RECIPE_PATH.find(path)
         if (request.method == "GET" && detail != null) {
             val running = inFlightDetails.incrementAndGet()

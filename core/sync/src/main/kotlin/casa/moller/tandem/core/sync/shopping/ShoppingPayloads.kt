@@ -60,12 +60,11 @@ internal object ShoppingPayloads {
     }.toString()
 
     /** `refs` of an entry CREATE that points at a list recipe created offline. */
-    fun createEntryRefs(listRecipeId: Long?): String? =
-        if (listRecipeId != null && listRecipeId < 0) {
-            OutboxRefs.encode(mapOf("list_recipe" to OutboxEntities.SHOPPING_LIST_RECIPE))
-        } else {
-            null
-        }
+    fun createEntryRefs(listRecipeId: Long?): String? = if (listRecipeId != null && listRecipeId < 0) {
+        OutboxRefs.encode(mapOf("list_recipe" to OutboxEntities.SHOPPING_LIST_RECIPE))
+    } else {
+        null
+    }
 
     /** One BULK_CHECK row: `{ids: [id], checked}`; `refs` resolve a temporary id. */
     fun check(id: Long, checked: Boolean): String = buildJsonObject {
