@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
-import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -59,10 +58,12 @@ fun ReadOnlyBanner(modifier: Modifier = Modifier, compact: Boolean = false) {
         icon = TandemIcons.Lock,
         tone = TandemTone.Warning,
         actions = {
-            TandemTextButton(
+            // Filled, like the demo banner's button: text buttons lack contrast on saffron.
+            TandemPrimaryButton(
                 text = stringResource(R.string.ui_read_only_more),
                 onClick = { sheetOpen = true },
                 leadingIcon = TandemIcons.Info,
+                size = TandemButtonSize.Small,
             )
         },
     )

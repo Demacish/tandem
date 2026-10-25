@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
+import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.navigation.AppChrome
@@ -28,6 +29,16 @@ private const val PHONE = "w412dp-h915dp-port-xhdpi"
 private const val PHONE_TALL = "w412dp-h1800dp-port-xhdpi"
 private const val MEDIUM = "w800dp-h1280dp-port-mdpi"
 private const val TABLET = "w1280dp-h800dp-land-mdpi"
+
+/**
+ * Phase 2 (books lane): three "Vill laga" recipes that are in none of the sample carousels (the same
+ * recipe twice on one screen would be two identical TalkBack items).
+ */
+internal val wantToCookRecipes: List<RecipeOverview> = listOf(
+    RecipeOverview(id = 9_001, name = "Linsgryta med kokosmjölk", workingMinutes = 15, waitingMinutes = 25, rating = 4.5),
+    RecipeOverview(id = 9_002, name = "Ugnsbakad lax med dill", workingMinutes = 10, waitingMinutes = 20),
+    RecipeOverview(id = 9_003, name = "Fredagstacos", workingMinutes = 30, rating = 4.0),
+)
 
 /** Today with the sample meal plan and carousels (core:testing), as the ViewModel builds it. */
 internal fun sampleHomeState(meals: UpcomingMeals = SampleRecipes.upcomingMeals, offline: Boolean = false): HomeUiState {
@@ -59,8 +70,8 @@ class TodayScreenshotTest {
     val composeRule = createComposeRule()
 
     private val loaded = sampleHomeState()
-    private val wantToCook = TodayBooksState(wantToCook = SampleRecipes.overviews.takeLast(3))
-    private val guest = TodayBooksState(wantToCook = SampleRecipes.overviews.take(2), readOnly = true)
+    private val wantToCook = TodayBooksState(wantToCook = wantToCookRecipes)
+    private val guest = TodayBooksState(wantToCook = wantToCookRecipes.take(2), readOnly = true)
     private val nothingPlanned = sampleHomeState(meals = UpcomingMeals(today = SampleRecipes.Today)).copy(sections = emptyList())
 
     @Test

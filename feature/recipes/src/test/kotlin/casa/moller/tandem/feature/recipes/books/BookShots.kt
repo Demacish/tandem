@@ -80,7 +80,6 @@ internal enum class BookShot(val content: @Composable () -> Unit) {
     BOOKS({ Books(BookSamples.books()) }),
     BOOKS_GUEST({ Books(BookSamples.books(readOnly = true)) }),
     BOOKS_EMPTY({ Books(BooksUiState(loading = false)) }),
-    BOOKS_CREATE({ Books(BookSamples.books().copy(creating = true)) }),
     OWN_BOOK({ Recipes(BookSamples.ownBook(), BookSamples.dinners.name) }),
     SHARED_BOOK({ Recipes(BookSamples.sharedBook(), BookSamples.party.name) }),
     EMPTY_BOOK({ Recipes(BookSamples.ownBook().copy(recipes = emptyList()), BookSamples.dinners.name) }),
@@ -137,12 +136,13 @@ private fun MasterDetail() {
             modifier = Modifier.width(LIST_PANE_WIDTH),
         )
         VerticalDivider(Modifier.fillMaxHeight())
+        // Beside the list the book has no back arrow of its own (the shell passes null).
         BookRecipesScreen(
             state = BookSamples.ownBook(),
             title = BookSamples.dinners.name,
             onAction = {},
             onOpenRecipe = {},
-            onBack = {},
+            onBack = null,
             modifier = Modifier.weight(1f),
         )
     }

@@ -47,9 +47,6 @@ class BooksAccessibilityTest {
     fun booksEmpty() = check(BookShot.BOOKS_EMPTY)
 
     @Test
-    fun newBookDialog() = check(BookShot.BOOKS_CREATE)
-
-    @Test
     fun ownBook() = check(BookShot.OWN_BOOK)
 
     @Test

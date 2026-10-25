@@ -48,10 +48,9 @@ fun RecipeFavoritesSample() {
     RecipeListItem(recipe = favorite, onClick = {}, favorite = RecipeFavorite(isFavorite = true, onToggle = null))
 }
 
-/** The guest's read-only banner (full and compact) and the in-place note. */
+/** The guest's read-only banner and the in-place note (the compact banner is shown by the books screens). */
 @Composable
 fun ReadOnlySample() {
     ReadOnlyBanner()
-    ReadOnlyBanner(compact = true)
     ReadOnlyNote(text = stringResource(R.string.ui_read_only_short))
 }

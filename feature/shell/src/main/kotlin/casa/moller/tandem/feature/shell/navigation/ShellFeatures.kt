@@ -141,17 +141,17 @@ internal interface ShellFeatures {
         selectedBookId: Long?,
     )
 
-    /** One book. */
+    /** One book; [onBack] null beside the books on wide windows (books lane). */
     @Composable
-    fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit)
+    fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?)
 
     /** Everyone's favourites. */
     @Composable
-    fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit)
+    fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?)
 
     /** "Vill laga"; [onPlanMeal] opens the plan-meal sheet for a recipe. */
     @Composable
-    fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit)
+    fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?)
 }
 
 /** The real feature routes. */
@@ -291,17 +291,17 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) {
+    override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) {
         BookDetailRoute(bookId = bookId, onOpenRecipe = onOpenRecipe, onBack = onBack)
     }
 
     @Composable
-    override fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) {
+    override fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) {
         FavoritesRoute(onOpenRecipe = onOpenRecipe, onBack = onBack)
     }
 
     @Composable
-    override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit) {
+    override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?) {
         WantToCookRoute(onOpenRecipe = onOpenRecipe, onPlanMeal = onPlanMeal, onBack = onBack)
     }
 }

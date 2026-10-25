@@ -60,6 +60,7 @@ const val BOOK_RECIPES_TAG: String = "book_recipes"
  * - A grid of rows on wide windows (two columns on a tablet in landscape).
  *
  * @param title the screen title ([BookRecipesUiState.title] for a book).
+ * @param onBack null hides the back arrow (beside the books on wide windows, where the list has one).
  * @param onPlanMeal plans a recipe from "Vill laga"; null hides the button (other books, guests).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +70,7 @@ fun BookRecipesScreen(
     title: String,
     onAction: (BookRecipesAction) -> Unit,
     onOpenRecipe: (Long) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     modifier: Modifier = Modifier,
     onPlanMeal: ((Long) -> Unit)? = null,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },

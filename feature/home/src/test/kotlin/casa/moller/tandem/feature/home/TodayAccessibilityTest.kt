@@ -68,7 +68,7 @@ class TodayAccessibilityTest {
 
     // --- Phase 2 (books lane): the "Vill laga" row and the guest's read-only banner (#42). ---
 
-    private val wantToCookGuest = TodayBooksState(wantToCook = SampleRecipes.overviews.take(3), readOnly = true)
+    private val wantToCookGuest = TodayBooksState(wantToCook = wantToCookRecipes, readOnly = true)
 
     @Test
     fun wantToCookAndGuest() = check(loaded, books = wantToCookGuest)

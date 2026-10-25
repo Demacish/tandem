@@ -62,21 +62,25 @@ fun BooksRoute(
     )
 }
 
-/** One book's recipes. [bookId] may be a temporary (negative) id of a book created offline. */
+/**
+ * One book's recipes. [bookId] may be a temporary (negative) id of a book created offline. [onBack]
+ * null hides the back arrow (the book beside the books list on wide windows); the same for the
+ * routes below.
+ */
 @Composable
-fun BookDetailRoute(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun BookDetailRoute(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?, modifier: Modifier = Modifier) {
     BookRecipesRoute(BookSource.Book(bookId), titleOverride = null, onOpenRecipe, onBack, null, modifier)
 }
 
 /** The merged favourites. */
 @Composable
-fun FavoritesRoute(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun FavoritesRoute(onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?, modifier: Modifier = Modifier) {
     BookRecipesRoute(BookSource.Favorites, stringResource(R.string.books_favorites_title), onOpenRecipe, onBack, null, modifier)
 }
 
 /** "Vill laga". [onPlanMeal] plans a recipe from the queue ("Planera", plan 8.3). */
 @Composable
-fun WantToCookRoute(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun WantToCookRoute(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?, modifier: Modifier = Modifier) {
     BookRecipesRoute(BookSource.WantToCook, stringResource(R.string.books_want_to_cook_title), onOpenRecipe, onBack, onPlanMeal, modifier)
 }
 
@@ -85,7 +89,7 @@ private fun BookRecipesRoute(
     source: BookSource,
     titleOverride: String?,
     onOpenRecipe: (Long) -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)?,
     onPlanMeal: ((Long) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {

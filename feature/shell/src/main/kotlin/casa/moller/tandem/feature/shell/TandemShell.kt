@@ -430,22 +430,29 @@ internal fun ShellScaffold(
                     },
                 )
             }
+            // Beside its list on wide windows the book needs no back arrow of its own (the list has one).
+            val bookBack: (NavKey) -> (() -> Unit)? = { key ->
+                val stack = navigation.stackOf(navigation.currentTab)
+                val below = stack.getOrNull(stack.lastIndexOf(key) - 1)
+                val besideList = !compactWidth && (below == BooksKey || below == RecipesKey)
+                if (besideList) null else ({ navigation.goBack() })
+            }
             entry<BookDetailKey>(metadata = ListDetailSceneStrategy.detailPane()) { key ->
                 features.BookDetail(
                     bookId = key.bookId,
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
-                    onBack = { navigation.goBack() },
+                    onBack = bookBack(key),
                 )
             }
             entry<FavoritesKey>(metadata = ListDetailSceneStrategy.detailPane()) {
-                features.Favorites(onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) }, onBack = { navigation.goBack() })
+                features.Favorites(onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) }, onBack = bookBack(FavoritesKey))
             }
             entry<WantToCookKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 features.WantToCook(
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                     // The plan-meal sheet for today; the sheet lets the user pick the day.
                     onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
-                    onBack = { navigation.goBack() },
+                    onBack = bookBack(WantToCookKey),
                 )
             }
             // More is the list pane of a list-detail scene (Phase 1b, design

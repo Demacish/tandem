@@ -272,13 +272,14 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     ) = Page("Books", onBack)
 
     @Composable
-    override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) = Page("Book $bookId", onBack)
+    override fun BookDetail(bookId: Long, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) = Page("Book $bookId", onBack ?: {})
 
     @Composable
-    override fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: () -> Unit) = Page("Favourites", onBack)
+    override fun Favorites(onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) = Page("Favourites", onBack ?: {})
 
     @Composable
-    override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: () -> Unit) = Page("Want to cook", onBack)
+    override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?) =
+        Page("Want to cook", onBack ?: {})
 
     @Composable
     private fun Page(title: String, onBack: () -> Unit) {

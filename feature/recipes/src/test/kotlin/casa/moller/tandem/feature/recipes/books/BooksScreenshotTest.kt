@@ -9,9 +9,7 @@ import casa.moller.tandem.feature.recipes.PHONE
 import casa.moller.tandem.feature.recipes.TABLET
 import casa.moller.tandem.feature.recipes.TestFrame
 import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
-import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
-import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -61,15 +59,6 @@ class BooksScreenshotTest {
 
     @Test
     fun booksEmptyDemo() = capture("phone_books_empty_demo_light", BookShot.BOOKS_EMPTY, chrome = DEMO)
-
-    @OptIn(ExperimentalRoborazziApi::class)
-    @Test
-    @Config(qualifiers = "sv-$PHONE")
-    fun newBookDialog() {
-        composeRule.setContent { TestFrame { BookShot.BOOKS_CREATE.content() } }
-        composeRule.waitForIdle()
-        captureScreenRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/books/phone_books_new_light_sv.png")
-    }
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
