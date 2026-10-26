@@ -462,10 +462,19 @@ class Phase2SmokeTest {
         // The on-screen keyboard (when it shows) covers the button below the preview and the
         // suggestions, and Back did not reliably close it in CI: then its "Done" key adds, as a
         // user would (the field's IME action). Again while the button still says "Add n items".
-        for (attempt in 1..TAP_ATTEMPTS) {
+        // The keyboard may only open after the text is set, so both are looked for each time.
+        val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
+        while (app.device.hasObject(By.text(button))) {
+            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("\"$button\" was never added (keyboard or button)")
             val done = app.device.findObject(By.pkg(KEYBOARD_PACKAGE).desc("Done"))
-            if (done != null) runCatching { done.click() } else clickAtRest(app.clickableWithText(button))
-            if (app.device.wait(Until.gone(By.text(button)), TAP_WAIT_MS) == true) break
+            val target = done ?: app.clickableWithText(button).firstNotNullOfOrNull { selector ->
+                app.device.findObject(selector)?.let { settledOrNull(selector, it) }
+            }
+            if (target != null && runCatching { target.click() }.isSuccess) {
+                app.device.wait(Until.gone(By.text(button)), TAP_WAIT_MS)
+            } else {
+                SystemClock.sleep(SETTLE_POLL_MS)
+            }
         }
         // Added: the field is emptied and the button says "Add" again; the sheet stays open.
         app.waitUntilGone(By.text(button))
