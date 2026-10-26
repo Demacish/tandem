@@ -252,7 +252,6 @@ class Phase2SmokeTest {
         tandoor.shopping.serverAddMeal(meatballs, MEATBALLS_ID, servings = 4.0, foods = tandoor.foodsOf(MEATBALLS_ID))
 
         // (d) A meal planned in the app, with "Put the ingredients on the shopping list" (addshopping).
-        app.waitFor(By.res(dayTag(today)))
         planInApp(today)
         waitForServer("the app's meal") { if (plan.all().any { it.recipe == SHAKSHUKA_ID }) null else "not created yet" }
         val created = plan.creates.map { Json.parseToJsonElement(it).jsonObject }
@@ -376,9 +375,9 @@ class Phase2SmokeTest {
         app.waitUntilGone(By.text(EDIT_TITLE))
     }
 
-    /** "+ Item", the free text, "Add n items", and the sheet closed again. */
+    /** "Add item…" above the list, the free text, "Add n items", and the sheet closed again. */
     private fun addItems(text: String, count: Int) {
-        app.tap("Item")
+        app.scrollBackTo(By.text("Add item…")).click()
         app.waitFor(By.text("Add to the list"))
         app.type(0, text)
         val button = if (count == 1) "Add 1 item" else "Add $count items"

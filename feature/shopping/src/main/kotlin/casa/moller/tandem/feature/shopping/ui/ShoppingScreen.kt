@@ -138,10 +138,15 @@ fun ShoppingScreen(
             },
             floatingActionButton = {
                 if (showAddButton && !state.grouped.isEmpty) {
+                    val label = stringResource(R.string.shopping_add_fab)
                     ExtendedFloatingActionButton(
-                        text = { Text(stringResource(R.string.shopping_add_fab)) },
+                        text = { Text(label) },
                         icon = { Icon(TandemIcons.Add, contentDescription = null) },
                         onClick = { onAction(ShoppingAction.OpenAdd) },
+                        // Phase 2 (integration lane): on the device the button reached TalkBack
+                        // without its label (the release smoke test's window dump showed a
+                        // nameless clickable); the label is set on the button itself.
+                        modifier = Modifier.semantics { contentDescription = label },
                     )
                 }
             },
