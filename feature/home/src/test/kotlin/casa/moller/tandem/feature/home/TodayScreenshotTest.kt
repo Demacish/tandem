@@ -1,12 +1,16 @@
 package casa.moller.tandem.feature.home
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
+import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.model.recipe.RecipeOverview
@@ -39,6 +43,21 @@ internal val wantToCookRecipes: List<RecipeOverview> = listOf(
     RecipeOverview(id = 9_002, name = "Ugnsbakad lax med dill", workingMinutes = 10, waitingMinutes = 20),
     RecipeOverview(id = 9_003, name = "Fredagstacos", workingMinutes = 30, rating = 4.0),
 )
+
+/** Phase 2 (integration lane): the household's favourites, also in none of the sample carousels. */
+internal val favoriteRecipes: List<RecipeOverview> = listOf(
+    RecipeOverview(id = 9_101, name = "Kycklinggryta med curry", workingMinutes = 20, waitingMinutes = 30, rating = 5.0),
+    RecipeOverview(id = 9_102, name = "Pastasallad", workingMinutes = 15),
+    RecipeOverview(id = 9_103, name = "Raggmunk med fläsk", workingMinutes = 40, rating = 4.5),
+)
+
+/**
+ * Phase 2 (integration lane): what the shell puts in tonight's "Handla" slot, drawn here like
+ * feature:shopping's button (feature:home cannot depend on it; the button has its own goldens).
+ */
+internal fun tonightShoppingStub(text: String): TonightShoppingAction = { _, _, _ ->
+    TandemSecondaryButton(text = text, onClick = {}, leadingIcon = TandemIcons.ShoppingCart, modifier = Modifier.fillMaxWidth())
+}
 
 /** Today with the sample meal plan and carousels (core:testing), as the ViewModel builds it. */
 internal fun sampleHomeState(meals: UpcomingMeals = SampleRecipes.upcomingMeals, offline: Boolean = false): HomeUiState {
@@ -102,6 +121,26 @@ class TodayScreenshotTest {
     @Test
     @Config(qualifiers = TABLET)
     fun tabletWantToCook() = capture("tablet_today_want_to_cook_dark", loaded, darkTheme = true, books = wantToCook)
+
+    // --- Phase 2 (integration lane): the favourites row and "Handla" on tonight's card. ---
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun phoneFavoritesAndTonightShopping() = capture(
+        "phone_today_favorites_light_sv",
+        loaded,
+        books = TodayBooksState(wantToCook = wantToCookRecipes, favorites = favoriteRecipes),
+        tonightShopping = tonightShoppingStub("Lägg på inköpslistan"),
+    )
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletFavoritesAndTonightShopping() = capture(
+        "tablet_today_favorites_light",
+        loaded,
+        books = TodayBooksState(favorites = favoriteRecipes),
+        tonightShopping = tonightShoppingStub("Add to shopping list"),
+    )
 
     @Test
     fun phoneDark() = capture("phone_today_dark", loaded, darkTheme = true)
@@ -178,12 +217,13 @@ class TodayScreenshotTest {
         fontScale: Float? = null,
         chrome: AppChrome = AppChrome(),
         books: TodayBooksState = TodayBooksState(),
+        tonightShopping: TonightShoppingAction? = null,
     ) {
         composeRule.setContent {
             WithFontScale(fontScale) {
                 TandemTheme(darkTheme = darkTheme) {
                     CompositionLocalProvider(LocalAppChrome provides chrome) {
-                        TodayScreen(state = state, onAction = {}, books = books)
+                        TodayScreen(state = state, onAction = {}, books = books, tonightShoppingAction = tonightShopping)
                     }
                 }
             }

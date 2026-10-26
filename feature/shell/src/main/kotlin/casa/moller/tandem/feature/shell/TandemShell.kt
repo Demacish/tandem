@@ -352,6 +352,9 @@ internal fun ShellScaffold(
                     onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
                     // Phase 2 (books lane): "Visa alla" on the "Vill laga" row.
                     onOpenWantToCook = { navigation.navigate(WantToCookKey) },
+                    // Phase 2 (integration lane): the favourites row and tonight's "Handla".
+                    onOpenFavorites = { navigation.navigate(FavoritesKey) },
+                    onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {

@@ -57,4 +57,8 @@
     <string name="home_section_want_to_cook">Want to cook</string>
     <string name="home_section_want_to_cook_subtitle">What you want to cook soon</string>
     <string name="home_want_to_cook_all">Show all</string>
+    <!-- Phase 2 (integration lane): the household's favourites on Today. -->
+    <string name="home_section_favorites">Favourites</string>
+    <string name="home_section_favorites_subtitle">The household\'s favourite recipes</string>
+    <string name="home_favorites_all">Show all</string>
 </resources>

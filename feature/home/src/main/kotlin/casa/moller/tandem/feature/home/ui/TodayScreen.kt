@@ -51,6 +51,7 @@ import casa.moller.tandem.feature.home.HomeAction
 import casa.moller.tandem.feature.home.HomeUiState
 import casa.moller.tandem.feature.home.R
 import casa.moller.tandem.feature.home.TodayBooksState
+import casa.moller.tandem.feature.home.TonightShoppingAction
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -85,6 +86,8 @@ fun TodayScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     books: TodayBooksState = TodayBooksState(),
     onOpenWantToCook: () -> Unit = {},
+    onOpenFavorites: () -> Unit = {},
+    tonightShoppingAction: TonightShoppingAction? = null,
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
     ReportContentReady(ready = !state.loading)
@@ -122,6 +125,10 @@ fun TodayScreen(
                         twoColumns = twoColumns,
                         books = books,
                         onOpenWantToCook = onOpenWantToCook,
+                        onOpenFavorites = onOpenFavorites,
+                        // Phase 2 (integration lane): "Handla" on tonight's card; never for a guest (#42).
+                        tonightShopping = tonightShoppingAction.takeIf { !books.readOnly },
+                        snackbarHostState = snackbarHostState,
                     )
                 }
             }
@@ -136,6 +143,9 @@ private fun TodayContent(
     twoColumns: Boolean,
     books: TodayBooksState,
     onOpenWantToCook: () -> Unit,
+    onOpenFavorites: () -> Unit,
+    tonightShopping: TonightShoppingAction?,
+    snackbarHostState: SnackbarHostState,
 ) {
     val spacing = TandemTheme.spacing
     val horizontal = if (twoColumns) spacing.xxl else spacing.screenHorizontal
@@ -173,7 +183,13 @@ private fun TodayContent(
                     horizontalArrangement = Arrangement.spacedBy(spacing.xl),
                 ) {
                     Column(modifier = Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(spacing.lg)) {
-                        TodayMeals(state = state, onAction = onAction, canPlan = !books.readOnly)
+                        TodayMeals(
+                            state = state,
+                            onAction = onAction,
+                            canPlan = !books.readOnly,
+                            tonightShopping = tonightShopping,
+                            snackbarHostState = snackbarHostState,
+                        )
                     }
                     Column(modifier = Modifier.weight(2f), verticalArrangement = Arrangement.spacedBy(spacing.lg)) {
                         TomorrowMeals(meals = state.tomorrow, onOpenRecipe = openRecipe)
@@ -189,7 +205,13 @@ private fun TodayContent(
                         .widthIn(max = TandemTheme.sizes.maxReadingWidth),
                     verticalArrangement = Arrangement.spacedBy(spacing.lg),
                 ) {
-                    TodayMeals(state = state, onAction = onAction, canPlan = !books.readOnly)
+                    TodayMeals(
+                        state = state,
+                        onAction = onAction,
+                        canPlan = !books.readOnly,
+                        tonightShopping = tonightShopping,
+                        snackbarHostState = snackbarHostState,
+                    )
                     TomorrowMeals(meals = state.tomorrow, onOpenRecipe = openRecipe)
                 }
             }
@@ -206,6 +228,21 @@ private fun TodayContent(
                     onOpenRecipe = openRecipe,
                     allText = stringResource(R.string.home_want_to_cook_all),
                     onOpenAll = onOpenWantToCook,
+                )
+            }
+        }
+        // Phase 2 (integration lane): the household's favourites (#17), after "Vill laga".
+        if (books.favorites.isNotEmpty()) {
+            item(key = "favorites") {
+                RecipeRow(
+                    title = stringResource(R.string.home_section_favorites),
+                    subtitle = stringResource(R.string.home_section_favorites_subtitle),
+                    recipes = books.favorites,
+                    horizontal = horizontal,
+                    cardWidth = if (twoColumns) 240.dp else 168.dp,
+                    onOpenRecipe = openRecipe,
+                    allText = stringResource(R.string.home_favorites_all),
+                    onOpenAll = onOpenFavorites,
                 )
             }
         }
@@ -274,14 +311,26 @@ private fun TodayHeader(today: LocalDate?, dayPart: DayPart, modifier: Modifier 
 
 /** Tonight (or "Nothing planned today") and the rest of today. */
 @Composable
-private fun TodayMeals(state: HomeUiState, onAction: (HomeAction) -> Unit, canPlan: Boolean) {
+private fun TodayMeals(
+    state: HomeUiState,
+    onAction: (HomeAction) -> Unit,
+    canPlan: Boolean,
+    tonightShopping: TonightShoppingAction?,
+    snackbarHostState: SnackbarHostState,
+) {
     val openRecipe: (Long) -> Unit = { onAction(HomeAction.OpenRecipe(it)) }
+    val shopping: (@Composable (recipeId: Long, servings: Double?) -> Unit)? = if (tonightShopping == null) {
+        null
+    } else {
+        { recipeId, servings -> tonightShopping(recipeId, servings, snackbarHostState) }
+    }
     val tonight = state.tonight
     when {
         tonight != null -> TonightCard(
             entry = tonight,
             onOpenRecipe = openRecipe,
             onStartCooking = { id, servings -> onAction(HomeAction.StartCooking(id, servings)) },
+            shoppingAction = shopping,
         )
 
         // Phase 2 (matsedel lane): "Plan the week" leads to the Week tab, which plans now (not for a guest, #42).

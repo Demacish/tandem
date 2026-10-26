@@ -52,4 +52,8 @@
     <string name="home_section_want_to_cook">Vill laga</string>
     <string name="home_section_want_to_cook_subtitle">Det ni vill laga snart</string>
     <string name="home_want_to_cook_all">Visa alla</string>
+    <!-- Fas 2 (integrationsbanan): hushållets favoriter på Idag. -->
+    <string name="home_section_favorites">Favoriter</string>
+    <string name="home_section_favorites_subtitle">Hushållets favoritrecept</string>
+    <string name="home_favorites_all">Visa alla</string>
 </resources>

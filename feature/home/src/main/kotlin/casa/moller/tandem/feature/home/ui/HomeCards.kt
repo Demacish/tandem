@@ -103,6 +103,7 @@ internal fun TonightCard(
     onOpenRecipe: (Long) -> Unit,
     modifier: Modifier = Modifier,
     onStartCooking: ((recipeId: Long, servings: Double) -> Unit)? = null,
+    shoppingAction: (@Composable (recipeId: Long, servings: Double?) -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     val recipe = entry.recipe
@@ -162,6 +163,8 @@ internal fun TonightCard(
                         .semantics { contentDescription = cookDescription },
                 )
             }
+            // Phase 2 (integration lane): "Handla" (plan 6.2), feature:shopping's button through the shell.
+            if (recipe != null && shoppingAction != null) shoppingAction(recipe.id, entry.servings)
         }
     }
 }

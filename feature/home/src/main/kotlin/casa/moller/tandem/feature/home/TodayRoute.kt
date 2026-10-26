@@ -25,6 +25,10 @@ import casa.moller.tandem.feature.home.ui.TodayScreen
  *   planned servings.
  * @param onOpenWantToCook Phase 2 (books lane): "Visa alla" on the "Vill laga" row.
  * @param booksViewModel Phase 2 (books lane): the "Vill laga" row and the guest banner.
+ * @param onOpenFavorites Phase 2 (integration lane): "Visa alla" on the "Favoriter" row.
+ * @param tonightShoppingAction Phase 2 (integration lane): "Handla" on tonight's card (plan 6.2
+ *   "Ikväll ... knapparna Laga och Handla"), a slot the shell fills with feature:shopping's
+ *   "Lägg på inköpslistan" for the recipe at the planned servings; null shows nothing.
  */
 @Composable
 fun TodayRoute(
@@ -36,6 +40,8 @@ fun TodayRoute(
     onStartCooking: (recipeId: Long, servings: Double?) -> Unit = { _, _ -> },
     onOpenWantToCook: () -> Unit = {},
     booksViewModel: TodayBooksViewModel = hiltViewModel(),
+    onOpenFavorites: () -> Unit = {},
+    tonightShoppingAction: TonightShoppingAction? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val books by booksViewModel.uiState.collectAsStateWithLifecycle()
@@ -69,5 +75,10 @@ fun TodayRoute(
         snackbarHostState = snackbarHostState,
         books = books,
         onOpenWantToCook = onOpenWantToCook,
+        onOpenFavorites = onOpenFavorites,
+        tonightShoppingAction = tonightShoppingAction,
     )
 }
+
+/** Phase 2 (integration lane): the slot for "Handla" on tonight's card: recipe id, planned servings, the screen's snackbar. */
+typealias TonightShoppingAction = @Composable (recipeId: Long, servings: Double?, snackbarHostState: SnackbarHostState) -> Unit

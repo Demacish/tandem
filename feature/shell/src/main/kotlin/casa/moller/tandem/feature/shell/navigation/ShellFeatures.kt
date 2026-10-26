@@ -37,7 +37,11 @@ import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRoute
  */
 @Stable
 internal interface ShellFeatures {
-    /** The Today tab's first screen (feature:home); [onStartCooking] is tonight's "Laga" (Phase 1b). */
+    /**
+     * The Today tab's first screen (feature:home); [onStartCooking] is tonight's "Laga" (Phase 1b).
+     * Phase 2 (integration lane): [onOpenFavorites] is "Visa alla" on the favourites row, and
+     * [onOpenShoppingList] is "Visa listan" after tonight's "Handla" (feature:shopping's sheet).
+     */
     @Composable
     fun Today(
         onOpenRecipe: (Long) -> Unit,
@@ -45,6 +49,8 @@ internal interface ShellFeatures {
         onOpenWeek: () -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
         onOpenWantToCook: () -> Unit,
+        onOpenFavorites: () -> Unit,
+        onOpenShoppingList: () -> Unit,
     )
 
     /**
@@ -167,6 +173,8 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenWeek: () -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
         onOpenWantToCook: () -> Unit,
+        onOpenFavorites: () -> Unit,
+        onOpenShoppingList: () -> Unit,
     ) {
         TodayRoute(
             onOpenRecipe = onOpenRecipe,
@@ -174,6 +182,11 @@ internal object RouteShellFeatures : ShellFeatures {
             onOpenWeek = onOpenWeek,
             onStartCooking = onStartCooking,
             onOpenWantToCook = onOpenWantToCook,
+            onOpenFavorites = onOpenFavorites,
+            // Phase 2 (integration lane, plan 6.2): "Handla" on tonight's card.
+            tonightShoppingAction = { recipeId, servings, snackbar ->
+                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
+            },
         )
     }
 

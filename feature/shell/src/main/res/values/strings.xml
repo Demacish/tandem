@@ -9,15 +9,6 @@
     <string name="shell_tab_shopping">Shopping</string>
     <string name="shell_tab_more">More</string>
 
-    <!-- Placeholder tabs: what each tab will show. No fake data. -->
-    <string name="shell_today_title">Your day in the kitchen starts here</string>
-    <string name="shell_today_body">In the next version, Today shows tonight’s and tomorrow’s meals from your meal plan, recipes you cook often and a quick way back into cooking.</string>
-    <string name="shell_recipes_title">Your recipes are on their way</string>
-    <string name="shell_recipes_body">The next version brings your Tandoor recipes into the app: search, filters, books and a cooking mode with timers, also offline.</string>
-    <string name="shell_week_title">Plan your week here</string>
-    <string name="shell_week_body">A later version shows the week’s meal plan from Tandoor, lets you add meals and puts their ingredients on the shopping list.</string>
-    <string name="shell_shopping_title">Your shopping list is coming</string>
-    <string name="shell_shopping_body">A later version brings Tandoor’s shopping list: sorted by store aisle, shared with your household and usable offline in the store.</string>
 
     <!-- "More": account and settings. -->
     <string name="shell_account_signed_in_as">Signed in as %1$s</string>

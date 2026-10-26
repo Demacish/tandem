@@ -84,19 +84,29 @@ class TodayAccessibilityTest {
         books = TodayBooksState(readOnly = true),
     )
 
+    // Phase 2 (integration lane): the favourites row and tonight's "Handla" slot.
+    @Test
+    fun favoritesAndTonightShoppingFontScale2() = check(
+        loaded,
+        fontScale = 2f,
+        books = TodayBooksState(wantToCook = wantToCookRecipes, favorites = favoriteRecipes),
+        tonightShopping = tonightShoppingStub("Add to shopping list"),
+    )
+
     private fun check(
         state: HomeUiState,
         darkTheme: Boolean = false,
         fontScale: Float = 1f,
         chrome: AppChrome = AppChrome(),
         books: TodayBooksState = TodayBooksState(),
+        tonightShopping: TonightShoppingAction? = null,
     ) {
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale * density.fontScale)) {
                 TandemTheme(darkTheme = darkTheme) {
                     CompositionLocalProvider(LocalAppChrome provides chrome) {
-                        TodayScreen(state = state, onAction = {}, books = books)
+                        TodayScreen(state = state, onAction = {}, books = books, tonightShoppingAction = tonightShopping)
                     }
                 }
             }

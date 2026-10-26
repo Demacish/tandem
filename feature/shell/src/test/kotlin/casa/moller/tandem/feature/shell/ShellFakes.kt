@@ -1,15 +1,20 @@
 package casa.moller.tandem.feature.shell
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.data.settings.AppearanceRepository
+import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
@@ -18,6 +23,7 @@ import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.testing.time.TestClock
+import casa.moller.tandem.core.ui.DemoBanner
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.timer.LocalTimerClock
 import casa.moller.tandem.core.ui.timer.LocalTimerTicks
@@ -27,8 +33,8 @@ import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
-import casa.moller.tandem.feature.shell.ui.PlaceholderTab
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
+import casa.moller.tandem.feature.shell.ui.label
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -173,8 +179,8 @@ internal class RecordingActions : ShellActions {
 }
 
 /**
- * Shell tests never render the real feature routes (they create ViewModels with Hilt): Today and
- * Recipes show the Phase 0 placeholders, the recipe detail a minimal page with a back arrow.
+ * Shell tests never render the real feature routes (they create ViewModels with Hilt): the tabs
+ * show [TabStub], the other pages a minimal page with a back arrow.
  */
 internal class PlaceholderShellFeatures(private val state: ShellUiState) : ShellFeatures {
     @Composable
@@ -184,6 +190,8 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenWeek: () -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
         onOpenWantToCook: () -> Unit,
+        onOpenFavorites: () -> Unit,
+        onOpenShoppingList: () -> Unit,
     ) {
         Placeholder(ShellTab.TODAY)
     }
@@ -234,7 +242,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         }
     }
 
-    // --- Phase 2 (grund lane): Handla and Veckan keep their placeholder tabs (and screenshots). ---
+    // --- Phase 2: Handla and Veckan (their screens are tested in :feature:shopping and :feature:mealplan). ---
 
     @Composable
     override fun Shopping(
@@ -305,7 +313,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     @Composable
     private fun Placeholder(tab: ShellTab) {
         val chrome = LocalAppChrome.current
-        PlaceholderTab(
+        TabStub(
             tab = tab,
             state = state,
             showDemoBanner = chrome.showDemoBanner,
@@ -354,4 +362,39 @@ internal fun FrozenTimers(content: @Composable () -> Unit) {
         LocalTimerTicks provides false,
         content = content,
     )
+}
+
+// --- Phase 2 (integration lane): the stand-in for a tab's feature screen. ---
+
+/** The text a [TabStub] shows (tests find a tab's content by it). */
+internal fun tabStubText(tab: ShellTab): String = "Stand-in for the ${tab.name.lowercase()} screen"
+
+/**
+ * What a tab shows in shell tests instead of its feature route (the real screens are tested in
+ * their own modules): the tab's title, the demo banner as the real screens show it, and
+ * [tabStubText]. Replaced Phase 0's PlaceholderTab, which no longer exists in the app.
+ */
+@Composable
+internal fun TabStub(
+    tab: ShellTab,
+    state: ShellUiState,
+    showDemoBanner: Boolean,
+    onDismissDemoBanner: () -> Unit,
+    onConnectTandoor: () -> Unit,
+) {
+    val spacing = TandemTheme.spacing
+    ShellScreenScaffold(title = stringResource(tab.label), state = state) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = spacing.screenHorizontal),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (state.isDemo && showDemoBanner) {
+                DemoBanner(onConnect = onConnectTandoor, onDismiss = onDismissDemoBanner, modifier = Modifier.padding(top = spacing.sm))
+            }
+            Text(text = tabStubText(tab), modifier = Modifier.padding(top = spacing.xl))
+        }
+    }
 }

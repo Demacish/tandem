@@ -197,11 +197,11 @@ class ShellScaffoldTest {
             R.string.shell_tab_more,
         ).forEach { tab(it).assertExists() }
         tab(R.string.shell_tab_today).assertIsSelected()
-        composeRule.onNodeWithText(string(R.string.shell_today_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(tabStubText(ShellTab.TODAY)).assertIsDisplayed()
 
         tab(R.string.shell_tab_shopping).performClick()
         tab(R.string.shell_tab_shopping).assertIsSelected()
-        composeRule.onNodeWithText(string(R.string.shell_shopping_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(tabStubText(ShellTab.SHOPPING)).assertIsDisplayed()
     }
 
     @Test

@@ -145,7 +145,7 @@ class ShellAccessibilityTest {
     fun safeModeBannerDark() = check(safeMode, ShellTab.TODAY, darkTheme = true)
 
     @Test
-    fun demoPlaceholderTabs() = check(DEMO_STATE, ShellTab.WEEK)
+    fun demoTabWithBanner() = check(DEMO_STATE, ShellTab.WEEK)
 
     // --- Phase 1b: the timer bar on every tab ---
 

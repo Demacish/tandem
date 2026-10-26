@@ -7,16 +7,6 @@
     <string name="shell_tab_shopping">Handla</string>
     <string name="shell_tab_more">Mer</string>
 
-    <!-- Platshållarflikar: vad varje flik kommer att visa. Ingen påhittad data. -->
-    <string name="shell_today_title">Här börjar din dag i köket</string>
-    <string name="shell_today_body">I nästa version visar Idag kvällens och morgondagens måltider från matsedeln, recept du ofta lagar och en genväg tillbaka till matlagningen.</string>
-    <string name="shell_recipes_title">Dina recept är på väg</string>
-    <string name="shell_recipes_body">I nästa version kommer dina recept från Tandoor in i appen: sök, filter, böcker och ett kokläge med timers, även offline.</string>
-    <string name="shell_week_title">Här planerar du veckan</string>
-    <string name="shell_week_body">En senare version visar veckans matsedel från Tandoor, låter dig lägga till måltider och lägger deras ingredienser på inköpslistan.</string>
-    <string name="shell_shopping_title">Inköpslistan kommer snart</string>
-    <string name="shell_shopping_body">En senare version tar in Tandoors inköpslista: sorterad efter butikens avdelningar, delad med hushållet och användbar offline i butiken.</string>
-
     <!-- "Mer": konto och inställningar. -->
     <string name="shell_account_signed_in_as">Inloggad som %1$s</string>
     <string name="shell_account_server">Server</string>

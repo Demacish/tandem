@@ -14,7 +14,10 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.compose.material3.Text
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.book.RecipeBook
+import casa.moller.tandem.core.model.book.RecipeBookKind
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.testing.data.FakeHomeRepository
@@ -42,6 +45,8 @@ class TodayRouteTest {
     private val openedRecipes = mutableListOf<Long>()
     private var openedRecipesTab = 0
     private var openedWeek = 0
+    private var openedFavorites = 0
+    private val bookRepository = FakeRecipeBookRepository()
 
     private fun string(id: Int): String = ApplicationProvider.getApplicationContext<Context>().getString(id)
 
@@ -49,7 +54,7 @@ class TodayRouteTest {
 
     private fun setContent() {
         val viewModel = HomeViewModel(home, sync, currentHour = { 18 })
-        val books = TodayBooksViewModel(FakeRecipeBookRepository(), permissions)
+        val books = TodayBooksViewModel(bookRepository, permissions)
         composeRule.setContent {
             TandemTheme {
                 TodayRoute(
@@ -58,9 +63,44 @@ class TodayRouteTest {
                     onOpenWeek = { openedWeek++ },
                     viewModel = viewModel,
                     booksViewModel = books,
+                    onOpenFavorites = { openedFavorites++ },
+                    tonightShoppingAction = { recipeId, servings, _ ->
+                        Text(text = "$TONIGHT_SHOPPING $recipeId ${servings?.toInt()}")
+                    },
                 )
             }
         }
+    }
+
+    /** Phase 2 (integration lane): the favourites row opens recipes and "Show all" opens Favoriter. */
+    @Test
+    fun favoritesRowOpensRecipesAndAllFavorites() {
+        bookRepository.books.value = listOf(
+            RecipeBook(id = 1, name = "Favoriter", kind = RecipeBookKind.FAVORITES, ownerId = 1, isOwn = true),
+            RecipeBook(id = 2, name = "Favoriter", kind = RecipeBookKind.FAVORITES, ownerId = 2),
+        )
+        bookRepository.entries.value = mapOf(1L to listOf(SampleRecipes.Pancakes.id), 2L to listOf(SampleRecipes.MushroomPasta.id))
+        setContent()
+        val list = composeRule.onNodeWithTag(TODAY_LIST_TAG)
+        list.performScrollToNode(hasText(string(R.string.home_section_favorites)))
+        composeRule.onNodeWithText(string(R.string.home_section_favorites)).assertIsDisplayed()
+        composeRule.onNode(hasText(string(R.string.home_favorites_all)) and hasClickAction()).performClick()
+        assertEquals(1, openedFavorites)
+    }
+
+    /** Phase 2 (integration lane): tonight's card holds the shell's "Handla" slot for its recipe and servings; a guest gets none. */
+    @Test
+    fun tonightCardHoldsTheShoppingSlotForMembersOnly() {
+        setContent()
+        val tonight = SampleRecipes.upcomingMeals.todayMeals.first { it.recipe?.id == SampleRecipes.MushroomPasta.id }
+        composeRule.onNodeWithText("$TONIGHT_SHOPPING ${SampleRecipes.MushroomPasta.id} ${tonight.servings.toInt()}").assertIsDisplayed()
+    }
+
+    @Test
+    fun aGuestGetsNoShoppingSlotOnTonight() {
+        permissions.setGuest(true)
+        setContent()
+        composeRule.onAllNodesWithText(TONIGHT_SHOPPING, substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -116,5 +156,9 @@ class TodayRouteTest {
         composeRule.waitForIdle()
         assertEquals(2, home.refreshCount)
         assertEquals(listOf(SyncReason.USER_REFRESH), sync.requests)
+    }
+
+    private companion object {
+        const val TONIGHT_SHOPPING = "tonight-shopping"
     }
 }
