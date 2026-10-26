@@ -88,6 +88,8 @@ internal class OutboxSender @Inject constructor(
         outbox.resetInFlight(accountId)
         val storedRecipes = database.recipeDao().getRecipeIds(accountId).toHashSet()
         repeat(maxRows) {
+            // Phase 2 (konto lane): the user switched to another account: its own drain follows.
+            if (!caller.isCurrent(remote)) return@withLock DrainResult.STOPPED
             if (!network.online.value) return@withLock DrainResult.RETRY
             val row = outbox.nextReady(accountId) ?: return@withLock DrainResult.DONE
             if (outbox.markInFlight(row.id) != 1) return@repeat

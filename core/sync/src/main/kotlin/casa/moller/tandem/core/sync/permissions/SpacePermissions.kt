@@ -54,6 +54,10 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
  * Reads the user's group in the active space from `GET /api/user-space/all_personal/` (the entry
  * of the account's space, else the active one) and stores the highest of `admin`/`user`/`guest`
  * in `server_account.group_level`. A failed read keeps the stored value.
+ *
+ * Phase 2 (konto lane): the same answer carries the household (`household: {id, name}` or null;
+ * `/api/household/` is admin-only, FACTS "Fas 2"), stored with the group in one write for the
+ * account card and the account switcher (`AccountDirectory`).
  */
 @Singleton
 internal class SpaceRoleSync @Inject constructor(
@@ -61,12 +65,16 @@ internal class SpaceRoleSync @Inject constructor(
     private val caller: RemoteCaller,
     private val sources: ActiveSources,
 ) {
-    suspend fun sync(remote: ActiveSource.Remote, background: Boolean) {
-        val memberships = caller.call(remote, background) { userSpaces.allPersonal() } as? Outcome.Success ?: return
-        if (sources.source.value.identity != remote.identity) return
-        val own = memberships.value.firstOrNull { it.space == remote.account.spaceId }
-            ?: memberships.value.firstOrNull { it.active }
-            ?: return
+    /** Reads and stores group and household; a failure leaves the stored values (and is returned). */
+    suspend fun sync(remote: ActiveSource.Remote, background: Boolean): Outcome<Unit> {
+        val memberships = when (val result = caller.call(remote, background) { userSpaces.allPersonal() }) {
+            is Outcome.Failure -> return result
+            is Outcome.Success -> result.value
+        }
+        if (sources.source.value.identity != remote.identity) return Outcome.Success(Unit)
+        val own = memberships.firstOrNull { it.space == remote.account.spaceId }
+            ?: memberships.firstOrNull { it.active }
+            ?: return Outcome.Success(Unit)
         val role = SpaceRole.of(own.groups.map { it.name })
         val level = when (role) {
             SpaceRole.ADMIN -> GROUP_ADMIN
@@ -74,7 +82,14 @@ internal class SpaceRoleSync @Inject constructor(
             SpaceRole.GUEST -> GROUP_GUEST
             SpaceRole.UNKNOWN -> null
         }
-        databases.get(remote.kind).accountDao().setGroupLevel(remote.accountId, level)
+        val household = own.household?.takeIf { it.id != null }
+        databases.get(remote.kind).accountDao().setMembership(
+            accountId = remote.accountId,
+            groupLevel = level,
+            householdId = household?.id,
+            householdName = household?.name?.takeIf { it.isNotBlank() },
+        )
+        return Outcome.Success(Unit)
     }
 
     private companion object {

@@ -30,6 +30,22 @@ abstract class AccountDao {
     @Query("UPDATE server_account SET group_level = :groupLevel WHERE id = :accountId")
     abstract suspend fun setGroupLevel(accountId: String, groupLevel: String?)
 
+    // --- Phase 2 (konto lane): the household on the account card and in the account switcher. ---
+
+    /** The mirror row of [accountId] as it changes (household, group, version), null when none. */
+    @Query("SELECT * FROM server_account WHERE id = :accountId")
+    abstract fun observe(accountId: String): Flow<ServerAccountEntity?>
+
+    /**
+     * Stores what `/api/user-space/all_personal/` said about the account's space in one write:
+     * the group and the household (both null when the user has none); `AccountMirror` keeps them.
+     */
+    @Query(
+        "UPDATE server_account SET group_level = :groupLevel, household_id = :householdId, household_name = :householdName " +
+            "WHERE id = :accountId",
+    )
+    abstract suspend fun setMembership(accountId: String, groupLevel: String?, householdId: Long?, householdName: String?)
+
     /**
      * Deletes every row of [accountId] in every table (the account mirror included), in one
      * transaction. Other accounts are untouched. Use `TandemDatabase.clearAllTables()` to wipe

@@ -28,4 +28,25 @@ interface AccountDirectory {
 
     /** Reads household and group again (at login, on "Synka nu", at most hourly). */
     suspend fun refreshHousehold(): Outcome<Household?>
+
+    // --- Phase 2 (konto lane): removing an account and its unsent changes. ---
+
+    /**
+     * Removes the stored account [accountId] (the active one too: that is "log out") with its
+     * token and every local row. Unsent changes are never deleted silently: while the account has
+     * rows in the outbox and [discardPendingChanges] is false, nothing is removed and the result
+     * is [AccountRemoval.PendingChanges] (show the count, offer [exportPendingChanges], ask again).
+     * [revokeToken] follows `SessionRepository.logout` (only a token Tandem created). Fails with
+     * `DataProblem.NO_ACCOUNT` for an unknown id and `DataProblem.SECURE_STORAGE` when the account
+     * cannot be removed from the device (then nothing is revoked).
+     */
+    suspend fun remove(accountId: String, revokeToken: Boolean, discardPendingChanges: Boolean = false): Outcome<AccountRemoval>
+
+    /**
+     * The unsent changes of [accountId] as a JSON document for the share sheet (the same format as
+     * the recovery screen's "Export pending changes", feature #37): only the queued operations,
+     * never a token, password or server address. Fails with `TandemError.Unknown` when the outbox
+     * cannot be read.
+     */
+    suspend fun exportPendingChanges(accountId: String): Outcome<String>
 }

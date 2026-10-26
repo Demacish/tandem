@@ -2,6 +2,7 @@ package casa.moller.tandem.core.data.internal
 
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.account.AccountRepository
+import casa.moller.tandem.core.data.account.AccountSessions
 import casa.moller.tandem.core.data.remote.RemoteCredentials
 import casa.moller.tandem.core.data.remote.TandoorRemote
 import casa.moller.tandem.core.data.remote.compatibilityOf
@@ -47,7 +48,8 @@ internal class DefaultAccountRepository(
     private val now: () -> Instant,
     private val newId: () -> String,
 ) : AccountRepository,
-    SessionRepository {
+    SessionRepository,
+    AccountSessions {
 
     @Inject
     constructor(
@@ -243,6 +245,28 @@ internal class DefaultAccountRepository(
 
     override suspend fun logout(revokeToken: Boolean): Outcome<TokenRevocation> {
         val account = activeAccount() ?: return Outcome.Success(TokenRevocation.SKIPPED)
+        return removeAccount(account, revokeToken)
+    }
+
+    // --- AccountSessions (Phase 2, konto lane) -----------------------------------------------
+
+    override suspend fun activate(accountId: String): Outcome<Unit> {
+        if (accountStore.accounts.first().none { it.id == accountId }) return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        return updateSettings { it.copy(activeAccountId = accountId, demoMode = false, onboardingCompleted = true) }
+    }
+
+    override suspend fun remove(accountId: String, revokeToken: Boolean): Outcome<TokenRevocation> {
+        val account = accountStore.accounts.first().firstOrNull { it.id == accountId }
+            ?: return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        return removeAccount(account, revokeToken)
+    }
+
+    /**
+     * Removes [account] and its token (logout of the active account, or removal of another stored
+     * one), then revokes the token if asked and allowed. The active account stays active unless it
+     * was the one removed; then the first remaining account takes over.
+     */
+    private suspend fun removeAccount(account: ServerAccount, revokeToken: Boolean): Outcome<TokenRevocation> {
         // Read before the account and its token are removed; kept in memory for the request.
         val token = if (revokeToken) accountStore.token(account.id) else null
         try {
@@ -256,9 +280,11 @@ internal class DefaultAccountRepository(
         try {
             writeLock.withLock {
                 val remaining = accountStore.accounts.first()
-                settingsStore.update {
-                    it.copy(
-                        activeAccountId = remaining.firstOrNull()?.id,
+                settingsStore.update { current ->
+                    // Konto lane: removing another stored account keeps the active one.
+                    val stillActive = current.activeAccountId?.takeIf { id -> remaining.any { it.id == id } }
+                    current.copy(
+                        activeAccountId = stillActive ?: remaining.firstOrNull()?.id,
                         onboardingCompleted = remaining.isNotEmpty(),
                     )
                 }

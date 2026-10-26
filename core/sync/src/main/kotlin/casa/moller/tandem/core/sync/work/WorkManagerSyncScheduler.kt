@@ -27,7 +27,8 @@ import javax.inject.Singleton
  * - `tandem.sync.now` ([SyncWorker]): expedited when the quota allows, else normal; an automatic
  *   request while one is waiting or running is dropped (KEEP). Pull to refresh
  *   ([SyncReason.USER_REFRESH]) replaces it instead (REPLACE): an app start run that skips the
- *   hourly recipe index must not swallow the user's explicit refresh, which always reads it.
+ *   hourly recipe index must not swallow the user's explicit refresh, which always reads it. So
+ *   does an account switch ([SyncReason.ACCOUNT_CHANGED], konto lane).
  * - `tandem.sync.periodic` ([PeriodicSyncWorker]): every 15 minutes (or the interval chosen under
  *   Settings → Sync: 1 h, 6 h, none) with any network and a
  *   battery that is not low; no exact alarms and no foreground service, which keeps it friendly
@@ -96,8 +97,14 @@ internal class WorkManagerSyncScheduler @Inject constructor(@ApplicationContext 
                 .build()
         }
 
-        /** See the class comment: only the user's own refresh replaces a waiting or running sync. */
+        /**
+         * See the class comment: only the user's own refresh replaces a waiting or running sync, and
+         * (Phase 2, konto lane) a switch to another account: the old account's run is cancelled and
+         * must not swallow the new account's first sync.
+         */
         fun policyFor(reason: SyncReason): ExistingWorkPolicy =
-            if (reason == SyncReason.USER_REFRESH) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+            if (reason in REPLACING) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+
+        private val REPLACING = setOf(SyncReason.USER_REFRESH, SyncReason.ACCOUNT_CHANGED)
     }
 }

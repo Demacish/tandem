@@ -1,5 +1,7 @@
 package casa.moller.tandem.core.model.account
 
+import casa.moller.tandem.core.model.server.ServerCompatibility
+
 /**
  * The active user's group in the space (Tandoor `UserSpace.groups`: `guest` < `user` < `admin`,
  * `/api/user-space/all_personal/`).
@@ -60,7 +62,12 @@ data class Household(val id: Long, val name: String)
 
 /**
  * One stored account for the account switcher (plan 6.2 "Konto/server", Stitch `konto_servrar`):
- * one account is active at a time.
+ * one account is active at a time. Demo mode is never an account (it has no entry here).
+ *
+ * @property household the household last read for the account (`all_personal`), null when unknown or none.
+ * @property role the user's group in the account's space, [SpaceRole.UNKNOWN] until read.
+ * @property pendingChanges the account's rows in the outbox (also while another account is active).
+ * @property compatibility how the app treats the account's last known server version (konto lane).
  */
 data class AccountSummary(
     val account: ServerAccount,
@@ -68,4 +75,5 @@ data class AccountSummary(
     val household: Household? = null,
     val role: SpaceRole = SpaceRole.UNKNOWN,
     val pendingChanges: Int = 0,
+    val compatibility: ServerCompatibility = ServerCompatibility.UNRECOGNIZED,
 )

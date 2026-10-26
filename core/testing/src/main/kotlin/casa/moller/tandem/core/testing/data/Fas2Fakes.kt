@@ -2,6 +2,8 @@ package casa.moller.tandem.core.testing.data
 
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.account.AccountDirectory
+import casa.moller.tandem.core.data.account.AccountRemoval
+import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.data.book.RecipeBookRepository
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
@@ -444,6 +446,7 @@ class FakeAccountDirectory(accounts: List<AccountSummary> = emptyList(), househo
     override fun observeAccounts(): Flow<List<AccountSummary>> = accounts
 
     override suspend fun switchTo(accountId: String): Outcome<Unit> {
+        failure?.let { return Outcome.Failure(it) }
         if (accounts.value.none { it.account.id == accountId }) return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         switches += accountId
         accounts.update { list -> list.map { it.copy(isActive = it.account.id == accountId) } }
@@ -453,6 +456,40 @@ class FakeAccountDirectory(accounts: List<AccountSummary> = emptyList(), househo
     override fun observeHousehold(): Flow<Household?> = household
 
     override suspend fun refreshHousehold(): Outcome<Household?> = Outcome.Success(household.value)
+
+    // --- Phase 2 (konto lane): removal with the unsent-changes rule, and the export. ---
+
+    /** Every `remove` call as (account id, revoke, discard), in order. */
+    val removals = mutableListOf<Triple<String, Boolean, Boolean>>()
+
+    /** Every account whose changes were exported, in order. */
+    val exports = mutableListOf<String>()
+
+    /** What a successful removal says about the token. */
+    var revocation: TokenRevocation = TokenRevocation.REVOKED
+
+    /** Set to make `remove` and `switchTo` fail. */
+    var failure: TandemError? = null
+
+    override suspend fun remove(accountId: String, revokeToken: Boolean, discardPendingChanges: Boolean): Outcome<AccountRemoval> {
+        failure?.let { return Outcome.Failure(it) }
+        val account = accounts.value.firstOrNull { it.account.id == accountId }
+            ?: return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        removals += Triple(accountId, revokeToken, discardPendingChanges)
+        if (!discardPendingChanges && account.pendingChanges > 0) {
+            return Outcome.Success(AccountRemoval.PendingChanges(account.pendingChanges))
+        }
+        val remaining = accounts.value.filterNot { it.account.id == accountId }
+        val active = remaining.firstOrNull { it.isActive } ?: remaining.firstOrNull()?.takeIf { account.isActive }
+        accounts.value = remaining.map { it.copy(isActive = it.account.id == active?.account?.id) }
+        return Outcome.Success(AccountRemoval.Removed(revocation, active?.account))
+    }
+
+    override suspend fun exportPendingChanges(accountId: String): Outcome<String> {
+        exports += accountId
+        val count = accounts.value.firstOrNull { it.account.id == accountId }?.pendingChanges ?: 0
+        return Outcome.Success("{\"format\": \"tandem-pending-changes\", \"count\": $count}")
+    }
 }
 
 /** [SpacePermissionsRepository] with settable permissions (default: a normal member). */

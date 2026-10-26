@@ -92,6 +92,21 @@ internal class AccountMirror @Inject constructor(
         }
     }
 
+    /**
+     * Phase 2 (konto lane): removes the rows of every account that is no longer stored, now. Called
+     * after another (not the active) account was removed: that does not change the session, so
+     * [onSession] would only find it at the next session change. Never throws.
+     */
+    suspend fun removeForgotten() {
+        try {
+            removeForgottenAccounts(sessions.session.first())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Storage trouble: the next session change (at the latest the next start) tries again.
+        }
+    }
+
     private suspend fun mirror(account: ServerAccount) {
         val dao = databases.get(DatabaseKind.REAL).accountDao()
         val stored = dao.get(account.id)
@@ -108,6 +123,8 @@ internal class AccountMirror @Inject constructor(
                 userId = account.userId,
                 spaceId = account.spaceId,
                 householdId = kept?.householdId,
+                // Phase 2 (konto lane): the household's name read with the group stays too.
+                householdName = kept?.householdName,
                 serverVersion = account.serverVersion ?: kept?.serverVersion,
                 groupLevel = kept?.groupLevel,
                 tokenId = account.tokenId,

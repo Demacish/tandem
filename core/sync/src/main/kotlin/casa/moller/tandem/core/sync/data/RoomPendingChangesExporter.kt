@@ -45,12 +45,21 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
             .catch { emit(0) }
     }
 
-    override suspend fun exportAsJson(): Outcome<String> = try {
+    override suspend fun exportAsJson(): Outcome<String> = export(accountIds = null)
+
+    /**
+     * Phase 2 (konto lane): the pending changes of one account only, before it is removed
+     * (`AccountDirectory.exportPendingChanges`). Same format; also when its mirror row is gone.
+     */
+    suspend fun exportAccount(accountId: String): Outcome<String> = export(accountIds = listOf(accountId))
+
+    /** [accountIds] null = every mirrored account. */
+    private suspend fun export(accountIds: List<String>?): Outcome<String> = try {
         val database = databases.get(DatabaseKind.REAL)
-        val accounts = database.accountDao().observeAll().first()
+        val ids = accountIds ?: database.accountDao().observeAll().first().map { it.id }
         val changes = buildJsonArray {
-            for (account in accounts) {
-                for (row in database.outboxDao().observeAll(account.id).first()) {
+            for (accountId in ids) {
+                for (row in database.outboxDao().observeAll(accountId).first()) {
                     add(
                         buildJsonObject {
                             put("operation", row.op)

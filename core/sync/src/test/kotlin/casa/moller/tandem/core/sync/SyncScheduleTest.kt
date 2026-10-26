@@ -33,9 +33,11 @@ class SyncScheduleTest {
     }
 
     @Test
-    fun onlyPullToRefreshReplacesAWaitingOrRunningSync() {
+    fun onlyPullToRefreshAndAnAccountSwitchReplaceAWaitingOrRunningSync() {
         SyncReason.entries.forEach { reason ->
-            val expected = if (reason == SyncReason.USER_REFRESH) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+            // Konto lane: a switch cancels the old account's run instead of being dropped by it.
+            val replacing = reason == SyncReason.USER_REFRESH || reason == SyncReason.ACCOUNT_CHANGED
+            val expected = if (replacing) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
             assertEquals(reason.name, expected, WorkManagerSyncScheduler.policyFor(reason))
         }
     }

@@ -465,6 +465,73 @@ class DefaultAccountRepositoryTest {
         assertFalse(accounts.tokens().containsKey(second.id))
     }
 
+    // --- Phase 2 (konto lane): switching and removing stored accounts ---
+
+    @Test
+    fun activateSwitchesTheActiveAccountAndLeavesDemoMode() = runTest {
+        val first = repository.login(SERVER, "anna", "secret").getOrNull()!!
+        remote.loginResult = Outcome.Success(
+            credentials(baseUrl = "https://other.example.org/", userId = 3, token = "tda_device_token_0002"),
+        )
+        val second = repository.login(SERVER, "bo", "secret").getOrNull()!!
+        settings.state.value = settings.state.value.copy(demoMode = true)
+
+        assertTrue(repository.activate(first.id) is Outcome.Success)
+
+        assertEquals(first.id, settings.state.value.activeAccountId)
+        assertFalse(settings.state.value.demoMode)
+        assertEquals(first.id, (repository.session.first() as Session.LoggedIn).account.id)
+        // Both accounts and both tokens stay on the device.
+        assertEquals(setOf(first.id, second.id), accounts.tokens().keys)
+        assertTrue(remote.revocations.isEmpty())
+    }
+
+    @Test
+    fun activateAnUnknownAccountFails() = runTest {
+        repository.login(SERVER, "anna", "secret")
+
+        assertEquals(DataProblem.NO_ACCOUNT, repository.activate("nobody").errorOrNull()?.dataProblem())
+        assertEquals("account-1", settings.state.value.activeAccountId)
+    }
+
+    @Test
+    fun removingAnotherAccountKeepsTheActiveOne() = runTest {
+        val first = repository.login(SERVER, "anna", "secret").getOrNull()!!
+        remote.loginResult = Outcome.Success(
+            credentials(baseUrl = "https://other.example.org/", userId = 3, token = "tda_device_token_0002", tokenId = 43),
+        )
+        val second = repository.login(SERVER, "bo", "secret").getOrNull()!!
+        assertTrue(repository.activate(first.id) is Outcome.Success)
+
+        assertEquals(TokenRevocation.REVOKED, repository.remove(second.id, revokeToken = true).getOrNull())
+
+        assertEquals(first.id, settings.state.value.activeAccountId)
+        assertEquals(setOf(first.id), accounts.tokens().keys)
+        assertEquals(listOf(Triple("https://other.example.org", "tda_device_token_0002", 43L)), remote.revocations)
+        assertEquals(first.id, (repository.session.first() as Session.LoggedIn).account.id)
+    }
+
+    @Test
+    fun removingTheActiveAccountSwitchesToTheRemainingOne() = runTest {
+        val first = repository.login(SERVER, "anna", "secret").getOrNull()!!
+        remote.loginResult = Outcome.Success(credentials(baseUrl = "https://other.example.org/", userId = 3))
+        val second = repository.login(SERVER, "bo", "secret").getOrNull()!!
+
+        assertEquals(TokenRevocation.SKIPPED, repository.remove(second.id, revokeToken = false).getOrNull())
+
+        assertEquals(first.id, settings.state.value.activeAccountId)
+        assertTrue(settings.state.value.onboardingCompleted)
+    }
+
+    @Test
+    fun removingAnUnknownAccountFailsAndRevokesNothing() = runTest {
+        repository.login(SERVER, "anna", "secret")
+
+        assertEquals(DataProblem.NO_ACCOUNT, repository.remove("nobody", revokeToken = true).errorOrNull()?.dataProblem())
+        assertTrue(remote.revocations.isEmpty())
+        assertEquals(1, accounts.tokens().size)
+    }
+
     @Test
     fun logoutWithoutAccountIsANoOp() = runTest {
         assertEquals(TokenRevocation.SKIPPED, repository.logout(revokeToken = true).getOrNull())

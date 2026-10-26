@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.data.di
 
 import casa.moller.tandem.core.data.account.AccountRepository
+import casa.moller.tandem.core.data.account.AccountSessions
 import casa.moller.tandem.core.data.internal.DefaultAccountRepository
 import casa.moller.tandem.core.data.internal.DefaultAppearanceRepository
 import casa.moller.tandem.core.data.internal.DefaultSettingsRepository
@@ -28,6 +29,10 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindSessionRepository(impl: DefaultAccountRepository): SessionRepository
+
+    // --- Phase 2 (konto lane): switching and removing stored accounts (same object, same lock). ---
+    @Binds
+    abstract fun bindAccountSessions(impl: DefaultAccountRepository): AccountSessions
 
     @Binds
     abstract fun bindAppearanceRepository(impl: DefaultAppearanceRepository): AppearanceRepository
