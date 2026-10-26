@@ -515,17 +515,21 @@ class Phase2SmokeTest {
             val current = field?.text?.toString().orEmpty()
             when {
                 field == null -> SystemClock.sleep(SETTLE_POLL_MS)
+
                 submitted && current.isEmpty() -> break
+
                 current != text -> {
                     // Not set yet (or the field was opened again): set it, then wait for the preview.
                     app.setNodeText(field, text)
                     submitted = false
                 }
+
                 // The preview has read the text ("Add 5 items"): submit as the keyboard's "Done" would.
                 app.findNode { it.text?.toString() == button } != null -> {
                     submitted = app.imeEnter(field) || app.clickNodeWithText(button)
                     if (submitted) waitForEmptyAddField()
                 }
+
                 else -> SystemClock.sleep(SETTLE_POLL_MS)
             }
         }

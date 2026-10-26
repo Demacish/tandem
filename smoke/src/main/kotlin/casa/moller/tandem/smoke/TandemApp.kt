@@ -367,11 +367,7 @@ class TandemApp(val device: UiDevice) {
         runCatching { appNodes().firstOrNull(predicate) }.getOrNull()
 
     /** Waits for [findNode] ([what] names it in the failure). */
-    fun waitForNode(
-        what: String,
-        timeoutMs: Long = UI_TIMEOUT_MS,
-        predicate: (AccessibilityNodeInfo) -> Boolean,
-    ): AccessibilityNodeInfo {
+    fun waitForNode(what: String, timeoutMs: Long = UI_TIMEOUT_MS, predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo {
         val deadline = SystemClock.uptimeMillis() + timeoutMs
         while (true) {
             findNode(predicate)?.let { return it }
