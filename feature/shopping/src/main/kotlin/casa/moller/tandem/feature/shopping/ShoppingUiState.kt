@@ -63,6 +63,8 @@ data class AddItemState(
  * @property categoryId the food's aisle; [canChangeCategory] is false for a food the server does
  *   not know yet (created offline), whose aisle cannot be set until it is sent.
  * @property amountError the amount is not a number.
+ * @property recipeRows Phase 2 (koppling lane): rows on the list from the same recipe or meal as
+ *   this one ("Ta bort … från listan" removes them all), 0 for a row without a recipe.
  */
 data class EditEntryState(
     val entry: ShoppingEntry,
@@ -74,6 +76,7 @@ data class EditEntryState(
     val delayed: Boolean = false,
     val amountError: Boolean = false,
     val saving: Boolean = false,
+    val recipeRows: Int = 0,
 ) {
     val canChangeCategory: Boolean
         get() = entry.food.id != null
@@ -184,6 +187,9 @@ sealed interface ShoppingAction {
 
     data object DeleteEdited : ShoppingAction
 
+    /** Phase 2 (koppling lane, #12): removes the edited row's recipe with all its rows. */
+    data object RemoveEditedRecipe : ShoppingAction
+
     // Navigation (handled by the route)
     data object OpenStoreMode : ShoppingAction
 
@@ -212,6 +218,9 @@ sealed interface ShoppingMessage {
     data class Removed(val name: String) : ShoppingMessage
 
     data class ClearedChecked(val count: Int) : ShoppingMessage
+
+    /** Phase 2 (koppling lane): a recipe and its rows left the list. */
+    data class RecipeRemoved(val name: String) : ShoppingMessage
 
     data object Saved : ShoppingMessage
 }

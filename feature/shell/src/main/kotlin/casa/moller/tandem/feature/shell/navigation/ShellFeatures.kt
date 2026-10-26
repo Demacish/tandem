@@ -25,6 +25,7 @@ import casa.moller.tandem.feature.shopping.ShoppingListChoiceRoute
 import casa.moller.tandem.feature.shopping.ShoppingRoute
 import casa.moller.tandem.feature.shopping.StoreModeRoute
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRoute
 
 /**
  * The feature screens the shell hosts (navigation contract, docs/BYGGE.md "Navigering"). Each
@@ -56,7 +57,8 @@ internal interface ShellFeatures {
 
     /**
      * A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows.
-     * [onStartCooking] is "Börja laga" (Phase 1b).
+     * [onStartCooking] is "Börja laga" (Phase 1b). [onOpenShoppingList] (Phase 2, koppling lane) is
+     * "Visa listan" after "Lägg på inköpslistan" (feature:shopping's sheet in the detail's slot).
      */
     @Composable
     fun RecipeDetail(
@@ -65,6 +67,7 @@ internal interface ShellFeatures {
         onOpenRecipe: (Long) -> Unit,
         onOpenOnWeb: (String) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenShoppingList: () -> Unit,
     )
 
     /** The detail pane before a recipe is picked (wide windows only). */
@@ -75,10 +78,11 @@ internal interface ShellFeatures {
 
     /**
      * Cook mode (full screen on every width). [pageRequest] is a step the open cook mode should
-     * turn to (a tapped timer of it), handled once with [onPageRequestHandled].
+     * turn to (a tapped timer of it), handled once with [onPageRequestHandled]. [onOpenShoppingList]
+     * (Phase 2, koppling lane) is "Visa listan" after "Lägg på inköpslistan" on the last page.
      */
     @Composable
-    fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit)
+    fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit, onOpenShoppingList: () -> Unit)
 
     /**
      * All timers; [onOpenCook] opens cook mode at a timer's recipe and step, offered only for
@@ -185,6 +189,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenRecipe: (Long) -> Unit,
         onOpenOnWeb: (String) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenShoppingList: () -> Unit,
     ) {
         RecipeDetailRoute(
             recipeId = recipeId,
@@ -192,6 +197,10 @@ internal object RouteShellFeatures : ShellFeatures {
             onOpenRecipe = onOpenRecipe,
             onOpenOnWeb = onOpenOnWeb,
             onStartCooking = onStartCooking,
+            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" under the ingredients.
+            shoppingAction = { servings, snackbar ->
+                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
+            },
         )
     }
 
@@ -201,8 +210,23 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit) {
-        CookRoute(key = key, onClose = onClose, pageRequest = pageRequest, onPageRequestHandled = onPageRequestHandled)
+    override fun Cook(
+        key: CookKey,
+        onClose: () -> Unit,
+        pageRequest: Int?,
+        onPageRequestHandled: () -> Unit,
+        onOpenShoppingList: () -> Unit,
+    ) {
+        CookRoute(
+            key = key,
+            onClose = onClose,
+            pageRequest = pageRequest,
+            onPageRequestHandled = onPageRequestHandled,
+            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page.
+            shoppingAction = { servings, snackbar ->
+                RecipeShoppingRoute(key.recipeId, servings, snackbar, onOpenShoppingList)
+            },
+        )
     }
 
     @Composable

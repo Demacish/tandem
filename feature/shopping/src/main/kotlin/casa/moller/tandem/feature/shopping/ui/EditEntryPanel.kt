@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -31,7 +32,8 @@ import casa.moller.tandem.feature.shopping.ShoppingAction
 /**
  * Editing one entry (long press, plan 6.2 "Lång tryckning → ändra eller flytta kategori"): food,
  * amount and unit, the food's aisle (for the whole space, Tandoor's `supermarket_category`), "köp
- * senare" / "köp nu", the recipe it came from, and removing it.
+ * senare" / "köp nu", the recipe it came from, and removing it (or, Phase 2 koppling lane, the
+ * whole recipe with its rows).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -140,5 +142,14 @@ internal fun EditEntryPanel(state: EditEntryState, onAction: (ShoppingAction) ->
             leadingIcon = TandemIcons.Delete,
             modifier = Modifier.fillMaxWidth(),
         )
+        // Phase 2 (koppling lane, #12): the whole recipe goes, with every row it put on the list.
+        if (recipeName != null && state.recipeRows > 0) {
+            TandemTextButton(
+                text = pluralStringResource(R.plurals.shopping_edit_remove_recipe, state.recipeRows, state.recipeRows, recipeName),
+                onClick = { onAction(ShoppingAction.RemoveEditedRecipe) },
+                leadingIcon = TandemIcons.Delete,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }

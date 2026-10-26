@@ -109,21 +109,50 @@
     <string name="mealplan_delete_meal">Remove from the plan</string>
     <string name="mealplan_meal_gone">This meal is no longer in the plan.</string>
 
-    <!-- "Handla för veckan" (#16) -->
-    <string name="mealplan_week_shopping_intro">Choose the meals whose ingredients go on the shopping list. Things you have at home start unticked.</string>
-    <string name="mealplan_week_shopping_empty">No meals with recipes this week.</string>
+    <!-- "Handla för veckan" (#16; Phase 2 koppling lane: a range of days, merged per food and unit) -->
+    <string name="mealplan_week_shopping_intro">The meals\' ingredients, merged per food. Things you have at home start unticked, and meals already on the list are never added again.</string>
+    <string name="mealplan_week_shopping_empty">No meals with recipes on these days.</string>
     <string name="mealplan_week_shopping_already">Already on the list</string>
     <string name="mealplan_week_shopping_auto_add">Tandoor puts new meals on the list by itself (your setting). Meals already on the list are not added again.</string>
     <string name="mealplan_week_shopping_on_hand">At home</string>
     <string name="mealplan_week_shopping_no_ingredients">The recipe is not downloaded yet. Open it once while online to choose its ingredients.</string>
-    <plurals name="mealplan_week_shopping_add">
-        <item quantity="one">Add %1$d meal to the list</item>
-        <item quantity="other">Add %1$d meals to the list</item>
+    <string name="mealplan_week_shopping_change_days">Change days</string>
+    <string name="mealplan_week_shopping_change_days_description">Change the days, now %1$s</string>
+    <string name="mealplan_week_shopping_pick_days">Choose the days</string>
+    <plurals name="mealplan_week_shopping_planned">
+        <item quantity="one">%1$d planned meal with a recipe</item>
+        <item quantity="other">%1$d planned meals with recipes</item>
     </plurals>
-    <string name="mealplan_week_shopping_meal_label">%1$s, %2$s</string>
-    <string name="mealplan_week_shopping_ingredients">Ingredients of %1$s</string>
-    <plurals name="mealplan_week_shopping_chosen">
-        <item quantity="one">%1$d of %2$d ingredient</item>
-        <item quantity="other">%1$d of %2$d ingredients</item>
+    <plurals name="mealplan_week_shopping_to_buy_count">
+        <item quantity="one">%1$d item to buy</item>
+        <item quantity="other">%1$d items to buy</item>
     </plurals>
+    <plurals name="mealplan_week_shopping_at_home_count">
+        <item quantity="one">%1$d at home</item>
+        <item quantity="other">%1$d at home</item>
+    </plurals>
+    <string name="mealplan_week_shopping_only_missing">Only what is missing (%1$d)</string>
+    <string name="mealplan_week_shopping_all">All ingredients (%1$d)</string>
+    <string name="mealplan_week_shopping_meals">Included meals</string>
+    <string name="mealplan_week_shopping_meals_hint">Tap a meal to leave it out.</string>
+    <string name="mealplan_week_shopping_meal_chip">%1$s %2$s</string>
+    <string name="mealplan_week_shopping_meal_already">%1$s, already on the list</string>
+    <string name="mealplan_week_shopping_meal_unavailable">%1$s, not downloaded</string>
+    <string name="mealplan_week_shopping_merged">Combined</string>
+    <string name="mealplan_week_shopping_line_total">%1$s in total (%2$s)</string>
+    <string name="mealplan_week_shopping_line_part">%1$s %2$s</string>
+    <string name="mealplan_week_shopping_line_one">%1$s · %2$s</string>
+    <string name="mealplan_week_shopping_other_aisle">Other</string>
+    <plurals name="mealplan_week_shopping_aisle_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <string name="mealplan_week_shopping_at_home">At home already?</string>
+    <string name="mealplan_week_shopping_at_home_hint">Marked “at home” in Tandoor, so they are not ticked. Tick what you need anyway.</string>
+    <string name="mealplan_week_shopping_all_on_list">Everything planned on these days is already on the list.</string>
+    <plurals name="mealplan_week_shopping_add_items">
+        <item quantity="one">Add %1$d item to the shopping list</item>
+        <item quantity="other">Add %1$d items to the shopping list</item>
+    </plurals>
+    <string name="mealplan_week_shopping_add_none">Choose what to add</string>
 </resources>

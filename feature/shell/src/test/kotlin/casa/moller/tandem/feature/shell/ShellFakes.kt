@@ -200,6 +200,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenRecipe: (Long) -> Unit,
         onOpenOnWeb: (String) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenShoppingList: () -> Unit,
     ) {
         ShellScreenScaffold(title = "Recipe $recipeId", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Recipe detail $recipeId", modifier = Modifier.padding(padding))
@@ -212,7 +213,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     }
 
     @Composable
-    override fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit) {
+    override fun Cook(
+        key: CookKey,
+        onClose: () -> Unit,
+        pageRequest: Int?,
+        onPageRequestHandled: () -> Unit,
+        onOpenShoppingList: () -> Unit,
+    ) {
         ShellScreenScaffold(title = "Cook ${key.recipeId}", state = state, onNavigateBack = onClose) { padding ->
             // The step a tapped timer asked for stays visible, so tests can see it arrived.
             val page = pageRequest?.let { " at step ${it + 1}" }.orEmpty()

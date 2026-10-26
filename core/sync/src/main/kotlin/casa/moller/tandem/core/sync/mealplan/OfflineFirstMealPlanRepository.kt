@@ -172,8 +172,9 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
 
     override suspend fun create(draft: MealPlanDraft): Outcome<Long> {
         val created = createMeal(draft)
-        val recipeId = draft.recipeId
-        if (created is Outcome.Success && draft.addToShopping && recipeId != null && sources.current() == ActiveSource.Demo) {
+        val recipeId = draft.recipeId?.takeIf { draft.addToShopping }
+        val demo = sources.current() == ActiveSource.Demo
+        if (created is Outcome.Success && recipeId != null && demo) {
             // Phase 2 (koppling lane): demo mode has no server to act on `addshopping`, so the app
             // puts the ingredients (on-hand foods left out) on the demo list itself, linked to the meal.
             val ingredients = demoShoppingIngredients(recipeId)

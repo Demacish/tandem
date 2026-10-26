@@ -383,6 +383,8 @@ internal fun ShellScaffold(
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it, inListDetail = key.inListDetail)) },
                     onOpenOnWeb = openOnWeb,
                     onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                    // Phase 2 (koppling lane): "Visa listan" after "Lägg på inköpslistan".
+                    onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                 )
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---
@@ -393,6 +395,7 @@ internal fun ShellScaffold(
                     // fix-ui (0.2.0 review): a timer of this open cook mode turns it to the timer's step.
                     pageRequest = navigation.cookPageRequest?.takeIf { it.recipeId == key.recipeId }?.step,
                     onPageRequestHandled = { navigation.onCookPageRequestHandled(key.recipeId) },
+                    onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                 )
             }
             entry<TimersKey> {

@@ -45,8 +45,11 @@ internal object OutboxHealth {
 
     fun kindOf(row: OutboxEntity): OutboxKind = when {
         row.op == OutboxOps.COOK_LOG -> OutboxKind.COOK_LOG
+
         row.op == OutboxOps.VIEW_LOG -> OutboxKind.VIEW_LOG
+
         row.op == OutboxOps.RECIPE_KEYWORDS -> OutboxKind.WANT_TO_COOK
+
         else -> when (row.entity) {
             OutboxEntities.SHOPPING_ENTRY -> OutboxKind.SHOPPING_ENTRY
             OutboxEntities.SHOPPING_LIST_RECIPE -> OutboxKind.SHOPPING_RECIPE

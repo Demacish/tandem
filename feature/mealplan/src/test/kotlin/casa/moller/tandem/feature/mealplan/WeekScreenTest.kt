@@ -3,10 +3,14 @@ package casa.moller.tandem.feature.mealplan
 import android.content.Context
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -17,6 +21,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
@@ -33,11 +38,14 @@ import casa.moller.tandem.feature.mealplan.ui.WEEK_AGENDA_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_DAYS_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_DAY_PANE_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_GRID_TAG
+import casa.moller.tandem.feature.mealplan.ui.WEEK_SHOPPING_LIST_TAG
 import casa.moller.tandem.feature.mealplan.ui.WeekScreen
 import casa.moller.tandem.feature.mealplan.ui.WeekShoppingScreen
 import casa.moller.tandem.feature.mealplan.ui.dayTag
 import casa.moller.tandem.feature.mealplan.ui.mealTag
 import casa.moller.tandem.feature.mealplan.ui.planMealRecipeTag
+import casa.moller.tandem.feature.mealplan.ui.weekShoppingLineTag
+import casa.moller.tandem.feature.mealplan.ui.weekShoppingMealTag
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -214,8 +222,28 @@ class WeekScreenTest {
             MealPlanTestTheme { WeekShoppingScreen(state = MealPlanSamples.weekShopping, onAction = { shoppingActions += it }) }
         }
         composeRule.onNodeWithText(string(R.string.mealplan_week_shopping_auto_add)).assertIsDisplayed()
-        val add = context.resources.getQuantityString(R.plurals.mealplan_week_shopping_add, 1, 1)
+        // Sunday's chicken is on the list already: its chip cannot be picked.
+        composeRule.onNodeWithTag(weekShoppingMealTag(MealPlanSamples.sunday.id)).assertIsNotEnabled()
+        composeRule.onNodeWithTag(weekShoppingMealTag(MealPlanSamples.friday.id)).assertIsEnabled().performClick()
+        assertEquals(WeekShoppingAction.ToggleMeal(MealPlanSamples.friday.id), shoppingActions.last())
+        val add = context.resources.getQuantityString(R.plurals.mealplan_week_shopping_add_items, 5, 5)
         composeRule.onNodeWithText(add).assertIsEnabled().performClick()
         assertEquals(WeekShoppingAction.Add, shoppingActions.last())
+    }
+
+    /** Phase 2 (koppling lane): one merged line is one TalkBack item and toggles by its key. */
+    @Test
+    fun aMergedLineIsOneToggleableItem() {
+        val shoppingActions = mutableListOf<WeekShoppingAction>()
+        composeRule.setContent {
+            MealPlanTestTheme { WeekShoppingScreen(state = MealPlanSamples.weekShopping, onAction = { shoppingActions += it }) }
+        }
+        val cream = WeekShoppingMerge.key("grädde", "dl")
+        composeRule.onNodeWithTag(WEEK_SHOPPING_LIST_TAG).performScrollToNode(hasTestTag(weekShoppingLineTag(cream)))
+        composeRule.onNodeWithTag(weekShoppingLineTag(cream))
+            .assertIsOn()
+            .assert(hasText(string(R.string.mealplan_week_shopping_merged), substring = true))
+            .performClick()
+        assertEquals(WeekShoppingAction.ToggleLine(cream), shoppingActions.last())
     }
 }

@@ -115,21 +115,17 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         Outcome.Failure(TandemError.Unknown(EXPORT_FAILED))
     }
 
-    private fun snapshotOf(
-        server: ServerStatus,
-        coldStart: ColdStartTiming?,
-        fullSync: FullSyncTiming?,
-        health: SyncHealth,
-    ) = DiagnosticsSnapshot(
-        appVersion = buildInfo.versionName,
-        appVersionCode = buildInfo.versionCode,
-        distribution = buildInfo.distribution,
-        androidSdk = buildInfo.sdkInt,
-        serverVersion = server.version.takeUnless { server.isDemo },
-        lastColdStart = coldStart,
-        lastFullSync = fullSync,
-        syncHealth = health,
-    )
+    private fun snapshotOf(server: ServerStatus, coldStart: ColdStartTiming?, fullSync: FullSyncTiming?, health: SyncHealth) =
+        DiagnosticsSnapshot(
+            appVersion = buildInfo.versionName,
+            appVersionCode = buildInfo.versionCode,
+            distribution = buildInfo.distribution,
+            androidSdk = buildInfo.sdkInt,
+            serverVersion = server.version.takeUnless { server.isDemo },
+            lastColdStart = coldStart,
+            lastFullSync = fullSync,
+            syncHealth = health,
+        )
 
     private suspend fun buildLog(now: Instant): String {
         val server = serverStatus.observeStatus().first()

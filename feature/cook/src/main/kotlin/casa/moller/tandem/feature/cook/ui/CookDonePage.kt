@@ -62,10 +62,16 @@ import casa.moller.tandem.feature.cook.R
  * The last page, "Klart!" (plan 6.2, feature #8, Stitch kokl_ge_klart with the corrections in
  * docs/design/README.md: no quick-impression chips or "share a photo", which Tandoor does not
  * have). Servings, an optional rating, a comment, and "Spara i kokloggen", which works offline
- * (sent later) and in demo mode (stays on the device).
+ * (sent later) and in demo mode (stays on the device). Phase 2: "Lägg på inköpslistan" last
+ * ([shoppingActions], not for guests, who get no write controls here at all).
  */
 @Composable
-internal fun CookDonePage(state: CookUiState, onAction: (CookAction) -> Unit, onClose: () -> Unit) {
+internal fun CookDonePage(
+    state: CookUiState,
+    onAction: (CookAction) -> Unit,
+    onClose: () -> Unit,
+    shoppingActions: (@Composable () -> Unit)? = null,
+) {
     val spacing = TandemTheme.spacing
     val done = state.done
     Box(
@@ -141,6 +147,8 @@ internal fun CookDonePage(state: CookUiState, onAction: (CookAction) -> Unit, on
                     .align(Alignment.CenterHorizontally)
                     .heightIn(min = TandemTheme.sizes.kitchenTouchTarget),
             )
+            // Phase 2 (koppling lane, #12): something ran out? Its ingredients go on the list from here.
+            shoppingActions?.invoke()
         }
     }
 }

@@ -9,23 +9,37 @@ import casa.moller.tandem.core.sync.guard.SyncGuard
  */
 internal fun TandemError.code(): String = when (this) {
     TandemError.NetworkUnavailable -> "network-unavailable"
+
     TandemError.UnknownHost -> "unknown-host"
+
     TandemError.Timeout -> "timeout"
+
     is TandemError.TlsError -> "tls"
+
     is TandemError.InvalidUrl -> "invalid-url"
+
     is TandemError.NotTandoor -> "not-tandoor" + (httpStatus?.let { "-$it" } ?: "")
+
     is TandemError.Unauthorized -> "unauthorized"
+
     TandemError.Blocked -> "blocked"
+
     TandemError.NotFound -> "http-404"
+
     is TandemError.BadRequest -> "http-400"
+
     is TandemError.Throttled -> "http-429"
+
     is TandemError.ServerError -> "http-$code"
+
     is TandemError.Decode -> "decode"
+
     // Phase 2 (koppling lane): the circuit breaker and an import hold rows back; "blockerad"-diagnostik names them.
     is TandemError.Unknown -> when (this) {
         SyncGuard.BREAKER_ERROR -> CIRCUIT_BREAKER_CODE
         SyncGuard.IMPORT_ERROR -> "import-running"
         else -> "unknown"
+
     }
 }
 

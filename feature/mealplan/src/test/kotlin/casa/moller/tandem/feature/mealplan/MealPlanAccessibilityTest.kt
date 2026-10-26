@@ -101,6 +101,19 @@ class MealPlanAccessibilityTest {
     @Test
     fun weekShoppingDarkFontScale2() = check(MealPlanShot.WEEK_SHOPPING, darkTheme = true, fontScale = 2f)
 
+    @Test
+    @Config(qualifiers = TABLET)
+    fun weekShoppingTablet() = check(MealPlanShot.WEEK_SHOPPING)
+
+    @Test
+    fun weekShoppingGuest() = check(MealPlanShot.WEEK_SHOPPING_GUEST)
+
+    @Test
+    fun weekShoppingAllOnList() = check(MealPlanShot.WEEK_SHOPPING_ALL_ON_LIST)
+
+    @Test
+    fun weekShoppingEmpty() = check(MealPlanShot.WEEK_SHOPPING_EMPTY, fontScale = 2f)
+
     private fun check(shot: MealPlanShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {
             MealPlanTestTheme(darkTheme = darkTheme, fontScale = fontScale, chrome = chrome) { shot.content() }

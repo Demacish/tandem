@@ -180,6 +180,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
             is ShoppingAction.EditCategory -> editing { it.copy(categoryId = action.categoryId) }
             ShoppingAction.SaveEdit -> saveEdit()
             ShoppingAction.DeleteEdited -> deleteEdited()
+            ShoppingAction.RemoveEditedRecipe -> removeEditedRecipe()
             else -> Unit // Navigation and sharing (store mode, store choice, history, recipe, share) are the route's.
         }
     }
@@ -310,6 +311,10 @@ class ShoppingViewModel @AssistedInject internal constructor(
                     categoryId = entry.food.categoryId,
                     categories = state.categories.sortedBy { category -> category.name.lowercase() },
                     delayed = entry.isDelayed(clock.now()),
+                    // Phase 2 (koppling lane): rows of the same recipe, for "Ta bort … från listan".
+                    recipeRows = entry.recipe?.listRecipeId?.let { group ->
+                        state.grouped.all.count { other -> other.recipe?.listRecipeId == group }
+                    } ?: 0,
                 ),
             )
         }
@@ -371,6 +376,20 @@ class ShoppingViewModel @AssistedInject internal constructor(
             listIds = entry.listIds,
         )
         write(ShoppingMessage.Removed(entry.food.name), undo = { shopping.add(draft) }) { shopping.remove(listOf(entry.id)) }
+    }
+
+    /**
+     * Phase 2 (koppling lane, #12): removes the recipe the edited row came from, with all its rows
+     * (Tandoor deletes them with the list recipe; queued changes of the rows go first). No undo:
+     * "Lägg på inköpslistan" on the recipe adds it again.
+     */
+    private fun removeEditedRecipe() {
+        val edit = transient.value.edit ?: return
+        if (!canWrite()) return
+        val label = edit.entry.recipe ?: return
+        transient.update { it.copy(edit = null) }
+        val name = label.recipeName?.takeIf { it.isNotBlank() } ?: edit.entry.food.name
+        write(ShoppingMessage.RecipeRemoved(name), undo = null) { shopping.removeListRecipe(label.listRecipeId) }
     }
 
     /** Runs [block]; on success remembers [undo] and shows [message], on failure the error. */

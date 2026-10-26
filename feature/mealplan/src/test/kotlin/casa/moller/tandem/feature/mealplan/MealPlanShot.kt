@@ -32,10 +32,20 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     PLAN_TITLE_ERROR({ PlanMealScreen(state = MealPlanSamples.planState(kind = MealKind.TITLE, showErrors = true), onAction = {}) }),
     PLAN_EDIT({ PlanMealScreen(state = MealPlanSamples.planState(recipe = MealPlanSamples.pasta, editing = true), onAction = {}) }),
     WEEK_SHOPPING({ WeekShoppingScreen(state = MealPlanSamples.weekShopping, onAction = {}) }),
+
+    // Phase 2 (koppling lane): "Handla för veckan" for a guest, with everything on the list, and without meals.
+    WEEK_SHOPPING_GUEST({ WeekShoppingShot(MealPlanSamples.weekShoppingState(MealPlanSamples.weekShoppingMeals, readOnly = true)) }),
+    WEEK_SHOPPING_ALL_ON_LIST({
+        WeekShoppingShot(MealPlanSamples.weekShoppingState(MealPlanSamples.weekShoppingMeals.filter { it.alreadyOnList }))
+    }),
+    WEEK_SHOPPING_EMPTY({ WeekShoppingScreen(state = MealPlanSamples.weekShoppingState(emptyList(), autoAdd = false), onAction = {}) }),
 }
 
 @Composable
 private fun WeekShot(state: WeekUiState) = WeekScreen(state = state, onAction = {})
+
+@Composable
+private fun WeekShoppingShot(state: WeekShoppingUiState) = WeekShoppingScreen(state = state, onAction = {})
 
 @Composable
 private fun format(): MealPlanFormat = MealPlanFormat(LocalConfiguration.current.locales[0])

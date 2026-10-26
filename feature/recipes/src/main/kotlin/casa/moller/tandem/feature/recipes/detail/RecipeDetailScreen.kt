@@ -120,6 +120,8 @@ internal val TwoPaneMinWidth = 720.dp
  * @param onOpenRecipe opens another recipe (a step's sub-recipe).
  * @param onStartCooking opens cook mode at the servings shown ("Börja laga", Phase 1b); the
  *   button shows once the recipe's detail is stored. Null hides it.
+ * @param shoppingActions Phase 2 (koppling lane, #12): "Lägg på inköpslistan" right under the
+ *   ingredients once the detail is stored (in the ingredient pane on wide windows).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,6 +135,7 @@ fun RecipeDetailScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onStartCooking: (() -> Unit)? = null,
     bookActions: (@Composable () -> Unit)? = null,
+    shoppingActions: (@Composable () -> Unit)? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val scrollState = rememberScrollState()
@@ -180,6 +183,7 @@ fun RecipeDetailScreen(
                 onStartCooking = onStartCooking,
                 modifier = contentModifier,
                 bookActions = bookActions,
+                shoppingActions = shoppingActions,
             )
         }
     }
@@ -249,11 +253,12 @@ private fun DetailContent(
     onStartCooking: (() -> Unit)?,
     modifier: Modifier = Modifier,
     bookActions: (@Composable () -> Unit)? = null,
+    shoppingActions: (@Composable () -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     BoxWithConstraints(modifier = modifier) {
         if (maxWidth >= TwoPaneMinWidth && state.hasDetail) {
-            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe, onStartCooking, bookActions)
+            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe, onStartCooking, bookActions, shoppingActions)
         } else {
             Column(
                 modifier = Modifier
@@ -276,6 +281,7 @@ private fun DetailContent(
                     StartCooking(onStartCooking)
                     Servings(state, onAction)
                     Ingredients(state, onAction)
+                    shoppingActions?.invoke()
                     Steps(state, onAction, onOpenRecipe)
                     Source(state, onOpenUrl)
                 }
@@ -298,6 +304,7 @@ private fun TwoPaneContent(
     onOpenRecipe: (Long) -> Unit,
     onStartCooking: (() -> Unit)?,
     bookActions: (@Composable () -> Unit)? = null,
+    shoppingActions: (@Composable () -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     Row(
@@ -319,6 +326,7 @@ private fun TwoPaneContent(
             StartCooking(onStartCooking)
             Servings(state, onAction)
             Ingredients(state, onAction)
+            shoppingActions?.invoke()
         }
         Column(
             modifier = Modifier

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 2 (koppling lane): "Lägg på inköpslistan" från ett recept eller kokläget (#12, Stitch l_gg_p_listan_ark). -->
+<resources>
+    <string name="recipe_shopping_button">Lägg på inköpslistan</string>
+    <plurals name="recipe_shopping_on_list">
+        <item quantity="one">%1$d vara från receptet finns på inköpslistan</item>
+        <item quantity="other">%1$d varor från receptet finns på inköpslistan</item>
+    </plurals>
+    <string name="recipe_shopping_remove">Ta bort från listan</string>
+    <string name="recipe_shopping_remove_description">Ta bort %1$s från inköpslistan</string>
+    <string name="recipe_shopping_title">Lägg på inköpslistan</string>
+    <string name="recipe_shopping_servings_label">Portioner</string>
+    <plurals name="recipe_shopping_servings">
+        <item quantity="one">%1$s portion</item>
+        <item quantity="other">%1$s portioner</item>
+    </plurals>
+    <string name="recipe_shopping_servings_with_text">%1$s %2$s</string>
+    <string name="recipe_shopping_select_all">Markera alla</string>
+    <string name="recipe_shopping_only_missing">Bara det som saknas</string>
+    <string name="recipe_shopping_to_buy">Att köpa</string>
+    <plurals name="recipe_shopping_chosen">
+        <item quantity="one">%1$d vald</item>
+        <item quantity="other">%1$d valda</item>
+    </plurals>
+    <string name="recipe_shopping_at_home">Finns redan hemma?</string>
+    <string name="recipe_shopping_at_home_hint">Markerade som ”har hemma” i Tandoor, därför inte ikryssade. Kryssa i det du ändå behöver.</string>
+    <string name="recipe_shopping_on_hand">Finns hemma</string>
+    <string name="recipe_shopping_list_label">Läggs på</string>
+    <string name="recipe_shopping_list_none">Inköpslistan</string>
+    <plurals name="recipe_shopping_add">
+        <item quantity="one">Lägg till %1$d vara i inköpslistan</item>
+        <item quantity="other">Lägg till %1$d varor i inköpslistan</item>
+    </plurals>
+    <string name="recipe_shopping_add_none">Välj vad som ska läggas till</string>
+    <string name="recipe_shopping_cancel">Avbryt och gå tillbaka</string>
+    <plurals name="recipe_shopping_added">
+        <item quantity="one">%1$d vara från %2$s ligger på inköpslistan</item>
+        <item quantity="other">%1$d varor från %2$s ligger på inköpslistan</item>
+    </plurals>
+    <plurals name="recipe_shopping_removed">
+        <item quantity="one">%1$d vara från %2$s togs bort från listan</item>
+        <item quantity="other">%1$d varor från %2$s togs bort från listan</item>
+    </plurals>
+    <string name="recipe_shopping_show_list">Visa listan</string>
+    <string name="recipe_shopping_row_at_home">%1$s, finns hemma</string>
+
+    <!-- Listans ändringsark: ta bort hela receptet en rad kom från -->
+    <plurals name="shopping_edit_remove_recipe">
+        <item quantity="one">Ta bort %2$s från listan (%1$d vara)</item>
+        <item quantity="other">Ta bort %2$s från listan (%1$d varor)</item>
+    </plurals>
+    <string name="shopping_msg_recipe_removed">%1$s togs bort från listan</string>
+</resources>

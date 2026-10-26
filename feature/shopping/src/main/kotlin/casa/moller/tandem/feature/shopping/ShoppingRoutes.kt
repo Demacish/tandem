@@ -263,6 +263,8 @@ internal fun Resources.messageText(message: ShoppingMessage): String = when (mes
     is ShoppingMessage.ClearedChecked -> getQuantityString(R.plurals.shopping_msg_cleared, message.count, message.count)
 
     ShoppingMessage.Saved -> getString(R.string.shopping_msg_saved)
+
+    is ShoppingMessage.RecipeRemoved -> getString(R.string.shopping_msg_recipe_removed, message.name)
 }
 
 internal fun Resources.changeText(change: ShoppingChange): String = when (change) {

@@ -21,7 +21,8 @@ import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
  */
 object WeekShoppingMerge {
     /** The line key of [foodName] in [unitName]. */
-    fun key(foodName: String, unitName: String?): String = foodName.trim().lowercase() + KEY_SEPARATOR + unitName.orEmpty().trim().lowercase()
+    fun key(foodName: String, unitName: String?): String =
+        foodName.trim().lowercase() + KEY_SEPARATOR + unitName.orEmpty().trim().lowercase()
 
     /** Meals whose ingredients can still go on the list (not already on it, with ingredients). */
     fun selectable(meal: WeekShoppingMeal): Boolean = !meal.alreadyOnList && meal.ingredients.isNotEmpty()

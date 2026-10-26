@@ -109,21 +109,50 @@
     <string name="mealplan_delete_meal">Ta bort från matsedeln</string>
     <string name="mealplan_meal_gone">Måltiden finns inte längre i matsedeln.</string>
 
-    <!-- "Handla för veckan" (#16) -->
-    <string name="mealplan_week_shopping_intro">Välj måltiderna vars ingredienser ska på inköpslistan. Det du har hemma är bortvalt från början.</string>
-    <string name="mealplan_week_shopping_empty">Inga måltider med recept den här veckan.</string>
+    <!-- "Handla för veckan" (#16; Phase 2 koppling lane: a range of days, merged per food and unit) -->
+    <string name="mealplan_week_shopping_intro">Måltidernas ingredienser, sammanslagna per vara. Det du har hemma är bortvalt från början, och måltider som redan finns på listan läggs aldrig till igen.</string>
+    <string name="mealplan_week_shopping_empty">Inga måltider med recept de här dagarna.</string>
     <string name="mealplan_week_shopping_already">Redan på listan</string>
     <string name="mealplan_week_shopping_auto_add">Tandoor lägger själv nya måltider på listan (din inställning). Måltider som redan finns på listan läggs inte till igen.</string>
     <string name="mealplan_week_shopping_on_hand">Har hemma</string>
     <string name="mealplan_week_shopping_no_ingredients">Receptet är inte nedladdat än. Öppna det en gång med nätet på för att kunna välja ingredienserna.</string>
-    <plurals name="mealplan_week_shopping_add">
-        <item quantity="one">Lägg %1$d måltid på listan</item>
-        <item quantity="other">Lägg %1$d måltider på listan</item>
+    <string name="mealplan_week_shopping_change_days">Ändra dagar</string>
+    <string name="mealplan_week_shopping_change_days_description">Ändra dagarna, nu %1$s</string>
+    <string name="mealplan_week_shopping_pick_days">Välj dagarna</string>
+    <plurals name="mealplan_week_shopping_planned">
+        <item quantity="one">%1$d planerad måltid med recept</item>
+        <item quantity="other">%1$d planerade måltider med recept</item>
     </plurals>
-    <string name="mealplan_week_shopping_meal_label">%1$s, %2$s</string>
-    <string name="mealplan_week_shopping_ingredients">Ingredienserna i %1$s</string>
-    <plurals name="mealplan_week_shopping_chosen">
-        <item quantity="one">%1$d av %2$d ingrediens</item>
-        <item quantity="other">%1$d av %2$d ingredienser</item>
+    <plurals name="mealplan_week_shopping_to_buy_count">
+        <item quantity="one">%1$d vara att köpa</item>
+        <item quantity="other">%1$d varor att köpa</item>
     </plurals>
+    <plurals name="mealplan_week_shopping_at_home_count">
+        <item quantity="one">%1$d finns hemma</item>
+        <item quantity="other">%1$d finns hemma</item>
+    </plurals>
+    <string name="mealplan_week_shopping_only_missing">Bara det som saknas (%1$d)</string>
+    <string name="mealplan_week_shopping_all">Alla råvaror (%1$d)</string>
+    <string name="mealplan_week_shopping_meals">Inkluderade måltider</string>
+    <string name="mealplan_week_shopping_meals_hint">Tryck på en måltid för att utesluta den.</string>
+    <string name="mealplan_week_shopping_meal_chip">%1$s %2$s</string>
+    <string name="mealplan_week_shopping_meal_already">%1$s, redan på listan</string>
+    <string name="mealplan_week_shopping_meal_unavailable">%1$s, inte nedladdat</string>
+    <string name="mealplan_week_shopping_merged">Summerad</string>
+    <string name="mealplan_week_shopping_line_total">%1$s totalt (%2$s)</string>
+    <string name="mealplan_week_shopping_line_part">%1$s %2$s</string>
+    <string name="mealplan_week_shopping_line_one">%1$s · %2$s</string>
+    <string name="mealplan_week_shopping_other_aisle">Övrigt</string>
+    <plurals name="mealplan_week_shopping_aisle_count">
+        <item quantity="one">%1$d vara</item>
+        <item quantity="other">%1$d varor</item>
+    </plurals>
+    <string name="mealplan_week_shopping_at_home">Finns redan hemma?</string>
+    <string name="mealplan_week_shopping_at_home_hint">Markerade som ”har hemma” i Tandoor, därför inte ikryssade. Kryssa i det du ändå behöver.</string>
+    <string name="mealplan_week_shopping_all_on_list">Allt som är planerat de här dagarna finns redan på listan.</string>
+    <plurals name="mealplan_week_shopping_add_items">
+        <item quantity="one">Lägg till %1$d vara i inköpslistan</item>
+        <item quantity="other">Lägg till %1$d varor i inköpslistan</item>
+    </plurals>
+    <string name="mealplan_week_shopping_add_none">Välj vad som ska läggas till</string>
 </resources>

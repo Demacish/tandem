@@ -102,6 +102,9 @@ private class SyncFailure(val error: TandemError)
  * @param onOpenOnWeb opens a URL in the browser ("Open on the web" for editing, the source URL).
  * @param onStartCooking "Börja laga" (Phase 1b): opens cook mode for the recipe at the servings
  *   shown (null: the recipe's own). Null hides the button.
+ * @param shoppingAction Phase 2 (koppling lane, #12): "Lägg på inköpslistan" under the ingredients,
+ *   given the servings shown and the screen's snackbar (feature:shopping's route, passed in by the
+ *   shell). Null shows nothing.
  */
 @Composable
 fun RecipeDetailRoute(
@@ -111,6 +114,7 @@ fun RecipeDetailRoute(
     onOpenOnWeb: (url: String) -> Unit,
     modifier: Modifier = Modifier,
     onStartCooking: ((recipeId: Long, servings: Double?) -> Unit)? = null,
+    shoppingAction: (@Composable (servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<RecipeDetailViewModel, RecipeDetailViewModel.Factory>(
         key = "recipe-$recipeId",
@@ -137,6 +141,7 @@ fun RecipeDetailRoute(
         onStartCooking = onStartCooking?.let { start -> { start(recipeId, state.servings?.current) } },
         // Phase 2 (books lane): "Favorit", "Vill laga" and "Lägg i bok" under the title.
         bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState) },
+        shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, snackbarHostState) } },
     )
 }
 

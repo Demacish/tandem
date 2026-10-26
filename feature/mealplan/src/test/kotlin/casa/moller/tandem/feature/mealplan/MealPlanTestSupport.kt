@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
 import casa.moller.tandem.core.model.mealplan.MealPlanDay
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
@@ -138,28 +139,63 @@ internal object MealPlanSamples {
         readOnly = readOnly,
     )
 
-    val weekShopping: WeekShoppingUiState
-        get() {
-            val pastaMeal = WeekShoppingMeal(
+    /** Aisles of the "Handla för veckan" samples (the store's categories). */
+    val categories = mapOf(1L to "Torrvaror", 2L to "Frukt & grönt", 3L to "Mejeri", 4L to "Fisk & kött")
+
+    /**
+     * "Handla för veckan" (Phase 2 koppling lane): pasta tonight and salmon on Friday share the
+     * cream (merged: 3 + 2 dl), salt is at home, Sunday's chicken is already on the list.
+     */
+    val weekShoppingMeals: List<WeekShoppingMeal>
+        get() = listOf(
+            WeekShoppingMeal(
                 meal = todayDinner,
                 alreadyOnList = false,
                 selected = true,
                 ingredients = listOf(
-                    WeekShoppingIngredient(101, "pasta", 500.0, "g"),
-                    WeekShoppingIngredient(102, "champinjoner", 250.0, "g"),
-                    WeekShoppingIngredient(103, "grädde", 3.0, "dl"),
+                    WeekShoppingIngredient(101, "pasta", 500.0, "g", categoryId = 1),
+                    WeekShoppingIngredient(102, "champinjoner", 250.0, "g", categoryId = 2),
+                    WeekShoppingIngredient(103, "grädde", 3.0, "dl", categoryId = 3),
                     WeekShoppingIngredient(104, "salt", 0.0, null, onHand = true),
                 ),
-            )
-            val salmonMeal = WeekShoppingMeal(meal = friday, alreadyOnList = false, selected = true, ingredients = emptyList())
-            val chickenMeal = WeekShoppingMeal(meal = sunday, alreadyOnList = true, selected = false)
-            val meals = listOf(pastaMeal, salmonMeal, chickenMeal).map { meal ->
-                val chosen = meal.ingredients.filter { it.selected }.mapTo(LinkedHashSet()) { it.ingredientId }
-                val selected = !meal.alreadyOnList && chosen.isNotEmpty()
-                WeekShoppingMealState(meal, selected = selected, chosen = chosen, expanded = meal.meal.id == todayDinner.id)
-            }
-            return WeekShoppingUiState(loading = false, weekStart = weekStart, meals = meals, autoAdd = true)
-        }
+            ),
+            WeekShoppingMeal(
+                meal = friday,
+                alreadyOnList = false,
+                selected = true,
+                ingredients = listOf(
+                    WeekShoppingIngredient(201, "laxfilé", 600.0, "g", categoryId = 4),
+                    WeekShoppingIngredient(202, "grädde", 2.0, "dl", categoryId = 3),
+                    WeekShoppingIngredient(203, "dill", 1.0, "knippe", categoryId = 2),
+                    WeekShoppingIngredient(204, "salt", 0.0, null, onHand = true),
+                ),
+            ),
+            WeekShoppingMeal(meal = sunday, alreadyOnList = true, selected = false),
+        )
+
+    val weekShopping: WeekShoppingUiState
+        get() = weekShoppingState(weekShoppingMeals)
+
+    /** The screen's state for [meals] as the ViewModel builds it (everything included, defaults ticked). */
+    fun weekShoppingState(meals: List<WeekShoppingMeal>, readOnly: Boolean = false, autoAdd: Boolean = true): WeekShoppingUiState {
+        val included = meals.filter { WeekShoppingMerge.selectable(it) }.mapTo(HashSet()) { it.meal.id }
+        val lines = WeekShoppingMerge.lines(meals, included).sortedBy { it.foodName }
+            .map { WeekShoppingLineState(it, chosen = !it.onHand) }
+        val aisles = lines.filterNot { it.line.onHand }
+            .groupBy { it.line.categoryId }
+            .map { (id, list) -> WeekShoppingAisle(id?.toString() ?: "other", id?.let(categories::get), list) }
+            .sortedWith(compareBy({ it.name == null }, { it.name }))
+        return WeekShoppingUiState(
+            loading = false,
+            from = weekStart,
+            to = weekStart.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY),
+            meals = meals.map { WeekShoppingMealState(it, included = it.meal.id in included) },
+            aisles = aisles,
+            atHome = lines.filter { it.line.onHand },
+            autoAdd = autoAdd,
+            readOnly = readOnly,
+        )
+    }
 }
 
 /** Theme, app chrome and font scale around a screen under test. */

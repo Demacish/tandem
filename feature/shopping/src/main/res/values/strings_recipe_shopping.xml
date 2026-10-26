@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 2 (koppling lane): "Add to shopping list" from a recipe or cook mode (#12, Stitch l_gg_p_listan_ark). -->
+<resources>
+    <string name="recipe_shopping_button">Add to shopping list</string>
+    <plurals name="recipe_shopping_on_list">
+        <item quantity="one">%1$d item from this recipe is on the shopping list</item>
+        <item quantity="other">%1$d items from this recipe are on the shopping list</item>
+    </plurals>
+    <string name="recipe_shopping_remove">Remove from the list</string>
+    <string name="recipe_shopping_remove_description">Remove %1$s from the shopping list</string>
+    <string name="recipe_shopping_title">Add to shopping list</string>
+    <string name="recipe_shopping_servings_label">Servings</string>
+    <plurals name="recipe_shopping_servings">
+        <item quantity="one">%1$s serving</item>
+        <item quantity="other">%1$s servings</item>
+    </plurals>
+    <string name="recipe_shopping_servings_with_text">%1$s %2$s</string>
+    <string name="recipe_shopping_select_all">Select all</string>
+    <string name="recipe_shopping_only_missing">Only what is missing</string>
+    <string name="recipe_shopping_to_buy">To buy</string>
+    <plurals name="recipe_shopping_chosen">
+        <item quantity="one">%1$d chosen</item>
+        <item quantity="other">%1$d chosen</item>
+    </plurals>
+    <string name="recipe_shopping_at_home">At home already?</string>
+    <string name="recipe_shopping_at_home_hint">Marked “at home” in Tandoor, so they are not ticked. Tick what you need anyway.</string>
+    <string name="recipe_shopping_on_hand">At home</string>
+    <string name="recipe_shopping_list_label">Goes on</string>
+    <string name="recipe_shopping_list_none">The shopping list</string>
+    <plurals name="recipe_shopping_add">
+        <item quantity="one">Add %1$d item to the shopping list</item>
+        <item quantity="other">Add %1$d items to the shopping list</item>
+    </plurals>
+    <string name="recipe_shopping_add_none">Choose what to add</string>
+    <string name="recipe_shopping_cancel">Cancel and go back</string>
+    <plurals name="recipe_shopping_added">
+        <item quantity="one">%1$d item from %2$s is on the shopping list</item>
+        <item quantity="other">%1$d items from %2$s are on the shopping list</item>
+    </plurals>
+    <plurals name="recipe_shopping_removed">
+        <item quantity="one">%1$d item from %2$s was removed from the list</item>
+        <item quantity="other">%1$d items from %2$s were removed from the list</item>
+    </plurals>
+    <string name="recipe_shopping_show_list">Show list</string>
+    <string name="recipe_shopping_row_at_home">%1$s, at home</string>
+
+    <!-- The list's edit sheet: removing the whole recipe a row came from -->
+    <plurals name="shopping_edit_remove_recipe">
+        <item quantity="one">Remove %2$s from the list (%1$d item)</item>
+        <item quantity="other">Remove %2$s from the list (%1$d items)</item>
+    </plurals>
+    <string name="shopping_msg_recipe_removed">%1$s was removed from the list</string>
+</resources>

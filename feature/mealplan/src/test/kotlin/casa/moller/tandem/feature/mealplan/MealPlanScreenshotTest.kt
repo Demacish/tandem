@@ -120,6 +120,38 @@ class MealPlanScreenshotTest {
     @Test
     fun weekShoppingDark() = capture("phone_week_shopping_dark", MealPlanShot.WEEK_SHOPPING, darkTheme = true)
 
+    // Phase 2 (koppling lane): "Handla för veckan" merged per food, on every width and in every state.
+
+    @Test
+    fun weekShoppingFontScale2() = capture("phone_week_shopping_font2_light", MealPlanShot.WEEK_SHOPPING, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun weekShoppingLandscape() = capture("phone_landscape_week_shopping_light", MealPlanShot.WEEK_SHOPPING)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun weekShoppingTabletPortrait() = capture("tablet_portrait_week_shopping_light", MealPlanShot.WEEK_SHOPPING)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun weekShoppingTablet() = capture("tablet_week_shopping_light_sv", MealPlanShot.WEEK_SHOPPING)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun weekShoppingTabletDark() = capture("tablet_week_shopping_dark", MealPlanShot.WEEK_SHOPPING, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun weekShoppingGuest() = capture("phone_week_shopping_guest_light_sv", MealPlanShot.WEEK_SHOPPING_GUEST)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun weekShoppingAllOnList() = capture("phone_week_shopping_all_on_list_light_sv", MealPlanShot.WEEK_SHOPPING_ALL_ON_LIST)
+
+    @Test
+    fun weekShoppingEmpty() = capture("phone_week_shopping_empty_light", MealPlanShot.WEEK_SHOPPING_EMPTY)
+
     private fun capture(
         name: String,
         shot: MealPlanShot,

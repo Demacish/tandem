@@ -43,6 +43,8 @@ import casa.moller.tandem.feature.cook.ui.DarkSystemBars
  * @param pageRequest a page this open cook mode should show now (0-based step), e.g. a tapped
  *   notification of one of its timers while it is open on another step; null for none. Cook mode
  *   keeps its servings and "Klart!" draft and turns to that page, then calls [onPageRequestHandled].
+ * @param shoppingAction Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page,
+ *   given cook mode's servings and its snackbar (feature:shopping's route, passed in by the shell).
  */
 @Composable
 fun CookRoute(
@@ -51,6 +53,7 @@ fun CookRoute(
     modifier: Modifier = Modifier,
     pageRequest: Int? = null,
     onPageRequestHandled: () -> Unit = {},
+    shoppingAction: (@Composable (servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<CookViewModel, CookViewModel.Factory>(
         key = "cook-${key.recipeId}",
@@ -106,6 +109,7 @@ fun CookRoute(
             onOpenNotificationSettings = { context.openSettings(notificationSettingsIntent(context)) },
             onOpenAlarmChannelSettings = { context.openSettings(alarmChannelSettingsIntent(context)) },
             onOpenExactAlarmSettings = { context.openSettings(exactAlarmSettingsIntent(context)) },
+            shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, snackbarHostState) } },
         )
     }
 }
