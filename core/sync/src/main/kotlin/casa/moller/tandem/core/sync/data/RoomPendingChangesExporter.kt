@@ -27,7 +27,9 @@ import kotlinx.serialization.json.put
  * "Export pending changes" (feature #37) over the outbox of every account mirrored in the real
  * database, also while the session needs recovery (the accounts may be unreadable then, but the
  * outbox in Room is not). Only the queued operations: never a token or a server credential
- * (plan 5.5), and no server address either.
+ * (plan 5.5), and no server address either. Every Phase 2 type is a plain outbox row too (list
+ * entries and recipes, meals and meal types, books and their entries, "Vill laga", foods, aisle
+ * order), with its temporary id, references and dependency (Phase 2 koppling lane).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RoomPendingChangesExporter @Inject constructor(private val databases: TandemDatabaseFactory) : PendingChangesExporter {
@@ -65,6 +67,11 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
                             put("operation", row.op)
                             put("type", row.entity)
                             row.serverId?.let { put("id", it) }
+                            // Phase 2 (koppling lane): an object created offline has only its temporary
+                            // (negative) id; rows that point at it carry the same id in their payload.
+                            row.localId?.takeIf { row.serverId == null }?.let { put("localId", it) }
+                            row.refs?.let { put("refs", parse(it)) }
+                            row.dependsOn?.let { put("dependsOn", it) }
                             put("payload", parse(row.payload))
                             put("createdAt", TandoorDates.format(Instant.ofEpochMilli(row.createdAtEpochMillis)))
                             put("attempts", row.attempts)

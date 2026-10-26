@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.sync.engine
 
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.sync.guard.SyncGuard
 
 /**
  * A short, stable, non-sensitive description of an error for `outbox.last_error` and the
@@ -20,5 +21,13 @@ internal fun TandemError.code(): String = when (this) {
     is TandemError.Throttled -> "http-429"
     is TandemError.ServerError -> "http-$code"
     is TandemError.Decode -> "decode"
-    is TandemError.Unknown -> "unknown"
+    // Phase 2 (koppling lane): the circuit breaker and an import hold rows back; "blockerad"-diagnostik names them.
+    is TandemError.Unknown -> when (this) {
+        SyncGuard.BREAKER_ERROR -> CIRCUIT_BREAKER_CODE
+        SyncGuard.IMPORT_ERROR -> "import-running"
+        else -> "unknown"
+    }
 }
+
+/** `outbox.last_error` of a row the circuit breaker held back. */
+internal const val CIRCUIT_BREAKER_CODE: String = "circuit-breaker"

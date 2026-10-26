@@ -146,6 +146,54 @@
     <string name="settings_diagnostics_export_failed">Loggen kunde inte skapas.</string>
     <string name="settings_diagnostics_share_title">Dela Tandems logg</string>
 
+    <!-- Phase 2 (koppling lane): "blockerad"-diagnostik, why the sync is held back and what waits -->
+    <string name="settings_diagnostics_sync">Synk och väntande ändringar</string>
+    <string name="settings_diagnostics_sync_ok">Inget hålls tillbaka</string>
+    <string name="settings_diagnostics_sync_held">Blockerad</string>
+    <string name="settings_diagnostics_pause_blocked">Servern nekar Tandem till %1$s. Ändringarna väntar i telefonen.</string>
+    <string name="settings_diagnostics_pause_blocked_now">Servern nekar Tandem en stund. Ändringarna väntar i telefonen.</string>
+    <string name="settings_diagnostics_pause_breaker">Många fel på kort tid, så synken väntar till %1$s. Ändringarna väntar i telefonen.</string>
+    <string name="settings_diagnostics_pause_unauthorized">Inloggningen godtas inte längre. Logga in igen för att skicka ändringarna.</string>
+    <string name="settings_diagnostics_pause_offline">Inget nätverk. Ändringarna skickas när telefonen är uppkopplad igen.</string>
+    <string name="settings_diagnostics_pause_safe_mode">Säkert läge: Tandem läser från den här Tandoor-versionen men behåller ändringarna tills den är testad.</string>
+    <string name="settings_diagnostics_pause_import">En import pågår; synken väntar tills den är klar.</string>
+    <string name="settings_diagnostics_client_errors">Svaren ”finns inte” och ”nekad” de senaste 100 sekunderna: %1$d av %2$d innan synken tar en paus</string>
+    <string name="settings_diagnostics_outbox_empty">Inga ändringar väntar.</string>
+    <plurals name="settings_diagnostics_waiting">
+        <item quantity="one">%1$d väntar</item>
+        <item quantity="other">%1$d väntar</item>
+    </plurals>
+    <plurals name="settings_diagnostics_failed">
+        <item quantity="one">%1$d nekad</item>
+        <item quantity="other">%1$d nekade</item>
+    </plurals>
+    <string name="settings_diagnostics_last_error">Senaste fel: %1$s</string>
+    <string name="settings_diagnostics_refused_hint">Nekade ändringar skickas inte igen av sig själva. Du kan spara dem med ”Exportera ändringar” under Konton och servrar.</string>
+    <string name="settings_diagnostics_kind_shopping_entry">Inköpslistan</string>
+    <string name="settings_diagnostics_kind_shopping_recipe">Recept på listan</string>
+    <string name="settings_diagnostics_kind_meal_plan">Matsedeln</string>
+    <string name="settings_diagnostics_kind_meal_type">Måltidstyper</string>
+    <string name="settings_diagnostics_kind_recipe_book">Receptböcker</string>
+    <string name="settings_diagnostics_kind_recipe_book_entry">Recept i böcker</string>
+    <string name="settings_diagnostics_kind_want_to_cook">Vill laga</string>
+    <string name="settings_diagnostics_kind_food">Livsmedel (gång, har hemma)</string>
+    <string name="settings_diagnostics_kind_aisle_order">Gångordning</string>
+    <string name="settings_diagnostics_kind_preferences">Tandoor-inställningar</string>
+    <string name="settings_diagnostics_kind_cook_log">Kokloggen</string>
+    <string name="settings_diagnostics_kind_view_log">Senast visade</string>
+    <string name="settings_diagnostics_kind_other">Övrigt</string>
+    <string name="settings_diagnostics_problem_offline">inget nätverk</string>
+    <string name="settings_diagnostics_problem_timeout">inget svar i tid</string>
+    <string name="settings_diagnostics_problem_not_found">finns inte längre på servern (404)</string>
+    <string name="settings_diagnostics_problem_bad_request">nekad av Tandoor (400)</string>
+    <string name="settings_diagnostics_problem_unauthorized">inloggningen godtogs inte</string>
+    <string name="settings_diagnostics_problem_blocked">blockerad av servern</string>
+    <string name="settings_diagnostics_problem_throttled">för många anrop (429)</string>
+    <string name="settings_diagnostics_problem_server_error">serverfel</string>
+    <string name="settings_diagnostics_problem_circuit_breaker">hölls tillbaka av synkens paus</string>
+    <string name="settings_diagnostics_problem_conflict">ändrad på två ställen</string>
+    <string name="settings_diagnostics_problem_other">annat fel</string>
+
     <!-- Timerraden på alla flikar -->
     <string name="timer_hud_running">· %1$s</string>
     <string name="timer_hud_paused">· pausad vid %1$s</string>

@@ -116,6 +116,15 @@ abstract class SettingsScreenshotTest(private val device: String) {
     @Test
     fun diagnosticsDark() = page("diagnostics_dark", darkTheme = true) { FixedSettingsPages().Diagnostics {} }
 
+    /** Phase 2 (koppling lane): "blockerad"-diagnostik with the circuit breaker open and changes per kind. */
+    @Test
+    fun diagnosticsBlocked() = page("diagnostics_blocked_light") { FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {} }
+
+    @Test
+    fun diagnosticsBlockedDark() = page("diagnostics_blocked_dark", darkTheme = true) {
+        FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {}
+    }
+
     @Test
     fun diagnosticsNotMeasured() = page("diagnostics_not_measured_light") {
         FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_EMPTY.copy(exporting = true)).Diagnostics {}
@@ -179,6 +188,17 @@ class SettingsPhoneScreenshotTest : SettingsScreenshotTest("phone") {
     @Test
     @Config(qualifiers = PHONE_SV)
     fun diagnosticsSwedish() = page("diagnostics_light_sv") { FixedSettingsPages().Diagnostics {} }
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun diagnosticsBlockedSwedish() = page("diagnostics_blocked_light_sv") {
+        FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {}
+    }
+
+    @Test
+    fun diagnosticsBlockedFontScale2() = page("diagnostics_blocked_font_scale_2_light", fontScale = 2f) {
+        FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {}
+    }
 
     @Test
     fun appearanceFontScale2() = page("appearance_font_scale_2_light", fontScale = 2f) { FixedSettingsPages().Appearance {} }

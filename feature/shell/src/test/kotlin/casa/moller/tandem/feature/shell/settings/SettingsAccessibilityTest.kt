@@ -111,6 +111,15 @@ class SettingsAccessibilityTest {
         FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_EMPTY).Diagnostics {}
     }
 
+    /** Phase 2 (koppling lane): "blockerad"-diagnostik. */
+    @Test
+    fun diagnosticsBlocked() = check { FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {} }
+
+    @Test
+    fun diagnosticsBlockedDarkFontScale2() = check(darkTheme = true, fontScale = 2f) {
+        FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {}
+    }
+
     @Test
     fun diagnosticsExporting() = check { FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS.copy(exporting = true)).Diagnostics {} }
 

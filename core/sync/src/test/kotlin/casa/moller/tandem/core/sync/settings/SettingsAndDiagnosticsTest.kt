@@ -3,14 +3,23 @@ package casa.moller.tandem.core.sync.settings
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.common.AppBuildInfo
 import casa.moller.tandem.core.common.crash.CrashLogStore
+import casa.moller.tandem.core.database.entity.OutboxEntities
+import casa.moller.tandem.core.database.entity.OutboxEntity
+import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
+import casa.moller.tandem.core.model.diagnostics.OutboxKind
+import casa.moller.tandem.core.model.diagnostics.OutboxProblem
+import casa.moller.tandem.core.model.diagnostics.OutboxSummary
+import casa.moller.tandem.core.model.diagnostics.SyncHealth
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncPhase
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.data.DefaultDiagnosticsRepository
 import casa.moller.tandem.core.sync.data.DefaultOfflineStorageRepository
+import casa.moller.tandem.core.sync.data.RoomPendingChangesExporter
 import casa.moller.tandem.core.sync.testing.FakeTandoorServer
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
@@ -317,6 +326,84 @@ class SettingsAndDiagnosticsTest {
         assertEquals(41.seconds, snapshot.lastFullSync?.duration)
     }
 
+    /**
+     * Phase 2 (koppling lane): "blockerad"-diagnostik: the circuit breaker opened by five 404/400
+     * answers, until when, and the outbox per kind of change with its last error, in the snapshot
+     * Mer → Diagnostik shows and in the exported log.
+     */
+    @Test
+    fun theSnapshotShowsWhatIsHeldBackPerKindOfChange() = runBlocking {
+        val outbox = graph.real.outboxDao()
+        fun row(op: String, entity: String, localId: Long? = null, serverId: Long? = null) =
+            OutboxEntity(accountId = ACCOUNT_ID, op = op, entity = entity, localId = localId, serverId = serverId, createdAtEpochMillis = 1)
+        val entry = outbox.insert(row(OutboxOps.CREATE, OutboxEntities.SHOPPING_ENTRY, localId = -3))
+        outbox.markRetry(entry, "circuit-breaker")
+        val meal = outbox.insert(row(OutboxOps.PATCH, OutboxEntities.MEAL_PLAN, serverId = 7))
+        outbox.setFailed(listOf(meal), "http-400")
+        outbox.insert(row(OutboxOps.RECIPE_KEYWORDS, OutboxEntities.RECIPE, serverId = 2))
+        repeat(SyncHealth.CLIENT_ERROR_LIMIT) { graph.guard.record(ACCOUNT_ID, null, TandemError.NotFound) }
+
+        val repository = diagnosticsRepository(CrashLogStore({ tmp.newFolder("none") }))
+        val health = repository.observeDiagnostics().first { it.syncHealth.outbox.size == 3 && it.syncHealth.pause != null }.syncHealth
+
+        assertEquals(SyncPause.CIRCUIT_BREAKER, health.pause)
+        assertEquals(graph.clock.millis + SyncSchedule.BREAKER_PAUSE.inWholeMilliseconds, health.pausedUntil?.toEpochMilliseconds())
+        assertEquals(
+            listOf(
+                OutboxSummary(OutboxKind.SHOPPING_ENTRY, waiting = 1, failed = 0, lastProblem = OutboxProblem.CIRCUIT_BREAKER),
+                OutboxSummary(OutboxKind.MEAL_PLAN, waiting = 0, failed = 1, lastProblem = OutboxProblem.BAD_REQUEST),
+                OutboxSummary(OutboxKind.WANT_TO_COOK, waiting = 1, failed = 0, lastProblem = null),
+            ),
+            health.outbox,
+        )
+        assertEquals(2, health.waiting)
+        assertEquals(1, health.failed)
+
+        val text = (repository.exportLog() as Outcome.Success).value.text
+        listOf(
+            "Paused: CIRCUIT_BREAKER",
+            "Kind SHOPPING_ENTRY: waiting 1, failed 0, last error CIRCUIT_BREAKER",
+            "Kind MEAL_PLAN: waiting 0",
+        )
+            .forEach { assertTrue("export has \"$it\"", it in text) }
+    }
+
+    /** Phase 2 (koppling lane): "Exportera väntande ändringar" covers the new types with their temporary ids. */
+    @Test
+    fun thePendingChangesExportHasThePhase2Types() = runBlocking {
+        val outbox = graph.real.outboxDao()
+        val listRecipe = outbox.insert(
+            OutboxEntity(
+                accountId = ACCOUNT_ID,
+                op = OutboxOps.CREATE,
+                entity = OutboxEntities.SHOPPING_LIST_RECIPE,
+                localId = -4,
+                payload = """{"recipe":2,"servings":4.0,"mealplan":-5}""",
+                refs = """{"mealplan":"meal_plan"}""",
+                createdAtEpochMillis = 1,
+            ),
+        )
+        outbox.insert(
+            OutboxEntity(
+                accountId = ACCOUNT_ID,
+                op = OutboxOps.CREATE,
+                entity = OutboxEntities.SHOPPING_ENTRY,
+                localId = -6,
+                payload = """{"food":{"name":"grädde"},"amount":2.0,"list_recipe":-4}""",
+                refs = """{"list_recipe":"shopping_list_recipe"}""",
+                dependsOn = listRecipe,
+                createdAtEpochMillis = 2,
+            ),
+        )
+        val json = (RoomPendingChangesExporter(graph.databases).exportAccount(ACCOUNT_ID) as Outcome.Success).value
+        val changes = Json.parseToJsonElement(json).jsonObject.getValue("changes").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("shopping_list_recipe", "shopping_entry"), changes.map { it.getValue("type").jsonPrimitive.content })
+        assertEquals(-6L, changes[1].getValue("localId").jsonPrimitive.long)
+        assertEquals(listRecipe, changes[1].getValue("dependsOn").jsonPrimitive.long)
+        assertEquals("shopping_list_recipe", changes[1].getValue("refs").jsonObject.getValue("list_recipe").jsonPrimitive.content)
+        assertEquals(-4L, changes[1].getValue("payload").jsonObject.getValue("list_recipe").jsonPrimitive.long)
+    }
+
     @Test
     fun errorsAreDescribedByKindWithoutServerText() {
         val badRequest = TandemError.BadRequest(mapOf("recipe" to listOf("Invalid pk \"12\"")))
@@ -339,6 +426,8 @@ class SettingsAndDiagnosticsTest {
         crashLogs = crashes,
         clock = TestClock(),
         dropped = graph.droppedChanges,
+        sources = graph.sources,
+        guard = graph.guard,
     )
 
     private companion object {

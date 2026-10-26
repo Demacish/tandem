@@ -149,6 +149,54 @@
     <string name="settings_diagnostics_export_failed">The log could not be created.</string>
     <string name="settings_diagnostics_share_title">Share the Tandem log</string>
 
+    <!-- Phase 2 (koppling lane): "blockerad"-diagnostik, why the sync is held back and what waits -->
+    <string name="settings_diagnostics_sync">Sync and waiting changes</string>
+    <string name="settings_diagnostics_sync_ok">Nothing is held back</string>
+    <string name="settings_diagnostics_sync_held">Held back</string>
+    <string name="settings_diagnostics_pause_blocked">The server refuses Tandem until %1$s. Changes wait on the phone.</string>
+    <string name="settings_diagnostics_pause_blocked_now">The server refuses Tandem for a while. Changes wait on the phone.</string>
+    <string name="settings_diagnostics_pause_breaker">Many errors in a short time, so the sync waits until %1$s. Changes wait on the phone.</string>
+    <string name="settings_diagnostics_pause_unauthorized">The login is no longer accepted. Log in again to send the changes.</string>
+    <string name="settings_diagnostics_pause_offline">No network. Changes are sent when the phone is online again.</string>
+    <string name="settings_diagnostics_pause_safe_mode">Safe mode: Tandem reads from this Tandoor version but keeps the changes until it is tested.</string>
+    <string name="settings_diagnostics_pause_import">An import is running; the sync waits until it is done.</string>
+    <string name="settings_diagnostics_client_errors">“Not found” and “refused” answers in the last 100 seconds: %1$d of %2$d before the sync takes a break</string>
+    <string name="settings_diagnostics_outbox_empty">No changes are waiting.</string>
+    <plurals name="settings_diagnostics_waiting">
+        <item quantity="one">%1$d waiting</item>
+        <item quantity="other">%1$d waiting</item>
+    </plurals>
+    <plurals name="settings_diagnostics_failed">
+        <item quantity="one">%1$d refused</item>
+        <item quantity="other">%1$d refused</item>
+    </plurals>
+    <string name="settings_diagnostics_last_error">Last error: %1$s</string>
+    <string name="settings_diagnostics_refused_hint">Refused changes are not sent again by themselves. You can save them with “Export changes” under Accounts and servers.</string>
+    <string name="settings_diagnostics_kind_shopping_entry">Shopping list</string>
+    <string name="settings_diagnostics_kind_shopping_recipe">Recipes on the list</string>
+    <string name="settings_diagnostics_kind_meal_plan">Meal plan</string>
+    <string name="settings_diagnostics_kind_meal_type">Meal types</string>
+    <string name="settings_diagnostics_kind_recipe_book">Recipe books</string>
+    <string name="settings_diagnostics_kind_recipe_book_entry">Recipes in books</string>
+    <string name="settings_diagnostics_kind_want_to_cook">Want to cook</string>
+    <string name="settings_diagnostics_kind_food">Foods (aisle, at home)</string>
+    <string name="settings_diagnostics_kind_aisle_order">Aisle order</string>
+    <string name="settings_diagnostics_kind_preferences">Tandoor settings</string>
+    <string name="settings_diagnostics_kind_cook_log">Cook log</string>
+    <string name="settings_diagnostics_kind_view_log">Recently viewed</string>
+    <string name="settings_diagnostics_kind_other">Other</string>
+    <string name="settings_diagnostics_problem_offline">no network</string>
+    <string name="settings_diagnostics_problem_timeout">no answer in time</string>
+    <string name="settings_diagnostics_problem_not_found">gone on the server (404)</string>
+    <string name="settings_diagnostics_problem_bad_request">refused by Tandoor (400)</string>
+    <string name="settings_diagnostics_problem_unauthorized">login not accepted</string>
+    <string name="settings_diagnostics_problem_blocked">blocked by the server</string>
+    <string name="settings_diagnostics_problem_throttled">too many requests (429)</string>
+    <string name="settings_diagnostics_problem_server_error">server error</string>
+    <string name="settings_diagnostics_problem_circuit_breaker">held back by the short break</string>
+    <string name="settings_diagnostics_problem_conflict">changed in two places</string>
+    <string name="settings_diagnostics_problem_other">other error</string>
+
     <!-- The timer bar on every tab -->
     <string name="timer_hud_running">· %1$s</string>
     <string name="timer_hud_paused">· paused at %1$s</string>

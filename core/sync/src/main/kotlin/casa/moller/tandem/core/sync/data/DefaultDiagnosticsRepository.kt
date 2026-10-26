@@ -16,12 +16,16 @@ import casa.moller.tandem.core.model.diagnostics.ColdStartTiming
 import casa.moller.tandem.core.model.diagnostics.DiagnosticsSnapshot
 import casa.moller.tandem.core.model.diagnostics.FullSyncTiming
 import casa.moller.tandem.core.model.diagnostics.LogExport
+import casa.moller.tandem.core.model.diagnostics.SyncHealth
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
+import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.shopping.DroppedChanges
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,10 +34,14 @@ import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -50,6 +58,7 @@ import kotlinx.datetime.toLocalDateTime
  * Every remaining free-text piece (error details, an outbox row's last error) goes through
  * [CrashLogFormatter.redact]. No server address, user name, space name, token or e-mail address.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 internal class DefaultDiagnosticsRepository @Inject constructor(
     private val buildInfo: AppBuildInfo,
@@ -63,11 +72,29 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
     private val clock: Clock,
     // Phase 2 (inköp-data lane): shopping changes dropped instead of sent, with the reason.
     private val dropped: DroppedChanges,
+    // Phase 2 (koppling lane): "blockerad"-diagnostik, the active account's outbox and the guard.
+    private val sources: ActiveSources,
+    private val guard: SyncGuard,
 ) : DiagnosticsRepository {
 
-    override fun observeDiagnostics(): Flow<DiagnosticsSnapshot> = combine(store.timings, serverStatus.observeStatus()) { timings, server ->
-        snapshotOf(server, timings.lastColdStart, timings.lastFullSync)
-    }.distinctUntilChanged()
+    override fun observeDiagnostics(): Flow<DiagnosticsSnapshot> =
+        combine(store.timings, serverStatus.observeStatus(), observeHealth()) { timings, server, health ->
+            snapshotOf(server, timings.lastColdStart, timings.lastFullSync, health)
+        }.distinctUntilChanged()
+
+    /** Phase 2 (koppling lane): why the sync is held back and what waits, per kind (active real account only). */
+    private fun observeHealth(): Flow<SyncHealth> = sources.source
+        .flatMapLatest { source ->
+            if (source is ActiveSource.Remote) {
+                val rows = databases.get(source.kind).outboxDao().observeAll(source.accountId)
+                combine(rows, syncRepository.status, guard.state) { outbox, status, guardState ->
+                    OutboxHealth.of(outbox, status.pause, guardState)
+                }
+            } else {
+                flowOf(SyncHealth())
+            }
+        }
+        .catch { emit(SyncHealth()) }
 
     override suspend fun recordColdStart(duration: Duration) {
         store.recordColdStart(ColdStartTiming(duration, clock.now()))
@@ -88,7 +115,12 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         Outcome.Failure(TandemError.Unknown(EXPORT_FAILED))
     }
 
-    private fun snapshotOf(server: ServerStatus, coldStart: ColdStartTiming?, fullSync: FullSyncTiming?) = DiagnosticsSnapshot(
+    private fun snapshotOf(
+        server: ServerStatus,
+        coldStart: ColdStartTiming?,
+        fullSync: FullSyncTiming?,
+        health: SyncHealth,
+    ) = DiagnosticsSnapshot(
         appVersion = buildInfo.versionName,
         appVersionCode = buildInfo.versionCode,
         distribution = buildInfo.distribution,
@@ -96,6 +128,7 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         serverVersion = server.version.takeUnless { server.isDemo },
         lastColdStart = coldStart,
         lastFullSync = fullSync,
+        syncHealth = health,
     )
 
     private suspend fun buildLog(now: Instant): String {
@@ -184,6 +217,11 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         line("Last error", sync.lastError?.let(::describe) ?: "none")
         line("Paused", sync.pause?.name ?: "no")
         line("Pending changes", sync.pendingChanges.toString())
+        // Phase 2 (koppling lane): "blockerad"-diagnostik.
+        val guardState = guard.state.value
+        val health = OutboxHealth.of(emptyList(), sync.pause, guardState)
+        line("Paused until", health.pausedUntil?.toString() ?: "-")
+        line("404/400 in the breaker window", "${health.recentClientErrors} (opens at ${SyncHealth.CLIENT_ERROR_LIMIT})")
     }
 
     /** Per operation, entity and reason (deleted elsewhere before sending, or a 404); no ids, no names. */
@@ -209,6 +247,11 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         }
         rows.groupingBy { "${it.op} ${it.entity} ${it.state.name}" }.eachCount().toSortedMap().forEach { (kind, count) ->
             line(kind, count.toString())
+        }
+        // Phase 2 (koppling lane): per kind of change, with the last error reason.
+        OutboxHealth.summaries(rows).forEach { summary ->
+            val problem = summary.lastProblem?.name ?: "-"
+            line("Kind ${summary.kind.name}", "waiting ${summary.waiting}, failed ${summary.failed}, last error $problem")
         }
         rows.filter { it.lastError != null || it.attempts > 0 }.takeLast(MAX_OUTBOX_ROWS).forEach { row ->
             val error = row.lastError?.let { CrashLogFormatter.redact(it) } ?: "-"

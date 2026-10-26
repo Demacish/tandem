@@ -5,6 +5,10 @@ import casa.moller.tandem.core.data.sync.OfflineStorageRepository
 import casa.moller.tandem.core.model.diagnostics.ColdStartTiming
 import casa.moller.tandem.core.model.diagnostics.DiagnosticsSnapshot
 import casa.moller.tandem.core.model.diagnostics.FullSyncTiming
+import casa.moller.tandem.core.model.diagnostics.OutboxKind
+import casa.moller.tandem.core.model.diagnostics.OutboxProblem
+import casa.moller.tandem.core.model.diagnostics.OutboxSummary
+import casa.moller.tandem.core.model.diagnostics.SyncHealth
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.settings.SyncInterval
@@ -85,6 +89,26 @@ internal val SAMPLE_DIAGNOSTICS = DiagnosticsUiState(
         serverVersion = "2.6.13",
         lastColdStart = ColdStartTiming(843.milliseconds, SAMPLE_INSTANT),
         lastFullSync = FullSyncTiming(41.seconds, 312, SAMPLE_INSTANT),
+    ),
+)
+
+/**
+ * Phase 2 (koppling lane): "blockerad"-diagnostik: the circuit breaker paused the sync after five
+ * 404/400 answers; changes wait per kind, one meal change was refused (400).
+ */
+internal val SAMPLE_DIAGNOSTICS_BLOCKED = SAMPLE_DIAGNOSTICS.copy(
+    snapshot = SAMPLE_DIAGNOSTICS.snapshot!!.copy(
+        syncHealth = SyncHealth(
+            pause = SyncPause.CIRCUIT_BREAKER,
+            pausedUntil = SAMPLE_INSTANT,
+            recentClientErrors = 5,
+            outbox = listOf(
+                OutboxSummary(OutboxKind.SHOPPING_ENTRY, waiting = 4, failed = 0, lastProblem = OutboxProblem.CIRCUIT_BREAKER),
+                OutboxSummary(OutboxKind.SHOPPING_RECIPE, waiting = 1, failed = 0),
+                OutboxSummary(OutboxKind.MEAL_PLAN, waiting = 1, failed = 1, lastProblem = OutboxProblem.BAD_REQUEST),
+                OutboxSummary(OutboxKind.WANT_TO_COOK, waiting = 1, failed = 0, lastProblem = OutboxProblem.NOT_FOUND),
+            ),
+        ),
     ),
 )
 
