@@ -438,7 +438,17 @@ class Phase2SmokeTest {
         app.waitFor(By.text("Add to the list"))
         app.type(0, text)
         val button = if (count == 1) "Add 1 item" else "Add $count items"
-        app.tap(button)
+        // The keyboard can cover the button below the preview and the suggestions: the sheet is
+        // scrolled in its upper part (a swipe on the keyboard would type instead).
+        for (attempt in 1..MAX_NUDGES) {
+            if (app.clickableWithText(button).any { app.device.hasObject(it) }) break
+            val x = app.device.displayWidth / 2
+            val from = (app.device.displayHeight * SHEET_FROM).toInt()
+            app.device.swipe(x, from, x, (app.device.displayHeight * SHEET_TO).toInt(), SWIPE_STEPS)
+            app.device.waitForIdle()
+        }
+        app.waitForClickable(button)
+        app.clickableWithText(button).firstNotNullOf { app.device.findObject(it) }.click()
         // Added: the field is emptied and the button says "Add" again; the sheet stays open.
         app.waitUntilGone(By.text(button))
         repeat(CLOSE_ATTEMPTS) {
@@ -534,6 +544,8 @@ class Phase2SmokeTest {
         const val MAX_NUDGES = 4
         const val SWIPE_STEPS = 20
         const val CLOSE_ATTEMPTS = 3
+        const val SHEET_FROM = 0.45
+        const val SHEET_TO = 0.15
         const val TAP_ATTEMPTS = 3
         const val TAP_WAIT_MS = 4_000L
         const val SETTLE_MS = 3_000L
