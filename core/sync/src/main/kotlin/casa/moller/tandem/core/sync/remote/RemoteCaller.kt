@@ -31,12 +31,6 @@ internal class RemoteCaller @Inject constructor(private val guard: SyncGuard, pr
      *   delete of a row another device may have deleted, plan 3.5) and is not counted by the
      *   circuit breaker; the caller treats it as done. Every other answer is recorded as usual.
      */
-    /**
-     * Phase 2 (konto lane): [remote] is still the active source. Work for an account the user
-     * switched away from (an outbox drain) stops at the next request instead of going on.
-     */
-    fun isCurrent(remote: ActiveSource.Remote): Boolean = sources.source.value.identity == remote.identity
-
     suspend fun <T> call(
         remote: ActiveSource.Remote,
         background: Boolean,
@@ -58,4 +52,10 @@ internal class RemoteCaller @Inject constructor(private val guard: SyncGuard, pr
         guard.record(remote.accountId, sources.tokenFingerprint(remote.accountId), error)
         return result
     }
+
+    /**
+     * Phase 2 (konto lane): [remote] is still the active source. Work for an account the user
+     * switched away from (an outbox drain) stops at the next request instead of going on.
+     */
+    fun isCurrent(remote: ActiveSource.Remote): Boolean = sources.source.value.identity == remote.identity
 }
