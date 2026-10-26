@@ -118,7 +118,9 @@ abstract class SettingsScreenshotTest(private val device: String) {
 
     /** Phase 2 (koppling lane): "blockerad"-diagnostik with the circuit breaker open and changes per kind. */
     @Test
-    fun diagnosticsBlocked() = page("diagnostics_blocked_light") { FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {} }
+    fun diagnosticsBlocked() = page("diagnostics_blocked_light") {
+        FixedSettingsPages(diagnostics = SAMPLE_DIAGNOSTICS_BLOCKED).Diagnostics {}
+    }
 
     @Test
     fun diagnosticsBlockedDark() = page("diagnostics_blocked_dark", darkTheme = true) {
