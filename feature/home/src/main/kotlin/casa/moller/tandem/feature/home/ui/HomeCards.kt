@@ -332,8 +332,8 @@ internal fun HomeRecipeCard(recipe: RecipeOverview, width: Dp, onClick: () -> Un
 
 /**
  * "Nothing planned today" (plan 6.2) with a way to the recipes. [onPlanWeek] adds "Plan the
- * week →" once the Week tab can plan (Phase 2); until then the body points to Tandoor and
- * "Browse recipes" is the main action, so the card never leads to a placeholder.
+ * week →" as the main action (the Week tab plans since Phase 2); without it "Browse recipes" is
+ * the main action.
  */
 @Composable
 internal fun NothingPlannedCard(onBrowseRecipes: () -> Unit, modifier: Modifier = Modifier, onPlanWeek: (() -> Unit)? = null) {

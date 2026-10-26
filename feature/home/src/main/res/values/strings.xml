@@ -24,7 +24,7 @@
 
     <!-- Empty state (plan 6.2: "Inget planerat idag. Planera veckan →"). -->
     <string name="home_nothing_planned_title">Nothing planned today</string>
-    <string name="home_nothing_planned_body">Plan the week in Tandoor and tonight\'s dinner shows up here.</string>
+    <string name="home_nothing_planned_body">Plan the week and tonight\'s dinner shows up here.</string>
     <string name="home_plan_week">Plan the week</string>
     <string name="home_browse_recipes">Browse recipes</string>
     <string name="home_empty_sections">Recipes you cook often, new recipes and the ones you viewed show up here after the first sync.</string>

@@ -722,6 +722,9 @@ och `DtoFixturesTest` (GET/PATCH av en måltid).
   startar som `mealplan_autoadd_shopping` och skickar `addshopping` exakt när den är ikryssad).
   "Ändra" sparar bara det som ändrats; en måltid med recept kan byta recept men inte bli "bara
   titel" (`MealPlanUpdate` kan inte ta bort ett recept).
+- **Idag:** "Ikväll", resten av dagen och imorgon läser samma `meal_plan`-tabell (en lokalt
+  raderad måltid försvinner direkt, en offline skapad syns med sitt tillfälliga id); "Inget
+  planerat idag" har nu "Planera veckan" som byter till Veckan.
 - **Lägen:** tom vecka, gäst (#42: inga planera-, ändra- eller flyttakontroller alls), demo
   (skalets banner, exempelveckan ur demoinnehållet), offline (statuschippet; ändringar väntar).
 - **Tester:** `MealPlanDatesTest` (`:core:domain`), `MealPlanSyncTest` (`:core:sync`, en

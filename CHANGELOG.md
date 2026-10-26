@@ -47,7 +47,8 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   Måltider hamnar på samma dag i appen och på webben, även kring sommartidens slut. Ändrar någon
   annan samma måltid under tiden skickas bara det du ändrade, och har ni ändrat samma sak får du
   välja vems ändring som gäller. "Handla för veckan" lägger veckans ingredienser på listan utan
-  att något kommer med två gånger. Gäster ser matsedeln utan att kunna ändra den.
+  att något kommer med två gånger. Gäster ser matsedeln utan att kunna ändra den. Är inget
+  planerat idag leder Idag till Veckan med "Planera veckan".
 
 ## [0.2.0] – 2026-10-24
 
