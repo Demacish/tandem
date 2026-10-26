@@ -56,8 +56,12 @@ class Phase2SmokeTest {
     val network = object : TestWatcher() {
         override fun finished(description: Description) {
             if (networkTurnedOff) app.setNetworkEnabled(true)
+            restoreKeyboards()
         }
     }
+
+    /** The input methods turned off for this test ([startFresh]), turned on again afterwards. */
+    private var disabledKeyboards: List<String> = emptyList()
 
     @get:Rule(order = 1)
     val tandoor = FakeTandoor(instrumentation.context.assets)
@@ -83,9 +87,22 @@ class Phase2SmokeTest {
         }
     }
 
+    /**
+     * A fresh app, and no on-screen keyboard: this test types a lot (texts are set through
+     * accessibility, as in the other tests), and the keyboard covered the add sheet's button in CI
+     * without Back reliably closing it. The keyboards come back in the outermost rule.
+     */
     @Before
     fun startFresh() {
         app.clearData()
+        disabledKeyboards = app.shell("ime list -s").lines().map { it.trim() }.filter { it.isNotEmpty() }
+        disabledKeyboards.forEach { app.shell("ime disable $it") }
+    }
+
+    private fun restoreKeyboards() {
+        disabledKeyboards.forEach { runCatching { app.shell("ime enable $it") } }
+        disabledKeyboards.firstOrNull()?.let { runCatching { app.shell("ime set $it") } }
+        disabledKeyboards = emptyList()
     }
 
     @Test
