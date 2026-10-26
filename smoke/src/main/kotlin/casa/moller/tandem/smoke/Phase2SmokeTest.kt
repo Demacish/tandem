@@ -1,7 +1,6 @@
 package casa.moller.tandem.smoke
 
 import android.os.SystemClock
-import android.view.accessibility.AccessibilityWindowInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -56,12 +55,8 @@ class Phase2SmokeTest {
     val network = object : TestWatcher() {
         override fun finished(description: Description) {
             if (networkTurnedOff) app.setNetworkEnabled(true)
-            restoreKeyboards()
         }
     }
-
-    /** The input methods turned off for this test ([startFresh]), turned on again afterwards. */
-    private var disabledKeyboards: List<String> = emptyList()
 
     @get:Rule(order = 1)
     val tandoor = FakeTandoor(instrumentation.context.assets)
@@ -87,22 +82,9 @@ class Phase2SmokeTest {
         }
     }
 
-    /**
-     * A fresh app, and no on-screen keyboard: this test types a lot (texts are set through
-     * accessibility, as in the other tests), and the keyboard covered the add sheet's button in CI
-     * without Back reliably closing it. The keyboards come back in the outermost rule.
-     */
     @Before
     fun startFresh() {
         app.clearData()
-        disabledKeyboards = app.shell("ime list -s").lines().map { it.trim() }.filter { it.isNotEmpty() }
-        disabledKeyboards.forEach { app.shell("ime disable $it") }
-    }
-
-    private fun restoreKeyboards() {
-        disabledKeyboards.forEach { runCatching { app.shell("ime enable $it") } }
-        disabledKeyboards.firstOrNull()?.let { runCatching { app.shell("ime set $it") } }
-        disabledKeyboards = emptyList()
     }
 
     @Test
@@ -477,22 +459,12 @@ class Phase2SmokeTest {
         app.waitFor(By.text("Add to the list"))
         app.type(0, text)
         val button = if (count == 1) "Add 1 item" else "Add $count items"
-        // The keyboard covers the button below the preview and the suggestions (the sheet does
-        // not scroll above it): Back closes only the keyboard while it is shown.
-        hideKeyboard()
-        // The sheet lays out again once the keyboard is gone: the button is clicked at rest, and
-        // again while it still says "Add n items" (a click that took effect empties the field).
-        for (attempt in 1..MAX_NUDGES) {
-            if (app.clickableWithText(button).any { app.device.hasObject(it) }) break
-            // Still covered: the sheet's content scrolls (imePadding); swiped in its upper part.
-            hideKeyboard()
-            val x = app.device.displayWidth / 2
-            val from = (app.device.displayHeight * SHEET_FROM).toInt()
-            app.device.swipe(x, from, x, (app.device.displayHeight * SHEET_TO).toInt(), SWIPE_STEPS)
-            app.device.waitForIdle()
-        }
+        // The on-screen keyboard (when it shows) covers the button below the preview and the
+        // suggestions, and Back did not reliably close it in CI: then its "Done" key adds, as a
+        // user would (the field's IME action). Again while the button still says "Add n items".
         for (attempt in 1..TAP_ATTEMPTS) {
-            clickAtRest(app.clickableWithText(button))
+            val done = app.device.findObject(By.pkg(KEYBOARD_PACKAGE).desc("Done"))
+            if (done != null) runCatching { done.click() } else clickAtRest(app.clickableWithText(button))
             if (app.device.wait(Until.gone(By.text(button)), TAP_WAIT_MS) == true) break
         }
         // Added: the field is emptied and the button says "Add" again; the sheet stays open.
@@ -504,22 +476,6 @@ class Phase2SmokeTest {
         }
         app.waitUntilGone(By.text("Add to the list"))
     }
-
-    /**
-     * Back while the keyboard (an input-method window, e.g. Gboard's `...inputmethod.latin`, seen
-     * in the window dumps; `uiAutomation.windows` alone missed it once) is shown: closes only the
-     * keyboard.
-     */
-    private fun hideKeyboard() {
-        if (!keyboardShown()) return
-        app.device.pressBack()
-        val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
-        while (keyboardShown() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(SETTLE_POLL_MS)
-    }
-
-    private fun keyboardShown(): Boolean =
-        app.device.hasObject(By.pkg(KEYBOARD_PACKAGE)) ||
-            instrumentation.uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
 
     private fun goOffline() {
         tandoor.offline = true
@@ -607,8 +563,6 @@ class Phase2SmokeTest {
         const val SWIPE_STEPS = 20
         const val CLOSE_ATTEMPTS = 3
         const val TAP_ATTEMPTS = 3
-        const val SHEET_FROM = 0.45
-        const val SHEET_TO = 0.15
         val KEYBOARD_PACKAGE: Pattern = Pattern.compile(".*inputmethod.*")
         const val TAP_WAIT_MS = 4_000L
         const val SETTLE_MS = 3_000L
