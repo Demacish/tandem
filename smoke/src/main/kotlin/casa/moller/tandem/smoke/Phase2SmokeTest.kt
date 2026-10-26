@@ -7,6 +7,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.Until
 import java.io.File
 import java.time.LocalDate
 import java.util.regex.Pattern
@@ -173,8 +174,7 @@ class Phase2SmokeTest {
         editRow("ost", "Remove from the list")
         addItems("pasta", count = 1)
         check("pasta")
-        rowOnScreen("bröd").longClick()
-        app.waitFor(By.text(EDIT_TITLE))
+        openEdit("bröd")
         app.type(AMOUNT_FIELD, "2")
         app.tap("Save")
         app.waitUntilGone(By.text(EDIT_TITLE))
@@ -282,7 +282,9 @@ class Phase2SmokeTest {
 
     /** "+" on [day] in Veckan, Shakshuka from the stored recipes, the shopping tick, Middag, save. */
     private fun planInApp(day: LocalDate) {
-        val dayNode = app.findInList(By.res(dayTag(day)))
+        // Today comes first in the agenda: back to the top until its heading and "+" show.
+        val withPlus = By.res(dayTag(day)).hasDescendant(By.descStartsWith("Plan a meal on"))
+        val dayNode = settled(withPlus, app.scrollBackTo(withPlus))
         val plus = dayNode.findObject(By.clickable(true).hasDescendant(By.descStartsWith("Plan a meal on")))
             ?: dayNode.findObject(By.descStartsWith("Plan a meal on"))
             ?: throw AssertionError("No \"+\" on $day")
@@ -338,13 +340,15 @@ class Phase2SmokeTest {
     private fun row(food: String): BySelector = By.desc(Pattern.compile("(?:[^,]* )?${Pattern.quote(food)}, .*"))
 
     /**
-     * The row of [food], scrolled into the upper part of the screen: a snackbar ("Ångra", 10 s) and
-     * the "+ Vara" button sit at the bottom, and a tap there would hit them instead of the row.
+     * The row of [food], scrolled into the upper part of the screen and at rest: a snackbar
+     * ("Ångra", 10 s) and the "+ Vara" button sit at the bottom, and a tap there would hit them;
+     * a tap while the list still flings after a swipe lands where the row WAS (seen in CI: a
+     * check that never happened).
      */
     private fun rowOnScreen(food: String): UiObject2 {
         val limit = app.device.displayHeight * UPPER_PART
         repeat(MAX_NUDGES) {
-            val found = app.findInList(row(food))
+            val found = settled(row(food), app.findInList(row(food)))
             val bounds = found.visibleBounds
             if (bounds.bottom <= limit && bounds.height() >= MIN_ROW_DP * density) return found
             val x = app.device.displayWidth / 2
@@ -358,21 +362,59 @@ class Phase2SmokeTest {
             }
             app.device.waitForIdle()
         }
-        return app.findInList(row(food))
+        return settled(row(food), app.findInList(row(food)))
     }
 
-    /** Taps [food]'s row (check); a checked row leaves the list for the folded "Checked". */
+    /** [found] again once its bounds stop changing (at most [SETTLE_MS]). */
+    private fun settled(selector: BySelector, found: UiObject2): UiObject2 {
+        var current = found
+        var bounds = runCatching { current.visibleBounds }.getOrNull()
+        val deadline = SystemClock.uptimeMillis() + SETTLE_MS
+        while (SystemClock.uptimeMillis() < deadline) {
+            SystemClock.sleep(SETTLE_POLL_MS)
+            val again = app.device.findObject(selector) ?: return current
+            val now = again.visibleBounds
+            current = again
+            if (now == bounds) return current
+            bounds = now
+        }
+        return current
+    }
+
+    /**
+     * Taps [food]'s row (check); a checked row leaves the list for the folded "Checked". The row
+     * is a checkbox node: when a tap was lost (the row still there and unchecked), it is tapped
+     * again, never when it took effect.
+     */
     private fun check(food: String) {
-        rowOnScreen(food).click()
+        repeat(TAP_ATTEMPTS) {
+            rowOnScreen(food).click()
+            val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
+            while (SystemClock.uptimeMillis() < deadline) {
+                val current = app.device.findObject(row(food)) ?: return
+                if (current.isChecked) {
+                    app.waitUntilGone(row(food))
+                    return
+                }
+                SystemClock.sleep(SETTLE_POLL_MS)
+            }
+        }
         app.waitUntilGone(row(food))
     }
 
-    /** Long press on [food]'s row (the edit sheet) and [button] there ("Buy later", "Remove from the list"). */
+    /** Long press on [food]'s row (the edit sheet, again when the press was lost) and [button] there. */
     private fun editRow(food: String, button: String) {
-        rowOnScreen(food).longClick()
-        app.waitFor(By.text(EDIT_TITLE))
+        openEdit(food)
         app.tap(button)
         app.waitUntilGone(By.text(EDIT_TITLE))
+    }
+
+    private fun openEdit(food: String) {
+        repeat(TAP_ATTEMPTS) {
+            rowOnScreen(food).longClick()
+            if (app.device.wait(Until.hasObject(By.text(EDIT_TITLE)), TAP_WAIT_MS) == true) return
+        }
+        app.waitFor(By.text(EDIT_TITLE))
     }
 
     /** "Add item…" above the list, the free text, "Add n items", and the sheet closed again. */
@@ -477,5 +519,9 @@ class Phase2SmokeTest {
         const val MAX_NUDGES = 4
         const val SWIPE_STEPS = 20
         const val CLOSE_ATTEMPTS = 3
+        const val TAP_ATTEMPTS = 3
+        const val TAP_WAIT_MS = 4_000L
+        const val SETTLE_MS = 3_000L
+        const val SETTLE_POLL_MS = 250L
     }
 }
