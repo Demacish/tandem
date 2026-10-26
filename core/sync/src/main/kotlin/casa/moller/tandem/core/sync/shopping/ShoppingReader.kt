@@ -21,6 +21,7 @@ import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
@@ -57,6 +58,7 @@ internal class ShoppingReader @Inject constructor(
     private val clock: SyncClock,
     private val changes: ShoppingChangeBus,
     private val dropped: DroppedChanges,
+    private val network: NetworkStatus,
 ) {
     /** Held by every read and by the shopping outbox handlers while they send. */
     val lock = Mutex()
@@ -78,13 +80,18 @@ internal class ShoppingReader @Inject constructor(
 
     /**
      * Before an update or delete of an entry is sent (caller holds [lock]): the full list, unless one
-     * was read within [VERIFY_MAX_AGE_MILLIS]. Returns whether [serverId] is still on the server:
+     * was read within [VERIFY_MAX_AGE_MILLIS] AND the device has not been offline since (Phase 2
+     * integration lane: changes made offline are always checked against a list read after the
+     * network came back, so rows another phone deleted meanwhile drain without a 404 even when the
+     * device was offline for less than a minute). Returns whether [serverId] is still on the server:
      * false only when a complete answer lacked it (it is gone; the change must be dropped), true when
      * it was there or the answer cannot tell (1000 entries, incomplete).
      */
     suspend fun stillOnServerLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<Boolean> {
         val now = clock.nowMillis()
-        val known = seen?.takeIf { it.accountId == remote.accountId && now - it.readAtMillis in 0 until VERIFY_MAX_AGE_MILLIS }
+        val known = seen?.takeIf {
+            it.accountId == remote.accountId && now - it.readAtMillis in 0 until VERIFY_MAX_AGE_MILLIS && it.reconnections == network.reconnections
+        }
         val snapshot = known ?: when (val read = readFull(remote, background = true)) {
             is Outcome.Failure -> return read
             is Outcome.Success -> seen ?: return Outcome.Success(true)
@@ -101,6 +108,7 @@ internal class ShoppingReader @Inject constructor(
 
     private suspend fun readFull(remote: ActiveSource.Remote, background: Boolean): Outcome<Unit> {
         val requestedAt = clock.nowMillis()
+        val reconnections = network.reconnections
         val page = when (val result = fetchAll(remote, background) { page -> shopping.entries(updatedAfter = null, page = page) }) {
             is Outcome.Failure -> return result
             is Outcome.Success -> result.value
@@ -124,7 +132,7 @@ internal class ShoppingReader @Inject constructor(
             )
         }
         val ids = page.items.mapNotNull { it.id }.toSet()
-        seen = SeenOnServer(accountId, ids, complete = canDetect, readAtMillis = requestedAt)
+        seen = SeenOnServer(accountId, ids, complete = canDetect, readAtMillis = requestedAt, reconnections = reconnections)
         if (!firstRead) events.forEach { changes.emit(accountId, it) }
         return Outcome.Success(Unit)
     }
@@ -268,7 +276,13 @@ internal class ShoppingReader @Inject constructor(
     }
 
     /** The ids a full read returned (plus later deltas and own creates), for [stillOnServerLocked]. */
-    private data class SeenOnServer(val accountId: String, val ids: Set<Long>, val complete: Boolean, val readAtMillis: Long)
+    private data class SeenOnServer(
+        val accountId: String,
+        val ids: Set<Long>,
+        val complete: Boolean,
+        val readAtMillis: Long,
+        val reconnections: Int,
+    )
 
     companion object {
         /** Every 10th read of the list is a full one (plan 3.5). */

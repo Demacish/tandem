@@ -136,7 +136,7 @@ internal class SyncTestGraph(
     // Phase 2 (inköp-data lane): the shopping list's reader, small tables and outbox senders.
     val shoppingChanges = ShoppingChangeBus()
     val droppedChanges = DroppedChanges()
-    val shoppingReader = ShoppingReader(databases, caller, sources, clock, shoppingChanges, droppedChanges)
+    val shoppingReader = ShoppingReader(databases, caller, sources, clock, shoppingChanges, droppedChanges, network)
     val shoppingTables = ShoppingTables(databases, caller, sources)
     val outbox = OutboxSender(
         databases,

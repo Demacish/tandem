@@ -5,11 +5,13 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.getAndUpdate
 
 /**
  * [NetworkStatus] from Android's default network callback. "Online" means the default network
@@ -24,18 +26,28 @@ internal class ConnectivityMonitor @Inject constructor(@ApplicationContext conte
 
     override val online: StateFlow<Boolean> = state.asStateFlow()
 
+    private val reconnectCount = AtomicInteger(0)
+
+    override val reconnections: Int get() = reconnectCount.get()
+
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            state.value = true
+            update(true)
         }
 
         override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-            state.value = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            update(networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))
         }
 
         override fun onLost(network: Network) {
-            state.value = false
+            update(false)
         }
+    }
+
+    /** Phase 2 (integration lane): counts offline -> online ([reconnections]) before publishing. */
+    private fun update(online: Boolean) {
+        val before = state.getAndUpdate { online }
+        if (online && !before) reconnectCount.incrementAndGet()
     }
 
     init {
@@ -43,10 +55,10 @@ internal class ConnectivityMonitor @Inject constructor(@ApplicationContext conte
             manager?.registerDefaultNetworkCallback(callback)
         } catch (e: SecurityException) {
             // Without ACCESS_NETWORK_STATE the app assumes it is online; requests fail cleanly.
-            state.value = true
+            update(true)
         } catch (e: RuntimeException) {
             // Too many callbacks registered (never expected for this singleton): same fallback.
-            state.value = true
+            update(true)
         }
     }
 

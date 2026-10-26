@@ -5,6 +5,7 @@ import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.ServerAccountEntity
+import casa.moller.tandem.core.database.entity.UserPreferenceEntity
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
 import casa.moller.tandem.core.model.shopping.ShoppingChange
@@ -231,6 +232,34 @@ class ShoppingSyncTest {
         assertEquals(0, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
         assertTrue(graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.DELETED_ELSEWHERE } >= 12)
         assertNull("the circuit breaker is not open", graph.guard.pauseAt(graph.guard.state.value, ACCOUNT_ID, graph.clock.millis))
+    }
+
+    /**
+     * Phase 2 (integration lane): the same within a minute of the last full read. The reconnect
+     * makes the stored read stale, so the drain reads the list again first: still no 404, also when
+     * the device was offline for only a few seconds (the release smoke test's case).
+     */
+    @Test
+    fun rowsDeletedElsewhereWhileBrieflyOfflineDrainWithoutA404() = forEachVersion {
+        val ids = (1..6).map { tandoor.seed("vara $it") }
+        read()
+        offline()
+        ok(repo.update(ids[0], amount = 5.0))
+        ok(repo.remove(listOf(ids[1])))
+        ok(repo.setDelayed(listOf(ids[2]), Instant.fromEpochMilliseconds(graph.clock.millis) + 2.hours))
+        ok(repo.update(ids[3], amount = 7.0))
+        tandoor.partnerDelete(ids.take(3))
+        graph.clock.advance(10.seconds)
+        tandoor.calls.clear()
+
+        graph.network.reconnect()
+        drainAll()
+
+        assertTrue("not a single 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
+        val writes = tandoor.calls.filter { (call, _) -> call.startsWith("PATCH") || call.startsWith("DELETE") }.map { it.first }
+        assertEquals(listOf("PATCH /api/shopping-list-entry/${ids[3]}/"), writes)
+        assertEquals("one fresh full read after the reconnect", 1, tandoor.requests("GET", "/api/shopping-list-entry/").size)
+        assertEquals(7.0, tandoor.entry(ids[3])?.amount ?: 0.0, 0.0)
     }
 
     /** Two phones in one household: checks through `updated_after`, deletions through the window rule. */
@@ -503,6 +532,51 @@ class ShoppingSyncTest {
         assertFalse(paused.active)
         assertEquals(before, tandoor.calls.size)
         assertTrue(waits.isNotEmpty())
+    }
+
+    /** Phase 2 (integration lane): the user's `shopping_auto_sync` slows polling down, and 0 turns it off. */
+    @Test
+    fun theUsersAutoSyncPreferenceSlowsOrStopsPolling() = forEachVersion {
+        tandoor.seed("mjölk")
+        val foreground = foregroundOf(graph) { delay(POLL_PAUSE_MILLIS) }
+        val target = ForegroundTarget.ShoppingList
+        graph.real.shoppingDao().setMinAutosyncSeconds(ACCOUNT_ID, 5)
+        autoSync(graph, seconds = 40)
+        assertEquals(40.seconds, foreground.intervalFor(target, graph.remote))
+        autoSync(graph, seconds = 5)
+        assertEquals(20.seconds, foreground.intervalFor(target, graph.remote))
+
+        autoSync(graph, seconds = 0)
+        tandoor.calls.clear()
+        val states = withTimeout(TIMEOUT_MILLIS) { foreground.keepFresh(target).take(2).toList() }
+        assertTrue("not polling with the web's sync off: $states", states.none { it.active || it.lastPollAt != null })
+        assertTrue("no request: ${tandoor.calls}", tandoor.calls.isEmpty())
+        // Pull to refresh still reads the list.
+        ok(graph.shoppingSync.refresh(graph.remote, background = false))
+        assertEquals(listOf("mjölk"), entries().map { it.food.name })
+    }
+
+    private suspend fun autoSync(graph: SyncTestGraph, seconds: Int) {
+        graph.real.referenceDao().upsertUserPreference(
+            UserPreferenceEntity(
+                accountId = ACCOUNT_ID,
+                useFractions = false,
+                ingredientDecimals = 2,
+                defaultUnit = "g",
+                useKj = false,
+                showStepIngredients = true,
+                defaultMealTypeId = null,
+                shoppingAutoSyncSeconds = seconds,
+                mealPlanAutoAddShopping = false,
+                mealPlanAutoExcludeOnHand = true,
+                mealPlanAutoIncludeRelated = false,
+                defaultDelayHours = 4.0,
+                filterToSupermarket = false,
+                shoppingRecentDays = 7,
+                shoppingAddOnHand = false,
+                commentsEnabled = true,
+            ),
+        )
     }
 
     @Test

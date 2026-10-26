@@ -86,6 +86,15 @@ internal class FakeClock(today: LocalDate = TODAY) : SyncClock {
 
 internal class FakeNetwork(online: Boolean = true) : NetworkStatus {
     override val online = MutableStateFlow(online)
+
+    /** Phase 2 (integration lane): bumped by [reconnect]; setting [online] alone leaves it. */
+    override var reconnections: Int = 0
+
+    /** Offline -> online like ConnectivityMonitor reports it. */
+    fun reconnect() {
+        if (!online.value) reconnections++
+        online.value = true
+    }
 }
 
 internal class FakeScheduler : SyncScheduler {

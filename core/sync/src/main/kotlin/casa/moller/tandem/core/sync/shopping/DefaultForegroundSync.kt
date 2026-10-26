@@ -36,8 +36,9 @@ import kotlinx.coroutines.flow.shareIn
  * the last one leaves (the screen left STARTED: no polling in the background):
  *
  * - **Shopping list:** [ShoppingSync.refresh] (outbox, then a delta; every 10th a full read with the
- *   window rule) every `ForegroundPolling.intervalFor(shopping_min_autosync_interval)` (20 s with
- *   Tandoor's default "5"), starting at once.
+ *   window rule) every `ForegroundPolling.intervalFor(shopping_min_autosync_interval,
+ *   shopping_auto_sync)` (20 s with Tandoor's defaults "5" and 5), starting at once; not at all
+ *   while the user's `shopping_auto_sync` is 0 (the web's "off").
  * - **Meal plan:** `MealPlanRepository.refresh()` (the meal plan lane's window read) every
  *   [MEAL_PLAN_INTERVAL].
  * - **Paused** (nothing is requested, [ForegroundSyncState.paused] says why) while offline, after a
@@ -81,7 +82,7 @@ internal class DefaultForegroundSync(
             val remote = sources.current() as? ActiveSource.Remote
             val interval = remote?.let { intervalFor(target, it) } ?: ForegroundPolling.DEFAULT_INTERVAL
             val pause = remote?.let { pauseFor(it) }
-            val polls = remote != null && (pause == null || pause == SyncPause.SAFE_MODE)
+            val polls = remote != null && (pause == null || pause == SyncPause.SAFE_MODE) && enabled(target, remote)
             if (polls && remote != null && pollOnce(target, remote) is Outcome.Success) {
                 lastPollAt = Instant.fromEpochMilliseconds(clock.nowMillis())
             }
@@ -105,14 +106,29 @@ internal class DefaultForegroundSync(
             ?: SyncPause.SAFE_MODE.takeIf { remote.writePolicy != WritePolicy.SEND }
     }
 
-    /** The time between polls of [target]: the server's floor for the list (stored by [ShoppingTables]). */
+    /**
+     * The time between polls of [target]: for the list the server's floor (stored by [ShoppingTables])
+     * and the user's own `shopping_auto_sync` (Phase 2 integration lane), whichever is longer.
+     */
     internal suspend fun intervalFor(target: ForegroundTarget, remote: ActiveSource.Remote): Duration = when (target) {
         ForegroundTarget.ShoppingList -> ForegroundPolling.intervalFor(
             databases.get(remote.kind).shoppingDao().getMinAutosyncSeconds(remote.accountId),
+            userAutoSyncSeconds(remote),
         )
 
         is ForegroundTarget.MealPlan -> MEAL_PLAN_INTERVAL
     }
+
+    /**
+     * Phase 2 (integration lane): `shopping_auto_sync` 0 (the web's automatic sync off) also stops
+     * the app's polling of the list; pull to refresh and the background sync still read it. Checked
+     * before every poll, so turning it on again on the web takes effect at the next sync.
+     */
+    private suspend fun enabled(target: ForegroundTarget, remote: ActiveSource.Remote): Boolean =
+        target !is ForegroundTarget.ShoppingList || ForegroundPolling.pollsShoppingList(userAutoSyncSeconds(remote))
+
+    private suspend fun userAutoSyncSeconds(remote: ActiveSource.Remote): Int? =
+        databases.get(remote.kind).referenceDao().getUserPreference(remote.accountId)?.shoppingAutoSyncSeconds
 
     companion object {
         /** The meal plan while Veckan is visible: at most every 60 s (plan 3.5). */

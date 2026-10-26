@@ -40,9 +40,18 @@ object ForegroundPolling {
     /** Never faster than this, whatever the server allows (plan 4.1: 2 workers, CrowdSec). */
     val MIN_INTERVAL: Duration = 15.seconds
 
-    /** `max(shopping_min_autosync_interval, 15–30 s)`: the server's floor (a STRING such as "5"), at least [MIN_INTERVAL]. */
-    fun intervalFor(serverMinimumSeconds: Int?): Duration {
+    /**
+     * `max(shopping_min_autosync_interval, 15–30 s)`: the server's floor (a STRING such as "5"), at
+     * least [MIN_INTERVAL]. Phase 2 (integration lane): also at least the user's own
+     * `shopping_auto_sync` ([userSeconds], the web's interval; plan 3.3 "follow the preferences"),
+     * so a user who slowed the web's sync down gets the same in the app.
+     */
+    fun intervalFor(serverMinimumSeconds: Int?, userSeconds: Int? = null): Duration {
         val floor = (serverMinimumSeconds ?: 0).seconds
-        return maxOf(DEFAULT_INTERVAL, floor, MIN_INTERVAL)
+        val own = (userSeconds ?: 0).coerceAtLeast(0).seconds
+        return maxOf(DEFAULT_INTERVAL, floor, own, MIN_INTERVAL)
     }
+
+    /** Phase 2 (integration lane): `shopping_auto_sync` 0 turns the web's automatic sync off, and the app's polling too. */
+    fun pollsShoppingList(userSeconds: Int?): Boolean = userSeconds != 0
 }

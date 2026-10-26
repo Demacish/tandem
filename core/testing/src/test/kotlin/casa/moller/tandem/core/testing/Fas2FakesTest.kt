@@ -112,6 +112,12 @@ class Fas2FakesTest {
         assertEquals(20.seconds, ForegroundPolling.intervalFor(5))
         assertEquals(60.seconds, ForegroundPolling.intervalFor(60))
         assertEquals(20.seconds, ForegroundPolling.intervalFor(null))
+        // Phase 2 (integration lane): the user's shopping_auto_sync; 0 = off.
+        assertEquals(40.seconds, ForegroundPolling.intervalFor(5, userSeconds = 40))
+        assertEquals(20.seconds, ForegroundPolling.intervalFor(5, userSeconds = 5))
+        assertEquals(false, ForegroundPolling.pollsShoppingList(0))
+        assertEquals(true, ForegroundPolling.pollsShoppingList(5))
+        assertEquals(true, ForegroundPolling.pollsShoppingList(null))
         val sync = FakeForegroundSync()
         sync.keepFresh(ForegroundTarget.ShoppingList)
         assertEquals(listOf<ForegroundTarget>(ForegroundTarget.ShoppingList), sync.started)
