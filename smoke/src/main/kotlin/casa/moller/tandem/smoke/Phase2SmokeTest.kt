@@ -491,10 +491,11 @@ class Phase2SmokeTest {
     /**
      * "Add item…" above the list, the free text, the field's "Done" action, and the sheet closed
      * again. Driven through accessibility actions on the sheet's nodes ([TandemApp.appNodes]), not
-     * taps: the on-screen keyboard (shown or not, before or after the text is set) covers "Add n
-     * items" below the preview and the suggestions, and a tap meant for the keyboard's "Done" or
-     * the hidden button could land on the sheet's scrim, which closes the sheet without adding
-     * (the field then vanished too, so earlier versions of this test took it for "added"). Added
+     * taps: the on-screen keyboard (shown or not, before or after the text is set) covered "Add n
+     * items" when it stood below the preview and the suggestions (since 0.3.0 it stands right
+     * below the field), and a tap meant for the keyboard's "Done" or the hidden button could land
+     * on the sheet's scrim, which closes the sheet without adding (the field then vanished too,
+     * so earlier versions of this test took it for "added"). Added
      * means: the sheet is still open and its field was emptied, which the ViewModel does only
      * after a successful add. A sheet that closed anyway keeps the text (SavedStateHandle), so it
      * is opened again and the text submitted again; an add that already happened empties the text,
@@ -524,13 +525,12 @@ class Phase2SmokeTest {
                     submitted = false
                 }
 
-                // The preview has read the text ("Add 5 items"): submit as the keyboard's "Done" would.
-                app.findNode { it.text?.toString() == button } != null -> {
+                // The field holds the text, which SubmitAdd reads: "Done" as the keyboard would send
+                // it, else "Add n items" (right below the field, so above the keyboard).
+                else -> {
                     submitted = app.imeEnter(field) || app.clickNodeWithText(button)
-                    if (submitted) waitForEmptyAddField()
+                    if (submitted) waitForEmptyAddField() else SystemClock.sleep(SETTLE_POLL_MS)
                 }
-
-                else -> SystemClock.sleep(SETTLE_POLL_MS)
             }
         }
         app.capture("phase2-add-added")

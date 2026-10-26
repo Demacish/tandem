@@ -47,8 +47,9 @@ const val SHOPPING_ADD_BUTTON_TAG = "shopping:add:button"
  * "Lägg till" (#11, plan 6.2 "Lägg till manuellt", Stitch ink_pslista_handla_surfplatta's "Lägg
  * till vara"): free text ("2 dl grädde", several by line or comma), the interpretation of every
  * item before it is added, suggestions for the item being typed and the foods bought recently.
- * Done on the keyboard adds and keeps the field open for the next item. In a bottom sheet on
- * phones, in the side pane on tablets.
+ * Done on the keyboard adds and keeps the field open for the next item; so does the button, which
+ * stands right below the field so that the keyboard never covers it. In a bottom sheet on phones,
+ * in the side pane on tablets.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -83,6 +84,23 @@ internal fun AddItemPanel(
                 .fillMaxWidth()
                 .focusRequester(focus)
                 .testTag(SHOPPING_ADD_FIELD_TAG),
+        )
+        // Right below the field, not below the preview and the suggestions: on a phone the keyboard
+        // covers the lower half of the sheet, and with a few items and suggestions "Lägg till n
+        // varor" ended up under it (0.3.0 integration, seen in the release smoke test).
+        val count = state.preview.size
+        TandemPrimaryButton(
+            text = if (count > 0) {
+                pluralStringResource(R.plurals.shopping_add_button_count, count, count)
+            } else {
+                stringResource(R.string.shopping_add_button)
+            },
+            onClick = { onAction(ShoppingAction.SubmitAdd) },
+            enabled = count > 0 && !state.adding,
+            leadingIcon = TandemIcons.Add,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(SHOPPING_ADD_BUTTON_TAG),
         )
         if (state.preview.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
@@ -119,20 +137,6 @@ internal fun AddItemPanel(
                 }
             }
         }
-        val count = state.preview.size
-        TandemPrimaryButton(
-            text = if (count > 0) {
-                pluralStringResource(R.plurals.shopping_add_button_count, count, count)
-            } else {
-                stringResource(R.string.shopping_add_button)
-            },
-            onClick = { onAction(ShoppingAction.SubmitAdd) },
-            enabled = count > 0 && !state.adding,
-            leadingIcon = TandemIcons.Add,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(SHOPPING_ADD_BUTTON_TAG),
-        )
     }
 }
 
