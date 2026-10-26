@@ -22,6 +22,7 @@
 
     <string name="home_nothing_planned_title">Inget planerat idag</string>
     <string name="home_nothing_planned_body">Planera veckan så syns kvällens middag här.</string>
+    <string name="home_nothing_planned_body_read_only">När någon har planerat veckan syns kvällens middag här.</string>
     <string name="home_plan_week">Planera veckan</string>
     <string name="home_browse_recipes">Bläddra bland recept</string>
     <string name="home_empty_sections">Recept ni lagar ofta, nya recept och de du har tittat på visas här efter första synkningen.</string>

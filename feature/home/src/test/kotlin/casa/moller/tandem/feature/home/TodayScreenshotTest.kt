@@ -90,6 +90,15 @@ class TodayScreenshotTest {
     @Test
     fun phoneGuestDarkFontScale2() = capture("phone_today_guest_font2_dark", loaded, darkTheme = true, fontScale = 2f, books = guest)
 
+    // Phase 2 (matsedel lane): a guest with nothing planned is not sent to plan the week.
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneNothingPlannedGuest() = capture(
+        "phone_today_nothing_planned_guest_light_sv",
+        nothingPlanned,
+        books = TodayBooksState(readOnly = true),
+    )
+
     @Test
     @Config(qualifiers = TABLET)
     fun tabletWantToCook() = capture("tablet_today_want_to_cook_dark", loaded, darkTheme = true, books = wantToCook)

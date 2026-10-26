@@ -332,8 +332,8 @@ internal fun HomeRecipeCard(recipe: RecipeOverview, width: Dp, onClick: () -> Un
 
 /**
  * "Nothing planned today" (plan 6.2) with a way to the recipes. [onPlanWeek] adds "Plan the
- * week →" as the main action (the Week tab plans since Phase 2); without it "Browse recipes" is
- * the main action.
+ * week →" as the main action (the Week tab plans since Phase 2); without it (a guest, #42) the
+ * body says the dinner shows up once someone plans and "Browse recipes" is the main action.
  */
 @Composable
 internal fun NothingPlannedCard(onBrowseRecipes: () -> Unit, modifier: Modifier = Modifier, onPlanWeek: (() -> Unit)? = null) {
@@ -354,7 +354,9 @@ internal fun NothingPlannedCard(onBrowseRecipes: () -> Unit, modifier: Modifier 
                 modifier = Modifier.semantics { heading() },
             )
             Text(
-                text = stringResource(R.string.home_nothing_planned_body),
+                text = stringResource(
+                    if (onPlanWeek != null) R.string.home_nothing_planned_body else R.string.home_nothing_planned_body_read_only,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

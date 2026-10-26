@@ -173,7 +173,7 @@ private fun TodayContent(
                     horizontalArrangement = Arrangement.spacedBy(spacing.xl),
                 ) {
                     Column(modifier = Modifier.weight(3f), verticalArrangement = Arrangement.spacedBy(spacing.lg)) {
-                        TodayMeals(state = state, onAction = onAction)
+                        TodayMeals(state = state, onAction = onAction, canPlan = !books.readOnly)
                     }
                     Column(modifier = Modifier.weight(2f), verticalArrangement = Arrangement.spacedBy(spacing.lg)) {
                         TomorrowMeals(meals = state.tomorrow, onOpenRecipe = openRecipe)
@@ -189,7 +189,7 @@ private fun TodayContent(
                         .widthIn(max = TandemTheme.sizes.maxReadingWidth),
                     verticalArrangement = Arrangement.spacedBy(spacing.lg),
                 ) {
-                    TodayMeals(state = state, onAction = onAction)
+                    TodayMeals(state = state, onAction = onAction, canPlan = !books.readOnly)
                     TomorrowMeals(meals = state.tomorrow, onOpenRecipe = openRecipe)
                 }
             }
@@ -274,7 +274,7 @@ private fun TodayHeader(today: LocalDate?, dayPart: DayPart, modifier: Modifier 
 
 /** Tonight (or "Nothing planned today") and the rest of today. */
 @Composable
-private fun TodayMeals(state: HomeUiState, onAction: (HomeAction) -> Unit) {
+private fun TodayMeals(state: HomeUiState, onAction: (HomeAction) -> Unit, canPlan: Boolean) {
     val openRecipe: (Long) -> Unit = { onAction(HomeAction.OpenRecipe(it)) }
     val tonight = state.tonight
     when {
@@ -284,10 +284,10 @@ private fun TodayMeals(state: HomeUiState, onAction: (HomeAction) -> Unit) {
             onStartCooking = { id, servings -> onAction(HomeAction.StartCooking(id, servings)) },
         )
 
-        // Phase 2 (matsedel lane): the Week tab plans now, so "Plan the week" leads there.
+        // Phase 2 (matsedel lane): "Plan the week" leads to the Week tab, which plans now (not for a guest, #42).
         state.nothingPlannedToday -> NothingPlannedCard(
             onBrowseRecipes = { onAction(HomeAction.OpenRecipes) },
-            onPlanWeek = { onAction(HomeAction.OpenWeek) },
+            onPlanWeek = { onAction(HomeAction.OpenWeek) }.takeIf { canPlan },
         )
     }
     if (state.alsoToday.isNotEmpty()) {

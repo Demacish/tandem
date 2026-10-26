@@ -76,6 +76,14 @@ class TodayAccessibilityTest {
     @Test
     fun wantToCookAndGuestDarkFontScale2() = check(loaded, darkTheme = true, fontScale = 2f, books = wantToCookGuest)
 
+    // Phase 2 (matsedel lane): "Plan the week" for a member, the read-only body for a guest.
+    @Test
+    fun nothingPlannedGuestFontScale2() = check(
+        sampleHomeState(meals = UpcomingMeals(today = SampleRecipes.Today)).copy(sections = emptyList()),
+        fontScale = 2f,
+        books = TodayBooksState(readOnly = true),
+    )
+
     private fun check(
         state: HomeUiState,
         darkTheme: Boolean = false,

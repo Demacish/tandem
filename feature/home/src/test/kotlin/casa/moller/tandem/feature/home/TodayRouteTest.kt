@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.home
 
 import android.content.Context
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -44,9 +45,11 @@ class TodayRouteTest {
 
     private fun string(id: Int): String = ApplicationProvider.getApplicationContext<Context>().getString(id)
 
+    private val permissions = FakeSpacePermissionsRepository()
+
     private fun setContent() {
         val viewModel = HomeViewModel(home, sync, currentHour = { 18 })
-        val books = TodayBooksViewModel(FakeRecipeBookRepository(), FakeSpacePermissionsRepository())
+        val books = TodayBooksViewModel(FakeRecipeBookRepository(), permissions)
         composeRule.setContent {
             TandemTheme {
                 TodayRoute(
@@ -90,6 +93,18 @@ class TodayRouteTest {
         assertEquals(1, openedWeek)
         composeRule.onNode(hasText(string(R.string.home_browse_recipes)) and hasClickAction()).performClick()
         assertEquals(1, openedRecipesTab)
+    }
+
+    @Test
+    fun aGuestIsNotSentToPlanTheWeek() {
+        permissions.setGuest(true)
+        home.upcomingMeals.value = UpcomingMeals(today = SampleRecipes.Today)
+        setContent()
+        composeRule.onNodeWithText(string(R.string.home_nothing_planned_body_read_only)).assertIsDisplayed()
+        composeRule.onAllNodes(hasText(string(R.string.home_plan_week))).assertCountEquals(0)
+        composeRule.onNode(hasText(string(R.string.home_browse_recipes)) and hasClickAction()).performClick()
+        assertEquals(1, openedRecipesTab)
+        assertEquals(0, openedWeek)
     }
 
     @Test
