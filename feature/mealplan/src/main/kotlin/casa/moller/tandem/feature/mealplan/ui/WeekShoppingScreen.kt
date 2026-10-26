@@ -437,9 +437,8 @@ private fun LineRow(line: WeekShoppingLineState, readOnly: Boolean, format: Meal
             if (amount.isEmpty()) parts else stringResource(R.string.mealplan_week_shopping_line_total, amount, parts)
         }
 
-        amount.isEmpty() -> merged.parts.firstOrNull()?.mealName.orEmpty()
-
-        else -> stringResource(R.string.mealplan_week_shopping_line_one, amount, merged.parts.firstOrNull()?.mealName.orEmpty())
+        // One meal: its name (the amount stands at the end of the row).
+        else -> merged.parts.firstOrNull()?.mealName.orEmpty()
     }
     val rowModifier = if (readOnly) {
         Modifier.semantics(mergeDescendants = true) {}

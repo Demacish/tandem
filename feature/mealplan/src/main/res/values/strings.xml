@@ -141,7 +141,6 @@
     <string name="mealplan_week_shopping_merged">Combined</string>
     <string name="mealplan_week_shopping_line_total">%1$s in total (%2$s)</string>
     <string name="mealplan_week_shopping_line_part">%1$s %2$s</string>
-    <string name="mealplan_week_shopping_line_one">%1$s · %2$s</string>
     <string name="mealplan_week_shopping_other_aisle">Other</string>
     <plurals name="mealplan_week_shopping_aisle_count">
         <item quantity="one">%1$d item</item>
