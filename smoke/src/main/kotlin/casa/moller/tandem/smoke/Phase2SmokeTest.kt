@@ -462,8 +462,7 @@ class Phase2SmokeTest {
         while (keyboardShown() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(SETTLE_POLL_MS)
     }
 
-    private fun keyboardShown(): Boolean =
-        instrumentation.uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+    private fun keyboardShown(): Boolean = instrumentation.uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
 
     private fun goOffline() {
         tandoor.offline = true
