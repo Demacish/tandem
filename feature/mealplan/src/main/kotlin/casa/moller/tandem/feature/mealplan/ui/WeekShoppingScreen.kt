@@ -59,9 +59,6 @@ import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
-import casa.moller.tandem.core.designsystem.icon.CalendarMonth
-import casa.moller.tandem.core.designsystem.icon.CheckCircle
-import casa.moller.tandem.core.designsystem.icon.ShoppingCart
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.LoadingState
@@ -92,8 +89,8 @@ fun weekShoppingLineTag(key: String): String = "week-shopping:line:$key"
 fun weekShoppingMealTag(id: Long): String = "week-shopping:meal:$id"
 
 /** From this width the meals and the lines stand side by side (plan 6.5: tablets, phones in landscape). */
-private val TwoPaneMinWidth = 840.dp
-private val MealPaneWidth = 360.dp
+private val ShoppingTwoPaneMinWidth = 840.dp
+private val ShoppingMealPaneWidth = 360.dp
 
 /**
  * "Handla för veckan" (feature #16, plan 6.2 steps 1-4, 8.3; Stitch handla_f_r_veckan with the
@@ -155,10 +152,10 @@ fun WeekShoppingScreen(
         } else {
             BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
                 val content = PaddingValues(horizontal = spacing.screenHorizontal, vertical = spacing.lg)
-                if (maxWidth >= TwoPaneMinWidth) {
+                if (maxWidth >= ShoppingTwoPaneMinWidth) {
                     Row(horizontalArrangement = Arrangement.spacedBy(spacing.lg)) {
                         LazyColumn(
-                            modifier = Modifier.width(MealPaneWidth).fillMaxHeight(),
+                            modifier = Modifier.width(ShoppingMealPaneWidth).fillMaxHeight(),
                             contentPadding = content,
                             verticalArrangement = Arrangement.spacedBy(spacing.md),
                         ) {

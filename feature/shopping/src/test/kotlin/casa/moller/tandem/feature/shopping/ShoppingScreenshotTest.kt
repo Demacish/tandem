@@ -151,6 +151,42 @@ class ShoppingScreenshotTest {
     @Test
     fun historyEmpty() = capture("phone_history_empty_light", ShoppingShot.HISTORY_EMPTY)
 
+    // Phase 2 (koppling lane): "Lägg på inköpslistan" (#12) and removing a recipe from the list.
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeSheet() = capture("phone_recipe_shopping_light_sv", ShoppingShot.RECIPE_SHEET)
+
+    @Test
+    fun recipeSheetDark() = capture("phone_recipe_shopping_dark", ShoppingShot.RECIPE_SHEET, darkTheme = true)
+
+    @Test
+    fun recipeSheetFontScale2() = capture("phone_recipe_shopping_font2_light", ShoppingShot.RECIPE_SHEET, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeSheetLists() = capture("phone_recipe_shopping_lists_light_sv", ShoppingShot.RECIPE_SHEET_LISTS)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun recipeSheetLandscape() = capture("phone_landscape_recipe_shopping_light", ShoppingShot.RECIPE_SHEET)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun recipeSheetTablet() = capture("tablet_recipe_shopping_light", ShoppingShot.RECIPE_SHEET)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun recipeSheetTabletPortraitDark() = capture("tablet_portrait_recipe_shopping_dark_sv", ShoppingShot.RECIPE_SHEET, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeButton() = capture("phone_recipe_shopping_button_light_sv", ShoppingShot.RECIPE_BUTTON)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun editFromRecipe() = capture("phone_shopping_edit_from_recipe_light_sv", ShoppingShot.EDIT_FROM_RECIPE)
+
     private fun capture(
         name: String,
         shot: ShoppingShot,

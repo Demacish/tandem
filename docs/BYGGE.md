@@ -577,8 +577,8 @@ sparas; demoläget skriver bara demodatabasen.
   räknas som kända.
 - En 404 som ändå kommer (raderad mellan läsningen och sändningen, listrecept, livsmedel, gång)
   är ett väntat svar: raden är klar, posten tas bort lokalt med det som köats för den, skälet
-  hamnar i `DroppedChanges.NOT_FOUND`, och `RemoteCaller(expectedNotFound = true)` låter
-  kretsbrytaren vara. Allt annat följer `OutboxSender`s regler (400 FAILED, 401/403/429 stoppar,
+  hamnar i `DroppedChanges.NOT_FOUND`. Den **räknas** ändå i kretsbrytaren (plan 3.5/4.1;
+  kopplingsbanan tog bort `expectedNotFound`, se "Koppling" nedan). Allt annat följer `OutboxSender`s regler (400 FAILED, 401/403/429 stoppar,
   säkert läge PAUSED, offline/5xx försöker igen).
 - `POST` av en post är inte idempotent: en rad som försökts förut letar först efter en egen ny
   post med samma livsmedel, enhet och mängd.
@@ -615,7 +615,7 @@ gång per innehållsversion och språk, så det användaren gör i demoläget st
 **Tester:** `ShoppingSyncTest` (Robolectric, en tillståndsfull Tandoor i de inspelade formerna
 för **2.6.13 och 2.7.1**, `FakeShoppingTandoor`): 20 ändringar offline med skapa + bocka av samma
 vara, partnern raderar 15 rader (inga 404 i serverns logg), två telefoner med `updated_after` och
-fönsterregeln, bulk, köp senare, recept på listan, rensa avbockade, 404 utanför kretsbrytaren,
+fönsterregeln, bulk, köp senare, recept på listan, rensa avbockade, 404 som räknas av kretsbrytaren,
 429, säkert läge, polling, gäst, konton och demo. `ShoppingOrderingTest`, `ShoppingDaoTest`
 (transaktionen, frågorna, 3 → 4 med en köad "Klart!"), `ShoppingServicesTest`,
 `LocalIngredientParserTest`, `DemoShoppingContentTest`.
@@ -678,10 +678,11 @@ Konfliktfälten väntar i en egen outbox-rad (`FAILED`, `last_error = tandem.mea
 payload = användarens värden, `base_snapshot` = serverns), som `observeConflicts()` visar och
 `resolveConflict` löser: "Behåll min" köar fälten igen med serverns värde som bas, "Ta deras"
 skriver serverns värde lokalt. En 404 (raderad mellan läsning och sändning) är ett väntat svar
-(`expectedNotFound`, utanför kretsbrytaren). En POST som försöks igen letar först efter måltiden
+(raden är klar; den räknas i kretsbrytaren som alla 404/400). En POST som försöks igen letar först efter måltiden
 på sin dag (POST är inte idempotent); en måltidstyp på namn.
 
-**"Handla för veckan" (#16):** `weekShoppingPreview` tar veckans måltider med recept, markerar
+**"Handla för veckan" (#16):** (kopplingsbanan gjorde om den: datumintervall, sammanslagning och
+läsning från servern först, se "Koppling" nedan) `weekShoppingPreview` tar veckans måltider med recept, markerar
 dem som redan har poster på den lagrade listan (`shopping_entry.meal_plan_id`) eller `shopping`
 som "redan på listan" (aldrig valbara) och ger ingredienserna ur den lagrade receptdetaljen,
 skalade till måltidens portioner, med "har hemma" bortvalt. `addWeekToShopping` anropar
@@ -738,6 +739,91 @@ och `DtoFixturesTest` (GET/PATCH av en måltid).
   `MealPlanScreenshotTest`/`MealPlanPseudoLocaleScreenshotTest`
   (`feature/mealplan/src/test/screenshots/mealplan/`). Skärmarna och lägena står i `MealPlanShot`.
 <!-- /Fas 2 matsedel -->
+
+<!-- Fas 2 koppling -->
+## Koppling: recept → lista, Handla för veckan, kretsbrytaren och blockerad-diagnostik (Fas 2)
+
+Kopplingsbanan knyter ihop inköp, matsedel och recept (#12, #16, plan 4.1, 5.4, 6.2, 8.3, §10
+"Kretsbrytare med 404/400-gräns, rensning av outbox före tömning, blockerad-diagnostik").
+
+**"Lägg på inköpslistan" (#12, Stitch `l_gg_p_listan_ark`):** `:feature:shopping`
+`recipe/RecipeShoppingRoute(recipeId, servings, snackbarHostState, onOpenShoppingList)` visar
+knappen och arket. Features beror inte på varandra, så receptdetaljen
+(`RecipeDetailRoute(shoppingAction = …)`, under ingredienserna; i surfplattans ingredienspanel) och
+kokläget (`CookRoute(shoppingAction = …)`, sist på "Klart!"-sidan) har en **plats** som skalet
+fyller (`RouteShellFeatures`); "Visa listan" i snackbaren byter till Handla.
+- `RecipeShoppingViewModel` (assisted, recept-id; valen i `SavedStateHandle`): raderna byggs med
+  `core:domain` `RecipeDisplay` i de valda portionerna (samma skalning, bråk och plural som
+  receptet), bara ingredienser med livsmedel (Tandoor kräver `food`). `food_onhand` → inte
+  ikryssad och märkt "Finns hemma"; "Markera alla" och "Bara det som saknas"; listval bland
+  Tandoors namngivna listor. "Lägg till" = `ShoppingRepository.addRecipe` (ett listrecept med de
+  valda raderna, offline via outboxen, inköpsbanans kod). Receptets egna rader på listan
+  (`ShoppingRecipeLabel.recipeId`, inte en måltids) räknas, och "Ta bort från listan" anropar
+  `removeListRecipe` per listrecept (Tandoor tar bort raderna med det; radernas köade ändringar
+  rensas först). Gäster ser ingen knapp och ViewModel skriver inget; ett recept utan lagrad detalj
+  har ingen knapp.
+- Listan visar receptet på varje rad (inköpsbanan); ändringsarket har nu "Ta bort … från listan
+  (n varor)" (`ShoppingAction.RemoveEditedRecipe`).
+
+**"Handla för veckan" (#16, Stitch `handla_f_r_veckan`):**
+- `MealPlanRepository.weekShoppingPreview(from, to)` (den gamla `weekShoppingPreview(start)` är
+  en standardmetod för sju dagar). **Online läses matsedeln och listan först**
+  (`MealPlanSync.refresh` och `ShoppingRepository.refresh`, som också tömmer outboxen), så rader
+  som servern eller en annan telefon lagt dit för en måltid syns. En måltid är "redan på listan"
+  när servern säger `shopping` **eller** en lagrad rad eller ett listrecept pekar på den
+  (`MealPlanDao.getMealIdsOnShoppingList` läser nu både `shopping_entry` och
+  `shopping_list_recipe`). Ingredienserna bär livsmedel och gång; "har hemma" kommer ur
+  livsmedelstabellen (nyare än receptet).
+- **Utan dubbletter, inställningen på eller av:** Tandoor gör inget själv för
+  `mealplan_autoadd_shopping` via API:t (FACTS "Fas 2"), men webben lägger till när den är på.
+  Av: appen lägger till, ett listrecept med `mealplan` per måltid; nästa förhandsvisning (på
+  samma eller en annan telefon) ser dem som på listan. På: serverns rader markerar måltiden. En
+  måltid som planeras i appen med "Lägg på listan" (`addshopping`) räknas som på listan **direkt**
+  (lokalt `meal_plan.shopping`, också offline innan servern svarat), så appen lägger aldrig till
+  den en gång till. I demoläget lägger appen själv på ingredienserna (utan "har hemma") när
+  rutan är ikryssad.
+- Sammanslagningen är ren (`core:domain` `WeekShoppingMerge`): samma livsmedel och enhet (utan
+  skillnad på stora/små bokstäver) blir en rad med summerad mängd (`WeekShoppingLine`/`Part`),
+  olika enheter står var för sig (Tandoor räknar inte om), en rad är "har hemma" om något av
+  dess livsmedel är det. Valet går tillbaka till måltiderna (`selection`): raderna läggs per
+  måltid, så att ta bort en måltid tar bort just dess rader.
+- `WeekShoppingViewModel` (datumintervall, uteslutna måltider och omvalda rader i
+  `SavedStateHandle`; gångarnas namn ur `SupermarketRepository`): dagarna (`DateRangePicker`),
+  antal att köpa och hemma, "Bara det som saknas (n)" / "Alla råvaror (n)", måltiderna som chips
+  (en måltid på listan är markerad och går inte att välja), raderna per gång ("Summerad" när
+  flera måltider bidrar: "5 dl totalt (3 dl Svamppasta + 2 dl Fisksoppa)"), "Finns redan
+  hemma?" sist. Från 840 dp står måltiderna i en egen kolumn bredvid raderna.
+
+**Kretsbrytaren för Fas 2-skrivningar (plan 3.5, 4.1):** `RemoteCaller` räknar nu **varje**
+404 och 400, också en 404 som en avsändare behandlar som klar (inköpsbanans `expectedNotFound`
+är borttagen; planen säger att de räknas, och varje sådan rad i proxyns logg räknas av
+CrowdSecs `http-probing`). Fem inom 100 s pausar bakgrundsanropen (alla outbox-avsändare) i 5
+minuter; resten av outboxen väntar och kontrolleras mot listan igen före sändning. Rensningen
+före tömning är avsändarnas kontroll mot en full läsning (inköp), fönsterläsningen (matsedel) och
+`removeListRecipe`/`clearChecked`, som tar bort radernas köade ändringar innan listan töms.
+
+**Blockerad-diagnostik (Mer → Diagnostik):** `DiagnosticsSnapshot.syncHealth` (`core:model`
+`SyncHealth`, `OutboxSummary`, `OutboxKind`, `OutboxProblem`) byggs av `core:sync`
+`OutboxHealth` ur det aktiva kontots outbox, synkstatusens paus och `SyncGuard`s tillstånd:
+blockerad eller inte (och till när: 403 utan JSON, 429, kretsbrytaren), 404/400 i kretsbrytarens
+fönster ("n av 5"), och per slag av ändring väntande, nekade (FAILED) och senaste felet ur radens
+stabila felkod (kretsbrytaren har nu en egen: `circuit-breaker`). Gruppen "Synk och väntande
+ändringar" visas bara med ett riktigt konto. Loggexporten har samma uppgifter
+("Kind SHOPPING_ENTRY: waiting …", "Paused until", "404/400 in the breaker window"). Exporten av
+väntande ändringar (återställningsskärmen, Konton) tar med Fas 2-typerna som vanliga rader och nu
+också tillfälligt `localId`, `refs` och `dependsOn`.
+
+**Tester:** `WeekShoppingMergeTest` (`:core:domain`); `WeekShoppingSyncTest` (`:core:sync`, en
+tillståndsfull matsedel **och** lista i 2.6.13:s och 2.7.1:s inspelade former, `addshopping` lägger
+rader som servern): av (appen lägger till en gång, inte igen, inte från en annan telefon), på
+(serverns rader med och utan `shopping`), en måltid planerad med "Lägg på listan" offline;
+`ShoppingSyncTest` (fem 404 öppnar kretsbrytaren, resten kontrolleras igen),
+`SettingsAndDiagnosticsTest` (blockerad per slag, exporten med Fas 2-typerna);
+`RecipeShoppingViewModelTest`, `RecipeShoppingScreenTest`, `WeekShoppingViewModelTest`,
+`WeekScreenTest`; ATF i `ShoppingAccessibilityTest`, `MealPlanAccessibilityTest` och
+`SettingsAccessibilityTest`; skärmbilder `phone_recipe_shopping_*`, `*_week_shopping_*` och
+`settings_*_diagnostics_*` (inklusive `diagnostics_blocked_*`).
+<!-- /Fas 2 koppling -->
 
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)

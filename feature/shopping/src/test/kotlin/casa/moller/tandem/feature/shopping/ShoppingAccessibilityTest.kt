@@ -107,6 +107,23 @@ class ShoppingAccessibilityTest {
     @Test
     fun historyEmpty() = check(ShoppingShot.HISTORY_EMPTY)
 
+    // Phase 2 (koppling lane): "Lägg på inköpslistan" (#12) and removing a recipe from the list.
+
+    @Test
+    fun recipeSheet() = check(ShoppingShot.RECIPE_SHEET)
+
+    @Test
+    fun recipeSheetDarkFontScale2() = check(ShoppingShot.RECIPE_SHEET, darkTheme = true, fontScale = 2f)
+
+    @Test
+    fun recipeSheetLists() = check(ShoppingShot.RECIPE_SHEET_LISTS)
+
+    @Test
+    fun recipeButton() = check(ShoppingShot.RECIPE_BUTTON, fontScale = 2f)
+
+    @Test
+    fun editFromRecipe() = check(ShoppingShot.EDIT_FROM_RECIPE)
+
     private fun check(shot: ShoppingShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {
             ShoppingTestTheme(darkTheme = darkTheme, fontScale = fontScale, chrome = chrome) { shot.content() }

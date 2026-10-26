@@ -11,6 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.model.shopping.ParsedIngredient
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingButton
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingContent
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRow
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingUiState
 import casa.moller.tandem.feature.shopping.ui.AddItemPanel
 import casa.moller.tandem.feature.shopping.ui.EditEntryPanel
 import casa.moller.tandem.feature.shopping.ui.ShoppingHistoryScreen
@@ -40,6 +44,12 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     STORE_CHOICE_EMPTY({ ChoiceShot(StoreChoiceUiState(loading = false)) }),
     HISTORY({ HistoryShot(ShoppingHistoryUiState(loading = false, items = ShoppingSamples.history)) }),
     HISTORY_EMPTY({ HistoryShot(ShoppingHistoryUiState(loading = false)) }),
+
+    // Phase 2 (koppling lane): "Lägg på inköpslistan" (#12) and removing a recipe from the list.
+    RECIPE_SHEET({ Sheet { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = {}) } }),
+    RECIPE_SHEET_LISTS({ Sheet { RecipeShoppingContent(state = RecipeShoppingSamples.withLists, onAction = {}) } }),
+    RECIPE_BUTTON({ Sheet { RecipeShoppingButton(state = RecipeShoppingSamples.onList, onAction = {}, servings = 4.0) } }),
+    EDIT_FROM_RECIPE({ Sheet { EditEntryPanel(state = editState.copy(recipeRows = 4), onAction = {}) } }),
 }
 
 @Composable
@@ -94,4 +104,32 @@ private fun Sheet(content: @Composable () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 24.dp),
         ) { content() }
     }
+}
+
+/** Phase 2 (koppling lane): "Lägg på inköpslistan" for Krämig svamppasta (Stitch l_gg_p_listan_ark). */
+internal object RecipeShoppingSamples {
+    val sheet = RecipeShoppingUiState(
+        loading = false,
+        available = true,
+        open = true,
+        recipeName = "Krämig svamppasta",
+        servings = 4.0,
+        servingsText = "portioner",
+        toBuy = listOf(
+            RecipeShoppingRow(10111, "champinjoner", "400 g"),
+            RecipeShoppingRow(10113, "vitlöksklyftor", "2 st", note = "pressade"),
+            RecipeShoppingRow(10121, "tagliatelle", "300 g"),
+            RecipeShoppingRow(10131, "vispgrädde", "2,5 dl"),
+            RecipeShoppingRow(10132, "parmesan", "0,75 dl", note = "riven", chosen = false),
+        ),
+        atHome = listOf(
+            RecipeShoppingRow(10112, "smör", "1 ½ msk", onHand = true),
+            RecipeShoppingRow(10122, "salt", "", onHand = true),
+        ),
+    )
+
+    val withLists = sheet.copy(lists = ShoppingSamples.lists, listId = ShoppingSamples.lists.first().id, servings = 6.0)
+
+    /** The button under the ingredients with four of the recipe's rows on the list already. */
+    val onList = sheet.copy(open = false, onList = 4, onListRecipeIds = listOf(12))
 }

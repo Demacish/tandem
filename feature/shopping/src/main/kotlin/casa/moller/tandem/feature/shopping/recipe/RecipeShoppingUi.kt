@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -36,7 +37,6 @@ import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.Delete
-import casa.moller.tandem.core.designsystem.icon.ShoppingCart
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.recipe.ServingsStepper
@@ -101,6 +101,7 @@ fun RecipeShoppingButton(
 }
 
 /** The sheet over the recipe or cook mode while [RecipeShoppingUiState.open] (phones and tablets alike). */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipeShoppingSheet(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit) {
     if (!state.open) return

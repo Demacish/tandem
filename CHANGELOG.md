@@ -55,6 +55,22 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   inloggning som i introt, ta bort ett konto eller logga ut. Har kontot ändringar som inte
   skickats visas antalet och de kan exporteras först; inget raderas utan att du har sett det.
   Kontokortet under Mer visar hushållets namn och din roll (gäst syns tydligt).
+- **Lägg på inköpslistan:** i receptet (under ingredienserna) och på kokläget sista sida finns
+  "Lägg på inköpslistan". Arket visar ingredienserna i de portioner du valt, var och en med en
+  ruta; det du har hemma är inte ikryssat och märkt "Finns hemma". Välj lista, "Markera alla"
+  eller "Bara det som saknas" och lägg till; det fungerar också offline. Varorna visar vilket
+  recept de kom från, och hela receptet tas bort från listan med ett tryck (i receptet eller när
+  du ändrar en av varorna).
+- **Handla för veckan, sammanslaget:** välj vilka dagar, se alla planerade måltiders ingredienser
+  ihopslagna per vara och enhet ("5 dl vispgrädde" när två recept behöver grädde) och sorterade
+  efter butikens avdelningar, med det du har hemma bortvalt. Lämna en måltid utanför med ett
+  tryck. En måltid som redan finns på listan läggs aldrig till igen, oavsett om Tandoor själv lade
+  dit den (inställningen att lägga till planerade måltider automatiskt) eller om appen gjorde det.
+- **Synken skyddar servern och visar vad som väntar:** varje "finns inte" eller "nekad" från
+  servern räknas, och efter fem på kort tid pausar synken en stund i stället för att fortsätta
+  skicka. Mer → Diagnostik visar om synken är blockerad och till när, och hur många ändringar som
+  väntar eller nekats per slag (inköpslistan, matsedeln, böcker …) med det senaste felet.
+  Exporten av väntande ändringar tar med alla nya slag av ändringar.
 
 ## [0.2.0] – 2026-10-24
 

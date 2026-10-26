@@ -103,6 +103,37 @@ internal class FakeShoppingTandoor(private val version: String, private val cloc
     @Synchronized
     fun partnerAdd(food: String): Long = seed(food, by = PARTNER)
 
+    /**
+     * Phase 2 (koppling lane): the server puts a planned meal's recipe on the list itself (the web
+     * with `mealplan_autoadd_shopping`, or `addshopping`): one list recipe linked to [mealId] and one
+     * entry per food. Returns the list recipe's id.
+     */
+    @Synchronized
+    fun serverAddMeal(mealId: Long, recipe: Long, servings: Double, foods: List<String>): Long {
+        val listRecipe = ListRecipe(id = nextId++, recipe = recipe, servings = servings, mealplan = mealId)
+        listRecipes[listRecipe.id] = listRecipe
+        for (food in foods) {
+            val now = tick()
+            val entry = Entry(
+                id = nextId++,
+                food = food,
+                foodId = foodId(food),
+                unit = null,
+                amount = 1.0,
+                listRecipe = listRecipe.id,
+                createdBy = PARTNER,
+                createdAt = now,
+                updatedAt = now,
+            )
+            entries[entry.id] = entry
+        }
+        return listRecipe.id
+    }
+
+    /** Every list recipe on the server. */
+    @Synchronized
+    fun listRecipes(): List<ListRecipe> = listRecipes.values.map { it.copy() }
+
     @Synchronized
     fun partnerCheck(id: Long, checked: Boolean = true) {
         val entry = entries.getValue(id)
@@ -131,8 +162,9 @@ internal class FakeShoppingTandoor(private val version: String, private val cloc
 
     // ------------------------------------------------------------------------------ answers
 
+    /** Answers a shopping list request, null for any other path (so another fake may answer it). */
     @Synchronized
-    private fun answer(request: RecordedRequest): MockResponse? {
+    fun answer(request: RecordedRequest): MockResponse? {
         val method = request.method
         val path = request.url.encodedPath
         val text = request.body?.utf8().orEmpty()

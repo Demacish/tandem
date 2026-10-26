@@ -39,7 +39,6 @@ internal fun TandemError.code(): String = when (this) {
         SyncGuard.BREAKER_ERROR -> CIRCUIT_BREAKER_CODE
         SyncGuard.IMPORT_ERROR -> "import-running"
         else -> "unknown"
-
     }
 }
 

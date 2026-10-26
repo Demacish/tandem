@@ -230,7 +230,8 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
 
     private fun add() {
         val state = uiState.value
-        if (!state.canAdd || !state.open || state.adding || state.chosenCount == 0) return
+        val ready = state.canAdd && state.open && state.chosenCount > 0
+        if (!ready || state.adding) return
         val chosen = (state.toBuy + state.atHome).filter { it.chosen }.mapTo(LinkedHashSet()) { it.id }
         adding.value = true
         viewModelScope.launch {

@@ -122,8 +122,16 @@ internal class FakeMealPlanTandoor(private val version: String) {
 
     // ------------------------------------------------------------------------------ answers
 
+    /**
+     * Phase 2 (koppling lane): what the server does for `addshopping: true` (FACTS "Fas 2": it puts
+     * the recipe's ingredients on the list, linked to the meal); a test wires it to a [FakeShoppingTandoor].
+     */
+    @Volatile
+    var onAddShopping: ((Meal) -> Unit)? = null
+
+    /** Answers a meal plan request, null for any other path (so another fake may answer it). */
     @Synchronized
-    private fun answer(request: RecordedRequest): MockResponse? {
+    fun answer(request: RecordedRequest): MockResponse? {
         val method = request.method
         val path = request.url.encodedPath
         val text = request.body?.utf8().orEmpty()
@@ -168,6 +176,7 @@ internal class FakeMealPlanTandoor(private val version: String) {
             shopping = (body["addshopping"] as? JsonPrimitive)?.contentOrNull == "true",
         )
         meals[meal.id] = meal
+        if (meal.shopping) onAddShopping?.invoke(meal)
         return json(CREATED, mealJson(meal))
     }
 
