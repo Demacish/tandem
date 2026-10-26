@@ -128,8 +128,7 @@ class Phase2SmokeTest {
 
         // (b) Offline edits of 15 rows that the partner deletes meanwhile.
         goOffline()
-        app.scrollBackTo(By.desc("Check all in Grönsaker")).click()
-        VEGETABLES.forEach { app.waitUntilGone(row(it)) }
+        checkWholeAisle("Grönsaker", VEGETABLES)
         LATER.forEach { editRow(it, "Buy later") }
         REMOVED.forEach { editRow(it, "Remove from the list") }
         app.waitFor(By.desc(WAITING))
@@ -402,6 +401,20 @@ class Phase2SmokeTest {
             }
         }
         app.waitUntilGone(row(food))
+    }
+
+    /**
+     * "Check all" in [aisle] (above the rows, so the list is scrolled back up first), at rest and
+     * again while its rows are still there: checking an aisle twice changes nothing.
+     */
+    private fun checkWholeAisle(aisle: String, foods: List<String>) {
+        val button = By.clickable(true).hasDescendant(By.desc("Check all in $aisle"))
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.scrollBackTo(By.desc("Check all in $aisle"))
+            settled(button, app.waitFor(button)).click()
+            if (app.device.wait(Until.gone(row(foods.first())), TAP_WAIT_MS) == true) break
+        }
+        foods.forEach { app.waitUntilGone(row(it)) }
     }
 
     /** Long press on [food]'s row (the edit sheet, again when the press was lost) and [button] there. */
