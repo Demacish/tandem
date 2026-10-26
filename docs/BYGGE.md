@@ -1485,7 +1485,7 @@ riktiga namn och version).
 
 | Gränssnitt | Implementation | Innehåll |
 |---|---|---|
-| `account.AccountDirectory` (`:core:data`) | `DefaultAccountDirectory` (`:core:sync`, `di/AccountModule.kt`, ersätter appens `TemporaryFas2AccountModule`) | `observeAccounts` (sparade konton med hushåll, roll, osända ändringar, kompatibilitet; demoläget är aldrig ett konto), `switchTo`, `observeHousehold`/`refreshHousehold`, `remove(id, revokeToken, discardPendingChanges)`, `exportPendingChanges(id)` |
+| `account.AccountDirectory` (`:core:data`) | `DefaultAccountDirectory` (`:core:sync`, `di/AccountModule.kt`, ersätter appens `TemporaryFas2AccountModule`, den sista; filen `TemporaryFas2Module.kt` är därmed borttagen) | `observeAccounts` (sparade konton med hushåll, roll, osända ändringar, kompatibilitet; demoläget är aldrig ett konto), `switchTo`, `observeHousehold`/`refreshHousehold`, `remove(id, revokeToken, discardPendingChanges)`, `exportPendingChanges(id)` |
 | `account.AccountSessions` (`:core:data`, ny) | `DefaultAccountRepository` (samma objekt och skrivlås som inloggningen) | `activate(id)` (lämnar demoläget), `remove(id, revokeToken)`; `logout` använder samma väg |
 
 - **Byte:** bara det aktiva kontot ändras (`AppSettings.activeAccountId`); allt annat följer
