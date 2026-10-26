@@ -155,4 +155,5 @@
         <item quantity="other">Lägg till %1$d varor i inköpslistan</item>
     </plurals>
     <string name="mealplan_week_shopping_add_none">Välj vad som ska läggas till</string>
+    <string name="mealplan_week_shopping_read_only">Som gäst ser du vad dagarna behöver, men bara medlemmar kan lägga det på inköpslistan.</string>
 </resources>

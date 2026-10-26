@@ -155,4 +155,5 @@
         <item quantity="other">Add %1$d items to the shopping list</item>
     </plurals>
     <string name="mealplan_week_shopping_add_none">Choose what to add</string>
+    <string name="mealplan_week_shopping_read_only">As a guest you see what these days need, but only members can put it on the shopping list.</string>
 </resources>

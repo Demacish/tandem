@@ -63,6 +63,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.readonly.ReadOnlyNote
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
 import casa.moller.tandem.feature.mealplan.R
 import casa.moller.tandem.feature.mealplan.WeekShoppingAction
@@ -225,6 +226,10 @@ private fun LazyListScope.overview(
     }
     item(key = "intro") {
         Text(text = stringResource(R.string.mealplan_week_shopping_intro), style = MaterialTheme.typography.bodyLarge)
+    }
+    if (state.readOnly) {
+        // #42: a guest sees what the days need, but cannot put it on the list.
+        item(key = "read-only") { ReadOnlyNote(text = stringResource(R.string.mealplan_week_shopping_read_only)) }
     }
     if (state.autoAdd) {
         item(key = "auto-add") {

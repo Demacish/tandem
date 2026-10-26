@@ -32,6 +32,8 @@ import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
 import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.engine.DetailFetcher
+import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import javax.inject.Inject
@@ -90,6 +92,9 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
     private val clock: SyncClock,
     private val sync: MealPlanSync,
     private val shopping: Provider<ShoppingRepository>,
+    // Phase 2 (koppling lane): "Handla för veckan" fetches a planned recipe that was never opened.
+    private val details: DetailFetcher,
+    private val network: NetworkStatus,
 ) : MealPlanRepository {
     /** Serializes local writes, so two taps never get the same temporary id. */
     private val writes = Mutex()
@@ -362,6 +367,12 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         val pending = PendingMeals.of(outbox)
         val inRange = stored.map { it.toModel(pending = pending.contains(it.entry)) }
             .sortedWith(compareBy({ it.fromDate }, { it.mealType.order }))
+        if (source is ActiveSource.Remote && network.online.value) {
+            // Phase 2 (koppling lane; the matsedel lane's open issue): a planned recipe nobody opened
+            // yet has no stored ingredients; read it now instead of offering nothing to choose.
+            val missing = inRange.mapNotNull { it.recipe?.id }.distinct().filter { database.recipeDao().getDetail(accountId, it) == null }
+            missing.forEach { recipeId -> details.fetch(source, recipeId, isBackground = false) }
+        }
         val onList = database.mealPlanDao().getMealIdsOnShoppingList(accountId).toSet()
         val autoAdd = database.referenceDao().getUserPreference(accountId)?.mealPlanAutoAddShopping ?: false
         val foods = database.referenceDao().getFoods(accountId).associateBy { it.id }

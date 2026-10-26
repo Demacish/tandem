@@ -221,7 +221,18 @@ internal class SyncTestGraph(
 
     // Phase 2 (matsedel lane): the meal plan repository and its refresh.
     val mealPlanSync = MealPlanSync(mealPlanWindow, outbox, scheduler, network)
-    val mealPlans = OfflineFirstMealPlanRepository(sources, databases, permissions, scheduler, clock, mealPlanSync, { shopping })
+    val mealPlans = OfflineFirstMealPlanRepository(
+        sources,
+        databases,
+        permissions,
+        scheduler,
+        clock,
+        mealPlanSync,
+        { shopping },
+        // Phase 2 (koppling lane): planned recipes that were never opened are fetched for "Handla för veckan".
+        details,
+        network,
+    )
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

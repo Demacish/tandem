@@ -224,6 +224,16 @@ class WeekShoppingSyncTest {
         assertEquals("[$version] only the server's rows", mapOf(serverId to 1), listRecipesByMeal())
     }
 
+    /** A planned recipe nobody opened yet is read for the preview (online), so its ingredients can be chosen. */
+    @Test
+    fun aPlannedRecipeThatWasNeverOpenedIsReadForThePreview() = forEachVersion {
+        val shakshuka = meals.web("2026-10-17T00:00:00", recipe = NEVER_OPENED)
+        assertTrue(graph.real.recipeDao().getDetail(ACCOUNT_ID, NEVER_OPENED) == null)
+        val preview = preview()
+        assertTrue("[$version] ${preview.meals}", preview.meals.single { it.meal.id == shakshuka }.ingredients.isNotEmpty())
+        assertTrue(graph.server.requestsTo("GET", "/api/recipe/$NEVER_OPENED/").isNotEmpty())
+    }
+
     private companion object {
         val VERSIONS = listOf("2.6.13", "2.7.1")
         val MONDAY = LocalDate(2026, 10, 12)
@@ -232,6 +242,9 @@ class WeekShoppingSyncTest {
         /** Recipes with recorded details in FakeTandoorServer (svamppasta, köttbullar). */
         const val PASTA = 2L
         const val MEATBALLS = 5L
+
+        /** Shakshuka: recorded, but not fetched before the test. */
+        const val NEVER_OPENED = 6L
         const val MAX_DRAINS = 10
     }
 }
