@@ -1,6 +1,11 @@
 package casa.moller.tandem.feature.shopping.recipe
 
 import android.content.Context
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
@@ -33,25 +38,25 @@ class RecipeShoppingScreenTest {
     fun eachIngredientIsOneCheckboxAndAtHomeIsUnticked() {
         val actions = mutableListOf<RecipeShoppingAction>()
         composeRule.setContent {
-            ShoppingTestTheme { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = { actions += it }) }
+            ShoppingTestTheme { Scrolling { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = { actions += it }) } }
         }
         composeRule.onNodeWithTag(recipeShoppingRowTag(10111)).assertIsOn().performClick()
         assertEquals(RecipeShoppingAction.Toggle(10111), actions.last())
-        composeRule.onNodeWithTag(recipeShoppingRowTag(10132)).assertIsOff()
+        composeRule.onNodeWithTag(recipeShoppingRowTag(10132)).performScrollTo().assertIsOff()
         composeRule.onNodeWithTag(recipeShoppingRowTag(10112)).performScrollTo().assertIsOff()
-        composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_at_home)).performScrollTo()
+        composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_at_home)).assertExists()
         val add = context.resources.getQuantityString(R.plurals.recipe_shopping_add, 4, 4)
+        composeRule.onNodeWithText(add).assertExists()
         composeRule.onNodeWithTag(RECIPE_SHOPPING_ADD_TAG).performScrollTo().assertIsEnabled().performClick()
-        composeRule.onNodeWithText(add).performScrollTo()
         assertEquals(RecipeShoppingAction.Add, actions.last())
     }
 
     @Test
     fun nothingChosenCannotBeAdded() {
         val none = RecipeShoppingSamples.sheet.copy(toBuy = RecipeShoppingSamples.sheet.toBuy.map { it.copy(chosen = false) })
-        composeRule.setContent { ShoppingTestTheme { RecipeShoppingContent(state = none, onAction = {}) } }
+        composeRule.setContent { ShoppingTestTheme { Scrolling { RecipeShoppingContent(state = none, onAction = {}) } } }
         composeRule.onNodeWithTag(RECIPE_SHOPPING_ADD_TAG).performScrollTo().assertIsNotEnabled()
-        composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_add_none)).performScrollTo()
+        composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_add_none)).assertExists()
     }
 
     @Test
@@ -62,7 +67,7 @@ class RecipeShoppingScreenTest {
         }
         composeRule.onNodeWithTag(RECIPE_SHOPPING_BUTTON_TAG).performClick()
         assertEquals(RecipeShoppingAction.Open(6.0), actions.last())
-        composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.recipe_shopping_on_list, 4, 4)).performScrollTo()
+        composeRule.onNodeWithText(context.resources.getQuantityString(R.plurals.recipe_shopping_on_list, 4, 4)).assertExists()
         composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_remove)).performClick()
         assertEquals(RecipeShoppingAction.RemoveFromList, actions.last())
     }
@@ -75,4 +80,10 @@ class RecipeShoppingScreenTest {
         composeRule.onNodeWithTag(RECIPE_SHOPPING_BUTTON_TAG).assertDoesNotExist()
         composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_remove)).assertDoesNotExist()
     }
+}
+
+/** The sheet's content scrolls like it does in the sheet. */
+@Composable
+private fun Scrolling(content: @Composable () -> Unit) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) { content() }
 }

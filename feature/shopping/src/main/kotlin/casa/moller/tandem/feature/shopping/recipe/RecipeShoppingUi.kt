@@ -272,7 +272,7 @@ private fun IngredientChoice(row: RecipeShoppingRow, onToggle: () -> Unit) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
             Text(text = row.food, style = MaterialTheme.typography.bodyLarge)
             if (row.note.isNotBlank()) {
-                Text(text = row.note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = row.note, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (row.onHand) StatusChip(label = stringResource(R.string.recipe_shopping_on_hand))
         }

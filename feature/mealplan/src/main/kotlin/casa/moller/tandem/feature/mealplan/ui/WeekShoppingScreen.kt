@@ -195,8 +195,7 @@ fun WeekShoppingScreen(
     }
 }
 
-/** The days, the counts, the explanation and "Bara det som saknas" / "Alla råvaror". */
-@OptIn(ExperimentalLayoutApi::class)
+/** The days, the explanation and the counts. */
 private fun LazyListScope.overview(
     state: WeekShoppingUiState,
     format: MealPlanFormat,
@@ -242,6 +241,12 @@ private fun LazyListScope.overview(
             }
         }
     }
+    summary(state, onAction)
+}
+
+/** How many items to buy and at home, with "Bara det som saknas" / "Alla råvaror". */
+@OptIn(ExperimentalLayoutApi::class)
+private fun LazyListScope.summary(state: WeekShoppingUiState, onAction: (WeekShoppingAction) -> Unit) {
     if (state.lineCount > 0) {
         item(key = "summary") {
             val spacing = TandemTheme.spacing
@@ -462,7 +467,7 @@ private fun LineRow(line: WeekShoppingLineState, readOnly: Boolean, format: Meal
                 Text(text = merged.foodName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f, fill = false))
                 if (merged.merged) StatusChip(label = stringResource(R.string.mealplan_week_shopping_merged), tone = TandemTone.Accent)
             }
-            Text(text = detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (merged.onHand) StatusChip(label = stringResource(R.string.mealplan_week_shopping_on_hand))
         }
         if (amount.isNotEmpty()) {
