@@ -297,15 +297,8 @@ class FakeShoppingList(private val template: (String) -> JsonObject) {
     // ------------------------------------------------------------------------------ JSON
 
     private fun toJson(entry: Entry): JsonObject {
-        val category = entry.categoryId?.let { categories[it] } ?: JsonNull
-        val food = JsonObject(
-            entryTemplate.getValue("food").jsonObject +
-                mapOf("id" to JsonPrimitive(entry.foodId), "name" to JsonPrimitive(entry.food), "supermarket_category" to category),
-        )
-        val unit = entry.unit?.let { name ->
-            val fields = mapOf("id" to JsonPrimitive(foodId("unit:$name")), "name" to JsonPrimitive(name))
-            JsonObject(entryTemplate.getValue("unit").jsonObject + fields)
-        } ?: JsonNull
+        val food = foodJson(entry)
+        val unit = unitJson(entry.unit)
         val listRecipe = entry.listRecipe?.let { listRecipes[it] }
         return JsonObject(
             entryTemplate + mapOf(
@@ -325,6 +318,18 @@ class FakeShoppingList(private val template: (String) -> JsonObject) {
                 "delay_until" to (entry.delayUntil?.let { JsonPrimitive(format(it)) } ?: JsonNull),
             ),
         )
+    }
+
+    private fun foodJson(entry: Entry): JsonObject {
+        val category = entry.categoryId?.let { categories[it] } ?: JsonNull
+        val fields = mapOf("id" to JsonPrimitive(entry.foodId), "name" to JsonPrimitive(entry.food), "supermarket_category" to category)
+        return JsonObject(entryTemplate.getValue("food").jsonObject + fields)
+    }
+
+    private fun unitJson(name: String?): JsonElement {
+        if (name == null) return JsonNull
+        val fields = mapOf("id" to JsonPrimitive(foodId("unit:$name")), "name" to JsonPrimitive(name))
+        return JsonObject(entryTemplate.getValue("unit").jsonObject + fields)
     }
 
     private fun listRecipeJson(recipe: ListRecipe): JsonObject = JsonObject(

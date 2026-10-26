@@ -90,7 +90,9 @@ internal class ShoppingReader @Inject constructor(
     suspend fun stillOnServerLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<Boolean> {
         val now = clock.nowMillis()
         val known = seen?.takeIf {
-            it.accountId == remote.accountId && now - it.readAtMillis in 0 until VERIFY_MAX_AGE_MILLIS && it.reconnections == network.reconnections
+            it.accountId == remote.accountId &&
+                now - it.readAtMillis in 0 until VERIFY_MAX_AGE_MILLIS &&
+                it.reconnections == network.reconnections
         }
         val snapshot = known ?: when (val read = readFull(remote, background = true)) {
             is Outcome.Failure -> return read

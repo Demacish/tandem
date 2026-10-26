@@ -191,36 +191,34 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     }
 
     /** The recorded (stateless) answers after login. */
-    private fun respondRecorded(request: RecordedRequest, method: String, path: String): MockResponse {
-        return when {
-            // --- Phase 1 (sync lane): the first sync and the background sync after a login read
-            // the recipe index, overviews, small tables, meal plan and cook log, and send view logs.
-            method == "GET" && path == "/api/recipe/" -> recipeList(request.url)
+    private fun respondRecorded(request: RecordedRequest, method: String, path: String): MockResponse = when {
+        // --- Phase 1 (sync lane): the first sync and the background sync after a login read
+        // the recipe index, overviews, small tables, meal plan and cook log, and send view logs.
+        method == "GET" && path == "/api/recipe/" -> recipeList(request.url)
 
-            method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
+        method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
-            // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
-            method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
+        // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
+        method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
 
-            method == "GET" && RECIPE_PATH.matches(path) -> {
-                val id = RECIPE_PATH.find(path)!!.groupValues[1]
-                val recording = RECIPES_BY_ID[id] ?: "fas1/recipe-deleted-get"
-                // Phase 1b: the cook-mode recipe gets two short timers in its last step.
-                if (id == TIMER_RECIPE_ID.toString()) fixture(recording, ::withShortTimers) else fixture(recording)
-            }
-
-            // --- Phase 1b (integration lane): "Klart!" from cook mode, sent by the outbox. ---
-            method == "POST" && path == "/api/cook-log/" -> {
-                val body = request.body?.utf8().orEmpty()
-                cookLogPosts += body
-                fixture("fas1/cook-log-create") { recorded -> echoCookLog(recorded, body) }
-            }
-
-            method == "POST" && path == "/api/view-log/" -> fixture("fas1/view-log-create")
-
-            // Tandoor sends unknown paths to its login page (FACTS g).
-            else -> fixture("29-not-found-unknown-path")
+        method == "GET" && RECIPE_PATH.matches(path) -> {
+            val id = RECIPE_PATH.find(path)!!.groupValues[1]
+            val recording = RECIPES_BY_ID[id] ?: "fas1/recipe-deleted-get"
+            // Phase 1b: the cook-mode recipe gets two short timers in its last step.
+            if (id == TIMER_RECIPE_ID.toString()) fixture(recording, ::withShortTimers) else fixture(recording)
         }
+
+        // --- Phase 1b (integration lane): "Klart!" from cook mode, sent by the outbox. ---
+        method == "POST" && path == "/api/cook-log/" -> {
+            val body = request.body?.utf8().orEmpty()
+            cookLogPosts += body
+            fixture("fas1/cook-log-create") { recorded -> echoCookLog(recorded, body) }
+        }
+
+        method == "POST" && path == "/api/view-log/" -> fixture("fas1/view-log-create")
+
+        // Tandoor sends unknown paths to its login page (FACTS g).
+        else -> fixture("29-not-found-unknown-path")
     }
 
     /**
