@@ -459,25 +459,25 @@ class Phase2SmokeTest {
         app.waitFor(By.text("Add to the list"))
         app.type(0, text)
         val button = if (count == 1) "Add 1 item" else "Add $count items"
-        // The on-screen keyboard (when it shows) covers the button below the preview and the
-        // suggestions, and Back did not reliably close it in CI: then its "Done" key adds, as a
-        // user would (the field's IME action). Again while the button still says "Add n items".
-        // The keyboard may only open after the text is set, so both are looked for each time.
+        // The on-screen keyboard (when it shows, possibly only after the text is set) covers the
+        // button below the preview and the suggestions, and Back did not reliably close it in CI:
+        // then its "Done" key adds, as a user would (the field's IME action). Not added yet while
+        // the field still holds the text (a button under the keyboard is not in the window tree
+        // at all, so its absence says nothing).
         val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
-        while (app.device.hasObject(By.text(button))) {
+        val typed = By.clazz(EDIT_TEXT).text(text)
+        while (app.device.hasObject(typed)) {
             if (SystemClock.uptimeMillis() > deadline) throw AssertionError("\"$button\" was never added (keyboard or button)")
             val done = app.device.findObject(By.pkg(KEYBOARD_PACKAGE).desc("Done"))
             val target = done ?: app.clickableWithText(button).firstNotNullOfOrNull { selector ->
                 app.device.findObject(selector)?.let { settledOrNull(selector, it) }
             }
             if (target != null && runCatching { target.click() }.isSuccess) {
-                app.device.wait(Until.gone(By.text(button)), TAP_WAIT_MS)
+                app.device.wait(Until.gone(typed), TAP_WAIT_MS)
             } else {
                 SystemClock.sleep(SETTLE_POLL_MS)
             }
         }
-        // Added: the field is emptied and the button says "Add" again; the sheet stays open.
-        app.waitUntilGone(By.text(button))
         repeat(CLOSE_ATTEMPTS) {
             if (!app.device.hasObject(By.text("Add to the list"))) return@repeat
             app.device.pressBack()
@@ -572,6 +572,7 @@ class Phase2SmokeTest {
         const val SWIPE_STEPS = 20
         const val CLOSE_ATTEMPTS = 3
         const val TAP_ATTEMPTS = 3
+        const val EDIT_TEXT = "android.widget.EditText"
         val KEYBOARD_PACKAGE: Pattern = Pattern.compile(".*inputmethod.*")
         const val TAP_WAIT_MS = 4_000L
         const val SETTLE_MS = 3_000L
