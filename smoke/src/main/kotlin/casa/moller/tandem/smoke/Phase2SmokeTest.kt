@@ -365,6 +365,23 @@ class Phase2SmokeTest {
         return settled(row(food), app.findInList(row(food)))
     }
 
+    /** Clicks the first match of [selectors] once it lies still; retried while nodes go stale. */
+    private fun clickAtRest(selectors: List<BySelector>) {
+        val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
+        while (true) {
+            val target = selectors.firstNotNullOfOrNull { selector ->
+                app.device.findObject(selector)?.let { settledOrNull(selector, it) }
+            }
+            if (target != null && runCatching { target.click() }.isSuccess) return
+            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("Nothing to click at rest: $selectors")
+            SystemClock.sleep(SETTLE_POLL_MS)
+        }
+    }
+
+    /** [settled], or null when [selector] no longer matches. */
+    private fun settledOrNull(selector: BySelector, found: UiObject2): UiObject2? =
+        if (app.device.hasObject(selector)) settled(selector, found) else null
+
     /** [found] again once its bounds stop changing (at most [SETTLE_MS]). */
     private fun settled(selector: BySelector, found: UiObject2): UiObject2 {
         var current = found
@@ -421,7 +438,11 @@ class Phase2SmokeTest {
     /** Long press on [food]'s row (the edit sheet, again when the press was lost) and [button] there. */
     private fun editRow(food: String, button: String) {
         openEdit(food)
-        app.tap(button)
+        // Again while the sheet is still open: a click that took effect closes it.
+        for (attempt in 1..TAP_ATTEMPTS) {
+            clickAtRest(app.clickableWithText(button))
+            if (app.device.wait(Until.gone(By.text(EDIT_TITLE)), TAP_WAIT_MS) == true) break
+        }
         app.waitUntilGone(By.text(EDIT_TITLE))
     }
 
@@ -442,8 +463,12 @@ class Phase2SmokeTest {
         // The keyboard covers the button below the preview and the suggestions (the sheet does
         // not scroll above it): Back closes only the keyboard while it is shown.
         hideKeyboard()
-        app.waitForClickable(button)
-        app.clickableWithText(button).firstNotNullOf { app.device.findObject(it) }.click()
+        // The sheet lays out again once the keyboard is gone: the button is clicked at rest, and
+        // again while it still says "Add n items" (a click that took effect empties the field).
+        for (attempt in 1..TAP_ATTEMPTS) {
+            clickAtRest(app.clickableWithText(button))
+            if (app.device.wait(Until.gone(By.text(button)), TAP_WAIT_MS) == true) break
+        }
         // Added: the field is emptied and the button says "Add" again; the sheet stays open.
         app.waitUntilGone(By.text(button))
         repeat(CLOSE_ATTEMPTS) {
