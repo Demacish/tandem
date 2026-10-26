@@ -44,7 +44,13 @@ class AccountsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val active = AccountSummary(ACCOUNT, isActive = true, household = Household(3, "Familjen Exempel"), role = SpaceRole.ADMIN)
+    private val active = AccountSummary(
+        ACCOUNT,
+        isActive = true,
+        household = Household(3, "Familjen Exempel"),
+        role = SpaceRole.ADMIN,
+        compatibility = ServerCompatibility.SUPPORTED,
+    )
     private val guest = AccountSummary(
         ACCOUNT.copy(id = "account-2", baseUrl = "https://recept.exempel.se", displayName = null),
         isActive = false,
@@ -96,6 +102,15 @@ class AccountsViewModelTest {
     @Test
     fun sendFirstIsOfferedOnlyWhenASyncCouldSend() = runTest {
         sync.setStatus(SyncStatus(pause = SyncPause.OFFLINE))
+
+        assertFalse(newViewModel().uiState.value.canSendNow)
+    }
+
+    @Test
+    fun sendFirstIsNotOfferedInSafeMode() = runTest {
+        directory.accounts.update { list ->
+            list.map { if (it.isActive) it.copy(compatibility = ServerCompatibility.UNTESTED_NEWER) else it }
+        }
 
         assertFalse(newViewModel().uiState.value.canSendNow)
     }

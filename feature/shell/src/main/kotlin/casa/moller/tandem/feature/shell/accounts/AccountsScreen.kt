@@ -249,15 +249,25 @@ private fun AccountFacts(item: AccountItem) {
             }
         }
     }
-    DetailLine(icon = TandemIcons.Dns, label = stringResource(R.string.shell_account_server), value = item.serverUrl)
-    item.spaceName?.let { DetailLine(icon = TandemIcons.Home, label = stringResource(R.string.shell_account_space), value = it) }
-    item.householdName?.let { DetailLine(icon = TandemIcons.HomeFilled, label = stringResource(R.string.accounts_household), value = it) }
+    DetailLine(
+        icon = TandemIcons.Dns,
+        label = stringResource(R.string.shell_account_server),
+        value = item.serverUrl,
+        mergeDescendants = false,
+    )
+    item.spaceName?.let {
+        DetailLine(icon = TandemIcons.Home, label = stringResource(R.string.shell_account_space), value = it, mergeDescendants = false)
+    }
+    item.householdName?.let {
+        DetailLine(icon = TandemIcons.HomeFilled, label = stringResource(R.string.accounts_household), value = it, mergeDescendants = false)
+    }
     roleLabel(item.role)?.let { role ->
         DetailLine(
             icon = if (item.isGuest) TandemIcons.Lock else TandemIcons.Shield,
             label = stringResource(R.string.accounts_role),
             value = if (item.isGuest) stringResource(R.string.accounts_role_guest_body) else role,
             maxLines = Int.MAX_VALUE,
+            mergeDescendants = false,
         )
     }
     FlowRow(
@@ -282,6 +292,7 @@ private fun AccountFacts(item: AccountItem) {
                     TokenOrigin.PASTED -> R.string.accounts_token_pasted
                 },
             ),
+            mergeDescendants = false,
         )
     }
     if (item.pendingChanges > 0) {

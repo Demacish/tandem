@@ -443,12 +443,16 @@ internal fun Avatar(name: String, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Label and value with an icon, read as one TalkBack item. [mergeDescendants] false (Phase 2, konto
+ * lane): the line is part of a larger item that is read as one (an account in the switcher).
+ */
 @Composable
-internal fun DetailLine(icon: ImageVector, label: String, value: String, maxLines: Int = 2) {
+internal fun DetailLine(icon: ImageVector, label: String, value: String, maxLines: Int = 2, mergeDescendants: Boolean = true) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .semantics(mergeDescendants = true) {},
+            .then(if (mergeDescendants) Modifier.semantics(mergeDescendants = true) {} else Modifier),
         horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -173,7 +173,7 @@ class AppViewModelTest {
         vm.onDemoStarted()
         assertEquals("still no demo session yet", AppDestination.Onboarding, vm.destination())
         sessions.state.value = Session.Demo
-        assertEquals(SHELL_A, vm.destination())
+        assertEquals(AppDestination.Shell(AppViewModel.SHELL_DEMO), vm.destination())
     }
 
     @Test
@@ -201,7 +201,7 @@ class AppViewModelTest {
     fun logoutFromTheShellReturnsToTheIntro() = runTest {
         sessions.state.value = LOGGED_IN
         val vm = newViewModel()
-        assertEquals(AppDestination.Shell(AppViewModel.SHELL_DEMO), vm.destination())
+        assertEquals(SHELL_A, vm.destination())
 
         sessions.logout(revokeToken = true)
 

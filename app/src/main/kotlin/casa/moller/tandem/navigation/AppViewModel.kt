@@ -278,13 +278,9 @@ class AppViewModel @Inject constructor(
 
         fun resolveDestination(session: Session?, holdOnboarding: Boolean): AppDestination = when (session) {
             null -> AppDestination.Loading
-
             is Session.RecoveryNeeded -> AppDestination.Recovery
-
             Session.NoAccount -> AppDestination.Onboarding
-
             Session.Demo -> if (holdOnboarding) AppDestination.Onboarding else AppDestination.Shell(SHELL_DEMO)
-
             is Session.LoggedIn -> if (holdOnboarding) AppDestination.Onboarding else AppDestination.Shell(session.account.id)
         }
     }
