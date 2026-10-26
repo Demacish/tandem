@@ -31,16 +31,19 @@ Levereras i två steg: **0.1.0** (Fas 1a, läsa recept) och **0.2.0** (Fas 1b, l
   skärmbildstester mot referensbilder och med pseudospråk för lång text och höger-till-vänster
   (0.2.0).
 
-## Fas 2: Handla och planera
-- Inköpslista som fungerar offline och synkas mellan hushållets telefoner.
-- Butikssortering, flera listor, lägga till varor i fritext, butiksläge, köp senare.
-- Matsedel: vecka, måltidstyper, skapa och flytta måltider.
-- "Handla för veckan" utan dubbla rader.
-- Böcker, Favoriter och "Vill laga".
-- Skrivskyddat läge för gäster.
-- Byta mellan konton och servrar i appen (ett aktivt konto per enhet).
-- Hushållets namn på kontokortet under Mer (0.2.0 visar server, space, version och serverns
-  funktioner; hushållet kommer med hushållsstödet).
+## Fas 2: Handla och planera ✅
+Levererades i **0.3.0**.
+
+- ✅ Inköpslista som fungerar offline och synkas mellan hushållets telefoner (0.3.0).
+- ✅ Butikssortering, flera listor, lägga till varor i fritext, butiksläge, köp senare (0.3.0).
+- ✅ Recept och kvällens måltid till inköpslistan, med det du har hemma bortvalt (0.3.0).
+- ✅ Matsedel: vecka, måltidstyper, skapa och flytta måltider (0.3.0).
+- ✅ "Handla för veckan" utan dubbla rader (0.3.0).
+- ✅ Böcker, Favoriter och "Vill laga" (0.3.0).
+- ✅ Skrivskyddat läge för gäster (0.3.0).
+- ✅ Byta mellan konton och servrar i appen (ett aktivt konto per enhet) (0.3.0).
+- ✅ Hushållets namn och din roll på kontokortet under Mer (0.3.0).
+- ✅ Surfplatta: inköpslistan i två kolumner och veckorutnätet, i båda orienteringarna (0.3.0).
 
 ## Fas 3: Skapa och fånga
 - Skapa och redigera recept i appen, lika komplett som i Tandoors webb: ingredienser med

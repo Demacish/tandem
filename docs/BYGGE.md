@@ -467,7 +467,7 @@ COOK_LOG slås aldrig ihop här.
 
 ### Navigering och moduler
 
-| Modul | Nycklar | Routes (platshållare tills banan bygger skärmen) |
+| Modul | Nycklar | Routes |
 |---|---|---|
 | `:feature:shopping` (ny) | `ShoppingListKey(listId?, supermarketId?)`, `StoreModeKey(listId?, supermarketId?)` (helskärm på alla bredder), `ShoppingListChoiceKey`, `ShoppingHistoryKey` | `ShoppingRoute`, `StoreModeRoute`, `ShoppingListChoiceRoute`, `ShoppingHistoryRoute` |
 | `:feature:mealplan` (ny) | `WeekAgendaKey(weekStart?)`, `PlanMealKey(date, mealTypeId?, mealPlanId?, recipeId?)`, `WeekShoppingKey(weekStart)`; datum som `yyyy-MM-dd`-strängar | `WeekRoute`, `PlanMealRoute`, `WeekShoppingRoute` |
@@ -476,8 +476,9 @@ COOK_LOG slås aldrig ihop här.
 Skalet: flikarnas rötter är fortfarande `WeekKey` och `ShoppingKey`; `ShellFeatures` har en
 funktion per route och `TandemShell` en `entry` per nyckel (recept → `RecipeDetailKey`, "Laga" →
 `CookKey`, "Handla för veckan" → `WeekShoppingKey`, listan efter → Handla-fliken). Ingången till
-böckerna (chips i Recept, raden under Mer) lägger böckernas bana till. Skalets tester visar
-fortfarande `PlaceholderTab` för Handla och Veckan, så dess referensbilder är oförändrade.
+böckerna (chips i Recept, raden under Mer) lägger böckernas bana till. Integrationen tog bort
+Fas 0:s `PlaceholderTab` (och dess strängar): skalets tester ritar `TabStub` (testkod: flikens
+titel, demobannern och en rad text) i stället för de riktiga skärmarna.
 Nyckeltester: `ShoppingKeysTest`, `MealPlanKeysTest`, `BookKeysTest`.
 
 ### Fakes (`:core:testing`) och tillfälliga bindningar (`:app`)
@@ -487,10 +488,9 @@ Nyckeltester: `ShoppingKeysTest`, `MealPlanKeysTest`, `BookKeysTest`.
 `FakeSpacePermissionsRepository`, `FakeForegroundSync`, `SampleShopping` och `sampleMeal`
 (negativa id för nya objekt, `readOnly`, `failure`). `Fas2FakesTest` prövar dem.
 
-`app/.../di/TemporaryFas2Module.kt` binder tomma stand-ins (inget visas, varje skrivning ger
-`TandemError.Unknown("tandem.temporary.fas2")`) i fem moduler; **varje bana tar bort sin modul i
-samma ändring som den binder den riktiga** (annars dubbel Hilt-bindning), integrationen tar bort
-filen.
+`app/.../di/TemporaryFas2Module.kt` band tomma stand-ins under fasen; varje bana tog bort sin
+modul när den band den riktiga, och filen finns inte längre (0.3.0: alla gränssnitt binds av
+`:core:sync`).
 
 ### Fas 2 – fakta (2.6.13 och 2.7.1 beter sig likadant)
 
@@ -1998,6 +1998,29 @@ den kod som skickas:
   och den falska servern får inte en enda begäran. `DeviceState` läser notiser
   (`dumpsys notification`), tjänster, skärm och skärmlås. Testets yttersta regel lämnar alltid
   enheten upplåst, i naturlig orientering och med nät.
+- **Fas 2 (0.3.0, `Phase2SmokeTest`, plan §10 "Klart när"):** `FakeTandoor` har en
+  tillståndsfull inköpslista (`FakeShoppingList`) och matsedel (`FakeMealPlan`), portade från
+  `:core:sync`s testfakes och i de inspelade 2.6.13-formerna (fönsterregeln, `updated_after`,
+  bulk som ignorerar okända id, 404 med Tandoors kropp, `addshopping`, Europe/Stockholm och
+  naiva datum som Django läser dem). Båda börjar tomma, så Fas 1-testerna påverkas inte;
+  varje 404-svar sparas i `notFound`. Testet kan spela "partnern" och "webben".
+  `shoppingList_partnerCheckIn30s_twentyOfflineChanges_rowsDeletedElsewhereWithoutA404`: 24
+  rader på servern, inloggning; (c) partnern bockar av en rad medan listan är öppen och appen
+  visar det inom 30 s ("1 of 24 checked"); (a) flygplansläge och 20 ändringar (fem nya varor
+  på en gång, en av dem bockad, bocka och ångra, ta bort en ny vara, köp senare på en ny och en
+  gammal, ta bort en gammal, ny vara + bocka, ändrad mängd, fem avbockningar), nätet tillbaka
+  och serverns lista måste bli exakt den väntade med fem `POST` (den borttagna nya varan
+  skickas aldrig); (b) flygplansläge igen, en hel gång bockad ("Check all"), fem köp senare och
+  fem borttagna, partnern raderar alla 15 på servern, nätet tillbaka: outboxen töms (ingen
+  "waiting to sync" kvar), inget anrop gäller de raderade raderna och **inget svar var 404**.
+  `mealPlan_webMealOnItsDay_appMealArrivesWithItsDate_shopForTheWeekWithoutDuplicates`: (d) en
+  måltid planerad "på webben" 00:30 servertid (dagen innan i UTC) står under rätt dag i Veckan
+  (`day:<datum>` som resurs-id), och en måltid planerad i appen med "Put the ingredients on the
+  shopping list" når servern med vald dag och `addshopping`; (e) Handla för veckan med
+  `mealplan_autoadd_shopping` av (appen lägger webbmåltidens ingredienser på listan en gång,
+  andra gången: "Everything planned on these days is already on the list.") och på (servern
+  lade själv till en annan webbmåltids och appmåltidens rader): en listrecept per måltid,
+  inga dubbla rader (samma listrecept, vara och enhet) och inga 404.
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt

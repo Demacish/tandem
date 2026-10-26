@@ -6,71 +6,79 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-- **Grunden för "handla & planera" (Fas 2):** flikarna Handla och Veckan har fått egna moduler
-  och sidor (inköpslistan, butiksläget, listval, historik, veckan, planera måltid, "Handla för
-  veckan", receptböcker, favoriter och "Vill laga") som fylls i av kommande ändringar. Databasen
-  uppgraderas till version 4 när appen uppdateras; inget som redan är sparat ändras.
+## [0.3.0] – 2026-10-26
+
+Handla och planera med Tandem (Fas 2, "handla & planera"): hushållets inköpslista och veckans
+matsedel fungerar nu i appen, offline och mellan flera telefoner, så att Kitshn inte längre
+behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3 och senare.
+
 - **Handla:** inköpslistan grupperad efter butikens gångar (välj butik och lista), avbockade
   varor samlas hopfällda längst ned och "Köp senare" har en egen del. Bocka av med ett tryck eller
   svep, eller alla i en avdelning på en gång, och ångra direkt. Lägg till varor med fritext ("2 dl
   grädde, mjölk") och se hur de tolkas innan de läggs till, även offline; förslag och nyss köpta
   varor läggs till med ett tryck. Lång tryckning ändrar mängd, enhet, vara och avdelning.
-  Butiksläget har stor text, stora rader och tänd skärm, och listan kan delas som text. Offline
-  sparas allt och antalet väntande ändringar syns; gäster ser listan utan att kunna ändra den. På
-  surfplatta står "Lägg till", listor och butiker i en sidopanel bredvid listan.
+  Butiksläget har stor text, stora rader och tänd skärm, och listan kan delas som text. På
+  surfplatta står "Lägg till", listor och butiker i en sidopanel bredvid listan, och
+  avdelningarna står i två kolumner när det finns plats.
 - **Inköpslistan offline och i synk:** det du lägger till, bockar av, ändrar, flyttar mellan
   listor eller skjuter upp ("köp senare") sparas direkt på telefonen och skickas när nätet finns,
-  i rätt ordning, också för en vara som skapades och bockades av utan nät. En vara som någon
-  annan i hushållet har tagit bort under tiden släpps tyst, utan felanrop mot servern. Medan
-  listan är öppen hämtas ändringar från andra telefoner var 20:e sekund (eller serverns längre
-  intervall), och listan läses om helt med jämna mellanrum så att borttagna varor försvinner;
-  avbockade varor som Tandoor inte längre visar sparas i en lokal historik. Butiker med sin
-  gångordning, varors gång och "har hemma" följer med. Demoläget har en exempellista med två
-  butiker.
-- **Receptböcker, favoriter och "Vill laga":** Recept-fliken har Favoriter, Vill laga och
-  Böcker överst, och Mer har raden Receptböcker. Favoriter är din egen favoritbok i Tandoor
-  ("Favoriter (namn)"), som skapas första gången du trycker på hjärtat och delas för läsning
-  med de andra i hushållet; vyn Favoriter visar allas. "Vill laga" är en gemensam kö som alla
-  kan fylla på (nyckelordet `vill-laga` på receptet, med en smart bok för webben) och syns som en
-  rad på Idag. I receptet finns Favorit, Vill laga och Lägg i bok; bara dina egna böcker kan
-  ändras, och en bok som någon annan delat med dig förklarar varför den är skrivskyddad. Allt
-  fungerar offline och skickas senare. På surfplatta står böckerna bredvid den öppna boken.
-  Kitshns favoritbok (`#KTSHNFAV`) räknas som favoriter.
-- **Gästläge:** är du gäst i hushållets Tandoor är appen skrivskyddad: recept, matsedel,
-  inköpslista och kokläge fungerar, men inga ändringar sparas eller skickas, och en banderoll
-  förklarar vad en gäst kan göra.
+  i rätt ordning, också för en vara som skapades och bockades av utan nät. Antalet väntande
+  ändringar syns. En vara som någon annan i hushållet har tagit bort under tiden släpps tyst,
+  utan felanrop mot servern, även om telefonen bara var offline en kort stund. Medan listan är
+  öppen syns de andras ändringar inom en halv minut (var 20:e sekund, eller Tandoors längre
+  intervall; har du stängt av den automatiska synken på webben gör appen likadant). Avbockade
+  varor som Tandoor inte längre visar sparas i en lokal historik.
+- **Lägg på inköpslistan:** i receptet (under ingredienserna), på kokläget sista sida och på
+  kvällens måltid under Idag. Arket visar ingredienserna i de portioner du valt; det du har
+  hemma är inte ikryssat och märkt "Finns hemma". Välj lista, "Markera alla" eller "Bara det som
+  saknas" och lägg till, också offline. Varorna visar vilket recept de kom från, och hela
+  receptet tas bort från listan med ett tryck.
 - **Veckan:** veckans matsedel från Tandoor, dag för dag med idag först, eller som ett
   veckorutnät på surfplatta. Planera en måltid med ett recept eller bara en titel ("Rester"),
   välj dag, måltidstyp, portioner och anteckning, och lägg ingredienserna på inköpslistan om du
   vill. Flytta en måltid till en annan dag eller måltidstyp, ändra eller ta bort den och ångra
-  direkt; dagens måltid kan lagas direkt. Allt fungerar offline och skickas när nätet finns.
-  Måltider hamnar på samma dag i appen och på webben, även kring sommartidens slut. Ändrar någon
-  annan samma måltid under tiden skickas bara det du ändrade, och har ni ändrat samma sak får du
-  välja vems ändring som gäller. "Handla för veckan" lägger veckans ingredienser på listan utan
-  att något kommer med två gånger. Gäster ser matsedeln utan att kunna ändra den. Är inget
-  planerat idag leder Idag till Veckan med "Planera veckan".
+  direkt; dagens måltid kan lagas direkt. Allt fungerar offline. Måltider hamnar på samma dag i
+  appen och på webben, även nära midnatt och kring sommartidens slut. Ändrar någon annan samma
+  måltid under tiden skickas bara det du ändrade, och har ni ändrat samma sak får du välja vems
+  ändring som gäller.
+- **Handla för veckan:** välj vilka dagar, se alla planerade måltiders ingredienser ihopslagna
+  per vara och enhet och sorterade efter butikens avdelningar, med det du har hemma bortvalt.
+  Lämna en måltid utanför med ett tryck. En måltid som redan finns på listan läggs aldrig till
+  igen, oavsett om Tandoor själv lade dit den (inställningen att lägga till planerade måltider
+  automatiskt) eller om appen gjorde det.
+- **Receptböcker, favoriter och "Vill laga":** Recept-fliken har Favoriter, Vill laga och
+  Böcker överst, och Mer har raden Receptböcker. Favoriter är din egen favoritbok i Tandoor,
+  som skapas första gången du trycker på hjärtat och delas för läsning med de andra i
+  hushållet; vyn Favoriter visar allas. "Vill laga" är en gemensam kö som alla kan fylla på. I
+  receptet finns Favorit, Vill laga och Lägg i bok; bara dina egna böcker kan ändras. Kitshns
+  favoritbok räknas som favoriter.
+- **Idag:** kvällens måltid har "Lägg på inköpslistan" bredvid "Laga", och raderna "Vill laga"
+  och "Favoriter" (hushållets favoriter) står före de andra karusellerna. Är inget planerat leder
+  "Planera veckan" till Veckan.
+- **Gästläge:** är du gäst i hushållets Tandoor är appen skrivskyddad: recept, matsedel,
+  inköpslista och kokläge fungerar, men inga ändringar sparas eller skickas, och en banderoll
+  förklarar vad en gäst kan göra.
 - **Konton och servrar:** spara flera Tandoor-konton (även på olika servrar) och byt mellan dem
   under Mer → Konton och servrar; ett konto i taget är aktivt, och varje konto behåller sina
-  recept, sin lista och sina osända ändringar på telefonen. Lägg till ett konto med samma
-  inloggning som i introt, ta bort ett konto eller logga ut. Har kontot ändringar som inte
-  skickats visas antalet och de kan exporteras först; inget raderas utan att du har sett det.
-  Kontokortet under Mer visar hushållets namn och din roll (gäst syns tydligt).
-- **Lägg på inköpslistan:** i receptet (under ingredienserna) och på kokläget sista sida finns
-  "Lägg på inköpslistan". Arket visar ingredienserna i de portioner du valt, var och en med en
-  ruta; det du har hemma är inte ikryssat och märkt "Finns hemma". Välj lista, "Markera alla"
-  eller "Bara det som saknas" och lägg till; det fungerar också offline. Varorna visar vilket
-  recept de kom från, och hela receptet tas bort från listan med ett tryck (i receptet eller när
-  du ändrar en av varorna).
-- **Handla för veckan, sammanslaget:** välj vilka dagar, se alla planerade måltiders ingredienser
-  ihopslagna per vara och enhet ("5 dl vispgrädde" när två recept behöver grädde) och sorterade
-  efter butikens avdelningar, med det du har hemma bortvalt. Lämna en måltid utanför med ett
-  tryck. En måltid som redan finns på listan läggs aldrig till igen, oavsett om Tandoor själv lade
-  dit den (inställningen att lägga till planerade måltider automatiskt) eller om appen gjorde det.
-- **Synken skyddar servern och visar vad som väntar:** varje "finns inte" eller "nekad" från
-  servern räknas, och efter fem på kort tid pausar synken en stund i stället för att fortsätta
-  skicka. Mer → Diagnostik visar om synken är blockerad och till när, och hur många ändringar som
-  väntar eller nekats per slag (inköpslistan, matsedeln, böcker …) med det senaste felet.
-  Exporten av väntande ändringar tar med alla nya slag av ändringar.
+  recept, sin lista och sina osända ändringar på telefonen. Har ett konto ändringar som inte
+  skickats visas antalet innan det tas bort, och de kan exporteras först. Kontokortet under Mer
+  visar hushållets namn och din roll.
+- **Synken skyddar servern och visar vad som väntar:** efter fem "finns inte" eller "nekad" från
+  servern på kort tid pausar synken en stund i stället för att fortsätta skicka. Mer → Diagnostik
+  visar om synken är blockerad och till när, och hur många ändringar som väntar eller nekats per
+  slag med det senaste felet.
+- **Demoläget** har en exempellista med två butiker, en veckomatsedel och receptböcker.
+- **Uppdateringen:** databasen uppgraderas till version 4 när appen uppdateras; inget som redan
+  är sparat ändras, och ändringar som väntar sedan 0.2.0 skickas som vanligt.
+- **Release-röktest:** varje version provar nu också inköpslistan och matsedeln i
+  release-bygget på en Android-emulator: partnerns avbockning syns inom 30 sekunder, 20
+  ändringar gjorda utan nät hamnar rätt på servern, 15 rader som någon annan raderade medan
+  telefonen var offline släpps utan ett enda felanrop, måltider hamnar på rätt dag åt båda
+  hållen och "Handla för veckan" ger inga dubbla rader.
+
+Saknas fortfarande: dra och släpp i matsedeln, en anteckning per vara på listan (Tandoor har
+inget sådant fält), notiser när någon annan ändrar listan och att ta bort receptet från en
+planerad måltid (byt recept eller ta bort måltiden).
 
 ## [0.2.0] – 2026-10-24
 
