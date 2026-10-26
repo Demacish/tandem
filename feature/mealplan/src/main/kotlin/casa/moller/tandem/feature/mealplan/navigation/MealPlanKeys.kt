@@ -26,10 +26,15 @@ data class WeekAgendaKey(val weekStart: String? = null) : NavKey {
  * the "+" of a day/meal), or editing the meal [mealPlanId]. [recipeId] preselects a recipe
  * ("Planera" on a recipe).
  *
+ * A [FullScreenDestination] (fix-ui): on phones the tab bar is hidden while the form is open, so it
+ * never stands between the keyboard and "Lägg till i matsedeln".
+ *
  * @property date `yyyy-MM-dd`.
  */
 @Serializable
-data class PlanMealKey(val date: String, val mealTypeId: Long? = null, val mealPlanId: Long? = null, val recipeId: Long? = null) : NavKey {
+data class PlanMealKey(val date: String, val mealTypeId: Long? = null, val mealPlanId: Long? = null, val recipeId: Long? = null) :
+    NavKey,
+    FullScreenDestination {
     init {
         require(runCatching { LocalDate.parse(date) }.isSuccess) { "date is yyyy-MM-dd" }
     }

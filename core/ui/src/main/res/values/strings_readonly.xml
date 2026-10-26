@@ -14,7 +14,7 @@
     <string name="ui_read_only_can_plan">See the week plan and the shopping list</string>
     <string name="ui_read_only_cannot_shopping">Add or check off items on the shopping list</string>
     <string name="ui_read_only_cannot_plan">Plan, move or remove meals</string>
-    <string name="ui_read_only_cannot_books">Books, favourites and “Want to cook”</string>
+    <string name="ui_read_only_cannot_books">Change books, favourites and “Want to cook”</string>
     <string name="ui_read_only_cannot_log">Save “Done!”, ratings and comments</string>
     <string name="ui_read_only_full_access">To change things, ask whoever runs your Tandoor to give your account the group “user”.</string>
     <string name="ui_read_only_done">OK</string>

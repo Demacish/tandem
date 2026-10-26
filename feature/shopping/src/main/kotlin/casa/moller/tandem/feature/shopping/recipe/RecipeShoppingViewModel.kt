@@ -19,6 +19,7 @@ import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.shopping.ShoppingList
+import casa.moller.tandem.feature.shopping.RemovedRecipeRows
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -65,6 +67,8 @@ data class RecipeShoppingRow(
  * @property lists Tandoor's named lists; [listId] the one the rows go on, null = no list.
  * @property onList unchecked rows of this recipe already on the list (not from a planned meal).
  * @property onListRecipeIds their list recipes ("Ta bort från listan" removes these).
+ * @property removable every row those list recipes hold, checked ones too: what "Ta bort från
+ *   listan" removes (fix-ui: the message says this number, and "Ångra" puts the open rows back).
  */
 data class RecipeShoppingUiState(
     val loading: Boolean = true,
@@ -80,6 +84,7 @@ data class RecipeShoppingUiState(
     val listId: Long? = null,
     val onList: Int = 0,
     val onListRecipeIds: List<Long> = emptyList(),
+    val removable: Int = onList,
     val adding: Boolean = false,
 ) {
     val chosenCount: Int
@@ -129,12 +134,16 @@ sealed interface RecipeShoppingAction {
     data object RemoveFromList : RecipeShoppingAction
 
     data class SetLocale(val locale: Locale) : RecipeShoppingAction
+
+    /** fix-ui: "Ångra" after "Ta bort från listan" puts the rows still to buy back. */
+    data object Undo : RecipeShoppingAction
 }
 
 sealed interface RecipeShoppingEffect {
     /** [count] rows of [recipeName] are on the list now. */
     data class Added(val count: Int, val recipeName: String) : RecipeShoppingEffect
 
+    /** [count] rows (checked ones too) left the list; "Ångra" sends [RecipeShoppingAction.Undo]. */
     data class Removed(val count: Int, val recipeName: String) : RecipeShoppingEffect
 
     data class Failed(val error: TandemError) : RecipeShoppingEffect
@@ -145,7 +154,9 @@ sealed interface RecipeShoppingEffect {
  * like the recipe detail (core:domain [RecipeDisplay]), each with a checkbox; foods on hand start
  * unticked. "Lägg till" creates ONE list recipe with the chosen entries ([ShoppingRepository.addRecipe]:
  * stored at once and queued, so it works offline); the list shows the recipe on each row, and
- * "Ta bort från listan" removes the recipe with its rows ([ShoppingRepository.removeListRecipe]).
+ * "Ta bort från listan" removes the recipe with its rows ([ShoppingRepository.removeListRecipe]),
+ * with "Ångra" (fix-ui, [RemovedRecipeRows]). The recipe is read as stored
+ * ([RecipeRepository.observeStoredRecipe]): the detail screen beside it refreshes it (fix-ui).
  * Guests see no button and every write is ignored here too (#42).
  */
 @HiltViewModel(assistedFactory = RecipeShoppingViewModel.Factory::class)
@@ -171,6 +182,9 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
     private val style = MutableStateFlow(Locale.getDefault().toNumberStyle())
     private val adding = MutableStateFlow(false)
 
+    /** What "Ångra" puts back after "Ta bort från listan". */
+    private var removed: RemovedRecipeRows? = null
+
     private val choices: Flow<Choices> = combine(
         savedStateHandle.getStateFlow(KEY_OPEN, false),
         savedStateHandle.getStateFlow(KEY_SERVINGS, NO_SERVINGS),
@@ -179,21 +193,21 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
     ) { open, servings, toggled, list -> Choices(open, servings.takeIf { it > 0.0 }, toggled.toSet(), list.takeIf { it != NO_LIST }) }
 
     private val sources: Flow<Sources> = combine(
-        recipes.observeRecipe(recipeId).map { it.recipe },
+        recipes.observeStoredRecipe(recipeId).map { it.recipe },
         preferences.observeUserPreferences(),
         permissions.permissions.map { it.readOnly },
         shopping.observeLists(),
-        shopping.observeEntries().map { entries -> entries.filter(::isOwnRow) },
-    ) { recipe, prefs, readOnly, lists, onList -> Sources(recipe, prefs, readOnly, lists, onList) }
+        shopping.observeEntries().map { entries -> entries.filter(::isOwnRecipeRow) },
+    ) { recipe, prefs, readOnly, lists, rows -> Sources(recipe, prefs, readOnly, lists, rows) }
 
     val uiState: StateFlow<RecipeShoppingUiState> = combine(sources, choices, style, adding) { sources, choices, style, busy ->
         build(sources, choices, style, busy)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeShoppingUiState())
 
-    /** Rows of the list recipe(s) of this recipe that are not for a planned meal, still to buy. */
-    private fun isOwnRow(entry: ShoppingEntry): Boolean {
+    /** Rows of the list recipe(s) of this recipe that are not for a planned meal (checked ones too). */
+    private fun isOwnRecipeRow(entry: ShoppingEntry): Boolean {
         val label = entry.recipe ?: return false
-        return label.recipeId == recipeId && label.mealPlanId == null && !entry.checked
+        return label.recipeId == recipeId && label.mealPlanId == null
     }
 
     fun onAction(action: RecipeShoppingAction) {
@@ -209,6 +223,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
             RecipeShoppingAction.Add -> add()
             RecipeShoppingAction.RemoveFromList -> removeFromList()
             is RecipeShoppingAction.SetLocale -> style.value = action.locale.toNumberStyle()
+            RecipeShoppingAction.Undo -> undoRemoval()
         }
     }
 
@@ -258,28 +273,43 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         val state = uiState.value
         if (state.readOnly || state.onListRecipeIds.isEmpty()) return
         viewModelScope.launch {
+            val snapshot = RemovedRecipeRows.of(shopping.observeEntries().first(), state.onListRecipeIds)
             for (group in state.onListRecipeIds) {
-                val removed = shopping.removeListRecipe(group)
-                if (removed is Outcome.Failure) {
-                    effectChannel.send(RecipeShoppingEffect.Failed(removed.error))
+                val result = shopping.removeListRecipe(group)
+                if (result is Outcome.Failure) {
+                    effectChannel.send(RecipeShoppingEffect.Failed(result.error))
                     return@launch
                 }
             }
-            effectChannel.send(RecipeShoppingEffect.Removed(state.onList, state.recipeName))
+            removed = snapshot
+            effectChannel.send(RecipeShoppingEffect.Removed(snapshot.removed, state.recipeName))
+        }
+    }
+
+    private fun undoRemoval() {
+        val rows = removed ?: return
+        removed = null
+        if (uiState.value.readOnly) return
+        viewModelScope.launch {
+            val result = rows.restore(shopping)
+            if (result is Outcome.Failure) effectChannel.send(RecipeShoppingEffect.Failed(result.error))
         }
     }
 
     private fun build(sources: Sources, choices: Choices, style: NumberStyle, busy: Boolean): RecipeShoppingUiState {
         val recipe = sources.recipe
         val readOnly = sources.readOnly
-        val onListRecipeIds = sources.onList.mapNotNull { it.recipe?.listRecipeId }.distinct()
+        val open = sources.rows.filterNot { it.checked }
+        val onListRecipeIds = open.mapNotNull { it.recipe?.listRecipeId }.distinct()
+        val removable = sources.rows.count { row -> row.recipe?.listRecipeId?.let { it in onListRecipeIds } == true }
         if (recipe == null) {
             return RecipeShoppingUiState(
                 loading = false,
                 readOnly = readOnly,
                 lists = sources.lists,
-                onList = sources.onList.size,
+                onList = open.size,
                 onListRecipeIds = onListRecipeIds,
+                removable = removable,
             )
         }
         val servings = choices.servings ?: ServingsScaling.initialServings(recipe, null)
@@ -296,8 +326,9 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
             atHome = rows.filter { it.onHand },
             lists = sources.lists,
             listId = choices.listId?.takeIf { id -> sources.lists.any { it.id == id } },
-            onList = sources.onList.size,
+            onList = open.size,
             onListRecipeIds = onListRecipeIds,
+            removable = removable,
             adding = busy,
         )
     }
@@ -339,7 +370,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         val preferences: UserPreferences,
         val readOnly: Boolean,
         val lists: List<ShoppingList>,
-        val onList: List<ShoppingEntry>,
+        val rows: List<ShoppingEntry>,
     )
 
     private companion object {

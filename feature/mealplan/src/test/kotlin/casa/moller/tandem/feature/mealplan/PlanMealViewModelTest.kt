@@ -1,11 +1,14 @@
 package casa.moller.tandem.feature.mealplan
 
+import casa.moller.tandem.core.model.book.RecipeBook
+import casa.moller.tandem.core.model.book.RecipeBookKind
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.MealPlanUpdate
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeBookRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
@@ -42,8 +45,9 @@ class PlanMealViewModelTest {
     private val preferences = FakePreferencesRepository(UserPreferences(defaultMealTypeId = dinner.id, mealPlanAutoAddShopping = true))
     private val permissions = FakeSpacePermissionsRepository()
     private val pasta = SampleRecipes.MushroomPasta
+    private val books = FakeRecipeBookRepository()
 
-    private fun viewModel(key: PlanMealKey) = PlanMealViewModel(key, mealPlans, recipes, preferences, permissions, clock)
+    private fun viewModel(key: PlanMealKey) = PlanMealViewModel(key, mealPlans, recipes, preferences, permissions, clock, books)
 
     private fun TestScope.open(vm: PlanMealViewModel): MutableList<PlanMealEffect> {
         val effects = mutableListOf<PlanMealEffect>()
@@ -181,13 +185,56 @@ class PlanMealViewModelTest {
     }
 
     @Test
-    fun removingFromThePage() = runTest {
+    fun removingFromThePageAsksFirst() = runTest {
         val vm = viewModel(PlanMealKey(date = todayDinner.fromDate.toString(), mealPlanId = todayDinner.id))
         val effects = open(vm)
         vm.onAction(PlanMealAction.Delete)
         advanceUntilIdle()
+        // fix-ui: a mis-tap removes nothing; the question comes first.
+        assertTrue(vm.uiState.value.confirmDelete)
+        assertTrue(mealPlans.meals.value.any { it.id == todayDinner.id })
+        vm.onAction(PlanMealAction.ConfirmDelete(false))
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.confirmDelete)
+        assertTrue(mealPlans.meals.value.any { it.id == todayDinner.id })
+        assertTrue(effects.isEmpty())
+
+        vm.onAction(PlanMealAction.Delete)
+        vm.onAction(PlanMealAction.ConfirmDelete(true))
+        advanceUntilIdle()
         assertTrue(mealPlans.meals.value.none { it.id == todayDinner.id })
         assertEquals(listOf<PlanMealEffect>(PlanMealEffect.Done), effects)
+    }
+
+    @Test
+    fun aMealOnTheShoppingListSaysItsRowsGoToo() = runTest {
+        mealPlans.meals.value = mealPlans.meals.value.map { if (it.id == todayDinner.id) it.copy(onShoppingList = true) else it }
+        val vm = viewModel(PlanMealKey(date = todayDinner.fromDate.toString(), mealPlanId = todayDinner.id))
+        open(vm)
+        vm.onAction(PlanMealAction.Delete)
+        assertTrue(vm.uiState.value.confirmDelete && vm.uiState.value.onShoppingList)
+    }
+
+    @Test
+    fun wantToCookAndFavoritesAreOfferedWhileTheSearchIsEmpty() = runTest {
+        books.wantToCook.value = setOf(pasta.id)
+        books.books.value = listOf(RecipeBook(7, "Favoriter", kind = RecipeBookKind.FAVORITES, ownerId = 1, isOwn = true))
+        books.entries.value = mapOf(7L to listOf(SampleRecipes.overviews.last().id))
+        val vm = viewModel(PlanMealKey(date = day(5).toString()))
+        open(vm)
+        val state = vm.uiState.value
+        assertEquals(listOf(pasta.id), state.wantToCook.map { it.id })
+        assertEquals(listOf(SampleRecipes.overviews.last().id), state.favorites.map { it.id })
+        assertTrue(state.showCollections)
+
+        vm.onAction(PlanMealAction.Query("pasta"))
+        advanceUntilIdle()
+        assertFalse("a search shows the results only", vm.uiState.value.showCollections)
+        vm.onAction(PlanMealAction.Query(""))
+        vm.onAction(PlanMealAction.PickRecipe(state.wantToCook.first()))
+        advanceUntilIdle()
+        assertEquals(pasta.id, vm.uiState.value.recipe?.id)
+        assertFalse(vm.uiState.value.showCollections)
     }
 
     @Test

@@ -4,20 +4,22 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.model.error.TandemError
@@ -30,7 +32,6 @@ import casa.moller.tandem.feature.shopping.ui.ShoppingScreen
 import casa.moller.tandem.feature.shopping.ui.StoreChoiceScreen
 import casa.moller.tandem.feature.shopping.ui.StoreModeScreen
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 // Phase 2 (inköp-ui lane): the routes feature:shell shows for the Handla tab (docs/BYGGE.md "Fas 2
 // – kontrakt", navigation pattern "Navigering"). Each route gets its ViewModel from Hilt, shows a
@@ -87,9 +88,16 @@ internal fun ShoppingRoute(
     val resources = LocalResources.current
     val locale = LocalConfiguration.current.locales[0]
     val currentState by rememberUpdatedState(state)
-    LaunchedEffect(viewModel, snackbarHostState, resources) {
-        viewModel.effects.collect { effect ->
-            launch { snackbarHostState.show(effect, resources) { viewModel.onAction(ShoppingAction.Undo) } }
+    val scope = rememberCoroutineScope()
+    val snackbars = remember(snackbarHostState, scope) { ShoppingSnackbars(snackbarHostState, scope) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, snackbars, resources) {
+        viewModel.effects.collect { effect -> snackbars.show(effect, resources) { viewModel.onAction(ShoppingAction.Undo) } }
+    }
+    // fix-ui: other members' changes only while the list is visible (none pile up while hidden).
+    LaunchedEffect(viewModel, snackbars, resources, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.otherChanges.collect { snackbars.show(it, resources) {} }
         }
     }
     ShoppingScreen(
@@ -135,9 +143,15 @@ fun StoreModeRoute(key: StoreModeKey, onClose: () -> Unit, modifier: Modifier = 
     val resources = LocalResources.current
     val locale = LocalConfiguration.current.locales[0]
     val currentState by rememberUpdatedState(state)
-    LaunchedEffect(viewModel, snackbarHostState, resources) {
-        viewModel.effects.collect { effect ->
-            launch { snackbarHostState.show(effect, resources) { viewModel.onAction(StoreModeAction.Undo) } }
+    val scope = rememberCoroutineScope()
+    val snackbars = remember(snackbarHostState, scope) { ShoppingSnackbars(snackbarHostState, scope) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, snackbars, resources) {
+        viewModel.effects.collect { effect -> snackbars.show(effect, resources) { viewModel.onAction(StoreModeAction.Undo) } }
+    }
+    LaunchedEffect(viewModel, snackbars, resources, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.otherChanges.collect { snackbars.show(it, resources) {} }
         }
     }
     StoreModeScreen(
@@ -197,8 +211,10 @@ fun ShoppingHistoryRoute(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
-    LaunchedEffect(viewModel, snackbarHostState, resources) {
-        viewModel.effects.collect { effect -> launch { snackbarHostState.show(effect, resources) {} } }
+    val scope = rememberCoroutineScope()
+    val snackbars = remember(snackbarHostState, scope) { ShoppingSnackbars(snackbarHostState, scope) }
+    LaunchedEffect(viewModel, snackbars, resources) {
+        viewModel.effects.collect { effect -> snackbars.show(effect, resources) {} }
     }
     ShoppingHistoryScreen(
         state = state,
@@ -221,22 +237,6 @@ private fun Context.shareText(text: String, resources: Resources) {
     } catch (ignored: ActivityNotFoundException) {
         // No app can take text (practically impossible on a phone): nothing to share with.
     }
-}
-
-/** Shows [effect] as a snackbar; "Ångra" calls [onUndo]. A new message replaces the one shown. */
-private suspend fun SnackbarHostState.show(effect: ShoppingEffect, resources: Resources, onUndo: () -> Unit) {
-    val (text, undoable) = when (effect) {
-        is ShoppingEffect.Show -> resources.messageText(effect.message) to effect.undoable
-        is ShoppingEffect.Failed -> resources.errorText(effect.error) to false
-        is ShoppingEffect.OtherChange -> resources.changeText(effect.change) to false
-    }
-    currentSnackbarData?.dismiss()
-    val result = showSnackbar(
-        message = text,
-        actionLabel = if (undoable) resources.getString(R.string.shopping_undo) else null,
-        duration = if (undoable) SnackbarDuration.Long else SnackbarDuration.Short,
-    )
-    if (result == SnackbarResult.ActionPerformed) onUndo()
 }
 
 internal fun Resources.messageText(message: ShoppingMessage): String = when (message) {

@@ -32,6 +32,9 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     LIST_EMPTY({ ListShot(ShoppingSamples.state(entries = emptyList())) }),
     LIST_OFFLINE({ ListShot(ShoppingSamples.state(pendingCount = 3, syncNotice = ShoppingSyncNotice.OFFLINE)) }),
     LIST_PAUSED({ ListShot(ShoppingSamples.state(pendingCount = 1, syncNotice = ShoppingSyncNotice.PAUSED)) }),
+
+    // fix-ui: the app's own pause after many refused requests (the circuit breaker) has its own text.
+    LIST_BREAKER({ ListShot(ShoppingSamples.state(pendingCount = 2, syncNotice = ShoppingSyncNotice.BREAKER)) }),
     LIST_GUEST({ ListShot(ShoppingSamples.state(readOnly = true)) }),
     LIST_ONE_LIST({ ListShot(ShoppingSamples.state(entries = listOf(ShoppingSamples.milk), selectedListId = 1)) }),
     ADD({ Sheet { AddItemPanel(state = addState, format = format(), onAction = {}) } }),
@@ -80,6 +83,9 @@ private val editState = EditEntryState(
     unit = "dl",
     categoryId = ShoppingSamples.dairy.id,
     categories = ShoppingSamples.categories.sortedBy { it.name },
+    // fix-ui: the named lists the entry can move between.
+    lists = ShoppingSamples.lists,
+    listIds = setOf(ShoppingSamples.lists.first().id),
 )
 
 private val editOfflineState = EditEntryState(

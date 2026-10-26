@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.mealplan.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AssistChip
@@ -77,12 +80,19 @@ const val PLAN_MEAL_FORM_TAG = "plan-meal:form"
 /** Test tag of a recipe in the search results: `plan-meal:recipe:<id>`. */
 fun planMealRecipeTag(id: Long): String = "plan-meal:recipe:$id"
 
+/** Test tag of a recipe in "Vill laga" (`want`) or "Favoriter" (`favorite`): `plan-meal:<group>:<id>` (fix-ui). */
+fun planMealCollectionTag(group: String, id: Long): String = "plan-meal:$group:$id"
+
 /**
  * "Planera måltid" (Stitch planera_m_ltid_ark, plan 6.2), stateless: the day (two weeks of chips or
  * any date), the meal type (or a new one), a recipe from the stored recipes or a title only, the
  * servings, a note and "Lägg på listan"; "Lägg till i matsedeln (lördag)" at the bottom. Editing a
- * meal has "Spara" and "Ta bort från matsedeln". A full page on every width (the content stays at
- * a readable width on tablets), so the keyboard and TalkBack work as on any page.
+ * meal has "Spara" and "Ta bort från matsedeln" (asks first, fix-ui). A full page on every width
+ * (the content stays at a readable width on tablets; on phones without the tab bar), so the
+ * keyboard and TalkBack work as on any page. While typing, the form ends at the keyboard's top and
+ * the save bar waits under the keyboard (fix-ui: the keyboard was subtracted twice before).
+ * With an empty search, "Vill laga" and "Favoriter" are offered above the stored recipes (fix-ui,
+ * plan 6.2 "välj recept (sök, Vill laga, Favoriter)").
  */
 @Composable
 fun PlanMealScreen(
@@ -116,12 +126,27 @@ fun PlanMealScreen(
                     format = format,
                     onAction = onAction,
                     onPickDate = { picking = true },
-                    modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth).fillMaxSize().imePadding(),
+                    // fix-ui: the keyboard is handled here only. The Scaffold's padding already holds the
+                    // save bar (which stays under the keyboard); consuming it leaves imePadding just
+                    // the part of the keyboard above the bar, so the form ends at the keyboard's top.
+                    modifier = Modifier
+                        .widthIn(max = TandemTheme.sizes.maxReadingWidth)
+                        .fillMaxSize()
+                        .consumeWindowInsets(padding)
+                        .imePadding(),
                 )
             }
         }
     }
     if (picking) DatePickerFor(initial = state.date, onPick = { onAction(PlanMealAction.SetDate(it)) }, onDismiss = { picking = false })
+    if (state.confirmDelete) {
+        DeleteMealDialog(
+            mealTitle = state.title.ifBlank { state.recipe?.name.orEmpty() },
+            rowsOnList = 0.takeIf { state.onShoppingList },
+            onConfirm = { onAction(PlanMealAction.ConfirmDelete(true)) },
+            onDismiss = { onAction(PlanMealAction.ConfirmDelete(false)) },
+        )
+    }
 }
 
 @Composable
@@ -171,6 +196,14 @@ private fun PlanMealForm(
                         supportingText = stringResource(R.string.mealplan_recipe_missing).takeIf { errors && state.recipeMissing },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                }
+                if (state.showCollections) {
+                    // fix-ui (plan 6.2): the household's "Vill laga" queue and favourites first.
+                    collection(R.string.mealplan_from_want_to_cook, "want", state.wantToCook, onAction)
+                    collection(R.string.mealplan_from_favorites, "favorite", state.favorites, onAction)
+                    if (state.results.isNotEmpty()) {
+                        item(key = "all-heading") { CollectionHeading(stringResource(R.string.mealplan_all_recipes)) }
+                    }
                 }
                 if (state.results.isEmpty()) {
                     item(key = "no-results") {
@@ -227,6 +260,25 @@ private fun PlanMealForm(
             }
         }
     }
+}
+
+/** A "Vill laga" or "Favoriter" group of recipes to pick from (nothing when [recipes] is empty). */
+private fun LazyListScope.collection(
+    @StringRes heading: Int,
+    key: String,
+    recipes: List<RecipeOverview>,
+    onAction: (PlanMealAction) -> Unit,
+) {
+    if (recipes.isEmpty()) return
+    item(key = "$key-heading") { CollectionHeading(stringResource(heading)) }
+    items(recipes, key = { "$key-${it.id}" }) { recipe ->
+        RecipeResult(recipe = recipe, onPick = { onAction(PlanMealAction.PickRecipe(recipe)) }, tag = planMealCollectionTag(key, recipe.id))
+    }
+}
+
+@Composable
+private fun CollectionHeading(text: String) {
+    Text(text = text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
 }
 
 @Composable
@@ -337,12 +389,12 @@ private fun ChosenRecipe(recipe: RecipeOverview, onChange: () -> Unit) {
 }
 
 @Composable
-private fun RecipeResult(recipe: RecipeOverview, onPick: () -> Unit) {
+private fun RecipeResult(recipe: RecipeOverview, onPick: () -> Unit, tag: String = planMealRecipeTag(recipe.id)) {
     val spacing = TandemTheme.spacing
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .testTag(planMealRecipeTag(recipe.id))
+            .testTag(tag)
             .clip(MaterialTheme.shapes.large)
             .clickable(onClickLabel = stringResource(R.string.mealplan_choose_recipe), role = Role.Button, onClick = onPick),
         shape = MaterialTheme.shapes.large,
@@ -408,7 +460,7 @@ private fun Notice(text: String) {
 private fun SaveBar(state: PlanMealUiState, format: MealPlanFormat, onAction: (PlanMealAction) -> Unit) {
     val spacing = TandemTheme.spacing
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.navigationBarsPadding().imePadding().padding(spacing.md), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.navigationBarsPadding().padding(spacing.md), contentAlignment = Alignment.Center) {
             TandemPrimaryButton(
                 text = if (state.editing) {
                     stringResource(R.string.mealplan_save)

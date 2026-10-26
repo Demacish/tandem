@@ -2,11 +2,13 @@ package casa.moller.tandem.core.sync.shopping
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.ServerAccountEntity
 import casa.moller.tandem.core.database.entity.UserPreferenceEntity
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.mealplan.MealPlanWeek
 import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
 import casa.moller.tandem.core.model.shopping.ShoppingChange
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
@@ -34,6 +36,9 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
@@ -426,6 +431,9 @@ class ShoppingSyncTest {
         drainAll()
         assertTrue(tandoor.requests("POST", "/api/shopping-list-entry/").isEmpty())
         assertEquals(listOf("vara 4"), tandoor.all().map { it.food })
+        // fix-ui (Phase 2 review): what was bought and cleared fills "Köpt nyligen" at once.
+        val history = repo.observeHistory().first().map { it.foodName }
+        assertEquals(setOf("vara 1", "vara 2", "vara 3", "lokal"), history.toSet())
     }
 
     /**
@@ -532,6 +540,44 @@ class ShoppingSyncTest {
         assertFalse(paused.active)
         assertEquals(before, tandoor.calls.size)
         assertTrue(waits.isNotEmpty())
+    }
+
+    /**
+     * fix-ui (Phase 2 review): paging through weeks in Veckan starts a poller per week. The meal
+     * plan is read at most every 60 s counted from the last read of the same window, not once per
+     * week shown; a week outside the window is read on its own.
+     */
+    @Test
+    fun mealPlanPollingCountsFromTheLastReadAndReadsAWeekOutsideTheWindow() = forEachVersion {
+        val reads = CopyOnWriteArrayList<LocalDate>()
+        val mealPlans = object : MealPlanRepository by FakeMealPlanRepository() {
+            override suspend fun refreshWeek(start: LocalDate): Outcome<Unit> {
+                reads += start
+                return Outcome.Success(Unit)
+            }
+        }
+        val foreground = DefaultForegroundSync(
+            graph.sources,
+            graph.shoppingSync,
+            { mealPlans },
+            graph.databases,
+            graph.guard,
+            graph.network,
+            graph.clock,
+            graph.scope,
+        ) { delay(POLL_PAUSE_MILLIS) }
+        val today = graph.clock.today()
+        val thisWeek = MealPlanWeek.startOf(today)
+        // Three weeks in the window, one after the other within a few seconds: one read.
+        for (weeks in 0..2) {
+            val week = thisWeek.plus(weeks * MealPlanWeek.DAYS, DateTimeUnit.DAY)
+            withTimeout(TIMEOUT_MILLIS) { foreground.keepFresh(ForegroundTarget.MealPlan(week)).first() }
+        }
+        assertEquals("[$version] $reads", listOf(thisWeek), reads.toList())
+        // Eight weeks ahead lies outside the window (+42 days): that week is read on its own.
+        val far = thisWeek.plus(8 * MealPlanWeek.DAYS, DateTimeUnit.DAY)
+        withTimeout(TIMEOUT_MILLIS) { foreground.keepFresh(ForegroundTarget.MealPlan(far)).first() }
+        assertEquals(listOf(thisWeek, far), reads.toList())
     }
 
     /** Phase 2 (integration lane): the user's `shopping_auto_sync` slows polling down, and 0 turns it off. */

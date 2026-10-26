@@ -30,12 +30,15 @@ import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
 import casa.moller.tandem.feature.shopping.ShoppingSamples.onions
 import casa.moller.tandem.feature.shopping.ShoppingSamples.potato
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -351,8 +354,11 @@ class ShoppingViewModelTest {
         assertEquals(ShoppingSyncNotice.OFFLINE, vm.uiState.value.syncNotice)
         assertEquals(3, vm.uiState.value.pendingCount)
 
-        sync.setStatus(SyncStatus(pause = SyncPause.CIRCUIT_BREAKER))
+        sync.setStatus(SyncStatus(pause = SyncPause.BLOCKED))
         assertEquals(ShoppingSyncNotice.PAUSED, vm.uiState.value.syncNotice)
+        // fix-ui: the app's own pause after many refused requests has its own text.
+        sync.setStatus(SyncStatus(pause = SyncPause.CIRCUIT_BREAKER))
+        assertEquals(ShoppingSyncNotice.BREAKER, vm.uiState.value.syncNotice)
         sync.setStatus(SyncStatus())
         assertNull(vm.uiState.value.syncNotice)
     }
@@ -371,11 +377,67 @@ class ShoppingViewModelTest {
     }
 
     @Test
-    fun changesByOthersAreAnnounced() = runTest {
+    fun changesByOthersAreAnnouncedOncePerRead() = runTest {
         val vm = viewModel()
         val effects = open(vm)
+        val others = mutableListOf<ShoppingEffect.OtherChange>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.otherChanges.toList(others) }
         shopping.changes.emit(ShoppingChange.Added("mjölk", by = "Anna"))
-        assertEquals(ShoppingEffect.OtherChange(ShoppingChange.Added("mjölk", by = "Anna")), effects.last())
+        advanceTimeBy(CHANGE_BURST_WINDOW + 100.milliseconds)
+        assertEquals(listOf(ShoppingEffect.OtherChange(ShoppingChange.Added("mjölk", by = "Anna"))), others)
+
+        // fix-ui: one read that saw a partner's "Rensa" is ONE message, not one per row.
+        repeat(3) { shopping.changes.emit(ShoppingChange.Removed("vara $it")) }
+        advanceTimeBy(CHANGE_BURST_WINDOW + 100.milliseconds)
+        assertEquals(2, others.size)
+        assertEquals(3, others.last().changes.size)
+        assertTrue("others' changes never go through the own effects", effects.none { it is ShoppingEffect.OtherChange })
+    }
+
+    @Test
+    fun theProgressCountsOnlyWhatWasCheckedToday() = runTest {
+        // Checked on Saturday's trip: Tandoor still lists it for days (FACTS "Fas 2 b").
+        val saturday = eggs.copy(id = 50, completedAt = ShoppingSamples.now - 3.days)
+        shopping.entries.value = ShoppingSamples.entries + saturday
+        val vm = viewModel()
+        open(vm)
+        assertEquals(2, vm.uiState.value.grouped.checked.size)
+        assertEquals(1 to 8, vm.uiState.value.progressDone to vm.uiState.value.progressTotal)
+    }
+
+    @Test
+    fun anEntryMovesBetweenNamedListsWhenSaved() = runTest {
+        val vm = viewModel()
+        val effects = open(vm)
+        vm.onAction(ShoppingAction.OpenEdit(milk.id))
+        assertEquals(ShoppingSamples.lists, vm.uiState.value.edit?.lists)
+        assertEquals(setOf(1L), vm.uiState.value.edit?.listIds)
+
+        vm.onAction(ShoppingAction.EditList(1))
+        vm.onAction(ShoppingAction.EditList(2))
+        assertEquals(setOf(2L), vm.uiState.value.edit?.listIds)
+        assertEquals("nothing moves before Spara", setOf(1L), shopping.entries.value.first { it.id == milk.id }.listIds)
+
+        vm.onAction(ShoppingAction.SaveEdit)
+        assertEquals(setOf(2L), shopping.entries.value.first { it.id == milk.id }.listIds)
+        assertEquals(ShoppingEffect.Show(ShoppingMessage.Saved), effects.last())
+    }
+
+    @Test
+    fun removingARecipeFromTheEditSheetCanBeUndone() = runTest {
+        val vm = viewModel()
+        val effects = open(vm)
+        vm.onAction(ShoppingAction.OpenEdit(cream.id))
+        assertEquals(2, vm.uiState.value.edit?.recipeRows)
+        vm.onAction(ShoppingAction.RemoveEditedRecipe)
+        assertTrue(shopping.entries.value.none { it.recipe?.listRecipeId == 3L })
+        assertEquals(ShoppingEffect.Show(ShoppingMessage.RecipeRemoved("Potatisgratäng"), undoable = true), effects.last())
+
+        // The potato row has no recipe ingredient: the rows come back one by one, with their amounts.
+        vm.onAction(ShoppingAction.Undo)
+        val back = shopping.entries.value.filter { it.id < 0 && it.id != ShoppingSamples.butter.id }
+        assertEquals(listOf("grädde", "potatis"), back.map { it.food.name }.sorted())
+        assertEquals(3.0, back.first { it.food.name == "grädde" }.amount, 0.0)
     }
 
     @Test

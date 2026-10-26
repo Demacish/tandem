@@ -54,6 +54,18 @@ class MealPlanAccessibilityTest {
     fun weekConflict() = check(MealPlanShot.WEEK_CONFLICT)
 
     @Test
+    fun weekDelete() = check(MealPlanShot.WEEK_DELETE)
+
+    @Test
+    fun planDelete() = check(MealPlanShot.PLAN_DELETE)
+
+    @Test
+    fun planCollections() = check(MealPlanShot.PLAN_COLLECTIONS)
+
+    @Test
+    fun planCollectionsDarkFontScale2() = check(MealPlanShot.PLAN_COLLECTIONS, darkTheme = true, fontScale = 2f)
+
+    @Test
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun weekPhoneLandscape() = check(MealPlanShot.WEEK)
 

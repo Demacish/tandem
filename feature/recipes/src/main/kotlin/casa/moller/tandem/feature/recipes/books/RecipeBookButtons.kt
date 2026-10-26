@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -56,10 +57,17 @@ import casa.moller.tandem.feature.recipes.R
  * The recipe detail's "Favorit", "Vill laga" and "Lägg i bok" (plan 6.2 "Receptdetalj":
  * "Favorit/bok (bara i böcker du äger, §3.7)"): two toggle chips and a chip that opens the sheet
  * of the user's OWN books. Who else has the recipe as a favourite is said below ("Favorit hos
- * Alex"). A guest (#42) sees only that line.
+ * Alex"). A guest (#42) sees only that line. fix-ui (plan 6.2 "Receptdetalj: Åtgärder … Planera",
+ * the 6.3 wireframe's "[Planera]"): [onPlanMeal] adds a "Planera" chip that plans the recipe in
+ * Veckan; null hides it, and a guest never gets it.
  */
 @Composable
-fun RecipeBookButtons(state: RecipeBookButtonsState, onAction: (RecipeBookButtonsAction) -> Unit, modifier: Modifier = Modifier) {
+fun RecipeBookButtons(
+    state: RecipeBookButtonsState,
+    onAction: (RecipeBookButtonsAction) -> Unit,
+    modifier: Modifier = Modifier,
+    onPlanMeal: (() -> Unit)? = null,
+) {
     if (!state.loaded) return
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs)) {
         if (!state.readOnly) {
@@ -87,6 +95,17 @@ fun RecipeBookButtons(state: RecipeBookButtonsState, onAction: (RecipeBookButton
                     },
                     modifier = Modifier.heightIn(min = 48.dp),
                 )
+                if (onPlanMeal != null) {
+                    AssistChip(
+                        onClick = onPlanMeal,
+                        label = { Text(stringResource(R.string.books_action_plan)) },
+                        leadingIcon = {
+                            val size = Modifier.size(AssistChipDefaults.IconSize)
+                            Icon(TandemIcons.CalendarMonth, contentDescription = null, modifier = size)
+                        },
+                        modifier = Modifier.heightIn(min = 48.dp).testTag(RECIPE_PLAN_MEAL_TAG),
+                    )
+                }
             }
         }
         if (state.favoriteOf.isNotEmpty()) {
@@ -109,6 +128,9 @@ fun RecipeBookButtons(state: RecipeBookButtonsState, onAction: (RecipeBookButton
         AddToBookSheet(state = state, onAction = onAction)
     }
 }
+
+/** Test tag of the recipe detail's "Planera" chip (fix-ui). */
+const val RECIPE_PLAN_MEAL_TAG = "recipe:plan-meal"
 
 /** A filter chip that toggles (its state is said by TalkBack and shown by the filled icon, not colour alone). */
 @Composable

@@ -89,8 +89,9 @@ internal enum class BookShot(val content: @Composable () -> Unit) {
     WANT_TO_COOK_EMPTY({ Recipes(BookSamples.wantToCook().copy(recipes = emptyList()), "Vill laga", onPlanMeal = {}) }),
     MISSING({ Recipes(BookRecipesUiState(loading = false, missing = true), "") }),
     MASTER_DETAIL({ MasterDetail() }),
-    BUTTONS({ Surface { RecipeBookButtons(state = BookSamples.buttons, onAction = {}) } }),
-    BUTTONS_GUEST({ Surface { RecipeBookButtons(state = BookSamples.buttons.copy(readOnly = true), onAction = {}) } }),
+    // fix-ui: with "Planera" (plan 6.2 "Receptdetalj"); a guest never gets it.
+    BUTTONS({ Surface { RecipeBookButtons(state = BookSamples.buttons, onAction = {}, onPlanMeal = {}) } }),
+    BUTTONS_GUEST({ Surface { RecipeBookButtons(state = BookSamples.buttons.copy(readOnly = true), onAction = {}, onPlanMeal = {}) } }),
     ADD_TO_BOOK({ Surface { AddToBookContent(state = BookSamples.buttons, onAction = {}) } }),
     LIST_WITH_COLLECTIONS({
         RecipeListScreen(state = listState(), onAction = {}, onOpenRecipe = {}, collections = BookSamples.collections)

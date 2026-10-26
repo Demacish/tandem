@@ -46,6 +46,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,6 +61,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.InfoCard
@@ -95,23 +97,30 @@ const val SHOPPING_LIST_TAG = "shopping:list"
 /** Test tag of the tablet's side pane. */
 const val SHOPPING_SIDE_PANE_TAG = "shopping:pane"
 
-/** From this width the list gets the side pane with "Lägg till", lists and stores (plan 6.5). */
-private val SidePaneMinWidth = 600.dp
-
 /** From this width of the list itself the aisles stand in two columns (masonry, plan 6.5). */
-private val TwoColumnMinWidth = 640.dp
+internal val TwoColumnMinWidth = 640.dp
 
 private val SidePaneWidth = 340.dp
 
 /**
+ * From this width the list gets the fixed side pane with "Lägg till", lists and stores (plan 6.5),
+ * and still has room for two columns of aisles beside it (fix-ui: a portrait tablet, about 700–800
+ * dp wide, gets the two columns and the add field above the list instead of a pane and one column).
+ */
+internal val SidePaneMinWidth = SidePaneWidth + TwoColumnMinWidth
+
+/**
  * The Handla tab (plan 6.2 "Handla", 6.5, Stitch ink_pslista_*), stateless.
  *
- * - **Phones** (< 600 dp): one column. The list and store chips, a "Lägg till vara…" field that
- *   opens the add sheet (also the "+ Vara" button), the aisles as cards, then "Köp senare" and
- *   the folded "Avbockat".
- * - **Wider windows** (tablets in both orientations, phones in landscape): a side pane with "Lägg
- *   till vara", lists, stores, store mode and history beside the list; the aisles stand in two
- *   columns when the list is at least 640 dp wide (Stitch ink_pslista_handla_surfplatta).
+ * - **Below [SidePaneMinWidth]** (phones, phones in landscape, tablets in portrait): the list and
+ *   store chips, a "Lägg till vara…" field that opens the add sheet (also the "+ Vara" button),
+ *   the aisles as cards, then "Köp senare" and the folded "Avbockat". From [TwoColumnMinWidth]
+ *   (a tablet in portrait, a phone in landscape) the aisles stand in two columns.
+ * - **Wider windows** (tablets in landscape): a side pane with "Lägg till vara", lists, stores,
+ *   store mode and history beside the list, the aisles in two columns (Stitch
+ *   ink_pslista_handla_surfplatta).
+ * - **Order:** the aisles keep the store's walking order for TalkBack in both columns, and
+ *   "Övrigt" stands last across the whole width (fix-ui).
  * - **States:** empty, offline / paused (changes wait, with the count), guest (#42: no edit
  *   controls at all), demo (the shell's banner).
  */
@@ -302,7 +311,7 @@ private fun ShoppingList(
     val other = stringResource(R.string.shopping_other_category)
     val categoryOf: (ShoppingEntry) -> String = { entry -> entry.food.categoryId?.let(categoryNames::get) ?: other }
     BoxWithConstraints(modifier = modifier) {
-        val columns = if (!phone && maxWidth >= TwoColumnMinWidth) 2 else 1
+        val columns = if (maxWidth >= TwoColumnMinWidth) 2 else 1
         val grouped = state.grouped
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(columns),
@@ -318,7 +327,10 @@ private fun ShoppingList(
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
             item(key = "notices", span = StaggeredGridItemSpan.FullLine) {
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                Column(
+                    modifier = Modifier.semantics { traversalIndex = TRAVERSAL_NOTICES },
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
                     AppChromeDemoBanner()
                     if (state.readOnly) {
                         InfoCard(
@@ -327,7 +339,10 @@ private fun ShoppingList(
                             icon = TandemIcons.Lock,
                         )
                     }
-                    state.syncNotice?.let { SyncNoticeCard(notice = it, pendingCount = state.pendingCount, onAction = onAction) }
+                    // A guest changes nothing, so "changes are saved and sent later" does not apply (fix-ui).
+                    if (!state.readOnly) {
+                        state.syncNotice?.let { SyncNoticeCard(notice = it, pendingCount = state.pendingCount, onAction = onAction) }
+                    }
                     if (phone) {
                         Filters(state = state, onAction = onAction)
                         if (state.canEdit) AddFieldButton(onClick = { onAction(ShoppingAction.OpenAdd) })
@@ -349,22 +364,33 @@ private fun ShoppingList(
                     )
                 }
             }
-            grouped.sections.forEach { section ->
-                item(key = section.key) {
+            grouped.sections.forEachIndexed { index, section ->
+                // "Övrigt" (no or an unknown aisle) comes last across both columns, so the masonry
+                // never puts it before an aisle of the store (fix-ui).
+                val span = if (section.name == null) StaggeredGridItemSpan.FullLine else null
+                item(key = section.key, span = span) {
                     val title = section.name ?: other
                     val checkAll = { onAction(ShoppingAction.CheckSection(section.key)) }
                     AisleCard(
                         section = section,
                         title = title,
                         onCheckAll = if (state.canEdit && section.entries.size > 1) checkAll else null,
-                        modifier = Modifier.testTag(shoppingSectionTag(section.key)),
+                        modifier = Modifier
+                            .testTag(shoppingSectionTag(section.key))
+                            // TalkBack follows the walking order, whichever column a card lands in.
+                            .semantics { traversalIndex = index.toFloat() },
                     ) {
                         section.entries.forEach { entry ->
-                            ShoppingEntryRow(entry, format, title, delayed = false, actions = rowActions(state, entry, onAction))
+                            // Keyed: a row's swipe state never passes to the row that moves into its place.
+                            key(entry.id) {
+                                val actions = rememberRowActions(state, entry, onAction)
+                                ShoppingEntryRow(entry, format, title, delayed = false, actions = actions)
+                            }
                         }
                     }
                 }
             }
+            val afterAisles = grouped.sections.size.toFloat()
             if (grouped.later.isNotEmpty()) {
                 item(key = "later", span = StaggeredGridItemSpan.FullLine) {
                     FoldingCard(
@@ -372,10 +398,20 @@ private fun ShoppingList(
                         count = grouped.later.size,
                         expanded = state.laterExpanded,
                         onToggle = { onAction(ShoppingAction.ToggleLaterExpanded) },
-                        modifier = Modifier.testTag(shoppingSectionTag("later")),
+                        modifier = Modifier
+                            .testTag(shoppingSectionTag("later"))
+                            .semantics { traversalIndex = afterAisles },
                     ) {
                         grouped.later.forEach { entry ->
-                            ShoppingEntryRow(entry, format, categoryOf(entry), delayed = true, actions = rowActions(state, entry, onAction))
+                            key(entry.id) {
+                                ShoppingEntryRow(
+                                    entry,
+                                    format,
+                                    categoryOf(entry),
+                                    delayed = true,
+                                    actions = rememberRowActions(state, entry, onAction),
+                                )
+                            }
                         }
                     }
                 }
@@ -387,7 +423,9 @@ private fun ShoppingList(
                         count = grouped.checked.size,
                         expanded = state.checkedExpanded,
                         onToggle = { onAction(ShoppingAction.ToggleCheckedExpanded) },
-                        modifier = Modifier.testTag(shoppingSectionTag("checked")),
+                        modifier = Modifier
+                            .testTag(shoppingSectionTag("checked"))
+                            .semantics { traversalIndex = afterAisles + 1f },
                         action = if (state.canEdit) {
                             {
                                 val description = stringResource(R.string.shopping_clear_checked_description)
@@ -402,8 +440,10 @@ private fun ShoppingList(
                         },
                     ) {
                         grouped.checked.forEach { entry ->
-                            val actions = rowActions(state, entry, onAction)
-                            ShoppingEntryRow(entry, format, categoryOf(entry), delayed = false, actions = actions)
+                            key(entry.id) {
+                                val actions = rememberRowActions(state, entry, onAction)
+                                ShoppingEntryRow(entry, format, categoryOf(entry), delayed = false, actions = actions)
+                            }
                         }
                     }
                 }
@@ -412,15 +452,28 @@ private fun ShoppingList(
     }
 }
 
-/** A row's actions: none for a guest; check, "köp senare" (not for checked rows) and edit otherwise. */
-private fun rowActions(state: ShoppingUiState, entry: ShoppingEntry, onAction: (ShoppingAction) -> Unit): RowActions {
-    if (!state.canEdit) return RowActions()
-    val later = { onAction(ShoppingAction.ToggleLater(entry.id)) }
-    return RowActions(
-        onToggle = { onAction(ShoppingAction.ToggleChecked(entry.id)) },
-        onLater = if (entry.checked) null else later,
-        onEdit = { onAction(ShoppingAction.OpenEdit(entry.id)) },
-    )
+/** Where the notices stand for TalkBack: before every aisle. */
+private const val TRAVERSAL_NOTICES = -1f
+
+/**
+ * A row's actions: none for a guest; check, "köp senare" (not for checked rows) and edit otherwise.
+ * Remembered per entry (fix-ui), so an unchanged row is not handed new lambdas on every emission.
+ */
+@Composable
+private fun rememberRowActions(state: ShoppingUiState, entry: ShoppingEntry, onAction: (ShoppingAction) -> Unit): RowActions {
+    val canEdit = state.canEdit
+    return remember(entry.id, entry.checked, canEdit, onAction) {
+        if (!canEdit) {
+            RowActions()
+        } else {
+            val id = entry.id
+            RowActions(
+                onToggle = { onAction(ShoppingAction.ToggleChecked(id)) },
+                onLater = if (entry.checked) null else ({ onAction(ShoppingAction.ToggleLater(id)) }),
+                onEdit = { onAction(ShoppingAction.OpenEdit(id)) },
+            )
+        }
+    }
 }
 
 /** Named lists ("Alla", "Veckohandling") and the store the list is sorted by. */
@@ -514,6 +567,7 @@ private fun SyncNoticeCard(notice: ShoppingSyncNotice, pendingCount: Int, onActi
     val (title, body) = when (notice) {
         ShoppingSyncNotice.OFFLINE -> R.string.shopping_offline_title to R.string.shopping_offline_body
         ShoppingSyncNotice.PAUSED -> R.string.shopping_paused_title to R.string.shopping_paused_body
+        ShoppingSyncNotice.BREAKER -> R.string.shopping_breaker_title to R.string.shopping_breaker_body
         ShoppingSyncNotice.LOGIN -> R.string.shopping_login_title to R.string.shopping_login_body
         ShoppingSyncNotice.SAFE_MODE -> R.string.shopping_safe_mode_title to R.string.shopping_safe_mode_body
     }
@@ -528,7 +582,7 @@ private fun SyncNoticeCard(notice: ShoppingSyncNotice, pendingCount: Int, onActi
         icon = if (notice == ShoppingSyncNotice.OFFLINE) TandemIcons.CloudOff else TandemIcons.Warning,
         // Neutral also when paused: the action's text is readable on it (saffron is for the app chip).
         tone = TandemTone.Neutral,
-        actions = if (notice == ShoppingSyncNotice.OFFLINE || notice == ShoppingSyncNotice.PAUSED) {
+        actions = if (notice != ShoppingSyncNotice.LOGIN && notice != ShoppingSyncNotice.SAFE_MODE) {
             {
                 TandemTextButton(
                     text = stringResource(R.string.shopping_try_again),

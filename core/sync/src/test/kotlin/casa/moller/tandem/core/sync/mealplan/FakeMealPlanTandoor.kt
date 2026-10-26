@@ -129,6 +129,9 @@ internal class FakeMealPlanTandoor(private val version: String) {
     @Volatile
     var onAddShopping: ((Meal) -> Unit)? = null
 
+    /** fix-ui: a deleted meal's id; Tandoor deletes its shopping list recipe and entries with it (FACTS "Fas 2 f"). */
+    var onDelete: ((Long) -> Unit)? = null
+
     /** Answers a meal plan request, null for any other path (so another fake may answer it). */
     @Synchronized
     fun answer(request: RecordedRequest): MockResponse? {
@@ -187,6 +190,7 @@ internal class FakeMealPlanTandoor(private val version: String) {
 
             "DELETE" -> {
                 meals.remove(id)
+                onDelete?.invoke(id)
                 MockResponse.Builder().code(NO_CONTENT).build()
             }
 

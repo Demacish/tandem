@@ -10,12 +10,18 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
+import casa.moller.tandem.core.model.shopping.ShoppingChange
 import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.shopping.FakeShoppingTandoor
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import java.util.concurrent.CopyOnWriteArrayList
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import org.junit.Assert.assertEquals
@@ -174,6 +180,44 @@ class WeekShoppingSyncTest {
         assertEquals(mapOf(pasta to 1, meatballs to 1), listRecipesByMeal())
     }
 
+    /**
+     * fix-ui (Phase 2 review): Tandoor deletes a meal's rows with the meal, so removing it takes them
+     * off this phone's list at once, without queuing anything for them, and the next full read
+     * reports nothing as "togs bort" by someone else.
+     */
+    @Test
+    fun removingAMealTakesItsRowsOffTheListAtOnce() = forEachVersion {
+        autoAdd(graph, on = false)
+        meals.onDelete = { id -> shop.serverDeleteMeal(id) }
+        val pasta = meals.web("2026-10-13T00:00:00", recipe = PASTA)
+        val meatballs = meals.web("2026-10-15T00:00:00", recipe = MEATBALLS)
+        ok(repo.addWeekToShopping(everything(preview())))
+        drainAll()
+        ok(graph.shopping.refresh(full = true))
+        val before = graph.shopping.observeEntries().first()
+        assertTrue("[$version] $before", before.any { it.recipe?.mealPlanId == pasta })
+
+        val changes = CopyOnWriteArrayList<ShoppingChange>()
+        coroutineScope {
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) { graph.shopping.observeChanges().collect { changes += it } }
+            ok(repo.delete(pasta))
+            val after = graph.shopping.observeEntries().first()
+            assertTrue("[$version] gone at once: $after", after.none { it.recipe?.mealPlanId == pasta })
+            assertTrue("[$version] the other meal's rows stay", after.any { it.recipe?.mealPlanId == meatballs })
+            assertTrue(
+                "[$version] nothing queued for the rows",
+                graph.real.outboxDao().getAllFor(ACCOUNT_ID, OutboxEntities.SHOPPING_ENTRY).isEmpty(),
+            )
+            drainAll()
+            ok(graph.shopping.refresh(full = true))
+            delay(SETTLE_MILLIS)
+            collector.cancel()
+        }
+        assertTrue("[$version] no 'togs bort' for the meal's own rows: $changes", changes.isEmpty())
+        assertEquals("[$version] the server deleted them with the meal", mapOf(meatballs to 1), listRecipesByMeal())
+        assertTrue("[$version] no 404: ${shop.notFound}", shop.notFound.isEmpty())
+    }
+
     /** On: rows the server added for a meal (flag or only the link) are never added a second time. */
     @Test
     fun autoAddOnMealsTheServerPutOnTheListAreSkipped() = forEachVersion {
@@ -236,6 +280,7 @@ class WeekShoppingSyncTest {
 
     private companion object {
         val VERSIONS = listOf("2.6.13", "2.7.1")
+        const val SETTLE_MILLIS = 200L
         val MONDAY = LocalDate(2026, 10, 12)
         val SUNDAY = LocalDate(2026, 10, 18)
 

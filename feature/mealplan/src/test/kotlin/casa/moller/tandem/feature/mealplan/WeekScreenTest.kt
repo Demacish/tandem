@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.mealplan
 
 import android.content.Context
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
@@ -17,12 +18,14 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
+import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.mealplan.MealPlanSamples.day
@@ -63,6 +66,8 @@ class WeekScreenTest {
     private val actions = mutableListOf<WeekAction>()
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val format = MealPlanFormat(java.util.Locale.US)
+
+    private val todayBreakfastId = MealPlanSamples.todayBreakfast.id
 
     private fun string(id: Int, vararg args: Any): String = context.getString(id, *args)
 
@@ -134,14 +139,75 @@ class WeekScreenTest {
         assertEquals(WeekAction.PlanMeal(day(5), MealPlanSamples.dinner.id), actions.last())
     }
 
+    /** fix-ui (plan §10 "veckorutnätet … i båda orienteringarna"): a tablet in portrait gets the grid too. */
     @Test
     @Config(qualifiers = Devices.TABLET_PORTRAIT)
-    fun theTabletInPortraitShowsTheDaysBesideTheChosenDay() {
+    fun theTabletInPortraitShowsTheWeekGridWithTodayInView() {
+        show(MealPlanSamples.state())
+        composeRule.onNodeWithTag(WEEK_GRID_TAG).assertIsDisplayed()
+        composeRule.onNodeWithTag(dayTag(MealPlanSamples.today)).assertIsDisplayed()
+        composeRule.onNodeWithTag(mealTag(todayDinner.id)).assertIsDisplayed()
+    }
+
+    /**
+     * fix-ui: in the grid the day is a column heading TalkBack does not pass on, so a meal says its
+     * meal type and day itself ("Dinner, Thursday, October 22, today: …").
+     */
+    @Test
+    @Config(qualifiers = Devices.TABLET)
+    fun aMealInTheGridSaysItsDayAndMealType() {
+        show(MealPlanSamples.state())
+        val description = composeRule.onNodeWithTag(mealTag(todayDinner.id)).fetchSemanticsNode()
+            .config[SemanticsProperties.ContentDescription].joinToString()
+        val today = string(R.string.mealplan_today_heading, format.fullDay(MealPlanSamples.today))
+        assertTrue(description, description.startsWith(string(R.string.mealplan_tile_description, todayDinner.mealType.name, today, "")))
+        assertTrue(description, todayDinner.displayTitle in description)
+        val onMonday = composeRule.onNodeWithTag(mealTag(monday.id)).fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
+        assertTrue(onMonday.joinToString(), format.fullDay(day(0)) in onMonday.joinToString())
+    }
+
+    @Test
+    fun aLongPressOnAMealMovesIt() {
+        show(MealPlanSamples.state())
+        composeRule.onNodeWithTag(WEEK_AGENDA_TAG).performScrollToNode(hasTestTag(mealTag(monday.id)))
+        composeRule.onNodeWithTag(mealTag(monday.id)).performSemanticsAction(SemanticsActions.OnLongClick)
+        assertEquals(WeekAction.StartMove(monday), actions.last())
+    }
+
+    @Test
+    fun aGuestHasNoLongPress() {
+        show(MealPlanSamples.state(readOnly = true))
+        composeRule.onNodeWithTag(WEEK_AGENDA_TAG).performScrollToNode(hasTestTag(mealTag(monday.id)))
+        assertTrue(SemanticsActions.OnLongClick !in composeRule.onNodeWithTag(mealTag(monday.id)).fetchSemanticsNode().config)
+    }
+
+    /** fix-ui: the agenda opens on today (Thursday), but the guest note above the days stays in view. */
+    @Test
+    @Config(qualifiers = Devices.PHONE)
+    fun theGuestNoteShowsWhenTheWeekOpensOnToday() {
+        show(MealPlanSamples.state(readOnly = true))
+        composeRule.onNodeWithText(string(R.string.mealplan_read_only)).assertIsDisplayed()
+        composeRule.onNodeWithTag(dayTag(MealPlanSamples.today)).assertIsDisplayed()
+    }
+
+    @Test
+    fun removingAMealWithRowsOnTheListAsksFirst() {
+        show(MealPlanSamples.state().copy(deleting = DeleteMealState(todayDinner, rows = 3)))
+        val rows = context.resources.getQuantityString(R.plurals.mealplan_delete_confirm_rows, 3, 3)
+        composeRule.onNodeWithText(string(R.string.mealplan_delete_confirm_body, todayDinner.displayTitle) + " " + rows).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.mealplan_delete_confirm)).performClick()
+        assertEquals(WeekAction.ConfirmDelete(true), actions.last())
+    }
+
+    @Test
+    @Config(qualifiers = Devices.PHONE_LANDSCAPE)
+    fun aPhoneInLandscapeShowsTheDaysBesideTheChosenDay() {
         show(MealPlanSamples.state())
         composeRule.onNodeWithTag(WEEK_DAYS_TAG).assertIsDisplayed()
         composeRule.onNodeWithTag(WEEK_DAY_PANE_TAG).assertIsDisplayed()
         // Today is shown beside by default.
-        composeRule.onNodeWithTag(mealTag(todayDinner.id)).assertIsDisplayed()
+        composeRule.onNodeWithTag(mealTag(todayBreakfastId)).assertIsDisplayed()
+        composeRule.onNodeWithTag(WEEK_DAYS_TAG).performScrollToNode(hasTestTag(dayTag(day(6))))
         composeRule.onNodeWithTag(dayTag(day(6))).performClick()
         assertEquals(WeekAction.SelectDay(day(6)), actions.last())
     }
@@ -166,7 +232,15 @@ class WeekScreenTest {
     fun removingFromTheRouteCanBeUndone() {
         val mealPlans = FakeMealPlanRepository(meals = MealPlanSamples.meals, mealTypes = MealPlanSamples.mealTypes)
         val permissions = FakeSpacePermissionsRepository()
-        val vm = WeekViewModel(null, SavedStateHandle(), mealPlans, permissions, FakeForegroundSync(), TestClock(MealPlanSamples.now))
+        val vm = WeekViewModel(
+            null,
+            SavedStateHandle(),
+            mealPlans,
+            permissions,
+            FakeForegroundSync(),
+            TestClock(MealPlanSamples.now),
+            FakeShoppingRepository(entries = emptyList(), lists = emptyList()),
+        )
         val planned = mutableListOf<PlanMealKey>()
         composeRule.setContent {
             MealPlanTestTheme {

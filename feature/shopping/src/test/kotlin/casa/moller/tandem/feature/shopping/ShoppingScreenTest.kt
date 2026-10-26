@@ -152,6 +152,37 @@ class ShoppingScreenTest {
         assertEquals(listOf<ShoppingAction>(ShoppingAction.SelectStore(ShoppingSamples.otherStore.id)), actions)
     }
 
+    /**
+     * fix-ui (plan §10 "inköpslistan i två kolumner … i båda orienteringarna"): a tablet in portrait
+     * has no fixed side pane, so its aisles stand in two columns; the add field is above the list.
+     */
+    @Test
+    @Config(qualifiers = Devices.TABLET_PORTRAIT)
+    fun aTabletInPortraitShowsTwoColumnsOfAisles() {
+        show(ShoppingSamples.state())
+        composeRule.onAllNodesWithTag(SHOPPING_SIDE_PANE_TAG).assertCountEquals(0)
+        composeRule.onNodeWithText(string(R.string.shopping_add_field_hint)).assertIsDisplayed()
+        val fruit = composeRule.onNodeWithTag(shoppingSectionTag("category-1")).fetchSemanticsNode().boundsInRoot
+        val pantry = composeRule.onNodeWithTag(shoppingSectionTag("category-3")).fetchSemanticsNode().boundsInRoot
+        assertTrue("two aisles side by side: $fruit, $pantry", pantry.left >= fruit.right && pantry.top == fruit.top)
+        // "Övrigt" stands last, across both columns.
+        val other = composeRule.onNodeWithTag(shoppingSectionTag("category-none")).fetchSemanticsNode().boundsInRoot
+        assertTrue(other.top >= maxOf(fruit.bottom, pantry.bottom) && other.left <= fruit.left && other.right >= pantry.right)
+    }
+
+    /** fix-ui: TalkBack reads the aisles in the store's walking order, whichever column they stand in. */
+    @Test
+    @Config(qualifiers = Devices.TABLET)
+    fun theAislesKeepTheWalkingOrderForTalkBackInTwoColumns() {
+        val state = ShoppingSamples.state()
+        show(state)
+        val order = state.grouped.sections.map { section ->
+            composeRule.onNodeWithTag(shoppingSectionTag(section.key)).fetchSemanticsNode().config[SemanticsProperties.TraversalIndex]
+        }
+        assertEquals(order.sorted(), order)
+        assertEquals(order.distinct(), order)
+    }
+
     @Test
     fun storeModeChecksWithATapAndShowsOnlyWhatIsLeft() {
         val storeActions = mutableListOf<StoreModeAction>()

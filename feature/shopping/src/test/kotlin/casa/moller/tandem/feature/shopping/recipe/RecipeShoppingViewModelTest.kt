@@ -124,23 +124,36 @@ class RecipeShoppingViewModelTest {
     }
 
     @Test
-    fun theRecipesRowsOnTheListCanBeRemovedTogether() = runTest {
-        val label = ShoppingRecipeLabel(listRecipeId = -5, recipeId = pasta.id, recipeName = pasta.name)
+    fun theRecipesRowsOnTheListCanBeRemovedTogetherAndPutBackWithUndo() = runTest {
+        val label = ShoppingRecipeLabel(listRecipeId = -5, recipeId = pasta.id, recipeName = pasta.name, servings = 4.0)
         val meal = ShoppingRecipeLabel(listRecipeId = 9, recipeId = pasta.id, recipeName = pasta.name, mealPlanId = 3)
         shopping.entries.value = listOf(
-            ShoppingEntry(1, ShoppingFood(1, "champinjon"), amount = 400.0, recipe = label),
-            ShoppingEntry(2, ShoppingFood(4, "pasta"), amount = 400.0, recipe = label),
+            ShoppingEntry(1, ShoppingFood(1, "champinjon"), amount = 400.0, recipe = label, ingredientId = 10111, listIds = setOf(1)),
+            ShoppingEntry(2, ShoppingFood(4, "pasta"), amount = 400.0, recipe = label, ingredientId = 10121, listIds = setOf(1)),
             ShoppingEntry(3, ShoppingFood(6, "vispgrädde"), amount = 2.5, recipe = meal),
             ShoppingEntry(4, ShoppingFood(8, "mjölk"), amount = 1.0),
+            // Bought already: Tandoor deletes it with the list recipe too.
+            ShoppingEntry(5, ShoppingFood(9, "parmesan"), amount = 50.0, recipe = label, ingredientId = 10131, checked = true),
         )
         val vm = viewModel()
         val effects = open(vm)
         assertEquals("a planned meal's rows are not this recipe's own", 2, vm.uiState.value.onList)
+        assertEquals("the checked row goes too", 3, vm.uiState.value.removable)
         vm.onAction(RecipeShoppingAction.RemoveFromList)
         advanceUntilIdle()
         assertEquals(listOf(3L, 4L), shopping.entries.value.map { it.id })
-        assertEquals(listOf<RecipeShoppingEffect>(RecipeShoppingEffect.Removed(2, pasta.name)), effects)
+        val removed = listOf<RecipeShoppingEffect>(RecipeShoppingEffect.Removed(3, pasta.name))
+        assertEquals("the message counts every removed row (fix-ui)", removed, effects)
         assertEquals(0, vm.uiState.value.onList)
+
+        // fix-ui: "Ångra" puts the rows still to buy back as one list recipe (the bought one stays off).
+        vm.onAction(RecipeShoppingAction.Undo)
+        advanceUntilIdle()
+        val restored = RecipeShoppingRequest(pasta.id, 4.0, setOf(10111L, 10121L), listIds = setOf(1L))
+        assertEquals(listOf(restored), shopping.recipeRequests)
+        vm.onAction(RecipeShoppingAction.Undo)
+        advanceUntilIdle()
+        assertEquals("one undo only", 1, shopping.recipeRequests.size)
     }
 
     @Test

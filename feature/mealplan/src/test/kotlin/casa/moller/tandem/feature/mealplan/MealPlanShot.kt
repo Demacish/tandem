@@ -33,6 +33,11 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     PLAN_EDIT({ PlanMealScreen(state = MealPlanSamples.planState(recipe = MealPlanSamples.pasta, editing = true), onAction = {}) }),
     WEEK_SHOPPING({ WeekShoppingScreen(state = MealPlanSamples.weekShopping, onAction = {}) }),
 
+    // fix-ui: "Vill laga" and "Favoriter" while the search is empty, and removing a meal asks first.
+    PLAN_COLLECTIONS({ PlanMealScreen(state = MealPlanSamples.planCollectionsState, onAction = {}) }),
+    PLAN_DELETE({ PlanMealScreen(state = MealPlanSamples.planDeleteState, onAction = {}) }),
+    WEEK_DELETE({ WeekShot(MealPlanSamples.state().copy(deleting = DeleteMealState(MealPlanSamples.todayDinner, rows = 6))) }),
+
     // Phase 2 (koppling lane): "Handla för veckan" for a guest, with everything on the list, and without meals.
     WEEK_SHOPPING_GUEST({ WeekShoppingShot(MealPlanSamples.weekShoppingState(MealPlanSamples.weekShoppingMeals, readOnly = true)) }),
     WEEK_SHOPPING_ALL_ON_LIST({

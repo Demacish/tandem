@@ -70,9 +70,9 @@
 
     <!-- Conflicts (plan 3.5) -->
     <string name="mealplan_conflict_title">Changed in two places</string>
-    <string name="mealplan_conflict_body">%1$s: %2$s was changed on another device while you changed it here.\n\nYours: %3$s\nTheirs: %4$s</string>
-    <string name="mealplan_conflict_keep_mine">Keep mine</string>
-    <string name="mealplan_conflict_take_theirs">Take theirs</string>
+    <string name="mealplan_conflict_body">%1$s: %2$s was changed on another device while you changed it here.\n\nYour change: %3$s\nTheir change: %4$s</string>
+    <string name="mealplan_conflict_keep_mine">Keep my change</string>
+    <string name="mealplan_conflict_take_theirs">Take their change</string>
     <string name="mealplan_conflict_empty">(empty)</string>
     <string name="mealplan_field_day">the day</string>
     <string name="mealplan_field_meal_type">the meal type</string>
@@ -155,4 +155,18 @@
     </plurals>
     <string name="mealplan_week_shopping_add_none">Choose what to add</string>
     <string name="mealplan_week_shopping_read_only">As a guest you see what these days need, but only members can put it on the shopping list.</string>
+
+    <!-- fix-ui (Phase 2 review) -->
+    <string name="mealplan_tile_description">%1$s, %2$s: %3$s</string>
+    <string name="mealplan_delete_confirm_title">Remove the meal?</string>
+    <string name="mealplan_delete_confirm_body">%1$s is removed from the meal plan for the whole household.</string>
+    <string name="mealplan_delete_confirm_on_list">The items it put on the shopping list are removed too.</string>
+    <plurals name="mealplan_delete_confirm_rows">
+        <item quantity="one">The meal’s %d item on the shopping list is removed too.</item>
+        <item quantity="other">The meal’s %d items on the shopping list are removed too.</item>
+    </plurals>
+    <string name="mealplan_delete_confirm">Remove</string>
+    <string name="mealplan_from_want_to_cook">From Want to cook</string>
+    <string name="mealplan_from_favorites">From Favourites</string>
+    <string name="mealplan_all_recipes">All recipes</string>
 </resources>

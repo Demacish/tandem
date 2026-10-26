@@ -133,6 +133,27 @@ class BooksViewModelsTest {
         assertTrue(books.wantToCook.value.isEmpty())
     }
 
+    /** fix-ui: taking a recipe out of a book, Favoriter or the shared "Vill laga" can be undone. */
+    @Test
+    fun aRemovedRecipeComesBackWithUndo() = runTest {
+        books.wantToCook.value = setOf(pasta)
+        for (source in listOf(BookSource.Book(own.id), BookSource.Favorites, BookSource.WantToCook)) {
+            val vm = BookRecipesViewModel(source, books, permissions, FakeSyncRepository())
+            collect(vm.uiState)
+            val effects = mutableListOf<BookRecipesEffect>()
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.effects.toList(effects) }
+            val kind = vm.uiState.value.kind
+            vm.onAction(BookRecipesAction.Remove(pasta))
+            assertEquals(listOf<BookRecipesEffect>(BookRecipesEffect.Removed(SampleRecipes.MushroomPasta.name, kind)), effects)
+            assertTrue("$source: gone", vm.uiState.value.recipes.none { it.id == pasta })
+            vm.onAction(BookRecipesAction.Undo)
+            assertTrue("$source: back", vm.uiState.value.recipes.any { it.id == pasta })
+        }
+        assertEquals(listOf(pasta), books.entries.value[own.id])
+        assertEquals(listOf(pasta), books.entries.value[ownFavorites.id])
+        assertEquals(setOf(pasta), books.wantToCook.value)
+    }
+
     @Test
     fun theDetailButtonsToggleFavouriteWantToCookAndOwnBooks() = runTest {
         val vm = RecipeBookButtonsViewModel(pancakes, books, permissions, SavedStateHandle())

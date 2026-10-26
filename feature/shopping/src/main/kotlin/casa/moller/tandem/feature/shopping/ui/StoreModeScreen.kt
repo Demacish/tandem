@@ -24,12 +24,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -43,6 +41,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
+import casa.moller.tandem.core.ui.window.KeepScreenOn
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.ShoppingFormat
 import casa.moller.tandem.feature.shopping.ShoppingSection
@@ -55,7 +54,8 @@ const val STORE_MODE_LIST_TAG = "shopping:store:list"
 /**
  * Store mode (plan 6.2 "Butiksläge", 6.6, feature #13, Stitch butiksl_ge), stateless: big text,
  * rows at least 64 dp high, only what is still to buy, the aisle headings stick to the top while
- * scrolling, and the screen stays on. Tap or swipe puts an item in the cart ("Ångra" in the
+ * scrolling, and the screen stays on (core:ui [KeepScreenOn], reference counted with cook mode's,
+ * fix-ui). Tap or swipe puts an item in the cart ("Ångra" in the
  * snackbar). Full screen on every width ([casa.moller.tandem.feature.shopping.navigation.StoreModeKey]).
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -200,16 +200,5 @@ private fun AisleHeader(section: ShoppingSection, title: String) {
                 )
             }
         }
-    }
-}
-
-/** Keeps the screen on while store mode is shown (plan 6.2), and restores the window's flag after. */
-@Composable
-private fun KeepScreenOn() {
-    val view = LocalView.current
-    DisposableEffect(view) {
-        val before = view.keepScreenOn
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = before }
     }
 }

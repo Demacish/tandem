@@ -282,6 +282,7 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
             val serverId = entry.serverId
             if (serverId != null) {
                 context.database.outboxDao().deleteUnsentFor(context.accountId, OutboxEntities.SHOPPING_ENTRY, serverId)
+                context.keepInHistory(entry)
                 context.database.shoppingDao().deleteEntries(context.accountId, listOf(entry.localId))
             } else {
                 context.removeEntry(entry)
@@ -516,8 +517,19 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
 
         /** Removes [entry] here and queues its DELETE (which cancels an unsent CREATE and all queued for it). */
         suspend fun removeEntry(entry: ShoppingEntryEntity) {
+            keepInHistory(entry)
             database.shoppingDao().deleteEntries(accountId, listOf(entry.localId))
             queue(entry, OutboxOps.DELETE, "{}")
+        }
+
+        /**
+         * fix-ui (Phase 2 review): a bought (checked) entry that leaves the list ("Rensa", "Ta
+         * bort", a recipe taken off the list) goes to `shopping_history` first, as the window rule
+         * does with aged-out ones, so "Köpt nyligen" and "Köpt tidigare" also fill for a household
+         * that clears its list. Same `entry_id` (the server id) as the window rule would use.
+         */
+        suspend fun keepInHistory(entry: ShoppingEntryEntity) {
+            if (entry.checked) database.shoppingDao().archive(accountId, listOf(entry.toHistory(now)), emptyList())
         }
 
         /** The CREATE row of temporary id [localId] (any state), if it is still in the outbox. */

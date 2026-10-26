@@ -31,9 +31,9 @@ import casa.moller.tandem.feature.shopping.ShoppingAction
 
 /**
  * Editing one entry (long press, plan 6.2 "Lång tryckning → ändra eller flytta kategori"): food,
- * amount and unit, the food's aisle (for the whole space, Tandoor's `supermarket_category`), "köp
- * senare" / "köp nu", the recipe it came from, and removing it (or, Phase 2 koppling lane, the
- * whole recipe with its rows).
+ * amount and unit, the food's aisle (for the whole space, Tandoor's `supermarket_category`), the
+ * named lists it is on (fix-ui, plan 3.5 "Flytt mellan listor"), "köp senare" / "köp nu", the
+ * recipe it came from, and removing it (or, Phase 2 koppling lane, the whole recipe with its rows).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -118,6 +118,18 @@ internal fun EditEntryPanel(state: EditEntryState, onAction: (ShoppingAction) ->
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        if (state.lists.isNotEmpty()) {
+            SmallHeading(stringResource(R.string.shopping_edit_lists))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                state.lists.forEach { list ->
+                    FilterChip(
+                        selected = list.id in state.listIds,
+                        onClick = { onAction(ShoppingAction.EditList(list.id)) },
+                        label = { Text(list.name) },
+                    )
+                }
+            }
         }
         TandemPrimaryButton(
             text = stringResource(R.string.shopping_edit_save),

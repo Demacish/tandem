@@ -65,6 +65,7 @@ internal interface ShellFeatures {
      * A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows.
      * [onStartCooking] is "Börja laga" (Phase 1b). [onOpenShoppingList] (Phase 2, koppling lane) is
      * "Visa listan" after "Lägg på inköpslistan" (feature:shopping's sheet in the detail's slot).
+     * [onPlanMeal] (fix-ui, plan 6.2 "Receptdetalj: … Planera") plans the recipe in Veckan.
      */
     @Composable
     fun RecipeDetail(
@@ -74,6 +75,7 @@ internal interface ShellFeatures {
         onOpenOnWeb: (String) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
         onOpenShoppingList: () -> Unit,
+        onPlanMeal: (Long) -> Unit,
     )
 
     /** The detail pane before a recipe is picked (wide windows only). */
@@ -203,6 +205,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenOnWeb: (String) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
         onOpenShoppingList: () -> Unit,
+        onPlanMeal: (Long) -> Unit,
     ) {
         RecipeDetailRoute(
             recipeId = recipeId,
@@ -214,6 +217,8 @@ internal object RouteShellFeatures : ShellFeatures {
             shoppingAction = { servings, snackbar ->
                 RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
             },
+            // fix-ui: "Planera" beside the book buttons (hidden for guests by feature:recipes).
+            onPlanMeal = onPlanMeal,
         )
     }
 

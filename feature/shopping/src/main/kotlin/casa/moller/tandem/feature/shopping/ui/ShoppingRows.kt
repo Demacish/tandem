@@ -68,7 +68,9 @@ internal class RowActions(val onToggle: (() -> Unit)? = null, val onLater: (() -
  * One entry on the list (plan 6.2, 6.6, Stitch ink_pslista_*): check mark, food, recipe label and
  * amount. ONE accessibility node, read as "2 dl grädde, Mejeri, avbockad" with the other actions
  * (köp senare, ändra) as TalkBack actions instead of extra buttons; colour is never the only
- * sign (strike-through and a check icon). At least [minHeight] high (48 dp, 64 dp in store mode).
+ * sign (strike-through and a check icon). At least [minHeight] high: 64 dp, the kitchen touch
+ * target, on the list as in store mode (plan 6.6 "64 dp i kokläge och inköpslista", fix-ui);
+ * [large] only makes the text and the check mark bigger (store mode).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -80,7 +82,7 @@ internal fun ShoppingEntryRow(
     actions: RowActions,
     modifier: Modifier = Modifier,
     large: Boolean = false,
-    minHeight: Dp = if (large) TandemTheme.sizes.kitchenTouchTarget else 56.dp,
+    minHeight: Dp = TandemTheme.sizes.kitchenTouchTarget,
 ) {
     val quantity = format.quantity(entry)
     val food = format.food(entry)

@@ -23,7 +23,7 @@
     <string name="shopping_lists_all">Alla</string>
     <string name="shopping_store_heading">Butik</string>
     <string name="shopping_store_chip">Butik: %1$s</string>
-    <string name="shopping_store_by_category">Sorterad efter kategori</string>
+    <string name="shopping_store_by_category">Sorterad efter avdelning</string>
     <string name="shopping_store_choose">Välj butik</string>
     <string name="shopping_progress">%1$d av %2$d avbockade</string>
 
@@ -69,13 +69,15 @@
     <string name="shopping_empty_body">Lägg till varor här, eller planera veckan och lägg recepten på listan.</string>
     <string name="shopping_empty_body_guest">Det finns inget på listan just nu.</string>
     <string name="shopping_guest_title">Skrivskyddat</string>
-    <string name="shopping_guest_body">Du är gäst i det här utrymmet: du kan se listan men inte ändra den.</string>
+    <string name="shopping_guest_body">Du är gäst i hushållets Tandoor: du kan se listan men inte ändra den.</string>
     <string name="shopping_offline_title">Offline</string>
     <string name="shopping_offline_body">Ändringarna sparas på enheten och synkas när nätet är tillbaka.</string>
     <string name="shopping_paused_title">Synken är pausad</string>
     <string name="shopping_paused_body">Servern håller tillbaka anrop en stund. Ändringarna sparas och skickas senare.</string>
     <string name="shopping_login_title">Inloggningen har gått ut</string>
-    <string name="shopping_login_body">Ändringarna sparas och skickas när du har loggat in igen under Inställningar.</string>
+    <string name="shopping_login_body">Tryck på Logga in igen överst. Ändringarna sparas och skickas sedan.</string>
+    <string name="shopping_breaker_title">Synken tar en kort paus</string>
+    <string name="shopping_breaker_body">Det blev många fel på kort tid, så Tandem väntar några minuter innan nästa försök. Ändringarna sparas och skickas sedan.</string>
     <string name="shopping_safe_mode_title">Säkert läge</string>
     <string name="shopping_safe_mode_body">Den här Tandoor-versionen är inte testad än: listan läses, men ändringarna väntar.</string>
     <string name="shopping_try_again">Försök igen</string>
@@ -107,6 +109,7 @@
     <string name="shopping_edit_category">Avdelning</string>
     <string name="shopping_edit_category_note">Gäller %1$s överallt, för hela hushållet.</string>
     <string name="shopping_edit_category_unsynced">Avdelningen går att välja när varan har synkats.</string>
+    <string name="shopping_edit_lists">Listor</string>
     <string name="shopping_edit_save">Spara</string>
     <string name="shopping_edit_delete">Ta bort från listan</string>
     <string name="shopping_edit_from_recipe">Från %1$s</string>
@@ -114,20 +117,20 @@
 
     <!-- Messages -->
     <string name="shopping_undo">Ångra</string>
-    <string name="shopping_msg_checked">%1$s avbockad</string>
+    <string name="shopping_msg_checked">%1$s bockades av</string>
     <plurals name="shopping_msg_checked_many">
         <item quantity="one">%d vara avbockad</item>
         <item quantity="other">%d varor avbockade</item>
     </plurals>
     <string name="shopping_msg_unchecked">%1$s är tillbaka på listan</string>
-    <string name="shopping_msg_delayed">%1$s flyttad till Köp senare</string>
+    <string name="shopping_msg_delayed">%1$s flyttades till Köp senare</string>
     <string name="shopping_msg_undelayed">%1$s är tillbaka på listan</string>
-    <string name="shopping_msg_added">%1$s tillagd</string>
+    <string name="shopping_msg_added">%1$s lades till</string>
     <plurals name="shopping_msg_added_many">
         <item quantity="one">%d vara tillagd</item>
         <item quantity="other">%d varor tillagda</item>
     </plurals>
-    <string name="shopping_msg_removed">%1$s borttagen</string>
+    <string name="shopping_msg_removed">%1$s togs bort</string>
     <plurals name="shopping_msg_cleared">
         <item quantity="one">%d avbockad vara borttagen</item>
         <item quantity="other">%d avbockade varor borttagna</item>
@@ -137,6 +140,10 @@
     <string name="shopping_change_added">%1$s lades till</string>
     <string name="shopping_change_checked">%1$s bockades av</string>
     <string name="shopping_change_removed">%1$s togs bort</string>
+    <plurals name="shopping_change_many">
+        <item quantity="one">%d ändring från någon annan i hushållet</item>
+        <item quantity="other">%d ändringar från andra i hushållet</item>
+    </plurals>
     <string name="shopping_error_read_only">Du är gäst: listan går inte att ändra.</string>
     <string name="shopping_error_save">Ändringen kunde inte sparas.</string>
     <string name="shopping_error_refresh">Kunde inte nå Tandoor. Visar den sparade listan.</string>

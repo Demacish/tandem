@@ -171,7 +171,7 @@
         <item quantity="other">%1$d refused</item>
     </plurals>
     <string name="settings_diagnostics_last_error">Last error: %1$s</string>
-    <string name="settings_diagnostics_refused_hint">Refused changes are not sent again by themselves. You can save them with “Export changes” under Accounts and servers.</string>
+    <string name="settings_diagnostics_refused_hint">Refused changes are not sent again by themselves. You can save them with “Export changes” on the account under More → Accounts and servers.</string>
     <string name="settings_diagnostics_kind_shopping_entry">Shopping list</string>
     <string name="settings_diagnostics_kind_shopping_recipe">Recipes on the list</string>
     <string name="settings_diagnostics_kind_meal_plan">Meal plan</string>

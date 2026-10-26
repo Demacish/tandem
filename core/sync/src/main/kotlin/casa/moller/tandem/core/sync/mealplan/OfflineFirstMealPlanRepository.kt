@@ -173,6 +173,23 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         }
     }
 
+    // fix-ui (Phase 2 review): a week outside the window is read on its own while it is shown.
+    override suspend fun refreshWeek(start: LocalDate): Outcome<Unit> = catchingUnexpected {
+        when (val source = sources.current()) {
+            is ActiveSource.Remote -> {
+                val end = start.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY)
+                if (MealPlanWindowReader.inWindow(start, end, clock.today())) {
+                    sync.refresh(source, background = true)
+                } else {
+                    sync.refresh(source, background = true, range = start..end)
+                }
+            }
+
+            ActiveSource.Demo -> Outcome.Success(Unit)
+            ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        }
+    }
+
     // ------------------------------------------------------------------------------------ writes
 
     override suspend fun create(draft: MealPlanDraft): Outcome<Long> {
@@ -273,6 +290,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
 
     override suspend fun delete(id: Long): Outcome<Unit> = write { context ->
         val meal = context.meal(id) ?: return@write Outcome.Success(Unit)
+        removeShoppingRowsOf(context, meal)
         context.database.mealPlanDao().delete(context.accountId, meal.localId)
         // The meal's last server day, so a later read can tell "deleted elsewhere" without a request.
         val day = MealPlanDates.serverDay(meal.toRaw) ?: LocalDate.parse(meal.toDate)
@@ -428,6 +446,37 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
     }
 
     // ------------------------------------------------------------------------------------ helpers
+
+    /**
+     * fix-ui (Phase 2 review; FACTS "Fas 2 f": Tandoor deletes a meal's list recipe and its entries
+     * with the meal): the meal's rows leave this device's list in the same transaction, so the list
+     * matches the server at once and no later full read reports them as "X togs bort" by someone
+     * else. Nothing is queued for them (the meal's DELETE removes them on the server); their own
+     * unsent rows are dropped, also the CREATE of a row that never reached the server.
+     */
+    private suspend fun removeShoppingRowsOf(context: WriteContext, meal: MealPlanEntity) {
+        val ids = setOfNotNull(meal.localId, meal.serverId)
+        val shopping = context.database.shoppingDao()
+        val listRecipes = shopping.getListRecipes(context.accountId).filter { recipe -> recipe.mealPlanId?.let { it in ids } == true }
+        val groups = listRecipes.mapTo(HashSet()) { it.localId }
+        val entries = shopping.getEntries(context.accountId).filter { entry ->
+            entry.mealPlanId?.let { it in ids } == true || entry.listRecipeId?.let { it in groups } == true
+        }
+        if (context.source is ActiveSource.Remote) {
+            entries.forEach { dropUnsent(context, OutboxEntities.SHOPPING_ENTRY, it.localId, it.serverId) }
+            listRecipes.forEach { dropUnsent(context, OutboxEntities.SHOPPING_LIST_RECIPE, it.localId, it.serverId) }
+        }
+        if (entries.isNotEmpty()) shopping.deleteEntries(context.accountId, entries.map { it.localId })
+        if (listRecipes.isNotEmpty()) shopping.deleteListRecipes(context.accountId, listRecipes.map { it.localId })
+    }
+
+    /** Drops the unsent outbox rows of one shopping object (and what depends on them); a row being sent stays. */
+    private suspend fun dropUnsent(context: WriteContext, entity: String, localId: Long, serverId: Long?) {
+        val outbox = context.database.outboxDao()
+        if (serverId != null) outbox.deleteUnsentFor(context.accountId, entity, serverId)
+        val unsent = outbox.getUnsentFor(context.accountId, entity, localId, null).map { it.id }
+        if (unsent.isNotEmpty()) outbox.deleteWithDependents(unsent)
+    }
 
     private suspend fun readOnly(): Boolean = permissions.permissions.first().readOnly
 

@@ -39,15 +39,22 @@ internal val TwoPaneMinWidth = 600.dp
 internal val GridMinWidth = 840.dp
 internal val GridMinHeight = 560.dp
 
+/**
+ * A window taller than wide gets the grid from this width (fix-ui, plan §10 "veckorutnätet … i
+ * båda orienteringarna"): a tablet in portrait, about 700–800 dp wide beside the rail. The grid
+ * scrolls sideways there.
+ */
+internal val PortraitGridMinWidth = 680.dp
+
 /** How the week is laid out for the window it gets (plan 6.5). */
 internal enum class WeekLayout {
     /** Phones in portrait: one column, a section per day (Stitch veckan_matsedel). */
     AGENDA,
 
-    /** Tablets in portrait, phones in landscape: the days beside the chosen day. */
+    /** Phones in landscape (too low for the grid), narrow tablets: the days beside the chosen day. */
     TWO_PANE,
 
-    /** Tablets in landscape: the week grid. */
+    /** Tablets in both orientations: the week grid. */
     GRID,
 }
 
@@ -58,9 +65,11 @@ internal enum class WeekLayout {
  *
  * - **Header:** week number and dates, previous/next week, "Idag" outside this week, how many days
  *   are planned. Pull to refresh reads the plan again.
- * - **Layouts** ([WeekLayout]): the agenda (today first), two panes, or the week grid.
+ * - **Layouts** ([WeekLayout]): the agenda (today first), two panes, or the week grid (tablets in
+ *   both orientations, fix-ui).
  * - **Meals:** tapping opens the recipe; the menu has "Laga" (today), "Ändra", "Flytta" and "Ta
- *   bort" (TalkBack: custom actions). "Flytta" opens a sheet with days and meal types.
+ *   bort" (TalkBack: custom actions). "Flytta" (also a long press, fix-ui) opens a sheet with days
+ *   and meal types; "Ta bort" asks first when the meal has rows on the shopping list.
  * - **States:** empty week, guest (#42: no plan/change controls at all), demo (the shell's banner),
  *   offline (the status chip; changes wait and show "väntar på att synkas"), a conflict dialog.
  */
@@ -90,8 +99,9 @@ fun WeekScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) {
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val portraitGrid = maxHeight > maxWidth && maxWidth >= PortraitGridMinWidth
                     val layout = when {
-                        maxWidth >= GridMinWidth && maxHeight >= GridMinHeight -> WeekLayout.GRID
+                        maxHeight >= GridMinHeight && (maxWidth >= GridMinWidth || portraitGrid) -> WeekLayout.GRID
                         maxWidth >= TwoPaneMinWidth -> WeekLayout.TWO_PANE
                         else -> WeekLayout.AGENDA
                     }
@@ -129,4 +139,12 @@ fun WeekScreen(
         }
     }
     state.conflict?.let { conflict -> ConflictDialog(state = conflict, format = format, onAction = onAction) }
+    state.deleting?.let { deleting ->
+        DeleteMealDialog(
+            mealTitle = deleting.meal.displayTitle,
+            rowsOnList = deleting.rows,
+            onConfirm = { onAction(WeekAction.ConfirmDelete(true)) },
+            onDismiss = { onAction(WeekAction.ConfirmDelete(false)) },
+        )
+    }
 }

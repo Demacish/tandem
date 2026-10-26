@@ -50,6 +50,9 @@ class ShoppingAccessibilityTest {
     fun listPaused() = check(ShoppingShot.LIST_PAUSED)
 
     @Test
+    fun listBreaker() = check(ShoppingShot.LIST_BREAKER)
+
+    @Test
     fun listGuest() = check(ShoppingShot.LIST_GUEST)
 
     @Test

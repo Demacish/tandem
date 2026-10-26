@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.mealplan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import casa.moller.tandem.core.data.book.RecipeBookRepository
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
@@ -57,6 +58,10 @@ enum class MealKind { RECIPE, TITLE }
  * @property gone the meal being changed no longer exists (deleted elsewhere).
  * @property showAddToShopping "Lägg på listan" (new meals with a recipe only: Tandoor's `addshopping`).
  * @property kinds which of [MealKind] can be chosen (a meal with a recipe cannot lose it here).
+ * @property wantToCook the household's "Vill laga" queue and [favorites] everyone's favourites,
+ *   offered while the search is empty (fix-ui, plan 6.2 "välj recept (sök, Vill laga, Favoriter)").
+ * @property confirmDelete "Ta bort från matsedeln?" is asked (fix-ui: no removal by a mis-tap);
+ *   [onShoppingList] says that the meal's rows on the list go with it.
  */
 data class PlanMealUiState(
     val loading: Boolean = true,
@@ -79,6 +84,10 @@ data class PlanMealUiState(
     val newMealType: String? = null,
     val saving: Boolean = false,
     val showErrors: Boolean = false,
+    val wantToCook: List<RecipeOverview> = emptyList(),
+    val favorites: List<RecipeOverview> = emptyList(),
+    val confirmDelete: Boolean = false,
+    val onShoppingList: Boolean = false,
 ) {
     val showAddToShopping: Boolean
         get() = !editing && kind == MealKind.RECIPE && recipe != null
@@ -94,6 +103,10 @@ data class PlanMealUiState(
 
     val canSave: Boolean
         get() = !loading && !readOnly && !gone && !saving
+
+    /** "Vill laga" and "Favoriter" are offered while no recipe is chosen and nothing is searched. */
+    val showCollections: Boolean
+        get() = kind == MealKind.RECIPE && recipe == null && query.isBlank() && (wantToCook.isNotEmpty() || favorites.isNotEmpty())
 
     companion object {
         const val DEFAULT_SERVINGS: Double = 4.0
@@ -133,7 +146,11 @@ sealed interface PlanMealAction {
 
     data object Save : PlanMealAction
 
+    /** "Ta bort från matsedeln": asks first (fix-ui). */
     data object Delete : PlanMealAction
+
+    /** The answer to "Ta bort från matsedeln?". */
+    data class ConfirmDelete(val confirmed: Boolean) : PlanMealAction
 
     data object Close : PlanMealAction
 }
@@ -153,8 +170,11 @@ sealed interface PlanMealEffect {
  *   `mealplan_autoadd_shopping` and sends `addshopping` exactly when ticked (FACTS "Fas 2 f").
  * - **Changing a meal** ([PlanMealKey.mealPlanId]): the fields start as the meal's; only what
  *   changed is saved (a new day keeps the meal's length).
- * - **Recipes** are searched in the stored recipes (offline); the servings start as the recipe's
- *   when its detail is stored.
+ * - **Recipes** are searched in the stored recipes (offline), or picked from "Vill laga" and
+ *   "Favoriter" (fix-ui); the servings start as the recipe's when its detail is stored (read
+ *   without a refresh of its own, fix-ui).
+ * - **Removing** a meal asks first and says when its rows on the shopping list go too (fix-ui;
+ *   Tandoor deletes them with the meal, FACTS "Fas 2 f").
  * - **Guest** (#42): nothing can be saved.
  * - The form survives rotation (the ViewModel) but not process death: the page then starts again
  *   from its key.
@@ -168,6 +188,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
     private val preferences: PreferencesRepository,
     permissions: SpacePermissionsRepository,
     clock: Clock,
+    books: RecipeBookRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -199,17 +220,27 @@ class PlanMealViewModel @AssistedInject internal constructor(
         .map { it.take(MAX_RESULTS) }
         .catch { emit(emptyList()) }
 
+    /** "Vill laga" and the favourites (fix-ui), a few of each; empty if they cannot be read. */
+    private val collections: Flow<Pair<List<RecipeOverview>, List<RecipeOverview>>> = combine(
+        books.observeWantToCook().map { it.take(MAX_COLLECTION) }.catch { emit(emptyList()) },
+        books.observeFavorites().map { it.take(MAX_COLLECTION) }.catch { emit(emptyList()) },
+    ) { wantToCook, favorites -> wantToCook to favorites }
+
     val uiState: StateFlow<PlanMealUiState> = combine(
         form,
         mealPlans.observeMealTypes(),
         permissions.permissions,
         results,
-    ) { form, types, perms, found ->
+        collections,
+    ) { form, types, perms, found, (wantToCook, favorites) ->
         form.copy(
             mealTypes = types,
             mealTypeId = form.mealTypeId?.takeIf { id -> types.any { it.id == id } } ?: form.mealTypeId.takeIf { types.isEmpty() },
             readOnly = perms.readOnly,
             results = found,
+            wantToCook = wantToCook,
+            favorites = favorites,
+            confirmDelete = form.confirmDelete && !perms.readOnly,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), form.value)
 
@@ -238,6 +269,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
                         title = meal.title,
                         servings = meal.servings,
                         note = meal.note,
+                        onShoppingList = meal.onShoppingList,
                     )
                 }
             }
@@ -250,7 +282,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
 
     /** Preselects a recipe ("Planera" on a recipe): its stored overview and, when stored, its servings. */
     private suspend fun pickRecipe(id: Long) {
-        val detail = withTimeoutOrNull(RECIPE_WAIT_MILLIS) { recipes.observeRecipe(id).firstOrNull { !it.isEmpty } }
+        val detail = withTimeoutOrNull(RECIPE_WAIT_MILLIS) { recipes.observeStoredRecipe(id).firstOrNull { !it.isEmpty } }
         val overview = detail?.overview ?: detail?.recipe?.let { RecipeOverview(it.id, it.name, imageUrl = it.imageUrl) } ?: return
         val servings = detail?.recipe?.servings?.toDouble()
         form.update { state -> state.copy(recipe = overview, kind = MealKind.RECIPE, servings = servings ?: state.servings) }
@@ -293,7 +325,12 @@ class PlanMealViewModel @AssistedInject internal constructor(
 
             PlanMealAction.Save -> save()
 
-            PlanMealAction.Delete -> delete()
+            PlanMealAction.Delete -> if (original != null && !uiState.value.readOnly) form.update { it.copy(confirmDelete = true) }
+
+            is PlanMealAction.ConfirmDelete -> {
+                form.update { it.copy(confirmDelete = false) }
+                if (action.confirmed) delete()
+            }
 
             PlanMealAction.Close -> Unit // The route closes the page.
         }
@@ -301,7 +338,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
 
     /** The recipe's own servings when its detail is stored (no request is waited for). */
     private suspend fun servingsOf(recipeId: Long): Double? =
-        withTimeoutOrNull(RECIPE_WAIT_MILLIS) { recipes.observeRecipe(recipeId).first() }?.recipe?.servings?.toDouble()
+        withTimeoutOrNull(RECIPE_WAIT_MILLIS) { recipes.observeStoredRecipe(recipeId).first() }?.recipe?.servings?.toDouble()
 
     private fun createMealType() {
         val name = form.value.newMealType?.trim().orEmpty()
@@ -363,6 +400,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
         const val STOP_TIMEOUT_MILLIS = 5_000L
         const val SEARCH_DEBOUNCE_MILLIS = 150L
         const val MAX_RESULTS = 30
+        const val MAX_COLLECTION = 6
         const val MIN_SERVINGS = 1.0
         const val RECIPE_WAIT_MILLIS = 1_000L
     }

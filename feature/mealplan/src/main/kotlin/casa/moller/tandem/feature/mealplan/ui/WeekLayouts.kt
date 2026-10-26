@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.mealplan.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -76,26 +78,27 @@ private val TwoPaneDaysWidth = 300.dp
 
 /**
  * Phones: the week header, then a section per day, scrolled so that today is first in this week
- * (plan 6.2 "Veckan": agenda, 7 days per page), and "Handla för veckan" at the end.
+ * (plan 6.2 "Veckan": agenda, 7 days per page), and "Handla för veckan" at the end. The guest
+ * note and the empty-week note stand fixed above the days (fix-ui: scrolling to today hid them).
  */
 @Composable
 internal fun WeekAgenda(state: WeekUiState, format: MealPlanFormat, onAction: (WeekAction) -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
-    val before = listOfNotNull(state.readOnly.takeIf { it }, state.isEmpty.takeIf { it }).size
     val todayIndex = state.days.indexOfFirst { it.date == state.today }
     val listState = rememberSaveable(state.weekStart, saver = LazyListState.Saver) {
-        LazyListState(firstVisibleItemIndex = if (todayIndex > 0) before + todayIndex else 0)
+        LazyListState(firstVisibleItemIndex = todayIndex.coerceAtLeast(0))
     }
     Column(modifier = modifier.fillMaxSize()) {
         WeekHeader(state = state, format = format, onAction = onAction, modifier = Modifier.padding(horizontal = spacing.sm))
+        val notePadding = Modifier.padding(horizontal = spacing.lg, vertical = spacing.xs)
+        if (state.readOnly) ReadOnlyNote(modifier = notePadding)
+        if (state.isEmpty) EmptyWeekNote(readOnly = state.readOnly, modifier = notePadding)
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().testTag(WEEK_AGENDA_TAG),
             contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, top = spacing.sm, bottom = spacing.xxl),
             verticalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
-            if (state.readOnly) item(key = "read-only") { ReadOnlyNote() }
-            if (state.isEmpty) item(key = "empty") { EmptyWeekNote(readOnly = state.readOnly) }
             items(state.days, key = { it.date.toString() }) { day ->
                 DaySection(day = day, state = state, format = format, onAction = onAction)
             }
@@ -105,8 +108,9 @@ internal fun WeekAgenda(state: WeekUiState, format: MealPlanFormat, onAction: (W
 }
 
 /**
- * Tablets in portrait and phones in landscape (plan 6.5, list-detail): the days of the week with
- * their meals' names beside the chosen day (today by default) with its cards.
+ * Phones in landscape and other windows too narrow or too low for the grid (plan 6.5,
+ * list-detail): the days of the week with their meals' names beside the chosen day (today by
+ * default) with its cards.
  */
 @Composable
 internal fun WeekTwoPane(state: WeekUiState, format: MealPlanFormat, onAction: (WeekAction) -> Unit, modifier: Modifier = Modifier) {
@@ -142,9 +146,12 @@ internal fun WeekTwoPane(state: WeekUiState, format: MealPlanFormat, onAction: (
 }
 
 /**
- * Tablets in landscape (plan 6.5, Stitch veckan_matsedel_surfplatta): days as columns, meal types
- * as rows, today's column marked, "+" in every empty cell. Every column stays readable: on a
- * narrow window the grid scrolls sideways instead of clipping Sunday (docs/design/README.md).
+ * Tablets in both orientations (plan 6.5, §10 "veckorutnätet … i båda orienteringarna", Stitch
+ * veckan_matsedel_surfplatta): days as columns, meal types as rows, today's column marked, "+" in
+ * every empty cell. Every column stays readable: on a narrow window (a tablet in portrait) the grid
+ * scrolls sideways instead of clipping Sunday (docs/design/README.md), and opens with today's
+ * column in view. The day headings stay at the top while the meal types scroll under them, and
+ * scroll sideways with the cells (fix-ui).
  */
 @Composable
 internal fun WeekGrid(state: WeekUiState, format: MealPlanFormat, onAction: (WeekAction) -> Unit, modifier: Modifier = Modifier) {
@@ -161,17 +168,20 @@ internal fun WeekGrid(state: WeekUiState, format: MealPlanFormat, onAction: (Wee
         }
         if (state.readOnly) ReadOnlyNote(modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.xs))
         BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth().testTag(WEEK_GRID_TAG)) {
-            val cell = maxOf((maxWidth - GridTypeColumn - spacing.lg * 2) / state.days.size.coerceAtLeast(1), GridMinCell)
+            val shown = maxWidth - GridTypeColumn - spacing.lg * 2
+            val cell = maxOf(shown / state.days.size.coerceAtLeast(1), GridMinCell)
             val rows = gridRows(state)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = spacing.lg, vertical = spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(spacing.sm),
-            ) {
-                Row(verticalAlignment = Alignment.Bottom) {
+            // Today's column in view when the week is wider than the window (portrait).
+            val todayIndex = state.days.indexOfFirst { it.date == state.today }
+            val todayOffset = with(LocalDensity.current) { (cell * (todayIndex + 1) - shown).coerceAtLeast(0.dp).roundToPx() }
+            val sideways = rememberSaveable(state.weekStart, saver = ScrollState.Saver) { ScrollState(todayOffset) }
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier
+                        .horizontalScroll(sideways)
+                        .padding(start = spacing.lg, end = spacing.lg, top = spacing.sm),
+                ) {
                     Text(
                         text = stringResource(R.string.mealplan_meal_type_column),
                         style = MaterialTheme.typography.labelLarge,
@@ -180,22 +190,38 @@ internal fun WeekGrid(state: WeekUiState, format: MealPlanFormat, onAction: (Wee
                     )
                     state.days.forEach { day -> GridDayHead(day.date, today = day.date == state.today, format = format, width = cell) }
                 }
-                rows.forEach { type ->
-                    Row {
-                        GridTypeCell(type = type, width = GridTypeColumn)
-                        state.days.forEach { day ->
-                            GridCell(
-                                day = day,
-                                type = type,
-                                isToday = day.date == state.today,
-                                state = state,
-                                format = format,
-                                onAction = onAction,
-                                width = cell,
-                            )
-                        }
-                    }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .horizontalScroll(sideways)
+                        .padding(horizontal = spacing.lg, vertical = spacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
+                    GridBody(state = state, rows = rows, format = format, onAction = onAction, cell = cell)
                 }
+            }
+        }
+    }
+}
+
+/** The grid's rows (one per meal type), under the fixed day headings. */
+@Composable
+private fun GridBody(state: WeekUiState, rows: List<MealType>, format: MealPlanFormat, onAction: (WeekAction) -> Unit, cell: Dp) {
+    rows.forEach { type ->
+        Row {
+            GridTypeCell(type = type, width = GridTypeColumn)
+            state.days.forEach { day ->
+                GridCell(
+                    day = day,
+                    type = type,
+                    isToday = day.date == state.today,
+                    state = state,
+                    format = format,
+                    onAction = onAction,
+                    width = cell,
+                )
             }
         }
     }
@@ -419,6 +445,7 @@ private fun GridCell(
         meals.forEach { meal ->
             MealTile(
                 meal = meal,
+                date = day.date,
                 isToday = isToday,
                 readOnly = state.readOnly,
                 format = format,
@@ -456,9 +483,9 @@ private fun EmptyDay() {
 }
 
 @Composable
-private fun EmptyWeekNote(readOnly: Boolean) {
+private fun EmptyWeekNote(readOnly: Boolean, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
-    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
+    Surface(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.secondaryContainer) {
         Column(modifier = Modifier.padding(spacing.lg), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
             Text(
                 text = stringResource(R.string.mealplan_empty_week_title),

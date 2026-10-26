@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
+import casa.moller.tandem.core.data.shopping.ShoppingRepository
 import casa.moller.tandem.core.data.sync.ForegroundSync
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.errorOrNull
@@ -12,6 +13,8 @@ import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.mealplan.MealPlanUpdate
 import casa.moller.tandem.core.model.mealplan.MealPlanWeek
+import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
+import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.sync.ForegroundSyncState
 import casa.moller.tandem.core.model.sync.ForegroundTarget
 import dagger.assisted.Assisted
@@ -27,6 +30,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -49,8 +53,11 @@ import kotlinx.datetime.toLocalDateTime
  *   change is stored at once and queued, so the screen works the same offline.
  * - **Fresh while visible:** collecting the state keeps the shown week fresh
  *   ([ForegroundSync.keepFresh], at most every 60 s; never in demo mode).
- * - **Undo:** removing and moving a meal show a snackbar with "Ångra" (removing plans the meal
- *   again with the same values; Tandoor removed its shopping entries with it).
+ * - **Undo:** removing and moving a meal show a snackbar with "Ångra". Removing plans the meal
+ *   again with the same values; fix-ui: a meal with rows on the shopping list asks first (Tandoor
+ *   deletes them with the meal), and "Ångra" puts the rows that were still to buy back, linked to
+ *   the new meal.
+ * - **Long press** on a meal opens "Flytta" (plan 6.2; fix-ui), as the menu does.
  * - **Guest** (#42): read-only; actions that write are ignored (the repository refuses them too).
  * - **Survives** rotation and process death: the shown week and the selected day live in
  *   [SavedStateHandle].
@@ -64,6 +71,7 @@ class WeekViewModel @AssistedInject internal constructor(
     permissions: SpacePermissionsRepository,
     private val foregroundSync: ForegroundSync,
     private val clock: Clock,
+    private val shopping: ShoppingRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -122,6 +130,7 @@ class WeekViewModel @AssistedInject internal constructor(
             refreshing = local.refreshing,
             selectedDay = day,
             move = local.move.takeUnless { readOnly },
+            deleting = local.deleting.takeUnless { readOnly },
             conflict = conflicts.firstOrNull()?.takeUnless { readOnly }?.let { conflict ->
                 ConflictState(conflict, meals.firstOrNull { it.id == conflict.mealPlanId }?.displayTitle.orEmpty())
             },
@@ -143,7 +152,13 @@ class WeekViewModel @AssistedInject internal constructor(
 
             is WeekAction.SelectDay -> savedStateHandle[KEY_DAY] = action.date.toString()
 
-            is WeekAction.Delete -> delete(action.meal)
+            is WeekAction.Delete -> askDelete(action.meal)
+
+            is WeekAction.ConfirmDelete -> {
+                val deleting = transient.value.deleting
+                transient.update { it.copy(deleting = null) }
+                if (action.confirmed && deleting != null) delete(deleting.meal)
+            }
 
             WeekAction.Undo -> takeBack()
 
@@ -186,9 +201,51 @@ class WeekViewModel @AssistedInject internal constructor(
         }
     }
 
+    /** A meal with rows on the shopping list asks first (fix-ui); one without is removed with "Ångra". */
+    private fun askDelete(meal: MealPlanEntry) {
+        if (!canWrite()) return
+        viewModelScope.launch {
+            val rows = rowsOf(meal)
+            if (rows.isNotEmpty() || meal.onShoppingList) {
+                transient.update { it.copy(deleting = DeleteMealState(meal, rows.size)) }
+            } else {
+                delete(meal)
+            }
+        }
+    }
+
     private fun delete(meal: MealPlanEntry) {
         if (!canWrite()) return
-        write(WeekMessage.Removed(meal.displayTitle), undo = { mealPlans.create(meal.toDraft()) }) { mealPlans.delete(meal.id) }
+        viewModelScope.launch {
+            // What "Ångra" puts back: the meal's rows still to buy (Tandoor deletes them with it).
+            val rows = rowsOf(meal).filterNot { it.checked }
+            write(WeekMessage.Removed(meal.displayTitle), undo = { restore(meal, rows) }) { mealPlans.delete(meal.id) }
+        }
+    }
+
+    private suspend fun rowsOf(meal: MealPlanEntry): List<ShoppingEntry> =
+        shopping.observeEntries().first().filter { it.recipe?.mealPlanId == meal.id }
+
+    /** Plans [meal] again and puts its [rows] back on the list, per list recipe, linked to the new meal. */
+    private suspend fun restore(meal: MealPlanEntry, rows: List<ShoppingEntry>): Outcome<*> {
+        val created = mealPlans.create(meal.toDraft())
+        if (created !is Outcome.Success || rows.isEmpty()) return created
+        for ((_, group) in rows.groupBy { it.recipe?.listRecipeId }) {
+            val label = group.first().recipe ?: continue
+            val recipeId = label.recipeId ?: meal.recipe?.id ?: continue
+            val ingredients = group.mapNotNull { it.ingredientId }.toSet()
+            if (ingredients.isEmpty()) continue
+            val request = RecipeShoppingRequest(
+                recipeId = recipeId,
+                servings = label.servings,
+                ingredientIds = ingredients,
+                mealPlanId = created.value,
+                listIds = group.first().listIds,
+            )
+            val added = shopping.addRecipe(request)
+            if (added is Outcome.Failure) return added
+        }
+        return created
     }
 
     private fun confirmMove() {
@@ -238,7 +295,11 @@ class WeekViewModel @AssistedInject internal constructor(
         viewModelScope.launch { action().errorOrNull()?.let { effectChannel.send(WeekEffect.Failed(it)) } }
     }
 
-    private data class Transient(val refreshing: Boolean = false, val move: MoveMealState? = null)
+    private data class Transient(
+        val refreshing: Boolean = false,
+        val move: MoveMealState? = null,
+        val deleting: DeleteMealState? = null,
+    )
 
     private companion object {
         const val KEY_WEEK = "week.start"

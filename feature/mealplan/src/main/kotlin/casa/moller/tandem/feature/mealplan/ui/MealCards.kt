@@ -1,8 +1,9 @@
 package casa.moller.tandem.feature.mealplan.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
 import casa.moller.tandem.feature.mealplan.R
 import casa.moller.tandem.feature.mealplan.WeekAction
+import kotlinx.datetime.LocalDate
 
 /** Test tag of a meal card or tile: `meal:<id>`. */
 fun mealTag(id: Long): String = "meal:$id"
@@ -95,9 +97,11 @@ internal fun MealPlanEntry.name(): String = displayTitle.ifBlank { stringResourc
 /**
  * One planned meal in the agenda (Stitch veckan_matsedel): photo, meal type, name, servings and
  * time, the note, "väntar på att synkas" when queued, and a menu. Tapping opens the recipe (or
- * the plan-meal page for a meal without one). TalkBack reads the card as one item and offers the
+ * the plan-meal page for a meal without one); a long press opens "Flytta" (plan 6.2 "Lång
+ * tryckning → flytta", fix-ui; not for guests). TalkBack reads the card as one item and offers the
  * menu's actions as custom actions; today's recipe has a "Laga" button (plan 6.2).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun MealCard(
     meal: MealPlanEntry,
@@ -110,6 +114,7 @@ internal fun MealCard(
     val spacing = TandemTheme.spacing
     val menu = mealMenu(meal, isToday, readOnly)
     val primary = primaryAction(meal, readOnly)
+    val moveLabel = stringResource(R.string.mealplan_move)
     val customActions = menu.filter { it != MealMenuItem.OPEN }.map { item ->
         CustomAccessibilityAction(item.label()) {
             onAction(item.action(meal))
@@ -129,7 +134,13 @@ internal fun MealCard(
                     .clip(MaterialTheme.shapes.large)
                     .then(
                         if (primary != null) {
-                            Modifier.clickable(onClickLabel = primary.second, role = Role.Button) { onAction(primary.first) }
+                            Modifier.combinedClickable(
+                                onClickLabel = primary.second,
+                                role = Role.Button,
+                                onLongClickLabel = moveLabel.takeIf { MealMenuItem.MOVE in menu },
+                                onLongClick = { onAction(WeekAction.StartMove(meal)) }.takeIf { MealMenuItem.MOVE in menu },
+                                onClick = { onAction(primary.first) },
+                            )
                         } else {
                             Modifier
                         },
@@ -162,11 +173,15 @@ internal fun MealCard(
 
 /**
  * A meal in the tablet's week grid (Stitch veckan_matsedel_surfplatta): photo, name, servings.
- * Tapping opens the menu (open, cook, change, move, remove).
+ * Tapping opens the menu (open, cook, change, move, remove); a long press opens "Flytta" (fix-ui).
+ * TalkBack reads its day and meal type too ("Middag, torsdag 22 oktober, idag: Krämig svamppasta, 4
+ * portioner"; fix-ui): in the grid the day is a column heading it does not pass on its own.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun MealTile(
     meal: MealPlanEntry,
+    date: LocalDate,
     isToday: Boolean,
     readOnly: Boolean,
     format: MealPlanFormat,
@@ -177,6 +192,14 @@ internal fun MealTile(
     val menu = mealMenu(meal, isToday, readOnly)
     var open by rememberSaveable(meal.id) { mutableStateOf(false) }
     val resources = LocalResources.current
+    val day = format.fullDay(date).let { if (isToday) stringResource(R.string.mealplan_today_heading, it) else it }
+    val summary = listOfNotNull(
+        meal.name(),
+        if (meal.recipe == null) stringResource(R.string.mealplan_without_recipe) else format.servings(meal.servings, resources),
+        stringResource(R.string.mealplan_pending).takeIf { meal.pending },
+    ).joinToString(", ")
+    val description = stringResource(R.string.mealplan_tile_description, meal.mealType.name, day, summary)
+    val moveLabel = stringResource(R.string.mealplan_move)
     Box(modifier = modifier) {
         Surface(
             modifier = Modifier
@@ -186,12 +209,18 @@ internal fun MealTile(
                 .then(
                     if (menu.isNotEmpty()) {
                         val label = stringResource(R.string.mealplan_show_actions)
-                        Modifier.clickable(onClickLabel = label, role = Role.Button) { open = true }
+                        Modifier.combinedClickable(
+                            onClickLabel = label,
+                            role = Role.Button,
+                            onLongClickLabel = moveLabel.takeIf { MealMenuItem.MOVE in menu },
+                            onLongClick = { onAction(WeekAction.StartMove(meal)) }.takeIf { MealMenuItem.MOVE in menu },
+                            onClick = { open = true },
+                        )
                     } else {
                         Modifier
                     },
                 )
-                .semantics(mergeDescendants = true) {},
+                .semantics(mergeDescendants = true) { contentDescription = description },
             shape = MaterialTheme.shapes.medium,
             color = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {

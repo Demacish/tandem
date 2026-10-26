@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shopping
 
+import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.sync.ForegroundTarget
@@ -14,8 +15,11 @@ import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.shopping.ShoppingSamples.eggs
 import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -37,10 +41,15 @@ class StoreModeViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val foreground = FakeForegroundSync()
 
-    private fun viewModel(key: StoreModeKey = StoreModeKey(supermarketId = ShoppingSamples.store.id)) = StoreModeViewModel(
+    private fun viewModel(
+        key: StoreModeKey = StoreModeKey(supermarketId = ShoppingSamples.store.id),
+        saved: SavedStateHandle = SavedStateHandle(),
+    ) = StoreModeViewModel(
         key = key,
+        savedStateHandle = saved,
         source = ShoppingSource(shopping, supermarkets, permissions, foreground, FakeSyncRepository(), FakePreferencesRepository(), clock),
         shopping = shopping,
+        clock = clock,
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -60,7 +69,9 @@ class StoreModeViewModelTest {
         val shown = state.sections.flatMap { it.entries }
         assertFalse(eggs in shown)
         assertFalse(ShoppingSamples.coffee in shown)
-        assertEquals(7 to 8, state.toBuy to state.total)
+        // The eggs were checked an hour before store mode opened: not in this trip's cart (fix-ui).
+        assertEquals(7 to 7, state.toBuy to state.total)
+        assertEquals(0, state.inCart)
         assertEquals(listOf<ForegroundTarget>(ForegroundTarget.ShoppingList), foreground.started)
     }
 
@@ -78,11 +89,30 @@ class StoreModeViewModelTest {
         vm.onAction(StoreModeAction.Check(milk.id))
         assertTrue(shopping.entries.value.first { it.id == milk.id }.checked)
         assertFalse(milk in vm.uiState.value.sections.flatMap { it.entries })
-        assertEquals(2, vm.uiState.value.inCart)
+        assertEquals(1, vm.uiState.value.inCart)
         assertEquals(ShoppingEffect.Show(ShoppingMessage.Checked("mjölk", 1), undoable = true), effects.last())
 
         vm.onAction(StoreModeAction.Undo)
         assertFalse(shopping.entries.value.first { it.id == milk.id }.checked)
+    }
+
+    @Test
+    fun onlyChecksSinceStoreModeOpenedCountAndTheTimeSurvivesProcessDeath() = runTest {
+        val saved = SavedStateHandle()
+        val vm = viewModel(saved = saved)
+        open(vm)
+        clock.advanceBy(10.minutes)
+        // A partner checks something during the trip (the server's completed_at): it counts too.
+        shopping.entries.update { list ->
+            list.map { if (it.id == milk.id) it.copy(checked = true, completedAt = clock.now()) else it }
+        }
+        assertEquals(1, vm.uiState.value.inCart)
+        assertEquals(7, vm.uiState.value.total)
+
+        clock.advanceBy(1.hours)
+        val again = viewModel(saved = saved)
+        open(again)
+        assertEquals("store mode keeps the time it opened", 1, again.uiState.value.inCart)
     }
 
     @Test

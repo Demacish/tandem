@@ -130,6 +130,14 @@ internal class FakeShoppingTandoor(private val version: String, private val cloc
         return listRecipe.id
     }
 
+    /** fix-ui: Tandoor deletes a meal's list recipes and their entries with the meal (FACTS "Fas 2 f"). */
+    @Synchronized
+    fun serverDeleteMeal(mealId: Long) {
+        val gone = listRecipes.values.filter { it.mealplan == mealId }.map { it.id }.toSet()
+        gone.forEach { listRecipes.remove(it) }
+        entries.values.removeAll { it.listRecipe in gone }
+    }
+
     /** Every list recipe on the server. */
     @Synchronized
     fun listRecipes(): List<ListRecipe> = listRecipes.values.map { it.copy() }

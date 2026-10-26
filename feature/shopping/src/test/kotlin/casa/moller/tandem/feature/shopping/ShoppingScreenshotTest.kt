@@ -65,6 +65,10 @@ class ShoppingScreenshotTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
+    fun phoneBreaker() = capture("phone_shopping_breaker_light_sv", ShoppingShot.LIST_BREAKER)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
     fun phoneGuest() = capture("phone_shopping_guest_light_sv", ShoppingShot.LIST_GUEST)
 
     @Test

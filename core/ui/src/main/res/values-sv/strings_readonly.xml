@@ -13,7 +13,7 @@
     <string name="ui_read_only_can_plan">Se veckans matsedel och inköpslistan</string>
     <string name="ui_read_only_cannot_shopping">Lägga till eller bocka av varor på inköpslistan</string>
     <string name="ui_read_only_cannot_plan">Planera, flytta eller ta bort måltider</string>
-    <string name="ui_read_only_cannot_books">Böcker, favoriter och ”Vill laga”</string>
+    <string name="ui_read_only_cannot_books">Ändra böcker, favoriter och ”Vill laga”</string>
     <string name="ui_read_only_cannot_log">Spara ”Klart!”, betyg och kommentarer</string>
     <string name="ui_read_only_full_access">Vill du kunna ändra? Be den som sköter er Tandoor att ge ditt konto gruppen ”user”.</string>
     <string name="ui_read_only_done">OK</string>

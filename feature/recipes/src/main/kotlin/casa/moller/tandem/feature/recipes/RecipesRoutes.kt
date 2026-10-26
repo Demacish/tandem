@@ -57,6 +57,7 @@ fun RecipesRoute(
         collections.effects.collect { effect ->
             when (effect) {
                 is BookRecipesEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+                is BookRecipesEffect.Removed -> Unit // Only a book's own page removes recipes.
             }
         }
     }
@@ -105,6 +106,9 @@ private class SyncFailure(val error: TandemError)
  * @param shoppingAction Phase 2 (koppling lane, #12): "Lägg på inköpslistan" under the ingredients,
  *   given the servings shown and the screen's snackbar (feature:shopping's route, passed in by the
  *   shell). Null shows nothing.
+ * @param onPlanMeal fix-ui (plan 6.2 "Receptdetalj: Åtgärder … Planera"): "Planera" beside
+ *   "Favorit", "Vill laga" and "Lägg i bok" opens the plan-meal page for the recipe (the shell's
+ *   `PlanMealKey`); hidden for guests and when null.
  */
 @Composable
 fun RecipeDetailRoute(
@@ -115,6 +119,7 @@ fun RecipeDetailRoute(
     modifier: Modifier = Modifier,
     onStartCooking: ((recipeId: Long, servings: Double?) -> Unit)? = null,
     shoppingAction: (@Composable (servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
+    onPlanMeal: ((recipeId: Long) -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<RecipeDetailViewModel, RecipeDetailViewModel.Factory>(
         key = "recipe-$recipeId",
@@ -140,7 +145,7 @@ fun RecipeDetailRoute(
         snackbarHostState = snackbarHostState,
         onStartCooking = onStartCooking?.let { start -> { start(recipeId, state.servings?.current) } },
         // Phase 2 (books lane): "Favorit", "Vill laga" and "Lägg i bok" under the title.
-        bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState) },
+        bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState, onPlanMeal = onPlanMeal) },
         shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, snackbarHostState) } },
     )
 }

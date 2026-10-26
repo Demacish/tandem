@@ -139,6 +139,17 @@ internal object MealPlanSamples {
         readOnly = readOnly,
     )
 
+    /** fix-ui: a new meal with an empty search: "Vill laga", "Favoriter", then every stored recipe. */
+    val planCollectionsState: PlanMealUiState = planState().copy(
+        query = "",
+        wantToCook = listOf(pasta, salmon),
+        favorites = listOf(chicken),
+        results = listOf(chicken, lentils, pasta),
+    )
+
+    /** fix-ui: "Ta bort från matsedeln" asks first, and says the meal's rows on the list go too. */
+    val planDeleteState: PlanMealUiState = planState(recipe = pasta, editing = true).copy(confirmDelete = true, onShoppingList = true)
+
     /** Aisles of the "Handla för veckan" samples (the store's categories). */
     val categories = mapOf(1L to "Torrvaror", 2L to "Frukt & grönt", 3L to "Mejeri", 4L to "Fisk & kött")
 

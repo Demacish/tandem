@@ -12,7 +12,7 @@ Handla och planera med Tandem (Fas 2, "handla & planera"): hushållets inköpsli
 matsedel fungerar nu i appen, offline och mellan flera telefoner, så att Kitshn inte längre
 behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3 och senare.
 
-- **Handla:** inköpslistan grupperad efter butikens gångar (välj butik och lista), avbockade
+- **Handla:** inköpslistan grupperad efter butikens avdelningar (välj butik och lista), avbockade
   varor samlas hopfällda längst ned och "Köp senare" har en egen del. Bocka av med ett tryck eller
   svep, eller alla i en avdelning på en gång, och ångra direkt. Lägg till varor med fritext ("2 dl
   grädde, mjölk") och se hur de tolkas innan de läggs till, även offline; förslag och nyss köpta
@@ -58,6 +58,11 @@ behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3
 - **Gästläge:** är du gäst i hushållets Tandoor är appen skrivskyddad: recept, matsedel,
   inköpslista och kokläge fungerar, men inga ändringar sparas eller skickas, och en banderoll
   förklarar vad en gäst kan göra.
+- **Efter granskningen:** surfplatta stående visar också två kolumner och veckorutnätet; rader på
+  64 dp; flytta en vara mellan listor; "Planera" i receptet och Vill laga/Favoriter när du väljer
+  recept; lång tryckning flyttar en måltid; "Ångra" när ett recept tas bort från listan eller ur
+  en bok; en måltid med varor på listan frågar först och "Ångra" lägger tillbaka varorna; andras
+  ändringar tar aldrig bort din "Ångra"; Köpt nyligen fylls när du rensar.
 - **Konton och servrar:** spara flera Tandoor-konton (även på olika servrar) och byt mellan dem
   under Mer → Konton och servrar; ett konto i taget är aktivt, och varje konto behåller sina
   recept, sin lista och sina osända ändringar på telefonen. Har ett konto ändringar som inte

@@ -23,7 +23,7 @@
     <string name="shopping_lists_all">All</string>
     <string name="shopping_store_heading">Store</string>
     <string name="shopping_store_chip">Store: %1$s</string>
-    <string name="shopping_store_by_category">Sorted by category</string>
+    <string name="shopping_store_by_category">Sorted by aisle</string>
     <string name="shopping_store_choose">Choose store</string>
     <string name="shopping_progress">%1$d of %2$d checked</string>
 
@@ -69,13 +69,15 @@
     <string name="shopping_empty_body">Add items here, or plan the week and put the recipes on the list.</string>
     <string name="shopping_empty_body_guest">There is nothing on the list right now.</string>
     <string name="shopping_guest_title">Read only</string>
-    <string name="shopping_guest_body">You are a guest in this space: you can see the list but not change it.</string>
+    <string name="shopping_guest_body">You are a guest in the household’s Tandoor: you can see the list but not change it.</string>
     <string name="shopping_offline_title">Offline</string>
     <string name="shopping_offline_body">Changes are saved on this device and synced when the network is back.</string>
     <string name="shopping_paused_title">Sync paused</string>
     <string name="shopping_paused_body">The server is holding requests back for a while. Changes are kept and sent later.</string>
     <string name="shopping_login_title">Login expired</string>
-    <string name="shopping_login_body">Changes are kept and sent after you log in again in Settings.</string>
+    <string name="shopping_login_body">Tap Log in again at the top. Changes are kept and sent then.</string>
+    <string name="shopping_breaker_title">Sync is taking a short break</string>
+    <string name="shopping_breaker_body">There were many errors in a short time, so Tandem waits a few minutes before trying again. Changes are kept and sent then.</string>
     <string name="shopping_safe_mode_title">Safe mode</string>
     <string name="shopping_safe_mode_body">This Tandoor version has not been tested yet: the list is read, and changes wait.</string>
     <string name="shopping_try_again">Try again</string>
@@ -107,6 +109,7 @@
     <string name="shopping_edit_category">Aisle</string>
     <string name="shopping_edit_category_note">Applies to %1$s everywhere, for the whole household.</string>
     <string name="shopping_edit_category_unsynced">The aisle can be chosen once the item has been synced.</string>
+    <string name="shopping_edit_lists">Lists</string>
     <string name="shopping_edit_save">Save</string>
     <string name="shopping_edit_delete">Remove from the list</string>
     <string name="shopping_edit_from_recipe">From %1$s</string>
@@ -137,6 +140,10 @@
     <string name="shopping_change_added">%1$s was added</string>
     <string name="shopping_change_checked">%1$s was checked</string>
     <string name="shopping_change_removed">%1$s was removed</string>
+    <plurals name="shopping_change_many">
+        <item quantity="one">%d change by someone else in the household</item>
+        <item quantity="other">%d changes by others in the household</item>
+    </plurals>
     <string name="shopping_error_read_only">You are a guest: the list cannot be changed.</string>
     <string name="shopping_error_save">The change could not be saved.</string>
     <string name="shopping_error_refresh">Could not reach Tandoor. Showing the saved list.</string>

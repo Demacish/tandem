@@ -70,9 +70,9 @@
 
     <!-- Konflikter (plan 3.5) -->
     <string name="mealplan_conflict_title">Ändrad på två ställen</string>
-    <string name="mealplan_conflict_body">%1$s: %2$s ändrades på en annan enhet samtidigt som du ändrade här.\n\nDin: %3$s\nDeras: %4$s</string>
-    <string name="mealplan_conflict_keep_mine">Behåll min</string>
-    <string name="mealplan_conflict_take_theirs">Ta deras</string>
+    <string name="mealplan_conflict_body">%1$s: %2$s ändrades på en annan enhet samtidigt som du ändrade här.\n\nDin ändring: %3$s\nDeras ändring: %4$s</string>
+    <string name="mealplan_conflict_keep_mine">Behåll min ändring</string>
+    <string name="mealplan_conflict_take_theirs">Ta deras ändring</string>
     <string name="mealplan_conflict_empty">(tomt)</string>
     <string name="mealplan_field_day">dagen</string>
     <string name="mealplan_field_meal_type">måltidstypen</string>
@@ -155,4 +155,18 @@
     </plurals>
     <string name="mealplan_week_shopping_add_none">Välj vad som ska läggas till</string>
     <string name="mealplan_week_shopping_read_only">Som gäst ser du vad dagarna behöver, men bara medlemmar kan lägga det på inköpslistan.</string>
+
+    <!-- fix-ui (granskningen av Fas 2) -->
+    <string name="mealplan_tile_description">%1$s, %2$s: %3$s</string>
+    <string name="mealplan_delete_confirm_title">Ta bort måltiden?</string>
+    <string name="mealplan_delete_confirm_body">%1$s tas bort från matsedeln för hela hushållet.</string>
+    <string name="mealplan_delete_confirm_on_list">Varorna den lade på inköpslistan tas också bort.</string>
+    <plurals name="mealplan_delete_confirm_rows">
+        <item quantity="one">Måltidens %d vara på inköpslistan tas också bort.</item>
+        <item quantity="other">Måltidens %d varor på inköpslistan tas också bort.</item>
+    </plurals>
+    <string name="mealplan_delete_confirm">Ta bort</string>
+    <string name="mealplan_from_want_to_cook">Från Vill laga</string>
+    <string name="mealplan_from_favorites">Från Favoriter</string>
+    <string name="mealplan_all_recipes">Alla recept</string>
 </resources>

@@ -21,6 +21,7 @@ import kotlinx.datetime.plus
  * @property selectedDay the day open beside the week list on wider windows (two panes).
  * @property move the "Flytta" sheet, while open.
  * @property conflict the first change that collided with someone else's ("Ändrad på två ställen").
+ * @property deleting "Ta bort måltiden?" for a meal with rows on the shopping list (fix-ui).
  */
 data class WeekUiState(
     val loading: Boolean = true,
@@ -33,6 +34,7 @@ data class WeekUiState(
     val selectedDay: LocalDate? = null,
     val move: MoveMealState? = null,
     val conflict: ConflictState? = null,
+    val deleting: DeleteMealState? = null,
 ) {
     val weekEnd: LocalDate
         get() = weekStart.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY)
@@ -63,6 +65,12 @@ data class MoveMealState(val meal: MealPlanEntry, val date: LocalDate, val mealT
         get() = date != meal.fromDate || mealTypeId != meal.mealType.id
 }
 
+/**
+ * fix-ui: removing [meal] would also remove its [rows] on the shopping list (Tandoor deletes them
+ * with the meal), so the user is asked first; 0 = the server says it is on the list, count unknown.
+ */
+data class DeleteMealState(val meal: MealPlanEntry, val rows: Int)
+
 /** A conflict and the meal it belongs to (for its name in the dialog). */
 data class ConflictState(val conflict: MealPlanConflict, val mealTitle: String)
 
@@ -88,7 +96,11 @@ sealed interface WeekAction {
     /** "Laga" on today's meal: cook mode with the planned servings. */
     data class Cook(val meal: MealPlanEntry) : WeekAction
 
+    /** "Ta bort": asks first when the meal has rows on the shopping list (fix-ui). */
     data class Delete(val meal: MealPlanEntry) : WeekAction
+
+    /** The answer to "Ta bort måltiden?" ([WeekUiState.deleting]). */
+    data class ConfirmDelete(val confirmed: Boolean) : WeekAction
 
     data object Undo : WeekAction
 
@@ -102,7 +114,7 @@ sealed interface WeekAction {
 
     data object CancelMove : WeekAction
 
-    /** "Behåll min" (true) or "Ta deras" (false) for [WeekUiState.conflict]. */
+    /** "Behåll min ändring" (true) or "Ta deras ändring" (false) for [WeekUiState.conflict]. */
     data class ResolveConflict(val keepMine: Boolean) : WeekAction
 
     /** "Handla för veckan" for the shown week. */

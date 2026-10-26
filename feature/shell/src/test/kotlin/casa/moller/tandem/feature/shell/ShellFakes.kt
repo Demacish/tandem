@@ -209,6 +209,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenOnWeb: (String) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
         onOpenShoppingList: () -> Unit,
+        onPlanMeal: (Long) -> Unit,
     ) {
         ShellScreenScaffold(title = "Recipe $recipeId", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Recipe detail $recipeId", modifier = Modifier.padding(padding))

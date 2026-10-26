@@ -168,7 +168,7 @@
         <item quantity="other">%1$d nekade</item>
     </plurals>
     <string name="settings_diagnostics_last_error">Senaste fel: %1$s</string>
-    <string name="settings_diagnostics_refused_hint">Nekade ändringar skickas inte igen av sig själva. Du kan spara dem med ”Exportera ändringar” under Konton och servrar.</string>
+    <string name="settings_diagnostics_refused_hint">Nekade ändringar skickas inte igen av sig själva. Du kan spara dem med ”Exportera ändringar” på kontot under Mer → Konton och servrar.</string>
     <string name="settings_diagnostics_kind_shopping_entry">Inköpslistan</string>
     <string name="settings_diagnostics_kind_shopping_recipe">Recept på listan</string>
     <string name="settings_diagnostics_kind_meal_plan">Matsedeln</string>
@@ -176,8 +176,8 @@
     <string name="settings_diagnostics_kind_recipe_book">Receptböcker</string>
     <string name="settings_diagnostics_kind_recipe_book_entry">Recept i böcker</string>
     <string name="settings_diagnostics_kind_want_to_cook">Vill laga</string>
-    <string name="settings_diagnostics_kind_food">Livsmedel (gång, har hemma)</string>
-    <string name="settings_diagnostics_kind_aisle_order">Gångordning</string>
+    <string name="settings_diagnostics_kind_food">Livsmedel (avdelning, har hemma)</string>
+    <string name="settings_diagnostics_kind_aisle_order">Avdelningsordning</string>
     <string name="settings_diagnostics_kind_preferences">Tandoor-inställningar</string>
     <string name="settings_diagnostics_kind_cook_log">Kokloggen</string>
     <string name="settings_diagnostics_kind_view_log">Senast visade</string>

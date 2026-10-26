@@ -1,4 +1,4 @@
-package casa.moller.tandem.feature.cook.ui
+package casa.moller.tandem.core.ui.window
 
 import android.view.View
 import androidx.compose.runtime.getValue
@@ -14,46 +14,47 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Cook mode's window flags when one cook entry replaces another (fix-ui, 0.2.0 review): Navigation 3
- * keeps the outgoing entry composed during the transition, so the new entry's effect runs before the
- * old one's `onDispose`. The screen must stay on for the visible cook mode.
+ * The shared screen-on flag (fix-ui, Phase 2 review; moved here from cook mode's 0.2.0 fix):
+ * Navigation 3 keeps the outgoing entry composed during the transition, so the new entry's effect
+ * runs before the old one's `onDispose`. The visible screen must keep the screen on whether it is
+ * cook mode over store mode, store mode over cook mode, or one cook mode over another.
  */
 @RunWith(AndroidJUnit4::class)
-class CookWindowTest {
+class KeepScreenOnTest {
 
     @get:Rule
     val composeRule = createComposeRule()
 
     @Test
-    fun theScreenStaysOnWhenOneCookModeReplacesAnother() {
-        var first by mutableStateOf(true)
-        var second by mutableStateOf(false)
+    fun theScreenStaysOnWhenOneScreenReplacesAnother() {
+        var storeMode by mutableStateOf(true)
+        var cookMode by mutableStateOf(false)
         lateinit var view: View
         composeRule.setContent {
             view = LocalView.current
-            if (first) KeepScreenOn()
-            if (second) KeepScreenOn()
+            if (storeMode) KeepScreenOn()
+            if (cookMode) KeepScreenOn()
         }
         composeRule.waitForIdle()
         assertTrue(view.keepScreenOn)
 
-        // Cook mode Y comes in while X is still shown, then X leaves.
-        second = true
+        // A timer notification opens cook mode while store mode is still shown, then store mode leaves.
+        cookMode = true
         composeRule.waitForIdle()
-        first = false
+        storeMode = false
         composeRule.waitForIdle()
         assertTrue("the visible cook mode keeps the screen on", view.keepScreenOn)
 
-        // "Klart!" in Y pops back: X comes back first, then Y leaves.
-        first = true
+        // Back: store mode comes back first, then cook mode leaves.
+        storeMode = true
         composeRule.waitForIdle()
-        second = false
+        cookMode = false
         composeRule.waitForIdle()
-        assertTrue(view.keepScreenOn)
+        assertTrue("the visible store mode keeps the screen on", view.keepScreenOn)
 
-        first = false
+        storeMode = false
         composeRule.waitForIdle()
-        assertFalse("no cook mode left: the screen may turn off", view.keepScreenOn)
+        assertFalse("nothing left that needs it: the screen may turn off", view.keepScreenOn)
     }
 
     @Test
@@ -64,11 +65,11 @@ class CookWindowTest {
             KeepScreenOn()
         }
         composeRule.runOnIdle {
-            val window = CookWindowState.of(view)
-            window.releaseScreenOn(view)
-            window.releaseScreenOn(view)
+            val holders = ScreenOnHolders.of(view)
+            holders.release(view)
+            holders.release(view)
             assertFalse(view.keepScreenOn)
-            window.acquireScreenOn(view)
+            holders.acquire(view)
             assertTrue(view.keepScreenOn)
         }
     }

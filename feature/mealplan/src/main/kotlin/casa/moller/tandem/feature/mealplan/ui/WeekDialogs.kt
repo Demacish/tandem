@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -170,7 +171,7 @@ internal fun DatePickerFor(initial: LocalDate, onPick: (LocalDate) -> Unit, onDi
 
 /**
  * "Ändrad på två ställen" (plan 3.5): a field the user changed offline was changed on another
- * device too. "Behåll min" sends the user's value; "Ta deras" keeps the server's. The dialog stays
+ * device too. "Behåll min ändring" sends the user's value; "Ta deras ändring" keeps the server's. The dialog stays
  * until one is chosen; the other fields of the change were sent already.
  */
 @Composable
@@ -225,4 +226,31 @@ private fun conflictValue(field: String, value: String?, format: MealPlanFormat)
         "servings" -> value.toDoubleOrNull()?.let(format::number) ?: value
         else -> value
     }
+}
+
+/**
+ * "Ta bort måltiden?" (fix-ui, Phase 2 review): removing a meal asks first, on the week and on the
+ * plan-meal page, and says when its rows on the shopping list go too (Tandoor deletes them with
+ * the meal, FACTS "Fas 2 f"). [rowsOnList]: null = none, 0 = some (count unknown), else how many.
+ */
+@Composable
+internal fun DeleteMealDialog(mealTitle: String, rowsOnList: Int?, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    val title = mealTitle.ifBlank { stringResource(R.string.mealplan_untitled) }
+    val body = buildString {
+        append(stringResource(R.string.mealplan_delete_confirm_body, title))
+        when {
+            rowsOnList == null -> Unit
+            rowsOnList > 0 -> append(' ').append(pluralStringResource(R.plurals.mealplan_delete_confirm_rows, rowsOnList, rowsOnList))
+            else -> append(' ').append(stringResource(R.string.mealplan_delete_confirm_on_list))
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        // The theme's dialog surface gives the primary-coloured buttons too little contrast (ATF).
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        title = { Text(stringResource(R.string.mealplan_delete_confirm_title)) },
+        text = { Text(body) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.mealplan_delete_confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.mealplan_cancel)) } },
+    )
 }

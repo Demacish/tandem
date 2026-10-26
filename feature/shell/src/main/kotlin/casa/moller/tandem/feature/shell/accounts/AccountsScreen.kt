@@ -96,6 +96,15 @@ internal fun AccountsScreen(
                     leadingIcon = TandemIcons.Sync,
                     size = TandemButtonSize.Small,
                 )
+                // fix-ui: the place Diagnostik sends the user to for saving refused or waiting changes.
+                if (active.pendingChanges > 0) {
+                    TandemTextButton(
+                        text = stringResource(R.string.accounts_export),
+                        onClick = { onAction(AccountsAction.ExportPending) },
+                        leadingIcon = TandemIcons.Share,
+                        size = TandemButtonSize.Small,
+                    )
+                }
             }
         }
 

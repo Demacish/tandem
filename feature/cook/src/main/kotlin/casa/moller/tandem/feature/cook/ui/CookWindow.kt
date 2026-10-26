@@ -12,31 +12,20 @@ import androidx.core.view.WindowInsetsControllerCompat
 import java.util.WeakHashMap
 
 /**
- * Window state that cook mode changes while it is shown: the screen kept on (plan 6.2 "Skärmen
- * hålls på") and, with "Kokläge alltid mörkt", light system bar icons on the dark theme.
+ * Window state that cook mode changes while it is shown: with "Kokläge alltid mörkt", light system
+ * bar icons on the dark theme. (The screen kept on, plan 6.2 "Skärmen hålls på", is core:ui's
+ * `KeepScreenOn`, shared with store mode since the Phase 2 review, fix-ui.)
  *
  * Reference counted per window (the activity's root view), never set and cleared by each cook
  * entry on its own: Navigation 3 keeps the outgoing entry composed during the transition, so when
  * one cook mode replaces another (a timer notification for another recipe, or "Klart!" popping
  * back to the cook mode below) the new entry's effect runs before the old one's `onDispose`. An
- * unconditional reset there would turn the screen-on flag off and give the visible cook mode
- * dark icons on its dark bars.
+ * unconditional reset there would give the visible cook mode dark icons on its dark bars.
  */
 internal class CookWindowState {
-    private var screenOnHolders = 0
     private var darkBarHolders = 0
     private var savedLightStatus: Boolean? = null
     private var savedLightNavigation: Boolean? = null
-
-    fun acquireScreenOn(view: View) {
-        screenOnHolders++
-        view.keepScreenOn = true
-    }
-
-    fun releaseScreenOn(view: View) {
-        screenOnHolders = (screenOnHolders - 1).coerceAtLeast(0)
-        if (screenOnHolders == 0) view.keepScreenOn = false
-    }
 
     /** Light icons on the bars while any always-dark cook mode is shown; the first holder remembers the app's look. */
     fun acquireDarkBars(controller: WindowInsetsControllerCompat?) {
@@ -63,17 +52,6 @@ internal class CookWindowState {
 
         /** The state of [view]'s window (one per root view, shared by every cook entry in it). */
         fun of(view: View): CookWindowState = synchronized(byRoot) { byRoot.getOrPut(view.rootView) { CookWindowState() } }
-    }
-}
-
-/** Keeps the display on while cook mode is shown (plan 6.2 "Skärmen hålls på"); see [CookWindowState]. */
-@Composable
-internal fun KeepScreenOn() {
-    val view = LocalView.current
-    DisposableEffect(view) {
-        val window = CookWindowState.of(view)
-        window.acquireScreenOn(view)
-        onDispose { window.releaseScreenOn(view) }
     }
 }
 

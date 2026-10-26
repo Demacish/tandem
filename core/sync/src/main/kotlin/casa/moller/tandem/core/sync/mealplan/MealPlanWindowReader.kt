@@ -54,10 +54,18 @@ internal class MealPlanWindowReader @Inject constructor(
     /** One read at a time (the sync run and Veckan's polling may meet). */
     private val lock = Mutex()
 
-    suspend fun read(remote: ActiveSource.Remote, background: Boolean): Outcome<Unit> = lock.withLock {
+    /**
+     * Reads the window, or (fix-ui) only [range]: a week Veckan shows outside the window. A range
+     * read replaces the stored server meals of those days only and leaves the window's state alone.
+     */
+    suspend fun read(
+        remote: ActiveSource.Remote,
+        background: Boolean,
+        range: ClosedRange<LocalDate>? = null,
+    ): Outcome<Unit> = lock.withLock {
         val today = clock.today()
-        val from = today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY)
-        val to = today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
+        val from = range?.start ?: today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY)
+        val to = range?.endInclusive ?: today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
         val result = caller.call(remote, background) {
             val api = this
             Paginator.fetchAll { page -> api.mealPlans.mealPlans(from, to, page.takeIf { it > 1 }) }
@@ -78,6 +86,7 @@ internal class MealPlanWindowReader @Inject constructor(
         val mealPlans = database.mealPlanDao()
         mealPlans.deleteGone(accountId, gone)
         mealPlans.replaceWindow(accountId, from.toString(), to.toString(), rows)
+        if (range != null) return@withLock Outcome.Success(Unit)
         val syncState = database.syncStateDao()
         val state = syncState.get(accountId, SyncKeys.MEAL_PLAN) ?: SyncStateEntity(accountId = accountId, entity = SyncKeys.MEAL_PLAN)
         syncState.upsert(state.copy(windowFrom = from.toString(), windowTo = to.toString()))
@@ -106,5 +115,12 @@ internal class MealPlanWindowReader @Inject constructor(
             }
             serverId.takeIf { day != null && day >= from && day <= to }
         }
+    }
+
+    companion object {
+        /** True when the days [from]..[to] lie in the window around [today] (plan 3.5: −14..+42). */
+        fun inWindow(from: LocalDate, to: LocalDate, today: LocalDate): Boolean =
+            from >= today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY) &&
+                to <= today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
     }
 }

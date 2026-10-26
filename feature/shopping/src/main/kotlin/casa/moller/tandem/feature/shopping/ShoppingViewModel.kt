@@ -37,6 +37,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * The Handla tab (plan 6.2 "Handla", features #10, #11, #14; Stitch ink_pslista_*).
@@ -46,7 +49,10 @@ import kotlinx.coroutines.launch
  *   shows how many changes wait.
  * - **Grouping:** by aisle in the chosen store's order ([ShoppingGrouping]); "Köp senare" and
  *   "Avbockat" below.
- * - **Undo:** checking, "köp senare", adding and removing show a snackbar with "Ångra".
+ * - **Undo:** checking, "köp senare", adding and removing (also a recipe's rows, fix-ui) show a
+ *   snackbar with "Ångra".
+ * - **Others' changes** ([otherChanges], fix-ui): collected by the route only while the list is
+ *   visible, the changes of one read as one message.
  * - **Free text** (#11): previewed by the local parser while typing; Tandoor's parser (which
  *   creates foods) runs only when the user adds, with the local parser as the offline fallback.
  * - **Guest** (#42): read-only; actions that write are ignored (the repositories refuse them too).
@@ -145,14 +151,18 @@ class ShoppingViewModel @AssistedInject internal constructor(
             edit = local.edit.takeUnless { readOnly },
             confirmClearChecked = local.confirmClear && !readOnly,
             history = history,
+            // fix-ui: the progress counts what was checked today, not on earlier trips.
+            progressSince = snapshot.now.toLocalDateTime(TimeZone.currentSystemDefault()).date
+                .atStartOfDayIn(TimeZone.currentSystemDefault()),
         ).also { latestDelayHours = snapshot.preferences.defaultDelayHours }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ShoppingUiState())
 
-    init {
-        viewModelScope.launch {
-            shopping.observeChanges().collect { effectChannel.send(ShoppingEffect.OtherChange(it)) }
-        }
-    }
+    /**
+     * Changes by other household members (fix-ui): cold, so the route collects it only while the
+     * list is STARTED and nothing piles up while it is hidden; the changes of one read come as one
+     * [ShoppingEffect.OtherChange].
+     */
+    val otherChanges: Flow<ShoppingEffect.OtherChange> = shopping.observeChanges().inBursts().map { ShoppingEffect.OtherChange(it) }
 
     fun onAction(action: ShoppingAction) {
         when (action) {
@@ -178,6 +188,9 @@ class ShoppingViewModel @AssistedInject internal constructor(
             is ShoppingAction.EditAmount -> editing { it.copy(amount = action.text, amountError = false) }
             is ShoppingAction.EditUnit -> editing { it.copy(unit = action.text) }
             is ShoppingAction.EditCategory -> editing { it.copy(categoryId = action.categoryId) }
+            is ShoppingAction.EditList -> editing { edit ->
+                edit.copy(listIds = if (action.listId in edit.listIds) edit.listIds - action.listId else edit.listIds + action.listId)
+            }
             ShoppingAction.SaveEdit -> saveEdit()
             ShoppingAction.DeleteEdited -> deleteEdited()
             ShoppingAction.RemoveEditedRecipe -> removeEditedRecipe()
@@ -315,6 +328,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
                     recipeRows = entry.recipe?.listRecipeId?.let { group ->
                         state.grouped.all.count { other -> other.recipe?.listRecipeId == group }
                     } ?: 0,
+                    lists = state.lists,
+                    listIds = entry.listIds,
                 ),
             )
         }
@@ -338,6 +353,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
         val newAmount = amount.takeIf { it != entry.amount }
         // The aisle belongs to the food (for the whole space): only for the food the entry already had.
         val aisleFood = entry.food.id?.takeIf { food == null && edit.categoryId != entry.food.categoryId }
+        // fix-ui: moving between named lists (plan 3.5 "Flytt mellan listor", a PATCH of shopping_lists).
+        val lists = edit.listIds.takeIf { it != entry.listIds }
         editing { it.copy(saving = true) }
         viewModelScope.launch {
             val updated = if (food != null || unit != null || newAmount != null) {
@@ -350,7 +367,12 @@ class ShoppingViewModel @AssistedInject internal constructor(
             } else {
                 Outcome.Success(Unit)
             }
-            val error = updated.errorOrNull() ?: moved.errorOrNull()
+            val relisted = if (updated is Outcome.Success && moved is Outcome.Success && lists != null) {
+                shopping.setLists(listOf(entry.id), lists)
+            } else {
+                Outcome.Success(Unit)
+            }
+            val error = updated.errorOrNull() ?: moved.errorOrNull() ?: relisted.errorOrNull()
             if (error != null) {
                 editing { it.copy(saving = false) }
                 effectChannel.send(ShoppingEffect.Failed(error))
@@ -380,8 +402,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
 
     /**
      * Phase 2 (koppling lane, #12): removes the recipe the edited row came from, with all its rows
-     * (Tandoor deletes them with the list recipe; queued changes of the rows go first). No undo:
-     * "Lägg på inköpslistan" on the recipe adds it again.
+     * (Tandoor deletes them with the list recipe; queued changes of the rows go first). fix-ui:
+     * "Ångra" puts the rows still to buy back ([RemovedRecipeRows]).
      */
     private fun removeEditedRecipe() {
         val edit = transient.value.edit ?: return
@@ -389,7 +411,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
         val label = edit.entry.recipe ?: return
         transient.update { it.copy(edit = null) }
         val name = label.recipeName?.takeIf { it.isNotBlank() } ?: edit.entry.food.name
-        write(ShoppingMessage.RecipeRemoved(name), undo = null) { shopping.removeListRecipe(label.listRecipeId) }
+        val removed = RemovedRecipeRows.of(uiState.value.grouped.all, listOf(label.listRecipeId))
+        write(ShoppingMessage.RecipeRemoved(name), undo = { removed.restore(shopping) }) { shopping.removeListRecipe(label.listRecipeId) }
     }
 
     /** Runs [block]; on success remembers [undo] and shows [message], on failure the error. */

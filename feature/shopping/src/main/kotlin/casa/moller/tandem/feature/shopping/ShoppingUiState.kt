@@ -9,6 +9,7 @@ import casa.moller.tandem.core.model.shopping.ShoppingList
 import casa.moller.tandem.core.model.shopping.Supermarket
 import casa.moller.tandem.core.model.shopping.SupermarketCategory
 import casa.moller.tandem.core.model.sync.SyncPause
+import kotlin.time.Instant
 
 /**
  * Why the list may be out of date (plan 5.4, 6.2 "Offline: fullt fungerande, med en liten
@@ -18,10 +19,16 @@ enum class ShoppingSyncNotice {
     /** No network: changes wait ("3 ändringar väntar"). */
     OFFLINE,
 
-    /** The server or something in front of it holds requests back (403 without detail, 429, circuit breaker). */
+    /** The server or something in front of it holds requests back (403 without detail, 429). */
     PAUSED,
 
-    /** The login expired: nothing is sent until the user logs in again (Settings). */
+    /**
+     * Tandem itself paused the sync after many refused requests in a short time (the circuit
+     * breaker, plan 5.4; fix-ui: its own text, not "the server holds requests back").
+     */
+    BREAKER,
+
+    /** The login expired: nothing is sent until the user logs in again (the shell's "Logga in igen" banner). */
     LOGIN,
 
     /** Untested server version: the list is read, changes wait (plan 3.6). */
@@ -31,7 +38,8 @@ enum class ShoppingSyncNotice {
     companion object {
         fun of(pause: SyncPause?): ShoppingSyncNotice? = when (pause) {
             SyncPause.OFFLINE -> OFFLINE
-            SyncPause.BLOCKED, SyncPause.CIRCUIT_BREAKER -> PAUSED
+            SyncPause.BLOCKED -> PAUSED
+            SyncPause.CIRCUIT_BREAKER -> BREAKER
             SyncPause.UNAUTHORIZED -> LOGIN
             SyncPause.SAFE_MODE -> SAFE_MODE
             SyncPause.IMPORT_RUNNING, null -> null
@@ -65,6 +73,8 @@ data class AddItemState(
  * @property amountError the amount is not a number.
  * @property recipeRows Phase 2 (koppling lane): rows on the list from the same recipe or meal as
  *   this one ("Ta bort … från listan" removes them all), 0 for a row without a recipe.
+ * @property lists Tandoor's named lists the entry can be moved between (fix-ui, plan 3.5 "Flytt
+ *   mellan listor"); [listIds] the ones it is on in the sheet ("Spara" sends a change).
  */
 data class EditEntryState(
     val entry: ShoppingEntry,
@@ -77,6 +87,8 @@ data class EditEntryState(
     val amountError: Boolean = false,
     val saving: Boolean = false,
     val recipeRows: Int = 0,
+    val lists: List<ShoppingList> = emptyList(),
+    val listIds: Set<Long> = entry.listIds,
 ) {
     val canChangeCategory: Boolean
         get() = entry.food.id != null
@@ -97,6 +109,9 @@ data class EditEntryState(
  * @property add the add sheet, null while it is closed (on tablets the pane is always there).
  * @property edit the edit sheet, null while closed.
  * @property confirmClearChecked "Rensa avbockade?" is asked.
+ * @property progressSince only entries checked from this time on count as done in the progress
+ *   line (fix-ui: Tandoor keeps showing entries checked on earlier trips for days); null counts
+ *   every checked entry.
  */
 data class ShoppingUiState(
     val loading: Boolean = true,
@@ -118,16 +133,17 @@ data class ShoppingUiState(
     val edit: EditEntryState? = null,
     val confirmClearChecked: Boolean = false,
     val history: List<ShoppingHistoryItem> = emptyList(),
+    val progressSince: Instant? = null,
 ) {
     val canEdit: Boolean
         get() = !readOnly
 
-    /** Entries checked out of all that are to buy now or checked ("2 av 9"). */
+    /** Entries checked since [progressSince] out of those and all that are to buy now ("2 av 9"). */
     val progressDone: Int
-        get() = grouped.checked.size
+        get() = grouped.checked.count { entry -> progressSince == null || (entry.completedAt ?: progressSince) >= progressSince }
 
     val progressTotal: Int
-        get() = grouped.toBuyCount + grouped.checked.size
+        get() = grouped.toBuyCount + progressDone
 }
 
 /** What the Handla tab can ask for. */
@@ -183,6 +199,9 @@ sealed interface ShoppingAction {
 
     data class EditCategory(val categoryId: Long?) : ShoppingAction
 
+    /** fix-ui: puts the edited entry on, or takes it off, the named list [listId] ("Spara" sends it). */
+    data class EditList(val listId: Long) : ShoppingAction
+
     data object SaveEdit : ShoppingAction
 
     data object DeleteEdited : ShoppingAction
@@ -233,6 +252,11 @@ sealed interface ShoppingEffect {
     /** A write was refused (guest, local database) or a refresh the user asked for failed. */
     data class Failed(val error: TandemError) : ShoppingEffect
 
-    /** Another household member changed the list (plan 6.2 "Anna lade till Mjölk"). */
-    data class OtherChange(val change: ShoppingChange) : ShoppingEffect
+    /**
+     * Other household members changed the list (plan 6.2 "Anna lade till Mjölk"): the changes of
+     * one read together (fix-ui), shown as one message and never in place of an "Ångra".
+     */
+    data class OtherChange(val changes: List<ShoppingChange>) : ShoppingEffect {
+        constructor(change: ShoppingChange) : this(listOf(change))
+    }
 }

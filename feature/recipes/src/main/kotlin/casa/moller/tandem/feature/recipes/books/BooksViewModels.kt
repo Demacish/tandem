@@ -122,6 +122,9 @@ class BookRecipesViewModel @AssistedInject constructor(
     private val readOnly = permissions.permissions.map { it.readOnly }.distinctUntilChanged()
     private val offline = sync.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged()
 
+    /** What "Ångra" puts back after the last removal (fix-ui). */
+    private var undo: (suspend () -> Outcome<Unit>)? = null
+
     val uiState: StateFlow<BookRecipesUiState> = when (source) {
         is BookSource.Book -> combine(
             books.observeBook(source.id),
@@ -177,6 +180,16 @@ class BookRecipesViewModel @AssistedInject constructor(
         when (action) {
             BookRecipesAction.Refresh -> viewModelScope.launch { books.refresh() }
             is BookRecipesAction.Remove -> remove(action.recipeId)
+            BookRecipesAction.Undo -> takeBack()
+        }
+    }
+
+    private fun takeBack() {
+        val action = undo ?: return
+        undo = null
+        viewModelScope.launch {
+            val result = action()
+            if (result is Outcome.Failure) effectChannel.trySend(BookRecipesEffect.Message(bookWriteFailed(result.error)))
         }
     }
 
@@ -190,11 +203,19 @@ class BookRecipesViewModel @AssistedInject constructor(
                 BookSource.Favorites -> books.setFavorite(recipeId, false)
                 BookSource.WantToCook -> books.setWantToCook(recipeId, false)
             }
-            val message = when (result) {
-                is Outcome.Success -> R.string.books_removed
-                is Outcome.Failure -> bookWriteFailed(result.error)
+            when (result) {
+                is Outcome.Success -> {
+                    // fix-ui: the removal can be taken back, with a message that says from where.
+                    undo = when (source) {
+                        is BookSource.Book -> suspend { books.addToBook(source.id, recipeId) }
+                        BookSource.Favorites -> suspend { books.setFavorite(recipeId, true) }
+                        BookSource.WantToCook -> suspend { books.setWantToCook(recipeId, true) }
+                    }
+                    effectChannel.trySend(BookRecipesEffect.Removed(recipe.name, state.kind))
+                }
+
+                is Outcome.Failure -> effectChannel.trySend(BookRecipesEffect.Message(bookWriteFailed(result.error)))
             }
-            effectChannel.trySend(BookRecipesEffect.Message(message))
         }
     }
 }

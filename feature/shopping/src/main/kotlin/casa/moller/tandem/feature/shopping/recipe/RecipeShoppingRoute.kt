@@ -66,13 +66,23 @@ internal fun RecipeShoppingRoute(
         viewModel.effects.collect { effect ->
             launch {
                 snackbarHostState.currentSnackbarData?.dismiss()
-                val (text, showList) = effect.text(resources)
+                val (text, action) = effect.text(resources)
                 val result = snackbarHostState.showSnackbar(
                     message = text,
-                    actionLabel = if (showList) resources.getString(R.string.recipe_shopping_show_list) else null,
-                    duration = if (showList) SnackbarDuration.Long else SnackbarDuration.Short,
+                    actionLabel = when (action) {
+                        SnackbarAction.SHOW_LIST -> resources.getString(R.string.recipe_shopping_show_list)
+                        SnackbarAction.UNDO -> resources.getString(R.string.shopping_undo)
+                        null -> null
+                    },
+                    duration = if (action != null) SnackbarDuration.Long else SnackbarDuration.Short,
                 )
-                if (result == SnackbarResult.ActionPerformed) currentOnOpenList()
+                if (result == SnackbarResult.ActionPerformed) {
+                    when (action) {
+                        SnackbarAction.SHOW_LIST -> currentOnOpenList()
+                        SnackbarAction.UNDO -> viewModel.onAction(RecipeShoppingAction.Undo)
+                        null -> Unit
+                    }
+                }
             }
         }
     }
@@ -80,9 +90,15 @@ internal fun RecipeShoppingRoute(
     RecipeShoppingSheet(state = state, onAction = viewModel::onAction)
 }
 
-/** The snackbar text, and whether it offers "Visa listan". */
-private fun RecipeShoppingEffect.text(resources: Resources): Pair<String, Boolean> = when (this) {
-    is RecipeShoppingEffect.Added -> resources.getQuantityString(R.plurals.recipe_shopping_added, count, count, recipeName) to true
-    is RecipeShoppingEffect.Removed -> resources.getQuantityString(R.plurals.recipe_shopping_removed, count, count, recipeName) to false
-    is RecipeShoppingEffect.Failed -> resources.errorText(error) to false
+private enum class SnackbarAction { SHOW_LIST, UNDO }
+
+/** The snackbar text, and its action: "Visa listan" after adding, "Ångra" after removing (fix-ui). */
+private fun RecipeShoppingEffect.text(resources: Resources): Pair<String, SnackbarAction?> = when (this) {
+    is RecipeShoppingEffect.Added ->
+        resources.getQuantityString(R.plurals.recipe_shopping_added, count, count, recipeName) to SnackbarAction.SHOW_LIST
+
+    is RecipeShoppingEffect.Removed ->
+        resources.getQuantityString(R.plurals.recipe_shopping_removed, count, count, recipeName) to SnackbarAction.UNDO
+
+    is RecipeShoppingEffect.Failed -> resources.errorText(error) to null
 }

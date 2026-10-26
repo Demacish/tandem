@@ -388,6 +388,8 @@ internal fun ShellScaffold(
                     onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
                     // Phase 2 (koppling lane): "Visa listan" after "Lägg på inköpslistan".
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+                    // fix-ui: "Planera" plans the recipe from today, as "Vill laga" does (the page picks the day).
+                    onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
                 )
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---

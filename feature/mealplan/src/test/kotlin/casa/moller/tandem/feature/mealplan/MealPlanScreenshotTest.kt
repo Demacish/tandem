@@ -104,6 +104,13 @@ class MealPlanScreenshotTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
+    fun planCollections() = capture("phone_plan_meal_collections_light_sv", MealPlanShot.PLAN_COLLECTIONS)
+
+    @Test
+    fun planCollectionsDark() = capture("phone_plan_meal_collections_dark", MealPlanShot.PLAN_COLLECTIONS, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
     fun planTitleError() = capture("phone_plan_meal_title_dark_sv", MealPlanShot.PLAN_TITLE_ERROR, darkTheme = true)
 
     @Test

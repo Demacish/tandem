@@ -3,10 +3,14 @@ package casa.moller.tandem.feature.mealplan
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
+import casa.moller.tandem.core.model.shopping.ShoppingEntry
+import casa.moller.tandem.core.model.shopping.ShoppingFood
+import casa.moller.tandem.core.model.shopping.ShoppingRecipeLabel
 import casa.moller.tandem.core.model.sync.ForegroundTarget
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
+import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.mealplan.MealPlanSamples.day
@@ -37,9 +41,10 @@ class WeekViewModelTest {
     private val mealPlans = FakeMealPlanRepository(meals = MealPlanSamples.meals, mealTypes = MealPlanSamples.mealTypes)
     private val permissions = FakeSpacePermissionsRepository()
     private val foreground = FakeForegroundSync()
+    private val shopping = FakeShoppingRepository(entries = emptyList(), lists = emptyList())
 
     private fun viewModel(weekStart: String? = null, saved: SavedStateHandle = SavedStateHandle()) =
-        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock)
+        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping)
 
     /** Starts collecting the state (as the screen does) and the effects. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -108,6 +113,52 @@ class WeekViewModelTest {
         assertEquals(todayDinner.recipe?.id, again.recipeId)
         assertEquals("Dubbel sats, frys hälften", again.note)
         assertEquals(1, vm.uiState.value.days[3].meals.count { it.recipe?.id == todayDinner.recipe?.id })
+    }
+
+    /**
+     * fix-ui (Phase 2 review): Tandoor deletes a meal's rows on the shopping list with it, so
+     * removing such a meal asks first (with how many rows), and "Ångra" plans the meal again AND
+     * puts the rows still to buy back on the list, linked to the new meal.
+     */
+    @Test
+    fun removingAMealWithRowsOnTheListAsksFirstAndUndoPutsTheRowsBack() = runTest {
+        val label = ShoppingRecipeLabel(listRecipeId = 40, recipeId = todayDinner.recipe?.id, mealPlanId = todayDinner.id, servings = 4.0)
+        shopping.entries.value = listOf(
+            ShoppingEntry(1, ShoppingFood(1, "champinjon"), amount = 400.0, recipe = label, ingredientId = 10111, listIds = setOf(2)),
+            ShoppingEntry(2, ShoppingFood(4, "pasta"), amount = 400.0, recipe = label, ingredientId = 10121, listIds = setOf(2)),
+            ShoppingEntry(3, ShoppingFood(6, "vispgrädde"), amount = 2.5, recipe = label, ingredientId = 10131, checked = true),
+            ShoppingEntry(4, ShoppingFood(8, "mjölk"), amount = 1.0),
+        )
+        val vm = viewModel()
+        val effects = open(vm)
+        vm.onAction(WeekAction.Delete(todayDinner))
+        assertEquals(DeleteMealState(todayDinner, rows = 3), vm.uiState.value.deleting)
+        assertTrue("nothing is removed before the answer", mealPlans.meals.value.any { it.id == todayDinner.id })
+
+        vm.onAction(WeekAction.ConfirmDelete(false))
+        assertNull(vm.uiState.value.deleting)
+        assertTrue(mealPlans.meals.value.any { it.id == todayDinner.id })
+
+        vm.onAction(WeekAction.Delete(todayDinner))
+        vm.onAction(WeekAction.ConfirmDelete(true))
+        assertTrue(mealPlans.meals.value.none { it.id == todayDinner.id })
+        assertEquals(WeekEffect.Show(WeekMessage.Removed(todayDinner.displayTitle)), effects.single())
+
+        vm.onAction(WeekAction.Undo)
+        val again = mealPlans.meals.value.single { it.fromDate == todayDinner.fromDate && it.recipe?.id == todayDinner.recipe?.id }
+        val request = shopping.recipeRequests.single()
+        assertEquals(again.id, request.mealPlanId)
+        assertEquals("the rows still to buy, not the bought one", setOf(10111L, 10121L), request.ingredientIds)
+        assertEquals(4.0, request.servings, 0.0)
+        assertEquals(setOf(2L), request.listIds)
+    }
+
+    @Test
+    fun aMealTheServerSaysIsOnTheListAsksToo() = runTest {
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(WeekAction.Delete(MealPlanSamples.sunday))
+        assertEquals(DeleteMealState(MealPlanSamples.sunday, rows = 0), vm.uiState.value.deleting)
     }
 
     @Test

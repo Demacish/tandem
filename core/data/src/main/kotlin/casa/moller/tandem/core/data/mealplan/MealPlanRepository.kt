@@ -60,6 +60,13 @@ interface MealPlanRepository {
     suspend fun refresh(): Outcome<Unit>
 
     /**
+     * fix-ui (Phase 2 review): keeps the week starting [start] fresh while Veckan shows it: the
+     * plan window ([refresh]) when the week lies in it, else just that week (`from_date`/`to_date`),
+     * so meals planned on the web for a week far ahead or back still arrive. Default: [refresh].
+     */
+    suspend fun refreshWeek(start: LocalDate): Outcome<Unit> = refresh()
+
+    /**
      * "Handla för veckan" (#16, plan 6.2 steps 1-4): the week's meals with recipes, which are
      * already on the list (`?mealplan=` / `shopping`), and their ingredients with on-hand foods
      * deselected. Online it checks the server; offline it uses what is stored.

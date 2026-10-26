@@ -52,6 +52,14 @@ interface RecipeRepository {
      */
     fun observeRecipe(id: Long): Flow<RecipeDetailState>
 
+    /**
+     * fix-ui (Phase 2 review): the stored copy as [observeRecipe] emits it, but WITHOUT its
+     * background refresh. For a second collector beside the detail screen ("Lägg på
+     * inköpslistan", the plan-meal page), so a stale recipe is fetched once and not once per
+     * collector (plan 4.1: two requests at a time). The default is [observeRecipe].
+     */
+    fun observeStoredRecipe(id: Long): Flow<RecipeDetailState> = observeRecipe(id)
+
     /** Fetches the detail now (pull to refresh) and stores it. Observers of [observeRecipe] see the result. */
     suspend fun refreshRecipe(id: Long): Outcome<Unit>
 

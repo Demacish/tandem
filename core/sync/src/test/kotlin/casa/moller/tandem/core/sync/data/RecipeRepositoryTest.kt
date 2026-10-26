@@ -79,6 +79,32 @@ class RecipeRepositoryTest {
         assertEquals(1, server.requestsTo("GET", "/api/recipe/2/").size)
     }
 
+    /**
+     * fix-ui (Phase 2 review): the recipe detail and its "Lägg på inköpslistan" slot collect the
+     * same recipe; the slot reads the stored copy only, so a stale recipe is fetched ONCE.
+     */
+    @Test
+    fun aSecondCollectorOfTheStoredCopyFetchesNothing() = runBlocking {
+        graph.engine.run(SyncReason.FIRST_SYNC)
+        graph.details.fetch(graph.remote, 2, isBackground = false)
+        server.respond("GET", "/api/recipe/2/") { FakeTandoorServer.json(200, renamedRecipe("Ny svamppasta")) }
+        graph.clock.advance(10.minutes)
+        server.requests.clear()
+
+        val detail = CopyOnWriteArrayList<RecipeDetailState>()
+        val slot = CopyOnWriteArrayList<RecipeDetailState>()
+        val detailCollector = launch { repository.observeRecipe(2).collect { detail += it } }
+        val slotCollector = launch { repository.observeStoredRecipe(2).collect { slot += it } }
+        waitUntil { detail.any { it.recipe?.name == "Ny svamppasta" && !it.refreshing } }
+        waitUntil { slot.any { it.recipe?.name == "Ny svamppasta" } }
+        delay(300)
+        detailCollector.cancel()
+        slotCollector.cancel()
+
+        assertEquals("one GET for two collectors", 1, server.requestsTo("GET", "/api/recipe/2/").size)
+        assertTrue("the stored copy never says refreshing", slot.none { it.refreshing })
+    }
+
     @Test
     fun aFreshStoredRecipeIsNotFetchedAgain() = runBlocking {
         graph.engine.run(SyncReason.FIRST_SYNC)

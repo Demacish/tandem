@@ -102,10 +102,19 @@ sealed interface BookRecipesAction {
     data object Refresh : BookRecipesAction
 
     data class Remove(val recipeId: Long) : BookRecipesAction
+
+    /** fix-ui: "Ångra" after [Remove] puts the recipe back (in the book, Favoriter or "Vill laga"). */
+    data object Undo : BookRecipesAction
 }
 
 sealed interface BookRecipesEffect {
     data class Message(@StringRes val text: Int) : BookRecipesEffect
+
+    /**
+     * fix-ui: [recipeName] left the book of [kind] ("Vill laga" is the household's shared queue),
+     * shown with "Ångra" ([BookRecipesAction.Undo]).
+     */
+    data class Removed(val recipeName: String, val kind: RecipeBookKind) : BookRecipesEffect
 }
 
 /**

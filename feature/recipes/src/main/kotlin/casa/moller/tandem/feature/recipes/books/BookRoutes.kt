@@ -1,7 +1,10 @@
 package casa.moller.tandem.feature.recipes.books
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,8 +17,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import casa.moller.tandem.core.designsystem.icon.CollectionsBookmark
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import casa.moller.tandem.core.model.book.RecipeBookKind
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.feature.recipes.R
+import kotlinx.coroutines.launch
 
 // Phase 2 (books lane): the routes feature:shell shows for books (docs/BYGGE.md "Böcker, favoriter
 // och Vill laga"): ViewModels on RecipeBookRepository, write buttons only for own books and never
@@ -104,6 +109,17 @@ private fun BookRecipesRoute(
         viewModel.effects.collect { effect ->
             when (effect) {
                 is BookRecipesEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+
+                // fix-ui: says where the recipe left, with "Ångra" ("Vill laga" is the whole household's).
+                is BookRecipesEffect.Removed -> launch {
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    val result = snackbarHostState.showSnackbar(
+                        message = resources.removedText(effect),
+                        actionLabel = resources.getString(R.string.books_undo),
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onAction(BookRecipesAction.Undo)
+                }
             }
         }
     }
@@ -124,7 +140,12 @@ private fun BookRecipesRoute(
  * ViewModel; messages go to the detail's [snackbarHostState].
  */
 @Composable
-fun RecipeBookButtonsRoute(recipeId: Long, snackbarHostState: SnackbarHostState, modifier: Modifier = Modifier) {
+fun RecipeBookButtonsRoute(
+    recipeId: Long,
+    snackbarHostState: SnackbarHostState,
+    modifier: Modifier = Modifier,
+    onPlanMeal: ((Long) -> Unit)? = null,
+) {
     val viewModel = hiltViewModel<RecipeBookButtonsViewModel, RecipeBookButtonsViewModel.Factory>(
         key = "recipe-books-$recipeId",
         creationCallback = { factory -> factory.create(recipeId) },
@@ -135,10 +156,16 @@ fun RecipeBookButtonsRoute(recipeId: Long, snackbarHostState: SnackbarHostState,
         viewModel.effects.collect { effect ->
             when (effect) {
                 is BookRecipesEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+                is BookRecipesEffect.Removed -> Unit // The buttons only toggle; the detail shows the new state.
             }
         }
     }
-    RecipeBookButtons(state = state, onAction = viewModel::onAction, modifier = modifier)
+    RecipeBookButtons(
+        state = state,
+        onAction = viewModel::onAction,
+        modifier = modifier,
+        onPlanMeal = onPlanMeal?.let { plan -> { plan(recipeId) } },
+    )
 }
 
 /** The empty pane beside the books on wide windows before one is picked ("Välj en bok"). */
@@ -151,3 +178,13 @@ fun BookPanePlaceholder(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
     )
 }
+
+/** "Linsgryta togs bort från Vill laga" (fix-ui). */
+private fun Resources.removedText(effect: BookRecipesEffect.Removed): String = getString(
+    when (effect.kind) {
+        RecipeBookKind.WANT_TO_COOK -> R.string.books_removed_from_want_to_cook
+        RecipeBookKind.FAVORITES -> R.string.books_removed_from_favorites
+        RecipeBookKind.BOOK, RecipeBookKind.SMART -> R.string.books_removed_from_book
+    },
+    effect.recipeName,
+)

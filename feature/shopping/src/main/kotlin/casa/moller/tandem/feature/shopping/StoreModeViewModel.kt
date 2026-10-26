@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shopping
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
@@ -11,6 +12,8 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +29,9 @@ import kotlinx.coroutines.launch
  * still to buy, by aisle in the store's order.
  *
  * @property sections the unchecked entries that are not delayed, by aisle.
- * @property inCart entries checked on this list (the progress "5 av 13 i korgen").
+ * @property inCart entries checked since store mode opened, on this phone or another (the progress
+ *   "5 av 13 i korgen"; fix-ui: not the ones checked on earlier trips, which Tandoor keeps showing
+ *   for days).
  */
 data class StoreModeUiState(
     val loading: Boolean = true,
@@ -60,13 +65,16 @@ sealed interface StoreModeAction {
 /**
  * Store mode (plan 6.2 "Butiksläge", feature #13): large rows, only unchecked entries, the
  * screen stays on (the screen does that). Polls like the list while it is open, so a partner's
- * changes show up in the store.
+ * changes show up in the store. The time store mode opened is kept in [SavedStateHandle], so the
+ * progress survives rotation and process death.
  */
 @HiltViewModel(assistedFactory = StoreModeViewModel.Factory::class)
 class StoreModeViewModel @AssistedInject internal constructor(
     @Assisted key: StoreModeKey,
+    savedStateHandle: SavedStateHandle,
     source: ShoppingSource,
     private val shopping: ShoppingRepository,
+    clock: Clock,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -81,6 +89,10 @@ class StoreModeViewModel @AssistedInject internal constructor(
 
     private var undo: (suspend () -> Outcome<*>)? = null
 
+    /** When store mode opened: only what was checked from then on is "i korgen". */
+    private val openedAt: Instant = savedStateHandle.get<Long>(KEY_OPENED_AT)?.let { Instant.fromEpochMilliseconds(it) }
+        ?: clock.now().also { savedStateHandle[KEY_OPENED_AT] = it.toEpochMilliseconds() }
+
     val uiState: StateFlow<StoreModeUiState> = source.observe(MutableStateFlow(key.listId), MutableStateFlow(key.supermarketId))
         .map { snapshot ->
             val grouped = snapshot.grouped()
@@ -89,7 +101,7 @@ class StoreModeViewModel @AssistedInject internal constructor(
                 readOnly = snapshot.permissions.readOnly,
                 store = snapshot.store,
                 sections = grouped.sections,
-                inCart = grouped.checked.size,
+                inCart = grouped.checked.count { (it.completedAt ?: openedAt) >= openedAt },
                 amountStyle = AmountStyle.of(snapshot.preferences),
                 pendingCount = snapshot.pendingCount,
                 syncNotice = ShoppingSyncNotice.of(snapshot.pause),
@@ -97,11 +109,8 @@ class StoreModeViewModel @AssistedInject internal constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StoreModeUiState())
 
-    init {
-        viewModelScope.launch {
-            shopping.observeChanges().collect { effectChannel.send(ShoppingEffect.OtherChange(it)) }
-        }
-    }
+    /** Changes by other household members, as on the list ([ShoppingViewModel.otherChanges]). */
+    val otherChanges: Flow<ShoppingEffect.OtherChange> = shopping.observeChanges().inBursts().map { ShoppingEffect.OtherChange(it) }
 
     fun onAction(action: StoreModeAction) {
         when (action) {
@@ -135,5 +144,6 @@ class StoreModeViewModel @AssistedInject internal constructor(
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
+        const val KEY_OPENED_AT = "store-mode.openedAt"
     }
 }

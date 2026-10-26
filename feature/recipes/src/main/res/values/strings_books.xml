@@ -76,4 +76,11 @@
     <string name="books_collection_books">Books</string>
     <string name="books_pane_empty_title">Pick a book</string>
     <string name="books_pane_empty_body">Its recipes open here.</string>
+
+    <!-- fix-ui (Phase 2 review) -->
+    <string name="books_removed_from_book">%1$s was removed from the book</string>
+    <string name="books_removed_from_favorites">%1$s was removed from Favourites</string>
+    <string name="books_removed_from_want_to_cook">%1$s was removed from Want to cook</string>
+    <string name="books_undo">Undo</string>
+    <string name="books_action_plan">Plan</string>
 </resources>

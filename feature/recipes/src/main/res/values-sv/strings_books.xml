@@ -69,4 +69,11 @@
     <string name="books_collection_books">Böcker</string>
     <string name="books_pane_empty_title">Välj en bok</string>
     <string name="books_pane_empty_body">Bokens recept visas här.</string>
+
+    <!-- fix-ui (granskningen av Fas 2) -->
+    <string name="books_removed_from_book">%1$s togs bort ur boken</string>
+    <string name="books_removed_from_favorites">%1$s togs bort från Favoriter</string>
+    <string name="books_removed_from_want_to_cook">%1$s togs bort från Vill laga</string>
+    <string name="books_undo">Ångra</string>
+    <string name="books_action_plan">Planera</string>
 </resources>

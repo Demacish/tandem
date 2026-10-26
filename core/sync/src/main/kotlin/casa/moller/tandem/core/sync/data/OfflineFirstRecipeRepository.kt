@@ -140,10 +140,15 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         return Outcome.Success(sorted)
     }
 
-    override fun observeRecipe(id: Long): Flow<RecipeDetailState> = sources.source
+    override fun observeRecipe(id: Long): Flow<RecipeDetailState> = recipeStates(id, revalidate = true)
+
+    // fix-ui (Phase 2 review): a second collector beside the detail fetches nothing itself.
+    override fun observeStoredRecipe(id: Long): Flow<RecipeDetailState> = recipeStates(id, revalidate = false)
+
+    private fun recipeStates(id: Long, revalidate: Boolean): Flow<RecipeDetailState> = sources.source
         .flatMapLatest { source ->
             when (source) {
-                is ActiveSource.Stored -> detailStates(source, id)
+                is ActiveSource.Stored -> detailStates(source, id, revalidate)
                 ActiveSource.Loading -> emptyFlow<RecipeDetailState>()
                 ActiveSource.None -> flowOf(RecipeDetailState(recipeId = id, error = DataProblem.NO_ACCOUNT.toError()))
             }
@@ -151,10 +156,10 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         .distinctUntilChanged()
         .flowOn(Dispatchers.Default)
 
-    private fun detailStates(source: ActiveSource.Stored, id: Long): Flow<RecipeDetailState> = channelFlow {
+    private fun detailStates(source: ActiveSource.Stored, id: Long, revalidate: Boolean): Flow<RecipeDetailState> = channelFlow {
         val dao = recipeDao(source)
         val refresh = MutableStateFlow(RefreshState())
-        var revalidating = false
+        var revalidating = !revalidate
         combine(dao.observeListItem(source.accountId, id), dao.observeDetail(source.accountId, id), refresh) { item, detail, state ->
             detailState(id, item, detail, state)
         }.collect { state ->

@@ -706,19 +706,26 @@ och `DtoFixturesTest` (GET/PATCH av en måltid).
   "5 av 7 dagar planerade". Den visade veckan hålls färsk medan skärmen syns
   (`ForegroundSync.keepFresh(MealPlan(vecka))`). Veckan och vald dag ligger i `SavedStateHandle`.
 - **Layout (plan 6.5, efter fönstrets storlek):** under 600 dp en agenda (en del per dag, rullad
-  så att idag står först); från 600 dp två paneler (veckans dagar med måltidernas namn bredvid
-  den valda dagen, idag som standard; surfplatta stående och telefon liggande); från 840 × 560 dp
-  veckorutnätet (dagar som kolumner, måltidstyper som rader, "+" i tomma celler; rutnätet rullar i
-  sidled hellre än att klippa söndagen, docs/design/README.md).
+  så att idag står först; gästrutan och "Tom vecka" står fast ovanför dagarna); från 600 dp två
+  paneler (veckans dagar med måltidernas namn bredvid den valda dagen, idag som standard; telefon
+  liggande och smala fönster); veckorutnätet från 840 × 560 dp och, i ett stående fönster, från
+  680 dp bredd, alltså på surfplatta i båda orienteringarna (dagar som kolumner, måltidstyper som
+  rader, "+" i tomma celler; rutnätet rullar i sidled hellre än att klippa söndagen,
+  docs/design/README.md, och öppnar med idag i bild; dagarnas rubriker står kvar överst).
 - **Måltider:** foto, måltidstyp, namn, tid, portioner, anteckning, "på inköpslistan" och "väntar
   på att synkas". Ett tryck öppnar receptet (en måltid utan recept öppnar "Ändra"); menyn och
   TalkBacks egna åtgärder har "Laga" (dagens måltider, kokläget med måltidens portioner), "Ändra",
-  "Flytta" och "Ta bort". Ta bort och flytta visar "Ångra" (ta bort planerar måltiden igen med
-  samma värden; Tandoor har då redan tagit bort dess poster på inköpslistan). Flytta är ett
+  "Flytta" (också lång tryckning) och "Ta bort". Ta bort och flytta visar "Ångra". En måltid med
+  rader på inköpslistan frågar först ("Måltidens 6 varor på inköpslistan tas också bort"); Tandoor
+  tar bort raderna med måltiden, och appen tar bort dem lokalt i samma transaktion. "Ångra"
+  planerar måltiden igen och lägger tillbaka raderna som var kvar att köpa, kopplade till den nya
+  måltiden. I rutnätet säger en måltid sin dag och måltidstyp till TalkBack. Flytta är ett
   bottenark med två veckors dagar, "Annat datum…" (datumväljare) och måltidstyp (dra och släpp
   kommer i Fas 3). En konflikt visas som dialogen "Ändrad på två ställen".
-- **Planera måltid:** en egen sida på alla bredder (innehållet i läsbar bredd på surfplatta):
-  dag, måltidstyp (eller "Ny måltidstyp"), recept ur de lagrade recepten eller bara en titel,
+- **Planera måltid:** en egen sida på alla bredder (innehållet i läsbar bredd på surfplatta; på
+  telefon utan flikraden, `PlanMealKey` är en `FullScreenDestination`; tangentbordet hanteras på ett
+  ställe, så formuläret slutar vid tangentbordet): dag, måltidstyp (eller "Ny måltidstyp"), recept
+  ur "Vill laga", "Favoriter" eller de lagrade recepten, eller bara en titel,
   portioner, anteckning och "Lägg ingredienserna på inköpslistan" (bara nya måltider med recept;
   startar som `mealplan_autoadd_shopping` och skickar `addshopping` exakt när den är ikryssad).
   "Ändra" sparar bara det som ändrats; en måltid med recept kan byta recept men inte bli "bara
@@ -1476,7 +1483,8 @@ inköpets databana.
   (`SupermarketRepository.selectSupermarket`, också för gäster). `ShoppingListChoiceKey` visar bara
   butiksvalet och anropar `onChosen(null, null)` när valet är sparat; de namngivna listorna är chips
   på själva listan (valet ligger i `SavedStateHandle`, nya rader hamnar på den valda listan).
-- **Rader:** en rad är **en** nod för TalkBack ("2 dl grädde, Mejeri, avbockad"); tryck eller svep
+- **Rader:** minst 64 dp höga (plan 6.6, `kitchenTouchTarget`), en rad är **en** nod för TalkBack
+  ("2 dl grädde, Mejeri, avbockad"); tryck eller svep
   åt slutet bockar av, svep åt början = "köp senare"/"köp nu", lång tryckning = ändra. "Köp senare"
   och "Ändra" finns också som TalkBack-åtgärder. Ändringar visar en snackbar med "Ångra" (bocka av,
   bocka av alla i en gång, köp senare, lägg till, ta bort; ta bort lägger tillbaka varan som en ny
@@ -1497,15 +1505,69 @@ inköpets databana.
 - **Lägen:** tomt (med "Köpt nyligen"), offline/pausad/inloggning/säkert läge med antal väntande
   ändringar, gäst (inga redigeringskontroller alls, skrivningar ignoreras i ViewModel också), demo
   (skalets banner; demodatan kommer från repositoryt).
-- **Surfplatta (plan 6.5):** från 600 dp fönsterbredd en sidopanel (lägg till, listor, butiker,
-  butiksläge, historik) bredvid listan; från 640 dp listbredd står gångarna i två kolumner
-  (staggered grid). Gäller båda orienteringarna och telefon i liggande läge.
+- **Surfplatta (plan 6.5):** från 640 dp listbredd står avdelningarna i två kolumner (staggered
+  grid; "Övrigt" sist över båda kolumnerna, TalkBack läser i butikens ordning), alltså på
+  surfplatta i båda orienteringarna och på telefon i liggande läge. Den fasta sidopanelen (lägg
+  till, listor, butiker, butiksläge, historik) kommer först från 980 dp fönsterbredd (340 dp panel +
+  två kolumner, surfplatta liggande); smalare fönster har fältet "Lägg till vara…" och chipsen
+  ovanför listan som på telefon.
 - **Tester:** `ShoppingGroupingTest` (ordning, delning av fritext, format, delningstext),
   `ShoppingViewModelTest` och `StoreModeViewModelTest` (fakes ur `:core:testing`),
   `ShoppingScreenTest` (semantik, åtgärder, gäst, surfplatta, routen med ångra),
   `ShoppingAccessibilityTest` (ATF) och `ShoppingScreenshotTest`/`ShoppingPseudoLocaleScreenshotTest`
   (`feature/shopping/src/test/screenshots/shopping/`). Skärmarna och lägena står i `ShoppingShot`.
 <!-- /Fas 2 inköp-ui -->
+
+<!-- Fas 2 fix-ui -->
+## Granskningen av Fas 2: skärmarna (fix-ui)
+
+Rättelser efter granskningen av 0.3.0 i `feature/**`, `core:ui` och några små block i
+`:core:sync`/`:core:data` (nämnda nedan):
+
+- **Två kolumner och veckorutnätet i båda orienteringarna** (plan §10 "Klart när"): se Handla
+  "Surfplatta" och Veckan "Layout" ovan.
+- **Handla:** rader på 64 dp; flytt mellan Tandoors namngivna listor i ändringsarket (chipsen
+  "Listor", sparas med "Spara" som `ShoppingRepository.setLists`); framstegsraden räknar bara det
+  som bockats av idag (`ShoppingUiState.progressSince`) och butiksläget bara det som bockats sedan
+  det öppnades (tiden i `SavedStateHandle`); "Ta bort <recept> från listan" och arkets "Ta bort från
+  listan" har "Ångra" (`RemovedRecipeRows`: raderna som var kvar att köpa läggs tillbaka per
+  listrecept med samma ingredienser, portioner, listor och måltid) och meddelandet räknar alla
+  rader som togs bort; synkrutan har en egen text för kretsbrytaren (`ShoppingSyncNotice.BREAKER`)
+  och visas inte för gäster.
+- **Andras ändringar** (`ShoppingViewModel.otherChanges`/`StoreModeViewModel.otherChanges`): samlas
+  bara medan skärmen är STARTED (`repeatOnLifecycle`), ändringarna från en läsning blir ett
+  meddelande ("3 ändringar från andra i hushållet", `inBursts`) och `ShoppingSnackbars` låter dem
+  aldrig ersätta eller köa före en egen snackbar med "Ångra".
+- **Listans rader** har nycklar (`key(entry.id)`), så en svepning går aldrig vidare till raden som
+  flyttar in på samma plats.
+- **Skärmen tänd:** `core:ui` `KeepScreenOn()` räknar hållare per fönster och delas av kokläget och
+  butiksläget (tidigare sparade butiksläget flaggan själv och kunde släcka kokläget).
+- **Receptet:** "Planera" bredvid Favorit/Vill laga/Lägg i bok (`RecipeDetailRoute(onPlanMeal)`,
+  skalet öppnar `PlanMealKey(idag, recipeId)`, inte för gäster). Lägg på inköpslistan läser receptet
+  med `RecipeRepository.observeStoredRecipe` (ingen egen hämtning bredvid detaljvyn, ny
+  standardmetod i `:core:data`, implementerad i `:core:sync`).
+- **Böcker:** att ta bort ett recept ur en bok, Favoriter eller Vill laga har "Ångra" och säger
+  varifrån det togs bort.
+- **Konton:** det aktiva kontots kort har "Exportera ändringar" när ändringar väntar (dit
+  Diagnostik hänvisar).
+- **`:core:sync` (små block):** `OfflineFirstMealPlanRepository.delete` tar bort måltidens
+  listrecept och rader lokalt och släpper deras osända rader (inget köas för dem, servern tar bort
+  dem med måltiden); `OfflineFirstShoppingRepository` sparar en avbockad rad i `shopping_history`
+  när den tas bort (Rensa, Ta bort, receptet från listan), så "Köpt nyligen" fylls även hos den som
+  rensar; `DefaultForegroundSync` läser matsedeln högst var 60:e sekund räknat från förra läsningen
+  av samma fönster (eller vecka), avbryter aldrig en påbörjad läsning, och en vecka utanför fönstret
+  läses för sig (`MealPlanRepository.refreshWeek`, `MealPlanWindowReader.read(range)`).
+- **Språk:** svenska snackbars med verbformer ("Smör togs bort", inte "borttagen"), konfliktdialogen
+  "Din ändring"/"Behåll min ändring", "avdelning" genomgående, gästarket "Ändra böcker, favoriter
+  och ”Vill laga”".
+- **Tester:** `KeepScreenOnTest` (`:core:ui`), `ShoppingSnackbarsTest`, nya fall i
+  `ShoppingViewModelTest`, `StoreModeViewModelTest`, `RecipeShoppingViewModelTest`,
+  `ShoppingScreenTest` (två kolumner stående, TalkBack-ordning), `WeekViewModelTest`,
+  `PlanMealViewModelTest`, `WeekScreenTest` (rutnät stående, måltidens beskrivning, lång tryckning,
+  gästrutan), `BooksViewModelsTest`, `RecipePlanButtonTest`, `RecipeRepositoryTest` (en hämtning för
+  två läsare), `ShoppingSyncTest` (historik efter Rensa, matsedelns polling) och
+  `WeekShoppingSyncTest` (en borttagen måltids rader försvinner direkt utan "togs bort").
+<!-- /Fas 2 fix-ui -->
 
 <!-- Fas 2 böcker -->
 ## Böcker, favoriter och Vill laga (`:feature:recipes`, `:core:sync`, Fas 2)
