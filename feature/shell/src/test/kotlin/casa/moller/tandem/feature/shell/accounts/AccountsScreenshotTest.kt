@@ -25,6 +25,7 @@ import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigationAt
 import casa.moller.tandem.feature.shell.settings.FixedSettingsPages
 import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Rule
@@ -77,6 +78,7 @@ abstract class AccountsScreenshotTest(private val device: String) {
     }
 
     /** The page with its dialog open (the dialog is a window of its own). */
+    @OptIn(ExperimentalRoborazziApi::class)
     protected fun dialog(name: String, state: AccountsUiState, darkTheme: Boolean = false) {
         setPage(state, darkTheme, fontScale = null)
         composeRule.waitForIdle()
