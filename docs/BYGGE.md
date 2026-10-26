@@ -1232,8 +1232,8 @@ datadelen i `:core:datastore` och `:core:sync`.
   `SettingsRepository` och `TimerController.capabilities`), och Diagnostik och Om Tandem. Temat
   ligger inte längre direkt under Mer utan under Utseende. Kontokortet visar också *Funktioner på
   servern* (`ShellUiState.serverFeatures` från `ServerStatus.capabilities`, med egna namn, aldrig
-  API-namnen; fix-ui). Hushållets namn visas inte än (kontot sparar bara space-namnet; namnet
-  kräver `/api/user-space/` i `core:network`), se ROADMAP. **Logga ut** med ändringar i outboxen
+  API-namnen; fix-ui). Sedan Fas 2 också hushållets namn och rollen (gäst tydligt) och raden
+  "Konton och servrar", se "Konton och servrar" nedan. **Logga ut** med ändringar i outboxen
   (`ShellUiState.pendingChanges` = `SyncStatus.pendingChanges`) säger "N ändringar har inte
   skickats" och att utloggningen raderar dem (plan 4.2 p4), med "Skicka först" (`retrySync`)
   när en synk kan skicka dem; utloggningen är fortfarande möjlig. Bara en vald rad har
@@ -1473,6 +1473,81 @@ demo), `RecipeBookRulesTest`, `BookServicesTest`, `DtoFixturesTest` (custom-filt
 ägaren, poster (`?recipe=`, "unique set", 204/404), nyckelordslistan och den smarta boken med
 filtret som servern svarade, och rollerna i `all_personal`.
 <!-- /Fas 2 böcker -->
+
+<!-- Fas 2 konto -->
+## Konton och servrar (`:feature:shell`, `:core:sync`, `:core:data`, Fas 2)
+
+Beslut B14 (ett aktivt konto per enhet, byte i appen), plan 6.2 "Konto/server", 8.6 "Hushåll";
+Stitch `konto_servrar` (utan "Kopiera backup-sträng" och "Rensa alla sparade konton", med serverns
+riktiga namn och version).
+
+**Data:**
+
+| Gränssnitt | Implementation | Innehåll |
+|---|---|---|
+| `account.AccountDirectory` (`:core:data`) | `DefaultAccountDirectory` (`:core:sync`, `di/AccountModule.kt`, ersätter appens `TemporaryFas2AccountModule`) | `observeAccounts` (sparade konton med hushåll, roll, osända ändringar, kompatibilitet; demoläget är aldrig ett konto), `switchTo`, `observeHousehold`/`refreshHousehold`, `remove(id, revokeToken, discardPendingChanges)`, `exportPendingChanges(id)` |
+| `account.AccountSessions` (`:core:data`, ny) | `DefaultAccountRepository` (samma objekt och skrivlås som inloggningen) | `activate(id)` (lämnar demoläget), `remove(id, revokeToken)`; `logout` använder samma väg |
+
+- **Byte:** bara det aktiva kontot ändras (`AppSettings.activeAccountId`); allt annat följer
+  sessionen. `ActiveSourceProvider` ger repositorierna det nya kontots rader och server,
+  `SyncStarter` ber om `ACCOUNT_CHANGED`, som nu **ersätter** en väntande eller pågående
+  engångssynk (`WorkManagerSyncScheduler.policyFor`), en pågående `OutboxSender.drain` för det
+  gamla kontot slutar vid nästa rad (`RemoteCaller.isCurrent`), `SyncEngine` och läsarna avbryter
+  som förut vid byte av källa, och pollingen läser den nya källan. Varje konto behåller sina rader
+  och sin outbox (alla tabeller har `account_id`), så ett byte tillbaka fortsätter där det var.
+  Från demoläget ber bytet självt om kontots synk (startaren gör det bara mellan två konton).
+- **Timers och kokläget** bär källan (`TimerSource`: kontots id eller demo) sedan 0.2.0; efter ett
+  byte är skalets `timerSource` och `AppSettings.activeAccountId` det nya kontot, så en timer från
+  det gamla kontot öppnar timerlistan, aldrig fel recept.
+- **Borttagning:** `remove` vägrar så länge kontot har rader i outboxen och
+  `discardPendingChanges` är falskt (`AccountRemoval.PendingChanges(antal)`); en oläsbar outbox
+  tar inte bort något. Sedan tas konto och token bort (`AccountSessions.remove`, token återkallas
+  bara om Tandem skapade den), och `AccountMirror.removeForgotten` tar bort kontots rader i alla
+  tabeller och bildcachen direkt (en borttagning av ett annat konto ändrar inte sessionen).
+  Exporten är samma JSON som återställningsskärmens (`RoomPendingChangesExporter.exportAccount`):
+  bara de köade operationerna, ingen token, ingen serveradress.
+- **Ny inloggning till samma konto** (samma server och användare, t.ex. "Logga in igen" eller
+  "Lägg till konto") behåller kontots lokala id, så outboxen och raderna står kvar
+  (`MirrorDecision`: samma användare, space och server rensar inget).
+- **Hushåll och roll:** `SpaceRoleSync` (böckernas bana) sparar nu också hushållet ur
+  `/api/user-space/all_personal/` (`household {id, name}` eller null) i samma skrivning som rollen
+  (`AccountDao.setMembership`), med de små tabellerna och vid `refreshHousehold`; `AccountMirror`
+  behåller `household_name`. Ingen ny tabell eller kolumn (schema 4).
+
+**UI (`feature/shell/.../accounts/`):**
+
+| Route (nyckel) | ViewModel | Skärm |
+|---|---|---|
+| `RouteAccountsPage.Accounts` (`AccountsKey`, en Mer-sida: detaljpanel bredvid Mer på breda fönster) | `AccountsViewModel` | `AccountsScreen`: aktivt konto (server, space, hushåll, roll, version, inloggning, osända ändringar, "Synka nu"), andra konton ("Byt till …", "Ta bort …"), "Lägg till konto", "Logga ut från …", dialogen "Ta bort kontot?"/"Logga ut?" |
+
+- Varje kontos uppgifter är **en** nod för TalkBack, knapparna följer efter. En gäst visas med
+  ett chip "Gäst – bara läsning" och en förklaring.
+- **Ta bort / logga ut med osända ändringar:** dialogen visar antalet, "Exportera ändringar"
+  (delningsarket, `sharePendingChanges`) och för det aktiva kontot "Skicka först"; borttagningen
+  kastar bara det antal som dialogen visade (`RemovalPrompt.warnedPending`), annars visas det nya
+  antalet först. Mer:s egen utloggningsdialog fick också "Exportera ändringar"
+  (`ShellActions.exportPendingChanges` → `ShellViewModel.pendingExports`).
+- **Byte och utloggning** körs i applikationens scope och meddelas via `ShellMessageQueue`
+  (`SWITCHED_ACCOUNT`, `ACCOUNT_REMOVED*`, för det aktiva kontot utloggningens meddelanden).
+  Appen nycklar skalet per konto (`AppDestination.Shell(source)`), så ett byte startar ett nytt
+  skal (nya bakåtstackar och ViewModels, som efter en utloggning).
+- **Lägg till konto:** `AppViewModel.addAccount` öppnar introts serversteg med tomt fält och
+  "Avbryt" tillbaka till kontot (samma flaggor som "Logga in igen"); introt loggar in med token
+  (2.6) eller allauth (2.7) och gör det nya kontot aktivt. I demoläget leder knappen till "Anslut
+  din Tandoor".
+- **Mer:** kontokortet visar hushållet (`AccountDirectory.observeHousehold`) och rollen
+  (`SpacePermissionsRepository`), och raden "Konton och servrar" med antalet sparade konton.
+
+**Tester:** `AccountDirectoryTest` (`:core:sync`: listan med hushåll/roll/ändringar, demoläget är
+inget konto, bytet håller raderna isär och stoppar det gamla kontots drain, byte från demoläget
+ber om synk, borttagning varnar, exporterar bara kontots ändringar och tar sedan bort dess rader,
+ny inloggning behåller ändringarna, hushållet ur `all_personal`), `DefaultAccountRepositoryTest`
+(`activate`, `remove`), `SyncScheduleTest`, `AccountsViewModelTest`, `AccountsScreenTest`,
+`AccountsKeyTest`, `ShellViewModelTest` (hushåll, roll, timerkälla efter byte, export),
+`AppViewModelTest` (nytt skal per konto, "Lägg till konto"), `AccountsScreenshotTest`
+(telefon stående/liggande, surfplatta i båda orienteringar, mörkt, textstorlek 2, svenska) och
+`AccountsAccessibilityTest` (ATF).
+<!-- /Fas 2 konto -->
 
 ## Receptvisning (`:core:domain`, Fas 1)
 

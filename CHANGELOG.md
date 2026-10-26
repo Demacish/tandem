@@ -49,6 +49,12 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   välja vems ändring som gäller. "Handla för veckan" lägger veckans ingredienser på listan utan
   att något kommer med två gånger. Gäster ser matsedeln utan att kunna ändra den. Är inget
   planerat idag leder Idag till Veckan med "Planera veckan".
+- **Konton och servrar:** spara flera Tandoor-konton (även på olika servrar) och byt mellan dem
+  under Mer → Konton och servrar; ett konto i taget är aktivt, och varje konto behåller sina
+  recept, sin lista och sina osända ändringar på telefonen. Lägg till ett konto med samma
+  inloggning som i introt, ta bort ett konto eller logga ut. Har kontot ändringar som inte
+  skickats visas antalet och de kan exporteras först; inget raderas utan att du har sett det.
+  Kontokortet under Mer visar hushållets namn och din roll (gäst syns tydligt).
 
 ## [0.2.0] – 2026-10-24
 
