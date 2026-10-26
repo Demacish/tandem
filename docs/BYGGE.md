@@ -825,6 +825,40 @@ rader som servern): av (appen lägger till en gång, inte igen, inte från en an
 `settings_*_diagnostics_*` (inklusive `diagnostics_blocked_*`).
 <!-- /Fas 2 koppling -->
 
+<!-- Fas 2 integration -->
+## Integration av Fas 2 (0.3.0)
+
+- **Inga tillfälliga bindningar kvar:** `TemporaryFas2Module.kt` är borttagen och alla
+  gränssnitt i Fas 2 binds av `:core:sync` (`ShoppingModule`, `MealPlanModule`, `BookModule`,
+  `AccountModule`). Fas 0:s `PlaceholderTab` och dess strängar är borta; Handla och Veckan visar
+  sina skärmar, och skalets tester ritar `TabStub` (testkod).
+- **Idag:** raden "Favoriter" (hushållets favoriter, `TodayBooksState.favorites`, Visa alla →
+  `FavoritesKey`) efter "Vill laga", och "Handla" på Ikväll-kortet (plan 6.2): `TodayRoute`s
+  plats `tonightShoppingAction` fylls av skalet med `RecipeShoppingRoute` för receptet och de
+  planerade portionerna, aldrig för en gäst. `ShellFeatures.Today` fick `onOpenFavorites` och
+  `onOpenShoppingList`.
+- **Offline en kort stund:** `ShoppingReader.stillOnServerLocked` litar bara på en full läsning
+  som är under en minut gammal **och** gjordes efter den senaste återanslutningen
+  (`NetworkStatus.reconnections`, som `ConnectivityMonitor` räknar upp vid offline → online).
+  Annars kunde en PATCH eller DELETE av en rad som partnern raderat medan telefonen var offline i
+  mindre än en minut få 404.
+- **`shopping_auto_sync`:** pollingen av listan följer användarens egen inställning: intervallet
+  är max(20 s, serverns golv, användarens värde), och 0 (webbens "av") stänger av pollingen
+  (dra-för-att-uppdatera och bakgrundssynken läser fortfarande listan).
+- **"+ Vara"-knappen** (ExtendedFloatingActionButton) nådde tillgänglighetsträdet utan namn på
+  enheten (röktestets fönsterdump); etiketten sätts nu som `contentDescription`.
+- **Release-röktestet** täcker Fas 2:s "Klart när", se "Release-röktest".
+- **Kvar (avsiktligt eller utanför fasen):** `id_mapping` rensas aldrig (grundens beslut); en
+  anteckning per vara finns inte (Tandoor saknar fältet); `MealPlanUpdate` kan inte ta bort ett
+  recept från en måltid; ark (`ModalBottomSheet`) prövas i skärmbilder och ATF bara som innehåll;
+  svepgester på listraderna har inget automatiskt gesttest (röktestet trycker och långtrycker);
+  att lägga till ett konto när ett annat är inloggat synkar två gånger i rad (ofarligt); att
+  ta bort ett konto tömmer den gemensamma bildcachen (beslut B14); kontobyte och tillägg av
+  konto har inget scenario i röktestet (Robolectric- och enhetstester); ingen CrowdSec-provning
+  (kräver den riktiga servern) och ingen prövning med två fysiska telefoner (röktestet spelar
+  partnern på den falska servern).
+<!-- /Fas 2 integration -->
+
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)
 
@@ -1889,8 +1923,9 @@ emulator (API 36): mätningarna, med median/min/max och P50–P99 i jobbsammanfa
 (`-Ptandem.baselineProfile.generate=true`, så profilen har riktiga klassnamn som AGP sedan mappar
 om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; checka in den som
 `app/src/main/baselineProfiles/baseline-prof.txt` (`androidx.profileinstaller` installerar den
-även vid sidladdning). Den incheckade profilen (35 473 regler, 5 713 för Tandems egna klasser)
-genererades efter integrationen av 0.2.0 (körning 40031229148 på integrationsgrenen); förnya den när startvägen, listan eller receptvyn ändrats mycket
+även vid sidladdning). Den incheckade profilen (38 082 regler, 7 701 för Tandems egna klasser)
+genererades vid integrationen av 0.3.0 (körning 40306538195 på integrationsgrenen; 0.2.0:s hade
+35 473 / 5 713); förnya den när startvägen, listan eller receptvyn ändrats mycket
 (Actions → Benchmark → Run workflow, ladda ned, ersätt filen). Mätjobbet kontrollerar att
 profilen når AGP:s sammanslagna ART-profil (antalet regler för `casa/moller/tandem` står i
 sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i APK:n som mäts:
@@ -1899,19 +1934,23 @@ sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i A
 `StartupBenchmark` och `RecipeListScrollBenchmark` med `BaselineProfileMode.Require`, så en
 APK utan installerbar profil fäller mätningen i stället för att tyst mäta utan profil.
 
-**Senaste mätningen (0.2.0-integrationen, 2026-10-23, körning 40031229148, emulator API 36):**
+**Senaste mätningen (0.3.0-integrationen, 2026-10-26, körning 40306538195 på
+integrationsgrenen, emulator API 36, med 0.2.0:s profil; jämfört med `main` samma dag, schemalagd
+körning 40296698566 på 82d8664, och 0.2.0-integrationen, körning 40031229148):**
 
-| Mätning | median | min | max |
+| Mätning | 0.3.0 median (min–max) | `main` 82d8664 median | 0.2.0 median |
 |---|---|---|---|
-| Kallstart med baslinjeprofil, första bildrutan (`timeToInitialDisplayMs`) | 1 875 ms | 1 279 ms | 3 434 ms |
-| Kallstart med baslinjeprofil, Idag färdig (`timeToFullDisplayMs`) | 4 457 ms | 3 237 ms | 4 941 ms |
-| Kallstart utan kompilering, första bildrutan | 1 495 ms | 1 170 ms | 2 343 ms |
-| Kallstart utan kompilering, Idag färdig | 3 448 ms | 3 114 ms | 5 023 ms |
+| Kallstart med baslinjeprofil, första bildrutan (`timeToInitialDisplayMs`) | 1 808 ms (1 145–2 851) | 1 947 ms | 1 875 ms |
+| Kallstart med baslinjeprofil, Idag färdig (`timeToFullDisplayMs`) | 3 884 ms (2 994–4 827) | 3 817 ms | 4 457 ms |
+| Kallstart utan kompilering, första bildrutan | 1 429 ms (1 290–1 931) | 1 350 ms | 1 495 ms |
+| Kallstart utan kompilering, Idag färdig | 3 347 ms (3 168–4 029) | 3 047 ms | 3 448 ms |
 
-Svep i receptlistan (5 iterationer, median 160 bildrutor): `frameDurationCpuMs` P50 97 ms, P90
-161 ms, P99 294 ms; `frameOverrunMs` P50 124 ms, P90 217 ms, P99 426 ms. Som i ci-banans
-körning är profilen inte snabbare på emulatorn och bildtiderna är långt över 16 ms: det är
-programvarurenderingen, inte appen, och siffrorna duger bara för att se trender mellan körningar.
+Svep i receptlistan: `frameDurationCpuMs` P50 94 ms, P90 162 ms, P99 349 ms; `frameOverrunMs`
+P50 117 ms, P90 217 ms, P99 430 ms (`main`: 86/148/328 och 107/199/459 ms). Kallstarten har inte
+blivit långsammare än 0.2.0; skillnaderna mot `main` samma dag ligger inom emulatorns spridning
+(min–max över 10 iterationer är större än skillnaden). Idag färdig utan kompilering är ca 10 %
+långsammare än `main` (Idag läser nu också favoriterna; på emulatorn går det inte att skilja
+från bruset). Profilen förnyades i samma ändring.
 
 **Emulatorns siffror är bara en trend** (programvaru-GPU, 2 vCPU, delad löpare). Kravet i plan
 §10 (kallstart under 1,5 s) mäts på telefonen: appen mäter själv sin kallstart och visar den
