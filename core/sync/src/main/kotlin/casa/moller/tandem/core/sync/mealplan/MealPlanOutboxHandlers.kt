@@ -67,7 +67,7 @@ internal class MealPlanOutboxHandler @Inject constructor(
 
     private suspend fun patch(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
-        val read = caller.call(remote, background = true, expectedNotFound = true) { mealPlanEdits.mealPlan(serverId) }
+        val read = caller.call(remote, background = true) { mealPlanEdits.mealPlan(serverId) }
         val current = when (read) {
             is Outcome.Failure -> return if (read.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(read.error)
             is Outcome.Success -> read.value
@@ -76,7 +76,7 @@ internal class MealPlanOutboxHandler @Inject constructor(
         val comparison = MealPlanPayloads.compare(body, MealPlanPayloads.parse(row.baseSnapshot), server)
         if (comparison.conflicting.isNotEmpty()) holdConflict(remote, row, serverId, comparison)
         if (comparison.send.isEmpty()) return OutboxResult.Dropped
-        val sent = caller.call(remote, background = true, expectedNotFound = true) {
+        val sent = caller.call(remote, background = true) {
             mealPlanEdits.patchMealPlan(serverId, comparison.send)
         }
         return when (sent) {
@@ -91,7 +91,7 @@ internal class MealPlanOutboxHandler @Inject constructor(
 
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Dropped
-        val sent = caller.call(remote, background = true, expectedNotFound = true) { mealPlanEdits.deleteMealPlan(serverId) }
+        val sent = caller.call(remote, background = true) { mealPlanEdits.deleteMealPlan(serverId) }
         return when {
             sent is Outcome.Success -> OutboxResult.Sent
             (sent as Outcome.Failure).error == TandemError.NotFound -> OutboxResult.Dropped

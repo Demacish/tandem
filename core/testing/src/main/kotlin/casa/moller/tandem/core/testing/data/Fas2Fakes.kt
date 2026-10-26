@@ -28,6 +28,7 @@ import casa.moller.tandem.core.model.mealplan.MealPlanUpdate
 import casa.moller.tandem.core.model.mealplan.MealPlanWeek
 import casa.moller.tandem.core.model.mealplan.MealType
 import casa.moller.tandem.core.model.mealplan.MealTypeDraft
+import casa.moller.tandem.core.model.mealplan.WeekShoppingIngredient
 import casa.moller.tandem.core.model.mealplan.WeekShoppingMeal
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
@@ -266,6 +267,15 @@ class FakeMealPlanRepository(
     val drafts = mutableListOf<MealPlanDraft>()
     val weekSelections = mutableListOf<WeekShoppingSelection>()
     val resolved = mutableListOf<Pair<MealPlanConflict, Boolean>>()
+
+    /** Phase 2 (koppling lane): the ingredients "Handla för veckan" shows per meal id. */
+    var ingredients: Map<Long, List<WeekShoppingIngredient>> = emptyMap()
+
+    /** The user's `mealplan_autoadd_shopping` as the preview reports it. */
+    var autoAddOnServer: Boolean = false
+
+    /** Every date range a preview was asked for. */
+    val previewRanges = mutableListOf<Pair<LocalDate, LocalDate>>()
     private var nextId = -1L
 
     override fun observeWeek(start: LocalDate): Flow<MealPlanWeek> = meals.map { list ->
@@ -337,11 +347,22 @@ class FakeMealPlanRepository(
 
     override suspend fun refresh(): Outcome<Unit> = failure?.let { Outcome.Failure(it) } ?: Outcome.Success(Unit)
 
-    override suspend fun weekShoppingPreview(start: LocalDate): Outcome<WeekShoppingPreview> {
-        val end = start.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY)
-        val inWeek = meals.value.filter { it.recipe != null && it.fromDate <= end && it.toDate >= start }
+    override suspend fun weekShoppingPreview(from: LocalDate, to: LocalDate): Outcome<WeekShoppingPreview> {
+        failure?.let { return Outcome.Failure(it) }
+        previewRanges += from to to
+        val inRange = meals.value.filter { it.recipe != null && it.fromDate <= to && it.toDate >= from }
         return Outcome.Success(
-            WeekShoppingPreview(inWeek.map { WeekShoppingMeal(it, alreadyOnList = it.onShoppingList, selected = !it.onShoppingList) }),
+            WeekShoppingPreview(
+                meals = inRange.map { meal ->
+                    WeekShoppingMeal(
+                        meal = meal,
+                        alreadyOnList = meal.onShoppingList,
+                        selected = !meal.onShoppingList,
+                        ingredients = ingredients[meal.id].orEmpty(),
+                    )
+                },
+                autoAddOnServer = autoAddOnServer,
+            ),
         )
     }
 

@@ -107,7 +107,7 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         goneBeforeSending(remote, row, serverId)?.let { return it }
-        return when (val sent = caller.call(remote, background = true, expectedNotFound = true) { shopping.patchEntry(serverId, body) }) {
+        return when (val sent = caller.call(remote, background = true) { shopping.patchEntry(serverId, body) }) {
             is Outcome.Success -> {
                 storeAnswer(remote, row, sent.value)
                 OutboxResult.Sent
@@ -120,7 +120,7 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
         goneBeforeSending(remote, row, serverId)?.let { return it }
-        return when (val sent = caller.call(remote, background = true, expectedNotFound = true) { shopping.deleteEntry(serverId) }) {
+        return when (val sent = caller.call(remote, background = true) { shopping.deleteEntry(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
             is Outcome.Failure -> notFoundOrFailed(remote, row, serverId, sent.error)
         }
@@ -256,7 +256,7 @@ internal class ShoppingListRecipeOutboxHandler @Inject constructor(
         request: suspend TandoorApi.(Long) -> Any,
     ): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
-        return when (val sent = caller.call(remote, background = true, expectedNotFound = true) { this.request(serverId) }) {
+        return when (val sent = caller.call(remote, background = true) { this.request(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
 
             is Outcome.Failure -> {
@@ -288,7 +288,7 @@ internal class FoodOutboxHandler @Inject constructor(
         val foodId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.op != OutboxOps.PATCH) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        return when (val sent = caller.call(remote, background = true, expectedNotFound = true) { supermarkets.patchFood(foodId, body) }) {
+        return when (val sent = caller.call(remote, background = true) { supermarkets.patchFood(foodId, body) }) {
             is Outcome.Success -> OutboxResult.Sent
 
             is Outcome.Failure -> if (sent.error == TandemError.NotFound) {
@@ -312,7 +312,7 @@ internal class AisleOrderOutboxHandler @Inject constructor(
         val relationId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.op != OutboxOps.PATCH) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        val sent = caller.call(remote, background = true, expectedNotFound = true) { supermarkets.patchRelation(relationId, body) }
+        val sent = caller.call(remote, background = true) { supermarkets.patchRelation(relationId, body) }
         return when (sent) {
             is Outcome.Success -> OutboxResult.Sent
 

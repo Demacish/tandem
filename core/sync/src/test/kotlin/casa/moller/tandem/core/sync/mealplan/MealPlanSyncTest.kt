@@ -350,7 +350,7 @@ class MealPlanSyncTest {
         drainAll()
         assertEquals(0, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
         val stopped = graph.guard.check(ACCOUNT_ID, background = true)
-        assertNull("[$version] an expected 404 does not trip the circuit breaker", stopped)
+        assertNull("[$version] one 404 alone does not trip the circuit breaker (five within 100 s do)", stopped)
     }
 
     @Test

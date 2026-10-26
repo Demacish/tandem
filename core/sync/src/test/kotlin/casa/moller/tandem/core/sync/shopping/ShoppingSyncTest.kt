@@ -54,7 +54,7 @@ import org.robolectric.annotation.ConscryptMode
  * stateful Tandoor answering in the recorded shapes of BOTH 2.6.13 and 2.7.1 ([FakeShoppingTandoor]):
  * offline changes and their drain (temporary ids, merges, order), entries deleted elsewhere drained
  * without a single 404, two phones with `updated_after` and the window rule, bulk checks, "köp
- * senare", guests, 404s outside the circuit breaker, 429, safe mode, accounts and demo mode.
+ * senare", guests, 404s counted by the circuit breaker, 429, safe mode, accounts and demo mode.
  */
 @RunWith(AndroidJUnit4::class)
 @ConscryptMode(ConscryptMode.Mode.OFF)
@@ -399,18 +399,29 @@ class ShoppingSyncTest {
         assertEquals(listOf("vara 4"), tandoor.all().map { it.food })
     }
 
+    /**
+     * Phase 2 (koppling lane): a 404 that still comes is done for the row, but it COUNTS in the
+     * circuit breaker (plan 3.5/4.1, CrowdSec `http-probing`): five within 100 s pause the outbox,
+     * the rest waits, and after the pause it is checked against the list again before anything is sent.
+     */
     @Test
-    fun a404AfterTheCheckIsDoneAndNotCountedByTheCircuitBreaker() = forEachVersion {
+    fun a404AfterTheCheckIsDoneAndCountedByTheCircuitBreaker() = forEachVersion {
         val ids = (1..6).map { tandoor.seed("vara $it") }
         read()
         // Deleted right after the full read this phone checks against: the PATCHes get their 404.
         tandoor.partnerDelete(ids)
         ids.forEach { ok(repo.update(it, amount = 5.0)) }
+        assertEquals(DrainResult.STOPPED, graph.outbox.drain(graph.remote))
+        assertEquals("[$version] the breaker stops after five 404s", 5, tandoor.notFound.size)
+        assertEquals(SyncPause.CIRCUIT_BREAKER, graph.guard.pauseAt(graph.guard.state.value, ACCOUNT_ID, graph.clock.millis))
+        assertEquals(1, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
+        graph.clock.advance(6.minutes)
         drainAll()
-        assertEquals(6, tandoor.notFound.size)
-        assertTrue(graph.guard.state.value.clientErrorTimes.isEmpty())
+        // The last row is checked against a new full read first and dropped without a request.
+        assertEquals(5, tandoor.notFound.size)
         assertNull(graph.guard.pauseAt(graph.guard.state.value, ACCOUNT_ID, graph.clock.millis))
-        assertEquals(6, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.NOT_FOUND })
+        assertEquals(5, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.NOT_FOUND })
+        assertTrue(graph.droppedChanges.recent.value.any { it.reason == DroppedChanges.DELETED_ELSEWHERE })
         assertTrue(entries().isEmpty())
     }
 

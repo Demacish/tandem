@@ -104,7 +104,7 @@ internal class RecipeBookOutboxHandler @Inject constructor(
 
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Dropped
-        return when (val sent = caller.call(remote, background = true, expectedNotFound = true) { books.deleteBook(serverId) }) {
+        return when (val sent = caller.call(remote, background = true) { books.deleteBook(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
             is Outcome.Failure -> if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
         }
@@ -167,7 +167,7 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
 
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Dropped
-        return when (val sent = caller.call(remote, background = true, expectedNotFound = true) { books.deleteEntry(serverId) }) {
+        return when (val sent = caller.call(remote, background = true) { books.deleteEntry(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
             is Outcome.Failure -> if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
         }
@@ -199,7 +199,7 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
         val current = when (
-            val read = caller.call(remote, background = true, confirmUnauthorized = true, expectedNotFound = true) {
+            val read = caller.call(remote, background = true, confirmUnauthorized = true) {
                 recipes.recipeJson(recipeId)
             }
         ) {
@@ -220,7 +220,7 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
         }
         val list = if (want) kept + buildJsonObject { put("name", WantToCook.KEYWORD) } else kept
         val body = JsonObject(mapOf("keywords" to JsonArray(list)))
-        val sent = caller.call(remote, background = true, expectedNotFound = true) { books.patchRecipe(recipeId, body) }
+        val sent = caller.call(remote, background = true) { books.patchRecipe(recipeId, body) }
         val patched = when (sent) {
             is Outcome.Failure -> return if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value

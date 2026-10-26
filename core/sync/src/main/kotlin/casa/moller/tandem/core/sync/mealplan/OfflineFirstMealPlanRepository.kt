@@ -170,7 +170,30 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
 
     // ------------------------------------------------------------------------------------ writes
 
-    override suspend fun create(draft: MealPlanDraft): Outcome<Long> = write { context ->
+    override suspend fun create(draft: MealPlanDraft): Outcome<Long> {
+        val created = createMeal(draft)
+        val recipeId = draft.recipeId
+        if (created is Outcome.Success && draft.addToShopping && recipeId != null && sources.current() == ActiveSource.Demo) {
+            // Phase 2 (koppling lane): demo mode has no server to act on `addshopping`, so the app
+            // puts the ingredients (on-hand foods left out) on the demo list itself, linked to the meal.
+            val ingredients = demoShoppingIngredients(recipeId)
+            if (ingredients.isNotEmpty()) {
+                shopping.get().addRecipe(RecipeShoppingRequest(recipeId, draft.servings, ingredients, mealPlanId = created.value))
+            }
+        }
+        return created
+    }
+
+    private suspend fun demoShoppingIngredients(recipeId: Long): Set<Long> {
+        val database = databases.get(ActiveSource.Demo.kind)
+        val accountId = ActiveSource.Demo.accountId
+        val onHand = database.referenceDao().getFoods(accountId).filter { it.onHand }.mapTo(HashSet()) { it.id }
+        return database.recipeDao().getDetail(accountId, recipeId)?.ingredients.orEmpty()
+            .filter { !it.isHeader && !it.foodName.isNullOrBlank() && !it.foodOnHand && it.foodId !in onHand }
+            .mapTo(LinkedHashSet()) { it.ingredientId }
+    }
+
+    private suspend fun createMeal(draft: MealPlanDraft): Outcome<Long> = write { context ->
         if (draft.recipeId == null && draft.title.isBlank()) return@write Outcome.Failure(TandemError.BadRequest())
         val type = context.mealType(draft.mealTypeId) ?: return@write Outcome.Failure(TandemError.BadRequest())
         val recipeName = draft.recipeId?.let { context.recipeName(it) }
@@ -187,6 +210,10 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             toDate = to.toString(),
             mealTypeId = type.id,
             recipeName = recipeName,
+            // Phase 2 (koppling lane): `addshopping` puts the ingredients on the list on the server;
+            // until the answer says so, the meal already counts as "on the list", so "Handla för
+            // veckan" never adds it a second time (plan 6.2: no duplicate rows).
+            shopping = draft.addToShopping && draft.recipeId != null && context.source is ActiveSource.Remote,
         )
         context.database.mealPlanDao().upsert(listOf(meal))
         context.queue(
@@ -316,16 +343,28 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
 
     // ---------------------------------------------------------------------- "Handla för veckan"
 
-    override suspend fun weekShoppingPreview(start: LocalDate): Outcome<WeekShoppingPreview> = catchingUnexpected {
+    override suspend fun weekShoppingPreview(from: LocalDate, to: LocalDate): Outcome<WeekShoppingPreview> = catchingUnexpected {
         val source = sources.current() as? ActiveSource.Stored
             ?: return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        if (source is ActiveSource.Remote) {
+            // Phase 2 (koppling lane, plan 6.2 steps 1-2): what the server or another device put on
+            // the list for a meal (`addshopping`, the web with `mealplan_autoadd_shopping`) is read
+            // first, so such a meal is "redan på listan" and never added twice. Offline (or when
+            // the server holds back) the stored list decides; both reads also send the outbox.
+            sync.refresh(source, background = false)
+            shopping.get().refresh(full = false)
+        }
         val database = databases.get(source.kind)
         val accountId = source.accountId
-        val week = observeWeek(start).first()
+        val stored = database.mealPlanDao().getRange(accountId, minOf(from, to).toString(), maxOf(from, to).toString())
+        val outbox = if (source is ActiveSource.Remote) database.outboxDao().observeAll(accountId).first() else emptyList()
+        val pending = PendingMeals.of(outbox)
+        val inRange = stored.map { it.toModel(pending = pending.contains(it.entry)) }
+            .sortedWith(compareBy({ it.fromDate }, { it.mealType.order }))
         val onList = database.mealPlanDao().getMealIdsOnShoppingList(accountId).toSet()
         val autoAdd = database.referenceDao().getUserPreference(accountId)?.mealPlanAutoAddShopping ?: false
-        val foodsOnHand = database.referenceDao().getFoods(accountId).filter { it.onHand }.mapTo(HashSet()) { it.id }
-        val meals = week.days.flatMap { it.meals }.distinctBy { it.id }.filter { it.recipe != null }.map { meal ->
+        val foods = database.referenceDao().getFoods(accountId).associateBy { it.id }
+        val meals = inRange.distinctBy { it.id }.filter { it.recipe != null }.map { meal ->
             val already = meal.onShoppingList || meal.id in onList
             val detail = database.recipeDao().getDetail(accountId, requireNotNull(meal.recipe).id)
             val factor = detail?.detail?.servings?.takeIf { it > 0 }?.let { meal.servings / it } ?: 1.0
@@ -333,13 +372,17 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
                 .filter { !it.isHeader && !it.foodName.isNullOrBlank() }
                 .sortedWith(compareBy({ it.stepPosition }, { it.position }))
                 .map { ingredient ->
-                    val onHand = ingredient.foodOnHand || ingredient.foodId?.let { it in foodsOnHand } == true
+                    val food = ingredient.foodId?.let { foods[it] }
+                    // The food table is newer than the stored recipe (a check on the list may have set it).
+                    val onHand = food?.onHand ?: ingredient.foodOnHand
                     WeekShoppingIngredient(
                         ingredientId = ingredient.ingredientId,
                         foodName = ingredient.foodName.orEmpty(),
                         amount = if (ingredient.noAmount) 0.0 else ingredient.amount * factor,
                         unitName = ingredient.unitName,
                         onHand = onHand,
+                        foodId = ingredient.foodId,
+                        categoryId = food?.supermarketCategoryId,
                     )
                 }
             WeekShoppingMeal(meal = meal, alreadyOnList = already, selected = !already, ingredients = ingredients)

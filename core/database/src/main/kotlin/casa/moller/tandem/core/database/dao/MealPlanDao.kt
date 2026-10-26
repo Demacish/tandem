@@ -113,8 +113,15 @@ abstract class MealPlanDao {
     @Query("DELETE FROM meal_plan WHERE account_id = :accountId AND server_id IN (:serverIds)")
     abstract suspend fun deleteByServerIds(accountId: String, serverIds: List<Long>)
 
-    /** Meals with entries on the stored shopping list ("Handla för veckan": "redan på listan"). */
-    @Query("SELECT DISTINCT meal_plan_id FROM shopping_entry WHERE account_id = :accountId AND meal_plan_id IS NOT NULL")
+    /**
+     * Meals with entries on the stored shopping list ("Handla för veckan": "redan på listan"): an
+     * entry or a list recipe linked to the meal (Phase 2 koppling lane: also a list recipe whose
+     * entries are not stored yet, e.g. one the app queued or the server just created).
+     */
+    @Query(
+        "SELECT meal_plan_id FROM shopping_entry WHERE account_id = :accountId AND meal_plan_id IS NOT NULL " +
+            "UNION SELECT meal_plan_id FROM shopping_list_recipe WHERE account_id = :accountId AND meal_plan_id IS NOT NULL",
+    )
     abstract suspend fun getMealIdsOnShoppingList(accountId: String): List<Long>
 
     private companion object {

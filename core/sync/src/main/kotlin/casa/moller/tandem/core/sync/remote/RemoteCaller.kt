@@ -27,15 +27,17 @@ internal class RemoteCaller @Inject constructor(private val guard: SyncGuard, pr
      *   object the user may not see (another member's private recipe, FACTS "Fas 1"). Before such
      *   a 403 stops every request, one cheap authenticated read checks the token; if the token
      *   works, the object is reported as [TandemError.NotFound] instead.
-     * @param expectedNotFound Phase 2 (inköp-data lane): a 404 is an expected answer (an update or
-     *   delete of a row another device may have deleted, plan 3.5) and is not counted by the
-     *   circuit breaker; the caller treats it as done. Every other answer is recorded as usual.
+     *
+     * Every 404 and 400 counts in the circuit breaker (plan 3.5 "404 och 400 räknas ändå", 4.1),
+     * also one a Phase 2 sender treats as done (a row another device deleted): each is a line in
+     * the proxy's log that CrowdSec's `http-probing` counts, so five within 100 s pause the outbox.
+     * The senders check the list or the meal first, so such a 404 is rare (Phase 2 koppling lane;
+     * the inköp-data lane's `expectedNotFound` that kept them out is gone).
      */
     suspend fun <T> call(
         remote: ActiveSource.Remote,
         background: Boolean,
         confirmUnauthorized: Boolean = false,
-        expectedNotFound: Boolean = false,
         block: suspend TandoorApi.() -> T,
     ): Outcome<T> {
         guard.check(remote.accountId, background)?.let { return Outcome.Failure(it) }
@@ -48,7 +50,6 @@ internal class RemoteCaller @Inject constructor(private val guard: SyncGuard, pr
                 return Outcome.Failure(TandemError.NotFound)
             }
         }
-        if (expectedNotFound && error == TandemError.NotFound) return result
         guard.record(remote.accountId, sources.tokenFingerprint(remote.accountId), error)
         return result
     }

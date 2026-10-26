@@ -105,7 +105,13 @@ data class WeekShoppingMeal(
     val ingredients: List<WeekShoppingIngredient> = emptyList(),
 )
 
-/** One ingredient of a meal in the preview; on-hand foods start deselected (plan 6.2 step 4). */
+/**
+ * One ingredient of a meal in the preview; on-hand foods start deselected (plan 6.2 step 4).
+ *
+ * @property foodId the server's food (Phase 2 koppling lane): ingredients of different meals with
+ *   the same food and unit are merged into one line of the preview ([WeekShoppingLine]).
+ * @property categoryId the food's aisle (`supermarket_category`), null = "Övrigt".
+ */
 data class WeekShoppingIngredient(
     val ingredientId: Long,
     val foodName: String,
@@ -113,7 +119,45 @@ data class WeekShoppingIngredient(
     val unitName: String? = null,
     val onHand: Boolean = false,
     val selected: Boolean = !onHand,
+    val foodId: Long? = null,
+    val categoryId: Long? = null,
 )
 
 /** What the user picked in "Handla för veckan": per meal, the ingredient ids to add. */
 data class WeekShoppingSelection(val ingredientIdsByMeal: Map<Long, Set<Long>>)
+
+// Phase 2 (koppling lane): the merged preview of "Handla för veckan" (Stitch handla_f_r_veckan:
+// "Vispgrädde 5 dl totalt (3 dl Svamppasta + 2 dl Fisksoppa)"). Built by core:domain
+// `WeekShoppingMerge`; the entries still go on the list per meal (each linked to its meal), so
+// removing a meal removes its own rows.
+
+/**
+ * One ingredient of one meal inside a merged [WeekShoppingLine].
+ *
+ * @property mealId the meal (its id as the repository gave it, maybe temporary).
+ * @property mealName what the meal is called ("Svamppasta").
+ */
+data class WeekShoppingPart(val mealId: Long, val mealName: String, val ingredientId: Long, val amount: Double)
+
+/**
+ * One line of the merged preview: every chosen meal's ingredient with the same food and unit,
+ * amounts added ("5 dl vispgrädde").
+ *
+ * @property key stable key of the food + unit (lists, selection).
+ * @property amount the sum of [parts]; 0 when no part has an amount ("salt").
+ * @property onHand the food is marked "har hemma" (starts unticked, plan 6.2 step 4).
+ * @property parts where it comes from, in meal order.
+ */
+data class WeekShoppingLine(
+    val key: String,
+    val foodName: String,
+    val unitName: String?,
+    val amount: Double,
+    val onHand: Boolean,
+    val categoryId: Long?,
+    val parts: List<WeekShoppingPart>,
+) {
+    /** More than one meal needs it (the "Summerad" tag). */
+    val merged: Boolean
+        get() = parts.map { it.mealId }.distinct().size > 1
+}

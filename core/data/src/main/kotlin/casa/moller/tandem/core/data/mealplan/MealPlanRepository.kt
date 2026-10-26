@@ -11,7 +11,9 @@ import casa.moller.tandem.core.model.mealplan.MealTypeDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 
 /**
  * The meal plan (plan 3.5, 6.2 "Veckan", features #15-#16), offline first: creating, moving and
@@ -62,7 +64,17 @@ interface MealPlanRepository {
      * already on the list (`?mealplan=` / `shopping`), and their ingredients with on-hand foods
      * deselected. Online it checks the server; offline it uses what is stored.
      */
-    suspend fun weekShoppingPreview(start: LocalDate): Outcome<WeekShoppingPreview>
+    suspend fun weekShoppingPreview(start: LocalDate): Outcome<WeekShoppingPreview> =
+        weekShoppingPreview(start, start.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY))
+
+    /**
+     * Phase 2 (koppling lane): "Handla för veckan" for the days [from]..[to] (both included, a
+     * date range the user picked). Online it first reads the list and the plan from the server,
+     * so rows the server or another device added for a meal (`mealplan_autoadd_shopping` on the
+     * web, `addshopping`) mark it "redan på listan"; offline it uses what is stored. Ingredients
+     * carry their food and aisle, so the screen can merge them (core:domain `WeekShoppingMerge`).
+     */
+    suspend fun weekShoppingPreview(from: LocalDate, to: LocalDate): Outcome<WeekShoppingPreview>
 
     /** Adds the selection to the list, linked to each meal (`shopping-list-recipe` with `mealplan`), never twice. */
     suspend fun addWeekToShopping(selection: WeekShoppingSelection): Outcome<Unit>
