@@ -54,6 +54,12 @@ import org.junit.rules.ExternalResource
  * Phase 1b (integration lane): Shakshuka's last step gets two short text timers
  * ([TIMER_STEP_TEXT]), and `POST /api/cook-log/` answers 201 with the sent entry and records its
  * body ([cookLogPosts]).
+ *
+ * Phase 2 (integration lane): the shopping list ([shopping]) and the meal plan ([mealPlan]) are
+ * stateful, so the test can play "the partner" and "the web" and compare the server's state with
+ * what the app did; both start empty. `addshopping` (and, in a test, the web with
+ * `mealplan_autoadd_shopping`) puts a recipe's ingredients on the list. Every answer with status
+ * 404 is kept in [notFound].
  */
 class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private val server = MockWebServer()
@@ -74,6 +80,18 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     /** True: every request is answered by closing the connection (see the class comment). */
     @Volatile
     var offline: Boolean = false
+
+    /** Phase 2: `METHOD path` of every request answered with 404 ("a 404 in the Caddy log"). */
+    val notFound: MutableList<String> = CopyOnWriteArrayList()
+
+    /** Phase 2: the stateful shopping list (empty until a test seeds it). */
+    val shopping = FakeShoppingList(::template)
+
+    /** Phase 2: the stateful meal plan (empty until a test plans on "the web"). */
+    val mealPlan = FakeMealPlan(::template).also { plan ->
+        plan.onList = { mealId -> shopping.hasListRecipeFor(mealId) }
+        plan.onAddShopping = { meal -> shopping.serverAddMeal(meal.id, meal.recipe ?: 0, meal.servings, foodsOf(meal.recipe ?: 0)) }
+    }
 
     /** `https://localhost:<port>`: replaces the recorded server address in every body. */
     private val origin: String get() = "https://localhost:${server.port}"
@@ -102,7 +120,10 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         server.protocolNegotiationEnabled = false
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse = try {
-                respond(request).also { Log.i(TAG, "${request.method} ${request.url.encodedPath} -> ${it.code}") }
+                respond(request).also {
+                    Log.i(TAG, "${request.method} ${request.url.encodedPath} -> ${it.code}")
+                    if (it.code == NOT_FOUND) notFound += "${request.method} ${request.url.encodedPath}"
+                }
             } catch (e: Exception) {
                 // Visible in logcat; the app then sees a 500 instead of a dropped connection.
                 Log.e(TAG, "${request.method} ${request.url.encodedPath} failed in the fake server", e)
@@ -164,6 +185,14 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             method == "GET" && USER_PATH.matches(path) -> fixture("11-user-by-id")
 
+            // --- Phase 2 (integration lane): the stateful shopping list and meal plan. ---
+            else -> shopping.answer(request) ?: mealPlan.answer(request) ?: respondRecorded(request, method, path)
+        }
+    }
+
+    /** The recorded (stateless) answers after login. */
+    private fun respondRecorded(request: RecordedRequest, method: String, path: String): MockResponse {
+        return when {
             // --- Phase 1 (sync lane): the first sync and the background sync after a login read
             // the recipe index, overviews, small tables, meal plan and cook log, and send view logs.
             method == "GET" && path == "/api/recipe/" -> recipeList(request.url)
@@ -271,6 +300,21 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             .build()
     }
 
+    /** Phase 2: the recorded body of [name] (`fas2/...`), a template for the stateful answers. */
+    private fun template(name: String): JsonObject =
+        json.parseToJsonElement(assets.open("$name.json").bufferedReader().use { it.readText() })
+            .jsonObject.getValue("response").jsonObject.getValue("body").jsonObject
+
+    /** Phase 2: the foods of a recorded recipe's ingredients, in order (what `addshopping` puts on the list). */
+    fun foodsOf(recipeId: Long): List<String> {
+        val recording = RECIPES_BY_ID[recipeId.toString()] ?: return emptyList()
+        return template(recording).getValue("steps").jsonArray.flatMap { step ->
+            step.jsonObject.getValue("ingredients").jsonArray.mapNotNull { ingredient ->
+                (ingredient.jsonObject["food"] as? JsonObject)?.get("name")?.jsonPrimitive?.content
+            }
+        }.distinct()
+    }
+
     /** A small two-coloured PNG: something Coil can decode and show as a recipe photo. */
     private fun generatedPng(): ByteArray {
         val bitmap = Bitmap.createBitmap(IMAGE_WIDTH, IMAGE_HEIGHT, Bitmap.Config.ARGB_8888)
@@ -301,6 +345,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private const val CA_ASSET = "tandem-smoke-test-ca.pem"
         private const val FIXTURE_CHECK = "01-server-settings-no-auth.json"
         private const val TAG = "FakeTandoor"
+        private const val NOT_FOUND = 404
         private val VALID_TOKENS = setOf(LOGIN_TOKEN, DEVICE_TOKEN)
         private val TOKENS_BY_ID = mapOf("1" to LOGIN_TOKEN, "2" to DEVICE_TOKEN)
         private val ACCESS_TOKEN_PATH = Regex("^/api/access-token/(\\d+)/$")
@@ -311,12 +356,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/keyword/" to "fas1/keyword-list",
             "/api/food/" to "fas1/food-list",
             "/api/unit/" to "fas1/unit-list",
-            "/api/meal-type/" to "fas1/meal-type-list",
-            "/api/meal-plan/" to "fas1/meal-plan-list",
             "/api/cook-log/" to "fas1/cook-log-list-recipe",
         )
         private val PHASE2_LISTS = mapOf(
-            "/api/shopping-list-entry/" to "fas2/shopping-list-entry-list",
             "/api/shopping-list/" to "fas2/shopping-list-list",
             "/api/supermarket/" to "fas2/supermarket-list",
             "/api/supermarket-category/" to "fas2/supermarket-category-list",
