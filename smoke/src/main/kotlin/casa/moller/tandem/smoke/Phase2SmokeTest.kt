@@ -373,7 +373,7 @@ class Phase2SmokeTest {
         while (SystemClock.uptimeMillis() < deadline) {
             SystemClock.sleep(SETTLE_POLL_MS)
             val again = app.device.findObject(selector) ?: return current
-            val now = again.visibleBounds
+            val now = runCatching { again.visibleBounds }.getOrNull() ?: continue
             current = again
             if (now == bounds) return current
             bounds = now
@@ -392,7 +392,9 @@ class Phase2SmokeTest {
             val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
             while (SystemClock.uptimeMillis() < deadline) {
                 val current = app.device.findObject(row(food)) ?: return
-                if (current.isChecked) {
+                // Stale: the row left the list between finding and reading it (it was checked).
+                val checked = runCatching { current.isChecked }.getOrElse { return }
+                if (checked) {
                     app.waitUntilGone(row(food))
                     return
                 }
