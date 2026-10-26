@@ -2063,7 +2063,16 @@ den kod som skickas:
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt
-  rullningsläge (Mer). 0.2.0 krävde tre gröna körningar i rad på samma commit.
+  rullningsläge (Mer). 0.2.0 krävde tre gröna körningar i rad på samma commit, och 0.3.0 likaså.
+  Fas 2: knappar i bottenark (lägg till, redigera, Planera måltid) styrs med
+  tillgänglighetsåtgärder i stället för tryck (`TandemApp.appNodes`, `clickNodeWithText`,
+  `setNodeText`, `imeEnter`): noderna läses direkt från tillgänglighetstjänsten, också de som
+  Compose rapporterar som ej synliga (en knapp under tangentbordet eller utanför arkets
+  rullning, som UiAutomator utelämnar). Ett tryck mot tangentbordets "Done" eller en dold knapp
+  kunde annars träffa arkets skrim och stänga arket utan att lägga till. "Tillagt" betyder att
+  arket är öppet och fältet tömts (ViewModel tömmer det först efter ett lyckat tillägg).
+  Kontroller av att skärmen bytt använder resurs-id (`week:agenda`, `week-shopping:list`), inte
+  att en rubrik rullat bort.
 - **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 36,
   `google_apis`, x86_64, KVM) med `reactivecircus/android-emulator-runner` och kör
   `scripts/ci/smoke-run.sh`. Steget fallerar om ett test fallerar, om appen kraschar, om ingen
