@@ -91,7 +91,7 @@ class TandemApp(val device: UiDevice) {
             dismissForeignAnrDialog()
             selectors.flatMap { device.findObjects(it) }
                 .minByOrNull { it.visibleBounds.width().toLong() * it.visibleBounds.height() }
-                ?.let { return it }
+                ?.let { return if (scrolls > 0) settled(selectors, it) else it }
             if (SystemClock.uptimeMillis() > deadline) {
                 throw AssertionError("Not on screen within $UI_TIMEOUT_MS ms: $selectors (app running: ${isRunning()})")
             }
@@ -104,6 +104,28 @@ class TandemApp(val device: UiDevice) {
                 SystemClock.sleep(POLL_MS)
             }
         }
+    }
+
+    /**
+     * Phase 2 (konto lane): a swipe can leave the content flinging after `waitForIdle`, so an
+     * element found mid-fling would be clicked where it WAS (Mer grew by a row and the logout
+     * button then appeared while the list still moved). Waits until the element's bounds stop
+     * changing (at most [SETTLE_TIMEOUT_MS]) and returns it found again.
+     */
+    private fun settled(selectors: List<BySelector>, found: UiObject2): UiObject2 {
+        var current = found
+        var bounds = current.visibleBounds
+        val deadline = SystemClock.uptimeMillis() + SETTLE_TIMEOUT_MS
+        while (SystemClock.uptimeMillis() < deadline) {
+            SystemClock.sleep(POLL_MS)
+            val again = selectors.flatMap { device.findObjects(it) }
+                .minByOrNull { it.visibleBounds.width().toLong() * it.visibleBounds.height() } ?: return current
+            val now = again.visibleBounds
+            current = again
+            if (now == bounds) return current
+            bounds = now
+        }
+        return current
     }
 
     /**
@@ -326,6 +348,9 @@ class TandemApp(val device: UiDevice) {
         private const val OFFLINE_SETTLE_MS = 3_000L
         private const val LAUNCH_TIMEOUT_MS = 30_000L
         private const val POLL_MS = 250L
+
+        /** How long a found element may keep moving after a swipe (a fling) before it is clicked anyway. */
+        private const val SETTLE_TIMEOUT_MS = 3_000L
         private const val MAX_SCROLLS = 6
         private const val SWIPE_STEPS = 20
         private const val MAX_LABEL_DEPTH = 4
