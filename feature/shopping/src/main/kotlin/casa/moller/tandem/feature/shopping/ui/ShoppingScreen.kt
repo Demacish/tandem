@@ -185,7 +185,10 @@ fun ShoppingScreen(
                     format = format,
                     onAction = onAction,
                     autoFocus = true,
+                    // Phase 2 (integration lane): the keyboard covered "Lägg till" below the preview
+                    // and the suggestions with no way to scroll to it (release smoke test).
                     modifier = Modifier
+                        .imePadding()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = TandemTheme.spacing.screenHorizontal)
                         .padding(bottom = TandemTheme.spacing.xl),
