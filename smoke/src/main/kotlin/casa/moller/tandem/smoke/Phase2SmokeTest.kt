@@ -465,6 +465,15 @@ class Phase2SmokeTest {
         hideKeyboard()
         // The sheet lays out again once the keyboard is gone: the button is clicked at rest, and
         // again while it still says "Add n items" (a click that took effect empties the field).
+        for (attempt in 1..MAX_NUDGES) {
+            if (app.clickableWithText(button).any { app.device.hasObject(it) }) break
+            // Still covered: the sheet's content scrolls (imePadding); swiped in its upper part.
+            hideKeyboard()
+            val x = app.device.displayWidth / 2
+            val from = (app.device.displayHeight * SHEET_FROM).toInt()
+            app.device.swipe(x, from, x, (app.device.displayHeight * SHEET_TO).toInt(), SWIPE_STEPS)
+            app.device.waitForIdle()
+        }
         for (attempt in 1..TAP_ATTEMPTS) {
             clickAtRest(app.clickableWithText(button))
             if (app.device.wait(Until.gone(By.text(button)), TAP_WAIT_MS) == true) break
@@ -479,7 +488,11 @@ class Phase2SmokeTest {
         app.waitUntilGone(By.text("Add to the list"))
     }
 
-    /** Back while the keyboard (an input-method window) is shown: closes only the keyboard. */
+    /**
+     * Back while the keyboard (an input-method window, e.g. Gboard's `...inputmethod.latin`, seen
+     * in the window dumps; `uiAutomation.windows` alone missed it once) is shown: closes only the
+     * keyboard.
+     */
     private fun hideKeyboard() {
         if (!keyboardShown()) return
         app.device.pressBack()
@@ -487,7 +500,9 @@ class Phase2SmokeTest {
         while (keyboardShown() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(SETTLE_POLL_MS)
     }
 
-    private fun keyboardShown(): Boolean = instrumentation.uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+    private fun keyboardShown(): Boolean =
+        app.device.hasObject(By.pkg(KEYBOARD_PACKAGE)) ||
+            instrumentation.uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
 
     private fun goOffline() {
         tandoor.offline = true
@@ -575,6 +590,9 @@ class Phase2SmokeTest {
         const val SWIPE_STEPS = 20
         const val CLOSE_ATTEMPTS = 3
         const val TAP_ATTEMPTS = 3
+        const val SHEET_FROM = 0.45
+        const val SHEET_TO = 0.15
+        val KEYBOARD_PACKAGE: Pattern = Pattern.compile(".*inputmethod.*")
         const val TAP_WAIT_MS = 4_000L
         const val SETTLE_MS = 3_000L
         const val SETTLE_POLL_MS = 250L
