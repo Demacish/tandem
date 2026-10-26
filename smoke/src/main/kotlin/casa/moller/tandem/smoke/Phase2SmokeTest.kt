@@ -1,6 +1,7 @@
 package casa.moller.tandem.smoke
 
 import android.os.SystemClock
+import android.view.accessibility.AccessibilityWindowInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -438,15 +439,9 @@ class Phase2SmokeTest {
         app.waitFor(By.text("Add to the list"))
         app.type(0, text)
         val button = if (count == 1) "Add 1 item" else "Add $count items"
-        // The keyboard can cover the button below the preview and the suggestions: the sheet is
-        // scrolled in its upper part (a swipe on the keyboard would type instead).
-        for (attempt in 1..MAX_NUDGES) {
-            if (app.clickableWithText(button).any { app.device.hasObject(it) }) break
-            val x = app.device.displayWidth / 2
-            val from = (app.device.displayHeight * SHEET_FROM).toInt()
-            app.device.swipe(x, from, x, (app.device.displayHeight * SHEET_TO).toInt(), SWIPE_STEPS)
-            app.device.waitForIdle()
-        }
+        // The keyboard covers the button below the preview and the suggestions (the sheet does
+        // not scroll above it): Back closes only the keyboard while it is shown.
+        hideKeyboard()
         app.waitForClickable(button)
         app.clickableWithText(button).firstNotNullOf { app.device.findObject(it) }.click()
         // Added: the field is emptied and the button says "Add" again; the sheet stays open.
@@ -458,6 +453,17 @@ class Phase2SmokeTest {
         }
         app.waitUntilGone(By.text("Add to the list"))
     }
+
+    /** Back while the keyboard (an input-method window) is shown: closes only the keyboard. */
+    private fun hideKeyboard() {
+        if (!keyboardShown()) return
+        app.device.pressBack()
+        val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
+        while (keyboardShown() && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(SETTLE_POLL_MS)
+    }
+
+    private fun keyboardShown(): Boolean =
+        instrumentation.uiAutomation.windows.any { it.type == AccessibilityWindowInfo.TYPE_INPUT_METHOD }
 
     private fun goOffline() {
         tandoor.offline = true
@@ -544,8 +550,6 @@ class Phase2SmokeTest {
         const val MAX_NUDGES = 4
         const val SWIPE_STEPS = 20
         const val CLOSE_ATTEMPTS = 3
-        const val SHEET_FROM = 0.45
-        const val SHEET_TO = 0.15
         const val TAP_ATTEMPTS = 3
         const val TAP_WAIT_MS = 4_000L
         const val SETTLE_MS = 3_000L
