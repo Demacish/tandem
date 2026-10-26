@@ -60,8 +60,8 @@ class AppViewModelTest {
     fun destinationsFollowTheSession() {
         assertEquals(AppDestination.Loading, AppViewModel.resolveDestination(null, holdOnboarding = false))
         assertEquals(AppDestination.Onboarding, AppViewModel.resolveDestination(Session.NoAccount, false))
-        assertEquals(AppDestination.Shell, AppViewModel.resolveDestination(LOGGED_IN, false))
-        assertEquals(AppDestination.Shell, AppViewModel.resolveDestination(Session.Demo, false))
+        assertEquals(SHELL_A, AppViewModel.resolveDestination(LOGGED_IN, false))
+        assertEquals(AppDestination.Shell(AppViewModel.SHELL_DEMO), AppViewModel.resolveDestination(Session.Demo, false))
         assertEquals(AppDestination.Onboarding, AppViewModel.resolveDestination(LOGGED_IN, true))
         assertEquals(
             AppDestination.Recovery,
@@ -105,7 +105,7 @@ class AppViewModelTest {
     fun logInAgainOpensTheIntroAtTheServerStepForTheSameServer() {
         sessions.state.value = LOGGED_IN
         val vm = newViewModel()
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(SHELL_A, vm.destination())
 
         vm.logInAgain("https://tandoor.example.com")
         assertEquals("the stored account stays, the intro is shown", AppDestination.Onboarding, vm.destination())
@@ -113,7 +113,7 @@ class AppViewModelTest {
         assertEquals("https://tandoor.example.com", vm.uiState.value.onboardingServerUrl)
 
         vm.onOnboardingFinished()
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(SHELL_A, vm.destination())
         assertEquals(null, vm.uiState.value.onboardingServerUrl)
     }
 
@@ -127,7 +127,7 @@ class AppViewModelTest {
         assertTrue("the intro offers Cancel", vm.uiState.value.canCancelOnboarding)
 
         vm.cancelLogInAgain()
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(SHELL_A, vm.destination())
         assertEquals("the session is unchanged", LOGGED_IN, vm.uiState.value.session)
         assertFalse(vm.uiState.value.canCancelOnboarding)
         assertFalse(vm.uiState.value.startOnboardingAtServer)
@@ -152,7 +152,7 @@ class AppViewModelTest {
     @Test
     fun loggedInUserGoesStraightHome() {
         sessions.state.value = LOGGED_IN
-        assertEquals(AppDestination.Shell, newViewModel().destination())
+        assertEquals(SHELL_A, newViewModel().destination())
     }
 
     @Test
@@ -164,7 +164,7 @@ class AppViewModelTest {
         assertEquals("login alone does not leave the intro", AppDestination.Onboarding, vm.destination())
 
         vm.onOnboardingFinished()
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(SHELL_A, vm.destination())
     }
 
     @Test
@@ -173,7 +173,7 @@ class AppViewModelTest {
         vm.onDemoStarted()
         assertEquals("still no demo session yet", AppDestination.Onboarding, vm.destination())
         sessions.state.value = Session.Demo
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(SHELL_A, vm.destination())
     }
 
     @Test
@@ -201,13 +201,55 @@ class AppViewModelTest {
     fun logoutFromTheShellReturnsToTheIntro() = runTest {
         sessions.state.value = LOGGED_IN
         val vm = newViewModel()
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(AppDestination.Shell(AppViewModel.SHELL_DEMO), vm.destination())
 
         sessions.logout(revokeToken = true)
 
         assertEquals(AppDestination.Onboarding, vm.destination())
         sessions.state.value = LOGGED_IN
         assertEquals("the next login is held in the intro again", AppDestination.Onboarding, vm.destination())
+    }
+
+    // --- Phase 2 (konto lane) ---
+
+    @Test
+    fun switchingAccountsStartsAFreshShell() {
+        sessions.state.value = LOGGED_IN
+        val vm = newViewModel()
+        assertEquals(SHELL_A, vm.destination())
+
+        sessions.state.value = LOGGED_IN_B
+
+        assertEquals("a new key: the old account's back stacks and ViewModels go", AppDestination.Shell("b"), vm.destination())
+    }
+
+    @Test
+    fun addAccountOpensAnEmptyServerStepThatCanBeCancelled() {
+        sessions.state.value = LOGGED_IN
+        val vm = newViewModel()
+
+        vm.addAccount()
+
+        assertEquals(AppDestination.Onboarding, vm.destination())
+        assertTrue(vm.uiState.value.startOnboardingAtServer)
+        assertEquals(null, vm.uiState.value.onboardingServerUrl)
+        assertTrue(vm.uiState.value.canCancelOnboarding)
+
+        vm.cancelLogInAgain()
+        assertEquals("back to the same account", SHELL_A, vm.destination())
+    }
+
+    @Test
+    fun addAccountShowsTheNewAccountAfterTheIntro() {
+        sessions.state.value = LOGGED_IN
+        val vm = newViewModel()
+        vm.addAccount()
+
+        sessions.state.value = LOGGED_IN_B
+        assertEquals("held in the intro until its last step", AppDestination.Onboarding, vm.destination())
+
+        vm.onOnboardingFinished()
+        assertEquals(AppDestination.Shell("b"), vm.destination())
     }
 
     @Test
@@ -222,7 +264,7 @@ class AppViewModelTest {
         // "Log in again": the account was stored after all, so the shell opens, not a fresh intro.
         vm.acknowledgeRecovery()
         sessions.state.value = LOGGED_IN
-        assertEquals(AppDestination.Shell, vm.destination())
+        assertEquals(SHELL_A, vm.destination())
     }
 
     @Test
@@ -330,5 +372,10 @@ class AppViewModelTest {
             serverVersion = "2.6.13",
             compatibility = ServerCompatibility.SUPPORTED,
         )
+
+        val SHELL_A = AppDestination.Shell("a")
+
+        /** Konto lane: a second stored account on another server. */
+        val LOGGED_IN_B = LOGGED_IN.copy(account = LOGGED_IN.account.copy(id = "b", baseUrl = "https://other.example.org", userId = 3))
     }
 }

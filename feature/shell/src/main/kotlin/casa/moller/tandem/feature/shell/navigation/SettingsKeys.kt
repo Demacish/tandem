@@ -43,6 +43,8 @@ internal val NavKey.isMorePage: Boolean
     get() = when (this) {
         AppearanceSettingsKey, CookingSettingsKey, SyncSettingsKey, PermissionsKey, DiagnosticsKey,
         LanguageKey, AboutKey, LicensesKey, is LicenseTextKey,
+        // Phase 2 (konto lane).
+        AccountsKey,
         -> true
 
         else -> false

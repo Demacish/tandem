@@ -44,7 +44,8 @@ import casa.moller.tandem.recovery.RecoveryRoute
 /**
  * Top level: one Navigation 3 back stack whose single entry follows the session (intro, shell or
  * recovery). Each entry gets its own ViewModelStore, so the intro starts fresh after a logout and
- * the shell's state ends with the account.
+ * the shell's state ends with the account (also on a switch to another account: the shell entry
+ * is keyed by the account, Phase 2 konto lane).
  */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -109,6 +110,8 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                     onConnectTandoor = viewModel::connectFromDemo,
                     crashNotice = crashNotice,
                     onLogInAgain = viewModel::logInAgain,
+                    // Phase 2 (konto lane): Mer → Accounts and servers → "Add account".
+                    onAddAccount = viewModel::addAccount,
                     // Phase 1b: a tapped timer notification or lock-screen alarm (MainActivity).
                     timerRequest = state.timerRequest,
                     onTimerRequestHandled = viewModel::onTimerRequestHandled,

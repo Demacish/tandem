@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.shell
 
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
+import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
@@ -64,6 +65,13 @@ data class ShellUiState(
      * "Konto/server": kapabiliteter); empty in demo mode and before the first check.
      */
     val serverFeatures: Set<ServerFeature> = emptySet(),
+    // --- Phase 2 (konto lane): the account card and Mer → Konton och servrar ---
+    /** The shown account's household name (plan 8.6), null when unknown or none; never in demo mode. */
+    val household: String? = null,
+    /** The user's group in the shown account's space (`SpacePermissionsRepository`); a guest is shown clearly. */
+    val role: SpaceRole = SpaceRole.UNKNOWN,
+    /** How many accounts are stored on the device (the "Konton och servrar" row's summary). */
+    val storedAccounts: Int = 0,
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo

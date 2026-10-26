@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 2 (konto lane): Mer → Accounts and servers (plan 6.2 "Konto/server", Stitch konto_servrar). -->
+<resources>
+    <string name="accounts_title">Accounts and servers</string>
+    <string name="accounts_intro">Switch between your Tandoor accounts. One account is active at a time, and each keeps its own recipes, list and unsent changes on this device.</string>
+    <string name="accounts_section_active">Active account</string>
+    <string name="accounts_section_other">Other accounts</string>
+    <string name="accounts_section_saved">Saved accounts</string>
+    <string name="accounts_active_chip">Active</string>
+    <string name="accounts_household">Household</string>
+    <string name="accounts_role">Role</string>
+    <string name="accounts_role_admin">Administrator</string>
+    <string name="accounts_role_user">Member</string>
+    <string name="accounts_role_guest">Guest – read only</string>
+    <string name="accounts_role_guest_body">A guest can read recipes, the list and the week plan, and cook, but cannot change anything.</string>
+    <string name="accounts_login">Login</string>
+    <string name="accounts_token_created">This device’s own token</string>
+    <string name="accounts_token_pasted">A pasted API token</string>
+    <plurals name="accounts_pending">
+        <item quantity="one">%d change waiting to be sent</item>
+        <item quantity="other">%d changes waiting to be sent</item>
+    </plurals>
+    <string name="accounts_sync_now">Sync now</string>
+    <string name="accounts_sync_started">Sync started.</string>
+    <string name="accounts_switch_to">Switch to %1$s</string>
+    <string name="accounts_remove_named">Remove %1$s</string>
+    <string name="accounts_add">Add account</string>
+    <string name="accounts_add_body">Log in to another Tandoor server, or as another user. The new account becomes the active one.</string>
+    <string name="accounts_none_other">There are no other accounts on this device.</string>
+    <string name="accounts_demo_title">You are using demo mode</string>
+    <string name="accounts_demo_body">Demo mode is not an account and never talks to a server. Switch to a saved account, or connect your Tandoor.</string>
+    <string name="accounts_connect">Connect your Tandoor</string>
+    <string name="accounts_remove_title">Remove account?</string>
+    <string name="accounts_remove_body">%1$s on %2$s and everything Tandem keeps for it are removed from this device. Nothing is deleted in Tandoor, and you can add the account again later.</string>
+    <string name="accounts_remove_pending_body">They are deleted together with the account. Export them first if you want to enter them in Tandoor by hand.</string>
+    <string name="accounts_export">Export changes</string>
+    <string name="accounts_export_share_title">Unsent changes</string>
+    <string name="accounts_remove_confirm">Remove</string>
+    <string name="accounts_switched">Switched account.</string>
+    <string name="accounts_switch_failed">Could not switch account: secure storage on this device is not available.</string>
+    <string name="accounts_removed">Account removed.</string>
+    <string name="accounts_removed_token_not_revoked">Account removed on this device, but its token could not be revoked. Delete it in Tandoor under Settings → API.</string>
+    <string name="accounts_removed_pasted_token">Account removed on this device. Its pasted token is still valid; delete it in Tandoor under Settings → API if you no longer need it.</string>
+    <string name="accounts_remove_failed">Could not remove the account: secure storage on this device is not available.</string>
+    <string name="accounts_export_failed">Could not read the unsent changes.</string>
+    <string name="accounts_more_row">Accounts and servers</string>
+    <plurals name="accounts_more_row_count">
+        <item quantity="one">%d account on this device</item>
+        <item quantity="other">%d accounts on this device</item>
+    </plurals>
+</resources>

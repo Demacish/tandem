@@ -40,8 +40,13 @@ sealed interface AppDestination {
     /** The intro: welcome, server, login, connected (feature:onboarding). */
     data object Onboarding : AppDestination
 
-    /** The tabbed app for a logged-in account or demo mode (feature:shell). */
-    data object Shell : AppDestination
+    /**
+     * The tabbed app for a logged-in account or demo mode (feature:shell). Phase 2 (konto lane):
+     * keyed by [source] (the account's id, or demo mode), so switching accounts starts a fresh
+     * shell (back stacks, ViewModels and saved state of the old account are dropped, as after a
+     * logout) instead of showing account B's recipe 12 where account A's was open.
+     */
+    data class Shell(val source: String) : AppDestination
 
     /** Stored logins or settings could not be read (plan 4.2 step 7). */
     data object Recovery : AppDestination
@@ -205,6 +210,20 @@ class AppViewModel @Inject constructor(
         if (session.value is Session.LoggedIn && savedStateHandle.get<Boolean>(KEY_LOG_IN_AGAIN) == true) releaseOnboarding()
     }
 
+    /**
+     * Phase 2 (konto lane): "Add account" under Mer → Accounts and servers. The intro opens at the
+     * server step with an empty address, while the current account (or demo mode) stays as it is;
+     * "Cancel" returns to it ([cancelLogInAgain]). A login stores the new account next to the
+     * others and makes it the active one; logging in to an account that is already stored (same
+     * server and user) replaces only its token and keeps its data and unsent changes.
+     */
+    fun addAccount() {
+        savedStateHandle[KEY_SERVER_URL] = null
+        savedStateHandle[KEY_START_AT_SERVER] = true
+        savedStateHandle[KEY_LOG_IN_AGAIN] = true
+        savedStateHandle[KEY_HOLD_ONBOARDING] = true
+    }
+
     /** "Connect your Tandoor" in demo mode: leave demo and open the intro at the server step. */
     fun connectFromDemo() {
         savedStateHandle[KEY_START_AT_SERVER] = true
@@ -245,6 +264,9 @@ class AppViewModel @Inject constructor(
         const val KEY_LOG_IN_AGAIN = "app.logInAgain"
         const val KEY_TIMER_REQUEST = "app.timerRequest"
         const val KEY_TIMER_REQUEST_SOURCE = "app.timerRequestSource"
+
+        /** [AppDestination.Shell.source] in demo mode (account ids are UUIDs). */
+        const val SHELL_DEMO = "demo"
         private const val NONE = -1L
 
         private fun LongArray.toTimerRequest(): TimerOpenRequest? {
@@ -261,8 +283,9 @@ class AppViewModel @Inject constructor(
 
             Session.NoAccount -> AppDestination.Onboarding
 
-            Session.Demo, is Session.LoggedIn ->
-                if (holdOnboarding) AppDestination.Onboarding else AppDestination.Shell
+            Session.Demo -> if (holdOnboarding) AppDestination.Onboarding else AppDestination.Shell(SHELL_DEMO)
+
+            is Session.LoggedIn -> if (holdOnboarding) AppDestination.Onboarding else AppDestination.Shell(session.account.id)
         }
     }
 }

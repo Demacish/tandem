@@ -163,6 +163,13 @@ internal class RecordingActions : ShellActions {
     override fun stopTimer(id: Long) {
         stoppedTimers += id
     }
+
+    // Phase 2 (konto lane)
+    var exports = 0
+
+    override fun exportPendingChanges() {
+        exports++
+    }
 }
 
 /**

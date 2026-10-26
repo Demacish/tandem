@@ -11,6 +11,9 @@ import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.data.sync.SyncRepository
+import casa.moller.tandem.core.model.account.AccountSummary
+import casa.moller.tandem.core.model.account.Household
+import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -30,8 +33,10 @@ import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerState
+import casa.moller.tandem.core.testing.data.FakeAccountDirectory
 import casa.moller.tandem.core.testing.data.FakeServerStatusRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeTimerController
 import casa.moller.tandem.core.ui.AppStatus
 import kotlin.time.Duration.Companion.minutes
@@ -114,6 +119,10 @@ class ShellViewModelTest {
     private val settings = FakeSettingsRepository()
     private val timers = FakeTimerController()
 
+    // Phase 2 (konto lane): household, role and the stored accounts on the account card.
+    private val accountDirectory = FakeAccountDirectory()
+    private val permissions = FakeSpacePermissionsRepository()
+
     private fun newViewModel() = ShellViewModel(
         sessionRepository = sessions,
         appearanceRepository = appearance,
@@ -125,7 +134,61 @@ class ShellViewModelTest {
         serverStatus = serverStatus,
         settingsRepository = settings,
         timerController = timers,
+        accounts = accountDirectory,
+        permissions = permissions,
     ) { nowMillis }
+
+    // --- Phase 2 (konto lane) ---
+
+    @Test
+    fun theAccountCardShowsHouseholdRoleAndStoredAccounts() {
+        accountDirectory.household.value = Household(3, "Familjen Exempel")
+        accountDirectory.accounts.value = listOf(
+            AccountSummary(ACCOUNT, isActive = true),
+            AccountSummary(ACCOUNT.copy(id = "account-2", username = "bo"), isActive = false),
+        )
+        permissions.setGuest(true)
+
+        val state = newViewModel().uiState.value
+
+        assertEquals("Familjen Exempel", state.household)
+        assertEquals(SpaceRole.GUEST, state.role)
+        assertEquals(2, state.storedAccounts)
+    }
+
+    @Test
+    fun demoModeShowsNoHouseholdOrRole() {
+        sessions.state.value = Session.Demo
+        accountDirectory.household.value = Household(3, "Familjen Exempel")
+
+        val state = newViewModel().uiState.value
+
+        assertEquals(null, state.household)
+        assertEquals(SpaceRole.UNKNOWN, state.role)
+    }
+
+    @Test
+    fun aSwitchedAccountGetsItsOwnTimerSource() {
+        val vm = newViewModel()
+        assertEquals(ACCOUNT.id, vm.uiState.value.timerSource)
+
+        // A timer of account-1 opens the timer list while account-2 is shown, never cook mode here.
+        sessions.state.value = LOGGED_IN.copy(account = ACCOUNT.copy(id = "account-2"))
+
+        assertEquals("account-2", vm.uiState.value.timerSource)
+    }
+
+    @Test
+    fun exportingUnsentChangesBeforeALogoutSharesTheActiveAccountsChanges() = runTest {
+        accountDirectory.accounts.value = listOf(AccountSummary(ACCOUNT, isActive = true, pendingChanges = 2))
+        val vm = newViewModel()
+
+        vm.pendingExports.test {
+            vm.exportPendingChanges()
+            assertTrue(awaitItem().contains("\"count\": 2"))
+        }
+        assertEquals(listOf(ACCOUNT.id), accountDirectory.exports)
+    }
 
     // --- komplettering-3: the in-app notice for a server update (plan B18 fallback) ---
 

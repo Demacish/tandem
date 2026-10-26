@@ -3,8 +3,10 @@ package casa.moller.tandem.feature.shell
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.common.AppBuildInfo
+import casa.moller.tandem.core.data.account.AccountDirectory
 import casa.moller.tandem.core.data.demo.DemoDataRepository
 import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -13,6 +15,7 @@ import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.data.settings.SettingsRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.data.timer.TimerController
+import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
@@ -27,6 +30,8 @@ import casa.moller.tandem.core.model.timer.TimerSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +39,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -63,6 +69,12 @@ interface ShellActions {
 
     /** "Stop" on the timer bar: the ringing timer [id] stops ringing. */
     fun stopTimer(id: Long)
+
+    /**
+     * Phase 2 (konto lane): "Export changes" in the logout dialog: the shown account's unsent
+     * changes as JSON for the share sheet ([ShellViewModel.pendingExports]), before they are deleted.
+     */
+    fun exportPendingChanges()
 }
 
 /**
@@ -88,6 +100,9 @@ class ShellViewModel internal constructor(
     private val serverStatus: ServerStatusRepository,
     settingsRepository: SettingsRepository,
     private val timerController: TimerController,
+    // Phase 2 (konto lane): household, role and stored accounts for the account card.
+    private val accounts: AccountDirectory,
+    permissions: SpacePermissionsRepository,
     /** Monotonic time in milliseconds, for the resume throttle. */
     private val elapsedMillis: () -> Long,
 ) : ViewModel(),
@@ -105,6 +120,8 @@ class ShellViewModel internal constructor(
         serverStatus: ServerStatusRepository,
         settingsRepository: SettingsRepository,
         timerController: TimerController,
+        accounts: AccountDirectory,
+        permissions: SpacePermissionsRepository,
     ) : this(
         sessionRepository = sessionRepository,
         appearanceRepository = appearanceRepository,
@@ -116,6 +133,8 @@ class ShellViewModel internal constructor(
         serverStatus = serverStatus,
         settingsRepository = settingsRepository,
         timerController = timerController,
+        accounts = accounts,
+        permissions = permissions,
         elapsedMillis = { System.nanoTime() / NANOS_PER_MILLI },
     )
 
@@ -149,13 +168,25 @@ class ShellViewModel internal constructor(
         Phase1b(settings.toSummary(capabilities), timers, features, pending)
     }
 
+    // Phase 2 (konto lane): the household and the role on the account card, the stored accounts' count.
+    private val accountCard = combine(
+        accounts.observeHousehold(),
+        permissions.permissions.map { it.role }.distinctUntilChanged(),
+        accounts.observeAccounts().map { it.size }.distinctUntilChanged(),
+    ) { household, role, count -> AccountCard(household?.name, role, count) }
+
+    private val exports = Channel<String>(Channel.BUFFERED)
+
+    /** Phase 2 (konto lane): the exported unsent changes, for the share sheet (one-off). */
+    val pendingExports: Flow<String> = exports.receiveAsFlow()
+
     val uiState: StateFlow<ShellUiState> = combine(
         combine(session, appearanceRepository.themeMode) { current, theme -> current to theme },
         operations,
         syncPause,
-        serverUpdate,
+        combine(serverUpdate, accountCard) { update, card -> update to card },
         phase1b,
-    ) { (current, theme), ops, pause, update, extras ->
+    ) { (current, theme), ops, pause, (update, card), extras ->
         val mode = current.toShellMode()
         ShellUiState(
             mode = mode,
@@ -177,6 +208,9 @@ class ShellViewModel internal constructor(
             timerSource = current.timerSource,
             pendingChanges = extras.pendingChanges.takeIf { mode is ShellMode.Connected } ?: 0,
             serverFeatures = extras.serverFeatures.takeIf { mode is ShellMode.Connected }.orEmpty(),
+            household = card.household.takeIf { mode is ShellMode.Connected },
+            role = card.role.takeIf { mode is ShellMode.Connected } ?: SpaceRole.UNKNOWN,
+            storedAccounts = card.storedAccounts,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
@@ -245,6 +279,16 @@ class ShellViewModel internal constructor(
         syncRepository.requestSync(SyncReason.USER_REFRESH)
     }
 
+    override fun exportPendingChanges() {
+        val account = (session.value as? Session.LoggedIn)?.account ?: return
+        viewModelScope.launch {
+            when (val export = accounts.exportPendingChanges(account.id)) {
+                is Outcome.Success -> exports.send(export.value)
+                is Outcome.Failure -> messages.post(ShellMessage.EXPORT_FAILED)
+            }
+        }
+    }
+
     override fun stopTimer(id: Long) {
         viewModelScope.launch { timerController.stopRinging(id) }
     }
@@ -265,6 +309,8 @@ class ShellViewModel internal constructor(
         val loggingOut: Boolean = false,
         val resettingDemo: Boolean = false,
     )
+
+    private data class AccountCard(val household: String?, val role: SpaceRole, val storedAccounts: Int)
 
     private data class Phase1b(
         val settings: SettingsSummary,

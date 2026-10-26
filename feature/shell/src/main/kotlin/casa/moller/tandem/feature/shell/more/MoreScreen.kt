@@ -50,9 +50,11 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.CollectionsBookmark
 import casa.moller.tandem.core.designsystem.icon.Restaurant
+import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.account.TokenOrigin
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerFeature
@@ -69,7 +71,9 @@ import casa.moller.tandem.feature.shell.SettingsSummary
 import casa.moller.tandem.feature.shell.ShellActions
 import casa.moller.tandem.feature.shell.ShellMode
 import casa.moller.tandem.feature.shell.ShellUiState
+import casa.moller.tandem.feature.shell.accounts.roleLabel
 import casa.moller.tandem.feature.shell.navigation.AboutKey
+import casa.moller.tandem.feature.shell.navigation.AccountsKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
@@ -142,6 +146,21 @@ internal fun MoreScreen(
                         ShellMode.Demo -> DemoBanner(onConnect = onConnectTandoor)
 
                         ShellMode.Unavailable -> Unit
+                    }
+
+                    // Phase 2 (konto lane): Mer → Konton och servrar (also in demo mode with stored accounts).
+                    if (connected != null || state.storedAccounts > 0) {
+                        SettingsGroup {
+                            SettingsRow(
+                                icon = TandemIcons.Dns,
+                                title = stringResource(R.string.accounts_more_row),
+                                supporting = state.storedAccounts.takeIf { it > 0 }?.let { count ->
+                                    pluralStringResource(R.plurals.accounts_more_row_count, count, count)
+                                },
+                                onClick = { onOpenPage(AccountsKey) },
+                                selected = selectedPage == AccountsKey,
+                            )
+                        }
                     }
 
                     // Phase 2 (books lane): Mer → Receptböcker (plan 6.1 "Mer: Böcker").
@@ -268,6 +287,7 @@ internal fun MoreScreen(
             pendingChanges = state.pendingChanges,
             canSendNow = !state.syncOffline && !state.loginExpired && !state.isSafeMode,
             onSendFirst = actions::retrySync,
+            onExport = actions::exportPendingChanges,
             onConfirm = { revoke ->
                 confirmLogout = false
                 actions.logout(revoke)
@@ -311,6 +331,17 @@ private fun AccountCard(account: AccountSummary, state: ShellUiState, onCheckAga
             DetailLine(icon = TandemIcons.Dns, label = stringResource(R.string.shell_account_server), value = account.serverUrl)
             account.spaceName?.let {
                 DetailLine(icon = TandemIcons.Home, label = stringResource(R.string.shell_account_space), value = it)
+            }
+            // Phase 2 (konto lane): the household (plan 8.6) and the role; a guest is shown clearly (#42).
+            state.household?.let {
+                DetailLine(icon = TandemIcons.HomeFilled, label = stringResource(R.string.accounts_household), value = it)
+            }
+            if (state.role == SpaceRole.GUEST) {
+                StatusChip(label = stringResource(R.string.accounts_role_guest), icon = TandemIcons.Lock, tone = TandemTone.Warning)
+            } else {
+                roleLabel(state.role)?.let {
+                    DetailLine(icon = TandemIcons.Shield, label = stringResource(R.string.accounts_role), value = it)
+                }
             }
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(spacing.sm),
@@ -395,7 +426,7 @@ internal fun ServerFeature.label(): Int = when (this) {
 
 /** First letter of the name on a tomato circle; decorative (the name is next to it). */
 @Composable
-private fun Avatar(name: String, modifier: Modifier = Modifier) {
+internal fun Avatar(name: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(56.dp)
@@ -413,7 +444,7 @@ private fun Avatar(name: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun DetailLine(icon: ImageVector, label: String, value: String, maxLines: Int = 2) {
+internal fun DetailLine(icon: ImageVector, label: String, value: String, maxLines: Int = 2) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -430,7 +461,7 @@ private fun DetailLine(icon: ImageVector, label: String, value: String, maxLines
 }
 
 @Composable
-private fun CompatibilityChip(compatibility: ServerCompatibility) {
+internal fun CompatibilityChip(compatibility: ServerCompatibility) {
     when (compatibility) {
         ServerCompatibility.SUPPORTED -> StatusChip(
             label = stringResource(R.string.shell_compat_supported),
@@ -485,6 +516,7 @@ private fun LogoutDialog(
     pendingChanges: Int,
     canSendNow: Boolean,
     onSendFirst: () -> Unit,
+    onExport: () -> Unit,
     onConfirm: (revokeToken: Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -501,7 +533,7 @@ private fun LogoutDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                 if (pendingChanges > 0) {
-                    PendingChangesWarning(count = pendingChanges, canSendNow = canSendNow, onSendFirst = onSendFirst)
+                    PendingChangesWarning(count = pendingChanges, canSendNow = canSendNow, onSendFirst = onSendFirst, onExport = onExport)
                     Text(stringResource(R.string.shell_logout_body_pending))
                 } else {
                     Text(stringResource(R.string.shell_logout_body))
@@ -547,9 +579,12 @@ private fun LogoutDialog(
     )
 }
 
-/** "2 changes have not been sent" with what logging out does to them, and "Send first". */
+/**
+ * "2 changes have not been sent" with what logging out does to them, "Export changes" (Phase 2,
+ * konto lane: never deleted without a way to keep them) and "Send first".
+ */
 @Composable
-private fun PendingChangesWarning(count: Int, canSendNow: Boolean, onSendFirst: () -> Unit) {
+private fun PendingChangesWarning(count: Int, canSendNow: Boolean, onSendFirst: () -> Unit, onExport: () -> Unit) {
     val spacing = TandemTheme.spacing
     Surface(
         shape = MaterialTheme.shapes.medium,
@@ -571,13 +606,21 @@ private fun PendingChangesWarning(count: Int, canSendNow: Boolean, onSendFirst: 
                     Text(text = stringResource(R.string.shell_logout_pending_body), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            if (canSendNow) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                 TandemPrimaryButton(
-                    text = stringResource(R.string.shell_logout_send_first),
-                    onClick = onSendFirst,
+                    text = stringResource(R.string.accounts_export),
+                    onClick = onExport,
                     size = TandemButtonSize.Small,
-                    leadingIcon = TandemIcons.Sync,
+                    leadingIcon = TandemIcons.Share,
                 )
+                if (canSendNow) {
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.shell_logout_send_first),
+                        onClick = onSendFirst,
+                        size = TandemButtonSize.Small,
+                        leadingIcon = TandemIcons.Sync,
+                    )
+                }
             }
         }
     }

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 2 (konto lane): Mer → Konton och servrar (plan 6.2 "Konto/server", Stitch konto_servrar). -->
+<resources>
+    <string name="accounts_title">Konton och servrar</string>
+    <string name="accounts_intro">Byt mellan dina Tandoor-konton. Ett konto i taget är aktivt, och varje konto behåller sina egna recept, sin lista och sina osända ändringar på enheten.</string>
+    <string name="accounts_section_active">Aktivt konto</string>
+    <string name="accounts_section_other">Andra konton</string>
+    <string name="accounts_section_saved">Sparade konton</string>
+    <string name="accounts_active_chip">Aktivt</string>
+    <string name="accounts_household">Hushåll</string>
+    <string name="accounts_role">Roll</string>
+    <string name="accounts_role_admin">Administratör</string>
+    <string name="accounts_role_user">Medlem</string>
+    <string name="accounts_role_guest">Gäst – bara läsning</string>
+    <string name="accounts_role_guest_body">En gäst kan läsa recept, listan och veckans matsedel och laga mat, men inte ändra något.</string>
+    <string name="accounts_login">Inloggning</string>
+    <string name="accounts_token_created">Enhetens egen token</string>
+    <string name="accounts_token_pasted">En inklistrad API-token</string>
+    <plurals name="accounts_pending">
+        <item quantity="one">%d ändring väntar på att skickas</item>
+        <item quantity="other">%d ändringar väntar på att skickas</item>
+    </plurals>
+    <string name="accounts_sync_now">Synka nu</string>
+    <string name="accounts_sync_started">Synken har startat.</string>
+    <string name="accounts_switch_to">Byt till %1$s</string>
+    <string name="accounts_remove_named">Ta bort %1$s</string>
+    <string name="accounts_add">Lägg till konto</string>
+    <string name="accounts_add_body">Logga in på en annan Tandoor-server eller som en annan användare. Det nya kontot blir det aktiva.</string>
+    <string name="accounts_none_other">Det finns inga andra konton på enheten.</string>
+    <string name="accounts_demo_title">Du använder demoläget</string>
+    <string name="accounts_demo_body">Demoläget är inget konto och pratar aldrig med en server. Byt till ett sparat konto eller anslut din Tandoor.</string>
+    <string name="accounts_connect">Anslut din Tandoor</string>
+    <string name="accounts_remove_title">Ta bort kontot?</string>
+    <string name="accounts_remove_body">%1$s på %2$s och allt som Tandem sparat för kontot tas bort från enheten. Inget raderas i Tandoor, och du kan lägga till kontot igen senare.</string>
+    <string name="accounts_remove_pending_body">De raderas tillsammans med kontot. Exportera dem först om du vill föra in dem i Tandoor för hand.</string>
+    <string name="accounts_export">Exportera ändringar</string>
+    <string name="accounts_export_share_title">Osända ändringar</string>
+    <string name="accounts_remove_confirm">Ta bort</string>
+    <string name="accounts_switched">Kontot är bytt.</string>
+    <string name="accounts_switch_failed">Det gick inte att byta konto: den säkra lagringen på enheten går inte att använda.</string>
+    <string name="accounts_removed">Kontot är borttaget.</string>
+    <string name="accounts_removed_token_not_revoked">Kontot är borttaget från enheten, men dess token gick inte att återkalla. Radera den i Tandoor under Inställningar → API.</string>
+    <string name="accounts_removed_pasted_token">Kontot är borttaget från enheten. Den inklistrade token gäller fortfarande; radera den i Tandoor under Inställningar → API om du inte behöver den längre.</string>
+    <string name="accounts_remove_failed">Det gick inte att ta bort kontot: den säkra lagringen på enheten går inte att använda.</string>
+    <string name="accounts_export_failed">Det gick inte att läsa de osända ändringarna.</string>
+    <string name="accounts_more_row">Konton och servrar</string>
+    <plurals name="accounts_more_row_count">
+        <item quantity="one">%d konto på enheten</item>
+        <item quantity="other">%d konton på enheten</item>
+    </plurals>
+</resources>

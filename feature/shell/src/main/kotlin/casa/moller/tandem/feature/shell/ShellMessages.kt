@@ -16,6 +16,15 @@ enum class ShellMessage(@StringRes val text: Int) {
     SETTINGS_NOT_SAVED(R.string.shell_settings_not_saved),
     DEMO_DATA_RESET(R.string.shell_demo_data_reset),
     DEMO_DATA_RESET_FAILED(R.string.shell_demo_data_reset_failed),
+
+    // --- Phase 2 (konto lane) ---
+    SWITCHED_ACCOUNT(R.string.accounts_switched),
+    SWITCH_FAILED(R.string.accounts_switch_failed),
+    ACCOUNT_REMOVED(R.string.accounts_removed),
+    ACCOUNT_REMOVED_TOKEN_NOT_REVOKED(R.string.accounts_removed_token_not_revoked),
+    ACCOUNT_REMOVED_PASTED_TOKEN(R.string.accounts_removed_pasted_token),
+    ACCOUNT_REMOVE_FAILED(R.string.accounts_remove_failed),
+    EXPORT_FAILED(R.string.accounts_export_failed),
 }
 
 /**

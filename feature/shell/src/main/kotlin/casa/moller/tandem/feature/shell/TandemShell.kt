@@ -74,12 +74,16 @@ import casa.moller.tandem.feature.recipes.navigation.BooksKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
+import casa.moller.tandem.feature.shell.accounts.AccountsPage
+import casa.moller.tandem.feature.shell.accounts.RouteAccountsPage
+import casa.moller.tandem.feature.shell.accounts.sharePendingChanges
 import casa.moller.tandem.feature.shell.more.AboutScreen
 import casa.moller.tandem.feature.shell.more.LanguageScreen
 import casa.moller.tandem.feature.shell.more.LicenseTextScreen
 import casa.moller.tandem.feature.shell.more.LicensesScreen
 import casa.moller.tandem.feature.shell.more.MoreScreen
 import casa.moller.tandem.feature.shell.navigation.AboutKey
+import casa.moller.tandem.feature.shell.navigation.AccountsKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
@@ -130,12 +134,15 @@ import java.time.LocalDate
  *   the intro at the server step for the same server (plan 4.1, 5.4).
  * @param timerRequest a tapped timer notification or lock-screen alarm (Phase 1b): opened once
  *   with [ShellNavigationState.openTimer], then [onTimerRequestHandled] is called.
+ * @param onAddAccount Phase 2 (konto lane): "Add account" under Mer → Konton och servrar; the app
+ *   opens the intro at the server step, cancellable back to the current account.
  */
 @Composable
 fun TandemShell(
     onConnectTandoor: () -> Unit,
     modifier: Modifier = Modifier,
     onLogInAgain: (serverUrl: String) -> Unit = {},
+    onAddAccount: () -> Unit = {},
     viewModel: ShellViewModel = hiltViewModel(),
     languageController: LanguageController = rememberLanguageController(),
     crashNotice: @Composable () -> Unit = {},
@@ -160,6 +167,11 @@ fun TandemShell(
             currentOnTimerRequestHandled()
         }
     }
+    // Phase 2 (konto lane): "Export changes" in the logout dialog opens the share sheet.
+    val context = LocalContext.current
+    LaunchedEffect(viewModel, context) {
+        viewModel.pendingExports.collect { sharePendingChanges(context, it) }
+    }
     var language by remember(languageController) { mutableStateOf(languageController.current) }
     ShellScaffold(
         state = state,
@@ -175,6 +187,7 @@ fun TandemShell(
         modifier = modifier,
         crashNotice = crashNotice,
         onLogInAgain = onLogInAgain,
+        onAddAccount = onAddAccount,
     )
 }
 
@@ -258,6 +271,9 @@ internal fun ShellScaffold(
     navigationSuiteType: NavigationSuiteType = shellNavigationSuiteType(currentShellWindowSize()),
     crashNotice: @Composable () -> Unit = {},
     onLogInAgain: (serverUrl: String) -> Unit = {},
+    // Phase 2 (konto lane): Mer → Konton och servrar.
+    accountsPage: AccountsPage = RouteAccountsPage,
+    onAddAccount: () -> Unit = {},
 ) {
     // The demo banner can be put away for this session; the "Demo" chip in the top bar stays.
     var demoBannerDismissed by rememberSaveable { mutableStateOf(false) }
@@ -511,6 +527,14 @@ internal fun ShellScaffold(
             }
             entry<LicenseTextKey>(metadata = ListDetailSceneStrategy.detailPane()) { key ->
                 LicenseTextScreen(license = key.license, onNavigateBack = { navigation.goBack() })
+            }
+            // --- Phase 2 (konto lane): the stored accounts, beside the More list on wide windows. ---
+            entry<AccountsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                accountsPage.Accounts(
+                    onNavigateBack = { navigation.goBack() },
+                    onAddAccount = onAddAccount,
+                    onConnectTandoor = onConnectTandoor,
+                )
             }
             // --- Phase 1 (idag-ui lane): what safe mode means (feature #2), from the banner. ---
             entry<SafeModeInfoKey> {
