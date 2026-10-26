@@ -466,6 +466,7 @@ class Phase2SmokeTest {
         // at all, so its absence says nothing).
         val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
         val typed = By.clazz(EDIT_TEXT).text(text)
+        app.capture("phase2-add-typed")
         while (app.device.hasObject(typed)) {
             if (SystemClock.uptimeMillis() > deadline) throw AssertionError("\"$button\" was never added (keyboard or button)")
             val done = app.device.findObject(By.pkg(KEYBOARD_PACKAGE).desc("Done"))
@@ -474,10 +475,12 @@ class Phase2SmokeTest {
             }
             if (target != null && runCatching { target.click() }.isSuccess) {
                 app.device.wait(Until.gone(typed), TAP_WAIT_MS)
+                app.capture("phase2-add-after-${if (done != null) "done-key" else "button"}")
             } else {
                 SystemClock.sleep(SETTLE_POLL_MS)
             }
         }
+        assertTrue("Nothing was added: the field still holds \"$text\"", !app.device.hasObject(By.clazz(EDIT_TEXT).textStartsWith(text)))
         repeat(CLOSE_ATTEMPTS) {
             if (!app.device.hasObject(By.text("Add to the list"))) return@repeat
             app.device.pressBack()
