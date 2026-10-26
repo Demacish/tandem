@@ -457,9 +457,12 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
         private suspend fun createRowOf(entity: String, localId: Long): OutboxEntity? =
             database.outboxDao().getAllFor(accountId, entity).firstOrNull { it.op == OutboxOps.CREATE && it.localId == localId }
 
-        /** The CREATE a change of an offline object must wait for: only one being sent (an unsent one merges). */
+        /**
+         * The CREATE a change of an offline object must wait for: one being sent, failed, or attempted
+         * before (it may be on the server: 0.3.0 review, fix-data); an unsent one never attempted merges.
+         */
         private suspend fun sendingCreateOf(entity: String, localId: Long): Long? =
-            createRowOf(entity, localId)?.takeIf { it.state !in UNSENT }?.id
+            createRowOf(entity, localId)?.takeUnless { it.state in UNSENT && it.attempts == 0 }?.id
     }
 
     private companion object {

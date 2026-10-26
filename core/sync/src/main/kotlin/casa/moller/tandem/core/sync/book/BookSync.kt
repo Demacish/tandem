@@ -23,8 +23,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * The books' part of the small tables (plan 3.5 "Små tabeller": full re-read with the other small
@@ -38,6 +41,10 @@ import kotlinx.coroutines.flow.update
  * - a smart book whose filter the device cannot evaluate (anything but keyword ids) gets its
  *   recipes from `GET /api/recipe/?filter=<id>`, kept in memory for this process
  *   ([SmartBookResults]); offline after a restart it shows nothing and says why.
+ * - [lock] is held from before the two reads until the rows are replaced, and by the book outbox
+ *   handlers while they send (0.3.0 review, fix-data, like `ShoppingReader.lock`): an answer built
+ *   before a CREATE that is answered meanwhile never deletes the new favourite or entry. Lock
+ *   order: `OutboxSender`'s mutex, then [lock]; a book read never drains.
  */
 @Singleton
 internal class BookSync @Inject constructor(
@@ -46,24 +53,29 @@ internal class BookSync @Inject constructor(
     private val sources: ActiveSources,
     private val smart: SmartBookResults,
 ) {
+    /** Held by the books' read and by the book outbox handlers while they send. */
+    val lock = Mutex()
+
     suspend fun sync(remote: ActiveSource.Remote, background: Boolean) {
         val database = databases.get(remote.kind)
         val accountId = remote.accountId
         val dao = database.recipeBookDao()
-        val books = fetchAll(remote, background) { page -> taxonomy.recipeBooks(page) }
-        val entries = fetchAll(remote, background) { page -> taxonomy.recipeBookEntries(book = null, page = page) }
-        if (!sameSource(remote)) return
-        val bookList = (books as? Outcome.Success)?.value?.takeIf { it.complete }?.items
-        val entryList = (entries as? Outcome.Success)?.value?.takeIf { it.complete }?.items
-        if (bookList != null && entryList != null) {
-            val wantIds = dao.getKeywordIdsNamed(accountId, WantToCook.KEYWORD).toSet()
-            dao.inTransaction {
-                dao.replaceServerRows(
-                    accountId,
-                    books = bookList.mapNotNull { it.toEntity(accountId, wantIds) },
-                    entries = entryList.mapNotNull { it.toEntity(accountId) },
-                )
-                reapplyQueued(database, accountId)
+        lock.withLock {
+            val books = fetchAll(remote, background) { page -> taxonomy.recipeBooks(page) }
+            val entries = fetchAll(remote, background) { page -> taxonomy.recipeBookEntries(book = null, page = page) }
+            if (!sameSource(remote)) return
+            val bookList = (books as? Outcome.Success)?.value?.takeIf { it.complete }?.items
+            val entryList = (entries as? Outcome.Success)?.value?.takeIf { it.complete }?.items
+            if (bookList != null && entryList != null) {
+                val wantIds = dao.getKeywordIdsNamed(accountId, WantToCook.KEYWORD).toSet()
+                dao.inTransaction {
+                    dao.replaceServerRows(
+                        accountId,
+                        books = bookList.mapNotNull { it.toEntity(accountId, wantIds) },
+                        entries = entryList.mapNotNull { it.toEntity(accountId) },
+                    )
+                    reapplyQueued(database, accountId)
+                }
             }
         }
         val serverSmart = dao.getBooks(accountId).filter { book ->
@@ -132,14 +144,26 @@ internal class SmartBookResults @Inject constructor() {
 }
 
 /**
- * The books lane's step of a sync run (`SyncEngine`, after the shopping list): with the small
- * tables, the user's role in the space (guest mode #42, [SpaceRoleSync])
- * and the books ([BookSync]).
+ * The books lane's steps of a sync run (`SyncEngine`): [role] before the shopping list, [run] (the
+ * books, [BookSync]) after it, both with the small tables.
  */
-internal class BookSyncStep @Inject constructor(private val roles: SpaceRoleSync, private val books: BookSync) {
+internal class BookSyncStep @Inject constructor(
+    private val roles: SpaceRoleSync,
+    private val books: BookSync,
+    private val databases: TandemDatabaseFactory,
+) {
+    /**
+     * The user's role in the space (guest mode #42, [SpaceRoleSync]) with the small tables, and in
+     * every run while it is not known yet (0.3.0 review, fix-data): it is read BEFORE the shopping
+     * list and the outbox, so nothing a guest queued before the role was known is ever sent.
+     */
+    suspend fun role(remote: ActiveSource.Remote, background: Boolean, smallTables: Boolean) {
+        val unknown = databases.get(remote.kind).accountDao().observeGroupLevel(remote.accountId).first() == null
+        if (smallTables || unknown) roles.sync(remote, background)
+    }
+
     suspend fun run(remote: ActiveSource.Remote, background: Boolean, smallTables: Boolean) {
         if (!smallTables) return
-        roles.sync(remote, background)
         books.sync(remote, background)
     }
 }

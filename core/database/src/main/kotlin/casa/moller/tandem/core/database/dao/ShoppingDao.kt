@@ -122,6 +122,26 @@ abstract class ShoppingDao {
     )
     abstract fun observePendingCount(accountId: String): Flow<Int>
 
+    /**
+     * 0.3.0 review (fix-data): entries created on this device (no server id) whose CREATE is no
+     * longer in the outbox can never be sent (an older version left them behind when an unsent meal
+     * was deleted after "Handla för veckan"); a full read removes them.
+     */
+    @Query(
+        "DELETE FROM shopping_entry WHERE account_id = :accountId AND server_id IS NULL AND NOT EXISTS " +
+            "(SELECT 1 FROM outbox o WHERE o.account_id = shopping_entry.account_id AND o.entity = 'shopping_entry' " +
+            "AND o.op = 'CREATE' AND o.local_id = shopping_entry.local_id)",
+    )
+    abstract suspend fun deleteOrphanEntries(accountId: String)
+
+    /** The same for list recipes created on this device. */
+    @Query(
+        "DELETE FROM shopping_list_recipe WHERE account_id = :accountId AND server_id IS NULL AND NOT EXISTS " +
+            "(SELECT 1 FROM outbox o WHERE o.account_id = shopping_list_recipe.account_id AND o.entity = 'shopping_list_recipe' " +
+            "AND o.op = 'CREATE' AND o.local_id = shopping_list_recipe.local_id)",
+    )
+    abstract suspend fun deleteOrphanListRecipes(accountId: String)
+
     /** Every entry's aisle follows its food's aisle (`food.supermarket_category` is per space). */
     @Query("UPDATE shopping_entry SET category_id = :categoryId WHERE account_id = :accountId AND food_id = :foodId")
     abstract suspend fun setCategoryOfFood(accountId: String, foodId: Long, categoryId: Long?)

@@ -578,10 +578,14 @@ sparas; demoläget skriver bara demodatabasen.
 - En 404 som ändå kommer (raderad mellan läsningen och sändningen, listrecept, livsmedel, gång)
   är ett väntat svar: raden är klar, posten tas bort lokalt med det som köats för den, skälet
   hamnar i `DroppedChanges.NOT_FOUND`. Den **räknas** ändå i kretsbrytaren (plan 3.5/4.1;
-  kopplingsbanan tog bort `expectedNotFound`, se "Koppling" nedan). Allt annat följer `OutboxSender`s regler (400 FAILED, 401/403/429 stoppar,
-  säkert läge PAUSED, offline/5xx försöker igen).
+  kopplingsbanan tog bort `expectedNotFound`, se "Koppling" nedan), och nästa PATCH eller DELETE
+  läser listan igen först (`ShoppingReader.invalidateSeen`, fix-data). Allt annat följer
+  `OutboxSender`s regler (400 FAILED, 401/403/429 stoppar, säkert läge PAUSED, offline/5xx
+  försöker igen).
 - `POST` av en post är inte idempotent: en rad som försökts förut letar först efter en egen ny
-  post med samma livsmedel, enhet och mängd.
+  post med samma livsmedel, enhet och mängd, skapad efter ändringen och inte tagen av en annan
+  CREATE på telefonen (`id_mapping`); en kopia som en läsning sparat under tiden räknas (se
+  "Granskningsrättelser" nedan).
 
 **Läsningar** (`ShoppingReader`, med ett lås som avsändarna också håller, så att en läsning
 aldrig jämförs med en ändring som skickas samtidigt):
@@ -654,8 +658,10 @@ användaren lämnade dem. Samma läsning används av synkkörningens steg 4 (`Sy
 medan Veckan syns), som läser fönstret först och sedan tömmer outboxen. **Raderad någon
 annanstans:** en måltid med osända rader som ett komplett svar inte längre listar fast dess
 senast kända server-`to_date` (`to_raw`, för en lokalt raderad måltid DELETE-radens `to_date`)
-ligger i fönstret tas bort med sina outbox-rader **utan** anrop, så tömningen efteråt aldrig
-möter en 404 (`MealPlanDao.deleteGone`).
+ligger i fönstret tas bort med sina outbox-rader **utan** anrop (`MealPlanDao.deleteGone`).
+Före varje PATCH och DELETE av en måltid ser avsändaren till att ett komplett fönster lästs efter
+den senaste återanslutningen och inom en minut (`MealPlanWindowReader.stillOnServerLocked`,
+fix-data), också när bara outbox-arbetaren kör; läsningen och avsändarna delar ett lås.
 
 **Offline först (`OfflineFirstMealPlanRepository`):** skapa, ändra, flytta, ta bort och nya
 måltidstyper skrivs i `meal_plan`/`meal_type` och köas med `OutboxDao.enqueue` i en transaktion
@@ -865,6 +871,62 @@ rader som servern): av (appen lägger till en gång, inte igen, inte från en an
   (kräver den riktiga servern) och ingen prövning med två fysiska telefoner (röktestet spelar
   partnern på den falska servern).
 <!-- /Fas 2 integration -->
+
+<!-- Fas 2 fix-data -->
+## Granskningsrättelser i data och synk (0.3.0, fix-data)
+
+Granskningen av Fas 2 hittade fall där outboxen kunde fastna, skicka dubbletter eller skriva
+över andras ändringar. Rättat i `:core:database` och `:core:sync`, ingen schemaändring:
+
+- **Avbrutna CREATE tar med sina lokala rader** (`OutboxDao.deleteWithDependents`): när en CREATE
+  tas bort (en DELETE av något som aldrig nått servern) raderas också de lokala raderna (utan
+  server-id) för varje CREATE som följer med, per entitet (`deleteUnsentObjects`). En osänd måltid
+  som tas bort efter "Handla för veckan" lämnar alltså inga rader på listan. `MealPlanRepository.delete`
+  tar dessutom bort måltidens listrecept och poster direkt (`removeShoppingOf`): de som nått
+  servern utan anrop (Tandoor tar bort dem med måltiden, FACTS "Fas 2 f"), de andra med sina CREATE.
+- **En rad som aldrig kan skickas stoppar inget:** en referens till ett tillfälligt id vars CREATE
+  är borta, eller en ändring av ett offline-skapat objekt utan server-id, mapping och CREATE, släpps
+  med sin lokala rad (`DroppedChanges.ORPHAN`) i stället för `RETRY`/`STOPPED`. Repositorierna köar
+  inget för en sådan rad, och en full läsning av listan tar bort lokala rader utan CREATE
+  (`ShoppingDao.deleteOrphanEntries/-ListRecipes`, rester från äldre byggen).
+- **Sammanslagning** (`OutboxMerge`): payloads slås ihop på toppnivå (ett nytt `food`/`unit`
+  ersätter hela objektet, så inget gammalt id följer med ett nytt namn); PATCH in i PATCH slår ihop
+  `base_snapshot` (första värdet vinner, nya fält läggs till) så fältjämförelsen ser varje fälts
+  startvärde; en CREATE som **försökts förut** (`attempts > 0`) tar inte emot fler ändringar och
+  tas inte bort av en DELETE: ändringarna blir egna rader med `depends_on` på den och skickas med
+  server-id efteråt (DELETE tar då bort serverns kopia).
+- **Förlorade svar:** `findLostCreate` (post, listrecept, måltid, bok) utesluter bara server-id som
+  en annan CREATE på telefonen redan tagit (`id_mapping`), så en kopia som en läsning sparat är
+  kandidaten (`completeCreate` tar bort kopian). Posten måste dessutom vara skapad efter ändringen
+  (minus klocktoleransen). Listreceptets CREATE letar nu också (`GET /api/shopping-list-recipe/`).
+  Avsändarens anrop och bokföringen av svaret körs `NonCancellable`.
+- **Kontroll före sändning:** listrecept (PATCH/DELETE) mot en färsk full läsning och, när ingen
+  post pekar på det, listan av listrecept; måltider mot fönstret (se Matsedeln). Efter en 404
+  läses listan/fönstret om före nästa rad, så en skur raderingar kostar en 404.
+- **Lås:** `MealPlanWindowReader.lock` och `BookSync.lock` delas med respektive avsändare (som
+  `ShoppingReader.lock`), så en läsning som byggdes före ett svar på en CREATE aldrig tar bort den
+  nya måltiden, favoriten eller bokposten. Låsordning: `OutboxSender`s mutex, sedan läsarens lås.
+- **Konflikter:** när en del av en måltids PATCH är en konflikt smalnas raden av till fälten som
+  skickas i samma transaktion som konfliktraden skrivs, så ett nytt försök aldrig ger en andra
+  konflikt.
+- **Ordning:** `OutboxDao.READY` jämför bara rader av samma slag (loggar med loggar, ändringar med
+  ändringar): en FAILED "Vill laga"-rad håller aldrig tillbaka receptets "Klart!" eller visningar.
+- **Gäster och nekade skrivningar:** se Gästläget ovan; `RemoteCaller.write` (`confirmForbidden`)
+  provar token efter en JSON-403 och ger `SyncGuard.FORBIDDEN_ERROR` (räknas som klientfel),
+  `OutboxSender` märker raden FAILED (`tandem.sync.forbidden`), läser rollen igen och avslutar
+  tömningen.
+- **Gångar:** köade `food`-ändringar läggs på posterna efter varje läsning av listan
+  (`ShoppingTables.reapplyQueuedFoods`), och en skickad gångändring skrivs på posterna igen.
+- **Rensa** (`ShoppingRepository.clearChecked(ids)`) tar bara bort de avbockade rader skärmen
+  visar och räknar (den valda namngivna listan).
+- **Hushåll:** `SpacePermissions.householdMissing` är sant när rollen lästs och användaren inte
+  har något hushåll (plan 8.6).
+- **Tester:** `OutboxPhase2Test`, `OutboxDaoTest`, `ShoppingSyncTest`, `MealPlanSyncTest`,
+  `WeekShoppingSyncTest` och `RecipeBookRepositoryTest` har ett fall per rättelse (förlorade svar
+  med 503 efter att servern sparat, raderingar på båda sidor, lås med en grind i den falska
+  servern, gäst och nekad skrivning). `DtoFixturesTest` hoppar inte längre över `fas2/`-inspelningar
+  utan väg: varje har en väg eller ett skäl i `notModelled`.
+<!-- /Fas 2 fix-data -->
 
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)
@@ -1613,8 +1675,12 @@ Funktion #17 (plan 3.7, 6.2 "Böcker/Favoriter", B17) och gästläget #42 (plan 
   ett förlorat svar blir den befintliga posten via `?recipe=`; 400 på `book`/`recipe` = borta,
   posten släpps; DELETE 404 = redan borta) och `recipe` (`RECIPE_KEYWORDS`).
 - **Gästläget (#42):** rollen läses vid första synken efter inloggning och sedan med de små
-  tabellerna. En gäst köar ingenting: alla Fas 2-repositorier ger `READ_ONLY`, `logCooked` också,
-  och `markViewed` sparar bara lokalt (ingen `VIEW_LOG`). Demoläget är aldrig skrivskyddat.
+  tabellerna, **före** listan och outboxen, och i varje körning så länge den är okänd (fix-data).
+  En gäst köar ingenting: alla Fas 2-repositorier ger `READ_ONLY`, `logCooked` också,
+  och `markViewed` sparar bara lokalt (ingen `VIEW_LOG`). Rader som köades innan rollen var känd
+  skickas aldrig för en gäst (`OutboxSender`: FAILED `tandem.sync.read-only`), och en JSON-403 på
+  en skrivning med en fungerande token blir en nekad rad, inte "logga in igen" (se
+  "Granskningsrättelser"). Demoläget är aldrig skrivskyddat.
 - **Demo:** `DemoBooks` (efter `DemoShopping`) gör demoinnehållets "Favoriter" till demoanvändarens
   favoritbok, "Vill laga" till den smarta boken på nyckelordet (recepten får nyckelordet) och lägger
   till Alex favoritbok, delad och skrivskyddad. Seedas en gång per version och språk.

@@ -264,8 +264,9 @@ class ShoppingViewModel @AssistedInject internal constructor(
     private fun clearChecked(confirmed: Boolean) {
         transient.update { it.copy(confirmClear = false) }
         if (!confirmed || !canWrite()) return
-        val count = uiState.value.grouped.checked.size
-        write(ShoppingMessage.ClearedChecked(count), undo = null) { shopping.clearChecked() }
+        // 0.3.0 review (fix-data): the rows the dialog counted, so the deletion and the snackbar match it.
+        val ids = uiState.value.grouped.checked.map { it.id }
+        write(ShoppingMessage.ClearedChecked(ids.size), undo = null) { shopping.clearChecked(ids) }
     }
 
     private fun submitAdd() {

@@ -76,8 +76,12 @@ interface ShoppingRepository {
     /** Removes a recipe's or meal's whole group ("Ta bort receptet från listan"); Tandoor deletes its entries too. */
     suspend fun removeListRecipe(listRecipeId: Long): Outcome<Unit>
 
-    /** Removes every checked entry (on this device and on the server). */
-    suspend fun clearChecked(): Outcome<Unit>
+    /**
+     * Removes the checked entries among [ids] (on this device and on the server): the ones the
+     * screen shows and counts, so a named list's "Rensa" never deletes other lists' checked rows
+     * (0.3.0 review, fix-data). Ids that are not checked (any more) are left alone.
+     */
+    suspend fun clearChecked(ids: Collection<Long>): Outcome<Unit>
 
     /**
      * Reads the list from the server now (pull to refresh): a delta with `updated_after`, or the

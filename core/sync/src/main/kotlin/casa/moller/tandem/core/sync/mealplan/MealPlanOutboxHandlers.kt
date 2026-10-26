@@ -16,7 +16,11 @@ import casa.moller.tandem.core.sync.engine.OutboxHandler
 import casa.moller.tandem.core.sync.engine.OutboxResult
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.RemoteCaller
+import casa.moller.tandem.core.sync.shopping.DroppedChange
+import casa.moller.tandem.core.sync.shopping.DroppedChanges
+import casa.moller.tandem.core.sync.shopping.claimedServerIds
 import javax.inject.Inject
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -35,48 +39,59 @@ import kotlinx.serialization.json.jsonObject
  *   `MealPlanRepository.observeConflicts`) while the rest is sent. Unrelated fields are never sent.
  * - **DELETE** `DELETE /api/meal-plan/{id}/`.
  *
- * A 404 means "deleted elsewhere": the row is done (an expected answer, outside the circuit breaker).
- * Most never happen: the window read drops queued changes of meals that disappeared
- * (`MealPlanWindowReader`).
+ * Before a PATCH or DELETE, the meal is checked against a complete window read after the last
+ * reconnect (at most a minute old, [MealPlanWindowReader.stillOnServerLocked]; 0.3.0 review,
+ * fix-data, plan 3.5): a meal deleted elsewhere is dropped WITHOUT a request, also when only the
+ * outbox worker runs after the network came back. A 404 that still comes (deleted since the read,
+ * or a meal outside the window) means "deleted elsewhere": the row is done, the next update or
+ * delete reads the window again first, and the 404 counts in the circuit breaker like every 404.
+ *
+ * Every row is sent under [MealPlanWindowReader.lock], so a window read never sees the plan from
+ * before a CREATE that is answered meanwhile (and removes the new meal).
  */
 internal class MealPlanOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val caller: RemoteCaller,
     private val clock: SyncClock,
+    private val reader: MealPlanWindowReader,
+    private val dropped: DroppedChanges,
 ) : OutboxHandler {
-    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
-        val body = MealPlanPayloads.parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        return when (row.op) {
+    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = reader.lock.withLock {
+        val body = MealPlanPayloads.parse(payload) ?: return@withLock OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        when (row.op) {
             OutboxOps.CREATE -> create(remote, row, body)
             OutboxOps.PATCH -> patch(remote, row, body)
-            OutboxOps.DELETE -> delete(remote, row)
+            OutboxOps.DELETE -> delete(remote, row, body)
             else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
     }
 
     private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
         val existing = if (row.attempts > 0) findLostCreate(remote, body) else null
-        val created = existing ?: when (val sent = caller.call(remote, background = true) { mealPlanEdits.createMealPlan(body) }) {
+        val created = existing ?: when (val sent = caller.write(remote) { mealPlanEdits.createMealPlan(body) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
         val serverId = created.id ?: return OutboxResult.Failed(TandemError.Decode("meal-plan-without-id"))
         row.localId?.let { localId -> storeServerValues(remote, localId, created) }
+        reader.noteCreated(remote.accountId, serverId)
         return OutboxResult.Created(serverId)
     }
 
     private suspend fun patch(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
+        goneBeforeSending(remote, row, serverId, body)?.let { return it }
         val read = caller.call(remote, background = true) { mealPlanEdits.mealPlan(serverId) }
         val current = when (read) {
-            is Outcome.Failure -> return if (read.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(read.error)
+            is Outcome.Failure -> return notFoundOrFailed(remote, row, serverId, read.error)
             is Outcome.Success -> read.value
         }
         val server = TandoorJson.encodeToJsonElement(MealPlanDto.serializer(), current).jsonObject
-        val comparison = MealPlanPayloads.compare(body, MealPlanPayloads.parse(row.baseSnapshot), server)
-        if (comparison.conflicting.isNotEmpty()) holdConflict(remote, row, serverId, comparison)
+        val base = MealPlanPayloads.parse(row.baseSnapshot)
+        val comparison = MealPlanPayloads.compare(body, base, server)
+        if (comparison.conflicting.isNotEmpty()) holdConflict(remote, row, serverId, comparison, base)
         if (comparison.send.isEmpty()) return OutboxResult.Dropped
-        val sent = caller.call(remote, background = true) {
+        val sent = caller.write(remote) {
             mealPlanEdits.patchMealPlan(serverId, comparison.send)
         }
         return when (sent) {
@@ -85,41 +100,84 @@ internal class MealPlanOutboxHandler @Inject constructor(
                 OutboxResult.Sent
             }
 
-            is Outcome.Failure -> if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
+            is Outcome.Failure -> notFoundOrFailed(remote, row, serverId, sent.error)
         }
     }
 
-    private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
+    private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Dropped
-        val sent = caller.call(remote, background = true) { mealPlanEdits.deleteMealPlan(serverId) }
-        return when {
-            sent is Outcome.Success -> OutboxResult.Sent
-            (sent as Outcome.Failure).error == TandemError.NotFound -> OutboxResult.Dropped
-            else -> OutboxResult.Failed(sent.error)
+        goneBeforeSending(remote, row, serverId, body)?.let { return it }
+        return when (val sent = caller.write(remote) { mealPlanEdits.deleteMealPlan(serverId) }) {
+            is Outcome.Success -> OutboxResult.Sent
+            is Outcome.Failure -> notFoundOrFailed(remote, row, serverId, sent.error)
         }
     }
 
-    /** The fields someone else changed wait in their own FAILED row until "behåll min" or "ta deras". */
+    /** Null to send; a result when the meal is gone (dropped unsent, with its other queued rows) or the check failed. */
+    private suspend fun goneBeforeSending(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long, body: JsonObject): OutboxResult? {
+        val stored = databases.get(remote.kind).mealPlanDao().get(remote.accountId, serverId)
+        // The meal's last known server day; a DELETE remembers it in its payload (the meal is gone here).
+        val day = stored?.let { MealPlanDates.serverDay(it.toRaw) ?: MealPlanDates.serverDay(it.toDate) }
+            ?: MealPlanDates.serverDay(text(body, MealPlanPayloads.TO_DATE))
+        return when (val onServer = reader.stillOnServerLocked(remote, serverId, day)) {
+            is Outcome.Failure -> OutboxResult.Failed(onServer.error)
+            is Outcome.Success -> if (onServer.value) null else gone(remote, row, serverId, DroppedChanges.DELETED_ELSEWHERE)
+        }
+    }
+
+    private suspend fun notFoundOrFailed(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long, error: TandemError): OutboxResult {
+        if (error != TandemError.NotFound) return OutboxResult.Failed(error)
+        reader.invalidateSeen()
+        return gone(remote, row, serverId, DroppedChanges.NOT_FOUND)
+    }
+
+    /** The meal no longer exists on the server: it goes here too, with its other queued rows (Tandoor deleted its entries). */
+    private suspend fun gone(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long, reason: String): OutboxResult {
+        databases.get(remote.kind).mealPlanDao().deleteGone(remote.accountId, listOf(serverId))
+        dropped.record(DroppedChange(row.entity, row.op, serverId, reason, clock.nowMillis()))
+        return OutboxResult.Dropped
+    }
+
+    /**
+     * The fields someone else changed wait in their own FAILED row until "behåll min" or "ta deras".
+     * In the same transaction the row being sent is narrowed to the fields that go out now (0.3.0
+     * review, fix-data), so a retry after a failed PATCH never meets the conflict again and never
+     * adds a second conflict row.
+     */
     private suspend fun holdConflict(
         remote: ActiveSource.Remote,
         row: OutboxEntity,
         serverId: Long,
         comparison: MealPlanPayloads.Comparison,
+        base: JsonObject?,
     ) {
-        databases.get(remote.kind).outboxDao().insert(
-            OutboxEntity(
-                accountId = remote.accountId,
-                op = OutboxOps.PATCH,
-                entity = OutboxEntities.MEAL_PLAN,
-                serverId = serverId,
-                payload = comparison.conflicting.toString(),
-                baseSnapshot = comparison.theirs.toString(),
-                createdAtEpochMillis = row.createdAtEpochMillis,
-                state = OutboxState.FAILED,
-                lastError = MealPlanPayloads.CONFLICT,
-                updatedAtEpochMillis = clock.nowMillis(),
-            ),
-        )
+        val database = databases.get(remote.kind)
+        val outbox = database.outboxDao()
+        val now = clock.nowMillis()
+        database.mealPlanDao().inTransaction {
+            val held = outbox.getAllFor(remote.accountId, OutboxEntities.MEAL_PLAN).any { other ->
+                other.serverId == serverId && other.state == OutboxState.FAILED && other.lastError == MealPlanPayloads.CONFLICT &&
+                    MealPlanPayloads.parse(other.payload)?.keys?.containsAll(comparison.conflicting.keys) == true
+            }
+            if (!held) {
+                outbox.insert(
+                    OutboxEntity(
+                        accountId = remote.accountId,
+                        op = OutboxOps.PATCH,
+                        entity = OutboxEntities.MEAL_PLAN,
+                        serverId = serverId,
+                        payload = comparison.conflicting.toString(),
+                        baseSnapshot = comparison.theirs.toString(),
+                        createdAtEpochMillis = row.createdAtEpochMillis,
+                        state = OutboxState.FAILED,
+                        lastError = MealPlanPayloads.CONFLICT,
+                        updatedAtEpochMillis = now,
+                    ),
+                )
+            }
+            val sentBase = base?.let { JsonObject(it.filterKeys { field -> field in comparison.send }) }
+            outbox.updateMerged(row.id, comparison.send.toString(), row.batchKey, row.refs, row.dependsOn, now, sentBase?.toString())
+        }
     }
 
     /** The server's own values of the meal (its date-times and `shopping`); the user's fields stay as they are. */
@@ -136,12 +194,14 @@ internal class MealPlanOutboxHandler @Inject constructor(
             Paginator.fetchAll { page -> api.mealPlans.mealPlans(day, day, page.takeIf { it > 1 }) }
         }
         val meals = (listed as? Outcome.Success)?.value?.items ?: return null
-        val known = databases.get(remote.kind).mealPlanDao().getRange(remote.accountId, day.toString(), day.toString())
-            .mapNotNullTo(HashSet()) { it.entry.serverId }
+        // 0.3.0 review (fix-data): only meals another create of this device claimed are excluded.
+        // A copy of the lost meal that a window read stored meanwhile is THE candidate
+        // (`completeCreate` drops that copy), so the retry never makes a second meal.
+        val claimed = claimedServerIds(databases, remote, OutboxEntities.MEAL_PLAN)
         return meals.firstOrNull { meal ->
             val id = meal.id ?: return@firstOrNull false
             val server = TandoorJson.encodeToJsonElement(MealPlanDto.serializer(), meal).jsonObject
-            id !in known &&
+            id !in claimed && (meal.createdBy == null || meal.createdBy == remote.account.userId) &&
                 SAME_MEAL.all { field ->
                     MealPlanPayloads.normalized(field, server[field]) == MealPlanPayloads.normalized(field, body[field])
                 }
@@ -161,10 +221,17 @@ internal class MealPlanOutboxHandler @Inject constructor(
 
 /**
  * Sends `meal_type` rows: CREATE `POST /api/meal-type/` (shared by the whole space). A retry after a
- * lost answer first looks for a meal type with the same name.
+ * lost answer first looks for a meal type with the same name. Under [MealPlanWindowReader.lock],
+ * like the meals.
  */
-internal class MealTypeOutboxHandler @Inject constructor(private val caller: RemoteCaller) : OutboxHandler {
-    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
+internal class MealTypeOutboxHandler @Inject constructor(
+    private val caller: RemoteCaller,
+    private val reader: MealPlanWindowReader,
+) : OutboxHandler {
+    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult =
+        reader.lock.withLock { sendLocked(remote, row, payload) }
+
+    private suspend fun sendLocked(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         if (row.op != OutboxOps.CREATE) return OutboxResult.Failed(TandemError.Unknown("tandem.sync.unsupported-outbox-op"))
         val body = MealPlanPayloads.parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown("tandem.sync.unsupported-outbox-op"))
         if (row.attempts > 0) {
@@ -176,7 +243,7 @@ internal class MealTypeOutboxHandler @Inject constructor(private val caller: Rem
             val found = (listed as? Outcome.Success)?.value?.items?.firstOrNull { it.name == name }?.id
             if (found != null) return OutboxResult.Created(found)
         }
-        return when (val sent = caller.call(remote, background = true) { mealPlanEdits.createMealType(body) }) {
+        return when (val sent = caller.write(remote) { mealPlanEdits.createMealType(body) }) {
             is Outcome.Failure -> OutboxResult.Failed(sent.error)
 
             is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }

@@ -61,6 +61,16 @@ interface ShoppingService {
     @POST("api/shopping-list-recipe/")
     suspend fun createListRecipe(@Body body: JsonObject): ShoppingListRecipeDto
 
+    /**
+     * Every list recipe (DRF pages): read only before a retried CREATE, to find the one an earlier
+     * attempt created when its answer was lost (POST is not idempotent; 0.3.0 review, fix-data).
+     */
+    @GET("api/shopping-list-recipe/")
+    suspend fun listRecipes(
+        @Query("page") page: Int?,
+        @Query("page_size") pageSize: Int = TaxonomyService.MAX_PAGE_SIZE,
+    ): PageDto<ShoppingListRecipeDto>
+
     /** `{servings}` scales the recipe's entries on the server. */
     @PATCH("api/shopping-list-recipe/{id}/")
     suspend fun patchListRecipe(@Path("id") id: Long, @Body body: JsonObject): ShoppingListRecipeDto

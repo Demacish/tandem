@@ -100,7 +100,11 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
 
                 error.isConnectivityProblem -> current
 
-                else -> current.withError(now, isClientError = error == TandemError.NotFound || error is TandemError.BadRequest)
+                else -> current.withError(
+                    now,
+                    // A refused write (403 with a working token) is a client error in the proxy's log too.
+                    isClientError = error == TandemError.NotFound || error is TandemError.BadRequest || error == FORBIDDEN_ERROR,
+                )
             }
         }
     }
@@ -162,6 +166,12 @@ internal class SyncGuard @Inject constructor(private val clock: SyncClock) {
 
         /** Reported for background requests while an import runs. */
         val IMPORT_ERROR: TandemError = TandemError.Unknown("tandem.sync.import-running")
+
+        /**
+         * 0.3.0 review (fix-data): a write Tandoor refused with a JSON 403 while the token works
+         * (`RemoteCaller.call(confirmForbidden = true)`): the request is not allowed, the login is fine.
+         */
+        val FORBIDDEN_ERROR: TandemError = TandemError.Unknown("tandem.sync.forbidden")
     }
 }
 

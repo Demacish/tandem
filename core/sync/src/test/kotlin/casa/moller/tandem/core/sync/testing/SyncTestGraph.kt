@@ -138,6 +138,9 @@ internal class SyncTestGraph(
     val droppedChanges = DroppedChanges()
     val shoppingReader = ShoppingReader(databases, caller, sources, clock, shoppingChanges, droppedChanges, network)
     val shoppingTables = ShoppingTables(databases, caller, sources)
+
+    // Phase 2 (matsedel lane): the meal plan window, shared by the engine and Veckan's refresh.
+    val mealPlanWindow = MealPlanWindowReader(sources, databases, caller, clock, network)
     val outbox = OutboxSender(
         databases,
         caller,
@@ -150,17 +153,16 @@ internal class SyncTestGraph(
             OutboxEntities.FOOD to FoodOutboxHandler(databases, caller, droppedChanges, clock),
             OutboxEntities.SUPERMARKET_CATEGORY_RELATION to AisleOrderOutboxHandler(caller, droppedChanges, clock),
             // Phase 2 (böcker lane).
-            OutboxEntities.RECIPE_BOOK to RecipeBookOutboxHandler(databases, caller),
-            OutboxEntities.RECIPE_BOOK_ENTRY to RecipeBookEntryOutboxHandler(databases, caller),
-            OutboxEntities.RECIPE to RecipeKeywordsOutboxHandler(databases, caller, details, bookNames),
+            OutboxEntities.RECIPE_BOOK to RecipeBookOutboxHandler(databases, caller, bookSync),
+            OutboxEntities.RECIPE_BOOK_ENTRY to RecipeBookEntryOutboxHandler(databases, caller, bookSync),
+            OutboxEntities.RECIPE to RecipeKeywordsOutboxHandler(databases, caller, details, bookNames, bookSync),
             // Phase 2 (matsedel lane): meals and meal types.
-            OutboxEntities.MEAL_PLAN to MealPlanOutboxHandler(databases, caller, clock),
-            OutboxEntities.MEAL_TYPE to MealTypeOutboxHandler(caller),
+            OutboxEntities.MEAL_PLAN to MealPlanOutboxHandler(databases, caller, clock, mealPlanWindow, droppedChanges),
+            OutboxEntities.MEAL_TYPE to MealTypeOutboxHandler(caller, mealPlanWindow),
         ),
+        roles = roleSync,
+        dropped = droppedChanges,
     )
-
-    // Phase 2 (matsedel lane): the meal plan window, shared by the engine and Veckan's refresh.
-    val mealPlanWindow = MealPlanWindowReader(sources, databases, caller, clock)
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
@@ -180,7 +182,7 @@ internal class SyncTestGraph(
         settings,
         diagnosticsStore,
         ShoppingSyncStep(shoppingReader, shoppingTables, databases),
-        BookSyncStep(roleSync, bookSync),
+        BookSyncStep(roleSync, bookSync, databases),
         mealPlanWindow,
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)

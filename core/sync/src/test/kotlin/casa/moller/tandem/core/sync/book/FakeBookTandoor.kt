@@ -82,8 +82,9 @@ internal class FakeBookTandoor(private val version: String) {
 
     // ------------------------------------------------------------------------------ answers
 
+    /** Answers a books request, null for any other path (0.3.0 review, fix-data: a test may wrap it). */
     @Synchronized
-    private fun answer(request: RecordedRequest): MockResponse? {
+    fun answer(request: RecordedRequest): MockResponse? {
         val method = request.method
         val path = request.url.encodedPath
         val text = request.body?.utf8().orEmpty()

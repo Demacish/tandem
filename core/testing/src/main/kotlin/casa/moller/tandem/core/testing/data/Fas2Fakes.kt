@@ -142,8 +142,8 @@ class FakeShoppingRepository(
         entries.update { list -> list.filterNot { it.recipe?.listRecipeId == listRecipeId } }
     }
 
-    override suspend fun clearChecked(): Outcome<Unit> = write(readOnly, failure) {
-        entries.update { list -> list.filterNot { it.checked } }
+    override suspend fun clearChecked(ids: Collection<Long>): Outcome<Unit> = write(readOnly, failure) {
+        entries.update { list -> list.filterNot { it.checked && it.id in ids } }
     }
 
     override suspend fun refresh(full: Boolean): Outcome<Unit> {

@@ -19,9 +19,11 @@ import kotlinx.coroutines.flow.Flow
  *
  * Ordering rules of [nextReady]: lowest [OutboxEntity.id] first; a row waits while its
  * `depends_on` row still exists (any state, so a FAILED dependency blocks it) and while an older
- * row for the same object (same `entity` and `server_id` or `local_id`) is still in the outbox.
- * A FAILED log row (`VIEW_LOG`, `COOK_LOG`) holds nothing back: log entries are independent of
- * each other and of the recipe's edits, so one rejected "Klart!" never blocks the next.
+ * row for the same object (same `entity` and `server_id` or `local_id`) OF THE SAME KIND is still
+ * in the outbox: log rows (`VIEW_LOG`, `COOK_LOG`) wait only for log rows and edits only for edits
+ * (0.3.0 review, fix-data: a FAILED "Vill laga" `RECIPE_KEYWORDS` row of a recipe never holds back
+ * its "Klart!" or view log, and the reverse). A FAILED log row holds nothing back: log entries are
+ * independent of each other, so one rejected "Klart!" never blocks the next.
  */
 @Dao
 abstract class OutboxDao {
@@ -149,22 +151,28 @@ abstract class OutboxDao {
      * only `server_id` (resolve stale temporary ids with [IdRewriteDao.resolve] first).
      *
      * When the change merges into an older row, that row keeps its place in the queue, gets the
-     * merged payload, the union of both rows' [OutboxEntity.refs] and, if it had none, the new
-     * row's `depends_on`.
+     * merged payload, the union of both rows' [OutboxEntity.refs], the merged `base_snapshot` (PATCH
+     * into PATCH, see [OutboxMerge]) and, if it had none, the new row's `depends_on`. A new row of an
+     * object whose CREATE was attempted before (it may be on the server) `depends_on` that CREATE,
+     * so it is sent by server id after it and fails with it.
      *
      * @return the id of the row that carries the change, or null when the change cancelled out.
      */
     @Transaction
     open suspend fun enqueue(row: OutboxEntity): Long? {
         val unsent = getUnsentFor(row.accountId, row.entity, row.localId, row.serverId)
+        val attempted = OutboxMerge.attemptedCreateOf(unsent)
+        val waitsForCreate = attempted != null && row.op != OutboxOps.CREATE && row.dependsOn == null
+        val inserted = if (waitsForCreate) row.copy(dependsOn = attempted?.id) else row
         return when (val decision = OutboxMerge.decide(row, unsent)) {
-            OutboxMerge.Decision.Insert -> insert(row)
+            OutboxMerge.Decision.Insert -> insert(inserted)
 
             is OutboxMerge.Decision.Update -> {
                 val existing = unsent.first { it.id == decision.id }
                 val refs = OutboxRefs.encode(OutboxRefs.decode(existing.refs) + OutboxRefs.decode(row.refs))
                 val dependsOn = existing.dependsOn ?: row.dependsOn
-                updateMerged(decision.id, decision.payload, decision.batchKey, refs, dependsOn, row.createdAtEpochMillis)
+                val base = decision.baseSnapshot ?: existing.baseSnapshot
+                updateMerged(decision.id, decision.payload, decision.batchKey, refs, dependsOn, row.createdAtEpochMillis, base)
                 decision.id
             }
 
@@ -175,7 +183,7 @@ abstract class OutboxDao {
 
             is OutboxMerge.Decision.Replace -> {
                 deleteWithDependents(decision.ids)
-                insert(row)
+                insert(inserted)
             }
         }
     }
@@ -202,7 +210,14 @@ abstract class OutboxDao {
     @Query("SELECT * FROM outbox WHERE account_id = :accountId AND entity = :entity ORDER BY id")
     abstract suspend fun getAllFor(accountId: String, entity: String): List<OutboxEntity>
 
-    /** Removes the rows [ids] and every row that (transitively) depends on them; returns the ids removed. */
+    /**
+     * Removes the rows [ids] and every row that (transitively) depends on them; returns the ids removed.
+     *
+     * An object whose CREATE goes this way never reaches the server, so its local row (still without
+     * a server id) goes too, in the same transaction (0.3.0 review, fix-data): an unsent meal deleted
+     * after "Handla för veckan" takes its list recipe and entries with it instead of leaving rows on
+     * the list that can never be sent (and would hold up the outbox when touched).
+     */
     @Transaction
     open suspend fun deleteWithDependents(ids: List<Long>): List<Long> {
         val removed = mutableListOf<Long>()
@@ -211,15 +226,99 @@ abstract class OutboxDao {
             removed += level
             level = getDependents(level).filter { it !in removed }
         }
-        if (removed.isNotEmpty()) deleteRows(removed)
+        if (removed.isNotEmpty()) {
+            val creates = getRows(removed).filter { it.op == OutboxOps.CREATE && (it.localId ?: 0L) < 0L }
+            deleteRows(removed)
+            creates.groupBy { it.accountId to it.entity }.forEach { (key, rows) ->
+                deleteUnsentObjects(key.first, key.second, rows.mapNotNull { it.localId })
+            }
+        }
         return removed
+    }
+
+    /**
+     * Removes every row of one object that is not being sent right now, with what depends on them
+     * (and the local rows of creates among them, see [deleteWithDependents]): the object is gone.
+     */
+    @Transaction
+    open suspend fun deleteObjectRows(accountId: String, entity: String, localId: Long?, serverId: Long?) {
+        val rows = getAllFor(accountId, entity).filter { row ->
+            row.state != OutboxState.IN_FLIGHT &&
+                ((localId != null && row.localId == localId) || (serverId != null && row.serverId == serverId))
+        }
+        if (rows.isNotEmpty()) deleteWithDependents(rows.map { it.id })
+    }
+
+    /** True while the CREATE of temporary id [localId] of [entity] is in the outbox (any state). */
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM outbox WHERE account_id = :accountId AND entity = :entity AND op = 'CREATE' " +
+            "AND local_id = :localId)",
+    )
+    abstract suspend fun hasCreate(accountId: String, entity: String, localId: Long): Boolean
+
+    /**
+     * Deletes the local rows (never sent: `server_id IS NULL`) of objects created offline whose
+     * CREATE was removed, by entity. Entities without offline creates of their own are left alone.
+     */
+    open suspend fun deleteUnsentObjects(accountId: String, entity: String, localIds: List<Long>) {
+        if (localIds.isEmpty()) return
+        when (entity) {
+            OutboxEntities.SHOPPING_ENTRY -> deleteUnsentShoppingEntries(accountId, localIds)
+
+            OutboxEntities.SHOPPING_LIST_RECIPE -> {
+                deleteUnsentEntriesOfListRecipes(accountId, localIds)
+                deleteUnsentListRecipes(accountId, localIds)
+            }
+
+            OutboxEntities.MEAL_PLAN -> deleteUnsentMeals(accountId, localIds)
+
+            OutboxEntities.RECIPE_BOOK -> {
+                deleteUnsentEntriesOfBooks(accountId, localIds)
+                deleteUnsentBooks(accountId, localIds)
+            }
+
+            OutboxEntities.RECIPE_BOOK_ENTRY -> deleteUnsentBookEntries(accountId, localIds)
+        }
     }
 
     @Query(
         "UPDATE outbox SET payload = :payload, batch_key = :batchKey, refs = :refs, depends_on = :dependsOn, " +
-            "updated_at = :nowEpochMillis WHERE id = :id",
+            "updated_at = :nowEpochMillis, base_snapshot = :baseSnapshot WHERE id = :id",
     )
-    abstract suspend fun updateMerged(id: Long, payload: String, batchKey: String?, refs: String?, dependsOn: Long?, nowEpochMillis: Long)
+    @Suppress("LongParameterList") // The merged row's own columns.
+    abstract suspend fun updateMerged(
+        id: Long,
+        payload: String,
+        batchKey: String?,
+        refs: String?,
+        dependsOn: Long?,
+        nowEpochMillis: Long,
+        baseSnapshot: String?,
+    )
+
+    @Query("SELECT * FROM outbox WHERE id IN (:ids)")
+    abstract suspend fun getRows(ids: List<Long>): List<OutboxEntity>
+
+    @Query("DELETE FROM shopping_entry WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentShoppingEntries(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM shopping_entry WHERE account_id = :accountId AND server_id IS NULL AND list_recipe_id IN (:listRecipeIds)")
+    abstract suspend fun deleteUnsentEntriesOfListRecipes(accountId: String, listRecipeIds: List<Long>)
+
+    @Query("DELETE FROM shopping_list_recipe WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentListRecipes(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM meal_plan WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentMeals(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM recipe_book_entry WHERE account_id = :accountId AND server_id IS NULL AND book_id IN (:bookIds)")
+    abstract suspend fun deleteUnsentEntriesOfBooks(accountId: String, bookIds: List<Long>)
+
+    @Query("DELETE FROM recipe_book WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentBooks(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM recipe_book_entry WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentBookEntries(accountId: String, localIds: List<Long>)
 
     @Query("DELETE FROM outbox WHERE id IN (:ids)")
     abstract suspend fun deleteRows(ids: List<Long>)
@@ -227,13 +326,15 @@ abstract class OutboxDao {
     private companion object {
         /**
          * When a row `o` is ready: its `depends_on` row is gone (sent), and no older row for the same
-         * object is still in the outbox, except a FAILED log row (`VIEW_LOG`, `COOK_LOG`).
+         * object and of the same kind (log rows `VIEW_LOG`/`COOK_LOG` or edits) is still in the
+         * outbox, except a FAILED log row.
          */
         const val READY: String =
             "(o.depends_on IS NULL OR NOT EXISTS (SELECT 1 FROM outbox dep WHERE dep.id = o.depends_on)) " +
                 "AND NOT EXISTS (SELECT 1 FROM outbox p WHERE p.account_id = o.account_id AND p.id < o.id " +
                 "AND p.entity = o.entity AND ((o.server_id IS NOT NULL AND p.server_id = o.server_id) " +
                 "OR (o.local_id IS NOT NULL AND p.local_id = o.local_id)) " +
+                "AND ((p.op IN ('VIEW_LOG', 'COOK_LOG')) = (o.op IN ('VIEW_LOG', 'COOK_LOG'))) " +
                 "AND NOT (p.state = 'FAILED' AND p.op IN ('VIEW_LOG', 'COOK_LOG')))"
     }
 }

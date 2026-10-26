@@ -156,6 +156,13 @@ internal class FakeShoppingTandoor(private val version: String, private val cloc
         ids.forEach { entries.remove(it) }
     }
 
+    /** 0.3.0 review (fix-data): the web removes a list recipe; its entries go with it. */
+    @Synchronized
+    fun partnerDeleteListRecipe(id: Long) {
+        listRecipes.remove(id)
+        entries.values.removeAll { it.listRecipe == id }
+    }
+
     @Synchronized
     fun entry(id: Long): Entry? = entries[id]?.copy()
 
@@ -186,6 +193,9 @@ internal class FakeShoppingTandoor(private val version: String, private val cloc
             ENTRY.matches(path) -> entryAnswer(method, ENTRY.find(path)!!.groupValues[1].toLong(), parse(text))
 
             path == LIST_RECIPES && method == "POST" -> createListRecipe(parse(text))
+
+            // 0.3.0 review (fix-data): every list recipe, one page.
+            path == LIST_RECIPES && method == "GET" -> page(listRecipes.values.map { listRecipeJson(it) })
 
             LIST_RECIPE.matches(path) -> listRecipeAnswer(method, LIST_RECIPE.find(path)!!.groupValues[1].toLong(), parse(text))
 
@@ -223,6 +233,18 @@ internal class FakeShoppingTandoor(private val version: String, private val cloc
             ),
         )
     }
+
+    private fun page(results: List<JsonObject>): MockResponse = json(
+        200,
+        JsonObject(
+            mapOf(
+                "count" to num(results.size.toLong()),
+                "next" to JsonNull,
+                "previous" to JsonNull,
+                "results" to JsonArray(results),
+            ),
+        ),
+    )
 
     private fun create(body: JsonObject): MockResponse {
         val food = body["food"] as? JsonObject ?: return json(500, null)

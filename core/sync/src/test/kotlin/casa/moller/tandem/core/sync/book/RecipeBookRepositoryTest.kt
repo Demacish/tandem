@@ -16,7 +16,13 @@ import casa.moller.tandem.core.sync.account.DEMO_ACCOUNT_ID
 import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.time.Instant
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -315,7 +321,37 @@ class RecipeBookRepositoryTest {
 
     private fun JsonObject.long(key: String): Long? = (this[key] as? JsonPrimitive)?.longOrNull
 
+    /** 0.3.0 review (fix-data): an entry (a heart) sent while the books are read stays. */
+    @Test
+    fun anEntrySentWhileTheBooksAreReadStays() = forEachVersion(seed = { addBook("Vardag", owner = FakeBookTandoor.OWN_USER) }) {
+        val vardag = book("Vardag")
+        ok(repo.addToBook(vardag.id, PASTA))
+        val entered = CountDownLatch(1)
+        val gate = CountDownLatch(1)
+        graph.server.respond("GET", "/api/recipe-book-entry/") { request ->
+            // The answer is built now, before the entry below reaches the server.
+            val answer = checkNotNull(tandoor.answer(request))
+            entered.countDown()
+            gate.await(GATE_SECONDS, TimeUnit.SECONDS)
+            answer
+        }
+        coroutineScope {
+            val read = async(Dispatchers.Default) { graph.bookSync.sync(graph.remote, background = true) }
+            assertTrue(entered.await(GATE_SECONDS, TimeUnit.SECONDS))
+            val drain = async(Dispatchers.Default) { graph.outbox.drain(graph.remote) }
+            delay(SETTLE_MILLIS)
+            gate.countDown()
+            read.await()
+            drain.await()
+        }
+        assertEquals(1, tandoor.callsTo("POST", "/api/recipe-book-entry/").size)
+        assertEquals("[$version] the entry is still in the book", 1, repo.observeRecipes(vardag.id).first().size)
+    }
+
     private companion object {
+        const val GATE_SECONDS = 10L
+        const val SETTLE_MILLIS = 500L
+
         val VERSIONS = listOf("2.6.13", "2.7.1")
         const val MAX_DRAINS = 10
         const val PASTA = 2L

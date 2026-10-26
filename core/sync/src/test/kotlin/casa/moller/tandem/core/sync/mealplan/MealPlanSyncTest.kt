@@ -16,6 +16,12 @@ import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import java.time.LocalTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
@@ -23,6 +29,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mockwebserver3.MockResponse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -353,6 +360,149 @@ class MealPlanSyncTest {
         assertNull("[$version] one 404 alone does not trip the circuit breaker (five within 100 s do)", stopped)
     }
 
+    /**
+     * 0.3.0 review (fix-data, plan 3.5): meals deleted on the web while this phone changed them
+     * offline, and only the outbox worker runs after the reconnect: the window is read first, and
+     * the changes are dropped without a request (no GET or PATCH of the meal, no 404).
+     */
+    @Test
+    fun theOutboxWorkerAloneDrainsMealsDeletedElsewhereWithoutA404() = forEachVersion {
+        val ids = (10..12).map { day -> tandoor.web("2026-10-${day}T18:00:00+02:00", title = "Dag $day") }
+        refresh()
+        offline()
+        assertOk(repo.update(ids[0], MealPlanUpdate(servings = 3.0)))
+        assertOk(repo.delete(ids[1]))
+        assertOk(repo.update(ids[2], MealPlanUpdate(title = "Kvar")))
+        tandoor.partnerDelete(ids[0])
+        tandoor.partnerDelete(ids[1])
+        tandoor.calls.clear()
+        graph.network.reconnect()
+        drainAll()
+        assertTrue("[$version] no 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
+        assertTrue(tandoor.calls.none { (call, _) -> "/${ids[0]}/" in call || "/${ids[1]}/" in call })
+        assertEquals(listOf("PATCH /api/meal-plan/${ids[2]}/"), tandoor.writes().map { it.first })
+        assertEquals("Kvar", tandoor.meal(ids[2])?.title)
+        assertEquals(0, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
+    }
+
+    /** 0.3.0 review (fix-data): two offline edits of different fields keep both start values, so the web's change is a conflict. */
+    @Test
+    fun twoOfflineEditsKeepBothStartValuesForTheCompare() = forEachVersion {
+        val id = tandoor.web("2026-10-14T18:00:00+02:00", title = "Lax", servings = 2.0)
+        refresh()
+        offline()
+        assertOk(repo.update(id, MealPlanUpdate.move(LocalDate(2026, 10, 15))))
+        assertOk(repo.update(id, MealPlanUpdate(servings = 4.0)))
+        tandoor.partnerEdit(id) { servings = 6.0 }
+        online()
+        drainAll()
+        val patch = body(tandoor.requests("PATCH", "/api/meal-plan/$id/").single())
+        assertEquals("[$version] the move goes", setOf("from_date", "to_date"), patch.keys)
+        assertEquals(6.0, tandoor.meal(id)!!.servings, 0.0)
+        val conflict = repo.observeConflicts().first().single()
+        assertEquals("servings" to "4.0", conflict.field to conflict.mine)
+    }
+
+    /** 0.3.0 review (fix-data): a PATCH that fails after its conflict was held is retried with the rest only: one conflict. */
+    @Test
+    fun aRetriedPartlyConflictingPatchHoldsItsConflictOnce() = forEachVersion {
+        val id = tandoor.web("2026-10-14T18:00:00+02:00", title = "Lax", servings = 2.0)
+        refresh()
+        offline()
+        assertOk(repo.update(id, MealPlanUpdate(title = "Min lax", servings = 4.0)))
+        tandoor.partnerEdit(id) { title = "Deras lax" }
+        var busy = true
+        graph.server.respond("PATCH", "/api/meal-plan/$id/") { request ->
+            if (busy) {
+                busy = false
+                MockResponse.Builder().code(503).addHeader("Content-Type", "text/html").body("<html>busy</html>").build()
+            } else {
+                checkNotNull(tandoor.answer(request))
+            }
+        }
+        online()
+        assertEquals(DrainResult.RETRY, graph.outbox.drain(graph.remote))
+        drainAll()
+        assertEquals("[$version] one conflict", listOf("title"), repo.observeConflicts().first().map { it.field })
+        assertEquals(4.0, tandoor.meal(id)!!.servings, 0.0)
+        assertEquals("Deras lax", tandoor.meal(id)!!.title)
+    }
+
+    /** 0.3.0 review (fix-data): a meal whose answer was lost after the server saved it is not posted a second time. */
+    @Test
+    fun aMealWhoseAnswerWasLostIsNotPostedASecondTime() = forEachVersion {
+        var lose = true
+        graph.server.respond("POST", "/api/meal-plan/") { request ->
+            val saved = checkNotNull(tandoor.answer(request))
+            if (lose) {
+                lose = false
+                MockResponse.Builder().code(503).addHeader("Content-Type", "text/html").body("<html>busy</html>").build()
+            } else {
+                saved
+            }
+        }
+        val day = LocalDate(2026, 10, 20)
+        val id = assertOk(repo.create(MealPlanDraft(day, mealTypeId = FakeMealPlanTandoor.DINNER, recipeId = FakeMealPlanTandoor.RECIPE)))
+        assertEquals(DrainResult.RETRY, graph.outbox.drain(graph.remote))
+        // Veckan's refresh: the window (which stores the server's copy), then the retry.
+        refresh()
+        drainAll()
+        assertEquals("[$version] one POST", 1, tandoor.requests("POST", "/api/meal-plan/").size)
+        assertEquals(1, tandoor.all().size)
+        assertEquals(listOf(tandoor.all().single().id), mealsOn(day).map { it.id })
+        assertEquals(tandoor.all().single().id, repo.observeMeal(id).first()?.id)
+    }
+
+    /** 0.3.0 review (fix-data): a meal deleted after its CREATE was attempted is deleted on the server too. */
+    @Test
+    fun aMealDeletedAfterALostAnswerIsDeletedOnTheServerToo() = forEachVersion {
+        var lose = true
+        graph.server.respond("POST", "/api/meal-plan/") { request ->
+            val saved = checkNotNull(tandoor.answer(request))
+            if (lose) {
+                lose = false
+                MockResponse.Builder().code(503).addHeader("Content-Type", "text/html").body("<html>busy</html>").build()
+            } else {
+                saved
+            }
+        }
+        val day = LocalDate(2026, 10, 21)
+        val id = assertOk(repo.create(MealPlanDraft(day, mealTypeId = FakeMealPlanTandoor.DINNER, title = "Soppa")))
+        assertEquals(DrainResult.RETRY, graph.outbox.drain(graph.remote))
+        assertOk(repo.delete(id))
+        drainAll()
+        assertEquals("[$version] one POST", 1, tandoor.requests("POST", "/api/meal-plan/").size)
+        assertTrue("[$version] deleted on the server: ${tandoor.all()}", tandoor.all().isEmpty())
+        assertTrue(mealsOn(day).isEmpty())
+    }
+
+    /** 0.3.0 review (fix-data): a meal whose CREATE is answered while the window is read stays. */
+    @Test
+    fun aMealSentWhileTheWindowIsReadStays() = forEachVersion {
+        val entered = CountDownLatch(1)
+        val gate = CountDownLatch(1)
+        graph.server.respond("GET", "/api/meal-plan/") { request ->
+            // The answer is built now, before the meal below reaches the server.
+            val answer = checkNotNull(tandoor.answer(request))
+            entered.countDown()
+            gate.await(GATE_SECONDS, TimeUnit.SECONDS)
+            answer
+        }
+        val day = LocalDate(2026, 10, 22)
+        assertOk(repo.create(MealPlanDraft(day, mealTypeId = FakeMealPlanTandoor.DINNER, title = "Paj")))
+        coroutineScope {
+            val read = async(Dispatchers.Default) { graph.mealPlanWindow.read(graph.remote, background = true) }
+            assertTrue(entered.await(GATE_SECONDS, TimeUnit.SECONDS))
+            val drain = async(Dispatchers.Default) { graph.outbox.drain(graph.remote) }
+            delay(SETTLE_MILLIS)
+            gate.countDown()
+            read.await()
+            drain.await()
+        }
+        val created = tandoor.all().single()
+        assertEquals("[$version] the new meal is still here", listOf(created.id), mealsOn(day).map { it.id })
+    }
+
     @Test
     fun theSyncRunReadsTheWindowAndSendsTheOutbox() = forEachVersion {
         tandoor.web("2026-10-06T18:00:00+02:00", title = "Idag")
@@ -399,6 +549,8 @@ class MealPlanSyncTest {
     private companion object {
         val VERSIONS = listOf("2.6.13", "2.7.1")
         const val MAX_DRAINS = 10
+        const val GATE_SECONDS = 10L
+        const val SETTLE_MILLIS = 500L
 
         fun <T> assertOk(outcome: Outcome<T>): T {
             assertTrue("$outcome", outcome is Outcome.Success)

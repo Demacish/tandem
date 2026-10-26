@@ -361,7 +361,8 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         if (rest.isEmpty()) {
             outbox.deleteRows(listOf(row.id))
         } else {
-            outbox.updateMerged(row.id, rest.toString(), row.batchKey, row.refs, row.dependsOn, context.now)
+            val restBase = JsonObject(theirs.filterKeys { it !in fields })
+            outbox.updateMerged(row.id, rest.toString(), row.batchKey, row.refs, row.dependsOn, context.now, restBase.toString())
         }
         Outcome.Success(Unit)
     }

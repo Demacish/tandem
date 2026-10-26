@@ -294,9 +294,11 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         }
     }
 
-    override suspend fun clearChecked(): Outcome<Unit> = write { context ->
-        // Each DELETE replaces the entry's queued check (OutboxMerge): the outbox is clean before the list is.
-        context.database.shoppingDao().getCheckedEntries(context.accountId).forEach { context.removeEntry(it) }
+    override suspend fun clearChecked(ids: Collection<Long>): Outcome<Unit> = write { context ->
+        // Only the checked entries the screen showed (0.3.0 review, fix-data: not the other named
+        // lists' too). Each DELETE replaces the entry's queued check (OutboxMerge): the outbox is
+        // clean before the list is.
+        context.entries(ids).filter { it.checked }.forEach { context.removeEntry(it) }
     }
 
     // ------------------------------------------------------------------------------------ helpers
@@ -481,6 +483,8 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         ) {
             if (!remote) return
             val serverId = entry.serverId
+            // Created offline and its CREATE is gone (cancelled): nothing can ever be sent for it.
+            if (serverId == null && createRowOf(OutboxEntities.SHOPPING_ENTRY, entry.localId) == null) return
             database.outboxDao().enqueue(
                 OutboxEntity(
                     accountId = accountId,
@@ -501,6 +505,7 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         suspend fun queueListRecipe(listRecipe: ShoppingListRecipeEntity, op: String, payload: String) {
             if (!remote) return
             val serverId = listRecipe.serverId
+            if (serverId == null && createRowOf(OutboxEntities.SHOPPING_LIST_RECIPE, listRecipe.localId) == null) return
             database.outboxDao().enqueue(
                 OutboxEntity(
                     accountId = accountId,
@@ -536,18 +541,25 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         private suspend fun createRowOf(entity: String, localId: Long): OutboxEntity? =
             database.outboxDao().getAllFor(accountId, entity).firstOrNull { it.op == OutboxOps.CREATE && it.localId == localId }
 
-        /** True while [entry] never reached the server and its CREATE waits unsent (a change merges into it). */
+        /**
+         * True while [entry] never reached the server and its CREATE waits unsent and was never
+         * attempted (a change merges into it). A CREATE attempted before may be on the server
+         * already (0.3.0 review, fix-data): changes then wait for it as rows of their own.
+         */
         suspend fun hasUnsentCreate(entry: ShoppingEntryEntity): Boolean {
             if (!remote || entry.serverId != null) return false
-            return createRowOf(OutboxEntities.SHOPPING_ENTRY, entry.localId)?.state?.let { it in UNSENT } == true
+            return createRowOf(OutboxEntities.SHOPPING_ENTRY, entry.localId)?.let { mergesInto(it) } == true
         }
 
         /**
-         * The CREATE a change of an offline object must wait for: only one being sent (or failed). An
-         * unsent CREATE takes the change itself (`OutboxMerge`), and depending on it would block it.
+         * The CREATE a change of an offline object must wait for: one being sent, failed, or attempted
+         * before. An unsent CREATE that was never attempted takes the change itself (`OutboxMerge`),
+         * and depending on it would block it.
          */
         private suspend fun sendingCreateOf(entity: String, localId: Long): Long? =
-            createRowOf(entity, localId)?.takeIf { it.state !in UNSENT }?.id
+            createRowOf(entity, localId)?.takeUnless { mergesInto(it) }?.id
+
+        private fun mergesInto(create: OutboxEntity): Boolean = create.state in UNSENT && create.attempts == 0
     }
 
     private companion object {

@@ -39,8 +39,9 @@ internal class ShoppingChangeBus @Inject constructor() {
  * @property entity the outbox entity (`shopping_entry` …).
  * @property op the outbox operation.
  * @property reason [DroppedChanges.DELETED_ELSEWHERE] (seen missing in a full read before sending:
- *   no request) or [DroppedChanges.NOT_FOUND] (the server answered 404; not counted by the
- *   circuit breaker).
+ *   no request), [DroppedChanges.NOT_FOUND] (the server answered 404; counted by the circuit
+ *   breaker like every 404) or [DroppedChanges.ORPHAN] (a change of an object created offline whose
+ *   CREATE is gone, so it can never be sent).
  */
 internal data class DroppedChange(val entity: String, val op: String, val serverId: Long?, val reason: String, val atMillis: Long)
 
@@ -61,6 +62,9 @@ internal class DroppedChanges @Inject constructor() {
     companion object {
         const val DELETED_ELSEWHERE: String = "deleted-elsewhere"
         const val NOT_FOUND: String = "not-found"
+
+        /** 0.3.0 review (fix-data): the object was created offline and its CREATE is gone (`OutboxSender`). */
+        const val ORPHAN: String = "orphan"
         const val LIMIT: Int = 50
     }
 }

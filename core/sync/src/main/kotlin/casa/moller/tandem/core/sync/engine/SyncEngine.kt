@@ -281,11 +281,16 @@ internal class SyncEngine @Inject constructor(
             if (referenceDue) markDone(SyncKeys.REFERENCE_DATA)
             stopReason()?.let { return failed(it) }
 
+            // 0.3.0 review (fix-data): the role first (guest mode #42), so the list and the outbox
+            // below never act for a guest whose role was not read yet.
+            books.role(remote, background, smallTables = referenceDue)
+            stopReason()?.let { return failed(it) }
+
             // Phase 2 (inköp-data lane): the shopping list (plan 3.5: full at start, else a delta).
             shopping.run(remote, background, smallTables = referenceDue, full = reason in SHOPPING_FULL_READ)
             stopReason()?.let { return failed(it) }
 
-            // Phase 2 (böcker lane): the role (guest mode #42) and the books (plan 3.5 "Små tabeller").
+            // Phase 2 (böcker lane): the books (plan 3.5 "Små tabeller").
             books.run(remote, background, smallTables = referenceDue)
             stopReason()?.let { return failed(it) }
 

@@ -2,6 +2,7 @@ package casa.moller.tandem.core.sync.book
 
 import android.content.Context
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.domain.book.RecipeBookRules
@@ -17,9 +18,11 @@ import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxHandler
 import casa.moller.tandem.core.sync.engine.OutboxResult
 import casa.moller.tandem.core.sync.remote.RemoteCaller
+import casa.moller.tandem.core.sync.shopping.claimedServerIds
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -60,11 +63,15 @@ internal class ResourceBookNames @Inject constructor(@ApplicationContext private
 internal class RecipeBookOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val caller: RemoteCaller,
+    private val sync: BookSync,
 ) : OutboxHandler {
-    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = when (row.op) {
-        OutboxOps.CREATE -> create(remote, row, payload)
-        OutboxOps.DELETE -> delete(remote, row)
-        else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+    // Under BookSync.lock (0.3.0 review, fix-data): a books read never removes a book created meanwhile.
+    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = sync.lock.withLock {
+        when (row.op) {
+            OutboxOps.CREATE -> create(remote, row, payload)
+            OutboxOps.DELETE -> delete(remote, row)
+            else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        }
     }
 
     private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
@@ -80,7 +87,7 @@ internal class RecipeBookOutboxHandler @Inject constructor(
         val body = BookPayloads.bookBody(queued, shareWith)
         val name = (body["name"] as? JsonPrimitive)?.content.orEmpty()
         val existing = if (row.attempts > 0) findLostCreate(remote, name) else null
-        val created = existing ?: when (val sent = caller.call(remote, background = true) { books.createBook(body) }) {
+        val created = existing ?: when (val sent = caller.write(remote) { books.createBook(body) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value.id ?: return OutboxResult.Failed(TandemError.Decode("recipe-book-without-id"))
         }
@@ -93,18 +100,22 @@ internal class RecipeBookOutboxHandler @Inject constructor(
         return OutboxResult.Created(created)
     }
 
-    /** A book of the user with this name that the device does not know yet: the answer of an earlier attempt was lost. */
+    /**
+     * A book of the user with this name that no other create of this device claimed: the answer of
+     * an earlier attempt was lost. A copy a books read stored meanwhile counts too (0.3.0 review,
+     * fix-data): `completeCreate` drops it, so the retry never makes a second "Favoriter".
+     */
     private suspend fun findLostCreate(remote: ActiveSource.Remote, name: String): Long? {
         val listed = caller.call(remote, background = true) { taxonomy.recipeBooks(page = null) }
-        val known = databases.get(remote.kind).recipeBookDao().getBooks(remote.accountId).mapNotNull { it.serverId }.toSet()
+        val claimed = claimedServerIds(databases, remote, OutboxEntities.RECIPE_BOOK)
         return (listed as? Outcome.Success)?.value?.results
-            ?.firstOrNull { it.name == name && it.createdBy?.id == remote.account.userId && it.id !in known }
+            ?.firstOrNull { it.name == name && it.createdBy?.id == remote.account.userId && it.id != null && it.id !in claimed }
             ?.id
     }
 
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Dropped
-        return when (val sent = caller.call(remote, background = true) { books.deleteBook(serverId) }) {
+        return when (val sent = caller.write(remote) { books.deleteBook(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
             is Outcome.Failure -> if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
         }
@@ -119,11 +130,15 @@ internal class RecipeBookOutboxHandler @Inject constructor(
 internal class RecipeBookEntryOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val caller: RemoteCaller,
+    private val sync: BookSync,
 ) : OutboxHandler {
-    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = when (row.op) {
-        OutboxOps.CREATE -> create(remote, row, payload)
-        OutboxOps.DELETE -> delete(remote, row)
-        else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+    // Under BookSync.lock (0.3.0 review, fix-data): a books read never removes an entry (a heart) created meanwhile.
+    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = sync.lock.withLock {
+        when (row.op) {
+            OutboxOps.CREATE -> create(remote, row, payload)
+            OutboxOps.DELETE -> delete(remote, row)
+            else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        }
     }
 
     private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
@@ -132,7 +147,7 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
         val recipeId = (body["recipe"] as? JsonPrimitive)?.longOrNull
         if (bookId == null || recipeId == null || bookId < 0) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.attempts > 0) findOnServer(remote, bookId, recipeId)?.let { return OutboxResult.Created(it) }
-        return when (val sent = caller.call(remote, background = true) { books.createEntry(body) }) {
+        return when (val sent = caller.write(remote) { books.createEntry(body) }) {
             is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }
                 ?: OutboxResult.Failed(TandemError.Decode("entry-without-id"))
 
@@ -167,7 +182,7 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
 
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Dropped
-        return when (val sent = caller.call(remote, background = true) { books.deleteEntry(serverId) }) {
+        return when (val sent = caller.write(remote) { books.deleteEntry(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
             is Outcome.Failure -> if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
         }
@@ -191,8 +206,13 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
     private val caller: RemoteCaller,
     private val details: DetailFetcher,
     private val names: BookNames,
+    private val sync: BookSync,
 ) : OutboxHandler {
-    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
+    // Under BookSync.lock (0.3.0 review, fix-data): the "Vill laga" book it may create is never removed by a read.
+    override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult =
+        sync.lock.withLock { sendLocked(remote, row, payload) }
+
+    private suspend fun sendLocked(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val recipeId = row.serverId
         val want = BookPayloads.wantToCookOf(payload)
         if (row.op != OutboxOps.RECIPE_KEYWORDS || recipeId == null || want == null) {
@@ -220,7 +240,7 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
         }
         val list = if (want) kept + buildJsonObject { put("name", WantToCook.KEYWORD) } else kept
         val body = JsonObject(mapOf("keywords" to JsonArray(list)))
-        val sent = caller.call(remote, background = true) { books.patchRecipe(recipeId, body) }
+        val sent = caller.write(remote) { books.patchRecipe(recipeId, body) }
         val patched = when (sent) {
             is Outcome.Failure -> return if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
@@ -250,14 +270,14 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             put("search", WantToCook.filterSearch(keywordId))
             put("shared", others)
         }
-        val filter = (caller.call(remote, background = true) { books.createFilter(filterBody) } as? Outcome.Success)?.value ?: return
+        val filter = (caller.write(remote) { books.createFilter(filterBody) } as? Outcome.Success)?.value ?: return
         val bookBody = buildJsonObject {
             put("name", names.wantToCook)
             put("description", "")
             put("shared", others)
             put("filter", TandoorJson.encodeToJsonElement(CustomFilterDto.serializer(), filter))
         }
-        val book = (caller.call(remote, background = true) { books.createBook(bookBody) } as? Outcome.Success)?.value ?: return
+        val book = (caller.write(remote) { books.createBook(bookBody) } as? Outcome.Success)?.value ?: return
         book.toEntity(remote.accountId, setOf(keywordId))?.let { dao.upsertBooks(listOf(it)) }
     }
 

@@ -28,6 +28,9 @@ import kotlinx.coroutines.flow.map
  * [SpaceRoleSync] with the small tables, so at the first sync after a login and then at most once
  * an hour). Until it is known the role is [SpaceRole.UNKNOWN], which is not read-only. Demo mode
  * is never read-only; without an account there is nothing to write anyway.
+ *
+ * [SpacePermissions.householdMissing] (0.3.0 review, fix-data; plan 8.6): the role was read (the
+ * same answer carries the household) and `household` was null, so nothing is shared.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -38,8 +41,14 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
     override val permissions: Flow<SpacePermissions> = sources.source
         .flatMapLatest { source ->
             when (source) {
-                is ActiveSource.Remote -> databases.get(source.kind).accountDao().observeGroupLevel(source.accountId)
-                    .map { level -> SpacePermissions(role = SpaceRole.of(listOfNotNull(level))) }
+                is ActiveSource.Remote -> databases.get(source.kind).accountDao().observe(source.accountId)
+                    .map { row ->
+                        val level = row?.groupLevel
+                        SpacePermissions(
+                            role = SpaceRole.of(listOfNotNull(level)),
+                            householdMissing = level != null && row?.householdId == null,
+                        )
+                    }
 
                 ActiveSource.Demo -> flowOf(SpacePermissions(role = SpaceRole.USER, isDemo = true))
 

@@ -87,23 +87,56 @@ internal class ShoppingReader @Inject constructor(
      * false only when a complete answer lacked it (it is gone; the change must be dropped), true when
      * it was there or the answer cannot tell (1000 entries, incomplete).
      */
-    suspend fun stillOnServerLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<Boolean> {
+    suspend fun stillOnServerLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<Boolean> =
+        when (val snapshot = verifiedSnapshotLocked(remote)) {
+            is Outcome.Failure -> snapshot
+            is Outcome.Success -> Outcome.Success(snapshot.value?.let { !it.complete || serverId in it.ids } ?: true)
+        }
+
+    /**
+     * The same check for a list recipe (0.3.0 review, fix-data): false only when a complete answer
+     * listed no entry of it (deleted elsewhere with its entries; an empty one left on the server is
+     * harmless), true when an entry pointed at it, the answer cannot tell, or this device created it
+     * since the read.
+     */
+    suspend fun listRecipeStillOnServerLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<Boolean> =
+        when (val snapshot = verifiedSnapshotLocked(remote)) {
+            is Outcome.Failure -> snapshot
+            is Outcome.Success -> Outcome.Success(snapshot.value?.let { !it.complete || serverId in it.listRecipeIds } ?: true)
+        }
+
+    /**
+     * A 404 came back although the snapshot said the object was there (0.3.0 review, fix-data):
+     * others deleted rows since the read, so the next update or delete reads the list again first.
+     * A burst of deletions elsewhere then costs one 404 and one read, not one 404 per row.
+     */
+    fun invalidateSeen() {
+        seen = null
+    }
+
+    /** A CREATE was answered: the new entry exists, whatever the last full read said. */
+    fun noteCreated(accountId: String, serverId: Long) {
+        seen = seen?.takeIf { it.accountId == accountId }?.let { it.copy(ids = it.ids + serverId) }
+    }
+
+    /** A list recipe's CREATE was answered: it exists, whatever the last full read said. */
+    fun noteListRecipeCreated(accountId: String, serverId: Long) {
+        seen = seen?.takeIf { it.accountId == accountId }?.let { it.copy(listRecipeIds = it.listRecipeIds + serverId) }
+    }
+
+    /** The last full read if it is fresh enough (see [stillOnServerLocked]), else a new one; null when it cannot tell. */
+    private suspend fun verifiedSnapshotLocked(remote: ActiveSource.Remote): Outcome<SeenOnServer?> {
         val now = clock.nowMillis()
         val known = seen?.takeIf {
             it.accountId == remote.accountId &&
                 now - it.readAtMillis in 0 until VERIFY_MAX_AGE_MILLIS &&
                 it.reconnections == network.reconnections
         }
-        val snapshot = known ?: when (val read = readFull(remote, background = true)) {
-            is Outcome.Failure -> return read
-            is Outcome.Success -> seen ?: return Outcome.Success(true)
+        if (known != null) return Outcome.Success(known)
+        return when (val read = readFull(remote, background = true)) {
+            is Outcome.Failure -> read
+            is Outcome.Success -> Outcome.Success(seen)
         }
-        return Outcome.Success(!snapshot.complete || serverId in snapshot.ids)
-    }
-
-    /** A CREATE was answered: the new entry exists, whatever the last full read said. */
-    fun noteCreated(accountId: String, serverId: Long) {
-        seen = seen?.takeIf { it.accountId == accountId }?.let { it.copy(ids = it.ids + serverId) }
     }
 
     // ------------------------------------------------------------------------------------ reads
@@ -134,7 +167,14 @@ internal class ShoppingReader @Inject constructor(
             )
         }
         val ids = page.items.mapNotNull { it.id }.toSet()
-        seen = SeenOnServer(accountId, ids, complete = canDetect, readAtMillis = requestedAt, reconnections = reconnections)
+        seen = SeenOnServer(
+            accountId,
+            ids,
+            complete = canDetect,
+            readAtMillis = requestedAt,
+            reconnections = reconnections,
+            listRecipeIds = page.items.listRecipeIds(),
+        )
         if (!firstRead) events.forEach { changes.emit(accountId, it) }
         return Outcome.Success(Unit)
     }
@@ -154,7 +194,10 @@ internal class ShoppingReader @Inject constructor(
             )
         }
         seen = seen?.takeIf { it.accountId == remote.accountId }?.let { snapshot ->
-            snapshot.copy(ids = snapshot.ids + page.items.mapNotNull { it.id })
+            snapshot.copy(
+                ids = snapshot.ids + page.items.mapNotNull { it.id },
+                listRecipeIds = snapshot.listRecipeIds + page.items.listRecipeIds(),
+            )
         }
         events.forEach { changes.emit(remote.accountId, it) }
         return Outcome.Success(Unit)
@@ -191,9 +234,18 @@ internal class ShoppingReader @Inject constructor(
             }
         }
         dao.upsertEntries(incoming.filter { it.serverId !in pendingEntries })
+        // 0.3.0 review (fix-data): a food's aisle changed here and not sent yet stays on its entries
+        // (the server's copy still has the old aisle until the FOOD PATCH is sent).
+        ShoppingTables.reapplyQueuedFoods(database, accountId)
         val listRecipes = items.mapNotNull { it.listRecipeData?.toEntity(accountId) }.distinctBy { it.localId }
         dao.upsertListRecipes(listRecipes.filter { it.serverId !in pendingListRecipes })
-        if (full) events += applyWindowRule(remote, database, stored, incoming.mapNotNullTo(HashSet()) { it.serverId }, now)
+        if (full) {
+            events += applyWindowRule(remote, database, stored, incoming.mapNotNullTo(HashSet()) { it.serverId }, now)
+            // 0.3.0 review (fix-data): rows created offline whose CREATE is gone can never be sent
+            // (an earlier version left them behind when an unsent meal was deleted): removed.
+            dao.deleteOrphanEntries(accountId)
+            dao.deleteOrphanListRecipes(accountId)
+        }
         return events
     }
 
@@ -271,6 +323,8 @@ internal class ShoppingReader @Inject constructor(
 
     private fun List<OutboxEntity>.pendingServerIds(): Set<Long> = mapNotNullTo(HashSet()) { it.serverId }
 
+    private fun List<ShoppingListEntryDto>.listRecipeIds(): Set<Long> = mapNotNullTo(HashSet()) { it.listRecipeData?.id ?: it.listRecipe }
+
     /** [since] moved back by [OVERLAP_MILLIS] (in `Z` form, which Tandoor reads, FACTS "Fas 2 b"); as it is when unreadable. */
     private fun overlapped(since: String): String {
         val instant = TandoorDates.parseInstantOrNull(since) ?: return since
@@ -284,6 +338,8 @@ internal class ShoppingReader @Inject constructor(
         val complete: Boolean,
         val readAtMillis: Long,
         val reconnections: Int,
+        /** The list recipes the entries pointed at (0.3.0 review, fix-data), for [listRecipeStillOnServerLocked]. */
+        val listRecipeIds: Set<Long> = emptySet(),
     )
 
     companion object {

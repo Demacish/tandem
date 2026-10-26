@@ -10,7 +10,9 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.dto.ShoppingBulkCheckDto
 import casa.moller.tandem.core.network.dto.ShoppingListEntryDto
+import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.network.paging.Paginator
+import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.engine.OutboxHandler
 import casa.moller.tandem.core.sync.engine.OutboxResult
@@ -23,6 +25,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 
 /**
@@ -32,12 +35,17 @@ import kotlinx.serialization.json.longOrNull
  * - **CREATE** `POST /api/shopping-list-entry/`. A `checked` merged into the CREATE offline is not
  *   sent with it (Tandoor sets `completed_at` only when `checked` flips on an existing entry, FACTS
  *   "Fas 2 b"): the entry is checked with a bulk call right after. A retry after a lost answer first
- *   looks for the entry on the server (POST is not idempotent).
+ *   looks for the entry on the server (POST is not idempotent): an entry of this user with the same
+ *   food, unit and amount, created after the change was made, that no other create of this device
+ *   claimed (`id_mapping`). A copy a read stored meanwhile counts too (0.3.0 review, fix-data):
+ *   `IdRewriteDao.completeCreate` drops it, so the retry never makes a second entry.
  * - **PATCH / DELETE**: checked against a full read of the list first (at most one per minute,
  *   [ShoppingReader.stillOnServerLocked]): an entry another device deleted is dropped WITHOUT a
  *   request, so a list deleted elsewhere drains without a single 404 (Phase 2 "Klart när"). A 404
- *   that still happens (deleted between the read and the send) is an expected answer: done, recorded
- *   in [DroppedChanges], not counted by the circuit breaker.
+ *   that still happens (deleted between the read and the send) is done for the row and recorded in
+ *   [DroppedChanges]; it counts in the circuit breaker like every 404, and it makes the next update
+ *   or delete read the list again first ([ShoppingReader.invalidateSeen]), so a burst of deletions
+ *   elsewhere costs one 404, not one per row.
  * - **BULK_CHECK**: every ready row with the same `batch_key` in one `POST .../bulk/` (deleted ids
  *   are ignored by the server: no 404 possible).
  */
@@ -63,8 +71,8 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
         val checked = (body["checked"] as? JsonPrimitive)?.booleanOrNull == true
         // `checked` is sent with a bulk call after the create; `ids` never belongs in a create body.
         val createBody = JsonObject(body - "checked" - "ids")
-        val existing = if (row.attempts > 0) findLostCreate(remote, createBody) else null
-        val created = existing ?: when (val sent = caller.call(remote, background = true) { shopping.createEntry(createBody) }) {
+        val existing = if (row.attempts > 0) findLostCreate(remote, row, createBody) else null
+        val created = existing ?: when (val sent = caller.write(remote) { shopping.createEntry(createBody) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
@@ -81,7 +89,7 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
      * BULK_CHECK row takes over (unless a later check row of the user's already decides).
      */
     private suspend fun checkAfterCreate(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long) {
-        val sent = caller.call(remote, background = true) { shopping.bulkCheck(ShoppingBulkCheckDto(listOf(serverId), checked = true)) }
+        val sent = caller.write(remote) { shopping.bulkCheck(ShoppingBulkCheckDto(listOf(serverId), checked = true)) }
         if (sent is Outcome.Success) return
         val outbox = databases.get(remote.kind).outboxDao()
         val localId = row.localId ?: return
@@ -107,7 +115,7 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         goneBeforeSending(remote, row, serverId)?.let { return it }
-        return when (val sent = caller.call(remote, background = true) { shopping.patchEntry(serverId, body) }) {
+        return when (val sent = caller.write(remote) { shopping.patchEntry(serverId, body) }) {
             is Outcome.Success -> {
                 storeAnswer(remote, row, sent.value)
                 OutboxResult.Sent
@@ -120,14 +128,17 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
         goneBeforeSending(remote, row, serverId)?.let { return it }
-        return when (val sent = caller.call(remote, background = true) { shopping.deleteEntry(serverId) }) {
+        return when (val sent = caller.write(remote) { shopping.deleteEntry(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
             is Outcome.Failure -> notFoundOrFailed(remote, row, serverId, sent.error)
         }
     }
 
-    private suspend fun notFoundOrFailed(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long, error: TandemError): OutboxResult =
-        if (error == TandemError.NotFound) gone(remote, row, serverId, DroppedChanges.NOT_FOUND) else OutboxResult.Failed(error)
+    private suspend fun notFoundOrFailed(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long, error: TandemError): OutboxResult {
+        if (error != TandemError.NotFound) return OutboxResult.Failed(error)
+        reader.invalidateSeen()
+        return gone(remote, row, serverId, DroppedChanges.NOT_FOUND)
+    }
 
     /** Null to send; a result when the entry is gone (dropped unsent) or the check failed. */
     private suspend fun goneBeforeSending(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long): OutboxResult? =
@@ -164,7 +175,7 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
             batch.forEach { (other, _) -> outbox.markDone(other.id) }
             return OutboxResult.Dropped
         }
-        return when (val sent = caller.call(remote, background = true) { shopping.bulkCheck(ShoppingBulkCheckDto(ids, checked)) }) {
+        return when (val sent = caller.write(remote) { shopping.bulkCheck(ShoppingBulkCheckDto(ids, checked)) }) {
             is Outcome.Success -> {
                 batch.forEach { (other, _) -> outbox.markDone(other.id) }
                 OutboxResult.Sent
@@ -197,8 +208,14 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
         }
     }
 
-    /** An earlier attempt may have reached the server with its answer lost: the same new entry, if found. */
-    private suspend fun findLostCreate(remote: ActiveSource.Remote, body: JsonObject): ShoppingListEntryDto? {
+    /**
+     * An earlier attempt may have reached the server with its answer lost: the same new entry, if
+     * found. A candidate is this user's entry with the same food, unit and amount, created no earlier
+     * than the change was made (minus the clock skew tolerance, so an identical entry added on
+     * purpose before is never taken), that no other create of this device claimed. A copy that a
+     * read stored meanwhile is a candidate too: `completeCreate` drops it.
+     */
+    private suspend fun findLostCreate(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): ShoppingListEntryDto? {
         val food = ((body["food"] as? JsonObject)?.get("name") as? JsonPrimitive)?.content ?: return null
         val unit = ((body["unit"] as? JsonObject)?.get("name") as? JsonPrimitive)?.content
         val amount = (body["amount"] as? JsonPrimitive)?.content?.toDoubleOrNull() ?: 0.0
@@ -207,11 +224,14 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
             Paginator.fetchAll(maxPages = ShoppingReader.MAX_PAGES) { page -> api.shopping.entries(null, page.takeIf { it > 1 }) }
         }
         val items = (listed as? Outcome.Success)?.value?.items ?: return null
-        val known = databases.get(remote.kind).shoppingDao().getEntries(remote.accountId).mapNotNullTo(HashSet()) { it.serverId }
-        return items.lastOrNull { entry ->
-            entry.id != null && entry.id !in known && entry.createdBy?.id == remote.account.userId &&
+        val claimed = claimedServerIds(databases, remote, OutboxEntities.SHOPPING_ENTRY)
+        val notBefore = row.createdAtEpochMillis - SyncSchedule.CLOCK_SKEW_TOLERANCE.inWholeMilliseconds
+        return items.filter { entry ->
+            val createdAt = TandoorDates.parseInstantOrNull(entry.createdAt)?.toEpochMilli()
+            entry.id != null && entry.id !in claimed && entry.createdBy?.id == remote.account.userId &&
+                (createdAt == null || createdAt >= notBefore) &&
                 entry.food?.name.equals(food, ignoreCase = true) && entry.unit?.name == unit && entry.amount == amount
-        }
+        }.minByOrNull { it.id ?: Long.MAX_VALUE }
     }
 
     private fun idsOf(payload: String): List<Long> =
@@ -223,7 +243,18 @@ internal class ShoppingEntryOutboxHandler @Inject constructor(
     }
 }
 
-/** `shopping_list_recipe` rows: a recipe or meal on the list (`/api/shopping-list-recipe/`). */
+/**
+ * `shopping_list_recipe` rows: a recipe or meal on the list (`/api/shopping-list-recipe/`), under
+ * [ShoppingReader.lock] (0.3.0 review, fix-data: the plan 3.5 safeguards the entries have):
+ *
+ * - **CREATE** `POST`; a retry after a lost answer first lists the list recipes and takes this
+ *   user's one with the same recipe, meal and servings that no other create of this device claimed.
+ * - **PATCH / DELETE**: checked against a fresh full read of the list first (the list recipes its
+ *   entries point at, [ShoppingReader.listRecipeStillOnServerLocked]) and, when no entry points at
+ *   it, the list of list recipes; one deleted elsewhere is dropped without a request. A 404 that
+ *   still comes is done (its entries went with it) and makes the next update or delete read the
+ *   list again first.
+ */
 internal class ShoppingListRecipeOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val caller: RemoteCaller,
@@ -234,48 +265,103 @@ internal class ShoppingListRecipeOutboxHandler @Inject constructor(
     override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = reader.lock.withLock {
         val body = parse(payload) ?: return@withLock OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         when (row.op) {
-            OutboxOps.CREATE -> when (val sent = caller.call(remote, background = true) { shopping.createListRecipe(body) }) {
-                is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }
-                    ?: OutboxResult.Failed(TandemError.Decode("list-recipe-without-id"))
-
-                is Outcome.Failure -> OutboxResult.Failed(sent.error)
-            }
-
+            OutboxOps.CREATE -> create(remote, row, body)
             OutboxOps.PATCH -> expectGone(remote, row) { id -> shopping.patchListRecipe(id, body) }
-
             OutboxOps.DELETE -> expectGone(remote, row) { id -> shopping.deleteListRecipe(id) }
-
             else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
     }
 
-    /** An update or delete: a 404 means deleted elsewhere (its entries went with it): dropped, not counted. */
+    private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
+        val existing = if (row.attempts > 0) findLostCreate(remote, body) else null
+        val serverId = existing ?: when (val sent = caller.write(remote) { shopping.createListRecipe(body) }) {
+            is Outcome.Success -> sent.value.id ?: return OutboxResult.Failed(TandemError.Decode("list-recipe-without-id"))
+            is Outcome.Failure -> return OutboxResult.Failed(sent.error)
+        }
+        reader.noteListRecipeCreated(remote.accountId, serverId)
+        return OutboxResult.Created(serverId)
+    }
+
+    /** The list recipe an earlier attempt created (its answer lost), if the server has it. */
+    private suspend fun findLostCreate(remote: ActiveSource.Remote, body: JsonObject): Long? {
+        val recipe = (body["recipe"] as? JsonPrimitive)?.longOrNull
+        val mealPlan = (body["mealplan"] as? JsonPrimitive)?.longOrNull
+        val servings = (body["servings"] as? JsonPrimitive)?.doubleOrNull
+        val listed = caller.call(remote, background = true) {
+            val api: TandoorApi = this
+            Paginator.fetchAll(maxPages = ShoppingReader.MAX_PAGES) { page -> api.shopping.listRecipes(page.takeIf { it > 1 }) }
+        }
+        val items = (listed as? Outcome.Success)?.value?.items ?: return null
+        val claimed = claimedServerIds(databases, remote, OutboxEntities.SHOPPING_LIST_RECIPE)
+        return items.filter { found ->
+            val id = found.id
+            id != null && id !in claimed && found.recipe == recipe && found.mealplan == mealPlan && found.servings == servings &&
+                (found.createdBy?.id == null || found.createdBy?.id == remote.account.userId)
+        }.mapNotNull { it.id }.maxOrNull()
+    }
+
+    /** An update or delete: dropped unsent when a fresh read shows it is gone; a 404 means deleted elsewhere (entries too). */
     private suspend fun expectGone(
         remote: ActiveSource.Remote,
         row: OutboxEntity,
         request: suspend TandoorApi.(Long) -> Any,
     ): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
-        return when (val sent = caller.call(remote, background = true) { this.request(serverId) }) {
+        goneBeforeSending(remote, row, serverId)?.let { return it }
+        return when (val sent = caller.write(remote) { this.request(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
 
             is Outcome.Failure -> {
                 if (sent.error != TandemError.NotFound) return OutboxResult.Failed(sent.error)
-                val database = databases.get(remote.kind)
-                database.shoppingDao().inTransaction {
-                    val entries = database.shoppingDao().getEntriesOfListRecipe(remote.accountId, serverId)
-                    entries.forEach { entry ->
-                        entry.serverId?.let { database.outboxDao().deleteUnsentFor(remote.accountId, OutboxEntities.SHOPPING_ENTRY, it) }
-                    }
-                    database.shoppingDao().deleteEntries(remote.accountId, entries.map { it.localId })
-                    database.shoppingDao().deleteListRecipes(remote.accountId, listOf(serverId))
-                }
-                dropped.record(DroppedChange(row.entity, row.op, serverId, DroppedChanges.NOT_FOUND, clock.nowMillis()))
-                OutboxResult.Dropped
+                reader.invalidateSeen()
+                gone(remote, row, serverId, DroppedChanges.NOT_FOUND)
             }
         }
     }
+
+    /**
+     * Null to send; a result when the list recipe is gone (dropped unsent) or the check failed. No
+     * entry of a fresh complete read points at it AND the list of list recipes lacks it: only then
+     * it is gone (one whose entries are still queued, or that the list does not show, is sent).
+     */
+    private suspend fun goneBeforeSending(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long): OutboxResult? {
+        when (val onServer = reader.listRecipeStillOnServerLocked(remote, serverId)) {
+            is Outcome.Failure -> return OutboxResult.Failed(onServer.error)
+            is Outcome.Success -> if (onServer.value) return null
+        }
+        val listed = caller.call(remote, background = true) {
+            val api: TandoorApi = this
+            Paginator.fetchAll(maxPages = ShoppingReader.MAX_PAGES) { page -> api.shopping.listRecipes(page.takeIf { it > 1 }) }
+        }
+        return when (listed) {
+            is Outcome.Failure -> OutboxResult.Failed(listed.error)
+            is Outcome.Success -> when {
+                !listed.value.complete || listed.value.items.any { it.id == serverId } -> null
+                else -> gone(remote, row, serverId, DroppedChanges.DELETED_ELSEWHERE)
+            }
+        }
+    }
+
+    /** The list recipe no longer exists (its entries went with it): removed here with everything queued for them. */
+    private suspend fun gone(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long, reason: String): OutboxResult {
+        val database = databases.get(remote.kind)
+        database.shoppingDao().inTransaction {
+            val entries = database.shoppingDao().getEntriesOfListRecipe(remote.accountId, serverId)
+            entries.forEach { entry ->
+                entry.serverId?.let { database.outboxDao().deleteUnsentFor(remote.accountId, OutboxEntities.SHOPPING_ENTRY, it) }
+            }
+            database.shoppingDao().deleteEntries(remote.accountId, entries.map { it.localId })
+            database.shoppingDao().deleteListRecipes(remote.accountId, listOf(serverId))
+            database.outboxDao().deleteUnsentFor(remote.accountId, OutboxEntities.SHOPPING_LIST_RECIPE, serverId)
+        }
+        dropped.record(DroppedChange(row.entity, row.op, serverId, reason, clock.nowMillis()))
+        return OutboxResult.Dropped
+    }
 }
+
+/** Server ids that creates of this device already claimed for [entity] (`id_mapping`): never another create's lost answer. */
+internal suspend fun claimedServerIds(databases: TandemDatabaseFactory, remote: ActiveSource.Remote, entity: String): Set<Long> =
+    databases.get(remote.kind).idRewriteDao().getMappings(remote.accountId).filter { it.entity == entity }.mapTo(HashSet()) { it.serverId }
 
 /** `food` rows: a food's aisle and "har hemma" (`PATCH /api/food/{id}/`). */
 internal class FoodOutboxHandler @Inject constructor(
@@ -288,8 +374,18 @@ internal class FoodOutboxHandler @Inject constructor(
         val foodId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.op != OutboxOps.PATCH) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        return when (val sent = caller.call(remote, background = true) { supermarkets.patchFood(foodId, body) }) {
-            is Outcome.Success -> OutboxResult.Sent
+        return when (val sent = caller.write(remote) { supermarkets.patchFood(foodId, body) }) {
+            is Outcome.Success -> {
+                // 0.3.0 review (fix-data): entries a read stored meanwhile with the old aisle follow the food now.
+                ShoppingTables.categoryOf(body)?.let { aisle ->
+                    val database = databases.get(remote.kind)
+                    database.shoppingDao().inTransaction {
+                        database.supermarketDao().setFoodCategory(remote.accountId, foodId, aisle.value)
+                        database.shoppingDao().setCategoryOfFood(remote.accountId, foodId, aisle.value)
+                    }
+                }
+                OutboxResult.Sent
+            }
 
             is Outcome.Failure -> if (sent.error == TandemError.NotFound) {
                 dropped.record(DroppedChange(row.entity, row.op, foodId, DroppedChanges.NOT_FOUND, clock.nowMillis()))
@@ -312,7 +408,7 @@ internal class AisleOrderOutboxHandler @Inject constructor(
         val relationId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.op != OutboxOps.PATCH) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        val sent = caller.call(remote, background = true) { supermarkets.patchRelation(relationId, body) }
+        val sent = caller.write(remote) { supermarkets.patchRelation(relationId, body) }
         return when (sent) {
             is Outcome.Success -> OutboxResult.Sent
 

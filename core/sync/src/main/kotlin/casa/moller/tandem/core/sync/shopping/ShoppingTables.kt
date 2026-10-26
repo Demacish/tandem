@@ -72,18 +72,7 @@ internal class ShoppingTables @Inject constructor(
         val stores = database.supermarketDao()
         val shopping = database.shoppingDao()
         shopping.inTransaction {
-            for (row in outbox.getAllFor(accountId, OutboxEntities.FOOD)) {
-                val foodId = row.serverId
-                val body = parse(row.payload)
-                if (foodId == null || body == null) continue
-                (body["food_onhand"] as? JsonPrimitive)?.booleanOrNull?.let { stores.setFoodOnHand(accountId, foodId, it) }
-                if ("supermarket_category" in body) {
-                    val category = body["supermarket_category"]
-                    val categoryId = ((category as? JsonObject)?.get("id") as? JsonPrimitive)?.longOrNull
-                    stores.setFoodCategory(accountId, foodId, categoryId)
-                    shopping.setCategoryOfFood(accountId, foodId, categoryId)
-                }
-            }
+            reapplyQueuedFoods(database, accountId)
             outbox.getAllFor(accountId, OutboxEntities.SUPERMARKET_CATEGORY_RELATION).forEach { row ->
                 val order = (parse(row.payload)?.get("order") as? JsonPrimitive)?.intOrNull
                 val relationId = row.serverId
@@ -103,7 +92,39 @@ internal class ShoppingTables @Inject constructor(
 
     private fun sameSource(remote: ActiveSource.Remote): Boolean = sources.source.value.identity == remote.identity
 
-    private val json = Json { ignoreUnknownKeys = true }
+    companion object {
+        private val json = Json { ignoreUnknownKeys = true }
 
-    private fun parse(payload: String): JsonObject? = runCatching { json.parseToJsonElement(payload) }.getOrNull() as? JsonObject
+        private fun parse(payload: String): JsonObject? = runCatching { json.parseToJsonElement(payload) }.getOrNull() as? JsonObject
+
+        /**
+         * The queued `food` PATCHes (aisle, "har hemma") on the stored food and its entries, inside
+         * the caller's transaction. Also run after every list read (0.3.0 review, fix-data), whose
+         * entries carry the server's old aisle until the change is sent.
+         */
+        suspend fun reapplyQueuedFoods(database: TandemDatabase, accountId: String) {
+            val stores = database.supermarketDao()
+            val shopping = database.shoppingDao()
+            for (row in database.outboxDao().getAllFor(accountId, OutboxEntities.FOOD)) {
+                val foodId = row.serverId
+                val body = parse(row.payload)
+                if (foodId == null || body == null) continue
+                (body["food_onhand"] as? JsonPrimitive)?.booleanOrNull?.let { stores.setFoodOnHand(accountId, foodId, it) }
+                categoryOf(body)?.let { categoryId ->
+                    stores.setFoodCategory(accountId, foodId, categoryId.value)
+                    shopping.setCategoryOfFood(accountId, foodId, categoryId.value)
+                }
+            }
+        }
+
+        /** The aisle a `food` PATCH body sets (`supermarket_category`: `{id, name}` or null), null when it sets none. */
+        fun categoryOf(body: JsonObject): AisleId? {
+            if ("supermarket_category" !in body) return null
+            val category = body["supermarket_category"]
+            return AisleId(((category as? JsonObject)?.get("id") as? JsonPrimitive)?.longOrNull)
+        }
+    }
+
+    /** An aisle a food is moved to; [value] null = no aisle. */
+    data class AisleId(val value: Long?)
 }

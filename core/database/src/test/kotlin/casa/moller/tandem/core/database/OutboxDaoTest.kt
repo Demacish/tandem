@@ -89,10 +89,31 @@ class OutboxDaoTest {
         assertEquals(edit, outbox.nextReady(ACCOUNT_A)?.id)
         outbox.markInFlight(edit)
         outbox.markFailed(edit, "http-400")
+        // 0.3.0 review (fix-data): a FAILED edit ("Vill laga") never holds back the recipe's log rows...
         val next = add(entity = OutboxEntities.RECIPE, serverId = 2, op = OutboxOps.COOK_LOG)
-        assertNull("a failed edit still holds the recipe's later rows", outbox.nextReady(ACCOUNT_A))
+        assertEquals("a failed edit does not hold back a cook log", next, outbox.nextReady(ACCOUNT_A)?.id)
+        outbox.markDone(next)
+        // ...but it still holds back its later edits.
+        val laterEdit = add(entity = OutboxEntities.RECIPE, serverId = 2, op = OutboxOps.RECIPE_KEYWORDS)
+        assertNull("a failed edit still holds the recipe's later edits", outbox.nextReady(ACCOUNT_A))
         outbox.markDone(edit)
-        assertEquals(next, outbox.nextReady(ACCOUNT_A)?.id)
+        assertEquals(laterEdit, outbox.nextReady(ACCOUNT_A)?.id)
+    }
+
+    /** 0.3.0 review (fix-data): a log row waits only for log rows, an edit only for edits. */
+    @Test
+    fun logRowsAndEditsOfOneRecipeDoNotWaitForEachOther() = runTest {
+        val keywords = add(entity = OutboxEntities.RECIPE, serverId = 7, op = OutboxOps.RECIPE_KEYWORDS)
+        outbox.markInFlight(keywords)
+        outbox.markFailed(keywords, "tandem.sync.unsupported-outbox-op")
+        val cooked = add(entity = OutboxEntities.RECIPE, serverId = 7, op = OutboxOps.COOK_LOG)
+        val viewed = add(entity = OutboxEntities.RECIPE, serverId = 7, op = OutboxOps.VIEW_LOG)
+
+        assertEquals(cooked, outbox.nextReady(ACCOUNT_A)?.id)
+        outbox.markInFlight(cooked)
+        assertNull("the view log still waits for the cook log being sent", outbox.nextReady(ACCOUNT_A))
+        outbox.markDone(cooked)
+        assertEquals(viewed, outbox.nextReady(ACCOUNT_A)?.id)
     }
 
     @Test

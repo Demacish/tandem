@@ -17,15 +17,23 @@ import casa.moller.tandem.core.network.dto.ViewLogCreateRequestDto
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.network.json.TandoorJson
 import casa.moller.tandem.core.network.paging.Paginator
+import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
+import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.remote.toEntity
+import casa.moller.tandem.core.sync.shopping.DroppedChange
+import casa.moller.tandem.core.sync.shopping.DroppedChanges
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 
 /** How a run of [OutboxSender.drain] ended. */
@@ -64,6 +72,17 @@ internal enum class DrainResult {
  *   FAILED. `POST /api/cook-log/` is not idempotent, so a row that was attempted before first
  *   looks for its entry on the server (same recipe, author and `created_at`): an answer lost to a
  *   timeout never becomes a second entry.
+ * - **Guests** (#42; 0.3.0 review, fix-data): rows queued before the role was known (the first
+ *   sync after a login, a failed role read, a member demoted on the web) are never sent once the
+ *   stored role is `guest`: edits and "Klart!" become FAILED with [READ_ONLY], view logs are
+ *   dropped. A JSON 403 on a write whose token still works (the request is refused, the login is
+ *   fine) marks the row FAILED with [FORBIDDEN], reads the role again and ends the drain, so the
+ *   account is never sent back to the login and one refused row is not sent again and again.
+ * - **Rows that can never be sent** (0.3.0 review, fix-data): a row that points at an object
+ *   created offline whose CREATE is gone (cancelled) and that has no server id is dropped with its
+ *   local row ([DroppedChanges.ORPHAN]) instead of holding up every later row of the account.
+ * - A handler's request and the bookkeeping of its answer run to the end even when the caller is
+ *   cancelled (a screen's poller, a stopped worker), so an answered CREATE is never forgotten.
  */
 @Singleton
 internal class OutboxSender @Inject constructor(
@@ -73,6 +92,9 @@ internal class OutboxSender @Inject constructor(
     private val clock: SyncClock,
     // Phase 2 (grund lane): the lanes' senders by outbox entity (OutboxHandlerModule).
     private val handlers: Map<String, @JvmSuppressWildcards OutboxHandler>,
+    // 0.3.0 review (fix-data): the role is read again after a refused write; rows that can never be sent are recorded.
+    private val roles: SpaceRoleSync,
+    private val dropped: DroppedChanges,
 ) {
     private val mutex = Mutex()
 
@@ -86,6 +108,7 @@ internal class OutboxSender @Inject constructor(
         }
         outbox.resumeAll(accountId)
         outbox.resetInFlight(accountId)
+        if (isGuest(database, accountId)) refuseForGuest(remote)
         val storedRecipes = database.recipeDao().getRecipeIds(accountId).toHashSet()
         repeat(maxRows) {
             // Phase 2 (konto lane): the user switched to another account: its own drain follows.
@@ -115,6 +138,33 @@ internal class OutboxSender @Inject constructor(
         DrainResult.DONE
     }
 
+    /**
+     * The stored role is `guest` (#42): nothing queued is sent. Edits become FAILED with [READ_ONLY]
+     * (shown in "Pending changes"), a "Klart!" is kept as a rejected local entry, and view logs are
+     * dropped (a guest's views are not logged, see `markViewed`).
+     */
+    private suspend fun refuseForGuest(remote: ActiveSource.Remote) {
+        val database = databases.get(remote.kind)
+        val outbox = database.outboxDao()
+        val cookLog = database.cookLogDao()
+        for (row in outbox.getByState(remote.accountId, OutboxState.PENDING)) {
+            when (row.op) {
+                OutboxOps.VIEW_LOG -> outbox.markDone(row.id)
+
+                OutboxOps.COOK_LOG -> {
+                    val entry = cookLog.getEntryForOutbox(remote.accountId, row.id)
+                    if (entry != null) {
+                        cookLog.markRejected(remote.accountId, entry.localId, row.id, READ_ONLY, remote.cookStatsRules)
+                    } else {
+                        outbox.markFailed(row.id, READ_ONLY)
+                    }
+                }
+
+                else -> outbox.markFailed(row.id, READ_ONLY)
+            }
+        }
+    }
+
     /** Sends one row; null when the row needs no request (it is dropped). */
     private suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, storedRecipes: Set<Long>): Outcome<Unit>? = when (row.op) {
         OutboxOps.VIEW_LOG -> {
@@ -122,7 +172,9 @@ internal class OutboxSender @Inject constructor(
             if (recipeId == null || recipeId !in storedRecipes) {
                 null
             } else {
-                val sent = caller.call(remote, background = true) { logs.createViewLog(ViewLogCreateRequestDto(recipe = recipeId)) }
+                val sent = caller.write(remote) {
+                    logs.createViewLog(ViewLogCreateRequestDto(recipe = recipeId))
+                }
                 when (sent) {
                     is Outcome.Success -> Outcome.Success(Unit)
                     is Outcome.Failure -> sent
@@ -144,29 +196,71 @@ internal class OutboxSender @Inject constructor(
         val outbox = database.outboxDao()
         val ids = database.idRewriteDao()
         val mapping = ids.getMappings(remote.accountId).associate { (it.entity to it.localId) to it.serverId }
-        val payload = OutboxRefs.resolve(row.payload, row.refs) { entity, localId -> mapping[entity to localId] }
+        val missing = mutableListOf<Pair<String, Long>>()
+        val resolved = OutboxRefs.resolve(row.payload, row.refs) { entity, localId ->
+            mapping[entity to localId] ?: run {
+                missing += entity to localId
+                0L
+            }
+        }
+        val payload = resolved?.takeIf { missing.isEmpty() }
         if (payload == null) {
+            // Waiting for a CREATE that is still queued; a reference whose CREATE is gone can never resolve.
+            if (missing.any { (entity, localId) -> !outbox.hasCreate(remote.accountId, entity, localId) }) return dropOrphan(remote, row)
             outbox.markRetry(row.id, WAITING_FOR_ID)
             return DrainResult.RETRY
         }
-        return when (val result = handler.send(remote, row, payload)) {
-            OutboxResult.Sent, OutboxResult.Dropped -> {
-                outbox.markDone(row.id)
-                null
-            }
-
-            is OutboxResult.Created -> {
-                val localId = row.localId
-                if (localId != null && localId < 0) {
-                    ids.completeCreate(remote.accountId, row.id, row.entity, localId, result.serverId, clock.nowMillis())
-                } else {
+        // A change of an object that was created offline and whose CREATE is gone: it never gets a server id.
+        if (isOrphanChange(remote, row, mapping)) return dropOrphan(remote, row)
+        val localId = row.localId
+        // The request and what its answer means for the database belong together (a CREATE answered
+        // but not recorded would be sent again): they finish even when the caller is cancelled.
+        return withContext(NonCancellable) {
+            when (val result = handler.send(remote, row, payload)) {
+                OutboxResult.Sent, OutboxResult.Dropped -> {
                     outbox.markDone(row.id)
+                    null
                 }
-                null
-            }
 
-            is OutboxResult.Failed -> handleFailure(remote, row, result.error)
+                is OutboxResult.Created -> {
+                    if (localId != null && localId < 0) {
+                        ids.completeCreate(remote.accountId, row.id, row.entity, localId, result.serverId, clock.nowMillis())
+                    } else {
+                        outbox.markDone(row.id)
+                    }
+                    null
+                }
+
+                is OutboxResult.Failed -> handleFailure(remote, row, result.error)
+            }
         }
+    }
+
+    /** An update or delete of an object created offline that has no server id, no mapping and no CREATE any more. */
+    private suspend fun isOrphanChange(remote: ActiveSource.Remote, row: OutboxEntity, mapping: Map<Pair<String, Long>, Long>): Boolean {
+        val localId = row.localId ?: return false
+        if (row.op == OutboxOps.CREATE || row.serverId != null || localId >= 0) return false
+        if ((row.entity to localId) in mapping) return false
+        return !databases.get(remote.kind).outboxDao().hasCreate(remote.accountId, row.entity, localId)
+    }
+
+    /**
+     * [row] can never be sent (its object, or an object it points at, was created offline and its
+     * CREATE is gone): it is removed with the object's other rows and its local row that never
+     * reached the server, and recorded; the drain goes on with the next row.
+     */
+    private suspend fun dropOrphan(remote: ActiveSource.Remote, row: OutboxEntity): DrainResult? {
+        val database = databases.get(remote.kind)
+        val outbox = database.outboxDao()
+        database.shoppingDao().inTransaction {
+            outbox.markDone(row.id)
+            row.localId?.takeIf { it < 0 }?.let { localId ->
+                outbox.deleteObjectRows(remote.accountId, row.entity, localId, serverId = null)
+                outbox.deleteUnsentObjects(remote.accountId, row.entity, listOf(localId))
+            }
+        }
+        dropped.record(DroppedChange(row.entity, row.op, row.serverId, DroppedChanges.ORPHAN, clock.nowMillis()))
+        return null
     }
 
     /**
@@ -212,7 +306,7 @@ internal class OutboxSender @Inject constructor(
                 }
             }
         }
-        return when (val sent = caller.call(remote, background = true) { logs.createCookLog(request) }) {
+        return when (val sent = caller.write(remote) { logs.createCookLog(request) }) {
             is Outcome.Success -> {
                 settleSent(remote, row, localId, sent.value, request)
                 null
@@ -308,6 +402,15 @@ internal class OutboxSender @Inject constructor(
                 null
             }
 
+            error == SyncGuard.FORBIDDEN_ERROR -> {
+                // The token works, but this write was refused (FACTS "Fas 2": a guest gets 403 on bulk
+                // and recipe edits): FAILED, the role is read again, and the drain ends here so
+                // several refused writes never go out in a row (plan 4.1).
+                rejected(FORBIDDEN)
+                roles.sync(remote, background = true)
+                DrainResult.STOPPED
+            }
+
             error is TandemError.Unauthorized || error == TandemError.Blocked || error is TandemError.Throttled -> {
                 outbox.markRetry(row.id, error.code())
                 DrainResult.STOPPED
@@ -333,6 +436,12 @@ internal class OutboxSender @Inject constructor(
 
         /** A payload points at an object whose CREATE has not been answered yet (should not happen: `depends_on`). */
         const val WAITING_FOR_ID = "tandem.sync.waiting-for-server-id"
+
+        /** A row of a guest (#42): never sent. */
+        const val READ_ONLY = "tandem.sync.read-only"
+
+        /** Tandoor refused the write with a 403 although the token works. */
+        const val FORBIDDEN = "tandem.sync.forbidden"
 
         /** The cook log's `recipe` field (a 400 on it means the recipe does not exist). */
         const val FIELD_RECIPE = "recipe"

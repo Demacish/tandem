@@ -11,6 +11,7 @@ import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
 import casa.moller.tandem.core.model.shopping.ShoppingChange
+import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
 import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.shopping.FakeShoppingTandoor
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
@@ -266,6 +267,52 @@ class WeekShoppingSyncTest {
         ok(repo.addWeekToShopping(everything(online)))
         drainAll()
         assertEquals("[$version] only the server's rows", mapOf(serverId to 1), listRecipesByMeal())
+    }
+
+    /**
+     * 0.3.0 review (fix-data): an unsent meal deleted after "Handla för veckan" takes its rows on the
+     * list with it (nothing is left that could never be sent), and later changes still go out.
+     */
+    @Test
+    fun deletingAnUnsentMealAfterWeekShoppingLeavesNothingBehind() = forEachVersion {
+        autoAdd(graph, on = false)
+        graph.network.online.value = false
+        val day = LocalDate(2026, 10, 14)
+        val meal = ok(repo.create(MealPlanDraft(day, FakeMealPlanTandoor.DINNER, recipeId = PASTA, servings = 4.0)))
+        val offline = preview()
+        ok(repo.addWeekToShopping(everything(offline)))
+        val added = graph.real.shoppingDao().getEntries(ACCOUNT_ID)
+        assertTrue("[$version] the meal's rows are on the list", added.isNotEmpty() && added.all { it.mealPlanId == meal })
+
+        ok(repo.delete(meal))
+        val left = graph.real.shoppingDao().getEntries(ACCOUNT_ID)
+        assertTrue("[$version] no rows left: $left", left.isEmpty())
+        assertTrue(graph.real.shoppingDao().getListRecipes(ACCOUNT_ID).isEmpty())
+        assertEquals(0, graph.real.outboxDao().observeCount(ACCOUNT_ID).first())
+
+        // A later change of the list still reaches the server.
+        ok(graph.shopping.add(ShoppingEntryDraft("mjölk")))
+        graph.network.online.value = true
+        drainAll()
+        assertEquals(listOf("mjölk"), shop.all().map { it.food })
+        assertTrue(meals.all().isEmpty())
+        assertTrue(shop.listRecipes().isEmpty())
+    }
+
+    /** 0.3.0 review (fix-data): deleting a meal that reached the server removes its rows here; Tandoor deletes them itself. */
+    @Test
+    fun deletingAServerMealRemovesItsRowsWithoutAShoppingRequest() = forEachVersion {
+        autoAdd(graph, on = false)
+        val pasta = meals.web("2026-10-13T00:00:00", recipe = PASTA)
+        ok(repo.addWeekToShopping(everything(preview())))
+        drainAll()
+        assertEquals(mapOf(pasta to 1), listRecipesByMeal())
+        shop.calls.clear()
+        ok(repo.delete(pasta))
+        assertTrue(graph.real.shoppingDao().getEntries(ACCOUNT_ID).isEmpty())
+        drainAll()
+        assertTrue("[$version] no shopping request: ${shop.calls}", shop.calls.none { (call, _) -> !call.startsWith("GET ") })
+        assertEquals(listOf("DELETE /api/meal-plan/$pasta/"), meals.writes().map { it.first }.filter { it.startsWith("DELETE") })
     }
 
     /** A planned recipe nobody opened yet is read for the preview (online), so its ingredients can be chosen. */

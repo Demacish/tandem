@@ -74,6 +74,7 @@ PATCH /api/shopping-list-entry/{id}/
 DELETE /api/shopping-list-entry/{id}/
 POST /api/shopping-list-entry/bulk/
 POST /api/shopping-list-recipe/
+GET /api/shopping-list-recipe/
 PATCH /api/shopping-list-recipe/{id}/
 DELETE /api/shopping-list-recipe/{id}/
 GET /api/shopping-list/

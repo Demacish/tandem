@@ -58,6 +58,8 @@ class DtoFixturesTest {
         Route("GET", "/api/food/", PageDto.serializer(FoodDto.serializer())),
         Route("POST", "/api/food/", FoodDto.serializer()),
         Route("PATCH", "/api/food/\\d+/", FoodDto.serializer()),
+        // 0.3.0 review (fix-data): one food, the same shape as its PATCH answer.
+        Route("GET", "/api/food/\\d+/", FoodDto.serializer()),
         Route("GET", "/api/unit/", PageDto.serializer(UnitDto.serializer())),
         Route("POST", "/api/unit/", UnitDto.serializer()),
         Route("PATCH", "/api/unit/\\d+/", UnitDto.serializer()),
@@ -82,6 +84,8 @@ class DtoFixturesTest {
         Route("PATCH", "/api/shopping-list-entry/\\d+/", ShoppingListEntryDto.serializer()),
         Route("POST", "/api/shopping-list-entry/bulk/", ShoppingBulkCheckDto.serializer()),
         Route("POST", "/api/shopping-list-recipe/", ShoppingListRecipeDto.serializer()),
+        // 0.3.0 review (fix-data): read before a retried CREATE (an answer lost to a timeout).
+        Route("GET", "/api/shopping-list-recipe/", PageDto.serializer(ShoppingListRecipeDto.serializer())),
         Route("PATCH", "/api/shopping-list-recipe/\\d+/", ShoppingListRecipeDto.serializer()),
         Route("GET", "/api/shopping-list/", PageDto.serializer(ShoppingListDto.serializer())),
         Route("POST", "/api/shopping-list/", ShoppingListDto.serializer()),
@@ -105,6 +109,13 @@ class DtoFixturesTest {
         "fas1/seed-unit-conversion-create" to "the app reads conversions from the ingredients",
         "fas1/seed-unit-conversion-create-food" to "the app reads conversions from the ingredients",
         "fas1/unit-conversion-list" to "the app reads conversions from the ingredients",
+        // 0.3.0 review (fix-data): the Phase 2 recordings the app has no DTO for.
+        "fas2/household-list-owner" to "capability probe only (CapabilityProbeService), the body is never parsed",
+        "fas2/recipe-shopping-put" to "contract probe; the app uses shopping-list-recipe + entries, not recipe/{id}/shopping/",
+        "fas2/recipe-shopping-put-delete" to "contract probe; the app uses shopping-list-recipe + entries, not recipe/{id}/shopping/",
+        "fas2/shopping-list-recipe-bulk-create-entries" to "contract probe; the app creates each entry itself (ids for the outbox)",
+        "fas2/user-preference-patch" to "contract setup; the app only reads the preferences",
+        "fas2/user-preference-patch-autoadd" to "contract setup; the app only reads the preferences",
     )
 
     @Test
@@ -125,10 +136,7 @@ class DtoFixturesTest {
             val body = fixture.body?.takeUnless { it is JsonNull }
             val path = fixture.path.substringBefore('?')
             val route = routes.firstOrNull { it.method == fixture.method && it.path.matches(path) }
-            // Phase 2 (grund lane): a `fas2/` fixture of an endpoint without a DTO yet waits for the
-            // lane that adds the DTO and its route here (docs/BYGGE.md "Fas 2 – kontrakt"); the ones
-            // with a route (recipes, books, meal plans, foods, preferences) are checked already.
-            val skipped = name in notModelled || (route == null && name.startsWith(PHASE_2_DIR))
+            val skipped = name in notModelled
             if (body == null || fixture.status !in 200..299 || skipped) continue
             assertNotNull("No DTO for $name (${fixture.method} $path): add a route or a notModelled reason", route)
             @Suppress("UNCHECKED_CAST")
@@ -205,10 +213,5 @@ class DtoFixturesTest {
         private fun fail(message: String) {
             problems += message
         }
-    }
-
-    private companion object {
-        /** Phase 2 recordings (`api-schema/fixtures/<version>/fas2/`). */
-        const val PHASE_2_DIR = "fas2/"
     }
 }

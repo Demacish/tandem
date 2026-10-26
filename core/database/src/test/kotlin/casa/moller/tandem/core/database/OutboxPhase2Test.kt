@@ -78,19 +78,107 @@ class OutboxPhase2Test {
         assertEquals(1, outbox.getAllFor(ACCOUNT_A, OutboxEntities.SHOPPING_ENTRY).size)
     }
 
+    /** 0.3.0 review (fix-data): the merged base keeps every field's FIRST value and adds the new fields' own. */
     @Test
-    fun twoPatchesMergeAndKeepTheFirstBase() = runTest {
+    fun twoPatchesMergeTheirBasesAndTheFirstValueWins() = runTest {
         val first = outbox.enqueue(
             row(OutboxOps.PATCH, serverId = 7, payload = """{"title":"A"}""", base = """{"title":"X"}""", entity = MEAL),
         )
         val second = outbox.enqueue(
             row(OutboxOps.PATCH, serverId = 7, payload = """{"servings":3}""", base = """{"servings":2}""", entity = MEAL),
         )
+        val third = outbox.enqueue(
+            row(
+                OutboxOps.PATCH,
+                serverId = 7,
+                payload = """{"title":"B","servings":4}""",
+                base = """{"title":"A","servings":3}""",
+                entity = MEAL,
+            ),
+        )
 
         assertEquals(first, second)
+        assertEquals(first, third)
         val merged = checkNotNull(outbox.get(checkNotNull(first)))
-        assertEquals("""{"title":"A","servings":3}""", merged.payload)
-        assertEquals("""{"title":"X"}""", merged.baseSnapshot)
+        assertEquals("""{"title":"B","servings":4}""", merged.payload)
+        assertEquals("""{"title":"X","servings":2}""", merged.baseSnapshot)
+    }
+
+    /** 0.3.0 review (fix-data): a nested object is replaced as a whole, so no stale id survives an edit. */
+    @Test
+    fun anEditOfAnUnsentCreateReplacesFoodAndUnitWithoutTheirOldIds() = runTest {
+        val create = outbox.enqueue(
+            row(OutboxOps.CREATE, localId = -1, payload = """{"food":{"name":"mjölk","id":5},"unit":{"name":"dl","id":2},"amount":1.0}"""),
+        )
+        outbox.enqueue(row(OutboxOps.PATCH, localId = -1, payload = """{"food":{"name":"grädde"}}"""))
+        outbox.enqueue(row(OutboxOps.PATCH, localId = -1, payload = """{"unit":{"name":"l"}}"""))
+
+        val merged = checkNotNull(outbox.get(checkNotNull(create)))
+        assertEquals("""{"food":{"name":"grädde"},"unit":{"name":"l"},"amount":1.0}""", merged.payload)
+    }
+
+    /**
+     * 0.3.0 review (fix-data): a CREATE attempted before may be on the server: a later PATCH, check
+     * or DELETE is a row of its own that waits for it (and is sent by server id after it).
+     */
+    @Test
+    fun changesOfACreateThatWasAttemptedBeforeAreRowsOfTheirOwn() = runTest {
+        val payload = """{"food":{"name":"mjölk"},"amount":1.0}"""
+        val create = checkNotNull(outbox.enqueue(row(OutboxOps.CREATE, localId = -1, payload = payload)))
+        outbox.markInFlight(create)
+        outbox.markRetry(create, "timeout")
+
+        val patch = checkNotNull(outbox.enqueue(row(OutboxOps.PATCH, localId = -1, payload = """{"amount":2.0}""")))
+        val check = checkNotNull(
+            outbox.enqueue(
+                row(
+                    OutboxOps.BULK_CHECK,
+                    localId = -1,
+                    payload = """{"ids":[-1],"checked":true}""",
+                    base = """{"checked":false}""",
+                    refs = OutboxRefs.encode(mapOf("ids" to OutboxEntities.SHOPPING_ENTRY)),
+                    batchKey = CHECKED,
+                ),
+            ),
+        )
+
+        assertEquals("the CREATE is sent as first attempted", payload, outbox.get(create)?.payload)
+        assertEquals(create, outbox.get(patch)?.dependsOn)
+        assertEquals(create, outbox.get(check)?.dependsOn)
+
+        // A DELETE keeps the CREATE (the object may exist) and replaces the other changes.
+        val delete = checkNotNull(outbox.enqueue(row(OutboxOps.DELETE, localId = -1)))
+        val rows = outbox.getAllFor(ACCOUNT_A, OutboxEntities.SHOPPING_ENTRY)
+        assertEquals(listOf(OutboxOps.CREATE to null, OutboxOps.DELETE to create), rows.map { it.op to it.dependsOn })
+        assertEquals(create, outbox.nextReady(ACCOUNT_A)?.id)
+
+        ids.completeCreate(ACCOUNT_A, create, OutboxEntities.SHOPPING_ENTRY, localId = -1, serverId = 40, nowEpochMillis = 2)
+        val ready = checkNotNull(outbox.nextReady(ACCOUNT_A))
+        assertEquals(delete, ready.id)
+        assertEquals("sent by server id", 40L, ready.serverId)
+    }
+
+    /**
+     * 0.3.0 review (fix-data): when a CREATE is cancelled, the local rows of every CREATE removed with
+     * it go too (an unsent meal deleted after "Handla för veckan" leaves no rows on the list).
+     */
+    @Test
+    fun aCancelledCreateTakesTheLocalRowsOfItsDependentCreatesWithIt() = runTest {
+        val meal = checkNotNull(outbox.enqueue(row(OutboxOps.CREATE, localId = -5, entity = MEAL)))
+        shopping.upsertListRecipes(listOf(ShoppingListRecipeEntity(ACCOUNT_A, localId = -3, serverId = null, mealPlanId = -5)))
+        shopping.upsertEntries(listOf(entry(-7, null, listRecipe = -3), entry(-8, null, listRecipe = -3), entry(12, 12)))
+        val listRecipe = checkNotNull(
+            outbox.enqueue(row(OutboxOps.CREATE, localId = -3, entity = OutboxEntities.SHOPPING_LIST_RECIPE, dependsOn = meal)),
+        )
+        outbox.enqueue(row(OutboxOps.CREATE, localId = -7, dependsOn = listRecipe))
+        outbox.enqueue(row(OutboxOps.CREATE, localId = -8, dependsOn = listRecipe))
+
+        assertNull(outbox.enqueue(row(OutboxOps.DELETE, localId = -5, entity = MEAL)))
+
+        assertEquals(0, outbox.getAllFor(ACCOUNT_A, OutboxEntities.SHOPPING_ENTRY).size)
+        assertEquals(listOf(12L), shopping.getEntries(ACCOUNT_A).map { it.localId })
+        assertNull(shopping.getListRecipe(ACCOUNT_A, -3))
+        assertNull(outbox.nextReady(ACCOUNT_A))
     }
 
     @Test
