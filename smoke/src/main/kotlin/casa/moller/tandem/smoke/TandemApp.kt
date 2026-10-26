@@ -2,7 +2,9 @@ package casa.moller.tandem.smoke
 
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Bundle
 import android.os.SystemClock
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
@@ -329,6 +331,97 @@ class TandemApp(val device: UiDevice) {
             if (SystemClock.uptimeMillis() > deadline) throw AssertionError("Expected $count text fields, found ${fields.size}")
             SystemClock.sleep(POLL_MS)
         }
+    }
+
+    /**
+     * Phase 2 (integration lane): the app's accessibility nodes straight from the accessibility
+     * service, the focused window (a bottom sheet is a window of its own) first. Unlike
+     * UiAutomator's [UiDevice.findObject] this includes the nodes the screen does not show:
+     * Compose reports a button scrolled out of a sheet, or pushed below the keyboard, with
+     * `isVisibleToUser = false`, and UiAutomator leaves such nodes out. Acting on them through
+     * their accessibility actions (as TalkBack does) does not depend on where the keyboard, a
+     * sheet animation or a fling has them on screen: the cause of the flaky "Add n items" in
+     * the Phase 2 smoke test.
+     */
+    fun appNodes(): List<AccessibilityNodeInfo> {
+        val automation = instrumentation.uiAutomation
+        val windows = runCatching { automation.windows }.getOrDefault(emptyList()).mapNotNull { it.root }
+        val roots = (listOfNotNull(automation.rootInActiveWindow) + windows)
+            .filter { it.packageName?.toString() == PACKAGE }
+            .distinctBy { it.windowId }
+        // Window by window, so every node of the focused window comes before the ones behind it.
+        val nodes = mutableListOf<AccessibilityNodeInfo>()
+        for (root in roots) {
+            val queue = ArrayDeque(listOf(root))
+            while (queue.isNotEmpty()) {
+                val node = queue.removeFirst()
+                nodes += node
+                for (index in 0 until node.childCount) node.getChild(index)?.let(queue::addLast)
+            }
+        }
+        return nodes
+    }
+
+    /** The first of [appNodes] that matches [predicate], or null. */
+    fun findNode(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? =
+        runCatching { appNodes().firstOrNull(predicate) }.getOrNull()
+
+    /** Waits for [findNode] ([what] names it in the failure). */
+    fun waitForNode(
+        what: String,
+        timeoutMs: Long = UI_TIMEOUT_MS,
+        predicate: (AccessibilityNodeInfo) -> Boolean,
+    ): AccessibilityNodeInfo {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        while (true) {
+            findNode(predicate)?.let { return it }
+            if (SystemClock.uptimeMillis() > deadline) {
+                throw AssertionError("No node $what within $timeoutMs ms (app running: ${isRunning()})")
+            }
+            SystemClock.sleep(POLL_MS)
+        }
+    }
+
+    /** The node itself when it is clickable, else its nearest clickable ancestor (a button around its label). */
+    fun clickableOf(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        var current: AccessibilityNodeInfo? = node
+        repeat(MAX_LABEL_DEPTH + 1) {
+            val candidate = current ?: return null
+            if (candidate.isClickable) return candidate
+            current = candidate.parent
+        }
+        return null
+    }
+
+    /**
+     * Clicks the enabled button labelled [text] through its accessibility action (see
+     * [appNodes]); false when there is none (yet).
+     */
+    fun clickNodeWithText(text: String): Boolean = clickNodeWithText { it == text }
+
+    /** [clickNodeWithText] for a label that matches [text] entirely. */
+    fun clickNodeWithText(text: Pattern): Boolean = clickNodeWithText { text.matcher(it).matches() }
+
+    private fun clickNodeWithText(label: (String) -> Boolean): Boolean {
+        val button = findNode { node -> node.text?.toString()?.let(label) == true && clickableOf(node)?.isEnabled == true }
+            ?.let(::clickableOf) ?: return false
+        return button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+    }
+
+    /** Sets [text] on [field] through ACTION_SET_TEXT (what [UiObject2.setText] does too). */
+    fun setNodeText(field: AccessibilityNodeInfo, text: String): Boolean {
+        val arguments = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) }
+        return field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+    }
+
+    /**
+     * The keyboard's action key ("Done") on [field], as an accessibility action (Compose maps
+     * it to the field's KeyboardActions): no on-screen keyboard involved. False when the field
+     * has no IME action.
+     */
+    fun imeEnter(field: AccessibilityNodeInfo): Boolean {
+        val action = AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER
+        return field.actionList.any { it.id == action.id } && field.performAction(action.id)
     }
 
     /** Screenshot and window hierarchy, kept by the CI job (smoke-results artifact). */

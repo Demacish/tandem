@@ -1,6 +1,7 @@
 package casa.moller.tandem.smoke
 
 import android.os.SystemClock
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -175,7 +176,11 @@ class Phase2SmokeTest {
         check("pasta")
         openEdit("bröd")
         app.type(AMOUNT_FIELD, "2")
-        app.tap("Save")
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.waitForNode("\"Save\"") { it.text?.toString() == "Save" && app.clickableOf(it)?.isEnabled == true }
+            app.clickNodeWithText("Save")
+            if (app.device.wait(Until.gone(By.text(EDIT_TITLE)), TAP_WAIT_MS) == true) break
+        }
         app.waitUntilGone(By.text(EDIT_TITLE))
         check("ägg")
         check("russin")
@@ -228,9 +233,14 @@ class Phase2SmokeTest {
 
         // (e) Off: the app puts the meal's ingredients on the list once ...
         openShopForTheWeek()
-        val add = app.waitFor(By.text(ADD_TO_LIST), WEEK_SHOPPING_TIMEOUT_MS)
+        app.waitFor(By.res(WEEK_SHOPPING_ADD).enabled(true).hasDescendant(By.text(ADD_TO_LIST)), WEEK_SHOPPING_TIMEOUT_MS)
         app.capture("phase2-shop-for-the-week")
-        add.click()
+        // Clicked again only while the enabled button is still there (a click that took effect
+        // disables it while adding, then leaves for Handla).
+        for (attempt in 1..TAP_ATTEMPTS) {
+            clickAtRest(listOf(By.res(WEEK_SHOPPING_ADD).enabled(true)))
+            if (app.device.wait(Until.gone(By.res(WEEK_SHOPPING_ADD).enabled(true)), TAP_WAIT_MS) == true) break
+        }
         // "Added": the app switches to Handla, where the recipe's rows are.
         waitForInList(row("pasta"), WEEK_SHOPPING_TIMEOUT_MS)
         app.capture("phase2-week-shopping-added")
@@ -293,18 +303,40 @@ class Phase2SmokeTest {
         app.type(0, SHAKSHUKA)
         app.waitFor(By.res("plan-meal:recipe:$SHAKSHUKA_ID")).click()
         app.waitFor(By.text("Chosen recipe"))
-        val tick = app.scrollTo(By.checkable(true).hasDescendant(By.text(ADD_TO_SHOPPING)))
-        if (!tick.isChecked) tick.click()
-        app.waitFor(By.checkable(true).checked(true).hasDescendant(By.text(ADD_TO_SHOPPING)))
+        val tick = By.checkable(true).hasDescendant(By.text(ADD_TO_SHOPPING))
+        val ticked = By.checkable(true).checked(true).hasDescendant(By.text(ADD_TO_SHOPPING))
+        app.scrollTo(tick)
+        for (attempt in 1..TAP_ATTEMPTS) {
+            if (app.device.hasObject(ticked)) break
+            clickAtRest(listOf(tick))
+            app.device.wait(Until.hasObject(ticked), TAP_WAIT_MS)
+        }
+        app.waitFor(ticked)
         app.capture("phase2-plan-meal")
-        app.tapTextMatching(Pattern.compile("Add to the plan \\(.+\\)"))
+        // Through the button's accessibility action, again while the form is still open.
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.waitForNode("\"Add to the plan\"") { node ->
+                node.text?.toString()?.let { SAVE_PLAN.matcher(it).matches() } == true && app.clickableOf(node)?.isEnabled == true
+            }
+            app.clickNodeWithText(SAVE_PLAN)
+            if (app.device.wait(Until.gone(By.text("Plan a meal")), TAP_WAIT_MS) == true) break
+        }
         app.waitUntilGone(By.text("Plan a meal"))
     }
 
     /** The "Shop for the week" card below the days (Veckan scrolls; the card may be above or below). */
     private fun openShopForTheWeek() {
-        app.findInList(By.text("Shop for the week")).click()
-        app.waitUntilGone(By.res(dayTag(LocalDate.now())))
+        // The card is found while Veckan may still fling after findInList's swipes, so it is clicked
+        // at rest and again while the agenda still shows (CI: a click that landed where the card WAS,
+        // and the old check "today's heading gone" passed only because the heading had scrolled off).
+        val card = By.clickable(true).hasDescendant(By.text("Shop for the week"))
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.findInList(card)
+            clickAtRest(listOf(card))
+            if (app.device.wait(Until.gone(By.res(WEEK_AGENDA)), TAP_WAIT_MS) == true) break
+        }
+        app.waitUntilGone(By.res(WEEK_AGENDA))
+        app.waitFor(By.res(WEEK_SHOPPING_LIST), WEEK_SHOPPING_TIMEOUT_MS)
     }
 
     /** Rows on the server's list for [mealId]'s list recipe. */
@@ -438,8 +470,11 @@ class Phase2SmokeTest {
     private fun editRow(food: String, button: String) {
         openEdit(food)
         // Again while the sheet is still open: a click that took effect closes it.
+        // Through the button's accessibility action: the sheet may still slide in, and the keyboard
+        // or the sheet's own scroll may hide the button (see addItems).
         for (attempt in 1..TAP_ATTEMPTS) {
-            clickAtRest(app.clickableWithText(button))
+            app.waitForNode("\"$button\"") { it.text?.toString() == button && app.clickableOf(it)?.isEnabled == true }
+            app.clickNodeWithText(button)
             if (app.device.wait(Until.gone(By.text(EDIT_TITLE)), TAP_WAIT_MS) == true) break
         }
         app.waitUntilGone(By.text(EDIT_TITLE))
@@ -453,40 +488,82 @@ class Phase2SmokeTest {
         app.waitFor(By.text(EDIT_TITLE))
     }
 
-    /** "Add item…" above the list, the free text, "Add n items", and the sheet closed again. */
+    /**
+     * "Add item…" above the list, the free text, the field's "Done" action, and the sheet closed
+     * again. Driven through accessibility actions on the sheet's nodes ([TandemApp.appNodes]), not
+     * taps: the on-screen keyboard (shown or not, before or after the text is set) covers "Add n
+     * items" below the preview and the suggestions, and a tap meant for the keyboard's "Done" or
+     * the hidden button could land on the sheet's scrim, which closes the sheet without adding
+     * (the field then vanished too, so earlier versions of this test took it for "added"). Added
+     * means: the sheet is still open and its field was emptied, which the ViewModel does only
+     * after a successful add. A sheet that closed anyway keeps the text (SavedStateHandle), so it
+     * is opened again and the text submitted again; an add that already happened empties the text,
+     * and a second "Done" on an empty field adds nothing.
+     */
     private fun addItems(text: String, count: Int) {
-        app.scrollBackTo(By.text("Add item…")).click()
-        app.waitFor(By.text("Add to the list"))
-        app.type(0, text)
         val button = if (count == 1) "Add 1 item" else "Add $count items"
-        // The on-screen keyboard (when it shows, possibly only after the text is set) covers the
-        // button below the preview and the suggestions, and Back did not reliably close it in CI:
-        // then its "Done" key adds, as a user would (the field's IME action). Not added yet while
-        // the field still holds the text (a button under the keyboard is not in the window tree
-        // at all, so its absence says nothing).
+        openAddSheet()
         val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
-        val typed = By.clazz(EDIT_TEXT).text(text)
-        app.capture("phase2-add-typed")
-        while (app.device.hasObject(typed)) {
-            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("\"$button\" was never added (keyboard or button)")
-            val done = app.device.findObject(By.pkg(KEYBOARD_PACKAGE).desc("Done"))
-            val target = done ?: app.clickableWithText(button).firstNotNullOfOrNull { selector ->
-                app.device.findObject(selector)?.let { settledOrNull(selector, it) }
+        var submitted = false
+        while (true) {
+            if (SystemClock.uptimeMillis() > deadline) {
+                app.capture("phase2-add-not-added")
+                throw AssertionError("\"$text\" was never added (\"$button\")")
             }
-            if (target != null && runCatching { target.click() }.isSuccess) {
-                app.device.wait(Until.gone(typed), TAP_WAIT_MS)
-                app.capture("phase2-add-after-${if (done != null) "done-key" else "button"}")
-            } else {
-                SystemClock.sleep(SETTLE_POLL_MS)
+            if (!app.device.hasObject(By.text(ADD_TITLE))) openAddSheet()
+            val field = app.findNode(::isAddField)
+            val current = field?.text?.toString().orEmpty()
+            when {
+                field == null -> SystemClock.sleep(SETTLE_POLL_MS)
+                submitted && current.isEmpty() -> break
+                current != text -> {
+                    // Not set yet (or the field was opened again): set it, then wait for the preview.
+                    app.setNodeText(field, text)
+                    submitted = false
+                }
+                // The preview has read the text ("Add 5 items"): submit as the keyboard's "Done" would.
+                app.findNode { it.text?.toString() == button } != null -> {
+                    submitted = app.imeEnter(field) || app.clickNodeWithText(button)
+                    if (submitted) waitForEmptyAddField()
+                }
+                else -> SystemClock.sleep(SETTLE_POLL_MS)
             }
         }
-        assertTrue("Nothing was added: the field still holds \"$text\"", !app.device.hasObject(By.clazz(EDIT_TEXT).textStartsWith(text)))
+        app.capture("phase2-add-added")
+        closeAddSheet()
+    }
+
+    /** The add sheet's field (the only text field while the sheet is open). */
+    private fun isAddField(node: AccessibilityNodeInfo): Boolean = node.className?.toString() == EDIT_TEXT && node.isEditable
+
+    private fun waitForEmptyAddField() {
+        val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
+        while (SystemClock.uptimeMillis() < deadline) {
+            val field = app.findNode(::isAddField) ?: return
+            if (field.text.isNullOrEmpty()) return
+            SystemClock.sleep(SETTLE_POLL_MS)
+        }
+    }
+
+    /** "Add item…" above the list (at rest), again until the sheet shows. */
+    private fun openAddSheet() {
+        val opener = By.clickable(true).hasDescendant(By.text("Add item…"))
+        repeat(TAP_ATTEMPTS) {
+            app.scrollBackTo(By.text("Add item…"))
+            clickAtRest(listOf(opener, By.text("Add item…")))
+            if (app.device.wait(Until.hasObject(By.text(ADD_TITLE)), TAP_WAIT_MS) == true) return
+        }
+        app.waitFor(By.text(ADD_TITLE))
+    }
+
+    /** Back until the sheet is gone (the first Back may only close the keyboard). */
+    private fun closeAddSheet() {
         repeat(CLOSE_ATTEMPTS) {
-            if (!app.device.hasObject(By.text("Add to the list"))) return@repeat
+            if (!app.device.hasObject(By.text(ADD_TITLE))) return
             app.device.pressBack()
-            app.device.waitForIdle()
+            app.device.wait(Until.gone(By.text(ADD_TITLE)), TAP_WAIT_MS / 2)
         }
-        app.waitUntilGone(By.text("Add to the list"))
+        app.waitUntilGone(By.text(ADD_TITLE))
     }
 
     private fun goOffline() {
@@ -535,6 +612,12 @@ class Phase2SmokeTest {
         const val WELCOME_TEXT = "Welcome to Tandem"
         const val ENTRIES = "/api/shopping-list-entry/"
         const val EDIT_TITLE = "Edit item"
+        const val ADD_TITLE = "Add to the list"
+
+        /** feature:mealplan WEEK_AGENDA_TAG, WEEK_SHOPPING_LIST_TAG and WEEK_SHOPPING_ADD_TAG (resource ids). */
+        const val WEEK_AGENDA = "week:agenda"
+        const val WEEK_SHOPPING_LIST = "week-shopping:list"
+        const val WEEK_SHOPPING_ADD = "week-shopping:add"
 
         /** The edit sheet's fields, top to bottom: Item, Amount, Unit. */
         const val AMOUNT_FIELD = 1
@@ -557,6 +640,7 @@ class Phase2SmokeTest {
         val ADD_TO_LIST: Pattern = Pattern.compile("Add \\d+ items? to the shopping list")
         const val ALL_ON_LIST = "Everything planned on these days is already on the list."
         const val ADD_TO_SHOPPING = "Put the ingredients on the shopping list"
+        val SAVE_PLAN: Pattern = Pattern.compile("Add to the plan \\(.+\\)")
 
         const val FIRST_SYNC_TIMEOUT_MS = 90_000L
 
@@ -576,7 +660,6 @@ class Phase2SmokeTest {
         const val CLOSE_ATTEMPTS = 3
         const val TAP_ATTEMPTS = 3
         const val EDIT_TEXT = "android.widget.EditText"
-        val KEYBOARD_PACKAGE: Pattern = Pattern.compile(".*inputmethod.*")
         const val TAP_WAIT_MS = 4_000L
         const val SETTLE_MS = 3_000L
         const val SETTLE_POLL_MS = 250L
