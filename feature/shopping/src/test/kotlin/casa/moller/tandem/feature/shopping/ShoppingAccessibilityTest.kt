@@ -56,6 +56,9 @@ class ShoppingAccessibilityTest {
     fun listGuest() = check(ShoppingShot.LIST_GUEST)
 
     @Test
+    fun listNoHousehold() = check(ShoppingShot.LIST_NO_HOUSEHOLD)
+
+    @Test
     fun listDemo() = check(ShoppingShot.LIST, chrome = AppChrome(status = AppStatus.Demo, showDemoBanner = true))
 
     @Test

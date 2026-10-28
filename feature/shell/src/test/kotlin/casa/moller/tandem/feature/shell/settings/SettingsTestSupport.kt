@@ -45,6 +45,11 @@ internal val SAMPLE_SYNC = SyncSettingsUiState(
     status = SAMPLE_SYNC_STATUS,
 )
 
+/** 0.3.0 review (fix-data): the account's shopping preferences ("har hemma" on), read only. */
+internal val SAMPLE_SYNC_SHOPPING = SAMPLE_SYNC.copy(
+    shopping = ShoppingServerSettings(addOnHand = true, excludeOnHand = true, autoAdd = false, pollSeconds = 20),
+)
+
 /** "Download all recipes" is on and halfway; the sync runs. */
 internal val SAMPLE_SYNC_DOWNLOADING = SAMPLE_SYNC.copy(
     interval = SyncInterval.ONE_HOUR,

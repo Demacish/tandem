@@ -62,6 +62,7 @@ import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.AppStatusChip
 import casa.moller.tandem.core.ui.DemoBanner
+import casa.moller.tandem.core.ui.household.HouseholdMissingCard
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
@@ -336,6 +337,8 @@ private fun AccountCard(account: AccountSummary, state: ShellUiState, onCheckAga
             state.household?.let {
                 DetailLine(icon = TandemIcons.HomeFilled, label = stringResource(R.string.accounts_household), value = it)
             }
+            // 0.3.0 review (fix-data, plan 6.2 "kontroll av hushåll", 8.6).
+            if (state.householdMissing) HouseholdMissingCard()
             if (state.role == SpaceRole.GUEST) {
                 StatusChip(label = stringResource(R.string.accounts_role_guest), icon = TandemIcons.Lock, tone = TandemTone.Warning)
             } else {

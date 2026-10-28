@@ -83,6 +83,7 @@ import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.household.HouseholdMissingCard
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.feature.shopping.R
@@ -339,6 +340,8 @@ private fun ShoppingList(
                             icon = TandemIcons.Lock,
                         )
                     }
+                    // 0.3.0 review (fix-data, plan 8.6): nothing on this list is shared without a household.
+                    if (state.householdMissing) HouseholdMissingCard()
                     // A guest changes nothing, so "changes are saved and sent later" does not apply (fix-ui).
                     if (!state.readOnly) {
                         state.syncNotice?.let { SyncNoticeCard(notice = it, pendingCount = state.pendingCount, onAction = onAction) }

@@ -102,6 +102,8 @@ data class EditEntryState(
  *
  * @property loading nothing read from the device yet.
  * @property readOnly guest (#42): no edit controls at all.
+ * @property householdMissing (0.3.0 review, plan 8.6) the account is in no household: the list is
+ *   not shared, and a warning says how to fix it on the web.
  * @property lists Tandoor's named lists; [selectedListId] null = every entry.
  * @property store the store the list is sorted by, null = by category name.
  * @property grouped the list by aisle, "Köp senare" and "Avbockat".
@@ -119,6 +121,7 @@ data class EditEntryState(
 data class ShoppingUiState(
     val loading: Boolean = true,
     val readOnly: Boolean = false,
+    val householdMissing: Boolean = false,
     val lists: List<ShoppingList> = emptyList(),
     val selectedListId: Long? = null,
     val supermarkets: List<Supermarket> = emptyList(),

@@ -127,6 +127,7 @@ class WeekViewModel @AssistedInject internal constructor(
             days = week.days,
             mealTypes = types,
             readOnly = readOnly,
+            householdMissing = perms.householdMissing,
             refreshing = local.refreshing,
             selectedDay = day,
             move = local.move.takeUnless { readOnly },

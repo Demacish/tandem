@@ -36,6 +36,7 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     // fix-ui: the app's own pause after many refused requests (the circuit breaker) has its own text.
     LIST_BREAKER({ ListShot(ShoppingSamples.state(pendingCount = 2, syncNotice = ShoppingSyncNotice.BREAKER)) }),
     LIST_GUEST({ ListShot(ShoppingSamples.state(readOnly = true)) }),
+    LIST_NO_HOUSEHOLD({ ListShot(ShoppingSamples.state(householdMissing = true)) }),
     LIST_ONE_LIST({ ListShot(ShoppingSamples.state(entries = listOf(ShoppingSamples.milk), selectedListId = 1)) }),
     ADD({ Sheet { AddItemPanel(state = addState, format = format(), onAction = {}) } }),
     ADD_RECENT({ Sheet { AddItemPanel(state = recentState, format = format(), onAction = {}) } }),

@@ -162,8 +162,8 @@ abstract class OutboxDao {
     open suspend fun enqueue(row: OutboxEntity): Long? {
         val unsent = getUnsentFor(row.accountId, row.entity, row.localId, row.serverId)
         val attempted = OutboxMerge.attemptedCreateOf(unsent)
-        val waitsForCreate = attempted != null && row.op != OutboxOps.CREATE && row.dependsOn == null
-        val inserted = if (waitsForCreate && attempted != null) row.copy(dependsOn = attempted.id) else row
+        val waitsFor = attempted?.takeIf { row.op != OutboxOps.CREATE && row.dependsOn == null }
+        val inserted = if (waitsFor != null) row.copy(dependsOn = waitsFor.id) else row
         return when (val decision = OutboxMerge.decide(row, unsent)) {
             OutboxMerge.Decision.Insert -> insert(inserted)
 

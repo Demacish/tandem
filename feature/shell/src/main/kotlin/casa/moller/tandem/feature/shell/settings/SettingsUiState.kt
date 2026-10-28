@@ -3,9 +3,11 @@ package casa.moller.tandem.feature.shell.settings
 import androidx.annotation.StringRes
 import casa.moller.tandem.core.model.diagnostics.DiagnosticsSnapshot
 import casa.moller.tandem.core.model.diagnostics.LogExport
+import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.settings.CookTextScale
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.sync.ForegroundPolling
 import casa.moller.tandem.core.model.sync.OfflineStorage
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
@@ -41,7 +43,32 @@ data class SyncSettingsUiState(
     val storage: OfflineStorage = OfflineStorage.Empty,
     val status: SyncStatus = SyncStatus.Idle,
     val clearingImageCache: Boolean = false,
+    // 0.3.0 review (fix-data): the account's shopping preferences, null in demo mode and before they are known.
+    val shopping: ShoppingServerSettings? = null,
 )
+
+/**
+ * 0.3.0 review (fix-data, plan 6.2 "Har hemma-effekten", #12): the shopping preferences of the
+ * Tandoor account that change what the app does, shown read only on "Synk och lagring" (they are
+ * changed on the Tandoor web).
+ *
+ * @property addOnHand `shopping_add_onhand`: a check marks the food "at home" for the household.
+ * @property excludeOnHand `mealplan_autoexclude_onhand` (Tandoor's own adds).
+ * @property autoAdd `mealplan_autoadd_shopping`: "Lägg på inköpslistan" is preselected when planning.
+ * @property pollSeconds how often the open list is read; null when `shopping_auto_sync` is 0 (off).
+ */
+data class ShoppingServerSettings(val addOnHand: Boolean, val excludeOnHand: Boolean, val autoAdd: Boolean, val pollSeconds: Long?) {
+    companion object {
+        fun of(preferences: UserPreferences): ShoppingServerSettings = ShoppingServerSettings(
+            addOnHand = preferences.shoppingAddOnHand,
+            excludeOnHand = preferences.mealPlanAutoExcludeOnHand,
+            autoAdd = preferences.mealPlanAutoAddShopping,
+            pollSeconds = preferences.shoppingAutoSyncSeconds
+                .takeIf { ForegroundPolling.pollsShoppingList(it) }
+                ?.let { ForegroundPolling.intervalFor(serverMinimumSeconds = null, userSeconds = it).inWholeSeconds },
+        )
+    }
+}
 
 /**
  * Mer → Behörigheter: an overview, never a forced step (docs/design/README.md).

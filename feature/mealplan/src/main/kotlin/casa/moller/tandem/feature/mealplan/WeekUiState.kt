@@ -18,6 +18,8 @@ import kotlinx.datetime.plus
  * @property days the 7 days, each with its meals by meal type order.
  * @property mealTypes the space's meal types (rows of the tablet grid, choices when moving).
  * @property readOnly a guest (#42): no plan, move, change or delete controls at all.
+ * @property householdMissing (0.3.0 review, plan 8.6) the account is in no household: the plan is
+ *   not shared, and a warning says how to fix it on the web.
  * @property selectedDay the day open beside the week list on wider windows (two panes).
  * @property move the "Flytta" sheet, while open.
  * @property conflict the first change that collided with someone else's ("Ändrad på två ställen").
@@ -30,6 +32,7 @@ data class WeekUiState(
     val days: List<MealPlanDay> = emptyList(),
     val mealTypes: List<MealType> = emptyList(),
     val readOnly: Boolean = false,
+    val householdMissing: Boolean = false,
     val refreshing: Boolean = false,
     val selectedDay: LocalDate? = null,
     val move: MoveMealState? = null,

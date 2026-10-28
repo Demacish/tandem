@@ -203,6 +203,17 @@ class WeekViewModelTest {
         assertEquals(MealPlanSamples.meals.size, mealPlans.meals.value.size)
     }
 
+    /** 0.3.0 review (fix-data, plan 8.6): without a household the week says it is not shared. */
+    @Test
+    fun aMemberWithoutAHouseholdIsWarned() = runTest {
+        val vm = viewModel()
+        open(vm)
+        assertFalse(vm.uiState.value.householdMissing)
+        permissions.state.value = permissions.state.value.copy(householdMissing = true)
+        assertTrue(vm.uiState.value.householdMissing)
+        assertFalse(vm.uiState.value.readOnly)
+    }
+
     @Test
     fun aConflictIsShownWithItsMealAndResolved() = runTest {
         val conflict = MealPlanConflict(todayDinner.id, "title", mine = "Min", theirs = "Deras")

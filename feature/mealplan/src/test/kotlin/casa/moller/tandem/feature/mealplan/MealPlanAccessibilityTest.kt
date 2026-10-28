@@ -45,6 +45,9 @@ class MealPlanAccessibilityTest {
     fun weekGuest() = check(MealPlanShot.WEEK_GUEST)
 
     @Test
+    fun weekNoHousehold() = check(MealPlanShot.WEEK_NO_HOUSEHOLD)
+
+    @Test
     fun weekNext() = check(MealPlanShot.WEEK_NEXT)
 
     @Test

@@ -219,7 +219,7 @@ internal class SyncTestGraph(
         bookNames,
         network,
     )
-    val spacePermissions = DefaultSpacePermissionsRepository(sources, databases)
+    val spacePermissions = DefaultSpacePermissionsRepository(sources, databases, serverStatus)
 
     // Phase 2 (matsedel lane): the meal plan repository and its refresh.
     val mealPlanSync = MealPlanSync(mealPlanWindow, outbox, scheduler, network)

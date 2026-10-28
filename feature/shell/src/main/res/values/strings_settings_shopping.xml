@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 0.3.0 review (fix-data, plan 6.2 "Har hemma-effekten", #12): the shopping preferences of the Tandoor account, read only. -->
+    <string name="settings_shopping">Shopping list in Tandoor</string>
+    <string name="settings_shopping_intro">Tandem follows these settings of your Tandoor account. They are changed on the Tandoor web, in your settings for the shopping list and the meal plan.</string>
+    <string name="settings_shopping_on">On</string>
+    <string name="settings_shopping_off">Off</string>
+    <string name="settings_shopping_add_onhand">Checked items are “at home”</string>
+    <string name="settings_shopping_add_onhand_body">When this is on, checking off an item marks its food “at home” for the whole household. “Add to shopping list” and “Shop for the week” then start those foods unticked until the mark is removed in Tandoor.</string>
+    <string name="settings_shopping_exclude_onhand">Leave out what is at home</string>
+    <string name="settings_shopping_exclude_onhand_body">When Tandoor itself puts a recipe on the list, it leaves out foods marked “at home”. Tandem always starts them unticked and lets you choose.</string>
+    <string name="settings_shopping_autoadd">Planned recipes go on the list</string>
+    <string name="settings_shopping_autoadd_body">When this is on, “Add to the shopping list” is ticked from the start when you plan a meal with a recipe.</string>
+    <string name="settings_shopping_poll">Updates while the list is open</string>
+    <plurals name="settings_shopping_poll_every">
+        <item quantity="one">Every %1$d second</item>
+        <item quantity="other">Every %1$d seconds</item>
+    </plurals>
+    <string name="settings_shopping_poll_off">Off: automatic sync is switched off in Tandoor</string>
+    <string name="settings_shopping_poll_body">Changes by others show up at this pace. It follows your automatic sync setting in Tandoor and the server’s shortest interval.</string>
+</resources>

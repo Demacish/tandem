@@ -90,9 +90,11 @@ internal object ShoppingSamples {
         syncNotice: ShoppingSyncNotice? = null,
         checkedExpanded: Boolean = false,
         selectedListId: Long? = null,
+        householdMissing: Boolean = false,
     ): ShoppingUiState = ShoppingUiState(
         loading = false,
         readOnly = readOnly,
+        householdMissing = householdMissing,
         lists = lists,
         selectedListId = selectedListId,
         supermarkets = supermarkets,

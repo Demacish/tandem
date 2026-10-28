@@ -914,13 +914,21 @@ Granskningen av Fas 2 hittade fall där outboxen kunde fastna, skicka dubbletter
 - **Gäster och nekade skrivningar:** se Gästläget ovan; `RemoteCaller.write` (`confirmForbidden`)
   provar token efter en JSON-403 och ger `SyncGuard.FORBIDDEN_ERROR` (räknas som klientfel),
   `OutboxSender` märker raden FAILED (`tandem.sync.forbidden`), läser rollen igen och avslutar
-  tömningen.
+  tömningen. Visnings- och kokloggar behåller den vanliga 403-regeln (en gäst når dem aldrig,
+  och en avvisad token ska fortfarande leda till "Logga in igen").
 - **Gångar:** köade `food`-ändringar läggs på posterna efter varje läsning av listan
   (`ShoppingTables.reapplyQueuedFoods`), och en skickad gångändring skrivs på posterna igen.
 - **Rensa** (`ShoppingRepository.clearChecked(ids)`) tar bara bort de avbockade rader skärmen
   visar och räknar (den valda namngivna listan).
-- **Hushåll:** `SpacePermissions.householdMissing` är sant när rollen lästs och användaren inte
-  har något hushåll (plan 8.6).
+- **Hushåll** (plan 6.2, 8.6): `SpacePermissions.householdMissing` är sant när rollen lästs,
+  användaren inte har något hushåll och den kontrollerade servern saknar avslutad
+  hushållsinställning (ingen `ServerFeature.HOUSEHOLDS`, alltså `household_setup_completed`
+  falskt). Handla, Veckan och Mer:s kontokort visar då `core:ui` `HouseholdMissingCard`; aldrig i
+  demoläget. "Delad med: …" på listan och matsedeln är kvar till en senare version.
+- **Inköpsinställningar** (plan 6.2 "Har hemma-effekten"): Mer → Synk och lagring har gruppen
+  "Inköpslistan i Tandoor" (`ShoppingServerSettings`, bara visning): `shopping_add_onhand`,
+  `mealplan_autoexclude_onhand`, `mealplan_autoadd_shopping` och listans uppdateringstakt
+  (`shopping_auto_sync`, 0 = av), var och en med vad den gör och att den ändras på webben.
 - **Tester:** `OutboxPhase2Test`, `OutboxDaoTest`, `ShoppingSyncTest`, `MealPlanSyncTest`,
   `WeekShoppingSyncTest` och `RecipeBookRepositoryTest` har ett fall per rättelse (förlorade svar
   med 503 efter att servern sparat, raderingar på båda sidor, lås med en grind i den falska

@@ -156,6 +156,16 @@ class ShellViewModelTest {
         assertEquals(2, state.storedAccounts)
     }
 
+    /** 0.3.0 review (fix-data, plan 8.6): an account without a household is warned; demo mode never. */
+    @Test
+    fun theAccountCardWarnsWithoutAHousehold() {
+        permissions.state.value = permissions.state.value.copy(householdMissing = true)
+        assertTrue(newViewModel().uiState.value.householdMissing)
+
+        sessions.state.value = Session.Demo
+        assertFalse(newViewModel().uiState.value.householdMissing)
+    }
+
     @Test
     fun demoModeShowsNoHouseholdOrRole() {
         sessions.state.value = Session.Demo

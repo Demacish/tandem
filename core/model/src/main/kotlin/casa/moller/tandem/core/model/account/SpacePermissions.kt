@@ -34,9 +34,10 @@ enum class SpaceRole {
  * accepts a guest's own list entries and meals but refuses bulk checks and recipe edits, FACTS
  * "Fas 2"), so the app decides: read-only means read-only everywhere. Demo mode can write (locally).
  *
- * @property householdMissing (0.3.0 review, fix-data; plan 8.6) the role was read and the user is
- *   in no household: Tandoor then shares neither the shopping list nor the meal plan with the other
- *   members, so the screens warn and say how to join one on the web. Never in demo mode.
+ * @property householdMissing (0.3.0 review, fix-data; plan 6.2, 8.6) the role was read, the user is
+ *   in no household and the space has not finished its household setup: Tandoor then shares neither
+ *   the shopping list nor the meal plan with the other members, so Handla, Veckan and Mer warn and
+ *   say how to fix it on the web. Never in demo mode.
  */
 data class SpacePermissions(val role: SpaceRole = SpaceRole.UNKNOWN, val isDemo: Boolean = false, val householdMissing: Boolean = false) {
     /** Read-only mode (guest). */

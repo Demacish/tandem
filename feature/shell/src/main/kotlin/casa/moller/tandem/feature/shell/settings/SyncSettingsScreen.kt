@@ -85,6 +85,7 @@ internal fun SyncSettingsScreen(
                 )
             }
             DownloadAll(state = state, onChange = { onAction(SettingsAction.SetDownloadAll(it)) })
+            state.shopping?.let { ShoppingServerSettingsGroup(settings = it) }
         }
         Storage(
             storage = state.storage,
@@ -157,6 +158,66 @@ internal fun SyncPause.label(): Int = when (this) {
     SyncPause.CIRCUIT_BREAKER -> R.string.settings_pause_breaker
     SyncPause.SAFE_MODE -> R.string.settings_pause_safe_mode
     SyncPause.IMPORT_RUNNING -> R.string.settings_pause_import
+}
+
+/**
+ * 0.3.0 review (fix-data, plan 6.2 "Har hemma-effekten", #12): the Tandoor account's shopping
+ * preferences, read only, each with what it does (a check can mark a food "at home" for the whole
+ * household) and where it is changed (the Tandoor web; no address, the app is a generic client).
+ */
+@Composable
+private fun ShoppingServerSettingsGroup(settings: ShoppingServerSettings) {
+    val spacing = TandemTheme.spacing
+    SettingsGroup {
+        GroupHeading(text = stringResource(R.string.settings_shopping), icon = TandemIcons.ShoppingCart)
+        Text(
+            text = stringResource(R.string.settings_shopping_intro),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.xs),
+        )
+        ServerSetting(R.string.settings_shopping_add_onhand, R.string.settings_shopping_add_onhand_body, settings.addOnHand)
+        GroupDivider()
+        ServerSetting(R.string.settings_shopping_exclude_onhand, R.string.settings_shopping_exclude_onhand_body, settings.excludeOnHand)
+        GroupDivider()
+        ServerSetting(R.string.settings_shopping_autoadd, R.string.settings_shopping_autoadd_body, settings.autoAdd)
+        GroupDivider()
+        val seconds = settings.pollSeconds
+        val value = if (seconds == null) {
+            stringResource(R.string.settings_shopping_poll_off)
+        } else {
+            pluralStringResource(R.plurals.settings_shopping_poll_every, seconds.toInt(), seconds.toInt())
+        }
+        SettingText(
+            title = stringResource(R.string.settings_shopping_poll),
+            body = value + "\n" + stringResource(R.string.settings_shopping_poll_body),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(spacing.lg)
+                .semantics(mergeDescendants = true) {},
+        )
+    }
+}
+
+/** One read-only preference: its name, "On"/"Off" and what it does, one TalkBack item. */
+@Composable
+private fun ServerSetting(title: Int, body: Int, on: Boolean) {
+    val spacing = TandemTheme.spacing
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = spacing.lg, vertical = spacing.md)
+            .semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.spacedBy(spacing.lg),
+        verticalAlignment = Alignment.Top,
+    ) {
+        SettingText(title = stringResource(title), body = stringResource(body), modifier = Modifier.weight(1f))
+        Text(
+            text = stringResource(if (on) R.string.settings_shopping_on else R.string.settings_shopping_off),
+            style = MaterialTheme.typography.titleMedium,
+            color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 /** "Download all recipes": the switch, an estimate before, progress while it runs. */

@@ -79,7 +79,10 @@ behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3
   längre resten av kön, en vara eller måltid vars svar gick förlorat läggs inte till två gånger,
   att ta bort en måltid tar bort dess varor på listan, ändringar av andra i hushållet skrivs inte
   över utan att du får välja, "Rensa" tar bara bort den visade listans avbockade varor, och en
-  gäst skickas aldrig tillbaka till inloggningen av en nekad ändring.
+  gäst skickas aldrig tillbaka till inloggningen av en nekad ändring. Handla, Veckan och Mer
+  varnar när kontot inte ligger i något hushåll (då delas varken listan eller matsedeln), och
+  Mer → Synk och lagring visar Tandoor-kontots inköpsinställningar, bland annat att avbockade
+  varor kan bli "finns hemma" för hela hushållet.
 - **Release-röktest:** varje version provar nu också inköpslistan och matsedeln i
   release-bygget på en Android-emulator: partnerns avbockning syns inom 30 sekunder, 20
   ändringar gjorda utan nät hamnar rätt på servern, 15 rader som någon annan raderade medan

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Granskningen före 0.3.0 (plan 6.2, 8.6): kontot ligger inte i något hushåll, så inget delas. -->
+    <string name="ui_household_missing_title">Du är inte med i något hushåll</string>
+    <string name="ui_household_missing_body">Tandoor delar inköpslistan och matsedeln bara inom ett hushåll, så de andra ser inte det du lägger till här. Be den som sköter er Tandoor att göra klart hushållsinställningen i spacets inställningar på webben och lägga till dig i hushållet.</string>
+</resources>

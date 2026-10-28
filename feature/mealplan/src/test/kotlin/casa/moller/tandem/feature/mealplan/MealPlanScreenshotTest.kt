@@ -53,6 +53,11 @@ class MealPlanScreenshotTest {
     @Config(qualifiers = "sv-$PHONE")
     fun phoneGuestDark() = capture("phone_week_guest_dark_sv", MealPlanShot.WEEK_GUEST, darkTheme = true)
 
+    /** 0.3.0 review (fix-data, plan 8.6): no household, so the plan is not shared. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneNoHousehold() = capture("phone_week_no_household_light_sv", MealPlanShot.WEEK_NO_HOUSEHOLD)
+
     @Test
     fun phoneNextWeek() = capture("phone_week_next_light", MealPlanShot.WEEK_NEXT)
 

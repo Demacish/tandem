@@ -6,6 +6,7 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.model.diagnostics.LogExport
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
@@ -14,6 +15,7 @@ import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeDiagnosticsRepository
+import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.FakeTimerController
@@ -50,6 +52,7 @@ class SettingsViewModelTest {
     private val storage = FakeOfflineStorageRepository()
     private val diagnostics = FakeDiagnosticsRepository()
     private val sessions = FakeSessionRepository()
+    private val preferences = FakePreferencesRepository()
 
     private fun newViewModel(distribution: String = "sideload", manufacturer: String = "Google") = SettingsViewModel(
         settingsRepository = settings,
@@ -61,6 +64,7 @@ class SettingsViewModelTest {
         sessionRepository = sessions,
         buildInfo = AppBuildInfo(versionName = "0.2.0-dev", versionCode = 20, distribution = distribution, isDebug = true, sdkInt = 36),
         manufacturer = manufacturer,
+        preferences = preferences,
     )
 
     /** The screens' states are built while collected; keeps one collector for the test. */
@@ -158,6 +162,33 @@ class SettingsViewModelTest {
 
         sessions.state.value = Session.Demo
         assertTrue(state.value.isDemo)
+    }
+
+    /** 0.3.0 review (fix-data, plan 6.2 "Har hemma-effekten"): the account's shopping preferences, read only. */
+    @Test
+    fun syncShowsTheShoppingPreferencesOfTheAccount() = runTest {
+        val state = collecting(newViewModel().sync)
+        assertEquals(
+            ShoppingServerSettings(addOnHand = false, excludeOnHand = true, autoAdd = false, pollSeconds = 20),
+            state.value.shopping,
+        )
+
+        preferences.preferences.value = UserPreferences.Default.copy(
+            shoppingAddOnHand = true,
+            mealPlanAutoAddShopping = true,
+            shoppingAutoSyncSeconds = 45,
+        )
+        assertEquals(
+            ShoppingServerSettings(addOnHand = true, excludeOnHand = true, autoAdd = true, pollSeconds = 45),
+            state.value.shopping,
+        )
+
+        preferences.preferences.value = UserPreferences.Default.copy(shoppingAutoSyncSeconds = 0)
+        assertEquals("automatic sync off: no polling", null, state.value.shopping?.pollSeconds)
+        assertTrue(state.value.shopping != null)
+
+        sessions.state.value = Session.Demo
+        assertEquals("demo mode has no Tandoor account", null, state.value.shopping)
     }
 
     @Test

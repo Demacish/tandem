@@ -25,6 +25,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.household.HouseholdMissingCard
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
@@ -107,6 +108,11 @@ fun WeekScreen(
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
                         AppChromeDemoBanner()
+                        // 0.3.0 review (fix-data, plan 8.6): nothing in this plan is shared without a household.
+                        if (state.householdMissing) {
+                            val spacing = TandemTheme.spacing
+                            HouseholdMissingCard(modifier = Modifier.padding(horizontal = spacing.screenHorizontal, vertical = spacing.sm))
+                        }
                         val content = Modifier.weight(1f)
                         when (layout) {
                             WeekLayout.AGENDA -> WeekAgenda(state = state, format = format, onAction = onAction, modifier = content)

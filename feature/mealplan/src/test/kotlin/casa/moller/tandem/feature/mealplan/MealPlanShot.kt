@@ -23,6 +23,7 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     WEEK({ WeekShot(MealPlanSamples.state()) }),
     WEEK_EMPTY({ WeekShot(MealPlanSamples.state(meals = emptyList())) }),
     WEEK_GUEST({ WeekShot(MealPlanSamples.state(readOnly = true)) }),
+    WEEK_NO_HOUSEHOLD({ WeekShot(MealPlanSamples.state(householdMissing = true)) }),
     WEEK_NEXT({ WeekShot(MealPlanSamples.state(start = MealPlanSamples.day(7), meals = listOf(MealPlanSamples.nextWednesday))) }),
     WEEK_DAY_SELECTED({ WeekShot(MealPlanSamples.state(selectedDay = MealPlanSamples.day(6))) }),
     WEEK_CONFLICT({ WeekShot(MealPlanSamples.state(conflict = MealPlanSamples.conflictState)) }),

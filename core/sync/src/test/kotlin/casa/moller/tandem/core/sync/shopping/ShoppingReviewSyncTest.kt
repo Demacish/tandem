@@ -20,7 +20,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.ConscryptMode
 
-
 /**
  * The 0.3.0 review's fixes in the shopping list's sync (fix-data): lost answers, rows deleted
  * elsewhere, rows that can never be sent, queued aisle changes, "Rensa" per list and guests, against

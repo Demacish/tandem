@@ -82,6 +82,11 @@ class ShoppingScreenshotTest {
     @Test
     fun phoneOneList() = capture("phone_shopping_one_list_light", ShoppingShot.LIST_ONE_LIST)
 
+    /** 0.3.0 review (fix-data, plan 8.6): no household, so the list is not shared. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneNoHousehold() = capture("phone_shopping_no_household_light_sv", ShoppingShot.LIST_NO_HOUSEHOLD)
+
     @Test
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun phoneLandscape() = capture("phone_landscape_shopping_light", ShoppingShot.LIST)

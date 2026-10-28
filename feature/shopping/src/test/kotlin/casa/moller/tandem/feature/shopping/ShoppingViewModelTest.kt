@@ -327,6 +327,17 @@ class ShoppingViewModelTest {
         assertFalse(vm.uiState.value.confirmClearChecked)
     }
 
+    /** 0.3.0 review (fix-data, plan 8.6): without a household the list says it is not shared. */
+    @Test
+    fun aMemberWithoutAHouseholdIsWarned() = runTest {
+        val vm = viewModel()
+        open(vm)
+        assertFalse(vm.uiState.value.householdMissing)
+        permissions.state.value = SpacePermissions(SpaceRole.USER, householdMissing = true)
+        assertTrue(vm.uiState.value.householdMissing)
+        assertFalse("the list can still be changed", vm.uiState.value.readOnly)
+    }
+
     @Test
     fun demoModeIsNeverReadOnly() = runTest {
         permissions.state.value = SpacePermissions(SpaceRole.GUEST, isDemo = true)

@@ -219,6 +219,11 @@ class ShellPhoneScreenshotTest : ShellScreenshotTest("phone") {
     @Config(qualifiers = PHONE_SV)
     fun moreSwedish() = capture("more_light_sv", CONNECTED_STATE, ShellTab.MORE)
 
+    /** 0.3.0 review (fix-data, plan 6.2 "kontroll av hushåll", 8.6): the account card warns that nothing is shared. */
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun moreNoHouseholdSwedish() = capture("more_no_household_light_sv", CONNECTED_STATE.copy(householdMissing = true), ShellTab.MORE)
+
     @Test
     @Config(qualifiers = PHONE_SV)
     fun moreDarkSwedish() = capture("more_dark_sv", CONNECTED_STATE, ShellTab.MORE, darkTheme = true)

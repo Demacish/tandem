@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 0.3.0 review (plan 6.2, 8.6): the account is in no household, so nothing is shared. -->
+    <string name="ui_household_missing_title">You are not in a household</string>
+    <string name="ui_household_missing_body">Tandoor shares the shopping list and the meal plan only within a household, so the others do not see what you add here. Ask whoever runs your Tandoor to finish the household setup in the space settings on the web and add you to the household.</string>
+</resources>

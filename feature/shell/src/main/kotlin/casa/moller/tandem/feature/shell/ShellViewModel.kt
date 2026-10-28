@@ -171,9 +171,9 @@ class ShellViewModel internal constructor(
     // Phase 2 (konto lane): the household and the role on the account card, the stored accounts' count.
     private val accountCard = combine(
         accounts.observeHousehold(),
-        permissions.permissions.map { it.role }.distinctUntilChanged(),
+        permissions.permissions.map { it.role to it.householdMissing }.distinctUntilChanged(),
         accounts.observeAccounts().map { it.size }.distinctUntilChanged(),
-    ) { household, role, count -> AccountCard(household?.name, role, count) }
+    ) { household, (role, missing), count -> AccountCard(household?.name, role, count, missing) }
 
     private val exports = Channel<String>(Channel.BUFFERED)
 
@@ -211,6 +211,7 @@ class ShellViewModel internal constructor(
             household = card.household.takeIf { mode is ShellMode.Connected },
             role = card.role.takeIf { mode is ShellMode.Connected } ?: SpaceRole.UNKNOWN,
             storedAccounts = card.storedAccounts,
+            householdMissing = card.householdMissing && mode is ShellMode.Connected,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ShellUiState(appVersion = appVersion))
 
@@ -310,7 +311,7 @@ class ShellViewModel internal constructor(
         val resettingDemo: Boolean = false,
     )
 
-    private data class AccountCard(val household: String?, val role: SpaceRole, val storedAccounts: Int)
+    private data class AccountCard(val household: String?, val role: SpaceRole, val storedAccounts: Int, val householdMissing: Boolean)
 
     private data class Phase1b(
         val settings: SettingsSummary,

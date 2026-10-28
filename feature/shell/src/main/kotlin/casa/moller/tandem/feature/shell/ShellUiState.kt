@@ -72,6 +72,8 @@ data class ShellUiState(
     val role: SpaceRole = SpaceRole.UNKNOWN,
     /** How many accounts are stored on the device (the "Konton och servrar" row's summary). */
     val storedAccounts: Int = 0,
+    /** 0.3.0 review (fix-data, plan 8.6): the shown account is in no household, so nothing is shared. */
+    val householdMissing: Boolean = false,
 ) {
     val isDemo: Boolean
         get() = mode is ShellMode.Demo

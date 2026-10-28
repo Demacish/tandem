@@ -141,6 +141,40 @@ class ShoppingWritesContractTest {
         api("DELETE", "/api/shopping-list-recipe/$listRecipeId/")
     }
 
+    /**
+     * 0.3.0 review (fix-data, finding 3): what Tandoor does with an entry whose `food` carries the id
+     * of one food and the name of another. The app no longer sends such a pair (an edit replaces the
+     * whole `food` object, `OutboxMerge`), so this only records the server's behaviour for FACTS
+     * (printed as `FACT ...`) and checks that the request is answered at all. Own foods, so no
+     * seeded food is renamed.
+     */
+    @Test
+    fun aFoodWithTheIdOfOneAndTheNameOfAnotherIsRecorded() {
+        val created = api("POST", "/api/food/", obj("name" to "kontraktsfrukt"))
+        assertEquals(201, created.status, "$created")
+        val foodId = created.jsonObject.longAt("id") ?: error("food without id")
+        val entry = api(
+            "POST",
+            "/api/shopping-list-entry/",
+            obj(
+                "food" to mapOf("name" to "kontraktsbär", "id" to foodId),
+                "unit" to null,
+                "amount" to 1.0,
+                "shopping_lists" to emptyList<Any>(),
+            ),
+        )
+        assertTrue(entry.status in setOf(200, 201, 400), "$entry")
+        val entryFood = entry.jsonObject.objAt("food")
+        val after = api("GET", "/api/food/$foodId/").jsonObject.stringAt("name")
+        println(
+            "FACT mismatched-food-ref: status=${entry.status} entry.food.id=${entryFood?.longAt("id")} " +
+                "(sent id=$foodId) entry.food.name=${entryFood?.stringAt("name")} food $foodId name after=$after",
+        )
+        entry.jsonObject.longAt("id")?.let { api("DELETE", "/api/shopping-list-entry/$it/") }
+        entryFood?.longAt("id")?.takeIf { it != foodId }?.let { api("DELETE", "/api/food/$it/") }
+        api("DELETE", "/api/food/$foodId/")
+    }
+
     /** The recipe Phase2ContractTest seeded ("Potatisgratäng", with ingredients). */
     private fun recipeWithIngredients(): JsonObject {
         val list = api("GET", "/api/recipe/?query=Potatisgrat&page_size=10").jsonObject.arrAt("results").objects()

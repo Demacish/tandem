@@ -89,6 +89,10 @@ class SettingsAccessibilityTest {
     @Test
     fun syncDemo() = check { FixedSettingsPages(sync = SyncSettingsUiState(isDemo = true)).Sync {} }
 
+    /** 0.3.0 review (fix-data): the read-only shopping preferences. */
+    @Test
+    fun syncShopping() = check { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+
     @Test
     fun permissions() = check { FixedSettingsPages().Permissions {} }
 

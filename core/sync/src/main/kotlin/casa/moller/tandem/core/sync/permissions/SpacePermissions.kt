@@ -1,11 +1,14 @@
 package casa.moller.tandem.core.sync.permissions
 
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
+import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.server.ServerFeature
+import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
@@ -15,6 +18,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -29,26 +33,32 @@ import kotlinx.coroutines.flow.map
  * an hour). Until it is known the role is [SpaceRole.UNKNOWN], which is not read-only. Demo mode
  * is never read-only; without an account there is nothing to write anyway.
  *
- * [SpacePermissions.householdMissing] (0.3.0 review, fix-data; plan 8.6): the role was read (the
- * same answer carries the household) and `household` was null, so nothing is shared.
+ * [SpacePermissions.householdMissing] (0.3.0 review, fix-data; plan 6.2, 8.6): the role was read
+ * (the same answer carries the household), `household` was null, and the checked server has no
+ * finished household setup (no [ServerFeature.HOUSEHOLDS]: `space.household_setup_completed` is
+ * false, plan 8.6 "UserSpace.household == null medan household_setup_completed == false"). Tandoor
+ * then shares neither the list nor the meal plan with the other members.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 internal class DefaultSpacePermissionsRepository @Inject constructor(
     private val sources: ActiveSources,
     private val databases: TandemDatabaseFactory,
+    private val serverStatus: ServerStatusRepository,
 ) : SpacePermissionsRepository {
     override val permissions: Flow<SpacePermissions> = sources.source
         .flatMapLatest { source ->
             when (source) {
-                is ActiveSource.Remote -> databases.get(source.kind).accountDao().observe(source.accountId)
-                    .map { row ->
-                        val level = row?.groupLevel
-                        SpacePermissions(
-                            role = SpaceRole.of(listOfNotNull(level)),
-                            householdMissing = row != null && level != null && row.householdId == null,
-                        )
-                    }
+                is ActiveSource.Remote -> combine(
+                    databases.get(source.kind).accountDao().observe(source.accountId),
+                    serverStatus.observeStatus().map { it.withoutHouseholds() }.distinctUntilChanged(),
+                ) { row, noHouseholds ->
+                    val level = row?.groupLevel
+                    SpacePermissions(
+                        role = SpaceRole.of(listOfNotNull(level)),
+                        householdMissing = row != null && level != null && row.householdId == null && noHouseholds,
+                    )
+                }
 
                 ActiveSource.Demo -> flowOf(SpacePermissions(role = SpaceRole.USER, isDemo = true))
 
@@ -57,6 +67,9 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
         }
         .catch { emit(SpacePermissions()) }
         .distinctUntilChanged()
+
+    /** The server was checked and its space has not finished the household setup. */
+    private fun ServerStatus.withoutHouseholds(): Boolean = !isDemo && checkedAt != null && ServerFeature.HOUSEHOLDS !in capabilities
 }
 
 /**

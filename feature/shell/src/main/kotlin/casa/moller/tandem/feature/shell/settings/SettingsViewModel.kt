@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.common.AppBuildInfo
 import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
+import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.settings.AppearanceRepository
@@ -49,6 +50,8 @@ class SettingsViewModel internal constructor(
     sessionRepository: SessionRepository,
     buildInfo: AppBuildInfo,
     manufacturer: String,
+    // 0.3.0 review (fix-data): the account's shopping preferences, shown on "Synk och lagring".
+    preferences: PreferencesRepository,
 ) : ViewModel() {
 
     @Inject
@@ -61,6 +64,7 @@ class SettingsViewModel internal constructor(
         diagnostics: DiagnosticsRepository,
         sessionRepository: SessionRepository,
         buildInfo: AppBuildInfo,
+        preferences: PreferencesRepository,
     ) : this(
         settingsRepository,
         appearanceRepository,
@@ -71,6 +75,7 @@ class SettingsViewModel internal constructor(
         sessionRepository,
         buildInfo,
         manufacturer = Build.MANUFACTURER.orEmpty(),
+        preferences = preferences,
     )
 
     private val effects = Channel<SettingsEffect>(Channel.BUFFERED)
@@ -104,7 +109,8 @@ class SettingsViewModel internal constructor(
         offlineStorage.observeStorage(),
         syncRepository.status,
         clearingImageCache,
-    ) { (current, demo), storage, status, clearing ->
+        preferences.observeUserPreferences().map { ShoppingServerSettings.of(it) }.distinctUntilChanged(),
+    ) { (current, demo), storage, status, clearing, shopping ->
         SyncSettingsUiState(
             isDemo = demo,
             interval = current.syncInterval,
@@ -112,6 +118,7 @@ class SettingsViewModel internal constructor(
             storage = storage,
             status = status,
             clearingImageCache = clearing,
+            shopping = shopping.takeUnless { demo },
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())
 

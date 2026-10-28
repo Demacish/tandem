@@ -92,6 +92,7 @@ internal object MealPlanSamples {
         move: MoveMealState? = null,
         conflict: ConflictState? = null,
         selectedDay: LocalDate? = null,
+        householdMissing: Boolean = false,
     ): WeekUiState = WeekUiState(
         loading = false,
         weekStart = start,
@@ -99,6 +100,7 @@ internal object MealPlanSamples {
         days = week(meals, start),
         mealTypes = mealTypes,
         readOnly = readOnly,
+        householdMissing = householdMissing,
         selectedDay = selectedDay,
         move = move,
         conflict = conflict,

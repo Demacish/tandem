@@ -135,6 +135,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
         ShoppingUiState(
             loading = false,
             readOnly = readOnly,
+            householdMissing = snapshot.permissions.householdMissing,
             lists = snapshot.lists,
             selectedListId = list,
             supermarkets = snapshot.supermarkets,

@@ -92,6 +92,13 @@ abstract class SettingsScreenshotTest(private val device: String) {
     @Test
     fun syncPausedAllDownloaded() = page("sync_paused_all_downloaded_light") { FixedSettingsPages(sync = SAMPLE_SYNC_PAUSED).Sync {} }
 
+    /** 0.3.0 review (fix-data, plan 6.2 "Har hemma-effekten"): the Tandoor account's shopping preferences. */
+    @Test
+    fun syncShopping() = page("sync_shopping_light") { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+
+    @Test
+    fun syncShoppingDark() = page("sync_shopping_dark", darkTheme = true) { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+
     @Test
     fun syncDemo() = page("sync_demo_light") {
         val demo = SyncSettingsUiState(isDemo = true, storage = SAMPLE_STORAGE.copy(recipeCount = 14, downloadedCount = 14))
@@ -182,6 +189,10 @@ class SettingsPhoneScreenshotTest : SettingsScreenshotTest("phone") {
     @Test
     @Config(qualifiers = PHONE_SV)
     fun syncSwedish() = page("sync_light_sv") { FixedSettingsPages().Sync {} }
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun syncShoppingSwedish() = page("sync_shopping_light_sv") { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
 
     @Test
     @Config(qualifiers = PHONE_SV)

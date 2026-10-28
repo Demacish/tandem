@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Granskningen före 0.3.0 (plan 6.2 "Har hemma-effekten", #12): Tandoor-kontots inställningar för inköp, bara visning. -->
+    <string name="settings_shopping">Inköpslistan i Tandoor</string>
+    <string name="settings_shopping_intro">Tandem följer de här inställningarna i ditt Tandoor-konto. De ändras på Tandoor-webben, i dina inställningar för inköpslistan och matsedeln.</string>
+    <string name="settings_shopping_on">På</string>
+    <string name="settings_shopping_off">Av</string>
+    <string name="settings_shopping_add_onhand">Avbockade varor finns hemma</string>
+    <string name="settings_shopping_add_onhand_body">När den är på markeras livsmedlet som ”finns hemma” för hela hushållet när du bockar av en vara. ”Lägg på inköpslistan” och ”Handla för veckan” lämnar sedan de livsmedlen omarkerade tills markeringen tas bort i Tandoor.</string>
+    <string name="settings_shopping_exclude_onhand">Hoppa över det som finns hemma</string>
+    <string name="settings_shopping_exclude_onhand_body">När Tandoor själv lägger ett recept på listan hoppar den över livsmedel som är markerade ”finns hemma”. Tandem lämnar dem alltid omarkerade och låter dig välja.</string>
+    <string name="settings_shopping_autoadd">Planerade recept läggs på listan</string>
+    <string name="settings_shopping_autoadd_body">När den är på är ”Lägg på inköpslistan” förvald när du planerar en måltid med ett recept.</string>
+    <string name="settings_shopping_poll">Uppdatering medan listan är öppen</string>
+    <plurals name="settings_shopping_poll_every">
+        <item quantity="one">Med %1$d sekunds mellanrum</item>
+        <item quantity="other">Med %1$d sekunders mellanrum</item>
+    </plurals>
+    <string name="settings_shopping_poll_off">Av: automatisk synk är avstängd i Tandoor</string>
+    <string name="settings_shopping_poll_body">Andras ändringar syns i den takten. Den följer din inställning för automatisk synk i Tandoor och serverns kortaste intervall.</string>
+</resources>
