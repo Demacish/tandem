@@ -79,7 +79,6 @@ class HouseholdMembersContractTest {
         assertTrue(list.objects().none { "household" in it }, "no household in /api/user/")
     }
 
-    private fun userIdOf(token: String): Long =
-        http.call("household-user", "GET", "/api/user-preference/", bearer = token, record = false)
-            .json.objects().single().objAt("user")?.longAt("id") ?: error("no user id")
+    private fun userIdOf(token: String): Long = http.call("household-user", "GET", "/api/user-preference/", bearer = token, record = false)
+        .json.objects().single().objAt("user")?.longAt("id") ?: error("no user id")
 }
