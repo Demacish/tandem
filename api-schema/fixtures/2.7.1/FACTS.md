@@ -89,3 +89,5 @@
   [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md) "Fas 2". Inspelningarna ligger i [`fas2/`](fas2/). [O]
 - Push kör nu kontraktssviten mot både 2.6.13 och 2.7.1, och `EXPECTED` (det appen bygger på)
   gäller för båda. [S]
+- `food` med ett livsmedels id och ett annat namn döper om det livsmedlet, som i 2.6.13 ("Fas 2
+  b"; `ShoppingWritesContractTest`). [O]

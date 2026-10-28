@@ -598,6 +598,10 @@ Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 
 - **Skapa:** `{food: {name}, unit: {name} | null, amount}` → 201. Livsmedel och enhet skapas eller
   återanvänds på namn (`{id, name}` ger samma id). Utan `amount` → **400** `{"amount": ["This field
   is required."]}`; `food: null` → **500** (HTML); `amount: 0` → 201. [O]
+- **`food` med ett livsmedels id och ett annat namn** (`{id: 50, name: "kontraktsbär"}`) → 201
+  med livsmedel 50, och livsmedel 50 **byter namn** för hela spacet (`ShoppingWritesContractTest`,
+  granskningen före 0.3.0). Appen skickar därför aldrig ett gammalt id med ett nytt namn: en
+  ändring ersätter hela `food`/`unit` (`OutboxMerge`). [O]
 - **Posten:** `id, list_recipe, shopping_lists [{id,name,description,color}], food {id, name,
   plural_name, supermarket_category (objekt eller null), shopping_lists}, unit {id, name,
   plural_name, description, base_unit, open_data_slug} | null, amount (decimal, 2.0), order,

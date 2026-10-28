@@ -145,8 +145,9 @@ class ShoppingWritesContractTest {
      * 0.3.0 review (fix-data, finding 3): what Tandoor does with an entry whose `food` carries the id
      * of one food and the name of another. The app no longer sends such a pair (an edit replaces the
      * whole `food` object, `OutboxMerge`), so this only records the server's behaviour for FACTS
-     * (printed as `FACT ...`) and checks that the request is answered at all. Own foods, so no
-     * seeded food is renamed.
+     * (printed as `FACT ...`; 2.6.13 and 2.7.1: 201 with the sent id, and that food is RENAMED for
+     * the whole space, FACTS "Fas 2 b") and checks that the request is answered at all. Own foods,
+     * so no seeded food is renamed.
      */
     @Test
     fun aFoodWithTheIdOfOneAndTheNameOfAnotherIsRecorded() {
