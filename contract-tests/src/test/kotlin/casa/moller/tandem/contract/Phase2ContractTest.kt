@@ -2,8 +2,10 @@ package casa.moller.tandem.contract
 
 import java.io.File
 import java.net.URLEncoder
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -407,7 +409,8 @@ class Phase2ContractTest {
             observe("shopping.patchLists.seenByUpdatedAfter", t?.let { toothpasteId in idsOf(listAfter("patch-lists", it)) })
         }
 
-        // "Köp senare" (#14): delay_until = now + default_delay hours, undone with 1970-01-01.
+        // "Köp senare" (#14): delay_until = now + default_delay hours, undone with 1970-01-01 exactly as
+        // the app sends it (ShoppingPayloads.NOT_DELAYED), so the gate covers the app's own write.
         if (eggsId != null) {
             val later = isoOffset(ZonedDateTime.now(zone).plusHours(4))
             val delay = patchEntry("shopping-list-entry-patch-delay", eggsId, obj("delay_until" to later))
@@ -417,6 +420,9 @@ class Phase2ContractTest {
             val undo = patchEntry("shopping-list-entry-patch-undelay", eggsId, obj("delay_until" to "1970-01-01T00:00:00Z"))
             observe("shopping.undelay.status", undo.status)
             observe("shopping.undelay.value", objOf(undo)?.get("delay_until"))
+            val undone = getEntry("shopping-list-entry-get-undelayed", eggsId, record = false)
+            observe("shopping.undelay.notDelayed", objOf(undone)?.stringAt("delay_until")?.let { isPast(it) })
+            observe("shopping.undelay.listed", eggsId in idsOf(fullList()))
             val clear = patchEntry("shopping-list-entry-patch-delay-null", eggsId, obj("delay_until" to null), record = false)
             observe("shopping.delayNull.status", clear.status)
             observe("shopping.delayNull.value", objOf(clear)?.get("delay_until"))
@@ -672,14 +678,20 @@ class Phase2ContractTest {
             val move = api("meal-plan-patch-move", "PATCH", "/api/meal-plan/$moved/", obj("from_date" to newFrom))
             observe("mealPlan.moveFromOnly", describe(move, includeBody = move.status != 200))
             observe("mealPlan.moveFromOnly.dates", datesOf(move))
+            // The app's own move (MealPlanDates.toServer): both dates, NAIVE server-local date-times.
+            val target = today.plusDays(4)
+            val naive = "${target}T18:00:00"
             val both = api(
                 "meal-plan-patch-move-both",
                 "PATCH",
                 "/api/meal-plan/$moved/",
-                obj("from_date" to newFrom, "to_date" to newFrom),
+                obj("from_date" to naive, "to_date" to naive),
                 record = false,
             )
+            observe("mealPlan.moveBoth", describe(both, includeBody = both.status != 200))
             observe("mealPlan.moveBoth.dates", datesOf(both))
+            observe("mealPlan.moveBoth.listedOnTargetDay", moved in mealPlanIdsOn(target))
+            observe("mealPlan.moveBoth.listedOnOldDay", moved in mealPlanIdsOn(day3))
             val fieldsBody = obj("title" to "Ny titel", "servings" to 3, "meal_type" to breakfastRef)
             val fields = api("meal-plan-patch-fields", "PATCH", "/api/meal-plan/$moved/", fieldsBody)
             observe("mealPlan.patchFields.status", fields.status)
@@ -1076,6 +1088,10 @@ class Phase2ContractTest {
 
     private fun pause() = Thread.sleep(SMALL_PAUSE_MS)
 
+    /** True when a Tandoor date-time (with offset) lies before now; null when unreadable. */
+    private fun isPast(value: String): Boolean? =
+        runCatching { OffsetDateTime.parse(value).toInstant().isBefore(Instant.now()) }.getOrNull()
+
     /** Whole seconds with the zone's offset, as the web app sends date-times. */
     private fun isoOffset(time: ZonedDateTime): String = time.truncatedTo(ChronoUnit.SECONDS).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
@@ -1170,6 +1186,10 @@ class Phase2ContractTest {
             "shopping.patchLists.seenByUpdatedAfter" to true,
             "shopping.delay.listed" to true,
             "shopping.delayNull.status" to 200,
+            // The app's own "Köp nu" (ShoppingPayloads.NOT_DELAYED = 1970-01-01T00:00:00Z).
+            "shopping.undelay.status" to 200,
+            "shopping.undelay.notDelayed" to true,
+            "shopping.undelay.listed" to true,
             "shopping.window.recentDays7.listed30d10d3d" to listOf(false, false, true),
             "shopping.window.recentDays20.listed30d10d3d" to listOf(false, true, true),
             "shopping.window.agedOut.detailStatus" to 200,
@@ -1206,6 +1226,10 @@ class Phase2ContractTest {
             "mealPlan.lateUtc.listedOnDay4" to true,
             "mealPlan.twoDays.listedOnFirstDay" to false,
             "mealPlan.twoDays.listedOnSecondDay" to true,
+            // The app's own move (MealPlanDates.toServer: both dates, naive server-local).
+            "mealPlan.moveBoth.status" to 200,
+            "mealPlan.moveBoth.listedOnTargetDay" to true,
+            "mealPlan.moveBoth.listedOnOldDay" to false,
             "mealPlan.patchFields.status" to 200,
             "mealPlan.addShopping.shoppingFlag" to true,
             "mealPlan.addShopping.entries" to listOf("grädde=3.0", "mjölk=2.0", "potatis=1.0", "smör=1.0"),

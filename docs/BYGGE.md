@@ -510,6 +510,11 @@ Inspelningarna ligger i `api-schema/fixtures/<version>/fas2/`. Det viktigaste:
   "Lägg på listan" startar som inställningen och skickar `addshopping` när den är ikryssad.
 - Tidszon: en måltid listas under serverns lokala datum för `to_date`; ett rent datum får
   måltidstypens tid; 23:30Z blir nästa dag. PATCH av bara `from_date` lämnar `to_date`.
+- Appens egna skrivformer står i `EXPECTED` (granskningen före 0.3.0), inte bara varianter som
+  appen inte skickar: "Köp nu" med `delay_until: "1970-01-01T00:00:00Z"`
+  (`ShoppingPayloads.NOT_DELAYED`; 200, posten listas och är inte längre fördröjd) och flytt med
+  **båda** datumen som naiva serverlokala tider (`MealPlanDates.toServer`, `2000-01-19T18:00:00`;
+  200, listas på måldagen och inte på den gamla).
 - Böcker: en delad medlem kan **lägga till** poster i någon annans bok (201) men inte ta bort
   (403) eller ändra boken (403). Appen visar ändå skrivknappar bara för egna böcker (plan 3.7).
   `CustomFilter.search` måste vara id:n (`{"keywords_or":[8]}`), objekt ger 500 i receptlistan.

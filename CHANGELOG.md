@@ -15,8 +15,9 @@ behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3
 - **Handla:** inköpslistan grupperad efter butikens avdelningar (välj butik och lista), avbockade
   varor samlas hopfällda längst ned och "Köp senare" har en egen del. Bocka av med ett tryck eller
   svep, eller alla i en avdelning på en gång, och ångra direkt. Lägg till varor med fritext ("2 dl
-  grädde, mjölk") och se hur de tolkas innan de läggs till, även offline; förslag och nyss köpta
-  varor läggs till med ett tryck. Lång tryckning ändrar mängd, enhet, vara och avdelning.
+  grädde, mjölk") och se hur de tolkas innan de läggs till, även offline; förslag och tidigare
+  köpta varor ur historiken (avbockade varor som rensats eller som Tandoor inte längre visar)
+  läggs till med ett tryck. Lång tryckning ändrar mängd, enhet, vara och avdelning.
   Butiksläget har stor text, stora rader och tänd skärm, och listan kan delas som text. På
   surfplatta står "Lägg till", listor och butiker i en sidopanel bredvid listan, och
   avdelningarna står i två kolumner när det finns plats.
@@ -92,6 +93,9 @@ behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3
 Saknas fortfarande: dra och släpp i matsedeln, en anteckning per vara på listan (Tandoor har
 inget sådant fält), notiser när någon annan ändrar listan och att ta bort receptet från en
 planerad måltid (byt recept eller ta bort måltiden).
+Inte heller med: "Ångra" efter "Rensa" och efter att en måltid tagits bort från sin egen sida
+(båda frågar först), och Tandoor-kontots inköpsinställningar (bland annat att avbockade varor
+blir "finns hemma") ändras fortfarande på webben.
 
 ## [0.2.0] – 2026-10-24
 
