@@ -366,6 +366,8 @@
   "shopping.delay.listed": true,
   "shopping.undelay.status": 200,
   "shopping.undelay.value": "1970-01-01T01:00:00+01:00",
+  "shopping.undelay.notDelayed": true,
+  "shopping.undelay.listed": true,
   "shopping.delayNull.status": 200,
   "shopping.delayNull.value": null,
   "shopping.window.recentDays7.listed30d10d3d": [
@@ -771,10 +773,17 @@
     "2000-01-19T18:00:00+01:00",
     "2000-01-18T18:00:00+01:00"
   ],
+  "mealPlan.moveBoth": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
   "mealPlan.moveBoth.dates": [
     "2000-01-19T18:00:00+01:00",
     "2000-01-19T18:00:00+01:00"
   ],
+  "mealPlan.moveBoth.listedOnTargetDay": true,
+  "mealPlan.moveBoth.listedOnOldDay": false,
   "mealPlan.patchFields.status": 200,
   "mealPlan.patchFields.mealType": "Frukost",
   "mealPlan.patchFields.servings": 3.0,

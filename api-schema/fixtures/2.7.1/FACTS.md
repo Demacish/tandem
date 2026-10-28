@@ -91,3 +91,5 @@
   gäller för båda. [S]
 - `food` med ett livsmedels id och ett annat namn döper om det livsmedlet, som i 2.6.13 ("Fas 2
   b"; `ShoppingWritesContractTest`). [O]
+- Appens egna skrivformer för "Köp nu" (`1970-01-01T00:00:00Z`) och flytt av en måltid (båda
+  datumen, naiva serverlokala tider) står i `EXPECTED` och ger samma fakta som 2.6.13. [O]

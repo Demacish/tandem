@@ -619,6 +619,8 @@ Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 
 - **Köp senare:** `PATCH {delay_until: "<ISO>"}` → 200; en fördröjd post **finns kvar i listan**
   (appen döljer den själv). Ångra med `1970-01-01T00:00:00Z` (svaret: `1970-01-01T01:00:00+01:00`)
   eller `null`. [O]
+  Appens "Köp nu" (`1970-01-01T00:00:00Z`) står i `EXPECTED`: 200, posten listas och dess
+  `delay_until` ligger före nu (`shopping.undelay.*`). [O]
 - **Fönsterregeln:** listan ger oavbockade poster och poster avbockade efter midnatt (UTC) för
   `min(shopping_recent_days, 14)` dagar sedan, högst 1000. Med 7 dagar syntes 3-dagarsposten men
   inte 10- eller 30-dagarsposten; med 20 (= 14) syntes 10- och 3-dagarsposten. Detaljen
@@ -675,6 +677,9 @@ Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 
   filtrerar på serverns lokala datum för `to_date`). En måltid över två dagar listas bara på
   den sista. [O]
 - `PATCH {from_date}` ensam **lämnar `to_date`** (som då kan ligga före); flytta med båda. [O]
+  Appens flytt, båda datumen som **naiva** serverlokala tider (`2000-01-19T18:00:00`), står i
+  `EXPECTED`: 200, måltiden listas på måldagen och inte längre på den gamla
+  (`mealPlan.moveBoth.*`). [O]
   `PATCH {title, servings, meal_type: {id, name}}` → 200. [O]
 - **`addshopping: true`** vid skapande lägger receptets ingredienser på listan (i måltidens
   portioner), kopplade till måltiden (`?mealplan=<id>` ger dem, `meal_plan_data.id`), och
