@@ -38,8 +38,17 @@ enum class SpaceRole {
  *   in no household and the space has not finished its household setup: Tandoor then shares neither
  *   the shopping list nor the meal plan with the other members, so Handla, Veckan and Mer warn and
  *   say how to fix it on the web. Never in demo mode.
+ * @property sharedWith (0.3.0 komplettering, plan 8.6 "Delad med: …") the display names of the
+ *   household's OTHER members, sorted, who see the same shopping list and meal plan; empty when
+ *   none are known (no household, a member alone, or nothing read yet). See core:domain
+ *   `HouseholdMembers` for where they come from.
  */
-data class SpacePermissions(val role: SpaceRole = SpaceRole.UNKNOWN, val isDemo: Boolean = false, val householdMissing: Boolean = false) {
+data class SpacePermissions(
+    val role: SpaceRole = SpaceRole.UNKNOWN,
+    val isDemo: Boolean = false,
+    val householdMissing: Boolean = false,
+    val sharedWith: List<String> = emptyList(),
+) {
     /** Read-only mode (guest). */
     val readOnly: Boolean
         get() = role == SpaceRole.GUEST && !isDemo

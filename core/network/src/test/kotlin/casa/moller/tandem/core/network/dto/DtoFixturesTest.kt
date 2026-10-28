@@ -100,6 +100,9 @@ class DtoFixturesTest {
         // --- Phase 2 (böcker lane): saved filters (smart books) and the user's role. ---
         Route("POST", "/api/custom-filter/", CustomFilterDto.serializer()),
         Route("GET", "/api/user-space/all_personal/", ListSerializer(UserSpaceDto.serializer())),
+        // --- 0.3.0 komplettering: "Delad med: …" (the household's members, plan 8.6). ---
+        Route("GET", "/api/user-space/", PageDto.serializer(UserSpaceDto.serializer())),
+        Route("GET", "/api/user/", ListSerializer(UserDto.serializer())),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */

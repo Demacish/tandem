@@ -69,4 +69,12 @@ interface UserSpaceService {
     /** One element per space of the caller, with `groups` (`guest`/`user`/`admin`) and `household`. */
     @GET("api/user-space/all_personal/")
     suspend fun allPersonal(): List<UserSpaceDto>
+
+    /**
+     * 0.3.0 komplettering ("Delad med: …", plan 8.6): the space's memberships, paginated, with
+     * `user` and `household`. An admin gets every member of the space, anyone else only their own
+     * (FACTS "Fas 2 h"), so the app reads it only for an admin.
+     */
+    @GET("api/user-space/")
+    suspend fun list(@Query("page") page: Int?, @Query("page_size") pageSize: Int = TaxonomyService.MAX_PAGE_SIZE): PageDto<UserSpaceDto>
 }
