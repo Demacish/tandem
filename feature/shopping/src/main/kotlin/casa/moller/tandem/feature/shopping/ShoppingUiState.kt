@@ -92,6 +92,9 @@ data class EditEntryState(
 ) {
     val canChangeCategory: Boolean
         get() = entry.food.id != null
+
+    /** Puts the entry on [listId] in the sheet, or takes it off when it is already there. */
+    fun toggleList(listId: Long): EditEntryState = copy(listIds = if (listId in listIds) listIds - listId else listIds + listId)
 }
 
 /**

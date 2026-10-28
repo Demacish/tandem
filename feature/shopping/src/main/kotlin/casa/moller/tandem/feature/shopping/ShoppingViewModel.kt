@@ -7,6 +7,7 @@ import casa.moller.tandem.core.data.shopping.IngredientParser
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
 import casa.moller.tandem.core.data.shopping.SupermarketRepository
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.errorOrNull
 import casa.moller.tandem.core.model.error.getOrNull
 import casa.moller.tandem.core.model.shopping.ParsedIngredient
@@ -188,9 +189,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
             is ShoppingAction.EditAmount -> editing { it.copy(amount = action.text, amountError = false) }
             is ShoppingAction.EditUnit -> editing { it.copy(unit = action.text) }
             is ShoppingAction.EditCategory -> editing { it.copy(categoryId = action.categoryId) }
-            is ShoppingAction.EditList -> editing { edit ->
-                edit.copy(listIds = if (action.listId in edit.listIds) edit.listIds - action.listId else edit.listIds + action.listId)
-            }
+            is ShoppingAction.EditList -> editing { it.toggleList(action.listId) }
             ShoppingAction.SaveEdit -> saveEdit()
             ShoppingAction.DeleteEdited -> deleteEdited()
             ShoppingAction.RemoveEditedRecipe -> removeEditedRecipe()
@@ -353,26 +352,10 @@ class ShoppingViewModel @AssistedInject internal constructor(
         val newAmount = amount.takeIf { it != entry.amount }
         // The aisle belongs to the food (for the whole space): only for the food the entry already had.
         val aisleFood = entry.food.id?.takeIf { food == null && edit.categoryId != entry.food.categoryId }
-        // fix-ui: moving between named lists (plan 3.5 "Flytt mellan listor", a PATCH of shopping_lists).
         val lists = edit.listIds.takeIf { it != entry.listIds }
         editing { it.copy(saving = true) }
         viewModelScope.launch {
-            val updated = if (food != null || unit != null || newAmount != null) {
-                shopping.update(entry.id, amount = newAmount, unitName = unit, foodName = food)
-            } else {
-                Outcome.Success(Unit)
-            }
-            val moved = if (updated is Outcome.Success && aisleFood != null) {
-                supermarkets.setFoodCategory(aisleFood, edit.categoryId)
-            } else {
-                Outcome.Success(Unit)
-            }
-            val relisted = if (updated is Outcome.Success && moved is Outcome.Success && lists != null) {
-                shopping.setLists(listOf(entry.id), lists)
-            } else {
-                Outcome.Success(Unit)
-            }
-            val error = updated.errorOrNull() ?: moved.errorOrNull() ?: relisted.errorOrNull()
+            val error = applyEdit(entry.id, EditChange(food, unit, newAmount, aisleFood, edit.categoryId, lists))
             if (error != null) {
                 editing { it.copy(saving = false) }
                 effectChannel.send(ShoppingEffect.Failed(error))
@@ -381,6 +364,29 @@ class ShoppingViewModel @AssistedInject internal constructor(
                 effectChannel.send(ShoppingEffect.Show(ShoppingMessage.Saved))
             }
         }
+    }
+
+    /** What [saveEdit] changes; null fields stay as they are. */
+    private data class EditChange(
+        val food: String?,
+        val unit: String?,
+        val amount: Double?,
+        val aisleFood: Long?,
+        val categoryId: Long?,
+        val lists: Set<Long>?,
+    )
+
+    /** Saves [change] step by step and stops at the first failure, whose error it returns. */
+    private suspend fun applyEdit(id: Long, change: EditChange): TandemError? {
+        if (change.food != null || change.unit != null || change.amount != null) {
+            shopping.update(id, amount = change.amount, unitName = change.unit, foodName = change.food).errorOrNull()?.let { return it }
+        }
+        if (change.aisleFood != null) {
+            supermarkets.setFoodCategory(change.aisleFood, change.categoryId).errorOrNull()?.let { return it }
+        }
+        // fix-ui: moving between named lists (plan 3.5 "Flytt mellan listor", a PATCH of shopping_lists).
+        if (change.lists != null) shopping.setLists(listOf(id), change.lists).errorOrNull()?.let { return it }
+        return null
     }
 
     private fun deleteEdited() {

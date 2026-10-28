@@ -230,22 +230,27 @@ class WeekViewModel @AssistedInject internal constructor(
     private suspend fun restore(meal: MealPlanEntry, rows: List<ShoppingEntry>): Outcome<*> {
         val created = mealPlans.create(meal.toDraft())
         if (created !is Outcome.Success || rows.isEmpty()) return created
-        for ((_, group) in rows.groupBy { it.recipe?.listRecipeId }) {
-            val label = group.first().recipe ?: continue
-            val recipeId = label.recipeId ?: meal.recipe?.id ?: continue
-            val ingredients = group.mapNotNull { it.ingredientId }.toSet()
-            if (ingredients.isEmpty()) continue
-            val request = RecipeShoppingRequest(
-                recipeId = recipeId,
-                servings = label.servings,
-                ingredientIds = ingredients,
-                mealPlanId = created.value,
-                listIds = group.first().listIds,
-            )
+        val requests = rows.groupBy { it.recipe?.listRecipeId }.values.mapNotNull { group -> requestFor(meal, group, created.value) }
+        for (request in requests) {
             val added = shopping.addRecipe(request)
             if (added is Outcome.Failure) return added
         }
         return created
+    }
+
+    /** The request that puts one list recipe's [group] of rows back, linked to [mealPlanId]; null without a recipe or ingredients. */
+    private fun requestFor(meal: MealPlanEntry, group: List<ShoppingEntry>, mealPlanId: Long): RecipeShoppingRequest? {
+        val label = group.first().recipe ?: return null
+        val recipeId = label.recipeId ?: meal.recipe?.id ?: return null
+        val ingredients = group.mapNotNull { it.ingredientId }.toSet()
+        if (ingredients.isEmpty()) return null
+        return RecipeShoppingRequest(
+            recipeId = recipeId,
+            servings = label.servings,
+            ingredientIds = ingredients,
+            mealPlanId = mealPlanId,
+            listIds = group.first().listIds,
+        )
     }
 
     private fun confirmMove() {
@@ -295,11 +300,7 @@ class WeekViewModel @AssistedInject internal constructor(
         viewModelScope.launch { action().errorOrNull()?.let { effectChannel.send(WeekEffect.Failed(it)) } }
     }
 
-    private data class Transient(
-        val refreshing: Boolean = false,
-        val move: MoveMealState? = null,
-        val deleting: DeleteMealState? = null,
-    )
+    private data class Transient(val refreshing: Boolean = false, val move: MoveMealState? = null, val deleting: DeleteMealState? = null)
 
     private companion object {
         const val KEY_WEEK = "week.start"

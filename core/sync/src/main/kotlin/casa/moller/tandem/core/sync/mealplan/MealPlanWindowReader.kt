@@ -58,40 +58,37 @@ internal class MealPlanWindowReader @Inject constructor(
      * Reads the window, or (fix-ui) only [range]: a week Veckan shows outside the window. A range
      * read replaces the stored server meals of those days only and leaves the window's state alone.
      */
-    suspend fun read(
-        remote: ActiveSource.Remote,
-        background: Boolean,
-        range: ClosedRange<LocalDate>? = null,
-    ): Outcome<Unit> = lock.withLock {
-        val today = clock.today()
-        val from = range?.start ?: today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY)
-        val to = range?.endInclusive ?: today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
-        val result = caller.call(remote, background) {
-            val api = this
-            Paginator.fetchAll { page -> api.mealPlans.mealPlans(from, to, page.takeIf { it > 1 }) }
+    suspend fun read(remote: ActiveSource.Remote, background: Boolean, range: ClosedRange<LocalDate>? = null): Outcome<Unit> =
+        lock.withLock {
+            val today = clock.today()
+            val from = range?.start ?: today.minus(SyncSchedule.MEAL_PLAN_DAYS_BEFORE, DateTimeUnit.DAY)
+            val to = range?.endInclusive ?: today.plus(SyncSchedule.MEAL_PLAN_DAYS_AFTER, DateTimeUnit.DAY)
+            val result = caller.call(remote, background) {
+                val api = this
+                Paginator.fetchAll { page -> api.mealPlans.mealPlans(from, to, page.takeIf { it > 1 }) }
+            }
+            if (sources.source.value.identity != remote.identity) return@withLock Outcome.Failure(SyncStop.SourceChanged)
+            val plan = when (result) {
+                is Outcome.Failure -> return@withLock result
+                is Outcome.Success -> result.value
+            }
+            if (!plan.complete) return@withLock Outcome.Success(Unit)
+            val accountId = remote.accountId
+            val database = databases.get(remote.kind)
+            val images = ImageResolver.forBaseUrl(remote.baseUrl)
+            database.recipeDao().upsertOverviews(accountId, plan.items.mapNotNull { it.recipe?.toOverviewWrite(accountId, images) })
+            val rows = plan.items.mapNotNull { it.toEntity(accountId) }
+            val listed = rows.mapNotNullTo(HashSet()) { it.serverId }
+            val gone = goneElsewhere(remote, listed, from, to)
+            val mealPlans = database.mealPlanDao()
+            mealPlans.deleteGone(accountId, gone)
+            mealPlans.replaceWindow(accountId, from.toString(), to.toString(), rows)
+            if (range != null) return@withLock Outcome.Success(Unit)
+            val syncState = database.syncStateDao()
+            val state = syncState.get(accountId, SyncKeys.MEAL_PLAN) ?: SyncStateEntity(accountId = accountId, entity = SyncKeys.MEAL_PLAN)
+            syncState.upsert(state.copy(windowFrom = from.toString(), windowTo = to.toString()))
+            Outcome.Success(Unit)
         }
-        if (sources.source.value.identity != remote.identity) return@withLock Outcome.Failure(SyncStop.SourceChanged)
-        val plan = when (result) {
-            is Outcome.Failure -> return@withLock result
-            is Outcome.Success -> result.value
-        }
-        if (!plan.complete) return@withLock Outcome.Success(Unit)
-        val accountId = remote.accountId
-        val database = databases.get(remote.kind)
-        val images = ImageResolver.forBaseUrl(remote.baseUrl)
-        database.recipeDao().upsertOverviews(accountId, plan.items.mapNotNull { it.recipe?.toOverviewWrite(accountId, images) })
-        val rows = plan.items.mapNotNull { it.toEntity(accountId) }
-        val listed = rows.mapNotNullTo(HashSet()) { it.serverId }
-        val gone = goneElsewhere(remote, listed, from, to)
-        val mealPlans = database.mealPlanDao()
-        mealPlans.deleteGone(accountId, gone)
-        mealPlans.replaceWindow(accountId, from.toString(), to.toString(), rows)
-        if (range != null) return@withLock Outcome.Success(Unit)
-        val syncState = database.syncStateDao()
-        val state = syncState.get(accountId, SyncKeys.MEAL_PLAN) ?: SyncStateEntity(accountId = accountId, entity = SyncKeys.MEAL_PLAN)
-        syncState.upsert(state.copy(windowFrom = from.toString(), windowTo = to.toString()))
-        Outcome.Success(Unit)
-    }
 
     /**
      * Server ids of meals with unsent outbox rows that the complete window answer no longer lists

@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -272,7 +273,12 @@ private fun LazyListScope.collection(
     if (recipes.isEmpty()) return
     item(key = "$key-heading") { CollectionHeading(stringResource(heading)) }
     items(recipes, key = { "$key-${it.id}" }) { recipe ->
-        RecipeResult(recipe = recipe, onPick = { onAction(PlanMealAction.PickRecipe(recipe)) }, tag = planMealCollectionTag(key, recipe.id))
+        RecipeResult(
+            recipe = recipe,
+            onPick = { onAction(PlanMealAction.PickRecipe(recipe)) },
+            tag = planMealCollectionTag(key, recipe.id),
+            group = stringResource(heading),
+        )
     }
 }
 
@@ -389,14 +395,18 @@ private fun ChosenRecipe(recipe: RecipeOverview, onChange: () -> Unit) {
 }
 
 @Composable
-private fun RecipeResult(recipe: RecipeOverview, onPick: () -> Unit, tag: String = planMealRecipeTag(recipe.id)) {
+private fun RecipeResult(recipe: RecipeOverview, onPick: () -> Unit, tag: String = planMealRecipeTag(recipe.id), group: String? = null) {
     val spacing = TandemTheme.spacing
+    val duration = durationText(recipe.totalMinutes)
+    // A recipe can be in "Vill laga", "Favoriter" and the search at once: the group tells them apart for TalkBack.
+    val description = group?.let { listOfNotNull(recipe.name, duration, it).joinToString(", ") }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .testTag(tag)
             .clip(MaterialTheme.shapes.large)
-            .clickable(onClickLabel = stringResource(R.string.mealplan_choose_recipe), role = Role.Button, onClick = onPick),
+            .clickable(onClickLabel = stringResource(R.string.mealplan_choose_recipe), role = Role.Button, onClick = onPick)
+            .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
@@ -412,7 +422,7 @@ private fun RecipeResult(recipe: RecipeOverview, onPick: () -> Unit, tag: String
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = recipe.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                durationText(recipe.totalMinutes)?.let {
+                duration?.let {
                     Text(text = it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

@@ -186,6 +186,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             }
 
             ActiveSource.Demo -> Outcome.Success(Unit)
+
             ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
     }
