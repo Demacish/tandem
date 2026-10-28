@@ -79,7 +79,7 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
                 }
 
                 // 0.3.0 komplettering: the demo household is whoever else created the demo list's rows and meals.
-                ActiveSource.Demo -> observeCreators(source).map { creators ->
+                ActiveSource.Demo -> observeCreators(ActiveSource.Demo).map { creators ->
                     SpacePermissions(
                         role = SpaceRole.USER,
                         isDemo = true,

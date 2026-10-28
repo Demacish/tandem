@@ -68,6 +68,7 @@ internal class HouseholdMembersSync @Inject constructor(
                 }
                 when (result) {
                     is Outcome.Failure -> result
+
                     is Outcome.Success -> Outcome.Success(
                         Stored(confirmed = result.value.items.filter { it.household?.id == household }.mapNotNull { it.user?.toMember() }),
                     )
@@ -118,11 +119,10 @@ internal class HouseholdMembersSync @Inject constructor(
             list.map { member -> JsonObject(mapOf("id" to JsonPrimitive(member.id), "name" to JsonPrimitive(member.name))) },
         )
 
-        private fun membersOf(element: JsonElement?): List<HouseholdMembers.Member> =
-            element?.jsonArray.orEmpty().mapNotNull { item ->
-                val obj = item.jsonObject
-                val id = obj["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
-                HouseholdMembers.Member(id, obj["name"]?.jsonPrimitive?.takeIf { it.isString }?.content)
-            }
+        private fun membersOf(element: JsonElement?): List<HouseholdMembers.Member> = element?.jsonArray.orEmpty().mapNotNull { item ->
+            val obj = item.jsonObject
+            val id = obj["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            HouseholdMembers.Member(id, obj["name"]?.jsonPrimitive?.takeIf { it.isString }?.content)
+        }
     }
 }

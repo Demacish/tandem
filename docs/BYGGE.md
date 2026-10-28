@@ -929,7 +929,7 @@ Granskningen av Fas 2 hittade fall där outboxen kunde fastna, skicka dubbletter
   användaren inte har något hushåll och den kontrollerade servern saknar avslutad
   hushållsinställning (ingen `ServerFeature.HOUSEHOLDS`, alltså `household_setup_completed`
   falskt). Handla, Veckan och Mer:s kontokort visar då `core:ui` `HouseholdMissingCard`; aldrig i
-  demoläget. "Delad med: …" på listan och matsedeln är kvar till en senare version.
+  demoläget. "Delad med: …" på listan och matsedeln kom med kompletteringen (se nedan).
 - **Inköpsinställningar** (plan 6.2 "Har hemma-effekten"): Mer → Synk och lagring har gruppen
   "Inköpslistan i Tandoor" (`ShoppingServerSettings`, bara visning): `shopping_add_onhand`,
   `mealplan_autoexclude_onhand`, `mealplan_autoadd_shopping` och listans uppdateringstakt
@@ -940,6 +940,50 @@ Granskningen av Fas 2 hittade fall där outboxen kunde fastna, skicka dubbletter
   servern, gäst och nekad skrivning). `DtoFixturesTest` hoppar inte längre över `fas2/`-inspelningar
   utan väg: varje har en väg eller ett skäl i `notModelled`.
 <!-- /Fas 2 fix-data -->
+
+<!-- Fas 2 komplettering-1 -->
+## Komplettering före 0.3.0 (komplettering-1)
+
+Luckor som fullständighetskontrollen hittade, utan schemaändring:
+
+- **"Delad med: …"** (plan 8.6) överst i Handla och Veckan (`core:ui` `SharedWithRow`, en rad,
+  en nod för TalkBack; inget när ingen annan är känd). `SpacePermissions.sharedWith` byggs av
+  `core:domain` `HouseholdMembers`: Tandoor visar andras listrader och måltider bara inom
+  hushållet, men bara en admin kan lista hushållet (FACTS "Fas 2 h"). `core:sync`
+  `HouseholdMembersSync` läser därför med de små tabellerna (i `BookSyncStep.run`, en begäran):
+  för en admin `GET /api/user-space/` (hushållets medlemmar), för andra `GET /api/user/`
+  (spacets namn), och sparar svaret som JSON i `sync_state` (`household_members`, `hash`), så
+  det finns offline. Andra medlemmar = adminlistan plus de som skapat lagrade rader
+  (`ShoppingDao.observeCreators`, med namn) och måltider (`MealPlanDao.observeCreatorIds`).
+  Utan hushåll läses inget och raden töms. I demoläget: demolistans "Alex".
+  `HouseholdMembersContractTest` (eget steg i contract.yml) spelar in `fas2/user-space-list-*`
+  och `fas2/user-list-member` för 2.6.13 och 2.7.1.
+- **"Finns redan hemma?"** i receptarket och Handla för veckan har en mening om vad som gör ett
+  livsmedel "har hemma" (`shopping_add_onhand`) och att Tandoor själv hoppar över dem
+  (`mealplan_autoexclude_onhand`), med hänvisning till Mer → Synk och lagring.
+- **Uppdateringstakten** under Synk och lagring räknas som pollningen:
+  `ForegroundPolling.intervalFor(serverns minimum, användarens shopping_auto_sync)`, där
+  minimum kommer från `PreferencesRepository.observeShoppingMinAutoSyncSeconds()`
+  (`server_account.shopping_min_autosync_seconds`, ny standardmetod i `:core:data`).
+- **"Ångra"** efter "Rensa" (de rensade raderna läggs tillbaka avbockade, som nya rader utan
+  receptetikett) och efter "Ta bort från matsedeln" på måltidens egen sida: sidan stänger och
+  lämnar måltiden till veckoagendan (`feature:mealplan` `RemovedMeals`, en åt gången), som visar
+  samma snackbar som när måltiden tas bort i agendan och vid "Ångra" planerar den igen och
+  lägger tillbaka raderna som var kvar att köpa med `addRecipe(mealPlanId)`.
+- **Kretsbrytaren via listan:** `ShoppingReviewSyncTest` har ett fall där fem olika rader (tre
+  404 och två 400 på rader servern fortfarande listar) inom 100 s pausar outboxen; efter pausen
+  kontrolleras resten mot en ny fullläsning (en rad som partnern raderat släpps utan anrop, den
+  andra skickas, 400-raderna står kvar som FAILED).
+- **Release-röktestet** har kontobyte med två servrar, receptets inköpsark och Veckans flyttark
+  (se Release-röktest).
+- **Tester:** `HouseholdMembersTest` (`:core:domain`), `SpacePermissionsTest` (admin, medlem,
+  misslyckad läsning, utan hushåll, demo), `SettingsViewModelTest`
+  (`theShownPollingIntervalFollowsTheServersMinimum`), `ShoppingViewModelTest`,
+  `WeekViewModelTest`, `PlanMealViewModelTest`, `RecipeShoppingScreenTest`, `WeekScreenTest`,
+  ATF och nya referensbilder (`*_shopping_shared_*`, `*_week_shared_*`,
+  `phone_week_shopping_at_home_light_sv`, och de omtagna `recipe_shopping_*` och
+  `*week_shopping*` där "Finns redan hemma?" syns).
+<!-- /Fas 2 komplettering-1 -->
 
 <!-- Fas 1b koklogg -->
 ### Koklogg ("Klart!", `:core:sync` + `:core:database`)
@@ -2200,7 +2244,18 @@ den kod som skickas:
   `mealplan_autoadd_shopping` av (appen lägger webbmåltidens ingredienser på listan en gång,
   andra gången: "Everything planned on these days is already on the list.") och på (servern
   lade själv till en annan webbmåltids och appmåltidens rader): en listrecept per måltid,
-  inga dubbla rader (samma listrecept, vara och enhet) och inga 404.
+  inga dubbla rader (samma listrecept, vara och enhet) och inga 404; (f, komplettering)
+  Veckans flyttark: måltidskortets TalkBack-åtgärd "Move", morgondagens dagchip och "Move" i
+  arket (tillgänglighetsåtgärder) flyttar webbens lunch till i morgon med en `PATCH` och utan 404.
+  `recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges` (komplettering, kontots och
+  integrationens öppna punkt): (g) "Add to shopping list" i svamppastans recept och arkets "Add
+  n items to the shopping list" (tillgänglighetsåtgärder, knappen kan ligga under arkets kant)
+  ger ett listrecept med rader på servern; (h) en andra `FakeTandoor` (`second`, egen port och
+  lista) läggs till under More → Accounts and servers → Add account: Handla visar dess lista
+  och inte den förstas; i flygplansläge läggs "bröd" till där; byte tillbaka till det första
+  kontot visar dess egen lista utan väntande ändringar medan kontosidan säger "1 change waiting
+  to be sent" om det andra; med nät och det första kontot aktivt skickas ingenting (15 s);
+  efter byte tillbaka hamnar "bröd" på den andra servern och aldrig på den första, utan 404.
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt

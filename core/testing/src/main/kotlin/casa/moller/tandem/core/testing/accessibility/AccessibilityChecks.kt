@@ -87,10 +87,24 @@ object TandemAccessibility {
         sourceCheckClass == TextContrastCheck::class.java && element?.selfOrAncestorIsTextField() == true
     }
 
+    /**
+     * Text contrast of a SLIVER of text that a scrolling list cuts at its edge (0.3.0 komplettering:
+     * the tablet's "Handla för veckan" showed a line of 6 px at the bottom of its list). ATF marks
+     * such a result itself ("may be only partially visible within a scrollable container",
+     * `KEY_IS_AGAINST_SCROLLABLE_EDGE`) and estimates both colours from a few rows of antialiased
+     * pixels. Only slivers lower than [SLIVER_MAX_PX] are left out; the same text is measured in
+     * full where it is not cut (other states, sizes and the ATF checks of every screen).
+     */
+    private val slicedTextContrast: Matcher<CheckResult> = result("text contrast of a sliver cut by a scrolling edge") {
+        sourceCheckClass == TextContrastCheck::class.java &&
+            metadata?.getBoolean(KEY_AGAINST_SCROLLABLE_EDGE, false) == true &&
+            (element?.boundsInScreen?.height ?: Int.MAX_VALUE) < SLIVER_MAX_PX
+    }
+
     val options: RoborazziATFAccessibilityCheckOptions = RoborazziATFAccessibilityCheckOptions(
         checker = RoborazziATFAccessibilityChecker(
             preset = AccessibilityCheckPreset.LATEST,
-            suppressions = anyOf(disabledControlContrast, repeatedIngredientCheckbox, textFieldContrast),
+            suppressions = anyOf(disabledControlContrast, repeatedIngredientCheckbox, textFieldContrast, slicedTextContrast),
         ),
         failureLevel = RoborazziATFAccessibilityChecker.CheckLevel.Warning,
     )
@@ -111,3 +125,9 @@ object TandemAccessibility {
 }
 
 private const val EDIT_TEXT_CLASS = "android.widget.EditText"
+
+/** ATF's TextContrastCheck result metadata: the element touches the edge of a scrolling container. */
+private const val KEY_AGAINST_SCROLLABLE_EDGE = "KEY_IS_AGAINST_SCROLLABLE_EDGE"
+
+/** Less than one line of the smallest text the app uses (12 sp) at mdpi. */
+private const val SLIVER_MAX_PX = 12

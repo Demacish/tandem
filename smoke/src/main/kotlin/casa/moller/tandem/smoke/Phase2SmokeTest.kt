@@ -1,6 +1,7 @@
 package casa.moller.tandem.smoke
 
 import android.os.SystemClock
+import android.text.format.DateFormat
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -11,6 +12,8 @@ import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import java.io.File
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.regex.Pattern
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -42,7 +45,15 @@ import org.junit.runner.RunWith
  *   day, and a meal planned in the app reaches the server with the chosen date; (e) "Handla för
  *   veckan" with `mealplan_autoadd_shopping` off (the app adds a meal's ingredients once, asking
  *   again adds nothing) and on (the server added a web meal's ingredients, and `addshopping` an
- *   app meal's): one list recipe per meal and no duplicate rows.
+ *   app meal's): one list recipe per meal and no duplicate rows; (f, 0.3.0 komplettering) Veckan's
+ *   "Flytta" sheet moves a meal to tomorrow through its TalkBack action, and the server gets both dates.
+ * - [recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges] (0.3.0 komplettering, the
+ *   konto and integration lanes' open issue): (g) "Lägg på inköpslistan" in a recipe, driven
+ *   through accessibility actions, puts one list recipe with its rows on the server; (h) a second
+ *   Tandoor ([second], its own server and list) is added under Mer → Konton och servrar, Handla
+ *   then shows ITS list, a change made offline there waits on that account while the first one is
+ *   active again (its own list, nothing sent to either server), and goes to the second server only
+ *   after switching back.
  */
 @RunWith(AndroidJUnit4::class)
 class Phase2SmokeTest {
@@ -62,6 +73,10 @@ class Phase2SmokeTest {
     @get:Rule(order = 1)
     val tandoor = FakeTandoor(instrumentation.context.assets)
 
+    /** 0.3.0 komplettering: a second Tandoor on another port (another account) for (h). */
+    @get:Rule(order = 3)
+    val second = FakeTandoor(instrumentation.context.assets)
+
     /** On failure: screenshot, window hierarchy, the server's requests, 404s and state. */
     @get:Rule(order = 2)
     val artifacts = object : TestWatcher() {
@@ -76,7 +91,9 @@ class Phase2SmokeTest {
                             listOf("--- shopping list:") + tandoor.shopping.all().map { it.toString() } +
                             listOf("--- list recipes:") + tandoor.shopping.listRecipes().map { it.toString() } +
                             listOf("--- meal plan:") + tandoor.mealPlan.all().map { it.toString() } +
-                            listOf("--- meal plan creates:") + tandoor.mealPlan.creates + listOf(app.networkReport())
+                            listOf("--- meal plan creates:") + tandoor.mealPlan.creates +
+                            listOf("--- second server:") + second.requests + listOf("--- second list:") +
+                            second.shopping.all().map { it.toString() } + listOf(app.networkReport())
                         ).joinToString("\n"),
                 )
             }
@@ -287,6 +304,194 @@ class Phase2SmokeTest {
         val duplicates = tandoor.shopping.all().groupBy { Triple(it.listRecipe, it.food, it.unit) }.filterValues { it.size > 1 }
         assertEquals("No duplicate rows: $duplicates", emptyMap<Any, Any>(), duplicates)
         assertEquals("No request answered 404: ${tandoor.notFound}", emptyList<String>(), tandoor.notFound.toList())
+
+        // (f) 0.3.0 komplettering: "Flytta" moves the web's lunch to tomorrow (the sheet, through accessibility actions).
+        app.device.pressBack()
+        app.waitFor(By.res(WEEK_AGENDA))
+        moveMeal(meatballs, today.plusDays(1))
+        waitForServer("the moved meal") {
+            val moved = plan.all().single { it.id == meatballs }
+            if (moved.fromDay == today.plusDays(1)) null else "still on ${moved.fromDay}"
+        }
+        val patch = tandoor.requests.count { it == "PATCH /api/meal-plan/$meatballs/" }
+        assertEquals("One PATCH for the move: ${tandoor.requests}", 1, patch)
+        assertEquals("No request answered 404: ${tandoor.notFound}", emptyList<String>(), tandoor.notFound.toList())
+        app.capture("phase2-meal-moved")
+    }
+
+    /**
+     * (f) The meal card's TalkBack action "Move" (the same as a long press), tomorrow's day chip and
+     * "Move" in the sheet, each through accessibility actions and again while the sheet is still open.
+     */
+    private fun moveMeal(mealId: Long, day: LocalDate) {
+        waitForInList(By.res("meal:$mealId"), MEAL_PLAN_TIMEOUT_MS)
+        val moveTitle = By.textStartsWith("Move ")
+        for (attempt in 1..TAP_ATTEMPTS) {
+            val card = app.waitForNode("meal $mealId") { it.viewIdResourceName == "meal:$mealId" }
+            val action = customAction(card, MOVE)
+            assertTrue("The meal card offers \"$MOVE\"", action != null)
+            action?.let { (node, id) -> node.performAction(id) }
+            if (app.device.wait(Until.hasObject(moveTitle), TAP_WAIT_MS) == true) break
+        }
+        app.waitFor(moveTitle)
+        val chip = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(Locale.getDefault(), "EEEdMMM"), Locale.getDefault())
+            .format(day)
+        app.waitForNode("the day chip \"$chip\"") { it.text?.toString() == chip }
+        assertTrue("The day chip \"$chip\" is clicked", app.clickNodeWithText(chip))
+        app.capture("phase2-move-sheet")
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.waitForNode("\"$MOVE\"") { it.text?.toString() == MOVE && app.clickableOf(it)?.isEnabled == true }
+            app.clickNodeWithText(MOVE)
+            if (app.device.wait(Until.gone(moveTitle), TAP_WAIT_MS) == true) break
+        }
+        app.waitUntilGone(moveTitle)
+    }
+
+    /** The custom accessibility action labelled [label] on [node] or one of its ancestors (a merged card). */
+    private fun customAction(node: AccessibilityNodeInfo, label: String): Pair<AccessibilityNodeInfo, Int>? {
+        var current: AccessibilityNodeInfo? = node
+        repeat(MAX_ANCESTORS) {
+            val candidate = current ?: return null
+            candidate.actionList.firstOrNull { it.label?.toString() == label }?.let { return candidate to it.id }
+            current = candidate.parent
+        }
+        return null
+    }
+
+    @Test
+    fun recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges() {
+        tandoor.shopping.seed("mjölk", 1.0, "l")
+        second.shopping.seed("kaffe")
+
+        logIn()
+        // (g) "Lägg på inköpslistan" in the pasta's recipe, through accessibility actions.
+        app.tap("Recipes")
+        app.findInList(By.text(PASTA))
+        app.tap(PASTA)
+        app.scrollTo(By.text(RECIPE_SHOPPING_BUTTON))
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.waitForNode("\"$RECIPE_SHOPPING_BUTTON\"") { node ->
+                node.text?.toString() == RECIPE_SHOPPING_BUTTON && app.clickableOf(node)?.isEnabled == true
+            }
+            app.clickNodeWithText(RECIPE_SHOPPING_BUTTON)
+            if (nodeShows(TAP_WAIT_MS, ::isRecipeSheetAdd)) break
+        }
+        // The sheet's button may sit below its fold: found and clicked as an accessibility node.
+        app.waitForNode("\"Add n items to the shopping list\"", predicate = ::isRecipeSheetAdd)
+        app.capture("phase2-recipe-sheet")
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.waitForNode("an enabled \"Add n items to the shopping list\"") { node ->
+                isRecipeSheetAdd(node) && app.clickableOf(node)?.isEnabled == true
+            }
+            app.clickNodeWithText(ADD_TO_LIST)
+            if (nodeGone(TAP_WAIT_MS, ::isRecipeSheetAdd)) break
+        }
+        assertTrue("The recipe sheet closed after adding", app.findNode(::isRecipeSheetAdd) == null)
+        waitForServer("the pasta's list recipe") {
+            val recipe = tandoor.shopping.listRecipes().singleOrNull { it.recipe == PASTA_ID }
+            when {
+                recipe == null -> "no list recipe yet"
+                tandoor.shopping.all().none { it.listRecipe == recipe.id } -> "no rows yet"
+                else -> null
+            }
+        }
+        val pastaRows = tandoor.shopping.all().filter { it.listRecipe != null }.map { it.food }
+        app.capture("phase2-recipe-sheet-added")
+        // Everything of the first account is sent before the second one comes.
+        app.tap("Shopping")
+        waitForInList(row("mjölk"), FIRST_SYNC_TIMEOUT_MS)
+        waitUntilNothingWaits()
+
+        // (h) A second Tandoor under Mer → Konton och servrar; Handla shows ITS list.
+        app.tap("More")
+        openAccounts()
+        app.tap("Add account")
+        app.waitFor(By.text("Connect to your Tandoor"))
+        app.type(0, second.address)
+        app.tap("Connect")
+        app.waitFor(By.text("Use your Tandoor username and password."))
+        app.type(0, "smoke-user")
+        app.type(1, "smoke-password")
+        app.tap("Log in")
+        app.waitFor(By.text("You’re connected"))
+        app.tap("Continue")
+        app.waitForClickable("Recipes", FIRST_SYNC_TIMEOUT_MS)
+        app.tap("Shopping")
+        waitForInList(row("kaffe"), FIRST_SYNC_TIMEOUT_MS)
+        assertTrue("The first account's list is not shown", (listOf("mjölk") + pastaRows).none { app.device.hasObject(row(it)) })
+        app.capture("phase2-second-account-list")
+
+        // Offline on the second account: the change waits there.
+        goOffline()
+        addItems("bröd", count = 1)
+        app.waitFor(By.desc(WAITING))
+
+        // Back to the first account (offline too): its own list, nothing of the second's.
+        app.tap("More")
+        openAccounts()
+        app.tapTextMatching(SWITCH_TO)
+        app.waitForClickable("Shopping")
+        app.tap("Shopping")
+        waitForInList(row("mjölk"), FIRST_SYNC_TIMEOUT_MS)
+        assertTrue("The second account's rows are not shown", listOf("kaffe", "bröd").none { app.device.hasObject(row(it)) })
+        assertTrue("Nothing waits on the first account", !app.device.hasObject(By.desc(WAITING)))
+        app.capture("phase2-first-account-again")
+        app.tap("More")
+        openAccounts()
+        app.waitForNode("the second account's waiting change") { node ->
+            listOfNotNull(node.text, node.contentDescription).any { ACCOUNT_PENDING.matcher(it).find() }
+        }
+        app.capture("phase2-accounts-pending")
+
+        // Online with the first account active: the second account's change is NOT sent.
+        goOnline()
+        app.tap("Shopping")
+        waitForInList(row("mjölk"), FIRST_SYNC_TIMEOUT_MS)
+        SystemClock.sleep(INACTIVE_ACCOUNT_WAIT_MS)
+        assertTrue("Nothing is sent for an inactive account: ${second.requests}", second.shopping.all().none { it.food == "bröd" })
+        assertTrue("Nothing of it reaches the first server", tandoor.shopping.all().none { it.food == "bröd" })
+
+        // Switching back sends it to the second server, and only there.
+        app.tap("More")
+        openAccounts()
+        app.tapTextMatching(SWITCH_TO)
+        app.waitForClickable("Shopping")
+        app.tap("Shopping")
+        waitForInList(row("bröd"), FIRST_SYNC_TIMEOUT_MS)
+        waitUntilNothingWaits()
+        waitForServer("bröd on the second server") { if (second.shopping.all().any { it.food == "bröd" }) null else "not yet" }
+        assertTrue("Never on the first server", tandoor.shopping.all().none { it.food == "bröd" })
+        assertEquals("No 404 on either server", emptyList<String>(), tandoor.notFound + second.notFound)
+        app.capture("phase2-second-account-sent")
+    }
+
+    /** Mer → "Konton och servrar" (on a phone a page of its own, which starts with its intro). */
+    private fun openAccounts() {
+        app.tapUntil(ACCOUNTS, By.textStartsWith(ACCOUNTS_INTRO))
+    }
+
+    /** The recipe sheet's "Add n items to the shopping list". */
+    private fun isRecipeSheetAdd(node: AccessibilityNodeInfo): Boolean =
+        node.text?.toString()?.let { ADD_TO_LIST.matcher(it).matches() } == true
+
+    /** True once no app node matches [predicate] any more, false after [timeoutMs]. */
+    private fun nodeGone(timeoutMs: Long, predicate: (AccessibilityNodeInfo) -> Boolean): Boolean {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (app.findNode(predicate) == null) return true
+            SystemClock.sleep(SETTLE_POLL_MS)
+        }
+        return false
+    }
+
+    /** True as soon as an app node matches [predicate] (also one below a sheet's fold), false after [timeoutMs]. */
+    private fun nodeShows(timeoutMs: Long, predicate: (AccessibilityNodeInfo) -> Boolean): Boolean {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (app.findNode(predicate) != null) return true
+            SystemClock.sleep(SETTLE_POLL_MS)
+        }
+        return false
     }
 
     /** "+" on [day] in Veckan, Shakshuka from the stored recipes, the shopping tick, Middag, save. */
@@ -572,6 +777,7 @@ class Phase2SmokeTest {
 
     private fun goOffline() {
         tandoor.offline = true
+        second.offline = true
         networkTurnedOff = true
         app.setNetworkEnabled(false)
         assertTrue("The emulator must be offline: ${app.networkReport()}", !app.hasNetwork())
@@ -579,6 +785,7 @@ class Phase2SmokeTest {
 
     private fun goOnline() {
         tandoor.offline = false
+        second.offline = false
         app.setNetworkEnabled(true)
         networkTurnedOff = false
     }
@@ -645,6 +852,20 @@ class Phase2SmokeTest {
         const val ALL_ON_LIST = "Everything planned on these days is already on the list."
         const val ADD_TO_SHOPPING = "Put the ingredients on the shopping list"
         val SAVE_PLAN: Pattern = Pattern.compile("Add to the plan \\(.+\\)")
+
+        /** 0.3.0 komplettering: Veckan's "Flytta" (the card's TalkBack action and the sheet's button). */
+        const val MOVE = "Move"
+        const val MAX_ANCESTORS = 4
+
+        /** 0.3.0 komplettering: "Lägg på inköpslistan" in the recipe, and the accounts page. */
+        const val RECIPE_SHOPPING_BUTTON = "Add to shopping list"
+        const val ACCOUNTS = "Accounts and servers"
+        const val ACCOUNTS_INTRO = "Switch between your Tandoor accounts."
+        val SWITCH_TO: Pattern = Pattern.compile("Switch to .+")
+        val ACCOUNT_PENDING: Pattern = Pattern.compile("\\d+ changes? waiting to be sent")
+
+        /** How long an inactive account's change is watched for NOT being sent. */
+        const val INACTIVE_ACCOUNT_WAIT_MS = 15_000L
 
         const val FIRST_SYNC_TIMEOUT_MS = 90_000L
 

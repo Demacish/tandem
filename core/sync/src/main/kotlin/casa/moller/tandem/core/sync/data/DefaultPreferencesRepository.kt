@@ -43,7 +43,6 @@ internal class DefaultPreferencesRepository @Inject constructor(
         .flatMapLatest { source ->
             when (source) {
                 is ActiveSource.Remote -> databases.get(source.kind).shoppingDao().observeMinAutosyncSeconds(source.accountId)
-
                 ActiveSource.Demo, ActiveSource.Loading, ActiveSource.None -> flowOf(null)
             }
         }

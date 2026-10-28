@@ -18,6 +18,7 @@ behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3
   grädde, mjölk") och se hur de tolkas innan de läggs till, även offline; förslag och tidigare
   köpta varor ur historiken (avbockade varor som rensats eller som Tandoor inte längre visar)
   läggs till med ett tryck. Lång tryckning ändrar mängd, enhet, vara och avdelning.
+  Överst står vilka andra i hushållet som delar listan ("Delad med: Anna"), också i Veckan.
   Butiksläget har stor text, stora rader och tänd skärm, och listan kan delas som text. På
   surfplatta står "Lägg till", listor och butiker i en sidopanel bredvid listan, och
   avdelningarna står i två kolumner när det finns plats.
@@ -88,14 +89,19 @@ behövs. Receptredigering, import av recept, widgets och skafferi kommer i Fas 3
   release-bygget på en Android-emulator: partnerns avbockning syns inom 30 sekunder, 20
   ändringar gjorda utan nät hamnar rätt på servern, 15 rader som någon annan raderade medan
   telefonen var offline släpps utan ett enda felanrop, måltider hamnar på rätt dag åt båda
-  hållen och "Handla för veckan" ger inga dubbla rader.
+  hållen och "Handla för veckan" ger inga dubbla rader. Dessutom läggs ett recept på listan,
+  en måltid flyttas med flyttarket, och ett andra Tandoor-konto läggs till och byts till och
+  från: varje konto visar sin egen lista, och en ändring gjord utan nät skickas bara till rätt
+  server.
 
 Saknas fortfarande: dra och släpp i matsedeln, en anteckning per vara på listan (Tandoor har
 inget sådant fält), notiser när någon annan ändrar listan och att ta bort receptet från en
 planerad måltid (byt recept eller ta bort måltiden).
-Inte heller med: "Ångra" efter "Rensa" och efter att en måltid tagits bort från sin egen sida
-(båda frågar först), och Tandoor-kontots inköpsinställningar (bland annat att avbockade varor
-blir "finns hemma") ändras fortfarande på webben.
+Inte heller med: Tandoor-kontots inköpsinställningar (bland annat att avbockade varor blir
+"finns hemma") ändras fortfarande på webben; "Finns redan hemma?" i inköpsarken förklarar dem.
+"Rensa" och att ta bort en måltid från dess egen sida har nu "Ångra" som resten av listan och
+veckan, och Synk och lagring visar den uppdateringstakt listan faktiskt har (också serverns
+minsta intervall).
 
 ## [0.2.0] – 2026-10-24
 

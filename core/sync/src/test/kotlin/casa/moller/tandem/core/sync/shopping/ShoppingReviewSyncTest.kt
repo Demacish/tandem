@@ -9,8 +9,10 @@ import casa.moller.tandem.core.database.entity.ShoppingEntryEntity
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
 import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
+import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.first
 import mockwebserver3.MockResponse
 import org.junit.Assert.assertEquals
@@ -49,6 +51,57 @@ class ShoppingReviewSyncTest {
         assertEquals(1, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.NOT_FOUND })
         assertEquals(7, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.DELETED_ELSEWHERE })
         assertTrue(entries().isEmpty())
+    }
+
+    /**
+     * 0.3.0 komplettering (plan 3.5/4.1): five DISTINCT refused rows (three 404s and two 400s on
+     * rows the server still lists, so the check before sending cannot drop them) within 100 s open
+     * the circuit breaker: the drain stops, the rest waits, and after the pause it is checked
+     * against a NEW full read first. A row the partner deleted meanwhile is dropped without a
+     * request; the other one is sent; the two 400s stay FAILED (kept for "Väntande ändringar").
+     */
+    @Test
+    fun fiveDistinct404sAnd400sOpenTheBreakerAndTheRestIsCheckedAgainstANewRead() = forEachVersion {
+        val ids = (1..7).map { tandoor.seed("vara $it") }
+        read()
+        val refused = mutableListOf<Long>()
+        ids.take(3).forEach { id ->
+            graph.server.respond("PATCH", "/api/shopping-list-entry/$id/") {
+                refused += id
+                jsonAnswer(404, """{"detail":"No ShoppingListEntry matches the given query."}""")
+            }
+        }
+        ids.subList(3, 5).forEach { id ->
+            graph.server.respond("PATCH", "/api/shopping-list-entry/$id/") {
+                refused += id
+                jsonAnswer(400, """{"amount":["A valid number is required."]}""")
+            }
+        }
+        ids.forEach { ok(repo.update(it, amount = 5.0)) }
+
+        assertEquals(DrainResult.STOPPED, graph.outbox.drain(graph.remote))
+        assertEquals("[$version] five distinct rows refused, then the breaker", ids.take(5), refused)
+        assertEquals(5, graph.guard.state.value.clientErrorTimes.size)
+        assertEquals(SyncPause.CIRCUIT_BREAKER, graph.guard.pauseAt(graph.guard.state.value, ACCOUNT_ID, graph.clock.millis))
+        val waiting = ids.drop(5)
+        val sentForTheRest = waiting.flatMap { tandoor.requests("PATCH", "/api/shopping-list-entry/$it/") }
+        assertTrue("nothing sent for the rest: $sentForTheRest", sentForTheRest.isEmpty())
+
+        // Meanwhile the partner deletes one of the waiting rows; after the pause the rest is checked first.
+        tandoor.partnerDelete(listOf(waiting.first()))
+        val readsBefore = fullReads()
+        graph.clock.advance(6.minutes)
+        assertEquals(DrainResult.DONE, graph.outbox.drain(graph.remote))
+        assertTrue("a new full read before sending", fullReads() > readsBefore)
+        assertTrue("no request for the deleted row", tandoor.requests("PATCH", "/api/shopping-list-entry/${waiting.first()}/").isEmpty())
+        assertEquals(5.0, tandoor.entry(waiting.last())?.amount ?: 0.0, 0.0)
+        assertEquals(5, refused.size)
+        assertNull(graph.guard.pauseAt(graph.guard.state.value, ACCOUNT_ID, graph.clock.millis))
+        assertEquals(3, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.NOT_FOUND })
+        assertEquals(1, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.DELETED_ELSEWHERE })
+        val left = graph.real.outboxDao().observeAll(ACCOUNT_ID).first()
+        assertEquals("the 400s stay FAILED", listOf(ids[3], ids[4]), left.map { it.serverId ?: it.localId }.sorted())
+        assertTrue(left.all { it.state == OutboxState.FAILED })
     }
 
     /** 0.3.0 review (fix-data): the answer of a CREATE is lost after the server saved it: the retry adopts it. */
@@ -247,6 +300,13 @@ class ShoppingReviewSyncTest {
         assertEquals("not sent again", posts, graph.server.requestsTo("POST", "/api/shopping-list-entry/bulk/").size)
         assertTrue("the role was read again", graph.server.requestsTo("GET", "/api/user-space/all_personal/").isNotEmpty())
     }
+
+    /** Full reads of the list (no `updated_after`). */
+    private fun ShoppingSyncEnv.fullReads(): Int =
+        graph.server.requestsTo("GET", "/api/shopping-list-entry/").count { "updated_after" !in it }
+
+    private fun jsonAnswer(code: Int, body: String): MockResponse =
+        MockResponse.Builder().code(code).addHeader("Content-Type", "application/json").body(body).build()
 
     private companion object {
         const val RECIPE_ID = 3L
