@@ -224,10 +224,8 @@ internal class MealPlanOutboxHandler @Inject constructor(
  * lost answer first looks for a meal type with the same name. Under [MealPlanWindowReader.lock],
  * like the meals.
  */
-internal class MealTypeOutboxHandler @Inject constructor(
-    private val caller: RemoteCaller,
-    private val reader: MealPlanWindowReader,
-) : OutboxHandler {
+internal class MealTypeOutboxHandler @Inject constructor(private val caller: RemoteCaller, private val reader: MealPlanWindowReader) :
+    OutboxHandler {
     override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult =
         reader.lock.withLock { sendLocked(remote, row, payload) }
 

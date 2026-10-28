@@ -4,6 +4,7 @@ import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
+import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.ShoppingEntryEntity
 import casa.moller.tandem.core.database.entity.SyncEntities
@@ -218,10 +219,14 @@ internal class ShoppingReader @Inject constructor(
         val dao = database.shoppingDao()
         val outbox = database.outboxDao()
         val pendingEntries = outbox.getAllFor(accountId, OutboxEntities.SHOPPING_ENTRY).pendingServerIds()
-        val pendingListRecipes = outbox.getAllFor(accountId, OutboxEntities.SHOPPING_LIST_RECIPE).pendingServerIds()
+        val listRecipeRows = outbox.getAllFor(accountId, OutboxEntities.SHOPPING_LIST_RECIPE)
+        val pendingListRecipes = listRecipeRows.pendingServerIds()
+        // A list recipe removed here and not sent yet: the server still lists its entries (the check
+        // before the DELETE reads the list), but they went with it on this device (removeListRecipe).
+        val removedListRecipes = listRecipeRows.filter { it.op == OutboxOps.DELETE }.pendingServerIds()
         val stored = dao.getEntries(accountId)
         val storedByServerId = stored.filter { it.serverId != null }.associateBy { it.serverId }
-        val incoming = items.mapNotNull { it.toEntity(accountId, now) }
+        val incoming = items.mapNotNull { it.toEntity(accountId, now) }.filter { it.listRecipeId !in removedListRecipes }
         val events = mutableListOf<ShoppingChange>()
         for (entry in incoming) {
             if (entry.serverId in pendingEntries) continue

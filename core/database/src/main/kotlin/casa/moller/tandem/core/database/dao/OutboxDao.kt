@@ -163,7 +163,7 @@ abstract class OutboxDao {
         val unsent = getUnsentFor(row.accountId, row.entity, row.localId, row.serverId)
         val attempted = OutboxMerge.attemptedCreateOf(unsent)
         val waitsForCreate = attempted != null && row.op != OutboxOps.CREATE && row.dependsOn == null
-        val inserted = if (waitsForCreate) row.copy(dependsOn = attempted?.id) else row
+        val inserted = if (waitsForCreate && attempted != null) row.copy(dependsOn = attempted.id) else row
         return when (val decision = OutboxMerge.decide(row, unsent)) {
             OutboxMerge.Decision.Insert -> insert(inserted)
 

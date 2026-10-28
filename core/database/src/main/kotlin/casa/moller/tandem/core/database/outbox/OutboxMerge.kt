@@ -74,8 +74,7 @@ object OutboxMerge {
      * The object's CREATE that was attempted before (`attempts > 0`) and is waiting again: it may
      * have reached the server, so later rows of the object wait for it instead of merging.
      */
-    fun attemptedCreateOf(unsent: List<OutboxEntity>): OutboxEntity? =
-        unsent.firstOrNull { it.op == OutboxOps.CREATE && it.attempts > 0 }
+    fun attemptedCreateOf(unsent: List<OutboxEntity>): OutboxEntity? = unsent.firstOrNull { it.op == OutboxOps.CREATE && it.attempts > 0 }
 
     private fun decidePatch(new: OutboxEntity, unsent: List<OutboxEntity>, create: OutboxEntity?): Decision {
         if (create != null) return Decision.Update(create.id, mergePayload(create.payload, new.payload), create.batchKey)
@@ -94,8 +93,11 @@ object OutboxMerge {
         val others = unsent.filter { it.id != attempted?.id }
         return when {
             create != null -> Decision.Cancel(unsent.map { it.id })
+
             pendingDelete != null -> Decision.Update(pendingDelete.id, pendingDelete.payload, pendingDelete.batchKey)
+
             others.isEmpty() -> Decision.Insert
+
             // A CREATE that may have reached the server stays; the DELETE follows it by server id.
             else -> Decision.Replace(others.map { it.id })
         }

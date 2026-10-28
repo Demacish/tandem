@@ -38,11 +38,7 @@ enum class SpaceRole {
  *   in no household: Tandoor then shares neither the shopping list nor the meal plan with the other
  *   members, so the screens warn and say how to join one on the web. Never in demo mode.
  */
-data class SpacePermissions(
-    val role: SpaceRole = SpaceRole.UNKNOWN,
-    val isDemo: Boolean = false,
-    val householdMissing: Boolean = false,
-) {
+data class SpacePermissions(val role: SpaceRole = SpaceRole.UNKNOWN, val isDemo: Boolean = false, val householdMissing: Boolean = false) {
     /** Read-only mode (guest). */
     val readOnly: Boolean
         get() = role == SpaceRole.GUEST && !isDemo

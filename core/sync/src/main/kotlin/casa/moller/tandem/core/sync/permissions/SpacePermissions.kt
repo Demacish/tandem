@@ -46,7 +46,7 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
                         val level = row?.groupLevel
                         SpacePermissions(
                             role = SpaceRole.of(listOfNotNull(level)),
-                            householdMissing = level != null && row?.householdId == null,
+                            householdMissing = row != null && level != null && row.householdId == null,
                         )
                     }
 

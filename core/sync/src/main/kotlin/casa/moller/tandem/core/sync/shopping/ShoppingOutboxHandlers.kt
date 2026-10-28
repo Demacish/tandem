@@ -335,6 +335,7 @@ internal class ShoppingListRecipeOutboxHandler @Inject constructor(
         }
         return when (listed) {
             is Outcome.Failure -> OutboxResult.Failed(listed.error)
+
             is Outcome.Success -> when {
                 !listed.value.complete || listed.value.items.any { it.id == serverId } -> null
                 else -> gone(remote, row, serverId, DroppedChanges.DELETED_ELSEWHERE)

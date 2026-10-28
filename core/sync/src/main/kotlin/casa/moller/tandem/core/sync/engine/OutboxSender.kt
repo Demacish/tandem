@@ -6,6 +6,7 @@ import casa.moller.tandem.core.database.entity.CookLogEntity
 import casa.moller.tandem.core.database.entity.CookLogProblems
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.outbox.OutboxRefs
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -17,7 +18,6 @@ import casa.moller.tandem.core.network.dto.ViewLogCreateRequestDto
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.network.json.TandoorJson
 import casa.moller.tandem.core.network.paging.Paginator
-import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
@@ -172,9 +172,8 @@ internal class OutboxSender @Inject constructor(
             if (recipeId == null || recipeId !in storedRecipes) {
                 null
             } else {
-                val sent = caller.write(remote) {
-                    logs.createViewLog(ViewLogCreateRequestDto(recipe = recipeId))
-                }
+                // A log keeps the plain 403 rule: a guest's logs never get here (see refuseForGuest).
+                val sent = caller.call(remote, background = true) { logs.createViewLog(ViewLogCreateRequestDto(recipe = recipeId)) }
                 when (sent) {
                     is Outcome.Success -> Outcome.Success(Unit)
                     is Outcome.Failure -> sent
@@ -306,7 +305,7 @@ internal class OutboxSender @Inject constructor(
                 }
             }
         }
-        return when (val sent = caller.write(remote) { logs.createCookLog(request) }) {
+        return when (val sent = caller.call(remote, background = true) { logs.createCookLog(request) }) {
             is Outcome.Success -> {
                 settleSent(remote, row, localId, sent.value, request)
                 null
