@@ -109,7 +109,10 @@ class SettingsViewModel internal constructor(
         offlineStorage.observeStorage(),
         syncRepository.status,
         clearingImageCache,
-        preferences.observeUserPreferences().map { ShoppingServerSettings.of(it) }.distinctUntilChanged(),
+        // 0.3.0 komplettering: with the server's polling floor, as the list is really polled.
+        combine(preferences.observeUserPreferences(), preferences.observeShoppingMinAutoSyncSeconds()) { prefs, floor ->
+            ShoppingServerSettings.of(prefs, floor)
+        }.distinctUntilChanged(),
     ) { (current, demo), storage, status, clearing, shopping ->
         SyncSettingsUiState(
             isDemo = demo,

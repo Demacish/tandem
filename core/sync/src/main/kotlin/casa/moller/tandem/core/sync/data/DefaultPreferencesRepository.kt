@@ -37,4 +37,15 @@ internal class DefaultPreferencesRepository @Inject constructor(
             }
         }
         .distinctUntilChanged()
+
+    // 0.3.0 komplettering: the polling floor the shopping small tables stored (server_account).
+    override fun observeShoppingMinAutoSyncSeconds(): Flow<Int?> = sources.source
+        .flatMapLatest { source ->
+            when (source) {
+                is ActiveSource.Remote -> databases.get(source.kind).shoppingDao().observeMinAutosyncSeconds(source.accountId)
+
+                ActiveSource.Demo, ActiveSource.Loading, ActiveSource.None -> flowOf(null)
+            }
+        }
+        .distinctUntilChanged()
 }

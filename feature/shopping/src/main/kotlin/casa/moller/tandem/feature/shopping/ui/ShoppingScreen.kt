@@ -84,6 +84,7 @@ import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
 import casa.moller.tandem.core.ui.household.HouseholdMissingCard
+import casa.moller.tandem.core.ui.household.SharedWithRow
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.feature.shopping.R
@@ -333,6 +334,8 @@ private fun ShoppingList(
                     verticalArrangement = Arrangement.spacedBy(spacing.sm),
                 ) {
                     AppChromeDemoBanner()
+                    // 0.3.0 komplettering (plan 8.6): who else sees this list.
+                    SharedWithRow(names = state.sharedWith)
                     if (state.readOnly) {
                         InfoCard(
                             title = stringResource(R.string.shopping_guest_title),

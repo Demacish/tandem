@@ -203,6 +203,12 @@ fun RecipeShoppingContent(state: RecipeShoppingUiState, onAction: (RecipeShoppin
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // 0.3.0 komplettering (finding 22): where "at home" comes from (shopping_add_onhand, mealplan_autoexclude_onhand).
+            Text(
+                text = stringResource(R.string.recipe_shopping_at_home_settings),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             RowGroup(rows = state.atHome, onAction = onAction)
         }
         val count = state.chosenCount

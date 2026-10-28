@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.database.dao
 
+import androidx.room3.ColumnInfo
 import androidx.room3.Dao
 import androidx.room3.Query
 import androidx.room3.Transaction
@@ -171,6 +172,20 @@ abstract class ShoppingDao {
     @Query("SELECT shopping_min_autosync_seconds FROM server_account WHERE id = :accountId")
     abstract suspend fun getMinAutosyncSeconds(accountId: String): Int?
 
+    /** 0.3.0 komplettering: the server's polling floor for the settings page ("Synk och lagring"). */
+    @Query("SELECT shopping_min_autosync_seconds FROM server_account WHERE id = :accountId")
+    abstract fun observeMinAutosyncSeconds(accountId: String): Flow<Int?>
+
+    /**
+     * 0.3.0 komplettering ("Delad med: …", plan 8.6): who created the stored rows. Tandoor lists
+     * another user's rows only when that user is in the same household (core:domain `HouseholdMembers`).
+     */
+    @Query(
+        "SELECT created_by AS id, MAX(created_by_name) AS name FROM shopping_entry " +
+            "WHERE account_id = :accountId AND created_by IS NOT NULL GROUP BY created_by ORDER BY created_by",
+    )
+    abstract fun observeCreators(accountId: String): Flow<List<CreatorRow>>
+
     // ---------------------------------------------------------------- building blocks (Room)
 
     @Upsert
@@ -182,3 +197,6 @@ abstract class ShoppingDao {
     @Query("DELETE FROM shopping_list WHERE account_id = :accountId")
     abstract suspend fun deleteShoppingLists(accountId: String)
 }
+
+/** 0.3.0 komplettering: a user who created stored rows, with the display name the rows carry (if any). */
+data class CreatorRow(@ColumnInfo(name = "id") val id: Long, @ColumnInfo(name = "name") val name: String?)

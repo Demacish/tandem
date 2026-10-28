@@ -374,6 +374,12 @@ private fun LazyListScope.lines(state: WeekShoppingUiState, format: MealPlanForm
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // 0.3.0 komplettering (finding 22): where "at home" comes from (shopping_add_onhand, mealplan_autoexclude_onhand).
+                Text(
+                    text = stringResource(R.string.mealplan_week_shopping_at_home_settings),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 LineGroup(lines = state.atHome, readOnly = state.readOnly, format = format, onAction = onAction)
             }
         }

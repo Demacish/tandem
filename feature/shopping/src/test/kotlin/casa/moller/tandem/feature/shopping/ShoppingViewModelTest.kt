@@ -306,6 +306,27 @@ class ShoppingViewModelTest {
         assertFalse(vm.uiState.value.confirmClearChecked)
     }
 
+    /** 0.3.0 komplettering: "Ångra" after "Rensa" puts the cleared rows back, checked. */
+    @Test
+    fun clearingCheckedCanBeUndone() = runTest {
+        val vm = viewModel()
+        val effects = open(vm)
+        val cleared = shopping.entries.value.filter { it.checked }
+        assertTrue("the samples have checked rows", cleared.isNotEmpty())
+        vm.onAction(ShoppingAction.AskClearChecked)
+        vm.onAction(ShoppingAction.ConfirmClearChecked(true))
+        assertTrue(shopping.entries.value.none { it.checked })
+        assertEquals(ShoppingEffect.Show(ShoppingMessage.ClearedChecked(cleared.size), undoable = true), effects.last())
+
+        vm.onAction(ShoppingAction.Undo)
+        val back = shopping.entries.value.filter { it.checked }
+        assertEquals(cleared.map { it.food.name }.sorted(), back.map { it.food.name }.sorted())
+        assertEquals(cleared.map { it.amount to it.unit?.name }.toSet(), back.map { it.amount to it.unit?.name }.toSet())
+        // Undo works once.
+        vm.onAction(ShoppingAction.Undo)
+        assertEquals(cleared.size, shopping.entries.value.count { it.checked })
+    }
+
     @Test
     fun aGuestSeesTheListButNothingIsWritten() = runTest {
         permissions.state.value = SpacePermissions(SpaceRole.GUEST)
@@ -336,6 +357,16 @@ class ShoppingViewModelTest {
         permissions.state.value = SpacePermissions(SpaceRole.USER, householdMissing = true)
         assertTrue(vm.uiState.value.householdMissing)
         assertFalse("the list can still be changed", vm.uiState.value.readOnly)
+    }
+
+    /** 0.3.0 komplettering (plan 8.6): "Delad med: …" names the household's other members. */
+    @Test
+    fun theListSaysWhoElseSeesIt() = runTest {
+        val vm = viewModel()
+        open(vm)
+        assertEquals(emptyList<String>(), vm.uiState.value.sharedWith)
+        permissions.state.value = SpacePermissions(SpaceRole.USER, sharedWith = listOf("Anna", "Erik"))
+        assertEquals(listOf("Anna", "Erik"), vm.uiState.value.sharedWith)
     }
 
     @Test

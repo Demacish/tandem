@@ -5,11 +5,15 @@ import casa.moller.tandem.core.model.book.RecipeBookKind
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.MealPlanUpdate
 import casa.moller.tandem.core.model.preferences.UserPreferences
+import casa.moller.tandem.core.model.shopping.ShoppingEntry
+import casa.moller.tandem.core.model.shopping.ShoppingFood
+import casa.moller.tandem.core.model.shopping.ShoppingRecipeLabel
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeBookRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
+import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.testing.time.TestClock
@@ -46,8 +50,11 @@ class PlanMealViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val pasta = SampleRecipes.MushroomPasta
     private val books = FakeRecipeBookRepository()
+    private val shopping = FakeShoppingRepository(entries = emptyList(), lists = emptyList())
+    private val removedMeals = RemovedMeals()
 
-    private fun viewModel(key: PlanMealKey) = PlanMealViewModel(key, mealPlans, recipes, preferences, permissions, clock, books)
+    private fun viewModel(key: PlanMealKey) =
+        PlanMealViewModel(key, mealPlans, recipes, preferences, permissions, clock, books, shopping, removedMeals)
 
     private fun TestScope.open(vm: PlanMealViewModel): MutableList<PlanMealEffect> {
         val effects = mutableListOf<PlanMealEffect>()
@@ -204,6 +211,23 @@ class PlanMealViewModelTest {
         advanceUntilIdle()
         assertTrue(mealPlans.meals.value.none { it.id == todayDinner.id })
         assertEquals(listOf<PlanMealEffect>(PlanMealEffect.Done), effects)
+    }
+
+    /** 0.3.0 komplettering: the removed meal and its rows still to buy go to the agenda for "Ångra". */
+    @Test
+    fun aRemovedMealIsHandedToTheAgendaWithItsRowsStillToBuy() = runTest {
+        val label = ShoppingRecipeLabel(listRecipeId = 40, recipeId = todayDinner.recipe?.id, mealPlanId = todayDinner.id, servings = 4.0)
+        val toBuy = ShoppingEntry(1, ShoppingFood(1, "champinjon"), amount = 400.0, recipe = label, ingredientId = 10111)
+        val bought = ShoppingEntry(2, ShoppingFood(6, "vispgrädde"), amount = 2.5, recipe = label, ingredientId = 10131, checked = true)
+        val other = ShoppingEntry(3, ShoppingFood(8, "mjölk"), amount = 1.0)
+        shopping.entries.value = listOf(toBuy, bought, other)
+        val vm = viewModel(PlanMealKey(date = todayDinner.fromDate.toString(), mealPlanId = todayDinner.id))
+        open(vm)
+        assertNull(removedMeals.removals.value)
+        vm.onAction(PlanMealAction.Delete)
+        vm.onAction(PlanMealAction.ConfirmDelete(true))
+        advanceUntilIdle()
+        assertEquals(RemovedMeals.Removal(todayDinner, listOf(toBuy)), removedMeals.removals.value)
     }
 
     @Test

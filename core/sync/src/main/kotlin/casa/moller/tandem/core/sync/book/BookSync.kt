@@ -17,6 +17,7 @@ import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.permissions.HouseholdMembersSync
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
@@ -145,12 +146,15 @@ internal class SmartBookResults @Inject constructor() {
 
 /**
  * The books lane's steps of a sync run (`SyncEngine`): [role] before the shopping list, [run] (the
- * books, [BookSync]) after it, both with the small tables.
+ * books, [BookSync], and the household's members, [HouseholdMembersSync]) after it, both with the
+ * small tables.
  */
 internal class BookSyncStep @Inject constructor(
     private val roles: SpaceRoleSync,
     private val books: BookSync,
     private val databases: TandemDatabaseFactory,
+    // 0.3.0 komplettering: "Delad med: …" (the household's members) with the small tables.
+    private val members: HouseholdMembersSync,
 ) {
     /**
      * The user's role in the space (guest mode #42, [SpaceRoleSync]) with the small tables, and in
@@ -165,5 +169,7 @@ internal class BookSyncStep @Inject constructor(
     suspend fun run(remote: ActiveSource.Remote, background: Boolean, smallTables: Boolean) {
         if (!smallTables) return
         books.sync(remote, background)
+        // A failure keeps the stored members; the list and the plan work without them.
+        members.sync(remote, background)
     }
 }

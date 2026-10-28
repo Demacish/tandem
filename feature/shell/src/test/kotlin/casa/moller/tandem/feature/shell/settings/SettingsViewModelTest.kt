@@ -191,6 +191,26 @@ class SettingsViewModelTest {
         assertEquals("demo mode has no Tandoor account", null, state.value.shopping)
     }
 
+    /**
+     * 0.3.0 komplettering: the shown interval is the one the list is polled with, so a server whose
+     * `shopping_min_autosync_interval` is longer than the app's 20 s (or the user's own) wins.
+     */
+    @Test
+    fun theShownPollingIntervalFollowsTheServersMinimum() = runTest {
+        val state = collecting(newViewModel().sync)
+        assertEquals(20L, state.value.shopping?.pollSeconds)
+
+        preferences.shoppingMinAutoSyncSeconds.value = 60
+        assertEquals("the server's floor", 60L, state.value.shopping?.pollSeconds)
+
+        preferences.preferences.value = UserPreferences.Default.copy(shoppingAutoSyncSeconds = 90)
+        assertEquals("the user's own interval is longer", 90L, state.value.shopping?.pollSeconds)
+
+        preferences.shoppingMinAutoSyncSeconds.value = 5
+        preferences.preferences.value = UserPreferences.Default
+        assertEquals("never faster than the app's 20 s", 20L, state.value.shopping?.pollSeconds)
+    }
+
     @Test
     fun clearingThePhotoCacheSaysHowItWent() = runTest {
         val vm = newViewModel()

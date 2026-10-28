@@ -54,4 +54,10 @@ object SyncEntities {
     const val SUPERMARKET: String = "supermarket"
     const val SUPERMARKET_CATEGORY: String = "supermarket_category"
     const val RECIPE_BOOK: String = "recipe_book"
+
+    /**
+     * 0.3.0 komplettering ("Delad med: …", plan 8.6): the household's members as last read (no
+     * schema change): `hash` holds core:sync's JSON (`HouseholdMembersSync`), `last_full_relist` when.
+     */
+    const val HOUSEHOLD_MEMBERS: String = "household_members"
 }

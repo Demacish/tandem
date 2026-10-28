@@ -24,6 +24,8 @@
     </plurals>
     <string name="recipe_shopping_at_home">Finns redan hemma?</string>
     <string name="recipe_shopping_at_home_hint">Markerade som ”har hemma” i Tandoor, därför inte ikryssade. Kryssa i det du ändå behöver.</string>
+    <!-- Komplettering före 0.3.0: vad som gör ett livsmedel ”har hemma” (shopping_add_onhand, mealplan_autoexclude_onhand). -->
+    <string name="recipe_shopping_at_home_settings">Livsmedel blir ”har hemma” när någon bockar av dem medan ”Avbockade varor finns hemma” är på i Tandoor. Med ”Hoppa över det som finns hemma” hoppar Tandoor också över dem när den själv lägger ett recept på listan. Båda visas under Mer → Synk och lagring och ändras på Tandoor-webben.</string>
     <string name="recipe_shopping_on_hand">Finns hemma</string>
     <string name="recipe_shopping_list_label">Läggs på</string>
     <string name="recipe_shopping_list_none">Inköpslistan</string>

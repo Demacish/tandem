@@ -7,6 +7,7 @@ import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
+import casa.moller.tandem.core.data.shopping.ShoppingRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
@@ -174,7 +175,8 @@ sealed interface PlanMealEffect {
  *   "Favoriter" (fix-ui); the servings start as the recipe's when its detail is stored (read
  *   without a refresh of its own, fix-ui).
  * - **Removing** a meal asks first and says when its rows on the shopping list go too (fix-ui;
- *   Tandoor deletes them with the meal, FACTS "Fas 2 f").
+ *   Tandoor deletes them with the meal, FACTS "Fas 2 f"); the page closes and the week agenda
+ *   offers "Ångra" ([RemovedMeals], 0.3.0 komplettering).
  * - **Guest** (#42): nothing can be saved.
  * - The form survives rotation (the ViewModel) but not process death: the page then starts again
  *   from its key.
@@ -189,6 +191,9 @@ class PlanMealViewModel @AssistedInject internal constructor(
     permissions: SpacePermissionsRepository,
     clock: Clock,
     books: RecipeBookRepository,
+    // 0.3.0 komplettering: "Ångra" in the week agenda after "Ta bort från matsedeln" here.
+    private val shopping: ShoppingRepository,
+    private val removedMeals: RemovedMeals,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -389,8 +394,14 @@ class PlanMealViewModel @AssistedInject internal constructor(
         val meal = original ?: return
         if (uiState.value.readOnly) return
         viewModelScope.launch {
+            // What "Ångra" puts back: the meal's rows still to buy (Tandoor deletes them with it).
+            val rows = shopping.observeEntries().first().filter { it.recipe?.mealPlanId == meal.id && !it.checked }
             when (val result = mealPlans.delete(meal.id)) {
-                is Outcome.Success -> effectChannel.send(PlanMealEffect.Done)
+                is Outcome.Success -> {
+                    removedMeals.offer(RemovedMeals.Removal(meal, rows))
+                    effectChannel.send(PlanMealEffect.Done)
+                }
+
                 is Outcome.Failure -> effectChannel.send(PlanMealEffect.Failed(result.error))
             }
         }

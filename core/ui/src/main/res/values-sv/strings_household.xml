@@ -3,4 +3,11 @@
     <!-- Granskningen före 0.3.0 (plan 6.2, 8.6): kontot ligger inte i något hushåll, så inget delas. -->
     <string name="ui_household_missing_title">Du är inte med i något hushåll</string>
     <string name="ui_household_missing_body">Tandoor delar inköpslistan och matsedeln bara inom ett hushåll, så de andra ser inte det du lägger till här. Be den som sköter er Tandoor att göra klart hushållsinställningen i spacets inställningar på webben och lägga till dig i hushållet.</string>
+    <!-- Komplettering före 0.3.0 (plan 8.6 "Delad med: …"): vilka andra i hushållet som ser listan och matsedeln. -->
+    <string name="ui_shared_with_one">Delad med: %1$s</string>
+    <string name="ui_shared_with_two">Delad med: %1$s och %2$s</string>
+    <plurals name="ui_shared_with_many">
+        <item quantity="one">Delad med: %1$s, %2$s och %3$d till</item>
+        <item quantity="other">Delad med: %1$s, %2$s och %3$d till</item>
+    </plurals>
 </resources>

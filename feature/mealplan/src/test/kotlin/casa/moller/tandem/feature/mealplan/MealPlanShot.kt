@@ -24,6 +24,10 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     WEEK_EMPTY({ WeekShot(MealPlanSamples.state(meals = emptyList())) }),
     WEEK_GUEST({ WeekShot(MealPlanSamples.state(readOnly = true)) }),
     WEEK_NO_HOUSEHOLD({ WeekShot(MealPlanSamples.state(householdMissing = true)) }),
+
+    // 0.3.0 komplettering (plan 8.6): "Delad med: …" above the week.
+    WEEK_SHARED({ WeekShot(MealPlanSamples.state().copy(sharedWith = listOf("Anna"))) }),
+    WEEK_SHARED_MANY({ WeekShot(MealPlanSamples.state().copy(sharedWith = listOf("Anna", "Erik", "Lisa"))) }),
     WEEK_NEXT({ WeekShot(MealPlanSamples.state(start = MealPlanSamples.day(7), meals = listOf(MealPlanSamples.nextWednesday))) }),
     WEEK_DAY_SELECTED({ WeekShot(MealPlanSamples.state(selectedDay = MealPlanSamples.day(6))) }),
     WEEK_CONFLICT({ WeekShot(MealPlanSamples.state(conflict = MealPlanSamples.conflictState)) }),
@@ -45,6 +49,9 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
         WeekShoppingShot(MealPlanSamples.weekShoppingState(MealPlanSamples.weekShoppingMeals.filter { it.alreadyOnList }))
     }),
     WEEK_SHOPPING_EMPTY({ WeekShoppingScreen(state = MealPlanSamples.weekShoppingState(emptyList(), autoAdd = false), onAction = {}) }),
+
+    // 0.3.0 komplettering (finding 22): "Finns redan hemma?" in view, with where "at home" comes from.
+    WEEK_SHOPPING_AT_HOME({ WeekShoppingShot(MealPlanSamples.weekShopping.copy(aisles = emptyList())) }),
 }
 
 @Composable

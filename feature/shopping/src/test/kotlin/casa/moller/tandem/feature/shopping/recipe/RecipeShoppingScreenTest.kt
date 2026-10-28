@@ -45,6 +45,8 @@ class RecipeShoppingScreenTest {
         composeRule.onNodeWithTag(recipeShoppingRowTag(10132)).performScrollTo().assertIsOff()
         composeRule.onNodeWithTag(recipeShoppingRowTag(10112)).performScrollTo().assertIsOff()
         composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_at_home)).assertExists()
+        // 0.3.0 komplettering (finding 22): the group says where "at home" comes from.
+        composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_at_home_settings)).assertExists()
         val add = context.resources.getQuantityString(R.plurals.recipe_shopping_add, 4, 4)
         composeRule.onNodeWithText(add).assertExists()
         composeRule.onNodeWithTag(RECIPE_SHOPPING_ADD_TAG).performScrollTo().assertIsEnabled().performClick()

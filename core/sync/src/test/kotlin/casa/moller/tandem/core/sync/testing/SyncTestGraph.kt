@@ -41,6 +41,7 @@ import casa.moller.tandem.core.sync.mealplan.MealPlanWindowReader
 import casa.moller.tandem.core.sync.mealplan.MealTypeOutboxHandler
 import casa.moller.tandem.core.sync.mealplan.OfflineFirstMealPlanRepository
 import casa.moller.tandem.core.sync.permissions.DefaultSpacePermissionsRepository
+import casa.moller.tandem.core.sync.permissions.HouseholdMembersSync
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.shopping.AisleOrderOutboxHandler
@@ -133,6 +134,9 @@ internal class SyncTestGraph(
     val bookSync = BookSync(databases, caller, sources, smartBooks)
     val roleSync = SpaceRoleSync(databases, caller, sources)
 
+    // 0.3.0 komplettering: "Delad med: …".
+    val householdMembers = HouseholdMembersSync(databases, caller, sources, clock)
+
     // Phase 2 (inköp-data lane): the shopping list's reader, small tables and outbox senders.
     val shoppingChanges = ShoppingChangeBus()
     val droppedChanges = DroppedChanges()
@@ -182,7 +186,7 @@ internal class SyncTestGraph(
         settings,
         diagnosticsStore,
         ShoppingSyncStep(shoppingReader, shoppingTables, databases),
-        BookSyncStep(roleSync, bookSync, databases),
+        BookSyncStep(roleSync, bookSync, databases, householdMembers),
         mealPlanWindow,
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)

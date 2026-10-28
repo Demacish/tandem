@@ -24,6 +24,8 @@
     </plurals>
     <string name="recipe_shopping_at_home">At home already?</string>
     <string name="recipe_shopping_at_home_hint">Marked “at home” in Tandoor, so they are not ticked. Tick what you need anyway.</string>
+    <!-- 0.3.0 komplettering: what makes a food "at home" (shopping_add_onhand, mealplan_autoexclude_onhand). -->
+    <string name="recipe_shopping_at_home_settings">Foods become “at home” when someone checks them off while “Checked items are at home” is on in Tandoor. With “Leave out what is at home”, Tandoor also skips them when it puts a recipe on the list itself. Both are shown under More → Sync and storage and changed on the Tandoor web.</string>
     <string name="recipe_shopping_on_hand">At home</string>
     <string name="recipe_shopping_list_label">Goes on</string>
     <string name="recipe_shopping_list_none">The shopping list</string>

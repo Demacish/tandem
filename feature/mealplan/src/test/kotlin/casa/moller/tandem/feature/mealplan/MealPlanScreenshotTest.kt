@@ -58,6 +58,15 @@ class MealPlanScreenshotTest {
     @Config(qualifiers = "sv-$PHONE")
     fun phoneNoHousehold() = capture("phone_week_no_household_light_sv", MealPlanShot.WEEK_NO_HOUSEHOLD)
 
+    /** 0.3.0 komplettering (plan 8.6): "Delad med: …" above the week. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneShared() = capture("phone_week_shared_light_sv", MealPlanShot.WEEK_SHARED)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletSharedDark() = capture("tablet_week_shared_dark", MealPlanShot.WEEK_SHARED_MANY, darkTheme = true)
+
     @Test
     fun phoneNextWeek() = capture("phone_week_next_light", MealPlanShot.WEEK_NEXT)
 
@@ -163,6 +172,11 @@ class MealPlanScreenshotTest {
 
     @Test
     fun weekShoppingEmpty() = capture("phone_week_shopping_empty_light", MealPlanShot.WEEK_SHOPPING_EMPTY)
+
+    /** 0.3.0 komplettering (finding 22): the at-home group explains the Tandoor settings behind it. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun weekShoppingAtHome() = capture("phone_week_shopping_at_home_light_sv", MealPlanShot.WEEK_SHOPPING_AT_HOME)
 
     private fun capture(
         name: String,

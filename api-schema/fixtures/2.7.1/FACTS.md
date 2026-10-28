@@ -93,3 +93,6 @@
   b"; `ShoppingWritesContractTest`). [O]
 - Appens egna skrivformer för "Köp nu" (`1970-01-01T00:00:00Z`) och flytt av en måltid (båda
   datumen, naiva serverlokala tider) står i `EXPECTED` och ger samma fakta som 2.6.13. [O]
+- Hushållets medlemmar ("Fas 2 h", `HouseholdMembersContractTest`): `GET /api/user-space/` ger en
+  admin alla medlemskap med hushåll och en medlem bara sitt eget, `GET /api/user/` spacets
+  användare utan hushåll, som i 2.6.13 (`fas2/user-space-list-*`, `fas2/user-list-member`). [O]

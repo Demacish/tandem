@@ -87,6 +87,15 @@ class ShoppingScreenshotTest {
     @Config(qualifiers = "sv-$PHONE")
     fun phoneNoHousehold() = capture("phone_shopping_no_household_light_sv", ShoppingShot.LIST_NO_HOUSEHOLD)
 
+    /** 0.3.0 komplettering (plan 8.6): "Delad med: …" at the top of the list. */
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneShared() = capture("phone_shopping_shared_light_sv", ShoppingShot.LIST_SHARED)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletSharedDark() = capture("tablet_shopping_shared_dark", ShoppingShot.LIST_SHARED_MANY, darkTheme = true)
+
     @Test
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun phoneLandscape() = capture("phone_landscape_shopping_light", ShoppingShot.LIST)

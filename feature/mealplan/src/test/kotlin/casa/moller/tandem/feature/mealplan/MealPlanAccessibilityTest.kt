@@ -48,6 +48,12 @@ class MealPlanAccessibilityTest {
     fun weekNoHousehold() = check(MealPlanShot.WEEK_NO_HOUSEHOLD)
 
     @Test
+    fun weekShared() = check(MealPlanShot.WEEK_SHARED)
+
+    @Test
+    fun weekSharedManyDarkFontScale2() = check(MealPlanShot.WEEK_SHARED_MANY, darkTheme = true, fontScale = 2f)
+
+    @Test
     fun weekNext() = check(MealPlanShot.WEEK_NEXT)
 
     @Test
@@ -128,6 +134,12 @@ class MealPlanAccessibilityTest {
 
     @Test
     fun weekShoppingEmpty() = check(MealPlanShot.WEEK_SHOPPING_EMPTY, fontScale = 2f)
+
+    @Test
+    fun weekShoppingAtHome() = check(MealPlanShot.WEEK_SHOPPING_AT_HOME)
+
+    @Test
+    fun weekShoppingAtHomeDarkFontScale2() = check(MealPlanShot.WEEK_SHOPPING_AT_HOME, darkTheme = true, fontScale = 2f)
 
     private fun check(shot: MealPlanShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {

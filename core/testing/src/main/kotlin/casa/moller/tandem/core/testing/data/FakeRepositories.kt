@@ -194,6 +194,11 @@ class FakePreferencesRepository(initial: UserPreferences = UserPreferences.Defau
     val preferences = MutableStateFlow(initial)
 
     override fun observeUserPreferences(): Flow<UserPreferences> = preferences
+
+    /** 0.3.0 komplettering: the server's polling floor (null = unknown). */
+    val shoppingMinAutoSyncSeconds = MutableStateFlow<Int?>(null)
+
+    override fun observeShoppingMinAutoSyncSeconds(): Flow<Int?> = shoppingMinAutoSyncSeconds
 }
 
 /**

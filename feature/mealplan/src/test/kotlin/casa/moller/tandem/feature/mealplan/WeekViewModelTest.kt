@@ -42,9 +42,10 @@ class WeekViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val foreground = FakeForegroundSync()
     private val shopping = FakeShoppingRepository(entries = emptyList(), lists = emptyList())
+    private val removedMeals = RemovedMeals()
 
     private fun viewModel(weekStart: String? = null, saved: SavedStateHandle = SavedStateHandle()) =
-        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping)
+        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals)
 
     /** Starts collecting the state (as the screen does) and the effects. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -153,6 +154,29 @@ class WeekViewModelTest {
         assertEquals(setOf(2L), request.listIds)
     }
 
+    /**
+     * 0.3.0 komplettering: a meal removed on its own page (the page closed at once) gets the same
+     * "Ångra" in the agenda: the meal is planned again and its rows still to buy go back with addRecipe(mealPlanId).
+     */
+    @Test
+    fun aMealRemovedOnItsOwnPageCanBeUndoneInTheAgenda() = runTest {
+        val label = ShoppingRecipeLabel(listRecipeId = 40, recipeId = todayDinner.recipe?.id, mealPlanId = todayDinner.id, servings = 4.0)
+        val rows = listOf(ShoppingEntry(1, ShoppingFood(1, "champinjon"), amount = 400.0, recipe = label, ingredientId = 10111))
+        val vm = viewModel()
+        val effects = open(vm)
+        mealPlans.meals.value = mealPlans.meals.value.filterNot { it.id == todayDinner.id }
+        removedMeals.offer(RemovedMeals.Removal(todayDinner, rows))
+        assertEquals(WeekEffect.Show(WeekMessage.Removed(todayDinner.displayTitle)), effects.single())
+        assertNull("taken once", removedMeals.take())
+
+        vm.onAction(WeekAction.Undo)
+        val again = mealPlans.meals.value.single { it.fromDate == todayDinner.fromDate && it.recipe?.id == todayDinner.recipe?.id }
+        assertEquals(todayDinner.toDraft(), mealPlans.drafts.single())
+        val request = shopping.recipeRequests.single()
+        assertEquals(again.id, request.mealPlanId)
+        assertEquals(setOf(10111L), request.ingredientIds)
+    }
+
     @Test
     fun aMealTheServerSaysIsOnTheListAsksToo() = runTest {
         val vm = viewModel()
@@ -212,6 +236,16 @@ class WeekViewModelTest {
         permissions.state.value = permissions.state.value.copy(householdMissing = true)
         assertTrue(vm.uiState.value.householdMissing)
         assertFalse(vm.uiState.value.readOnly)
+    }
+
+    /** 0.3.0 komplettering (plan 8.6): "Delad med: …" names the household's other members. */
+    @Test
+    fun theWeekSaysWhoElseSeesIt() = runTest {
+        val vm = viewModel()
+        open(vm)
+        assertEquals(emptyList<String>(), vm.uiState.value.sharedWith)
+        permissions.state.value = permissions.state.value.copy(sharedWith = listOf("Anna"))
+        assertEquals(listOf("Anna"), vm.uiState.value.sharedWith)
     }
 
     @Test

@@ -53,7 +53,8 @@ internal class RemovedRecipeRows private constructor(private val groups: List<Li
     }
 }
 
-private fun ShoppingEntry.toDraft(): ShoppingEntryDraft = ShoppingEntryDraft(
+/** The entry as a new row with the same food, amount, unit and lists (no recipe label). */
+internal fun ShoppingEntry.toDraft(): ShoppingEntryDraft = ShoppingEntryDraft(
     foodName = food.name,
     amount = amount,
     unitName = unit?.name,

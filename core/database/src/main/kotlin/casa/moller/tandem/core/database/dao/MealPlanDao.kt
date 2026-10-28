@@ -85,6 +85,13 @@ abstract class MealPlanDao {
     @Query("DELETE FROM meal_plan WHERE account_id = :accountId AND local_id = :localId")
     abstract suspend fun delete(accountId: String, localId: Long)
 
+    /**
+     * 0.3.0 komplettering ("Delad med: …", plan 8.6): who planned the stored meals (`created_by` is
+     * an id; Tandoor lists another user's meals only within the household).
+     */
+    @Query("SELECT DISTINCT created_by FROM meal_plan WHERE account_id = :accountId AND created_by IS NOT NULL ORDER BY created_by")
+    abstract fun observeCreatorIds(accountId: String): Flow<List<Long>>
+
     /** The server's own values after it answered (`from_date`/`to_date` as sent, `shopping`); the user's fields stay. */
     @Query(
         "UPDATE meal_plan SET from_raw = :fromRaw, to_raw = :toRaw, shopping = :shopping " +

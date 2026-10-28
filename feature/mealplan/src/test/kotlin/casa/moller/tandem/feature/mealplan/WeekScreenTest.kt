@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -240,6 +241,7 @@ class WeekScreenTest {
             FakeForegroundSync(),
             TestClock(MealPlanSamples.now),
             FakeShoppingRepository(entries = emptyList(), lists = emptyList()),
+            RemovedMeals(),
         )
         val planned = mutableListOf<PlanMealKey>()
         composeRule.setContent {
@@ -318,5 +320,14 @@ class WeekScreenTest {
             .assert(hasContentDescription(string(R.string.mealplan_week_shopping_merged), substring = true))
             .performClick()
         assertEquals(WeekShoppingAction.ToggleLine(cream), shoppingActions.last())
+    }
+
+    /** 0.3.0 komplettering (finding 22): "Finns redan hemma?" says where "at home" comes from. */
+    @Test
+    fun theAtHomeGroupExplainsTheTandoorSettings() {
+        composeRule.setContent { MealPlanTestTheme { WeekShoppingScreen(state = MealPlanSamples.weekShopping, onAction = {}) } }
+        val hint = string(R.string.mealplan_week_shopping_at_home_settings)
+        composeRule.onNodeWithTag(WEEK_SHOPPING_LIST_TAG).performScrollToNode(hasText(hint))
+        composeRule.onNodeWithText(hint).assertIsDisplayed()
     }
 }

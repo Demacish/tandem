@@ -59,6 +59,12 @@ class ShoppingAccessibilityTest {
     fun listNoHousehold() = check(ShoppingShot.LIST_NO_HOUSEHOLD)
 
     @Test
+    fun listShared() = check(ShoppingShot.LIST_SHARED)
+
+    @Test
+    fun listSharedManyDarkFontScale2() = check(ShoppingShot.LIST_SHARED_MANY, darkTheme = true, fontScale = 2f)
+
+    @Test
     fun listDemo() = check(ShoppingShot.LIST, chrome = AppChrome(status = AppStatus.Demo, showDemoBanner = true))
 
     @Test

@@ -136,6 +136,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
             loading = false,
             readOnly = readOnly,
             householdMissing = snapshot.permissions.householdMissing,
+            sharedWith = snapshot.permissions.sharedWith,
             lists = snapshot.lists,
             selectedListId = list,
             supermarkets = snapshot.supermarkets,
@@ -266,8 +267,22 @@ class ShoppingViewModel @AssistedInject internal constructor(
         transient.update { it.copy(confirmClear = false) }
         if (!confirmed || !canWrite()) return
         // 0.3.0 review (fix-data): the rows the dialog counted, so the deletion and the snackbar match it.
-        val ids = uiState.value.grouped.checked.map { it.id }
-        write(ShoppingMessage.ClearedChecked(ids.size), undo = null) { shopping.clearChecked(ids) }
+        val cleared = uiState.value.grouped.checked
+        val ids = cleared.map { it.id }
+        // 0.3.0 komplettering: "Ångra" puts the cleared rows back, checked ([putBackChecked]).
+        write(ShoppingMessage.ClearedChecked(ids.size), undo = { putBackChecked(cleared) }) { shopping.clearChecked(ids) }
+    }
+
+    /**
+     * 0.3.0 komplettering: "Ångra" after "Rensa" adds the cleared rows again (same food, amount,
+     * unit and lists, as new rows like "Ta bort" does; a recipe's label is not restored) and checks
+     * them, so they are back in "Avbockat". Offline too: both changes are queued in order.
+     */
+    private suspend fun putBackChecked(rows: List<ShoppingEntry>): Outcome<*> {
+        if (rows.isEmpty()) return Outcome.Success(Unit)
+        val added = shopping.addAll(rows.map { it.toDraft() })
+        val ids = (added as? Outcome.Success)?.value ?: return added
+        return shopping.setChecked(ids, true)
     }
 
     private fun submitAdd() {

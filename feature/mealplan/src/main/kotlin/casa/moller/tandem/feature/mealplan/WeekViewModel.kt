@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -56,7 +57,7 @@ import kotlinx.datetime.toLocalDateTime
  * - **Undo:** removing and moving a meal show a snackbar with "Ångra". Removing plans the meal
  *   again with the same values; fix-ui: a meal with rows on the shopping list asks first (Tandoor
  *   deletes them with the meal), and "Ångra" puts the rows that were still to buy back, linked to
- *   the new meal.
+ *   the new meal. 0.3.0 komplettering: the same for a meal removed on its own page ([RemovedMeals]).
  * - **Long press** on a meal opens "Flytta" (plan 6.2; fix-ui), as the menu does.
  * - **Guest** (#42): read-only; actions that write are ignored (the repository refuses them too).
  * - **Survives** rotation and process death: the shown week and the selected day live in
@@ -72,6 +73,8 @@ class WeekViewModel @AssistedInject internal constructor(
     private val foregroundSync: ForegroundSync,
     private val clock: Clock,
     private val shopping: ShoppingRepository,
+    // 0.3.0 komplettering: meals removed on their own page get "Ångra" here.
+    private val removedMeals: RemovedMeals,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -93,6 +96,14 @@ class WeekViewModel @AssistedInject internal constructor(
         if (!savedStateHandle.contains(KEY_WEEK)) {
             val start = weekStart?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: today()
             savedStateHandle[KEY_WEEK] = MealPlanWeek.startOf(start).toString()
+        }
+        // 0.3.0 komplettering: a meal removed on the plan-meal page gets the same "Ångra" as one removed here.
+        viewModelScope.launch {
+            removedMeals.removals.filterNotNull().collect {
+                val removal = removedMeals.take() ?: return@collect
+                undo = { restore(removal.meal, removal.rows) }
+                effectChannel.send(WeekEffect.Show(WeekMessage.Removed(removal.meal.displayTitle)))
+            }
         }
     }
 
@@ -128,6 +139,7 @@ class WeekViewModel @AssistedInject internal constructor(
             mealTypes = types,
             readOnly = readOnly,
             householdMissing = perms.householdMissing,
+            sharedWith = perms.sharedWith,
             refreshing = local.refreshing,
             selectedDay = day,
             move = local.move.takeUnless { readOnly },

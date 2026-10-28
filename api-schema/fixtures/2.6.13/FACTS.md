@@ -577,6 +577,7 @@ Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 
 | `ingredient-parser-single`, `-many` | Parsern |
 | `meal-type-create`, `meal-plan-*` | Rent datum, sen UTC-tid, två dagar, flytt, fält, `addshopping`, autoadd, radering och 404, gäst |
 | `recipe-book-*`, `recipe-book-entry-*`, `custom-filter-create-ids`, `recipe-list-filter-ids`, `recipe-patch-keywords-*` | Delad bok (ägare/medlem/gäst), poster, smart bok, "Vill laga" |
+| `user-space-list-admin`, `user-space-list-member`, `user-list-member` | Hushållets medlemmar ("Delad med: …", h) |
 | `observed-facts.json` | Alla fakta, `mismatches: []` |
 
 ## Fas 2 a. Användarinställningar, roller och hushåll
@@ -714,6 +715,22 @@ Inspelat 2026-10-25 (`Phase1ContractTest.stepWithAFile`, även 2.6.15 och 2.7.1 
   boken delats med). `search` med objekt (`[{"id":…}]`) → **500** i receptlistan. En bok med
   `filter` (smart bok) har 0 poster. [O]
 - Gästen kan skapa en egen bok (201). [O]
+
+## Fas 2 h. Hushållets medlemmar ("Delad med: …", plan 8.6)
+
+`HouseholdMembersContractTest` (ett eget steg i contract.yml efter Fas 2; ägaren och den andra
+medlemmen ligger i "Contract Household", gästen i inget hushåll):
+
+- `GET /api/user-space/` är DRF-paginerad (`count`, `next`, `timestamp`, `results`). En **admin**
+  får **alla** medlemskap i spacet med `user` (objekt med `display_name`) och `household` (objekt
+  eller `null`); en vanlig medlem får **bara sitt eget**. [O]
+- `GET /api/user/` ger en medlem spacets alla användare som en **array** (inte paginerad), med
+  `display_name` men **utan hushåll**. [O]
+- Det finns alltså ingen väg för en vanlig medlem att lista hushållet. Listan och matsedeln visar
+  andras rader bara inom hushållet (`get_household_user_ids`, Tandoors källkod) [K], så den som
+  skapat en lagrad rad eller måltid hör till hushållet.
+  [S] "Delad med: …" = för en admin hushållets medlemmar ur `user-space`, för andra skaparna av de
+  lagrade raderna och måltiderna med namn ur `/api/user/` (core:domain `HouseholdMembers`).
 
 ## Fas 2: konsekvenser för appen [S]
 

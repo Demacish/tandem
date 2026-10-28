@@ -18,6 +18,10 @@ interface SyncStateDao {
     @Query("SELECT * FROM sync_state WHERE account_id = :accountId ORDER BY entity")
     fun observe(accountId: String): Flow<List<SyncStateEntity>>
 
+    /** 0.3.0 komplettering: one row, re-emitted when it changes (the household's members). */
+    @Query("SELECT * FROM sync_state WHERE account_id = :accountId AND entity = :entity")
+    fun observeOne(accountId: String, entity: String): Flow<SyncStateEntity?>
+
     @Query("DELETE FROM sync_state WHERE account_id = :accountId AND entity = :entity")
     suspend fun delete(accountId: String, entity: String)
 

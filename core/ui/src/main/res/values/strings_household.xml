@@ -3,4 +3,11 @@
     <!-- 0.3.0 review (plan 6.2, 8.6): the account is in no household, so nothing is shared. -->
     <string name="ui_household_missing_title">You are not in a household</string>
     <string name="ui_household_missing_body">Tandoor shares the shopping list and the meal plan only within a household, so the others do not see what you add here. Ask whoever runs your Tandoor to finish the household setup in the space settings on the web and add you to the household.</string>
+    <!-- 0.3.0 komplettering (plan 8.6 "Delad med: …"): who else in the household sees the list and the meal plan. -->
+    <string name="ui_shared_with_one">Shared with %1$s</string>
+    <string name="ui_shared_with_two">Shared with %1$s and %2$s</string>
+    <plurals name="ui_shared_with_many">
+        <item quantity="one">Shared with %1$s, %2$s and %3$d more</item>
+        <item quantity="other">Shared with %1$s, %2$s and %3$d more</item>
+    </plurals>
 </resources>

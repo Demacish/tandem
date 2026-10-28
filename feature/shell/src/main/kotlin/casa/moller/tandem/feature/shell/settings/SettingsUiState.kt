@@ -59,13 +59,18 @@ data class SyncSettingsUiState(
  */
 data class ShoppingServerSettings(val addOnHand: Boolean, val excludeOnHand: Boolean, val autoAdd: Boolean, val pollSeconds: Long?) {
     companion object {
-        fun of(preferences: UserPreferences): ShoppingServerSettings = ShoppingServerSettings(
+        /**
+         * 0.3.0 komplettering: [serverMinimumSeconds] is the server's `shopping_min_autosync_interval`
+         * (`PreferencesRepository.observeShoppingMinAutoSyncSeconds`), so the shown interval is the
+         * one the app polls with (core:sync `DefaultForegroundSync` uses the same formula).
+         */
+        fun of(preferences: UserPreferences, serverMinimumSeconds: Int? = null): ShoppingServerSettings = ShoppingServerSettings(
             addOnHand = preferences.shoppingAddOnHand,
             excludeOnHand = preferences.mealPlanAutoExcludeOnHand,
             autoAdd = preferences.mealPlanAutoAddShopping,
             pollSeconds = preferences.shoppingAutoSyncSeconds
                 .takeIf { ForegroundPolling.pollsShoppingList(it) }
-                ?.let { ForegroundPolling.intervalFor(serverMinimumSeconds = null, userSeconds = it).inWholeSeconds },
+                ?.let { ForegroundPolling.intervalFor(serverMinimumSeconds = serverMinimumSeconds, userSeconds = it).inWholeSeconds },
         )
     }
 }

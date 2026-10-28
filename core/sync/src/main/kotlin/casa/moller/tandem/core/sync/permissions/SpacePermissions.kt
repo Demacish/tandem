@@ -4,6 +4,8 @@ import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.SyncEntities
+import casa.moller.tandem.core.domain.account.HouseholdMembers
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.Outcome
@@ -12,6 +14,7 @@ import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.book.DemoBooks
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,6 +41,10 @@ import kotlinx.coroutines.flow.map
  * finished household setup (no [ServerFeature.HOUSEHOLDS]: `space.household_setup_completed` is
  * false, plan 8.6 "UserSpace.household == null medan household_setup_completed == false"). Tandoor
  * then shares neither the list nor the meal plan with the other members.
+ *
+ * [SpacePermissions.sharedWith] (0.3.0 komplettering, plan 8.6 "Delad med: …"): core:domain
+ * `HouseholdMembers` over what [HouseholdMembersSync] stored and the creators of the stored list
+ * rows and meals. In demo mode: the demo list's other creator.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -52,21 +59,58 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
                 is ActiveSource.Remote -> combine(
                     databases.get(source.kind).accountDao().observe(source.accountId),
                     serverStatus.observeStatus().map { it.withoutHouseholds() }.distinctUntilChanged(),
-                ) { row, noHouseholds ->
+                    observeCreators(source),
+                    databases.get(source.kind).syncStateDao().observeOne(source.accountId, SyncEntities.HOUSEHOLD_MEMBERS)
+                        .map { HouseholdMembersSync.decode(it?.hash) }
+                        .distinctUntilChanged(),
+                ) { row, noHouseholds, creators, stored ->
                     val level = row?.groupLevel
                     SpacePermissions(
                         role = SpaceRole.of(listOfNotNull(level)),
                         householdMissing = row != null && level != null && row.householdId == null && noHouseholds,
+                        sharedWith = HouseholdMembers.sharedWith(
+                            selfId = source.account.userId,
+                            inHousehold = row?.householdId != null,
+                            confirmed = stored.confirmed,
+                            creators = creators,
+                            directory = stored.directory,
+                        ),
                     )
                 }
 
-                ActiveSource.Demo -> flowOf(SpacePermissions(role = SpaceRole.USER, isDemo = true))
+                // 0.3.0 komplettering: the demo household is whoever else created the demo list's rows and meals.
+                ActiveSource.Demo -> observeCreators(source).map { creators ->
+                    SpacePermissions(
+                        role = SpaceRole.USER,
+                        isDemo = true,
+                        sharedWith = HouseholdMembers.sharedWith(
+                            selfId = DemoBooks.OWN_USER_ID,
+                            inHousehold = true,
+                            confirmed = emptyList(),
+                            creators = creators,
+                        ),
+                    )
+                }
 
                 ActiveSource.Loading, ActiveSource.None -> flowOf(SpacePermissions())
             }
         }
         .catch { emit(SpacePermissions()) }
         .distinctUntilChanged()
+
+    /**
+     * 0.3.0 komplettering ("Delad med: …"): the creators of the stored list rows (with their names)
+     * and meals (ids only); Tandoor shows other users' rows only within the household.
+     */
+    private fun observeCreators(source: ActiveSource.Stored): Flow<List<HouseholdMembers.Member>> {
+        val database = databases.get(source.kind)
+        return combine(
+            database.shoppingDao().observeCreators(source.accountId),
+            database.mealPlanDao().observeCreatorIds(source.accountId),
+        ) { rows, meals ->
+            rows.map { HouseholdMembers.Member(it.id, it.name) } + meals.map { HouseholdMembers.Member(it, null) }
+        }.distinctUntilChanged()
+    }
 
     /** The server was checked and its space has not finished the household setup. */
     private fun ServerStatus.withoutHouseholds(): Boolean = !isDemo && checkedAt != null && ServerFeature.HOUSEHOLDS !in capabilities

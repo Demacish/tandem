@@ -37,6 +37,10 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     LIST_BREAKER({ ListShot(ShoppingSamples.state(pendingCount = 2, syncNotice = ShoppingSyncNotice.BREAKER)) }),
     LIST_GUEST({ ListShot(ShoppingSamples.state(readOnly = true)) }),
     LIST_NO_HOUSEHOLD({ ListShot(ShoppingSamples.state(householdMissing = true)) }),
+
+    // 0.3.0 komplettering (plan 8.6): "Delad med: …" at the top, with two and with four other members.
+    LIST_SHARED({ ListShot(ShoppingSamples.state().copy(sharedWith = listOf("Anna", "Erik"))) }),
+    LIST_SHARED_MANY({ ListShot(ShoppingSamples.state().copy(sharedWith = listOf("Anna", "Erik", "Lisa", "Olle"))) }),
     LIST_ONE_LIST({ ListShot(ShoppingSamples.state(entries = listOf(ShoppingSamples.milk), selectedListId = 1)) }),
     ADD({ Sheet { AddItemPanel(state = addState, format = format(), onAction = {}) } }),
     ADD_RECENT({ Sheet { AddItemPanel(state = recentState, format = format(), onAction = {}) } }),
