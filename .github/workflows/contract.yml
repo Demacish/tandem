@@ -5,6 +5,12 @@ name: Contract
 # is deleted with the runner. See contract-tests/ and api-schema/fixtures/<version>/FACTS.md.
 on:
   workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Optional JSON array of image tags, e.g. ["2.6.13", "2.7.1", "2.7.2"] (empty: the manual default list)'
+        type: string
+        required: false
+        default: ""
   # The nightly matrix moved to tandoor-watch.yml (Fas 1b), which calls this workflow with the
   # image tags it found on Docker Hub (2.6.13, 2.6.15, the newest release of every line, latest).
   workflow_call:
@@ -319,6 +325,47 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.HouseholdMembersContractTest'
 
+      # Fas S (0.4.0 "Skafferi & drycker"): a fourth member in a SECOND household, so household
+      # scoping of on-hand flags, the inventory and makenow can be seen (PhaseSContractTest).
+      - name: Create the Fas S outsider (another household)
+        run: |
+          token="$(docker exec -w /opt/recipes -e CONTRACT_USERNAME="$TANDOOR_USERNAME" \
+            tandoor /opt/recipes/venv/bin/python manage.py shell -c '
+          import os, sys, uuid
+          from datetime import timedelta
+          from django.contrib.auth.models import Group, User
+          from django.utils import timezone
+          from django_scopes import scopes_disabled
+          from oauth2_provider.models import AccessToken
+          from cookbook.models import UserSpace
+
+          with scopes_disabled():
+              owner = User.objects.get(username=os.environ["CONTRACT_USERNAME"])
+              space = owner.userspace_set.get(active=True).space
+              outsider = User.objects.create_user("contract-outsider")
+              member = UserSpace.objects.create(space=space, user=outsider, active=True)
+              member.groups.add(Group.objects.get(name="user"))
+              try:
+                  from cookbook.models import Household
+                  other = Household.objects.create(space=space, name="Other Household")
+                  UserSpace.objects.filter(pk=member.pk).update(household=other)
+                  print("other household", other.id, file=sys.stderr)
+              except Exception as error:
+                  print("no household:", type(error).__name__, error, file=sys.stderr)
+              token = AccessToken.objects.create(
+                  user=outsider, token="tda_" + str(uuid.uuid4()).replace("-", "_"),
+                  expires=timezone.now() + timedelta(days=1), scope="read write")
+              print(token.token)
+          ' | tail -n 1)"
+          [ -n "$token" ] || { echo "::error::outsider token creation failed"; exit 1; }
+          echo "::add-mask::${token}"
+          echo "TANDOOR_OUTSIDER_TOKEN=${token}" >> "$GITHUB_ENV"
+
+      - name: Contract tests (Fas S)
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.PhaseSContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)
@@ -347,7 +394,8 @@ jobs:
           [ -d "$RECORDINGS" ] || { echo "No recordings"; exit 0; }
           leaked=0
           for value in "$TANDOOR_PASSWORD" "$TANDOOR_NOSPACE_PASSWORD" "$TANDOOR_SECRET_KEY" "$TANDOOR_DB_PASSWORD" \
-            "$TANDOOR_READER_PASSWORD" "${TANDOOR_FAS1_TOKEN:-}" "${TANDOOR_READER_TOKEN:-}" "${TANDOOR_GUEST_TOKEN:-}"; do
+            "$TANDOOR_READER_PASSWORD" "${TANDOOR_FAS1_TOKEN:-}" "${TANDOOR_READER_TOKEN:-}" "${TANDOOR_GUEST_TOKEN:-}" \
+            "${TANDOOR_OUTSIDER_TOKEN:-}"; do
             if [ -n "$value" ] && grep -rqF -- "$value" "$RECORDINGS"; then leaked=1; fi
           done
           # Real tokens look like tda_<8 hex>_...; recordings may only contain the fake

@@ -80,4 +80,16 @@ internal object ContractEnv {
 
     /** Fas 2 recordings: `<recordDir>/fas2/<name>.json` (committed to api-schema/fixtures/<tag>/fas2/). */
     val fas2RecordDir: File = File(recordDir, "fas2")
+
+    // --- Fas S (PhaseSContractTest) ---------------------------------------------------------
+
+    /**
+     * A token of a fourth member of the contract space (group `user`) in a SECOND household,
+     * created by contract.yml after the Fas 2 steps, so household scoping of on-hand flags, the
+     * inventory and `makenow` can be seen. PhaseSContractTest is skipped unless it is set.
+     */
+    val outsiderToken: String = System.getenv("TANDOOR_OUTSIDER_TOKEN").orEmpty()
+
+    /** Fas S recordings: `<recordDir>/fas-s/<name>.json` (committed to api-schema/fixtures/<tag>/fas-s/). */
+    val fasSRecordDir: File = File(recordDir, "fas-s")
 }
