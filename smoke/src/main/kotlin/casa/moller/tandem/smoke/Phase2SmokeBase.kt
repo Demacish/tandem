@@ -5,6 +5,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
@@ -136,7 +137,13 @@ abstract class Phase2SmokeBase {
         val limit = app.device.displayHeight * UPPER_PART
         repeat(MAX_NUDGES) {
             val found = settled(row(food), app.findInList(row(food)))
-            val bounds = found.visibleBounds
+            // Stale: the list moved between finding and reading the row (e.g. Handla's
+            // "Packa upp" card appearing above it after a check, Fas S); find it again.
+            val bounds = runCatching { found.visibleBounds }.getOrNull()
+            if (bounds == null) {
+                app.device.waitForIdle()
+                return@repeat
+            }
             if (bounds.bottom <= limit && bounds.height() >= MIN_ROW_DP * density) return found
             val x = app.device.displayWidth / 2
             val upper = (app.device.displayHeight * UPPER_PART).toInt()
@@ -192,7 +199,11 @@ abstract class Phase2SmokeBase {
      */
     protected fun check(food: String) {
         repeat(TAP_ATTEMPTS) {
-            rowOnScreen(food).click()
+            // A row gone stale before the tap took no tap: wait as for a lost tap, then retry.
+            runCatching { rowOnScreen(food).click() }.onFailure { error ->
+                if (error !is StaleObjectException) throw error
+                app.device.waitForIdle()
+            }
             val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
             while (SystemClock.uptimeMillis() < deadline) {
                 val current = app.device.findObject(row(food)) ?: return
