@@ -55,32 +55,42 @@ internal class DefaultBarcodeLookup @Inject constructor(
         }
         val source = sources.current() as? ActiveSource.Stored
             ?: return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        val online = source is ActiveSource.Remote && network.online.value
         learned(code)?.let { return@catchingUnexpected Outcome.Success(it) }
         // Learned on another phone a moment ago (Fas S "Klart när": known at once on phone B): the
         // space's aliases are read again first (at most once a minute).
-        if (source is ActiveSource.Remote && network.online.value && aliasReader.syncIfStale(source) is Outcome.Success) {
+        if (online && source is ActiveSource.Remote && aliasReader.syncIfStale(source) is Outcome.Success) {
             learned(code)?.let { return@catchingUnexpected Outcome.Success(it) }
         }
-        val dao = databases.get(source.kind).barcodeProductDao()
-        val cached = dao.get(source.accountId, code)
+        val cached = databases.get(source.kind).barcodeProductDao().get(source.accountId, code)
+        when {
+            cached != null && isFresh(cached, clock.nowMillis()) -> Outcome.Success(cached.toResult())
+
+            // Demo mode never asks the network; offline, a stale answer is better than none.
+            source !is ActiveSource.Remote -> Outcome.Success(cached?.toResult() ?: BarcodeLookupResult.NotFound)
+
+            !online -> cached?.let { Outcome.Success(it.toResult()) } ?: Outcome.Failure(TandemError.NetworkUnavailable)
+
+            else -> askOpenFoodFacts(source, code, cached)
+        }
+    }
+
+    /** Open Food Facts for [code]; its answer (also "not found") is cached. A failure falls back to [cached]. */
+    private suspend fun askOpenFoodFacts(
+        remote: ActiveSource.Remote,
+        code: String,
+        cached: BarcodeProductEntity?,
+    ): Outcome<BarcodeLookupResult> {
         val now = clock.nowMillis()
-        if (cached != null && isFresh(cached, now)) return@catchingUnexpected Outcome.Success(cached.toResult())
-        // Demo mode: never the network.
-        if (source !is ActiveSource.Remote) {
-            return@catchingUnexpected Outcome.Success(cached?.toResult() ?: BarcodeLookupResult.NotFound)
-        }
-        if (!network.online.value) {
-            return@catchingUnexpected cached?.let { Outcome.Success(it.toResult()) } ?: Outcome.Failure(TandemError.NetworkUnavailable)
-        }
-        when (val answer = openFoodFacts.product(code)) {
+        return when (val answer = openFoodFacts.product(code)) {
             is Outcome.Failure -> cached?.let { Outcome.Success(it.toResult()) } ?: Outcome.Failure(answer.error)
 
             is Outcome.Success -> {
                 val row = when (val result = answer.value) {
-                    OpenFoodFactsResult.NotFound -> BarcodeProductEntity(source.accountId, code, found = false, fetchedAtEpochMillis = now)
-                    is OpenFoodFactsResult.Found -> result.product.toEntity(source.accountId, code, now)
+                    OpenFoodFactsResult.NotFound -> BarcodeProductEntity(remote.accountId, code, found = false, fetchedAtEpochMillis = now)
+                    is OpenFoodFactsResult.Found -> result.product.toEntity(remote.accountId, code, now)
                 }
-                dao.upsert(row)
+                databases.get(remote.kind).barcodeProductDao().upsert(row)
                 Outcome.Success(row.toResult())
             }
         }

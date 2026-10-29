@@ -283,10 +283,6 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
      * The recorded response of [name], without hop-by-hop and length headers, with this server's
      * address in place of the recorded one; [transform] may change a JSON body first.
      */
-    /** A recorded DRF page without its results (Fas S: the smoke tests start with an empty pantry). */
-    private fun emptyPage(recorded: JsonElement): JsonElement =
-        JsonObject(recorded.jsonObject + mapOf("count" to JsonPrimitive(0), "next" to JsonNull, "results" to JsonArray(emptyList())))
-
     private fun fixture(name: String, transform: ((JsonElement) -> JsonElement)? = null): MockResponse {
         val root = json.parseToJsonElement(assets.open("$name.json").bufferedReader().use { it.readText() }).jsonObject
         val response = root.getValue("response").jsonObject
@@ -304,6 +300,10 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             .body(body)
             .build()
     }
+
+    /** A recorded DRF page without its results (Fas S: the smoke tests start with an empty pantry). */
+    private fun emptyPage(recorded: JsonElement): JsonElement =
+        JsonObject(recorded.jsonObject + mapOf("count" to JsonPrimitive(0), "next" to JsonNull, "results" to JsonArray(emptyList())))
 
     /** Phase 2: the recorded body of [name] (`fas2/...`), a template for the stateful answers. */
     private fun template(name: String): JsonObject =

@@ -886,7 +886,9 @@ och tar över samma `param_1` från en annan telefon i stället för att skapa e
 "Tandem: streckkod"/"Tandem: kvitto" (OTHER = "Tandem"). Gäster: `READ_ONLY`, och listan läses inte.
 
 **Streckkod** (`DefaultBarcodeLookup`): giltig EAN-8/UPC-A/EAN-13 (GS1-kontrollsiffra) annars fel
-utan anrop; sedan inlärt alias (livsmedlets namn, inget anrop), cachen `barcode_product` (hittad
+utan anrop; sedan inlärt alias (livsmedlets namn, inget anrop; online läses spacets alias om först
+när senaste läsningen är en minut gammal, så en kod som telefon A just kopplat känns igen direkt
+på telefon B), cachen `barcode_product` (hittad
 30 dagar, "finns inte" 7 dagar), sist Open Food Facts. Produktnamnet på enhetens språk
 (`product_name_sv`/`_en`) när det finns. Offline används en gammal cache hellre än inget.
 Demoläget frågar aldrig Open Food Facts.
