@@ -93,8 +93,11 @@ internal fun BarcodeScanRoute(
                 }
 
                 is BarcodeScanEffect.AddedToList -> resources.getQuantityString(R.plurals.scan_added_to_list, effect.count, effect.count)
+
                 BarcodeScanEffect.NoCodeInImage -> resources.getString(R.string.scan_barcode_none_in_image)
+
                 BarcodeScanEffect.ImageUnreadable -> resources.getString(R.string.scan_image_unreadable)
+
                 is BarcodeScanEffect.Failed -> resources.scanErrorText(effect.error)
             }
             if (message != null) {

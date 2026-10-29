@@ -55,6 +55,7 @@ object ReceiptParser {
 
                 ReceiptLineKind.OTHER -> when {
                     pending != null && isPriceOnly(line.text) -> items += ItemBuilder(pending, pending.text)
+
                     // A member number never becomes an item name.
                     hasLetters(line.text) && !ReceiptLineFilter.trailingPrice.containsMatchIn(line.text) &&
                         !longDigits.containsMatchIn(line.text) -> pendingName = line

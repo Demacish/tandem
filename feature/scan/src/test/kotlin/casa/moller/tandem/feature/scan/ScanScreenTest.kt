@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.scan
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -104,10 +105,10 @@ class ScanScreenTest {
     fun theCameraIsAskedForInContextAndThePickerAlwaysWorks() {
         val (_, camera) = barcode(ScanShots.barcode(), CameraAccess.NOT_ASKED)
         composeRule.onNodeWithText("Tillåt kameran").performClick()
-        // In the camera area and below the panel: both open the picker.
-        composeRule.onAllNodesWithText("Välj en bild från galleriet")[0].performClick()
-        composeRule.onAllNodesWithText("Välj en bild från galleriet")[1].performClick()
-        assertEquals(listOf(ScanCameraAction.ALLOW, ScanCameraAction.PICK_IMAGE, ScanCameraAction.PICK_IMAGE), camera)
+        // One picker button (in the panel, not repeated in the camera area: TalkBack reads it once).
+        composeRule.onAllNodesWithText("Välj en bild från galleriet").assertCountEquals(1)
+        composeRule.onNodeWithText("Välj en bild från galleriet").performClick()
+        assertEquals(listOf(ScanCameraAction.ALLOW, ScanCameraAction.PICK_IMAGE), camera)
     }
 
     @Test

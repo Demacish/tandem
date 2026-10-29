@@ -140,8 +140,7 @@ fun CameraPreview(controller: LifecycleCameraController, modifier: Modifier = Mo
     )
 }
 
-private fun Context.hasCameraPermission(): Boolean =
-    checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+private fun Context.hasCameraPermission(): Boolean = checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

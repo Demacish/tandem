@@ -31,7 +31,6 @@ import androidx.compose.ui.text.style.TextAlign
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
-import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTextField
 import casa.moller.tandem.core.designsystem.component.TandemTone
@@ -108,6 +107,7 @@ enum class ScanRowStatus(@StringRes val label: Int, val tone: TandemTone) {
         /** The status of a review row from its match alone. */
         fun of(item: ScanReviewItem): ScanRowStatus = when {
             !item.include -> SKIPPED
+
             else -> when (item.food?.via) {
                 FoodMatchVia.ALIAS -> LEARNED
                 FoodMatchVia.SEARCH -> SUGGESTED
@@ -191,11 +191,7 @@ internal fun ExpiryChips(
 }
 
 /** What the food picker shows: the typed [query], the foods that contain it and the suggestions for the scanned text. */
-data class FoodPickerUi(
-    val query: String = "",
-    val results: List<Food> = emptyList(),
-    val suggestions: List<Food> = emptyList(),
-) {
+data class FoodPickerUi(val query: String = "", val results: List<Food> = emptyList(), val suggestions: List<Food> = emptyList()) {
     /** "Skapa «query»" is offered when no stored food has exactly that name. */
     val canCreate: Boolean
         get() = query.isNotBlank() && results.none { it.name.equals(query.trim(), ignoreCase = true) }
@@ -207,6 +203,8 @@ const val SCAN_FOOD_SEARCH_TAG = "scan:food-search"
 /**
  * Pick or create the food for a row (plan §8.8: "välj eller skapa"): the suggestions for the
  * scanned text as chips, a search field over the space's foods, and "Skapa «…»" for a new one.
+ * The [current] food and the suggestions are not repeated among the results (one button per food,
+ * so TalkBack never reads the same name twice).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -215,14 +213,19 @@ internal fun FoodPicker(
     onQuery: (String) -> Unit,
     onPick: (Food) -> Unit,
     onCreate: (String) -> Unit,
+    current: String?,
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
+    val suggestions = picker.suggestions.filterNot { it.name.equals(current, ignoreCase = true) }
+    val results = picker.results.filterNot { food ->
+        food.name.equals(current, ignoreCase = true) || suggestions.any { it.id == food.id }
+    }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-        if (picker.suggestions.isNotEmpty()) {
+        if (suggestions.isNotEmpty()) {
             ScanSectionTitle(stringResource(R.string.scan_food_suggestions))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                picker.suggestions.forEach { food ->
+                suggestions.forEach { food ->
                     FilterChip(
                         selected = false,
                         onClick = { onPick(food) },
@@ -241,7 +244,7 @@ internal fun FoodPicker(
                 .fillMaxWidth()
                 .testTag(SCAN_FOOD_SEARCH_TAG),
         )
-        picker.results.forEach { food ->
+        results.forEach { food ->
             TandemTextButton(text = food.name, onClick = { onPick(food) }, modifier = Modifier.fillMaxWidth())
         }
         if (picker.canCreate) {
@@ -257,15 +260,15 @@ internal fun FoodPicker(
 
 /**
  * The camera area when the preview cannot run: why the camera is needed (asked only now, in
- * context), "Tillåt kameran", and the photo picker, which needs no permission. Refused for good =
- * a link to the app's settings; no camera = only the picker.
+ * context) and "Tillåt kameran". Refused for good = a link to the app's settings; no camera = only
+ * the text. The photo picker, which needs no permission, is the screen's own button next to this
+ * panel (always shown, so it is not repeated here).
  */
 @Composable
 internal fun CameraAccessPanel(
     access: CameraAccess,
     @StringRes rationale: Int,
     onAllow: () -> Unit,
-    onPickImage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
@@ -316,7 +319,6 @@ internal fun CameraAccessPanel(
 
                 CameraAccess.GRANTED, CameraAccess.UNAVAILABLE -> Unit
             }
-            TandemSecondaryButton(text = stringResource(R.string.scan_pick_image), onClick = onPickImage, leadingIcon = ScanIcons.Gallery)
         }
     }
 }

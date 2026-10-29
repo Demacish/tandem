@@ -179,6 +179,7 @@ class ScanReviewViewModel @AssistedInject internal constructor(
 
     private val local = MutableStateFlow(Local())
     private val foods = MutableStateFlow<List<Food>>(emptyList())
+
     // The app's language: amounts are shown as typed there ("1,5"); both separators are read back.
     private val format = ScanFormat(Locale.getDefault())
     private var lastSession: ScanSession? = null
@@ -215,8 +216,11 @@ class ScanReviewViewModel @AssistedInject internal constructor(
     fun onAction(action: ScanReviewAction) {
         when (action) {
             is ScanReviewAction.Edit -> startEdit(action.key)
+
             is ScanReviewAction.EditQuery -> editing { it.copy(picker = picker(it.text, action.text)) }
+
             is ScanReviewAction.EditPick -> editing { pick(it, MatchedFood(action.food.id, action.food.name, FoodMatchVia.MANUAL)) }
+
             is ScanReviewAction.EditCreate -> action.name.trim().takeIf { it.isNotEmpty() }?.let { name ->
                 editing { pick(it, MatchedFood(null, name, FoodMatchVia.NEW)) }
             }
@@ -226,19 +230,28 @@ class ScanReviewViewModel @AssistedInject internal constructor(
             }
 
             is ScanReviewAction.EditUnit -> editing { it.copy(unit = action.text) }
+
             is ScanReviewAction.EditLocation -> editing { it.copy(locationId = action.locationId) }
+
             is ScanReviewAction.EditExpiry -> editing { it.copy(expires = action.choice.dateFrom(today())) }
+
             is ScanReviewAction.EditLearn -> editing { it.copy(learn = action.learn) }
+
             is ScanReviewAction.EditInclude -> editing { it.copy(include = action.include) }
+
             ScanReviewAction.ApplyEdit -> applyEdit()
+
             ScanReviewAction.CancelEdit -> local.update { it.copy(edit = null) }
+
             is ScanReviewAction.ToggleInclude -> change(action.key) { it.copy(include = !it.include) }
+
             is ScanReviewAction.Remove -> {
                 store.update(key.sessionId) { session -> session.copy(items = session.items.filterNot { it.key == action.key }) }
                 local.update { if (it.edit?.key == action.key) it.copy(edit = null) else it }
             }
 
             is ScanReviewAction.SetDefaultLocation -> store.update(key.sessionId) { it.copy(locationId = action.locationId) }
+
             ScanReviewAction.Save -> save()
         }
     }

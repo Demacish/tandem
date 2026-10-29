@@ -149,6 +149,7 @@ fun BarcodeScanScreen(
                     )
                     BarcodePanel(
                         state = state,
+                        cameraOn = camera.access == CameraAccess.GRANTED,
                         onAction = onAction,
                         onCamera = onCamera,
                         modifier = Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight(),
@@ -162,7 +163,13 @@ fun BarcodeScanScreen(
                         preview = cameraPreview,
                         modifier = Modifier.fillMaxWidth().height(maxOf(MIN_CAMERA_HEIGHT, height * CAMERA_SHARE)),
                     )
-                    BarcodePanel(state = state, onAction = onAction, onCamera = onCamera, modifier = Modifier.weight(1f).fillMaxWidth())
+                    BarcodePanel(
+                        state = state,
+                        cameraOn = camera.access == CameraAccess.GRANTED,
+                        onAction = onAction,
+                        onCamera = onCamera,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
                 }
             }
         }
@@ -182,7 +189,6 @@ private fun CameraArea(
             access = camera.access,
             rationale = R.string.scan_camera_barcode_rationale,
             onAllow = { onCamera(ScanCameraAction.ALLOW) },
-            onPickImage = { onCamera(ScanCameraAction.PICK_IMAGE) },
             modifier = modifier,
         )
         return
@@ -212,10 +218,14 @@ private fun CameraArea(
     }
 }
 
-/** The panel: the selected package, the earlier ones, and the buttons pinned below. */
+/**
+ * The panel: the selected package, the earlier ones, and the buttons pinned below. Without the
+ * camera ([cameraOn] false) the photo picker is the way in, so it is a full button.
+ */
 @Composable
 private fun BarcodePanel(
     state: BarcodeScanUiState,
+    cameraOn: Boolean,
     onAction: (BarcodeScanAction) -> Unit,
     onCamera: (ScanCameraAction) -> Unit,
     modifier: Modifier = Modifier,
@@ -247,11 +257,20 @@ private fun BarcodePanel(
                         }
                     }
                 }
-                TandemTextButton(
-                    text = stringResource(R.string.scan_pick_image),
-                    onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
-                    leadingIcon = ScanIcons.Gallery,
-                )
+                if (cameraOn) {
+                    TandemTextButton(
+                        text = stringResource(R.string.scan_pick_image),
+                        onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
+                        leadingIcon = ScanIcons.Gallery,
+                    )
+                } else {
+                    TandemSecondaryButton(
+                        text = stringResource(R.string.scan_pick_image),
+                        onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
+                        leadingIcon = ScanIcons.Gallery,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
             if (state.rows.isNotEmpty() && !state.readOnly) {
                 BarcodeActions(state = state, onAction = onAction)
@@ -285,7 +304,8 @@ private fun SelectedCard(row: BarcodeRow, state: BarcodeScanUiState, onAction: (
     val location = state.locationOf(row)
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        // Lowest (not Highest): primary-coloured text buttons need >= 4.5:1 (core:designsystem Color.kt).
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
         modifier = Modifier
             .fillMaxWidth()
             .testTag(BARCODE_CARD_TAG),
@@ -318,6 +338,7 @@ private fun SelectedCard(row: BarcodeRow, state: BarcodeScanUiState, onAction: (
                         onQuery = { onAction(BarcodeScanAction.PickerQuery(it)) },
                         onPick = { onAction(BarcodeScanAction.ChooseFood(key, it)) },
                         onCreate = { onAction(BarcodeScanAction.CreateFood(key, it)) },
+                        current = item.food?.name,
                     )
                     TandemTextButton(text = stringResource(R.string.scan_cancel), onClick = { onAction(BarcodeScanAction.ClosePicker) })
                 }

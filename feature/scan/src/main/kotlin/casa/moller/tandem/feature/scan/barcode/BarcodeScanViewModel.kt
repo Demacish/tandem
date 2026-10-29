@@ -119,8 +119,7 @@ data class BarcodeScanUiState(
         get() = rows.count { it.item.ready }
 
     /** The place of [row] (its own, or the default). */
-    fun locationOf(row: BarcodeRow): InventoryLocation? =
-        locations.firstOrNull { it.id == (row.item.locationId ?: defaultLocationId) }
+    fun locationOf(row: BarcodeRow): InventoryLocation? = locations.firstOrNull { it.id == (row.item.locationId ?: defaultLocationId) }
 }
 
 sealed interface BarcodeScanAction {
@@ -256,6 +255,7 @@ class BarcodeScanViewModel @AssistedInject internal constructor(
     fun onAction(action: BarcodeScanAction) {
         when (action) {
             is BarcodeScanAction.CodeScanned -> scanned(action.code)
+
             is BarcodeScanAction.ImageRead -> if (action.codes.isEmpty()) {
                 effectChannel.trySend(BarcodeScanEffect.NoCodeInImage)
             } else {
@@ -263,17 +263,29 @@ class BarcodeScanViewModel @AssistedInject internal constructor(
             }
 
             BarcodeScanAction.ImageFailed -> effectChannel.trySend(BarcodeScanEffect.ImageUnreadable)
+
             is BarcodeScanAction.Select -> local.update { it.copy(selectedKey = action.key, pickerKey = null) }
+
             is BarcodeScanAction.SetLocation -> edit(action.key) { it.copy(locationId = action.locationId) }
+
             is BarcodeScanAction.SetExpiry -> edit(action.key) { it.copy(expires = action.choice.dateFrom(today())) }
+
             is BarcodeScanAction.ChooseFood -> choose(action.key, MatchedFood(action.food.id, action.food.name, FoodMatchVia.MANUAL))
+
             is BarcodeScanAction.CreateFood -> choose(action.key, MatchedFood(null, action.name.trim(), FoodMatchVia.NEW))
+
             is BarcodeScanAction.OpenPicker -> local.update { it.copy(selectedKey = action.key, pickerKey = action.key, pickerQuery = "") }
+
             is BarcodeScanAction.PickerQuery -> local.update { it.copy(pickerQuery = action.text) }
+
             BarcodeScanAction.ClosePicker -> local.update { it.copy(pickerKey = null, pickerQuery = "") }
+
             is BarcodeScanAction.Remove -> remove(action.key)
+
             BarcodeScanAction.SaveToPantry -> saveToPantry()
+
             BarcodeScanAction.AddToShoppingList -> addToShoppingList()
+
             BarcodeScanAction.Review -> effectChannel.trySend(BarcodeScanEffect.OpenReview(sessionId.value))
         }
     }
@@ -304,6 +316,7 @@ class BarcodeScanViewModel @AssistedInject internal constructor(
         }
         val result = when (val outcome = lookup.lookup(code)) {
             is Outcome.Success -> outcome.value
+
             is Outcome.Failure -> {
                 val state = if (outcome.error.isConnectivityProblem) BarcodeLookupState.OFFLINE else BarcodeLookupState.FAILED
                 lookups.update { it + (itemKey to Lookup(state)) }

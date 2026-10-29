@@ -37,6 +37,7 @@ internal fun ScanReviewRoute(viewModel: ScanReviewViewModel, onBack: () -> Unit,
         viewModel.effects.collect { effect ->
             when (effect) {
                 is ScanReviewEffect.Saved -> currentBack()
+
                 is ScanReviewEffect.Failed -> launch {
                     snackbarHostState.currentSnackbarData?.dismiss()
                     snackbarHostState.showSnackbar(resources.scanErrorText(effect.error))

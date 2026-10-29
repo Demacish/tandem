@@ -466,6 +466,7 @@ private fun ReviewEditFields(edit: ReviewEdit, state: ScanReviewUiState, onActio
             onQuery = { onAction(ScanReviewAction.EditQuery(it)) },
             onPick = { onAction(ScanReviewAction.EditPick(it)) },
             onCreate = { onAction(ScanReviewAction.EditCreate(it)) },
+            current = edit.food?.name,
         )
     }
     Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm), modifier = Modifier.fillMaxWidth()) {

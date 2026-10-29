@@ -147,7 +147,6 @@ private fun ReceiptCameraArea(
             access = camera.access,
             rationale = R.string.scan_camera_receipt_rationale,
             onAllow = { onCamera(ScanCameraAction.ALLOW) },
-            onPickImage = { onCamera(ScanCameraAction.PICK_IMAGE) },
             modifier = modifier,
         )
     }
@@ -196,7 +195,7 @@ private fun ReceiptPanel(
                 Text(
                     text = stringResource(R.string.scan_receipt_privacy),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 state.problem?.let { problem ->
                     InfoCard(
@@ -282,13 +281,24 @@ private fun ReceiptActions(
                     )
                 }
             }
-            TandemTextButton(
-                text = stringResource(R.string.scan_pick_image),
-                onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
-                enabled = !state.busy,
-                leadingIcon = ScanIcons.Gallery,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            )
+            if (camera.access == CameraAccess.GRANTED) {
+                TandemTextButton(
+                    text = stringResource(R.string.scan_pick_image),
+                    onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
+                    enabled = !state.busy,
+                    leadingIcon = ScanIcons.Gallery,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            } else {
+                // Without the camera the photo picker is the way in (CameraAccessPanel no longer repeats it).
+                TandemSecondaryButton(
+                    text = stringResource(R.string.scan_pick_image),
+                    onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
+                    enabled = !state.busy,
+                    leadingIcon = ScanIcons.Gallery,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
