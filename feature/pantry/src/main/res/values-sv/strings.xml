@@ -7,4 +7,204 @@
     <string name="pantry_unpack_title">Packa upp</string>
     <string name="pantry_make_now_title">Kan laga nu</string>
     <string name="pantry_staples_title">Basvaror</string>
+
+    <string name="pantry_more">Fler val</string>
+    <string name="pantry_add">Lägg till</string>
+    <string name="pantry_add_by_hand">Lägg till för hand</string>
+    <string name="pantry_save">Spara</string>
+    <string name="pantry_cancel">Avbryt</string>
+    <string name="pantry_ok">OK</string>
+    <string name="pantry_undo">Ångra</string>
+    <string name="pantry_try_again">Försök igen</string>
+    <string name="pantry_guest_title">Du är gäst</string>
+    <string name="pantry_guest_body">Du ser vad som finns hemma, men bara hushållets medlemmar kan ändra det.</string>
+    <string name="pantry_offline_title">Offline</string>
+    <string name="pantry_offline_body">Ändringar sparas i telefonen och skickas när du är uppkopplad igen.</string>
+    <string name="pantry_paused_title">Skickandet har pausats</string>
+    <string name="pantry_paused_body">Servern tar inte emot ändringar just nu. De sparas i telefonen och skickas senare.</string>
+    <string name="pantry_safe_mode_title">Säkert läge</string>
+    <string name="pantry_safe_mode_body">Den här Tandoor-versionen är inte provad än, så ändringar väntar i telefonen tills den är det.</string>
+    <plurals name="pantry_pending">
+        <item quantity="one">%d väntar</item>
+        <item quantity="other">%d väntar</item>
+    </plurals>
+    <plurals name="pantry_pending_description">
+        <item quantity="one">%d ändring väntar på att skickas</item>
+        <item quantity="other">%d ändringar väntar på att skickas</item>
+    </plurals>
+    <string name="pantry_error_read_only">Gäster kan inte ändra skafferiet.</string>
+    <string name="pantry_error_refresh">Servern gick inte att nå. Det du ser hämtades tidigare.</string>
+    <string name="pantry_error_save">Ändringen kunde inte sparas. Försök igen.</string>
+
+    <string name="pantry_row_pending">väntar på att skickas</string>
+    <string name="pantry_action_edit">Ändra</string>
+    <string name="pantry_action_empty">Slut</string>
+    <string name="pantry_action_less">En mindre</string>
+    <string name="pantry_action_less_short">−1</string>
+    <string name="pantry_action_move">Flytta</string>
+    <string name="pantry_move_title">Flytta %1$s till</string>
+    <plurals name="pantry_location_count">
+        <item quantity="one">%d vara</item>
+        <item quantity="other">%d varor</item>
+    </plurals>
+    <string name="pantry_location_empty">Inget här ännu.</string>
+    <string name="pantry_location_menu">Val för %1$s</string>
+    <string name="pantry_location_add_here">Lägg till här</string>
+    <string name="pantry_location_new">Ny förvaringsplats</string>
+    <string name="pantry_location_rename">Byt namn på platsen</string>
+    <string name="pantry_location_delete">Ta bort platsen</string>
+    <string name="pantry_location_delete_title">Ta bort %1$s?</string>
+    <string name="pantry_location_delete_body">Allt som ligger där tas också bort, för hela hushållet.</string>
+    <string name="pantry_location_delete_confirm">Ta bort</string>
+    <string name="pantry_location_name">Namn</string>
+    <string name="pantry_location_freezer">Frys</string>
+    <string name="pantry_location_freezer_hint">Ger längre bäst före-val (+1 och +3 månader).</string>
+    <string name="pantry_default_fridge">Kyl</string>
+    <string name="pantry_default_freezer">Frys</string>
+    <string name="pantry_default_pantry">Skafferi</string>
+    <string name="pantry_no_locations_title">Inga förvaringsplatser än</string>
+    <string name="pantry_no_locations_body">Börja med de vanliga platserna. Du kan byta namn på dem eller lägga till egna sedan.</string>
+    <string name="pantry_no_locations_body_guest">Hushållet har inte lagt till några förvaringsplatser än.</string>
+    <string name="pantry_no_locations_create">Lägg till %1$s, %2$s och %3$s</string>
+    <string name="pantry_empty_title">Skafferiet är tomt</string>
+    <string name="pantry_empty_body">Skanna en streckkod, fota ett kvitto, packa upp det du bockat av i Handla eller lägg till för hand. Sedan visar Kan laga nu vad du kan laga.</string>
+    <string name="pantry_empty_body_guest">Inget har lagts in i skafferiet än.</string>
+    <string name="pantry_on_hand_title">Markerat som hemma</string>
+    <string name="pantry_on_hand_body">Livsmedel som är markerade som hemma utan mängd, till exempel basvaror.</string>
+    <string name="pantry_on_hand_row">finns hemma</string>
+    <string name="pantry_on_hand_staple">finns hemma, basvara</string>
+    <string name="pantry_on_hand_remove">Inte hemma längre</string>
+    <string name="pantry_on_hand_remove_short">Inte hemma</string>
+    <string name="pantry_unpack_prompt_title">Packa upp det du handlat?</string>
+    <plurals name="pantry_unpack_prompt_body">
+        <item quantity="one">%d vara bockades av i dag. Lägg den på sin plats och håll koll på datumet.</item>
+        <item quantity="other">%d varor bockades av i dag. Lägg dem på sin plats och håll koll på datumen.</item>
+    </plurals>
+    <string name="pantry_make_now_button">Vad kan jag laga nu?</string>
+    <plurals name="pantry_make_now_button_expiring">
+        <item quantity="one">Kan laga nu – %d vara går ut snart</item>
+        <item quantity="other">Kan laga nu – %d varor går ut snart</item>
+    </plurals>
+    <string name="pantry_scan_barcode">Skanna streckkod</string>
+    <string name="pantry_scan_receipt">Fota kvitto</string>
+    <string name="pantry_scan_fridge">Foto av kylen (experimentell)</string>
+    <string name="pantry_message_empty">%1$s är slut</string>
+    <string name="pantry_message_left">%1$s: %2$s kvar</string>
+    <string name="pantry_message_moved">%1$s flyttad till %2$s</string>
+    <string name="pantry_message_on_hand_removed">%1$s är inte längre markerad som hemma</string>
+    <plurals name="pantry_message_locations_created">
+        <item quantity="one">%d förvaringsplats tillagd</item>
+        <item quantity="other">%d förvaringsplatser tillagda</item>
+    </plurals>
+    <string name="pantry_message_location_saved">%1$s sparad</string>
+    <string name="pantry_message_location_deleted">%1$s borttagen</string>
+
+    <string name="pantry_entry_food">Livsmedel</string>
+    <string name="pantry_entry_food_hint">Ett annat livsmedel eller en annan enhet ersätter varan.</string>
+    <string name="pantry_entry_pick_food">Välj %1$s</string>
+    <string name="pantry_entry_amount">Mängd</string>
+    <string name="pantry_entry_amount_error">Skriv ett tal större än 0, till exempel 2 eller 1,5.</string>
+    <string name="pantry_entry_unit">Enhet</string>
+    <string name="pantry_entry_unit_placeholder">st</string>
+    <string name="pantry_entry_location">Förvaringsplats</string>
+    <string name="pantry_entry_expiry">Bäst före</string>
+    <string name="pantry_entry_pick_date">Välj datum</string>
+    <string name="pantry_entry_expiry_chosen">Bäst före %1$s (%2$s)</string>
+    <string name="pantry_entry_expiry_none">Inget datum</string>
+    <string name="pantry_entry_note">Anteckning</string>
+    <string name="pantry_entry_delete">Ta bort varan</string>
+    <string name="pantry_entry_delete_title">Ta bort %1$s?</string>
+    <string name="pantry_entry_delete_body">Den tas bort ur skafferiet för hela hushållet. Välj Slut i stället om den ska finnas kvar i historiken.</string>
+    <string name="pantry_entry_delete_confirm">Ta bort</string>
+    <string name="pantry_entry_missing_title">Varan finns inte längre</string>
+    <string name="pantry_entry_missing_body">Någon i hushållet har tagit bort den.</string>
+    <string name="pantry_expiry_none">Inget</string>
+    <string name="pantry_expiry_3_days">+3 dagar</string>
+    <string name="pantry_expiry_1_week">+1 vecka</string>
+    <string name="pantry_expiry_1_month">+1 månad</string>
+    <string name="pantry_expiry_3_months">+3 månader</string>
+
+    <plurals name="pantry_unpack_intro">
+        <item quantity="one">Du bockade av %d vara i dag. Välj var den ska ligga och hur länge den håller.</item>
+        <item quantity="other">Du bockade av %d varor i dag. Välj var de ska ligga och hur länge de håller.</item>
+    </plurals>
+    <string name="pantry_unpack_all">För allt</string>
+    <string name="pantry_unpack_items">Varor</string>
+    <string name="pantry_unpack_item_change">Ändra plats eller datum</string>
+    <string name="pantry_unpack_item_done">Klar</string>
+    <string name="pantry_unpack_no_place">Ingen förvaringsplats</string>
+    <string name="pantry_unpack_skipped">Läggs inte in</string>
+    <string name="pantry_unpack_no_locations_title">Inga förvaringsplatser än</string>
+    <string name="pantry_unpack_no_locations_body">Lägg först till en plats under Hemma, till exempel Kyl.</string>
+    <plurals name="pantry_unpack_save">
+        <item quantity="one">Lägg in %d vara</item>
+        <item quantity="other">Lägg in %d varor</item>
+    </plurals>
+    <string name="pantry_unpack_save_none">Inget valt</string>
+    <string name="pantry_unpack_skip">Hoppa över</string>
+    <string name="pantry_unpack_empty_title">Inget att packa upp</string>
+    <string name="pantry_unpack_empty_body">Varor du bockar av i Handla visas här samma dag, så att du kan lägga in dem med datum.</string>
+
+    <string name="pantry_staples_intro">Markera basvarorna du alltid har. Annars saknas nästan alltid salt och olja i recepten.</string>
+    <plurals name="pantry_staples_count">
+        <item quantity="one">%d markerad som hemma</item>
+        <item quantity="other">%d markerade som hemma</item>
+    </plurals>
+    <string name="pantry_staples_add_label">Lägg till en egen</string>
+    <string name="pantry_staples_add">Lägg till basvara</string>
+    <string name="pantry_staples_remove">Ta bort %1$s från basvarorna</string>
+    <string name="pantry_staples_removed">%1$s borttagen från basvarorna</string>
+    <string name="pantry_staples_not_now">Inte nu</string>
+    <string name="pantry_staples_prompt_title">Har du basvarorna hemma?</string>
+    <string name="pantry_staples_prompt_body">Markera salt, peppar, olja och liknande som hemma. Annars saknas de nästan alltid i recepten.</string>
+    <string name="pantry_staples_prompt_open">Välj basvaror</string>
+    <string-array name="pantry_staple_suggestions">
+        <item>salt</item>
+        <item>svartpeppar</item>
+        <item>olja</item>
+        <item>olivolja</item>
+        <item>vatten</item>
+        <item>socker</item>
+        <item>vetemjöl</item>
+        <item>smör</item>
+        <item>vitlök</item>
+        <item>gul lök</item>
+        <item>ättika</item>
+        <item>buljongtärningar</item>
+    </string-array>
+
+    <string name="pantry_make_now_has_all">Har allt (%1$d)</string>
+    <string name="pantry_make_now_missing_1">Saknar 1 (%1$d)</string>
+    <string name="pantry_make_now_missing_2">Saknar 2 (%1$d)</string>
+    <string name="pantry_make_now_has_all_hint">Allt finns hemma.</string>
+    <string name="pantry_make_now_missing_1_hint">Ett livsmedel saknas.</string>
+    <string name="pantry_make_now_missing_2_hint">Två livsmedel saknas.</string>
+    <string name="pantry_make_now_checking">Kollar vad som saknas…</string>
+    <string name="pantry_make_now_has_everything">Allt finns hemma</string>
+    <string name="pantry_make_now_missing">Saknas: %1$s</string>
+    <string name="pantry_make_now_uses_up">%1$s %2$s</string>
+    <string name="pantry_make_now_cook">Laga</string>
+    <string name="pantry_make_now_add_missing">Lägg det som saknas på listan</string>
+    <string name="pantry_make_now_surprise">Överraska mig</string>
+    <string name="pantry_make_now_surprise_none">Det finns inget recept att välja här.</string>
+    <string name="pantry_make_now_meal_type">Måltidstyp</string>
+    <string name="pantry_make_now_meal_type_any">Alla måltidstyper</string>
+    <string name="pantry_make_now_keywords">Nyckelord</string>
+    <plurals name="pantry_make_now_keywords_chosen">
+        <item quantity="one">%d nyckelord</item>
+        <item quantity="other">%d nyckelord</item>
+    </plurals>
+    <string name="pantry_make_now_keywords_done">Klar</string>
+    <string name="pantry_make_now_time">Högst %1$d min</string>
+    <string name="pantry_make_now_clear_filters">Rensa filter</string>
+    <string name="pantry_make_now_stale_title">Visar det som hämtades tidigare</string>
+    <string name="pantry_make_now_stale_body">Servern gick inte att nå, så grupperna kan vara inaktuella.</string>
+    <string name="pantry_make_now_empty_all_title">Inget har allt än</string>
+    <string name="pantry_make_now_empty_all_body">Fyll på skafferiet och markera basvarorna som hemma, så visas recepten du kan laga här.</string>
+    <string name="pantry_make_now_empty_missing_title">Inga recept här</string>
+    <string name="pantry_make_now_empty_missing_body">Inget recept saknar just så många livsmedel.</string>
+    <string name="pantry_make_now_empty_filtered_title">Inga recept med de här filtren</string>
+    <string name="pantry_make_now_empty_filtered_body">Prova en annan måltidstyp, ett annat nyckelord eller en annan tid.</string>
+    <string name="pantry_use_up_title">Använd upp</string>
+    <string name="pantry_use_up_body">%1$s. Recepten som använder dem kommer först.</string>
 </resources>

@@ -227,16 +227,21 @@ fun RecipeShoppingContent(
         if (state.atHome.isNotEmpty()) {
             SectionHeading(title = stringResource(R.string.recipe_shopping_at_home), end = null)
             Text(
-                text = stringResource(R.string.recipe_shopping_at_home_hint),
+                // Fas S (hemma-ui lane): from Kan laga nu, "at home" is what the pantry has.
+                text = stringResource(
+                    if (state.fromPantry) R.string.recipe_shopping_at_home_pantry_hint else R.string.recipe_shopping_at_home_hint,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             // 0.3.0 komplettering (finding 22): where "at home" comes from (shopping_add_onhand, mealplan_autoexclude_onhand).
-            Text(
-                text = stringResource(R.string.recipe_shopping_at_home_settings),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (!state.fromPantry) {
+                Text(
+                    text = stringResource(R.string.recipe_shopping_at_home_settings),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             RowGroup(rows = state.atHome, onAction = onAction)
         }
         if (actions) RecipeShoppingActions(state = state, onAction = onAction)

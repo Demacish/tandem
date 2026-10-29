@@ -1,14 +1,17 @@
 package casa.moller.tandem.core.data.pantry
 
+import androidx.compose.runtime.getValue
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.pantry.InventoryEntry
 import casa.moller.tandem.core.model.pantry.InventoryEntryDraft
 import casa.moller.tandem.core.model.pantry.InventoryEntryUpdate
 import casa.moller.tandem.core.model.pantry.InventoryLocation
+import casa.moller.tandem.core.model.pantry.PantryFood
 import casa.moller.tandem.core.model.pantry.PantryGroup
 import casa.moller.tandem.core.model.pantry.UnpackChoice
 import casa.moller.tandem.core.model.pantry.UnpackItem
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.LocalDate
 
 // Fas S (grund lane): the contracts of the pantry ("Hemma", plan §8.8, #26, #28, #46). Implemented by
@@ -40,6 +43,14 @@ interface PantryRepository {
      * core:domain `MissingIngredients`.
      */
     fun observeAvailableFoodIds(): Flow<Set<Long>>
+
+    /**
+     * hemma-ui lane: the foods marked "har hemma" (`food_onhand`, per household) that have NO
+     * entry with amount > 0, by name: Hemma's "Har hemma" list (salt, a jar of honey ...). The
+     * default is empty, so an implementation that does not read on-hand foods yet shows only the
+     * staples there (StaplesRepository); hemma-data's repository overrides it.
+     */
+    fun observeOnHandFoods(): Flow<List<PantryFood>> = flowOf(emptyList())
 
     suspend fun createLocation(name: String, isFreezer: Boolean): Outcome<InventoryLocation>
 

@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.testing.data
 
+import androidx.compose.runtime.getValue
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.ai.AiSettingsRepository
 import casa.moller.tandem.core.data.ai.FridgeVision
@@ -139,6 +140,9 @@ class FakePantryRepository(
 
     /** Food ids on hand (`food_onhand`) besides the stocked ones. */
     val onHandFoodIds = MutableStateFlow<Set<Long>>(emptySet())
+
+    /** hemma-ui lane: the on-hand foods without stock ("Har hemma"), by name. */
+    val onHandFoods = MutableStateFlow<List<PantryFood>>(emptyList())
     var failure: TandemError? = null
     var refreshes: Int = 0
     private var nextId = -1L
@@ -158,6 +162,8 @@ class FakePantryRepository(
     override fun observeAvailableFoodIds(): Flow<Set<Long>> = combine(entries, onHandFoodIds) { list, onHand ->
         list.filter { !it.isEmpty }.mapNotNull { it.food.id }.toSet() + onHand
     }
+
+    override fun observeOnHandFoods(): Flow<List<PantryFood>> = onHandFoods.map { list -> list.sortedBy { it.name } }
 
     override suspend fun createLocation(name: String, isFreezer: Boolean): Outcome<InventoryLocation> = fasSWrite(readOnly, failure) {
         InventoryLocation(id = nextId--, name = name, isFreezer = isFreezer, pending = true).also { created ->

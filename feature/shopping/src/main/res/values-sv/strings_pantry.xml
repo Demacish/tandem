@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipe_shopping_at_home_pantry_hint">Finns i skafferiet eller är markerade som ”har hemma”, därför inte ikryssade. Kryssa i det du ändå behöver.</string>
+    <string name="recipe_shopping_not_stored">Receptet finns inte i telefonen än. Öppna det en gång och försök igen.</string>
+    <string name="shopping_unpack_title">Packa upp det du handlat?</string>
+    <plurals name="shopping_unpack_body">
+        <item quantity="one">%d vara bockades av i dag. Lägg in den i skafferiet med bäst före-datum.</item>
+        <item quantity="other">%d varor bockades av i dag. Lägg in dem i skafferiet med bäst före-datum.</item>
+    </plurals>
+    <string name="shopping_unpack_action">Packa upp</string>
+</resources>

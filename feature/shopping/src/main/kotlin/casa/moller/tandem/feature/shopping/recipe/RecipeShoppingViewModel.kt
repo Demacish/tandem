@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shopping.recipe
 
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,6 +54,7 @@ data class RecipeShoppingRow(
     val note: String = "",
     val onHand: Boolean = false,
     val chosen: Boolean = !onHand,
+    val foodId: Long? = null,
 )
 
 /**
@@ -69,6 +71,9 @@ data class RecipeShoppingRow(
  * @property onListRecipeIds their list recipes ("Ta bort från listan" removes these).
  * @property removable every row those list recipes hold, checked ones too: what "Ta bort från
  *   listan" removes (fix-ui: the message says this number, and "Ångra" puts the open rows back).
+ * @property fromPantry Fas S (hemma-ui lane): opened by "Lägg det som saknas på listan" (plan §8.8):
+ *   only the foods the pantry lacks are ticked, and the others count as "Finns hemma" (in the pantry
+ *   or marked at home), whatever Tandoor's `food_onhand` says.
  */
 data class RecipeShoppingUiState(
     val loading: Boolean = true,
@@ -86,6 +91,7 @@ data class RecipeShoppingUiState(
     val onListRecipeIds: List<Long> = emptyList(),
     val removable: Int = onList,
     val adding: Boolean = false,
+    val fromPantry: Boolean = false,
 ) {
     val chosenCount: Int
         get() = toBuy.count { it.chosen } + atHome.count { it.chosen }
@@ -111,8 +117,12 @@ data class RecipeShoppingUiState(
 }
 
 sealed interface RecipeShoppingAction {
-    /** "Lägg på inköpslistan": opens the sheet at the recipe detail's or cook mode's [servings]. */
-    data class Open(val servings: Double?) : RecipeShoppingAction
+    /**
+     * "Lägg på inköpslistan": opens the sheet at the recipe detail's or cook mode's [servings].
+     * Fas S (hemma-ui lane): [missingFoodIds] ticks exactly those foods ("Lägg det som saknas på
+     * listan" from Kan laga nu); null = the usual choice (everything not on hand).
+     */
+    data class Open(val servings: Double?, val missingFoodIds: Set<Long>? = null) : RecipeShoppingAction
 
     data object Dismiss : RecipeShoppingAction
 
@@ -190,7 +200,10 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         savedStateHandle.getStateFlow(KEY_SERVINGS, NO_SERVINGS),
         savedStateHandle.getStateFlow(KEY_TOGGLED, LongArray(0)),
         savedStateHandle.getStateFlow(KEY_LIST, NO_LIST),
-    ) { open, servings, toggled, list -> Choices(open, servings.takeIf { it > 0.0 }, toggled.toSet(), list.takeIf { it != NO_LIST }) }
+        savedStateHandle.getStateFlow<LongArray?>(KEY_MISSING, null),
+    ) { open, servings, toggled, list, missing ->
+        Choices(open, servings.takeIf { it > 0.0 }, toggled.toSet(), list.takeIf { it != NO_LIST }, missing?.toSet())
+    }
 
     private val sources: Flow<Sources> = combine(
         recipes.observeStoredRecipe(recipeId).map { it.recipe },
@@ -212,7 +225,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
 
     fun onAction(action: RecipeShoppingAction) {
         when (action) {
-            is RecipeShoppingAction.Open -> open(action.servings)
+            is RecipeShoppingAction.Open -> open(action.servings, action.missingFoodIds)
             RecipeShoppingAction.Dismiss -> savedStateHandle[KEY_OPEN] = false
             is RecipeShoppingAction.Toggle -> toggled { it.toggle(action.id) }
             RecipeShoppingAction.SelectAll -> toggled { uiState.value.atHome.mapTo(HashSet()) { row -> row.id } }
@@ -227,10 +240,11 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         }
     }
 
-    private fun open(servings: Double?) {
+    private fun open(servings: Double?, missingFoodIds: Set<Long>?) {
         if (!uiState.value.canAdd) return
         savedStateHandle[KEY_SERVINGS] = servings?.takeIf { it > 0.0 } ?: NO_SERVINGS
         savedStateHandle[KEY_TOGGLED] = LongArray(0)
+        savedStateHandle[KEY_MISSING] = missingFoodIds?.toLongArray()
         savedStateHandle[KEY_OPEN] = true
     }
 
@@ -313,7 +327,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
             )
         }
         val servings = choices.servings ?: ServingsScaling.initialServings(recipe, null)
-        val rows = rows(recipe, servings, sources.preferences, style, choices.toggled)
+        val rows = rows(recipe, servings, sources.preferences, style, choices.toggled, choices.missingFoodIds)
         return RecipeShoppingUiState(
             loading = false,
             readOnly = readOnly,
@@ -330,6 +344,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
             onListRecipeIds = onListRecipeIds,
             removable = removable,
             adding = busy,
+            fromPantry = choices.missingFoodIds != null,
         )
     }
 
@@ -339,31 +354,43 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         preferences: UserPreferences,
         style: NumberStyle,
         toggled: Set<Long>,
+        missingFoodIds: Set<Long>?,
     ): List<RecipeShoppingRow> {
         // Only ingredients with a food can become a list entry (Tandoor needs `food`).
-        val withFood = recipe.steps.flatMap { it.ingredients }
+        val foodOf = recipe.steps.flatMap { it.ingredients }
             .filter { !it.isHeader && !it.food?.name.isNullOrBlank() }
-            .mapTo(HashSet()) { it.id }
+            .associate { it.id to it.food?.id?.takeIf { id -> id > 0 } }
+        val withFood = foodOf.keys
         return RecipeDisplay.build(recipe, servings, preferences, style).ingredients
             .filterIsInstance<IngredientRow.Item>()
             .filter { it.id in withFood }
             .distinctBy { it.id }
             .map { item ->
                 val amount = listOf(item.amount, item.unit).filter { it.isNotEmpty() }.joinToString(" ")
+                val foodId = foodOf[item.id]
+                // Fas S: from Kan laga nu, "at home" means "not among the missing foods".
+                val onHand = if (missingFoodIds != null) foodId == null || foodId !in missingFoodIds else item.onHand
                 RecipeShoppingRow(
                     id = item.id,
                     food = item.food,
                     amount = amount,
                     note = item.note,
-                    onHand = item.onHand,
-                    chosen = item.onHand == (item.id in toggled),
+                    onHand = onHand,
+                    chosen = onHand == (item.id in toggled),
+                    foodId = foodId,
                 )
             }
     }
 
     private fun Set<Long>.toggle(id: Long): Set<Long> = if (id in this) this - id else this + id
 
-    private data class Choices(val open: Boolean, val servings: Double?, val toggled: Set<Long>, val listId: Long?)
+    private data class Choices(
+        val open: Boolean,
+        val servings: Double?,
+        val toggled: Set<Long>,
+        val listId: Long?,
+        val missingFoodIds: Set<Long>? = null,
+    )
 
     private data class Sources(
         val recipe: Recipe?,
@@ -379,6 +406,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         const val KEY_SERVINGS = "recipe-shopping-servings"
         const val KEY_TOGGLED = "recipe-shopping-toggled"
         const val KEY_LIST = "recipe-shopping-list"
+        const val KEY_MISSING = "recipe-shopping-missing"
         const val NO_SERVINGS = -1.0
         const val NO_LIST = -1L
     }

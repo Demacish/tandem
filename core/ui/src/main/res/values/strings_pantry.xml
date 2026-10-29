@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (hemma-ui lane): best-before days in the pantry, Idag and after "Klart!" (plan §8.8).
+         Lower case: they are also read inside a row's description ("Cream, 2 dl, Fridge, expires tomorrow"). -->
+    <string name="ui_pantry_expires_today">expires today</string>
+    <string name="ui_pantry_expires_tomorrow">expires tomorrow</string>
+    <plurals name="ui_pantry_expires_in_days">
+        <item quantity="one">expires in %d day</item>
+        <item quantity="other">expires in %d days</item>
+    </plurals>
+    <string name="ui_pantry_expired_yesterday">expired yesterday</string>
+    <plurals name="ui_pantry_expired_days_ago">
+        <item quantity="one">expired %d day ago</item>
+        <item quantity="other">expired %d days ago</item>
+    </plurals>
+    <string name="ui_pantry_best_before">best before %1$s</string>
+</resources>

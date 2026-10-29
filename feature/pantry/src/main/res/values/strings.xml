@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Fas S (grund lane): the titles of "Hemma" (plan §8.8). The lanes add the screens' texts. -->
+    <!-- Fas S (grund lane): the titles of "Hemma" (plan §8.8). -->
     <string name="pantry_title">At home</string>
     <string name="pantry_location_title">Storage place</string>
     <string name="pantry_entry_new_title">Add to the pantry</string>
@@ -8,4 +8,209 @@
     <string name="pantry_unpack_title">Unpack</string>
     <string name="pantry_make_now_title">Cook now</string>
     <string name="pantry_staples_title">Staples</string>
+
+    <!-- Fas S (hemma-ui lane): Hemma, the pantry by storage place (plan §8.8, #26, #28, #46). -->
+    <string name="pantry_more">More options</string>
+    <string name="pantry_add">Add</string>
+    <string name="pantry_add_by_hand">Add by hand</string>
+    <string name="pantry_save">Save</string>
+    <string name="pantry_cancel">Cancel</string>
+    <string name="pantry_ok">OK</string>
+    <string name="pantry_undo">Undo</string>
+    <string name="pantry_try_again">Try again</string>
+    <string name="pantry_guest_title">You are a guest</string>
+    <string name="pantry_guest_body">You can see what is at home, but only members of the household can change it.</string>
+    <string name="pantry_offline_title">Offline</string>
+    <string name="pantry_offline_body">Changes are saved on this phone and sent when you are back online.</string>
+    <string name="pantry_paused_title">Sending is paused</string>
+    <string name="pantry_paused_body">The server is not taking changes right now. They are kept on this phone and sent later.</string>
+    <string name="pantry_safe_mode_title">Safe mode</string>
+    <string name="pantry_safe_mode_body">This Tandoor version is untested, so changes wait on this phone until it is.</string>
+    <plurals name="pantry_pending">
+        <item quantity="one">%d waiting</item>
+        <item quantity="other">%d waiting</item>
+    </plurals>
+    <plurals name="pantry_pending_description">
+        <item quantity="one">%d change is waiting to be sent</item>
+        <item quantity="other">%d changes are waiting to be sent</item>
+    </plurals>
+    <string name="pantry_error_read_only">Guests cannot change the pantry.</string>
+    <string name="pantry_error_refresh">Could not reach the server. What you see was fetched earlier.</string>
+    <string name="pantry_error_save">Could not save the change. Try again.</string>
+
+    <string name="pantry_row_pending">waiting to be sent</string>
+    <string name="pantry_action_edit">Edit</string>
+    <string name="pantry_action_empty">Used up</string>
+    <string name="pantry_action_less">One less</string>
+    <string name="pantry_action_less_short">−1</string>
+    <string name="pantry_action_move">Move</string>
+    <string name="pantry_move_title">Move %1$s to</string>
+    <plurals name="pantry_location_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="pantry_location_empty">Nothing here yet.</string>
+    <string name="pantry_location_menu">Options for %1$s</string>
+    <string name="pantry_location_add_here">Add here</string>
+    <string name="pantry_location_new">New storage place</string>
+    <string name="pantry_location_rename">Rename storage place</string>
+    <string name="pantry_location_delete">Remove storage place</string>
+    <string name="pantry_location_delete_title">Remove %1$s?</string>
+    <string name="pantry_location_delete_body">Everything stored there is removed too, for the whole household.</string>
+    <string name="pantry_location_delete_confirm">Remove</string>
+    <string name="pantry_location_name">Name</string>
+    <string name="pantry_location_freezer">Freezer</string>
+    <string name="pantry_location_freezer_hint">Offers longer best-before days (+1 and +3 months).</string>
+    <string name="pantry_default_fridge">Fridge</string>
+    <string name="pantry_default_freezer">Freezer</string>
+    <string name="pantry_default_pantry">Pantry</string>
+    <string name="pantry_no_locations_title">No storage places yet</string>
+    <string name="pantry_no_locations_body">Start with the usual places. You can rename them or add your own later.</string>
+    <string name="pantry_no_locations_body_guest">The household has not added any storage places yet.</string>
+    <string name="pantry_no_locations_create">Add %1$s, %2$s and %3$s</string>
+    <string name="pantry_empty_title">The pantry is empty</string>
+    <string name="pantry_empty_body">Scan a barcode, photograph a receipt, unpack what you ticked off in Shopping or add items by hand. Then Cook now shows what you can make.</string>
+    <string name="pantry_empty_body_guest">Nothing has been added to the pantry yet.</string>
+    <string name="pantry_on_hand_title">Marked as at home</string>
+    <string name="pantry_on_hand_body">Foods marked as at home without an amount, such as staples.</string>
+    <string name="pantry_on_hand_row">at home</string>
+    <string name="pantry_on_hand_staple">at home, staple</string>
+    <string name="pantry_on_hand_remove">No longer at home</string>
+    <string name="pantry_on_hand_remove_short">Not at home</string>
+    <string name="pantry_unpack_prompt_title">Unpack your shopping?</string>
+    <plurals name="pantry_unpack_prompt_body">
+        <item quantity="one">%d item was ticked off today. Put it where it belongs and keep track of its date.</item>
+        <item quantity="other">%d items were ticked off today. Put them where they belong and keep track of their dates.</item>
+    </plurals>
+    <string name="pantry_make_now_button">What can I cook now?</string>
+    <plurals name="pantry_make_now_button_expiring">
+        <item quantity="one">Cook now – %d item expires soon</item>
+        <item quantity="other">Cook now – %d items expire soon</item>
+    </plurals>
+    <string name="pantry_scan_barcode">Scan barcode</string>
+    <string name="pantry_scan_receipt">Photograph receipt</string>
+    <string name="pantry_scan_fridge">Fridge photo (experimental)</string>
+    <string name="pantry_message_empty">%1$s is used up</string>
+    <string name="pantry_message_left">%1$s: %2$s left</string>
+    <string name="pantry_message_moved">%1$s moved to %2$s</string>
+    <string name="pantry_message_on_hand_removed">%1$s is no longer marked as at home</string>
+    <plurals name="pantry_message_locations_created">
+        <item quantity="one">%d storage place added</item>
+        <item quantity="other">%d storage places added</item>
+    </plurals>
+    <string name="pantry_message_location_saved">%1$s saved</string>
+    <string name="pantry_message_location_deleted">%1$s removed</string>
+
+    <!-- Adding or editing an item (PantryEntryKey). -->
+    <string name="pantry_entry_food">Food</string>
+    <string name="pantry_entry_food_hint">Another food or unit replaces the item.</string>
+    <string name="pantry_entry_pick_food">Use %1$s</string>
+    <string name="pantry_entry_amount">Amount</string>
+    <string name="pantry_entry_amount_error">Enter a number above 0, such as 2 or 1.5.</string>
+    <string name="pantry_entry_unit">Unit</string>
+    <string name="pantry_entry_unit_placeholder">pcs</string>
+    <string name="pantry_entry_location">Storage place</string>
+    <string name="pantry_entry_expiry">Best before</string>
+    <string name="pantry_entry_pick_date">Pick a date</string>
+    <string name="pantry_entry_expiry_chosen">Best before %1$s (%2$s)</string>
+    <string name="pantry_entry_expiry_none">No date</string>
+    <string name="pantry_entry_note">Note</string>
+    <string name="pantry_entry_delete">Remove item</string>
+    <string name="pantry_entry_delete_title">Remove %1$s?</string>
+    <string name="pantry_entry_delete_body">It is removed from the pantry for the whole household. To keep it in the history, choose Used up instead.</string>
+    <string name="pantry_entry_delete_confirm">Remove</string>
+    <string name="pantry_entry_missing_title">The item is gone</string>
+    <string name="pantry_entry_missing_body">Someone in the household removed it.</string>
+    <string name="pantry_expiry_none">None</string>
+    <string name="pantry_expiry_3_days">+3 days</string>
+    <string name="pantry_expiry_1_week">+1 week</string>
+    <string name="pantry_expiry_1_month">+1 month</string>
+    <string name="pantry_expiry_3_months">+3 months</string>
+
+    <!-- Unpack (#46). -->
+    <plurals name="pantry_unpack_intro">
+        <item quantity="one">You ticked off %d item today. Choose where it goes and how long it keeps.</item>
+        <item quantity="other">You ticked off %d items today. Choose where they go and how long they keep.</item>
+    </plurals>
+    <string name="pantry_unpack_all">For everything</string>
+    <string name="pantry_unpack_items">Items</string>
+    <string name="pantry_unpack_item_change">Change place or date</string>
+    <string name="pantry_unpack_item_done">Done</string>
+    <string name="pantry_unpack_no_place">No storage place</string>
+    <string name="pantry_unpack_skipped">Not put away</string>
+    <string name="pantry_unpack_no_locations_title">No storage places yet</string>
+    <string name="pantry_unpack_no_locations_body">Add a storage place under At home first, such as Fridge.</string>
+    <plurals name="pantry_unpack_save">
+        <item quantity="one">Put %d item away</item>
+        <item quantity="other">Put %d items away</item>
+    </plurals>
+    <string name="pantry_unpack_save_none">Nothing chosen</string>
+    <string name="pantry_unpack_skip">Skip</string>
+    <string name="pantry_unpack_empty_title">Nothing to unpack</string>
+    <string name="pantry_unpack_empty_body">Items you tick off in Shopping show up here the same day, so you can put them away with a date.</string>
+
+    <!-- Staples. -->
+    <string name="pantry_staples_intro">Mark the staples you always have. Otherwise salt and oil are missing from almost every recipe.</string>
+    <plurals name="pantry_staples_count">
+        <item quantity="one">%d marked as at home</item>
+        <item quantity="other">%d marked as at home</item>
+    </plurals>
+    <string name="pantry_staples_add_label">Add your own</string>
+    <string name="pantry_staples_add">Add staple</string>
+    <string name="pantry_staples_remove">Remove %1$s from the staples</string>
+    <string name="pantry_staples_removed">%1$s removed from the staples</string>
+    <string name="pantry_staples_not_now">Not now</string>
+    <string name="pantry_staples_prompt_title">Do you have the staples?</string>
+    <string name="pantry_staples_prompt_body">Mark salt, pepper, oil and the like as at home. Otherwise they are missing from almost every recipe.</string>
+    <string name="pantry_staples_prompt_open">Choose staples</string>
+    <string-array name="pantry_staple_suggestions">
+        <item>salt</item>
+        <item>black pepper</item>
+        <item>oil</item>
+        <item>olive oil</item>
+        <item>water</item>
+        <item>sugar</item>
+        <item>flour</item>
+        <item>butter</item>
+        <item>garlic</item>
+        <item>onion</item>
+        <item>vinegar</item>
+        <item>stock cubes</item>
+    </string-array>
+
+    <!-- Cook now (#23, #28). -->
+    <string name="pantry_make_now_has_all">Have it all (%1$d)</string>
+    <string name="pantry_make_now_missing_1">Missing 1 (%1$d)</string>
+    <string name="pantry_make_now_missing_2">Missing 2 (%1$d)</string>
+    <string name="pantry_make_now_has_all_hint">Everything is at home.</string>
+    <string name="pantry_make_now_missing_1_hint">One food is missing.</string>
+    <string name="pantry_make_now_missing_2_hint">Two foods are missing.</string>
+    <string name="pantry_make_now_checking">Checking what is missing…</string>
+    <string name="pantry_make_now_has_everything">Everything at home</string>
+    <string name="pantry_make_now_missing">Missing: %1$s</string>
+    <string name="pantry_make_now_uses_up">%1$s %2$s</string>
+    <string name="pantry_make_now_cook">Cook</string>
+    <string name="pantry_make_now_add_missing">Add what is missing to the list</string>
+    <string name="pantry_make_now_surprise">Surprise me</string>
+    <string name="pantry_make_now_surprise_none">No recipe to pick from here.</string>
+    <string name="pantry_make_now_meal_type">Meal type</string>
+    <string name="pantry_make_now_meal_type_any">Any meal type</string>
+    <string name="pantry_make_now_keywords">Keywords</string>
+    <plurals name="pantry_make_now_keywords_chosen">
+        <item quantity="one">%d keyword</item>
+        <item quantity="other">%d keywords</item>
+    </plurals>
+    <string name="pantry_make_now_keywords_done">Done</string>
+    <string name="pantry_make_now_time">Up to %1$d min</string>
+    <string name="pantry_make_now_clear_filters">Clear filters</string>
+    <string name="pantry_make_now_stale_title">Shown as fetched earlier</string>
+    <string name="pantry_make_now_stale_body">The server could not be reached, so the groups may be out of date.</string>
+    <string name="pantry_make_now_empty_all_title">Nothing has it all yet</string>
+    <string name="pantry_make_now_empty_all_body">Fill the pantry and mark your staples as at home, and the recipes you can cook show up here.</string>
+    <string name="pantry_make_now_empty_missing_title">No recipes here</string>
+    <string name="pantry_make_now_empty_missing_body">No recipe is missing exactly this many foods.</string>
+    <string name="pantry_make_now_empty_filtered_title">No recipes with these filters</string>
+    <string name="pantry_make_now_empty_filtered_body">Try another meal type, keyword or time.</string>
+    <string name="pantry_use_up_title">Use up</string>
+    <string name="pantry_use_up_body">%1$s. Recipes that use them come first.</string>
 </resources>

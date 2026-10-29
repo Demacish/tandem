@@ -7,7 +7,10 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
@@ -15,6 +18,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.errorText
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -58,6 +62,18 @@ internal fun RecipeShoppingRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    RecipeShoppingEffects(viewModel = viewModel, snackbarHostState = snackbarHostState, onOpenShoppingList = onOpenShoppingList)
+    RecipeShoppingButton(state = state, onAction = viewModel::onAction, servings = servings, modifier = modifier)
+    RecipeShoppingSheet(state = state, onAction = viewModel::onAction)
+}
+
+/** The sheet's snackbars ("6 varor … ligger på inköpslistan" with "Visa listan", "Ångra" after removing). */
+@Composable
+private fun RecipeShoppingEffects(
+    viewModel: RecipeShoppingViewModel,
+    snackbarHostState: SnackbarHostState,
+    onOpenShoppingList: () -> Unit,
+) {
     val resources = LocalResources.current
     val locale = LocalConfiguration.current.locales[0]
     val currentOnOpenList by rememberUpdatedState(onOpenShoppingList)
@@ -86,7 +102,56 @@ internal fun RecipeShoppingRoute(
             }
         }
     }
-    RecipeShoppingButton(state = state, onAction = viewModel::onAction, servings = servings, modifier = modifier)
+}
+
+/**
+ * Fas S (hemma-ui lane): "Lägg det som saknas på listan" from Kan laga nu (plan §8.8): the same
+ * sheet as "Lägg på inköpslistan" for [recipeId], with exactly [missingFoodIds] ticked and the rest
+ * under "Finns hemma" (the pantry has them), at the recipe's own servings. Opens by itself every
+ * time [request] changes (no button); its messages go to [snackbarHostState]. A recipe that is not
+ * stored on the phone yet cannot be shown, which a message says.
+ */
+@Composable
+fun RecipeMissingShoppingSheet(
+    recipeId: Long,
+    missingFoodIds: Set<Long>,
+    request: Int,
+    snackbarHostState: SnackbarHostState,
+    onOpenShoppingList: () -> Unit,
+) {
+    val viewModel = hiltViewModel<RecipeShoppingViewModel, RecipeShoppingViewModel.Factory>(
+        key = "recipe-shopping-missing-$recipeId",
+        creationCallback = { factory -> factory.create(recipeId) },
+    )
+    RecipeMissingShoppingSheet(viewModel, missingFoodIds, request, snackbarHostState, onOpenShoppingList)
+}
+
+/** [RecipeMissingShoppingSheet] with a given [viewModel] (tests pass one built on fakes). */
+@Composable
+internal fun RecipeMissingShoppingSheet(
+    viewModel: RecipeShoppingViewModel,
+    missingFoodIds: Set<Long>,
+    request: Int,
+    snackbarHostState: SnackbarHostState,
+    onOpenShoppingList: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val resources = LocalResources.current
+    RecipeShoppingEffects(viewModel = viewModel, snackbarHostState = snackbarHostState, onOpenShoppingList = onOpenShoppingList)
+    // Each request opens the sheet once (not again after a rotation recreates this composable).
+    var handled by rememberSaveable(viewModel) { mutableIntStateOf(0) }
+    val currentMissing by rememberUpdatedState(missingFoodIds)
+    LaunchedEffect(viewModel, request) {
+        if (handled == request) return@LaunchedEffect
+        handled = request
+        val missingFoodIds = currentMissing
+        val loaded = viewModel.uiState.first { !it.loading }
+        if (loaded.canAdd) {
+            viewModel.onAction(RecipeShoppingAction.Open(servings = null, missingFoodIds = missingFoodIds))
+        } else if (!loaded.readOnly) {
+            snackbarHostState.showSnackbar(resources.getString(R.string.recipe_shopping_not_stored))
+        }
+    }
     RecipeShoppingSheet(state = state, onAction = viewModel::onAction)
 }
 

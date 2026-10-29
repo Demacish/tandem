@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_pantry_expires_today">går ut i dag</string>
+    <string name="ui_pantry_expires_tomorrow">går ut i morgon</string>
+    <plurals name="ui_pantry_expires_in_days">
+        <item quantity="one">går ut om %d dag</item>
+        <item quantity="other">går ut om %d dagar</item>
+    </plurals>
+    <string name="ui_pantry_expired_yesterday">gick ut i går</string>
+    <plurals name="ui_pantry_expired_days_ago">
+        <item quantity="one">gick ut för %d dag sedan</item>
+        <item quantity="other">gick ut för %d dagar sedan</item>
+    </plurals>
+    <string name="ui_pantry_best_before">bäst före %1$s</string>
+</resources>
