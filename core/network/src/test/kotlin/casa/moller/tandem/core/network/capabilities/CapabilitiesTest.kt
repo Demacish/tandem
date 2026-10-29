@@ -39,6 +39,7 @@ class CapabilitiesTest {
             // 2.7.0 refuses token writes with "CSRF Failed" (FACTS 2.7.1 "2.7.0"); 2.7.1 fixed that.
             "2.7.0" to Row(ServerCompatibility.UNTESTED_NEWER, tested = false, inRange = true, WritePolicy.QUEUE_PAUSED),
             "2.7.1" to Row(ServerCompatibility.SUPPORTED, tested = true, inRange = true, WritePolicy.SEND),
+            "2.7.2" to Row(ServerCompatibility.SUPPORTED, tested = true, inRange = true, WritePolicy.SEND),
             "2.7.3" to Row(ServerCompatibility.UNTESTED_NEWER, tested = false, inRange = true, WritePolicy.QUEUE_PAUSED),
             "2.8.0" to Row(ServerCompatibility.UNTESTED_NEWER, tested = false, inRange = false, WritePolicy.DISABLED),
             "3.1.0" to Row(ServerCompatibility.UNTESTED_NEWER, tested = false, inRange = false, WritePolicy.DISABLED),
@@ -54,7 +55,7 @@ class CapabilitiesTest {
             assertEquals("version '$version'", expected, actual)
             assertEquals(version, assessment.rawVersion)
         }
-        assertEquals(17, TandoorVersionTable.TESTED.size)
+        assertEquals(18, TandoorVersionTable.TESTED.size)
         assertNull(TandoorVersionTable.assess(null).version)
     }
 
