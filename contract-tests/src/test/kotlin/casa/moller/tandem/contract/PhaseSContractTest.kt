@@ -599,7 +599,8 @@ class PhaseSContractTest {
         val noSteps = api("recipe-create-drink-no-steps", "POST", "/api/recipe/", base)
         observe("drink.createNoSteps", describe(noSteps, includeBody = noSteps.status != CREATED))
         idOf(noSteps)?.let { delete("recipe", it) }
-        val withEmptySteps = JsonObject(base + ("steps" to JsonArray(emptyList())))
+        // `internal: true` as the web's own editor creates recipes (without it the server stores false).
+        val withEmptySteps = JsonObject(base + ("steps" to JsonArray(emptyList())) + ("internal" to JsonPrimitive(true)))
         val emptySteps = api("recipe-create-drink-empty-steps", "POST", "/api/recipe/", withEmptySteps)
         observe("drink.createEmptySteps", describe(emptySteps, includeBody = emptySteps.status != CREATED))
         val emptyStep = obj("instruction" to "", "ingredients" to emptyList<Any>())
@@ -742,7 +743,7 @@ class PhaseSContractTest {
             val parserBody = obj("ingredient" to text)
             val parserPath = "/api/ingredient-parser/post/"
             val parsed = api("ingredient-parser-alias-$label", "POST", parserPath, parserBody, record = label == "lower")
-            observe("automation.parser.$label", objOf(parsed)?.objAt("food")?.stringAt("name"))
+            observe("automation.parser.$label", objOf(parsed)?.objAt("ingredient")?.objAt("food")?.stringAt("name"))
         }
 
         // Update and delete.
@@ -934,6 +935,9 @@ class PhaseSContractTest {
             "Falafel" to listOf("kikärtor", "persilja", "spiskummin", "kikärtsmjöl"),
         )
 
+        /** Every Fas S recipe of [MAKENOW_RECIPES], sorted (what an ignored makenow filter lists). */
+        val ALL_FOUR: List<String> = MAKENOW_RECIPES.map { it.first }.sorted()
+
         /**
          * The facts the app relies on (api-schema/fixtures/<version>/FACTS.md "Fas S", docs/BYGGE.md
          * "Fas S – kontrakt"). A key ending in `.status` also matches the status of a recorded
@@ -965,6 +969,11 @@ class PhaseSContractTest {
             "inventoryLocation.reader.names" to listOf("Frys", "Kyl", "Skafferiet"),
             "inventoryLocation.guest.list.status" to 403,
             "inventoryLocation.guest.create.status" to 403,
+            "inventoryLocation.createNoHousehold.status" to 400,
+            // Locations and entries are SPACE-wide: another household sees them (the app filters by household).
+            "inventoryLocation.outsider.names" to listOf("Frys", "Kyl", "Skafferiet"),
+            "inventoryLocation.delete.status" to 204,
+            "inventoryLocation.delete.entryGet.status" to 404,
             // b. Inventory entries and the log
             "inventoryEntry.create.status" to 201,
             "inventoryEntry.createZero.status" to 201,
@@ -974,6 +983,23 @@ class PhaseSContractTest {
             "inventoryEntry.list.foodId" to listOf("kikärtor"),
             "inventoryEntry.list.locationId" to listOf("blåbär"),
             "inventoryEntry.list.reader" to listOf("kikärtor", "blåbär", "persilja"),
+            "inventoryEntry.list.outsider" to listOf("kikärtor", "blåbär", "persilja"),
+            // `empty` in the query at all (also empty=false) lists the entries with amount 0 too.
+            "inventoryEntry.list.empty=false" to listOf("kikärtor", "citronsaft", "blåbär", "persilja"),
+            "inventoryEntry.list.code" to listOf("kikärtor"),
+            "inventoryEntry.create.expires" to "2000-01-17",
+            "inventoryEntry.create.amount" to 2.0,
+            // The nested location must be the whole object; its fields are WRITTEN (a different name renames it).
+            "inventoryEntry.createLocationIdOnly.status" to 400,
+            "inventoryEntry.createRenamedLocation.locationRenamed" to true,
+            // A unit is required (not null).
+            "inventoryEntry.createNoUnit.status" to 400,
+            "inventoryEntry.createNullUnit.status" to 400,
+            "inventoryEntry.createNoExpires.expires" to null,
+            "inventoryEntry.patchNoteExpires.expires" to "2000-01-16",
+            "inventoryEntry.deleted.patch.status" to 404,
+            "inventoryLog.create.status" to 405,
+            "inventoryLog.afterEntryDelete.count" to 0,
             "inventoryEntry.guest.list.status" to 403,
             "inventoryEntry.guest.create.status" to 403,
             "inventoryEntry.reader.create.status" to 201,
@@ -1001,22 +1027,39 @@ class PhaseSContractTest {
             "makenow.1.withoutSubstitute" to listOf("Gröt med blåbär", "Hummus", "Tahinidressing"),
             "makenow.0.reader" to mapOf("status" to 200, "recipes" to listOf("Gröt med blåbär", "Tahinidressing")),
             "makenow.0.outsider" to mapOf("status" to 200, "recipes" to emptyList<String>()),
+            "makenow.0.guest" to mapOf("status" to 200, "recipes" to emptyList<String>()),
             "makenow.2.foodsOrChickpeas" to listOf("Falafel", "Hummus"),
+            // Not an integer (or "true"/"yes"): the filter is ignored, every recipe is listed; -1 lists none.
+            "makenow.invalid.false" to mapOf("status" to 200, "recipes" to ALL_FOUR),
+            "makenow.invalid.1.5" to mapOf("status" to 200, "recipes" to ALL_FOUR),
+            "makenow.invalid.-1" to mapOf("status" to 200, "recipes" to emptyList<String>()),
             // c. Keywords and pairings
             "keyword.create.status" to 201,
             "keyword.createDuplicate.sameId" to true,
             "keyword.createWithParent.parentSet" to false,
+            "keyword.createOtherCase.sameId" to true,
+            "keyword.child.fullName" to "$PAIRS_WITH > $PAIRING_TYPE",
+            "keyword.moveEmptyBody.status" to 200,
+            "keyword.guest.create.status" to 403,
+            "keyword.reader.create.status" to 201,
             "keyword.move.status" to 200,
             "keyword.move.parentSet" to true,
             "pairing.memberPatch.status" to 200,
             "pairing.memberPatch.keywords" to listOf(PAIRING_TYPE),
             "pairing.patchReplaces.keywords" to listOf(PAIRING_TYPE),
             "pairing.guestPatch.status" to 403,
+            "pairing.outsiderPatch.status" to 200,
+            "pairing.patchIdOnly.status" to 200,
             "pairing.keywordsOrParent.includeChildren=true" to listOf("Falafel", "Hummus"),
             "pairing.keywordsOrParent.includeChildren=false" to listOf("Falafel"),
             "pairing.keywordsOrChild.reader" to listOf("Hummus"),
             // f. The drink
+            "drink.createNoSteps.status" to 400,
             "drink.createEmptySteps.status" to 201,
+            "drink.createOneEmptyStep.status" to 201,
+            "drink.create.internal" to true,
+            "drink.create.steps" to 0,
+            "drink.imagePost.status" to 405,
             "drink.create.keywords" to listOf(DRINK, "Vin"),
             "drink.guest.create.status" to 403,
             "drink.image.status" to 200,
@@ -1035,6 +1078,10 @@ class PhaseSContractTest {
             "automation.reader.create.status" to 201,
             "automation.param128.status" to 201,
             "automation.param129.status" to 400,
+            "automation.name129.status" to 400,
+            "automation.createDuplicate.status" to 201,
+            "automation.outsider.params" to listOf(BARCODE, RECEIPT_LINE),
+            "automation.guest.patch.status" to 403,
             "automation.parser.lower" to "kikärtor",
             "automation.parser.upper" to "kikärtor",
             "automation.patch.status" to 200,
