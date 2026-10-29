@@ -277,8 +277,10 @@ internal class DefaultMakeNowRepository @Inject constructor(
         ) { rows, ingredients, detailIds ->
             Triple(rows, ingredients.groupBy { it.recipeId }, detailIds.toHashSet())
         }
-        val pantryNow = combine(availability(source, database), pantry.observePantry()) { foods, groups ->
-            foods to groups.flatMap { it.entries }
+        // One subscription for both, so the missing foods and "Använd upp" always see the same pantry.
+        val pantryNow = combine(database.supermarketDao().observeFoods(accountId), pantry.observePantry()) { foods, groups ->
+            val entries = groups.flatMap { it.entries }
+            availabilityOf(foods, entries.stocked()) to entries
         }
         val own = status.map { it[accountId] ?: Status() }.distinctUntilChanged()
         return combine(inputs, pantryNow, own) { (rows, ingredients, detailIds), (foods, entries), state ->
@@ -327,9 +329,11 @@ internal class DefaultMakeNowRepository @Inject constructor(
     /** What the household has, per food: "har hemma", stock (amount > 0 in its locations), substitutes, `ignore_shopping`. */
     private fun availability(source: ActiveSource.Stored, database: TandemDatabase): Flow<Map<Long, FoodAvailability>> =
         combine(database.supermarketDao().observeFoods(source.accountId), pantry.observePantry()) { foods, groups ->
-            val stocked = groups.flatMap { it.entries }.filter { !it.isEmpty }.mapNotNullTo(HashSet()) { it.food.id }
-            availabilityOf(foods, stocked)
+            availabilityOf(foods, groups.flatMap { it.entries }.stocked())
         }
+
+    /** The food ids with stock (amount > 0). */
+    private fun List<InventoryEntry>.stocked(): Set<Long> = filter { !it.isEmpty }.mapNotNullTo(HashSet()) { it.food.id }
 
     private fun isDrink(recipe: RecipeOverview): Boolean = recipe.keywords.any { it.name.equals(DrinkKeywords.DRINK, ignoreCase = true) }
 
