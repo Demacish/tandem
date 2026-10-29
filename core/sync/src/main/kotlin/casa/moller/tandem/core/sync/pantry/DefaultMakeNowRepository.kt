@@ -270,12 +270,16 @@ internal class DefaultMakeNowRepository @Inject constructor(
         val database = databases.get(source.kind)
         val dao = database.makeNowDao()
         val accountId = source.accountId
+        // The ingredient and detail flows only say WHEN to compute again (a detail was fetched);
+        // the rows, ingredients and details are then read together, so a group never shows recipes
+        // whose ingredients a flow has not delivered yet.
         val inputs = combine(
             dao.observeAll(accountId),
             dao.observeIngredients(accountId),
             dao.observeDetailIds(accountId),
-        ) { rows, ingredients, detailIds ->
-            Triple(rows, ingredients.groupBy { it.recipeId }, detailIds.toHashSet())
+        ) { _, _, _ -> Unit }.map {
+            val snapshot = dao.getSnapshot(accountId)
+            Triple(snapshot.rows, snapshot.ingredients.groupBy { it.recipeId }, snapshot.detailIds)
         }
         // One subscription for both, so the missing foods and "Använd upp" always see the same pantry.
         val pantryNow = combine(database.supermarketDao().observeFoods(accountId), pantry.observePantry()) { foods, groups ->

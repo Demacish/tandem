@@ -163,6 +163,25 @@ abstract class MakeNowDao {
     )
     abstract fun observeDetailIds(accountId: String): Flow<List<Long>>
 
+    /** The groups with the ingredients and downloaded details of their recipes, read in one transaction. */
+    @Transaction
+    open suspend fun getSnapshot(accountId: String): MakeNowSnapshot =
+        MakeNowSnapshot(getAll(accountId), getIngredientsOfAll(accountId), getDetailIdsOfAll(accountId).toSet())
+
+    /** [observeIngredients] once. */
+    @Query(
+        "SELECT * FROM ingredient WHERE account_id = :accountId " +
+            "AND recipe_id IN (SELECT recipe_id FROM make_now WHERE account_id = :accountId) ORDER BY recipe_id, step_position, position",
+    )
+    abstract suspend fun getIngredientsOfAll(accountId: String): List<IngredientEntity>
+
+    /** [observeDetailIds] once. */
+    @Query(
+        "SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL " +
+            "AND recipe_id IN (SELECT recipe_id FROM make_now WHERE account_id = :accountId)",
+    )
+    abstract suspend fun getDetailIdsOfAll(accountId: String): List<Long>
+
     /** The stored ingredients of [recipeId]. */
     @Query("SELECT * FROM ingredient WHERE account_id = :accountId AND recipe_id = :recipeId ORDER BY step_position, position")
     abstract suspend fun getIngredients(accountId: String, recipeId: Long): List<IngredientEntity>
@@ -175,6 +194,9 @@ abstract class MakeNowDao {
     @Query("SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL ORDER BY recipe_id")
     abstract suspend fun getDetailIds(accountId: String): List<Long>
 }
+
+/** "Kan laga nu" as stored: the groups, their recipes' ingredients and which details are downloaded (hemma-data lane). */
+data class MakeNowSnapshot(val rows: List<MakeNowEntity>, val ingredients: List<IngredientEntity>, val detailIds: Set<Long>)
 
 /** Learned barcodes and receipt names (`FOOD_ALIAS` automations, skanning lane). */
 @Dao
