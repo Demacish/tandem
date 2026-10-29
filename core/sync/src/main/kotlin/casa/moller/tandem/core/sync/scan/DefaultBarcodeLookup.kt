@@ -26,7 +26,9 @@ import kotlin.time.Duration.Companion.days
 /**
  * [BarcodeLookup] (plan §8.8 "Streckkod", #27): a scanned code, in this order:
  *
- * 1. a **learned alias** (`FOOD_ALIAS`, shared by the household's phones): the food's name, no request;
+ * 1. a **learned alias** (`FOOD_ALIAS`, shared by the household's phones): the food's name, no request
+ *    (online, the space's aliases are read again first when the last read is a minute old, so a
+ *    code another phone just learned is known at once);
  * 2. the **cache** (`barcode_product`, per account): a product for [FOUND_MAX_AGE], "not found" for
  *    [NOT_FOUND_MAX_AGE];
  * 3. **Open Food Facts** (`GET /api/v2/product/{ean}`, [OpenFoodFactsClient]: only the code, Tandem's
@@ -41,6 +43,7 @@ internal class DefaultBarcodeLookup @Inject constructor(
     private val sources: ActiveSources,
     private val databases: TandemDatabaseFactory,
     private val aliases: FoodAliasRepository,
+    private val aliasReader: FoodAliasReader,
     private val openFoodFacts: OpenFoodFactsClient,
     private val network: NetworkStatus,
     private val clock: SyncClock,
@@ -52,8 +55,11 @@ internal class DefaultBarcodeLookup @Inject constructor(
         }
         val source = sources.current() as? ActiveSource.Stored
             ?: return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
-        aliases.find(code)?.let { alias ->
-            return@catchingUnexpected Outcome.Success(BarcodeLookupResult.Found(BarcodeProduct(ean = code, name = alias.foodName)))
+        learned(code)?.let { return@catchingUnexpected Outcome.Success(it) }
+        // Learned on another phone a moment ago (Fas S "Klart när": known at once on phone B): the
+        // space's aliases are read again first (at most once a minute).
+        if (source is ActiveSource.Remote && network.online.value && aliasReader.syncIfStale(source) is Outcome.Success) {
+            learned(code)?.let { return@catchingUnexpected Outcome.Success(it) }
         }
         val dao = databases.get(source.kind).barcodeProductDao()
         val cached = dao.get(source.accountId, code)
@@ -79,6 +85,10 @@ internal class DefaultBarcodeLookup @Inject constructor(
             }
         }
     }
+
+    /** The learned alias of [code] as a product named after its food, null when none. */
+    private suspend fun learned(code: String): BarcodeLookupResult? =
+        aliases.find(code)?.let { alias -> BarcodeLookupResult.Found(BarcodeProduct(ean = code, name = alias.foodName)) }
 
     private fun isFresh(row: BarcodeProductEntity, now: Long): Boolean {
         val age = now - row.fetchedAtEpochMillis

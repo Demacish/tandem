@@ -52,7 +52,15 @@ class ScanDataSyncTest {
             sslSocketFactory(TestTls.client.sslSocketFactory(), TestTls.client.trustManager)
         }
         val client = OpenFoodFactsClient(http, openFoodFacts.url("/").toString())
-        return DefaultBarcodeLookup(graph.sources, graph.databases, graph.foodAliases, client, graph.network, graph.clock)
+        return DefaultBarcodeLookup(
+            graph.sources,
+            graph.databases,
+            graph.foodAliases,
+            graph.foodAliasReader,
+            client,
+            graph.network,
+            graph.clock,
+        )
     }
 
     private fun answer(code: Int, body: String) {
@@ -157,6 +165,20 @@ class ScanDataSyncTest {
 
         assertEquals("kikärtor", found.product.name)
         assertEquals(0, openFoodFacts.requestCount)
+    }
+
+    @Test
+    fun aCodeLearnedOnAnotherPhoneIsKnownAtOnce() = forEachVersion {
+        val lookup = lookup()
+        val before = openFoodFacts.requestCount
+        // Phone A learned it; phone B has never read the aliases since.
+        tandoor.seedAlias(BARCODE, "kikärtor")
+
+        val found = value(lookup.lookup(BARCODE)) as BarcodeLookupResult.Found
+
+        assertEquals("kikärtor", found.product.name)
+        assertEquals(before, openFoodFacts.requestCount)
+        assertEquals(1, tandoor.requests("GET", "/api/automation/").size)
     }
 
     @Test

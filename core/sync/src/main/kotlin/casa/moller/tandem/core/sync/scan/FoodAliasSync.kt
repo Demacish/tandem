@@ -133,6 +133,16 @@ internal class FoodAliasReader @Inject constructor(
         }
     }
 
+    /**
+     * A full read when the last complete one is older than [MAX_AGE_MILLIS] (or there was none):
+     * a code another phone learned a moment ago is known here before Open Food Facts is asked.
+     */
+    suspend fun syncIfStale(remote: ActiveSource.Remote): Outcome<Unit> {
+        val last = lastRead[remote.accountId]?.atMillis
+        if (last != null && clock.nowMillis() - last in 0..MAX_AGE_MILLIS) return Outcome.Success(Unit)
+        return sync(remote, background = false)
+    }
+
     /** An alias this device just created or changed, so the next check in the same drain knows it. */
     fun noteServerAlias(accountId: String, alias: AutomationDto) {
         val known = lastRead[accountId] ?: return
