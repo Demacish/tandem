@@ -42,6 +42,8 @@ internal class DefaultSettingsRepository @Inject constructor(private val setting
     override suspend fun setExactAlarmPromptDismissed(dismissed: Boolean): Outcome<Unit> =
         write { it.copy(exactAlarmPromptDismissed = dismissed) }
 
+    override suspend fun setSystembolagetLink(shown: Boolean?): Outcome<Unit> = write { it.copy(systembolagetLink = shown) }
+
     private suspend fun write(transform: (AppSettings) -> AppSettings): Outcome<Unit> = try {
         settingsStore.update(transform)
         Outcome.Success(Unit)

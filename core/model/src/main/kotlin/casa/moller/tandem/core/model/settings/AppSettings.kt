@@ -38,6 +38,10 @@ enum class ThemeMode {
  *   first timer, plan 8.7). Afterwards the app links to the system settings instead.
  * @property exactAlarmPromptDismissed play build: the user dismissed "allow exact alarms" (plan
  *   8.1/4.4); the late-alarm warning stays, the prompt is not shown again.
+ *
+ * Fas S (drycker lane):
+ * @property systembolagetLink "Sök på Systembolaget" on a drink (a plain web link, plan §8.8); null
+ *   = not chosen, which [systembolagetLinkShown] reads as on for a Swedish UI and off otherwise.
  */
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -54,7 +58,13 @@ data class AppSettings(
     val downloadAllRecipes: Boolean = false,
     val notificationPermissionAsked: Boolean = false,
     val exactAlarmPromptDismissed: Boolean = false,
+    // --- Fas S (drycker lane) ---
+    val systembolagetLink: Boolean? = null,
 ) {
+    /** Whether a drink shows "Sök på Systembolaget" for a UI in [languageTag] ("sv", "en-GB"). */
+    fun systembolagetLinkShown(languageTag: String): Boolean =
+        systembolagetLink ?: languageTag.substringBefore('-').equals("sv", ignoreCase = true)
+
     companion object {
         /** Settings of a fresh install. */
         val Default: AppSettings = AppSettings()

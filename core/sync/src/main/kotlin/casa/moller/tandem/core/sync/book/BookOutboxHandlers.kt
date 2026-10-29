@@ -8,12 +8,16 @@ import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.domain.book.RecipeBookRules
 import casa.moller.tandem.core.model.book.RecipeBookKind
 import casa.moller.tandem.core.model.book.WantToCook
+import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.dto.CustomFilterDto
 import casa.moller.tandem.core.network.json.TandoorJson
 import casa.moller.tandem.core.sync.R
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.drink.DrinkPayloads
+import casa.moller.tandem.core.sync.drink.PairingKeywords
+import casa.moller.tandem.core.sync.drink.RecipeKeywordChanges
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxHandler
 import casa.moller.tandem.core.sync.engine.OutboxResult
@@ -195,11 +199,14 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
 }
 
 /**
- * The recipe's `RECIPE_KEYWORDS` rows ("Vill laga", plan 3.7 B): the recipe is read fresh
- * (`GET /api/recipe/{id}/`), then its WHOLE keyword list is sent with or without the
- * [WantToCook.KEYWORD] keyword (`PATCH /api/recipe/{id}/`, the server reuses the keyword by name).
- * The answer is stored as the recipe's detail. After the first "Vill laga" the shared smart book is
- * created when none is visible yet (a saved filter on the keyword id, so the web shows the list).
+ * The recipe's `RECIPE_KEYWORDS` rows ("Vill laga", plan 3.7 B; Fas S: pairings, plan §8.8): the
+ * recipe is read fresh (`GET /api/recipe/{id}/`), the row's changes are applied field by field in
+ * order (`RecipeKeywordFields`: "Vill laga", `keyword:<id>`, `pairing:<name>`), and its WHOLE keyword
+ * list is sent (`PATCH /api/recipe/{id}/`: a PATCH replaces the list, so a keyword a partner added
+ * meanwhile is kept; FACTS "Fas S c"). A pairing by name is found or created under "Passar med"
+ * first ([PairingKeywords]). Nothing to change = no PATCH. The answer is stored as the recipe's
+ * detail. After the first "Vill laga" the shared smart book is created when none is visible yet (a
+ * saved filter on the keyword id, so the web shows the list).
  */
 internal class RecipeKeywordsOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
@@ -207,6 +214,7 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
     private val details: DetailFetcher,
     private val names: BookNames,
     private val sync: BookSync,
+    private val pairingKeywords: PairingKeywords,
 ) : OutboxHandler {
     // Under BookSync.lock (0.3.0 review, fix-data): the "Vill laga" book it may create is never removed by a read.
     override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult =
@@ -214,8 +222,8 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
 
     private suspend fun sendLocked(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val recipeId = row.serverId
-        val want = BookPayloads.wantToCookOf(payload)
-        if (row.op != OutboxOps.RECIPE_KEYWORDS || recipeId == null || want == null) {
+        val changes = DrinkPayloads.changesOf(payload)
+        if (row.op != OutboxOps.RECIPE_KEYWORDS || recipeId == null || changes == null || changes.isEmpty) {
             return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
         val current = when (
@@ -226,33 +234,87 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             is Outcome.Failure -> return if (read.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(read.error)
             is Outcome.Success -> read.value
         }
-        val keywords = (current["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
-        val has = keywords.any { RecipeBookRules.isWantToCookKeyword(it.string("name").orEmpty()) }
-        if (has == want) {
+        val before = (current["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.map { keyword ->
+            SentKeyword(
+                id = (keyword["id"] as? JsonPrimitive)?.longOrNull,
+                name = keyword.string("name").orEmpty(),
+                parentId = (keyword["parent"] as? JsonPrimitive)?.longOrNull,
+            )
+        }
+        val list = when (val applied = apply(remote, before, changes)) {
+            is Outcome.Failure -> return OutboxResult.Failed(applied.error)
+            is Outcome.Success -> applied.value
+        }
+        if (list == before) {
             details.store(remote, recipeId, current)
             return OutboxResult.Sent
         }
-        val kept = keywords.filterNot { RecipeBookRules.isWantToCookKeyword(it.string("name").orEmpty()) }.map { keyword ->
-            buildJsonObject {
-                keyword["id"]?.let { put("id", it) }
-                put("name", keyword.string("name").orEmpty())
-            }
-        }
-        val list = if (want) kept + buildJsonObject { put("name", WantToCook.KEYWORD) } else kept
-        val body = JsonObject(mapOf("keywords" to JsonArray(list)))
+        val body = JsonObject(mapOf("keywords" to JsonArray(list.map { it.json() })))
         val sent = caller.write(remote) { books.patchRecipe(recipeId, body) }
         val patched = when (sent) {
             is Outcome.Failure -> return if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
         details.store(remote, recipeId, patched)
-        if (want) {
+        if (changes.wantToCook == true) {
             val keywordId = (patched["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
                 .firstOrNull { RecipeBookRules.isWantToCookKeyword(it.string("name").orEmpty()) }
                 ?.let { (it["id"] as? JsonPrimitive)?.longOrNull }
             if (keywordId != null) ensureWantToCookBook(remote, keywordId)
         }
         return OutboxResult.Sent
+    }
+
+    /** [before] (the recipe's keywords as read just now) with every change of the row applied in order. */
+    private suspend fun apply(
+        remote: ActiveSource.Remote,
+        before: List<SentKeyword>,
+        changes: RecipeKeywordChanges,
+    ): Outcome<List<SentKeyword>> {
+        var list = before
+        changes.wantToCook?.let { want ->
+            val has = list.any { RecipeBookRules.isWantToCookKeyword(it.name) }
+            if (has != want) {
+                list = list.filterNot { RecipeBookRules.isWantToCookKeyword(it.name) }
+                if (want) list = list + SentKeyword(null, WantToCook.KEYWORD)
+            }
+        }
+        val database = databases.get(remote.kind)
+        val storedNames = if (changes.keywords.any { it.second }) {
+            database.drinkDraftDao().getKeywords(remote.accountId).associate { it.id to it.name }
+        } else {
+            emptyMap()
+        }
+        for ((field, add) in changes.keywords) {
+            // A temporary id that never reached the server has nothing to link.
+            val id = database.idRewriteDao().current(remote.accountId, OutboxEntities.KEYWORD, field).takeIf { it >= 0 } ?: continue
+            list = when {
+                !add -> list.filterNot { it.id == id }
+                list.any { it.id == id } -> list
+                else -> list + SentKeyword(id, storedNames[id].orEmpty())
+            }
+        }
+        for ((name, add) in changes.pairings) {
+            list = if (add) {
+                val id = when (val found = pairingKeywords.pairing(remote, name)) {
+                    is Outcome.Failure -> return found
+                    is Outcome.Success -> found.value
+                }
+                if (list.any { it.id == id }) list else list + SentKeyword(id, name.trim())
+            } else {
+                // Only a keyword with a parent (under "Passar med") goes; a root keyword of the same name stays.
+                list.filterNot { it.parentId != null && DrinkKeywords.key(it.name) == DrinkKeywords.key(name) }
+            }
+        }
+        return Outcome.Success(list)
+    }
+
+    /** One element of the keyword list sent back: `{id, name}`, or `{name}` for a keyword reused or created by name. */
+    private data class SentKeyword(val id: Long?, val name: String, val parentId: Long? = null) {
+        fun json(): JsonObject = buildJsonObject {
+            id?.let { put("id", it) }
+            put("name", name)
+        }
     }
 
     /**

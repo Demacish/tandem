@@ -17,6 +17,7 @@ import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.DEMO_ACCOUNT_ID
 import casa.moller.tandem.core.sync.book.DemoBooks
+import casa.moller.tandem.core.sync.drink.DemoDrinks
 import casa.moller.tandem.core.sync.engine.cookStatsRules
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.ImageResolver
@@ -88,7 +89,8 @@ internal class DemoSeeder(
             val today = clock.today()
             val key = seedKey(currentLocale)
             val state = database.syncStateDao().get(DEMO_ACCOUNT_ID, SEED_KEY)
-            if (state == null || state.hash != key || state.lastDate != today.toString()) {
+            val contentWritten = state == null || state.hash != key || state.lastDate != today.toString()
+            if (contentWritten) {
                 write(database, currentLocale, today, initial = state == null)
                 database.syncStateDao().upsert(
                     SyncStateEntity(
@@ -106,6 +108,8 @@ internal class DemoSeeder(
             DemoBooks.ensureSeeded(database, content, currentLocale, today, clock.nowMillis())
             // Fas S (hemma-data lane): the pantry and staples ("Kan laga nu" is computed from them).
             DemoPantry.ensureSeeded(database, content.version, currentLocale, today, clock.nowMillis())
+            // Fas S (drycker lane): the drinks and pairings, again whenever the content was rewritten.
+            DemoDrinks.ensureSeeded(database, content.version, currentLocale, clock.nowMillis(), contentWritten)
             Outcome.Success(Unit)
         }
     }

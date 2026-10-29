@@ -5,6 +5,7 @@ import casa.moller.tandem.core.model.drink.DrinkDraft
 import casa.moller.tandem.core.model.drink.Pairing
 import casa.moller.tandem.core.model.drink.RecipePairings
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.TandemError
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -34,8 +35,19 @@ interface DrinkRepository {
     /** Adds the pairing [keywordId] to the recipe (dish or drink). */
     suspend fun addPairing(recipeId: Long, keywordId: Long): Outcome<Unit>
 
-    /** Creates the pairing keyword [name] under `Passar med` (when missing) and adds it to the recipe. */
+    /**
+     * Creates the pairing keyword [name] under `Passar med` (when missing) and adds it to the recipe
+     * (a pairing with a kind of drink, "Kraftigt rött"). A name another keyword already has (a dish
+     * keyword "Vin") is refused with [DrinkProblem.NAME_TAKEN]: Tandoor would reuse that keyword.
+     */
     suspend fun addNewPairing(recipeId: Long, name: String): Outcome<Pairing>
+
+    /**
+     * Fas S (drycker lane): pairs dish [recipeId] with drink [drinkId] from either side: the drink's
+     * own pairing keyword (`Passar med › <drink name>`, created on the drink first when it has none)
+     * is added to the dish. Works for a drink created offline (negative id) too.
+     */
+    suspend fun pairWithDrink(recipeId: Long, drinkId: Long): Outcome<Pairing>
 
     suspend fun removePairing(recipeId: Long, keywordId: Long): Outcome<Unit>
 
@@ -43,4 +55,24 @@ interface DrinkRepository {
     suspend fun createDrink(draft: DrinkDraft): Outcome<Drink>
 
     suspend fun refresh(): Outcome<Unit>
+}
+
+/** Fas S (drycker lane): why a drink write was refused before anything was stored (`TandemError.Unknown(detail)`). */
+enum class DrinkProblem(val detail: String) {
+    /** The name is empty. */
+    NAME_EMPTY("tandem.drink.name-empty"),
+
+    /** Another keyword (not a pairing) already has the name; Tandoor would reuse it. */
+    NAME_TAKEN("tandem.drink.name-taken"),
+
+    /** The recipe or drink is not known on this device. */
+    UNKNOWN_RECIPE("tandem.drink.unknown-recipe"),
+    ;
+
+    fun toError(): TandemError = TandemError.Unknown(detail)
+
+    companion object {
+        /** The [DrinkProblem] this error stands for, or null. */
+        fun of(error: TandemError): DrinkProblem? = entries.firstOrNull { (error as? TandemError.Unknown)?.detail == it.detail }
+    }
 }

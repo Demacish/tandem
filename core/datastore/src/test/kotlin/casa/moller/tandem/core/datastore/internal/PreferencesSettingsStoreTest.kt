@@ -192,4 +192,19 @@ class PreferencesSettingsStoreTest {
         assertEquals(SyncInterval.FIFTEEN_MINUTES, settings.syncInterval)
         assertEquals(2.0f, settings.cookTextScale)
     }
+
+    // --- Fas S (drycker lane) ---
+
+    @Test
+    fun theSystembolagetChoiceSurvivesARestartAndCanBeUnset() = runTest {
+        val first = open()
+        assertNull(first.settings.first().systembolagetLink)
+        first.update { it.copy(systembolagetLink = false) }
+        scopes.closeAll()
+        val second = open()
+        assertEquals(false, second.settings.first().systembolagetLink)
+        second.update { it.copy(systembolagetLink = null) }
+        scopes.closeAll()
+        assertNull(open().settings.first().systembolagetLink)
+    }
 }

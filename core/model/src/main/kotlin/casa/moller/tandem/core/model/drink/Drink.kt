@@ -16,8 +16,33 @@ object DrinkKeywords {
     /** The parent of every pairing keyword. */
     const val PAIRS_WITH: String = "Passar med"
 
-    /** Suggested drink types (keywords of their own, at the root). */
+    /**
+     * Suggested drink types. The drycker lane creates them as children of [DRINK] ("Dryck > Vin");
+     * a root keyword with one of these names (created on the web) is read as a type too.
+     */
     val TYPES: List<String> = listOf("Vin", "Öl", "Cider", "Alkoholfritt", "Drink")
+
+    // Fas S (drycker lane): the server names stay Swedish whatever the UI language (docs/BYGGE.md
+    // "Drycker"), so both phones of a household find the same keywords; a household that already
+    // has an English root keyword for drinks or pairings keeps using it.
+
+    /** Root keyword names that mean "drinks" (lower case). "Drink" is a TYPE (a cocktail), never the root. */
+    val DRINK_ROOT_NAMES: Set<String> = setOf("dryck", "drycker", "beverage", "beverages")
+
+    /** Root keyword names that mean "goes with" (lower case). */
+    val PAIRS_WITH_ROOT_NAMES: Set<String> = setOf("passar med", "pairs with", "goes with")
+
+    /** Whether [name] is a root keyword for drinks ("Dryck", or an English variant). */
+    fun isDrinkRoot(name: String): Boolean = key(name) in DRINK_ROOT_NAMES
+
+    /** Whether [name] is the parent of the pairing keywords ("Passar med", or an English variant). */
+    fun isPairsWithRoot(name: String): Boolean = key(name) in PAIRS_WITH_ROOT_NAMES
+
+    /** Whether [name] is one of the suggested [TYPES] (ignoring case). */
+    fun isSuggestedType(name: String): Boolean = TYPES.any { it.equals(name.trim(), ignoreCase = true) }
+
+    /** How keyword names are compared: Tandoor reuses a keyword whose name differs only in case (FACTS "Fas S c"). */
+    fun key(name: String): String = name.trim().lowercase()
 }
 
 /** A drink in lists ([id] = recipe id; negative = created in the app and not on the server yet). */

@@ -61,7 +61,8 @@ class DemoAndAccountsTest {
         assertTrue(graph.demo.ensureSeeded() is Outcome.Success)
 
         val recipes = graph.recipes.observeRecipes(RecipeQuery.All).first()
-        assertEquals(graph.demoContent.recipeIds.size, recipes.size)
+        // Fas S (drycker lane): plus the three demo drinks (recipes with the keyword "Dryck").
+        assertEquals(graph.demoContent.recipeIds.size + DEMO_DRINKS, recipes.size)
         assertTrue(graph.real.recipeDao().getRecipeIds(DEMO_ACCOUNT_ID).isEmpty())
         assertTrue(graph.real.recipeDao().getRecipeIds(ACCOUNT_ID).isEmpty())
         assertTrue(recipes.all { it.availableOffline })
@@ -337,5 +338,6 @@ class DemoAndAccountsTest {
 
     private companion object {
         const val OTHER_ACCOUNT = "account-b"
+        const val DEMO_DRINKS = 3
     }
 }

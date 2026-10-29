@@ -122,3 +122,13 @@ PATCH /api/automation/{id}/
 DELETE /api/automation/{id}/
 PUT /api/food/batch_update/
 POST /api/food/
+
+# --- Fas S (drycker lane): drinks and "Passar med" (#43, B20, FACTS "Fas S" c, f) ---
+# Sent through the outbox: keywords are created by name (get-or-create) and then moved under
+# "Dryck" or "Passar med" (POST ignores parent); a drink is POSTed as a recipe with steps: [] and
+# its photo PUT afterwards. The recipe keyword PATCH is Phase 2's (re-read first).
+POST /api/keyword/
+GET /api/keyword/{id}/
+PUT /api/keyword/{id}/move/{parent}/
+POST /api/recipe/
+PUT /api/recipe/{id}/image/

@@ -419,6 +419,17 @@ class FakeDrinkRepository(
         pairing
     }
 
+    override suspend fun pairWithDrink(recipeId: Long, drinkId: Long): Outcome<Pairing> = fasSWrite(readOnly, failure) {
+        val drink = drinks.value.first { it.id == drinkId }
+        val own = recipePairings.value[drinkId].orEmpty()
+        val pairing = pairings.value.firstOrNull { it.keywordId in own } ?: Pairing(nextId--, drink.name).also { created ->
+            pairings.update { it + created }
+            recipePairings.update { links -> links + (drinkId to (links[drinkId].orEmpty() + created.keywordId)) }
+        }
+        recipePairings.update { links -> links + (recipeId to (links[recipeId].orEmpty() + pairing.keywordId)) }
+        pairing
+    }
+
     override suspend fun removePairing(recipeId: Long, keywordId: Long): Outcome<Unit> = fasSWrite(readOnly, failure) {
         recipePairings.update { links -> links + (recipeId to (links[recipeId].orEmpty() - keywordId)) }
     }

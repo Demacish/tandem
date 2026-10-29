@@ -43,6 +43,8 @@ class TandoorApi internal constructor(
     val inventory: InventoryService,
     val automations: AutomationService,
     val pantryFoods: PantryFoodService,
+    // --- Fas S (drycker lane): keywords under "Dryck"/"Passar med", a drink as a recipe, its photo. ---
+    val drinks: DrinkService,
     /** Capability probes; see `CapabilityResolver`. */
     internal val probes: CapabilityProbeService,
     /** The client with this server's [AuthInterceptor]; for raw calls in tests and later image loading. */
@@ -92,6 +94,7 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             inventory = retrofit.create(InventoryService::class.java),
             automations = retrofit.create(AutomationService::class.java),
             pantryFoods = retrofit.create(PantryFoodService::class.java),
+            drinks = retrofit.create(DrinkService::class.java),
             probes = retrofit.create(CapabilityProbeService::class.java),
             httpClient = client,
         )

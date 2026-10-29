@@ -116,12 +116,14 @@ class DtoFixturesTest {
         Route("PATCH", "/api/automation/\\d+/", AutomationDto.serializer()),
         // `{}` (FACTS "Fas S e"): compared as raw JSON.
         Route("PUT", "/api/food/batch_update/", JsonObject.serializer()),
+        // --- Fas S (drycker lane): a keyword with its parent, the move, the drink's photo. ---
+        Route("GET", "/api/keyword/\\d+/", KeywordDto.serializer()),
+        Route("PUT", "/api/keyword/\\d+/move/\\d+/", KeywordMoveDto.serializer()),
+        Route("PUT", "/api/recipe/\\d+/image/", RecipeImageDto.serializer()),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */
     private val notModelled = mapOf(
-        "fas1/seed-keyword-move" to "seeding only ({msg}); the app never moves keywords",
-        "fas1/recipe-image-put" to "image upload belongs to import (Phase 3)",
         "fas1/seed-unit-conversion-create" to "the app reads conversions from the ingredients",
         "fas1/seed-unit-conversion-create-food" to "the app reads conversions from the ingredients",
         "fas1/unit-conversion-list" to "the app reads conversions from the ingredients",
@@ -132,16 +134,7 @@ class DtoFixturesTest {
         "fas2/shopping-list-recipe-bulk-create-entries" to "contract probe; the app creates each entry itself (ids for the outbox)",
         "fas2/user-preference-patch" to "contract setup; the app only reads the preferences",
         "fas2/user-preference-patch-autoadd" to "contract setup; the app only reads the preferences",
-        // Fas S (grund lane): recordings whose DTO the lane adds with its route (docs/BYGGE.md
-        // "Fas S – kontrakt"); the lane removes its lines here in the same commit.
-        "fas-s/keyword-get-child" to FAS_S_DRYCKER,
-        "fas-s/keyword-move" to FAS_S_DRYCKER,
-        "fas-s/recipe-image-put-drink" to FAS_S_DRYCKER,
     )
-
-    private companion object {
-        const val FAS_S_DRYCKER = "Fas S: the drycker lane adds keyword move/detail and the drink image upload"
-    }
 
     @Test
     fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() = checkFixtures("2.6.13", notModelled)

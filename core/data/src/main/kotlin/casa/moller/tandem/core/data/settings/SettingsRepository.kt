@@ -45,4 +45,7 @@ interface SettingsRepository {
 
     /** Play build: the "allow exact alarms" prompt was dismissed. */
     suspend fun setExactAlarmPromptDismissed(dismissed: Boolean): Outcome<Unit>
+
+    /** Fas S (drycker lane): "Sök på Systembolaget" on drinks, null = follow the UI language. */
+    suspend fun setSystembolagetLink(shown: Boolean?): Outcome<Unit>
 }

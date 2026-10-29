@@ -30,6 +30,11 @@ import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstHomeRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstRecipeRepository
 import casa.moller.tandem.core.sync.demo.DemoSeeder
+import casa.moller.tandem.core.sync.drink.DrinkImageStore
+import casa.moller.tandem.core.sync.drink.DrinkOutboxHandler
+import casa.moller.tandem.core.sync.drink.DrinkSync
+import casa.moller.tandem.core.sync.drink.OfflineFirstDrinkRepository
+import casa.moller.tandem.core.sync.drink.PairingKeywords
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxSender
 import casa.moller.tandem.core.sync.engine.SyncEngine
@@ -166,6 +171,10 @@ internal class SyncTestGraph(
     val pantryLocations = PantryLocations(databases)
     val foodAliasReader = FoodAliasReader(databases, caller, sources, clock)
     val pantryNames = TestPantryNames()
+
+    // Fas S (drycker lane): the keywords of drinks and pairings, the photo copies (a folder per graph).
+    val pairingKeywords = PairingKeywords(databases, caller)
+    val drinkImages = TestDrinkImageStore(File(context.cacheDir, "drink-images-$databasePrefix${System.nanoTime()}"))
     val outbox = OutboxSender(
         databases,
         caller,
@@ -181,7 +190,7 @@ internal class SyncTestGraph(
             // Phase 2 (böcker lane).
             OutboxEntities.RECIPE_BOOK to RecipeBookOutboxHandler(databases, caller, bookSync),
             OutboxEntities.RECIPE_BOOK_ENTRY to RecipeBookEntryOutboxHandler(databases, caller, bookSync),
-            OutboxEntities.RECIPE to RecipeKeywordsOutboxHandler(databases, caller, details, bookNames, bookSync),
+            OutboxEntities.RECIPE to RecipeKeywordsOutboxHandler(databases, caller, details, bookNames, bookSync, pairingKeywords),
             // Phase 2 (matsedel lane): meals and meal types.
             OutboxEntities.MEAL_PLAN to MealPlanOutboxHandler(databases, caller, clock, mealPlanWindow, droppedChanges),
             OutboxEntities.MEAL_TYPE to MealTypeOutboxHandler(caller, mealPlanWindow),
@@ -191,6 +200,8 @@ internal class SyncTestGraph(
             OutboxEntities.INVENTORY_ENTRY to
                 InventoryEntryOutboxHandler(databases, caller, pantryReader, pantryLocations, pantryChanges, droppedChanges, clock),
             OutboxEntities.FOOD_ALIAS to FoodAliasOutboxHandler(databases, caller, foodAliasReader, droppedChanges, clock),
+            // Fas S (drycker lane): a drink created in the app and its photo.
+            OutboxEntities.DRINK to DrinkOutboxHandler(databases, caller, details, pairingKeywords, drinkImages),
         ),
         roles = roleSync,
         dropped = droppedChanges,
@@ -290,6 +301,9 @@ internal class SyncTestGraph(
     val makeNow = DefaultMakeNowRepository(sources, databases, caller, details, network, clock, pantry, pantryChanges)
     val foodAliases = OfflineFirstFoodAliasRepository(sources, databases, permissions, foodAliasReader, outbox, scheduler, network, clock)
 
+    // Fas S (drycker lane): drinks and "Passar med".
+    val drinks = OfflineFirstDrinkRepository(sources, databases, permissions, scheduler, clock, drinkImages, DrinkSync(databases, caller))
+
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)
 
@@ -332,5 +346,25 @@ internal class TestPantryNames : PantryNames {
 internal suspend fun waitUntil(timeoutMillis: Long = 15_000, condition: suspend () -> Boolean) {
     withTimeout(timeoutMillis) {
         while (!condition()) delay(20)
+    }
+}
+
+/**
+ * Fas S (drycker lane): the photo store without decoding: a "photo" is any readable file path
+ * (Robolectric has no real image decoder), copied as it is into [directory].
+ */
+internal class TestDrinkImageStore(private val directory: File) : DrinkImageStore {
+    val deleted = mutableListOf<String>()
+
+    override suspend fun copy(accountId: String, uri: String): File? {
+        val source = File(uri.removePrefix("file://"))
+        if (!source.isFile) return null
+        directory.mkdirs()
+        return File(directory, "drink-${System.nanoTime()}.jpg").also { source.copyTo(it) }
+    }
+
+    override suspend fun delete(path: String) {
+        deleted += path
+        File(path).delete()
     }
 }

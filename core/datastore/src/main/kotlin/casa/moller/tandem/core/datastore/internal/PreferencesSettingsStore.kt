@@ -61,6 +61,9 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         val DOWNLOAD_ALL_RECIPES = booleanPreferencesKey("download_all_recipes")
         val NOTIFICATION_PERMISSION_ASKED = booleanPreferencesKey("notification_permission_asked")
         val EXACT_ALARM_PROMPT_DISMISSED = booleanPreferencesKey("exact_alarm_prompt_dismissed")
+
+        // --- Fas S (drycker lane): absent = not chosen (follows the UI language). ---
+        val SYSTEMBOLAGET_LINK = booleanPreferencesKey("systembolaget_link")
     }
 
     companion object {
@@ -103,6 +106,8 @@ private fun Preferences.toAppSettings(): AppSettings {
             ?: defaults.notificationPermissionAsked,
         exactAlarmPromptDismissed = this[PreferencesSettingsStore.Keys.EXACT_ALARM_PROMPT_DISMISSED]
             ?: defaults.exactAlarmPromptDismissed,
+        // --- Fas S (drycker lane) ---
+        systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
     )
 }
 
@@ -143,4 +148,11 @@ private fun MutablePreferences.write(settings: AppSettings) {
     this[PreferencesSettingsStore.Keys.DOWNLOAD_ALL_RECIPES] = settings.downloadAllRecipes
     this[PreferencesSettingsStore.Keys.NOTIFICATION_PERMISSION_ASKED] = settings.notificationPermissionAsked
     this[PreferencesSettingsStore.Keys.EXACT_ALARM_PROMPT_DISMISSED] = settings.exactAlarmPromptDismissed
+    // --- Fas S (drycker lane) ---
+    val systembolaget = settings.systembolagetLink
+    if (systembolaget == null) {
+        remove(PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK)
+    } else {
+        this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK] = systembolaget
+    }
 }

@@ -1,6 +1,8 @@
 package casa.moller.tandem.core.database.dao
 
 import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Transaction
 import androidx.room3.Upsert
@@ -10,7 +12,9 @@ import casa.moller.tandem.core.database.entity.FoodAliasEntity
 import casa.moller.tandem.core.database.entity.IngredientEntity
 import casa.moller.tandem.core.database.entity.InventoryEntryEntity
 import casa.moller.tandem.core.database.entity.InventoryLocationEntity
+import casa.moller.tandem.core.database.entity.KeywordEntity
 import casa.moller.tandem.core.database.entity.MakeNowEntity
+import casa.moller.tandem.core.database.entity.RecipeKeywordCrossRef
 import casa.moller.tandem.core.database.entity.StapleEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -260,4 +264,42 @@ abstract class DrinkDraftDao {
 
     @Query("DELETE FROM drink_draft WHERE account_id = :accountId AND local_id = :localId")
     abstract suspend fun delete(accountId: String, localId: Long)
+
+    // --- Fas S (drycker lane): the drinks index reads the cached keywords and links (no table of its own). ---
+
+    /** Every drink draft (pairing writes look a pending drink up). */
+    @Query("SELECT * FROM drink_draft WHERE account_id = :accountId ORDER BY created_at")
+    abstract suspend fun getDrafts(accountId: String): List<DrinkDraftEntity>
+
+    /** Every keyword of the account (the drinks index, the pairing picker). */
+    @Query("SELECT * FROM keyword WHERE account_id = :accountId")
+    abstract suspend fun getKeywords(accountId: String): List<KeywordEntity>
+
+    /** Every recipe-keyword link of the account. */
+    @Query("SELECT recipe_id, keyword_id FROM recipe_keyword WHERE account_id = :accountId")
+    abstract suspend fun getRecipeKeywords(accountId: String): List<RecipeKeywordRow>
+
+    /** The name of recipe [recipeId] as listed, null when it is not stored. */
+    @Query("SELECT name FROM recipe_overview WHERE account_id = :accountId AND server_id = :recipeId")
+    abstract suspend fun getRecipeName(accountId: String, recipeId: Long): String?
+
+    /** Stores keywords the senders created or moved (`POST /api/keyword/`, `move`), so the index sees them at once. */
+    @Upsert
+    abstract suspend fun upsertKeywords(rows: List<KeywordEntity>)
+
+    /** Demo mode: the highest recipe id (a demo drink gets the next one). */
+    @Query("SELECT IFNULL(MAX(server_id), 0) FROM recipe_overview WHERE account_id = :accountId")
+    abstract suspend fun getMaxRecipeId(accountId: String): Long
+
+    /** Demo mode: the highest keyword id (a demo pairing gets the next one). */
+    @Query("SELECT IFNULL(MAX(id), 0) FROM keyword WHERE account_id = :accountId")
+    abstract suspend fun getMaxKeywordId(accountId: String): Long
+
+    /** Demo mode: a pairing written directly. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract suspend fun insertKeywordRefs(rows: List<RecipeKeywordCrossRef>)
+
+    /** Demo mode: a pairing removed directly. */
+    @Query("DELETE FROM recipe_keyword WHERE account_id = :accountId AND recipe_id = :recipeId AND keyword_id = :keywordId")
+    abstract suspend fun deleteKeywordRef(accountId: String, recipeId: Long, keywordId: Long)
 }

@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.drink.observeDrinkIndex
 import casa.moller.tandem.core.sync.engine.SyncEngine
 import casa.moller.tandem.core.sync.platform.SyncClock
 import java.text.Collator
@@ -68,11 +69,14 @@ internal class OfflineFirstHomeRepository @Inject constructor(
     private fun sections(source: ActiveSource.Stored): Flow<List<HomeSection>> {
         val database = databases.get(source.kind)
         val recipes = database.recipeDao()
+        // Fas S (drycker lane): drinks are recipes too, but never a dinner suggestion (plan §8.8).
+        val drinkIds = observeDrinkIndex(database, source.accountId, withOutbox = false).map { it.drinkIds }.distinctUntilChanged()
         return combine(
             recipes.observePinned(source.accountId),
             database.homeSectionDao().observeSectionRows(source.accountId),
             recipes.observeRecentlyViewedLocal(source.accountId, SyncSchedule.HOME_SECTION_SIZE),
-        ) { pinned, cached, viewedLocally ->
+            drinkIds,
+        ) { pinned, cached, viewedLocally, drinks ->
             val collator = Collator.getInstance(Locale.getDefault()).apply { strength = Collator.SECONDARY }
             val fromServer = cached.toHomeSections().associateBy { it.type }
             val recentlyViewed = (viewedLocally.map { it.toModel() } + fromServer[HomeSectionType.RECENTLY_VIEWED]?.recipes.orEmpty())
@@ -83,7 +87,7 @@ internal class OfflineFirstHomeRepository @Inject constructor(
                 val recipes = when (type) {
                     HomeSectionType.PINNED -> pinnedByName
                     HomeSectionType.RECENTLY_VIEWED -> recentlyViewed
-                    else -> fromServer[type]?.recipes.orEmpty()
+                    else -> fromServer[type]?.recipes.orEmpty().filterNot { it.id in drinks }
                 }
                 if (recipes.isEmpty()) null else HomeSection(type, recipes)
             }

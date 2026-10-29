@@ -173,6 +173,8 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings.Default) : Setti
 
     override suspend fun setExactAlarmPromptDismissed(dismissed: Boolean) = write { it.copy(exactAlarmPromptDismissed = dismissed) }
 
+    override suspend fun setSystembolagetLink(shown: Boolean?) = write { it.copy(systembolagetLink = shown) }
+
     private fun write(transform: (AppSettings) -> AppSettings): Outcome<Unit> {
         if (failWrites) return Outcome.Failure(DataProblem.SETTINGS_NOT_SAVED.toError())
         state.update(transform)
