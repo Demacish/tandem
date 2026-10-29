@@ -52,8 +52,9 @@ kan installeras bredvid release-bygget.
 | Modul | Typ | Får bero på |
 |---|---|---|
 | `:app` | applikation | allt den kopplar ihop |
-| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook`, `:feature:shopping`, `:feature:mealplan` (Fas 2) | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer` och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
-| `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes`, `feature:home`, `feature:cook`, `feature:shopping` och `feature:mealplan`: skalet är navigationsvärden (se Navigering) |
+| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook`, `:feature:shopping`, `:feature:mealplan` (Fas 2), `:feature:pantry`, `:feature:scan` (Fas S) | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer` och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
+| `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes`, `feature:home`, `feature:cook`, `feature:shopping`, `feature:mealplan`, `feature:pantry` och `feature:scan`: skalet är navigationsvärden (se Navigering) |
+| `:core:ai` (Fas S) | Android-bibliotek + Hilt | `core:{data,model,datastore,common}`, aldrig `core:network`; foto av kylen (se "Fas S – kontrakt") |
 | `:core:data` | Android-bibliotek + Hilt | `core:{network,datastore,model,common}`; repository-gränssnitten för Fas 1 |
 | `:core:database` | Android-bibliotek + Hilt + `tandem.android.room` | `core:{model,common}` |
 | `:core:sync` | Android-bibliotek + Hilt + WorkManager/hilt-work | `core:{data,network,database,datastore,domain,model,common}` |
@@ -67,7 +68,7 @@ kan installeras bredvid release-bygget.
 | `:contract-tests` | ren Kotlin/JVM | – (pratar HTTP med en tillfällig Tandoor) |
 | `:smoke` | `tandem.android.test` (test-APK) | – (svart låda: rör bara `:app`s minifierade APK via skärmen) |
 
-Alla moduler för Fas 1a, 1b och 2 finns redan i `settings.gradle.kts`. Nya beroenden läggs i modulens egen
+Alla moduler för Fas 1a, 1b, 2 och S finns redan i `settings.gradle.kts`. Nya beroenden läggs i modulens egen
 `build.gradle.kts`; använd typsäkra projektreferenser (`projects.core.model`) och katalogen
 (`libs.…`).
 
@@ -129,7 +130,8 @@ Gemensamt för Android-moduler:
   `cook_log` (`TandemMigrations.MIGRATION_1_2`, testad från en fil skapad ur `1.json`), version 3
   (0.2.0) `step.image_url` och markerar detaljer med stegbild för ny hämtning (`MIGRATION_2_3`,
   testad 1 → 3; synksidan i `SyncEngineTest`), version 4 (0.3.0) hela Fas 2 (`MIGRATION_3_4`,
-  se "Fas 2 – kontrakt"; testad 3 → 4 och 1 → 4).
+  se "Fas 2 – kontrakt"; testad 3 → 4 och 1 → 4), version 5 (0.4.0) hela Fas S (`MIGRATION_4_5`,
+  se "Fas S – kontrakt"; testad 4 → 5 och 1 → 5).
 - **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
   schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
   (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
@@ -536,6 +538,227 @@ Inspelningarna ligger i `api-schema/fixtures/<version>/fas2/`. Det viktigaste:
 | Synk (`:core:sync`) | `ForegroundSync`, `ShoppingWindowRule`, `OutboxDao.enqueue/nextReadyBatch`, `IdRewriteDao`, `sync_state.delta_count` | Delta + full omläsning med fönsterregeln och arkivering, polling, små tabeller (butiker, listor, böcker), rensning före tömning, demoinnehåll för Fas 2; `TemporaryFas2SyncModule` |
 | Integration | allt ovan | kopplar ihop, tar bort `TemporaryFas2Module.kt`, röktest för Fas 2 |
 <!-- /Fas 2 kontrakt -->
+
+<!-- Fas S kontrakt -->
+## Fas S – kontrakt (0.4.0 "Skafferi & drycker")
+
+Grunden för 0.4.0 (skafferi, Kan laga nu, Använd upp, Packa upp, basvaror, streckkod, kvitto, foto
+av kylen och drycker; plan §8.8, §10 Fas S, B20–B23) lades först, så att sex banor kan bygga
+parallellt mot samma typer, tabeller, outbox-typer och nycklar. Allt nedan finns på `main`; de
+riktiga implementationerna kommer från banorna. Fakta om servern: `api-schema/fixtures/2.6.13/FACTS.md`
+och `2.7.1/FACTS.md`, avsnitten "Fas S" (`PhaseSContractTest`, se "Fas S – fakta" nedan).
+
+### Moduler och var Hemma bor
+
+| Modul | Typ | Innehåll |
+|---|---|---|
+| `:feature:pantry` (ny) | `tandem.android.feature` | Hemma: skafferiet per plats, en plats, lägg till/ändra post, Packa upp, Kan laga nu (Har allt / Saknar 1 / Saknar 2, Överraska mig, Använd upp), Basvaror |
+| `:feature:scan` (ny) | `tandem.android.feature` + CameraX + ML Kit (bundlat) | Streckkod, kvitto, foto av kylen, den gemensamma granskningslistan **och Inställningar → AI** (nyckel, tjänst, modell, varningen; bredvid fotot av kylen, så att ai-foto-banan äger både sidan och nyckeln) |
+| `:feature:recipes` | (finns) | Drycker: listan, en dryck, kopplingsväljaren, "Ny dryck" (en dryck är ett recept, B20) |
+| `:core:ai` (ny) | Android-bibliotek + Hilt | `FridgeVision`-implementationen: Claude via `anthropic-java`, Gemini och OpenAI via REST. Beror på `core:{data,model,datastore,common}`, **aldrig** på `core:network` (ingen Tandoor-interceptor, header, token eller cookie kan nå AI-anropen) |
+
+Varför så: skanning är en egen yta med kamera och tunga beroenden, så den hålls ur
+`feature:pantry`; `core:ai` är ett eget lager (det enda som läser AI-nyckeln) i stället för en del
+av `core:sync`, som annars skulle få både Tandoor- och AI-klienterna.
+
+**Hemma i navigeringen** (plan §6.1 behåller fem flikar: Idag, Recept, Veckan, Handla, Mer):
+
+- **Mer:** första raden "Hemma" (`PantryKey`), före böckerna; "Inställningar → AI" (`AiSettingsKey`)
+  bland inställningarna, en sida bredvid listan på breda fönster (`isMorePage`).
+- **Idag:** avsnitten "Kan laga nu" (`MakeNowKey()`, de första i Har allt) och "Går ut snart"
+  (`MakeNowKey(useUpFirst = true)`, "Grädden går ut i morgon – 4 recept").
+- **Handla:** "Packa upp" (`UnpackKey`) efter de avbockade varorna när något bockats av i dag.
+- **Recept:** ett chip "Drycker" bland samlingarna (`DrinksKey`); receptvyn får "Passar med" och
+  drycken "Passar till" (`PairingPickerKey`).
+- **Surfplatta:** ingen sjätte rail-post (samma fem flikar på alla bredder); Hemma och Kan laga nu
+  visas i två kolumner (plan §10 "Klart när").
+
+Ingångarna läggs till av banorna (hemma-ui, drycker, ai-foto); grunden kopplar bara in sidorna i
+skalet, så att inga referensbilder ändras i grunden. Alla nya sidor visar tills vidare
+`core:ui` `placeholder/PlaceholderPage` (tas bort av sista banan).
+
+### Navigering
+
+| Modul | Nycklar (alla `@Serializable`, tester `PantryKeysTest`, `ScanKeysTest`, `DrinkKeysTest`) | Route |
+|---|---|---|
+| `:feature:pantry` | `PantryDestination`: `PantryKey`, `PantryLocationKey(locationId)`, `PantryEntryKey(entryId?, locationId?)` (helskärm), `UnpackKey`, `MakeNowKey(useUpFirst)`, `StaplesKey` | `PantryRoute(key, onNavigate, onOpenRecipe, onBack)` |
+| `:feature:scan` | `ScanDestination`: `BarcodeScanKey(locationId?)`, `ReceiptScanKey(locationId?)`, `FridgeScanKey(locationId?)`, `ScanReviewKey(sessionId)` (alla helskärm), `AiSettingsKey` | `ScanRoute(key, onNavigate, onBack)` |
+| `:feature:recipes` | `DrinkDestination`: `DrinksKey(type?)`, `DrinkDetailKey(recipeId)`, `PairingPickerKey(recipeId)`, `CreateDrinkKey(pairWithRecipeId?)` (helskärm) | `drinks/DrinkRoutes.kt` `DrinkRoute(key, onNavigate, onOpenRecipe, onBack)` |
+
+Skalet har **en** funktion per modul i `ShellFeatures` (`Pantry`, `Scan`, `Drinks`) och en `entry`
+per nyckel i `TandemShell`; `onNavigate` öppnar vilken nyckel som helst som skalet känner (även
+mellan modulerna, t.ex. Hemma → `BarcodeScanKey`). En bana som behöver en ny återuppringning (t.ex.
+receptarket för "Lägg det som saknas på listan") lägger till den i sin route och i skalet.
+`ScanReviewKey.sessionId` pekar på granskningen i minnet i `feature:scan`; efter processdöd är den
+borta och sidan erbjuder att skanna igen.
+
+### Rena typer (`:core:model`)
+
+| Paket | Typer |
+|---|---|
+| `model.pantry` | `InventoryLocation` (id negativt = bara på enheten), `PantryFood`, `PantryUnit`, `InventoryEntry` (`isEmpty`, `daysLeft`, `expiresSoon`, `EXPIRING_SOON_DAYS = 3`), `PantryGroup`, `InventoryEntryDraft`, `InventoryEntryUpdate`, `ExpiryChoice` (+3 dagar, +1 vecka, +1 månad, +3 månader, inget; `forLocation` ger frysen längre val), `UnpackItem`, `UnpackChoice`, `Staple` |
+| `model.makenow` | `MakeNowGroup` HAS_ALL/MISSING_1/MISSING_2 (`of(n)`), `MissingFood`, `ExpiringFood`, `MakeNowRecipe`, `MakeNowFilter` (nyckelord, tid, måltidstyp), `MakeNowState` (`refreshing`, `stale`) |
+| `model.scan` | `ScanSource` BARCODE/RECEIPT/FRIDGE, `FoodMatchVia`, `MatchedFood`, **`ScanReviewItem`** (text, matchat livsmedel eller inget, mängd, enhet, plats, utgångsdatum, streckkod, AI:ns säkerhet och anteckning, `include`, `learn`; `ready`), `BarcodeProduct`, `BarcodeLookupResult`, `FoodAlias` (`MAX_LENGTH = 128`), `FoodAliasKind`, `ReceiptLine`, `ReceiptLineKind`, `ReceiptItem` |
+| `model.drink` | `DrinkKeywords` (`Dryck`, `Passar med`, typerna), `Drink`, `Pairing` (`isTypeOnly`), `RecipePairings`, `DrinkDraft` |
+| `model.ai` | `AiProvider` CLAUDE (`claude-opus-5-5`)/GEMINI (`gemini-2.5-flash`)/OPENAI (`gpt-5.2-mini`) med `defaultModel` (Claude enligt B22; Gemini och OpenAI är exemplen i Tandoors AI-dokumentation, ai-foto-banan prövar dem), `AiSettings` (**utan nyckel**, bara `hasKey`; `effectiveModel`, `fridgePhotoAvailable`, `warningAcknowledged`), `RecognizedItem`, `FridgeVisionError` (NoKey, InvalidKey, QuotaOrRateLimit, Refusal, Network, Unparseable, DemoMode), `FridgeVisionResult` |
+
+### Gränssnitt (`:core:data`, `:core:datastore`) och vem som implementerar
+
+Samma regler som Fas 2: main-safe, följer det aktiva kontot, fungerar offline (skrivningar sparas
+direkt och köas), en demoväg utan nät, och gäster (`SpacePermissions.readOnly`) får
+`DataProblem.READ_ONLY` innan något sparas.
+
+| Gränssnitt | Bana | Innehåll |
+|---|---|---|
+| `pantry.PantryRepository` | hemma-data (`:core:sync`) | platser (bara kontots hushåll: Tandoor listar hela spacet), skafferiet per plats, en post, `observeExpiring(today, days)` (indata till `UseUpRanking`), `observeAvailableFoodIds`, skapa/ändra/radera, "Slut" (`markEmpty` = mängd 0), "−1" (`decrement`), Packa upp (`observeUnpackable`, `unpack`), `refresh` |
+| `pantry.StaplesRepository` | hemma-data | basvarorna med *har hemma*, förslagen en gång (`observeSuggestionsShown`), `addStaples`, `removeStaple`, `setOnHand` (i batch) |
+| `pantry.MakeNowRepository` | hemma-data | `observe(filter, today)` (tre `makenow`-anrop, minsta N vinner, Använd upp först), `refresh`, `missingFoods(recipeId)` (lokalt med `MissingIngredients`), `surprise(group, filter)` |
+| `scan.FoodAliasRepository` | skanning | inlärda koder och kvittonamn som `FOOD_ALIAS`: `observeAliases`, `find(text)` (utan versaler), `learn`, `forget`, `refresh` |
+| `scan.BarcodeLookup` | skanning | Open Food Facts `GET /api/v2/product/{ean}`: **bara koden**, User-Agent `Tandem/<versionName> (+https://github.com/Demacish/tandem)`, en **egen OkHttp-klient** utan Tandoors interceptors/headers/token/cookies, svaret (även "finns inte") cachat i `barcode_product`; aldrig i demoläget |
+| `drink.DrinkRepository` | drycker | drycker (per typ), typerna, kopplingsnyckelorden, kopplingar åt båda håll (`observeRecipePairings`), `observeIsDrink`, `addPairing`/`addNewPairing`/`removePairing`, `createDrink`, `refresh` |
+| `ai.AiSettingsRepository` | ai-foto | tjänst, modell, egen bas-URL (https), `storeKey`/`removeKey` (**skrivskyddad nyckel**: inget returnerar den), `acknowledgeWarning` |
+| `ai.FridgeVision` | ai-foto (`:core:ai`, binds redan av `AiModule`) | foto (JPEG, skalat till 1600 px) → `FridgeVisionResult`; inga automatiska omförsök |
+| `core:datastore` `AiKeyStore` | ai-foto | **det smala nyckel-API:t**: `providersWithKey`, `store`, `remove`, `useKey(provider) { key -> … }` (nyckeln lämnar aldrig blocket), `clearAll`; fil `files/datastore/secure_ai_keys.pb` (`DatastoreFiles.SECURE_AI_KEYS`), krypterad med samma Keystore-AEAD som kontona. Features når aldrig `core:datastore` (checkModuleGraph), så bara `core:ai` läser nyckeln |
+
+**AI-nyckeln (B22):** lagras bara krypterad (`AiKeyStore`), loggas aldrig, finns aldrig i
+diagnostik, kraschlogg, export, backup (hela `file`-domänen är undantagen i
+`data_extraction_rules.xml`, `allowBackup=false`), skärmbilder, testfixturer eller CI-loggar.
+Fältet är ett lösenordsfält. Funktionen är dold utan nyckel, **märkt experimentell**, och första
+gången visas varningen att AI:n kan missa varor eller hitta på sådana som inte finns
+(`AiSettings.warningAcknowledged`); granskningslistan påminner om detsamma. Testerna använder
+fejkade nycklar (`sk-test-not-a-real-key`) och fejkade servrar, aldrig ett riktigt AI-API.
+
+### Ren logik (`:core:domain`)
+
+| Typ | Innehåll |
+|---|---|
+| `pantry.MissingIngredients` | `missing(ingredients, foods: Map<Long, FoodAvailability>)` → `List<MissingFood>` med Tandoors regler (har hemma eller lager > 0; ersättning; `ignore_shopping` om inte recept; rubriker och fritext räknas inte; varje livsmedel en gång). `FoodAvailability(foodId, onHand, inStock, substituteOnHand, substituteIds, ignoreShopping, isRecipe)`. Känd lucka: ett syskon/barn som bara finns i lagret ses inte |
+| `pantry.UseUpRanking` | `rank(recipes, recipeFoods, pantry, today, days = 3)`: recept med en vara som går ut inom 3 dagar först (tidigast först, sedan fler), annars serverns ordning; `expiringByFood` |
+| `scan.ReceiptLineFilter` | `classify(line)` → `ReceiptLineKind`, `items(lines)` → `ReceiptItem` utan pris; ett första skelett (summa, moms, pant, rabatt, kort, rubrik) som skanningsbanan fyller i |
+
+### Room-schema 5 (`MIGRATION_4_5`, hela fasens enda migrering)
+
+Tabellerna och migreringen är **slutliga för Fas S**: banorna lägger till frågor i sina DAO:er men
+ingen tabell, kolumn eller version. Behövs ändå en ändring blir den 5 → 6 och samordnas här först.
+`5.json` är incheckad; `TandemMigrationTest` prövar 4 → 5 och 1 → 5; `OutboxPhaseSTest` prövar
+id-omskrivningen och sammanslagningen.
+
+| Tabell | Nyckel | Innehåll | DAO (bana) |
+|---|---|---|---|
+| `inventory_location` | `(account_id, local_id)`, unik `server_id` | namn, `is_freezer`, `household_id`/`household_name` (avsändaren bygger hela platsen ur dem), `location_order` (enhetens ordning), `fetched_at` | `PantryDao` (hemma-data) |
+| `inventory_entry` | som ovan; index plats, livsmedel, `expires` | `location_id` (server- eller tillfälligt id), `sub_location`, `code` (Tandoors, ingen streckkod), livsmedel (id, namn, plural), enhet (id, namn), `amount`, `expires` `yyyy-MM-dd`, `note`, skapare, `created_at`, `fetched_at` | `PantryDao` |
+| `food_alias` | som ovan; index `alias_key` | `alias` (`param_1`), `alias_key` (gemener, trimmad), `food_name` (`param_2`), `food_id`, `kind` (`FoodAliasKinds` BARCODE/RECEIPT/OTHER), `automation_name`, `disabled` | `FoodAliasDao` (skanning) |
+| `barcode_product` | `(account_id, ean)` | Open Food Facts: `found`, namn, märke, mängd, `fetched_at` | `BarcodeProductDao` (skanning) |
+| `make_now` | `(account_id, recipe_id)`; index `missing_count` | 0/1/2, `missing_foods` (JSON, när raden visats), `fetched_at` | `MakeNowDao` (hemma-data) |
+| `staple` | `(account_id, name_key)` | basvaran (namn, `food_id`, `added_at`); *har hemma* ligger i Tandoor | `StapleDao` (hemma-data) |
+| `drink_draft` | `(account_id, local_id)` | en dryck skapad offline: namn, beskrivning, portioner, nyckelord (JSON), `image_path` (app-privat kopia), `created_at` | `DrinkDraftDao` (drycker) |
+
+Nya kolumner: `food.substitute_on_hand` (standard 0, serverns `substitute_onhand`),
+`food.substitute_ids` (standard `[]`, de direkta ersättningarnas id), `food.recipe_id`. Dryckernas
+kopplingar behöver ingen egen tabell: `keyword` har redan `parent_id` och `full_name`, och
+`recipe_keyword` kopplar recept och nyckelord (en dryck = ett recept med `Dryck`, en koppling = ett
+nyckelord under `Passar med`). Alla nya tabeller rensas av `AccountDao.deleteAccountData`
+(`AccountIsolationTest`).
+
+### Outboxen (Fas S)
+
+Samma regler som Fas 2 (tillfälliga negativa id ur `IdRewriteDao.nextLocalId`, `refs`,
+`depends_on`, `completeCreate` i en transaktion). `nextLocalId` och `completeCreate` klarar nu även
+platser (posterna följer med: `inventory_entry.location_id` skrivs om), poster, alias, nyckelord
+(barnens `parent_id` och `recipe_keyword` följer med) och drycker (`drink_draft`-raden tas bort,
+väntande `RECIPE_IMAGE` får server-id).
+
+| op | entitet | Anrop | Payload / `refs` / batch | Särskilt (FACTS "Fas S") |
+|---|---|---|---|---|
+| CREATE/PATCH/DELETE | `inventory_location` | `/api/inventory-location/` | `{name, is_freezer}`; avsändaren lägger till `household: {id, name}` | hushåll krävs (400); DELETE tar postarna med sig |
+| CREATE/PATCH/DELETE | `inventory_entry` | `/api/inventory-entry/` | `{inventory_location: <id>, food: {name[,id]}, unit: {name}, amount, expires, note, sub_location}`; refs `{"inventory_location": "inventory_location"}`; avsändaren byter id:t mot **hela** platsen | enhet krävs (null = 400); en plats med annat namn döps om; "Slut" = PATCH `{amount: 0}` |
+| PATCH | `food` | `PATCH /api/food/{id}/` | `{food_onhand}` (Fas 2, ett livsmedel) | per hushåll |
+| **BATCH_ON_HAND** (ny) | `food` | `PUT /api/food/batch_update/` `{foods: [ids], on_hand}` | en rad per livsmedel (`server_id` = id), `{"on_hand": true}`, bas `{"on_hand": <före>}`, batch `food:on_hand=true\|false` | svaret `{}`; slås ihop som BULK_CHECK (sista värdet, tillbaka till basen tar ut varandra) |
+| CREATE/PATCH/DELETE | `food_alias` | `/api/automation/` | `{type: "FOOD_ALIAS", name: "Tandem: streckkod"\|"Tandem: kvitto", description: "", param_1, param_2}` | ≤ 128 tecken (129 = 400); gäst 403; ingen unikhet på servern |
+| CREATE | `keyword` | `POST /api/keyword/`, sedan `PUT /api/keyword/{id}/move/{parent}/` | `{name, parent?}` (parent kan vara tillfälligt: refs `{"parent": "keyword"}`) | POST ignorerar `parent`; samma namn (även annan versal) = samma id |
+| RECIPE_KEYWORDS | `recipe` | `PATCH /api/recipe/{id}/` `{keywords: [...hela listan]}` | fälten i `RecipeKeywordFields`: `"keywords": {"vill-laga": bool}` (Fas 2), **`"keyword:<id>": bool`** (koppling/typ på id), **`"pairing:<namn>": true`** (ny koppling under "Passar med", skapas och flyttas först) | läs receptet färskt (PATCH ersätter listan); fälten slås ihop ett och ett och baserna slås ihop, så "Vill laga" och kopplingar på samma recept aldrig tar ut varandra; drycker-banan utökar `RecipeKeywordsOutboxHandler` med de nya fälten |
+| CREATE | `drink` | `POST /api/recipe/` `{name, description, keywords: [{name}...], servings, steps: [], internal: true}` | ur `drink_draft` (tillfälligt id) | utan `steps` = 400, `internal` blir annars false |
+| **RECIPE_IMAGE** (ny) | `drink` | `PUT /api/recipe/{id}/image/` (multipart `image`) | `{"file": "<app-privat sökväg>"}`, `depends_on` CREATE; en nyare bild ersätter en osänd | POST = 405 |
+
+`OutboxHealth.kindOf` visar de nya raderna som "Övrigt" tills banorna lägger till egna
+`OutboxKind` (med strängar i skalets diagnostik).
+
+### Fas S – fakta (2.6.13, 2.6.15, 2.7.1, 2.7.2 och `latest` beter sig likadant)
+
+`PhaseSContractTest` körs i `contract.yml` efter Fas 2 (push: 2.6.13 och 2.7.1; `tandoor-watch`
+och manuella körningar även 2.6.15, 2.7.2 och `latest`; `workflow_dispatch` tar nu valfria taggar).
+Steget före lägger till en medlem i ett **andra hushåll**. Det viktigaste (allt i FACTS "Fas S"):
+
+- `makenow` är ett heltal (`true` = 0); lager > 0 och *har hemma* i hushållet, ersättningar och
+  `ignore_shopping` räknas; ogiltiga värden ignoreras (alla recept), `-1` ger inga; ett recept utan
+  ingredienser är alltid "Har allt".
+- Platser och poster är **space-breda** (ett annat hushåll ser dem), men makenow och *har hemma*
+  följer hushållet. Platsen kräver hushåll; en post kräver enhet och **hela** platsen (som skrivs).
+- Loggen: `add` vid skapande, `remove` vid varje mängdändring (även ökning), `move` vid flytt.
+- Nyckelord: POST ignorerar `parent` → `move`; `keywords_or` tar med barnen som standard; en
+  medlem (även i ett annat hushåll) kan PATCHa någons recept, gästen inte; PATCH ersätter listan.
+- `FOOD_ALIAS`: space-bred, ≤ 128 tecken, parsern tillämpar den utan hänsyn till versaler (också en
+  streckkod); gästen 403.
+- `food/batch_update/` sätter *har hemma* för hushållet; drycken: `steps: []` krävs, bild med PUT.
+
+### Beroenden (Fas S, `gradle/libs.versions.toml`)
+
+| Bibliotek | Version | Används i | Not |
+|---|---|---|---|
+| `androidx.camera:camera-{core,camera2,lifecycle,view}` (bundle `camerax`) | 1.6.2 (2026-08-26) | `:feature:scan` | 1.7.0 är rc |
+| `com.google.mlkit:barcode-scanning` | 17.3.0 | `:feature:scan` | **bundlad** modell (tflite + `libbarhopper_v3.so` per ABI i APK:n), inte `play-services-mlkit-*` |
+| `com.google.mlkit:text-recognition` | 16.0.1 | `:feature:scan` | bundlad latinsk modell |
+| `com.anthropic:anthropic-java` | 2.72.0 (2026-10-14) | `:core:ai` | 2.73.0 och senare var under två veckor gamla; drar in Jackson 2.19, `kotlin-reflect`, OpenTelemetry API och OkHttp 4.12 (vår OkHttp 5.5 vinner). Biblioteket har egna R8-regler (`META-INF/proguard/`) |
+| `org.jetbrains.kotlin:kotlin-reflect` | = Kotlin (2.4.21) | `:core:ai` | SDK:n vill ha 1.9.0; låst till vår Kotlin |
+
+Publicerade `.sha1` kontrollerades vid hämtningen 2026-10-29 för CameraX-, ML Kit- och SDK-jararna.
+`app` utesluter `META-INF/versions/9/module-info.class` och `META-INF/versions/9/OSGI-INF/MANIFEST.MF`
+(Jacksons jarar har samma sökväg). `:feature:scan` deklarerar `CAMERA` (frågas i sammanhanget med
+förklaring; nekad = systemets bildväljare fungerar ändå) och `android.hardware.camera` som valfri.
+
+**R8 och röktestet:** `:feature:scan` (`engine/ScanEngines.kt`: `BarcodeEngine`, `ReceiptTextEngine`)
+och `:core:ai` (`ClaudeFridgeVisionClient`, bunden via Hilt) refererar biblioteken redan i grunden,
+så att den minifierade byggen bevisar att R8 klarar dem (`smoke.yml`, "OK (n tests)"). Anropen körs
+inte i röktestet; ai-foto-banan prövar Claude-klienten mot en fejkad server i processen.
+
+### APK-storlek
+
+`smoke.yml` skriver nu den minifierade APK:ns storlek i körningens sammanfattning.
+
+| Bygge | Före Fas S (main `db4cd6b`) | Med grundens beroenden | Skillnad |
+|---|---|---|---|
+| `sideloadMinified` (R8, alla ABI) | APK_BEFORE | APK_AFTER | APK_DIFF |
+| `sideloadDebug` (artefakten i `pr.yml`, zip) | DEBUG_BEFORE | DEBUG_AFTER | DEBUG_DIFF |
+
+Det mesta är ML Kits bundlade streckkodsbibliotek (`libbarhopper_v3.so`, 3–6 MB per ABI) och
+textmodellen. ABI-uppdelade APK:er för `sideload` (Obtainium väljer rätt fil) är en öppen fråga för
+release-flödet.
+
+### Fakes (`:core:testing`) och tillfälliga bindningar (`:app`)
+
+`FasSFakes.kt`: `FakePantryRepository`, `FakeStaplesRepository`, `FakeMakeNowRepository`,
+`FakeFoodAliasRepository`, `FakeBarcodeLookup`, `FakeDrinkRepository`, `FakeAiSettingsRepository`
+(håller nycklarna bara för testernas påståenden), `FakeFridgeVision` och `SamplePantry`
+(körningsdag 2026-10-29, syntetiska koder). `FasSFakesTest` prövar dem; `FridgeVisionTest` i
+`:core:ai` prövar valet av tjänst, att nyckeln aldrig syns i `toString` och tolkningen av svaret.
+
+`app/.../di/TemporaryFasSModule.kt` binder tomma stand-ins (`NotBuilt…`, varje skrivning ger
+`tandem.fas-s.not-built-yet`) i fyra moduler: `TemporaryFasSPantryModule`,
+`TemporaryFasSScanModule`, `TemporaryFasSDrinkModule`, `TemporaryFasSAiModule` (även en
+`AiKeyStore` som inte sparar något). Fakes i `core:testing` kan inte användas i en main-konfiguration
+(checkModuleGraph regel 4). Varje bana tar bort sin modul i samma commit som den binder den riktiga.
+
+### Vem bygger vad
+
+| Bana | Bygger på | Levererar (tar bort) |
+|---|---|---|
+| hemma-data (`:core:sync`, `:core:network`) | `PantryRepository`, `StaplesRepository`, `MakeNowRepository`, `PantryDao`, `StapleDao`, `MakeNowDao`, `food.substitute_*`, outbox `inventory_location`, `inventory_entry`, `BATCH_ON_HAND`, `MissingIngredients`, `UseUpRanking` | DTO:er och tjänster för `inventory-*` och `makenow` (egna filer, rader i `DtoFixturesTest` mot `fas-s/`), synk av platser/poster (hushållsfiltret), makenow i tre anrop med RateLimiter, Packa upp ur dagens avbockade poster, basvaror i batch, demoinnehåll; `TemporaryFasSPantryModule` |
+| hemma-ui (`:feature:pantry`, `:feature:home`, `:feature:shopping`, `:feature:shell`) | nycklarna ovan, `MakeNowState`, `ExpiryChoice`, `RecipeShoppingSheet` med förval | Hemma (två kolumner på surfplatta), plats, post, "Slut"/"−1", Packa upp, Kan laga nu med filter och Överraska mig, "Lägg det som saknas på listan", basvarorna, ingångarna (Mer, Idag, Handla), "Tog något slut?" efter "Klart!", referensbilder |
+| skanning (`:feature:scan`, `:core:sync`, `:core:network`) | `ScanReviewItem`, `FoodAliasRepository`, `BarcodeLookup`, `FoodAliasDao`, `BarcodeProductDao`, outbox `food_alias`, `ReceiptLineFilter`, `BarcodeEngine`, `ReceiptTextEngine` | CameraX-skanner med behörighet i sammanhanget och bildväljaren, Open Food Facts-klienten (egen OkHttp), kvittoheuristiken, granskningslistan (gemensam för alla tre), inlärning som `FOOD_ALIAS`; `TemporaryFasSScanModule` |
+| drycker (`:feature:recipes`, `:core:sync`) | `DrinkRepository`, `DrinkKeywords`, `DrinkDraftDao`, outbox `keyword`, `drink`, `RECIPE_IMAGE`, `RECIPE_KEYWORDS` + `RecipeKeywordFields` | Drycker, en dryck, kopplingsväljaren, "Ny dryck", "Passar med"/"Passar till" i receptvyn, dryckesförslag i Idag och Veckan, Systembolaget-länken (valfri); `TemporaryFasSDrinkModule` |
+| ai-foto (`:core:ai`, `:core:datastore`, `:feature:scan`) | `AiSettingsRepository`, `AiKeyStore`, `FridgeVision`, `ClaudeFridgeVisionClient`, `FridgePrompt` | Inställningar → AI (lösenordsfält, varningen om att AI:n kan ha fel), `EncryptedAiKeyStore`, Gemini- och OpenAI-klienterna, skalning till 1600 px, foto av kylen → granskningslistan, tester mot fejkade servrar; `TemporaryFasSAiModule` |
+| rester (`:core:sync`, `:smoke`, `:feature:shell`) | Fas 2:s rester (plan §10 Fas S) | dubbel synk när ett konto läggs till, röktest för hushållsvarningen och "Delad med", rensning av `id_mapping`, bottenark som fönster i skärmbildstester; till sist bort med `PlaceholderPage` |
+<!-- /Fas S kontrakt -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)

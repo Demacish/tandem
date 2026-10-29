@@ -1,0 +1,702 @@
+{
+  "tandoorTag": "2.6.13",
+  "runDay": "2000-01-15",
+  "household.owner.present": true,
+  "household.reader.present": true,
+  "household.reader.sameAsOwner": true,
+  "household.outsider.present": true,
+  "household.outsider.sameAsOwner": false,
+  "seed.foods": [
+    "blåbär",
+    "citronsaft",
+    "havredryck",
+    "havregryn",
+    "kardemummakaka",
+    "kikärtor",
+    "kikärtsmjöl",
+    "mellanmjölk",
+    "olivolja",
+    "persilja",
+    "spiskummin",
+    "tahini"
+  ],
+  "food.patchOnHand": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.patchOnHand.value": true,
+  "food.patchOnHand.reader": true,
+  "food.patchOnHand.outsider": false,
+  "food.patchOnHand.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.patchIgnoreShopping": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.patchIgnoreShopping.value": true,
+  "food.batchOnHand": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {}
+  },
+  "food.batchOnHand.values": [
+    true,
+    true,
+    true
+  ],
+  "food.batchOnHand.reader": true,
+  "food.batchOnHand.outsider": false,
+  "food.batchOff.status": 200,
+  "food.batchOff.value": false,
+  "food.batchIgnoreShopping.status": 200,
+  "food.batchIgnoreShopping.value": true,
+  "food.batchOnHand.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.batchMinimal.status": 200,
+  "food.batchSubstitute.status": 200,
+  "food.substitute.names": [
+    "mellanmjölk"
+  ],
+  "food.substituteOnhand": true,
+  "food.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "plural_name": "null",
+    "description": "string",
+    "shopping": "string",
+    "recipe": "null",
+    "url": "string",
+    "properties": "array",
+    "properties_food_amount": "number",
+    "properties_food_unit": "null",
+    "fdc_id": "null",
+    "food_onhand": "boolean",
+    "supermarket_category": "null",
+    "parent": "null",
+    "numchild": "number",
+    "inherit_fields": "array",
+    "full_name": "string",
+    "ignore_shopping": "boolean",
+    "substitute": "array",
+    "substitute_siblings": "boolean",
+    "substitute_children": "boolean",
+    "substitute_onhand": "boolean",
+    "child_inherit_fields": "array",
+    "open_data_slug": "null",
+    "shopping_lists": "array"
+  },
+  "inventoryLocation.list": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryLocation.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "inventoryLocation.createNoHousehold": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "household": [
+        "This field is required."
+      ]
+    }
+  },
+  "inventoryLocation.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryLocation.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "is_freezer": "boolean",
+    "household": "object"
+  },
+  "inventoryLocation.create.sameHousehold": true,
+  "inventoryLocation.create.isFreezer": true,
+  "inventoryLocation.create.newHouseholdCreated": false,
+  "inventoryLocation.patch": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryLocation.patch.name": "Skafferiet",
+  "inventoryLocation.patch.householdKept": true,
+  "inventoryLocation.list.names": [
+    "Frys",
+    "Kyl",
+    "Skafferiet"
+  ],
+  "inventoryLocation.reader.names": [
+    "Frys",
+    "Kyl",
+    "Skafferiet"
+  ],
+  "inventoryLocation.outsider": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryLocation.outsider.names": [
+    "Frys",
+    "Kyl",
+    "Skafferiet"
+  ],
+  "inventoryLocation.guest.list": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryLocation.guest.create": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryEntry.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryEntry.fieldTypes": {
+    "id": "number",
+    "inventory_location": "object",
+    "sub_location": "string",
+    "code": "string",
+    "food": "object",
+    "unit": "object",
+    "amount": "number",
+    "expires": "string",
+    "note": "string",
+    "label": "string",
+    "created_at": "string",
+    "created_by": "number"
+  },
+  "inventoryEntry.create.code.shape": "X",
+  "inventoryEntry.create.label.shape": "#N - N.N (burk) kikärtor",
+  "inventoryEntry.create.expires": "2000-01-17",
+  "inventoryEntry.create.expiresInDays": 2,
+  "inventoryEntry.create.amount": 2.0,
+  "inventoryEntry.create.subLocation": "Översta hyllan",
+  "inventoryEntry.create.locationName": "Kyl",
+  "inventoryEntry.create.food.keys": [
+    "child_inherit_fields",
+    "description",
+    "fdc_id",
+    "food_onhand",
+    "full_name",
+    "id",
+    "ignore_shopping",
+    "inherit_fields",
+    "name",
+    "numchild",
+    "open_data_slug",
+    "parent",
+    "plural_name",
+    "properties",
+    "properties_food_amount",
+    "properties_food_unit",
+    "recipe",
+    "shopping_lists",
+    "substitute",
+    "substitute_children",
+    "substitute_onhand",
+    "substitute_siblings",
+    "supermarket_category",
+    "url"
+  ],
+  "inventoryEntry.createZero.status": 201,
+  "inventoryEntry.createNoExpires.status": 201,
+  "inventoryEntry.createNoExpires.expires": null,
+  "inventoryEntry.createFreezer.status": 201,
+  "inventoryEntry.createLocationIdOnly": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "inventory_location": {
+        "name": [
+          "This field is required."
+        ],
+        "household": [
+          "This field is required."
+        ]
+      }
+    }
+  },
+  "inventoryEntry.createNoUnit": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "unit": [
+        "This field is required."
+      ]
+    }
+  },
+  "inventoryEntry.createNullUnit": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "unit": [
+        "This field may not be null."
+      ]
+    }
+  },
+  "inventoryEntry.createRenamedLocation.status": 201,
+  "inventoryEntry.createRenamedLocation.locationRenamed": true,
+  "inventoryEntry.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "inventoryEntry.list.foodsInOrder": [
+    "kikärtor",
+    "blåbär",
+    "persilja"
+  ],
+  "inventoryEntry.list.empty=true": [
+    "kikärtor",
+    "citronsaft",
+    "blåbär",
+    "persilja"
+  ],
+  "inventoryEntry.list.empty=false": [
+    "kikärtor",
+    "citronsaft",
+    "blåbär",
+    "persilja"
+  ],
+  "inventoryEntry.list.foodId": [
+    "kikärtor"
+  ],
+  "inventoryEntry.list.locationId": [
+    "blåbär"
+  ],
+  "inventoryEntry.list.code": [
+    "kikärtor"
+  ],
+  "inventoryEntry.list.reader": [
+    "kikärtor",
+    "blåbär",
+    "persilja"
+  ],
+  "inventoryEntry.list.outsider": [
+    "kikärtor",
+    "blåbär",
+    "persilja"
+  ],
+  "inventoryEntry.guest.list": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryEntry.guest.create": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryEntry.reader.create.status": 201,
+  "inventoryEntry.reader.create.ownerSees": true,
+  "inventoryEntry.patchAmount": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "inventoryEntry.patchAmount.amount": 1.0,
+  "inventoryEntry.patchZero.status": 200,
+  "inventoryEntry.patchZero.listed": false,
+  "inventoryEntry.patchNoteExpires.status": 200,
+  "inventoryEntry.patchNoteExpires.expires": "2000-01-16",
+  "inventoryEntry.patchNoteExpires.expiresInDays": 1,
+  "inventoryEntry.patchMove.status": 200,
+  "inventoryEntry.patchMove.location": "Frys",
+  "inventoryLog.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "inventoryLog.fieldTypes": {
+    "id": "number",
+    "entry": "object",
+    "booking_type": "string",
+    "old_amount": "number",
+    "new_amount": "number",
+    "old_inventory_location": "object",
+    "new_inventory_location": "object",
+    "note": "null",
+    "created_at": "string"
+  },
+  "inventoryLog.entry.rowsNewestFirst": [
+    "move:2.0->2.0",
+    "move:2.0->2.0",
+    "remove:0.0->2.0",
+    "remove:1.0->0.0",
+    "remove:2.0->1.0",
+    "add:0.0->2.0"
+  ],
+  "inventoryLog.entry.locations": [
+    "Frys->Kyl",
+    "Kyl->Frys",
+    "Kyl->Kyl",
+    "Kyl->Kyl",
+    "Kyl->Kyl",
+    "Kyl->Kyl"
+  ],
+  "inventoryLog.foodId.count": 6,
+  "inventoryLog.create.status": 405,
+  "inventoryEntry.delete.status": 204,
+  "inventoryEntry.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No InventoryEntry matches the given query."
+    }
+  },
+  "inventoryEntry.deleted.patch.status": 404,
+  "inventoryLog.afterEntryDelete.count": 0,
+  "inventoryLocation.delete.status": 204,
+  "inventoryLocation.delete.entryGet.status": 404,
+  "makenow.0": [
+    "Gröt med blåbär",
+    "Tahinidressing"
+  ],
+  "makenow.1": [
+    "Gröt med blåbär",
+    "Hummus",
+    "Tahinidressing"
+  ],
+  "makenow.2": [
+    "Falafel",
+    "Gröt med blåbär",
+    "Hummus",
+    "Tahinidressing"
+  ],
+  "makenow.3": [
+    "Falafel",
+    "Gröt med blåbär",
+    "Hummus",
+    "Tahinidressing"
+  ],
+  "makenow.true": [
+    "Gröt med blåbär",
+    "Tahinidressing"
+  ],
+  "makenow.none": [
+    "Falafel",
+    "Gröt med blåbär",
+    "Hummus",
+    "Tahinidressing"
+  ],
+  "makenow.invalid.false": {
+    "status": 200,
+    "recipes": [
+      "Falafel",
+      "Gröt med blåbär",
+      "Hummus",
+      "Tahinidressing"
+    ]
+  },
+  "makenow.invalid.abc": {
+    "status": 200,
+    "recipes": [
+      "Falafel",
+      "Gröt med blåbär",
+      "Hummus",
+      "Tahinidressing"
+    ]
+  },
+  "makenow.invalid.-1": {
+    "status": 200,
+    "recipes": []
+  },
+  "makenow.invalid.1.5": {
+    "status": 200,
+    "recipes": [
+      "Falafel",
+      "Gröt med blåbär",
+      "Hummus",
+      "Tahinidressing"
+    ]
+  },
+  "makenow.invalid.": {
+    "status": 200,
+    "recipes": [
+      "Falafel",
+      "Gröt med blåbär",
+      "Hummus",
+      "Tahinidressing"
+    ]
+  },
+  "makenow.0.afterLemonJuice": [
+    "Gröt med blåbär",
+    "Hummus",
+    "Tahinidressing"
+  ],
+  "makenow.0.withoutSubstitute": [
+    "Tahinidressing"
+  ],
+  "makenow.1.withoutSubstitute": [
+    "Gröt med blåbär",
+    "Hummus",
+    "Tahinidressing"
+  ],
+  "makenow.0.reader": {
+    "status": 200,
+    "recipes": [
+      "Gröt med blåbär",
+      "Tahinidressing"
+    ]
+  },
+  "makenow.0.outsider": {
+    "status": 200,
+    "recipes": []
+  },
+  "makenow.0.guest": {
+    "status": 200,
+    "recipes": []
+  },
+  "makenow.2.foodsOrChickpeas": [
+    "Falafel",
+    "Hummus"
+  ],
+  "makenow.1.random": {
+    "status": 200,
+    "recipes": [
+      "Gröt med blåbär",
+      "Hummus",
+      "Tahinidressing"
+    ]
+  },
+  "keyword.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "keyword.fieldTypes": {
+    "id": "number",
+    "name": "string",
+    "label": "string",
+    "description": "string",
+    "parent": "null",
+    "numchild": "number",
+    "created_at": "string",
+    "updated_at": "string",
+    "full_name": "string"
+  },
+  "keyword.createDuplicate.status": 201,
+  "keyword.createDuplicate.sameId": true,
+  "keyword.createOtherCase.sameId": true,
+  "keyword.createWithParent.status": 201,
+  "keyword.createWithParent.parentSet": false,
+  "keyword.move": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "msg": "Kraftigt rött was moved successfully to parent Passar med"
+    }
+  },
+  "keyword.move.parentSet": true,
+  "keyword.child.fullName": "Passar med > Kraftigt rött",
+  "keyword.child.label": "Kraftigt rött",
+  "keyword.parent.numchild": 1,
+  "keyword.moveEmptyBody.status": 200,
+  "keyword.rootChildren.names": [
+    "Kraftigt rött"
+  ],
+  "keyword.query.child": [
+    "Kraftigt rött"
+  ],
+  "keyword.guest.create": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "keyword.reader.create.status": 201,
+  "pairing.before.keywords": [],
+  "pairing.memberPatch.status": 200,
+  "pairing.memberPatch.keywords": [
+    "Kraftigt rött"
+  ],
+  "pairing.patchReplaces.keywords": [
+    "Kraftigt rött"
+  ],
+  "pairing.patchIdOnly": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "pairing.guestPatch.status": 403,
+  "pairing.outsiderPatch.status": 200,
+  "pairing.keywordsOrParent.includeChildren=true": [
+    "Falafel",
+    "Hummus"
+  ],
+  "pairing.keywordsOrParent.includeChildren=false": [
+    "Falafel"
+  ],
+  "pairing.keywordsOrParent.default": [
+    "Falafel",
+    "Hummus"
+  ],
+  "pairing.keywordsOrChild.reader": [
+    "Hummus"
+  ],
+  "drink.createNoSteps": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "steps": [
+        "This field is required."
+      ]
+    }
+  },
+  "drink.createEmptySteps": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "drink.createOneEmptyStep": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "drink.create.keywords": [
+    "Dryck",
+    "Vin"
+  ],
+  "drink.create.servings": 1,
+  "drink.create.internal": true,
+  "drink.create.private": false,
+  "drink.create.steps": 0,
+  "drink.guest.create": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "drink.image.status": 200,
+  "drink.imagePost.status": 405,
+  "drink.flat.listed": true,
+  "drink.flat.hasImage": true,
+  "drink.search.names": [
+    "Rioja Crianza"
+  ],
+  "drink.keywordsOr.names": [
+    "Rioja Crianza"
+  ],
+  "drink.makenow0.listed": true,
+  "drink.pairingPatch.status": 200,
+  "drink.pairing.bothSides": [
+    "Hummus",
+    "Rioja Crianza"
+  ],
+  "automation.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "automation.fieldTypes": {
+    "id": "number",
+    "type": "string",
+    "name": "string",
+    "description": "string",
+    "param_1": "string",
+    "param_2": "string",
+    "param_3": "null",
+    "order": "number",
+    "disabled": "boolean",
+    "created_by": "number"
+  },
+  "automation.create.defaults": {
+    "order": 1000,
+    "disabled": false,
+    "description": ""
+  },
+  "automation.createReceipt.status": 201,
+  "automation.list.keys": [
+    "count",
+    "next",
+    "previous",
+    "timestamp",
+    "results"
+  ],
+  "automation.list.params": [
+    "2000000000015",
+    "KIKÄRTOR 380G EKO"
+  ],
+  "automation.list.otherType": 0,
+  "automation.reader.params": [
+    "2000000000015",
+    "KIKÄRTOR 380G EKO"
+  ],
+  "automation.outsider.params": [
+    "2000000000015",
+    "KIKÄRTOR 380G EKO"
+  ],
+  "automation.guest.list": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "automation.guest.create": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "automation.reader.create.status": 201,
+  "automation.createDuplicate.status": 201,
+  "automation.param128.status": 201,
+  "automation.param129": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "param_1": [
+        "Ensure this field has no more than 128 characters."
+      ]
+    }
+  },
+  "automation.name129.status": 400,
+  "automation.parser.lower": "kikärtor",
+  "automation.parser.upper": "kikärtor",
+  "automation.parser.barcode": "kikärtor",
+  "automation.patch": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "automation.patch.param2": "kikärtor eko",
+  "automation.guest.patch.status": 403,
+  "automation.delete.status": 204,
+  "automation.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No Automation matches the given query."
+    }
+  },
+  "mismatches": []
+}

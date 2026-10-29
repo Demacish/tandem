@@ -1,0 +1,91 @@
+{
+  "name": "inventory-entry-list-food",
+  "request": {
+    "method": "GET",
+    "path": "/api/inventory-entry/?food_id=51",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 1,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-15T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 1,
+          "inventory_location": {
+            "id": 1,
+            "name": "Kyl",
+            "is_freezer": false,
+            "household": {
+              "id": 1,
+              "name": "Contract Household",
+              "created_at": "2000-01-15T00:00:00.000000+01:00",
+              "updated_at": "2000-01-15T00:00:00.000000+01:00"
+            }
+          },
+          "sub_location": "Översta hyllan",
+          "code": "1",
+          "food": {
+            "id": 51,
+            "name": "kikärtor",
+            "plural_name": null,
+            "description": "",
+            "recipe": null,
+            "url": "",
+            "properties": [],
+            "properties_food_amount": 100.0,
+            "properties_food_unit": null,
+            "fdc_id": null,
+            "food_onhand": false,
+            "supermarket_category": null,
+            "parent": null,
+            "numchild": 0,
+            "inherit_fields": [],
+            "full_name": "kikärtor",
+            "ignore_shopping": false,
+            "substitute": [],
+            "substitute_siblings": false,
+            "substitute_children": false,
+            "substitute_onhand": false,
+            "child_inherit_fields": [],
+            "open_data_slug": null,
+            "shopping_lists": []
+          },
+          "unit": {
+            "id": 9,
+            "name": "burk",
+            "plural_name": "burkar",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "amount": 2.0,
+          "expires": "2000-01-17",
+          "note": "",
+          "label": "#1 - 2.00 (burk) kikärtor",
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "created_by": 1
+        }
+      ]
+    }
+  }
+}

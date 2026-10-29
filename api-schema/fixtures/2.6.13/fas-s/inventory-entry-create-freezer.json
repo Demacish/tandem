@@ -1,0 +1,107 @@
+{
+  "name": "inventory-entry-create-freezer",
+  "request": {
+    "method": "POST",
+    "path": "/api/inventory-entry/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "inventory_location": {
+        "id": 2,
+        "name": "Frys",
+        "is_freezer": true,
+        "household": {
+          "id": 1,
+          "name": "Contract Household",
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00"
+        }
+      },
+      "food": {
+        "name": "blåbär"
+      },
+      "unit": {
+        "name": "påse"
+      },
+      "amount": 1.0,
+      "expires": "2000-03-15",
+      "note": "",
+      "sub_location": null
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "inventory_location": {
+        "id": 2,
+        "name": "Frys",
+        "is_freezer": true,
+        "household": {
+          "id": 1,
+          "name": "Contract Household",
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00"
+        }
+      },
+      "sub_location": null,
+      "code": "4",
+      "food": {
+        "id": 57,
+        "name": "blåbär",
+        "plural_name": null,
+        "description": "",
+        "recipe": null,
+        "url": "",
+        "properties": [],
+        "properties_food_amount": 100.0,
+        "properties_food_unit": null,
+        "fdc_id": null,
+        "food_onhand": false,
+        "supermarket_category": null,
+        "parent": null,
+        "numchild": 0,
+        "inherit_fields": [],
+        "full_name": "blåbär",
+        "ignore_shopping": false,
+        "substitute": [],
+        "substitute_siblings": false,
+        "substitute_children": false,
+        "substitute_onhand": false,
+        "child_inherit_fields": [],
+        "open_data_slug": null,
+        "shopping_lists": []
+      },
+      "unit": {
+        "id": 15,
+        "name": "påse",
+        "plural_name": "påse",
+        "description": null,
+        "base_unit": null,
+        "open_data_slug": null
+      },
+      "amount": 1.0,
+      "expires": "2000-03-15",
+      "note": "",
+      "label": "#4 - 1.00 (påse) blåbär",
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "created_by": 1
+    }
+  }
+}

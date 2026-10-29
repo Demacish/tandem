@@ -1,0 +1,68 @@
+{
+  "name": "inventory-location-list",
+  "request": {
+    "method": "GET",
+    "path": "/api/inventory-location/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 3,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-15T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 1,
+          "name": "Kyl",
+          "is_freezer": false,
+          "household": {
+            "id": 1,
+            "name": "Contract Household",
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00"
+          }
+        },
+        {
+          "id": 2,
+          "name": "Frys",
+          "is_freezer": true,
+          "household": {
+            "id": 1,
+            "name": "Contract Household",
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00"
+          }
+        },
+        {
+          "id": 3,
+          "name": "Skafferiet",
+          "is_freezer": false,
+          "household": {
+            "id": 1,
+            "name": "Contract Household",
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00"
+          }
+        }
+      ]
+    }
+  }
+}

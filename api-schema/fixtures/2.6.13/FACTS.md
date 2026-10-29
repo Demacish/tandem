@@ -746,3 +746,152 @@ medlemmen ligger i "Contract Household", gästen i inget hushåll):
 7. Skrivknappar bara för egna böcker; "Vill laga" via receptets nyckelord (inte gäst).
 8. Gästläget är appens beslut (servern tillåter delar).
 9. 404 på en raderad rad betyder "raderad någon annanstans"; bulk ger aldrig 404.
+
+# Fas S: skafferi, Kan laga nu, nyckelord, inlärda alias, livsmedel och drycker
+
+> **Källa:** `PhaseSContractTest` i [`contract.yml`](../../../.github/workflows/contract.yml), ett
+> eget steg efter Fas 2 mot samma tillfälliga 2.6.13-server. Inspelad 2026-10-29. Filerna ligger i
+> [`fas-s/`](fas-s/). Sista steget jämför testets `EXPECTED` (raderna nedan med **[O]**) och fäller
+> körningen vid avvikelse; allt annat står i [`fas-s/observed-facts.json`](fas-s/observed-facts.json)
+> och jämförs nattligen av `tandoor-watch` (`report.py` läser `fas-s/` som `fasS.*`).
+> **2.6.15, 2.7.1, 2.7.2 och `latest` gav exakt samma fakta** (skiljer sig bara i `tandoorTag`). [O]
+> **[K]** = Tandoors källkod 2.6.13/2.7.2 (`food_availability_helper.py`, `managers.py` `cookable`,
+> `recipe_search.py` `_parse_makenow`, `serializer.py`, `views/api.py`, `automation_helper.py`).
+
+## Fas S: upplägg
+
+- Före testet lägger arbetsflödet till en **fjärde medlem** (`tda_…0004`, gruppen `user`) i ett
+  **andra hushåll** ("Other Household"), så att hushållsgränsen syns. Ägaren (`…0001`) och den andra
+  medlemmen (`…0002`) är kvar i "Contract Household", gästen (`…0003`) i inget.
+- Testet seedar fyra recept med livsmedel som inga tidigare faser använder: *Hummus* (kikärtor,
+  tahini, citronsaft, olivolja), *Tahinidressing* (tahini, olivolja), *Gröt med blåbär*
+  (havregryn, havredryck, blåbär) och *Falafel* (kikärtor, persilja, spiskummin, kikärtsmjöl),
+  livsmedlen *mellanmjölk* och *kardemummakaka*, platserna Kyl, Frys (`is_freezer`) och Skafferi
+  och drycken *Rioja Crianza*. Tillståndet inför makenow: tahini *har hemma* (PATCH), olivolja
+  `ignore_shopping`, havregryn och mellanmjölk *har hemma* (batch), havredryck har mellanmjölk som
+  ersättning, kikärtor 2 burk i Kyl, citronsaft **0** dl i Kyl, persilja och blåbär 1 vardera.
+- Streckkoden är syntetisk (`2000000000015`, GS1-prefix 20–29 = butiksintern kod, aldrig en
+  verklig produkt), kvittoraden påhittad (`KIKÄRTOR 380G EKO`). Datum flyttas som i Fas 1/2; fakta
+  om utgångsdatum jämförs därför som **antal dagar** från körningsdagen.
+
+## Fas S a. `recipe?makenow=N` är ett heltal
+
+- `makenow=0` → *Gröt med blåbär* och *Tahinidressing*; `=1` → + *Hummus*; `=2` → + *Falafel*;
+  `=3` = `=2`. **`makenow=true` = `0`.** [O] `N` = högst N saknade livsmedel [K]. Har allt / Saknar 1
+  / Saknar 2 är alltså tre anrop; ett recept hör till den minsta N som listar det. [S]
+- **Ogiltiga värden ignoreras:** `false`, `abc`, `1.5` och tomt ger **alla** recept (filtret
+  används inte, status 200); `-1` ger **inga**. [O] Appen skickar bara `0`, `1` och `2`. [S]
+- Ett livsmedel räknas som tillgängligt med *har hemma* (`food_onhand`, hushållets användare)
+  **eller** en lagerpost med **mängd > 0** på en plats i hushållet: citronsaft med mängd 0 räknas
+  inte, och när mängden blir 1 flyttar *Hummus* till `makenow=0`. [O]
+- **Ersättningar** räknas (havredryck via mellanmjölk på *har hemma*); utan mellanmjölk faller
+  *Gröt* till Saknar 1. [O] Även syskon och barn med `substitute_siblings`/`substitute_children`
+  och ersättningar **i lagret** räknas [K]. `ignore_shopping` räknas som löst, utom för ett
+  livsmedel som självt är ett recept [K] (olivolja gör *Tahinidressing* till Har allt [O]).
+- `food_onhand` på livsmedlet speglar **bara** *har hemma*, inte lagret (kikärtor i lagret har
+  `food_onhand: false`). `substitute_onhand` är sann när en ersättning, ett syskon eller ett barn
+  har *har hemma* (inte lagret). [O]/[K] [S] Appen räknar själv ut vilka som saknas
+  (core:domain `MissingIngredients`); grupperna kommer från servern.
+- **Hushållet:** den andra medlemmen får samma grupper; medlemmen i det andra hushållet och
+  gästen (inget hushåll) får **inga** av recepten i `makenow=0` (status 200). [O]
+- Ett recept **utan ingredienser** (en dryck utan steg) saknar ingenting och ligger alltid i
+  `makenow=0`. [O] [S] Drycker filtreras bort ur Kan laga nu.
+- `makenow=2&foods_or=<kikärtor>` → *Falafel* och *Hummus* ("Använd upp", #28). [O]
+  `random=true` fungerar tillsammans med `makenow`. [O]
+
+## Fas S b. Lagret (`inventory-location`, `inventory-entry`, `inventory-log`)
+
+- **Plats:** `{id, name, is_freezer, household: {id, name, created_at, updated_at}}`, listan
+  DRF-paginerad. `household` **krävs** (400 `{"household": ["This field is required."]}`) och
+  skickas som `{id, name}`: servern använder **samma** hushåll (inget nytt skapas). [O] Det nästlade
+  objektet **skrivs** (drf-writable-nested): ett annat namn döper om hushållet [K]. PATCH av namnet
+  → 200, hushållet kvar. DELETE → 204 och **platsens poster raderas** (CASCADE; GET → 404). [O]
+- **Post:** `{id, inventory_location: {...hela platsen}, sub_location, code, food: {...Food},
+  unit: {...Unit}, amount (decimal), expires ("yyyy-MM-dd" | null), note, label, created_at,
+  created_by}`. `code` blir postens id i hex (versaler) och `label` `"#<code> - 2.00 (burk)
+  kikärtor"`; **`code` är ingen streckkod** (plan #27). [O]/[K]
+- Den nästlade platsen måste vara **hela objektet**: bara `{id}` → 400 (`name`, `household`
+  krävs), och ett annat namn **döper om platsen** (201 och platsen heter sedan så). [O]
+  [S] Avsändaren bygger platsen ur Room (`inventory_location` med `household_id`/`household_name`).
+- **Enhet krävs:** utan `unit` → 400 "required", `unit: null` → 400 "may not be null" (modellen
+  tillåter null, serialiseraren inte). [O] [S] Appen skickar en standardenhet ("st") när ingen anges.
+- `food: {name}` skapar eller återanvänder livsmedlet på namn, `unit: {name}` likaså (som Fas 2).
+- **Listan** sorteras på `expires` stigande med **null sist** (Postgres); bara poster med mängd > 0
+  utom när `empty` finns i frågan alls: **`empty=true` och `empty=false` listar båda** posterna
+  med mängd 0. [O] Filtren `food_id`, `inventory_location_id` och `code` (samma livsmedel som
+  posten med koden) fungerar. [O]
+- **Hushållet:** platser och poster är **space-breda**: medlemmen i det andra hushållet ser dem
+  (`inventoryLocation.outsider.names`, `inventoryEntry.list.outsider`) [O] och kan också skriva
+  dem (vyerna filtrerar bara på space, `CustomIsUser`) [K].
+  [S] Appen visar bara platser med kontots `household.id`. Den andra medlemmen i samma hushåll kan
+  skapa poster som ägaren ser. [O]
+- **Gäst:** list och skapa → **403** för platser och poster [O], loggen likaså (`CustomIsUser`) [K].
+- **Ändringar:** PATCH `{amount}` → 200 ("−1", "Slut" = 0: posten finns kvar men listas inte).
+  PATCH `{note, expires}` → 200. PATCH `{inventory_location: {...}}` flyttar posten. [O]
+- **Loggen** (`?entry_id=`, nyast först): skapa = `add 0→2`, varje mängdändring = `remove` (även
+  en **ökning**, `remove 0→2`), en flytt = `move` med gammal och ny plats; note/expires loggas inte.
+  `?food_id=` filtrerar på livsmedlet. POST mot loggen → 405. En raderad post tar sina loggrader
+  med sig (0 kvar). [O]
+- DELETE av en post → 204; GET och PATCH efteråt → 404 `{"detail": "No InventoryEntry matches the
+  given query."}`. [O]
+
+## Fas S c. Nyckelord, `move`, `keywords_or` och partnerns recept
+
+- `POST /api/keyword/ {name}` → 201; samma namn igen → 201 med **samma id** (get_or_create),
+  också med **annan versalisering** (`passar med` = `Passar med`). [O] `parent` i POST
+  **ignoreras** (skrivskyddat): barnet hamnar i roten. [O]
+- `PUT /api/keyword/{id}/move/{parent}/` → 200 `{"msg": "… was moved successfully to parent …"}`,
+  även med tom kropp. Barnet får `parent`, `full_name` = `"Passar med > Kraftigt rött"`, `label` =
+  namnet, och föräldern `numchild` 1. `?root=<förälder>` listar barnen. [O]
+- `recipe?keywords_or=<förälder>`: `include_children=true` (standard) ger recepten med föräldern
+  **eller ett barn** (*Falafel*, *Hummus*); `false` bara föräldern (*Falafel*). [O]
+- **Partnerns recept:** den andra medlemmen PATCHar ägarens recept med `keywords` → 200, också
+  medlemmen i det **andra hushållet** (recept är space-breda); gästen → 403. [O]
+- **PATCH ersätter hela listan:** `{keywords: [bara det nya]}` lämnar receptet med bara det nya.
+  [O] Ett nyckelord som bara `{id}` → 200. [O] [S] Läs receptet färskt före PATCH (som "Vill laga").
+- Gästen kan inte skapa nyckelord (403), en vanlig medlem kan (201). [O]
+
+## Fas S d. Inlärda koder och kvittonamn (`automation`, typ `FOOD_ALIAS`)
+
+- `POST /api/automation/ {type: "FOOD_ALIAS", name, description, param_1, param_2}` → 201 med
+  `{id, type, name, description, param_1, param_2, param_3: null, order: 1000, disabled: false,
+  created_by}`. Listan (`?type=FOOD_ALIAS`) är paginerad och **space-bred**: den andra medlemmen
+  och medlemmen i det andra hushållet ser samma alias. [O] Samma `param_1` två gånger → 201 (ingen
+  unikhet). [O]
+- `param_1` och `name` får vara **högst 128 tecken** (129 → 400). [O]
+- **Ingrediensparsern använder aliaset**, utan hänsyn till versaler: med `param_1 = "KIKÄRTER"`
+  ger både `2 kikärter` och `2 KIKÄRTER` livsmedlet *kikärtor*, och en inlärd streckkod (`1
+  2000000000015`) också. [O] Parserns alias cachas 30 s per space [K]: ett ändrat alias kan ta så
+  lång tid att slå igenom i parsern; appens egen matchning använder Room-tabellen (`food_alias`). [S]
+- PATCH `param_2` → 200, DELETE → 204, GET efteråt → 404. Gästen: list, skapa och PATCH → **403**. [O]
+
+## Fas S e. Livsmedel: *har hemma*, `ignore_shopping`, `batch_update`
+
+- `PATCH /api/food/{id}/ {food_onhand: true}` → 200; den andra medlemmen ser `true`, medlemmen i det
+  andra hushållet `false` (per hushåll). Gästen → 403. `{ignore_shopping: true}` → 200. [O]
+- `PUT /api/food/batch_update/ {foods: [ids], on_hand: true|false}` → 200 med tom kropp `{}`;
+  sätter/tar bort *har hemma* för **hela hushållet** (samma synlighet som PATCH). [O]
+  `ignore_shopping` och `substitute_add` fungerar i samma anrop; bara `{foods}` → 200. Gästen → 403. [O]
+
+## Fas S f. En dryck som recept
+
+- `POST /api/recipe/` **utan `steps`** → 400 `{"steps": ["This field is required."]}`; med
+  `steps: []` eller ett tomt steg → 201. [O] `keywords: [{name: "Dryck"}, {name: "Vin"}]` skapar
+  eller återanvänder nyckelorden. **Utan `internal` sparas `internal: false`**; appen skickar
+  `internal: true` som webben. [O] Gästen → 403. [O]
+- Bilden: `PUT /api/recipe/{id}/image/` (multipart `image`) → 200; **POST → 405**. [O]
+- Drycken syns i `recipe/flat` (med bild), i sök (`?query=Rioja`) och i `keywords_or=<Dryck>`. [O]
+- Kopplingen från dryckens sida (den andra medlemmen PATCHar drycken) ger
+  `keywords_or=<kopplingen>` = rätten och drycken. [O]
+
+## Fas S: konsekvenser för appen [S]
+
+1. Kan laga nu = tre anrop `makenow=0/1/2`, den minsta N vinner; drycker (utan ingredienser) tas
+   bort; saknade varor räknas i appen.
+2. Lager: filtrera platser på kontots hushåll; skicka **hela** platsen i en post; skicka alltid en
+   enhet; "Slut" = PATCH `amount: 0`; listan utan `empty`.
+3. Nyckelord: POST, sedan `move` (POST ignorerar `parent`); PATCH av recept = hela listan, läst
+   färskt; kopplingen på id.
+4. Alias: `FOOD_ALIAS` med `param_1` ≤ 128 tecken, lokalt cachat; gäster kan inte lära in.
+5. Många *har hemma* på en gång: `food/batch_update/` (outbox `BATCH_ON_HAND`).
+6. Dryck: `POST recipe` med `steps: []`, `internal: true`, nyckelorden; bilden med PUT efteråt.

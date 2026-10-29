@@ -1,0 +1,35 @@
+{
+  "name": "recipe-image-put-drink",
+  "request": {
+    "method": "PUT",
+    "path": "/api/recipe/19/image/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "multipart/form-data; boundary=fc7b0aeb-d26c-4244-a07b-a064a6b8ef57",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "image": "<multipart file tandem-dryck.png, image/png, 76 bytes>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "PUT, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "image": "/media/recipes/3f1eb2ac-4844-4614-a85c-16b28d90fe9f_19.png",
+      "image_url": null
+    }
+  }
+}

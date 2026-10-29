@@ -6,7 +6,22 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+Skafferi och drycker (Fas S, kommande 0.4.0) byggs nu. Grunden är på plats men syns inte i appen
+än: databasen, typerna och sidorna för Hemma (skafferiet, Kan laga nu, Packa upp, basvaror),
+skanning (streckkod, kvitto och foto av kylen) och drycker finns, och sidorna fylls i av de
+kommande delarna.
+
 - **Tandoor 2.7.2** är testad: appen kör den som 2.7.1, utan säkert läge.
+- **Tandoor-kontrollen** prövar nu också det skafferiet och dryckerna bygger på (Kan laga nu som
+  "saknar högst N varor", lagret och hushållet, nyckelorden för "Passar med", inlärda streckkoder
+  och kvittonamn, en dryck som recept), mot Tandoor 2.6.13, 2.6.15, 2.7.1 och 2.7.2.
+- **Databasen** uppgraderas (version 5) när 0.4.0 installeras; allt som redan finns på telefonen,
+  också osända ändringar, finns kvar.
+- **Foto av kylen** kommer att använda din egen AI-nyckel (Claude, Gemini eller OpenAI) under
+  Inställningar → AI. Funktionen blir märkt som experimentell: AI:n kan missa varor eller hitta på
+  sådana som inte finns, så resultatet blir alltid en lista att granska innan något sparas.
+  Nyckeln sparas krypterad på telefonen och skickas bara till den tjänst du valt.
+- Appen ber om kameran först när du skannar, och bilder kan alltid väljas från galleriet i stället.
 
 ## [0.3.0] – 2026-10-26
 

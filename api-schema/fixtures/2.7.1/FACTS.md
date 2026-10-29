@@ -96,3 +96,12 @@
 - Hushållets medlemmar ("Fas 2 h", `HouseholdMembersContractTest`): `GET /api/user-space/` ger en
   admin alla medlemskap med hushåll och en medlem bara sitt eget, `GET /api/user/` spacets
   användare utan hushåll, som i 2.6.13 (`fas2/user-space-list-*`, `fas2/user-list-member`). [O]
+
+## Fas S
+
+- `PhaseSContractTest` gav **exakt samma fakta** som 2.6.13 (`fas-s/observed-facts.json` skiljer
+  sig bara i `tandoorTag`): `makenow` som heltal, lagret (space-brett, hela platsen i en post,
+  enhet krävs, loggen), nyckelord och `move`, PATCH av partnerns recept, `FOOD_ALIAS` i parsern,
+  `food/batch_update/` och drycken som recept. Se [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md)
+  "Fas S". Inspelningarna ligger i [`fas-s/`](fas-s/). [O]
+- Samma fakta gav **2.7.2** och `latest` i `tandoor-watch` (körd från grenen 2026-10-29). [O]

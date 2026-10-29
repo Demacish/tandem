@@ -1,0 +1,71 @@
+{
+  "name": "recipe-search-drink",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/?query=Rioja&page_size=100",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 1,
+      "next": null,
+      "previous": null,
+      "results": [
+        {
+          "id": 19,
+          "name": "Rioja Crianza",
+          "description": "Fruktigt och kryddigt. Ca 120 kr.",
+          "image": "https://tandoor.example.com/media/recipes/0d0f4630-7382-4eab-a1c3-7f61c9327cb3_19.png",
+          "keywords": [
+            {
+              "id": 12,
+              "label": "Dryck"
+            },
+            {
+              "id": 13,
+              "label": "Vin"
+            }
+          ],
+          "working_time": 0,
+          "waiting_time": 0,
+          "created_by": {
+            "id": 1,
+            "username": "contract-admin",
+            "first_name": "",
+            "last_name": "",
+            "display_name": "contract-admin",
+            "is_staff": true,
+            "is_superuser": true,
+            "is_active": true
+          },
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "internal": true,
+          "private": false,
+          "servings": 1,
+          "servings_text": "",
+          "rating": null,
+          "last_cooked": null,
+          "new": true
+        }
+      ]
+    }
+  }
+}
