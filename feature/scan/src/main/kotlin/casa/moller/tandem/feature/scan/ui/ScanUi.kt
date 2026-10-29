@@ -265,12 +265,7 @@ internal fun FoodPicker(
  * panel (always shown, so it is not repeated here).
  */
 @Composable
-internal fun CameraAccessPanel(
-    access: CameraAccess,
-    @StringRes rationale: Int,
-    onAllow: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+internal fun CameraAccessPanel(access: CameraAccess, @StringRes rationale: Int, onAllow: () -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
     val context = LocalContext.current
     Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
