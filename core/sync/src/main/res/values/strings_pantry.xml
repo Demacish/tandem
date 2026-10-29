@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (hemma-data lane): the storage places Tandem creates in Tandoor the first time the pantry is used (plan §8.8). They are seen on the Tandoor web too. -->
+    <string name="sync_pantry_location_fridge">Fridge</string>
+    <string name="sync_pantry_location_freezer">Freezer</string>
+    <string name="sync_pantry_location_pantry">Pantry</string>
+    <!-- The unit a pantry entry gets when none was chosen (Tandoor requires one), short for "pieces". -->
+    <string name="sync_pantry_default_unit">pcs</string>
+</resources>

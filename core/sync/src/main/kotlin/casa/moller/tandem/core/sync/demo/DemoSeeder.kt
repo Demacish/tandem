@@ -104,6 +104,8 @@ internal class DemoSeeder(
             DemoShopping.ensureSeeded(database, content, currentLocale, today, clock.nowMillis())
             // Phase 2 (böcker lane): the books, favourites and "Vill laga", seeded once as well.
             DemoBooks.ensureSeeded(database, content, currentLocale, today, clock.nowMillis())
+            // Fas S (hemma-data lane): the pantry and staples ("Kan laga nu" is computed from them).
+            DemoPantry.ensureSeeded(database, content.version, currentLocale, today, clock.nowMillis())
             Outcome.Success(Unit)
         }
     }

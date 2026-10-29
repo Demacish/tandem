@@ -44,6 +44,8 @@ import casa.moller.tandem.core.network.json.TandoorDates
 import kotlin.math.floor
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -203,8 +205,22 @@ internal fun FoodDto.toEntity(accountId: String): FoodEntity? {
         onHand = onHand ?: false,
         ignoreShopping = ignoreShopping,
         supermarketCategoryId = ((supermarketCategory as? JsonObject)?.get("id") as? JsonPrimitive)?.longOrNull,
+        // Fas S (hemma-data lane): what "Kan laga nu" counts besides on hand (FACTS "Fas S a").
+        substituteOnHand = substituteOnHand,
+        substituteIds = substituteIdsJson(substitute),
+        recipeId = ((recipe as? JsonObject)?.get("id") as? JsonPrimitive)?.longOrNull,
     )
 }
+
+/** The direct substitutes' ids of a food (`substitute: [{id, name, plural_name}]`) as the JSON array `food.substitute_ids` stores. */
+internal fun substituteIdsJson(substitute: JsonElement?): String {
+    val ids = (substitute as? JsonArray).orEmpty().mapNotNull { ((it as? JsonObject)?.get("id") as? JsonPrimitive)?.longOrNull }
+    return ids.distinct().joinToString(prefix = "[", postfix = "]", separator = ",")
+}
+
+/** `food.substitute_ids` back as ids (a broken value is no substitutes). */
+internal fun substituteIdsOf(json: String): Set<Long> =
+    json.trim().removePrefix("[").removeSuffix("]").split(',').mapNotNullTo(HashSet()) { it.trim().toLongOrNull() }
 
 internal fun UnitDto.toEntity(accountId: String): UnitEntity? {
     val unitId = id ?: return null

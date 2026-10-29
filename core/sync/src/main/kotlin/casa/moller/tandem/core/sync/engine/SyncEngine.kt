@@ -33,6 +33,7 @@ import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.image.PrefetchedImages
 import casa.moller.tandem.core.sync.mealplan.MealPlanWindowReader
+import casa.moller.tandem.core.sync.pantry.PantrySyncStep
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
@@ -145,6 +146,8 @@ internal class SyncEngine @Inject constructor(
     private val books: BookSyncStep,
     // Phase 2 (matsedel lane): the meal plan window, shared with Veckan's own refresh.
     private val mealPlanWindow: MealPlanWindowReader,
+    // Fas S (hemma-data lane): the pantry, the learned aliases and staples waiting for a food.
+    private val pantry: PantrySyncStep,
 ) {
     private val mutex = Mutex()
     private val homeMutex = Mutex()
@@ -292,6 +295,10 @@ internal class SyncEngine @Inject constructor(
 
             // Phase 2 (böcker lane): the books (plan 3.5 "Små tabeller").
             books.run(remote, background, smallTables = referenceDue)
+            stopReason()?.let { return failed(it) }
+
+            // Fas S (hemma-data lane): the pantry (at most every 5 minutes), the learned aliases (with the small tables).
+            pantry.run(remote, background, smallTables = referenceDue, forced = forced)
             stopReason()?.let { return failed(it) }
 
             // Serialized with Today's refresh (refreshHome) and checked again inside the lock:

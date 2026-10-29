@@ -115,6 +115,8 @@ internal class FakeTandoorServer {
             // Today's carousel queries: empty unless a test overrides them.
             return json(200, EMPTY_PAGE)
         }
+        // Fas S (hemma-data lane): every sync run reads the pantry and the learned aliases; empty unless a test answers.
+        if (request.method == "GET" && path in EMPTY_LISTS) return json(200, EMPTY_PAGE)
         val name = ROUTES["${request.method} $path"] ?: return json(404, """{"detail":"Not found."}""")
         return fixture(name)
     }
@@ -123,6 +125,9 @@ internal class FakeTandoorServer {
         private val RECIPE_PATH = Regex("^/api/recipe/(\\d+)/$")
         private val HOME_QUERIES = listOf("timescooked_gte", "new", "viewedon_gte", "cookedon_lte")
         const val EMPTY_PAGE = """{"count":0,"next":null,"previous":null,"results":[]}"""
+
+        /** Lists the sync reads that have no recording of their own here (Fas S: the pantry, the aliases). */
+        private val EMPTY_LISTS = setOf("/api/inventory-location/", "/api/inventory-entry/", "/api/automation/")
 
         private val ROUTES = mapOf(
             "GET /api/server-settings/current/" to "01-server-settings-no-auth",

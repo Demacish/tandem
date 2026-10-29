@@ -40,10 +40,24 @@ import casa.moller.tandem.core.sync.mealplan.MealPlanSync
 import casa.moller.tandem.core.sync.mealplan.MealPlanWindowReader
 import casa.moller.tandem.core.sync.mealplan.MealTypeOutboxHandler
 import casa.moller.tandem.core.sync.mealplan.OfflineFirstMealPlanRepository
+import casa.moller.tandem.core.sync.pantry.DefaultMakeNowRepository
+import casa.moller.tandem.core.sync.pantry.DefaultStaplesRepository
+import casa.moller.tandem.core.sync.pantry.FoodOnHandBatchSender
+import casa.moller.tandem.core.sync.pantry.InventoryEntryOutboxHandler
+import casa.moller.tandem.core.sync.pantry.InventoryLocationOutboxHandler
+import casa.moller.tandem.core.sync.pantry.OfflineFirstPantryRepository
+import casa.moller.tandem.core.sync.pantry.PantryChanges
+import casa.moller.tandem.core.sync.pantry.PantryLocations
+import casa.moller.tandem.core.sync.pantry.PantryNames
+import casa.moller.tandem.core.sync.pantry.PantryReader
+import casa.moller.tandem.core.sync.pantry.PantrySyncStep
 import casa.moller.tandem.core.sync.permissions.DefaultSpacePermissionsRepository
 import casa.moller.tandem.core.sync.permissions.HouseholdMembersSync
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.remote.RemoteCaller
+import casa.moller.tandem.core.sync.scan.FoodAliasOutboxHandler
+import casa.moller.tandem.core.sync.scan.FoodAliasReader
+import casa.moller.tandem.core.sync.scan.OfflineFirstFoodAliasRepository
 import casa.moller.tandem.core.sync.shopping.AisleOrderOutboxHandler
 import casa.moller.tandem.core.sync.shopping.DefaultIngredientParser
 import casa.moller.tandem.core.sync.shopping.DefaultSupermarketRepository
@@ -145,6 +159,13 @@ internal class SyncTestGraph(
 
     // Phase 2 (matsedel lane): the meal plan window, shared by the engine and Veckan's refresh.
     val mealPlanWindow = MealPlanWindowReader(sources, databases, caller, clock, network)
+
+    // Fas S (hemma-data lane): the pantry's reader, senders and the learned aliases.
+    val pantryChanges = PantryChanges()
+    val pantryReader = PantryReader(databases, caller, sources, clock, pantryChanges)
+    val pantryLocations = PantryLocations(databases)
+    val foodAliasReader = FoodAliasReader(databases, caller, sources, clock)
+    val pantryNames = TestPantryNames()
     val outbox = OutboxSender(
         databases,
         caller,
@@ -154,7 +175,8 @@ internal class SyncTestGraph(
             OutboxEntities.SHOPPING_ENTRY to ShoppingEntryOutboxHandler(databases, caller, shoppingReader, droppedChanges, clock),
             OutboxEntities.SHOPPING_LIST_RECIPE to
                 ShoppingListRecipeOutboxHandler(databases, caller, shoppingReader, droppedChanges, clock),
-            OutboxEntities.FOOD to FoodOutboxHandler(databases, caller, droppedChanges, clock),
+            OutboxEntities.FOOD to
+                FoodOutboxHandler(databases, caller, droppedChanges, clock, FoodOnHandBatchSender(databases, caller, pantryChanges)),
             OutboxEntities.SUPERMARKET_CATEGORY_RELATION to AisleOrderOutboxHandler(caller, droppedChanges, clock),
             // Phase 2 (böcker lane).
             OutboxEntities.RECIPE_BOOK to RecipeBookOutboxHandler(databases, caller, bookSync),
@@ -163,10 +185,21 @@ internal class SyncTestGraph(
             // Phase 2 (matsedel lane): meals and meal types.
             OutboxEntities.MEAL_PLAN to MealPlanOutboxHandler(databases, caller, clock, mealPlanWindow, droppedChanges),
             OutboxEntities.MEAL_TYPE to MealTypeOutboxHandler(caller, mealPlanWindow),
+            // Fas S (hemma-data lane): locations, entries and learned aliases.
+            OutboxEntities.INVENTORY_LOCATION to
+                InventoryLocationOutboxHandler(databases, caller, pantryReader, pantryLocations, pantryChanges, droppedChanges, clock),
+            OutboxEntities.INVENTORY_ENTRY to
+                InventoryEntryOutboxHandler(databases, caller, pantryReader, pantryLocations, pantryChanges, droppedChanges, clock),
+            OutboxEntities.FOOD_ALIAS to FoodAliasOutboxHandler(databases, caller, foodAliasReader, droppedChanges, clock),
         ),
         roles = roleSync,
         dropped = droppedChanges,
     )
+    // Phase 2: the role the repositories check (moved up for Fas S: the pantry step's staples use it).
+    val permissions = FakeSpacePermissionsRepository()
+
+    // Fas S (hemma-data lane): staples (the sync step resolves the ones waiting for a food).
+    val staples = DefaultStaplesRepository(sources, databases, permissions, caller, scheduler, network, clock, pantryChanges)
     val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
@@ -188,6 +221,7 @@ internal class SyncTestGraph(
         ShoppingSyncStep(shoppingReader, shoppingTables, databases),
         BookSyncStep(roleSync, bookSync, databases, householdMembers),
         mealPlanWindow,
+        PantrySyncStep(databases, pantryReader, foodAliasReader, staples, clock),
     )
     val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
@@ -195,7 +229,6 @@ internal class SyncTestGraph(
     val sync = DefaultSyncRepository(sources, databases, engine, scheduler, demo, guard, network, clock, scope)
 
     // Phase 2 (inköp-data lane): the shopping repositories, the parser and foreground polling.
-    val permissions = FakeSpacePermissionsRepository()
     val shoppingSync = ShoppingSync(shoppingReader, outbox, scheduler, network)
     val shopping = OfflineFirstShoppingRepository(
         sources,
@@ -240,6 +273,22 @@ internal class SyncTestGraph(
         network,
     )
 
+    // Fas S (hemma-data lane): "Hemma", "Kan laga nu", learned aliases and Open Food Facts (a fake client per test).
+    val pantry = OfflineFirstPantryRepository(
+        sources,
+        databases,
+        permissions,
+        scheduler,
+        clock,
+        pantryReader,
+        outbox,
+        pantryNames,
+        pantryChanges,
+        network,
+    )
+    val makeNow = DefaultMakeNowRepository(sources, databases, caller, details, network, clock, pantry, pantryChanges)
+    val foodAliases = OfflineFirstFoodAliasRepository(sources, databases, permissions, foodAliasReader, outbox, scheduler, network, clock)
+
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)
 
@@ -268,6 +317,14 @@ internal class SyncTestGraph(
 internal class TestBookNames : BookNames {
     override val favoritesWord: String = "Favoriter"
     override val wantToCook: String = "Vill laga"
+}
+
+/** The names Tandem gives the default locations, in Swedish (the app's resources are not needed). */
+internal class TestPantryNames : PantryNames {
+    override val fridge: String = "Kyl"
+    override val freezer: String = "Frys"
+    override val pantry: String = "Skafferi"
+    override val defaultUnit: String = "st"
 }
 
 /** Polls [condition] in real time (Room and the server run on their own threads). */

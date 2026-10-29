@@ -16,6 +16,7 @@ import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.engine.OutboxHandler
 import casa.moller.tandem.core.sync.engine.OutboxResult
+import casa.moller.tandem.core.sync.pantry.FoodOnHandBatchSender
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
@@ -364,14 +365,19 @@ internal class ShoppingListRecipeOutboxHandler @Inject constructor(
 internal suspend fun claimedServerIds(databases: TandemDatabaseFactory, remote: ActiveSource.Remote, entity: String): Set<Long> =
     databases.get(remote.kind).idRewriteDao().getMappings(remote.accountId).filter { it.entity == entity }.mapTo(HashSet()) { it.serverId }
 
-/** `food` rows: a food's aisle and "har hemma" (`PATCH /api/food/{id}/`). */
+/**
+ * `food` rows: a food's aisle and "har hemma" (`PATCH /api/food/{id}/`). Fas S (hemma-data lane):
+ * `BATCH_ON_HAND` rows of the same entity go to [FoodOnHandBatchSender] (`food/batch_update/`).
+ */
 internal class FoodOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val caller: RemoteCaller,
     private val dropped: DroppedChanges,
     private val clock: SyncClock,
+    private val batch: FoodOnHandBatchSender,
 ) : OutboxHandler {
     override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
+        if (row.op == OutboxOps.BATCH_ON_HAND) return batch.send(remote, row, payload)
         val foodId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val body = parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.op != OutboxOps.PATCH) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))

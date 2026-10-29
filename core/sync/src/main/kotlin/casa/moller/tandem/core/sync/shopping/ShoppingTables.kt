@@ -3,6 +3,7 @@ package casa.moller.tandem.core.sync.shopping
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.OutboxEntities
+import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.dto.PageDto
@@ -109,7 +110,9 @@ internal class ShoppingTables @Inject constructor(
                 val foodId = row.serverId
                 val body = parse(row.payload)
                 if (foodId == null || body == null) continue
-                (body["food_onhand"] as? JsonPrimitive)?.booleanOrNull?.let { stores.setFoodOnHand(accountId, foodId, it) }
+                // Fas S (hemma-data lane): `BATCH_ON_HAND` rows carry `on_hand` (food/batch_update/).
+                val onHand = body["food_onhand"] ?: body["on_hand"].takeIf { row.op == OutboxOps.BATCH_ON_HAND }
+                (onHand as? JsonPrimitive)?.booleanOrNull?.let { stores.setFoodOnHand(accountId, foodId, it) }
                 categoryOf(body)?.let { categoryId ->
                     stores.setFoodCategory(accountId, foodId, categoryId.value)
                     shopping.setCategoryOfFood(accountId, foodId, categoryId.value)

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (hemma-data-banan): platserna Tandem skapar i Tandoor första gången skafferiet används (plan §8.8). De syns också på webben. -->
+    <string name="sync_pantry_location_fridge">Kyl</string>
+    <string name="sync_pantry_location_freezer">Frys</string>
+    <string name="sync_pantry_location_pantry">Skafferi</string>
+    <!-- Enheten en lagerpost får när ingen valts (Tandoor kräver en), förkortning av "styck". -->
+    <string name="sync_pantry_default_unit">st</string>
+</resources>
