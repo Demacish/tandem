@@ -215,13 +215,12 @@ class FridgeScanViewModel @AssistedInject internal constructor(
     }
 }
 
+/** The page never sends in demo mode (core:ai refuses too), so DemoMode is only a fallback here. */
 private fun FridgeVisionError.problem(): FridgeProblem = when (this) {
     FridgeVisionError.InvalidKey, FridgeVisionError.NoKey -> FridgeProblem.INVALID_KEY
     FridgeVisionError.ModelUnavailable -> FridgeProblem.MODEL_UNAVAILABLE
     is FridgeVisionError.QuotaOrRateLimit -> FridgeProblem.RATE_LIMITED
     FridgeVisionError.Refusal -> FridgeProblem.REFUSAL
     is FridgeVisionError.Network -> FridgeProblem.NETWORK
-    is FridgeVisionError.Unparseable -> FridgeProblem.UNPARSEABLE
-    // The page never sends in demo mode; core:ai refuses too.
-    FridgeVisionError.DemoMode -> FridgeProblem.UNPARSEABLE
+    is FridgeVisionError.Unparseable, FridgeVisionError.DemoMode -> FridgeProblem.UNPARSEABLE
 }

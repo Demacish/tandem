@@ -12,7 +12,7 @@ internal const val LOW_CONFIDENCE: Double = 0.6
 
 /** The AI was unsure about this fridge-photo row (marked in the review). */
 internal val ScanReviewItem.lowConfidence: Boolean
-    get() = source == ScanSource.FRIDGE && confidence != null && confidence < LOW_CONFIDENCE
+    get() = source == ScanSource.FRIDGE && (confidence ?: 1.0) < LOW_CONFIDENCE
 
 /**
  * The AI's items as review rows. EVERY row is a suggestion the user confirms in the review: a

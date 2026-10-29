@@ -45,17 +45,15 @@ class FridgeScanViewModelTest {
     private val vision = FakeFridgeVision()
     private val ready = AiSettings(provider = AiProvider.CLAUDE, hasKey = true, warningAcknowledged = true)
 
-    private fun viewModel(
-        settings: AiSettings = ready,
-        ai: FakeAiSettingsRepository = FakeAiSettingsRepository(settings),
-    ) = FridgeScanViewModel(
-        key = FridgeScanKey(locationId = 1),
-        store = store,
-        matcher = ScanMatcher(FakeFoodAliasRepository(), recipes),
-        vision = vision,
-        settings = ai,
-        permissions = permissions,
-    )
+    private fun viewModel(settings: AiSettings = ready, ai: FakeAiSettingsRepository = FakeAiSettingsRepository(settings)) =
+        FridgeScanViewModel(
+            key = FridgeScanKey(locationId = 1),
+            store = store,
+            matcher = ScanMatcher(FakeFoodAliasRepository(), recipes),
+            vision = vision,
+            settings = ai,
+            permissions = permissions,
+        )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun TestScope.open(vm: FridgeScanViewModel): MutableList<FridgeScanEffect> {

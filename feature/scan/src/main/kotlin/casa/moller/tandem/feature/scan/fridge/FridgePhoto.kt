@@ -102,14 +102,11 @@ internal object JpegMetadata {
         val out = ByteArrayOutputStream(jpeg.size)
         out.write(jpeg, 0, 2)
         var index = 2
-        while (index + 4 <= jpeg.size && jpeg.u(index) == MARKER) {
-            val marker = jpeg.u(index + 1)
-            if (marker == SOS) break
-            val length = (jpeg.u(index + 2) shl 8) or jpeg.u(index + 3)
-            val end = index + 2 + length
-            if (length < 2 || end > jpeg.size) break
-            if (!isMetadata(marker)) out.write(jpeg, index, end - index)
+        var end = segmentEnd(jpeg, index)
+        while (end != null) {
+            if (!isMetadata(jpeg.u(index + 1))) out.write(jpeg, index, end - index)
             index = end
+            end = segmentEnd(jpeg, index)
         }
         out.write(jpeg, index, jpeg.size - index)
         return out.toByteArray()
@@ -129,6 +126,13 @@ internal object JpegMetadata {
 
     private fun isMetadata(marker: Int): Boolean = marker in APP1..APP15 || marker == COM
 
+    /** The end of the marker segment at [index], or null at the image data (SOS) or a broken segment. */
+    private fun segmentEnd(jpeg: ByteArray, index: Int): Int? {
+        if (index + 4 > jpeg.size || jpeg.u(index) != MARKER || jpeg.u(index + 1) == SOS) return null
+        val length = (jpeg.u(index + 2) shl 8) or jpeg.u(index + 3)
+        val end = index + 2 + length
+        return end.takeIf { length >= 2 && it <= jpeg.size }
+    }
 
     private fun ByteArray.u(index: Int): Int = this[index].toInt() and 0xFF
 }
