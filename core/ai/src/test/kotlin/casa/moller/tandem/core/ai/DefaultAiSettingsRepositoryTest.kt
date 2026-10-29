@@ -38,7 +38,8 @@ class DefaultAiSettingsRepositoryTest {
 
     @Test
     fun emptyOrBrokenKeysAreRefused() = runTest {
-        assertEquals(Outcome.Failure(TandemError.Unknown(DefaultAiSettingsRepository.KEY_EMPTY)), repository.storeKey(AiProvider.GEMINI, "   "))
+        val empty = Outcome.Failure(TandemError.Unknown(DefaultAiSettingsRepository.KEY_EMPTY))
+        assertEquals(empty, repository.storeKey(AiProvider.GEMINI, "   "))
         val inner = Outcome.Failure(TandemError.Unknown(DefaultAiSettingsRepository.KEY_INVALID))
         assertEquals(inner, repository.storeKey(AiProvider.GEMINI, "sk-test with space"))
         assertEquals(inner, repository.storeKey(AiProvider.GEMINI, "sk-test\nline"))

@@ -131,16 +131,23 @@ internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeV
         val retryAfter = e.headers().values("retry-after").firstOrNull()?.trim()?.toLongOrNull()
         return when (e.errorType().orElse(null)) {
             ErrorType.AUTHENTICATION_ERROR, ErrorType.PERMISSION_ERROR -> FridgeVisionError.InvalidKey
+
             ErrorType.NOT_FOUND_ERROR -> FridgeVisionError.ModelUnavailable
-            ErrorType.RATE_LIMIT_ERROR, ErrorType.OVERLOADED_ERROR, ErrorType.BILLING_ERROR -> FridgeVisionError.QuotaOrRateLimit(retryAfter)
+
+            ErrorType.RATE_LIMIT_ERROR, ErrorType.OVERLOADED_ERROR, ErrorType.BILLING_ERROR ->
+                FridgeVisionError.QuotaOrRateLimit(retryAfter)
+
             ErrorType.TIMEOUT_ERROR -> FridgeVisionError.Network("timeout")
-            else -> when (val status = e.statusCode()) {
-                HTTP_UNAUTHORIZED, HTTP_FORBIDDEN -> FridgeVisionError.InvalidKey
-                HTTP_NOT_FOUND -> FridgeVisionError.ModelUnavailable
-                HTTP_TOO_MANY_REQUESTS, HTTP_OVERLOADED -> FridgeVisionError.QuotaOrRateLimit(retryAfter)
-                else -> FridgeVisionError.Network("http-$status")
-            }
+
+            else -> byStatus(e.statusCode(), retryAfter)
         }
+    }
+
+    private fun byStatus(status: Int, retryAfter: Long?): FridgeVisionError = when (status) {
+        HTTP_UNAUTHORIZED, HTTP_FORBIDDEN -> FridgeVisionError.InvalidKey
+        HTTP_NOT_FOUND -> FridgeVisionError.ModelUnavailable
+        HTTP_TOO_MANY_REQUESTS, HTTP_OVERLOADED -> FridgeVisionError.QuotaOrRateLimit(retryAfter)
+        else -> FridgeVisionError.Network("http-$status")
     }
 
     private companion object {

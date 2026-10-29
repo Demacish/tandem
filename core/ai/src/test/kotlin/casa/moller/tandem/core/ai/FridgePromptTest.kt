@@ -36,7 +36,8 @@ class FridgePromptTest {
 
     @Test
     fun theStructuredObjectAndABareArrayAreRead() {
-        val structured = """{"items":[{"name":"mjölk","amount":1,"unit":"l","confidence":0.9,"note":null},{"name":"ägg","amount":null,"unit":null,"confidence":0.4,"note":"delvis skymd"}]}"""
+        val structured = """{"items":[{"name":"mjölk","amount":1,"unit":"l","confidence":0.9,"note":null},""" +
+            """{"name":"ägg","amount":null,"unit":null,"confidence":0.4,"note":"delvis skymd"}]}"""
         val items = (FridgePrompt.parse(structured) as FridgeVisionResult.Items).items
         assertEquals(listOf("mjölk", "ägg"), items.map { it.name })
         assertEquals(1.0, items[0].amount ?: 0.0, 0.0)

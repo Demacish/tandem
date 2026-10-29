@@ -65,7 +65,9 @@ class RestFridgeVisionClientsTest {
 
     @Test
     fun geminiWrongKeyRateLimitBlockedMalformedAndTimeout() = runTest {
-        server.enqueue(json(400, """{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}"""))
+        val wrongKey = """{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.",""" +
+            """"status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}"""
+        server.enqueue(json(400, wrongKey))
         assertEquals(FridgeVisionResult.Failed(FridgeVisionError.InvalidKey), gemini.recognize(geminiRequest()))
 
         server.enqueue(json(403, """{"error":{"code":403,"status":"PERMISSION_DENIED"}}"""))
@@ -129,7 +131,8 @@ class RestFridgeVisionClientsTest {
 
     @Test
     fun openAiSendsADataUrlAStrictSchemaAndABearerKey() = runTest {
-        server.enqueue(json(200, openAiAnswer("""{\"items\":[{\"name\":\"ägg\",\"amount\":6,\"unit\":\"st\",\"confidence\":0.8,\"note\":null}]}""")))
+        val items = """{\"items\":[{\"name\":\"ägg\",\"amount\":6,\"unit\":\"st\",\"confidence\":0.8,\"note\":null}]}"""
+        server.enqueue(json(200, openAiAnswer(items)))
 
         val result = openAi.recognize(openAiRequest())
 
@@ -151,13 +154,14 @@ class RestFridgeVisionClientsTest {
 
     @Test
     fun openAiWrongKeyRateLimitRefusalMalformedAndTimeout() = runTest {
-        server.enqueue(json(401, """{"error":{"message":"Incorrect API key provided","type":"invalid_request_error","code":"invalid_api_key"}}"""))
+        server.enqueue(json(401, """{"error":{"message":"Incorrect API key","type":"invalid_request_error","code":"invalid_api_key"}}"""))
         assertEquals(FridgeVisionResult.Failed(FridgeVisionError.InvalidKey), openAi.recognize(openAiRequest()))
 
         server.enqueue(json(429, """{"error":{"code":"insufficient_quota"}}"""))
         assertEquals(FridgeVisionResult.Failed(FridgeVisionError.QuotaOrRateLimit()), openAi.recognize(openAiRequest()))
 
-        server.enqueue(json(200, """{"status":"completed","output":[{"type":"message","content":[{"type":"refusal","refusal":"I can't help with that."}]}]}"""))
+        val refusal = """{"status":"completed","output":[{"type":"message","content":[{"type":"refusal","refusal":"No."}]}]}"""
+        server.enqueue(json(200, refusal))
         assertEquals(FridgeVisionResult.Failed(FridgeVisionError.Refusal), openAi.recognize(openAiRequest()))
 
         server.enqueue(json(400, """{"error":{"message":"The model `x` does not exist","code":"model_not_found"}}"""))
@@ -195,7 +199,8 @@ class RestFridgeVisionClientsTest {
         assertEquals(AiKeyCheck.FAILED, openAi.checkKey(AiKeyRequest(FAKE_KEY, "x", server.base("/v1"))))
     }
 
-    private fun geminiAnswer(text: String) = """{"candidates":[{"finishReason":"STOP","content":{"role":"model","parts":[{"text":"$text"}]}}]}"""
+    private fun geminiAnswer(text: String) =
+        """{"candidates":[{"finishReason":"STOP","content":{"role":"model","parts":[{"text":"$text"}]}}]}"""
 
     private fun openAiAnswer(text: String) =
         """{"status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"$text"}]}]}"""

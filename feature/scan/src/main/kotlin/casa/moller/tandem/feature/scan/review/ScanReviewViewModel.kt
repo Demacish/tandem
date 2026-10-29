@@ -83,6 +83,8 @@ data class ScanReviewUiState(
     val saving: Boolean = false,
     val edit: ReviewEdit? = null,
     val today: LocalDate = LocalDate(2000, 1, 1),
+    // ai-foto lane: the fridge photo's answer was cut off (the list may be incomplete).
+    val truncated: Boolean = false,
 ) {
     /** Rows that will be saved: included and matched. */
     val readyCount: Int
@@ -205,6 +207,7 @@ class ScanReviewViewModel @AssistedInject internal constructor(
             saving = ui.saving || ui.done,
             edit = ui.edit,
             today = today(),
+            truncated = session.truncated,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ScanReviewUiState())
 

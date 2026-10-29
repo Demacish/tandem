@@ -67,6 +67,7 @@ import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.pantry.navigation.PantryKey
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
+import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.shell.AccountSummary
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.SettingsSummary
@@ -246,6 +247,15 @@ internal fun MoreScreen(
                             supporting = languageLabel(language),
                             onClick = { onOpenPage(LanguageKey) },
                             selected = selectedPage == LanguageKey,
+                        )
+                        // Fas S (ai-foto lane, B22): Settings → AI (experimental), feature:scan's page.
+                        GroupDivider()
+                        SettingsRow(
+                            icon = TandemIcons.Key,
+                            title = stringResource(R.string.shell_more_ai),
+                            supporting = stringResource(R.string.shell_more_ai_supporting),
+                            onClick = { onOpenPage(AiSettingsKey) },
+                            selected = selectedPage == AiSettingsKey,
                         )
                     }
 

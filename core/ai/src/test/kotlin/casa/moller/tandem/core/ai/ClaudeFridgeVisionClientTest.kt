@@ -37,7 +37,8 @@ class ClaudeFridgeVisionClientTest {
 
     @Test
     fun theSdkSendsTheImageSchemaEffortAndFallbacks() = runTest {
-        server.enqueue(json(200, message(text = """{\"items\":[{\"name\":\"mjölk\",\"amount\":1,\"unit\":\"l\",\"confidence\":0.9,\"note\":null}]}""")))
+        val items = """{\"items\":[{\"name\":\"mjölk\",\"amount\":1,\"unit\":\"l\",\"confidence\":0.9,\"note\":null}]}"""
+        server.enqueue(json(200, message(text = items)))
 
         val result = claude.recognize(request()) as FridgeVisionResult.Items
 
@@ -86,7 +87,8 @@ class ClaudeFridgeVisionClientTest {
         server.enqueue(json(200, message(text = null, stopReason = "refusal")))
         assertEquals(FridgeVisionResult.Failed(FridgeVisionError.Refusal), claude.recognize(request()))
 
-        server.enqueue(json(200, message(text = """{\"items\":[{\"name\":\"ost\",\"confidence\":0.6},{\"name\":\"gr""", stopReason = "max_tokens")))
+        val cut = """{\"items\":[{\"name\":\"ost\",\"confidence\":0.6},{\"name\":\"gr"""
+        server.enqueue(json(200, message(text = cut, stopReason = "max_tokens")))
         val partial = claude.recognize(request()) as FridgeVisionResult.Items
         assertEquals(listOf("ost"), partial.items.map { it.name })
         assertTrue(partial.truncated)
@@ -103,7 +105,8 @@ class ClaudeFridgeVisionClientTest {
 
     @Test
     fun theKeyCheckRetrievesTheModel() = runTest {
-        server.enqueue(json(200, """{"type":"model","id":"claude-opus-5-5","display_name":"Claude Opus 5.5","created_at":"2026-01-01T00:00:00Z"}"""))
+        val model = """{"type":"model","id":"claude-opus-5-5","display_name":"Claude Opus 5.5","created_at":"2026-01-01T00:00:00Z"}"""
+        server.enqueue(json(200, model))
         assertEquals(AiKeyCheck.WORKS, claude.checkKey(AiKeyRequest(FAKE_KEY, "claude-opus-5-5", server.base())))
         val sent = server.takeRequest()
         assertEquals("GET", sent.method)

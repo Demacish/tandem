@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.update
  *   the household's first location.
  * @property saved set when the review saved: the number of entries now in the pantry. The scanner
  *   that opened the review sees it and closes (receipt, fridge photo) or starts over (barcode).
+ * @property truncated ai-foto lane: the AI's answer was cut off at its output limit, so the list may
+ *   be incomplete (the review says so).
  */
 data class ScanSession(
     val id: String,
@@ -27,6 +29,7 @@ data class ScanSession(
     val locationId: Long?,
     val items: List<ScanReviewItem> = emptyList(),
     val saved: Int? = null,
+    val truncated: Boolean = false,
 )
 
 /**

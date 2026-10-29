@@ -67,7 +67,7 @@ internal class GeminiFridgeVisionClient(private val http: OkHttpClient) : Fridge
                 mapOf(
                     "role" to "user",
                     "parts" to listOf(
-                        mapOf("inlineData" to mapOf("mimeType" to "image/jpeg", "data" to Base64.getEncoder().encodeToString(request.jpeg))),
+                        mapOf("inlineData" to mapOf("mimeType" to "image/jpeg", "data" to request.jpeg.base64())),
                         mapOf("text" to FridgePrompt.USER),
                     ),
                 ),
@@ -122,7 +122,16 @@ internal class GeminiFridgeVisionClient(private val http: OkHttpClient) : Fridge
         const val KEY_HEADER = "x-goog-api-key"
 
         /** FinishReason values that mean the answer was withheld (safety, policy). */
-        val BLOCKED = setOf("SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST", "SPII", "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT", "RECITATION", "OTHER")
+        val BLOCKED = setOf(
+            "SAFETY",
+            "PROHIBITED_CONTENT",
+            "BLOCKLIST",
+            "SPII",
+            "IMAGE_SAFETY",
+            "IMAGE_PROHIBITED_CONTENT",
+            "RECITATION",
+            "OTHER",
+        )
     }
 }
 
@@ -140,7 +149,7 @@ internal class OpenAiFridgeVisionClient(private val http: OkHttpClient) : Fridge
     override suspend fun recognize(request: FridgeVisionRequest): FridgeVisionResult {
         val url = url(request.baseUrl ?: AiProvider.OPENAI.officialBaseUrl, "responses")
             ?: return FridgeVisionResult.Failed(FridgeVisionError.Network("base-url"))
-        val image = "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(request.jpeg)
+        val image = "data:image/jpeg;base64," + request.jpeg.base64()
         val body = mapOf(
             "model" to request.model,
             "instructions" to FridgePrompt.system(request.languageTag),
@@ -154,13 +163,19 @@ internal class OpenAiFridgeVisionClient(private val http: OkHttpClient) : Fridge
                 ),
             ),
             "text" to mapOf(
-                "format" to mapOf("type" to "json_schema", "name" to "fridge_items", "schema" to FridgePrompt.openAiSchema(), "strict" to true),
+                "format" to mapOf(
+                    "type" to "json_schema",
+                    "name" to "fridge_items",
+                    "schema" to FridgePrompt.openAiSchema(),
+                    "strict" to true,
+                ),
             ),
             "max_output_tokens" to FridgePrompt.MAX_OUTPUT_TOKENS,
             "store" to false,
         ).toJson().toString()
         val answer = try {
-            http.send(Request.Builder().url(url).header("Authorization", "Bearer ${request.key}").post(body.toRequestBody(JSON_MEDIA)).build())
+            val post = Request.Builder().url(url).header(AUTHORIZATION, "Bearer ${request.key}").post(body.toRequestBody(JSON_MEDIA))
+            http.send(post.build())
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
@@ -189,7 +204,7 @@ internal class OpenAiFridgeVisionClient(private val http: OkHttpClient) : Fridge
     override suspend fun checkKey(request: AiKeyRequest): AiKeyCheck {
         val url = url(request.baseUrl ?: AiProvider.OPENAI.officialBaseUrl, "models", request.model) ?: return AiKeyCheck.NO_NETWORK
         return try {
-            val answer = http.send(Request.Builder().url(url).header("Authorization", "Bearer ${request.key}").get().build())
+            val answer = http.send(Request.Builder().url(url).header(AUTHORIZATION, "Bearer ${request.key}").get().build())
             if (answer.code in HTTP_OK) AiKeyCheck.WORKS else httpKeyCheck(answer.code, answer.body)
         } catch (e: CancellationException) {
             throw e
@@ -200,3 +215,7 @@ internal class OpenAiFridgeVisionClient(private val http: OkHttpClient) : Fridge
 }
 
 private val HTTP_OK = 200..299
+
+private const val AUTHORIZATION = "Authorization"
+
+private fun ByteArray.base64(): String = Base64.getEncoder().encodeToString(this)

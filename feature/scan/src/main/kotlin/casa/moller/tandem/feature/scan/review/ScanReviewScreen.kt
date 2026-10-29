@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -66,6 +68,7 @@ import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.readonly.ReadOnlyBanner
 import casa.moller.tandem.feature.scan.R
+import casa.moller.tandem.feature.scan.fridge.lowConfidence
 import casa.moller.tandem.feature.scan.ui.ExpiryChips
 import casa.moller.tandem.feature.scan.ui.FoodPicker
 import casa.moller.tandem.feature.scan.ui.LocationChips
@@ -196,6 +199,16 @@ private fun ReviewList(
                     modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth),
                 )
             }
+            // ai-foto lane: the answer was cut off at the AI's output limit.
+            if (state.truncated) {
+                item(key = "ai-truncated") {
+                    InfoCard(
+                        title = stringResource(R.string.fridge_review_truncated_title),
+                        body = stringResource(R.string.fridge_review_truncated_body),
+                        modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth),
+                    )
+                }
+            }
         }
         if (showDefaultLocation && !state.readOnly && state.locations.isNotEmpty()) {
             item(key = "default-location") {
@@ -262,6 +275,7 @@ private fun LazyListScope.section(
 }
 
 /** One row: ONE TalkBack item ("Grädde, 5 dl, Kyl, går ut 5 nov., förslag, kvittorad GRÄDDE 36% 5DL"); tap to edit. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReviewRow(
     item: ScanReviewItem,
@@ -282,10 +296,15 @@ private fun ReviewRow(
         item.expires?.let { stringResource(R.string.scan_expires_on, format.date(it)) },
     ).joinToString(" · ")
     val source = item.barcode ?: item.text.takeIf { item.food != null && !it.equals(item.food?.name, ignoreCase = true) }
+    // ai-foto lane: a fridge-photo row the AI was unsure about, and the AI's note ("delvis skymd").
+    val unsure = if (item.lowConfidence) stringResource(R.string.fridge_review_unsure) else null
+    val note = item.note?.takeIf { item.source == ScanSource.FRIDGE }
     val description = listOfNotNull(
         title,
         details.replace(" · ", ", "),
         statusText,
+        unsure,
+        note,
         source?.let { stringResource(item.source.sourceLabel(), it) },
     ).joinToString(", ")
     val editLabel = stringResource(R.string.scan_review_edit)
@@ -339,7 +358,20 @@ private fun ReviewRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                StatusChip(label = statusText, tone = status.tone)
+                if (note != null) {
+                    Text(text = note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (unsure != null) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                    ) {
+                        StatusChip(label = statusText, tone = status.tone)
+                        StatusChip(label = unsure, icon = TandemIcons.Warning, tone = TandemTone.Warning)
+                    }
+                } else {
+                    StatusChip(label = statusText, tone = status.tone)
+                }
             }
         }
     }

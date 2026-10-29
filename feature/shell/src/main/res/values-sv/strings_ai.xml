@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (ai-foto lane, B22): Mer → AI (experimentellt), sidan är feature:scans AiSettingsKey. -->
+    <string name="shell_more_ai">AI (experimentellt)</string>
+    <string name="shell_more_ai_supporting">Foto av kylen med din egen nyckel</string>
+</resources>

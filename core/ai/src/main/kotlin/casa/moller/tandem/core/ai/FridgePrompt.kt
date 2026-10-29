@@ -157,13 +157,18 @@ internal object FridgePrompt {
             val char = body[index]
             when {
                 escaped -> escaped = false
+
                 inString && char == '\\' -> escaped = true
+
                 char == '"' -> inString = !inString
+
                 inString -> Unit
+
                 char == '{' -> {
                     if (depth == 0) objectStart = index
                     depth++
                 }
+
                 char == '}' && depth > 0 -> {
                     depth--
                     if (depth == 0 && objectStart >= 0) {
@@ -173,6 +178,7 @@ internal object FridgePrompt {
                         objectStart = -1
                     }
                 }
+
                 char == ']' && depth == 0 -> return items
             }
         }

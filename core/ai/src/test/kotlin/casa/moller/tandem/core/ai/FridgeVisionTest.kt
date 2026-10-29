@@ -75,15 +75,15 @@ class FridgeVisionTest {
     fun anUnscaledOrEmptyPhotoIsRefusedWithoutARequest() = runTest {
         val vision = vision(AiSettings(provider = AiProvider.CLAUDE, hasKey = true))
         assertTrue((vision.recognize(ByteArray(0), "sv") as FridgeVisionResult.Failed).error is FridgeVisionError.Unparseable)
-        assertTrue(
-            (vision.recognize(ByteArray(FridgeVisionRequest.MAX_BYTES + 1), "sv") as FridgeVisionResult.Failed).error is FridgeVisionError.Unparseable,
-        )
+        val tooBig = vision.recognize(ByteArray(FridgeVisionRequest.MAX_BYTES + 1), "sv") as FridgeVisionResult.Failed
+        assertTrue(tooBig.error is FridgeVisionError.Unparseable)
         assertTrue(claude.requests.isEmpty())
     }
 
     @Test
     fun theKeyCheckUsesTheChosenModel() = runTest {
-        val vision = vision(AiSettings(provider = AiProvider.OPENAI, model = "gpt-custom", hasKey = true), MemoryKeys(AiProvider.OPENAI to FAKE_KEY))
+        val settings = AiSettings(provider = AiProvider.OPENAI, model = "gpt-custom", hasKey = true)
+        val vision = vision(settings, MemoryKeys(AiProvider.OPENAI to FAKE_KEY))
         assertEquals(AiKeyCheck.WORKS, vision.checkKey())
         assertEquals("gpt-custom", openAi.checks.single().model)
         assertFalse(openAi.checks.single().toString().contains(FAKE_KEY))

@@ -28,10 +28,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * error message that quotes the header value.
  */
 @Singleton
-internal class DefaultAiSettingsRepository @Inject constructor(
-    private val preferences: AiPreferencesStore,
-    private val keys: AiKeyStore,
-) : AiSettingsRepository {
+internal class DefaultAiSettingsRepository @Inject constructor(private val preferences: AiPreferencesStore, private val keys: AiKeyStore) :
+    AiSettingsRepository {
 
     override val settings: Flow<AiSettings> = combine(preferences.preferences, keys.providersWithKey) { prefs, withKey ->
         val provider = prefs.provider
@@ -50,8 +48,8 @@ internal class DefaultAiSettingsRepository @Inject constructor(
         val value = model?.trim().orEmpty()
         if (value.any { it.isWhitespace() || it.isISOControl() }) return Outcome.Failure(TandemError.Unknown(MODEL_INVALID))
         return updateCurrent { prefs, provider ->
-            val models = if (value.isEmpty() || value == provider.defaultModel) prefs.models - provider else prefs.models + (provider to value)
-            prefs.copy(models = models)
+            val default = value.isEmpty() || value == provider.defaultModel
+            prefs.copy(models = if (default) prefs.models - provider else prefs.models + (provider to value))
         }
     }
 
@@ -59,8 +57,8 @@ internal class DefaultAiSettingsRepository @Inject constructor(
         val value = url?.trim().orEmpty().trimEnd('/')
         if (value.isNotEmpty() && !isValidBaseUrl(value)) return Outcome.Failure(TandemError.Unknown(BASE_URL_INVALID))
         return updateCurrent { prefs, provider ->
-            val urls = if (value.isEmpty() || value == provider.officialBaseUrl) prefs.baseUrls - provider else prefs.baseUrls + (provider to value)
-            prefs.copy(baseUrls = urls)
+            val official = value.isEmpty() || value == provider.officialBaseUrl
+            prefs.copy(baseUrls = if (official) prefs.baseUrls - provider else prefs.baseUrls + (provider to value))
         }
     }
 

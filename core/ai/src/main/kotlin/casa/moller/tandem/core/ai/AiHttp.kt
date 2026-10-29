@@ -63,13 +63,16 @@ internal suspend fun Call.await(): Response = suspendCancellableCoroutine { cont
 }
 
 /** What a failed HTTP answer means for the fridge photo (the body is read only for its error code, never logged). */
-internal fun httpFailure(code: Int, body: String, retryAfter: String?): FridgeVisionError = when {
-    code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN && !body.mentionsModel() -> FridgeVisionError.InvalidKey
-    code == HTTP_BAD_REQUEST && body.isInvalidKey() -> FridgeVisionError.InvalidKey
-    code == HTTP_NOT_FOUND || body.mentionsModel() && code in HTTP_CLIENT_ERRORS -> FridgeVisionError.ModelUnavailable
-    code == HTTP_PAYMENT_REQUIRED || code == HTTP_TOO_MANY_REQUESTS -> FridgeVisionError.QuotaOrRateLimit(retryAfter?.trim()?.toLongOrNull())
-    code >= HTTP_SERVER_ERRORS -> FridgeVisionError.Network("http-$code")
-    else -> FridgeVisionError.Unparseable("http-$code")
+internal fun httpFailure(code: Int, body: String, retryAfter: String?): FridgeVisionError {
+    val retryAfterSeconds = retryAfter?.trim()?.toLongOrNull()
+    return when {
+        code == HTTP_UNAUTHORIZED || (code == HTTP_FORBIDDEN && !body.mentionsModel()) -> FridgeVisionError.InvalidKey
+        code == HTTP_BAD_REQUEST && body.isInvalidKey() -> FridgeVisionError.InvalidKey
+        code == HTTP_NOT_FOUND || (body.mentionsModel() && code in HTTP_CLIENT_ERRORS) -> FridgeVisionError.ModelUnavailable
+        code == HTTP_PAYMENT_REQUIRED || code == HTTP_TOO_MANY_REQUESTS -> FridgeVisionError.QuotaOrRateLimit(retryAfterSeconds)
+        code >= HTTP_SERVER_ERRORS -> FridgeVisionError.Network("http-$code")
+        else -> FridgeVisionError.Unparseable("http-$code")
+    }
 }
 
 /** What a failed HTTP answer means for "Testa nyckeln". */
@@ -89,7 +92,7 @@ internal fun ioFailure(error: IOException): FridgeVisionError.Network =
 private fun String.isInvalidKey(): Boolean = contains("API_KEY_INVALID") || contains("API key not valid", ignoreCase = true)
 
 // OpenAI: {"error": {"code": "model_not_found"}}; Gemini: "models/x is not found".
-private fun String.mentionsModel(): Boolean = contains("model_not_found") || contains("does not exist") && contains("model")
+private fun String.mentionsModel(): Boolean = contains("model_not_found") || (contains("does not exist") && contains("model"))
 
 private const val HTTP_BAD_REQUEST = 400
 private const val HTTP_UNAUTHORIZED = 401

@@ -6,7 +6,7 @@
     <!-- The fridge photo is experimental (B22): the title says so. -->
     <string name="scan_fridge_title">Foto av kylen (experimentell)</string>
     <string name="scan_review_title">Granska innan du sparar</string>
-    <string name="scan_ai_settings_title">AI</string>
+    <string name="scan_ai_settings_title">AI (experimentellt)</string>
 
     <!-- skanning lane: shared by the scanners and the review -->
     <string name="scan_cancel">Avbryt</string>

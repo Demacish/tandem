@@ -48,10 +48,14 @@ internal class PreferencesAiPreferencesStore(private val dataStore: DataStore<Pr
     private fun MutablePreferences.write(value: AiPreferences) {
         value.provider?.let { this[Keys.PROVIDER] = it.name } ?: remove(Keys.PROVIDER)
         AiProvider.entries.forEach { provider ->
-            value.models[provider]?.takeIf { it.isNotBlank() }?.let { this[Keys.model(provider)] = it } ?: remove(Keys.model(provider))
-            value.baseUrls[provider]?.takeIf { it.isNotBlank() }?.let { this[Keys.baseUrl(provider)] = it } ?: remove(Keys.baseUrl(provider))
+            setOrRemove(Keys.model(provider), value.models[provider])
+            setOrRemove(Keys.baseUrl(provider), value.baseUrls[provider])
         }
         this[Keys.WARNING_ACKNOWLEDGED] = value.warningAcknowledged
+    }
+
+    private fun MutablePreferences.setOrRemove(key: Preferences.Key<String>, value: String?) {
+        if (value.isNullOrBlank()) remove(key) else this[key] = value
     }
 
     internal object Keys {

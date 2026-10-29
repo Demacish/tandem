@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (ai-foto lane, B22): Mer → AI (experimental), the page is feature:scan's AiSettingsKey. -->
+    <string name="shell_more_ai">AI (experimental)</string>
+    <string name="shell_more_ai_supporting">Fridge photo with your own key</string>
+</resources>

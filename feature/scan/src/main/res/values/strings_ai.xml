@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ai-foto lane (Fas S, #45, B22): the EXPERIMENTAL fridge photo and Settings → AI. -->
+    <string name="fridge_experimental">Experimental</string>
+    <string name="fridge_service_fallback">the AI service</string>
+    <string name="fridge_heading">Photograph the fridge, freezer or pantry</string>
+    <string name="fridge_tips">Open the door, get a whole shelf in the picture and make sure it is light. Things that are hidden or in closed containers are not found.</string>
+    <string name="fridge_privacy">The photo is made smaller and sent to %1$s without location or camera data. The cost is charged to your own account there. The photo is not kept in the app.</string>
+    <string name="fridge_camera_rationale">The camera is used to photograph your fridge. You can also pick a photo from the gallery.</string>
+    <string name="fridge_take_photo">Take photo</string>
+    <string name="fridge_preparing">Preparing the photo …</string>
+    <string name="fridge_asking">Asking %1$s …</string>
+    <string name="fridge_matching">Matching with your foods …</string>
+    <string name="fridge_demo_body">The fridge photo is not available in demo mode: it needs a Tandoor and your own AI key. Nothing is sent from the demo.</string>
+    <string name="fridge_no_key_title">Add an AI key in Settings</string>
+    <string name="fridge_no_key_body">The fridge photo uses your own key for Claude, Gemini or OpenAI. Choose a service and paste the key under Settings → AI.</string>
+    <string name="fridge_open_settings">Open AI settings</string>
+    <string name="fridge_warning_title">The fridge photo is experimental</string>
+    <string name="fridge_warning_body">The AI can miss items, or believe something is there that is not. Everything it finds becomes a list of suggestions that you check before anything is saved in the pantry.</string>
+    <string name="fridge_warning_accept">I understand</string>
+    <string name="fridge_warning_decline">Not now</string>
+    <string name="fridge_problem_key_title">The key does not work</string>
+    <string name="fridge_problem_key_body">%1$s did not accept the key. Check it under Settings → AI.</string>
+    <string name="fridge_problem_model_title">The model is not available</string>
+    <string name="fridge_problem_model_body">The key works, but %1$s does not offer the chosen model to it. Check the model under Settings → AI.</string>
+    <string name="fridge_problem_rate_title">Try again later</string>
+    <string name="fridge_problem_rate_body">%1$s is busy or the account has no credits left right now.</string>
+    <string name="fridge_problem_refusal_title">The AI would not interpret the photo</string>
+    <string name="fridge_problem_refusal_body">%1$s declined to answer. Try another photo, or add the items by hand.</string>
+    <string name="fridge_problem_network_title">No answer</string>
+    <string name="fridge_problem_network_body">%1$s could not be reached. Check the connection and try again.</string>
+    <string name="fridge_problem_unparseable_title">The answer could not be read</string>
+    <string name="fridge_problem_unparseable_body">%1$s answered with something other than a list of items. Try again, or pick another model.</string>
+    <string name="fridge_problem_nothing_title">No food found</string>
+    <string name="fridge_problem_nothing_body">%1$s did not see any food in the photo. Get closer, or open the door wider.</string>
+    <string name="fridge_problem_unreadable_body">Take the photo again or pick another one.</string>
+    <string name="fridge_review_unsure">Unsure</string>
+    <string name="fridge_review_truncated_title">The list may be incomplete</string>
+    <string name="fridge_review_truncated_body">The AI\'s answer was cut off. Add what is missing by hand, or photograph a smaller part.</string>
+
+    <string name="ai_provider_claude" translatable="false">Claude</string>
+    <string name="ai_provider_gemini" translatable="false">Gemini</string>
+    <string name="ai_provider_openai" translatable="false">OpenAI</string>
+    <string name="ai_intro_title">The fridge photo with your own AI key</string>
+    <string name="ai_intro_body">Photograph the fridge and an AI service suggests what you have at home. It is experimental: the AI can miss items or see things that are not there, so you always check the list before anything is saved.</string>
+    <string name="ai_demo_body">Demo mode never calls an AI service. The settings are kept for when the app is connected to your Tandoor.</string>
+    <string name="ai_provider_heading">Service</string>
+    <string name="ai_provider_default_model">Default model: %1$s</string>
+    <string name="ai_provider_off">Off</string>
+    <string name="ai_provider_off_body">No fridge photo</string>
+    <string name="ai_key_heading">Key for %1$s</string>
+    <string name="ai_key_stored">Key saved</string>
+    <string name="ai_key_missing">No key</string>
+    <string name="ai_key_field">API key</string>
+    <string name="ai_key_field_replace">New API key</string>
+    <string name="ai_key_field_help">Stored encrypted on this phone only and never shown again.</string>
+    <string name="ai_key_save">Save key</string>
+    <string name="ai_key_paste">Paste</string>
+    <string name="ai_key_check">Test the key</string>
+    <string name="ai_key_remove">Remove the key</string>
+    <string name="ai_key_remove_title">Remove the key?</string>
+    <string name="ai_key_remove_body">The fridge photo is hidden until you add a key again. The key is not removed from your account at the service.</string>
+    <string name="ai_key_saved">The key is saved</string>
+    <string name="ai_key_removed">The key is removed</string>
+    <string name="ai_key_error_empty">Paste the key first</string>
+    <string name="ai_key_error_invalid">That does not look like a key: it must be one line without spaces</string>
+    <string name="ai_key_error_storage">The key could not be saved on this phone. Try again.</string>
+    <string name="ai_check_running">Asking %1$s …</string>
+    <string name="ai_check_works_title">The key works</string>
+    <string name="ai_check_works_body">%1$s accepts the key and offers %2$s.</string>
+    <string name="ai_check_invalid_title">Wrong key</string>
+    <string name="ai_check_invalid_body">%1$s did not accept the key. Paste it again.</string>
+    <string name="ai_check_model_title">No access to the model</string>
+    <string name="ai_check_model_body">The key works, but %1$s does not offer %2$s to it. Pick another model.</string>
+    <string name="ai_check_rate_title">Try again later</string>
+    <string name="ai_check_rate_body">%1$s is busy or the account has no credits left right now.</string>
+    <string name="ai_check_network_title">No connection</string>
+    <string name="ai_check_network_body">%1$s could not be reached. Check the connection and the base URL.</string>
+    <string name="ai_check_failed_title">Could not test the key</string>
+    <string name="ai_check_failed_body">%1$s gave an unexpected answer. Check the base URL, or try again later.</string>
+    <string name="ai_check_no_key_body">Choose a service and save a key first.</string>
+    <string name="ai_advanced_heading">Model and address</string>
+    <string name="ai_model_field">Model</string>
+    <string name="ai_model_help">Empty = the default, %1$s</string>
+    <string name="ai_model_error">A model name has no spaces</string>
+    <string name="ai_base_url_field">Own base URL (optional)</string>
+    <string name="ai_base_url_help">For a proxy or a compatible server. Empty = %1$s</string>
+    <string name="ai_base_url_error">Use an https address without a user name</string>
+    <string name="ai_advanced_save">Save</string>
+    <string name="ai_advanced_reset">Use the defaults</string>
+    <string name="ai_advanced_saved">Saved</string>
+    <string name="ai_privacy_heading">Your photo, your key, your costs</string>
+    <string name="ai_privacy_body">The photo is sent only to %1$s, made smaller and without location, and is not kept in the app. Every photo costs a little on your own account at the service. The key never leaves this phone except in the call to the service, and it is not part of backups. The setting is for this phone, whichever Tandoor account is active.</string>
+</resources>
