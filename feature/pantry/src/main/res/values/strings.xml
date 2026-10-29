@@ -213,4 +213,8 @@
     <string name="pantry_make_now_empty_filtered_body">Try another meal type, keyword or time.</string>
     <string name="pantry_use_up_title">Use up</string>
     <string name="pantry_use_up_body">%1$s. Recipes that use them come first.</string>
+    <string name="pantry_make_now_cook_description">Cook %1$s</string>
+    <string name="pantry_make_now_add_missing_description">Add what %1$s is missing to the list</string>
+    <string name="pantry_unpack_item_change_description">Change place or date for %1$s</string>
+    <string name="pantry_entry_expiry_chosen_far">Best before %1$s</string>
 </resources>

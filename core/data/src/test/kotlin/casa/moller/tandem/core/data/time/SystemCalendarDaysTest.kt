@@ -57,7 +57,7 @@ class SystemCalendarDaysTest {
     @Test
     fun aChangedTimeZoneIsNoticedAtTheRecheck() = runTest {
         val clock = MovableClock(Instant.parse("2026-10-29T12:00:00Z"))
-        var zone = TimeZone.UTC
+        var zone: TimeZone = TimeZone.UTC
         val days = SystemCalendarDays(clock, { zone }, recheck = 1.hours)
         val result = flow {
             days.observeToday().collect { day ->

@@ -63,6 +63,7 @@ import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.pantry.expiryText
 import casa.moller.tandem.core.ui.pantry.formatDay
+import casa.moller.tandem.core.ui.pantry.isCountedExpiry
 import casa.moller.tandem.core.ui.recipe.currentLocale
 import casa.moller.tandem.feature.pantry.R
 import casa.moller.tandem.feature.pantry.ui.PantryIcons
@@ -306,8 +307,10 @@ private fun ExpiryPicker(state: PantryEntryUiState, onAction: (PantryEntryAction
     }
     val expires = state.expires
     Text(
-        text = if (expires != null && today != null) {
+        text = if (expires != null && today != null && isCountedExpiry(expires, today)) {
             stringResource(R.string.pantry_entry_expiry_chosen, formatDay(expires, today, currentLocale()), expiryText(expires, today))
+        } else if (expires != null && today != null) {
+            stringResource(R.string.pantry_entry_expiry_chosen_far, formatDay(expires, today, currentLocale()))
         } else {
             stringResource(R.string.pantry_entry_expiry_none)
         },

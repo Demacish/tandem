@@ -255,7 +255,8 @@ private fun Shortcuts(state: PantryUiState, onAction: (PantryAction) -> Unit) {
                 title = stringResource(R.string.pantry_unpack_prompt_title),
                 body = pluralStringResource(R.plurals.pantry_unpack_prompt_body, state.unpackCount, state.unpackCount),
                 icon = PantryIcons.Unpack,
-                tone = TandemTone.Accent,
+                // Neutral: the text button's colour is readable on it (the accent container is not, ATF).
+                tone = TandemTone.Neutral,
                 actions = {
                     TandemTextButton(text = stringResource(R.string.pantry_unpack_title), onClick = { onAction(PantryAction.OpenUnpack) })
                 },
@@ -347,12 +348,15 @@ private fun EmptyPantry(state: PantryUiState, onAction: (PantryAction) -> Unit) 
                 leadingIcon = PantryIcons.Receipt,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TandemSecondaryButton(
-                text = stringResource(R.string.pantry_unpack_title),
-                onClick = { onAction(PantryAction.OpenUnpack) },
-                leadingIcon = PantryIcons.Unpack,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            // The "Packa upp" card above offers it already when something was checked off today.
+            if (state.unpackCount == 0) {
+                TandemSecondaryButton(
+                    text = stringResource(R.string.pantry_unpack_title),
+                    onClick = { onAction(PantryAction.OpenUnpack) },
+                    leadingIcon = PantryIcons.Unpack,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             TandemTextButton(
                 text = stringResource(R.string.pantry_add_by_hand),
                 onClick = { onAction(PantryAction.AddEntry(null)) },

@@ -7,6 +7,7 @@ import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.feature.pantry.Devices.PHONE_LANDSCAPE
 import casa.moller.tandem.feature.pantry.Devices.PHONE_TALL
+import casa.moller.tandem.feature.pantry.Devices.PHONE_XTALL
 import casa.moller.tandem.feature.pantry.Devices.TABLET
 import casa.moller.tandem.feature.pantry.Devices.TABLET_PORTRAIT
 import org.junit.Rule
@@ -32,6 +33,7 @@ class PantryAccessibilityTest {
     fun hemma() = check(PantryShot.HEMMA)
 
     @Test
+    @Config(qualifiers = "sv-$PHONE_XTALL")
     fun hemmaDarkFontScale2() = check(PantryShot.HEMMA, darkTheme = true, fontScale = 2f)
 
     @Test
@@ -66,9 +68,6 @@ class PantryAccessibilityTest {
 
     @Test
     fun hemmaMove() = check(PantryShot.HEMMA_MOVE)
-
-    @Test
-    fun hemmaNewPlace() = check(PantryShot.HEMMA_NEW_PLACE)
 
     @Test
     fun entryNew() = check(PantryShot.ENTRY_NEW)

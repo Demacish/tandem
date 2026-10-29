@@ -15,7 +15,6 @@ import casa.moller.tandem.core.testing.data.SamplePantry
 import casa.moller.tandem.core.ui.pantry.ExpiryUrgency
 import casa.moller.tandem.feature.pantry.entry.PantryEntryScreen
 import casa.moller.tandem.feature.pantry.entry.PantryEntryUiState
-import casa.moller.tandem.feature.pantry.hemma.LocationEditor
 import casa.moller.tandem.feature.pantry.hemma.OnHandFood
 import casa.moller.tandem.feature.pantry.hemma.PantryRow
 import casa.moller.tandem.feature.pantry.hemma.PantryScreen
@@ -45,7 +44,6 @@ internal enum class PantryShot(val content: @Composable () -> Unit) {
     HEMMA_FRIDGE_PHOTO({ HemmaShot(PantryStates.hemma(fridgePhoto = true, unpackCount = 0)) }),
     HEMMA_LOCATION({ HemmaShot(PantryStates.location()) }),
     HEMMA_MOVE({ HemmaShot(PantryStates.hemma().let { it.copy(moving = it.sections.first().rows[1]) }) }),
-    HEMMA_NEW_PLACE({ HemmaShot(PantryStates.hemma().copy(locationEditor = LocationEditor(null, "Vinkyl", isFreezer = false))) }),
     ENTRY_NEW({ PantryEntryScreen(state = PantryStates.entryNew, onAction = {}) }),
     ENTRY_EDIT({ PantryEntryScreen(state = PantryStates.entryEdit, onAction = {}) }),
     UNPACK({ UnpackScreen(state = PantryStates.unpack, onAction = {}) }),

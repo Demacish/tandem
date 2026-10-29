@@ -207,4 +207,8 @@
     <string name="pantry_make_now_empty_filtered_body">Prova en annan måltidstyp, ett annat nyckelord eller en annan tid.</string>
     <string name="pantry_use_up_title">Använd upp</string>
     <string name="pantry_use_up_body">%1$s. Recepten som använder dem kommer först.</string>
+    <string name="pantry_make_now_cook_description">Laga %1$s</string>
+    <string name="pantry_make_now_add_missing_description">Lägg det som saknas till %1$s på listan</string>
+    <string name="pantry_unpack_item_change_description">Ändra plats eller datum för %1$s</string>
+    <string name="pantry_entry_expiry_chosen_far">Bäst före %1$s</string>
 </resources>

@@ -189,7 +189,7 @@ private fun Header(state: MakeNowUiState, onAction: (MakeNowAction) -> Unit, mod
             CalloutCard(
                 title = stringResource(R.string.pantry_staples_prompt_title),
                 body = stringResource(R.string.pantry_staples_prompt_body),
-                tone = TandemTone.Accent,
+                tone = TandemTone.Neutral,
                 onDismiss = { onAction(MakeNowAction.DismissStaples) },
                 actions = {
                     TandemTextButton(
@@ -214,10 +214,10 @@ private fun UseUpLine(state: MakeNowUiState) {
     val today = state.today ?: return
     if (state.expiring.isEmpty()) return
     val locale = currentLocale()
-    // map is inline, so the texts can be read here (joinToString's transform is not composable).
-    val items = state.expiring.take(MAX_USE_UP).map { entry ->
+    // mapIndexed is inline, so the texts can be read here (joinToString's transform is not composable).
+    val items = state.expiring.take(MAX_USE_UP).mapIndexed { index, entry ->
         val day = entry.expires
-        val name = foodTitle(entry.food.name, locale)
+        val name = if (index == 0) foodTitle(entry.food.name, locale) else entry.food.name.trim()
         if (day != null) "$name ${expiryText(day, today)}" else name
     }.joinToString(", ")
     InfoCard(

@@ -81,9 +81,6 @@ class PantryScreenshotTest {
     fun hemmaMove() = capture("phone_pantry_move_light_sv", PantryShot.HEMMA_MOVE)
 
     @Test
-    fun hemmaNewPlace() = capture("phone_pantry_new_place_light_sv", PantryShot.HEMMA_NEW_PLACE)
-
-    @Test
     fun entryNew() = capture("phone_pantry_entry_new_light_sv", PantryShot.ENTRY_NEW)
 
     @Test

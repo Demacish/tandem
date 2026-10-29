@@ -93,6 +93,9 @@ fun expiryText(expires: LocalDate, today: LocalDate): String {
     }
 }
 
+/** [expiryText] counts the days ("går ut om 5 dagar") rather than naming the day. */
+fun isCountedExpiry(expires: LocalDate, today: LocalDate): Boolean = today.daysUntil(expires) <= COUNTED_DAYS
+
 /** "4 nov." in the app's language, with the year when it is not this year's ("15 jan. 2027"). */
 fun formatDay(day: LocalDate, today: LocalDate, locale: Locale): String {
     val skeleton = if (day.year == today.year) "dMMM" else "dMMMy"

@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -125,19 +126,24 @@ internal fun MakeNowRecipeRow(
                 }
             }
             FlowRow(modifier = Modifier.padding(horizontal = spacing.xs), horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                val cookDescription = stringResource(R.string.pantry_make_now_cook_description, recipe.name)
                 TandemTextButton(
                     text = stringResource(R.string.pantry_make_now_cook),
                     onClick = { onAction(MakeNowAction.StartCooking(recipe.id)) },
                     leadingIcon = TandemIcons.Cooking,
-                    modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget),
+                    modifier = Modifier
+                        .heightIn(min = TandemTheme.sizes.minTouchTarget)
+                        .semantics { contentDescription = cookDescription },
                 )
                 if (canAddToList && !row.missing.isNullOrEmpty()) {
+                    val addDescription = stringResource(R.string.pantry_make_now_add_missing_description, recipe.name)
                     TandemTextButton(
                         text = stringResource(R.string.pantry_make_now_add_missing),
                         onClick = { onAction(MakeNowAction.AddMissingToList(recipe.id)) },
                         leadingIcon = TandemIcons.ShoppingCart,
                         modifier = Modifier
                             .heightIn(min = TandemTheme.sizes.minTouchTarget)
+                            .semantics { contentDescription = addDescription }
                             .testTag(makeNowAddMissingTag(recipe.id)),
                     )
                 }

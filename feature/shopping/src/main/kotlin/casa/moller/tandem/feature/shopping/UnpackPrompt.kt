@@ -64,7 +64,8 @@ internal fun UnpackPrompt(count: Int, onUnpack: () -> Unit, modifier: Modifier =
         title = stringResource(R.string.shopping_unpack_title),
         body = pluralStringResource(R.plurals.shopping_unpack_body, count, count),
         icon = TandemIcons.ShoppingCartFilled,
-        tone = TandemTone.Accent,
+        // Neutral, like the sync notice: the text button's colour is readable on it (ATF).
+        tone = TandemTone.Neutral,
         modifier = modifier,
         actions = { TandemTextButton(text = stringResource(R.string.shopping_unpack_action), onClick = onUnpack) },
     )

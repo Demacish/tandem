@@ -26,6 +26,9 @@ import kotlinx.datetime.LocalDate
 internal object Devices {
     const val PHONE = "w412dp-h915dp-port-xhdpi"
     const val PHONE_TALL = "w412dp-h1800dp-port-xhdpi"
+
+    /** Tall enough that no row is cut at the bottom at font scale 2 (ATF would measure a sliver). */
+    const val PHONE_XTALL = "w412dp-h3600dp-port-xhdpi"
     const val PHONE_LANDSCAPE = "w915dp-h412dp-land-xhdpi"
     const val TABLET_PORTRAIT = "w800dp-h1280dp-port-mdpi"
     const val TABLET = "w1280dp-h800dp-land-mdpi"

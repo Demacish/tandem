@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import casa.moller.tandem.core.designsystem.component.InfoCard
@@ -216,12 +217,14 @@ private fun UnpackItemRow(row: UnpackRow, state: UnpackUiState, onAction: (Unpac
             }
         }
         if (row.include && !state.readOnly && state.locations.isNotEmpty()) {
+            val changeDescription = stringResource(R.string.pantry_unpack_item_change_description, foodTitle(row.item.food.name, locale))
             TandemTextButton(
                 text = stringResource(if (expanded) R.string.pantry_unpack_item_done else R.string.pantry_unpack_item_change),
                 onClick = { expanded = !expanded },
                 modifier = Modifier
                     .padding(start = spacing.sm)
-                    .heightIn(min = TandemTheme.sizes.minTouchTarget),
+                    .heightIn(min = TandemTheme.sizes.minTouchTarget)
+                    .semantics { if (!expanded) contentDescription = changeDescription },
             )
             if (expanded) {
                 Column(

@@ -27,6 +27,18 @@ kommande delarna.
   bara ditt hushålls platser visas. Kan laga nu räknar ut Har allt, Saknar 1 och Saknar 2 som
   Tandoor gör, och varor som snart går ut lyfter sina recept. En streckkod som ingen telefon har
   lärt sig slås upp i Open Food Facts med bara koden.
+- **Hemma** (Mer → Hemma): skafferiet per plats (Kyl, Frys, Skafferi och egna) med mängd och
+  bäst före-dag i färg ("går ut i morgon", "gick ut i går"), snabbknapparna "Slut" och "−1",
+  flytta, ändra och ångra. En ny Tandoor får Kyl, Frys och Skafferi med ett tryck, och "Har hemma"
+  visar det som bara är markerat som hemma. På surfplatta står platserna i kolumner.
+- **Kan laga nu:** Har allt, Saknar 1 och Saknar 2 med det som saknas på varje recept, "Lägg det
+  som saknas på listan" (bara det som saknas är ikryssat), filter för måltidstyp, nyckelord och
+  tid, Överraska mig, och recept som använder något som snart går ut står först. Första gången
+  föreslås basvaror (salt, olja och liknande), annars saknas de i nästan alla recept.
+- **Packa upp:** när något bockats av i Handla i dag erbjuder listan att lägga det i skafferiet,
+  med plats och bäst före-dag för allt på en gång eller för varje vara.
+- **Idag** visar Kan laga nu och Går ut snart när det finns något, och efter Klart! i kokläget kan
+  du, om du vill, markera det som tog slut. Inget räknas av av sig självt.
 
 ## [0.3.0] – 2026-10-26
 

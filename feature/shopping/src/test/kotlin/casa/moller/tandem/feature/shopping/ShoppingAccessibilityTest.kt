@@ -151,6 +151,7 @@ class ShoppingAccessibilityTest {
     fun listUnpack() = check(ShoppingShot.LIST_UNPACK)
 
     @Test
+    @Config(qualifiers = "w412dp-h3600dp-port-xhdpi")
     fun listUnpackDarkFontScale2() = check(ShoppingShot.LIST_UNPACK, darkTheme = true, fontScale = 2f)
 
     private fun check(shot: ShoppingShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
