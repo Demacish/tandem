@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
+import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import kotlinx.serialization.Serializable
 
 // Phase 1b (grund lane): the settings sub-screens under "Mer" (plan 6.2 "Inställningar",
@@ -45,6 +46,8 @@ internal val NavKey.isMorePage: Boolean
         LanguageKey, AboutKey, LicensesKey, is LicenseTextKey,
         // Phase 2 (konto lane).
         AccountsKey,
+        // Fas S (grund lane): Settings → AI (feature:scan, B22).
+        AiSettingsKey,
         -> true
 
         else -> false

@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -30,7 +31,10 @@ import casa.moller.tandem.core.ui.timer.LocalTimerTicks
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
+import casa.moller.tandem.feature.pantry.navigation.PantryDestination
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
+import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
+import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
@@ -303,6 +307,19 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     @Composable
     override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?) =
         Page("Want to cook", onBack ?: {})
+
+    // --- Fas S (grund lane) ---
+
+    @Composable
+    override fun Pantry(key: PantryDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) =
+        Page("Pantry $key", onBack ?: {})
+
+    @Composable
+    override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit) = Page("Scan $key", onBack)
+
+    @Composable
+    override fun Drinks(key: DrinkDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) =
+        Page("Drinks $key", onBack ?: {})
 
     @Composable
     private fun Page(title: String, onBack: () -> Unit) {

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (grund lane): the titles of the drink pages (#43, plan §8.8). The drycker lane adds the rest. -->
+    <string name="drinks_title">Drinks</string>
+    <string name="drinks_detail_title">Drink</string>
+    <string name="drinks_pairing_picker_title">Goes well with</string>
+    <string name="drinks_create_title">New drink</string>
+</resources>

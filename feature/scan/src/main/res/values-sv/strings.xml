@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="scan_barcode_title">Skanna streckkod</string>
+    <string name="scan_receipt_title">Skanna kvitto</string>
+    <string name="scan_fridge_title">Foto av kylen (experimentell)</string>
+    <string name="scan_review_title">Granska innan du sparar</string>
+    <string name="scan_ai_settings_title">AI</string>
+</resources>

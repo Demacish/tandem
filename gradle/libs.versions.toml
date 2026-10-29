@@ -77,6 +77,16 @@ composeRulesDetekt = "0.6.7"  # io.nlopez.compose.rules for detekt 2.0.0-alpha.6
 benchmark = "1.5.0"           # androidx.benchmark: Macrobenchmark (:benchmark)
 profileinstaller = "1.4.1"    # installs the baseline profile on sideloaded (non-Play) installs
 
+# --- grund lane (Fas S, 0.4.0 "Skafferi & drycker"), verified 2026-10-29 against Google Maven /
+# Maven Central (release date >= 2 weeks before, published .sha1 checked on download). Scanning
+# with BUNDLED ML Kit models (barcode + Latin text; they ship in the APK, so the sideload variant
+# works without Play services) in CameraX; the fridge photo calls Claude through Anthropic's
+# official Java SDK (decision B22). docs/BYGGE.md "Fas S – kontrakt". ---
+camerax = "1.6.2"                 # 2026-08-26 (1.7.0 is rc)
+mlkitBarcodeScanning = "17.3.0"   # com.google.mlkit (bundled model), not play-services-mlkit-*
+mlkitTextRecognition = "16.0.1"   # bundled Latin text recognizer
+anthropicJava = "2.72.0"          # 2026-10-14; 2.73.0+ (2026-10-15 and later) were < 2 weeks old
+
 [libraries]
 # Gradle plugins as libraries for build-logic (compileOnly in build-logic/convention)
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -194,6 +204,17 @@ compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref 
 androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
 
+# --- grund lane (Fas S): scanning (feature:scan) and the fridge photo (core:ai). ---
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
+anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropicJava" }
+# The SDK brings kotlin-reflect 1.9 (for Jackson's Kotlin module); pinned to our Kotlin version.
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+
 [bundles]
 compose-ui = [
     "androidx-compose-ui",
@@ -250,6 +271,14 @@ jvm-unit-test = [
     "junit5-jupiter",
     "turbine",
     "kotlinx-coroutines-test",
+]
+
+# --- grund lane (Fas S) ---
+camerax = [
+    "androidx-camera-core",
+    "androidx-camera-camera2",
+    "androidx-camera-lifecycle",
+    "androidx-camera-view",
 ]
 
 [plugins]

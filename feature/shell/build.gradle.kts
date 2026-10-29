@@ -19,6 +19,10 @@ dependencies {
     // --- grund lane (Fas 2): the Handla and Veckan tabs and their pages; books are in feature:recipes. ---
     implementation(projects.feature.shopping)
     implementation(projects.feature.mealplan)
+    // --- grund lane (Fas S): Hemma (pantry, Kan laga nu, Packa upp, basvaror) and scanning
+    // (barcode, receipt, fridge photo, the review, Settings → AI). Drinks are in feature:recipes. ---
+    implementation(projects.feature.pantry)
+    implementation(projects.feature.scan)
     // --- Phase 1 (recept-ui lane): web pages ("Open on the web", recipe sources) open in a
     // Custom Tab, with the system browser as fallback. ---
     implementation(libs.androidx.browser)

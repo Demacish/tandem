@@ -69,4 +69,6 @@
     <string name="ui_crash_dialog_note">App version, Android version, device model and where in the code Tandem stopped. Passwords, tokens and web addresses are removed.</string>
     <string name="ui_crash_share_subject">Tandem crash log</string>
     <string name="ui_crash_share_chooser">Share crash log</string>
+    <!-- Fas S (grund lane): the empty page of a destination that is still being built. -->
+    <string name="ui_placeholder_body">This page is being built for Tandem 0.4.0.</string>
 </resources>

@@ -67,6 +67,14 @@ android {
         localeFilters += listOf("en", "sv")
     }
 
+    // --- grund lane (Fas S): Anthropic's Java SDK brings Jackson and friends, whose jars each carry
+    // a Java 9 module descriptor and OSGi manifest at the same path; Android uses neither. ---
+    packaging {
+        resources {
+            excludes += listOf("META-INF/versions/9/module-info.class", "META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+        }
+    }
+
     signingConfigs {
         // PUBLIC, debug-only key committed as app/debug.p12 (standard android/androiddebugkey
         // credentials). Every CI run signs the .dev debug APK with the same key, so a newer CI
@@ -174,6 +182,12 @@ dependencies {
     // --- grund lane (Fas 2): the Handla and Veckan tabs (hosted by the shell). ---
     implementation(projects.feature.shopping)
     implementation(projects.feature.mealplan)
+    // --- grund lane (Fas S): Hemma and scanning (hosted by the shell; drinks are in feature:recipes)
+    // and core:ai, which binds FridgeVision (the fridge photo, B22). The lanes' real repositories
+    // replace di/TemporaryFasSModule.kt. ---
+    implementation(projects.feature.pantry)
+    implementation(projects.feature.scan)
+    implementation(projects.core.ai)
     // --- sync lane (Phase 1): WorkManager runs core:sync's @HiltWorker workers through the
     // HiltWorkerFactory that TandemApplication provides (Configuration.Provider). ---
     implementation(libs.androidx.work.runtime)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pantry_title">Hemma</string>
+    <string name="pantry_location_title">Förvaringsplats</string>
+    <string name="pantry_entry_new_title">Lägg till i skafferiet</string>
+    <string name="pantry_entry_edit_title">Ändra vara</string>
+    <string name="pantry_unpack_title">Packa upp</string>
+    <string name="pantry_make_now_title">Kan laga nu</string>
+    <string name="pantry_staples_title">Basvaror</string>
+</resources>

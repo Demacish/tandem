@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (grund lane): the titles of "Hemma" (plan §8.8). The lanes add the screens' texts. -->
+    <string name="pantry_title">At home</string>
+    <string name="pantry_location_title">Storage place</string>
+    <string name="pantry_entry_new_title">Add to the pantry</string>
+    <string name="pantry_entry_edit_title">Edit item</string>
+    <string name="pantry_unpack_title">Unpack</string>
+    <string name="pantry_make_now_title">Cook now</string>
+    <string name="pantry_staples_title">Staples</string>
+</resources>

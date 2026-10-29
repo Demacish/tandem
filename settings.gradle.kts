@@ -52,3 +52,11 @@ include(":benchmark")
 // live in :feature:recipes (plan 6.1). Declared up front so the lanes never edit this file. ---
 include(":feature:shopping")
 include(":feature:mealplan")
+
+// --- grund lane (Fas S, 0.4.0 "Skafferi & drycker"): Hemma (pantry, Kan laga nu, Packa upp,
+// basvaror), scanning (barcode, receipt, fridge photo, the shared review list) and the fridge
+// photo's AI clients. Drinks live in :feature:recipes. Declared up front so the lanes never edit
+// this file (docs/BYGGE.md "Fas S – kontrakt"). ---
+include(":feature:pantry")
+include(":feature:scan")
+include(":core:ai")

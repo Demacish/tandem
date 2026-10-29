@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="drinks_title">Drycker</string>
+    <string name="drinks_detail_title">Dryck</string>
+    <string name="drinks_pairing_picker_title">Passar med</string>
+    <string name="drinks_create_title">Ny dryck</string>
+</resources>

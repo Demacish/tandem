@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        Fas S (plan §8.8, B21): the camera for the barcode, receipt and fridge scans. Asked in
+        context with a rationale (never at start); denied = the system photo picker still works
+        (it needs no storage permission). Not required: devices without a camera use the picker.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+</manifest>

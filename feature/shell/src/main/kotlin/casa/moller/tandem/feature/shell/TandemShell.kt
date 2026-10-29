@@ -65,15 +65,33 @@ import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
+import casa.moller.tandem.feature.pantry.navigation.MakeNowKey
+import casa.moller.tandem.feature.pantry.navigation.PantryDestination
+import casa.moller.tandem.feature.pantry.navigation.PantryEntryKey
+import casa.moller.tandem.feature.pantry.navigation.PantryKey
+import casa.moller.tandem.feature.pantry.navigation.PantryLocationKey
+import casa.moller.tandem.feature.pantry.navigation.StaplesKey
+import casa.moller.tandem.feature.pantry.navigation.UnpackKey
 import casa.moller.tandem.feature.recipes.books.BookPanePlaceholder
 import casa.moller.tandem.feature.recipes.books.FAVORITES_SELECTION
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.WANT_TO_COOK_SELECTION
 import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
+import casa.moller.tandem.feature.recipes.navigation.CreateDrinkKey
+import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
+import casa.moller.tandem.feature.recipes.navigation.DrinkDetailKey
+import casa.moller.tandem.feature.recipes.navigation.DrinksKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
+import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
+import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
+import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
+import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
+import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
+import casa.moller.tandem.feature.scan.navigation.ScanDestination
+import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
 import casa.moller.tandem.feature.shell.accounts.AccountsPage
 import casa.moller.tandem.feature.shell.accounts.RouteAccountsPage
 import casa.moller.tandem.feature.shell.accounts.sharePendingChanges
@@ -343,7 +361,35 @@ internal fun ShellScaffold(
                 onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
             )
         }
+        // --- Fas S (grund lane): Hemma, scanning and drinks, each through its module's one route. ---
+        val openKey: (NavKey) -> Unit = { navigation.navigate(it) }
+        val openRecipe: (Long) -> Unit = { navigation.navigate(RecipeDetailKey(it)) }
+        val pantry: @Composable (PantryDestination) -> Unit = { key ->
+            features.Pantry(key = key, onNavigate = openKey, onOpenRecipe = openRecipe, onBack = { navigation.goBack() })
+        }
+        val scan: @Composable (ScanDestination) -> Unit = { key ->
+            features.Scan(key = key, onNavigate = openKey, onBack = { navigation.goBack() })
+        }
+        val drinks: @Composable (DrinkDestination) -> Unit = { key ->
+            features.Drinks(key = key, onNavigate = openKey, onOpenRecipe = openRecipe, onBack = { navigation.goBack() })
+        }
         val entryProvider = entryProvider<NavKey> {
+            entry<PantryKey> { pantry(it) }
+            entry<PantryLocationKey> { pantry(it) }
+            entry<PantryEntryKey> { pantry(it) }
+            entry<UnpackKey> { pantry(it) }
+            entry<MakeNowKey> { pantry(it) }
+            entry<StaplesKey> { pantry(it) }
+            entry<BarcodeScanKey> { scan(it) }
+            entry<ReceiptScanKey> { scan(it) }
+            entry<FridgeScanKey> { scan(it) }
+            entry<ScanReviewKey> { scan(it) }
+            // Settings → AI is a page of the More list (beside it on wide windows), like the other settings.
+            entry<AiSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) { scan(it) }
+            entry<DrinksKey> { drinks(it) }
+            entry<DrinkDetailKey> { drinks(it) }
+            entry<PairingPickerKey> { drinks(it) }
+            entry<CreateDrinkKey> { drinks(it) }
             entry<TodayKey> {
                 features.Today(
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },

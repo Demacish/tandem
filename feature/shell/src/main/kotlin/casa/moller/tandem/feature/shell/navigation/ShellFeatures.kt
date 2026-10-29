@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.shell.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.CookRoute
 import casa.moller.tandem.feature.cook.TimersRoute
@@ -12,6 +13,8 @@ import casa.moller.tandem.feature.mealplan.WeekRoute
 import casa.moller.tandem.feature.mealplan.WeekShoppingRoute
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
+import casa.moller.tandem.feature.pantry.PantryRoute
+import casa.moller.tandem.feature.pantry.navigation.PantryDestination
 import casa.moller.tandem.feature.recipes.RecipeDetailPanePlaceholder
 import casa.moller.tandem.feature.recipes.RecipeDetailRoute
 import casa.moller.tandem.feature.recipes.RecipesRoute
@@ -20,6 +23,10 @@ import casa.moller.tandem.feature.recipes.books.BooksRoute
 import casa.moller.tandem.feature.recipes.books.FavoritesRoute
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.WantToCookRoute
+import casa.moller.tandem.feature.recipes.drinks.DrinkRoute
+import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
+import casa.moller.tandem.feature.scan.ScanRoute
+import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.shopping.ShoppingHistoryRoute
 import casa.moller.tandem.feature.shopping.ShoppingListChoiceRoute
 import casa.moller.tandem.feature.shopping.ShoppingRoute
@@ -164,6 +171,21 @@ internal interface ShellFeatures {
     /** "Vill laga"; [onPlanMeal] opens the plan-meal sheet for a recipe. */
     @Composable
     fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?)
+
+    // --- Fas S (grund lane): Hemma, scanning and drinks (feature:pantry, feature:scan, feature:recipes),
+    // one function per module; [onNavigate] opens any key the shell maps (docs/BYGGE.md "Fas S – kontrakt"). ---
+
+    /** Every pantry destination ("Hemma", a location, an entry, "Packa upp", "Kan laga nu", "Basvaror"). */
+    @Composable
+    fun Pantry(key: PantryDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?)
+
+    /** Every scan destination (barcode, receipt, fridge photo, the review, Settings → AI). */
+    @Composable
+    fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit)
+
+    /** Every drink destination ("Drycker", a drink, the pairing picker, "Ny dryck"). */
+    @Composable
+    fun Drinks(key: DrinkDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?)
 }
 
 /** The real feature routes. */
@@ -345,5 +367,22 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun WantToCook(onOpenRecipe: (Long) -> Unit, onPlanMeal: (Long) -> Unit, onBack: (() -> Unit)?) {
         WantToCookRoute(onOpenRecipe = onOpenRecipe, onPlanMeal = onPlanMeal, onBack = onBack)
+    }
+
+    // --- Fas S (grund lane) ---
+
+    @Composable
+    override fun Pantry(key: PantryDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) {
+        PantryRoute(key = key, onNavigate = onNavigate, onOpenRecipe = onOpenRecipe, onBack = onBack)
+    }
+
+    @Composable
+    override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit) {
+        ScanRoute(key = key, onNavigate = onNavigate, onBack = onBack)
+    }
+
+    @Composable
+    override fun Drinks(key: DrinkDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) {
+        DrinkRoute(key = key, onNavigate = onNavigate, onOpenRecipe = onOpenRecipe, onBack = onBack)
     }
 }
