@@ -201,6 +201,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
         method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
 
+        // --- Fas S (hemma-data lane): every sync reads the pantry and the learned aliases (empty here). ---
+        method == "GET" && path in FAS_S_LISTS -> fixture(FAS_S_LISTS.getValue(path), ::emptyPage)
+
         method == "GET" && RECIPE_PATH.matches(path) -> {
             val id = RECIPE_PATH.find(path)!!.groupValues[1]
             val recording = RECIPES_BY_ID[id] ?: "fas1/recipe-deleted-get"
@@ -280,6 +283,10 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
      * The recorded response of [name], without hop-by-hop and length headers, with this server's
      * address in place of the recorded one; [transform] may change a JSON body first.
      */
+    /** A recorded DRF page without its results (Fas S: the smoke tests start with an empty pantry). */
+    private fun emptyPage(recorded: JsonElement): JsonElement =
+        JsonObject(recorded.jsonObject + mapOf("count" to JsonPrimitive(0), "next" to JsonNull, "results" to JsonArray(emptyList())))
+
     private fun fixture(name: String, transform: ((JsonElement) -> JsonElement)? = null): MockResponse {
         val root = json.parseToJsonElement(assets.open("$name.json").bufferedReader().use { it.readText() }).jsonObject
         val response = root.getValue("response").jsonObject
@@ -364,6 +371,11 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/user-space/all_personal/" to "14-user-space-all-personal",
             "/api/recipe-book/" to "fas1/recipe-book-list",
             "/api/recipe-book-entry/" to "fas1/recipe-book-entry-list",
+        )
+        private val FAS_S_LISTS = mapOf(
+            "/api/inventory-location/" to "fas-s/inventory-location-list",
+            "/api/inventory-entry/" to "fas-s/inventory-entry-list",
+            "/api/automation/" to "fas-s/automation-list-food-alias",
         )
         private val RECIPES_BY_ID = mapOf(
             "1" to "fas1/recipe-pyttipanna",
