@@ -2,15 +2,9 @@ package casa.moller.tandem.smoke
 
 import android.os.SystemClock
 import android.text.format.DateFormat
-import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
-import androidx.test.uiautomator.BySelector
-import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
-import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -21,11 +15,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 import org.junit.runner.RunWith
 
 /**
@@ -47,63 +37,13 @@ import org.junit.runner.RunWith
  *   again adds nothing) and on (the server added a web meal's ingredients, and `addshopping` an
  *   app meal's): one list recipe per meal and no duplicate rows; (f, 0.3.0 komplettering) Veckan's
  *   "Flytta" sheet moves a meal to tomorrow through its TalkBack action, and the server gets both dates.
- * - [recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges] (0.3.0 komplettering, the
- *   konto and integration lanes' open issue): (g) "Lägg på inköpslistan" in a recipe, driven
- *   through accessibility actions, puts one list recipe with its rows on the server; (h) a second
- *   Tandoor ([second], its own server and list) is added under Mer → Konton och servrar, Handla
- *   then shows ITS list, a change made offline there waits on that account while the first one is
- *   active again (its own list, nothing sent to either server), and goes to the second server only
- *   after switching back.
+ *
+ * The accounts scenario and the recipe's sheet are in [Phase2AccountsSmokeTest]; the shared rules
+ * and steps in [Phase2SmokeBase].
  */
 @RunWith(AndroidJUnit4::class)
-class Phase2SmokeTest {
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val app = TandemApp(UiDevice.getInstance(instrumentation))
-    private var networkTurnedOff = false
-    private val density = instrumentation.context.resources.displayMetrics.density
-
-    /** The network always comes back, also after a failure. The outermost rule (see Phase1SmokeTest). */
-    @get:Rule(order = 0)
-    val network = object : TestWatcher() {
-        override fun finished(description: Description) {
-            if (networkTurnedOff) app.setNetworkEnabled(true)
-        }
-    }
-
-    @get:Rule(order = 1)
-    val tandoor = FakeTandoor(instrumentation.context.assets)
-
-    /** 0.3.0 komplettering: a second Tandoor on another port (another account) for (h). */
-    @get:Rule(order = 3)
-    val second = FakeTandoor(instrumentation.context.assets)
-
-    /** On failure: screenshot, window hierarchy, the server's requests, 404s and state. */
-    @get:Rule(order = 2)
-    val artifacts = object : TestWatcher() {
-        override fun failed(e: Throwable, description: Description) {
-            val name = "FAILED-${description.methodName}"
-            app.capture(name)
-            runCatching {
-                File(TandemApp.outputDir(), "$name-requests.txt").writeText(
-                    (
-                        tandoor.requests + listOf("--- while offline:") + tandoor.requestsWhileOffline +
-                            listOf("--- 404:") + tandoor.notFound +
-                            listOf("--- shopping list:") + tandoor.shopping.all().map { it.toString() } +
-                            listOf("--- list recipes:") + tandoor.shopping.listRecipes().map { it.toString() } +
-                            listOf("--- meal plan:") + tandoor.mealPlan.all().map { it.toString() } +
-                            listOf("--- meal plan creates:") + tandoor.mealPlan.creates +
-                            listOf("--- second server:") + second.requests + listOf("--- second list:") +
-                            second.shopping.all().map { it.toString() } + listOf(app.networkReport())
-                        ).joinToString("\n"),
-                )
-            }
-        }
-    }
-
-    @Before
-    fun startFresh() {
-        app.clearData()
-    }
+class Phase2SmokeTest : Phase2SmokeBase() {
+    override fun servers(): List<FakeTandoor> = listOf(tandoor)
 
     @Test
     fun shoppingList_partnerCheckIn30s_twentyOfflineChanges_rowsDeletedElsewhereWithoutA404() {
@@ -347,153 +287,6 @@ class Phase2SmokeTest {
         app.waitUntilGone(moveTitle)
     }
 
-    /** The custom accessibility action labelled [label] on [node] or one of its ancestors (a merged card). */
-    private fun customAction(node: AccessibilityNodeInfo, label: String): Pair<AccessibilityNodeInfo, Int>? {
-        var current: AccessibilityNodeInfo? = node
-        repeat(MAX_ANCESTORS) {
-            val candidate = current ?: return null
-            candidate.actionList.firstOrNull { it.label?.toString() == label }?.let { return candidate to it.id }
-            current = candidate.parent
-        }
-        return null
-    }
-
-    @Test
-    fun recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges() {
-        tandoor.shopping.seed("mjölk", 1.0, "l")
-        second.shopping.seed("kaffe")
-
-        logIn()
-        // (g) "Lägg på inköpslistan" in the pasta's recipe, through accessibility actions.
-        app.tap("Recipes")
-        app.findInList(By.text(PASTA))
-        app.tap(PASTA)
-        app.scrollTo(By.text(RECIPE_SHOPPING_BUTTON))
-        for (attempt in 1..TAP_ATTEMPTS) {
-            app.waitForNode("\"$RECIPE_SHOPPING_BUTTON\"") { node ->
-                node.text?.toString() == RECIPE_SHOPPING_BUTTON && app.clickableOf(node)?.isEnabled == true
-            }
-            app.clickNodeWithText(RECIPE_SHOPPING_BUTTON)
-            if (nodeShows(TAP_WAIT_MS, ::isRecipeSheetAdd)) break
-        }
-        // The sheet's button may sit below its fold: found and clicked as an accessibility node.
-        app.waitForNode("\"Add n items to the shopping list\"", predicate = ::isRecipeSheetAdd)
-        app.capture("phase2-recipe-sheet")
-        for (attempt in 1..TAP_ATTEMPTS) {
-            app.waitForNode("an enabled \"Add n items to the shopping list\"") { node ->
-                isRecipeSheetAdd(node) && app.clickableOf(node)?.isEnabled == true
-            }
-            app.clickNodeWithText(ADD_TO_LIST)
-            if (nodeGone(TAP_WAIT_MS, ::isRecipeSheetAdd)) break
-        }
-        assertTrue("The recipe sheet closed after adding", app.findNode(::isRecipeSheetAdd) == null)
-        waitForServer("the pasta's list recipe") {
-            val recipe = tandoor.shopping.listRecipes().singleOrNull { it.recipe == PASTA_ID }
-            when {
-                recipe == null -> "no list recipe yet"
-                tandoor.shopping.all().none { it.listRecipe == recipe.id } -> "no rows yet"
-                else -> null
-            }
-        }
-        val pastaRows = tandoor.shopping.all().filter { it.listRecipe != null }.map { it.food }
-        app.capture("phase2-recipe-sheet-added")
-        // Everything of the first account is sent before the second one comes.
-        app.tap("Shopping")
-        waitForInList(row("mjölk"), FIRST_SYNC_TIMEOUT_MS)
-        waitUntilNothingWaits()
-
-        // (h) A second Tandoor under Mer → Konton och servrar; Handla shows ITS list.
-        app.tap("More")
-        openAccounts()
-        app.tap("Add account")
-        app.waitFor(By.text("Connect to your Tandoor"))
-        app.type(0, second.address)
-        app.tap("Connect")
-        app.waitFor(By.text("Use your Tandoor username and password."))
-        app.type(0, "smoke-user")
-        app.type(1, "smoke-password")
-        app.tap("Log in")
-        app.waitFor(By.text("You’re connected"))
-        app.tap("Continue")
-        app.waitForClickable("Recipes", FIRST_SYNC_TIMEOUT_MS)
-        app.tap("Shopping")
-        waitForInList(row("kaffe"), FIRST_SYNC_TIMEOUT_MS)
-        assertTrue("The first account's list is not shown", (listOf("mjölk") + pastaRows).none { app.device.hasObject(row(it)) })
-        app.capture("phase2-second-account-list")
-
-        // Offline on the second account: the change waits there.
-        goOffline()
-        addItems("bröd", count = 1)
-        app.waitFor(By.desc(WAITING))
-
-        // Back to the first account (offline too): its own list, nothing of the second's.
-        app.tap("More")
-        openAccounts()
-        app.tapTextMatching(SWITCH_TO)
-        app.waitForClickable("Shopping")
-        app.tap("Shopping")
-        waitForInList(row("mjölk"), FIRST_SYNC_TIMEOUT_MS)
-        assertTrue("The second account's rows are not shown", listOf("kaffe", "bröd").none { app.device.hasObject(row(it)) })
-        assertTrue("Nothing waits on the first account", !app.device.hasObject(By.desc(WAITING)))
-        app.capture("phase2-first-account-again")
-        app.tap("More")
-        openAccounts()
-        app.waitForNode("the second account's waiting change") { node ->
-            listOfNotNull(node.text, node.contentDescription).any { ACCOUNT_PENDING.matcher(it).find() }
-        }
-        app.capture("phase2-accounts-pending")
-
-        // Online with the first account active: the second account's change is NOT sent.
-        goOnline()
-        app.tap("Shopping")
-        waitForInList(row("mjölk"), FIRST_SYNC_TIMEOUT_MS)
-        SystemClock.sleep(INACTIVE_ACCOUNT_WAIT_MS)
-        assertTrue("Nothing is sent for an inactive account: ${second.requests}", second.shopping.all().none { it.food == "bröd" })
-        assertTrue("Nothing of it reaches the first server", tandoor.shopping.all().none { it.food == "bröd" })
-
-        // Switching back sends it to the second server, and only there.
-        app.tap("More")
-        openAccounts()
-        app.tapTextMatching(SWITCH_TO)
-        app.waitForClickable("Shopping")
-        app.tap("Shopping")
-        waitForInList(row("bröd"), FIRST_SYNC_TIMEOUT_MS)
-        waitUntilNothingWaits()
-        waitForServer("bröd on the second server") { if (second.shopping.all().any { it.food == "bröd" }) null else "not yet" }
-        assertTrue("Never on the first server", tandoor.shopping.all().none { it.food == "bröd" })
-        assertEquals("No 404 on either server", emptyList<String>(), tandoor.notFound + second.notFound)
-        app.capture("phase2-second-account-sent")
-    }
-
-    /** Mer → "Konton och servrar" (on a phone a page of its own, which starts with its intro). */
-    private fun openAccounts() {
-        app.tapUntil(ACCOUNTS, By.textStartsWith(ACCOUNTS_INTRO))
-    }
-
-    /** The recipe sheet's "Add n items to the shopping list". */
-    private fun isRecipeSheetAdd(node: AccessibilityNodeInfo): Boolean =
-        node.text?.toString()?.let { ADD_TO_LIST.matcher(it).matches() } == true
-
-    /** True once no app node matches [predicate] any more, false after [timeoutMs]. */
-    private fun nodeGone(timeoutMs: Long, predicate: (AccessibilityNodeInfo) -> Boolean): Boolean {
-        val deadline = SystemClock.uptimeMillis() + timeoutMs
-        while (SystemClock.uptimeMillis() < deadline) {
-            if (app.findNode(predicate) == null) return true
-            SystemClock.sleep(SETTLE_POLL_MS)
-        }
-        return false
-    }
-
-    /** True as soon as an app node matches [predicate] (also one below a sheet's fold), false after [timeoutMs]. */
-    private fun nodeShows(timeoutMs: Long, predicate: (AccessibilityNodeInfo) -> Boolean): Boolean {
-        val deadline = SystemClock.uptimeMillis() + timeoutMs
-        while (SystemClock.uptimeMillis() < deadline) {
-            if (app.findNode(predicate) != null) return true
-            SystemClock.sleep(SETTLE_POLL_MS)
-        }
-        return false
-    }
-
     /** "+" on [day] in Veckan, Shakshuka from the stored recipes, the shopping tick, Middag, save. */
     private fun planInApp(day: LocalDate) {
         // Today comes first in the agenda: back to the top until its heading and "+" show.
@@ -550,280 +343,10 @@ class Phase2SmokeTest {
         return tandoor.shopping.all().count { it.listRecipe == listRecipe }
     }
 
-    // ------------------------------------------------------------------------------------ helpers
-
-    /** Password login and the real first sync, like [Phase1SmokeTest]. */
-    private fun logIn() {
-        app.launch()
-        app.waitFor(By.text(WELCOME_TEXT))
-        app.tap("Get started")
-        app.waitFor(By.text("Connect to your Tandoor"))
-        app.type(0, tandoor.address)
-        app.tap("Connect")
-        app.waitFor(By.text("Use your Tandoor username and password."))
-        app.type(0, "smoke-user")
-        app.type(1, "smoke-password")
-        app.tap("Log in")
-        app.waitFor(By.text("You’re connected"))
-        app.tap("Continue")
-        app.waitForClickable("Recipes", FIRST_SYNC_TIMEOUT_MS)
-    }
-
-    /**
-     * A list row by its food: one TalkBack item described "<amount> <food>, <aisle>[, ...]"
-     * (feature:shopping ShoppingEntryRow). "mjöl" does not match "2 l mjölk, Mejeri".
-     */
-    private fun row(food: String): BySelector = By.desc(Pattern.compile("(?:[^,]* )?${Pattern.quote(food)}, .*"))
-
-    /**
-     * The row of [food], scrolled into the upper part of the screen and at rest: a snackbar
-     * ("Ångra", 10 s) and the "+ Vara" button sit at the bottom, and a tap there would hit them;
-     * a tap while the list still flings after a swipe lands where the row WAS (seen in CI: a
-     * check that never happened).
-     */
-    private fun rowOnScreen(food: String): UiObject2 {
-        val limit = app.device.displayHeight * UPPER_PART
-        repeat(MAX_NUDGES) {
-            val found = settled(row(food), app.findInList(row(food)))
-            val bounds = found.visibleBounds
-            if (bounds.bottom <= limit && bounds.height() >= MIN_ROW_DP * density) return found
-            val x = app.device.displayWidth / 2
-            val upper = (app.device.displayHeight * UPPER_PART).toInt()
-            val nudged = (app.device.displayHeight * NUDGE_TO).toInt()
-            // Content up when the row is low, down when it is cut at the top.
-            if (bounds.bottom > limit) {
-                app.device.swipe(x, upper, x, nudged, SWIPE_STEPS)
-            } else {
-                app.device.swipe(x, nudged, x, upper, SWIPE_STEPS)
-            }
-            app.device.waitForIdle()
-        }
-        return settled(row(food), app.findInList(row(food)))
-    }
-
-    /** Clicks the first match of [selectors] once it lies still; retried while nodes go stale. */
-    private fun clickAtRest(selectors: List<BySelector>) {
-        val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
-        while (true) {
-            val target = selectors.firstNotNullOfOrNull { selector ->
-                app.device.findObject(selector)?.let { settledOrNull(selector, it) }
-            }
-            if (target != null && runCatching { target.click() }.isSuccess) return
-            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("Nothing to click at rest: $selectors")
-            SystemClock.sleep(SETTLE_POLL_MS)
-        }
-    }
-
-    /** [settled], or null when [selector] no longer matches. */
-    private fun settledOrNull(selector: BySelector, found: UiObject2): UiObject2? =
-        if (app.device.hasObject(selector)) settled(selector, found) else null
-
-    /** [found] again once its bounds stop changing (at most [SETTLE_MS]). */
-    private fun settled(selector: BySelector, found: UiObject2): UiObject2 {
-        var current = found
-        var bounds = runCatching { current.visibleBounds }.getOrNull()
-        val deadline = SystemClock.uptimeMillis() + SETTLE_MS
-        while (SystemClock.uptimeMillis() < deadline) {
-            SystemClock.sleep(SETTLE_POLL_MS)
-            val again = app.device.findObject(selector) ?: return current
-            val now = runCatching { again.visibleBounds }.getOrNull() ?: continue
-            current = again
-            if (now == bounds) return current
-            bounds = now
-        }
-        return current
-    }
-
-    /**
-     * Taps [food]'s row (check); a checked row leaves the list for the folded "Checked". The row
-     * is a checkbox node: when a tap was lost (the row still there and unchecked), it is tapped
-     * again, never when it took effect.
-     */
-    private fun check(food: String) {
-        repeat(TAP_ATTEMPTS) {
-            rowOnScreen(food).click()
-            val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
-            while (SystemClock.uptimeMillis() < deadline) {
-                val current = app.device.findObject(row(food)) ?: return
-                // Stale: the row left the list between finding and reading it (it was checked).
-                val checked = runCatching { current.isChecked }.getOrElse { return }
-                if (checked) {
-                    app.waitUntilGone(row(food))
-                    return
-                }
-                SystemClock.sleep(SETTLE_POLL_MS)
-            }
-        }
-        app.waitUntilGone(row(food))
-    }
-
-    /**
-     * "Check all" in [aisle] (above the rows, so the list is scrolled back up first), at rest and
-     * again while its rows are still there: checking an aisle twice changes nothing.
-     */
-    private fun checkWholeAisle(aisle: String, foods: List<String>) {
-        val button = By.clickable(true).hasDescendant(By.desc("Check all in $aisle"))
-        for (attempt in 1..TAP_ATTEMPTS) {
-            app.scrollBackTo(By.desc("Check all in $aisle"))
-            settled(button, app.waitFor(button)).click()
-            if (app.device.wait(Until.gone(row(foods.first())), TAP_WAIT_MS) == true) break
-        }
-        foods.forEach { app.waitUntilGone(row(it)) }
-    }
-
-    /** Long press on [food]'s row (the edit sheet, again when the press was lost) and [button] there. */
-    private fun editRow(food: String, button: String) {
-        openEdit(food)
-        // Again while the sheet is still open: a click that took effect closes it.
-        // Through the button's accessibility action: the sheet may still slide in, and the keyboard
-        // or the sheet's own scroll may hide the button (see addItems).
-        for (attempt in 1..TAP_ATTEMPTS) {
-            app.waitForNode("\"$button\"") { it.text?.toString() == button && app.clickableOf(it)?.isEnabled == true }
-            app.clickNodeWithText(button)
-            if (app.device.wait(Until.gone(By.text(EDIT_TITLE)), TAP_WAIT_MS) == true) break
-        }
-        app.waitUntilGone(By.text(EDIT_TITLE))
-    }
-
-    private fun openEdit(food: String) {
-        repeat(TAP_ATTEMPTS) {
-            rowOnScreen(food).longClick()
-            if (app.device.wait(Until.hasObject(By.text(EDIT_TITLE)), TAP_WAIT_MS) == true) return
-        }
-        app.waitFor(By.text(EDIT_TITLE))
-    }
-
-    /**
-     * "Add item…" above the list, the free text, the field's "Done" action, and the sheet closed
-     * again. Driven through accessibility actions on the sheet's nodes ([TandemApp.appNodes]), not
-     * taps: the on-screen keyboard (shown or not, before or after the text is set) covered "Add n
-     * items" when it stood below the preview and the suggestions (since 0.3.0 it stands right
-     * below the field), and a tap meant for the keyboard's "Done" or the hidden button could land
-     * on the sheet's scrim, which closes the sheet without adding (the field then vanished too,
-     * so earlier versions of this test took it for "added"). Added
-     * means: the sheet is still open and its field was emptied, which the ViewModel does only
-     * after a successful add. A sheet that closed anyway keeps the text (SavedStateHandle), so it
-     * is opened again and the text submitted again; an add that already happened empties the text,
-     * and a second "Done" on an empty field adds nothing.
-     */
-    private fun addItems(text: String, count: Int) {
-        val button = if (count == 1) "Add 1 item" else "Add $count items"
-        openAddSheet()
-        val deadline = SystemClock.uptimeMillis() + TandemApp.UI_TIMEOUT_MS
-        var submitted = false
-        while (true) {
-            if (SystemClock.uptimeMillis() > deadline) {
-                app.capture("phase2-add-not-added")
-                throw AssertionError("\"$text\" was never added (\"$button\")")
-            }
-            if (!app.device.hasObject(By.text(ADD_TITLE))) openAddSheet()
-            val field = app.findNode(::isAddField)
-            val current = field?.text?.toString().orEmpty()
-            when {
-                field == null -> SystemClock.sleep(SETTLE_POLL_MS)
-
-                submitted && current.isEmpty() -> break
-
-                current != text -> {
-                    // Not set yet (or the field was opened again): set it, then wait for the preview.
-                    app.setNodeText(field, text)
-                    submitted = false
-                }
-
-                // The field holds the text, which SubmitAdd reads: "Done" as the keyboard would send
-                // it, else "Add n items" (right below the field, so above the keyboard).
-                else -> {
-                    submitted = app.imeEnter(field) || app.clickNodeWithText(button)
-                    if (submitted) waitForEmptyAddField() else SystemClock.sleep(SETTLE_POLL_MS)
-                }
-            }
-        }
-        app.capture("phase2-add-added")
-        closeAddSheet()
-    }
-
-    /** The add sheet's field (the only text field while the sheet is open). */
-    private fun isAddField(node: AccessibilityNodeInfo): Boolean = node.className?.toString() == EDIT_TEXT && node.isEditable
-
-    private fun waitForEmptyAddField() {
-        val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
-        while (SystemClock.uptimeMillis() < deadline) {
-            val field = app.findNode(::isAddField) ?: return
-            if (field.text.isNullOrEmpty()) return
-            SystemClock.sleep(SETTLE_POLL_MS)
-        }
-    }
-
-    /** "Add item…" above the list (at rest), again until the sheet shows. */
-    private fun openAddSheet() {
-        val opener = By.clickable(true).hasDescendant(By.text("Add item…"))
-        repeat(TAP_ATTEMPTS) {
-            app.scrollBackTo(By.text("Add item…"))
-            clickAtRest(listOf(opener, By.text("Add item…")))
-            if (app.device.wait(Until.hasObject(By.text(ADD_TITLE)), TAP_WAIT_MS) == true) return
-        }
-        app.waitFor(By.text(ADD_TITLE))
-    }
-
-    /** Back until the sheet is gone (the first Back may only close the keyboard). */
-    private fun closeAddSheet() {
-        repeat(CLOSE_ATTEMPTS) {
-            if (!app.device.hasObject(By.text(ADD_TITLE))) return
-            app.device.pressBack()
-            app.device.wait(Until.gone(By.text(ADD_TITLE)), TAP_WAIT_MS / 2)
-        }
-        app.waitUntilGone(By.text(ADD_TITLE))
-    }
-
-    private fun goOffline() {
-        tandoor.offline = true
-        second.offline = true
-        networkTurnedOff = true
-        app.setNetworkEnabled(false)
-        assertTrue("The emulator must be offline: ${app.networkReport()}", !app.hasNetwork())
-    }
-
-    private fun goOnline() {
-        tandoor.offline = false
-        second.offline = false
-        app.setNetworkEnabled(true)
-        networkTurnedOff = false
-    }
-
-    /** Until the top bar's "n waiting" (and every row's "waiting to sync") is gone: the outbox is empty. */
-    private fun waitUntilNothingWaits() {
-        app.waitUntilGone(By.desc(WAITING), DRAIN_TIMEOUT_MS)
-    }
-
-    /** Polls [mismatch] (null = done) for up to [DRAIN_TIMEOUT_MS]. */
-    private fun waitForServer(what: String, mismatch: () -> String?) {
-        val deadline = SystemClock.uptimeMillis() + DRAIN_TIMEOUT_MS
-        var last = mismatch()
-        while (last != null) {
-            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("Timed out waiting for $what: $last")
-            SystemClock.sleep(POLL_MS)
-            last = mismatch()
-        }
-    }
-
     private fun dayTag(day: LocalDate): String = "day:$day"
 
-    /** [TandemApp.findInList] again and again until [selector] shows (data that arrives with a sync). */
-    private fun waitForInList(selector: BySelector, timeoutMs: Long): UiObject2 {
-        val deadline = SystemClock.uptimeMillis() + timeoutMs
-        while (true) {
-            val found = runCatching { app.findInList(selector) }
-            found.getOrNull()?.let { return it }
-            if (SystemClock.uptimeMillis() > deadline) throw found.exceptionOrNull() ?: AssertionError("Not in the list: $selector")
-            SystemClock.sleep(POLL_MS)
-        }
-    }
-
     private companion object {
-        const val WELCOME_TEXT = "Welcome to Tandem"
         const val ENTRIES = "/api/shopping-list-entry/"
-        const val EDIT_TITLE = "Edit item"
-        const val ADD_TITLE = "Add to the list"
 
         /** feature:mealplan WEEK_AGENDA_TAG, WEEK_SHOPPING_LIST_TAG and WEEK_SHOPPING_ADD_TAG (resource ids). */
         const val WEEK_AGENDA = "week:agenda"
@@ -833,60 +356,28 @@ class Phase2SmokeTest {
         /** The edit sheet's fields, top to bottom: Item, Amount, Unit. */
         const val AMOUNT_FIELD = 1
 
-        /** The top bar's chip ("3 changes waiting to sync") and a pending row's "..., waiting to sync". */
-        val WAITING: Pattern = Pattern.compile(".*waiting to sync")
-
         val VEGETABLES = listOf("morot", "gurka", "tomat", "paprika", "squash")
         val LATER = listOf("ris", "nudlar", "socker", "peppar", "olja")
         val REMOVED = listOf("senap", "honung", "sylt", "müsli", "flingor")
 
         /** fas1 recordings. */
-        const val PASTA_ID = 2L
-        const val PASTA = "Krämig svamppasta"
         const val MEATBALLS_ID = 5L
         const val MEATBALLS = "Köttbullar med potatismos"
         const val SHAKSHUKA_ID = 6L
         const val SHAKSHUKA = "Shakshuka"
 
-        val ADD_TO_LIST: Pattern = Pattern.compile("Add \\d+ items? to the shopping list")
         const val ALL_ON_LIST = "Everything planned on these days is already on the list."
         const val ADD_TO_SHOPPING = "Put the ingredients on the shopping list"
         val SAVE_PLAN: Pattern = Pattern.compile("Add to the plan \\(.+\\)")
 
         /** 0.3.0 komplettering: Veckan's "Flytta" (the card's TalkBack action and the sheet's button). */
         const val MOVE = "Move"
-        const val MAX_ANCESTORS = 4
-
-        /** 0.3.0 komplettering: "Lägg på inköpslistan" in the recipe, and the accounts page. */
-        const val RECIPE_SHOPPING_BUTTON = "Add to shopping list"
-        const val ACCOUNTS = "Accounts and servers"
-        const val ACCOUNTS_INTRO = "Switch between your Tandoor accounts."
-        val SWITCH_TO: Pattern = Pattern.compile("Switch to .+")
-        val ACCOUNT_PENDING: Pattern = Pattern.compile("\\d+ changes? waiting to be sent")
-
-        /** How long an inactive account's change is watched for NOT being sent. */
-        const val INACTIVE_ACCOUNT_WAIT_MS = 15_000L
-
-        const val FIRST_SYNC_TIMEOUT_MS = 90_000L
 
         /** Plan §10: "ser varandras avbockningar inom 30 s när listan är öppen". */
         const val PARTNER_TIMEOUT_MS = 30_000L
-        const val DRAIN_TIMEOUT_MS = 120_000L
         const val WEEK_SHOPPING_TIMEOUT_MS = 45_000L
 
         /** Veckan reads the meal plan when it opens and every 60 s while it is visible. */
         const val MEAL_PLAN_TIMEOUT_MS = 90_000L
-        const val POLL_MS = 500L
-        const val UPPER_PART = 0.6
-        const val NUDGE_TO = 0.35
-        const val MIN_ROW_DP = 40
-        const val MAX_NUDGES = 4
-        const val SWIPE_STEPS = 20
-        const val CLOSE_ATTEMPTS = 3
-        const val TAP_ATTEMPTS = 3
-        const val EDIT_TEXT = "android.widget.EditText"
-        const val TAP_WAIT_MS = 4_000L
-        const val SETTLE_MS = 3_000L
-        const val SETTLE_POLL_MS = 250L
     }
 }

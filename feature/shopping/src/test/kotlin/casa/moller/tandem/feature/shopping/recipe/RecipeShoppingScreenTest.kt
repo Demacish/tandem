@@ -1,12 +1,16 @@
 package casa.moller.tandem.feature.shopping.recipe
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -16,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.feature.shopping.R
@@ -59,6 +64,26 @@ class RecipeShoppingScreenTest {
         composeRule.setContent { ShoppingTestTheme { Scrolling { RecipeShoppingContent(state = none, onAction = {}) } } }
         composeRule.onNodeWithTag(RECIPE_SHOPPING_ADD_TAG).performScrollTo().assertIsNotEnabled()
         composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_add_none)).assertExists()
+    }
+
+    /**
+     * 0.3.0 komplettering: in a short window (a phone, a landscape phone) the add button stays in
+     * view, pinned below the scrolling rows, without scrolling to it first.
+     */
+    @Test
+    fun theAddButtonIsPinnedInViewBelowTheScrollingRows() {
+        val actions = mutableListOf<RecipeShoppingAction>()
+        composeRule.setContent {
+            ShoppingTestTheme {
+                Box(modifier = Modifier.height(360.dp)) {
+                    RecipeShoppingSheetLayout(state = RecipeShoppingSamples.sheet, onAction = { actions += it })
+                }
+            }
+        }
+        composeRule.onNodeWithTag(recipeShoppingRowTag(10112)).assertIsNotDisplayed()
+        composeRule.onNodeWithTag(RECIPE_SHOPPING_ADD_TAG).assertIsDisplayed().assertIsEnabled().performClick()
+        assertEquals(RecipeShoppingAction.Add, actions.last())
+        composeRule.onNodeWithText(context.getString(R.string.recipe_shopping_cancel)).assertIsDisplayed()
     }
 
     @Test

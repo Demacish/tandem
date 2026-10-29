@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.shopping
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +15,7 @@ import casa.moller.tandem.core.model.shopping.ParsedIngredient
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingButton
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingContent
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRow
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingSheetLayout
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingUiState
 import casa.moller.tandem.feature.shopping.ui.AddItemPanel
 import casa.moller.tandem.feature.shopping.ui.EditEntryPanel
@@ -56,6 +58,9 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     // Phase 2 (koppling lane): "Lägg på inköpslistan" (#12) and removing a recipe from the list.
     RECIPE_SHEET({ Sheet { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = {}) } }),
     RECIPE_SHEET_LISTS({ Sheet { RecipeShoppingContent(state = RecipeShoppingSamples.withLists, onAction = {}) } }),
+
+    // 0.3.0 komplettering: the sheet as laid out on screen, "Lägg till n varor" pinned below the scrolling rows.
+    RECIPE_SHEET_PINNED({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.sheet, onAction = {}) } }),
     RECIPE_BUTTON({ Sheet { RecipeShoppingButton(state = RecipeShoppingSamples.onList, onAction = {}, servings = 4.0) } }),
     EDIT_FROM_RECIPE({ Sheet { EditEntryPanel(state = editState.copy(recipeRows = 4), onAction = {}) } }),
 }
@@ -114,6 +119,14 @@ private fun Sheet(content: @Composable () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 24.dp),
         ) { content() }
+    }
+}
+
+/** A sheet that fills the window (bounded height), so its own scrolling part and pinned buttons show as on a device. */
+@Composable
+private fun PinnedSheet(content: @Composable () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp)) { content() }
     }
 }
 

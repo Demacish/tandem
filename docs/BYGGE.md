@@ -974,15 +974,20 @@ Luckor som fullständighetskontrollen hittade, utan schemaändring:
   404 och två 400 på rader servern fortfarande listar) inom 100 s pausar outboxen; efter pausen
   kontrolleras resten mot en ny fullläsning (en rad som partnern raderat släpps utan anrop, den
   andra skickas, 400-raderna står kvar som FAILED).
-- **Release-röktestet** har kontobyte med två servrar, receptets inköpsark och Veckans flyttark
-  (se Release-röktest).
+- **Receptets inköpsark:** "Lägg till n varor i inköpslistan" och "Avbryt" står fast under de
+  rullande raderna (`RecipeShoppingSheetLayout`). Förut låg knappen sist i det rullande innehållet,
+  så med nio ingredienser hamnade den under kanten på en telefon: man fick rulla förbi alla rader,
+  och röktestet hittade ingen nod för den (Compose utelämnar helt avskurna noder).
+- **Release-röktestet** har kontobyte med två servrar, receptets inköpsark
+  (`Phase2AccountsSmokeTest`) och Veckans flyttark (se Release-röktest).
 - **Tester:** `HouseholdMembersTest` (`:core:domain`), `SpacePermissionsTest` (admin, medlem,
   misslyckad läsning, utan hushåll, demo), `SettingsViewModelTest`
   (`theShownPollingIntervalFollowsTheServersMinimum`), `ShoppingViewModelTest`,
   `WeekViewModelTest`, `PlanMealViewModelTest`, `RecipeShoppingScreenTest`, `WeekScreenTest`,
   ATF och nya referensbilder (`*_shopping_shared_*`, `*_week_shared_*`,
   `phone_week_shopping_at_home_light_sv`, och de omtagna `recipe_shopping_*` och
-  `*week_shopping*` där "Finns redan hemma?" syns).
+  `*week_shopping*` där "Finns redan hemma?" syns; nya `phone_recipe_shopping_pinned_light` och
+  `phone_landscape_recipe_shopping_pinned_dark` med den fasta knappen).
 <!-- /Fas 2 komplettering-1 -->
 
 <!-- Fas 1b koklogg -->
@@ -2247,10 +2252,11 @@ den kod som skickas:
   inga dubbla rader (samma listrecept, vara och enhet) och inga 404; (f, komplettering)
   Veckans flyttark: måltidskortets TalkBack-åtgärd "Move", morgondagens dagchip och "Move" i
   arket (tillgänglighetsåtgärder) flyttar webbens lunch till i morgon med en `PATCH` och utan 404.
-  `recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges` (komplettering, kontots och
-  integrationens öppna punkt): (g) "Add to shopping list" i svamppastans recept och arkets "Add
-  n items to the shopping list" (tillgänglighetsåtgärder, knappen kan ligga under arkets kant)
-  ger ett listrecept med rader på servern; (h) en andra `FakeTandoor` (`second`, egen port och
+  `Phase2AccountsSmokeTest.recipeSheet_addAccount_switchKeepsEachListAndItsUnsentChanges`
+  (komplettering, kontots och integrationens öppna punkt; regler och liststeg delas med
+  `Phase2SmokeTest` i `Phase2SmokeBase`): (g) "Add to shopping list" i svamppastans recept och
+  arkets "Add n items to the shopping list" (tillgänglighetsåtgärder; knappen står fast under
+  arkets rullande rader) ger ett listrecept med rader på servern; (h) en andra `FakeTandoor` (`second`, egen port och
   lista) läggs till under More → Accounts and servers → Add account: Handla visar dess lista
   och inte den förstas; i flygplansläge läggs "bröd" till där; byte tillbaka till det första
   kontot visar dess egen lista utan väntande ändringar medan kontosidan säger "1 change waiting

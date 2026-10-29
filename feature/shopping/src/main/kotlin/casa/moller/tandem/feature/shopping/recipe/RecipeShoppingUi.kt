@@ -110,14 +110,35 @@ fun RecipeShoppingSheet(state: RecipeShoppingUiState, onAction: (RecipeShoppingA
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
     ModalBottomSheet(onDismissRequest = { onAction(RecipeShoppingAction.Dismiss) }, sheetState = sheetState) {
-        RecipeShoppingContent(
+        RecipeShoppingSheetLayout(
             state = state,
             onAction = onAction,
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = TandemTheme.spacing.screenHorizontal)
                 .padding(bottom = TandemTheme.spacing.xl),
         )
+    }
+}
+
+/**
+ * The sheet's layout (0.3.0 komplettering): the lists, servings and ingredients scroll, and "Lägg
+ * till n varor i inköpslistan" with "Avbryt" stays pinned below them. Before, the button stood at
+ * the end of the scrolling content, so with a recipe of nine ingredients it was below the fold on
+ * a phone: the user had to scroll past every row to find it (and the release smoke test found no
+ * node for it, since Compose leaves fully clipped nodes out of the accessibility tree).
+ */
+@Composable
+fun RecipeShoppingSheetLayout(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.sm)) {
+        RecipeShoppingContent(
+            state = state,
+            onAction = onAction,
+            actions = false,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
+        )
+        RecipeShoppingActions(state = state, onAction = onAction)
     }
 }
 
@@ -126,10 +147,17 @@ fun RecipeShoppingSheet(state: RecipeShoppingUiState, onAction: (RecipeShoppingA
  * there are any), the servings, "Markera alla" / "Bara det som saknas", the ingredients to buy
  * and those "Finns hemma" (unticked), and "Lägg till n varor i inköpslistan". Each row is one
  * TalkBack item with its checkbox state.
+ *
+ * @param actions false when the caller pins the buttons below the content ([RecipeShoppingSheetLayout]).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun RecipeShoppingContent(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit, modifier: Modifier = Modifier) {
+fun RecipeShoppingContent(
+    state: RecipeShoppingUiState,
+    onAction: (RecipeShoppingAction) -> Unit,
+    modifier: Modifier = Modifier,
+    actions: Boolean = true,
+) {
     val spacing = TandemTheme.spacing
     val locale = LocalConfiguration.current.locales[0]
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
@@ -211,6 +239,14 @@ fun RecipeShoppingContent(state: RecipeShoppingUiState, onAction: (RecipeShoppin
             )
             RowGroup(rows = state.atHome, onAction = onAction)
         }
+        if (actions) RecipeShoppingActions(state = state, onAction = onAction)
+    }
+}
+
+/** "Lägg till n varor i inköpslistan" and "Avbryt" (below the content, or pinned in [RecipeShoppingSheetLayout]). */
+@Composable
+private fun RecipeShoppingActions(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md)) {
         val count = state.chosenCount
         TandemPrimaryButton(
             text = if (count > 0) {

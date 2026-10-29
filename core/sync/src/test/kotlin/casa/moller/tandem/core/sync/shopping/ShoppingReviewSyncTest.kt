@@ -81,7 +81,9 @@ class ShoppingReviewSyncTest {
 
         assertEquals(DrainResult.STOPPED, graph.outbox.drain(graph.remote))
         assertEquals("[$version] five distinct rows refused, then the breaker", ids.take(5), refused)
-        assertEquals(5, graph.guard.state.value.clientErrorTimes.size)
+        // The fifth trips the breaker, which starts a new count (SyncGuard.withError).
+        assertTrue(graph.guard.state.value.breakerUntil > graph.clock.millis)
+        assertTrue(graph.guard.state.value.clientErrorTimes.isEmpty())
         assertEquals(SyncPause.CIRCUIT_BREAKER, graph.guard.pauseAt(graph.guard.state.value, ACCOUNT_ID, graph.clock.millis))
         val waiting = ids.drop(5)
         val sentForTheRest = waiting.flatMap { tandoor.requests("PATCH", "/api/shopping-list-entry/$it/") }
@@ -100,7 +102,7 @@ class ShoppingReviewSyncTest {
         assertEquals(3, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.NOT_FOUND })
         assertEquals(1, graph.droppedChanges.recent.value.count { it.reason == DroppedChanges.DELETED_ELSEWHERE })
         val left = graph.real.outboxDao().observeAll(ACCOUNT_ID).first()
-        assertEquals("the 400s stay FAILED", listOf(ids[3], ids[4]), left.map { it.serverId ?: it.localId }.sorted())
+        assertEquals("the 400s stay FAILED", listOf(ids[3], ids[4]), left.mapNotNull { it.serverId ?: it.localId }.sorted())
         assertTrue(left.all { it.state == OutboxState.FAILED })
     }
 

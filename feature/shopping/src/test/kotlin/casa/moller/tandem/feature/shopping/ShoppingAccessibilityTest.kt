@@ -131,6 +131,9 @@ class ShoppingAccessibilityTest {
     fun recipeSheetLists() = check(ShoppingShot.RECIPE_SHEET_LISTS)
 
     @Test
+    fun recipeSheetPinned() = check(ShoppingShot.RECIPE_SHEET_PINNED)
+
+    @Test
     fun recipeButton() = check(ShoppingShot.RECIPE_BUTTON, fontScale = 2f)
 
     @Test

@@ -197,6 +197,16 @@ class ShoppingScreenshotTest {
     @Config(qualifiers = "sv-$TABLET_PORTRAIT")
     fun recipeSheetTabletPortraitDark() = capture("tablet_portrait_recipe_shopping_dark_sv", ShoppingShot.RECIPE_SHEET, darkTheme = true)
 
+    // 0.3.0 komplettering: "Lägg till n varor" pinned below the scrolling rows (phone portrait and landscape).
+
+    @Test
+    fun recipeSheetPinned() = capture("phone_recipe_shopping_pinned_light", ShoppingShot.RECIPE_SHEET_PINNED)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun recipeSheetPinnedLandscape() =
+        capture("phone_landscape_recipe_shopping_pinned_dark", ShoppingShot.RECIPE_SHEET_PINNED, darkTheme = true)
+
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun recipeButton() = capture("phone_recipe_shopping_button_light_sv", ShoppingShot.RECIPE_BUTTON)

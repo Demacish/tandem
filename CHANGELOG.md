@@ -101,7 +101,8 @@ Inte heller med: Tandoor-kontots inköpsinställningar (bland annat att avbockad
 "finns hemma") ändras fortfarande på webben; "Finns redan hemma?" i inköpsarken förklarar dem.
 "Rensa" och att ta bort en måltid från dess egen sida har nu "Ångra" som resten av listan och
 veckan, och Synk och lagring visar den uppdateringstakt listan faktiskt har (också serverns
-minsta intervall).
+minsta intervall). I receptets inköpsark står "Lägg till n varor" fast under raderna, så
+knappen syns utan att man rullar förbi alla ingredienser.
 
 ## [0.2.0] – 2026-10-24
 
