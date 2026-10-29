@@ -128,7 +128,11 @@ class MakeNowViewModelTest {
         makeNow.state.value = MakeNowState(
             mapOf(
                 MakeNowGroup.HAS_ALL to listOf(
-                    MakeNowRecipe(PantrySamples.creamSauce.copy(keywords = listOf(weekday)), MakeNowGroup.HAS_ALL, missingFoods = emptyList()),
+                    MakeNowRecipe(
+                        PantrySamples.creamSauce.copy(keywords = listOf(weekday)),
+                        MakeNowGroup.HAS_ALL,
+                        missingFoods = emptyList(),
+                    ),
                     MakeNowRecipe(PantrySamples.omelette, MakeNowGroup.HAS_ALL, missingFoods = emptyList()),
                 ),
             ),
