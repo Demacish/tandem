@@ -600,7 +600,7 @@ borta och sidan erbjuder att skanna igen.
 | `model.makenow` | `MakeNowGroup` HAS_ALL/MISSING_1/MISSING_2 (`of(n)`), `MissingFood`, `ExpiringFood`, `MakeNowRecipe`, `MakeNowFilter` (nyckelord, tid, måltidstyp), `MakeNowState` (`refreshing`, `stale`) |
 | `model.scan` | `ScanSource` BARCODE/RECEIPT/FRIDGE, `FoodMatchVia`, `MatchedFood`, **`ScanReviewItem`** (text, matchat livsmedel eller inget, mängd, enhet, plats, utgångsdatum, streckkod, AI:ns säkerhet och anteckning, `include`, `learn`; `ready`), `BarcodeProduct`, `BarcodeLookupResult`, `FoodAlias` (`MAX_LENGTH = 128`), `FoodAliasKind`, `ReceiptLine`, `ReceiptLineKind`, `ReceiptItem` |
 | `model.drink` | `DrinkKeywords` (`Dryck`, `Passar med`, typerna), `Drink`, `Pairing` (`isTypeOnly`), `RecipePairings`, `DrinkDraft` |
-| `model.ai` | `AiProvider` CLAUDE (`claude-opus-5-5`)/GEMINI (`gemini-2.5-flash`)/OPENAI (`gpt-5.2-mini`) med `defaultModel` (Claude enligt B22; Gemini och OpenAI är exemplen i Tandoors AI-dokumentation, ai-foto-banan prövar dem), `AiSettings` (**utan nyckel**, bara `hasKey`; `effectiveModel`, `fridgePhotoAvailable`, `warningAcknowledged`), `RecognizedItem`, `FridgeVisionError` (NoKey, InvalidKey, QuotaOrRateLimit, Refusal, Network, Unparseable, DemoMode), `FridgeVisionResult` |
+| `model.ai` | `AiProvider` CLAUDE (`claude-opus-5-5`)/GEMINI (`gemini-2.5-flash-lite`)/OPENAI (`gpt-5-nano`) med `defaultModel` och `officialBaseUrl` (se "Foto av kylen"), `AiSettings` (**utan nyckel**, bara `hasKey`; `effectiveModel`, `fridgePhotoAvailable`, `warningAcknowledged`), `RecognizedItem`, `FridgeVisionError` (NoKey, InvalidKey, QuotaOrRateLimit, Refusal, Network, Unparseable, DemoMode), `FridgeVisionResult` |
 
 ### Gränssnitt (`:core:data`, `:core:datastore`) och vem som implementerar
 
@@ -1197,6 +1197,112 @@ samma commit som `core:designsystem`) ligger i modulen, som hemma-ui-banans `pan
 orienteringarna, ljust och mörkt, svenska och engelska, teckenstorlek 2) och
 `ScanAccessibilityTest` (ATF för varje skärm och läge).
 <!-- /Fas S skanning -->
+
+<!-- Fas S ai-foto -->
+## Foto av kylen och Inställningar → AI (`:core:ai`, `:core:datastore`, `:feature:scan`, Fas S, ai-foto)
+
+Banans del av Fas S (#45, plan §8.8 "Foto av kylen", B22). Funktionen är **experimentell** överallt
+där den syns: titeln ("Foto av kylen (experimentell)", "AI (experimentellt)"), chippet
+"Experimentell" på sidan och i inställningarna, varningen första gången och påminnelsen i
+granskningslistan.
+
+**Beslut (dokumenterat här):**
+
+- **Utan nyckel är ingången dold** (Hemmas chip "Foto av kylen (experimentell)" visas bara när
+  `AiSettings.fridgePhotoAvailable`, och aldrig i demoläget eller för en gäst, hemma-ui-banans
+  `PantryViewModel`). Öppnas sidan ändå utan nyckel (en gammal back stack) visar den "Lägg in en
+  AI-nyckel under Inställningar" med en knapp till `AiSettingsKey`.
+- **Demoläget:** sidan förklarar att funktionen är avstängd (ingen kamera, ingen varning), "Testa
+  nyckeln" är avstängd, och `DefaultFridgeVision` svarar `DemoMode`/`DEMO_MODE` utan anrop.
+  Inställningarna går att ändra (de gäller enheten).
+- **Gäster** kan fotografera (nyckeln är enhetens, inte Tandoor-kontots) men inte spara:
+  granskningslistan är skrivskyddad för dem som för kvitton och streckkoder.
+- **Varje AI-rad är ett förslag:** en träff (inlärt namn eller ett livsmedel som passar) visas
+  alltid som "Förslag", aldrig "Känd"; rader med `confidence < 0,6` (`LOW_CONFIDENCE`) börjar som
+  överhoppade och märks **"Osäker"** (chip + TalkBack), AI:ns anteckning ("delvis skymd") visas på
+  raden, och inget från AI:n lärs in som alias. "Spara n varor" är bekräftelsen.
+- **Varningen** ("AI:n kan missa varor eller tro att något finns där som inte finns …") är en
+  dialog som måste kvitteras (`AiSettingsRepository.acknowledgeWarning`, sparas) innan första
+  fotot; "Inte nu" stänger sidan. Ingen kamera binds och inget foto skickas före kvitteringen.
+- **Inställningen gäller enheten**, inte Tandoor-kontot (en egen fil); "Rensa appdata" tar bort
+  nycklarna och AI-inställningarna (`DefaultAccountRepository.clearAppData`).
+
+**Flödet** (`feature:scan` `fridge/`): CameraX-foto (`IMAGE_CAPTURE`) eller systemets bildväljare →
+`FridgePhoto` i minnet på `Dispatchers.Default` (kamerans JPEG avkodas med `inSampleSize`, roteras
+efter `rotationDegrees`, bildväljarens via `ImageDecoder` som tillämpar EXIF-orienteringen; längsta
+sidan högst **1600 px**, **JPEG 85 %**, kodas om utan metadata och `JpegMetadata.strip` tar bort
+APP1–APP15 och COM för säkerhets skull) → `FridgeVision.recognize(jpeg, språk)` → `fridgeRows`
+(`FOOD_ALIAS` via `ScanMatcher.learned`, annars `suggested` bland spacets livsmedel) →
+`ScanSessionStore.create(FRIDGE, …)` → den gemensamma granskningslistan → skafferiet. Fotot finns
+bara i åtgärden som bär det och i anropet: det skrivs aldrig till fil, hamnar aldrig i tillståndet
+(`PhotoReady.toString()` visar bara storleken) och loggas inte. Ett avbrutet svar (gränsen för
+svarets längd) ger de rader som hann komma och kortet "Listan kan vara ofullständig"
+(`ScanSession.truncated`). Inga automatiska omförsök: varje fel har ett eget kort (fel nyckel,
+modellen finns inte, försök igen senare, "AI:n ville inte tolka bilden", inget svar, svaret gick
+inte att läsa, ingen mat hittades, bilden gick inte att läsa).
+
+**Inställningar → AI** (`feature:scan` `aisettings/`, `AiSettingsKey`; raden "AI (experimentellt)"
+i Mer → Inställningar, en sida bredvid listan på breda fönster): tjänst (Claude, Gemini, OpenAI eller
+Av), nyckeln (lösenordsfält med visa/dölj och "Klistra in"; texten hålls med `remember`, **inte**
+`rememberSaveable`, så den aldrig hamnar i sparat läge, och töms när nyckeln sparats; "Spara
+nyckeln", "Testa nyckeln", "Ta bort nyckeln" med fråga), modellen (tomt = tjänstens standard,
+redigerbar), egen bas-URL (valfri, bara `https://` utan användarnamn, fråga eller fragment; för en
+proxy eller kompatibel server och för röktestet), och texten om vart fotot går och att kostnaden dras
+från användarens eget konto. Standardmodeller: `claude-opus-5-5` (Claude), `gemini-2.5-flash-lite`
+(Gemini), `gpt-5-nano` (OpenAI). Modell och bas-URL sparas per tjänst.
+
+**Nyckeln** (B22): `core:datastore` `EncryptedAiKeyStore` (`files/datastore/secure_ai_keys.pb`, ett
+dokument krypterat med samma Keystore-AEAD som kontona, associated data bunden till filen; den
+anropar **aldrig** `AeadProvider.reset`, eftersom nyckeluppsättningen delas med kontona: ett oläsligt
+dokument läses som "inga nycklar"), `AiPreferencesStore` (`files/datastore/ai_settings.preferences_pb`,
+ingen hemlighet). Båda omfattas av backupundantaget (hela `file`-domänen). `AiSettingsRepository`
+(`core:ai` `DefaultAiSettingsRepository`) är skrivskyddat för nyckeln och godtar bara en rad synlig
+ASCII (en nyckel med radbrytning eller mellanslag skulle annars ge ett OkHttp-fel som citerar
+headervärdet). Bara `core:ai` läser nyckeln, genom `AiKeyStore.useKey`. Tester använder bara
+`sk-test-not-a-real-key`.
+
+**Tjänsterna** (`core:ai`, samma resultat `{"items": [{name, amount?, unit?, confidence 0..1, note?}]}`,
+samma prompt: bara synliga varor, på UI-språket, inga gissningar om dolda saker eller märken;
+`FridgePrompt` med ett schema per dialekt och en tolerant tolkning som också räddar hela poster ur
+ett avbrutet svar):
+
+| Tjänst | Anrop | Strukturerat svar | "Testa nyckeln" |
+|---|---|---|---|
+| Claude | Anthropics Java-SDK `anthropic-java` (aldrig rå HTTP): `client.beta().messages().create`, bilden som `BetaImageBlockParam` + `BetaBase64ImageSource`, `max_tokens` 16000, ingen `thinking` (adaptivt är modellens standard), `BetaOutputConfig` effort `MEDIUM` + `BetaJsonOutputFormat` (ett JSON-schema, ingen reflektion över egna klasser efter R8), `fallbacksDefault()` med beta `server-side-fallback-2026-07-01`; `stopReason` `refusal` → "AI:n ville inte tolka bilden", `max_tokens` → avbrutet; fel efter `errorType()` (autentisering → fel nyckel, rate limit/överbelastad/betalning → försök senare, not found → modellen) | `output_config.format` | `client.models().retrieve(modell)` |
+| Gemini | REST `POST {bas}/models/{modell}:generateContent`, `x-goog-api-key`, bilden som `inlineData` | `generationConfig.responseMimeType` + `responseSchema` (OpenAPI-delmängden, `nullable`) | `GET {bas}/models/{modell}` |
+| OpenAI | REST `POST {bas}/responses`, `Authorization: Bearer`, bilden som `input_image` (data-URL), `store: false` | `text.format` `json_schema` `strict` | `GET {bas}/models/{modell}` |
+
+Officiella bas-URL:er (`AiProvider.officialBaseUrl`, en egen bas-URL ersätter exakt den delen):
+`https://api.anthropic.com`, `https://generativelanguage.googleapis.com/v1beta`,
+`https://api.openai.com/v1`. Gemini och OpenAI går på `core:ai`s **egen** OkHttp-klient
+(`AiHttpClient`: inga Tandoor-interceptors, headers, token eller cookies, inga omförsök, inga
+omdirigeringar, 120 s), Claude på SDK:ns egen klient (`maxRetries(0)`). Svaren läses som
+kotlinx.serialization-träd (inga DTO-klasser för R8 att döpa om). Dokumentationen som formerna
+kontrollerades mot (2026-10-30): <https://ai.google.dev/api/generate-content>,
+<https://ai.google.dev/api/models>, <https://ai.google.dev/gemini-api/docs/api-errors>,
+<https://developers.openai.com/api/docs/guides/structured-outputs>,
+<https://developers.openai.com/api/docs/guides/images-vision>,
+<https://developers.openai.com/api/reference/resources/models/methods/retrieve>; Claude-klassernas
+namn kontrollerades mot `anthropic-java-core-2.72.0.jar` (Maven Central, `.sha1` kontrollerad).
+
+**Röktestet** (`PhaseSAiSmokeTest`, minifierad app): loggar in, Mer → AI (experimental) → Claude,
+den fejkade Anthropic-endpointen i `FakeTandoor` (`FakeAnthropic`, `/v1/…`, samma test-CA) som egen
+bas-URL, den fejkade nyckeln sparas ("Key saved"), "Test the key" → "The key works"; servern ska ha
+fått `GET /v1/models/claude-opus-5-5` med rätt `x-api-key`, `anthropic-version` och **utan**
+`Authorization`. Det visar att SDK:ns klient, Jackson och modelltyperna fungerar efter R8.
+
+**Tester:** `core:ai` `ClaudeFridgeVisionClientTest`, `RestFridgeVisionClientsTest` (MockWebServer:
+lyckat, fel nyckel, rate limit, vägran/blockerad, trasig JSON, timeout, avbrutet, modellen saknas,
+"Testa nyckeln"), `FridgePromptTest`, `FridgeVisionTest` (valet av tjänst, demo, storlek),
+`DefaultAiSettingsRepositoryTest`; `core:datastore` `EncryptedAiKeyStoreTest` (krypterat på disk,
+oläsligt dokument utan nollställning), `PreferencesAiPreferencesStoreTest`; `feature:scan`
+`FridgeScanViewModelTest`, `AiSettingsViewModelTest` (nyckeln aldrig i tillståndet eller i en
+åtgärds text, borttagning, testet, demo), `FridgePhotoTest` (1600 px, rotation, ingen EXIF),
+`FridgeScreenTest` (varningen, vägen till nyckeln, lösenordsfältet), `FridgeScreenshotTest`
+(referensbilder `phone_fridge_*`, `phone_ai_settings_*`, `tablet_*fridge*`, `tablet_*ai_settings*`
+i `feature/scan/src/test/screenshots/scan/`) och `FridgeAccessibilityTest` (ATF för varje läge,
+dialogerna också).
+<!-- /Fas S ai-foto -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)

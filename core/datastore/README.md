@@ -14,7 +14,8 @@ enhetstoken** (DataStore + Tink AEAD, nyckeln skyddad av Android Keystore).
 | `SecureStorageException` | `casa.moller.tandem.core.datastore` | Kastas av skrivningar i `SecureAccountStore` när något inte kunde sparas |
 | `DatastoreFiles` | `casa.moller.tandem.core.datastore` | Alla filnamn och nyckelalias nedan som konstanter |
 | `AeadProvider` | `casa.moller.tandem.core.datastore.crypto` | Abstraktion av Tink-`Aead` (Keystore i appen, minnesnyckel i tester) |
-| `DatastoreModule` | `casa.moller.tandem.core.datastore.di` | Hilt: alla fyra ovan som `@Singleton` |
+| `AiKeyStore`, `AiPreferencesStore` | `casa.moller.tandem.core.datastore` | Fas S: AI-nycklarna (`useKey` – nyckeln lämnar aldrig blocket) och AI-inställningarna; bara `core:ai` använder dem |
+| `DatastoreModule` | `casa.moller.tandem.core.datastore.di` | Hilt: alla ovan som `@Singleton` |
 
 Modelltyperna ligger i `:core:model`: `ServerAccount` (`…core.model.account`) samt
 `AppSettings`, `ThemeMode`, `StorageHealth` och `RecoveryReason` (`…core.model.settings`).
@@ -31,6 +32,8 @@ dvs. `casa.moller.tandem` eller `casa.moller.tandem.dev`).
 | `files/datastore/secure_accounts.pb.tmp` | DataStores tillfälliga fil under en skrivning (krypterad som ovan) | `file` |
 | `files/datastore/app_settings.preferences_pb` | Inställningar (tema, onboarding klar, demoläge, aktivt konto-id). Ingen hemlighet | `file` |
 | `files/datastore/diagnostics.preferences_pb` | Senast uppmätta kallstart och fulla synk (`DiagnosticsStore`, från 0.2.0): tider och antal recept. Ingen hemlighet | `file` |
+| `files/datastore/secure_ai_keys.pb` | Fas S: användarens AI-nycklar (en per tjänst) som ett JSON-dokument, **helt krypterat** med samma Tink-AEAD. Associated data: `casa.moller.tandem/datastore/secure_ai_keys.pb`. Nollställer aldrig nycklarna; ett oläsligt dokument läses som "inga nycklar" | `file` |
+| `files/datastore/ai_settings.preferences_pb` | Fas S: AI-inställningarna (tjänst, modell och egen bas-URL per tjänst, varningen kvitterad). Ingen hemlighet | `file` |
 | `shared_prefs/tandem_secure_keyset.xml` | Tink-keysetet (nyckel `secure_accounts_keyset`), krypterat med Keystore-nyckeln | `sharedpref` |
 | Android Keystore-alias `tandem_secure_master_key` | AES-256-GCM-huvudnyckel som skyddar keysetet. Lämnar aldrig enheten | – |
 

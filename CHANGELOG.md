@@ -17,10 +17,15 @@ kommande delarna.
   och kvittonamn, en dryck som recept), mot Tandoor 2.6.13, 2.6.15, 2.7.1 och 2.7.2.
 - **Databasen** uppgraderas (version 5) när 0.4.0 installeras; allt som redan finns på telefonen,
   också osända ändringar, finns kvar.
-- **Foto av kylen** kommer att använda din egen AI-nyckel (Claude, Gemini eller OpenAI) under
-  Inställningar → AI. Funktionen blir märkt som experimentell: AI:n kan missa varor eller hitta på
-  sådana som inte finns, så resultatet blir alltid en lista att granska innan något sparas.
-  Nyckeln sparas krypterad på telefonen och skickas bara till den tjänst du valt.
+- **Foto av kylen (experimentellt):** fotografera kylen, frysen eller skafferiet så föreslår en
+  AI-tjänst vad ni har hemma, med din egen nyckel till Claude, Gemini eller OpenAI under Mer →
+  Inställningar → AI (experimentellt). Där väljer du tjänst och modell, klistrar in nyckeln, testar
+  den och tar bort den. Första gången förklarar appen att AI:n kan missa varor eller tro att något
+  finns som inte finns; allt blir förslag i granskningslistan, osäkra rader är märkta och tas bara
+  med om du vill, och inget sparas förrän du har gått igenom listan. Fotot görs mindre, skickas
+  utan plats- och kameradata bara till den tjänst du valt och sparas inte; kostnaden dras från
+  ditt eget konto där. Nyckeln sparas krypterad på telefonen, följer inte med i säkerhetskopior
+  och tas bort med "Rensa appdata". Funktionen syns inte utan nyckel och fungerar inte i demoläget.
 - Appen ber om kameran först när du skannar, och bilder kan alltid väljas från galleriet i stället.
 - **Skafferiet i bakgrunden:** platserna (Kyl, Frys och Skafferi skapas första gången), lagret,
   basvarorna och inlärda streckkoder och kvittonamn synkas nu med Tandoor och fungerar offline;
