@@ -462,7 +462,6 @@ internal fun ShellScaffold(
                             RecipeCollection.FAVORITES -> FavoritesKey
                             RecipeCollection.WANT_TO_COOK -> WantToCookKey
                             RecipeCollection.BOOKS -> BooksKey
-                            // drycker lane: "Drycker" beside the list on wide windows, like the books.
                             RecipeCollection.DRINKS -> DrinksKey()
                         }
                         navigation.navigate(key, replace = { it is RecipeDetailKey || it.isBookPage || it.isDrinksPage })

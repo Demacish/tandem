@@ -97,7 +97,7 @@ fun RecipePairingsRoute(
  * Stateless: a heading, the paired drinks (photo, name, type; tap opens), the kinds of drink as
  * text, or a drink's dishes, each with a 48 dp remove button (not for a guest), and "Välj dryck" /
  * "Välj rätter". A drink also gets "Sök på Systembolaget" (when on) and, without ingredients,
- * "Lägg på inköpslistan". Nothing until the state is loaded.
+ * "Lägg på inköpslistan". Nothing until the state is loaded, nor for a guest when it is empty.
  */
 @Composable
 fun RecipePairingsSection(
@@ -109,7 +109,8 @@ fun RecipePairingsSection(
     modifier: Modifier = Modifier,
     canAddToList: Boolean = false,
 ) {
-    if (!state.loaded) return
+    // A guest cannot add any, so an empty section would only be noise.
+    if (!state.loaded || (state.isEmpty && state.readOnly)) return
     val spacing = TandemTheme.spacing
     Column(modifier = modifier.fillMaxWidth().testTag(RECIPE_PAIRINGS_TAG), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         Text(

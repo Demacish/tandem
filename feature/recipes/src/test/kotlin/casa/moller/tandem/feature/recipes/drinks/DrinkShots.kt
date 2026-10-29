@@ -114,8 +114,7 @@ internal enum class DrinkShot(val content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun DrinkList(state: DrinksUiState) =
-    DrinksScreen(state = state, onAction = {}, onOpenDrink = {}, onCreateDrink = {}, onBack = {})
+private fun DrinkList(state: DrinksUiState) = DrinksScreen(state = state, onAction = {}, onOpenDrink = {}, onCreateDrink = {}, onBack = {})
 
 @Composable
 private fun Section(state: RecipePairingsUiState, canAddToList: Boolean = false) = Surface { SectionContent(state, canAddToList) }
