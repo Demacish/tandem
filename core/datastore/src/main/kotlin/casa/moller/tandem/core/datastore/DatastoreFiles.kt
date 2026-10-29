@@ -43,6 +43,19 @@ object DatastoreFiles {
     internal val SECURE_ACCOUNTS_ASSOCIATED_DATA: ByteArray
         get() = "casa.moller.tandem/datastore/$SECURE_ACCOUNTS".encodeToByteArray()
 
+    /**
+     * Fas S (ai-foto lane, decision B22): the user's AI keys, ONE document encrypted with the same
+     * Keystore-backed AEAD as [SECURE_ACCOUNTS]: `files/datastore/secure_ai_keys.pb`. Covered by the
+     * backup exclusion (domain `file`); never in diagnostics, logs or exports.
+     */
+    const val SECURE_AI_KEYS = "secure_ai_keys.pb"
+
+    /** Associated data of [SECURE_AI_KEYS] (binds the ciphertext to that file). */
+    internal val SECURE_AI_KEYS_ASSOCIATED_DATA: ByteArray
+        get() = "casa.moller.tandem/datastore/$SECURE_AI_KEYS".encodeToByteArray()
+
+    internal fun secureAiKeysFile(context: Context): File = context.dataStoreFile(SECURE_AI_KEYS)
+
     internal fun secureAccountsFile(context: Context): File = context.dataStoreFile(SECURE_ACCOUNTS)
 
     internal fun settingsFile(context: Context): File = context.preferencesDataStoreFile(SETTINGS_NAME)
