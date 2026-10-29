@@ -136,7 +136,9 @@ fun BarcodeScanScreen(
                 .padding(padding)
                 .imePadding(),
         ) {
-            val sideBySide = maxWidth > maxHeight || maxWidth >= WIDE
+            val width = maxWidth
+            val height = maxHeight
+            val sideBySide = width > height || width >= WIDE
             if (sideBySide) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     CameraArea(
@@ -149,7 +151,7 @@ fun BarcodeScanScreen(
                         state = state,
                         onAction = onAction,
                         onCamera = onCamera,
-                        modifier = Modifier.width(minOf(PANEL_WIDTH, maxWidth / 2)).fillMaxHeight(),
+                        modifier = Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight(),
                     )
                 }
             } else {
@@ -158,7 +160,7 @@ fun BarcodeScanScreen(
                         camera = camera,
                         onCamera = onCamera,
                         preview = cameraPreview,
-                        modifier = Modifier.fillMaxWidth().height(maxOf(MIN_CAMERA_HEIGHT, maxHeight * CAMERA_SHARE)),
+                        modifier = Modifier.fillMaxWidth().height(maxOf(MIN_CAMERA_HEIGHT, height * CAMERA_SHARE)),
                     )
                     BarcodePanel(state = state, onAction = onAction, onCamera = onCamera, modifier = Modifier.weight(1f).fillMaxWidth())
                 }
@@ -375,12 +377,12 @@ private fun OtherRow(row: BarcodeRow, state: BarcodeScanUiState, onSelect: () ->
     val selectLabel = stringResource(R.string.scan_show_item)
     Row(
         modifier = Modifier
+            .testTag(barcodeRowTag(row.item.key))
             .fillMaxWidth()
             .heightIn(min = TandemTheme.sizes.minTouchTarget)
             .clickable(onClickLabel = selectLabel, onClick = onSelect)
             .clearAndSetSemantics { contentDescription = description }
-            .padding(vertical = TandemTheme.spacing.xs)
-            .testTag(barcodeRowTag(row.item.key)),
+            .padding(vertical = TandemTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),
     ) {

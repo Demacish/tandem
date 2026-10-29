@@ -91,7 +91,9 @@ fun ReceiptScanScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            val sideBySide = maxWidth > maxHeight || maxWidth >= WIDE
+            val width = maxWidth
+            val height = maxHeight
+            val sideBySide = width > height || width >= WIDE
             if (sideBySide) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     ReceiptCameraArea(
@@ -106,7 +108,7 @@ fun ReceiptScanScreen(
                         onAction = onAction,
                         onCamera = onCamera,
                         onTakePhoto = onTakePhoto,
-                        modifier = Modifier.width(minOf(PANEL_WIDTH, maxWidth / 2)).fillMaxHeight(),
+                        modifier = Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight(),
                     )
                 }
             } else {
@@ -115,7 +117,7 @@ fun ReceiptScanScreen(
                         camera = camera,
                         onCamera = onCamera,
                         preview = cameraPreview,
-                        modifier = Modifier.fillMaxWidth().height(maxOf(MIN_CAMERA_HEIGHT, maxHeight * CAMERA_SHARE)),
+                        modifier = Modifier.fillMaxWidth().height(maxOf(MIN_CAMERA_HEIGHT, height * CAMERA_SHARE)),
                     )
                     ReceiptPanel(
                         state = state,

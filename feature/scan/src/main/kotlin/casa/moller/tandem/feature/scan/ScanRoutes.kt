@@ -34,8 +34,16 @@ fun ScanRoute(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> 
         is ScanReviewKey -> ScanReviewRoute(key = key, onBack = onBack, modifier = modifier)
 
         // --- ai-foto lane: the fridge photo and Settings → AI ---
-        is FridgeScanKey -> PlaceholderPage(title = stringResource(R.string.scan_fridge_title), onNavigateBack = onBack, modifier = modifier)
+        is FridgeScanKey -> PlaceholderPage(
+            title = stringResource(R.string.scan_fridge_title),
+            onNavigateBack = onBack,
+            modifier = modifier,
+        )
 
-        AiSettingsKey -> PlaceholderPage(title = stringResource(R.string.scan_ai_settings_title), onNavigateBack = onBack, modifier = modifier)
+        AiSettingsKey -> PlaceholderPage(
+            title = stringResource(R.string.scan_ai_settings_title),
+            onNavigateBack = onBack,
+            modifier = modifier,
+        )
     }
 }

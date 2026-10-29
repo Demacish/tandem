@@ -139,10 +139,12 @@ fun ScanReviewScreen(
                 val edit = state.edit
                 if (maxWidth >= WIDE && edit != null) {
                     Row(modifier = Modifier.fillMaxSize()) {
+                        // The pane has its own place chips: the list's default ones wait until the edit is done.
                         ReviewList(
                             state = state,
                             format = format,
                             onAction = onAction,
+                            showDefaultLocation = false,
                             modifier = Modifier.weight(1f).fillMaxHeight(),
                         )
                         Surface(
@@ -170,7 +172,13 @@ fun ScanReviewScreen(
 }
 
 @Composable
-private fun ReviewList(state: ScanReviewUiState, format: ScanFormat, onAction: (ScanReviewAction) -> Unit, modifier: Modifier = Modifier) {
+private fun ReviewList(
+    state: ScanReviewUiState,
+    format: ScanFormat,
+    onAction: (ScanReviewAction) -> Unit,
+    modifier: Modifier = Modifier,
+    showDefaultLocation: Boolean = true,
+) {
     val spacing = TandemTheme.spacing
     LazyColumn(
         modifier = modifier,
@@ -189,7 +197,7 @@ private fun ReviewList(state: ScanReviewUiState, format: ScanFormat, onAction: (
                 )
             }
         }
-        if (!state.readOnly && state.locations.isNotEmpty()) {
+        if (showDefaultLocation && !state.readOnly && state.locations.isNotEmpty()) {
             item(key = "default-location") {
                 Column(
                     modifier = Modifier
@@ -287,12 +295,11 @@ private fun ReviewRow(
     Surface(
         shape = MaterialTheme.shapes.large,
         color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = modifier
-            .fillMaxWidth()
-            .testTag(scanReviewRowTag(item.key)),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier
+                .testTag(scanReviewRowTag(item.key))
                 .clickable(onClickLabel = editLabel) { onAction(ScanReviewAction.Edit(item.key)) }
                 .clearAndSetSemantics {
                     contentDescription = description
