@@ -124,7 +124,7 @@ jobs:
           ./gradlew --stop
           # Fas S (grund lane): the minified APK's size in the run summary (docs/BYGGE.md "APK-storlek").
           for apk in app/build/outputs/apk/sideload/minified/*.apk; do
-            echo "Minified APK: \`$(basename "$apk")\` $(stat -c %s "$apk") bytes" >> "$GITHUB_STEP_SUMMARY"
+            echo "Minified APK: \`$(basename "$apk")\` $(stat -c %s "$apk") bytes" | tee -a "$GITHUB_STEP_SUMMARY"
           done
 
       # The emulator's userdata partition needs about 7.5 GB; a fresh runner has about 5.5 GB left

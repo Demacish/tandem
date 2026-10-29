@@ -12,6 +12,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+android {
+    defaultConfig {
+        // ML Kit's component registrars are created by reflection (see the file).
+        consumerProguardFiles("consumer-rules.pro")
+    }
+}
+
 dependencies {
     implementation(libs.bundles.compose.adaptive)
     implementation(libs.bundles.camerax)
