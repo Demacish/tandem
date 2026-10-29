@@ -278,8 +278,30 @@ abstract class OutboxDao {
             }
 
             OutboxEntities.RECIPE_BOOK_ENTRY -> deleteUnsentBookEntries(accountId, localIds)
+
+            // Fas S (hemma-data lane): a location's entries go with it, as on the server (CASCADE).
+            OutboxEntities.INVENTORY_LOCATION -> {
+                deleteUnsentEntriesOfLocations(accountId, localIds)
+                deleteUnsentLocations(accountId, localIds)
+            }
+
+            OutboxEntities.INVENTORY_ENTRY -> deleteUnsentInventoryEntries(accountId, localIds)
+
+            OutboxEntities.FOOD_ALIAS -> deleteUnsentFoodAliases(accountId, localIds)
         }
     }
+
+    @Query("DELETE FROM inventory_entry WHERE account_id = :accountId AND location_id IN (:locationIds)")
+    abstract suspend fun deleteUnsentEntriesOfLocations(accountId: String, locationIds: List<Long>)
+
+    @Query("DELETE FROM inventory_location WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentLocations(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM inventory_entry WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentInventoryEntries(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM food_alias WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
+    abstract suspend fun deleteUnsentFoodAliases(accountId: String, localIds: List<Long>)
 
     @Query(
         "UPDATE outbox SET payload = :payload, batch_key = :batchKey, refs = :refs, depends_on = :dependsOn, " +

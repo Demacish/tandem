@@ -7,6 +7,7 @@ import androidx.room3.Upsert
 import casa.moller.tandem.core.database.entity.BarcodeProductEntity
 import casa.moller.tandem.core.database.entity.DrinkDraftEntity
 import casa.moller.tandem.core.database.entity.FoodAliasEntity
+import casa.moller.tandem.core.database.entity.IngredientEntity
 import casa.moller.tandem.core.database.entity.InventoryEntryEntity
 import casa.moller.tandem.core.database.entity.InventoryLocationEntity
 import casa.moller.tandem.core.database.entity.MakeNowEntity
@@ -76,6 +77,31 @@ abstract class PantryDao {
 
     @Query("DELETE FROM inventory_entry WHERE account_id = :accountId AND local_id >= 0")
     abstract suspend fun deleteServerEntries(accountId: String)
+
+    // --- hemma-data lane ---
+
+    /** Runs [block] in one transaction (a local change and its outbox row are stored together). */
+    @Transaction
+    open suspend fun inTransaction(block: suspend () -> Unit) {
+        block()
+    }
+
+    /** One entry as it changes (also with amount 0), null when it is gone. */
+    @Query("SELECT * FROM inventory_entry WHERE account_id = :accountId AND local_id = :localId")
+    abstract fun observeEntry(accountId: String, localId: Long): Flow<InventoryEntryEntity?>
+
+    @Query("SELECT * FROM inventory_entry WHERE account_id = :accountId AND location_id = :locationId")
+    abstract suspend fun getEntriesOfLocation(accountId: String, locationId: Long): List<InventoryEntryEntity>
+
+    @Query("DELETE FROM inventory_entry WHERE account_id = :accountId AND location_id = :locationId")
+    abstract suspend fun deleteEntriesOfLocation(accountId: String, locationId: Long)
+
+    @Query("UPDATE inventory_location SET location_order = :order WHERE account_id = :accountId AND local_id = :localId")
+    abstract suspend fun setLocationOrder(accountId: String, localId: Long, order: Int)
+
+    /** Every entry with amount > 0 of every location (the household filter is the caller's), for "har hemma" and makenow. */
+    @Query("SELECT * FROM inventory_entry WHERE account_id = :accountId AND amount > 0")
+    abstract fun observeStockedEntries(accountId: String): Flow<List<InventoryEntryEntity>>
 }
 
 /** Staples ("Basvaror", hemma-data lane). */
@@ -89,6 +115,11 @@ abstract class StapleDao {
 
     @Query("DELETE FROM staple WHERE account_id = :accountId AND name_key = :nameKey")
     abstract suspend fun deleteStaple(accountId: String, nameKey: String)
+
+    // --- hemma-data lane ---
+
+    @Query("SELECT * FROM staple WHERE account_id = :accountId ORDER BY name COLLATE NOCASE")
+    abstract suspend fun getStaples(accountId: String): List<StapleEntity>
 }
 
 /** "Kan laga nu" (#23): the server's makenow groups (hemma-data lane). */
@@ -112,6 +143,37 @@ abstract class MakeNowDao {
 
     @Query("DELETE FROM make_now WHERE account_id = :accountId")
     abstract suspend fun deleteAll(accountId: String)
+
+    // --- hemma-data lane ---
+
+    @Query("SELECT * FROM make_now WHERE account_id = :accountId ORDER BY missing_count, recipe_id")
+    abstract suspend fun getAll(accountId: String): List<MakeNowEntity>
+
+    /** The stored ingredients of the recipes in "Kan laga nu" (for the missing foods and "Använd upp"). */
+    @Query(
+        "SELECT * FROM ingredient WHERE account_id = :accountId " +
+            "AND recipe_id IN (SELECT recipe_id FROM make_now WHERE account_id = :accountId) ORDER BY recipe_id, step_position, position",
+    )
+    abstract fun observeIngredients(accountId: String): Flow<List<IngredientEntity>>
+
+    /** The recipes of "Kan laga nu" whose detail is downloaded (their ingredients are known). */
+    @Query(
+        "SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL " +
+            "AND recipe_id IN (SELECT recipe_id FROM make_now WHERE account_id = :accountId)",
+    )
+    abstract fun observeDetailIds(accountId: String): Flow<List<Long>>
+
+    /** The stored ingredients of [recipeId]. */
+    @Query("SELECT * FROM ingredient WHERE account_id = :accountId AND recipe_id = :recipeId ORDER BY step_position, position")
+    abstract suspend fun getIngredients(accountId: String, recipeId: Long): List<IngredientEntity>
+
+    /** Whether [recipeId]'s detail is downloaded. */
+    @Query("SELECT EXISTS(SELECT 1 FROM recipe_detail WHERE account_id = :accountId AND recipe_id = :recipeId AND raw_json IS NOT NULL)")
+    abstract suspend fun hasDetail(accountId: String, recipeId: Long): Boolean
+
+    /** Every recipe with a downloaded detail (the demo computes its groups from them). */
+    @Query("SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL ORDER BY recipe_id")
+    abstract suspend fun getDetailIds(accountId: String): List<Long>
 }
 
 /** Learned barcodes and receipt names (`FOOD_ALIAS` automations, skanning lane). */
@@ -139,6 +201,14 @@ abstract class FoodAliasDao {
 
     @Query("DELETE FROM food_alias WHERE account_id = :accountId AND local_id >= 0")
     abstract suspend fun deleteServerRows(accountId: String)
+
+    // --- hemma-data lane ---
+
+    @Query("SELECT * FROM food_alias WHERE account_id = :accountId AND local_id = :localId")
+    abstract suspend fun get(accountId: String, localId: Long): FoodAliasEntity?
+
+    @Query("SELECT * FROM food_alias WHERE account_id = :accountId ORDER BY alias_key")
+    abstract suspend fun getAll(accountId: String): List<FoodAliasEntity>
 }
 
 /** The Open Food Facts cache (skanning lane). */

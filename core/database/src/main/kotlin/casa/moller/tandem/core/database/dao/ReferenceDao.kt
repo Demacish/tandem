@@ -95,6 +95,10 @@ abstract class ReferenceDao {
     @Insert
     abstract suspend fun insertFoods(rows: List<FoodEntity>)
 
+    /** Fas S (hemma-data lane): a food the app created (a staple) or the demo's staples, until the next full read. */
+    @Upsert
+    abstract suspend fun upsertFoods(rows: List<FoodEntity>)
+
     @Query("DELETE FROM food WHERE account_id = :accountId")
     abstract suspend fun deleteFoods(accountId: String)
 
