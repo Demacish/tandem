@@ -22,6 +22,11 @@ kommande delarna.
   sådana som inte finns, så resultatet blir alltid en lista att granska innan något sparas.
   Nyckeln sparas krypterad på telefonen och skickas bara till den tjänst du valt.
 - Appen ber om kameran först när du skannar, och bilder kan alltid väljas från galleriet i stället.
+- **Skafferiet i bakgrunden:** platserna (Kyl, Frys och Skafferi skapas första gången), lagret,
+  basvarorna och inlärda streckkoder och kvittonamn synkas nu med Tandoor och fungerar offline;
+  bara ditt hushålls platser visas. Kan laga nu räknar ut Har allt, Saknar 1 och Saknar 2 som
+  Tandoor gör, och varor som snart går ut lyfter sina recept. En streckkod som ingen telefon har
+  lärt sig slås upp i Open Food Facts med bara koden.
 
 ## [0.3.0] – 2026-10-26
 

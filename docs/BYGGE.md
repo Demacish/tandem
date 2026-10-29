@@ -773,6 +773,141 @@ behåller den (`-keep class * implements com.google.firebase.components.Componen
 | rester (`:core:sync`, `:smoke`, `:feature:shell`) | Fas 2:s rester (plan §10 Fas S) | dubbel synk när ett konto läggs till, röktest för hushållsvarningen och "Delad med", rensning av `id_mapping`, bottenark som fönster i skärmbildstester; till sist bort med `PlaceholderPage` |
 <!-- /Fas S kontrakt -->
 
+<!-- Fas S hemma-data -->
+## Skafferiet – data och synk (`:core:sync`, `:core:network`, Fas S)
+
+Hemma-data-banans del av Fas S (#23, #26, #28, #46 och datadelen av #27/#44; plan §8.8). Allt
+ligger i `core/sync/.../pantry/` och `.../scan/` och binds i `di/PantryModule.kt`, som ersätter
+appens `TemporaryFasSPantryModule` och `TemporaryFasSScanModule` (borttagna):
+
+| Gränssnitt (`:core:data`) | Implementation |
+|---|---|
+| `PantryRepository` | `OfflineFirstPantryRepository` |
+| `StaplesRepository` | `DefaultStaplesRepository` |
+| `MakeNowRepository` | `DefaultMakeNowRepository` |
+| `FoodAliasRepository` | `OfflineFirstFoodAliasRepository` (+ `FoodAliasReader`) |
+| `BarcodeLookup` | `DefaultBarcodeLookup` (+ `core:network` `OpenFoodFactsClient`) |
+
+Uppgiftsfördelningen ändrades av arbetsflödet: `FoodAliasRepository`, `BarcodeLookup` och
+Open Food Facts-klienten byggdes här (tabellen "Vem bygger vad" ovan nämner skanningsbanan);
+skanningsbanan använder dem.
+
+**Nätverk:** `TandoorApi.inventory` (`InventoryService`: platser, poster med `empty` bara för
+existenskontrollen, loggen), `TandoorApi.automations` (`AutomationService`, typ `FOOD_ALIAS`) och
+`TandoorApi.pantryFoods` (`PantryFoodService`: `PUT food/batch_update/` som svarar `{}`, `POST
+food/` för en basvara som spacet saknar). `RecipeListQuery.makeNow` är nu ett **heltal**. DTO:er
+i `dto/PantryDtos.kt`, rader i `used-endpoints.txt` och `DtoFixturesTest` (båda versionernas
+`fas-s/`; banans `notModelled`-rader är borttagna). **Open Food Facts** (`openfoodfacts/`,
+`di/OpenFoodFactsModule`): en helt egen OkHttp-klient (ingen `TandoorHttpClient`, ingen
+interceptor, token eller kaka från Tandoor), HTTPS, en förfrågan åt gången och högst en per
+sekund, 5/10/15 s tidsgränser, User-Agent `Tandem/<versionName> (+https://github.com/Demacish/tandem)`;
+bara koden går ut (i sökvägen) plus den fasta fältlistan `fields=code,product_name,...`. 404 eller
+`status: 0` = `NotFound`, 429 = `Throttled`. Två publika svar ligger som testresurser.
+
+**Offline först:** varje ändring skrivs i `inventory_location`/`inventory_entry`/`food_alias` och
+köas med `OutboxDao.enqueue` i **en** transaktion (`PantryDao.inTransaction`). Payloader i
+`PantryPayloads`: plats `{name, is_freezer}` (avsändaren lägger till `household: {id, name}` ur
+raden eller kontot), post `{inventory_location: <id>, food: {name[,id]}, unit: {name}, amount,
+expires, note: "", sub_location}` (refs + `depends_on` när platsen är ny; avsändaren byter id:t
+mot **hela** platsen med `is_freezer` och hushållet, `PantryLocations`), PATCH bara ändrade fält,
+"Slut" = `{amount: 0}`, "−1", DELETE. Utan enhet skickas standardenheten (`sync_pantry_default_unit`,
+"st"/"pcs"). Skapad + ändrad + "Slut" offline = **en** CREATE med mängd 0; skapad + raderad = inget.
+En plats som raderas tar sina poster med sig (lokalt, och deras köade ändringar; servern kaskadar).
+Platsernas ordning (`reorderLocations`) finns bara på enheten (`location_order`).
+
+**Hushållet:** listorna är space-breda (FACTS "Fas S b"). Allt lagras; `observeLocations`,
+`observePantry`, `observeExpiring` och `observeAvailableFoodIds` visar bara platser med kontots
+`server_account.household_id` (plus de som skapats på enheten). Okänt hushåll (demo, inte läst än)
+= alla. En plats kan inte skapas medan hushållet är okänt (`tandem.pantry.household-unknown`).
+
+**Standardplatserna** Kyl, Frys (`is_freezer`) och Skafferi (enhetens språk, `strings_pantry.xml`)
+skapas av `PantryRepository.refresh()` när hushållets lager är tomt efter en komplett läsning, en
+gång per hushåll och enhet (`sync_state` `pantry_default_locations`). **Hemma-skärmen ska anropa
+`refresh()` när den öppnas** (det är "första användningen"); raderar man alla platser senare kommer
+de inte tillbaka.
+
+**Läsningar** (`PantryReader`, låset delas med avsändarna): alla platser och poster med mängd > 0
+(utan `empty`, så "Slut"-poster lämnar enheten), komplett eller inget. Rader med köad PATCH behåller
+sitt lokala läge, köad DELETE hålls borta, platsernas ordning står kvar. Aldrig för gäster (403).
+`SyncEngine` kör `PantrySyncStep` efter böckerna: lagret högst var 5:e minut (alltid med de små
+tabellerna eller vid start/inloggning/pull to refresh), aliasen med de små tabellerna (och en gång
+om de aldrig lästs), och basvaror som väntar på ett livsmedel. `FakeTandoorServer` svarar tomma
+sidor på listorna, så motorns andra tester inte får 404.
+
+**Avsändare** (`PantryOutboxHandlers.kt`, `FoodAliasOutboxHandler.kt`): `inventory_location`
+(CREATE med hushållet; ett omförsök efter ett förlorat svar tar en plats med samma namn i hushållet
+som ingen annan CREATE på enheten tagit), `inventory_entry` (CREATE med hela platsen och samma
+omförsöksregel som inköpslistan; PATCH/DELETE kontrolleras först mot en komplett läsning med
+`empty=true`, högst en per minut, så en post som en annan telefon raderat släpps **utan** 404) och
+`food_alias`. `BATCH_ON_HAND` går genom inköpsbanans `FoodOutboxHandler` (en rad) till
+`FoodOnHandBatchSender`: alla redo rader med samma batchnyckel i **ett** `PUT food/batch_update/`.
+`ShoppingTables.reapplyQueuedFoods` lägger på köade `on_hand` igen efter omläsningen av livsmedlen.
+Varje skickad skafferirad meddelar `PantryChanges` (Kan laga nu läses om).
+
+**Packa upp** (`observeUnpackable(today)`/`unpack`): dagens avbockade inköpsposter (`completed_at`
+på enhetens kalenderdag), utom de som packats upp eller hoppats över i dag (`sync_state`
+`pantry_unpacked`, `yyyy-MM-dd|id,...`; nästa dag börjar listan om). Mängd 0 blir 1.
+
+**Basvaror** (`DefaultStaplesRepository`, `core:domain` `StapleCatalog`): en kurerad lista (salt,
+svartpeppar, vitpeppar, olivolja, rapsolja, vatten, socker, vetemjöl, smör, ättika, soja, bakpulver,
+bikarbonat, vaniljsocker, kanel, buljongtärning, honung) med svenska och engelska namn. Ett namn
+hittar spacets livsmedel med samma namn (eller plural), annars med ett annat namn för samma basvara
+("Black pepper" → "svartpeppar"). Att lägga till markerar *har hemma* med `BATCH_ON_HAND` (av och på
+igen före sändning tar ut varandra). En basvara som spacet saknar skapas med `POST food/` när
+enheten är online, annars vid nästa synk (`resolvePending`). `markSuggestionsShown` är en
+enhetsinställning (`sync_state` `pantry_staples_suggested`). UI:t kan visa
+`StapleCatalog.suggestions` (`displayName("sv"|"en")`) eller egna strängar.
+
+**Kan laga nu** (`DefaultMakeNowRepository`):
+- tre anrop `recipe?makenow=0|1|2&page_size=100` (högst 5 sidor var), grupperna med
+  `core:domain` `MakeNowGroups` (minsta N vinner), lagrade i `make_now`; offline visas det
+  lagrade med `stale`. Recept som saknas lokalt får en översiktsrad ur svaret.
+- **När:** när `observe` börjar samlas, efter varje `PantryChanges` och via `refresh()`, högst en
+  gång i minuten om inte `force`.
+- **Filtren** används på enheten (nyckelord med barn i ett led, maxtid där 0 = okänd tid tas med);
+  Tandoors receptsök har inget måltidsfilter, så `MakeNowFilter.mealTypeId` används inte.
+- **Bort:** drycker (nyckelordet `Dryck`) och nedladdade recept utan livsmedel (de ligger alltid i
+  `makenow=0`).
+- **Saknade varor** räknas live med `MissingIngredients` för recept med nedladdad detalj (`food`
+  med `substitute_*`/`ignore_shopping`/`recipe_id`, *har hemma* och hushållets lager > 0). För ett
+  recept utan detalj hämtar `missingFoods(id)` detaljen genom `DetailFetcher`s bakgrundskö, högst
+  20 samtidigt (annars `Throttled`), och sparar listan i `make_now.missing_foods`.
+- **Ordning:** "Använd upp" först (`UseUpRanking`, inom 3 dagar), annars namnordning som serverns.
+  "Överraska mig" (`surprise`) väljer slumpvis bland gruppens recept med samma filter (fungerar
+  offline och i demoläget; inget extra `random=true`-anrop).
+- `FoodDto.toEntity` fyller nu `substitute_on_hand`, `substitute_ids` och `recipe_id`.
+
+**Inlärda alias** (`OfflineFirstFoodAliasRepository`, `FoodAliasReader`): alla `FOOD_ALIAS` läses
+in i `food_alias`; `find` matchar utan versaler (nyckeln = trimmad, gemen, högst 128 tecken).
+`learn` gör aldrig en dubblett: samma text (utan versaler) pekas om (PATCH `param_2`) eller lämnas
+när den redan pekar på livsmedlet; ett alias från webben (typ OTHER) vinner och ändras inte.
+Avsändaren kontrollerar spacets alias (en komplett läsning, högst en minut gammal) före en CREATE
+och tar över samma `param_1` från en annan telefon i stället för att skapa en till. `name` =
+"Tandem: streckkod"/"Tandem: kvitto" (OTHER = "Tandem"). Gäster: `READ_ONLY`, och listan läses inte.
+
+**Streckkod** (`DefaultBarcodeLookup`): giltig EAN-8/UPC-A/EAN-13 (GS1-kontrollsiffra) annars fel
+utan anrop; sedan inlärt alias (livsmedlets namn, inget anrop), cachen `barcode_product` (hittad
+30 dagar, "finns inte" 7 dagar), sist Open Food Facts. Produktnamnet på enhetens språk
+(`product_name_sv`/`_en`) när det finns. Offline används en gammal cache hellre än inget.
+Demoläget frågar aldrig Open Food Facts.
+
+**Demo** (`demo/DemoPantry.kt`, från `DemoSeeder`): Kyl, Frys och Skafferi med demorecepternas
+livsmedel (vispgrädde och lax går ut i morgon), basvarorna *har hemma*; en gång per
+innehållsversion och språk, utgångsdatumen flyttas med dagarna. Kan laga nu räknas på enheten ur
+demorecepten (Har allt: lax, pannkakor; Saknar 1: havregrynsgröt; Saknar 2: tomatsoppa).
+
+**Tester:** `PantrySyncTest`, `MakeNowSyncTest`, `StaplesSyncTest`, `ScanDataSyncTest`
+(Robolectric, `FakePantryTandoor` i de inspelade `fas-s/`-formerna för **2.6.13 och 2.7.1**):
+offline skapa/ändra/"Slut"/radera med få anrop, flytt till en ny plats, hushållsfiltret,
+standardplatserna, poster raderade någon annanstans utan 404, Packa upp, gäst, konton och demo;
+Kan laga nu = de inspelade makenow-svaren (drycken bort) och de lokalt räknade saknade varorna
+stämmer med varje grupp, Använd upp, en gång i minuten, Överraska mig, detalj vid behov, demo;
+basvaror i en batch, av/på som tar ut varandra, okänd basvara; alias utan dubbletter (också från
+en annan telefon), 128 tecken, gäst; streckkod med alias, cache, "finns inte", offline och demo.
+`PantryServicesTest`, `OpenFoodFactsClientTest` (`:core:network`), `MakeNowGroupsTest`,
+`StapleCatalogTest` (`:core:domain`).
+<!-- /Fas S hemma-data -->
+
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
 

@@ -220,10 +220,10 @@ class ScanDataSyncTest {
 
         /** A public Open Food Facts product (UPC-A), and a code with a valid check digit that does not exist. */
         const val UPC = "737628064502"
-        const val UNKNOWN = "2999999999992"
+        const val UNKNOWN = "2999999999991"
 
         const val FOUND = """{"code":"0737628064502","product":{"brands":"Simply Asia, Thai Kitchen","code":"0737628064502",""" +
             """"product_name":"Thai peanut noodle kit","quantity":"155 g"},"status":1,"status_verbose":"product found"}"""
-        const val NOT_FOUND_BODY = """{"code":"2999999999992","status":0,"status_verbose":"product not found"}"""
+        const val NOT_FOUND_BODY = """{"code":"2999999999991","status":0,"status_verbose":"product not found"}"""
     }
 }

@@ -203,8 +203,8 @@ class MakeNowSyncTest {
     fun theMissingFoodsOfARecipeWithoutDetailAreFetchedOnceWhenAsked() = forEachVersion {
         // Pytt i panna (recipe 1) has no stored detail: it is fetched now, then reused.
         val missing = value(graph.makeNow.missingFoods(1))
-        assertTrue("[$version] $missing", missing.isNotEmpty())
         assertEquals(1, graph.server.requestsTo("GET", "/api/recipe/1/").size)
+        assertTrue("[$version] the detail is stored", graph.real.makeNowDao().hasDetail(ACCOUNT_ID, 1))
         assertEquals(missing, value(graph.makeNow.missingFoods(1)))
         assertEquals(1, graph.server.requestsTo("GET", "/api/recipe/1/").size)
     }

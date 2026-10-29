@@ -40,8 +40,10 @@ internal class PantrySyncEnv(val graph: SyncTestGraph, val tandoor: FakePantryTa
 
     fun ok(outcome: Outcome<*>) = assertTrue("[$version] $outcome", outcome is Outcome.Success)
 
-    @Suppress("UNCHECKED_CAST")
-    fun <T> value(outcome: Outcome<T>): T = (outcome as? Outcome.Success<T>)?.value ?: throw AssertionError("[$version] $outcome")
+    fun <T> value(outcome: Outcome<T>): T = when (outcome) {
+        is Outcome.Success -> outcome.value
+        is Outcome.Failure -> throw AssertionError("[$version] $outcome")
+    }
 
     companion object {
         val VERSIONS = listOf("2.6.13", "2.7.1")
