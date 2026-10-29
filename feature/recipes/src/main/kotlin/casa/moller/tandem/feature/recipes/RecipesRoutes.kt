@@ -113,7 +113,7 @@ private class SyncFailure(val error: TandemError)
  *   "Favorit", "Vill laga" and "Lägg i bok" opens the plan-meal page for the recipe (the shell's
  *   `PlanMealKey`); hidden for guests and when null.
  * @param onNavigate Fas S (drycker lane, plan §8.8): "Passar med" on a dish and "Passar till" on a
- *   drink below the book buttons; it opens the pairing picker (`PairingPickerKey`). Null hides the
+ *   drink after the ingredients; it opens the pairing picker (`PairingPickerKey`). Null hides the
  *   section.
  */
 @Composable

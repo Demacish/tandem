@@ -122,7 +122,8 @@ internal val TwoPaneMinWidth = 720.dp
  *   button shows once the recipe's detail is stored. Null hides it.
  * @param shoppingActions Phase 2 (koppling lane, #12): "Lägg på inköpslistan" right under the
  *   ingredients once the detail is stored (in the ingredient pane on wide windows).
- * @param pairings Fas S (drycker lane): "Passar med" / "Passar till" below the book buttons.
+ * @param pairings Fas S (drycker lane): "Passar med" / "Passar till" after the ingredients (in the
+ *   ingredient pane on wide windows).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -279,14 +280,16 @@ private fun DetailContent(
                 HeaderImage(state, Modifier.fillMaxWidth().aspectRatio(PHOTO_ASPECT_RATIO))
                 Header(state)
                 bookActions?.invoke()
-                pairings?.invoke()
                 if (!state.hasDetail) {
                     MissingDetail(state = state, onAction = onAction)
+                    pairings?.invoke()
                 } else {
                     StartCooking(onStartCooking)
                     Servings(state, onAction)
                     Ingredients(state, onAction)
                     shoppingActions?.invoke()
+                    // Fas S: after the ingredients, so the servings and the list stay where they were.
+                    pairings?.invoke()
                     Steps(state, onAction, onOpenRecipe)
                     Source(state, onOpenUrl)
                 }
@@ -333,6 +336,7 @@ private fun TwoPaneContent(
             Servings(state, onAction)
             Ingredients(state, onAction)
             shoppingActions?.invoke()
+            pairings?.invoke()
         }
         Column(
             modifier = Modifier
@@ -349,7 +353,6 @@ private fun TwoPaneContent(
             Notices(state)
             Header(state)
             bookActions?.invoke()
-            pairings?.invoke()
             Steps(state, onAction, onOpenRecipe)
             Source(state, onOpenUrl)
         }
