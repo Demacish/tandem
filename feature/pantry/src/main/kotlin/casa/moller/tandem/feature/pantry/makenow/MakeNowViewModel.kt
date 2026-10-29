@@ -278,9 +278,15 @@ class MakeNowViewModel @AssistedInject internal constructor(
         local: Transient,
         savedGroup: String,
     ): MakeNowUiState {
+        // Tandoor's recipe search has no meal type (hemma-data contract): a meal type is offered when
+        // the space has a keyword of the same name ("Middag"), and choosing it keeps the recipes
+        // tagged with that keyword or one of its children, on the device.
+        val mealKeywords = mealTypeKeywords(ref.mealTypes, ref.keywords)
+        val mealKeyword = filter.mealTypeId?.let { mealKeywords[it] }
         val groups = MakeNowGroup.entries.associateWith { group ->
             state.recipes(group)
                 .filterNot { it.recipe.isDrink() }
+                .filter { mealKeyword == null || it.recipe.hasKeyword(mealKeyword) }
                 .map { it.toRow(found) }
                 // "Använd upp" first (the repository orders them; kept here for any source): soonest day first.
                 .sortedWith(compareBy<MakeNowRow> { !it.usesUp }.thenBy { row -> row.expiring.minOfOrNull { it.expires } })
@@ -293,7 +299,7 @@ class MakeNowViewModel @AssistedInject internal constructor(
             groups = groups,
             selected = selected,
             filter = filter,
-            mealTypes = ref.mealTypes,
+            mealTypes = ref.mealTypes.filter { it.id in mealKeywords },
             keywords = ref.keywords,
             expiring = ref.expiring,
             refreshing = local.refreshing || state.refreshing,
@@ -344,9 +350,16 @@ class MakeNowViewModel @AssistedInject internal constructor(
 
     private fun surprise(group: MakeNowGroup) {
         if (transient.value.surprising) return
+        val current = uiState.value
+        // A meal type is applied here, not by the repository: pick among the rows shown.
+        if (current.filter.mealTypeId != null && current.mealTypes.any { it.id == current.filter.mealTypeId }) {
+            val pick = current.rows(group).randomOrNull()
+            effectChannel.trySend(if (pick != null) MakeNowEffect.OpenRecipe(pick.recipe.id) else MakeNowEffect.NothingToSurprise)
+            return
+        }
         transient.update { it.copy(surprising = true) }
         viewModelScope.launch {
-            val result = makeNow.surprise(group, uiState.value.filter)
+            val result = makeNow.surprise(group, current.filter)
             transient.update { it.copy(surprising = false) }
             when (result) {
                 is Outcome.Success -> {
@@ -374,6 +387,14 @@ class MakeNowViewModel @AssistedInject internal constructor(
             if (foods.isNotEmpty()) effectChannel.send(MakeNowEffect.AddToList(recipeId, foods.mapTo(LinkedHashSet()) { it.id }))
         }
     }
+
+    /** Meal type id -> the keyword with the same name (case-insensitive), for those that have one. */
+    private fun mealTypeKeywords(types: List<MealType>, keywords: List<Keyword>): Map<Long, Long> {
+        val byName = keywords.associateBy { it.name.trim().lowercase() }
+        return types.mapNotNull { type -> byName[type.name.trim().lowercase()]?.let { type.id to it.id } }.toMap()
+    }
+
+    private fun RecipeOverview.hasKeyword(id: Long): Boolean = keywords.any { it.id == id || it.parentId == id }
 
     private data class Reference(
         val mealTypes: List<MealType>,

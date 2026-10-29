@@ -153,6 +153,9 @@ fun PantryEntryScreen(
     if (state.confirmDelete) {
         AlertDialog(
             onDismissRequest = { onAction(PantryEntryAction.ConfirmDelete(false)) },
+            // The theme's dialog surface (surfaceContainerHigh) gives the primary-coloured buttons
+            // only 4.2:1 (ATF); the same surface as Veckan's dialogs.
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             title = { Text(stringResource(R.string.pantry_entry_delete_title, state.food)) },
             text = { Text(stringResource(R.string.pantry_entry_delete_body)) },
             confirmButton = {

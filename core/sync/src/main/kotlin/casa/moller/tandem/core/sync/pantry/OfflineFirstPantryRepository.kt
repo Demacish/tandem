@@ -169,6 +169,21 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         .catch { emit(emptySet()) }
         .distinctUntilChanged()
 
+    // hemma-ui lane: Hemma's "Har hemma" list – foods flagged on hand (`food_onhand`, household)
+    // without a stocked entry in one of the household's locations.
+    override fun observeOnHandFoods(): Flow<List<PantryFood>> = stored(emptyList()) { source, database ->
+        combine(
+            visibleLocations(source, database),
+            database.pantryDao().observeStockedEntries(source.accountId),
+            database.supermarketDao().observeFoods(source.accountId),
+        ) { locations, entries, foods ->
+            val visible = locations.mapTo(HashSet()) { it.localId }
+            val stocked = entries.filter { it.locationId in visible }.mapNotNullTo(HashSet()) { it.foodId }
+            foods.filter { it.onHand && it.id !in stocked }
+                .map { PantryFood(id = it.id, name = it.name, pluralName = it.pluralName) }
+        }
+    }
+
     override fun observeUnpackable(today: LocalDate): Flow<List<UnpackItem>> = stored(emptyList()) { source, database ->
         combine(
             database.shoppingDao().observeEntries(source.accountId),

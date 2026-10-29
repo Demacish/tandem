@@ -2,6 +2,7 @@ package casa.moller.tandem.core.sync.pantry
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.ShoppingEntryEntity
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.pantry.InventoryEntryDraft
@@ -120,6 +121,28 @@ class PantrySyncTest {
         assertEquals(listOf(own), pantry.observeLocations().first().map { it.id })
         assertEquals(listOf("kikärtor"), pantry.observePantry().first().flatMap { group -> group.entries.map { it.food.name } })
         assertEquals(setOf(tandoor.foodId("kikärtor")), pantry.observeAvailableFoodIds().first())
+    }
+
+    @Test
+    fun harHemmaListsOnHandFoodsWithoutStockInTheHousehold() = forEachVersion {
+        // hemma-ui lane: Hemma's "Har hemma" (observeOnHandFoods).
+        val own = tandoor.seedLocation("Kyl")
+        val other = tandoor.seedLocation("Kyl", householdId = FakePantryTandoor.OTHER_HOUSEHOLD)
+        tandoor.seedEntry(own, "kikärtor", amount = 2.0)
+        tandoor.seedEntry(other, "blåbär")
+        read()
+        graph.real.referenceDao().replaceFoods(
+            ACCOUNT_ID,
+            listOf(
+                FoodEntity(ACCOUNT_ID, tandoor.foodId("kikärtor"), "kikärtor", onHand = true),
+                FoodEntity(ACCOUNT_ID, tandoor.foodId("blåbär"), "blåbär", onHand = true),
+                FoodEntity(ACCOUNT_ID, 9001, "salt", onHand = true),
+                FoodEntity(ACCOUNT_ID, 9002, "socker", onHand = false),
+            ),
+        )
+
+        // Stocked in the household's own location: not repeated; stocked only elsewhere: listed.
+        assertEquals(listOf("blåbär", "salt"), pantry.observeOnHandFoods().first().map { it.name })
     }
 
     @Test

@@ -40,6 +40,9 @@ internal fun PantryDialogs(state: PantryUiState, onAction: (PantryAction) -> Uni
     state.confirmDelete?.let { location ->
         AlertDialog(
             onDismissRequest = { onAction(PantryAction.ConfirmDeleteLocation(false)) },
+            // The theme's dialog surface (surfaceContainerHigh) gives the primary-coloured buttons
+            // only 4.2:1 (ATF); the same surface as Veckan's dialogs.
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             title = { Text(stringResource(R.string.pantry_location_delete_title, location.name)) },
             text = { Text(stringResource(R.string.pantry_location_delete_body)) },
             confirmButton = {
@@ -62,6 +65,9 @@ private fun MoveDialog(row: PantryRow, state: PantryUiState, onAction: (PantryAc
     val name = foodTitle(row.entry.food.name, currentLocale())
     AlertDialog(
         onDismissRequest = { onAction(PantryAction.CancelMove) },
+        // The theme's dialog surface (surfaceContainerHigh) gives the primary-coloured buttons
+        // only 4.2:1 (ATF); the same surface as Veckan's dialogs.
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         title = { Text(stringResource(R.string.pantry_move_title, name)) },
         text = {
             Column(modifier = Modifier.selectableGroup().verticalScroll(rememberScrollState())) {
@@ -98,6 +104,9 @@ private fun MoveDialog(row: PantryRow, state: PantryUiState, onAction: (PantryAc
 private fun LocationEditorDialog(editor: LocationEditor, onAction: (PantryAction) -> Unit) {
     AlertDialog(
         onDismissRequest = { onAction(PantryAction.CloseLocationEditor) },
+        // The theme's dialog surface (surfaceContainerHigh) gives the primary-coloured buttons
+        // only 4.2:1 (ATF); the same surface as Veckan's dialogs.
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         title = { Text(stringResource(if (editor.id == null) R.string.pantry_location_new else R.string.pantry_location_rename)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md)) {

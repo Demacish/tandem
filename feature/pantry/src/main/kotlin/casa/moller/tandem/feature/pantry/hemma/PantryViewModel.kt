@@ -99,6 +99,12 @@ class PantryViewModel @AssistedInject internal constructor(
         build(stock, status, local)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), PantryUiState())
 
+    init {
+        // Opening Hemma is the pantry's "first use" (hemma-data contract, docs/BYGGE.md): drain,
+        // read and, the first time, create Kyl, Frys and Skafferi. Quiet: offline shows the notice.
+        viewModelScope.launch { pantry.refresh() }
+    }
+
     fun onAction(action: PantryAction) {
         when (action) {
             PantryAction.Refresh -> refresh()

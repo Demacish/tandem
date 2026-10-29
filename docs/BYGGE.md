@@ -913,8 +913,9 @@ en annan telefon), 128 tecken, gäst; streckkod med alias, cache, "finns inte", 
 ## Hemma, Kan laga nu och Packa upp (`:feature:pantry`, Fas S, hemma-ui)
 
 Skärmarna för skafferiet (plan §8.8, #23, #26, #28, #46) mot `core:data`-kontrakten i "Fas S –
-kontrakt"; data och synk kommer från hemma-data-banan (`TemporaryFasSPantryModule` binder tills
-dess tomma stand-ins, så sidorna visar sina tomma lägen i appen). Alla sidor följer Handla:
+kontrakt"; data och synk kommer från hemma-data-banan ("Skafferiet – data och synk" ovan,
+`PantryModule` i `core:sync`). Hemma anropar `PantryRepository.refresh()` när sidan öppnas (tyst;
+offline visas noticen), så Kyl, Frys och Skafferi skapas första gången. Alla sidor följer Handla:
 tillståndslös `XScreen(state, onAction)`, `@HiltViewModel` med `StateFlow` och engångseffekter,
 `SavedStateHandle` för det som ska överleva rotation och processdöd.
 
@@ -924,7 +925,7 @@ tillståndslös `XScreen(state, onAction)`, `@HiltViewModel` med `StateFlow` och
 | Post (`PantryEntryKey`, helskärm) | `entry/PantryEntryViewModel.kt`, `PantryEntryScreen.kt` | livsmedel med förslag ur `RecipeRepository.observeFoods`, mängd (decimalkomma), enhet med snabbval ur skafferiet, plats, bäst före med snabbvalen `ExpiryChoice.forLocation` (frysen längre) och kalendern, anteckning; "Spara"/"Ta bort varan" fasta ovanför tangentbordet |
 | Packa upp (`UnpackKey`) | `unpack/UnpackViewModel.kt`, `UnpackScreen.kt` | dagens avbockade varor (`observeUnpackable`), plats och dag för alla eller per vara, kryssa ur för att hoppa över en, "Lägg in n varor" och "Hoppa över" fasta nedtill |
 | Basvaror (`StaplesKey`) | `staples/StaplesViewModel.kt`, `StaplesScreen.kt` | förslagen (`R.array.pantry_staple_suggestions`, översatta) och hushållets basvaror som checklista, egna, ta bort (Ångra); "Spara" skickar `addStaples` och `setOnHand` i batch och `markSuggestionsShown`, "Inte nu" räknas också som visad |
-| Kan laga nu (`MakeNowKey(useUpFirst)`) | `makenow/MakeNowViewModel.kt`, `MakeNowScreen.kt`, `MakeNowRows.kt` | flikar Har allt / Saknar 1 / Saknar 2 på telefon (och telefon liggande), grupperna sida vid sida på surfplatta (Har allt bredvid Saknar 1 + 2, tre kolumner från 1000 dp); drycker (`Dryck`) sorteras bort, recept som använder något som går ut inom 3 dagar först och märkta; de saknade varorna hämtas när raden visas (`missingFoods`, en åt gången), filter måltidstyp/nyckelord/tid, Överraska mig, "Laga" (kokläget) och "Lägg det som saknas på listan"; basvarukortet första gången; `useUpFirst` öppnar första gruppen med ett sådant recept |
+| Kan laga nu (`MakeNowKey(useUpFirst)`) | `makenow/MakeNowViewModel.kt`, `MakeNowScreen.kt`, `MakeNowRows.kt` | flikar Har allt / Saknar 1 / Saknar 2 på telefon (och telefon liggande), grupperna sida vid sida på surfplatta (Har allt bredvid Saknar 1 + 2, tre kolumner från 1000 dp); drycker (`Dryck`) sorteras bort, recept som använder något som går ut inom 3 dagar först och märkta; de saknade varorna hämtas när raden visas (`missingFoods`, en åt gången), filter måltidstyp/nyckelord/tid (Tandoor har inget måltidstypsfilter: en måltidstyp erbjuds när spacet har ett nyckelord med samma namn, t.ex. "Middag", och filtrerar på enheten på det nyckelordet och dess barn; Överraska mig väljer då bland raderna som visas), Överraska mig, "Laga" (kokläget) och "Lägg det som saknas på listan"; basvarukortet första gången; `useUpFirst` öppnar första gruppen med ett sådant recept |
 
 **Routen** `PantryRoute(key, onNavigate, onOpenRecipe, onBack, onStartCooking, onOpenScanner,
 missingToList)`: `onOpenScanner(PantryScanner, locationId?)` (skalet öppnar `BarcodeScanKey`,
@@ -938,9 +939,9 @@ som skalet fyller med feature:shoppings `RecipeMissingShoppingSheet`.
   `SystemCalendarDays`: enhetens dag (bäst före räknas i telefonens tidszon, inte serverns), ny
   dag strax efter midnatt och minst var 15:e minut (tidszon eller klocka ändrad). Tester:
   `SystemCalendarDaysTest`; `core:testing` `time/FakeCalendarDays`.
-- `core:data` `PantryRepository.observeOnHandFoods()` med en **tom standard**: *har hemma* utan
-  lagerpost. hemma-data skriver över den (tills dess visar "Har hemma" bara basvarorna);
-  `FakePantryRepository.onHandFoods`.
+- `core:data` `PantryRepository.observeOnHandFoods()` (standard tom): *har hemma* utan lagerpost
+  i hushållets platser. `core:sync` `OfflineFirstPantryRepository` implementerar den ur `food`
+  (`on_hand`) och `inventory_entry` (test i `PantrySyncTest`); `FakePantryRepository.onHandFoods`.
 - `core:ui` `pantry/PantryText.kt`: `ExpiryUrgency` (NONE/LATER/SOON/TODAY/EXPIRED, `isUrgent`),
   `expiryText` ("går ut i morgon", "gick ut i går", "går ut om 5 dagar", "bäst före 4 nov."),
   `formatDay`, `formatPantryAmount` (decimalkomma), `foodTitle`, `ExpiryLabel` (färg + ikon +
@@ -973,7 +974,9 @@ namn i `TandemIcons`.
 **Medvetna val:** att ta bort en post eller en plats frågar först (sidan stängs, eller Tandoor tar
 platsens poster med sig), allt annat som försvinner har Ångra; Tandoors post byter aldrig livsmedel
 eller enhet, så ett nytt livsmedel eller en ny enhet ersätter posten (ny post, gamla bort);
-basvarorna erbjuds som ett kort överst i Kan laga nu i stället för att öppnas av sig själva.
+basvarorna erbjuds som ett kort överst i Kan laga nu i stället för att öppnas av sig själva;
+dialogerna har `surfaceContainerLow` som Veckans (temats `surfaceContainerHigh` ger textknapparna
+bara 4,2:1 i ATF).
 
 **Tester:** `PantryViewModelTest` (gruppering, färger över midnatt, Ångra, Har hemma, platser,
 gäst, offline, foto av kylen), `PantryEntryViewModelTest`, `UnpackViewModelTest`,

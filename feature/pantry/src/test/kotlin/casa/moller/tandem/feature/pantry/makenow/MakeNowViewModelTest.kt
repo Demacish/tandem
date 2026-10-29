@@ -6,6 +6,7 @@ import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.makenow.MakeNowGroup
 import casa.moller.tandem.core.model.makenow.MakeNowRecipe
 import casa.moller.tandem.core.model.makenow.MakeNowState
+import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeMakeNowRepository
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
@@ -45,14 +46,17 @@ class MakeNowViewModelTest {
     private val pantry = FakePantryRepository(locations = PantrySamples.locations, entries = PantrySamples.entries)
     private val permissions = FakeSpacePermissionsRepository()
 
-    private fun TestScope.start(useUpFirst: Boolean = false): Pair<MakeNowViewModel, MutableList<MakeNowEffect>> {
+    private fun TestScope.start(
+        useUpFirst: Boolean = false,
+        recipes: FakeRecipeRepository = FakeRecipeRepository(),
+    ): Pair<MakeNowViewModel, MutableList<MakeNowEffect>> {
         val vm = MakeNowViewModel(
             useUpFirst,
             SavedStateHandle(),
             makeNow,
             staples,
             pantry,
-            FakeRecipeRepository(),
+            recipes,
             FakeMealPlanRepository(),
             permissions,
             FakeCalendarDays(PantrySamples.today),
@@ -114,6 +118,33 @@ class MakeNowViewModelTest {
         vm.onAction(MakeNowAction.AddMissingToList(PantrySamples.pancakes.id))
         advanceUntilIdle()
         assertEquals(1, effects.count { it is MakeNowEffect.AddToList })
+    }
+
+    @Test
+    fun aMealTypeIsOfferedThroughAKeywordOfTheSameNameAndFiltersOnTheDevice() = runTest {
+        // FakeMealPlanRepository has "Middag" and "Lunch"; only "Middag" has a keyword.
+        val dinner = Keyword(id = 50, name = "middag")
+        val weekday = Keyword(id = 51, name = "Vardag", parentId = 50)
+        makeNow.state.value = MakeNowState(
+            mapOf(
+                MakeNowGroup.HAS_ALL to listOf(
+                    MakeNowRecipe(PantrySamples.creamSauce.copy(keywords = listOf(weekday)), MakeNowGroup.HAS_ALL, missingFoods = emptyList()),
+                    MakeNowRecipe(PantrySamples.omelette, MakeNowGroup.HAS_ALL, missingFoods = emptyList()),
+                ),
+            ),
+        )
+        val (vm, effects) = start(recipes = FakeRecipeRepository(keywords = listOf(dinner, weekday)))
+        assertEquals(listOf("Middag"), vm.uiState.value.mealTypes.map { it.name })
+        assertEquals(2, vm.uiState.value.rows(MakeNowGroup.HAS_ALL).size)
+
+        val middag = vm.uiState.value.mealTypes.single().id
+        vm.onAction(MakeNowAction.SetMealType(middag))
+        advanceUntilIdle()
+        // A child keyword of "Middag" counts.
+        assertEquals(listOf("Krämig kycklinggryta"), vm.uiState.value.rows(MakeNowGroup.HAS_ALL).map { it.recipe.name })
+        vm.onAction(MakeNowAction.Surprise(MakeNowGroup.HAS_ALL))
+        advanceUntilIdle()
+        assertEquals(MakeNowEffect.OpenRecipe(PantrySamples.creamSauce.id), effects.last())
     }
 
     @Test

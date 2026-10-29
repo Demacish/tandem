@@ -78,6 +78,14 @@ class PantryViewModelTest {
     }
 
     @Test
+    fun openingHemmaRefreshesThePantryOnce() = runTest {
+        // hemma-data contract: refresh() on open drains, reads and creates the default places.
+        val vm = viewModel()
+        start(vm)
+        assertEquals(1, pantry.refreshes)
+    }
+
+    @Test
     fun expiryColoursFollowTheDeviceDayAcrossMidnight() = runTest {
         val vm = viewModel()
         start(vm)

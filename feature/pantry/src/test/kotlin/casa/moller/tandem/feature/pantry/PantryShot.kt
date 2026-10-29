@@ -43,8 +43,7 @@ internal enum class PantryShot(val content: @Composable () -> Unit) {
     HEMMA_OFFLINE({ HemmaShot(PantryStates.hemma(syncNotice = PantrySyncNotice.OFFLINE)) }),
     HEMMA_FRIDGE_PHOTO({ HemmaShot(PantryStates.hemma(fridgePhoto = true, unpackCount = 0)) }),
     HEMMA_LOCATION({ HemmaShot(PantryStates.location()) }),
-    // Without the "Packa upp" card: ATF measures the screen behind the dialog's scrim too, where its text button dims below 4.5:1.
-    HEMMA_MOVE({ HemmaShot(PantryStates.hemma(unpackCount = 0).let { it.copy(moving = it.sections.first().rows[1]) }) }),
+    HEMMA_MOVE({ HemmaShot(PantryStates.hemma().let { it.copy(moving = it.sections.first().rows[1]) }) }),
     ENTRY_NEW({ PantryEntryScreen(state = PantryStates.entryNew, onAction = {}) }),
     ENTRY_EDIT({ PantryEntryScreen(state = PantryStates.entryEdit, onAction = {}) }),
     UNPACK({ UnpackScreen(state = PantryStates.unpack, onAction = {}) }),
