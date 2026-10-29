@@ -81,6 +81,10 @@ abstract class AccountDao {
             "UNION SELECT account_id FROM supermarket UNION SELECT account_id FROM supermarket_category " +
             "UNION SELECT account_id FROM supermarket_category_relation UNION SELECT account_id FROM recipe_book " +
             "UNION SELECT account_id FROM recipe_book_entry UNION SELECT account_id FROM id_mapping " +
+            "UNION SELECT account_id FROM inventory_location UNION SELECT account_id FROM inventory_entry " +
+            "UNION SELECT account_id FROM food_alias UNION SELECT account_id FROM barcode_product " +
+            "UNION SELECT account_id FROM make_now UNION SELECT account_id FROM staple " +
+            "UNION SELECT account_id FROM drink_draft " +
             "UNION SELECT id FROM server_account",
     )
     abstract suspend fun getStoredAccountIds(): List<String>
@@ -104,8 +108,42 @@ abstract class AccountDao {
         deleteCookLog(accountId)
         // Phase 2 (schema 4)
         deletePhase2Tables(accountId)
+        // Fas S (schema 5)
+        deletePhaseSTables(accountId)
         deleteAccount(accountId)
     }
+
+    /** Fas S (schema 5): every new account-scoped table. */
+    private suspend fun deletePhaseSTables(accountId: String) {
+        deleteInventoryLocations(accountId)
+        deleteInventoryEntries(accountId)
+        deleteFoodAliases(accountId)
+        deleteBarcodeProducts(accountId)
+        deleteMakeNow(accountId)
+        deleteStaples(accountId)
+        deleteDrinkDrafts(accountId)
+    }
+
+    @Query("DELETE FROM inventory_location WHERE account_id = :accountId")
+    abstract suspend fun deleteInventoryLocations(accountId: String)
+
+    @Query("DELETE FROM inventory_entry WHERE account_id = :accountId")
+    abstract suspend fun deleteInventoryEntries(accountId: String)
+
+    @Query("DELETE FROM food_alias WHERE account_id = :accountId")
+    abstract suspend fun deleteFoodAliases(accountId: String)
+
+    @Query("DELETE FROM barcode_product WHERE account_id = :accountId")
+    abstract suspend fun deleteBarcodeProducts(accountId: String)
+
+    @Query("DELETE FROM make_now WHERE account_id = :accountId")
+    abstract suspend fun deleteMakeNow(accountId: String)
+
+    @Query("DELETE FROM staple WHERE account_id = :accountId")
+    abstract suspend fun deleteStaples(accountId: String)
+
+    @Query("DELETE FROM drink_draft WHERE account_id = :accountId")
+    abstract suspend fun deleteDrinkDrafts(accountId: String)
 
     /** Phase 2 (schema 4): every new account-scoped table. */
     private suspend fun deletePhase2Tables(accountId: String) {

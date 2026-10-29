@@ -19,7 +19,15 @@ data class KeywordEntity(
     @ColumnInfo(name = "full_name") val fullName: String? = null,
 )
 
-/** A food (plan 5.7 `food`), from the full food list. Used by later phases (shopping). */
+/**
+ * A food (plan 5.7 `food`), from the full food list. Used by later phases (shopping).
+ *
+ * Fas S (schema 5) adds what "Kan laga nu" needs to name the missing foods locally (plan §8.8,
+ * `MissingIngredients`): [substituteOnHand] is the server's `substitute_onhand` (a substitute,
+ * sibling or child is on hand in the household), [substituteIds] the JSON array of the direct
+ * substitutes' ids (whose inventory counts too), and [recipeId] the food's own recipe (an
+ * `ignore_shopping` food counts as resolved only when it is not a recipe, FACTS "Fas S a").
+ */
 @Entity(tableName = "food", primaryKeys = ["account_id", "id"])
 data class FoodEntity(
     @ColumnInfo(name = "account_id") val accountId: String,
@@ -29,6 +37,10 @@ data class FoodEntity(
     @ColumnInfo(name = "on_hand") val onHand: Boolean = false,
     @ColumnInfo(name = "ignore_shopping") val ignoreShopping: Boolean = false,
     @ColumnInfo(name = "supermarket_category_id") val supermarketCategoryId: Long? = null,
+    // --- Fas S (schema 5) ---
+    @ColumnInfo(name = "substitute_on_hand", defaultValue = "0") val substituteOnHand: Boolean = false,
+    @ColumnInfo(name = "substitute_ids", defaultValue = "'[]'") val substituteIds: String = "[]",
+    @ColumnInfo(name = "recipe_id") val recipeId: Long? = null,
 )
 
 /** A unit of measurement (plan 5.7 `unit`), from the full unit list. */

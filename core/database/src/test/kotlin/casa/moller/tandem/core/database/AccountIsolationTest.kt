@@ -187,6 +187,14 @@ class AccountIsolationTest {
             "recipe_book",
             "recipe_book_entry",
             "id_mapping",
+            // Fas S (schema 5)
+            "inventory_location",
+            "inventory_entry",
+            "food_alias",
+            "barcode_product",
+            "make_now",
+            "staple",
+            "drink_draft",
         )
     }
 }

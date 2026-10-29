@@ -141,5 +141,59 @@ object TandemMigrations {
             "`server_id` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `entity`, `local_id`))",
     )
 
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /**
+     * 0.3.0 -> 0.4.0 (Fas S "Skafferi & drycker"): the ONE migration of the whole phase (docs/BYGGE.md
+     * "Fas S – kontrakt"). New tables: the pantry (`inventory_location`, `inventory_entry`), learned
+     * barcodes and receipt names (`food_alias`), the Open Food Facts cache (`barcode_product`), the
+     * "Kan laga nu" cache (`make_now`), staples (`staple`) and drinks created offline
+     * (`drink_draft`). New columns: `food.substitute_on_hand` (0), `food.substitute_ids` (`[]`),
+     * `food.recipe_id`. Existing rows are untouched; the new tables fill with the next sync. The
+     * SQL is Room's own for the entities (see `schemas/.../5.json`).
+     */
+    val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            SCHEMA_5_STATEMENTS.forEach { connection.execSQL(it) }
+        }
+    }
+
+    /** The statements of [MIGRATION_4_5], in order. */
+    internal val SCHEMA_5_STATEMENTS: List<String> = listOf(
+        "ALTER TABLE `food` ADD COLUMN `substitute_on_hand` INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE `food` ADD COLUMN `substitute_ids` TEXT NOT NULL DEFAULT '[]'",
+        "ALTER TABLE `food` ADD COLUMN `recipe_id` INTEGER",
+        "CREATE TABLE IF NOT EXISTS `inventory_location` (`account_id` TEXT NOT NULL, `local_id` INTEGER NOT NULL, " +
+            "`server_id` INTEGER, `name` TEXT NOT NULL, `is_freezer` INTEGER NOT NULL, `household_id` INTEGER, " +
+            "`household_name` TEXT, `location_order` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL, " +
+            "PRIMARY KEY(`account_id`, `local_id`))",
+        "CREATE UNIQUE INDEX IF NOT EXISTS `index_inventory_location_account_id_server_id` ON `inventory_location` " +
+            "(`account_id`, `server_id`)",
+        "CREATE TABLE IF NOT EXISTS `inventory_entry` (`account_id` TEXT NOT NULL, `local_id` INTEGER NOT NULL, " +
+            "`server_id` INTEGER, `location_id` INTEGER NOT NULL, `sub_location` TEXT, `code` TEXT, `food_id` INTEGER, " +
+            "`food_name` TEXT NOT NULL, `food_plural_name` TEXT, `unit_id` INTEGER, `unit_name` TEXT, `amount` REAL NOT NULL, " +
+            "`expires` TEXT, `note` TEXT, `created_by` INTEGER, `created_at` INTEGER, `fetched_at` INTEGER NOT NULL, " +
+            "PRIMARY KEY(`account_id`, `local_id`))",
+        "CREATE UNIQUE INDEX IF NOT EXISTS `index_inventory_entry_account_id_server_id` ON `inventory_entry` (`account_id`, `server_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_inventory_entry_account_id_location_id` ON `inventory_entry` (`account_id`, `location_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_inventory_entry_account_id_food_id` ON `inventory_entry` (`account_id`, `food_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_inventory_entry_account_id_expires` ON `inventory_entry` (`account_id`, `expires`)",
+        "CREATE TABLE IF NOT EXISTS `food_alias` (`account_id` TEXT NOT NULL, `local_id` INTEGER NOT NULL, `server_id` INTEGER, " +
+            "`alias` TEXT NOT NULL, `alias_key` TEXT NOT NULL, `food_name` TEXT NOT NULL, `food_id` INTEGER, `kind` TEXT NOT NULL, " +
+            "`automation_name` TEXT NOT NULL, `disabled` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL, " +
+            "PRIMARY KEY(`account_id`, `local_id`))",
+        "CREATE UNIQUE INDEX IF NOT EXISTS `index_food_alias_account_id_server_id` ON `food_alias` (`account_id`, `server_id`)",
+        "CREATE INDEX IF NOT EXISTS `index_food_alias_account_id_alias_key` ON `food_alias` (`account_id`, `alias_key`)",
+        "CREATE TABLE IF NOT EXISTS `barcode_product` (`account_id` TEXT NOT NULL, `ean` TEXT NOT NULL, `found` INTEGER NOT NULL, " +
+            "`product_name` TEXT, `brand` TEXT, `quantity` TEXT, `fetched_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `ean`))",
+        "CREATE TABLE IF NOT EXISTS `make_now` (`account_id` TEXT NOT NULL, `recipe_id` INTEGER NOT NULL, " +
+            "`missing_count` INTEGER NOT NULL, `missing_foods` TEXT, `fetched_at` INTEGER NOT NULL, " +
+            "PRIMARY KEY(`account_id`, `recipe_id`))",
+        "CREATE INDEX IF NOT EXISTS `index_make_now_account_id_missing_count` ON `make_now` (`account_id`, `missing_count`)",
+        "CREATE TABLE IF NOT EXISTS `staple` (`account_id` TEXT NOT NULL, `name_key` TEXT NOT NULL, `name` TEXT NOT NULL, " +
+            "`food_id` INTEGER, `added_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `name_key`))",
+        "CREATE TABLE IF NOT EXISTS `drink_draft` (`account_id` TEXT NOT NULL, `local_id` INTEGER NOT NULL, `name` TEXT NOT NULL, " +
+            "`description` TEXT NOT NULL, `servings` INTEGER NOT NULL, `keywords` TEXT NOT NULL, `image_path` TEXT, " +
+            "`created_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `local_id`))",
+    )
+
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

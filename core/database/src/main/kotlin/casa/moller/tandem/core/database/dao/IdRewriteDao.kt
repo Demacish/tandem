@@ -43,6 +43,12 @@ abstract class IdRewriteDao {
         OutboxEntities.MEAL_TYPE -> lowestMealTypeId(accountId, entity)
         OutboxEntities.RECIPE_BOOK -> lowestRecipeBookId(accountId, entity)
         OutboxEntities.RECIPE_BOOK_ENTRY -> lowestRecipeBookEntryId(accountId, entity)
+        // --- Fas S (schema 5) ---
+        OutboxEntities.INVENTORY_LOCATION -> lowestInventoryLocationId(accountId, entity)
+        OutboxEntities.INVENTORY_ENTRY -> lowestInventoryEntryId(accountId, entity)
+        OutboxEntities.FOOD_ALIAS -> lowestFoodAliasId(accountId, entity)
+        OutboxEntities.KEYWORD -> lowestKeywordId(accountId, entity)
+        OutboxEntities.DRINK -> lowestDrinkDraftId(accountId, entity)
         else -> error("no offline creates for $entity")
     } - 1
 
@@ -98,8 +104,44 @@ abstract class IdRewriteDao {
                 deleteRecipeBookEntry(accountId, serverId, localId)
                 rekeyRecipeBookEntry(accountId, localId, serverId)
             }
+
+            else -> rewritePhaseSCreate(accountId, entity, localId, serverId)
         }
         deleteOutboxRow(outboxId)
+    }
+
+    /**
+     * Fas S (schema 5): the local side of an answered CREATE of a location, an entry, a learned
+     * alias, a keyword or a drink (part of [completeCreate]'s transaction).
+     */
+    open suspend fun rewritePhaseSCreate(accountId: String, entity: String, localId: Long, serverId: Long) {
+        when (entity) {
+            OutboxEntities.INVENTORY_LOCATION -> {
+                deleteInventoryLocation(accountId, serverId, localId)
+                rekeyInventoryLocation(accountId, localId, serverId)
+                rewriteEntryLocation(accountId, localId, serverId)
+            }
+
+            OutboxEntities.INVENTORY_ENTRY -> {
+                deleteInventoryEntry(accountId, serverId, localId)
+                rekeyInventoryEntry(accountId, localId, serverId)
+            }
+
+            OutboxEntities.FOOD_ALIAS -> {
+                deleteFoodAlias(accountId, serverId, localId)
+                rekeyFoodAlias(accountId, localId, serverId)
+            }
+
+            OutboxEntities.KEYWORD -> {
+                deleteKeyword(accountId, serverId, localId)
+                rekeyKeyword(accountId, localId, serverId)
+                rewriteKeywordParent(accountId, localId, serverId)
+                rewriteRecipeKeywordRefs(accountId, localId, serverId)
+            }
+
+            // The recipe itself arrives with the sync (or the sender stores the answer); the draft is done.
+            OutboxEntities.DRINK -> deleteDrinkDraft(accountId, localId)
+        }
     }
 
     // ---------------------------------------------------------------- building blocks (Room)
@@ -188,6 +230,63 @@ abstract class IdRewriteDao {
         "UPDATE recipe_book_entry SET local_id = :serverId, server_id = :serverId WHERE account_id = :accountId AND local_id = :localId",
     )
     abstract suspend fun rekeyRecipeBookEntry(accountId: String, localId: Long, serverId: Long)
+
+    // --- Fas S (schema 5) ---
+
+    @Query(LOWEST_PREFIX + "(SELECT MIN(local_id) FROM inventory_location WHERE account_id = :accountId), 0), " + LOWEST_SUFFIX)
+    abstract suspend fun lowestInventoryLocationId(accountId: String, entity: String): Long
+
+    @Query(LOWEST_PREFIX + "(SELECT MIN(local_id) FROM inventory_entry WHERE account_id = :accountId), 0), " + LOWEST_SUFFIX)
+    abstract suspend fun lowestInventoryEntryId(accountId: String, entity: String): Long
+
+    @Query(LOWEST_PREFIX + "(SELECT MIN(local_id) FROM food_alias WHERE account_id = :accountId), 0), " + LOWEST_SUFFIX)
+    abstract suspend fun lowestFoodAliasId(accountId: String, entity: String): Long
+
+    @Query(LOWEST_PREFIX + "(SELECT MIN(id) FROM keyword WHERE account_id = :accountId), 0), " + LOWEST_SUFFIX)
+    abstract suspend fun lowestKeywordId(accountId: String, entity: String): Long
+
+    @Query(LOWEST_PREFIX + "(SELECT MIN(local_id) FROM drink_draft WHERE account_id = :accountId), 0), " + LOWEST_SUFFIX)
+    abstract suspend fun lowestDrinkDraftId(accountId: String, entity: String): Long
+
+    @Query("DELETE FROM inventory_location WHERE account_id = :accountId AND local_id = :serverId AND local_id != :localId")
+    abstract suspend fun deleteInventoryLocation(accountId: String, serverId: Long, localId: Long)
+
+    @Query(
+        "UPDATE inventory_location SET local_id = :serverId, server_id = :serverId WHERE account_id = :accountId AND local_id = :localId",
+    )
+    abstract suspend fun rekeyInventoryLocation(accountId: String, localId: Long, serverId: Long)
+
+    @Query("UPDATE inventory_entry SET location_id = :serverId WHERE account_id = :accountId AND location_id = :localId")
+    abstract suspend fun rewriteEntryLocation(accountId: String, localId: Long, serverId: Long)
+
+    @Query("DELETE FROM inventory_entry WHERE account_id = :accountId AND local_id = :serverId AND local_id != :localId")
+    abstract suspend fun deleteInventoryEntry(accountId: String, serverId: Long, localId: Long)
+
+    @Query(
+        "UPDATE inventory_entry SET local_id = :serverId, server_id = :serverId WHERE account_id = :accountId AND local_id = :localId",
+    )
+    abstract suspend fun rekeyInventoryEntry(accountId: String, localId: Long, serverId: Long)
+
+    @Query("DELETE FROM food_alias WHERE account_id = :accountId AND local_id = :serverId AND local_id != :localId")
+    abstract suspend fun deleteFoodAlias(accountId: String, serverId: Long, localId: Long)
+
+    @Query("UPDATE food_alias SET local_id = :serverId, server_id = :serverId WHERE account_id = :accountId AND local_id = :localId")
+    abstract suspend fun rekeyFoodAlias(accountId: String, localId: Long, serverId: Long)
+
+    @Query("DELETE FROM keyword WHERE account_id = :accountId AND id = :serverId AND id != :localId")
+    abstract suspend fun deleteKeyword(accountId: String, serverId: Long, localId: Long)
+
+    @Query("UPDATE keyword SET id = :serverId WHERE account_id = :accountId AND id = :localId")
+    abstract suspend fun rekeyKeyword(accountId: String, localId: Long, serverId: Long)
+
+    @Query("UPDATE keyword SET parent_id = :serverId WHERE account_id = :accountId AND parent_id = :localId")
+    abstract suspend fun rewriteKeywordParent(accountId: String, localId: Long, serverId: Long)
+
+    @Query("UPDATE recipe_keyword SET keyword_id = :serverId WHERE account_id = :accountId AND keyword_id = :localId")
+    abstract suspend fun rewriteRecipeKeywordRefs(accountId: String, localId: Long, serverId: Long)
+
+    @Query("DELETE FROM drink_draft WHERE account_id = :accountId AND local_id = :localId")
+    abstract suspend fun deleteDrinkDraft(accountId: String, localId: Long)
 
     private companion object {
         /** `MIN(0, <lowest in the table>, <lowest mapped>, <lowest in the outbox>)`; callers subtract 1. */

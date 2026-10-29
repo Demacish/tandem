@@ -104,6 +104,26 @@ object OutboxOps {
 
     /** `POST /api/view-log/` `{recipe}` when a recipe is opened (plan 3.3). */
     const val VIEW_LOG: String = "VIEW_LOG"
+
+    // --- Fas S (schema 5, grund lane; docs/BYGGE.md "Fas S – kontrakt", table "Outbox") ---
+
+    /**
+     * "Har hemma" for many foods at once (staples, "Packa upp"): `PUT /api/food/batch_update/`
+     * `{foods: [ids], on_hand}`. Entity [OutboxEntities.FOOD], one row per food (`server_id` = food
+     * id), payload `{"on_hand": true}`, `base_snapshot` `{"on_hand": <before>}`, batch key
+     * `food:on_hand=true|false` (`OutboxDao.nextReadyBatch` → one request). Merged like
+     * [BULK_CHECK]: the last value wins, back to the base cancels. One food alone may use PATCH
+     * `food_onhand` (Phase 2) instead.
+     */
+    const val BATCH_ON_HAND: String = "BATCH_ON_HAND"
+
+    /**
+     * A drink's photo: `PUT /api/recipe/{id}/image/` (multipart `image`). Entity
+     * [OutboxEntities.DRINK]; queued with the drink's temporary `local_id` and `depends_on` its
+     * CREATE (the id rewrite then gives it `server_id`). Payload `{"file": "<app-private path>"}`;
+     * a newer photo replaces the payload of an unsent one.
+     */
+    const val RECIPE_IMAGE: String = "RECIPE_IMAGE"
 }
 
 /** Values for [OutboxEntity.entity]. */
@@ -135,4 +155,63 @@ object OutboxEntities {
 
     /** The user's Tandoor preferences (`PATCH /api/user-preference/{user}/`); `server_id` = user id. */
     const val USER_PREFERENCE: String = "user_preference"
+
+    // --- Fas S (schema 5) ---
+
+    /** A storage place (`/api/inventory-location/`): CREATE/PATCH/DELETE, offline creates (temporary ids). */
+    const val INVENTORY_LOCATION: String = "inventory_location"
+
+    /**
+     * A stock entry (`/api/inventory-entry/`): CREATE/PATCH/DELETE, offline creates. A payload's
+     * `inventory_location` holds the location's id (refs `{"inventory_location": "inventory_location"}`
+     * while it is temporary); the sender expands it to the whole location object (FACTS "Fas S b").
+     */
+    const val INVENTORY_ENTRY: String = "inventory_entry"
+
+    /** A learned barcode or receipt name: a `FOOD_ALIAS` automation (`/api/automation/`), CREATE/PATCH/DELETE. */
+    const val FOOD_ALIAS: String = "food_alias"
+
+    /**
+     * A keyword (`POST /api/keyword/`, then `PUT /api/keyword/{id}/move/{parent}/` when it has a
+     * parent: POST ignores `parent`, FACTS "Fas S c"): "Passar med" and its children, drink types.
+     * Offline creates use a negative `keyword.id`.
+     */
+    const val KEYWORD: String = "keyword"
+
+    /**
+     * A drink (#43, B20): CREATE = `POST /api/recipe/` `{name, description, keywords:[{name}],
+     * servings, steps: []}` from a `drink_draft` row; [OutboxOps.RECIPE_IMAGE] its photo. Once the
+     * drink exists it is an ordinary recipe ([RECIPE]).
+     */
+    const val DRINK: String = "drink"
+}
+
+/**
+ * Fas S: the top-level fields of a [OutboxOps.RECIPE_KEYWORDS] payload. Fields merge one by one
+ * (`OutboxMerge` merges payloads at the top level), so "Vill laga" and every pairing toggle of the
+ * same recipe live side by side in one unsent row:
+ *
+ * - `"keywords": {"vill-laga": true}`: Phase 2's want-to-cook (unchanged);
+ * - `"keyword:<id>": true|false`: add/remove an existing keyword by its server id (pairings and
+ *   drink types: the link hangs on the id, so a rename does not break it, plan §8.8);
+ * - `"pairing:<name>": true`: add the pairing keyword `<name>` under "Passar med", which the
+ *   sender creates and moves first when the server has none.
+ *
+ * `base_snapshot` holds the same fields with the values before the change. The recipe is read
+ * fresh and the WHOLE keyword list is PATCHed (a PATCH replaces the list, FACTS "Fas S c").
+ */
+object RecipeKeywordFields {
+    const val WANT_TO_COOK: String = "keywords"
+    const val KEYWORD_PREFIX: String = "keyword:"
+    const val PAIRING_PREFIX: String = "pairing:"
+
+    fun keyword(id: Long): String = KEYWORD_PREFIX + id
+
+    fun pairing(name: String): String = PAIRING_PREFIX + name
+
+    /** The keyword id of a `keyword:<id>` field, null for any other field. */
+    fun keywordIdOf(field: String): Long? = field.takeIf { it.startsWith(KEYWORD_PREFIX) }?.removePrefix(KEYWORD_PREFIX)?.toLongOrNull()
+
+    /** The name of a `pairing:<name>` field, null for any other field. */
+    fun pairingNameOf(field: String): String? = field.takeIf { it.startsWith(PAIRING_PREFIX) }?.removePrefix(PAIRING_PREFIX)
 }

@@ -5,24 +5,36 @@ import androidx.room3.Database
 import androidx.room3.Room
 import androidx.room3.RoomDatabase
 import casa.moller.tandem.core.database.dao.AccountDao
+import casa.moller.tandem.core.database.dao.BarcodeProductDao
 import casa.moller.tandem.core.database.dao.CookLogDao
+import casa.moller.tandem.core.database.dao.DrinkDraftDao
+import casa.moller.tandem.core.database.dao.FoodAliasDao
 import casa.moller.tandem.core.database.dao.HomeSectionDao
 import casa.moller.tandem.core.database.dao.IdRewriteDao
+import casa.moller.tandem.core.database.dao.MakeNowDao
 import casa.moller.tandem.core.database.dao.MealPlanDao
 import casa.moller.tandem.core.database.dao.OutboxDao
+import casa.moller.tandem.core.database.dao.PantryDao
 import casa.moller.tandem.core.database.dao.RecipeBookDao
 import casa.moller.tandem.core.database.dao.RecipeDao
 import casa.moller.tandem.core.database.dao.ReferenceDao
 import casa.moller.tandem.core.database.dao.ShoppingDao
+import casa.moller.tandem.core.database.dao.StapleDao
 import casa.moller.tandem.core.database.dao.SupermarketDao
 import casa.moller.tandem.core.database.dao.SyncStateDao
+import casa.moller.tandem.core.database.entity.BarcodeProductEntity
 import casa.moller.tandem.core.database.entity.CookLogEntity
+import casa.moller.tandem.core.database.entity.DrinkDraftEntity
+import casa.moller.tandem.core.database.entity.FoodAliasEntity
 import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.HomeSectionEntity
 import casa.moller.tandem.core.database.entity.HomeSectionRecipeEntity
 import casa.moller.tandem.core.database.entity.IdMappingEntity
 import casa.moller.tandem.core.database.entity.IngredientEntity
+import casa.moller.tandem.core.database.entity.InventoryEntryEntity
+import casa.moller.tandem.core.database.entity.InventoryLocationEntity
 import casa.moller.tandem.core.database.entity.KeywordEntity
+import casa.moller.tandem.core.database.entity.MakeNowEntity
 import casa.moller.tandem.core.database.entity.MealPlanEntity
 import casa.moller.tandem.core.database.entity.MealTypeEntity
 import casa.moller.tandem.core.database.entity.OutboxEntity
@@ -37,6 +49,7 @@ import casa.moller.tandem.core.database.entity.ShoppingEntryEntity
 import casa.moller.tandem.core.database.entity.ShoppingHistoryEntity
 import casa.moller.tandem.core.database.entity.ShoppingListEntity
 import casa.moller.tandem.core.database.entity.ShoppingListRecipeEntity
+import casa.moller.tandem.core.database.entity.StapleEntity
 import casa.moller.tandem.core.database.entity.StepEntity
 import casa.moller.tandem.core.database.entity.SupermarketCategoryEntity
 import casa.moller.tandem.core.database.entity.SupermarketCategoryRelationEntity
@@ -88,6 +101,14 @@ import casa.moller.tandem.core.database.entity.UserPreferenceEntity
         RecipeBookEntity::class,
         RecipeBookEntryEntity::class,
         IdMappingEntity::class,
+        // --- Fas S (schema 5, grund lane) ---
+        InventoryLocationEntity::class,
+        InventoryEntryEntity::class,
+        FoodAliasEntity::class,
+        BarcodeProductEntity::class,
+        MakeNowEntity::class,
+        StapleEntity::class,
+        DrinkDraftEntity::class,
     ],
     version = TandemDatabase.VERSION,
     exportSchema = true,
@@ -119,14 +140,30 @@ abstract class TandemDatabase : RoomDatabase() {
 
     abstract fun idRewriteDao(): IdRewriteDao
 
+    // --- Fas S (schema 5, grund lane) ---
+
+    abstract fun pantryDao(): PantryDao
+
+    abstract fun stapleDao(): StapleDao
+
+    abstract fun makeNowDao(): MakeNowDao
+
+    abstract fun foodAliasDao(): FoodAliasDao
+
+    abstract fun barcodeProductDao(): BarcodeProductDao
+
+    abstract fun drinkDraftDao(): DrinkDraftDao
+
     companion object {
         /**
          * Schema version. 1 = 0.1.0 (frozen); 2 = 0.2.0 adds `cook_log` ([TandemMigrations.MIGRATION_1_2]);
          * 3 = 0.2.0 adds the step's photo ([TandemMigrations.MIGRATION_2_3]); 4 = 0.3.0, the whole of
-         * Phase 2 ([TandemMigrations.MIGRATION_3_4]: shopping, stores, books, `id_mapping`). Lanes of
-         * Phase 2 do not add a version; a needed change is 4 -> 5, coordinated in docs/BYGGE.md.
+         * Phase 2 ([TandemMigrations.MIGRATION_3_4]: shopping, stores, books, `id_mapping`); 5 = 0.4.0,
+         * the whole of Fas S ([TandemMigrations.MIGRATION_4_5]: pantry, aliases, Open Food Facts,
+         * makenow, staples, drink drafts, food substitutes). Lanes of Fas S do not add a version; a
+         * needed change is 5 -> 6, coordinated in docs/BYGGE.md "Fas S – kontrakt".
          */
-        const val VERSION: Int = 4
+        const val VERSION: Int = 5
 
         /** File name of the real database (the whole database folder is excluded from backup, data_extraction_rules.xml). */
         const val FILE_NAME: String = "tandem.db"

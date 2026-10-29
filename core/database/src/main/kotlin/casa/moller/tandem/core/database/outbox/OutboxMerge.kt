@@ -26,6 +26,8 @@ import kotlinx.serialization.json.JsonObject
  * - `BULK_CHECK` after a `CREATE`: `checked` is merged into the CREATE.
  * - `BULK_CHECK` or `RECIPE_KEYWORDS` after the same op: merged; when the result equals the older
  *   row's `base_snapshot` (checked, then unchecked again) both cancel.
+ * - Fas S: `BATCH_ON_HAND` merges like `BULK_CHECK` (never into a CREATE), `RECIPE_IMAGE` after an
+ *   unsent `RECIPE_IMAGE` replaces its payload (the newest photo is sent once).
  * - Anything else is inserted as it is (`CREATE`, `VIEW_LOG`, `COOK_LOG` are never merged here).
  *
  * **A CREATE that was attempted before** (`attempts > 0`: a timeout, a 5xx or a process death) may
@@ -66,6 +68,9 @@ object OutboxMerge {
             OutboxOps.PATCH -> decidePatch(new, unsent, create)
             OutboxOps.DELETE -> decideDelete(unsent, create, attemptedCreateOf(unsent))
             OutboxOps.BULK_CHECK, OutboxOps.RECIPE_KEYWORDS -> decideToggle(new, unsent, create)
+
+            // Fas S: on-hand in batch merges like a check; a newer photo replaces an unsent one.
+            OutboxOps.BATCH_ON_HAND, OutboxOps.RECIPE_IMAGE -> decideToggle(new, unsent, create)
             else -> Decision.Insert
         }
     }
@@ -127,7 +132,9 @@ object OutboxMerge {
         return if (base != null && mergeObjects(mergedObject, base) == mergedObject) {
             Decision.Cancel(listOf(prior.id))
         } else {
-            Decision.Update(prior.id, merged, new.batchKey)
+            // Fas S: the bases merge too (the earliest value of each field wins), so the toggles of
+            // different fields in one row ("Vill laga" and a pairing) never cancel each other.
+            Decision.Update(prior.id, merged, new.batchKey, baseSnapshot = mergeBase(prior.baseSnapshot, new.baseSnapshot))
         }
     }
 
