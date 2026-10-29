@@ -987,6 +987,108 @@ engelska), `TodayPantryViewModelTest`, `CookPantryTest`, `RecipeShoppingViewMode
 (`fromCookNowOnlyTheMissingFoodsAreTicked`), `PantryTextTest` (`core:ui`).
 <!-- /Fas S hemma-ui -->
 
+<!-- Fas S skanning -->
+## Skanning – streckkod, kvitto och granskningslistan (`:feature:scan`, `:core:domain`, Fas S)
+
+Skanningsbanans del av Fas S (#27 streckkod, #44 kvitto; plan §8.8 "Skanning", B21). Datadelen
+(`FoodAliasRepository`, `BarcodeLookup`, Open Food Facts-klienten) kommer från hemma-data-banan
+(avsnittet ovan) och används som den är; skanningen lägger bara till UI:t och den rena logiken.
+
+**Kameran** (`camera/Camera.kt`): CameraX genom camera-views `LifecycleCameraController`
+(analys för streckkoder, fotografering för kvitton), bunden till skärmens livscykel. ML Kit med de
+**bundlade** modellerna (`engine/ScanEngines.kt`): `BarcodeEngine` (EAN-13/EAN-8/UPC-A/UPC-E, en
+bildruta åt gången, `STRATEGY_KEEP_ONLY_LATEST`) och `ReceiptTextEngine` (latinsk text med rutor,
+`TextFragment`). Behörigheten frågas **i sammanhanget**: skärmen förklarar först varför
+(`CameraAccess.NOT_ASKED`), nekad (`DENIED`) förklarar igen, "fråga inte igen" (`BLOCKED`) länkar
+till appens sida i Androids inställningar, och utan kamera (`UNAVAILABLE`) finns bara bildväljaren.
+**Systemets bildväljare** (`PickVisualMedia`, ingen lagringsbehörighet) finns på varje
+skanningsskärm. Skärmarna är tillståndslösa och får förhandsvisningen som en plats (`preview`), så
+skärmbildstesterna ritar `CameraPlaceholder` i stället.
+
+**Streckkod** (`barcode/`, `BarcodeScanViewModel`): kontinuerlig skanning; samma kod tas en gång
+per session och ignoreras tills kameran inte sett den på 3 s (`RESCAN_AFTER_MILLIS`), varje ny kod
+ger haptik (`HapticFeedbackType.Confirm`) och kortet läses upp (live region). Uppslaget: inlärt
+alias (`FoodAliasRepository.find`, inget anrop) → `BarcodeLookup.lookup` (Open Food Facts, bara
+koden; ett uppslag online läser också om spacets alias, så aliaset kontrolleras igen efteråt och en
+kod som telefon A just lärt sig känns igen på telefon B) → produktnamnet ger förslag bland spacets
+livsmedel (`FoodMatcher`). Lägen: `KNOWN`, `PRODUCT`, `NOT_FOUND`, `OFFLINE`, `FAILED`. Kortet har
+förslagen, väljaren (sök eller "Skapa ”…”"), platsen och bäst före-snabbvalen
+(`ExpiryChoice.forLocation`). **En** förpackning: "Lägg i Kyl" sparar direkt (känd kod = högst 3
+tryck: plats, datum, spara; `aKnownCodeIsInThePantryInThreeTaps`) eller "Lägg på inköpslistan";
+**flera**: "Granska n varor" öppnar granskningslistan. Koden lärs in vid sparandet.
+
+**Kvitto** (`receipt/`, `ReceiptScanViewModel`): ett eller flera foton (ett långt kvitto i delar),
+eller en bild ur galleriet; texten läses i minnet och bildrutan stängs direkt. "Läs kvittot" kör
+`ReceiptLayout` + `ReceiptParser` och matchningen (`ScanMatcher.receiptRows`: inlärt kvittonamn,
+annars förslag ur livsmedlen, annars okänd) och öppnar granskningslistan. Tillbaka utan att spara
+och utan nytt foto öppnar samma granskning igen (med ändringarna). Inga varurader = `NO_ITEMS`,
+ingen text = `NO_TEXT`.
+
+**Kvittoheuristiken** (`:core:domain` `scan/`, rena, JUnit 5):
+
+| Typ | Innehåll |
+|---|---|
+| `TextFragment`, `ReceiptLayout` | ML Kits rader med rutor → kvittorader efter geometri (vertikala mitten inom ca 0,6 radhöjd, vänster till höger, två mellanslag); flera foton i ordning, där raderna som ett foto upprepar från slutet av det förra (överlappet, högst 8) tas bort |
+| `ReceiptLineFilter` | en rad → `ReceiptLineKind`: summa/totalt/att betala/avrundning, moms (också momstabellen), pant (bara i början av raden: "Läsk inkl pant" är en vara), rabatt/kampanj/extrapris/"2 för 30"/negativt pris, kort/kontant/swish/växel/maskerade kortnummer, medlem/stammis/bonus/poäng (`LOYALTY`), datum och tid (`DATE`), butikens sidhuvud och sidfot, rader utan bokstäver (bara pris), och vikt-/antalsrader (`QUANTITY`) |
+| `ReceiptParser` | varor med mängd: en vikt- eller antalsrad ("1,234kg*24,90kr/kg", "2 st x 54,90") hör till varan ovanför, eller till namnraden utan pris strax före (lösvikt, Lidls flerköp); ett namn utan pris följt av en rad med bara pris är en vara; i raden själv antal på slutet ("2 x 21,90"), vikt ("1,23 kg") eller förpackning ("5DL", "1,5L", "12P", "2 × 500G" = 1000 g). Namnet är raden som den står (utan pris, momsbokstav, markeringar och siffersekvenser på 8+ siffror): det blir också det inlärda aliaset, så det måste vara detsamma nästa gång butiken skriver det |
+| `ReceiptNormalizer` | namnet → sökord för livsmedlen: gemener, utan tal, storlekar och procent, butikernas förkortningar utskrivna och ord utan betydelse borta (eko, krav, butiksmärken, förpackningsord). **Orden ligger i datafilen** `core/domain/src/main/resources/casa/moller/tandem/core/domain/scan/receipt-words.txt` (`kort = långt`, `- ord`), läst med en absolut sökväg (R8 byter paketnamn) |
+| `FoodMatcher` | `rank`/`best` (från `STRONG` = 70 väljs livsmedlet): exakt, ett av orden, alla ord, samma ord i plural, sista delen av ett sammansatt ord ("vispgrädde" → "grädde"), början eller del; `search` för väljaren (det inskrivna, början först) |
+
+Testerna (`ReceiptParserTest`, `ReceiptLineFilterTest`, `ReceiptLayoutTest`, `FoodMatcherTest`)
+använder **syntetiska** kvitton i ICA:s, Coops, Willys, Hemköps och Lidls upplägg (påhittade
+butiker, varor och priser, bara nollor som nummer). Kravet "minst 80 % rätt andra gången samma
+butik används" (plan §10) bygger på inlärningen: en rad som kopplats och sparats lärs in som
+`FOOD_ALIAS` med den tryckta texten, och samma text matchas nästa gång direkt
+(`theSecondTimeTheSameStoreIsUsedTheLearnedNamesMatch`; 20 varurader ger 20 varor i
+`twentyItemLinesGiveTwentyItems`).
+
+**Den gemensamma granskningslistan** (`review/`, används också av ai-foto-banans foto av kylen):
+
+- `session/ScanSessionStore` (`@Singleton`, bara i minnet: kvittots eller fotots text når aldrig
+  disken eller det sparade läget). En skanner gör så här:
+  1. `create(source, locationId, items)` med en `ScanReviewItem` per sak den hittat;
+  2. `onNavigate(ScanReviewKey(id))`;
+  3. observerar sessionen: när `ScanSession.saved` är satt har granskningen sparat och stängt
+     sig själv; skannern stänger sig (kvitto, foto av kylen) eller börjar om (streckkod) och
+     `remove`ar sessionen.
+- `ScanReviewViewModel` + `ScanReviewScreen` (publik, tillståndslös) + `ReviewEditLayout` (raden
+  som ark på telefon, som panel bredvid listan från 840 dp). Rader: "Att granska" (ingen mat än),
+  "Klara", "Hoppas över"; varje rad är **en** TalkBack-nod ("grädde, 5 dl, Kyl, går ut 5 nov.,
+  Känd, kvittorad GRÄDDE 36% 5DL") med åtgärderna Ändra, Hoppa över/Ta med och Ta bort. Ändra:
+  livsmedel (förslag, sök, "Skapa"), mängd (decimalkomma eller -punkt), enhet, plats, bäst före,
+  "Kom ihåg raden" och "Ta med raden". "Spara n varor i skafferiet" är fäst under listan och är det
+  **enda** som skriver (`ScanSaver.toPantry`: lär in koden eller kvittoraden när användaren kopplat
+  den, aldrig ett alias som redan finns och aldrig foto av kylen, sedan en lagerpost per rad).
+- **Foto av kylen** (ai-foto-banan): skapa sessionen med `ScanSource.FRIDGE` (rader med
+  `confidence`); granskningen visar då påminnelsen att AI:n kan missa varor eller hitta på sådana
+  som inte finns (`scan_review_ai_*`), och inget lärs in. Egna filer, t.ex. `fridge/`, och grenen
+  `FridgeScanKey` i `ScanRoutes.kt`.
+
+**Integritet:** fotot läses i minnet och stängs (`ReceiptTextEngine.read(ImageProxy)` stänger
+bildrutan), sparas aldrig; den igenkända texten finns bara i `ReceiptScanViewModel` tills
+granskningen öppnas (inte i `SavedStateHandle`), och bara varurader når granskningen. Kort- och
+medlemsrader klassas bort och långa sifferföljder tas bort ur namnen. Inget loggas.
+
+**Demo, gäst och offline:** i demoläget fungerar ML Kit (inget nät) och uppslagen går mot
+demodatan (`BarcodeLookup` frågar aldrig Open Food Facts; livsmedlen är demorecepternas). En gäst
+kan skanna men inte spara (inga sparknappar, `ReadOnlyBanner`; förvaren svarar `READ_ONLY`).
+Offline: aliasen och livsmedlen finns på enheten, okända koder väljs för hand (`OFFLINE`) och
+sparandet köas. Utan platser (Hemma aldrig öppnad online) anropas `PantryRepository.refresh()` och
+sparandet säger `tandem.scan.no-location`.
+
+**Avvikelser:** "livsmedelssök" görs på enheten över spacets synkade livsmedel
+(`RecipeRepository.observeFoods`) i stället för Tandoors sök-API, så att det fungerar offline och i
+demoläget (en ny vara skapas av Tandoor vid sparandet). `ReceiptLineKind` fick `QUANTITY`,
+`LOYALTY` och `DATE` (bara skanningen använder typen). Ikonerna (`scan_ic_*`, Material Symbols vid
+samma commit som `core:designsystem`) ligger i modulen, som hemma-ui-banans `pantry_ic_*`.
+
+**Tester:** `BarcodeScanViewModelTest`, `ReceiptScanViewModelTest`, `ScanReviewViewModelTest`
+(fakes ur `core:testing`), `ScanScreenTest` (Compose), `ScanScreenshotTest` (39 referensbilder i
+`feature/scan/src/test/screenshots/scan/`: telefon stående och liggande, surfplatta i båda
+orienteringarna, ljust och mörkt, svenska och engelska, teckenstorlek 2) och
+`ScanAccessibilityTest` (ATF för varje skärm och läge).
+<!-- /Fas S skanning -->
+
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
 

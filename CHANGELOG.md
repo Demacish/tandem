@@ -39,6 +39,15 @@ kommande delarna.
   med plats och bäst före-dag för allt på en gång eller för varje vara.
 - **Idag** visar Kan laga nu och Går ut snart när det finns något, och efter Klart! i kokläget kan
   du, om du vill, markera det som tog slut. Inget räknas av av sig självt.
+- **Skanna till skafferiet:** streckkoder läses med kameran i en följd (en kort vibration för
+  varje ny vara, lampan kan tändas) eller ur en bild från galleriet. En kod som hushållet lärt sig
+  hamnar direkt på rätt livsmedel; en okänd slås upp i Open Food Facts och produktnamnet föreslår
+  ett av dina livsmedel, eller så skapar du ett nytt, och koden känns sedan igen på alla telefoner
+  i hushållet. Välj plats och bäst före med snabbval och lägg in varan, eller lägg den på
+  inköpslistan. **Kvitton** fotograferas (ett långt kvitto i flera foton) och läses i telefonen:
+  summa, moms, pant, rabatter, kort- och medlemsrader tas bort, och varje vara kopplas till ett
+  inlärt kvittonamn eller ett förslag. Allt hamnar i en lista där varje rad kan ändras eller
+  hoppas över innan något sparas, och det du kopplat lärs in till nästa gång. Fotot sparas inte.
 
 ## [0.3.0] – 2026-10-26
 
