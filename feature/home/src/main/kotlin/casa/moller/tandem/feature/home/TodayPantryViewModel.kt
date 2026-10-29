@@ -50,11 +50,8 @@ data class TodayPantryState(
 /** [TodayPantryState] from "Kan laga nu" and the pantry, counted from the device's day. */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class TodayPantryViewModel @Inject internal constructor(
-    makeNow: MakeNowRepository,
-    pantry: PantryRepository,
-    calendar: CalendarDays,
-) : ViewModel() {
+class TodayPantryViewModel @Inject internal constructor(makeNow: MakeNowRepository, pantry: PantryRepository, calendar: CalendarDays) :
+    ViewModel() {
     val uiState: StateFlow<TodayPantryState> = calendar.observeToday()
         .flatMapLatest { day ->
             combine(makeNow.observe(MakeNowFilter(), day), pantry.observeExpiring(day)) { state, expiring -> build(day, state, expiring) }

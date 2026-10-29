@@ -1,7 +1,6 @@
 package casa.moller.tandem.feature.pantry
 
 import android.content.res.Resources
-import androidx.compose.runtime.getValue
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.model.drink.DrinkKeywords

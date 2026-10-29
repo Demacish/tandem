@@ -91,9 +91,13 @@ fun PantryRoute(
     val back = onBack ?: {}
     when (key) {
         PantryKey -> PantryHomeRoute(null, onNavigate, onOpenScanner, onBack, modifier)
+
         is PantryLocationKey -> PantryHomeRoute(key.locationId, onNavigate, onOpenScanner, onBack, modifier)
+
         is PantryEntryKey -> PantryEntryRoute(key = key, onDone = back, modifier = modifier)
+
         UnpackKey -> UnpackRoute(onDone = back, modifier = modifier)
+
         is MakeNowKey -> MakeNowRoute(
             key = key,
             onNavigate = onNavigate,
@@ -324,9 +328,13 @@ internal fun Resources.text(message: PantryMessage): String {
         }
 
         is PantryMessage.Moved -> getString(R.string.pantry_message_moved, foodTitle(message.name, locale), message.location)
+
         is PantryMessage.OnHandRemoved -> getString(R.string.pantry_message_on_hand_removed, foodTitle(message.name, locale))
+
         is PantryMessage.LocationsCreated -> getQuantityString(R.plurals.pantry_message_locations_created, message.count, message.count)
+
         is PantryMessage.LocationSaved -> getString(R.string.pantry_message_location_saved, message.name)
+
         is PantryMessage.LocationDeleted -> getString(R.string.pantry_message_location_deleted, message.name)
     }
 }

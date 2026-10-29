@@ -337,12 +337,7 @@ private fun GroupHeading(state: MakeNowUiState, group: MakeNowGroup, onAction: (
 }
 
 /** The rows of [group] (or why it is empty), with "Överraska mig" first on phones. */
-private fun LazyListScope.groupItems(
-    state: MakeNowUiState,
-    group: MakeNowGroup,
-    onAction: (MakeNowAction) -> Unit,
-    horizontal: Dp,
-) {
+private fun LazyListScope.groupItems(state: MakeNowUiState, group: MakeNowGroup, onAction: (MakeNowAction) -> Unit, horizontal: Dp) {
     val rows = state.rows(group)
     val phone = horizontal > 0.dp
     if (phone) {

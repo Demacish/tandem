@@ -1,6 +1,5 @@
 package casa.moller.tandem.core.testing.data
 
-import androidx.compose.runtime.getValue
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.ai.AiSettingsRepository
 import casa.moller.tandem.core.data.ai.FridgeVision

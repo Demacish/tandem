@@ -1,6 +1,5 @@
 package casa.moller.tandem.core.testing.time
 
-import androidx.compose.runtime.getValue
 import casa.moller.tandem.core.data.time.CalendarDays
 import casa.moller.tandem.core.testing.data.SamplePantry
 import kotlinx.coroutines.flow.Flow

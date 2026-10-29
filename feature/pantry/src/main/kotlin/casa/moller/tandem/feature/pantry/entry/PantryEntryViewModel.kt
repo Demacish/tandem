@@ -207,14 +207,23 @@ class PantryEntryViewModel @AssistedInject internal constructor(
             }
 
             is PantryEntryAction.UnitText -> savedStateHandle[KEY_UNIT] = action.text
+
             is PantryEntryAction.PickLocation -> savedStateHandle[KEY_LOCATION] = action.locationId
+
             is PantryEntryAction.PickExpiry -> pickExpiry(action.choice)
+
             is PantryEntryAction.PickDate -> savedStateHandle[KEY_EXPIRES] = action.date?.toString().orEmpty()
+
             is PantryEntryAction.NoteText -> savedStateHandle[KEY_NOTE] = action.text
+
             PantryEntryAction.Save -> save()
+
             PantryEntryAction.AskDelete -> askDelete()
+
             is PantryEntryAction.ConfirmDelete -> delete(action.confirmed)
+
             is PantryEntryAction.SetLocale -> locale.value = action.locale
+
             PantryEntryAction.Close -> Unit
         }
     }
@@ -316,6 +325,7 @@ class PantryEntryViewModel @AssistedInject internal constructor(
             )
             val result = when {
                 before == null -> pantry.addEntry(draft)
+
                 replaces(before, draft) -> pantry.addEntry(draft).let { added ->
                     if (added is Outcome.Success) pantry.deleteEntry(before.id) else added
                 }

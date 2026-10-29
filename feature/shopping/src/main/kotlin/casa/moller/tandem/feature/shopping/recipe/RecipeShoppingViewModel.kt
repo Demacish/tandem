@@ -1,6 +1,5 @@
 package casa.moller.tandem.feature.shopping.recipe
 
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

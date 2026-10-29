@@ -1,6 +1,5 @@
 package casa.moller.tandem.feature.pantry.makenow
 
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -242,17 +241,29 @@ class MakeNowViewModel @AssistedInject internal constructor(
     fun onAction(action: MakeNowAction) {
         when (action) {
             MakeNowAction.Refresh -> refresh()
+
             is MakeNowAction.SelectGroup -> savedStateHandle[KEY_GROUP] = action.group.name
+
             is MakeNowAction.SetMealType -> savedStateHandle[KEY_MEAL_TYPE] = action.mealTypeId ?: NONE
+
             is MakeNowAction.SetTime -> savedStateHandle[KEY_TIME] = action.time.name
+
             is MakeNowAction.ToggleKeyword -> toggleKeyword(action.keywordId)
+
             MakeNowAction.OpenKeywords -> transient.update { it.copy(keywordPicker = true) }
+
             MakeNowAction.CloseKeywords -> transient.update { it.copy(keywordPicker = false) }
+
             MakeNowAction.ClearFilters -> clearFilters()
+
             is MakeNowAction.Surprise -> surprise(action.group)
+
             is MakeNowAction.RowShown -> request(action.recipeId)
+
             is MakeNowAction.AddMissingToList -> addMissing(action.recipeId)
+
             MakeNowAction.DismissStaples -> viewModelScope.launch { staples.markSuggestionsShown() }
+
             // Navigation is the route's.
             else -> Unit
         }
@@ -354,6 +365,7 @@ class MakeNowViewModel @AssistedInject internal constructor(
         viewModelScope.launch {
             val foods = known ?: when (val result = makeNow.missingFoods(recipeId)) {
                 is Outcome.Success -> result.value.also { value -> missing.update { it + (recipeId to value) } }
+
                 is Outcome.Failure -> {
                     effectChannel.send(MakeNowEffect.Failed(result.error))
                     return@launch

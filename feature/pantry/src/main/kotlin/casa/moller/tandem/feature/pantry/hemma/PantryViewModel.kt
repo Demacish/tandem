@@ -1,6 +1,5 @@
 package casa.moller.tandem.feature.pantry.hemma
 
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.ai.AiSettingsRepository
@@ -103,21 +102,37 @@ class PantryViewModel @AssistedInject internal constructor(
     fun onAction(action: PantryAction) {
         when (action) {
             PantryAction.Refresh -> refresh()
+
             is PantryAction.MarkEmpty -> row(action.entryId)?.let(::markEmpty)
+
             is PantryAction.Decrement -> row(action.entryId)?.let(::decrement)
+
             is PantryAction.StartMove -> if (canWrite()) transient.update { it.copy(movingId = action.entryId) }
+
             is PantryAction.MoveTo -> moveTo(action.locationId)
+
             PantryAction.CancelMove -> transient.update { it.copy(movingId = null) }
+
             is PantryAction.RemoveOnHand -> removeOnHand(action.food)
+
             PantryAction.Undo -> takeBack()
+
             is PantryAction.CreateDefaultLocations -> createDefaults(action.places)
+
             is PantryAction.EditLocation -> editLocation(action.locationId)
+
             is PantryAction.LocationName -> transient.update { it.copy(editor = it.editor?.copy(name = action.name)) }
+
             is PantryAction.LocationFreezer -> transient.update { it.copy(editor = it.editor?.copy(isFreezer = action.isFreezer)) }
+
             PantryAction.SaveLocation -> saveLocation()
+
             PantryAction.CloseLocationEditor -> transient.update { it.copy(editor = null) }
+
             is PantryAction.AskDeleteLocation -> if (canWrite()) transient.update { it.copy(deleteId = action.locationId) }
+
             is PantryAction.ConfirmDeleteLocation -> deleteLocation(action.confirmed)
+
             // Navigation is the route's.
             else -> Unit
         }
@@ -247,6 +262,7 @@ class PantryViewModel @AssistedInject internal constructor(
             for ((name, freezer) in places) {
                 when (val result = pantry.createLocation(name, freezer)) {
                     is Outcome.Success -> created += 1
+
                     is Outcome.Failure -> {
                         effectChannel.send(PantryEffect.Failed(result.error))
                         return@launch
