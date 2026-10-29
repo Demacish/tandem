@@ -149,6 +149,7 @@ data class FoldBounds(val top: Float, val bottom: Float) {
  * @param fold forces the fold of the tabletop layout (tests); null reads the window's horizontal
  *   hinge, and without one the halves split the screen evenly.
  * @param shoppingActions Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the "Klart!" page.
+ * @param pantryActions Fas S (hemma-ui lane, plan §8.8): "Tog något slut?" on the "Klart!" page.
  */
 @Composable
 fun CookScreen(
@@ -163,6 +164,7 @@ fun CookScreen(
     layout: CookLayout? = null,
     fold: FoldBounds? = null,
     shoppingActions: (@Composable () -> Unit)? = null,
+    pantryActions: (@Composable () -> Unit)? = null,
 ) {
     val locale = currentLocale()
     val currentOnAction by rememberUpdatedState(onAction)
@@ -216,6 +218,7 @@ fun CookScreen(
                     fold = fold ?: windowFold,
                     warningActions = warningActions,
                     shoppingActions = shoppingActions,
+                    pantryActions = pantryActions,
                 )
 
                 else -> Column(Modifier.fillMaxSize()) {
@@ -314,6 +317,7 @@ private fun CookContent(
     fold: FoldBounds?,
     warningActions: WarningActions,
     shoppingActions: (@Composable () -> Unit)? = null,
+    pantryActions: (@Composable () -> Unit)? = null,
 ) {
     val pagerState = rememberPagerState(initialPage = state.page) { state.pageCount }
     PagerSync(pagerState = pagerState, page = state.page, onAction = onAction)
@@ -349,7 +353,13 @@ private fun CookContent(
                     largeText = largeText,
                 )
             } else {
-                CookDonePage(state = state, onAction = onAction, onClose = onClose, shoppingActions = shoppingActions)
+                CookDonePage(
+                    state = state,
+                    onAction = onAction,
+                    onClose = onClose,
+                    shoppingActions = shoppingActions,
+                    pantryActions = pantryActions,
+                )
             }
         }
     }

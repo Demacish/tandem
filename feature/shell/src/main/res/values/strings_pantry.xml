@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (hemma-ui lane): Mer → Hemma (plan §6.1, §8.8). -->
+    <string name="shell_more_pantry">At home</string>
+    <string name="shell_more_pantry_supporting">Pantry, cook now and staples</string>
+</resources>

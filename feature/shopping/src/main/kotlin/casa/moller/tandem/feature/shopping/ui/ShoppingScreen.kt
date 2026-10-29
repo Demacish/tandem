@@ -133,6 +133,7 @@ fun ShoppingScreen(
     onAction: (ShoppingAction) -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    unpackPrompt: @Composable () -> Unit = {},
 ) {
     ReportContentReady(ready = !state.loading)
     val locale = LocalConfiguration.current.locales[0]
@@ -180,10 +181,24 @@ fun ShoppingScreen(
                                 onAction = onAction,
                                 modifier = Modifier.width(SidePaneWidth).fillMaxHeight(),
                             )
-                            ShoppingList(state = state, format = format, onAction = onAction, phone = false, modifier = Modifier.weight(1f))
+                            ShoppingList(
+                                state = state,
+                                format = format,
+                                onAction = onAction,
+                                phone = false,
+                                modifier = Modifier.weight(1f),
+                                unpackPrompt = unpackPrompt,
+                            )
                         }
                     } else {
-                        ShoppingList(state = state, format = format, onAction = onAction, phone = true, modifier = Modifier.fillMaxSize())
+                        ShoppingList(
+                            state = state,
+                            format = format,
+                            onAction = onAction,
+                            phone = true,
+                            modifier = Modifier.fillMaxSize(),
+                            unpackPrompt = unpackPrompt,
+                        )
                     }
                 }
             }
@@ -306,6 +321,7 @@ private fun ShoppingList(
     onAction: (ShoppingAction) -> Unit,
     phone: Boolean,
     modifier: Modifier,
+    unpackPrompt: @Composable () -> Unit = {},
 ) {
     val spacing = TandemTheme.spacing
     val horizontal = if (phone) spacing.screenHorizontal else spacing.xl
@@ -354,6 +370,8 @@ private fun ShoppingList(
                         if (state.canEdit) AddFieldButton(onClick = { onAction(ShoppingAction.OpenAdd) })
                     }
                     if (state.progressTotal > 0) Progress(done = state.progressDone, total = state.progressTotal)
+                    // Fas S (hemma-ui lane, #46): "Packa upp" when something was checked off today.
+                    unpackPrompt()
                 }
             }
             if (grouped.isEmpty) {

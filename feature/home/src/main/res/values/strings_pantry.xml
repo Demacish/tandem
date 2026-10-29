@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (hemma-ui lane): Idag's "Kan laga nu" and "Går ut snart" (plan §8.8, #23, #28). -->
+    <string name="home_make_now_title">Cook now</string>
+    <plurals name="home_make_now_subtitle">
+        <item quantity="one">%d recipe with everything at home</item>
+        <item quantity="other">%d recipes with everything at home</item>
+    </plurals>
+    <string name="home_make_now_subtitle_almost">Recipes missing just one food</string>
+    <string name="home_make_now_all">Show all</string>
+    <string name="home_expiring_title">Expiring soon</string>
+    <string name="home_expiring_subtitle">Use these first. The recipes that use them come first in Cook now.</string>
+    <plurals name="home_expiring_recipes">
+        <item quantity="one">%d recipe</item>
+        <item quantity="other">%d recipes</item>
+    </plurals>
+    <string name="home_expiring_no_recipes">No recipe</string>
+    <string name="home_expiring_open">Show recipes</string>
+</resources>

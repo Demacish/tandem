@@ -15,6 +15,7 @@ import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.pantry.PantryRoute
 import casa.moller.tandem.feature.pantry.navigation.PantryDestination
+import casa.moller.tandem.feature.pantry.navigation.PantryScanner
 import casa.moller.tandem.feature.recipes.RecipeDetailPanePlaceholder
 import casa.moller.tandem.feature.recipes.RecipeDetailRoute
 import casa.moller.tandem.feature.recipes.RecipesRoute
@@ -26,12 +27,16 @@ import casa.moller.tandem.feature.recipes.books.WantToCookRoute
 import casa.moller.tandem.feature.recipes.drinks.DrinkRoute
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
 import casa.moller.tandem.feature.scan.ScanRoute
+import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
+import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
+import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
 import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.shopping.ShoppingHistoryRoute
 import casa.moller.tandem.feature.shopping.ShoppingListChoiceRoute
 import casa.moller.tandem.feature.shopping.ShoppingRoute
 import casa.moller.tandem.feature.shopping.StoreModeRoute
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import casa.moller.tandem.feature.shopping.recipe.RecipeMissingShoppingSheet
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRoute
 
 /**
@@ -48,6 +53,8 @@ internal interface ShellFeatures {
      * The Today tab's first screen (feature:home); [onStartCooking] is tonight's "Laga" (Phase 1b).
      * Phase 2 (integration lane): [onOpenFavorites] is "Visa alla" on the favourites row, and
      * [onOpenShoppingList] is "Visa listan" after tonight's "Handla" (feature:shopping's sheet).
+     * Fas S (hemma-ui lane): [onOpenMakeNow] is "Kan laga nu" (`MakeNowKey`), from "Går ut snart"
+     * with the recipes that use soon-expiring foods first (true).
      */
     @Composable
     fun Today(
@@ -58,6 +65,7 @@ internal interface ShellFeatures {
         onOpenWantToCook: () -> Unit,
         onOpenFavorites: () -> Unit,
         onOpenShoppingList: () -> Unit,
+        onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
     )
 
     /**
@@ -109,7 +117,10 @@ internal interface ShellFeatures {
     // --- Phase 2 (grund lane): Handla, Veckan and books (feature:shopping, feature:mealplan,
     // feature:recipes). The lanes fill the routes; the shell's tests show placeholders. ---
 
-    /** The shopping list: the Handla tab root (`listId`/`supermarketId` null) or a `ShoppingListKey`. */
+    /**
+     * The shopping list: the Handla tab root (`listId`/`supermarketId` null) or a `ShoppingListKey`.
+     * Fas S (hemma-ui lane): [onOpenUnpack] is "Packa upp" (`UnpackKey`) after shopping (#46).
+     */
     @Composable
     fun Shopping(
         listId: Long?,
@@ -118,6 +129,7 @@ internal interface ShellFeatures {
         onOpenListChoice: () -> Unit,
         onOpenHistory: () -> Unit,
         onOpenRecipe: (Long) -> Unit,
+        onOpenUnpack: () -> Unit,
     )
 
     /** Store mode (full screen on every width). */
@@ -175,9 +187,19 @@ internal interface ShellFeatures {
     // --- Fas S (grund lane): Hemma, scanning and drinks (feature:pantry, feature:scan, feature:recipes),
     // one function per module; [onNavigate] opens any key the shell maps (docs/BYGGE.md "Fas S – kontrakt"). ---
 
-    /** Every pantry destination ("Hemma", a location, an entry, "Packa upp", "Kan laga nu", "Basvaror"). */
+    /**
+     * Every pantry destination ("Hemma", a location, an entry, "Packa upp", "Kan laga nu", "Basvaror").
+     * hemma-ui lane: the scanners and cook mode open through [onNavigate] (the shell's keys), and
+     * [onOpenShoppingList] is "Visa listan" after "Lägg det som saknas på listan" (the Handla tab).
+     */
     @Composable
-    fun Pantry(key: PantryDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?)
+    fun Pantry(
+        key: PantryDestination,
+        onNavigate: (NavKey) -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onBack: (() -> Unit)?,
+        onOpenShoppingList: () -> Unit,
+    )
 
     /** Every scan destination (barcode, receipt, fridge photo, the review, Settings → AI). */
     @Composable
@@ -199,6 +221,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenWantToCook: () -> Unit,
         onOpenFavorites: () -> Unit,
         onOpenShoppingList: () -> Unit,
+        onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
     ) {
         TodayRoute(
             onOpenRecipe = onOpenRecipe,
@@ -211,6 +234,8 @@ internal object RouteShellFeatures : ShellFeatures {
             tonightShoppingAction = { recipeId, servings, snackbar ->
                 RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
             },
+            // Fas S (hemma-ui lane): "Kan laga nu" and "Går ut snart".
+            onOpenMakeNow = onOpenMakeNow,
         )
     }
 
@@ -284,6 +309,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenListChoice: () -> Unit,
         onOpenHistory: () -> Unit,
         onOpenRecipe: (Long) -> Unit,
+        onOpenUnpack: () -> Unit,
     ) {
         ShoppingRoute(
             onOpenStoreMode = onOpenStoreMode,
@@ -292,6 +318,8 @@ internal object RouteShellFeatures : ShellFeatures {
             onOpenRecipe = onOpenRecipe,
             listId = listId,
             supermarketId = supermarketId,
+            // Fas S (hemma-ui lane, #46).
+            onOpenUnpack = onOpenUnpack,
         )
     }
 
@@ -372,8 +400,33 @@ internal object RouteShellFeatures : ShellFeatures {
     // --- Fas S (grund lane) ---
 
     @Composable
-    override fun Pantry(key: PantryDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) {
-        PantryRoute(key = key, onNavigate = onNavigate, onOpenRecipe = onOpenRecipe, onBack = onBack)
+    override fun Pantry(
+        key: PantryDestination,
+        onNavigate: (NavKey) -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onBack: (() -> Unit)?,
+        onOpenShoppingList: () -> Unit,
+    ) {
+        PantryRoute(
+            key = key,
+            onNavigate = onNavigate,
+            onOpenRecipe = onOpenRecipe,
+            onBack = onBack,
+            // hemma-ui lane: "Laga" in Kan laga nu, the scanners of feature:scan and the shopping sheet.
+            onStartCooking = { recipeId -> onNavigate(CookKey(recipeId)) },
+            onOpenScanner = { scanner, locationId ->
+                onNavigate(
+                    when (scanner) {
+                        PantryScanner.BARCODE -> BarcodeScanKey(locationId)
+                        PantryScanner.RECEIPT -> ReceiptScanKey(locationId)
+                        PantryScanner.FRIDGE -> FridgeScanKey(locationId)
+                    },
+                )
+            },
+            missingToList = { recipeId, missingFoodIds, request, snackbar ->
+                RecipeMissingShoppingSheet(recipeId, missingFoodIds, request, snackbar, onOpenShoppingList)
+            },
+        )
     }
 
     @Composable

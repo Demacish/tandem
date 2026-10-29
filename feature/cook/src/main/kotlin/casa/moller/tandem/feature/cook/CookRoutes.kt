@@ -26,6 +26,7 @@ import casa.moller.tandem.core.designsystem.theme.TandemDarkTheme
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.pantry.CookPantryRoute
 import casa.moller.tandem.feature.cook.timers.TimersScreen
 import casa.moller.tandem.feature.cook.timers.TimersViewModel
 import casa.moller.tandem.feature.cook.ui.CookScreen
@@ -110,6 +111,8 @@ fun CookRoute(
             onOpenAlarmChannelSettings = { context.openSettings(alarmChannelSettingsIntent(context)) },
             onOpenExactAlarmSettings = { context.openSettings(exactAlarmSettingsIntent(context)) },
             shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, snackbarHostState) } },
+            // Fas S (hemma-ui lane, plan §8.8): "Tog något slut?" (hidden for a guest and without pantry items).
+            pantryActions = { CookPantryRoute(recipeId = key.recipeId, snackbarHostState = snackbarHostState) },
         )
     }
 }

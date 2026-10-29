@@ -51,6 +51,7 @@ import casa.moller.tandem.feature.home.HomeAction
 import casa.moller.tandem.feature.home.HomeUiState
 import casa.moller.tandem.feature.home.R
 import casa.moller.tandem.feature.home.TodayBooksState
+import casa.moller.tandem.feature.home.TodayPantryState
 import casa.moller.tandem.feature.home.TonightShoppingAction
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -88,6 +89,8 @@ fun TodayScreen(
     onOpenWantToCook: () -> Unit = {},
     onOpenFavorites: () -> Unit = {},
     tonightShoppingAction: TonightShoppingAction? = null,
+    pantry: TodayPantryState = TodayPantryState(),
+    onOpenMakeNow: (useUpFirst: Boolean) -> Unit = {},
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
     ReportContentReady(ready = !state.loading)
@@ -129,6 +132,8 @@ fun TodayScreen(
                         // Phase 2 (integration lane): "Handla" on tonight's card; never for a guest (#42).
                         tonightShopping = tonightShoppingAction.takeIf { !books.readOnly },
                         snackbarHostState = snackbarHostState,
+                        pantry = pantry,
+                        onOpenMakeNow = onOpenMakeNow,
                     )
                 }
             }
@@ -146,6 +151,8 @@ private fun TodayContent(
     onOpenFavorites: () -> Unit,
     tonightShopping: TonightShoppingAction?,
     snackbarHostState: SnackbarHostState,
+    pantry: TodayPantryState = TodayPantryState(),
+    onOpenMakeNow: (Boolean) -> Unit = {},
 ) {
     val spacing = TandemTheme.spacing
     val horizontal = if (twoColumns) spacing.xxl else spacing.screenHorizontal
@@ -214,6 +221,29 @@ private fun TodayContent(
                     )
                     TomorrowMeals(meals = state.tomorrow, onOpenRecipe = openRecipe)
                 }
+            }
+        }
+        // Fas S (hemma-ui lane, plan §8.8): "Går ut snart" and "Kan laga nu" after the plan; hidden when empty.
+        if (pantry.today != null && pantry.expiring.isNotEmpty()) {
+            item(key = "expiring") {
+                TodayExpiringCard(
+                    pantry = pantry,
+                    onOpenUseUp = { onOpenMakeNow(true) },
+                    modifier = Modifier
+                        .padding(horizontal = horizontal)
+                        .widthIn(max = TandemTheme.sizes.maxReadingWidth),
+                )
+            }
+        }
+        if (pantry.makeNow.isNotEmpty()) {
+            item(key = "make-now") {
+                TodayMakeNowRow(
+                    pantry = pantry,
+                    horizontal = horizontal,
+                    cardWidth = if (twoColumns) 240.dp else 168.dp,
+                    onOpenRecipe = openRecipe,
+                    onOpenMakeNow = { onOpenMakeNow(false) },
+                )
             }
         }
         // Phase 2 (books lane): "Vill laga" before the other carousels (plan 8.3: the queue to plan from).

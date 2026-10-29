@@ -350,6 +350,8 @@ internal fun ShellScaffold(
                 onOpenListChoice = { navigation.navigate(ShoppingListChoiceKey) },
                 onOpenHistory = { navigation.navigate(ShoppingHistoryKey) },
                 onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
+                // Fas S (hemma-ui lane, #46): "Packa upp" after shopping.
+                onOpenUnpack = { navigation.navigate(UnpackKey) },
             )
         }
         val week: @Composable (String?) -> Unit = { weekStart ->
@@ -365,7 +367,13 @@ internal fun ShellScaffold(
         val openKey: (NavKey) -> Unit = { navigation.navigate(it) }
         val openRecipe: (Long) -> Unit = { navigation.navigate(RecipeDetailKey(it)) }
         val pantry: @Composable (PantryDestination) -> Unit = { key ->
-            features.Pantry(key = key, onNavigate = openKey, onOpenRecipe = openRecipe, onBack = { navigation.goBack() })
+            features.Pantry(
+                key = key,
+                onNavigate = openKey,
+                onOpenRecipe = openRecipe,
+                onBack = { navigation.goBack() },
+                onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+            )
         }
         val scan: @Composable (ScanDestination) -> Unit = { key ->
             features.Scan(key = key, onNavigate = openKey, onBack = { navigation.goBack() })
@@ -401,6 +409,8 @@ internal fun ShellScaffold(
                     // Phase 2 (integration lane): the favourites row and tonight's "Handla".
                     onOpenFavorites = { navigation.navigate(FavoritesKey) },
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+                    // Fas S (hemma-ui lane): "Kan laga nu" and "Går ut snart" (#23, #28).
+                    onOpenMakeNow = { useUpFirst -> navigation.navigate(MakeNowKey(useUpFirst)) },
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {

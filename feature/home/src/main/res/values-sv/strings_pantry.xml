@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_make_now_title">Kan laga nu</string>
+    <plurals name="home_make_now_subtitle">
+        <item quantity="one">%d recept där allt finns hemma</item>
+        <item quantity="other">%d recept där allt finns hemma</item>
+    </plurals>
+    <string name="home_make_now_subtitle_almost">Recept där bara ett livsmedel saknas</string>
+    <string name="home_make_now_all">Visa alla</string>
+    <string name="home_expiring_title">Går ut snart</string>
+    <string name="home_expiring_subtitle">Använd dem först. Recepten som använder dem kommer först i Kan laga nu.</string>
+    <plurals name="home_expiring_recipes">
+        <item quantity="one">%d recept</item>
+        <item quantity="other">%d recept</item>
+    </plurals>
+    <string name="home_expiring_no_recipes">Inget recept</string>
+    <string name="home_expiring_open">Visa recepten</string>
+</resources>

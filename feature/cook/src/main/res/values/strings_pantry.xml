@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas S (hemma-ui lane): "Tog något slut?" on the "Klart!" page (plan §8.8). -->
+    <string name="cook_pantry_title">Did anything run out?</string>
+    <string name="cook_pantry_body">Optional. Nothing is taken from the pantry by itself: mark what ran out or got less.</string>
+    <plurals name="cook_pantry_show">
+        <item quantity="one">Show %d item in the pantry</item>
+        <item quantity="other">Show %d items in the pantry</item>
+    </plurals>
+    <string name="cook_pantry_hide">Hide</string>
+    <string name="cook_pantry_action_empty">Used up</string>
+    <string name="cook_pantry_action_less">One less</string>
+    <string name="cook_pantry_action_less_short">−1</string>
+    <string name="cook_pantry_empty">%1$s is used up</string>
+    <string name="cook_pantry_left">%1$s: %2$s left</string>
+    <string name="cook_pantry_undo">Undo</string>
+    <string name="cook_pantry_failed">Could not change the pantry. Try again.</string>
+    <string name="cook_pantry_read_only">Guests cannot change the pantry.</string>
+</resources>

@@ -65,6 +65,7 @@ import casa.moller.tandem.core.ui.DemoBanner
 import casa.moller.tandem.core.ui.household.HouseholdMissingCard
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.toErrorText
+import casa.moller.tandem.feature.pantry.navigation.PantryKey
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
 import casa.moller.tandem.feature.shell.AccountSummary
 import casa.moller.tandem.feature.shell.R
@@ -162,6 +163,17 @@ internal fun MoreScreen(
                                 selected = selectedPage == AccountsKey,
                             )
                         }
+                    }
+
+                    // Fas S (hemma-ui lane, plan §6.1, §8.8): Mer → Hemma first, before the books.
+                    SettingsGroup {
+                        SettingsRow(
+                            icon = TandemIcons.Home,
+                            title = stringResource(R.string.shell_more_pantry),
+                            supporting = stringResource(R.string.shell_more_pantry_supporting),
+                            onClick = { onOpenPage(PantryKey) },
+                            selected = selectedPage == PantryKey,
+                        )
                     }
 
                     // Phase 2 (books lane): Mer → Receptböcker (plan 6.1 "Mer: Böcker").

@@ -196,6 +196,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenWantToCook: () -> Unit,
         onOpenFavorites: () -> Unit,
         onOpenShoppingList: () -> Unit,
+        onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
     ) {
         Placeholder(ShellTab.TODAY)
     }
@@ -257,6 +258,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenListChoice: () -> Unit,
         onOpenHistory: () -> Unit,
         onOpenRecipe: (Long) -> Unit,
+        onOpenUnpack: () -> Unit,
     ) {
         Placeholder(ShellTab.SHOPPING)
     }
@@ -311,8 +313,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     // --- Fas S (grund lane) ---
 
     @Composable
-    override fun Pantry(key: PantryDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) =
-        Page("Pantry $key", onBack ?: {})
+    override fun Pantry(
+        key: PantryDestination,
+        onNavigate: (NavKey) -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onBack: (() -> Unit)?,
+        onOpenShoppingList: () -> Unit,
+    ) = Page("Pantry $key", onBack ?: {})
 
     @Composable
     override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit) = Page("Scan $key", onBack)

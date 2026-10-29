@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cook_pantry_title">Tog något slut?</string>
+    <string name="cook_pantry_body">Valfritt. Inget räknas av från skafferiet av sig självt: markera det som tog slut eller minskade.</string>
+    <plurals name="cook_pantry_show">
+        <item quantity="one">Visa %d vara i skafferiet</item>
+        <item quantity="other">Visa %d varor i skafferiet</item>
+    </plurals>
+    <string name="cook_pantry_hide">Dölj</string>
+    <string name="cook_pantry_action_empty">Slut</string>
+    <string name="cook_pantry_action_less">En mindre</string>
+    <string name="cook_pantry_action_less_short">−1</string>
+    <string name="cook_pantry_empty">%1$s är slut</string>
+    <string name="cook_pantry_left">%1$s: %2$s kvar</string>
+    <string name="cook_pantry_undo">Ångra</string>
+    <string name="cook_pantry_failed">Skafferiet gick inte att ändra. Försök igen.</string>
+    <string name="cook_pantry_read_only">Gäster kan inte ändra skafferiet.</string>
+</resources>

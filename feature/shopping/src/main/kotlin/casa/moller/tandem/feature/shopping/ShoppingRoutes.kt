@@ -46,6 +46,8 @@ import java.util.Locale
  * @param onOpenListChoice the store chooser ([casa.moller.tandem.feature.shopping.navigation.ShoppingListChoiceKey]).
  * @param onOpenHistory the local history.
  * @param onOpenRecipe the recipe an entry came from (edit sheet).
+ * @param onOpenUnpack Fas S (hemma-ui lane, #46): "Packa upp" (feature:pantry's UnpackKey, opened by
+ *   the shell) when something was checked off today; null shows no prompt.
  */
 @Composable
 fun ShoppingRoute(
@@ -56,6 +58,7 @@ fun ShoppingRoute(
     modifier: Modifier = Modifier,
     listId: Long? = null,
     supermarketId: Long? = null,
+    onOpenUnpack: (() -> Unit)? = null,
 ) {
     val key = ShoppingListKey(listId, supermarketId)
     val viewModel = hiltViewModel<ShoppingViewModel, ShoppingViewModel.Factory>(
@@ -69,6 +72,7 @@ fun ShoppingRoute(
         onOpenHistory = onOpenHistory,
         onOpenRecipe = onOpenRecipe,
         modifier = modifier,
+        unpackPrompt = { if (onOpenUnpack != null) UnpackPromptRoute(onUnpack = onOpenUnpack) },
     )
 }
 
@@ -81,6 +85,7 @@ internal fun ShoppingRoute(
     onOpenHistory: () -> Unit,
     onOpenRecipe: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    unpackPrompt: @Composable () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -127,6 +132,7 @@ internal fun ShoppingRoute(
         },
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        unpackPrompt = unpackPrompt,
     )
 }
 

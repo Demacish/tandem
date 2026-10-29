@@ -63,7 +63,8 @@ import casa.moller.tandem.feature.cook.R
  * docs/design/README.md: no quick-impression chips or "share a photo", which Tandoor does not
  * have). Servings, an optional rating, a comment, and "Spara i kokloggen", which works offline
  * (sent later) and in demo mode (stays on the device). Phase 2: "Lägg på inköpslistan" last
- * ([shoppingActions], not for guests, who get no write controls here at all).
+ * ([shoppingActions], not for guests, who get no write controls here at all). Fas S: "Tog något
+ * slut?" ([pantryActions]) above "Spara i kokloggen", never applied by itself.
  */
 @Composable
 internal fun CookDonePage(
@@ -71,6 +72,7 @@ internal fun CookDonePage(
     onAction: (CookAction) -> Unit,
     onClose: () -> Unit,
     shoppingActions: (@Composable () -> Unit)? = null,
+    pantryActions: (@Composable () -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     val done = state.done
@@ -119,6 +121,8 @@ internal fun CookDonePage(
             }
             Card { RatingPicker(rating = done.rating, onRate = { onAction(CookAction.SetRating(it)) }) }
             CommentField(initial = done.comment, onChange = { onAction(CookAction.SetComment(it)) })
+            // Fas S (hemma-ui lane, plan §8.8): "Tog något slut?", optional, before the entry is saved (the page closes then).
+            pantryActions?.invoke()
             // Where the entry goes, in the app's 0.1.0 terms: sent now, or saved and sent later (and why).
             IconLabel(
                 icon = when {

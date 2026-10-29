@@ -29,6 +29,8 @@ import casa.moller.tandem.feature.home.ui.TodayScreen
  * @param tonightShoppingAction Phase 2 (integration lane): "Handla" on tonight's card (plan 6.2
  *   "Ikväll ... knapparna Laga och Handla"), a slot the shell fills with feature:shopping's
  *   "Lägg på inköpslistan" for the recipe at the planned servings; null shows nothing.
+ * @param onOpenMakeNow Fas S (hemma-ui lane): "Kan laga nu" (false) or, from "Går ut snart", with
+ *   the recipes that use soon-expiring foods first (true). Null shows neither row (and reads no pantry).
  */
 @Composable
 fun TodayRoute(
@@ -42,9 +44,15 @@ fun TodayRoute(
     booksViewModel: TodayBooksViewModel = hiltViewModel(),
     onOpenFavorites: () -> Unit = {},
     tonightShoppingAction: TonightShoppingAction? = null,
+    onOpenMakeNow: ((useUpFirst: Boolean) -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val books by booksViewModel.uiState.collectAsStateWithLifecycle()
+    val pantry = if (onOpenMakeNow != null) {
+        hiltViewModel<TodayPantryViewModel>().uiState.collectAsStateWithLifecycle().value
+    } else {
+        TodayPantryState()
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     val currentOpenRecipe by rememberUpdatedState(onOpenRecipe)
@@ -77,6 +85,8 @@ fun TodayRoute(
         onOpenWantToCook = onOpenWantToCook,
         onOpenFavorites = onOpenFavorites,
         tonightShoppingAction = tonightShoppingAction,
+        pantry = pantry,
+        onOpenMakeNow = { useUpFirst -> onOpenMakeNow?.invoke(useUpFirst) },
     )
 }
 
