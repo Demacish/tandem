@@ -99,14 +99,14 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
         app.findInList(By.text(PASTA))
         app.tap(PASTA)
         app.scrollTo(By.text(RECIPE_SHOPPING_BUTTON))
-        for (attempt in 1..TAP_ATTEMPTS) {
-            // The sheet's title reads the same as the button: once the sheet shows, never wait for the button again.
-            if (app.findNode(::isRecipeSheetAdd) != null) break
+        // The sheet's title reads the same as the button: once the sheet shows, the button is never waited for again.
+        var attempt = 0
+        while (attempt++ < TAP_ATTEMPTS && app.findNode(::isRecipeSheetAdd) == null) {
             app.waitForNode("\"$RECIPE_SHOPPING_BUTTON\"") { node ->
                 node.text?.toString() == RECIPE_SHOPPING_BUTTON && app.clickableOf(node)?.isEnabled == true
             }
             app.clickNodeWithText(RECIPE_SHOPPING_BUTTON)
-            if (nodeShows(TAP_WAIT_MS, ::isRecipeSheetAdd)) break
+            nodeShows(TAP_WAIT_MS, ::isRecipeSheetAdd)
         }
         app.waitForNode("\"Add n items to the shopping list\"", predicate = ::isRecipeSheetAdd)
         app.capture("phase2-recipe-sheet")
@@ -127,6 +127,9 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
             }
         }
         app.capture("phase2-recipe-sheet-added")
+        // The recipe is a page of its own on a phone (no tab bar): back to the tabs.
+        app.device.pressBack()
+        app.waitForClickable("Shopping")
         return tandoor.shopping.all().filter { it.listRecipe != null }.map { it.food }
     }
 
