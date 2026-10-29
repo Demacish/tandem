@@ -723,16 +723,29 @@ inte i röktestet; ai-foto-banan prövar Claude-klienten mot en fejkad server i 
 
 ### APK-storlek
 
-`smoke.yml` skriver nu den minifierade APK:ns storlek i körningens sammanfattning.
+`smoke.yml` skriver nu den minifierade APK:ns storlek i loggen och i körningens sammanfattning.
 
-| Bygge | Före Fas S (main `db4cd6b`) | Med grundens beroenden | Skillnad |
+| Bygge | Före Fas S (main `db4cd6b`) | Med grundens beroenden (`a0b9419`) | Skillnad |
 |---|---|---|---|
-| `sideloadMinified` (R8, alla ABI) | APK_BEFORE | APK_AFTER | APK_DIFF |
-| `sideloadDebug` (artefakten i `pr.yml`, zip) | DEBUG_BEFORE | DEBUG_AFTER | DEBUG_DIFF |
+| `sideloadMinified` (R8, alla fyra ABI, `smoke.yml`) | 7 616 478 B (7,6 MB) | 73 436 724 B (73,4 MB) | +65,8 MB |
+| `sideloadDebug` (artefakten `tandem-sideload-debug` i `pr.yml`, zippad) | 20 612 821 B | 65 967 542 B (APK:n själv 178,7 MB) | +45,4 MB |
 
-Det mesta är ML Kits bundlade streckkodsbibliotek (`libbarhopper_v3.so`, 3–6 MB per ABI) och
-textmodellen. ABI-uppdelade APK:er för `sideload` (Obtainium väljer rätt fil) är en öppen fråga för
-release-flödet.
+Nästan allt är **ML Kits bundlade bibliotek**: de inbyggda biblioteken är 61,5 MB i APK:n
+(`libmlkit_google_ocr_pipeline.so` 6,8–11,6 MB och `libbarhopper_v3.so` 3,2–6,1 MB per ABI, för
+arm64-v8a, armeabi-v7a, x86 och x86_64; med minSdk 34 lagras de okomprimerade och sidjusterade),
+modellerna i `assets/` ca 3 MB. Anthropic-SDK:n (Jackson, `kotlin-reflect`) gör debug-APK:n stor
+(osorterade dex-filer) men krymps av R8; resten av ökningen i den minifierade APK:n är ca 4 MB kod.
+**Förslag** (beslut för release-flödet, inte gjort i grunden): bara `arm64-v8a` (+ `x86_64` för
+röktestets emulator) i `sideload` med `ndk { abiFilters }` eller ABI-uppdelade APK:er (Obtainium
+väljer filen), eller `packaging.jniLibs.useLegacyPackaging = true` (mindre nedladdning, större
+installation). Bara arm64-v8a skulle ta bort ca 35 MB.
+
+**R8:** ML Kit hittar sina komponentregistrarer via manifestets meta-data och skapar dem med en
+konstruktor utan argument, som R8 full mode tog bort ("Could not instantiate … NoSuchMethodException
+`<init>` []" vid varje start, som röktestets loggkontroll fäller). `feature/scan/consumer-rules.pro`
+behåller den (`-keep class * implements com.google.firebase.components.ComponentRegistrar
+{ <init>(); }`). Anthropic-SDK:n och CameraX behövde inga egna regler; `release.yml`:s torrkörning
+(R8) och röktestet ("OK (9 tests)") är gröna.
 
 ### Fakes (`:core:testing`) och tillfälliga bindningar (`:app`)
 
