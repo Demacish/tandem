@@ -159,9 +159,20 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
         app.tap("Shopping")
     }
 
-    /** Mer → "Konton och servrar" (on a phone a page of its own, which starts with its intro). */
+    /**
+     * Mer → "Konton och servrar" (on a phone a page of its own, which starts with its intro). The
+     * More tab keeps its page: when the accounts page is still open there (maybe scrolled past its
+     * intro), it is used as it is.
+     */
     private fun openAccounts() {
-        app.tapUntil(ACCOUNTS, By.textStartsWith(ACCOUNTS_INTRO))
+        val onThePage = listOf(By.textStartsWith(ACCOUNTS_INTRO), By.textStartsWith("Switch to "), By.text("Add account"))
+        val deadline = SystemClock.uptimeMillis() + TAP_WAIT_MS
+        var open = false
+        while (!open && SystemClock.uptimeMillis() < deadline) {
+            open = onThePage.any { app.device.hasObject(it) }
+            if (!open) SystemClock.sleep(SETTLE_POLL_MS)
+        }
+        if (!open) app.tapUntil(ACCOUNTS, By.textStartsWith(ACCOUNTS_INTRO))
     }
 
     /** The recipe sheet's "Add n items to the shopping list". */
