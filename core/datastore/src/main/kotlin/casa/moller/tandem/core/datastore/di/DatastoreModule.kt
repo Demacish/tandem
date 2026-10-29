@@ -1,6 +1,8 @@
 package casa.moller.tandem.core.datastore.di
 
 import android.content.Context
+import casa.moller.tandem.core.datastore.AiKeyStore
+import casa.moller.tandem.core.datastore.AiPreferencesStore
 import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.DiagnosticsStore
 import casa.moller.tandem.core.datastore.SecureAccountStore
@@ -9,6 +11,8 @@ import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.crypto.AeadProvider
 import casa.moller.tandem.core.datastore.crypto.AndroidKeystoreAeadProvider
 import casa.moller.tandem.core.datastore.internal.EncryptedAccountStore
+import casa.moller.tandem.core.datastore.internal.EncryptedAiKeyStore
+import casa.moller.tandem.core.datastore.internal.PreferencesAiPreferencesStore
 import casa.moller.tandem.core.datastore.internal.PreferencesDiagnosticsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesSettingsStore
 import dagger.Module
@@ -63,6 +67,23 @@ object DatastoreModule {
     @Singleton
     fun provideDiagnosticsStore(@ApplicationContext context: Context): DiagnosticsStore = PreferencesDiagnosticsStore.create(
         produceFile = { DatastoreFiles.diagnosticsFile(context) },
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    // --- Fas S (ai-foto lane, B22): the user's AI keys (encrypted, never returned as a value) and
+    // the non-secret AI settings, both per device and excluded from backup. ---
+    @Provides
+    @Singleton
+    fun provideAiKeyStore(@ApplicationContext context: Context, keys: AeadProvider): AiKeyStore = EncryptedAiKeyStore(
+        produceFile = { DatastoreFiles.secureAiKeysFile(context) },
+        keys = keys,
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    @Provides
+    @Singleton
+    fun provideAiPreferencesStore(@ApplicationContext context: Context): AiPreferencesStore = PreferencesAiPreferencesStore.create(
+        produceFile = { DatastoreFiles.aiSettingsFile(context) },
         scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     )
 }

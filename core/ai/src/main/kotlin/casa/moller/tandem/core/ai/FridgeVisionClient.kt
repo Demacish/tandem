@@ -1,17 +1,21 @@
 package casa.moller.tandem.core.ai
 
+import casa.moller.tandem.core.model.ai.AiKeyCheck
 import casa.moller.tandem.core.model.ai.AiProvider
 import casa.moller.tandem.core.model.ai.FridgeVisionResult
 
 /**
- * One AI provider's call for the fridge photo (ai-foto lane). [request] carries the user's key only
- * for the duration of the call; an implementation never logs it, never keeps it and never puts it
- * in an exception message.
+ * One AI provider's calls for the fridge photo. [FridgeVisionRequest] / [AiKeyRequest] carry the
+ * user's key only for the duration of the call; an implementation never logs it, never keeps it and
+ * never puts it in an exception message. No automatic retries (a call costs the user credits).
  */
 internal interface FridgeVisionClient {
     val provider: AiProvider
 
     suspend fun recognize(request: FridgeVisionRequest): FridgeVisionResult
+
+    /** "Testa nyckeln": the provider's free model lookup with the key. */
+    suspend fun checkKey(request: AiKeyRequest): AiKeyCheck
 }
 
 /**
@@ -35,4 +39,9 @@ internal class FridgeVisionRequest(
         /** A scaled JPEG is far below this; a bigger one was not scaled. */
         const val MAX_BYTES: Int = 5 * 1024 * 1024
     }
+}
+
+/** "Testa nyckeln" for [model]; [toString] never shows the key. */
+internal class AiKeyRequest(val key: String, val model: String, val baseUrl: String?) {
+    override fun toString(): String = "AiKeyRequest(model=$model, custom=${baseUrl != null})"
 }

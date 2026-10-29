@@ -10,6 +10,8 @@ import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
+import casa.moller.tandem.core.datastore.AiKeyStore
+import casa.moller.tandem.core.datastore.AiPreferencesStore
 import casa.moller.tandem.core.datastore.SecureAccountStore
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
@@ -47,6 +49,9 @@ internal class DefaultAccountRepository(
     private val health: StorageHealthMonitor,
     private val now: () -> Instant,
     private val newId: () -> String,
+    // Fas S (ai-foto lane): "Rensa appdata" also removes the AI keys and settings (B22).
+    private val aiKeys: AiKeyStore? = null,
+    private val aiPreferences: AiPreferencesStore? = null,
 ) : AccountRepository,
     SessionRepository,
     AccountSessions {
@@ -57,6 +62,8 @@ internal class DefaultAccountRepository(
         accountStore: SecureAccountStore,
         settingsStore: SettingsStore,
         health: StorageHealthMonitor,
+        aiKeys: AiKeyStore,
+        aiPreferences: AiPreferencesStore,
     ) : this(
         remote = remote,
         accountStore = accountStore,
@@ -64,6 +71,8 @@ internal class DefaultAccountRepository(
         health = health,
         now = { Instant.fromEpochMilliseconds(System.currentTimeMillis()) },
         newId = { UUID.randomUUID().toString() },
+        aiKeys = aiKeys,
+        aiPreferences = aiPreferences,
     )
 
     /** Serializes writes that read-modify-write accounts and settings together. */
@@ -336,6 +345,12 @@ internal class DefaultAccountRepository(
             }
             try {
                 settingsStore.update { AppSettings.Default }
+            } catch (e: IOException) {
+                failed = true
+            }
+            try {
+                aiKeys?.clearAll()
+                aiPreferences?.clear()
             } catch (e: IOException) {
                 failed = true
             }

@@ -19,6 +19,12 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    // ai-foto lane: Gemini and OpenAI on core:ai's own OkHttp client (AiHttpClient), never core:network's.
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp)
 
     testImplementation(projects.core.testing)
+    // ai-foto lane: every provider against an in-process fake server (never a real AI API).
+    testImplementation(platform(libs.okhttp.bom))
+    testImplementation(libs.okhttp.mockwebserver3)
 }

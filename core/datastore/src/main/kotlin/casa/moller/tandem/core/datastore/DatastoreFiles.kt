@@ -54,7 +54,18 @@ object DatastoreFiles {
     internal val SECURE_AI_KEYS_ASSOCIATED_DATA: ByteArray
         get() = "casa.moller.tandem/datastore/$SECURE_AI_KEYS".encodeToByteArray()
 
+    /**
+     * Fas S (ai-foto lane): the non-secret AI settings (provider, model, own base URL, warning
+     * acknowledged), `files/datastore/ai_settings.preferences_pb`. No key is ever in it.
+     */
+    const val AI_SETTINGS_NAME = "ai_settings"
+
+    /** File name of the AI settings store. */
+    const val AI_SETTINGS = "$AI_SETTINGS_NAME.preferences_pb"
+
     internal fun secureAiKeysFile(context: Context): File = context.dataStoreFile(SECURE_AI_KEYS)
+
+    internal fun aiSettingsFile(context: Context): File = context.preferencesDataStoreFile(AI_SETTINGS_NAME)
 
     internal fun secureAccountsFile(context: Context): File = context.dataStoreFile(SECURE_ACCOUNTS)
 

@@ -9,6 +9,7 @@ import casa.moller.tandem.core.data.pantry.PantryRepository
 import casa.moller.tandem.core.data.pantry.StaplesRepository
 import casa.moller.tandem.core.data.scan.BarcodeLookup
 import casa.moller.tandem.core.data.scan.FoodAliasRepository
+import casa.moller.tandem.core.model.ai.AiKeyCheck
 import casa.moller.tandem.core.model.ai.AiProvider
 import casa.moller.tandem.core.model.ai.AiSettings
 import casa.moller.tandem.core.model.ai.FridgeVisionError
@@ -503,5 +504,17 @@ class FakeFridgeVision(
         calls += jpeg.size
         if (jpeg.isEmpty()) return FridgeVisionResult.Failed(FridgeVisionError.Unparseable("empty photo"))
         return result
+    }
+
+    /** The answer of "Testa nyckeln". */
+    var keyCheck: AiKeyCheck = AiKeyCheck.WORKS
+
+    /** How often "Testa nyckeln" was called. */
+    var keyChecks: Int = 0
+        private set
+
+    override suspend fun checkKey(): AiKeyCheck {
+        keyChecks++
+        return keyCheck
     }
 }

@@ -8,13 +8,14 @@ package casa.moller.tandem.core.model.ai
 /**
  * The AI provider the user picked (Settings → AI).
  *
- * @property defaultModel the model used until the user changes it (B22: `claude-opus-5-5` for
- *   Claude; for Gemini and OpenAI the example models of Tandoor's own AI documentation).
+ * @property defaultModel the model used until the user changes it (Settings → AI, editable).
+ * @property officialBaseUrl the provider's own API; an own base URL (a proxy or a compatible server)
+ *   replaces exactly this part of every request URL.
  */
-enum class AiProvider(val defaultModel: String) {
-    CLAUDE("claude-opus-5-5"),
-    GEMINI("gemini-2.5-flash"),
-    OPENAI("gpt-5.2-mini"),
+enum class AiProvider(val defaultModel: String, val officialBaseUrl: String) {
+    CLAUDE("claude-opus-5-5", "https://api.anthropic.com"),
+    GEMINI("gemini-2.5-flash-lite", "https://generativelanguage.googleapis.com/v1beta"),
+    OPENAI("gpt-5-nano", "https://api.openai.com/v1"),
 }
 
 /**
@@ -74,13 +75,50 @@ sealed interface FridgeVisionError {
     /** The answer was not the expected list. */
     data class Unparseable(val detail: String? = null) : FridgeVisionError
 
+    /** The key works, but the chosen model does not exist or the key has no access to it (404). */
+    data object ModelUnavailable : FridgeVisionError
+
     /** Demo mode: never a network call. */
     data object DemoMode : FridgeVisionError
 }
 
 /** The fridge photo's result. */
 sealed interface FridgeVisionResult {
-    data class Items(val items: List<RecognizedItem>) : FridgeVisionResult
+    /**
+     * @property truncated the answer was cut off at the output limit: [items] is what came before
+     *   (the review says the list may be incomplete).
+     */
+    data class Items(val items: List<RecognizedItem>, val truncated: Boolean = false) : FridgeVisionResult
 
     data class Failed(val error: FridgeVisionError) : FridgeVisionResult
+}
+
+/**
+ * "Testa nyckeln" in Settings → AI: a free call (the provider's model lookup) with the stored key,
+ * model and base URL. Nothing is generated and no photo is sent.
+ */
+enum class AiKeyCheck {
+    /** The key is accepted and the model is available. */
+    WORKS,
+
+    /** The provider refused the key (wrong, revoked or expired). */
+    INVALID_KEY,
+
+    /** The key is accepted, but the model does not exist or the key may not use it. */
+    NO_MODEL_ACCESS,
+
+    /** Rate-limited or out of credits right now. */
+    RATE_LIMITED,
+
+    /** No connection, a timeout or the provider (or the own base URL) did not answer. */
+    NO_NETWORK,
+
+    /** No provider chosen or no key stored. */
+    NO_KEY,
+
+    /** Demo mode: the app never calls a service. */
+    DEMO_MODE,
+
+    /** Any other answer (a server error, an unexpected reply). */
+    FAILED,
 }

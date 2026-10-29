@@ -1,20 +1,25 @@
 package casa.moller.tandem.core.ai
 
+import casa.moller.tandem.core.model.ai.AiKeyCheck
 import casa.moller.tandem.core.model.ai.AiProvider
 import casa.moller.tandem.core.model.ai.FridgeVisionError
 import casa.moller.tandem.core.model.ai.FridgeVisionResult
+import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
+import com.anthropic.core.JsonValue
+import com.anthropic.errors.AnthropicException
 import com.anthropic.errors.AnthropicIoException
 import com.anthropic.errors.AnthropicServiceException
-import com.anthropic.errors.PermissionDeniedException
-import com.anthropic.errors.RateLimitException
-import com.anthropic.errors.UnauthorizedException
-import com.anthropic.models.messages.Base64ImageSource
-import com.anthropic.models.messages.ContentBlockParam
-import com.anthropic.models.messages.ImageBlockParam
-import com.anthropic.models.messages.MessageCreateParams
-import com.anthropic.models.messages.StopReason
-import com.anthropic.models.messages.TextBlockParam
+import com.anthropic.models.ErrorType
+import com.anthropic.models.beta.AnthropicBeta
+import com.anthropic.models.beta.messages.BetaBase64ImageSource
+import com.anthropic.models.beta.messages.BetaContentBlockParam
+import com.anthropic.models.beta.messages.BetaImageBlockParam
+import com.anthropic.models.beta.messages.BetaJsonOutputFormat
+import com.anthropic.models.beta.messages.BetaMessage
+import com.anthropic.models.beta.messages.BetaOutputConfig
+import com.anthropic.models.beta.messages.BetaStopReason
+import com.anthropic.models.beta.messages.MessageCreateParams
 import java.time.Duration
 import java.util.Base64
 import javax.inject.Inject
@@ -22,65 +27,127 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Claude through Anthropic's official Java SDK (B22). A first implementation the ai-foto lane builds
- * on (tests against an in-process fake server, the fallback on a refusal, effort). The SDK makes
- * its own OkHttp client: nothing of the Tandoor client (interceptors, tokens, cookies) reaches it.
- * `maxRetries(0)`: no automatic retries (a call costs the user credits, plan 5.4).
+ * Claude through Anthropic's official Java SDK (B22; never raw HTTP, never an OpenAI-compatible
+ * shim). One non-streaming call on the beta Messages endpoint: the photo as a base64 image block,
+ * structured output via `output_config.format` (a JSON schema, so nothing depends on reflection
+ * over our own classes after R8), effort MEDIUM set explicitly, adaptive thinking (the model's
+ * default: no `thinking` parameter; disabled or a budget would be a 400), `max_tokens` 16000, and
+ * the server-side refusal fallbacks (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`)
+ * so a classifier refusal is retried on Anthropic's recommended fallback model instead of failing.
+ *
+ * The SDK builds its own OkHttp client: nothing of the Tandoor client (interceptors, tokens, cookies)
+ * reaches it. `maxRetries(0)`: no automatic retries (a call costs the user credits, plan 5.4). The
+ * key is only in the client for this one call; errors are mapped by type and status, never by
+ * message (it could echo request details).
  */
-internal class ClaudeFridgeVisionClient @Inject constructor() : FridgeVisionClient {
+internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeVisionClient {
+    @Inject
+    constructor() : this(Duration.ofSeconds(AiHttpClient.CALL_TIMEOUT_SECONDS))
+
     override val provider: AiProvider = AiProvider.CLAUDE
 
     override suspend fun recognize(request: FridgeVisionRequest): FridgeVisionResult = withContext(Dispatchers.IO) {
-        val client = AnthropicOkHttpClient.builder()
-            .apiKey(request.key)
-            .maxRetries(0)
-            .timeout(Duration.ofSeconds(TIMEOUT_SECONDS))
-            .apply { request.baseUrl?.let { baseUrl(it) } }
-            .build()
+        val client = client(request.key, request.baseUrl)
         try {
-            val image = ImageBlockParam.builder()
+            val image = BetaImageBlockParam.builder()
                 .source(
-                    Base64ImageSource.builder()
+                    BetaBase64ImageSource.builder()
                         .data(Base64.getEncoder().encodeToString(request.jpeg))
-                        .mediaType(Base64ImageSource.MediaType.IMAGE_JPEG)
+                        .mediaType(BetaBase64ImageSource.MediaType.IMAGE_JPEG)
                         .build(),
                 )
                 .build()
             val params = MessageCreateParams.builder()
                 .model(request.model)
-                .maxTokens(MAX_TOKENS)
+                .maxTokens(FridgePrompt.MAX_OUTPUT_TOKENS)
                 .system(FridgePrompt.system(request.languageTag))
-                .addUserMessageOfBlockParams(
-                    listOf(
-                        ContentBlockParam.ofImage(image),
-                        ContentBlockParam.ofText(TextBlockParam.builder().text(FridgePrompt.USER).build()),
-                    ),
+                .outputConfig(
+                    BetaOutputConfig.builder()
+                        .effort(BetaOutputConfig.Effort.MEDIUM)
+                        .format(BetaJsonOutputFormat.builder().schema(schema()).build())
+                        .build(),
+                )
+                .addBeta(AnthropicBeta.SERVER_SIDE_FALLBACK_2026_07_01)
+                .fallbacksDefault()
+                .addUserMessageOfBetaContentBlockParams(
+                    listOf(BetaContentBlockParam.ofImage(image), BetaContentBlockParam.ofText(FridgePrompt.USER)),
                 )
                 .build()
-            val message = client.messages().create(params)
-            if (message.stopReason().orElse(null) == StopReason.REFUSAL) {
-                FridgeVisionResult.Failed(FridgeVisionError.Refusal)
-            } else {
-                FridgePrompt.parse(message.content().mapNotNull { block -> block.text().orElse(null)?.text() }.joinToString("\n"))
-            }
-        } catch (ignored: UnauthorizedException) {
-            FridgeVisionResult.Failed(FridgeVisionError.InvalidKey)
-        } catch (ignored: PermissionDeniedException) {
-            FridgeVisionResult.Failed(FridgeVisionError.InvalidKey)
-        } catch (ignored: RateLimitException) {
-            FridgeVisionResult.Failed(FridgeVisionError.QuotaOrRateLimit())
-        } catch (error: AnthropicServiceException) {
-            // Only the status: the message could echo request details.
-            FridgeVisionResult.Failed(FridgeVisionError.Network("http-${error.statusCode()}"))
-        } catch (ignored: AnthropicIoException) {
-            FridgeVisionResult.Failed(FridgeVisionError.Network("io"))
+            result(client.beta().messages().create(params))
+        } catch (e: AnthropicServiceException) {
+            FridgeVisionResult.Failed(failure(e))
+        } catch (e: AnthropicIoException) {
+            FridgeVisionResult.Failed(FridgeVisionError.Network(if (e.cause is java.io.InterruptedIOException) "timeout" else "io"))
+        } catch (e: AnthropicException) {
+            // The answer could not be read (an unexpected body from an own base URL, for example).
+            FridgeVisionResult.Failed(FridgeVisionError.Unparseable(e.javaClass.name))
         } finally {
             client.close()
         }
     }
 
+    override suspend fun checkKey(request: AiKeyRequest): AiKeyCheck = withContext(Dispatchers.IO) {
+        val client = client(request.key, request.baseUrl)
+        try {
+            client.models().retrieve(request.model)
+            AiKeyCheck.WORKS
+        } catch (e: AnthropicServiceException) {
+            when (val failure = failure(e)) {
+                FridgeVisionError.InvalidKey -> AiKeyCheck.INVALID_KEY
+                FridgeVisionError.ModelUnavailable -> AiKeyCheck.NO_MODEL_ACCESS
+                is FridgeVisionError.QuotaOrRateLimit -> AiKeyCheck.RATE_LIMITED
+                is FridgeVisionError.Network -> if (failure.detail == "timeout") AiKeyCheck.NO_NETWORK else AiKeyCheck.FAILED
+                else -> AiKeyCheck.FAILED
+            }
+        } catch (ignored: AnthropicIoException) {
+            AiKeyCheck.NO_NETWORK
+        } catch (ignored: AnthropicException) {
+            AiKeyCheck.FAILED
+        } finally {
+            client.close()
+        }
+    }
+
+    private fun client(key: String, baseUrl: String?): AnthropicClient = AnthropicOkHttpClient.builder()
+        .apiKey(key)
+        .maxRetries(0)
+        .timeout(timeout)
+        .apply { baseUrl?.let { baseUrl(it.trimEnd('/')) } }
+        .build()
+
+    private fun schema(): BetaJsonOutputFormat.Schema = BetaJsonOutputFormat.Schema.builder()
+        .apply { FridgePrompt.claudeSchema().forEach { (key, value) -> putAdditionalProperty(key, JsonValue.from(value)) } }
+        .build()
+
+    /** Refusal first (the content is not the answer then), then the text blocks; thinking blocks are skipped. */
+    private fun result(message: BetaMessage): FridgeVisionResult {
+        val stop = message.stopReason().orElse(null)
+        if (stop == BetaStopReason.REFUSAL) return FridgeVisionResult.Failed(FridgeVisionError.Refusal)
+        val text = message.content().mapNotNull { block -> block.text().orElse(null)?.text() }.joinToString("")
+        return FridgePrompt.parse(text, truncated = stop == BetaStopReason.MAX_TOKENS)
+    }
+
+    private fun failure(e: AnthropicServiceException): FridgeVisionError {
+        val retryAfter = e.headers().values("retry-after").firstOrNull()?.trim()?.toLongOrNull()
+        return when (e.errorType().orElse(null)) {
+            ErrorType.AUTHENTICATION_ERROR, ErrorType.PERMISSION_ERROR -> FridgeVisionError.InvalidKey
+            ErrorType.NOT_FOUND_ERROR -> FridgeVisionError.ModelUnavailable
+            ErrorType.RATE_LIMIT_ERROR, ErrorType.OVERLOADED_ERROR, ErrorType.BILLING_ERROR -> FridgeVisionError.QuotaOrRateLimit(retryAfter)
+            ErrorType.TIMEOUT_ERROR -> FridgeVisionError.Network("timeout")
+            else -> when (val status = e.statusCode()) {
+                HTTP_UNAUTHORIZED, HTTP_FORBIDDEN -> FridgeVisionError.InvalidKey
+                HTTP_NOT_FOUND -> FridgeVisionError.ModelUnavailable
+                HTTP_TOO_MANY_REQUESTS, HTTP_OVERLOADED -> FridgeVisionError.QuotaOrRateLimit(retryAfter)
+                else -> FridgeVisionError.Network("http-$status")
+            }
+        }
+    }
+
     private companion object {
-        const val TIMEOUT_SECONDS = 120L
-        const val MAX_TOKENS = 4096L
+        const val HTTP_UNAUTHORIZED = 401
+        const val HTTP_FORBIDDEN = 403
+        const val HTTP_NOT_FOUND = 404
+        const val HTTP_TOO_MANY_REQUESTS = 429
+        const val HTTP_OVERLOADED = 529
     }
 }

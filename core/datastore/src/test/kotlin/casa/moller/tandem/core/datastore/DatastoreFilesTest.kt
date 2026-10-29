@@ -38,4 +38,11 @@ class DatastoreFilesTest {
         )
         assertEquals("diagnostics.preferences_pb", DatastoreFiles.DIAGNOSTICS)
     }
+
+    @Test
+    fun aiKeysAndSettingsLiveInFilesDatastore() {
+        assertEquals(File(context.filesDir, "datastore/secure_ai_keys.pb"), DatastoreFiles.secureAiKeysFile(context))
+        assertEquals(File(context.filesDir, "datastore/ai_settings.preferences_pb"), DatastoreFiles.aiSettingsFile(context))
+        assertEquals("ai_settings.preferences_pb", DatastoreFiles.AI_SETTINGS)
+    }
 }
