@@ -33,7 +33,8 @@ internal class PantrySyncStep @Inject constructor(
         val states = database.syncStateDao()
         val now = clock.nowMillis()
         val pantryRead = states.get(accountId, PANTRY_KEY)?.lastFullRelistEpochMillis
-        if (forced || smallTables || pantryRead == null || now - pantryRead !in 0 until PANTRY_INTERVAL_MILLIS) {
+        val pantryDue = pantryRead == null || now - pantryRead !in 0 until PANTRY_INTERVAL_MILLIS
+        if (forced || smallTables || pantryDue) {
             if (reader.sync(remote, background) is Outcome.Success) {
                 states.upsert(SyncStateEntity(accountId = accountId, entity = PANTRY_KEY, lastFullRelistEpochMillis = now))
             }

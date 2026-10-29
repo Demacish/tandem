@@ -404,7 +404,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         /** A new location of the account's household; null when the household is unknown (a real account only). */
         suspend fun createLocation(name: String, isFreezer: Boolean): InventoryLocationEntity? {
             val account = if (remote) database.accountDao().get(accountId) else null
-            if (remote && (account?.householdId == null || account?.householdName == null)) return null
+            if (remote && (account?.householdId == null || account.householdName == null)) return null
             val dao = database.pantryDao()
             val order = (dao.getLocations(accountId).maxOfOrNull { it.locationOrder } ?: 0) + 1
             val row = InventoryLocationEntity(

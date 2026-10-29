@@ -19,8 +19,8 @@ class MakeNowGroupsTest {
 
     private fun recorded(version: String): Map<Int, List<String>> {
         val facts = json.parseToJsonElement(File(fixtures, "$version/fas-s/observed-facts.json").readText()).jsonObject
-        val makeNow = facts.getValue("makenow").jsonObject
-        return (0..2).associateWith { n -> makeNow.getValue(n.toString()).jsonArray.map { it.jsonPrimitive.content } }
+        // The facts are flat, with dotted keys ("makenow.0").
+        return (0..2).associateWith { n -> facts.getValue("makenow.$n").jsonArray.map { it.jsonPrimitive.content } }
     }
 
     @Test

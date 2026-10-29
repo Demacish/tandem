@@ -165,9 +165,9 @@ internal object DemoPantry {
         val names = HashMap<Long, Pair<String, String?>>()
         for (recipeId in dao.getDetailIds(DEMO_ACCOUNT_ID)) {
             for (ingredient in dao.getIngredients(DEMO_ACCOUNT_ID, recipeId)) {
-                val id = ingredient.foodId ?: continue
-                val name = ingredient.foodName ?: continue
-                names.getOrPut(id) { name to ingredient.foodPluralName }
+                val id = ingredient.foodId
+                val name = ingredient.foodName
+                if (id != null && name != null) names.getOrPut(id) { name to ingredient.foodPluralName }
             }
         }
         return names

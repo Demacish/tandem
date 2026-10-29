@@ -195,6 +195,7 @@ internal class SyncTestGraph(
         roles = roleSync,
         dropped = droppedChanges,
     )
+
     // Phase 2: the role the repositories check (moved up for Fas S: the pantry step's staples use it).
     val permissions = FakeSpacePermissionsRepository()
 

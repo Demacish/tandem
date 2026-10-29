@@ -48,10 +48,13 @@ internal class FoodAliasOutboxHandler @Inject constructor(
         val body = parse(payload) ?: return@withLock OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         when (row.op) {
             OutboxOps.CREATE -> create(remote, body)
+
             OutboxOps.PATCH -> update(remote, row) { id ->
                 automations.patchAutomation(id, body).also { reader.noteServerAlias(remote.accountId, it) }
             }
+
             OutboxOps.DELETE -> update(remote, row) { id -> automations.deleteAutomation(id) }
+
             else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
     }
@@ -98,11 +101,7 @@ internal class FoodAliasOutboxHandler @Inject constructor(
             }
         }
 
-    private suspend fun update(
-        remote: ActiveSource.Remote,
-        row: OutboxEntity,
-        request: suspend TandoorApi.(Long) -> Any,
-    ): OutboxResult {
+    private suspend fun update(remote: ActiveSource.Remote, row: OutboxEntity, request: suspend TandoorApi.(Long) -> Any): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
         return when (val sent = caller.write(remote) { this.request(serverId) }) {
             is Outcome.Success -> OutboxResult.Sent
