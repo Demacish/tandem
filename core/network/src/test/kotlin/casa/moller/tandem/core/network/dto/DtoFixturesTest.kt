@@ -119,7 +119,43 @@ class DtoFixturesTest {
         "fas2/shopping-list-recipe-bulk-create-entries" to "contract probe; the app creates each entry itself (ids for the outbox)",
         "fas2/user-preference-patch" to "contract setup; the app only reads the preferences",
         "fas2/user-preference-patch-autoadd" to "contract setup; the app only reads the preferences",
+        // Fas S (grund lane): recordings whose DTO the lane adds with its route (docs/BYGGE.md
+        // "Fas S – kontrakt"); the lane removes its lines here in the same commit.
+        "fas-s/food-batch-update-off" to FAS_S_HEMMA_DATA,
+        "fas-s/food-batch-update-on-hand" to FAS_S_HEMMA_DATA,
+        "fas-s/food-batch-update-substitute" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-create" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-create-freezer" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-create-no-date" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-create-zero" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-list" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-list-food" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-list-location" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-patch-amount" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-patch-move" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-patch-note" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-entry-patch-zero" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-location-create" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-location-create-Frys" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-location-list" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-location-list-as-outsider" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-location-list-empty" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-location-patch" to FAS_S_HEMMA_DATA,
+        "fas-s/inventory-log-list-entry" to FAS_S_HEMMA_DATA,
+        "fas-s/automation-create-barcode" to FAS_S_SKANNING,
+        "fas-s/automation-create-receipt" to FAS_S_SKANNING,
+        "fas-s/automation-list-food-alias" to FAS_S_SKANNING,
+        "fas-s/automation-patch" to FAS_S_SKANNING,
+        "fas-s/keyword-get-child" to FAS_S_DRYCKER,
+        "fas-s/keyword-move" to FAS_S_DRYCKER,
+        "fas-s/recipe-image-put-drink" to FAS_S_DRYCKER,
     )
+
+    private companion object {
+        const val FAS_S_HEMMA_DATA = "Fas S: the hemma-data lane adds the inventory and food batch DTOs"
+        const val FAS_S_SKANNING = "Fas S: the skanning lane adds the automation (FOOD_ALIAS) DTO"
+        const val FAS_S_DRYCKER = "Fas S: the drycker lane adds keyword move/detail and the drink image upload"
+    }
 
     @Test
     fun everySuccessfulJsonFixtureOfTandoor2613DecodesWithItsDto() = checkFixtures("2.6.13", notModelled)
