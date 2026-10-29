@@ -13,15 +13,23 @@ import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
+import casa.moller.tandem.core.model.pantry.InventoryEntry
+import casa.moller.tandem.core.model.pantry.PantryFood
+import casa.moller.tandem.core.model.pantry.PantryUnit
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import casa.moller.tandem.core.ui.pantry.ExpiryUrgency
 import casa.moller.tandem.feature.home.ui.TodayScreen
 import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
 import com.github.takahirom.roborazzi.captureRoboImage
 import kotlin.time.Instant
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,6 +66,32 @@ internal val favoriteRecipes: List<RecipeOverview> = listOf(
 internal fun tonightShoppingStub(text: String): TonightShoppingAction = { _, _, _ ->
     TandemSecondaryButton(text = text, onClick = {}, leadingIcon = TandemIcons.ShoppingCart, modifier = Modifier.fillMaxWidth())
 }
+
+/**
+ * Fas S (hemma-ui lane): "Kan laga nu" and "Går ut snart" on the sample day (recipes in none of
+ * the other carousels): the cream expires tomorrow (4 recipes use it), the leftovers expired yesterday.
+ */
+internal fun samplePantryState(today: LocalDate = SampleRecipes.upcomingMeals.today): TodayPantryState = TodayPantryState(
+    today = today,
+    makeNow = listOf(
+        RecipeOverview(id = 9_201, name = "Pannkakor", workingMinutes = 30),
+        RecipeOverview(id = 9_202, name = "Krämig kycklinggryta", workingMinutes = 35),
+        RecipeOverview(id = 9_203, name = "Omelett med svamp", workingMinutes = 10),
+    ),
+    hasAll = 2,
+    expiring = listOf(
+        TodayExpiring(
+            InventoryEntry(11, 1, PantryFood(101, "grädde"), PantryUnit(1, "dl"), 3.0, today.plus(DatePeriod(days = 1))),
+            ExpiryUrgency.SOON,
+            recipeCount = 4,
+        ),
+        TodayExpiring(
+            InventoryEntry(15, 1, PantryFood(111, "köttfärssås"), PantryUnit(6, "låda"), 1.0, today.minus(DatePeriod(days = 1))),
+            ExpiryUrgency.EXPIRED,
+            recipeCount = 0,
+        ),
+    ),
+)
 
 /** Today with the sample meal plan and carousels (core:testing), as the ViewModel builds it. */
 internal fun sampleHomeState(meals: UpcomingMeals = SampleRecipes.upcomingMeals, offline: Boolean = false): HomeUiState {
@@ -210,6 +244,25 @@ class TodayScreenshotTest {
     @Config(qualifiers = TABLET)
     fun tabletNothingPlanned() = capture("tablet_today_nothing_planned_light", nothingPlanned)
 
+    // Fas S (hemma-ui lane): "Går ut snart" and "Kan laga nu" after the plan (plan §8.8).
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun phonePantrySwedish() = capture("phone_today_pantry_light_sv", sampleHomeState(), pantry = samplePantryState())
+
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun phonePantryDark() = capture("phone_today_pantry_dark", sampleHomeState(), darkTheme = true, pantry = samplePantryState())
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun tabletPantrySwedish() = capture("tablet_today_pantry_light_sv", sampleHomeState(), pantry = samplePantryState())
+
+    @Test
+    @Config(qualifiers = "sv-$MEDIUM")
+    fun mediumPantryFontScale2() =
+        capture("medium_today_pantry_font2_light_sv", sampleHomeState(), fontScale = 2f, pantry = samplePantryState())
+
     private fun capture(
         name: String,
         state: HomeUiState,
@@ -218,12 +271,13 @@ class TodayScreenshotTest {
         chrome: AppChrome = AppChrome(),
         books: TodayBooksState = TodayBooksState(),
         tonightShopping: TonightShoppingAction? = null,
+        pantry: TodayPantryState = TodayPantryState(),
     ) {
         composeRule.setContent {
             WithFontScale(fontScale) {
                 TandemTheme(darkTheme = darkTheme) {
                     CompositionLocalProvider(LocalAppChrome provides chrome) {
-                        TodayScreen(state = state, onAction = {}, books = books, tonightShoppingAction = tonightShopping)
+                        TodayScreen(state = state, onAction = {}, books = books, tonightShoppingAction = tonightShopping, pantry = pantry)
                     }
                 }
             }

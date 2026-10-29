@@ -103,6 +103,10 @@ fun UnpackScreen(
 @Composable
 private fun UnpackList(state: UnpackUiState, onAction: (UnpackAction) -> Unit, contentPadding: PaddingValues) {
     val spacing = TandemTheme.spacing
+    val width = Modifier
+        .widthIn(max = TandemTheme.sizes.maxReadingWidth)
+        .fillMaxWidth()
+        .padding(horizontal = spacing.screenHorizontal)
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -112,10 +116,6 @@ private fun UnpackList(state: UnpackUiState, onAction: (UnpackAction) -> Unit, c
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        val width = Modifier
-            .widthIn(max = TandemTheme.sizes.maxReadingWidth)
-            .fillMaxWidth()
-            .padding(horizontal = spacing.screenHorizontal)
         item(key = "intro") {
             Column(modifier = width, verticalArrangement = Arrangement.spacedBy(spacing.md)) {
                 if (state.readOnly) {

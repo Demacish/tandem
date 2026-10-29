@@ -93,6 +93,14 @@ class TodayAccessibilityTest {
         tonightShopping = tonightShoppingStub("Add to shopping list"),
     )
 
+    // Fas S (hemma-ui lane): "Går ut snart" and "Kan laga nu".
+
+    @Test
+    fun pantrySections() = check(sampleHomeState(), pantry = samplePantryState())
+
+    @Test
+    fun pantrySectionsDarkFontScale2() = check(sampleHomeState(), darkTheme = true, fontScale = 2f, pantry = samplePantryState())
+
     private fun check(
         state: HomeUiState,
         darkTheme: Boolean = false,
@@ -100,13 +108,14 @@ class TodayAccessibilityTest {
         chrome: AppChrome = AppChrome(),
         books: TodayBooksState = TodayBooksState(),
         tonightShopping: TonightShoppingAction? = null,
+        pantry: TodayPantryState = TodayPantryState(),
     ) {
         composeRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale * density.fontScale)) {
                 TandemTheme(darkTheme = darkTheme) {
                     CompositionLocalProvider(LocalAppChrome provides chrome) {
-                        TodayScreen(state = state, onAction = {}, books = books, tonightShoppingAction = tonightShopping)
+                        TodayScreen(state = state, onAction = {}, books = books, tonightShoppingAction = tonightShopping, pantry = pantry)
                     }
                 }
             }

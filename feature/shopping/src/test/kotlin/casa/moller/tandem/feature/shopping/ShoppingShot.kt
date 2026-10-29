@@ -63,10 +63,18 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     RECIPE_SHEET_PINNED({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.sheet, onAction = {}) } }),
     RECIPE_BUTTON({ Sheet { RecipeShoppingButton(state = RecipeShoppingSamples.onList, onAction = {}, servings = 4.0) } }),
     EDIT_FROM_RECIPE({ Sheet { EditEntryPanel(state = editState.copy(recipeRows = 4), onAction = {}) } }),
+
+    // Fas S (hemma-ui lane): "Lägg det som saknas på listan" from Kan laga nu, and "Packa upp" after shopping (#46).
+    RECIPE_SHEET_FROM_PANTRY({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.fromPantry, onAction = {}) } }),
+    LIST_UNPACK({ UnpackListShot() }),
 }
 
 @Composable
 private fun ListShot(state: ShoppingUiState) = ShoppingScreen(state = state, onAction = {})
+
+@Composable
+private fun UnpackListShot() =
+    ShoppingScreen(state = ShoppingSamples.state(), onAction = {}, unpackPrompt = { UnpackPrompt(5, onUnpack = {}) })
 
 @Composable
 private fun ChoiceShot(state: StoreChoiceUiState) = StoreChoiceScreen(state = state, onChoose = {}, onBack = {})
@@ -153,6 +161,19 @@ internal object RecipeShoppingSamples {
     )
 
     val withLists = sheet.copy(lists = ShoppingSamples.lists, listId = ShoppingSamples.lists.first().id, servings = 6.0)
+
+    /** Fas S (hemma-ui lane): from Kan laga nu, only the mushrooms and the parmesan are missing. */
+    val fromPantry = sheet.copy(
+        fromPantry = true,
+        toBuy = listOf(RecipeShoppingRow(10111, "champinjoner", "400 g"), RecipeShoppingRow(10132, "parmesan", "0,75 dl", note = "riven")),
+        atHome = listOf(
+            RecipeShoppingRow(10113, "vitlöksklyftor", "2 st", note = "pressade", onHand = true),
+            RecipeShoppingRow(10121, "tagliatelle", "300 g", onHand = true),
+            RecipeShoppingRow(10131, "vispgrädde", "2,5 dl", onHand = true),
+            RecipeShoppingRow(10112, "smör", "1 ½ msk", onHand = true),
+            RecipeShoppingRow(10122, "salt", "", onHand = true),
+        ),
+    )
 
     /** The button under the ingredients with four of the recipe's rows on the list already. */
     val onList = sheet.copy(open = false, onList = 4, onListRecipeIds = listOf(12))

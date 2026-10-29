@@ -215,6 +215,24 @@ class ShoppingScreenshotTest {
     @Config(qualifiers = "sv-$PHONE")
     fun editFromRecipe() = capture("phone_shopping_edit_from_recipe_light_sv", ShoppingShot.EDIT_FROM_RECIPE)
 
+    // Fas S (hemma-ui lane): the sheet from Kan laga nu and "Packa upp" on the list.
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeSheetFromPantry() = capture("phone_recipe_shopping_from_pantry_light_sv", ShoppingShot.RECIPE_SHEET_FROM_PANTRY)
+
+    @Test
+    fun recipeSheetFromPantryDark() =
+        capture("phone_recipe_shopping_from_pantry_dark", ShoppingShot.RECIPE_SHEET_FROM_PANTRY, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun listUnpack() = capture("phone_shopping_unpack_light_sv", ShoppingShot.LIST_UNPACK)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun listUnpackTabletDark() = capture("tablet_shopping_unpack_dark", ShoppingShot.LIST_UNPACK, darkTheme = true)
+
     private fun capture(
         name: String,
         shot: ShoppingShot,

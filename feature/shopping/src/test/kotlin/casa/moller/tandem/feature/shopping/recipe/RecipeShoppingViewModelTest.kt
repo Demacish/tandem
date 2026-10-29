@@ -179,4 +179,29 @@ class RecipeShoppingViewModelTest {
         vm.onAction(RecipeShoppingAction.Open(4.0))
         assertFalse(vm.uiState.value.open)
     }
+
+    /** Fas S (hemma-ui lane): "Lägg det som saknas på listan" ticks exactly the missing foods. */
+    @Test
+    fun fromCookNowOnlyTheMissingFoodsAreTicked() = runTest {
+        val vm = viewModel()
+        open(vm)
+        // Mushrooms (1) are missing, and so is the butter (2), although Tandoor marks it on hand.
+        vm.onAction(RecipeShoppingAction.Open(servings = null, missingFoodIds = setOf(1L, 2L)))
+        val state = vm.uiState.value
+        assertTrue(state.open)
+        assertTrue(state.fromPantry)
+        assertEquals(listOf("champinjoner", "smör"), state.toBuy.map { it.food })
+        assertTrue(state.toBuy.all { it.chosen })
+        assertTrue(state.atHome.none { it.chosen })
+        assertTrue("salt" in state.atHome.map { it.food })
+        assertEquals(2, state.chosenCount)
+        vm.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(setOf(10111L, 10112L), shopping.recipeRequests.last().ingredientIds)
+
+        // The usual sheet afterwards is the usual choice again.
+        vm.onAction(RecipeShoppingAction.Open(servings = 4.0))
+        assertFalse(vm.uiState.value.fromPantry)
+        assertTrue("smör" in vm.uiState.value.atHome.map { it.food })
+    }
 }

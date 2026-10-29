@@ -214,11 +214,12 @@ private fun UseUpLine(state: MakeNowUiState) {
     val today = state.today ?: return
     if (state.expiring.isEmpty()) return
     val locale = currentLocale()
-    val items = state.expiring.take(MAX_USE_UP).joinToString(", ") { entry ->
+    // map is inline, so the texts can be read here (joinToString's transform is not composable).
+    val items = state.expiring.take(MAX_USE_UP).map { entry ->
         val day = entry.expires
         val name = foodTitle(entry.food.name, locale)
         if (day != null) "$name ${expiryText(day, today)}" else name
-    }
+    }.joinToString(", ")
     InfoCard(
         title = stringResource(R.string.pantry_use_up_title),
         body = stringResource(R.string.pantry_use_up_body, items),

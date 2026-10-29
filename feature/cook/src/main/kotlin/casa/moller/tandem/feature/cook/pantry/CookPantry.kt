@@ -243,10 +243,15 @@ const val COOK_PANTRY_TAG = "cook:pantry"
  * ("Grädde, 2 dl, Kyl") with the two as actions.
  */
 @Composable
-internal fun CookPantryCard(state: CookPantryState, onAction: (CookPantryAction) -> Unit, modifier: Modifier = Modifier) {
+internal fun CookPantryCard(
+    state: CookPantryState,
+    onAction: (CookPantryAction) -> Unit,
+    modifier: Modifier = Modifier,
+    initiallyOpen: Boolean = false,
+) {
     if (!state.visible) return
     val spacing = TandemTheme.spacing
-    var open by rememberSaveable { mutableStateOf(false) }
+    var open by rememberSaveable { mutableStateOf(initiallyOpen) }
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,

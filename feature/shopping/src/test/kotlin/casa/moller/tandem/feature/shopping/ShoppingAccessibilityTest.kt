@@ -139,6 +139,20 @@ class ShoppingAccessibilityTest {
     @Test
     fun editFromRecipe() = check(ShoppingShot.EDIT_FROM_RECIPE)
 
+    // Fas S (hemma-ui lane).
+
+    @Test
+    fun recipeSheetFromPantry() = check(ShoppingShot.RECIPE_SHEET_FROM_PANTRY)
+
+    @Test
+    fun recipeSheetFromPantryDarkFontScale2() = check(ShoppingShot.RECIPE_SHEET_FROM_PANTRY, darkTheme = true, fontScale = 2f)
+
+    @Test
+    fun listUnpack() = check(ShoppingShot.LIST_UNPACK)
+
+    @Test
+    fun listUnpackDarkFontScale2() = check(ShoppingShot.LIST_UNPACK, darkTheme = true, fontScale = 2f)
+
     private fun check(shot: ShoppingShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {
             ShoppingTestTheme(darkTheme = darkTheme, fontScale = fontScale, chrome = chrome) { shot.content() }

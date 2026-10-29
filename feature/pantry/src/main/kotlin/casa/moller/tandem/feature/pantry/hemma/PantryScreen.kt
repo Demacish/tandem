@@ -271,7 +271,8 @@ private fun Shortcuts(state: PantryUiState, onAction: (PantryAction) -> Unit) {
             leadingIcon = TandemIcons.Restaurant,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (state.canEdit && !state.noLocations) ScannerChips(fridgePhoto = state.fridgePhoto, onAction = onAction)
+        // The empty pantry shows the same ways in as big buttons.
+        if (state.canEdit && !state.noLocations && !state.isEmpty) ScannerChips(fridgePhoto = state.fridgePhoto, onAction = onAction)
     }
 }
 
