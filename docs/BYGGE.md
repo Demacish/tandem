@@ -986,6 +986,115 @@ telefon stående och liggande, surfplatta i båda orienteringarna, mörkt, tecke
 engelska), `TodayPantryViewModelTest`, `CookPantryTest`, `RecipeShoppingViewModelTest`
 (`fromCookNowOnlyTheMissingFoodsAreTicked`), `PantryTextTest` (`core:ui`).
 <!-- /Fas S hemma-ui -->
+<!-- Fas S drycker -->
+## Drycker och "Passar med" (`:feature:recipes`, `:core:sync`, Fas S, drycker)
+
+Drycker kopplade till rätter (#43, B20, plan §8.8) mot `DrinkRepository` i "Fas S – kontrakt".
+
+**Modellen på servern** (alla namn är serverdata och syns på webben):
+
+- En **dryck** är ett vanligt recept med nyckelordet `Dryck` (roten) och gärna en **typ** som barn
+  (`Dryck > Vin`, `Öl`, `Cider`, `Alkoholfritt`, `Drink`). Ett rotnyckelord som heter som en
+  föreslagen typ (gjort på webben utan trädet) läses också som typ, men bara `Dryck` och dess
+  barn gör ett recept till en dryck. Recept-POST: `{name, description, keywords: [{id, name}...],
+  servings, steps: [], internal: true}`, bilden med `PUT /api/recipe/{id}/image/` (FACTS "Fas S f").
+- En **koppling** är ett nyckelord under roten `Passar med`. Drycken bär sitt eget
+  (`Passar med > <dryckens namn>`, skapas första gången drycken kopplas) och varje rätt den passar
+  till bär samma. Ett nyckelord under `Passar med` som ingen dryck bär är en koppling till en
+  **sorts dryck** ("Kraftigt rött", `Pairing.isTypeOnly`) och visas som text. Kopplingen följer
+  nyckelordets **id**, så ett namnbyte på webben bryter den inte.
+- **Namnen på servern är alltid svenska** (`DrinkKeywords.DRINK`, `PAIRS_WITH`, `TYPES`), också med
+  ett engelskt gränssnitt, så att hushållets telefoner hittar samma nyckelord; appen visar typerna
+  på gränssnittets språk (`drinkTypeLabel`: Vin → Wine, Drink → Cocktail). Har hushållet redan en
+  engelsk rot (`Beverages`/`Beverage`, `Pairs with`/`Goes with`) används den
+  (`DrinkKeywords.isDrinkRoot`, `isPairsWithRoot`); "Drink" är alltid en typ, aldrig roten.
+- Tandoors `POST /api/keyword/` hämtar eller skapar på namn (versaler spelar ingen roll) och
+  ignorerar `parent`, och namn är unika i spacet. Därför flyttas ett nytt barn med
+  `PUT /api/keyword/{id}/move/{parent}/`, ett nyckelord som redan har en annan förälder flyttas
+  aldrig, och en ny sorts dryck vars namn ett annat (icke-kopplings-)nyckelord redan har nekas
+  med `DrinkProblem.NAME_TAKEN` innan något köas (Tandoor skulle annars återanvända det).
+
+**Läsningar offline** (`core:domain` `drink/DrinkIndex`, ren Kotlin): byggs ur `keyword`
+(med `parent_id`), `recipe_keyword`, de osända `RECIPE_KEYWORDS`-raderna (i ordning, inte FAILED)
+och `drink_draft` (`core:sync` `drink/DrinkReader.kt`). Kopplingar som bara finns i outboxen eller
+i ett utkast får ett stabilt negativt id under `DrinkIndex.PENDING_ID_LIMIT`
+(`pendingKeywordId(namn)`), så de syns och kan tas bort direkt. Ingen ny tabell: frågorna ligger i
+`DrinkDraftDao` (`getKeywords`, `getRecipeKeywords`, `getRecipeName`, `upsertKeywords`, demofrågor).
+
+**Skrivningar** (`OfflineFirstDrinkRepository`, `di/DrinkModule.kt`, ersätter appens
+`TemporaryFasSDrinkModule`):
+
+| Anrop | Lokalt | Outbox |
+|---|---|---|
+| `addPairing(recept, nyckelord)` / `removePairing` | överlägget i indexet | `RECIPE_KEYWORDS` `{"keyword:<id>": true\|false}` (väntande nyckelord: `{"pairing:<namn>": …}`), bas = motsatsen, så lägg till + ta bort tar ut varandra |
+| `addNewPairing(recept, namn)` | väntande koppling (sorts dryck) | `{"pairing:<namn>": true}`; tomt namn → `NAME_EMPTY`, upptaget → `NAME_TAKEN` |
+| `pairWithDrink(rätt, dryck)` (ny i `DrinkRepository`) | drycken får sitt eget nyckelord om den saknar ett, rätten samma | på båda recepten; en dryck som inte skickats än får namnet i sitt `drink_draft.keywords` |
+| `createDrink(utkast)` | `drink_draft` (tillfälligt id ur `IdRewriteDao.nextLocalId(DRINK)`), fotot kopierat och skalat | `drink` CREATE `{"draft": <id>}` + `RECIPE_IMAGE` `{"file": …}` som väntar på CREATE |
+
+`RecipeKeywordsOutboxHandler` (bok-banans, utökad) läser receptet **färskt**, tillämpar raden fält
+för fält i ordning (Vill laga, `keyword:<id>` med tillfälliga id via `id_mapping`,
+`pairing:<namn>` som `PairingKeywords` hittar eller skapar och flyttar), skickar **hela** listan och
+lagrar svaret som detalj; inget att ändra = ingen PATCH. Så behålls ett nyckelord som en partner
+lagt till under tiden. `DrinkOutboxHandler` (`drink`): CREATE läser utkastet (kopplingar som lagts
+till offline följer med), säkrar `Dryck`, typerna och kopplingarna, POSTar och lagrar svaret
+(drycken syns direkt, `completeCreate` tar bort utkastet och ger bildraden id); ett nytt försök
+efter ett förlorat svar letar först efter drycken på namn (`recipe?query=`, med `Dryck`, inte redan
+tagen). `RECIPE_IMAGE` PUTar kopian och tar bort den. `DrinkImageStore`
+(`AndroidDrinkImageStore`): `ImageDecoder` → längsta sidan högst 1600 px, JPEG 85 %, i
+`files/drink-images/` (hela `file`-domänen är undantagen från backup).
+
+`refresh()` (Drycker dras ned) läser hela nyckelordslistan och `recipe?keywords_or=<Dryck>`.
+**Idags förslag:** `OfflineFirstHomeRepository` tar bort drycker ur Ofta lagade, Nya och Inte lagade
+på länge (Fästa och Nyligen visade får behålla dem); Kan laga nu sorterade redan bort dem
+(`DefaultMakeNowRepository`). **Demoläget** (`drink/DemoDrinks.kt`, anropas av `DemoSeeder` och skrivs
+om när demoinnehållet skrivits om): Rioja Crianza (Vin) till köttfärssåsen och köttbullarna, Ljus
+lager (Öl) och Äppelmust (Alkoholfritt) till tacon m.fl., "Friskt vitt" som sorts dryck till laxen
+och kycklingen; kopplingar och nya drycker skrivs direkt i demodatabasen.
+
+**Skärmarna** (`feature/recipes/.../drinks/`, inga Stitch-skisser: receptlistans mönster):
+
+| Sida | Fil | Innehåll |
+|---|---|---|
+| Drycker (`DrinksKey(type)`) | `DrinksViewModel.kt`, `DrinksScreen.kt`, `DrinkUi.kt` | sök (namn, anteckning, typ, utan diakritiska tecken), typchips (Alla + typerna), rader med foto, typ, namn, anteckning och betyg (en TalkBack-nod), "Väntar på att skickas" för en dryck som inte skickats (öppnas inte än, meddelande), FAB Ny dryck (inte för gäst), tomt läge, inget matchar, gäst; menyn har växeln "Visa Sök på Systembolaget"; två kolumner från 720 dp, list-detail i skalet |
+| En dryck (`DrinkDetailKey`) | skalet visar `RecipeDetail` | receptvyn med avsnittet nedan (kokläge, koklogg "druckit", receptarket som för alla recept) |
+| Passar med / Passar till | `RecipePairingsViewModel.kt`, `RecipePairingsSection.kt` | i receptvyn under bokknapparna (`RecipeDetailRoute(onNavigate)` → `RecipeDetailScreen(pairings)`, båda panelerna på surfplatta): en rätts drycker (tryck öppnar) och sorter som text, en dryck rätterna; ta bort per rad (48 dp, inte för gäst), Välj dryck/Välj rätter → väljaren; för en dryck "Sök på Systembolaget" och, utan ingredienser, "Lägg på inköpslistan" (drycken själv blir en vara; med ingredienser gäller receptarket) |
+| Kopplingsväljaren (`PairingPickerKey`) | `PairingPickerViewModel.kt`, `PairingPickerScreen.kt` | rätt: drycker och sorter som kryssrader (en nod var), "Lägg till ”…”" av söktexten, Ny dryck när inga finns; dryck: rätterna; varje tryck sparas direkt; två kolumner på surfplatta |
+| Ny dryck (`CreateDrinkKey(pairWithRecipeId)`, helskärm) | `CreateDrinkViewModel.kt`, `CreateDrinkScreen.kt`, `DrinkRoutes.kt` | namn (krävs), typchips, anteckning (pris, var den köps), foto: "Ta foto" (`TakePicture` till cachen via modulens `FileProvider` `${applicationId}.drinkphotos`, `res/xml/drink_photo_paths.xml`; CAMERA frågas först vid trycket, förklaringen står under knapparna, nekad = meddelande och bildväljaren) eller "Välj bild" (systemets bildväljare, ingen behörighet); "Spara drycken" fast nedanför formuläret ovanför tangentbordet; öppnad från en rätt kopplas drycken till den; resten ändras på webben (Fas 3 har redigeraren). Formuläret överlever processdöd |
+
+**Sök på Systembolaget** (`systembolagetUrl`): bara en webblänk,
+`https://www.systembolaget.se/sok/?textQuery=<namn>`, inget anrop från appen. Inställningen
+`AppSettings.systembolagetLink` (`null` = inte vald: på för svenskt gränssnitt, av annars,
+`systembolagetLinkShown(språk)`; nyckeln `systembolaget_link` i inställningsfilen) ändras i
+Dryckers meny.
+
+**Dryckesförslag i Idag och Veckan:** `core:ui` `drink/DrinkSuggestion.kt` (`LocalDrinkSuggestion`,
+`DrinkSuggestionSlot`) är en plats som skalet fyller med feature:recipes `drinkSuggestionSlot`
+(`ShellFeatures.drinkSuggestion`, null i skalets tester), eftersom feature:home och
+feature:mealplan inte får se feature:recipes. `TonightCard` och `MealCard` (inte surfplattans
+`MealTile`) visar "Passar med: Rioja Crianza, Kraftigt rött" när det planerade receptet har
+kopplingar; tryck öppnar den första drycken. Utan kopplingar (och i alla tester) ritas inget.
+
+**Skalet:** chipet **Drycker** sist i receptlistans samlingsrad (`RecipeCollection.DRINKS`;
+`DrinksKey` ersätter en öppen bok/dryck som de andra samlingarna), `DrinksKey` list-panel och
+`DrinkDetailKey` detaljpanel (en vald dryck ersätter den öppna och markeras i listan),
+`ShellFeatures.RecipeDetail(onNavigate)`, `Drinks(selectedDrinkId)`. Ikonerna `WineBar`,
+`PhotoCamera` och `Image` i `core:designsystem` `icon/TandemIconsDrinks.kt` (Material Symbols
+Rounded på NOTICE-commiten, blob-hashar kontrollerade).
+
+**Tester:** `DrinkIndexTest` (`:core:domain`), `DrinkKeywordsTest` (`:core:model`),
+`PreferencesSettingsStoreTest` (Systembolaget-valet), `DtoFixturesTest` (nyckelord med förälder,
+`move`, bilden; också `fas1/`), `DrinkRepositoryTest` (`:core:sync`, mot `FakeDrinkTandoor` i både
+2.6.13- och 2.7.1-form: en dryck som recept med `Dryck > Vin`, `steps: []`, `internal`; koppling från
+rätten och från drycken med samma nyckelord, borttagning; sorts dryck, upptaget och tomt namn,
+lägg till + ta bort före synk tar ut varandra; receptet läses om före PATCH och partnerns
+nyckelord blir kvar; en dryck skapad offline med foto, kopplad före synk, sedan skickad med
+omskrivna id; gäst; demoläget utan nät; skalningen), `DemoAndAccountsTest` (tre demodrycker),
+`DrinkViewModelsTest` (`:feature:recipes`), `DrinkScreenshotTest` och `DrinkAccessibilityTest`
+(`DrinkShot`: telefon stående och liggande, surfplatta i båda orienteringarna och list-detail,
+mörkt, teckenstorlek 2, svenska och engelska, tomt, gäst, demo); nya referensbilder under
+`feature/recipes/src/test/screenshots/drinks/`, och de tre `books/*list_collections*` har nu chipet
+Drycker.
+<!-- /Fas S drycker -->
 
 <!-- Fas S skanning -->
 ## Skanning – streckkod, kvitto och granskningslistan (`:feature:scan`, `:core:domain`, Fas S)

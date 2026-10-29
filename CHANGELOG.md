@@ -48,6 +48,19 @@ kommande delarna.
   summa, moms, pant, rabatter, kort- och medlemsrader tas bort, och varje vara kopplas till ett
   inlärt kvittonamn eller ett förslag. Allt hamnar i en lista där varje rad kan ändras eller
   hoppas över innan något sparas, och det du kopplat lärs in till nästa gång. Fotot sparas inte.
+- **Drycker** (Recept → Drycker): en dryck är ett vanligt recept med nyckelordet "Dryck" och gärna
+  en typ (Vin, Öl, Cider, Alkoholfritt, Drink), så den syns på webben och kan ha bild, betyg och
+  koklogg. Sök och filtrera på typ, och skapa en ny dryck med namn, typ, en anteckning (pris, var
+  den köps) och ett foto från kameran eller galleriet; resten ändras på webben.
+- **Passar med:** receptvyn visar vilka drycker (och sorter som "Kraftigt rött") en rätt passar
+  med, och en dryck vilka rätter den passar till. Koppla och ta bort från båda håll; kopplingen
+  sparas som nyckelord under "Passar med" i Tandoor, så den syns på den andra telefonen och på
+  webben, och den fungerar offline. Gäster ser kopplingarna men kan inte ändra dem.
+- Kvällens måltid i **Idag** och måltiderna i **Veckan** visar ett dryckesförslag när receptet har
+  en koppling. Drycker föreslås aldrig som middag.
+- En dryck utan ingredienser läggs på inköpslistan som en vara. **Sök på Systembolaget** öppnar
+  Systembolagets sök med dryckens namn (bara en länk; på som standard med svenska i appen, går att
+  slå av i Dryckers meny).
 
 ## [0.3.0] – 2026-10-26
 
