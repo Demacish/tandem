@@ -15,12 +15,7 @@ import kotlinx.datetime.plus
  * @property isFreezer the freezer offers longer expiry choices ([ExpiryChoice.forLocation]).
  * @property pending a change of it waits in the outbox.
  */
-data class InventoryLocation(
-    val id: Long,
-    val name: String,
-    val isFreezer: Boolean = false,
-    val pending: Boolean = false,
-) {
+data class InventoryLocation(val id: Long, val name: String, val isFreezer: Boolean = false, val pending: Boolean = false) {
     val isLocalOnly: Boolean
         get() = id < 0
 }
@@ -125,20 +120,10 @@ enum class ExpiryChoice(private val period: DatePeriod?) {
  *
  * @property shoppingEntryId the shopping list entry it came from.
  */
-data class UnpackItem(
-    val shoppingEntryId: Long,
-    val food: PantryFood,
-    val amount: Double,
-    val unit: PantryUnit? = null,
-)
+data class UnpackItem(val shoppingEntryId: Long, val food: PantryFood, val amount: Double, val unit: PantryUnit? = null)
 
 /** The user's choice for one [UnpackItem]: where it goes and until when; [include] false skips it. */
-data class UnpackChoice(
-    val item: UnpackItem,
-    val locationId: Long,
-    val expires: LocalDate? = null,
-    val include: Boolean = true,
-)
+data class UnpackChoice(val item: UnpackItem, val locationId: Long, val expires: LocalDate? = null, val include: Boolean = true)
 
 /**
  * A staple ("Basvaror": salt, peppar, olja, vatten ...): without them almost no recipe "has all"

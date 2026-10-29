@@ -41,11 +41,7 @@ data class MakeNowRecipe(
 )
 
 /** Filters of "Kan laga nu" (plan §8.8: måltidstyp, nyckelord och tid). */
-data class MakeNowFilter(
-    val keywordIds: Set<Long> = emptySet(),
-    val maxMinutes: Int? = null,
-    val mealTypeId: Long? = null,
-)
+data class MakeNowFilter(val keywordIds: Set<Long> = emptySet(), val maxMinutes: Int? = null, val mealTypeId: Long? = null)
 
 /**
  * The groups as last fetched. [refreshing] while a new answer is on its way; [stale] when the

@@ -40,16 +40,13 @@ object MissingIngredients {
      * @param foods what is known per food id; a food without an entry counts by its own `onHand`.
      */
     fun missing(ingredients: List<Ingredient>, foods: Map<Long, FoodAvailability>): List<MissingFood> {
-        val seen = HashSet<Long>()
-        val result = ArrayList<MissingFood>()
-        for (ingredient in ingredients) {
-            if (ingredient.isHeader) continue
-            val food = ingredient.food ?: continue
-            if (!seen.add(food.id)) continue
-            val availability = foods[food.id] ?: FoodAvailability(food.id, onHand = food.onHand)
-            if (!isResolved(availability, foods)) result += MissingFood(food.id, food.name, food.pluralName)
-        }
-        return result
+        return ingredients.asSequence()
+            .filterNot { it.isHeader }
+            .mapNotNull { it.food }
+            .distinctBy { it.id }
+            .filterNot { food -> isResolved(foods[food.id] ?: FoodAvailability(food.id, onHand = food.onHand), foods) }
+            .map { food -> MissingFood(food.id, food.name, food.pluralName) }
+            .toList()
     }
 
     /** Whether one food is resolved (available, by a substitute, or ignorable). */

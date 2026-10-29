@@ -250,7 +250,7 @@ class FakePantryRepository(
     }
 
     private fun sortForPantry(list: List<InventoryEntry>): List<InventoryEntry> =
-        list.sortedWith(compareBy<InventoryEntry>(nullsLast()) { it.expires }.thenBy { it.food.name })
+        list.sortedWith(compareBy<InventoryEntry, LocalDate?>(nullsLast()) { it.expires }.thenBy { it.food.name })
 
     companion object {
         const val DEFAULT_UNIT: String = "st"
