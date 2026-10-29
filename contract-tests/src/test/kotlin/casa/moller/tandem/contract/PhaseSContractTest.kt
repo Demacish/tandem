@@ -546,11 +546,11 @@ class PhaseSContractTest {
             val withPairing = existing + obj("id" to childId, "name" to PAIRING_TYPE)
             val patch = api("recipe-patch-keywords-as-member", "PATCH", path, obj("keywords" to withPairing), token = env.readerToken)
             observe("pairing.memberPatch.status", patch.status)
-            observe("pairing.memberPatch.keywords", keywordRefs(objOf(patch)).map { it.stringAt("name") }.sorted())
+            observe("pairing.memberPatch.keywords", keywordRefs(objOf(patch)).mapNotNull { it.stringAt("name") }.sorted())
             // Only the new one: does the PATCH replace the list (the client must read before PATCH)?
             val onlyPairing = obj("keywords" to listOf(obj("id" to childId, "name" to PAIRING_TYPE)))
             val replace = api("recipe-patch-keywords-replace", "PATCH", path, onlyPairing)
-            observe("pairing.patchReplaces.keywords", keywordRefs(objOf(replace)).map { it.stringAt("name") }.sorted())
+            observe("pairing.patchReplaces.keywords", keywordRefs(objOf(replace)).mapNotNull { it.stringAt("name") }.sorted())
             api("recipe-restore-keywords", "PATCH", path, obj("keywords" to withPairing), record = false)
             // A keyword given only by id.
             val idOnly = obj("keywords" to (existing + obj("id" to childId)))
@@ -615,7 +615,7 @@ class PhaseSContractTest {
         val created = emptySteps
         drinkId = id
         objOf(created)?.let { drink ->
-            observe("drink.create.keywords", keywordRefs(drink).map { it.stringAt("name") }.sorted())
+            observe("drink.create.keywords", keywordRefs(drink).mapNotNull { it.stringAt("name") }.sorted())
             observe("drink.create.servings", drink["servings"])
             observe("drink.create.internal", drink["internal"])
             observe("drink.create.private", drink["private"])
