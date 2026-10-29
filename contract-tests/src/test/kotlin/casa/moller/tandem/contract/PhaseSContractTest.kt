@@ -132,8 +132,7 @@ class PhaseSContractTest {
             assertEquals(CREATED, created.status, created.toString())
             idOf(created)?.let { recipeIds[name] = it }
             val ingredients = objOf(created)?.arrAt("steps").objects().flatMap { it.arrAt("ingredients").objects() }
-            for (ingredient in ingredients) {
-                val food = ingredient.objAt("food") ?: continue
+            for (food in ingredients.mapNotNull { it.objAt("food") }) {
                 val foodName = food.stringAt("name") ?: continue
                 food.longAt("id")?.let { foodIds[foodName] = it }
             }

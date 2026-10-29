@@ -35,7 +35,10 @@ abstract class IdRewriteDao {
     /** [id] itself when it is a server id (>= 0), its server id when it is a mapped temporary id, else [id]. */
     open suspend fun current(accountId: String, entity: String, id: Long): Long = if (id >= 0) id else resolve(accountId, entity, id) ?: id
 
-    /** A new temporary (negative) id for [entity] (one of the [OutboxEntities] with offline creates). */
+    /**
+     * A new temporary (negative) id for [entity] (one of the [OutboxEntities] with offline creates;
+     * Fas S adds locations, entries, aliases, keywords and drinks).
+     */
     open suspend fun nextLocalId(accountId: String, entity: String): Long = when (entity) {
         OutboxEntities.SHOPPING_ENTRY -> lowestShoppingEntryId(accountId, entity)
         OutboxEntities.SHOPPING_LIST_RECIPE -> lowestListRecipeId(accountId, entity)
@@ -43,7 +46,6 @@ abstract class IdRewriteDao {
         OutboxEntities.MEAL_TYPE -> lowestMealTypeId(accountId, entity)
         OutboxEntities.RECIPE_BOOK -> lowestRecipeBookId(accountId, entity)
         OutboxEntities.RECIPE_BOOK_ENTRY -> lowestRecipeBookEntryId(accountId, entity)
-        // --- Fas S (schema 5) ---
         OutboxEntities.INVENTORY_LOCATION -> lowestInventoryLocationId(accountId, entity)
         OutboxEntities.INVENTORY_ENTRY -> lowestInventoryEntryId(accountId, entity)
         OutboxEntities.FOOD_ALIAS -> lowestFoodAliasId(accountId, entity)

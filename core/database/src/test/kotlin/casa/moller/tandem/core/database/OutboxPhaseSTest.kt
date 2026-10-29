@@ -70,14 +70,14 @@ class OutboxPhaseSTest {
         expires: String? = null,
         amount: Double = 1.0,
     ) = InventoryEntryEntity(
-            accountId = ACCOUNT_A,
-            localId = localId,
-            serverId = serverId,
-            locationId = locationId,
-            foodName = food,
-            amount = amount,
-            expires = expires,
-        )
+        accountId = ACCOUNT_A,
+        localId = localId,
+        serverId = serverId,
+        locationId = locationId,
+        foodName = food,
+        amount = amount,
+        expires = expires,
+    )
 
     @Test
     fun aLocationCreatedOfflineTakesItsEntriesAlongWhenItGetsItsServerId() = runTest {
@@ -197,7 +197,10 @@ class OutboxPhaseSTest {
         assertNull(RecipeKeywordFields.keywordIdOf(RecipeKeywordFields.WANT_TO_COOK))
 
         // "Vill laga" taken back: the pairing stays queued (the bases merged, nothing cancels it).
-        val takenBack = wantToCook.copy(payload = """{"keywords":{"vill-laga":false}}""", baseSnapshot = """{"keywords":{"vill-laga":true}}""")
+        val takenBack = wantToCook.copy(
+            payload = """{"keywords":{"vill-laga":false}}""",
+            baseSnapshot = """{"keywords":{"vill-laga":true}}""",
+        )
         outbox.enqueue(takenBack)
         val after = outbox.getAllFor(ACCOUNT_A, OutboxEntities.RECIPE).single()
         assertEquals("""{"keywords":{"vill-laga":false},"keyword:41":true}""", after.payload)

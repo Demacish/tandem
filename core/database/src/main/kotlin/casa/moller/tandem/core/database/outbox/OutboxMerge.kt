@@ -62,15 +62,15 @@ object OutboxMerge {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    /** Ops whose later value replaces the earlier one (Fas S: on-hand in batch, and a newer photo replaces an unsent one). */
+    private val toggleOps = setOf(OutboxOps.BULK_CHECK, OutboxOps.RECIPE_KEYWORDS, OutboxOps.BATCH_ON_HAND, OutboxOps.RECIPE_IMAGE)
+
     fun decide(new: OutboxEntity, unsent: List<OutboxEntity>): Decision {
         val create = unsent.firstOrNull { it.op == OutboxOps.CREATE && it.attempts == 0 }
         return when (new.op) {
             OutboxOps.PATCH -> decidePatch(new, unsent, create)
             OutboxOps.DELETE -> decideDelete(unsent, create, attemptedCreateOf(unsent))
-            OutboxOps.BULK_CHECK, OutboxOps.RECIPE_KEYWORDS -> decideToggle(new, unsent, create)
-
-            // Fas S: on-hand in batch merges like a check; a newer photo replaces an unsent one.
-            OutboxOps.BATCH_ON_HAND, OutboxOps.RECIPE_IMAGE -> decideToggle(new, unsent, create)
+            in toggleOps -> decideToggle(new, unsent, create)
             else -> Decision.Insert
         }
     }
