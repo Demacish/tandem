@@ -39,15 +39,13 @@ object MissingIngredients {
      * @param ingredients the recipe's ingredients (all steps), in recipe order.
      * @param foods what is known per food id; a food without an entry counts by its own `onHand`.
      */
-    fun missing(ingredients: List<Ingredient>, foods: Map<Long, FoodAvailability>): List<MissingFood> {
-        return ingredients.asSequence()
-            .filterNot { it.isHeader }
-            .mapNotNull { it.food }
-            .distinctBy { it.id }
-            .filterNot { food -> isResolved(foods[food.id] ?: FoodAvailability(food.id, onHand = food.onHand), foods) }
-            .map { food -> MissingFood(food.id, food.name, food.pluralName) }
-            .toList()
-    }
+    fun missing(ingredients: List<Ingredient>, foods: Map<Long, FoodAvailability>): List<MissingFood> = ingredients.asSequence()
+        .filterNot { it.isHeader }
+        .mapNotNull { it.food }
+        .distinctBy { it.id }
+        .filterNot { food -> isResolved(foods[food.id] ?: FoodAvailability(food.id, onHand = food.onHand), foods) }
+        .map { food -> MissingFood(food.id, food.name, food.pluralName) }
+        .toList()
 
     /** Whether one food is resolved (available, by a substitute, or ignorable). */
     fun isResolved(food: FoodAvailability, foods: Map<Long, FoodAvailability>): Boolean = isAvailable(food) ||

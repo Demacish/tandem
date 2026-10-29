@@ -29,8 +29,8 @@ class ScanKeysTest {
 
     @Test
     fun cameraPagesAreFullScreenAndTheSettingsAreNot() {
-        assertTrue(BarcodeScanKey() is FullScreenDestination)
-        assertTrue(ScanReviewKey("x") is FullScreenDestination)
-        assertFalse(AiSettingsKey is FullScreenDestination)
+        assertTrue((BarcodeScanKey() as Any) is FullScreenDestination)
+        assertTrue((ScanReviewKey("x") as Any) is FullScreenDestination)
+        assertFalse((AiSettingsKey as Any) is FullScreenDestination)
     }
 }

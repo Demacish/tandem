@@ -36,14 +36,12 @@ fun PantryRoute(
     modifier: Modifier = Modifier,
 ) {
     val title = when (key) {
-        PantryKey -> stringResource(R.string.pantry_title)
-        is PantryLocationKey -> stringResource(R.string.pantry_location_title)
-        is PantryEntryKey -> stringResource(
-            if (key.entryId == null) R.string.pantry_entry_new_title else R.string.pantry_entry_edit_title,
-        )
-        UnpackKey -> stringResource(R.string.pantry_unpack_title)
-        is MakeNowKey -> stringResource(R.string.pantry_make_now_title)
-        StaplesKey -> stringResource(R.string.pantry_staples_title)
+        PantryKey -> R.string.pantry_title
+        is PantryLocationKey -> R.string.pantry_location_title
+        is PantryEntryKey -> if (key.entryId == null) R.string.pantry_entry_new_title else R.string.pantry_entry_edit_title
+        UnpackKey -> R.string.pantry_unpack_title
+        is MakeNowKey -> R.string.pantry_make_now_title
+        StaplesKey -> R.string.pantry_staples_title
     }
-    PlaceholderPage(title = title, onNavigateBack = onBack, modifier = modifier)
+    PlaceholderPage(title = stringResource(title), onNavigateBack = onBack, modifier = modifier)
 }

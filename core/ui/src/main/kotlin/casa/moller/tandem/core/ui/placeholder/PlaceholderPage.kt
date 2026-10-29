@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
-import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.Restaurant
+import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.R
 

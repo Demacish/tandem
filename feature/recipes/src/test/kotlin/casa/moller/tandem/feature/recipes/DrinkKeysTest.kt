@@ -23,6 +23,6 @@ class DrinkKeysTest {
         assertEquals(DrinkDetailKey(-2), roundTrip(DrinkDetailKey.serializer(), DrinkDetailKey(-2)))
         assertEquals(PairingPickerKey(7), roundTrip(PairingPickerKey.serializer(), PairingPickerKey(7)))
         assertEquals(CreateDrinkKey(7), roundTrip(CreateDrinkKey.serializer(), CreateDrinkKey(7)))
-        assertTrue(CreateDrinkKey() is FullScreenDestination)
+        assertTrue((CreateDrinkKey() as Any) is FullScreenDestination)
     }
 }

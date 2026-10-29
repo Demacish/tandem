@@ -10,6 +10,7 @@ import casa.moller.tandem.feature.pantry.navigation.UnpackKey
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -32,6 +33,7 @@ class PantryKeysTest {
 
     @Test
     fun theEntryFormIsFullScreen() {
-        assertTrue(PantryEntryKey() is FullScreenDestination)
+        assertTrue((PantryEntryKey() as Any) is FullScreenDestination)
+        assertFalse((PantryKey as Any) is FullScreenDestination)
     }
 }
