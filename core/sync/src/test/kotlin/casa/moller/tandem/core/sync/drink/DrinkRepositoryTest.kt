@@ -116,7 +116,7 @@ class DrinkRepositoryTest {
         // From the drink's side too, with the same keyword (no second "Rioja Crianza").
         ok(repo.pairWithDrink(PANCAKES, server.id))
         drainAll()
-        assertEquals(listOf(PANCAKES, PASTA), repo.observeRecipePairings(server.id).first().dishIds.sorted())
+        assertEquals(listOf(PASTA, PANCAKES), repo.observeRecipePairings(server.id).first().dishIds.sorted())
         assertEquals(1, tandoor.keywords.values.count { it.name == "Rioja Crianza" })
 
         ok(repo.removePairing(PANCAKES, keyword.id))

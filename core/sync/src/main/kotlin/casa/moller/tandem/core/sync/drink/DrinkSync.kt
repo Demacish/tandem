@@ -20,10 +20,7 @@ import javax.inject.Inject
  * (`GET /api/recipe/?keywords_or=<Dryck>`, children included by default, FACTS "Fas S c"), whose
  * list rows carry their keywords. A user action: not a background call.
  */
-internal class DrinkSync @Inject constructor(
-    private val databases: TandemDatabaseFactory,
-    private val caller: RemoteCaller,
-) {
+internal class DrinkSync @Inject constructor(private val databases: TandemDatabaseFactory, private val caller: RemoteCaller) {
     suspend fun refresh(remote: ActiveSource.Remote): Outcome<Unit> {
         val database = databases.get(remote.kind)
         val keywords = caller.call(remote, background = false) {

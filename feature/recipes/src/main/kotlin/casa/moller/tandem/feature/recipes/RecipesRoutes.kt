@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.ui.EmptyState
@@ -24,9 +25,11 @@ import casa.moller.tandem.feature.recipes.books.RecipeCollectionsViewModel
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailEffect
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailScreen
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
+import casa.moller.tandem.feature.recipes.drinks.RecipePairingsRoute
 import casa.moller.tandem.feature.recipes.list.RecipeListEffect
 import casa.moller.tandem.feature.recipes.list.RecipeListScreen
 import casa.moller.tandem.feature.recipes.list.RecipeListViewModel
+import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
 
 /**
  * The Recipes tab's first screen: the recipe list (plan 6.2 "Receptlista", feature #3).
@@ -109,6 +112,9 @@ private class SyncFailure(val error: TandemError)
  * @param onPlanMeal fix-ui (plan 6.2 "Receptdetalj: Åtgärder … Planera"): "Planera" beside
  *   "Favorit", "Vill laga" and "Lägg i bok" opens the plan-meal page for the recipe (the shell's
  *   `PlanMealKey`); hidden for guests and when null.
+ * @param onNavigate Fas S (drycker lane, plan §8.8): "Passar med" on a dish and "Passar till" on a
+ *   drink below the book buttons; it opens the pairing picker (`PairingPickerKey`). Null hides the
+ *   section.
  */
 @Composable
 fun RecipeDetailRoute(
@@ -120,6 +126,7 @@ fun RecipeDetailRoute(
     onStartCooking: ((recipeId: Long, servings: Double?) -> Unit)? = null,
     shoppingAction: (@Composable (servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
     onPlanMeal: ((recipeId: Long) -> Unit)? = null,
+    onNavigate: ((NavKey) -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<RecipeDetailViewModel, RecipeDetailViewModel.Factory>(
         key = "recipe-$recipeId",
@@ -147,6 +154,19 @@ fun RecipeDetailRoute(
         // Phase 2 (books lane): "Favorit", "Vill laga" and "Lägg i bok" under the title.
         bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState, onPlanMeal = onPlanMeal) },
         shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, snackbarHostState) } },
+        // Fas S (drycker lane): "Passar med" / "Passar till" with its own ViewModel.
+        pairings = onNavigate?.let { navigate ->
+            {
+                RecipePairingsRoute(
+                    recipeId = recipeId,
+                    hasIngredients = state.ingredients.isNotEmpty() || state.steps.any { it.ingredients.isNotEmpty() },
+                    snackbarHostState = snackbarHostState,
+                    onOpenPicker = { navigate(PairingPickerKey(it)) },
+                    onOpenRecipe = onOpenRecipe,
+                    onOpenUrl = onOpenOnWeb,
+                )
+            }
+        },
     )
 }
 

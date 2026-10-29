@@ -52,6 +52,7 @@ import androidx.navigation3.ui.NavDisplay
 import casa.moller.tandem.core.model.error.isConnectivityProblem
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.ui.AppStatus
+import casa.moller.tandem.core.ui.drink.LocalDrinkSuggestion
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.language.LanguageController
 import casa.moller.tandem.core.ui.language.rememberLanguageController
@@ -379,7 +380,13 @@ internal fun ShellScaffold(
             features.Scan(key = key, onNavigate = openKey, onBack = { navigation.goBack() })
         }
         val drinks: @Composable (DrinkDestination) -> Unit = { key ->
-            features.Drinks(key = key, onNavigate = openKey, onOpenRecipe = openRecipe, onBack = { navigation.goBack() })
+            features.Drinks(
+                key = key,
+                onNavigate = openKey,
+                onOpenRecipe = openRecipe,
+                onBack = { navigation.goBack() },
+                selectedDrinkId = null,
+            )
         }
         val entryProvider = entryProvider<NavKey> {
             entry<PantryKey> { pantry(it) }
@@ -394,8 +401,36 @@ internal fun ShellScaffold(
             entry<ScanReviewKey> { scan(it) }
             // Settings → AI is a page of the More list (beside it on wide windows), like the other settings.
             entry<AiSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) { scan(it) }
-            entry<DrinksKey> { drinks(it) }
-            entry<DrinkDetailKey> { drinks(it) }
+            // drycker lane: "Drycker" is a list-detail scene of its own on wide windows (a picked drink
+            // replaces the open one); a drink is a recipe, shown by the recipe detail.
+            entry<DrinksKey>(
+                metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() }),
+            ) { key ->
+                val open = navigation.stackOf(navigation.currentTab).lastOrNull { it is DrinkDetailKey } as? DrinkDetailKey
+                features.Drinks(
+                    key = key,
+                    onNavigate = { next ->
+                        // A picked drink replaces the one open beside the list.
+                        val replace: (NavKey) -> Boolean = { open -> next is DrinkDetailKey && open is DrinkDetailKey }
+                        navigation.navigate(next, replace = replace)
+                    },
+                    onOpenRecipe = openRecipe,
+                    onBack = { navigation.goBack() },
+                    selectedDrinkId = open?.recipeId,
+                )
+            }
+            entry<DrinkDetailKey>(metadata = ListDetailSceneStrategy.detailPane()) { key ->
+                features.RecipeDetail(
+                    recipeId = key.recipeId,
+                    onBack = { navigation.goBack() },
+                    onOpenRecipe = openRecipe,
+                    onOpenOnWeb = openOnWeb,
+                    onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                    onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+                    onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
+                    onNavigate = openKey,
+                )
+            }
             entry<PairingPickerKey> { drinks(it) }
             entry<CreateDrinkKey> { drinks(it) }
             entry<TodayKey> {
@@ -427,8 +462,10 @@ internal fun ShellScaffold(
                             RecipeCollection.FAVORITES -> FavoritesKey
                             RecipeCollection.WANT_TO_COOK -> WantToCookKey
                             RecipeCollection.BOOKS -> BooksKey
+                            // drycker lane: "Drycker" beside the list on wide windows, like the books.
+                            RecipeCollection.DRINKS -> DrinksKey()
                         }
-                        navigation.navigate(key, replace = { it is RecipeDetailKey || it.isBookPage })
+                        navigation.navigate(key, replace = { it is RecipeDetailKey || it.isBookPage || it.isDrinksPage })
                     },
                 )
             }
@@ -446,6 +483,8 @@ internal fun ShellScaffold(
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                     // fix-ui: "Planera" plans the recipe from today, as "Vill laga" does (the page picks the day).
                     onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
+                    // Fas S (drycker lane): the pairing picker from "Passar med".
+                    onNavigate = openKey,
                 )
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---
@@ -612,7 +651,9 @@ internal fun ShellScaffold(
             }
         }
         val listDetail = rememberListDetailSceneStrategy<NavKey>(backNavigationBehavior = BackNavigationBehavior.PopLatest)
-        CompositionLocalProvider(LocalAppChrome provides chrome) {
+        // Fas S (drycker lane): the drink suggestion under tonight's meal and Veckan's meals.
+        val drinkSuggestion = remember(features, navigation) { features.drinkSuggestion { navigation.navigate(RecipeDetailKey(it)) } }
+        CompositionLocalProvider(LocalAppChrome provides chrome, LocalDrinkSuggestion provides drinkSuggestion) {
             // Phase 1 (idag-ui lane): the server status (safe mode banner, too old) around the tabs.
             ServerStatusFrame(
                 state = state,
@@ -684,3 +725,7 @@ internal fun ShellNavDisplay(
         onBack = { navigation.goBack() },
     )
 }
+
+/** Fas S (drycker lane): "Drycker" and a drink beside it, replaced like the books when another collection opens. */
+private val NavKey.isDrinksPage: Boolean
+    get() = this is DrinksKey || this is DrinkDetailKey

@@ -255,12 +255,7 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
     private data class Snapshot(val index: DrinkIndex, val drafts: List<DrinkDraftEntity>)
 
     /** One local change: the source, its database, the index as it is now and "now". */
-    private inner class WriteContext(
-        val source: ActiveSource.Stored,
-        val database: TandemDatabase,
-        val index: DrinkIndex,
-        val now: Long,
-    ) {
+    private inner class WriteContext(val source: ActiveSource.Stored, val database: TandemDatabase, val index: DrinkIndex, val now: Long) {
         private val accountId: String = source.accountId
         private val remote: Boolean = source is ActiveSource.Remote
         private val drinks = database.drinkDraftDao()
@@ -297,7 +292,9 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
                 id < 0 -> editDraft(id) { list ->
                     list.filterNot { it.role == DraftKeywordRole.PAIRING && DrinkKeywords.key(it.name) == key }
                 }
+
                 !remote -> drinks.deleteKeywordRef(accountId, id, pairing.keywordId)
+
                 else -> enqueueToggle(id, pairing, add = false)
             }
         }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas S (drycker lane): the camera writes the drink's photo here (the app's cache, never backed up);
+     the drinks repository copies and scales it to 1600 px before it is uploaded. -->
+<paths>
+    <cache-path
+        name="drink_camera"
+        path="drink-camera/" />
+</paths>

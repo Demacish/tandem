@@ -222,8 +222,8 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
 
     private suspend fun sendLocked(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val recipeId = row.serverId
-        val changes = DrinkPayloads.changesOf(payload)
-        if (row.op != OutboxOps.RECIPE_KEYWORDS || recipeId == null || changes == null || changes.isEmpty) {
+        val changes = DrinkPayloads.changesOf(payload)?.takeUnless { it.isEmpty }
+        if (row.op != OutboxOps.RECIPE_KEYWORDS || recipeId == null || changes == null) {
             return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
         val current = when (

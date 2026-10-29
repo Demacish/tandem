@@ -86,6 +86,7 @@ internal fun DetailWithFakes(
     fakes: DetailFakes = remember { DetailFakes() },
     onBack: () -> Unit = {},
     onStartCooking: () -> Unit = {},
+    pairings: (@Composable () -> Unit)? = null,
 ) {
     val viewModel = remember(recipeId) {
         RecipeDetailViewModel(recipeId, fakes.handle, fakes.repository, fakes.preferences, fakes.sync, fakes.sessions)
@@ -100,6 +101,8 @@ internal fun DetailWithFakes(
         modifier = modifier,
         // Phase 1b: "Börja laga" is part of every detail screenshot and ATF check.
         onStartCooking = onStartCooking,
+        // Fas S (drycker lane): "Passar med" in the drinks' screenshots.
+        pairings = pairings,
     )
 }
 

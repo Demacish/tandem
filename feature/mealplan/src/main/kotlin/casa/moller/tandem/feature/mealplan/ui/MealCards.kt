@@ -49,6 +49,7 @@ import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
+import casa.moller.tandem.core.ui.drink.DrinkSuggestion
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
 import casa.moller.tandem.feature.mealplan.R
@@ -154,6 +155,13 @@ internal fun MealCard(
                 MealThumbnail(meal = meal, modifier = Modifier.size(72.dp))
                 MealTexts(meal = meal, format = format, modifier = Modifier.weight(1f))
                 if (menu.isNotEmpty()) MealMenuButton(meal = meal, menu = menu, onAction = onAction)
+            }
+            // Fas S (drycker lane, plan §8.8): the drink suggestion, filled in by the shell (feature:recipes).
+            meal.recipe?.let { recipe ->
+                DrinkSuggestion(
+                    recipeId = recipe.id,
+                    modifier = Modifier.padding(start = spacing.md, end = spacing.md, bottom = spacing.sm),
+                )
             }
             if (isToday && MealMenuItem.COOK in menu) {
                 val cookDescription = stringResource(R.string.mealplan_cook_description, meal.name())

@@ -25,6 +25,7 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.core.ui.DemoBanner
+import casa.moller.tandem.core.ui.drink.DrinkSuggestionSlot
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.timer.LocalTimerClock
 import casa.moller.tandem.core.ui.timer.LocalTimerTicks
@@ -215,6 +216,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onStartCooking: (Long, Double?) -> Unit,
         onOpenShoppingList: () -> Unit,
         onPlanMeal: (Long) -> Unit,
+        onNavigate: (NavKey) -> Unit,
     ) {
         ShellScreenScaffold(title = "Recipe $recipeId", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Recipe detail $recipeId", modifier = Modifier.padding(padding))
@@ -325,8 +327,15 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit) = Page("Scan $key", onBack)
 
     @Composable
-    override fun Drinks(key: DrinkDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) =
-        Page("Drinks $key", onBack ?: {})
+    override fun Drinks(
+        key: DrinkDestination,
+        onNavigate: (NavKey) -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onBack: (() -> Unit)?,
+        selectedDrinkId: Long?,
+    ) = Page("Drinks $key", onBack ?: {})
+
+    override fun drinkSuggestion(onOpenRecipe: (Long) -> Unit): DrinkSuggestionSlot? = null
 
     @Composable
     private fun Page(title: String, onBack: () -> Unit) {

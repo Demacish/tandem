@@ -50,6 +50,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.recipe.RecipeOverview
+import casa.moller.tandem.core.ui.drink.DrinkSuggestion
 import casa.moller.tandem.core.ui.recipe.RecipeImageTags
 import casa.moller.tandem.core.ui.recipe.cappedAspectRatio
 import casa.moller.tandem.feature.home.R
@@ -152,6 +153,8 @@ internal fun TonightCard(
                 )
             }
             MealMeta(entry = entry)
+            // Fas S (drycker lane, plan §8.8): "Passar med" for tonight, filled in by the shell (feature:recipes).
+            if (recipe != null) DrinkSuggestion(recipeId = recipe.id)
             if (recipe != null && onStartCooking != null) {
                 val cookDescription = stringResource(R.string.home_start_cooking_description, entry.displayTitle)
                 TandemPrimaryButton(

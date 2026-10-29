@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!--
+            Fas S (drycker lane, plan §8.8): "Ta foto" in "Ny dryck" hands the camera app a file in
+            the cache (res/xml/drink_photo_paths.xml) through this provider. Not exported; the
+            camera gets a one-off grant for that one URI.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.drinkphotos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/drink_photo_paths" />
+        </provider>
+    </application>
+</manifest>

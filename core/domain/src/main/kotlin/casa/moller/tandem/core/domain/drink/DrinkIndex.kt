@@ -179,6 +179,7 @@ class DrinkIndex private constructor(
                 val ids = linked.getOrPut(change.recipeId) { mutableSetOf() }
                 val keywordId = when (change) {
                     is PendingKeywordChange.ById -> change.keywordId
+
                     is PendingKeywordChange.PairingByName -> if (change.add) {
                         resolver.pairing(change.name)
                     } else {

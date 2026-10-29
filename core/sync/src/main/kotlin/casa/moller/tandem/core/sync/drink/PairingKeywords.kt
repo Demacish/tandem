@@ -25,10 +25,7 @@ import kotlinx.serialization.json.put
  * A keyword with the name that already sits under ANOTHER parent is used as it is (never moved
  * away from where the household put it); one at the root is moved under its parent.
  */
-internal class PairingKeywords @Inject constructor(
-    private val databases: TandemDatabaseFactory,
-    private val caller: RemoteCaller,
-) {
+internal class PairingKeywords @Inject constructor(private val databases: TandemDatabaseFactory, private val caller: RemoteCaller) {
     /** The id of the pairing keyword [name] under "Passar med". */
     suspend fun pairing(remote: ActiveSource.Remote, name: String): Outcome<Long> = child(remote, name, PAIRS_WITH)
 
@@ -73,6 +70,7 @@ internal class PairingKeywords @Inject constructor(
         }
         return when (moved) {
             is Outcome.Failure -> moved
+
             is Outcome.Success -> {
                 store(remote, keyword.copy(parent = rootId))
                 Outcome.Success(id)
@@ -88,6 +86,7 @@ internal class PairingKeywords @Inject constructor(
         }
         return when (val sent = caller.write(remote) { drinks.createKeyword(body) }) {
             is Outcome.Failure -> sent
+
             is Outcome.Success -> {
                 val keyword = sent.value
                 if (keyword.id == null) return Outcome.Failure(TandemError.Decode("keyword-without-id"))

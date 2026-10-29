@@ -50,6 +50,7 @@ import casa.moller.tandem.core.designsystem.icon.Favorite
 import casa.moller.tandem.core.designsystem.icon.FavoriteFilled
 import casa.moller.tandem.core.designsystem.icon.LibraryAdd
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import casa.moller.tandem.core.designsystem.icon.WineBar
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.feature.recipes.R
 
@@ -251,6 +252,13 @@ fun RecipeCollectionsRow(state: RecipeCollectionsState, onOpen: (RecipeCollectio
             shortCount = null,
             icon = TandemIcons.CollectionsBookmark,
             onClick = { onOpen(RecipeCollection.BOOKS) },
+        )
+        // Fas S (drycker lane, plan §8.8 "Recept får en Drycker-vy").
+        CollectionChip(
+            label = stringResource(R.string.drinks_collection),
+            shortCount = null,
+            icon = TandemIcons.WineBar,
+            onClick = { onOpen(RecipeCollection.DRINKS) },
         )
     }
 }

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.model.timer.CookTimer
+import casa.moller.tandem.core.ui.drink.DrinkSuggestionSlot
 import casa.moller.tandem.feature.cook.CookRoute
 import casa.moller.tandem.feature.cook.TimersRoute
 import casa.moller.tandem.feature.cook.navigation.CookKey
@@ -25,6 +26,7 @@ import casa.moller.tandem.feature.recipes.books.FavoritesRoute
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.WantToCookRoute
 import casa.moller.tandem.feature.recipes.drinks.DrinkRoute
+import casa.moller.tandem.feature.recipes.drinks.drinkSuggestionSlot
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
 import casa.moller.tandem.feature.scan.ScanRoute
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
@@ -81,6 +83,7 @@ internal interface ShellFeatures {
      * [onStartCooking] is "Börja laga" (Phase 1b). [onOpenShoppingList] (Phase 2, koppling lane) is
      * "Visa listan" after "Lägg på inköpslistan" (feature:shopping's sheet in the detail's slot).
      * [onPlanMeal] (fix-ui, plan 6.2 "Receptdetalj: … Planera") plans the recipe in Veckan.
+     * Fas S (drycker lane): [onNavigate] opens the pairing picker from "Passar med" / "Passar till".
      */
     @Composable
     fun RecipeDetail(
@@ -91,6 +94,7 @@ internal interface ShellFeatures {
         onStartCooking: (Long, Double?) -> Unit,
         onOpenShoppingList: () -> Unit,
         onPlanMeal: (Long) -> Unit,
+        onNavigate: (NavKey) -> Unit,
     )
 
     /** The detail pane before a recipe is picked (wide windows only). */
@@ -205,9 +209,24 @@ internal interface ShellFeatures {
     @Composable
     fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit)
 
-    /** Every drink destination ("Drycker", a drink, the pairing picker, "Ny dryck"). */
+    /**
+     * Every drink destination ("Drycker", the pairing picker, "Ny dryck"; a drink itself is shown
+     * with [RecipeDetail]). drycker lane: [selectedDrinkId] is the drink open beside "Drycker".
+     */
     @Composable
-    fun Drinks(key: DrinkDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?)
+    fun Drinks(
+        key: DrinkDestination,
+        onNavigate: (NavKey) -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onBack: (() -> Unit)?,
+        selectedDrinkId: Long?,
+    )
+
+    /**
+     * Fas S (drycker lane): the drink suggestion under a planned recipe in Idag and Veckan
+     * (core:ui `LocalDrinkSuggestion`); null shows none (the shell's tests).
+     */
+    fun drinkSuggestion(onOpenRecipe: (Long) -> Unit): DrinkSuggestionSlot?
 }
 
 /** The real feature routes. */
@@ -253,6 +272,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onStartCooking: (Long, Double?) -> Unit,
         onOpenShoppingList: () -> Unit,
         onPlanMeal: (Long) -> Unit,
+        onNavigate: (NavKey) -> Unit,
     ) {
         RecipeDetailRoute(
             recipeId = recipeId,
@@ -266,6 +286,8 @@ internal object RouteShellFeatures : ShellFeatures {
             },
             // fix-ui: "Planera" beside the book buttons (hidden for guests by feature:recipes).
             onPlanMeal = onPlanMeal,
+            // Fas S (drycker lane): "Passar med" / "Passar till".
+            onNavigate = onNavigate,
         )
     }
 
@@ -435,7 +457,15 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Drinks(key: DrinkDestination, onNavigate: (NavKey) -> Unit, onOpenRecipe: (Long) -> Unit, onBack: (() -> Unit)?) {
-        DrinkRoute(key = key, onNavigate = onNavigate, onOpenRecipe = onOpenRecipe, onBack = onBack)
+    override fun Drinks(
+        key: DrinkDestination,
+        onNavigate: (NavKey) -> Unit,
+        onOpenRecipe: (Long) -> Unit,
+        onBack: (() -> Unit)?,
+        selectedDrinkId: Long?,
+    ) {
+        DrinkRoute(key = key, onNavigate = onNavigate, onOpenRecipe = onOpenRecipe, onBack = onBack, selectedDrinkId = selectedDrinkId)
     }
+
+    override fun drinkSuggestion(onOpenRecipe: (Long) -> Unit): DrinkSuggestionSlot = drinkSuggestionSlot(onOpenRecipe)
 }

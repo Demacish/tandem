@@ -74,14 +74,22 @@ internal class FakeDrinkTandoor(private val version: String) {
         val text = request.body?.utf8().orEmpty()
         val response = when {
             path == KEYWORDS && method == "GET" -> page(keywords.values.map { keywordJson(it) })
+
             path == KEYWORDS && method == "POST" -> json(201, keywordJson(getOrCreate(parse(text).string("name").orEmpty())))
+
             KEYWORD.matches(path) && method == "GET" -> keywords[KEYWORD.find(path)!!.groupValues[1].toLong()]
                 ?.let { json(200, keywordJson(it)) } ?: notFound("Keyword")
+
             MOVE.matches(path) && method == "PUT" -> MOVE.find(path)!!.groupValues.let { move(it[1].toLong(), it[2].toLong()) }
+
             path == RECIPES && method == "POST" -> createRecipe(parse(text))
+
             IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong())
+
             RECIPE.matches(path) && method == "GET" -> recipe(RECIPE.find(path)!!.groupValues[1].toLong())
+
             RECIPE.matches(path) && method == "PATCH" -> patchRecipe(RECIPE.find(path)!!.groupValues[1].toLong(), parse(text))
+
             else -> return null
         } ?: return null
         val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()

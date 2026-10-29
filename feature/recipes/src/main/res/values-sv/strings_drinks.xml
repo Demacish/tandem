@@ -4,4 +4,82 @@
     <string name="drinks_detail_title">Dryck</string>
     <string name="drinks_pairing_picker_title">Passar med</string>
     <string name="drinks_create_title">Ny dryck</string>
+
+    <string name="drinks_collection">Drycker</string>
+    <string name="drinks_search">Sök bland drycker</string>
+    <string name="drinks_filter_all">Alla</string>
+    <string name="drinks_filter_label">Visa drycker av typen %1$s</string>
+    <string name="drinks_new">Ny dryck</string>
+    <string name="drinks_more">Fler val</string>
+    <string name="drinks_setting_systembolaget">Visa ”Sök på Systembolaget”</string>
+    <string name="drinks_setting_systembolaget_body">En länk till Systembolagets webbplats med dryckens namn. Bara namnet skickas, när du trycker på länken.</string>
+    <string name="drinks_empty_title">Inga drycker än</string>
+    <string name="drinks_empty_body">En dryck är ett recept med nyckelordet ”Dryck”. Lägg till en här eller märk ett recept på webben.</string>
+    <string name="drinks_empty_guest_body">En dryck är ett recept med nyckelordet ”Dryck”. Gäster kan se drycker men inte lägga till nya.</string>
+    <string name="drinks_no_match_title">Inga drycker matchar</string>
+    <string name="drinks_no_match_body">Prova ett annat ord eller en annan typ.</string>
+    <string name="drinks_pending">Väntar på att skickas</string>
+    <string name="drinks_pending_message">Drycken går att öppna när den har skickats till Tandoor.</string>
+    <string name="drinks_refresh_failed">Dryckerna kunde inte uppdateras. De sparade visas.</string>
+    <string name="drinks_unrated">Inget betyg</string>
+
+    <string name="drinks_type_wine">Vin</string>
+    <string name="drinks_type_beer">Öl</string>
+    <string name="drinks_type_cider">Cider</string>
+    <string name="drinks_type_alcohol_free">Alkoholfritt</string>
+    <string name="drinks_type_cocktail">Drink</string>
+
+    <string name="drinks_pairs_with_heading">Passar med</string>
+    <string name="drinks_pairs_to_heading">Passar till</string>
+    <string name="drinks_pairs_with_empty">Ingen dryck vald än.</string>
+    <string name="drinks_pairs_to_empty">Inte kopplad till någon rätt än.</string>
+    <string name="drinks_pairs_with_add">Välj dryck</string>
+    <string name="drinks_pairs_to_add">Välj rätter</string>
+    <string name="drinks_open_drink">Öppna %1$s</string>
+    <string name="drinks_open_dish">Öppna %1$s</string>
+    <string name="drinks_remove_pairing">Ta bort %1$s</string>
+    <string name="drinks_type_only_description">%1$s, en sorts dryck</string>
+    <string name="drinks_add_to_list">Lägg på inköpslistan</string>
+    <string name="drinks_added_to_list">%1$s finns på inköpslistan.</string>
+    <string name="drinks_add_to_list_failed">Det gick inte att lägga till på inköpslistan.</string>
+    <string name="drinks_systembolaget">Sök på Systembolaget</string>
+    <string name="drinks_web_more">Resten av drycken ändrar du på webben.</string>
+    <string name="drinks_change_failed">Ändringen kunde inte sparas.</string>
+    <string name="drinks_read_only">Gäster ser kopplingarna men kan inte ändra dem.</string>
+
+    <string name="drinks_picker_search_drinks">Sök drycker och sorter</string>
+    <string name="drinks_picker_search_dishes">Sök rätter</string>
+    <string name="drinks_picker_drinks">Drycker</string>
+    <string name="drinks_picker_kinds">Sorters dryck</string>
+    <string name="drinks_picker_kinds_hint">För en koppling utan en viss flaska, till exempel ”Kraftigt rött”.</string>
+    <string name="drinks_picker_dishes">Rätter</string>
+    <string name="drinks_picker_new_kind">Ny sorts dryck</string>
+    <string name="drinks_picker_create_kind">Lägg till ”%1$s”</string>
+    <string name="drinks_picker_no_drinks">Inga drycker än. Skapa en först.</string>
+    <string name="drinks_picker_no_match">Inget matchar ”%1$s”.</string>
+    <string name="drinks_picker_done">Klar</string>
+    <string name="drinks_picker_unknown">Receptet finns inte på enheten än.</string>
+
+    <string name="drinks_create_name">Namn</string>
+    <string name="drinks_create_name_missing">Ge drycken ett namn.</string>
+    <string name="drinks_create_type">Typ</string>
+    <string name="drinks_create_note">Anteckning</string>
+    <string name="drinks_create_note_hint">Pris, var den köps, smak</string>
+    <string name="drinks_create_photo">Foto</string>
+    <string name="drinks_create_take_photo">Ta foto</string>
+    <string name="drinks_create_pick_photo">Välj bild</string>
+    <string name="drinks_create_remove_photo">Ta bort fotot</string>
+    <string name="drinks_create_photo_chosen">Foto valt</string>
+    <string name="drinks_create_camera_rationale">Kameran används bara till dryckens foto. Du kan välja en bild i stället.</string>
+    <string name="drinks_create_camera_denied">Appen får inte använda kameran. Välj en bild i stället.</string>
+    <string name="drinks_create_pair_with">Passar med %1$s</string>
+    <string name="drinks_create_save">Spara drycken</string>
+    <string name="drinks_create_saved">%1$s sparades.</string>
+    <string name="drinks_create_saved_offline">%1$s sparades och skickas när du är online.</string>
+    <string name="drinks_create_failed">Drycken kunde inte sparas.</string>
+    <string name="drinks_create_web_hint">Steg, ingredienser och annat kan läggas till på webben efteråt.</string>
+    <string name="drinks_name_taken">Ett annat nyckelord har redan det namnet.</string>
+
+    <string name="drinks_suggestion">Passar med: %1$s</string>
+    <string name="drinks_suggestion_description">Dryckesförslag: %1$s</string>
 </resources>

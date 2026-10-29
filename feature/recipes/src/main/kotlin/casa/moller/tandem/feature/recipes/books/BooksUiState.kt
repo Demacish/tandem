@@ -171,4 +171,4 @@ data class RecipeCollectionsState(
 )
 
 /** A collection opened from the Recipes tab. */
-enum class RecipeCollection { FAVORITES, WANT_TO_COOK, BOOKS }
+enum class RecipeCollection { FAVORITES, WANT_TO_COOK, BOOKS, DRINKS }

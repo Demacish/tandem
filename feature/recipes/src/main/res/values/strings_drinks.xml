@@ -1,8 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Fas S (grund lane): the titles of the drink pages (#43, plan §8.8). The drycker lane adds the rest. -->
+    <!-- Fas S (grund lane): the titles of the drink pages (#43, plan §8.8). -->
     <string name="drinks_title">Drinks</string>
     <string name="drinks_detail_title">Drink</string>
     <string name="drinks_pairing_picker_title">Goes well with</string>
     <string name="drinks_create_title">New drink</string>
+
+    <!-- Fas S (drycker lane): the drinks list. -->
+    <string name="drinks_collection">Drinks</string>
+    <string name="drinks_search">Search drinks</string>
+    <string name="drinks_filter_all">All</string>
+    <string name="drinks_filter_label">Show drinks of type %1$s</string>
+    <string name="drinks_new">New drink</string>
+    <string name="drinks_more">More options</string>
+    <string name="drinks_setting_systembolaget">Show “Search Systembolaget”</string>
+    <string name="drinks_setting_systembolaget_body">A link to Systembolaget’s website with the drink’s name. Only the name is sent, when you tap it.</string>
+    <string name="drinks_empty_title">No drinks yet</string>
+    <string name="drinks_empty_body">A drink is a recipe with the keyword “Dryck”. Add one here or tag a recipe on the web.</string>
+    <string name="drinks_empty_guest_body">A drink is a recipe with the keyword “Dryck”. Guests can see drinks but not add them.</string>
+    <string name="drinks_no_match_title">No drinks match</string>
+    <string name="drinks_no_match_body">Try another word or type.</string>
+    <string name="drinks_pending">Waiting to be sent</string>
+    <string name="drinks_pending_message">The drink opens once it has been sent to Tandoor.</string>
+    <string name="drinks_refresh_failed">Could not refresh the drinks. Showing the saved ones.</string>
+    <string name="drinks_unrated">Not rated</string>
+
+    <!-- The drink types: the server keeps the Swedish names ("Vin"), the app shows them in the UI's language. -->
+    <string name="drinks_type_wine">Wine</string>
+    <string name="drinks_type_beer">Beer</string>
+    <string name="drinks_type_cider">Cider</string>
+    <string name="drinks_type_alcohol_free">Alcohol-free</string>
+    <string name="drinks_type_cocktail">Cocktail</string>
+
+    <!-- The recipe detail: "Passar med" on a dish, "Passar till" on a drink. -->
+    <string name="drinks_pairs_with_heading">Goes well with</string>
+    <string name="drinks_pairs_to_heading">Goes well with these dishes</string>
+    <string name="drinks_pairs_with_empty">No drink chosen yet.</string>
+    <string name="drinks_pairs_to_empty">Not paired with any dish yet.</string>
+    <string name="drinks_pairs_with_add">Choose a drink</string>
+    <string name="drinks_pairs_to_add">Choose dishes</string>
+    <string name="drinks_open_drink">Open %1$s</string>
+    <string name="drinks_open_dish">Open %1$s</string>
+    <string name="drinks_remove_pairing">Remove %1$s</string>
+    <string name="drinks_type_only_description">%1$s, a kind of drink</string>
+    <string name="drinks_add_to_list">Add to shopping list</string>
+    <string name="drinks_added_to_list">%1$s is on the shopping list.</string>
+    <string name="drinks_add_to_list_failed">Could not add it to the shopping list.</string>
+    <string name="drinks_systembolaget">Search Systembolaget</string>
+    <string name="drinks_web_more">Edit the rest of the drink on the web.</string>
+    <string name="drinks_change_failed">The change could not be saved.</string>
+    <string name="drinks_read_only">Guests can see the pairings but not change them.</string>
+
+    <!-- The pairing picker. -->
+    <string name="drinks_picker_search_drinks">Search drinks and kinds</string>
+    <string name="drinks_picker_search_dishes">Search dishes</string>
+    <string name="drinks_picker_drinks">Drinks</string>
+    <string name="drinks_picker_kinds">Kinds of drink</string>
+    <string name="drinks_picker_kinds_hint">For a pairing without a particular bottle, e.g. “Full-bodied red”.</string>
+    <string name="drinks_picker_dishes">Dishes</string>
+    <string name="drinks_picker_new_kind">New kind of drink</string>
+    <string name="drinks_picker_create_kind">Add “%1$s”</string>
+    <string name="drinks_picker_no_drinks">No drinks yet. Create one first.</string>
+    <string name="drinks_picker_no_match">Nothing matches “%1$s”.</string>
+    <string name="drinks_picker_done">Done</string>
+    <string name="drinks_picker_unknown">This recipe is not on the device yet.</string>
+
+    <!-- "Ny dryck". -->
+    <string name="drinks_create_name">Name</string>
+    <string name="drinks_create_name_missing">Give the drink a name.</string>
+    <string name="drinks_create_type">Type</string>
+    <string name="drinks_create_note">Note</string>
+    <string name="drinks_create_note_hint">Price, where to buy it, taste</string>
+    <string name="drinks_create_photo">Photo</string>
+    <string name="drinks_create_take_photo">Take photo</string>
+    <string name="drinks_create_pick_photo">Choose picture</string>
+    <string name="drinks_create_remove_photo">Remove photo</string>
+    <string name="drinks_create_photo_chosen">Photo chosen</string>
+    <string name="drinks_create_camera_rationale">The camera is only used for the drink’s photo. You can choose a picture instead.</string>
+    <string name="drinks_create_camera_denied">No camera access. Choose a picture instead.</string>
+    <string name="drinks_create_pair_with">Goes with %1$s</string>
+    <string name="drinks_create_save">Save drink</string>
+    <string name="drinks_create_saved">%1$s was saved.</string>
+    <string name="drinks_create_saved_offline">%1$s was saved and is sent when you are online.</string>
+    <string name="drinks_create_failed">The drink could not be saved.</string>
+    <string name="drinks_create_web_hint">Steps, ingredients and more can be added on the web afterwards.</string>
+    <string name="drinks_name_taken">Another keyword already has that name.</string>
+
+    <!-- Idag and Veckan: the drink suggestion under a planned recipe. -->
+    <string name="drinks_suggestion">Goes with: %1$s</string>
+    <string name="drinks_suggestion_description">Drink suggestion: %1$s</string>
 </resources>
