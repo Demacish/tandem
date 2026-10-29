@@ -1,8 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Fas S (grund lane): the titles of the scanning pages (plan §8.8). The lanes add the rest. -->
     <string name="scan_barcode_title">Skanna streckkod</string>
     <string name="scan_receipt_title">Skanna kvitto</string>
+    <!-- The fridge photo is experimental (B22): the title says so. -->
     <string name="scan_fridge_title">Foto av kylen (experimentell)</string>
     <string name="scan_review_title">Granska innan du sparar</string>
     <string name="scan_ai_settings_title">AI</string>
+
+    <!-- skanning lane: shared by the scanners and the review -->
+    <string name="scan_cancel">Avbryt</string>
+    <string name="scan_remove">Ta bort</string>
+    <string name="scan_where">Var</string>
+    <string name="scan_best_before">Bäst före</string>
+    <string name="scan_pantry">skafferiet</string>
+    <string name="scan_unit_default">st</string>
+    <string name="scan_expires_on">går ut %1$s</string>
+    <string name="scan_pick_image">Välj en bild från galleriet</string>
+    <string name="scan_image_unreadable">Bilden gick inte att läsa</string>
+    <string name="scan_demo_title">Demoläge</string>
+    <string name="scan_to_shopping_list">Lägg på inköpslistan</string>
+    <string name="scan_choose_food">Välj livsmedel</string>
+    <string name="scan_change_food">Byt livsmedel</string>
+    <string name="scan_show_item">Visa</string>
+    <string name="scan_food_suggestions">Förslag</string>
+    <string name="scan_food_search">Sök livsmedel</string>
+    <string name="scan_food_create">Skapa ”%1$s”</string>
+    <string name="scan_expiry_none">Inget datum</string>
+    <string name="scan_expiry_3_days">+3 dagar</string>
+    <string name="scan_expiry_1_week">+1 vecka</string>
+    <string name="scan_expiry_1_month">+1 månad</string>
+    <string name="scan_expiry_3_months">+3 månader</string>
+    <string name="scan_status_learned">Känd</string>
+    <string name="scan_status_suggested">Förslag</string>
+    <string name="scan_status_chosen">Vald</string>
+    <string name="scan_status_new">Nytt livsmedel</string>
+    <string name="scan_status_unknown">Okänd – välj livsmedel</string>
+    <string name="scan_status_skipped">Hoppas över</string>
+    <string name="scan_status_looking_up">Söker …</string>
+    <string name="scan_status_not_found">Okänd kod</string>
+    <string name="scan_status_offline">Offline – välj livsmedel</string>
+    <string name="scan_status_failed">Gick inte att slå upp</string>
+    <string name="scan_error_read_only">Gäster kan inte ändra i skafferiet.</string>
+    <string name="scan_error_no_location">Hemma har inga platser än. Öppna Hemma en gång när du är uppkopplad.</string>
+    <string name="scan_error_offline">Ingen anslutning. Försök igen senare.</string>
+    <string name="scan_error_save">Det gick inte att spara. Försök igen.</string>
+    <plurals name="scan_saved">
+        <item quantity="one">%d vara i skafferiet</item>
+        <item quantity="other">%d varor i skafferiet</item>
+    </plurals>
+    <plurals name="scan_saved_to">
+        <item quantity="one">%1$d vara i %2$s</item>
+        <item quantity="other">%1$d varor i %2$s</item>
+    </plurals>
+    <plurals name="scan_added_to_list">
+        <item quantity="one">%d vara på inköpslistan</item>
+        <item quantity="other">%d varor på inköpslistan</item>
+    </plurals>
+
+    <!-- skanning lane: the camera, asked in context (plan §8.8, B21) -->
+    <string name="scan_camera_title">Skanna med kameran</string>
+    <string name="scan_camera_denied_title">Kameran är avstängd</string>
+    <string name="scan_camera_barcode_rationale">Tandem använder kameran bara för att läsa streckkoder, i telefonen. Du kan också välja en bild från galleriet.</string>
+    <string name="scan_camera_receipt_rationale">Tandem använder kameran bara för att fota kvittot. Texten läses i telefonen och fotot sparas inte. Du kan också välja en bild från galleriet.</string>
+    <string name="scan_camera_blocked_body">Tillåt kameran för Tandem i Androids inställningar, eller välj en bild från galleriet.</string>
+    <string name="scan_camera_none_title">Ingen kamera</string>
+    <string name="scan_camera_none_body">Enheten har ingen kamera. Välj en bild från galleriet i stället.</string>
+    <string name="scan_camera_allow">Tillåt kameran</string>
+    <string name="scan_camera_settings">Öppna inställningarna</string>
+    <string name="scan_torch_on">Tänd lampan</string>
+    <string name="scan_torch_off">Släck lampan</string>
+
+    <!-- skanning lane: barcode (#27) -->
+    <string name="scan_barcode_aim">Håll streckkoden inom ramen</string>
+    <string name="scan_barcode_empty_title">Skanna en förpackning</string>
+    <string name="scan_barcode_empty_body">En känd kod hittar sitt livsmedel direkt. En okänd slås upp i Open Food Facts; bara koden skickas.</string>
+    <string name="scan_barcode_demo_body">I demoläget jämförs koderna bara med demovarorna; inget slås upp på nätet.</string>
+    <string name="scan_barcode_unknown_item">Okänd vara</string>
+    <string name="scan_barcode_none_in_image">Ingen streckkod i bilden</string>
+    <string name="scan_barcode_save_to">Lägg i %1$s</string>
+    <plurals name="scan_barcode_review">
+        <item quantity="one">Granska %d vara</item>
+        <item quantity="other">Granska %d varor</item>
+    </plurals>
+    <plurals name="scan_barcode_scanned">
+        <item quantity="one">%d skannad</item>
+        <item quantity="other">%d skannade</item>
+    </plurals>
+
+    <!-- skanning lane: receipt (#44) -->
+    <string name="scan_receipt_none_yet">Fota kvittot</string>
+    <string name="scan_receipt_tips">Lägg kvittot plant i bra ljus. Ett långt kvitto kan du fota i flera delar, uppifrån och ned.</string>
+    <string name="scan_receipt_privacy">Texten läses i telefonen. Fotot sparas inte, och kort- och medlemsnummer tas bort.</string>
+    <string name="scan_receipt_take_photo">Ta foto</string>
+    <string name="scan_receipt_take_another">Ta ett foto till</string>
+    <string name="scan_receipt_remove_last">Ta bort det senaste fotot</string>
+    <string name="scan_receipt_reading">Läser kvittot …</string>
+    <string name="scan_receipt_matching">Letar upp livsmedlen …</string>
+    <string name="scan_receipt_no_text_title">Ingen text hittades</string>
+    <string name="scan_receipt_no_text_body">Försök igen i bättre ljus, med hela kvittots bredd i bilden.</string>
+    <string name="scan_receipt_no_items_title">Inga varor hittades</string>
+    <string name="scan_receipt_no_items_body">Texten liknade inte varuraderna på ett kvitto. Prova ett annat foto.</string>
+    <string name="scan_receipt_unreadable_body">Ta fotot igen.</string>
+    <string name="scan_receipt_demo_body">I demoläget läses kvittot i telefonen och jämförs med demovarorna.</string>
+    <plurals name="scan_receipt_pages">
+        <item quantity="one">%d foto läst</item>
+        <item quantity="other">%d foton lästa</item>
+    </plurals>
+    <plurals name="scan_receipt_done">
+        <item quantity="one">Läs kvittot (%d foto)</item>
+        <item quantity="other">Läs kvittot (%d foton)</item>
+    </plurals>
+
+    <!-- skanning lane: the shared review list -->
+    <string name="scan_review_source_barcode">Streckkoder</string>
+    <string name="scan_review_source_receipt">Kvitto</string>
+    <string name="scan_review_source_fridge">Foto av kylen (experimentell)</string>
+    <string name="scan_review_from_barcode">streckkod %1$s</string>
+    <string name="scan_review_from_receipt">kvittorad %1$s</string>
+    <string name="scan_review_from_fridge">AI:n såg %1$s</string>
+    <string name="scan_review_ai_title">Kontrollera vad AI:n hittade</string>
+    <string name="scan_review_ai_body">AI:n kan missa varor eller hitta på sådana som inte finns. Inget sparas förrän du har kontrollerat listan.</string>
+    <string name="scan_review_default_location">Rader utan egen plats hamnar i</string>
+    <string name="scan_review_to_check">Att granska (%1$d)</string>
+    <string name="scan_review_ready">Klara (%1$d)</string>
+    <string name="scan_review_skipped">Hoppas över (%1$d)</string>
+    <string name="scan_review_empty">Inga rader kvar.</string>
+    <string name="scan_review_edit">Ändra</string>
+    <string name="scan_review_skip">Hoppa över</string>
+    <string name="scan_review_include">Ta med</string>
+    <string name="scan_review_included">Tas med</string>
+    <string name="scan_review_edit_title">Ändra raden</string>
+    <string name="scan_review_food">Livsmedel</string>
+    <string name="scan_review_amount">Mängd</string>
+    <string name="scan_review_amount_error">Skriv ett tal, till exempel 1,5</string>
+    <string name="scan_review_unit">Enhet</string>
+    <string name="scan_review_learn">Kom ihåg raden</string>
+    <string name="scan_review_learn_body">Nästa gång känns ”%1$s” igen på alla telefoner i hushållet.</string>
+    <string name="scan_review_include_row">Ta med raden</string>
+    <string name="scan_review_apply">Klar</string>
+    <string name="scan_review_save_none">Inget att spara än</string>
+    <string name="scan_review_missing_title">Granskningen finns inte längre</string>
+    <string name="scan_review_missing_body">Appen stängdes innan du sparade. Skanna igen.</string>
+    <string name="scan_review_scan_again">Skanna igen</string>
+    <plurals name="scan_review_save">
+        <item quantity="one">Spara %d vara i skafferiet</item>
+        <item quantity="other">Spara %d varor i skafferiet</item>
+    </plurals>
+    <plurals name="scan_review_unmatched">
+        <item quantity="one">%d rad saknar livsmedel och sparas inte</item>
+        <item quantity="other">%d rader saknar livsmedel och sparas inte</item>
+    </plurals>
 </resources>

@@ -1,8 +1,10 @@
 package casa.moller.tandem.feature.scan.engine
 
+import androidx.annotation.OptIn
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import casa.moller.tandem.core.model.scan.ReceiptLine
+import casa.moller.tandem.core.domain.scan.TextFragment
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -13,12 +15,12 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
-// Fas S (grund lane): the on-device recognisers with the BUNDLED ML Kit models (no download through
-// Play services, works offline and in the sideload variant). First implementations the skanning lane
-// builds on (CameraX binding, the photo picker, throttling); they also keep R8's view of the libraries
-// honest in the minified smoke build (docs/BYGGE.md "Fas S – kontrakt").
+// Fas S: the on-device recognisers with the BUNDLED ML Kit models (no download through Play
+// services, works offline and in the sideload variant; docs/BYGGE.md "Fas S – kontrakt"). The
+// grund lane added them so R8 sees the libraries; the skanning lane uses them in the scanners.
+// Nothing here stores or logs an image or its text.
 
-/** EAN-13/EAN-8/UPC barcodes (food packages). Create lazily, [close] when the screen goes. */
+/** EAN-13/EAN-8/UPC-A/UPC-E barcodes (food packages). Create lazily, [close] when the screen goes. */
 class BarcodeEngine {
     private val scanner by lazy {
         BarcodeScanning.getClient(
@@ -28,35 +30,62 @@ class BarcodeEngine {
         )
     }
 
-    /** A CameraX analyzer that reports every recognised code (digits only) to [onCode]. */
+    /**
+     * A CameraX analyzer that reports every recognised code (digits only) to [onCode], on the main
+     * thread. One frame at a time: the frame is closed when ML Kit is done with it, and CameraX
+     * drops the frames that came meanwhile (`STRATEGY_KEEP_ONLY_LATEST`).
+     */
+    @OptIn(ExperimentalGetImage::class)
     fun analyzer(onCode: (String) -> Unit): ImageAnalysis.Analyzer = ImageAnalysis.Analyzer { proxy: ImageProxy ->
-        val image = InputImage.fromBitmap(proxy.toBitmap(), proxy.imageInfo.rotationDegrees)
-        scanner.process(image)
-            .addOnSuccessListener { codes -> codes.mapNotNull { it.rawValue }.filter { it.all(Char::isDigit) }.forEach(onCode) }
+        val media = proxy.image
+        if (media == null) {
+            proxy.close()
+            return@Analyzer
+        }
+        scanner.process(InputImage.fromMediaImage(media, proxy.imageInfo.rotationDegrees))
+            .addOnSuccessListener { codes -> codes.digitsOnly().forEach(onCode) }
             .addOnCompleteListener { proxy.close() }
     }
 
-    /** The codes in one still image (a photo from the picker). */
+    /** The codes in one still image (a photo from the system photo picker). */
     suspend fun read(image: InputImage): List<String> = suspendCancellableCoroutine { continuation ->
         scanner.process(image)
-            .addOnSuccessListener { codes -> continuation.resume(codes.mapNotNull { it.rawValue }) }
+            .addOnSuccessListener { codes -> continuation.resume(codes.digitsOnly()) }
             .addOnFailureListener { continuation.resumeWithException(it) }
     }
 
     fun close() = scanner.close()
+
+    private fun List<Barcode>.digitsOnly(): List<String> =
+        mapNotNull { it.rawValue?.trim() }.filter { code -> code.isNotEmpty() && code.all(Char::isDigit) }.distinct()
 }
 
-/** Latin text (receipts) in reading order, one [ReceiptLine] per recognised line. */
+/**
+ * Latin text (receipts), on the device: every recognised line with its box, for core:domain
+ * `ReceiptLayout` (rows by geometry). The image is only read, never kept.
+ */
 class ReceiptTextEngine {
     private val recognizer by lazy { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
 
-    suspend fun read(image: InputImage): List<ReceiptLine> = suspendCancellableCoroutine { continuation ->
+    suspend fun read(image: InputImage): List<TextFragment> = suspendCancellableCoroutine { continuation ->
         recognizer.process(image)
             .addOnSuccessListener { text ->
-                val lines = text.textBlocks.flatMap { block -> block.lines.map { it.text } }
-                continuation.resume(lines.mapIndexed { index, line -> ReceiptLine(index, line) })
+                val fragments = text.textBlocks.flatMap { block -> block.lines }.mapNotNull { line ->
+                    val box = line.boundingBox ?: return@mapNotNull null
+                    TextFragment(line.text, box.left, box.top, box.right, box.bottom)
+                }
+                continuation.resume(fragments)
             }
             .addOnFailureListener { continuation.resumeWithException(it) }
+    }
+
+    /** The text of a photo CameraX just took; the frame is closed (and gone) when this returns. */
+    @OptIn(ExperimentalGetImage::class)
+    suspend fun read(proxy: ImageProxy): List<TextFragment> = try {
+        val media = proxy.image
+        if (media == null) emptyList() else read(InputImage.fromMediaImage(media, proxy.imageInfo.rotationDegrees))
+    } finally {
+        proxy.close()
     }
 
     fun close() = recognizer.close()

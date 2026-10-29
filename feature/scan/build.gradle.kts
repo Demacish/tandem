@@ -21,6 +21,8 @@ android {
 
 dependencies {
     implementation(libs.bundles.compose.adaptive)
+    // skanning lane: the camera permission and the system photo picker (rememberLauncherForActivityResult).
+    implementation(libs.androidx.activity.compose)
     implementation(libs.bundles.camerax)
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.mlkit.text.recognition)

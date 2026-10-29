@@ -7,4 +7,148 @@
     <string name="scan_fridge_title">Fridge photo (experimental)</string>
     <string name="scan_review_title">Check before saving</string>
     <string name="scan_ai_settings_title">AI</string>
+
+    <!-- skanning lane: shared by the scanners and the review -->
+    <string name="scan_cancel">Cancel</string>
+    <string name="scan_remove">Remove</string>
+    <string name="scan_where">Where</string>
+    <string name="scan_best_before">Best before</string>
+    <string name="scan_pantry">the pantry</string>
+    <string name="scan_unit_default">pcs</string>
+    <string name="scan_expires_on">expires %1$s</string>
+    <string name="scan_pick_image">Pick a photo from the gallery</string>
+    <string name="scan_image_unreadable">The photo could not be read</string>
+    <string name="scan_demo_title">Demo mode</string>
+    <string name="scan_to_shopping_list">Add to the shopping list</string>
+    <string name="scan_choose_food">Choose a food</string>
+    <string name="scan_change_food">Change the food</string>
+    <string name="scan_show_item">Show</string>
+    <string name="scan_food_suggestions">Suggestions</string>
+    <string name="scan_food_search">Search foods</string>
+    <string name="scan_food_create">Create “%1$s”</string>
+    <string name="scan_expiry_none">No date</string>
+    <string name="scan_expiry_3_days">+3 days</string>
+    <string name="scan_expiry_1_week">+1 week</string>
+    <string name="scan_expiry_1_month">+1 month</string>
+    <string name="scan_expiry_3_months">+3 months</string>
+    <string name="scan_status_learned">Known</string>
+    <string name="scan_status_suggested">Suggested</string>
+    <string name="scan_status_chosen">Chosen</string>
+    <string name="scan_status_new">New food</string>
+    <string name="scan_status_unknown">Unknown – choose a food</string>
+    <string name="scan_status_skipped">Skipped</string>
+    <string name="scan_status_looking_up">Looking up…</string>
+    <string name="scan_status_not_found">Unknown code</string>
+    <string name="scan_status_offline">Offline – choose the food</string>
+    <string name="scan_status_failed">Could not look it up</string>
+    <string name="scan_error_read_only">Guests cannot change the pantry.</string>
+    <string name="scan_error_no_location">Home has no places yet. Open Home once while online.</string>
+    <string name="scan_error_offline">No connection. Try again later.</string>
+    <string name="scan_error_save">Could not save. Try again.</string>
+    <plurals name="scan_saved">
+        <item quantity="one">%d item in the pantry</item>
+        <item quantity="other">%d items in the pantry</item>
+    </plurals>
+    <plurals name="scan_saved_to">
+        <item quantity="one">%1$d item in %2$s</item>
+        <item quantity="other">%1$d items in %2$s</item>
+    </plurals>
+    <plurals name="scan_added_to_list">
+        <item quantity="one">%d item added to the shopping list</item>
+        <item quantity="other">%d items added to the shopping list</item>
+    </plurals>
+
+    <!-- skanning lane: the camera, asked in context (plan §8.8, B21) -->
+    <string name="scan_camera_title">Scan with the camera</string>
+    <string name="scan_camera_denied_title">The camera is off</string>
+    <string name="scan_camera_barcode_rationale">Tandem uses the camera only to read barcodes, on the phone. You can also pick a photo from the gallery.</string>
+    <string name="scan_camera_receipt_rationale">Tandem uses the camera only to photograph the receipt. The text is read on the phone and the photo is not saved. You can also pick a photo from the gallery.</string>
+    <string name="scan_camera_blocked_body">Allow the camera for Tandem in Android’s settings, or pick a photo from the gallery.</string>
+    <string name="scan_camera_none_title">No camera</string>
+    <string name="scan_camera_none_body">This device has no camera. Pick a photo from the gallery instead.</string>
+    <string name="scan_camera_allow">Allow the camera</string>
+    <string name="scan_camera_settings">Open settings</string>
+    <string name="scan_torch_on">Turn on the light</string>
+    <string name="scan_torch_off">Turn off the light</string>
+
+    <!-- skanning lane: barcode (#27) -->
+    <string name="scan_barcode_aim">Hold the barcode inside the frame</string>
+    <string name="scan_barcode_empty_title">Scan a package</string>
+    <string name="scan_barcode_empty_body">A known code finds its food at once. An unknown one is looked up in Open Food Facts; only the code is sent.</string>
+    <string name="scan_barcode_demo_body">In demo mode codes are only matched with the demo foods; nothing is looked up online.</string>
+    <string name="scan_barcode_unknown_item">Unknown item</string>
+    <string name="scan_barcode_none_in_image">No barcode in the photo</string>
+    <string name="scan_barcode_save_to">Put in %1$s</string>
+    <plurals name="scan_barcode_review">
+        <item quantity="one">Review %d item</item>
+        <item quantity="other">Review %d items</item>
+    </plurals>
+    <plurals name="scan_barcode_scanned">
+        <item quantity="one">%d scanned</item>
+        <item quantity="other">%d scanned</item>
+    </plurals>
+
+    <!-- skanning lane: receipt (#44) -->
+    <string name="scan_receipt_none_yet">Photograph the receipt</string>
+    <string name="scan_receipt_tips">Lay the receipt flat in good light. Take a long receipt in several photos, from the top down.</string>
+    <string name="scan_receipt_privacy">The text is read on the phone. The photo is not saved, and card and member numbers are left out.</string>
+    <string name="scan_receipt_take_photo">Take a photo</string>
+    <string name="scan_receipt_take_another">Take another photo</string>
+    <string name="scan_receipt_remove_last">Remove the last photo</string>
+    <string name="scan_receipt_reading">Reading the receipt…</string>
+    <string name="scan_receipt_matching">Finding the foods…</string>
+    <string name="scan_receipt_no_text_title">No text found</string>
+    <string name="scan_receipt_no_text_body">Try again in better light, with the whole width of the receipt in the photo.</string>
+    <string name="scan_receipt_no_items_title">No items found</string>
+    <string name="scan_receipt_no_items_body">The text did not look like the item lines of a receipt. Try another photo.</string>
+    <string name="scan_receipt_unreadable_body">Take the photo again.</string>
+    <string name="scan_receipt_demo_body">In demo mode the receipt is read on the phone and matched with the demo foods.</string>
+    <plurals name="scan_receipt_pages">
+        <item quantity="one">%d photo read</item>
+        <item quantity="other">%d photos read</item>
+    </plurals>
+    <plurals name="scan_receipt_done">
+        <item quantity="one">Read the receipt (%d photo)</item>
+        <item quantity="other">Read the receipt (%d photos)</item>
+    </plurals>
+
+    <!-- skanning lane: the shared review list -->
+    <string name="scan_review_source_barcode">Barcodes</string>
+    <string name="scan_review_source_receipt">Receipt</string>
+    <string name="scan_review_source_fridge">Fridge photo (experimental)</string>
+    <string name="scan_review_from_barcode">barcode %1$s</string>
+    <string name="scan_review_from_receipt">receipt line %1$s</string>
+    <string name="scan_review_from_fridge">the AI saw %1$s</string>
+    <string name="scan_review_ai_title">Check what the AI found</string>
+    <string name="scan_review_ai_body">The AI can miss items or find things that are not there. Nothing is saved until you have checked the list.</string>
+    <string name="scan_review_default_location">Rows without their own place go to</string>
+    <string name="scan_review_to_check">To review (%1$d)</string>
+    <string name="scan_review_ready">Ready (%1$d)</string>
+    <string name="scan_review_skipped">Skipped (%1$d)</string>
+    <string name="scan_review_empty">No rows left.</string>
+    <string name="scan_review_edit">Edit</string>
+    <string name="scan_review_skip">Skip</string>
+    <string name="scan_review_include">Include</string>
+    <string name="scan_review_included">Included</string>
+    <string name="scan_review_edit_title">Edit the row</string>
+    <string name="scan_review_food">Food</string>
+    <string name="scan_review_amount">Amount</string>
+    <string name="scan_review_amount_error">Enter a number, such as 1.5</string>
+    <string name="scan_review_unit">Unit</string>
+    <string name="scan_review_learn">Remember this row</string>
+    <string name="scan_review_learn_body">Next time “%1$s” is recognised on every phone in the household.</string>
+    <string name="scan_review_include_row">Include this row</string>
+    <string name="scan_review_apply">Done</string>
+    <string name="scan_review_save_none">Nothing to save yet</string>
+    <string name="scan_review_missing_title">This review is gone</string>
+    <string name="scan_review_missing_body">The app was closed before you saved. Scan again.</string>
+    <string name="scan_review_scan_again">Scan again</string>
+    <plurals name="scan_review_save">
+        <item quantity="one">Save %d item in the pantry</item>
+        <item quantity="other">Save %d items in the pantry</item>
+    </plurals>
+    <plurals name="scan_review_unmatched">
+        <item quantity="one">%d row has no food and is not saved</item>
+        <item quantity="other">%d rows have no food and are not saved</item>
+    </plurals>
 </resources>

@@ -1,0 +1,149 @@
+package casa.moller.tandem.feature.scan.barcode
+
+import android.content.Context
+import android.net.Uri
+import androidx.camera.view.CameraController
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalResources
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavKey
+import casa.moller.tandem.feature.scan.R
+import casa.moller.tandem.feature.scan.camera.CameraAccess
+import casa.moller.tandem.feature.scan.camera.CameraPreview
+import casa.moller.tandem.feature.scan.camera.rememberCameraController
+import casa.moller.tandem.feature.scan.camera.rememberCameraPermission
+import casa.moller.tandem.feature.scan.camera.rememberPhotoPicker
+import casa.moller.tandem.feature.scan.engine.BarcodeEngine
+import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
+import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
+import casa.moller.tandem.feature.scan.ui.scanErrorText
+import com.google.mlkit.vision.common.InputImage
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.launch
+
+/**
+ * The barcode scanner (#27) for [key]: the ViewModel, the camera permission (asked in context),
+ * CameraX with ML Kit's bundled barcode model, the torch, the system photo picker, haptic feedback
+ * for every new code, the snackbars and the review.
+ */
+@Composable
+fun BarcodeScanRoute(key: BarcodeScanKey, onNavigate: (NavKey) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+    val viewModel = hiltViewModel<BarcodeScanViewModel, BarcodeScanViewModel.Factory>(
+        key = "barcode-scan-${key.locationId}",
+        creationCallback = { factory -> factory.create(key) },
+    )
+    BarcodeScanRoute(viewModel = viewModel, onNavigate = onNavigate, onBack = onBack, modifier = modifier)
+}
+
+@Composable
+internal fun BarcodeScanRoute(
+    viewModel: BarcodeScanViewModel,
+    onNavigate: (NavKey) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val resources = LocalResources.current
+    val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val engine = remember { BarcodeEngine() }
+    DisposableEffect(engine) { onDispose { engine.close() } }
+    val permission = rememberCameraPermission()
+    var torchOn by rememberSaveable { mutableStateOf(false) }
+    var torchAvailable by remember { mutableStateOf(false) }
+    val currentNavigate by rememberUpdatedState(onNavigate)
+
+    val picker = rememberPhotoPicker { uri ->
+        scope.launch { viewModel.onAction(readCodes(context, engine, uri)) }
+    }
+    LaunchedEffect(viewModel, snackbarHostState, resources) {
+        viewModel.effects.collect { effect ->
+            val message = when (effect) {
+                BarcodeScanEffect.Scanned -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    null
+                }
+
+                is BarcodeScanEffect.OpenReview -> {
+                    currentNavigate(ScanReviewKey(effect.sessionId))
+                    null
+                }
+
+                is BarcodeScanEffect.Saved -> if (effect.place != null) {
+                    resources.getQuantityString(R.plurals.scan_saved_to, effect.count, effect.count, effect.place)
+                } else {
+                    resources.getQuantityString(R.plurals.scan_saved, effect.count, effect.count)
+                }
+
+                is BarcodeScanEffect.AddedToList -> resources.getQuantityString(R.plurals.scan_added_to_list, effect.count, effect.count)
+                BarcodeScanEffect.NoCodeInImage -> resources.getString(R.string.scan_barcode_none_in_image)
+                BarcodeScanEffect.ImageUnreadable -> resources.getString(R.string.scan_image_unreadable)
+                is BarcodeScanEffect.Failed -> resources.scanErrorText(effect.error)
+            }
+            if (message != null) {
+                launch {
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    snackbarHostState.showSnackbar(message)
+                }
+            }
+        }
+    }
+
+    val granted = permission.access == CameraAccess.GRANTED
+    BarcodeScanScreen(
+        state = state,
+        camera = ScanCameraUi(access = permission.access, torchAvailable = torchAvailable, torchOn = torchOn),
+        onAction = viewModel::onAction,
+        onCamera = { action ->
+            when (action) {
+                ScanCameraAction.ALLOW -> permission.request()
+                ScanCameraAction.PICK_IMAGE -> picker()
+                ScanCameraAction.TOGGLE_TORCH -> torchOn = !torchOn
+            }
+        },
+        onBack = onBack,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+        preview = { previewModifier ->
+            if (granted) {
+                val analyzer = remember(engine, viewModel) { engine.analyzer { viewModel.onAction(BarcodeScanAction.CodeScanned(it)) } }
+                val controller = rememberCameraController(CameraController.IMAGE_ANALYSIS, analyzer)
+                LaunchedEffect(controller) {
+                    controller.initializationFuture.addListener(
+                        { torchAvailable = controller.cameraInfo?.hasFlashUnit() == true },
+                        context.mainExecutor,
+                    )
+                }
+                LaunchedEffect(controller, torchOn) { controller.enableTorch(torchOn) }
+                CameraPreview(controller = controller, modifier = previewModifier)
+            }
+        },
+    )
+}
+
+/** The codes in the picked photo (read on the device, the photo is not kept). */
+@Suppress("TooGenericExceptionCaught") // ML Kit fails a broken or unsupported picked file with any Exception.
+private suspend fun readCodes(context: Context, engine: BarcodeEngine, uri: Uri): BarcodeScanAction = try {
+    BarcodeScanAction.ImageRead(engine.read(InputImage.fromFilePath(context, uri)))
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    BarcodeScanAction.ImageFailed
+}

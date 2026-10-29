@@ -1,0 +1,116 @@
+# Receipt words of Swedish stores (Tandem #44, plan §8.8 "Kvitto"), read by core:domain
+# ReceiptNormalizer to turn a printed receipt line into words for the food search. The learned
+# alias (FOOD_ALIAS) always keeps the line as printed; this list only helps the first time a line
+# is seen. Lower case; one entry per line; "#" starts a comment.
+#
+#   short = long    a store abbreviation and the word it stands for
+#   - word          a word that says nothing about the food (labels, store brands, package words)
+#
+# Dairy
+grdd = grädde
+vispgr = vispgrädde
+vispgrd = vispgrädde
+matlgr = matlagningsgrädde
+matlagn = matlagningsgrädde
+mellanmj = mellanmjölk
+standmj = standardmjölk
+standardmj = standardmjölk
+lättmj = lättmjölk
+mjlk = mjölk
+mj = mjölk
+filmj = filmjölk
+yogh = yoghurt
+yoghu = yoghurt
+smörg = smörgåsmargarin
+# Meat, fish
+kyckl = kyckling
+kycklfilé = kycklingfilé
+kycklfile = kycklingfilé
+nötf = nötfärs
+blandf = blandfärs
+fläskf = fläskfärs
+fläskfil = fläskfilé
+torskf = torskfilé
+# Fruit, vegetables
+ban = banan
+apels = apelsin
+äppl = äpple
+potat = potatis
+pot = potatis
+tom = tomat
+körsbtom = körsbärstomat
+gurk = gurka
+vitl = vitlök
+paprik = paprika
+champ = champinjoner
+citr = citron
+avok = avokado
+# Pantry
+havregr = havregryn
+vetemj = vetemjöl
+strösock = socker
+sock = socker
+spagh = spaghetti
+spag = spaghetti
+makar = makaroner
+kikärt = kikärtor
+krosstom = krossade tomater
+tomatpur = tomatpuré
+rapsol = rapsolja
+olivol = olivolja
+bryggk = kaffe
+brygg = kaffe
+knäckebr = knäckebröd
+rostbr = rostbröd
+# Words that say nothing about the food
+- eko
+- ekol
+- ekologisk
+- ekologiska
+- krav
+- sv
+- sve
+- svensk
+- svenska
+- sverige
+- fairtrade
+- garant
+- änglamark
+- ica
+- basic
+- coop
+- xtra
+- x-tra
+- eldorado
+- favorit
+- budget
+- willys
+- hemköp
+- lidl
+- dagens
+- färsk
+- färska
+- fryst
+- frysta
+- lösvikt
+- lös
+- styck
+- st
+- pack
+- paket
+- förp
+- burk
+- flaska
+- fl
+- påse
+- port
+- portion
+- ca
+- kg
+- hg
+- g
+- l
+- dl
+- cl
+- ml
+- p

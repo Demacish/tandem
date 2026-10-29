@@ -120,6 +120,15 @@ enum class ReceiptLineKind {
     PAYMENT,
     HEADER,
     OTHER,
+
+    /** skanning lane: the weight or count of the item next to it ("1,234 kg x 24,90 kr/kg", "2 st x 12,90"). */
+    QUANTITY,
+
+    /** skanning lane: loyalty and member lines (member numbers, points); never shown or stored. */
+    LOYALTY,
+
+    /** skanning lane: dates and times of the purchase. */
+    DATE,
 }
 
 /** A receipt line the filter kept as an item: the text without price, and the amount if one was read. */
