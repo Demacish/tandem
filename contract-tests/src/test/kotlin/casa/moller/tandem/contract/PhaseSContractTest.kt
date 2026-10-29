@@ -6,6 +6,7 @@ import java.io.File
 import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import javax.imageio.ImageIO
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -292,6 +293,7 @@ class PhaseSContractTest {
             observe("inventoryEntry.create.code.shape", created.stringAt("code")?.replace(Regex("[0-9A-F]"), "X"))
             observe("inventoryEntry.create.label.shape", created.stringAt("label")?.replace(Regex("[0-9A-F]+"), "N"))
             observe("inventoryEntry.create.expires", created.stringAt("expires"))
+            observe("inventoryEntry.create.expiresInDays", daysFromToday(created.stringAt("expires")))
             observe("inventoryEntry.create.amount", created["amount"])
             observe("inventoryEntry.create.subLocation", created.stringAt("sub_location"))
             observe("inventoryEntry.create.locationName", created.objAt("inventory_location")?.stringAt("name"))
@@ -388,6 +390,7 @@ class PhaseSContractTest {
             val note = api("inventory-entry-patch-note", "PATCH", path, obj("note" to "Öppnad", "expires" to today.plusDays(1).toString()))
             observe("inventoryEntry.patchNoteExpires.status", note.status)
             observe("inventoryEntry.patchNoteExpires.expires", objOf(note)?.stringAt("expires"))
+            observe("inventoryEntry.patchNoteExpires.expiresInDays", daysFromToday(objOf(note)?.stringAt("expires")))
             if (freezer != null) {
                 val move = api("inventory-entry-patch-move", "PATCH", path, obj("inventory_location" to freezer))
                 observe("inventoryEntry.patchMove.status", move.status)
@@ -822,6 +825,10 @@ class PhaseSContractTest {
         return pageOrArray(ex.json).mapNotNull { it.stringAt("name") }.filter { it in names }.sorted()
     }
 
+    /** Days from the run day to a `yyyy-MM-dd` date (dates are shifted in the recordings, day counts are not). */
+    private fun daysFromToday(date: String?): Long? =
+        date?.let { runCatching { ChronoUnit.DAYS.between(today, LocalDate.parse(it)) }.getOrNull() }
+
     private fun foodsOf(ex: Exchange): List<String?> = pageOrArray(ex.json).map { it.objAt("food")?.stringAt("name") }
 
     private fun keywordRefs(recipe: JsonObject?): List<JsonObject> =
@@ -987,7 +994,7 @@ class PhaseSContractTest {
             // `empty` in the query at all (also empty=false) lists the entries with amount 0 too.
             "inventoryEntry.list.empty=false" to listOf("kikärtor", "citronsaft", "blåbär", "persilja"),
             "inventoryEntry.list.code" to listOf("kikärtor"),
-            "inventoryEntry.create.expires" to "2000-01-17",
+            "inventoryEntry.create.expiresInDays" to 2,
             "inventoryEntry.create.amount" to 2.0,
             // The nested location must be the whole object; its fields are WRITTEN (a different name renames it).
             "inventoryEntry.createLocationIdOnly.status" to 400,
@@ -996,7 +1003,7 @@ class PhaseSContractTest {
             "inventoryEntry.createNoUnit.status" to 400,
             "inventoryEntry.createNullUnit.status" to 400,
             "inventoryEntry.createNoExpires.expires" to null,
-            "inventoryEntry.patchNoteExpires.expires" to "2000-01-16",
+            "inventoryEntry.patchNoteExpires.expiresInDays" to 1,
             "inventoryEntry.deleted.patch.status" to 404,
             "inventoryLog.create.status" to 405,
             "inventoryLog.afterEntryDelete.count" to 0,
@@ -1084,6 +1091,8 @@ class PhaseSContractTest {
             "automation.guest.patch.status" to 403,
             "automation.parser.lower" to "kikärtor",
             "automation.parser.upper" to "kikärtor",
+            // A learned barcode is applied by the parser too ("1 <EAN>" -> the food).
+            "automation.parser.barcode" to "kikärtor",
             "automation.patch.status" to 200,
             "automation.delete.status" to 204,
             "automation.deleted.get.status" to 404,
