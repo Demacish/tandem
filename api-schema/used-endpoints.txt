@@ -102,3 +102,23 @@ GET /api/user-space/all_personal/
 # The household's members for an admin (every membership of the space with its household; a member
 # sees only their own, FACTS "Fas 2 h"). Read with the small tables.
 GET /api/user-space/
+
+# --- Fas S (hemma-data lane): the pantry, learned aliases, "har hemma" in batch and staples ---
+# Locations and entries are space-wide (the app filters on the account's household); an entry's
+# write carries the WHOLE location (FACTS "Fas S b"). FOOD_ALIAS automations are the learned
+# barcodes and receipt names (FACTS "Fas S d"). batch_update answers {} (FACTS "Fas S e"); a staple
+# the space has no food for is created by name. GET /api/inventory-location/ is listed above.
+POST /api/inventory-location/
+PATCH /api/inventory-location/{id}/
+DELETE /api/inventory-location/{id}/
+GET /api/inventory-entry/
+POST /api/inventory-entry/
+PATCH /api/inventory-entry/{id}/
+DELETE /api/inventory-entry/{id}/
+GET /api/inventory-log/
+GET /api/automation/
+POST /api/automation/
+PATCH /api/automation/{id}/
+DELETE /api/automation/{id}/
+PUT /api/food/batch_update/
+POST /api/food/

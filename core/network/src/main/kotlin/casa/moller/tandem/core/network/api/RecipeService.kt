@@ -49,7 +49,7 @@ interface RecipeService {
         @Query("viewedon_gte") viewedOnOrAfter: LocalDate?,
         @Query("createdon_gte") createdOnOrAfter: LocalDate?,
         @Query("updatedon_gte") updatedOnOrAfter: LocalDate?,
-        @Query("makenow") makeNow: Boolean?,
+        @Query("makenow") makeNow: Int?,
         @Query("new") newFirst: Boolean?,
         @Query("random") random: Boolean?,
         @Query("internal") internalOnly: Boolean?,
@@ -100,6 +100,9 @@ enum class RecipeSortOrder(val apiValue: String) {
  * child keywords unless [includeChildren] is false; [cookedOnOrBefore] leaves out recipes never
  * cooked.
  *
+ * @property makeNow Fas S (hemma-data lane): an INTEGER although the schema says boolean: at most
+ *   N foods missing (FACTS "Fas S a": `true` = 0, invalid values are ignored and `-1` lists none).
+ *   The app sends only 0, 1 and 2.
  * @property pageSize clamped to 1..[MAX_PAGE_SIZE] when sent.
  */
 data class RecipeListQuery(
@@ -124,7 +127,7 @@ data class RecipeListQuery(
     val viewedOnOrAfter: LocalDate? = null,
     val createdOnOrAfter: LocalDate? = null,
     val updatedOnOrAfter: LocalDate? = null,
-    val makeNow: Boolean? = null,
+    val makeNow: Int? = null,
     val newFirst: Boolean? = null,
     val random: Boolean? = null,
     val internalOnly: Boolean? = null,

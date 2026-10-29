@@ -103,6 +103,19 @@ class DtoFixturesTest {
         // --- 0.3.0 komplettering: "Delad med: …" (the household's members, plan 8.6). ---
         Route("GET", "/api/user-space/", PageDto.serializer(UserSpaceDto.serializer())),
         Route("GET", "/api/user/", ListSerializer(UserDto.serializer())),
+        // --- Fas S (hemma-data lane): the pantry, learned aliases and "har hemma" in batch. ---
+        Route("GET", "/api/inventory-location/", PageDto.serializer(InventoryLocationDto.serializer())),
+        Route("POST", "/api/inventory-location/", InventoryLocationDto.serializer()),
+        Route("PATCH", "/api/inventory-location/\\d+/", InventoryLocationDto.serializer()),
+        Route("GET", "/api/inventory-entry/", PageDto.serializer(InventoryEntryDto.serializer())),
+        Route("POST", "/api/inventory-entry/", InventoryEntryDto.serializer()),
+        Route("PATCH", "/api/inventory-entry/\\d+/", InventoryEntryDto.serializer()),
+        Route("GET", "/api/inventory-log/", PageDto.serializer(InventoryLogDto.serializer())),
+        Route("GET", "/api/automation/", PageDto.serializer(AutomationDto.serializer())),
+        Route("POST", "/api/automation/", AutomationDto.serializer()),
+        Route("PATCH", "/api/automation/\\d+/", AutomationDto.serializer()),
+        // `{}` (FACTS "Fas S e"): compared as raw JSON.
+        Route("PUT", "/api/food/batch_update/", JsonObject.serializer()),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */
@@ -121,39 +134,12 @@ class DtoFixturesTest {
         "fas2/user-preference-patch-autoadd" to "contract setup; the app only reads the preferences",
         // Fas S (grund lane): recordings whose DTO the lane adds with its route (docs/BYGGE.md
         // "Fas S – kontrakt"); the lane removes its lines here in the same commit.
-        "fas-s/food-batch-update-off" to FAS_S_HEMMA_DATA,
-        "fas-s/food-batch-update-on-hand" to FAS_S_HEMMA_DATA,
-        "fas-s/food-batch-update-substitute" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-create" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-create-freezer" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-create-no-date" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-create-zero" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-list" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-list-food" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-list-location" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-patch-amount" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-patch-move" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-patch-note" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-entry-patch-zero" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-location-create" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-location-create-Frys" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-location-list" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-location-list-as-outsider" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-location-list-empty" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-location-patch" to FAS_S_HEMMA_DATA,
-        "fas-s/inventory-log-list-entry" to FAS_S_HEMMA_DATA,
-        "fas-s/automation-create-barcode" to FAS_S_SKANNING,
-        "fas-s/automation-create-receipt" to FAS_S_SKANNING,
-        "fas-s/automation-list-food-alias" to FAS_S_SKANNING,
-        "fas-s/automation-patch" to FAS_S_SKANNING,
         "fas-s/keyword-get-child" to FAS_S_DRYCKER,
         "fas-s/keyword-move" to FAS_S_DRYCKER,
         "fas-s/recipe-image-put-drink" to FAS_S_DRYCKER,
     )
 
     private companion object {
-        const val FAS_S_HEMMA_DATA = "Fas S: the hemma-data lane adds the inventory and food batch DTOs"
-        const val FAS_S_SKANNING = "Fas S: the skanning lane adds the automation (FOOD_ALIAS) DTO"
         const val FAS_S_DRYCKER = "Fas S: the drycker lane adds keyword move/detail and the drink image upload"
     }
 

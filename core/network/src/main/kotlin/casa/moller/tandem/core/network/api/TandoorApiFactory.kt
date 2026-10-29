@@ -39,6 +39,10 @@ class TandoorApi internal constructor(
     // --- Phase 2 (böcker lane): recipe books, favourites, "Vill laga" and the user's role. ---
     val books: BookService,
     val userSpaces: UserSpaceService,
+    // --- Fas S (hemma-data lane): the pantry, learned aliases and "har hemma" in batch. ---
+    val inventory: InventoryService,
+    val automations: AutomationService,
+    val pantryFoods: PantryFoodService,
     /** Capability probes; see `CapabilityResolver`. */
     internal val probes: CapabilityProbeService,
     /** The client with this server's [AuthInterceptor]; for raw calls in tests and later image loading. */
@@ -85,6 +89,9 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             supermarkets = retrofit.create(SupermarketService::class.java),
             books = retrofit.create(BookService::class.java),
             userSpaces = retrofit.create(UserSpaceService::class.java),
+            inventory = retrofit.create(InventoryService::class.java),
+            automations = retrofit.create(AutomationService::class.java),
+            pantryFoods = retrofit.create(PantryFoodService::class.java),
             probes = retrofit.create(CapabilityProbeService::class.java),
             httpClient = client,
         )
