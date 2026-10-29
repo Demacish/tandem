@@ -29,19 +29,20 @@ data class VersionAssessment(
 /**
  * The versions this app build was tested against, and the range it supports (plan 3.6).
  *
- * - **Tested**: 2.6.0 to 2.6.15, and 2.7.1. The contract tests run against 2.6.13 (the baseline)
- *   and the nightly watch against 2.6.15, the newest release of every line and `latest`; 2.6.0 to
- *   2.6.15 changed no field the app uses (plan 3.6). 2.7.1: the password login goes through
- *   allauth (`TandoorAuthenticator`), `CookLog.servings` is a decimal, and every other difference
- *   is reviewed in `contract-tests/watch/reviewed-changes.json`. **2.7.0 is not tested on
- *   purpose**: it refuses every write with a token ("CSRF Failed", fixed in 2.7.1), so it runs in
- *   safe mode. Add a version here when the nightly run against it is green.
+ * - **Tested**: 2.6.0 to 2.6.15, 2.7.1 and 2.7.2. The contract tests run against 2.6.13 (the
+ *   baseline) and the nightly watch against 2.6.15, the newest release of every line and `latest`;
+ *   2.6.0 to 2.6.15 changed no field the app uses (plan 3.6). 2.7.1: the password login goes
+ *   through allauth (`TandoorAuthenticator`), `CookLog.servings` is a decimal, and every other
+ *   difference is reviewed in `contract-tests/watch/reviewed-changes.json`; 2.7.2 changed no fact
+ *   beyond those. **2.7.0 is not tested on purpose**: it refuses every write with a token ("CSRF
+ *   Failed", fixed in 2.7.1), so it runs in safe mode. Add a version here when the nightly run
+ *   against it is green.
  * - **Supported range**: `>= 2.6.0 < 2.8.0`. An untested version inside it runs in safe mode.
  * - Older 2.x (2.0.0 to 2.5.x) may log in and runs in safe mode (plan 4.5: any Tandoor >= 2.0);
  *   1.x is refused. Newer than the range: reading works, writes are disabled.
  */
 object TandoorVersionTable {
-    val TESTED: List<TandoorVersion> = (0..15).map { TandoorVersion(2, 6, it) } + listOf(TandoorVersion(2, 7, 1))
+    val TESTED: List<TandoorVersion> = (0..15).map { TandoorVersion(2, 6, it) } + listOf(TandoorVersion(2, 7, 1), TandoorVersion(2, 7, 2))
 
     /** First version of the supported range (inclusive). */
     val SUPPORTED_FROM: TandoorVersion = TandoorVersion(2, 6, 0)

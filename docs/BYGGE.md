@@ -2066,8 +2066,9 @@ taggen), aldrig för hand utan granskning.
 `/account/login/`). Appen loggar in via allauth headless (`TandoorAuthenticator`, se "Nätverk"),
 och sviten har en 2.7-gren i `Phase0ContractTest` (inloggning, enhetstoken med `X-Session-Token`,
 utloggning, konto utan space, spärren 3 per minut). Fixturerna och skillnaderna står i
-`api-schema/fixtures/2.7.1/` (`FACTS.md`); `DtoFixturesTest` avkodar dem också. 2.7.1 står i
-`TESTED`, och dess skillnader i `reviewed-changes.json` ("2.7"). **2.7.0 är inte testad med
+`api-schema/fixtures/2.7.1/` (`FACTS.md`); `DtoFixturesTest` avkodar dem också. 2.7.1 och 2.7.2
+står i `TESTED` (2.7.2 sedan 2026-10-29: bevakningen grön utan andra skillnader än de granskade),
+och skillnaderna i `reviewed-changes.json` ("2.7"). **2.7.0 är inte testad med
 flit**: den nekar varje skrivning med token ("CSRF Failed", `SessionAuthentication` före
 OAuth2), så appen kör den i säkert läge; bevakningen testar bara den nyaste i varje linje, och
 en körning med `extra-tags=2.7.0` är röd av just det skälet.

@@ -6,6 +6,8 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+- **Tandoor 2.7.2** är testad: appen kör den som 2.7.1, utan säkert läge.
+
 ## [0.3.0] – 2026-10-26
 
 Handla och planera med Tandem (Fas 2, "handla & planera"): hushållets inköpslista och veckans
