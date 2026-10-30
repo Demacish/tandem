@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.recipes.drinks
 
 import android.content.Context
 import android.net.Uri
+import casa.moller.tandem.core.data.files.CacheDirectories
 import java.io.File
 import java.io.IOException
 
@@ -13,7 +14,8 @@ import java.io.IOException
  * files inside that directory are ever deleted (canonical paths), never a photo-picker image.
  */
 internal object DrinkCameraFiles {
-    const val DIRECTORY: String = "drink-camera"
+    /** Shared with "Rensa appdata" and the logout clean-up (core:data [CacheDirectories]). */
+    const val DIRECTORY: String = CacheDirectories.DRINK_CAMERA
 
     /** The FileProvider of feature:recipes' manifest (`${applicationId}.drinkphotos`). */
     const val AUTHORITY_SUFFIX: String = ".drinkphotos"

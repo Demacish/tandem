@@ -3,6 +3,7 @@ package casa.moller.tandem.core.data.internal
 import app.cash.turbine.test
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
+import casa.moller.tandem.core.data.files.CacheDirectories
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
@@ -17,6 +18,8 @@ import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.StorageHealth
+import java.io.File
+import java.nio.file.Files
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
@@ -573,6 +576,39 @@ class DefaultAccountRepositoryTest {
         assertEquals(AppSettings.Default, settings.state.value)
         assertEquals(Session.NoAccount, repository.session.first())
         assertTrue(remote.revocations.isEmpty())
+    }
+
+    /** Fas S komplettering (fix-ui #3/#22): the camera originals of "Ny dryck" go with "Rensa appdata". */
+    @Test
+    fun clearAppDataEmptiesTheDrinkCameraCache() = runTest {
+        val cache = Files.createTempDirectory("tandem-cache").toFile()
+        try {
+            val original = File(cache, "${CacheDirectories.DRINK_CAMERA}/drink-1.jpg").apply {
+                parentFile?.mkdirs()
+                writeText("jpeg")
+            }
+            val kept = File(cache, "image_cache/recipe.png").apply {
+                parentFile?.mkdirs()
+                writeText("png")
+            }
+            val withCache = DefaultAccountRepository(
+                remote = remote,
+                accountStore = accounts,
+                settingsStore = settings,
+                health = health,
+                now = { NOW },
+                newId = { "account-${++ids}" },
+                cacheDir = cache,
+            )
+
+            assertEquals(Outcome.Success(Unit), withCache.clearAppData())
+
+            assertFalse(original.exists())
+            assertFalse(File(cache, CacheDirectories.DRINK_CAMERA).exists())
+            assertTrue("other caches are core:sync's (AccountMirror)", kept.exists())
+        } finally {
+            cache.deleteRecursively()
+        }
     }
 
     @Test

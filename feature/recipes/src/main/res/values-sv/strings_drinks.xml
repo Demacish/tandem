@@ -79,6 +79,7 @@
     <string name="drinks_create_saved">%1$s sparades.</string>
     <string name="drinks_create_saved_offline">%1$s sparades och skickas när du är online.</string>
     <string name="drinks_create_failed">Drycken kunde inte sparas.</string>
+    <string name="drinks_create_photo_unreadable">Fotot gick inte att läsa. Välj det igen, eller spara drycken utan foto.</string>
     <string name="drinks_create_web_hint">Steg, ingredienser och annat kan läggas till på webben efteråt.</string>
     <string name="drinks_name_taken">Ett annat nyckelord har redan det namnet.</string>
 

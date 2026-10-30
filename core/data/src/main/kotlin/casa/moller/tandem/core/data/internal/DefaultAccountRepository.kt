@@ -1,8 +1,10 @@
 package casa.moller.tandem.core.data.internal
 
+import android.content.Context
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.account.AccountSessions
+import casa.moller.tandem.core.data.files.CacheDirectories
 import casa.moller.tandem.core.data.remote.RemoteCredentials
 import casa.moller.tandem.core.data.remote.TandoorRemote
 import casa.moller.tandem.core.data.remote.compatibilityOf
@@ -21,12 +23,15 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.StorageHealth
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Instant
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -52,6 +57,8 @@ internal class DefaultAccountRepository(
     // Fas S (ai-foto lane): "Rensa appdata" also removes the AI keys and settings (B22).
     private val aiKeys: AiKeyStore? = null,
     private val aiPreferences: AiPreferencesStore? = null,
+    // Fas S komplettering: the app's cache directory ("Rensa appdata" empties cache/drink-camera).
+    private val cacheDir: File? = null,
 ) : AccountRepository,
     SessionRepository,
     AccountSessions {
@@ -64,6 +71,7 @@ internal class DefaultAccountRepository(
         health: StorageHealthMonitor,
         aiKeys: AiKeyStore,
         aiPreferences: AiPreferencesStore,
+        @ApplicationContext context: Context,
     ) : this(
         remote = remote,
         accountStore = accountStore,
@@ -73,6 +81,7 @@ internal class DefaultAccountRepository(
         newId = { UUID.randomUUID().toString() },
         aiKeys = aiKeys,
         aiPreferences = aiPreferences,
+        cacheDir = context.cacheDir,
     )
 
     /** Serializes writes that read-modify-write accounts and settings together. */
@@ -354,6 +363,9 @@ internal class DefaultAccountRepository(
             } catch (e: IOException) {
                 failed = true
             }
+            // Fas S komplettering (fix-ui #3/#22): the camera originals of "Ny dryck" go too
+            // (often with EXIF location); the drinks' scaled copies go with the account's rows.
+            cacheDir?.let { dir -> withContext(Dispatchers.IO) { File(dir, CacheDirectories.DRINK_CAMERA).deleteRecursively() } }
         }
         health.acknowledge()
         return if (failed) Outcome.Failure(DataProblem.SECURE_STORAGE.toError()) else Outcome.Success(Unit)

@@ -34,6 +34,7 @@ import casa.moller.tandem.core.sync.drink.DrinkImageStore
 import casa.moller.tandem.core.sync.drink.DrinkOutboxHandler
 import casa.moller.tandem.core.sync.drink.DrinkSync
 import casa.moller.tandem.core.sync.drink.OfflineFirstDrinkRepository
+import casa.moller.tandem.core.sync.drink.SharedDrinkIndex
 import casa.moller.tandem.core.sync.drink.PairingKeywords
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxSender
@@ -302,7 +303,18 @@ internal class SyncTestGraph(
     val foodAliases = OfflineFirstFoodAliasRepository(sources, databases, permissions, foodAliasReader, outbox, scheduler, network, clock)
 
     // Fas S (drycker lane): drinks and "Passar med".
-    val drinks = OfflineFirstDrinkRepository(sources, databases, permissions, scheduler, clock, drinkImages, DrinkSync(databases, caller))
+    // Fas S komplettering: the one shared index per account (SharedDrinkIndex).
+    val drinkIndex = SharedDrinkIndex(databases, scope)
+    val drinks = OfflineFirstDrinkRepository(
+        sources,
+        databases,
+        permissions,
+        scheduler,
+        clock,
+        drinkImages,
+        DrinkSync(databases, caller),
+        drinkIndex,
+    )
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

@@ -46,6 +46,7 @@ internal fun drinkErrorMessage(error: TandemError): Int = when {
     error.dataProblem() == DataProblem.READ_ONLY -> R.string.drinks_read_only
     DrinkProblem.of(error) == DrinkProblem.NAME_TAKEN -> R.string.drinks_name_taken
     DrinkProblem.of(error) == DrinkProblem.NAME_EMPTY -> R.string.drinks_create_name_missing
+    DrinkProblem.of(error) == DrinkProblem.PHOTO_UNREADABLE -> R.string.drinks_create_photo_unreadable
     else -> R.string.drinks_change_failed
 }
 

@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.recipes.drinks
 
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.drink.DrinkProblem
 import casa.moller.tandem.core.model.drink.Drink
 import casa.moller.tandem.core.model.drink.RecipePairings
 import casa.moller.tandem.core.model.error.Outcome
@@ -264,6 +265,24 @@ class DrinkViewModelsTest {
         val created = drinks.drinks.value.single { it.name == "Husets rosé" }
         assertTrue(created.id in drinks.recipePairings.value.filterValues { it.isNotEmpty() }.keys)
         assertTrue(drinks.recipePairings.value[dish].orEmpty().isNotEmpty())
+    }
+
+    /** Fas S komplettering (fix-ui #23): an unreadable photo is said in the snackbar; the form stays. */
+    @Test
+    fun anUnreadablePhotoIsSaidAndTheFormStays() = runTest {
+        val vm = CreateDrinkViewModel(null, SavedStateHandle(), drinks, recipes, permissions)
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        vm.onAction(CreateDrinkAction.SetName("Husets rosé"))
+        vm.onAction(CreateDrinkAction.SetPhoto("content://media/picker/gone"))
+        drinks.failure = DrinkProblem.PHOTO_UNREADABLE.toError()
+
+        vm.onAction(CreateDrinkAction.Save)
+
+        assertEquals(listOf(CreateDrinkEffect.Message(R.string.drinks_create_photo_unreadable)), effects)
+        assertFalse(vm.uiState.value.saving)
+        assertEquals("content://media/picker/gone", vm.uiState.value.photoUri)
+        assertEquals("Husets rosé", vm.uiState.value.name)
     }
 
     @Test

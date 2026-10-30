@@ -67,6 +67,12 @@ enum class DrinkProblem(val detail: String) {
 
     /** The recipe or drink is not known on this device. */
     UNKNOWN_RECIPE("tandem.drink.unknown-recipe"),
+
+    /**
+     * Fas S komplettering: the chosen photo could not be read or copied (deleted meanwhile, no
+     * longer allowed, not an image); nothing was saved, so the drink is never stored without it.
+     */
+    PHOTO_UNREADABLE("tandem.drink.photo-unreadable"),
     ;
 
     fun toError(): TandemError = TandemError.Unknown(detail)

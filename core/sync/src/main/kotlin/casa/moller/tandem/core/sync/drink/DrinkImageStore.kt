@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.ColorSpace
 import android.graphics.ImageDecoder
 import android.net.Uri
+import casa.moller.tandem.core.data.files.CacheDirectories
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -32,7 +33,10 @@ internal interface DrinkImageStore {
     /** Fas S review (fix-data): every copy of [accountId] (the account's rows are gone: removed, or its data cleared). */
     suspend fun deleteAccount(accountId: String)
 
-    /** Every copy of every account (no account is left: logout, "Rensa appdata"). */
+    /**
+     * Every copy of every account (no account is left: logout, "Rensa appdata"), and (Fas S
+     * komplettering) the camera originals of "Ny dryck" in `cache/drink-camera/`.
+     */
     suspend fun deleteAll()
 
     companion object {
@@ -88,7 +92,10 @@ internal class AndroidDrinkImageStore @Inject constructor(@ApplicationContext pr
     }
 
     override suspend fun deleteAll() {
-        withContext(Dispatchers.IO) { File(context.filesDir, DIRECTORY).deleteRecursively() }
+        withContext(Dispatchers.IO) {
+            File(context.filesDir, DIRECTORY).deleteRecursively()
+            File(context.cacheDir, CacheDirectories.DRINK_CAMERA).deleteRecursively()
+        }
     }
 
     private fun accountDirectory(accountId: String): File = File(context.filesDir, "$DIRECTORY/${accountId.hashCode().toUInt()}")

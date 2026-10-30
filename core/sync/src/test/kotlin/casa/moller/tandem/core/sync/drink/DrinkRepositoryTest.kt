@@ -19,8 +19,12 @@ import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import java.io.File
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -364,6 +368,45 @@ class DrinkRepositoryTest {
         }
     }
 
+    /**
+     * Fas S komplettering (fix-ui #24): five drink suggestions on screen at once share ONE index
+     * pipeline, and a pairing made meanwhile is seen at once, by the cards and by a new reader.
+     */
+    @Test
+    fun theDrinkSuggestionsShareOneIndexAndSeeAWriteAtOnce() = forEachVersion {
+        val started = graph.drinkIndex.pipelinesStarted.get()
+        val seen = MutableStateFlow(emptyMap<Int, List<String>>())
+        val cards = (1..CARDS).map { card ->
+            graph.scope.launch {
+                repo.observeRecipePairings(PASTA).collect { shown ->
+                    seen.update { it + (card to shown.pairings.map { pairing -> pairing.name }) }
+                }
+            }
+        }
+        try {
+            withTimeout(WAIT_MILLIS) { seen.first { it.size == CARDS } }
+            ok(repo.addNewPairing(PASTA, "Friskt vitt"))
+            assertTrue("Friskt vitt" in repo.observeRecipePairings(PASTA).first().pairings.map { it.name })
+            withTimeout(WAIT_MILLIS) { seen.first { all -> all.values.all { "Friskt vitt" in it } } }
+            assertEquals("[$version] one pipeline for every card", 1, graph.drinkIndex.pipelinesStarted.get() - started)
+        } finally {
+            cards.forEach { it.cancel() }
+        }
+    }
+
+    /** Fas S komplettering (fix-ui #23): a photo that cannot be read is said, never dropped in silence. */
+    @Test
+    fun aDrinkWhosePhotoCannotBeReadIsNotSavedWithoutIt() = forEachVersion {
+        val missing = File(graph.context.cacheDir, "not-there-${System.nanoTime()}.jpg")
+        val draft = DrinkDraft(name = "Rioja Crianza", types = listOf("Vin"), imageUri = "file://${missing.path}")
+
+        assertEquals(DrinkProblem.PHOTO_UNREADABLE.toError(), failure(repo.createDrink(draft)))
+        assertTrue("[$version] nothing stored", repo.observeDrinks().first().isEmpty())
+        assertTrue("[$version] nothing queued", outbox().isEmpty())
+        // Without the photo (the user chose to) it is saved.
+        ok(repo.createDrink(draft.copy(imageUri = null)))
+    }
+
     @Test
     fun aPhotoIsScaledToAtMost1600Pixels() {
         assertEquals(1600 to 1200, DrinkImageStore.scaledSize(4000, 3000))
@@ -379,5 +422,7 @@ class DrinkRepositoryTest {
         const val PANCAKES = 3L
         const val DEMO_SALMON = 1L
         const val DEMO_TACOS = 10L
+        const val CARDS = 5
+        const val WAIT_MILLIS = 10_000L
     }
 }

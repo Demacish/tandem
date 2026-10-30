@@ -34,7 +34,6 @@ import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -43,7 +42,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -73,6 +71,7 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
     private val clock: SyncClock,
     private val images: DrinkImageStore,
     private val drinkSync: DrinkSync,
+    private val sharedIndex: SharedDrinkIndex,
 ) : DrinkRepository {
     /** Serializes local writes, so two taps never get the same temporary id. */
     private val writes = Mutex()
@@ -187,13 +186,19 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
         if (readOnlyRemote()) return Outcome.Failure(DataProblem.READ_ONLY.toError())
         val accountId = (sources.current() as? ActiveSource.Stored)?.accountId
         val photo = draft.imageUri?.let { uri -> accountId?.let { images.copy(it, uri) } }
+        // Fas S komplettering (fix-ui #23): a chosen photo that cannot be copied is a failure the
+        // form says, not a drink saved without its photo.
+        if (draft.imageUri != null && accountId != null && photo == null) return Outcome.Failure(DrinkProblem.PHOTO_UNREADABLE.toError())
         val result = write { context -> Outcome.Success(context.createDrink(draft.copy(name = name), photo)) }
         if (result is Outcome.Failure && photo != null) images.delete(photo.path)
         return result
     }
 
     override suspend fun refresh(): Outcome<Unit> = when (val source = sources.current()) {
-        is ActiveSource.Remote -> drinkSync.refresh(source).also { scheduler.scheduleOutbox() }
+        is ActiveSource.Remote -> drinkSync.refresh(source).also {
+            sharedIndex.invalidate()
+            scheduler.scheduleOutbox()
+        }
         ActiveSource.Demo -> Outcome.Success(Unit)
         ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
     }
@@ -213,13 +218,13 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
     /**
      * The index and the drafts of [source], updated on every change. Fas S review (fix-ui): built
      * on Dispatchers.Default (every meal card in Veckan and Idag reads it for its drink suggestion,
-     * and the build ran on the main thread), with the drafts read once, not a second time beside
-     * the index. Not shared between readers: a reader right after a write must see that write.
+     * and the build ran on the main thread), with the drafts read once. Fas S komplettering: one
+     * pipeline per account shared by every reader ([SharedDrinkIndex]); [write] invalidates it, so
+     * a reader right after a write still sees that write.
      */
     private fun snapshotOf(source: ActiveSource.Stored): Flow<Snapshot> =
-        observeDrinkIndexAndDrafts(databases.get(source.kind), source.accountId, withOutbox = source is ActiveSource.Remote)
+        sharedIndex.observe(source.kind, source.accountId, withOutbox = source is ActiveSource.Remote)
             .map { (index, drafts) -> Snapshot(index, drafts) }
-            .flowOn(Dispatchers.Default)
 
     private fun <T> snapshots(flow: (ActiveSource.Stored, Snapshot) -> Flow<List<T>>): Flow<List<T>> = sources.source
         .flatMapLatest { source ->
@@ -248,6 +253,8 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
                     @Suppress("UNCHECKED_CAST") // Set by the block before the transaction returns.
                     value as Outcome<T>
                 }
+                // Committed: the shared index is read anew for every reader that starts from now on.
+                sharedIndex.invalidate()
                 if (source is ActiveSource.Remote && result is Outcome.Success) scheduler.scheduleOutbox()
                 result
             }
