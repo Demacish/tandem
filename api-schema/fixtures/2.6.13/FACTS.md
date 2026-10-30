@@ -788,6 +788,16 @@ medlemmen ligger i "Contract Household", gästen i inget hushåll):
   *Gröt* till Saknar 1. [O] Även syskon och barn med `substitute_siblings`/`substitute_children`
   och ersättningar **i lagret** räknas [K]. `ignore_shopping` räknas som löst, utom för ett
   livsmedel som självt är ett recept [K] (olivolja gör *Tahinidressing* till Har allt [O]).
+- **Ersättningar genom livsmedelsträdet** (Fas S komplettering, `substituteTree`, recepten
+  *Bönsallad* och *Linssoppa* med egna livsmedel): `PUT /api/food/{id}/move/{parent}/` → 200 sätter
+  `parent`. Med `substitute_children` på *bönor* räknas barnet *kidneybönor*, med
+  `substitute_siblings` på *röda linser* syskonet *gröna linser* under samma förälder *linser*,
+  **också när de bara finns i lagret** (mängd > 0, inte *har hemma*): båda recepten i `makenow=0`.
+  Mängd 0 räknas inte; barnet *har hemma* räknas också; utan flaggan räknas barnet inte; en
+  **förälder** i lagret ersätter aldrig sitt barn. `substitute_onhand` är falsk när barnet bara
+  finns i lagret och sann när det är *har hemma*. [O] [S] Appen sparar trädet (`food.parent_id`,
+  `substitute_siblings`, `substitute_children`, schema 6) och core:domain `MissingIngredients`
+  räknar likadant.
 - `food_onhand` på livsmedlet speglar **bara** *har hemma*, inte lagret (kikärtor i lagret har
   `food_onhand: false`). `substitute_onhand` är sann när en ersättning, ett syskon eller ett barn
   har *har hemma* (inte lagret). [O]/[K] [S] Appen räknar själv ut vilka som saknas
@@ -811,7 +821,8 @@ medlemmen ligger i "Contract Household", gästen i inget hushåll):
   created_by}`. `code` blir postens id i hex (versaler) och `label` `"#<code> - 2.00 (burk)
   kikärtor"`; **`code` är ingen streckkod** (plan #27). [O]/[K]
 - Den nästlade platsen måste vara **hela objektet**: bara `{id}` → 400 (`name`, `household`
-  krävs), och ett annat namn **döper om platsen** (201 och platsen heter sedan så). [O]
+  krävs), och ett annat namn **döper om platsen** (201 och platsen heter sedan så). [O] Samma
+  gäller en **PATCH** (en flytt) med den nästlade platsen: 200 och platsen döps om. [O]
   [S] Avsändaren bygger platsen ur Room (`inventory_location` med `household_id`/`household_name`).
 - **Enhet krävs:** utan `unit` → 400 "required", `unit: null` → 400 "may not be null" (modellen
   tillåter null, serialiseraren inte). [O] [S] Appen skickar en standardenhet ("st") när ingen anges.
@@ -849,6 +860,9 @@ medlemmen ligger i "Contract Household", gästen i inget hushåll):
   medlemmen i det **andra hushållet** (recept är space-breda); gästen → 403. [O]
 - **PATCH ersätter hela listan:** `{keywords: [bara det nya]}` lämnar receptet med bara det nya.
   [O] Ett nyckelord som bara `{id}` → 200. [O] [S] Läs receptet färskt före PATCH (som "Vill laga").
+- **`{id, name}` med ett annat namn döper om nyckelordet** för hela spacet (200, receptet har
+  nyckelordet med det nya namnet, inget nytt skapas bredvid). [O] [S] Appen skickar ett känt
+  nyckelord bara med `id`, så ett gammalt namn i cachen aldrig döper om det.
 - Gästen kan inte skapa nyckelord (403), en vanlig medlem kan (201). [O]
 
 ## Fas S d. Inlärda koder och kvittonamn (`automation`, typ `FOOD_ALIAS`)
@@ -872,6 +886,10 @@ medlemmen ligger i "Contract Household", gästen i inget hushåll):
 - `PUT /api/food/batch_update/ {foods: [ids], on_hand: true|false}` → 200 med tom kropp `{}`;
   sätter/tar bort *har hemma* för **hela hushållet** (samma synlighet som PATCH). [O]
   `ignore_shopping` och `substitute_add` fungerar i samma anrop; bara `{foods}` → 200. Gästen → 403. [O]
+- `POST /api/food/ {name}` med ett namn som **redan finns** (Basvaror skapar okända livsmedel så)
+  → 201 med **samma** livsmedel (get-or-create), också med annan versalisering (`Tahini` =
+  `tahini`), och dess *har hemma* finns kvar. [O] [S] En basvara som en annan telefon eller webben
+  hunnit skapa blir alltså samma livsmedel, aldrig en dubblett.
 
 ## Fas S f. En dryck som recept
 

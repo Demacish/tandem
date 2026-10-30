@@ -105,3 +105,8 @@
   `food/batch_update/` och drycken som recept. Se [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md)
   "Fas S". Inspelningarna ligger i [`fas-s/`](fas-s/). [O]
 - Samma fakta gav **2.7.2** och `latest` i `tandoor-watch` (körd från grenen 2026-10-29). [O]
+- Fas S komplettering (2026-10-30), samma fakta som 2.6.13: ersättningar genom livsmedelsträdet
+  (`substitute_children`/`substitute_siblings` räknas också i lagret, en förälder aldrig för sitt
+  barn), `POST food/` med ett befintligt namn ger samma livsmedel (201, *har hemma* kvar), och ett
+  nästlat nyckelord eller en nästlad plats med ett annat namn döps om, också i en PATCH. Se
+  2.6.13 "Fas S a", "b", "c" och "e". [O]

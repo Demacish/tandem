@@ -719,10 +719,9 @@ class PhaseSContractTest {
         observe("pairing.patchOtherName.status", patch.status)
         observe("pairing.patchOtherName.recipeKeywords", keywordRefs(objOf(patch)).mapNotNull { it.stringAt("name") }.sorted())
         observe("pairing.patchOtherName.keywordName", objOf(read("/api/keyword/$temporary/"))?.stringAt("name"))
-        observe(
-            "pairing.patchOtherName.newKeywordCreated",
-            pageOrArray(read("/api/keyword/?query=${enc("Annat namn")}").json).any { it.stringAt("name") == "Annat namn" },
-        )
+        // Another keyword (not the temporary one) with the new name: was one created beside it?
+        val named = pageOrArray(read("/api/keyword/?query=${enc("Annat namn")}").json).filter { it.stringAt("name") == "Annat namn" }
+        observe("pairing.patchOtherName.otherKeywordCreated", named.any { it.longAt("id") != temporary })
         api("recipe-restore-keywords-4", "PATCH", path, obj("keywords" to restore), record = false)
         delete("keyword", temporary)
         pageOrArray(read("/api/keyword/?query=${enc("Annat namn")}").json)
@@ -1125,6 +1124,13 @@ class PhaseSContractTest {
             "food.batchIgnoreShopping.value" to true,
             "food.batchOnHand.guest.status" to 403,
             "food.substitute.names" to listOf(SUBSTITUTE),
+            // Fas S komplettering (Basvaror): POST food/ with an existing name is a get-or-create,
+            // also in another case: 201, the same food, its "har hemma" kept.
+            "food.createExisting.status" to 201,
+            "food.createExisting.sameId" to true,
+            "food.createExisting.onHandKept" to true,
+            "food.createExistingOtherCase.status" to 201,
+            "food.createExistingOtherCase.sameId" to true,
             // b. Inventory locations
             "inventoryLocation.create.status" to 201,
             "inventoryLocation.create.sameHousehold" to true,
@@ -1157,6 +1163,9 @@ class PhaseSContractTest {
             // The nested location must be the whole object; its fields are WRITTEN (a different name renames it).
             "inventoryEntry.createLocationIdOnly.status" to 400,
             "inventoryEntry.createRenamedLocation.locationRenamed" to true,
+            // Fas S komplettering: a PATCH (a move) with the nested location renames it too.
+            "inventoryEntry.patchRenamedLocation.status" to 200,
+            "inventoryEntry.patchRenamedLocation.locationRenamed" to true,
             // A unit is required (not null).
             "inventoryEntry.createNoUnit.status" to 400,
             "inventoryEntry.createNullUnit.status" to 400,
@@ -1198,6 +1207,17 @@ class PhaseSContractTest {
             "makenow.invalid.false" to mapOf("status" to 200, "recipes" to ALL_FOUR),
             "makenow.invalid.1.5" to mapOf("status" to 200, "recipes" to ALL_FOUR),
             "makenow.invalid.-1" to mapOf("status" to 200, "recipes" to emptyList<String>()),
+            // Fas S komplettering: substitutes through the food tree (core:domain MissingIngredients).
+            "substituteTree.child.parent" to true,
+            "substituteTree.sibling.parent" to true,
+            "substituteTree.makenow0.before" to emptyList<String>(),
+            "substituteTree.makenow0.inStock" to listOf("Bönsallad", "Linssoppa"),
+            "substituteTree.inStock.substituteOnhand" to false,
+            "substituteTree.makenow0.stockZero" to emptyList<String>(),
+            "substituteTree.makenow0.childOnHand" to listOf("Bönsallad"),
+            "substituteTree.childOnHand.substituteOnhand" to true,
+            "substituteTree.makenow0.flagOff" to emptyList<String>(),
+            "substituteTree.makenow0.parentInStock" to emptyList<String>(),
             // c. Keywords and pairings
             "keyword.create.status" to 201,
             "keyword.createDuplicate.sameId" to true,
@@ -1218,6 +1238,11 @@ class PhaseSContractTest {
             "pairing.keywordsOrParent.includeChildren=true" to listOf("Falafel", "Hummus"),
             "pairing.keywordsOrParent.includeChildren=false" to listOf("Falafel"),
             "pairing.keywordsOrChild.reader" to listOf("Hummus"),
+            // Fas S komplettering: `{id, name}` with ANOTHER name renames that keyword for the whole
+            // space (none is created beside it): the app sends a known keyword by id only.
+            "pairing.patchOtherName.status" to 200,
+            "pairing.patchOtherName.keywordName" to "Annat namn",
+            "pairing.patchOtherName.otherKeywordCreated" to false,
             // f. The drink
             "drink.createNoSteps.status" to 400,
             "drink.createEmptySteps.status" to 201,
