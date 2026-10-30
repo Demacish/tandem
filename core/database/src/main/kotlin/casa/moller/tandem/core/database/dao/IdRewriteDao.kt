@@ -168,16 +168,10 @@ abstract class IdRewriteDao {
      * No schema change: `id_mapping` already has `created_at` (schema 4).
      */
     @Transaction
-    open suspend fun pruneMappings(accountId: String, createdBefore: Long): Int {
-        var removed = 0
-        for (mapping in pruneCandidates(accountId, createdBefore)) {
-            val id = mapping.localId
-            if (outboxMayNeed(accountId, mapping.entity, id, id.toString())) continue
-            if (stillReferenced(accountId, mapping.entity, id)) continue
-            removed += deleteMapping(accountId, mapping.entity, id)
-        }
-        return removed
-    }
+    open suspend fun pruneMappings(accountId: String, createdBefore: Long): Int = pruneCandidates(accountId, createdBefore)
+        .filterNot { outboxMayNeed(accountId, it.entity, it.localId, it.localId.toString()) }
+        .filterNot { stillReferenced(accountId, it.entity, it.localId) }
+        .sumOf { deleteMapping(accountId, it.entity, it.localId) }
 
     /** Whether a local table still holds temporary id [id] of [entity]; an unknown entity is kept. */
     open suspend fun stillReferenced(accountId: String, entity: String, id: Long): Boolean = when (entity) {

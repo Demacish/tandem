@@ -66,6 +66,13 @@ kommande delarna.
 - En dryck utan ingredienser läggs på inköpslistan som en vara. **Sök på Systembolaget** öppnar
   Systembolagets sök med dryckens namn (bara en länk; på som standard med svenska i appen, går att
   slå av i Dryckers meny).
+- Att lägga till ett konto medan ett annat är inloggat synkar inte längre två gånger i rad.
+- Varningen "Du är inte med i något hushåll" i Handla och Veckan syns nu direkt efter
+  inloggningen, inte först efter en kvart.
+- **Receptets inköpsark** på en telefon i liggande läge: rubriken och portionerna står på en rad
+  och "Avbryt" bredvid knappen, så att ingredienserna får plats att rulla.
+- Telefonen rensar gamla anteckningar om vilka tillfälliga id som fått server-id (efter 30 dagar,
+  när inget längre behöver dem).
 
 ## [0.3.0] – 2026-10-26
 

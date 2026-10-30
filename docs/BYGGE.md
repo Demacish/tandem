@@ -388,7 +388,7 @@ ingen tabell, kolumn eller version. Behövs ändå en ändring blir den 4 → 5 
 | `supermarket`, `supermarket_category`, `supermarket_category_relation` | `(account_id, id)` | butiker, gångar, gångordning per butik (`relation_order`) |
 | `recipe_book` | `(account_id, local_id)`, unik `server_id` | namn, ägare (id, namn), delad med (JSON), filter (id, `search`), ordning, `kind` (`RecipeBookKinds`) |
 | `recipe_book_entry` | som ovan | `book_id` (server- eller lokalt id), `recipe_id` |
-| `id_mapping` | `(account_id, entity, local_id)` | tillfälligt id → server-id (rensas inte i Fas 2) |
+| `id_mapping` | `(account_id, entity, local_id)` | tillfälligt id → server-id (rensas inte i Fas 2; Fas S: `pruneMappings`, se "Fas 2:s rester") |
 
 Nya kolumner: `outbox.refs`, `outbox.batch_key`, `outbox.updated_at`;
 `server_account.household_name`, `server_account.shopping_min_autosync_seconds`;
@@ -1307,6 +1307,58 @@ oläsligt dokument utan nollställning), `PreferencesAiPreferencesStoreTest`; `f
 i `feature/scan/src/test/screenshots/scan/`) och `FridgeAccessibilityTest` (ATF för varje läge,
 dialogerna också).
 <!-- /Fas S ai-foto -->
+
+<!-- Fas S rester -->
+## Fas 2:s rester (Fas S, rester)
+
+Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
+
+- **Ingen dubbel synk när ett konto läggs till.** En inloggning från introt gör kontot aktivt
+  direkt, och `SyncStarter` begärde då en `ACCOUNT_CHANGED`-synk medan introt väntade på
+  "Fortsätt", varefter introts `FIRST_SYNC` gjorde samma fulla synk igen. Nu hoppar `SyncStarter`
+  över `ACCOUNT_CHANGED` för ett konto som lagts till för mindre än `SyncStarter.JUST_ADDED`
+  (10 min) sedan och aldrig avslutat en synk (ingen `sync_state` `last_sync`):
+  `SyncStarter.syncsOnAccountChange(addedAt, lastSuccess, now)`, testad i `SyncScheduleTest`. Ett
+  byte till ett konto som synkat förut, eller som lades till för länge sedan men vars första synk
+  aldrig blev klar, synkar som förut. Byte från demoläget begär synken i `DefaultAccountDirectory`
+  som tidigare.
+- **`id_mapping` rensas.** `IdRewriteDao.pruneMappings(account, createdBefore)` tar i **en**
+  transaktion bort mappningar äldre än `IdRewriteDao.MAPPING_RETENTION_MILLIS` (30 dagar efter
+  att CREATE:ns omskrivning blev klar, `created_at`) som inget längre behöver. Kvar blir:
+  det **lägsta** tillfälliga id:t per slag (`nextLocalId` läser det, så ett id delas aldrig ut två
+  gånger); mappningar vars objekt har en väntande outboxrad (samma `entity`/`local_id`); alla
+  mappningar av ett slag medan en CREATE av det slaget väntar (`claimedServerIds` vid förlorade
+  svar); mappningar vars id står som text i någon outboxrads payload, bas eller `refs`
+  (referenser, `keyword:<id>`, `{"draft": <id>}`; en textträff räcker, så hellre kvar för länge);
+  och mappningar vars id fortfarande står i en lokal tabell (`IdRewriteDao.stillReferenced`: raden
+  själv eller en referens, för alla slag med offline-CREATE, Fas S:s platser, poster, alias,
+  nyckelord och drycker inräknade). `SyncEngine` rensar efter outboxen, högst en gång per dygn
+  (`SyncKeys.ID_MAPPING_PRUNE`). Ett nytt slag med offline-CREATE behöver en rad i
+  `stillReferenced` (okända slag rensas aldrig). Tester: `IdMappingPruneTest` (`:core:database`),
+  `SyncEngineTest.aRunPrunesOldMappingsNothingNeedsOnceADay`.
+- **Röktest för hushållet** (`Phase2HouseholdSmokeTest`, se "Release-röktest"). Det hittade ett fel:
+  hushållsvarningen kom först efter den periodiska synken (upp till 15 min efter inloggningen),
+  eftersom `DefaultSpacePermissionsRepository` krävde `ServerStatus.checkedAt`, som bara
+  versionskontrollen (`refresh`, periodisk synk) sätter. Nu krävs `ServerStatus.capabilitiesResolved`
+  (ny, `:core:model`, standard `false`): förmågorna är lösta med serverns `space/current`
+  (`ensureCapabilities`, varje synks serverkontroll) och inte bara härledda ur versionen.
+  `SpacePermissionsTest.theWarningShowsRightAfterTheFirstSync`.
+- **Bottenarken som fönster.** Skärmbilds- och ATF-testerna tog arken bara som innehåll.
+  `ShoppingSheetWindowTest` (receptets inköpsark stående och liggande, lägg till-arket) och
+  `MealPlanSheetWindowTest` (Veckans flyttark stående och liggande) öppnar de riktiga
+  `ModalBottomSheet` och tar bild av hela skärmen med alla fönster (Roborazzis
+  `captureScreenRoboImage`: skrim, arkets läge, draghandtag och insättningar) och kör
+  `assertAccessible` på varje fönster (arket är en egen rot). Referensbilderna heter
+  `*_window_*`. "Planera måltid" är inget ark sedan 0.3.0 (fix-ui, `PlanMealKey` är en hel sida)
+  och prövas som sida.
+- **Receptets inköpsark liggande.** I ett ark lägre än `COMPACT_SHEET_HEIGHT` (480 dp, telefon
+  liggande) står rubrik och portioner på en rad och "Avbryt" bredvid "Lägg till n varor", så
+  raderna får plats att rulla (förut fyllde rubriken, portionerna, chipsen och de fasta knapparna
+  hela arket). `RecipeShoppingSheetLayout` mäter med `BoxWithConstraints`; innehållet utan fasta
+  knappar (`RecipeShoppingContent`) är oförändrat. Omtagen referensbild:
+  `phone_landscape_recipe_shopping_pinned_dark`; ny ATF-kontroll
+  `ShoppingAccessibilityTest.recipeSheetPinnedLandscapeDark`.
+<!-- /Fas S rester -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
@@ -3034,6 +3086,13 @@ den kod som skickas:
   kontot visar dess egen lista utan väntande ändringar medan kontosidan säger "1 change waiting
   to be sent" om det andra; med nät och det första kontot aktivt skickas ingenting (15 s);
   efter byte tillbaka hamnar "bröd" på den andra servern och aldrig på den första, utan 404.
+- **Hushållet (Fas S, rester, `Phase2HouseholdSmokeTest`):** `FakeTandoor.household` (på som
+  standard, alla röktester körs alltså i ett hushåll) låter `user-space/all_personal/` svara med
+  hushållet ur inspelningarna, `user-space/` med adminlistan (`fas2/user-space-list-admin`) och
+  `user/` med två användare. I ett hushåll säger Handla "Shared with contract-reader" och visar
+  ingen hushållsvarning; utan hushåll (`household = false`, som inspelat, hushållsinställningen
+  inte klar) visar Handla "You are not in a household" direkt efter första synken och inget
+  "Shared with".
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt

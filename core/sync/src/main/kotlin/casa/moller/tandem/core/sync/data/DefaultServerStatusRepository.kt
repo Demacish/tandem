@@ -157,6 +157,7 @@ internal class DefaultServerStatusRepository @Inject constructor(
                 compatibility = TandoorVersionTable.assess(version).compatibility,
                 capabilities = check?.capabilities ?: TandoorCapabilities.fromVersionAndSpace(version, space = null),
                 checkedAt = check?.checkedAtMillis?.let { Instant.fromEpochMilliseconds(it) },
+                capabilitiesResolved = check?.capabilities != null,
             )
         }
 

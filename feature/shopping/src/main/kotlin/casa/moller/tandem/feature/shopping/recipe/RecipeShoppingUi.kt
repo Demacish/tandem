@@ -179,8 +179,9 @@ fun RecipeShoppingContent(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) spacing.sm else spacing.md)) {
         if (compact) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
-                SheetTitle(state = state, modifier = Modifier.weight(1f))
-                Servings(state = state, onAction = onAction, modifier = Modifier.weight(1f))
+                // More room for the stepper: "4 portioner" stays on one line in a 640 dp sheet.
+                SheetTitle(state = state, modifier = Modifier.weight(2f))
+                Servings(state = state, onAction = onAction, modifier = Modifier.weight(3f))
             }
         } else {
             SheetTitle(state = state)

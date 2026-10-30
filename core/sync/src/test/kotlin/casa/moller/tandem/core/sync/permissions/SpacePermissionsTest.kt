@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.server.Capabilities
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.server.ServerStatus
+import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
@@ -21,6 +22,7 @@ import mockwebserver3.MockResponse
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,8 +61,8 @@ class SpacePermissionsTest {
         status.status.value = checked(households = true)
         assertFalse("the setup is finished", permissions.permissions.first().householdMissing)
 
-        status.status.value = checked(households = false).copy(checkedAt = null)
-        assertFalse("the server is not checked yet", permissions.permissions.first().householdMissing)
+        status.status.value = checked(households = false).copy(capabilitiesResolved = false)
+        assertFalse("the household setup is not read yet", permissions.permissions.first().householdMissing)
 
         status.status.value = checked(households = false)
         graph.real.accountDao().setMembership(ACCOUNT_ID, groupLevel = "user", householdId = 3, householdName = "Hemma")
@@ -174,6 +176,24 @@ class SpacePermissionsTest {
             compatibility = ServerCompatibility.SUPPORTED,
             capabilities = Capabilities("2.6.13", features),
             checkedAt = Instant.fromEpochMilliseconds(1),
+            capabilitiesResolved = true,
         )
+    }
+
+    /**
+     * Fas S (rester lane, found by the release smoke test): right after the first sync of a login the
+     * warning shows. The version check that sets `checkedAt` runs only with the periodic sync, so the
+     * warning used to wait for it; the sync's own server check (`space/current`) is enough.
+     */
+    @Test
+    fun theWarningShowsRightAfterTheFirstSync() = runBlocking {
+        val account = graph.account
+        graph.real.accountDao().upsert(ServerAccountEntity(account.id, account.baseUrl, account.userId, account.spaceId))
+        assertEquals(null, graph.engine.run(SyncReason.FIRST_SYNC).error)
+
+        val server = graph.serverStatus.observeStatus().first()
+        assertNull("no version check yet", server.checkedAt)
+        assertTrue(server.capabilitiesResolved)
+        assertTrue(graph.spacePermissions.permissions.first().householdMissing)
     }
 }

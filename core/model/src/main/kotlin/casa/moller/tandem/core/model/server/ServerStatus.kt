@@ -67,6 +67,10 @@ data class Capabilities(val version: String?, val features: Set<ServerFeature>) 
  * @property capabilities what the UI may offer.
  * @property checkedAt when the version was last confirmed by the server, null when never.
  * @property isDemo the app runs on local demo data (no server); everything local is allowed.
+ * @property capabilitiesResolved (Fas S, rester lane) [capabilities] were resolved with the server
+ *   (`space/current`, once per version, the sync's server check) and not only derived from the
+ *   version: only then does a missing [ServerFeature.HOUSEHOLDS] mean "the household setup is not
+ *   finished".
  */
 data class ServerStatus(
     val version: String?,
@@ -74,6 +78,7 @@ data class ServerStatus(
     val capabilities: Capabilities,
     val checkedAt: Instant? = null,
     val isDemo: Boolean = false,
+    val capabilitiesResolved: Boolean = false,
 ) {
     /** Safe mode: read normally, queue writes without sending them (plan 3.6). */
     val safeMode: Boolean

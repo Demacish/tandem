@@ -37,8 +37,8 @@ import kotlinx.coroutines.flow.map
  * is never read-only; without an account there is nothing to write anyway.
  *
  * [SpacePermissions.householdMissing] (0.3.0 review, fix-data; plan 6.2, 8.6): the role was read
- * (the same answer carries the household), `household` was null, and the checked server has no
- * finished household setup (no [ServerFeature.HOUSEHOLDS]: `space.household_setup_completed` is
+ * (the same answer carries the household), `household` was null, and the server's resolved
+ * capabilities ([ServerStatus.capabilitiesResolved]) show no finished household setup (no [ServerFeature.HOUSEHOLDS]: `space.household_setup_completed` is
  * false, plan 8.6 "UserSpace.household == null medan household_setup_completed == false"). Tandoor
  * then shares neither the list nor the meal plan with the other members.
  *
@@ -113,7 +113,9 @@ internal class DefaultSpacePermissionsRepository @Inject constructor(
     }
 
     /** The server was checked and its space has not finished the household setup. */
-    private fun ServerStatus.withoutHouseholds(): Boolean = !isDemo && checkedAt != null && ServerFeature.HOUSEHOLDS !in capabilities
+    // Fas S (rester lane): `checkedAt` is only set by a version check (periodic sync, resume), so after a
+    // login the warning waited up to 15 minutes; the capabilities are resolved by every sync's server check.
+    private fun ServerStatus.withoutHouseholds(): Boolean = !isDemo && capabilitiesResolved && ServerFeature.HOUSEHOLDS !in capabilities
 }
 
 /**

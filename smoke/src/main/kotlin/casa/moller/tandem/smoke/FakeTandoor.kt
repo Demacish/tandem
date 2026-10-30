@@ -61,11 +61,12 @@ import org.junit.rules.ExternalResource
  * `mealplan_autoadd_shopping`) puts a recipe's ingredients on the list. Every answer with status
  * 404 is kept in [notFound].
  *
- * Fas S (rester lane, Phase 2's open issue): the logged-in user (the recorded `contract-admin`) is
- * in no household by default, as recorded, so Handla shows the household warning. With
- * [household] set, `user-space/all_personal/` answers with the recorded household, and the admin's
+ * Fas S (rester lane, Phase 2's open issue): with [household] (the default, as in most homes)
+ * `user-space/all_personal/` answers with the household of the recordings, and the admin's
  * `user-space/` list (`fas2/user-space-list-admin`) has a second member in it, so Handla shows
- * "Shared with contract-reader". `GET /api/user/` (what a non-admin reads) answers with two users.
+ * "Shared with contract-reader". Without it the logged-in user (the recorded `contract-admin`) is
+ * in no household, as recorded on a space whose household setup is not finished, so Handla shows
+ * the household warning. `GET /api/user/` (what a non-admin reads) answers with two users.
  */
 class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private val server = MockWebServer()
@@ -92,7 +93,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
     /** Fas S (rester lane): the user is in the recorded household (see the class comment). Set before the login. */
     @Volatile
-    var household: Boolean = false
+    var household: Boolean = true
 
     /** Phase 2: the stateful shopping list (empty until a test seeds it). */
     val shopping = FakeShoppingList(::template)
@@ -204,8 +205,20 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             method == "GET" && USER_PATH.matches(path) -> fixture("11-user-by-id")
 
             // --- Phase 2 (integration lane): the stateful shopping list and meal plan. ---
-            else -> shopping.answer(request) ?: mealPlan.answer(request) ?: respondRecorded(request, method, path)
+            else -> shopping.answer(request)
+                ?: mealPlan.answer(request)
+                ?: householdAnswer(method, path)
+                ?: respondRecorded(request, method, path)
         }
+    }
+
+    /** Fas S (rester lane): the household ("Delad med: …" and the household warning), null for other requests. */
+    private fun householdAnswer(method: String, path: String): MockResponse? = when {
+        method != "GET" -> null
+        path == USER_SPACE_PERSONAL_PATH && household -> fixture("14-user-space-all-personal", ::inHousehold)
+        path == "/api/user-space/" -> fixture("fas2/user-space-list-admin")
+        path == "/api/user/" -> fixture("fas2/user-list-member", ::twoUsers)
+        else -> null
     }
 
     /** The recorded (stateless) answers after login. */
@@ -215,13 +228,6 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         method == "GET" && path == "/api/recipe/" -> recipeList(request.url)
 
         method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
-
-        // --- Fas S (rester lane): the household ("Delad med: …" and the household warning). ---
-        method == "GET" && path == USER_SPACE_PERSONAL_PATH && household -> fixture("14-user-space-all-personal", ::inHousehold)
-
-        method == "GET" && path == "/api/user-space/" -> fixture("fas2/user-space-list-admin")
-
-        method == "GET" && path == "/api/user/" -> fixture("fas2/user-list-member", ::twoUsers)
 
         // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
         method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
