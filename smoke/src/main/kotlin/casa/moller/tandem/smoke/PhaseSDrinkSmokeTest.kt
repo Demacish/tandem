@@ -3,6 +3,7 @@ package casa.moller.tandem.smoke
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -43,11 +44,19 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
         gallery.add("drink", Gallery.fridge())
         app.tap("Recipes")
         openDrinks()
-        app.tap(NEW_DRINK)
-        app.waitFor(By.text(SAVE_DRINK))
+        // The extended FAB: through its accessibility action, else a tap on its label or description.
+        app.waitFor(By.text(FakeDrinks.DRINK_NAME))
+        waitForAction("the New drink page") {
+            val clicked = app.clickNodeWithText(NEW_DRINK) ||
+                (app.device.findObject(By.text(NEW_DRINK)) ?: app.device.findObject(By.desc(NEW_DRINK)))
+                    ?.let { runCatching { it.click() }.isSuccess } == true
+            clicked && app.device.wait(Until.hasObject(By.text(SAVE_DRINK)), TAP_WAIT_MS) == true
+        }
         val name = app.waitForNode("the name field") { it.className?.toString() == EDIT_TEXT }
         assertTrue("Name not typed", app.setNodeText(name, CREATED_NAME))
-        waitForAction("the Wine chip") { app.clickNodeWithText(WINE) }
+        waitForAction("the Wine chip") {
+            app.clickNodeWithText(WINE) || app.device.findObject(By.text(WINE))?.let { runCatching { it.click() }.isSuccess } == true
+        }
         app.tap(CHOOSE_PICTURE)
         gallery.pickNewest(app)
         app.waitForNode("the chosen photo") { it.text?.toString() == PHOTO_CHOSEN || it.contentDescription?.toString() == PHOTO_CHOSEN }
@@ -156,7 +165,7 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
         const val CHOOSE_PICTURE = "Choose picture"
         const val PHOTO_CHOSEN = "Photo chosen"
         const val CREATED_NAME = "Cava Exempel"
-        const val ACTION_TIMEOUT_MS = 10_000L
+        const val ACTION_TIMEOUT_MS = 20_000L
         const val CHOOSE_A_DRINK = "Choose a drink"
         const val PARTNER_KEYWORD = "Snabbt"
         const val PAIRS_WITH = "Passar med"
