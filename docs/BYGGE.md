@@ -1552,8 +1552,8 @@ Rättelser efter granskningen av 0.4.0 i `feature/**`, `core:ui` och några små
     `phone_scan_receipt_camera_denied_font2_dark_sv`, `phone_landscape_scan_barcode_picker_light_sv`;
     `mealplan/tablet_week_drinks_light_sv`, `tablet_portrait_week_drinks_dark_sv` (en falsk
     dryckesplats, `FakeDrinkSuggestion`);
-  - avsiktligt ändrade: foto av kylens svenska bilder ("(experimentellt)", 11 st och
-    `phone_scan_review_fridge_light_sv`), `phone_scan_barcode_picker_light_sv` (knapparna kliver
+  - avsiktligt ändrade: foto av kylen (11 st: den svenska titeln "(experimentellt)", och i
+    bilderna med ett problem rullas kortet fram) och `phone_scan_review_fridge_light_sv`, `phone_scan_barcode_picker_light_sv` (knapparna kliver
     undan), Passar med med en väntande dryck (5 st i `recipes/drinks`), Handlas Packa upp (3 st),
     Om (3 st), Behörigheter med kameraraden (12 st) och introduktionens välkomstsida (12 st).
   - Hemmas telefonbilder spelades in med ca 120 pixlar annorlunda kantutjämning men samma innehåll
