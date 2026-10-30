@@ -574,8 +574,8 @@ av `core:sync`, som annars skulle få både Tandoor- och AI-klienterna.
   visas i två kolumner (plan §10 "Klart när").
 
 Ingångarna läggs till av banorna (hemma-ui, drycker, ai-foto); grunden kopplar bara in sidorna i
-skalet, så att inga referensbilder ändras i grunden. Alla nya sidor visar tills vidare
-`core:ui` `placeholder/PlaceholderPage` (tas bort av sista banan).
+skalet, så att inga referensbilder ändras i grunden. Alla nya sidor visade först `core:ui`
+`placeholder/PlaceholderPage`, som togs bort vid integrationen (se "Integration av Fas S").
 
 ### Navigering
 
@@ -1359,6 +1359,50 @@ Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
   `phone_landscape_recipe_shopping_pinned_dark`; ny ATF-kontroll
   `ShoppingAccessibilityTest.recipeSheetPinnedLandscapeDark`.
 <!-- /Fas S rester -->
+
+<!-- Fas S integration -->
+## Integration av Fas S (0.4.0)
+
+- **Inga tillfälliga bindningar kvar:** `TemporaryFasSModule.kt` togs bort av banorna (ai-foto
+  sist), och `core:ui` `PlaceholderPage` med sin sträng är borta (ingen sida använder den).
+  Alla gränssnitt i Fas S binds av `:core:sync` (`PantryModule`, `DrinkModule`) och `:core:ai`
+  (`AiModule`); `:core:datastore` ger `AiKeyStore` och `AiPreferencesStore`.
+- **Ingångarna** (som grunden bestämde): Mer → Hemma först (Hemma → Kan laga nu, Basvaror, Packa
+  upp, skannrarna och, med en AI-nyckel, foto av kylen), Mer → Inställningar → AI
+  (experimentellt), Idag ("Kan laga nu", "Går ut snart" och kvällens dryckesförslag), Handla
+  ("Packa upp"), Recept → Drycker, receptvyn ("Passar med"/"Passar till") och Veckans
+  måltidskort (dryckesförslaget). Kokläget har "Tog något slut?" efter Klart!.
+- **Gäster** kan inte ändra något i skafferiet, basvarorna, Packa upp, granskningslistan,
+  kopplingarna eller Ny dryck (repositoryn svarar `READ_ONLY` innan något sparas och sidorna visar
+  läsläget); foto av kylen får tas men inte sparas. **Demoläget** har skafferi, drycker och Kan
+  laga nu på enheten och anropar aldrig Tandoor, Open Food Facts eller en AI-tjänst.
+- **Kontobyte:** appen nycklar skalet per konto (`AppDestination.Shell(source)`), så Hemma, en
+  öppen granskning och skannrarna börjar om; skafferiets synk (`PantrySyncStep`), Kan laga nu
+  (`make_now` per konto) och outboxen följer det aktiva kontot som Fas 2:s tabeller. AI-nyckeln
+  hör till enheten och följer inte med kontot (tas bort med "Rensa appdata").
+- **Diagnostik:** `OutboxKind` fick `PANTRY` (`inventory_location`, `inventory_entry`),
+  `LEARNED_ALIAS` (`food_alias`), `DRINK` (`drink`: CREATE och `RECIPE_IMAGE`) och `PAIRING`
+  (`RECIPE_KEYWORDS` med bara `keyword:<id>`/`pairing:<name>`, och `keyword`). En
+  `RECIPE_KEYWORDS`-rad med "Vill laga" (`keywords`) eller utan fält räknas som Vill laga
+  (`OutboxHealthTest`). `BATCH_ON_HAND` hör till Livsmedel som förut.
+- **Licenser:** biblioteksraden (Apache 2.0) nämner CameraX, `kotlin-reflect`, Jackson,
+  OpenTelemetry API, victools JSON Schema Generator och Swagger annotations; nya rader för
+  Anthropic Java SDK (MIT, texten ur jar-filen) och Google ML Kit (ML Kit Terms of Service, med
+  komponentnamnen ur paketens `third_party_licenses.json`; de fullständiga texterna, 1–2 MB per
+  paket, ligger inte i appen). Filerna i `core/designsystem/.../assets/licenses/` och NOTICE.txt;
+  `BundledLicenseTest` kräver en text per rad. Referensbilderna `phone_licenses_dark` och
+  `tablet_licenses_dark` togs om.
+- **Testkrok för Open Food Facts:** `core:network` deklarerar `@OpenFoodFactsBaseUrl` som valfri
+  (`@BindsOptionalOf`); bara byggtypen `minified` (röktestets paket `casa.moller.tandem.minified`)
+  binder den, i `app/src/minified/kotlin/.../SmokeEndpointsModule.kt`, till
+  `https://localhost:47654/` (röktestets falska Open Food Facts med test-CA:n). Debug, release och
+  play saknar bindningen och anropar alltid `https://world.openfoodfacts.org/`.
+- **Surfplatta:** varje ny sida har referensbilder i båda orienteringarna; integrationen lade till
+  `tablet_portrait_pantry_entry_dark_sv`, `tablet_unpack_dark_sv`, `tablet_staples_light_sv`,
+  `tablet_portrait_staples_dark_sv`, `tablet_portrait_detail_pairings_dark_sv` och
+  `tablet_portrait_shopping_unpack_light_sv`.
+- **Release-röktestet** täcker Fas S:s "Klart när", se "Release-röktest" (Fas S).
+<!-- /Fas S integration -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)

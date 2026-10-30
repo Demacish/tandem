@@ -98,31 +98,33 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
         val path = request.url.encodedPath
         val text = request.body?.utf8().orEmpty()
         val response = when {
-            path == KEYWORDS && method == "GET" -> page(keywords.values.map { keywordJson(it) })
-
-            path == KEYWORDS && method == "POST" -> json(CREATED, keywordJson(getOrCreate(parse(text).string("name").orEmpty())))
-
-            KEYWORD.matches(path) && method == "GET" ->
-                keywords[KEYWORD.find(path)!!.groupValues[1].toLong()]?.let { json(OK, keywordJson(it)) } ?: notFound("Keyword")
-
-            MOVE.matches(path) && method == "PUT" -> MOVE.find(path)!!.groupValues.let { move(it[1].toLong(), it[2].toLong()) }
-
-            RECIPE.matches(path) && method == "GET" -> {
-                val id = RECIPE.find(path)!!.groupValues[1].toLong()
-                if (id != DRINK_ID && id !in recipeKeywords) return null
-                recipeJson(id, recorded) ?: notFound("Recipe")
-            }
-
-            RECIPE.matches(path) && method == "PATCH" -> {
-                val id = RECIPE.find(path)!!.groupValues[1].toLong()
-                patchRecipe(id, parse(text), recorded)
-            }
-
-            else -> return null
-        }
+            path == KEYWORDS -> keywordsAnswer(method, text)
+            KEYWORD.matches(path) || MOVE.matches(path) -> keywordAnswer(method, path)
+            RECIPE.matches(path) -> recipeAnswer(method, RECIPE.find(path)!!.groupValues[1].toLong(), text, recorded)
+            else -> null
+        } ?: return null
         val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()
         calls += "$method $path$query" to text
         return response
+    }
+
+    private fun keywordsAnswer(method: String, text: String): MockResponse? = when (method) {
+        "GET" -> page(keywords.values.map { keywordJson(it) })
+        "POST" -> json(CREATED, keywordJson(getOrCreate(parse(text).string("name").orEmpty())))
+        else -> null
+    }
+
+    private fun keywordAnswer(method: String, path: String): MockResponse? {
+        MOVE.find(path)?.groupValues?.let { return if (method == "PUT") move(it[1].toLong(), it[2].toLong()) else null }
+        if (method != "GET") return null
+        return keywords[KEYWORD.find(path)!!.groupValues[1].toLong()]?.let { json(OK, keywordJson(it)) } ?: notFound("Keyword")
+    }
+
+    /** A recipe this fake changed (or the drink); null for the others, which the recordings answer. */
+    private fun recipeAnswer(method: String, id: Long, text: String, recorded: (Long) -> JsonObject?): MockResponse? = when (method) {
+        "GET" -> if (id == DRINK_ID || id in recipeKeywords) recipeJson(id, recorded) ?: notFound("Recipe") else null
+        "PATCH" -> patchRecipe(id, parse(text), recorded)
+        else -> null
     }
 
     /**

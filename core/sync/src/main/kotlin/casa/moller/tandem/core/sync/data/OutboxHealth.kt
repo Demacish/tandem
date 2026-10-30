@@ -74,9 +74,10 @@ internal object OutboxHealth {
      * types (`keyword:<id>`, `pairing:<name>`, `RecipeKeywordFields`); a row with "Vill laga"
      * (`keywords`) in it, or an old row without fields, counts as "Vill laga".
      */
-    private fun isPairingOnly(payload: String): Boolean =
-        "\"${RecipeKeywordFields.WANT_TO_COOK}\"" !in payload &&
-            ("\"${RecipeKeywordFields.KEYWORD_PREFIX}" in payload || "\"${RecipeKeywordFields.PAIRING_PREFIX}" in payload)
+    private fun isPairingOnly(payload: String): Boolean {
+        val pairing = "\"${RecipeKeywordFields.KEYWORD_PREFIX}" in payload || "\"${RecipeKeywordFields.PAIRING_PREFIX}" in payload
+        return pairing && "\"${RecipeKeywordFields.WANT_TO_COOK}\"" !in payload
+    }
 
     /** A row's `last_error` (an `ErrorCodes` code or a lane's own code) as a reason people can read. */
     fun problemOf(code: String): OutboxProblem = when {
