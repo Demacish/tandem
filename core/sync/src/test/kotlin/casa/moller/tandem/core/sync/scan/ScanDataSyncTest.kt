@@ -12,6 +12,7 @@ import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.pantry.PantrySyncEnv
 import casa.moller.tandem.core.sync.testing.TestTls
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -112,6 +113,25 @@ class ScanDataSyncTest {
         assertEquals(setOf(existing, other), aliases.observeAliases().first().map { it.id }.toSet())
     }
 
+    /** Fas S review (fix-data): a web alias that appeared after the last read wins over one learned offline (never re-pointed). */
+    @Test
+    fun aWebAliasThatAppearedMeanwhileWinsOverOneLearnedOffline() = forEachVersion {
+        val aliases = graph.foodAliases
+        offline()
+        value(aliases.learn(RECEIPT_LINE, "kikärtor", FoodAliasKind.RECEIPT))
+        val web = tandoor.seedAlias(RECEIPT_LINE, "kikärter", name = "Från webben")
+        online()
+
+        drainAll()
+
+        assertTrue(tandoor.requests("PATCH", "/api/automation/").isEmpty())
+        assertTrue(tandoor.requests("POST", "/api/automation/").isEmpty())
+        assertEquals(listOf(web to "kikärter"), tandoor.aliases().map { it.id to it.param2 })
+        val local = aliases.find(RECEIPT_LINE)
+        assertEquals("kikärter", local?.foodName)
+        assertEquals(FoodAliasKind.OTHER, local?.kind)
+    }
+
     @Test
     fun theSpacesAliasesAreReadWithTheirKindAndMatchedWithoutCase() = forEachVersion {
         tandoor.seedAlias(BARCODE, "kikärtor")
@@ -181,6 +201,43 @@ class ScanDataSyncTest {
         assertEquals(1, tandoor.requests("GET", "/api/automation/").size)
     }
 
+    /** Fas S review (fix-data): an alias another phone learned seconds after this phone's last read is still known at once. */
+    @Test
+    fun aCodeLearnedOnAnotherPhoneRightAfterARecentReadIsKnownAtOnce() = forEachVersion {
+        val lookup = lookup()
+        val before = openFoodFacts.requestCount
+        // This phone read the aliases (the sync) and its sender checked them while learning another code.
+        ok(graph.foodAliases.refresh())
+        value(graph.foodAliases.learn("7310000000005", "havregryn", FoodAliasKind.BARCODE))
+        drainAll()
+        graph.clock.advance(10.seconds)
+        // Phone A links an unknown code ten seconds later.
+        tandoor.seedAlias(BARCODE, "kikärtor")
+        graph.clock.advance(10.seconds)
+
+        val found = value(lookup.lookup(BARCODE)) as BarcodeLookupResult.Found
+
+        assertEquals("kikärtor", found.product.name)
+        assertEquals(before, openFoodFacts.requestCount)
+    }
+
+    /** Fas S review (fix-data): a UPC-E code (as ML Kit reads it) is looked up as its UPC-A; its alias stays under the scanned code. */
+    @Test
+    fun aUpcECodeIsLookedUpAsItsUpcA() = forEachVersion {
+        val lookup = lookup()
+        val before = openFoodFacts.requestCount
+        answer(200, FOUND)
+
+        assertTrue(value(lookup.lookup(UPC_E)) is BarcodeLookupResult.Found)
+        assertEquals(before + 1, openFoodFacts.requestCount)
+        assertEquals("/api/v2/product/$UPC_E_AS_UPC_A", openFoodFacts.takeRequest().url.encodedPath)
+
+        value(graph.foodAliases.learn(UPC_E, "nudlar", FoodAliasKind.BARCODE))
+        val learned = value(lookup.lookup(UPC_E)) as BarcodeLookupResult.Found
+        assertEquals("nudlar", learned.product.name)
+        assertEquals(before + 1, openFoodFacts.requestCount)
+    }
+
     @Test
     fun openFoodFactsIsAskedOnceAndItsAnswerCached() = forEachVersion {
         val lookup = lookup()
@@ -242,6 +299,10 @@ class ScanDataSyncTest {
 
         /** A public Open Food Facts product (UPC-A), and a code with a valid check digit that does not exist. */
         const val UPC = "737628064502"
+
+        /** UPC-E (number system 0) and its UPC-A: the textbook example, not a product of ours. */
+        const val UPC_E = "04252614"
+        const val UPC_E_AS_UPC_A = "042100005264"
         const val UNKNOWN = "2999999999991"
 
         const val FOUND = """{"code":"0737628064502","product":{"brands":"Simply Asia, Thai Kitchen","code":"0737628064502",""" +

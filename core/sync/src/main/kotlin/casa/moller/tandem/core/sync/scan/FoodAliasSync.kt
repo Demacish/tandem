@@ -103,6 +103,12 @@ internal class FoodAliasReader @Inject constructor(
     /** Per account: the server's aliases of the last complete read, for the sender's duplicate check. */
     private val lastRead = ConcurrentHashMap<String, ServerAliases>()
 
+    /**
+     * Fas S review (fix-data): per account, when a complete read was last STORED in `food_alias` (the
+     * sender's duplicate check reads without storing, so it never counts as "known here").
+     */
+    private val lastStored = ConcurrentHashMap<String, Long>()
+
     class ServerAliases(val items: MutableList<AutomationDto>, val atMillis: Long)
 
     suspend fun sync(remote: ActiveSource.Remote, background: Boolean): Outcome<Unit> = lock.withLock {
@@ -115,6 +121,7 @@ internal class FoodAliasReader @Inject constructor(
                 if (sources.source.value.identity != remote.identity) return@withLock Outcome.Failure(SyncStop.SourceChanged)
                 val aliases = listed.value ?: return@withLock Outcome.Success(Unit)
                 store(database, remote.accountId, aliases)
+                lastStored[remote.accountId] = clock.nowMillis()
                 Outcome.Success(Unit)
             }
         }
@@ -134,12 +141,14 @@ internal class FoodAliasReader @Inject constructor(
     }
 
     /**
-     * A full read when the last complete one is older than [MAX_AGE_MILLIS] (or there was none):
-     * a code another phone learned a moment ago is known here before Open Food Facts is asked.
+     * A full read for the scanner when the last STORED one is older than [SCANNER_MAX_AGE_MILLIS]
+     * (Fas S review, fix-data: a code another phone learned a moment ago is known here before Open
+     * Food Facts is asked, also right after a sync or a sent alias; the list is small and an unknown
+     * code costs an Open Food Facts request anyway).
      */
     suspend fun syncIfStale(remote: ActiveSource.Remote): Outcome<Unit> {
-        val last = lastRead[remote.accountId]?.atMillis
-        if (last != null && clock.nowMillis() - last in 0..MAX_AGE_MILLIS) return Outcome.Success(Unit)
+        val last = lastStored[remote.accountId]
+        if (last != null && clock.nowMillis() - last in 0..SCANNER_MAX_AGE_MILLIS) return Outcome.Success(Unit)
         return sync(remote, background = false)
     }
 
@@ -154,6 +163,7 @@ internal class FoodAliasReader @Inject constructor(
 
     fun invalidate(accountId: String) {
         lastRead.remove(accountId)
+        lastStored.remove(accountId)
     }
 
     /** Every FOOD_ALIAS of the space, null when the list was not read completely. */
@@ -198,6 +208,9 @@ internal class FoodAliasReader @Inject constructor(
 
         /** How long a read is reused by the sender's duplicate check. */
         const val MAX_AGE_MILLIS: Long = 60_000
+
+        /** How long a stored read is reused by the scanner before an unknown code is looked up elsewhere. */
+        const val SCANNER_MAX_AGE_MILLIS: Long = 5_000
 
         /** A server alias as a row (`local_id = server_id`); the food's id when a food of that name is stored. */
         fun AutomationDto.toEntity(accountId: String, now: Long, foodIds: Map<String, Long>): FoodAliasEntity? {

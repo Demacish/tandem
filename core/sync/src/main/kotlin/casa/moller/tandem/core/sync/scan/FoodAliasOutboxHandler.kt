@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.sync.scan
 
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.FoodAliasKinds
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
@@ -47,7 +48,7 @@ internal class FoodAliasOutboxHandler @Inject constructor(
     override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = reader.lock.withLock {
         val body = parse(payload) ?: return@withLock OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         when (row.op) {
-            OutboxOps.CREATE -> create(remote, body)
+            OutboxOps.CREATE -> create(remote, row, body)
 
             OutboxOps.PATCH -> update(remote, row) { id ->
                 automations.patchAutomation(id, body).also { reader.noteServerAlias(remote.accountId, it) }
@@ -59,7 +60,7 @@ internal class FoodAliasOutboxHandler @Inject constructor(
         }
     }
 
-    private suspend fun create(remote: ActiveSource.Remote, body: JsonObject): OutboxResult {
+    private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
         val alias = (body["param_1"] as? JsonPrimitive)?.contentOrNull
             ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val food = (body["param_2"] as? JsonPrimitive)?.contentOrNull.orEmpty()
@@ -74,6 +75,12 @@ internal class FoodAliasOutboxHandler @Inject constructor(
         }
         if (existing != null) {
             val id = existing.id ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+            // Fas S review (fix-data): an alias made on the web (not one of Tandem's own names) wins,
+            // as in `learn`: it is taken as it is, and this device's row follows the server.
+            if (FoodAliases.kindOf(existing.name) == FoodAliasKinds.OTHER) {
+                followServer(remote, row, existing)
+                return OutboxResult.Created(id)
+            }
             if (!existing.param2.equals(food, ignoreCase = true)) {
                 val patch = buildJsonObject { put("param_2", food) }
                 when (val sent = caller.write(remote) { automations.patchAutomation(id, patch) }) {
@@ -88,6 +95,18 @@ internal class FoodAliasOutboxHandler @Inject constructor(
             return OutboxResult.Created(id)
         }
         return post(remote, body)
+    }
+
+    /** The local row of [row]'s CREATE takes the server alias's food and kind (before `completeCreate` re-keys it). */
+    private suspend fun followServer(remote: ActiveSource.Remote, row: OutboxEntity, server: AutomationDto) {
+        val localId = row.localId ?: return
+        val database = databases.get(remote.kind)
+        val local = database.foodAliasDao().get(remote.accountId, localId) ?: return
+        val food = server.param2?.trim()?.takeIf { it.isNotEmpty() } ?: return
+        val foodId = database.referenceDao().getFoods(remote.accountId).firstOrNull { it.name.equals(food, ignoreCase = true) }?.id
+        database.foodAliasDao().upsert(
+            listOf(local.copy(foodName = food, foodId = foodId, kind = FoodAliasKinds.OTHER, automationName = server.name)),
+        )
     }
 
     private suspend fun post(remote: ActiveSource.Remote, body: JsonObject): OutboxResult =
