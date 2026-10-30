@@ -68,11 +68,10 @@ internal enum class SystemSetting {
             context.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName)
 
         /** Whether the scanners may use the camera; null on a device without a camera (no row then). */
-        fun cameraAllowed(context: Context): Boolean? =
-            if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
-                null
-            } else {
-                context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-            }
+        fun cameraAllowed(context: Context): Boolean? = if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            null
+        } else {
+            context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        }
     }
 }

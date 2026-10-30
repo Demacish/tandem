@@ -1493,6 +1493,61 @@ Kan laga nu, Packa upp och streckkoden står i "Skafferiet – data och synk" ov
   drycker, men `MakeNowRepository` släpper redan alla drycker enligt `DrinkIndex`.
 <!-- /Fas S fix-data -->
 
+<!-- Fas S fix-ui -->
+## Granskningen av Fas S: skärmarna (fix-ui)
+
+Rättelser efter granskningen av 0.4.0 i `feature/**`, `core:ui` och några små block utanför
+(nämnda nedan):
+
+- **Ingen telemetri från ML Kit** (plan §8.8): de bundlade ML Kit-biblioteken drar in Googles
+  `datatransport` (Clearcut). `app/src/main/AndroidManifest.xml` tar bort
+  `TransportBackendDiscovery` (`tools:node="remove"`), så ingen uppladdningsväg registreras och
+  köade händelser släpps på enheten (schemaläggarens tjänst och mottagare finns kvar, körtiden
+  namnger dem). `MlKitInitProvider` tas också bort: ML Kit startas först när en skanner behöver det
+  (`feature:scan` `engine/MlKitStartup`, `MlKitContext.initializeIfNeeded`, före `getClient` och
+  före varje `InputImage`), inte vid varje processtart. `smoke.yml` kontrollerar den minifierade
+  APK:ns manifest med `aapt2 dump xmltree` (varken `CctBackendFactory`, `TransportBackendDiscovery`
+  eller `MlKitInitProvider`, men `MlKitComponentDiscoveryService` kvar), och röktestets skanning
+  (streckkod och kvitto) visar att det fungerar. Startmätningen (`benchmark.yml`) och
+  baslinjeprofilen är inte gjorda om.
+- **Integritetstexterna** (Om, Behörigheter, introduktionen) nämner Open Food Facts (bara koden)
+  och den valda AI-tjänsten (bara fotot, med egen nyckel); Behörigheter har en rad för kameran
+  (`PermissionsUiState.cameraAllowed`, `SystemSetting.cameraAllowed`, ingen rad utan kamera). Med
+  en egen bas-URL namnger AI-sidan och foto av kylen värden (`customHostOf`).
+- **Skannrarna:** valda bilder avkodas nedskalade utanför huvudtråden (`engine/ScanImages`:
+  `ImageDecoder` med målstorlek, 2 560 px för kvitton och 1 600 px för streckkoder; ett taget
+  kvittofoto kopieras ur `ImageProxy` och avkodas med `inSampleSize`), `OutOfMemoryError` fångas.
+  Kvittots läsning och kylfotots skalning körs i ViewModel (`ReceiptScanAction.ReadPage`,
+  `FridgeScanAction.Prepare`; `Shown` släpper ett "läser" som en återskapad aktivitet tappat), och
+  `ReceiptTextEngine` ägs av ViewModel. Foto av kylen binder kameran också medan fotot tas
+  (`FridgeScanUiState.cameraWanted`; förut avbröts varje kamerafoto med `ERROR_CAMERA_CLOSED`).
+  Kvittots och kylfotots problem sägs i en snackbar och rullas fram. Kamerarutan rullar och tappar
+  hjältebilden under 300 dp. Ficklampan följer `controller.torchState`. Matchningsväljaren gömmer
+  de fästa knapparna medan den är öppen.
+- **Hemma:** på surfplatta rullar Kan laga nus rubrikdel undan ovanför kolumnerna (`HeaderFirst`,
+  en `NestedScrollConnection`; kolumnerna är sidans höjd). Varans sida och Basvaror i ett lågt
+  fönster (under 480 dp, `PantryCompactHeight`): bara "Spara" fäst, "Ta bort varan" i formuläret,
+  "Inte nu" bort, och med tangentbordet uppe kliver raden undan (`PantryEntryLayout`/`StaplesLayout`
+  med `keyboardOpen`, för testerna). På telefon är varje vara och varje rad i "Har hemma" ett eget
+  lazy-objekt (`PantryCardRow` ritar kortet per rad), surfplattans kolumner har kvar ett kort per
+  plats.
+- **Handla:** Packa upp-kortet står sist i listan (efter Avbockat) och har "Inte nu", som döljer det
+  för dagen på enheten (`UnpackPromptDismissals`, minnet: efter en omstart kan det komma tillbaka
+  samma dag) utan att något markeras som uppackat. **Idag:** Kan laga nu visar bara Har allt när
+  det finns, annars Saknar 1.
+- **Drycker:** borttagen koppling har "Ångra" (`RecipePairingsEffect.Removed`, `PairingLink`;
+  outboxen tar ut en kö-borttagning mot tillägget). Dryckesförslaget säger namnet på drycken som
+  öppnas (`DrinkSuggestionState.drinkName`) och en väntande dryck i Passar med säger "Väntar på att
+  skickas". Ny dryck tar bort kamerans original i `cache/drink-camera` (avbruten, ersatt, borttagen,
+  sparad, och det som blivit kvar när sidan öppnas; `DrinkCameraFiles`, bara inom katalogen) och
+  behåller bildväljarens läsrätt (`takePersistableUriPermission`) tills drycken sparats, så att ett
+  formulär efter processdöd har kvar fotot.
+- **`:core:sync` (litet block):** dryckesindexet byggs på `Dispatchers.Default` och utkasten läses en
+  gång (`observeDrinkIndexAndDrafts`). Indexet delas INTE mellan läsare: en läsare direkt efter en
+  skrivning måste se den (repositorytesterna läser så).
+- **Referensbilder:** FYLLS_I
+<!-- /Fas S fix-ui -->
+
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
 

@@ -269,4 +269,3 @@ internal val FakeDrinkSuggestion = DrinkSuggestionSlot { _, modifier, compact ->
         )
     }
 }
-
