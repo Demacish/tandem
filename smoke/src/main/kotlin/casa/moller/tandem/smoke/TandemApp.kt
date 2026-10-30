@@ -230,6 +230,25 @@ class TandemApp(val device: UiDevice) {
         return device.findObject(selector) ?: throw AssertionError("Not in the list: $selector (app running: ${isRunning()})")
     }
 
+    /**
+     * Finds the clickable row labelled [text] in a list that may be scrolled ANYWHERE (both
+     * directions, like [findInList]), waits until it stops moving and clicks it. [tap] only
+     * scrolls towards the end of the list, so a row above the viewport (Mer's "At home" when an
+     * earlier test left Mer scrolled down) would be pushed further away (Fas S review, fix-bygg).
+     */
+    fun tapInList(text: String) {
+        val selectors = clickableWithText(text)
+        val found = findInList(selectors.first())
+        settled(selectors, found).click()
+    }
+
+    /** Clicks the clickable row labelled [text] if it is on screen now, without scrolling; false if not. */
+    fun tapIfShown(text: String): Boolean {
+        val found = clickableWithText(text).firstNotNullOfOrNull { device.findObject(it) } ?: return false
+        found.click()
+        return true
+    }
+
     /** Scrolls the content back towards its top until [selector] shows (e.g. a list's search field). */
     fun scrollBackTo(selector: BySelector): UiObject2 {
         repeat(MAX_SCROLLS * 2) {

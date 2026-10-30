@@ -206,16 +206,24 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
         const val ENTRY_AMOUNT = "pantry-entry:amount"
         const val ENTRY_SAVE = "pantry-entry:save"
         const val PANTRY_LIST = "pantry:list"
+        private const val RETAP_MS = 5_000L
 
         /** Mer → Hemma ("At home"), at its list or its "no places yet" state. */
         fun openHome(app: TandemApp) {
             // From another tab; on Mer already (its tab is then not clickable) the list may be scrolled anywhere.
             if (app.clickableWithText("More").any { app.device.hasObject(it) }) app.tap("More")
-            app.findInList(By.text("At home"))
-            app.tap("At home")
+            // Finds the row in both directions and clicks it once it stopped moving: tap() alone
+            // only scrolls down and lost the row above the viewport once (main a3317e8).
+            app.tapInList("At home")
             val deadline = SystemClock.uptimeMillis() + Phase2SmokeBase.FIRST_SYNC_TIMEOUT_MS
+            var retapAt = SystemClock.uptimeMillis() + RETAP_MS
             while (!app.device.hasObject(By.res(PANTRY_LIST)) && !app.device.hasObject(By.text("No storage places yet"))) {
                 if (SystemClock.uptimeMillis() > deadline) throw AssertionError("Hemma did not open")
+                // A tap that landed while Mer still moved is lost; repeat it while the row is still there.
+                if (SystemClock.uptimeMillis() > retapAt) {
+                    app.tapIfShown("At home")
+                    retapAt = SystemClock.uptimeMillis() + RETAP_MS
+                }
                 SystemClock.sleep(Phase2SmokeBase.POLL_MS)
             }
         }
