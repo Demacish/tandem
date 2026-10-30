@@ -42,8 +42,7 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
         logIn()
         gallery.add("drink", Gallery.fridge())
         app.tap("Recipes")
-        // The collection chips scroll sideways: "Drinks" is clicked through its accessibility action.
-        waitForAction("the Drinks collection") { app.clickNodeWithText(DRINKS) }
+        openDrinks()
         app.tap(NEW_DRINK)
         app.waitFor(By.text(SAVE_DRINK))
         val name = app.waitForNode("the name field") { it.className?.toString() == EDIT_TEXT }
@@ -118,6 +117,24 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
         assertTrue("A 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
     }
 
+    /**
+     * Recipes → the "Drinks" collection chip. The chips scroll sideways and Compose leaves a chip
+     * scrolled out of the row out of the accessibility tree, so the row is swiped to the left
+     * (at the height of "Want to cook") until "Drinks" can be clicked.
+     */
+    private fun openDrinks() {
+        val deadline = SystemClock.uptimeMillis() + ACTION_TIMEOUT_MS
+        while (!app.clickNodeWithText(DRINKS)) {
+            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("No Drinks collection within $ACTION_TIMEOUT_MS ms")
+            val row = app.device.findObject(By.textStartsWith(WANT_TO_COOK))?.let { runCatching { it.visibleBounds }.getOrNull() }
+            if (row != null) {
+                val width = app.device.displayWidth
+                app.device.swipe(width * SWIPE_FROM / SWIPE_PARTS, row.centerY(), width / SWIPE_PARTS, row.centerY(), SWIPE_STEPS)
+            }
+            SystemClock.sleep(POLL_MS)
+        }
+    }
+
     /** Repeats [action] until it succeeds (a node that is not there yet), at most [ACTION_TIMEOUT_MS]. */
     private fun waitForAction(what: String, action: () -> Boolean) {
         val deadline = SystemClock.uptimeMillis() + ACTION_TIMEOUT_MS
@@ -129,6 +146,10 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
 
     private companion object {
         const val DRINKS = "Drinks"
+        const val WANT_TO_COOK = "Want to cook"
+        const val SWIPE_PARTS = 10
+        const val SWIPE_FROM = 9
+        const val SWIPE_STEPS = 20
         const val NEW_DRINK = "New drink"
         const val SAVE_DRINK = "Save drink"
         const val WINE = "Wine"
