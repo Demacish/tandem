@@ -199,7 +199,9 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
             sharedIndex.invalidate()
             scheduler.scheduleOutbox()
         }
+
         ActiveSource.Demo -> Outcome.Success(Unit)
+
         ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
     }
 

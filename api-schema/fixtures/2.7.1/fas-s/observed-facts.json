@@ -33,6 +33,15 @@
     "contentType": "application/json",
     "isJson": true
   },
+  "food.createExisting": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "food.createExisting.sameId": true,
+  "food.createExisting.onHandKept": true,
+  "food.createExistingOtherCase.status": 201,
+  "food.createExistingOtherCase.sameId": true,
   "food.patchIgnoreShopping": {
     "status": 200,
     "contentType": "application/json",
@@ -364,6 +373,8 @@
   ],
   "inventoryLog.foodId.count": 6,
   "inventoryLog.create.status": 405,
+  "inventoryEntry.patchRenamedLocation.status": 200,
+  "inventoryEntry.patchRenamedLocation.locationRenamed": true,
   "inventoryEntry.delete.status": 204,
   "inventoryEntry.deleted.get": {
     "status": 404,
@@ -488,6 +499,35 @@
       "Tahinidressing"
     ]
   },
+  "substituteTree.foods": [
+    "bönor",
+    "gröna linser",
+    "kidneybönor",
+    "linser",
+    "röda linser"
+  ],
+  "substituteTree.move": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "substituteTree.child.parent": true,
+  "substituteTree.sibling.parent": true,
+  "substituteTree.patchChildren.status": 200,
+  "substituteTree.patchSiblings.status": 200,
+  "substituteTree.makenow0.before": [],
+  "substituteTree.makenow0.inStock": [
+    "Bönsallad",
+    "Linssoppa"
+  ],
+  "substituteTree.inStock.substituteOnhand": false,
+  "substituteTree.makenow0.stockZero": [],
+  "substituteTree.makenow0.childOnHand": [
+    "Bönsallad"
+  ],
+  "substituteTree.childOnHand.substituteOnhand": true,
+  "substituteTree.makenow0.flagOff": [],
+  "substituteTree.makenow0.parentInStock": [],
   "keyword.create": {
     "status": 201,
     "contentType": "application/json",
@@ -549,6 +589,13 @@
   },
   "pairing.guestPatch.status": 403,
   "pairing.outsiderPatch.status": 200,
+  "pairing.patchOtherName.status": 200,
+  "pairing.patchOtherName.recipeKeywords": [
+    "Annat namn",
+    "Kraftigt rött"
+  ],
+  "pairing.patchOtherName.keywordName": "Annat namn",
+  "pairing.patchOtherName.otherKeywordCreated": false,
   "pairing.keywordsOrParent.includeChildren=true": [
     "Falafel",
     "Hummus"

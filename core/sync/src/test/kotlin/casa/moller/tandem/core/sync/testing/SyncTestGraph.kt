@@ -34,8 +34,8 @@ import casa.moller.tandem.core.sync.drink.DrinkImageStore
 import casa.moller.tandem.core.sync.drink.DrinkOutboxHandler
 import casa.moller.tandem.core.sync.drink.DrinkSync
 import casa.moller.tandem.core.sync.drink.OfflineFirstDrinkRepository
-import casa.moller.tandem.core.sync.drink.SharedDrinkIndex
 import casa.moller.tandem.core.sync.drink.PairingKeywords
+import casa.moller.tandem.core.sync.drink.SharedDrinkIndex
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxSender
 import casa.moller.tandem.core.sync.engine.SyncEngine

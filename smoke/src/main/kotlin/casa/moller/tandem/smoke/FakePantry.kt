@@ -146,6 +146,7 @@ class FakePantry(
             rememberOnHand(FOOD.find(path)!!.groupValues[1].toLong(), parse(text))
             return null
         }
+        // The body is parsed only for the pantry's own paths (a drink photo upload is a binary multipart body).
         val response = when (path) {
             LOCATIONS -> if (method == "GET") page(locations.values.map { locationJson(it) }) else createLocation(parse(text))
             ENTRIES -> if (method == "GET") listEntries("empty" in request.url.queryParameterNames) else createEntry(parse(text))
@@ -153,7 +154,6 @@ class FakePantry(
             BATCH -> batch(parse(text))
             FOODS -> if (method == "POST") createFood(parse(text)) else null
             RECIPES -> request.url.queryParameter("makenow")?.let(::makeNowPage)
-            // Parsed only for the pantry's own paths (a drink photo upload is a binary multipart body).
             else -> byId(method, path) { parse(text) }
         } ?: return null
         val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()
