@@ -144,7 +144,12 @@ abstract class IdRewriteDao {
             }
 
             // The recipe itself arrives with the sync (or the sender stores the answer); the draft is done.
-            OutboxEntities.DRINK -> deleteDrinkDraft(accountId, localId)
+            OutboxEntities.DRINK -> {
+                deleteDrinkDraft(accountId, localId)
+                // Fas S review (fix-data): pairings changed while the drink's CREATE was being sent
+                // were queued for the recipe by its temporary id; they now name the new recipe.
+                rewriteRecipeRowsOfDrink(accountId, localId, serverId)
+            }
         }
     }
 
@@ -406,6 +411,12 @@ abstract class IdRewriteDao {
 
     @Query("DELETE FROM drink_draft WHERE account_id = :accountId AND local_id = :localId")
     abstract suspend fun deleteDrinkDraft(accountId: String, localId: Long)
+
+    @Query(
+        "UPDATE outbox SET server_id = :serverId, local_id = NULL WHERE account_id = :accountId AND entity = 'recipe' " +
+            "AND local_id = :localId AND server_id IS NULL",
+    )
+    abstract suspend fun rewriteRecipeRowsOfDrink(accountId: String, localId: Long, serverId: Long)
 
     companion object {
         /**

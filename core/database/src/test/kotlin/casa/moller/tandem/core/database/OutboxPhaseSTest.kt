@@ -177,6 +177,77 @@ class OutboxPhaseSTest {
         assertEquals(listOf(8L), outbox.getAllFor(ACCOUNT_A, OutboxEntities.FOOD).map { it.serverId })
     }
 
+    /** Fas S review (fix-data): a move merged into an unsent entry CREATE waits for the NEWER location's CREATE. */
+    @Test
+    fun aMergedMoveWaitsForTheNewerLocationsCreate() = runTest {
+        val first = checkNotNull(outbox.enqueue(row(OutboxOps.CREATE, OutboxEntities.INVENTORY_LOCATION, localId = -1)))
+        val entry = checkNotNull(
+            outbox.enqueue(
+                row(OutboxOps.CREATE, OutboxEntities.INVENTORY_ENTRY, localId = -1, payload = """{"inventory_location":-1}""")
+                    .copy(dependsOn = first, refs = """{"inventory_location":"inventory_location"}"""),
+            ),
+        )
+        val second = checkNotNull(outbox.enqueue(row(OutboxOps.CREATE, OutboxEntities.INVENTORY_LOCATION, localId = -2)))
+
+        val merged = outbox.enqueue(
+            row(OutboxOps.PATCH, OutboxEntities.INVENTORY_ENTRY, localId = -1, payload = """{"inventory_location":-2}""")
+                .copy(dependsOn = second, refs = """{"inventory_location":"inventory_location"}"""),
+        )
+
+        assertEquals(entry, merged)
+        val row = checkNotNull(outbox.get(entry))
+        assertEquals(second, row.dependsOn)
+        assertEquals("""{"inventory_location":-2}""", row.payload)
+        // The older location goes first anyway; the entry waits until the newer one is sent too.
+        assertEquals(first, outbox.nextReady(ACCOUNT_A)?.id)
+        outbox.markDone(first)
+        assertEquals(second, outbox.nextReady(ACCOUNT_A)?.id)
+        assertEquals(second, outbox.getCreate(ACCOUNT_A, OutboxEntities.INVENTORY_LOCATION, -2)?.id)
+    }
+
+    /** Fas S review (fix-data): Basvaror's "har hemma" never merges past Handla's newer PATCH of the same food. */
+    @Test
+    fun onHandInBatchNeverJumpsOverANewerPatchOfTheFood() = runTest {
+        val off = row(
+            OutboxOps.BATCH_ON_HAND,
+            OutboxEntities.FOOD,
+            serverId = 7,
+            payload = """{"on_hand":false}""",
+            base = """{"on_hand":true}""",
+            batchKey = "food:on_hand=false",
+        )
+        outbox.enqueue(off)
+        outbox.enqueue(row(OutboxOps.PATCH, OutboxEntities.FOOD, serverId = 7, payload = """{"food_onhand":true}"""))
+        outbox.enqueue(off.copy(base = """{"on_hand":true}"""))
+
+        val rows = outbox.getAllFor(ACCOUNT_A, OutboxEntities.FOOD)
+        assertEquals(listOf(OutboxOps.BATCH_ON_HAND, OutboxOps.PATCH, OutboxOps.BATCH_ON_HAND), rows.map { it.op })
+        // Sent in order: the last change ("not on hand") is the server's final state.
+        assertEquals("""{"on_hand":false}""", rows.last().payload)
+        assertEquals(listOf(rows.first().id), outbox.nextReadyBatch(ACCOUNT_A, "food:on_hand=false", limit = 10).map { it.id })
+    }
+
+    /** Fas S review (fix-data): pairings queued by a pending drink's temporary id follow it to its server id. */
+    @Test
+    fun pairingsQueuedForAPendingDrinkNameTheNewRecipe() = runTest {
+        val drinkId = ids.nextLocalId(ACCOUNT_A, OutboxEntities.DRINK)
+        val draft = DrinkDraftEntity(accountId = ACCOUNT_A, localId = drinkId, name = "Rioja", createdAtEpochMillis = 1)
+        database.drinkDraftDao().upsert(draft)
+        val create = checkNotNull(outbox.enqueue(row(OutboxOps.CREATE, OutboxEntities.DRINK, localId = drinkId)))
+        val field = RecipeKeywordFields.pairing("Rioja")
+        outbox.enqueue(
+            row(OutboxOps.RECIPE_KEYWORDS, OutboxEntities.RECIPE, localId = drinkId, payload = """{"$field":true}""")
+                .copy(dependsOn = create),
+        )
+
+        ids.completeCreate(ACCOUNT_A, create, OutboxEntities.DRINK, drinkId, serverId = 77, nowEpochMillis = 2)
+
+        val pairing = outbox.getAllFor(ACCOUNT_A, OutboxEntities.RECIPE).single()
+        assertEquals(77L, pairing.serverId)
+        assertNull(pairing.localId)
+        assertEquals(pairing.id, outbox.nextReady(ACCOUNT_A)?.id)
+    }
+
     @Test
     fun wantToCookAndPairingsOfOneRecipeLiveSideBySide() = runTest {
         val wantToCook = row(

@@ -152,7 +152,9 @@ abstract class OutboxDao {
      *
      * When the change merges into an older row, that row keeps its place in the queue, gets the
      * merged payload, the union of both rows' [OutboxEntity.refs], the merged `base_snapshot` (PATCH
-     * into PATCH, see [OutboxMerge]) and, if it had none, the new row's `depends_on`. A new row of an
+     * into PATCH, see [OutboxMerge]) and the NEWER of both rows' `depends_on` that still exists (Fas S
+     * review, fix-data: an entry created in location A and moved offline to location B, created
+     * later, must wait for B's CREATE; rows go out lowest id first, so A's is sent before anyway). A new row of an
      * object whose CREATE was attempted before (it may be on the server) `depends_on` that CREATE,
      * so it is sent by server id after it and fails with it.
      *
@@ -170,7 +172,7 @@ abstract class OutboxDao {
             is OutboxMerge.Decision.Update -> {
                 val existing = unsent.first { it.id == decision.id }
                 val refs = OutboxRefs.encode(OutboxRefs.decode(existing.refs) + OutboxRefs.decode(row.refs))
-                val dependsOn = existing.dependsOn ?: row.dependsOn
+                val dependsOn = listOfNotNull(existing.dependsOn, row.dependsOn).filter { get(it) != null }.maxOrNull()
                 val base = decision.baseSnapshot ?: existing.baseSnapshot
                 updateMerged(decision.id, decision.payload, decision.batchKey, refs, dependsOn, row.createdAtEpochMillis, base)
                 decision.id
@@ -248,6 +250,17 @@ abstract class OutboxDao {
         }
         if (rows.isNotEmpty()) deleteWithDependents(rows.map { it.id })
     }
+
+    /** Fas S review (fix-data): the CREATE row of temporary id [localId] of [entity] (any state), null when gone. */
+    @Query(
+        "SELECT * FROM outbox WHERE account_id = :accountId AND entity = :entity AND op = 'CREATE' " +
+            "AND local_id = :localId ORDER BY id LIMIT 1",
+    )
+    abstract suspend fun getCreate(accountId: String, entity: String, localId: Long): OutboxEntity?
+
+    /** Fas S review (fix-data): row [id] waits for row [dependsOn] from now on (a reference that resolves only after it). */
+    @Query("UPDATE outbox SET depends_on = :dependsOn WHERE id = :id")
+    abstract suspend fun setDependsOn(id: Long, dependsOn: Long)
 
     /** True while the CREATE of temporary id [localId] of [entity] is in the outbox (any state). */
     @Query(

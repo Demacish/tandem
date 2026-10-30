@@ -206,8 +206,7 @@ internal class OutboxSender @Inject constructor(
         if (payload == null) {
             // Waiting for a CREATE that is still queued; a reference whose CREATE is gone can never resolve.
             if (missing.any { (entity, localId) -> !outbox.hasCreate(remote.accountId, entity, localId) }) return dropOrphan(remote, row)
-            outbox.markRetry(row.id, WAITING_FOR_ID)
-            return DrainResult.RETRY
+            return waitForCreates(remote, row, missing)
         }
         // A change of an object that was created offline and whose CREATE is gone: it never gets a server id.
         if (isOrphanChange(remote, row, mapping)) return dropOrphan(remote, row)
@@ -233,6 +232,28 @@ internal class OutboxSender @Inject constructor(
                 is OutboxResult.Failed -> handleFailure(remote, row, result.error)
             }
         }
+    }
+
+    /**
+     * Fas S review (fix-data): [row] names objects whose CREATEs are still queued. It waits for the
+     * newest of them from now on (`depends_on`) and the drain goes on, so those CREATEs (often queued
+     * AFTER the row, e.g. an entry moved offline to a location created later) are sent in this drain
+     * instead of the row blocking the whole account at the head of the queue. A failed CREATE fails
+     * the row with it.
+     */
+    private suspend fun waitForCreates(remote: ActiveSource.Remote, row: OutboxEntity, missing: List<Pair<String, Long>>): DrainResult? {
+        val outbox = databases.get(remote.kind).outboxDao()
+        val creates = missing.mapNotNull { (entity, localId) -> outbox.getCreate(remote.accountId, entity, localId) }
+        val failed = creates.firstOrNull { it.state == OutboxState.FAILED }
+        if (failed != null) {
+            outbox.markFailed(row.id, failed.lastError ?: WAITING_FOR_ID)
+            return null
+        }
+        val wait = creates.filter { it.id != row.id }.maxOfOrNull { it.id }
+        outbox.markRetry(row.id, WAITING_FOR_ID)
+        if (wait == null) return DrainResult.RETRY
+        outbox.setDependsOn(row.id, wait)
+        return null
     }
 
     /** An update or delete of an object created offline that has no server id, no mapping and no CREATE any more. */
