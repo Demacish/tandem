@@ -7,6 +7,7 @@ import androidx.test.uiautomator.By
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -18,16 +19,87 @@ import org.junit.runner.RunWith
  * answer must be read ("The key works") and the request must carry the key in `x-api-key` and
  * nothing of Tandoor's (no `Authorization`). The minified build keeps the SDK's OkHttp client,
  * Jackson and model types working, which unit tests cannot show.
+ *
+ * Fas S (integration): the fridge photo itself (#45, B22). The first use shows the experimental
+ * warning, a synthetic photo from the gallery goes to the fake Claude through the SDK's beta
+ * Messages call (`messages().create`: request serialization and the structured answer under R8),
+ * and the answer becomes a review list in which nothing is saved until the user saves; the unsure
+ * row starts skipped.
  */
 @RunWith(AndroidJUnit4::class)
 class PhaseSAiSmokeTest : Phase2SmokeBase() {
+    @get:Rule(order = 3)
+    val gallery = Gallery(instrumentation.context)
+
     override fun servers(): List<FakeTandoor> = listOf(tandoor)
 
-    override fun extraReport(): List<String> = listOf("--- fake Anthropic:") + tandoor.anthropic.requests.map { it.toString() }
+    override fun extraReport(): List<String> = listOf("--- fake Anthropic:") + tandoor.anthropic.requests.map { it.toString() } +
+        tandoor.anthropic.messages.map { it.toString() } + PhaseSPantrySmokeTest.pantryReport(tandoor)
 
     @Test
     fun aiSettings_claudeKeyIsStoredAndTestedThroughTheSdk() {
         logIn()
+        setUpClaude()
+
+        app.scrollBackTo(By.text("Test the key"))
+        waitUntil("Test the key enabled") { app.clickNodeWithText("Test the key") }
+        // The answer card sits below the buttons (maybe just below the fold): scroll to it.
+        app.scrollTo(By.text("The key works"))
+        app.capture("phaseS-ai-key-works")
+
+        val seen = tandoor.anthropic.requests.single()
+        assertEquals("GET", seen.method)
+        assertEquals("/v1/models/claude-opus-5-5", seen.path)
+        assertTrue("The SDK did not send the stored key", seen.keyMatched)
+        assertTrue("Not the Anthropic SDK (no anthropic-version header)", seen.sdkVersionHeader)
+        assertFalse("A Tandoor Authorization header reached the AI service", seen.hadAuthorization)
+    }
+
+    @Test
+    fun fridgePhoto_warningFirst_claudeThroughTheSdk_nothingSavedBeforeTheReview() {
+        logIn()
+        setUpClaude()
+        app.device.pressBack()
+        PhaseSPantrySmokeTest.openHome(app)
+        PhaseSPantrySmokeTest.waitForDefaultLocations(app, tandoor)
+        gallery.add("fridge", Gallery.fridge())
+
+        app.tap("Fridge photo (experimental)")
+        app.waitFor(By.text("The fridge photo is experimental"))
+        app.capture("phaseS-fridge-warning")
+        app.tap("I understand")
+        app.waitUntilGone(By.text("The fridge photo is experimental"))
+        app.tap(PhaseSScanSmokeTest.PICK_IMAGE)
+        gallery.pickNewest(app)
+
+        app.waitFor(By.text("Check what the AI found"), PhaseSScanSmokeTest.ML_KIT_TIMEOUT_MS)
+        app.capture("phaseS-fridge-review")
+        val message = tandoor.anthropic.messages.single()
+        assertEquals("claude-opus-5-5", message.model)
+        assertTrue("No JPEG in the request", message.hadJpeg)
+        assertTrue("No structured output in the request", message.structuredOutput)
+        assertTrue("No refusal fallback beta: ${message.betaHeader}", message.betaHeader.orEmpty().contains("server-side-fallback"))
+        val call = tandoor.anthropic.requests.last()
+        assertEquals("/v1/messages", call.path)
+        assertTrue("The SDK did not send the stored key", call.keyMatched)
+        assertFalse("A Tandoor Authorization header reached the AI service", call.hadAuthorization)
+        assertTrue("Saved before the review: ${tandoor.pantry.entries()}", tandoor.pantry.entries().isEmpty())
+
+        // Two sure rows are ready; the unsure "kaviar" (confidence 0.3) starts skipped.
+        app.waitForNode("\"Save 2 items in the pantry\"") { it.text?.toString() == "Save 2 items in the pantry" }
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.clickNodeWithText("Save 2 items in the pantry")
+            if (nodeGone(TAP_WAIT_MS) { it.text?.toString() == "Check what the AI found" }) break
+        }
+        waitForServer("the two reviewed rows in the pantry") {
+            val foods = tandoor.pantry.entries().map { it.foodName.lowercase() }.sorted()
+            if (foods == listOf("mjölk", "smör")) null else "entries: $foods"
+        }
+        assertTrue("A Tandoor alias was learned from the AI", tandoor.pantry.aliases().isEmpty())
+    }
+
+    /** Settings → AI: Claude, the fake key (stored), and the fake endpoint as the own base URL. */
+    private fun setUpClaude() {
         app.tap("More")
         app.tap("AI (experimental)")
         app.waitFor(By.text("Service"))
@@ -50,19 +122,6 @@ class PhaseSAiSmokeTest : Phase2SmokeBase() {
         assertTrue("Base URL not typed", app.setNodeText(baseUrl, tandoor.baseUrl))
         waitUntil("Save enabled") { app.clickNodeWithText("Save") }
         app.waitForNode("the snackbar \"Saved\"") { it.text?.toString() == "Saved" }
-
-        app.scrollBackTo(By.text("Test the key"))
-        waitUntil("Test the key enabled") { app.clickNodeWithText("Test the key") }
-        // The answer card sits below the buttons (maybe just below the fold): scroll to it.
-        app.scrollTo(By.text("The key works"))
-        app.capture("phaseS-ai-key-works")
-
-        val seen = tandoor.anthropic.requests.single()
-        assertEquals("GET", seen.method)
-        assertEquals("/v1/models/claude-opus-5-5", seen.path)
-        assertTrue("The SDK did not send the stored key", seen.keyMatched)
-        assertTrue("Not the Anthropic SDK (no anthropic-version header)", seen.sdkVersionHeader)
-        assertFalse("A Tandoor Authorization header reached the AI service", seen.hadAuthorization)
     }
 
     /** The page's text fields on screen, in order (at least one). */

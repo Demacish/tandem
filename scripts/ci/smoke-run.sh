@@ -53,7 +53,16 @@ adb logcat -v threadtime > "$OUT/logcat.txt" 2>&1 &
 logcat_pid=$!
 
 echo "::group::Instrumentation"
-adb shell am instrument -w "$TEST_PACKAGE/$RUNNER" 2>&1 | tr -d '\r' | tee "$OUT/instrumentation.txt"
+# SMOKE_TESTS (a by-hand run, smoke.yml's "tests" input): only these classes; empty = every test.
+filter=()
+if [ -n "${SMOKE_TESTS:-}" ]; then
+  case "$SMOKE_TESTS" in
+    *[!A-Za-z0-9_.,#]*) echo "::error::SMOKE_TESTS may only name test classes"; exit 1 ;;
+  esac
+  echo "Only: $SMOKE_TESTS"
+  filter=(-e class "$SMOKE_TESTS")
+fi
+adb shell am instrument -w "${filter[@]}" "$TEST_PACKAGE/$RUNNER" 2>&1 | tr -d '\r' | tee "$OUT/instrumentation.txt"
 echo "::endgroup::"
 
 # Evidence first, verdict later.

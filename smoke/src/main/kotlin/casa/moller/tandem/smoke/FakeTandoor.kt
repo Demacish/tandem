@@ -104,6 +104,12 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         plan.onAddShopping = { meal -> shopping.serverAddMeal(meal.id, meal.recipe ?: 0, meal.servings, foodsOf(meal.recipe ?: 0)) }
     }
 
+    /** Fas S (integration): the stateful pantry, learned aliases and `makenow` (empty until a test seeds it). */
+    val pantry = FakePantry(::template, ::foodsOf) { RECIPES_BY_ID.keys.map(String::toLong).sorted() }
+
+    /** Fas S (integration): keywords, recipe keyword PATCHes and (with `drinks.enabled`) one drink. */
+    val drinks = FakeDrinks(::template)
+
     /** `https://localhost:<port>`: replaces the recorded server address in every body. */
     private val origin: String get() = "https://localhost:${server.port}"
 
@@ -123,17 +129,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         check(FIXTURE_CHECK in packaged && CA_ASSET in packaged) {
             "Test APK assets incomplete (api-schema/fixtures/2.6.13 not packaged?): $packaged"
         }
-        val ca = HeldCertificate.decode(assets.open(CA_ASSET).bufferedReader().use { it.readText() })
-        val serverCertificate = HeldCertificate.Builder()
-            .commonName("localhost")
-            .addSubjectAlternativeName("localhost")
-            .addSubjectAlternativeName("127.0.0.1")
-            .signedBy(ca)
-            .build()
-        val certificates = HandshakeCertificates.Builder()
-            .heldCertificate(serverCertificate, ca.certificate)
-            .build()
-        server.useHttps(certificates.sslSocketFactory())
+        server.useHttps(serverCertificates(assets).sslSocketFactory())
         server.protocolNegotiationEnabled = false
         server.dispatcher = object : Dispatcher() {
             override fun dispatch(request: RecordedRequest): MockResponse = try {
@@ -204,8 +200,11 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             method == "GET" && USER_PATH.matches(path) -> fixture("11-user-by-id")
 
-            // --- Phase 2 (integration lane): the stateful shopping list and meal plan. ---
-            else -> shopping.answer(request)
+            // --- Phase 2 (integration lane): the stateful shopping list and meal plan; Fas S: the
+            // pantry and the keywords. ---
+            else -> pantry.answer(request)
+                ?: drinks.answer(request, ::recordedRecipe)
+                ?: shopping.answer(request)
                 ?: mealPlan.answer(request)
                 ?: householdAnswer(method, path)
                 ?: respondRecorded(request, method, path)
@@ -227,13 +226,15 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         // the recipe index, overviews, small tables, meal plan and cook log, and send view logs.
         method == "GET" && path == "/api/recipe/" -> recipeList(request.url)
 
+        // Fas S (integration): the foods carry the pantry's "at home", the index has the drink.
+        method == "GET" && path == FOODS_PATH -> fixture(PHASE1_LISTS.getValue(path), pantry::withOnHand)
+
+        method == "GET" && path == FLAT_PATH -> fixture(PHASE1_LISTS.getValue(path), drinks::flat)
+
         method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
         // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
         method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
-
-        // --- Fas S (hemma-data lane): every sync reads the pantry and the learned aliases (empty here). ---
-        method == "GET" && path in FAS_S_LISTS -> fixture(FAS_S_LISTS.getValue(path), ::emptyPage)
 
         method == "GET" && RECIPE_PATH.matches(path) -> {
             val id = RECIPE_PATH.find(path)!!.groupValues[1]
@@ -279,12 +280,16 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
                 )
             }
         }
+        // Fas S (integration): the drinks' query (`keywords_or`, children included) and the
+        // overview pages carry the drink and the keywords changed since.
+        val keywordsOr = url.queryParameterValues("keywords_or").flatMap { it.orEmpty().split(',') }.mapNotNull { it.trim().toLongOrNull() }
+        if (keywordsOr.isNotEmpty()) return fixture("fas1/recipe-list-default") { drinks.overviews(it, keywordsOr.toSet()) }
         val recording = when {
             url.queryParameter("timescooked_gte") != null -> "fas1/recipe-list-timescooked-gte"
             url.queryParameter("viewedon_gte") != null -> "fas1/recipe-list-viewedon-gte"
             url.queryParameter("cookedon_lte") != null -> "fas1/recipe-list-cookedon-lte"
             url.queryParameter("new") != null -> "fas1/recipe-list-new"
-            else -> "fas1/recipe-list-default"
+            else -> return fixture("fas1/recipe-list-default") { drinks.overviews(it, null) }
         }
         return fixture(recording)
     }
@@ -343,9 +348,19 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private fun twoUsers(recorded: JsonElement): JsonElement =
         JsonArray(recorded.jsonArray.filter { it.jsonObject["id"]?.jsonPrimitive?.content in TWO_USER_IDS })
 
-    /** A recorded DRF page without its results (Fas S: the smoke tests start with an empty pantry). */
-    private fun emptyPage(recorded: JsonElement): JsonElement =
-        JsonObject(recorded.jsonObject + mapOf("count" to JsonPrimitive(0), "next" to JsonNull, "results" to JsonArray(emptyList())))
+    /** Fas S (integration): [recipe]'s keyword names on the server now (recorded, or as changed since). */
+    fun keywordNamesOf(recipe: Long): List<String> = drinks.keywordNamesOf(recipe, recordedKeywordIds(recipe))
+
+    /** Fas S (integration): "the partner" adds the keyword [name] to [recipe] on the web. */
+    fun partnerAddsKeyword(recipe: Long, name: String) {
+        drinks.partnerAdds(recipe, recordedKeywordIds(recipe), name)
+    }
+
+    private fun recordedKeywordIds(recipe: Long): List<Long> = (recordedRecipe(recipe)?.get("keywords") as? JsonArray).orEmpty()
+        .mapNotNull { (it as? JsonObject)?.get("id")?.jsonPrimitive?.content?.toLongOrNull() }
+
+    /** Fas S (integration): the recorded detail of a recipe (null: not recorded), for [drinks]. */
+    private fun recordedRecipe(id: Long): JsonObject? = RECIPES_BY_ID[id.toString()]?.let(::template)
 
     /** Phase 2: the recorded body of [name] (`fas2/...`), a template for the stateful answers. */
     private fun template(name: String): JsonObject =
@@ -375,6 +390,20 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     }
 
     companion object {
+        /** A `localhost` server certificate issued by the test CA (also used by [FakeOpenFoodFacts]). */
+        fun serverCertificates(assets: AssetManager): HandshakeCertificates {
+            val ca = HeldCertificate.decode(assets.open(CA_ASSET).bufferedReader().use { it.readText() })
+            val serverCertificate = HeldCertificate.Builder()
+                .commonName("localhost")
+                .addSubjectAlternativeName("localhost")
+                .addSubjectAlternativeName("127.0.0.1")
+                .signedBy(ca)
+                .build()
+            return HandshakeCertificates.Builder()
+                .heldCertificate(serverCertificate, ca.certificate)
+                .build()
+        }
+
         /** From `03-login-json`: the token `api-token-auth` returns. */
         const val LOGIN_TOKEN = "tda_00000000_0000_0000_0000_000000000001"
 
@@ -418,11 +447,8 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/recipe-book/" to "fas1/recipe-book-list",
             "/api/recipe-book-entry/" to "fas1/recipe-book-entry-list",
         )
-        private val FAS_S_LISTS = mapOf(
-            "/api/inventory-location/" to "fas-s/inventory-location-list",
-            "/api/inventory-entry/" to "fas-s/inventory-entry-list",
-            "/api/automation/" to "fas-s/automation-list-food-alias",
-        )
+        private const val FOODS_PATH = "/api/food/"
+        private const val FLAT_PATH = "/api/recipe/flat/"
         private val RECIPES_BY_ID = mapOf(
             "1" to "fas1/recipe-pyttipanna",
             "2" to "fas1/recipe-svamppasta",

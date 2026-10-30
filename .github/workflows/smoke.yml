@@ -15,6 +15,11 @@ on:
   push:
     branches: ["**"]
   workflow_dispatch:
+    inputs:
+      tests:
+        description: "Only these test classes (comma-separated, e.g. casa.moller.tandem.smoke.PhaseSScanSmokeTest); empty = all"
+        required: false
+        default: ""
   workflow_call:
     outputs:
       ran:
@@ -157,6 +162,9 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: bash scripts/ci/smoke-run.sh
+        env:
+          # Fas S (integration): a by-hand run may pick test classes; pushes, main and tags run all.
+          SMOKE_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
 
       # The incident check, independent of the emulator: every Retrofit service interface must
       # survive R8 (v0.0.1 lost ServerService, and with it the whole login), and the password

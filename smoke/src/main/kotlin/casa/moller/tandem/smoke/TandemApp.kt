@@ -452,7 +452,11 @@ class TandemApp(val device: UiDevice) {
 
             @Suppress("DEPRECATION")
             val media = context.externalMediaDirs.first()
-            return File(media, "smoke").apply { mkdirs() }
+            // Fas S: `.nomedia` keeps these screenshots out of the gallery the photo picker shows.
+            return File(media, "smoke").apply {
+                mkdirs()
+                File(this, ".nomedia").takeIf { !it.exists() }?.let { runCatching { it.createNewFile() } }
+            }
         }
     }
 }
