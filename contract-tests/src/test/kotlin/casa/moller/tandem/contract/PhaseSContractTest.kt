@@ -159,6 +159,7 @@ class PhaseSContractTest {
             observe("food.patchOnHand.outsider", foodField(tahini, "food_onhand", env.outsiderToken))
             val guest = api("food-patch-onhand-as-guest", "PATCH", "/api/food/$tahini/", obj("food_onhand" to true), token = env.guestToken)
             observe("food.patchOnHand.guest", describe(guest, includeBody = false))
+            createExistingFood(tahini)
         }
         val oil = foodIds["olivolja"]
         if (oil != null) {
@@ -214,6 +215,25 @@ class PhaseSContractTest {
             observe("food.substituteOnhand", detail?.get("substitute_onhand"))
             detail?.let { observe("food.fieldTypes", Facts.fieldTypes(it)) }
         }
+    }
+
+    /**
+     * Fas S komplettering (Basvaror): `POST /api/food/` with the name of a food that exists, as
+     * DefaultStaplesRepository sends it for a staple the device did not know yet (another phone or
+     * the web created the food in the meantime): the same food or a new one, and what happens to
+     * its "har hemma". Another spelling of the case too. Whatever was created anew is deleted again,
+     * and tahini's on hand is set back, so the makenow facts stay as seeded.
+     */
+    private fun createExistingFood(tahini: Long) {
+        val same = api("food-create-existing", "POST", "/api/food/", obj("name" to "tahini"))
+        observe("food.createExisting", describe(same, includeBody = same.status !in setOf(OK, CREATED)))
+        observe("food.createExisting.sameId", idOf(same)?.let { it == tahini })
+        observe("food.createExisting.onHandKept", foodField(tahini, "food_onhand"))
+        val otherCase = api("food-create-existing-other-case", "POST", "/api/food/", obj("name" to "Tahini"), record = false)
+        observe("food.createExistingOtherCase.status", otherCase.status)
+        observe("food.createExistingOtherCase.sameId", idOf(otherCase)?.let { it == tahini })
+        for (created in listOf(same, otherCase)) idOf(created)?.takeIf { it != tahini }?.let { delete("food", it) }
+        api("food-patch-onhand-again", "PATCH", "/api/food/$tahini/", obj("food_onhand" to true), record = false)
     }
 
     // --- b. Inventory: locations ---------------------------------------------------------------
@@ -416,6 +436,21 @@ class PhaseSContractTest {
             observe("inventoryLog.create.status", writeLog.status)
         }
 
+        // Fas S komplettering: a PATCH (a move, "Flytta") whose nested location carries another
+        // name, on an entry of its own (the log facts above stay as they are): renamed as by a POST?
+        val moved = api("ie-renamed-patch", "POST", "/api/inventory-entry/", entryBody(fridge, "honung", 1.0, "burk", null), record = false)
+        idOf(moved)?.let { id ->
+            val renamedPlace = JsonObject(fridge + ("name" to JsonPrimitive("Kylen (omdöpt)")))
+            val renaming = obj("inventory_location" to renamedPlace)
+            val patch = api("inventory-entry-patch-renamed-location", "PATCH", "/api/inventory-entry/$id/", renaming)
+            observe("inventoryEntry.patchRenamedLocation.status", patch.status)
+            val place = fridgeId?.let { objOf(read("/api/inventory-location/$it/")) }
+            observe("inventoryEntry.patchRenamedLocation.locationRenamed", place?.stringAt("name") == "Kylen (omdöpt)")
+            val restore = obj("name" to "Kyl")
+            fridgeId?.let { api("inventory-location-restore-2", "PATCH", "/api/inventory-location/$it/", restore, record = false) }
+            delete("inventory-entry", id)
+        }
+
         // Delete: the entry and what the log keeps.
         val doomed = api("ie-doomed", "POST", "/api/inventory-entry/", entryBody(fridge, "honung", 1.0, "burk", null), record = false)
         idOf(doomed)?.let { id ->
@@ -565,6 +600,7 @@ class PhaseSContractTest {
             val outsider = api("recipe-patch-keywords-as-outsider", "PATCH", path, pairingBody, token = env.outsiderToken, record = false)
             observe("pairing.outsiderPatch.status", outsider.status)
             api("recipe-restore-keywords-3", "PATCH", path, obj("keywords" to withPairing), record = false)
+            nestedKeywordWithAnotherName(path, withPairing)
         }
         if (falafel != null && parentId != null) {
             val path = "/api/recipe/$falafel/"
@@ -589,6 +625,30 @@ class PhaseSContractTest {
             observe("pairing.keywordsOrChild.reader", ours(other))
         }
         drinkKeywordId = childId
+    }
+
+    /**
+     * Fas S komplettering: a recipe PATCH whose keyword entry has a known `id` but ANOTHER `name`
+     * (an old name in the app's cache, the user's own case): does Tandoor rename the keyword for the
+     * whole space, or keep it? On a keyword of its own, which is deleted again; the recipe's
+     * keywords are restored.
+     */
+    private fun nestedKeywordWithAnotherName(path: String, restore: List<JsonObject>) {
+        val temporary = idOf(api("kw-temporary", "POST", "/api/keyword/", obj("name" to "Tillfälligt ord"), record = false)) ?: return
+        val renamed = obj("keywords" to (restore + obj("id" to temporary, "name" to "Annat namn")))
+        val patch = api("recipe-patch-keyword-other-name", "PATCH", path, renamed)
+        observe("pairing.patchOtherName.status", patch.status)
+        observe("pairing.patchOtherName.recipeKeywords", keywordRefs(objOf(patch)).mapNotNull { it.stringAt("name") }.sorted())
+        observe("pairing.patchOtherName.keywordName", objOf(read("/api/keyword/$temporary/"))?.stringAt("name"))
+        observe(
+            "pairing.patchOtherName.newKeywordCreated",
+            pageOrArray(read("/api/keyword/?query=${enc("Annat namn")}").json).any { it.stringAt("name") == "Annat namn" },
+        )
+        api("recipe-restore-keywords-4", "PATCH", path, obj("keywords" to restore), record = false)
+        delete("keyword", temporary)
+        pageOrArray(read("/api/keyword/?query=${enc("Annat namn")}").json)
+            .filter { it.stringAt("name") == "Annat namn" }
+            .forEach { keyword -> keyword.longAt("id")?.let { delete("keyword", it) } }
     }
 
     // --- f. A drink: a minimal recipe, its image, flat and search ---------------------------------
