@@ -1545,7 +1545,19 @@ Rättelser efter granskningen av 0.4.0 i `feature/**`, `core:ui` och några små
 - **`:core:sync` (litet block):** dryckesindexet byggs på `Dispatchers.Default` och utkasten läses en
   gång (`observeDrinkIndexAndDrafts`). Indexet delas INTE mellan läsare: en läsare direkt efter en
   skrivning måste se den (repositorytesterna läser så).
-- **Referensbilder:** FYLLS_I
+- **Referensbilder** (Screenshots-körning 41043360492 på grenen, bara dessa togs):
+  - nya: `pantry/tablet_make_now_font2_light_sv`, `phone_landscape_pantry_entry_light_sv`,
+    `phone_landscape_pantry_entry_keyboard_dark`, `phone_landscape_staples_light_sv`;
+    `scan/phone_scan_barcode_camera_font2_light_sv`, `phone_landscape_scan_barcode_camera_font2_light`,
+    `phone_scan_receipt_camera_denied_font2_dark_sv`, `phone_landscape_scan_barcode_picker_light_sv`;
+    `mealplan/tablet_week_drinks_light_sv`, `tablet_portrait_week_drinks_dark_sv` (en falsk
+    dryckesplats, `FakeDrinkSuggestion`);
+  - avsiktligt ändrade: foto av kylens svenska bilder ("(experimentellt)", 11 st och
+    `phone_scan_review_fridge_light_sv`), `phone_scan_barcode_picker_light_sv` (knapparna kliver
+    undan), Passar med med en väntande dryck (5 st i `recipes/drinks`), Handlas Packa upp (3 st),
+    Om (3 st), Behörigheter med kameraraden (12 st) och introduktionens välkomstsida (12 st).
+  - Hemmas telefonbilder spelades in med ca 120 pixlar annorlunda kantutjämning men samma innehåll
+    och togs INTE (verifieringen godtar de gamla: varorna som egna lazy-objekt ritar likadant).
 <!-- /Fas S fix-ui -->
 
 <!-- Fas 2 inköp-data -->
