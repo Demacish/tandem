@@ -277,7 +277,9 @@ internal class InventoryEntryOutboxHandler @Inject constructor(
         }
         val full = when (val nested = nest(remote, body)) {
             is Nested.Ready -> nested.body
+
             is Nested.Failed -> return OutboxResult.Failed(nested.error)
+
             // Moved to a location deleted elsewhere: the move goes; the next read shows where the entry is.
             Nested.Gone -> return dropMove(row, serverId)
         }
@@ -320,11 +322,8 @@ internal class InventoryEntryOutboxHandler @Inject constructor(
      */
     private suspend fun nest(remote: ActiveSource.Remote, body: JsonObject): Nested {
         val id = (body[PantryPayloads.FIELD_LOCATION] as? JsonPrimitive)?.longOrNull ?: return Nested.Ready(body)
-        val database = databases.get(remote.kind)
-        val stored = database.pantryDao().getLocation(remote.accountId, id)
-        val renaming = stored != null && database.outboxDao().getAllFor(remote.accountId, OutboxEntities.INVENTORY_LOCATION)
-            .any { it.op == OutboxOps.PATCH && it.serverId == id }
-        if (renaming) return locations.expandIn(remote, body)?.let { Nested.Ready(it) } ?: Nested.Gone
+        val stored = databases.get(remote.kind).pantryDao().getLocation(remote.accountId, id)
+        if (stored != null && renamingHere(remote, id)) return roomCopy(remote, body)
         val server = when (val read = reader.locationOnServerLocked(remote, id)) {
             is Outcome.Failure -> return Nested.Failed(read.error)
             is Outcome.Success -> read.value
@@ -333,27 +332,36 @@ internal class InventoryEntryOutboxHandler @Inject constructor(
             PantryReader.LocationOnServer.Gone -> Nested.Gone
 
             // A list too long to read completely: Room's copy, as before.
-            PantryReader.LocationOnServer.Unknown -> locations.expandIn(remote, body)?.let { Nested.Ready(it) } ?: Nested.Gone
+            PantryReader.LocationOnServer.Unknown -> roomCopy(remote, body)
 
             is PantryReader.LocationOnServer.Found -> {
-                val location = server.location
-                val nested = locations.fromServer(remote, id, location, stored)
+                val nested = locations.fromServer(remote, id, server.location, stored)
                     ?: return Nested.Failed(TandemError.BadRequest(mapOf(PantryPayloads.FIELD_LOCATION to emptyList())))
-                if (stored != null && (stored.name != location.name || stored.isFreezer != location.isFreezer)) {
-                    database.pantryDao().upsertLocations(
-                        listOf(
-                            stored.copy(
-                                name = location.name,
-                                isFreezer = location.isFreezer,
-                                householdId = location.household?.id ?: stored.householdId,
-                                householdName = location.household?.name ?: stored.householdName,
-                            ),
-                        ),
-                    )
-                }
+                if (stored != null) followServer(remote, stored, server.location)
                 Nested.Ready(JsonObject(body + (PantryPayloads.FIELD_LOCATION to nested)))
             }
         }
+    }
+
+    /** Whether this device's own rename of location [id] still waits (its values are the intended ones then). */
+    private suspend fun renamingHere(remote: ActiveSource.Remote, id: Long): Boolean =
+        databases.get(remote.kind).outboxDao().getAllFor(remote.accountId, OutboxEntities.INVENTORY_LOCATION)
+            .any { it.op == OutboxOps.PATCH && it.serverId == id }
+
+    /** [body] with the location built from Room ([PantryLocations.expandIn]); gone when Room does not know it. */
+    private suspend fun roomCopy(remote: ActiveSource.Remote, body: JsonObject): Nested =
+        locations.expandIn(remote, body)?.let { Nested.Ready(it) } ?: Nested.Gone
+
+    /** Room's copy of a location takes the server's name, freezer flag and household. */
+    private suspend fun followServer(remote: ActiveSource.Remote, stored: InventoryLocationEntity, location: InventoryLocationDto) {
+        if (stored.name == location.name && stored.isFreezer == location.isFreezer) return
+        val updated = stored.copy(
+            name = location.name,
+            isFreezer = location.isFreezer,
+            householdId = location.household?.id ?: stored.householdId,
+            householdName = location.household?.name ?: stored.householdName,
+        )
+        databases.get(remote.kind).pantryDao().upsertLocations(listOf(updated))
     }
 
     /**

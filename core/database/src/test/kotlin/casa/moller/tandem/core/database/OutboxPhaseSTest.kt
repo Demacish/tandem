@@ -218,7 +218,7 @@ class OutboxPhaseSTest {
         )
         outbox.enqueue(off)
         outbox.enqueue(row(OutboxOps.PATCH, OutboxEntities.FOOD, serverId = 7, payload = """{"food_onhand":true}"""))
-        outbox.enqueue(off.copy(base = """{"on_hand":true}"""))
+        outbox.enqueue(off.copy(baseSnapshot = """{"on_hand":true}"""))
 
         val rows = outbox.getAllFor(ACCOUNT_A, OutboxEntities.FOOD)
         assertEquals(listOf(OutboxOps.BATCH_ON_HAND, OutboxOps.PATCH, OutboxOps.BATCH_ON_HAND), rows.map { it.op })

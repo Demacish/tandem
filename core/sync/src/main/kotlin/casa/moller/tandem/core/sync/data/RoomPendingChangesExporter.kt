@@ -5,6 +5,7 @@ import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.DrinkDraftEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
+import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -75,24 +76,7 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
                     } else {
                         null
                     }
-                    add(
-                        buildJsonObject {
-                            put("operation", row.op)
-                            put("type", row.entity)
-                            row.serverId?.let { put("id", it) }
-                            // Phase 2 (koppling lane): an object created offline has only its temporary
-                            // (negative) id; rows that point at it carry the same id in their payload.
-                            row.localId?.takeIf { row.serverId == null }?.let { put("localId", it) }
-                            row.refs?.let { put("refs", parse(it)) }
-                            row.dependsOn?.let { put("dependsOn", it) }
-                            put("payload", if (row.op == OutboxOps.RECIPE_IMAGE) PHOTO else parse(row.payload))
-                            drink?.let { put("drink", drinkOf(it)) }
-                            put("createdAt", TandoorDates.format(Instant.ofEpochMilli(row.createdAtEpochMillis)))
-                            put("attempts", row.attempts)
-                            put("state", row.state.name)
-                            row.lastError?.let { put("lastError", it) }
-                        },
-                    )
+                    add(changeOf(row, drink))
                 }
             }
         }
@@ -106,6 +90,24 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
         throw e
     } catch (e: Exception) {
         Outcome.Failure(TandemError.Unknown(EXPORT_FAILED))
+    }
+
+    /** One outbox row as an exported change ([drink]: the draft of a drink CREATE). */
+    private fun changeOf(row: OutboxEntity, drink: DrinkDraftEntity?): JsonObject = buildJsonObject {
+        put("operation", row.op)
+        put("type", row.entity)
+        row.serverId?.let { put("id", it) }
+        // Phase 2 (koppling lane): an object created offline has only its temporary
+        // (negative) id; rows that point at it carry the same id in their payload.
+        row.localId?.takeIf { row.serverId == null }?.let { put("localId", it) }
+        row.refs?.let { put("refs", parse(it)) }
+        row.dependsOn?.let { put("dependsOn", it) }
+        put("payload", if (row.op == OutboxOps.RECIPE_IMAGE) PHOTO else parse(row.payload))
+        drink?.let { put("drink", drinkOf(it)) }
+        put("createdAt", TandoorDates.format(Instant.ofEpochMilli(row.createdAtEpochMillis)))
+        put("attempts", row.attempts)
+        put("state", row.state.name)
+        row.lastError?.let { put("lastError", it) }
     }
 
     /** What a drink created offline consists of (its photo only as a flag). */

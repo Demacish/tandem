@@ -459,7 +459,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         suspend fun entry(id: Long): InventoryEntryEntity? {
             val entry = database.pantryDao().getEntry(accountId, current(OutboxEntities.INVENTORY_ENTRY, id)) ?: return null
             val location = database.pantryDao().getLocation(accountId, entry.locationId)
-            return entry.takeIf { location != null && visible(location) || location == null && !remote }
+            return entry.takeIf { if (location != null) visible(location) else !remote }
         }
 
         /** Whether an amount the user SET ("Slut", the editor, Undo) still waits for [entry]: "-1" then stays a value. */

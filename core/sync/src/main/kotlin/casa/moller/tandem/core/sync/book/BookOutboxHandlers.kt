@@ -290,7 +290,9 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             val id = database.idRewriteDao().current(remote.accountId, OutboxEntities.KEYWORD, field).takeIf { it >= 0 } ?: continue
             list = when {
                 !add -> list.filterNot { it.id == id }
+
                 list.any { it.id == id } -> list
+
                 // Fas S review (fix-data): by id only (FACTS "Fas S c": `{id}` is enough), never the cached
                 // name, which may be stale and would rename the keyword back for everyone.
                 else -> list + SentKeyword(id, storedNames[id].orEmpty(), sendName = false)

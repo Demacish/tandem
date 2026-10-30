@@ -50,10 +50,8 @@ import kotlinx.coroutines.withContext
  * SDK's blocking call runs beside the coroutine, and a cancellation closes the call's sockets
  * ([ClosableSockets]), so a paid request never keeps running for minutes in the background.
  */
-internal class ClaudeFridgeVisionClient(
-    private val timeout: Duration,
-    private val tls: () -> AiTls = { AiTls.platform() },
-) : FridgeVisionClient {
+internal class ClaudeFridgeVisionClient(private val timeout: Duration, private val tls: () -> AiTls = { AiTls.platform() }) :
+    FridgeVisionClient {
     @Inject
     constructor() : this(Duration.ofSeconds(AiHttpClient.CALL_TIMEOUT_SECONDS))
 
