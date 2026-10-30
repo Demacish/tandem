@@ -2,6 +2,7 @@ package casa.moller.tandem.core.sync.pantry
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.database.entity.FoodEntity
+import casa.moller.tandem.core.database.entity.KeywordEntity
 import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.makenow.MakeNowFilter
@@ -21,6 +22,9 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.plus
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -70,7 +74,11 @@ class MakeNowSyncTest {
      * `ignore_shopping`, havredryck with mellanmjölk as substitute, kikärtor 2 in Kyl, citronsaft 0,
      * persilja and blåbär 1; the recorded answers of `makenow=0/1/2` and the recipes' ingredients.
      */
-    private suspend fun PantrySyncEnv.contractState(tahiniExpires: String? = null) {
+    private suspend fun PantrySyncEnv.contractState(
+        tahiniExpires: String? = null,
+        chickpeasExpire: String? = null,
+        withDetail: (String) -> Boolean = { true },
+    ) {
         val id = { name: String -> foods.getValue(name) }
         graph.real.referenceDao().replaceFoods(
             ACCOUNT_ID,
@@ -87,7 +95,7 @@ class MakeNowSyncTest {
             },
         )
         val fridge = tandoor.seedLocation("Kyl")
-        tandoor.seedEntry(fridge, "kikärtor", amount = 2.0, withFoodId = id("kikärtor"))
+        tandoor.seedEntry(fridge, "kikärtor", amount = 2.0, expires = chickpeasExpire, withFoodId = id("kikärtor"))
         tandoor.seedEntry(fridge, "citronsaft", amount = 0.0, withFoodId = id("citronsaft"))
         tandoor.seedEntry(fridge, "persilja", amount = 1.0, withFoodId = id("persilja"))
         tandoor.seedEntry(fridge, "blåbär", amount = 1.0, withFoodId = id("blåbär"))
@@ -106,6 +114,7 @@ class MakeNowSyncTest {
             tandoor.makeNow[n] = names.map { byName.getValue(it) }
         }
         for ((name, ingredients) in recipes) {
+            if (!withDetail(name)) continue
             val recipeId = byName.getValue(name).getValue("id").jsonPrimitive.content.toLong()
             val recipe = Recipe(
                 id = recipeId,
@@ -121,6 +130,27 @@ class MakeNowSyncTest {
             )
             graph.real.recipeDao().replaceDetail(ACCOUNT_ID, recipe.toDetailWrite(ACCOUNT_ID, rawJson = "{}", fetchedAtEpochMillis = 1))
         }
+    }
+
+    /** The recorded overviews named [names] (all versions record the same recipes). */
+    private fun PantrySyncEnv.recorded(vararg names: String): List<JsonObject> =
+        (FakePantryTandoor.overviews("recipe-makenow-1", version) + FakePantryTandoor.overviews("recipe-makenow-foods-or", version))
+            .filter { it.getValue("name").jsonPrimitive.content in names }
+            .distinctBy { it.getValue("name").jsonPrimitive.content }
+
+    /** The recorded drink's overview as another recipe [id] named [name], with one keyword (none when [keywordId] is null). */
+    private fun PantrySyncEnv.drinkLike(id: Long, name: String, keywordId: Long?, keywordName: String?): JsonObject {
+        val rioja = FakePantryTandoor.overviews("recipe-search-drink", version)
+            .first { it.getValue("name").jsonPrimitive.content == "Rioja Crianza" }
+        val template = rioja.getValue("keywords").jsonArray.first().jsonObject
+        val keywords = if (keywordId == null || keywordName == null) {
+            emptyList()
+        } else {
+            val label = JsonPrimitive(keywordName)
+            val fields = mapOf("id" to JsonPrimitive(keywordId), "name" to label, "label" to label)
+            listOf(JsonObject(template + fields))
+        }
+        return JsonObject(rioja + mapOf("id" to JsonPrimitive(id), "name" to JsonPrimitive(name), "keywords" to JsonArray(keywords)))
     }
 
     private suspend fun PantrySyncEnv.state(filter: MakeNowFilter = MakeNowFilter()): MakeNowState = withTimeout(15.seconds) {
@@ -154,6 +184,7 @@ class MakeNowSyncTest {
     @Test
     fun aFoodThatExpiresTomorrowLiftsItsRecipeToTheTop() = forEachVersion {
         contractState(tahiniExpires = graph.clock.today().plus(DatePeriod(days = 1)).toString())
+        tandoor.foodsOr[foods.getValue("tahini")] = recorded("Hummus", "Tahinidressing")
         ok(graph.makeNow.refresh(force = true))
 
         val top = state().recipes(MakeNowGroup.HAS_ALL)
@@ -161,6 +192,71 @@ class MakeNowSyncTest {
         assertEquals(listOf("Tahinidressing", "Gröt med blåbär"), top.map { it.recipe.name })
         assertEquals(listOf("tahini"), top.first().expiring.map { it.name })
         assertTrue(top[1].expiring.isEmpty())
+    }
+
+    /** Fas S review (fix-data): the server says which recipes use an expiring food, so no stored detail is needed. */
+    @Test
+    fun anExpiringFoodLiftsRecipesWhoseDetailWasNeverDownloaded() = forEachVersion {
+        val tomorrow = graph.clock.today().plus(DatePeriod(days = 1)).toString()
+        contractState(chickpeasExpire = tomorrow, withDetail = { it != "Hummus" && it != "Falafel" })
+        tandoor.foodsOr[foods.getValue("kikärtor")] = FakePantryTandoor.overviews("recipe-makenow-foods-or", version)
+        ok(graph.makeNow.refresh(force = true))
+
+        val state = state()
+
+        val hummus = state.recipes(MakeNowGroup.MISSING_1).single { it.recipe.name == "Hummus" }
+        val falafel = state.recipes(MakeNowGroup.MISSING_2).single { it.recipe.name == "Falafel" }
+        assertEquals(listOf("kikärtor"), hummus.expiring.map { it.name })
+        assertEquals(listOf("kikärtor"), falafel.expiring.map { it.name })
+        assertTrue(state.recipes(MakeNowGroup.HAS_ALL).all { it.expiring.isEmpty() })
+        // One extra request for the one expiring food (FACTS "Fas S a": makenow=2&foods_or=<food>).
+        val asked = tandoor.requests("GET", "/api/recipe/").map { (call, _) -> call }
+        assertEquals("[$version] $asked", 1, asked.count { "foods_or=${foods.getValue("kikärtor")}" in it })
+        assertEquals(4, asked.size)
+    }
+
+    /** Fas S review (fix-data): drinks under an English root, or tagged only with a type, never show. */
+    @Test
+    fun drinksAreLeftOutByTheDrinksListsOwnRule() = forEachVersion {
+        contractState()
+        graph.real.recipeDao().replaceKeywords(
+            ACCOUNT_ID,
+            listOf(
+                KeywordEntity(ACCOUNT_ID, id = 800, name = "Beverages"),
+                KeywordEntity(ACCOUNT_ID, id = 801, name = "Vin", parentId = 800),
+            ),
+        )
+        val drinks = listOf(drinkLike(9001, "Glögg", 801, "Vin"), drinkLike(9002, "Irish coffee", 800, "Beverages"))
+        tandoor.makeNow[0] = tandoor.makeNow.getValue(0) + drinks
+        ok(graph.makeNow.refresh(force = true))
+
+        val state = state()
+
+        assertEquals(listOf("Gröt med blåbär", "Tahinidressing"), state.names(MakeNowGroup.HAS_ALL))
+        assertTrue(MakeNowGroup.entries.flatMap { state.names(it) }.none { it in setOf("Glögg", "Irish coffee", "Rioja Crianza") })
+    }
+
+    /** Fas S review (fix-data): a "Har allt" recipe without any food (a note) leaves once its detail is fetched in the background. */
+    @Test
+    fun aHasAllRecipeWithoutFoodLeavesOnceItsDetailIsFetched() = forEachVersion {
+        contractState()
+        val note = drinkLike(9100, "Pannkaksanteckning", null, null)
+        tandoor.makeNow[0] = tandoor.makeNow.getValue(0) + note
+        val detail = Json.parseToJsonElement(TandoorFixtures.exchange("fas-s/recipe-create-drink-empty-steps", version).body!!).jsonObject
+        val fields = mapOf("id" to JsonPrimitive(9100), "name" to JsonPrimitive("Pannkaksanteckning"), "keywords" to JsonArray(emptyList()))
+        val answer = JsonObject(detail + fields)
+        graph.server.respond("GET", "/api/recipe/9100/") { FakePantryTandoor.json(200, answer) }
+        ok(graph.makeNow.refresh(force = true))
+
+        val after = withTimeout(15.seconds) {
+            graph.makeNow.observe(MakeNowFilter(), graph.clock.today()).first { state ->
+                state.names(MakeNowGroup.HAS_ALL).isNotEmpty() && "Pannkaksanteckning" !in state.names(MakeNowGroup.HAS_ALL)
+            }
+        }
+
+        assertEquals(listOf("Gröt med blåbär", "Tahinidressing"), after.names(MakeNowGroup.HAS_ALL))
+        assertTrue(graph.real.makeNowDao().hasDetail(ACCOUNT_ID, 9100))
+        assertEquals(1, graph.server.requestsTo("GET", "/api/recipe/9100/").size)
     }
 
     @Test

@@ -33,6 +33,28 @@ class DrinkIndexTest {
 
     private val index = DrinkIndex.build(keywords, links)
 
+    /** Fas S review (fix-data): one rule for "is a drink" (Kan laga nu uses it too), also for an English root. */
+    @Test
+    fun aDrinkKeywordIsARootOrAChildOfOneWhateverItsName() {
+        assertTrue(index.isDrinkKeyword(1, "Dryck"))
+        assertTrue(index.isDrinkKeyword(2, "Vin"))
+        assertFalse(index.isDrinkKeyword(5, "Rioja Crianza"))
+        assertFalse(index.isDrinkKeyword(7, "Middag"))
+        // Not in the index yet: its own parent or name decides.
+        assertTrue(index.isDrinkKeyword(99, "Rosé", parentId = 1))
+        assertTrue(index.isDrinkKeyword(98, "Beverages"))
+        assertFalse(index.isDrinkKeyword(97, "Pasta"))
+
+        val english = DrinkIndex.build(
+            listOf(DrinkKeywordNode(10, "Beverages"), DrinkKeywordNode(11, "Vin", parentId = 10), DrinkKeywordNode(12, "Middag")),
+            emptyMap(),
+        )
+        // A cocktail tagged only "Beverages > Vin", and one only with the root.
+        assertTrue(english.isDrink(500, listOf(DrinkKeywordNode(11, "Vin"))))
+        assertTrue(english.isDrink(501, listOf(DrinkKeywordNode(10, "Beverages"))))
+        assertFalse(english.isDrink(502, listOf(DrinkKeywordNode(12, "Middag"))))
+    }
+
     @Test
     fun drinksAreRecipesWithDryckOrOneOfItsChildren() {
         assertEquals(setOf(100L, 101L, 102L), index.drinkIds)

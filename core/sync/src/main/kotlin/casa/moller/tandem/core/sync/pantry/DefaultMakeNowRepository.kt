@@ -7,12 +7,14 @@ import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.IngredientEntity
 import casa.moller.tandem.core.database.entity.MakeNowEntity
+import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toModel
+import casa.moller.tandem.core.domain.drink.DrinkIndex
+import casa.moller.tandem.core.domain.drink.DrinkKeywordNode
 import casa.moller.tandem.core.domain.pantry.FoodAvailability
 import casa.moller.tandem.core.domain.pantry.MakeNowGroups
 import casa.moller.tandem.core.domain.pantry.MissingIngredients
 import casa.moller.tandem.core.domain.pantry.UseUpRanking
-import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
@@ -31,6 +33,8 @@ import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.drink.observeDrinkIndex
+import casa.moller.tandem.core.sync.drink.readDrinkIndex
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
@@ -86,14 +90,20 @@ import kotlinx.serialization.json.put
  * - **When:** on open (collecting [observe]), after a change of the pantry or "har hemma" (a local
  *   write, a sent outbox row, a read that brought someone else's change), at most once a minute
  *   unless forced (plan 4.1; three requests of 100 per page, through the RateLimiter like every call).
- * - **Not shown:** drinks (a recipe with the keyword `Dryck`; a recipe without ingredients is always
- *   in `makenow=0`) and recipes whose downloaded detail has no food at all.
+ * - **Not shown:** drinks (core:domain `DrinkIndex`, the rule of the drinks list: a root of the drinks
+ *   such as `Dryck` or `Beverages`, or one of its children; a recipe without ingredients is always
+ *   in `makenow=0`) and recipes whose downloaded detail has no food at all. A "Har allt" recipe
+ *   whose detail is not stored is fetched in the background (at most [MAX_PENDING_DETAILS] per
+ *   refresh), so one without any food leaves the list (Fas S review, fix-data).
  * - **Missing foods** are computed on the device with core:domain [MissingIngredients] from the
  *   stored detail against "har hemma", the household's stock and substitutes; a detail that is not
  *   stored is fetched only when [missingFoods] asks for it (a row is shown), at most
  *   [MAX_PENDING_DETAILS] at a time, through `DetailFetcher`'s background queue.
  * - **Order:** "Använd upp" first (core:domain [UseUpRanking]: a food expiring within 3 days), then
- *   by name like the server's list.
+ *   by name like the server's list. Which recipes use an expiring food is asked the server too
+ *   (`recipe?makenow=2&foods_or=<food>`, FACTS "Fas S a", one request per expiring food, at most
+ *   [MAX_USE_UP_FOODS]) and stored per account, so a recipe whose detail was never downloaded is
+ *   lifted as well (Fas S review, fix-data).
  * - **Demo mode:** the groups are computed from the demo recipes and the demo pantry; no network.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -117,6 +127,9 @@ internal class DefaultMakeNowRepository @Inject constructor(
     /** "Överraska mig"; tests make it predictable. */
     internal var random: Random = Random.Default
 
+    /** Fas S review (fix-data): one background detail round at a time per process. */
+    private val prefetching = Mutex()
+
     private val collator: Collator = Collator.getInstance(Locale.getDefault())
 
     override fun observe(filter: MakeNowFilter, today: LocalDate): Flow<MakeNowState> = sources.source
@@ -124,13 +137,17 @@ internal class DefaultMakeNowRepository @Inject constructor(
             if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(MakeNowState())
             channelFlow {
                 // On open, and after every change of the pantry (at most once a minute, the newest change wins).
-                launch { refreshSource(source, force = false, background = true) }
+                launch {
+                    refreshSource(source, force = false, background = true)
+                    prefetchDetails(source)
+                }
                 launch {
                     changes.changes.filter { it == source.accountId }.collectLatest {
                         val last = status.value[source.accountId]?.lastFetchMillis
                         val wait = if (last == null) 0 else last + MIN_INTERVAL_MILLIS - clock.nowMillis()
                         if (wait > 0) delay(wait.coerceAtMost(MIN_INTERVAL_MILLIS))
                         refreshSource(source, force = false, background = true)
+                        prefetchDetails(source)
                     }
                 }
                 state(source, filter, today).collect { send(it) }
@@ -220,6 +237,7 @@ internal class DefaultMakeNowRepository @Inject constructor(
                 is Outcome.Success -> answers[group.missing] = listed.value.items
             }
         }
+        val useUp = useUpFromServer(remote, background)
         if (sources.source.value.identity != remote.identity) return Outcome.Success(Unit)
         val groups = MakeNowGroups.fromServer(answers.mapValues { (_, items) -> items.mapNotNull { it.id } })
         val database = databases.get(remote.kind)
@@ -231,7 +249,68 @@ internal class DefaultMakeNowRepository @Inject constructor(
             database.recipeDao().upsertOverviews(remote.accountId, writes)
         }
         store(database, remote.accountId, groups)
+        if (useUp != null) {
+            val row = SyncStateEntity(accountId = remote.accountId, entity = USE_UP_KEY, hash = UseUpJson.encode(useUp))
+            database.syncStateDao().upsert(row)
+        }
         return Outcome.Success(Unit)
+    }
+
+    /**
+     * Fas S review (fix-data): recipe id → the expiring foods it uses, from the server: one
+     * `recipe?makenow=2&foods_or=<food>` per expiring food of the household (the soonest
+     * [MAX_USE_UP_FOODS]). Null when a request failed (the stored answer stays); best effort, the
+     * groups never wait for it.
+     */
+    private suspend fun useUpFromServer(remote: ActiveSource.Remote, background: Boolean): Map<Long, Set<Long>>? {
+        val entries = pantry.observePantry().first().flatMap { it.entries }
+        val expiring = UseUpRanking.expiringByFood(entries, clock.today()).values
+            .sortedBy { it.expires }
+            .take(MAX_USE_UP_FOODS)
+            .map { it.foodId }
+        val uses = HashMap<Long, MutableSet<Long>>()
+        for (foodId in expiring) {
+            val listed = caller.call(remote, background) {
+                val api: TandoorApi = this
+                Paginator.fetchAll(maxPages = MAX_PAGES) { page ->
+                    val query = RecipeListQuery(
+                        makeNow = MakeNowGroup.MISSING_2.missing,
+                        foodsOr = setOf(foodId),
+                        pageSize = RecipeListQuery.MAX_PAGE_SIZE,
+                    )
+                    api.recipes.list(query, page)
+                }
+            }
+            val items = (listed as? Outcome.Success)?.value?.items ?: return null
+            items.mapNotNull { it.id }.forEach { uses.getOrPut(it) { HashSet() } += foodId }
+        }
+        return uses
+    }
+
+    /**
+     * Fas S review (fix-data): "Har allt" recipes whose detail is not stored, fetched in the background
+     * (at most [MAX_PENDING_DETAILS] a round, `DetailFetcher`'s background queue), so a recipe
+     * without any food (a note, a link) leaves the group and the expiring foods can be named.
+     */
+    private suspend fun prefetchDetails(source: ActiveSource.Stored) {
+        val remote = source as? ActiveSource.Remote ?: return
+        if (!network.online.value || !prefetching.tryLock()) return
+        try {
+            val database = databases.get(remote.kind)
+            val dao = database.makeNowDao()
+            val stored = dao.getDetailIds(remote.accountId).toHashSet()
+            val index = readDrinkIndex(database, remote.accountId, withOutbox = false)
+            val rows = dao.getAll(remote.accountId).filter { it.missingCount == MakeNowGroup.HAS_ALL.missing && it.recipeId !in stored }
+            val overviews = database.recipeDao().getListItems(remote.accountId, rows.map { it.recipeId }).map { it.toModel() }
+                .associateBy { it.id }
+            val wanted = rows.mapNotNull { overviews[it.recipeId] }.filterNot { isDrink(it, index) }.take(MAX_PENDING_DETAILS)
+            for (recipe in wanted) {
+                if (sources.source.value.identity != remote.identity || !network.online.value) return
+                if (details.fetch(remote, recipe.id, isBackground = true) is Outcome.Failure) return
+            }
+        } finally {
+            prefetching.unlock()
+        }
     }
 
     /** Demo mode: the groups computed on the device from every stored detail (the demo recipes). */
@@ -287,32 +366,46 @@ internal class DefaultMakeNowRepository @Inject constructor(
             availabilityOf(foods, entries.stocked()) to entries
         }
         val own = status.map { it[accountId] ?: Status() }.distinctUntilChanged()
-        return combine(inputs, pantryNow, own) { (rows, ingredients, detailIds), (foods, entries), state ->
+        // Drinks by the drinks list's own rule, and which recipes the server says use an expiring food.
+        val drinksAndUseUp = combine(
+            observeDrinkIndex(database, accountId, withOutbox = false),
+            database.syncStateDao().observeOne(accountId, USE_UP_KEY).map { UseUpJson.decode(it?.hash) },
+        ) { index, useUp -> index to useUp }
+        return combine(inputs, pantryNow, own, drinksAndUseUp) { (rows, ingredients, detailIds), (foods, entries), state, (index, useUp) ->
             val items = database.recipeDao().getListItems(accountId, rows.map { it.recipeId }).map { it.toModel() }.associateBy { it.id }
             MakeNowState(
-                groups = groupsOf(rows, items, ingredients, detailIds, foods, entries, filter, today),
+                groups = groupsOf(GroupInputs(rows, items, ingredients, detailIds, foods, entries, index, useUp), filter, today),
                 refreshing = state.refreshing,
                 stale = state.stale,
             )
         }
     }
 
+    /** Everything one computation of the groups reads. */
     @Suppress("LongParameterList") // The state's inputs, combined above.
-    private fun groupsOf(
-        rows: List<MakeNowEntity>,
-        overviews: Map<Long, RecipeOverview>,
-        ingredients: Map<Long, List<IngredientEntity>>,
-        detailIds: Set<Long>,
-        foods: Map<Long, FoodAvailability>,
-        entries: List<InventoryEntry>,
-        filter: MakeNowFilter,
-        today: LocalDate,
-    ): Map<MakeNowGroup, List<MakeNowRecipe>> {
-        val recipeFoods = ingredients.mapValues { (_, list) -> list.mapNotNullTo(HashSet()) { it.foodId } }
-        val byGroup = rows.mapNotNull { row ->
+    private class GroupInputs(
+        val rows: List<MakeNowEntity>,
+        val overviews: Map<Long, RecipeOverview>,
+        val ingredients: Map<Long, List<IngredientEntity>>,
+        val detailIds: Set<Long>,
+        val foods: Map<Long, FoodAvailability>,
+        val entries: List<InventoryEntry>,
+        val drinks: DrinkIndex,
+        val useUp: Map<Long, Set<Long>>,
+    )
+
+    private fun groupsOf(inputs: GroupInputs, filter: MakeNowFilter, today: LocalDate): Map<MakeNowGroup, List<MakeNowRecipe>> {
+        val ingredients = inputs.ingredients
+        val detailIds = inputs.detailIds
+        val foods = inputs.foods
+        // The stored ingredients, plus what the server said about the expiring foods (no detail needed).
+        val recipeFoods = HashMap<Long, Set<Long>>()
+        ingredients.forEach { (id, list) -> recipeFoods[id] = list.mapNotNullTo(HashSet()) { it.foodId } }
+        inputs.useUp.forEach { (id, used) -> recipeFoods[id] = recipeFoods[id].orEmpty() + used }
+        val byGroup = inputs.rows.mapNotNull { row ->
             val group = MakeNowGroup.of(row.missingCount) ?: return@mapNotNull null
-            val recipe = overviews[row.recipeId] ?: return@mapNotNull null
-            if (isDrink(recipe) || !matches(recipe, filter)) return@mapNotNull null
+            val recipe = inputs.overviews[row.recipeId] ?: return@mapNotNull null
+            if (isDrink(recipe, inputs.drinks) || !matches(recipe, filter)) return@mapNotNull null
             val known = row.recipeId in detailIds
             val recipeIngredients = ingredients[row.recipeId].orEmpty()
             // A downloaded recipe without any food (like a drink without ingredients) is always "Har allt": not cooking.
@@ -326,7 +419,7 @@ internal class DefaultMakeNowRepository @Inject constructor(
         }.groupBy { it.group }
         return MakeNowGroup.entries.associateWith { group ->
             val sorted = byGroup[group].orEmpty().sortedWith(compareBy(collator) { it.recipe.name })
-            UseUpRanking.rank(sorted, recipeFoods, entries, today)
+            UseUpRanking.rank(sorted, recipeFoods, inputs.entries, today)
         }
     }
 
@@ -339,7 +432,9 @@ internal class DefaultMakeNowRepository @Inject constructor(
     /** The food ids with stock (amount > 0). */
     private fun List<InventoryEntry>.stocked(): Set<Long> = filter { !it.isEmpty }.mapNotNullTo(HashSet()) { it.food.id }
 
-    private fun isDrink(recipe: RecipeOverview): Boolean = recipe.keywords.any { it.name.equals(DrinkKeywords.DRINK, ignoreCase = true) }
+    /** A drink by the drinks list's rule (core:domain [DrinkIndex]), also before the keywords were read. */
+    private fun isDrink(recipe: RecipeOverview, index: DrinkIndex): Boolean =
+        index.isDrink(recipe.id, recipe.keywords.map { DrinkKeywordNode(it.id, it.name, it.parentId) })
 
     private fun matches(recipe: RecipeOverview, filter: MakeNowFilter): Boolean {
         val keywords = filter.keywordIds
@@ -359,6 +454,12 @@ internal class DefaultMakeNowRepository @Inject constructor(
         /** 100 recipes per page: at most 500 per group. */
         const val MAX_PAGES: Int = 5
 
+        /** The soonest-expiring foods the server is asked about (as on Idag). */
+        const val MAX_USE_UP_FOODS: Int = 4
+
+        /** `sync_state` (Fas S review, fix-data): recipe id → expiring food ids it uses, from `foods_or`. */
+        const val USE_UP_KEY: String = "make_now_use_up"
+
         /** [FoodAvailability] per food from the stored foods and the stocked food ids. */
         fun availabilityOf(foods: List<FoodEntity>, stocked: Set<Long>): Map<Long, FoodAvailability> {
             val map = HashMap<Long, FoodAvailability>()
@@ -376,6 +477,24 @@ internal class DefaultMakeNowRepository @Inject constructor(
             for (id in stocked) map.getOrPut(id) { FoodAvailability(foodId = id, inStock = true) }
             return map
         }
+    }
+}
+
+/** `sync_state` [DefaultMakeNowRepository.USE_UP_KEY]: `{"<recipe id>":[<food id>,…]}`. */
+internal object UseUpJson {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    fun encode(uses: Map<Long, Set<Long>>): String = buildJsonObject {
+        uses.forEach { (recipeId, foods) -> put(recipeId.toString(), JsonArray(foods.sorted().map { JsonPrimitive(it) })) }
+    }.toString()
+
+    fun decode(text: String?): Map<Long, Set<Long>> {
+        val obj = text?.let { runCatching { json.parseToJsonElement(it) }.getOrNull() } as? JsonObject ?: return emptyMap()
+        return obj.mapNotNull { (key, value) ->
+            val recipeId = key.toLongOrNull() ?: return@mapNotNull null
+            val foods = (value as? JsonArray)?.mapNotNullTo(HashSet()) { (it as? JsonPrimitive)?.longOrNull } ?: return@mapNotNull null
+            recipeId to foods
+        }.toMap()
     }
 }
 

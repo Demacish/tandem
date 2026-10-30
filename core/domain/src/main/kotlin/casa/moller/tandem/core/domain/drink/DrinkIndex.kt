@@ -88,6 +88,22 @@ class DrinkIndex private constructor(
 
     fun isDrink(recipeId: Long): Boolean = recipeId in drinkIds
 
+    /**
+     * Fas S review (fix-data): whether a keyword a recipe carries makes it a drink, by the same rule
+     * as [drinkIds]: a root of the drinks ("Dryck", "Drycker", "Beverages") or one of its children
+     * ("Dryck > Vin"). For a keyword the index does not know yet (an overview read before the
+     * keywords), its own [parentId] and [name] decide.
+     */
+    fun isDrinkKeyword(keywordId: Long, name: String, parentId: Long? = null): Boolean {
+        val known = keywords[keywordId]
+        if (known != null) return keywordId in drinkRootIds || known.parentId in drinkRootIds
+        return if (parentId != null) parentId in drinkRootIds else DrinkKeywords.isDrinkRoot(name)
+    }
+
+    /** Whether recipe [recipeId] with [keywords] (`id`, `name`, `parentId`) is a drink: [isDrink], or one of them says so. */
+    fun isDrink(recipeId: Long, keywords: List<DrinkKeywordNode>): Boolean =
+        isDrink(recipeId) || keywords.any { isDrinkKeyword(it.id, it.name, it.parentId) }
+
     fun isPending(keywordId: Long): Boolean = keywordId <= PENDING_ID_LIMIT
 
     /** The type names of a drink ("Vin"), by name. */
