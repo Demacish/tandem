@@ -74,6 +74,8 @@ Levererades i **0.4.0**, före Fas 3 (beslutat 2026-10-29).
 - Inlärd butiksordning, återkommande varor, förslag på veckans matsedel.
 - Notiser när någon i hushållet ändrar listan. Appen kontrollerar i bakgrunden, så ingen extra
   tjänst behövs; snabbare push via en valfri liten tjänst som man kan köra själv.
+- Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
+  kontroll i bakgrunden, går att slå av).
 - Två recept samtidigt i kokläget.
 
 ## Fas 5: Plattform

@@ -102,6 +102,38 @@ class StaplesSyncTest {
         assertEquals(setOf(saffron, tandoor.foodId("kardemumma")), tandoor.onHand.toSet())
     }
 
+    /**
+     * Fas S (komplettering-2): a staple added offline without a food and then unmarked stays
+     * unmarked when the next sync creates its food; marked again, it is marked as before.
+     */
+    @Test
+    fun aStapleUnmarkedWhileItWaitsForItsFoodIsNotMarkedWhenItIsResolved() = forEachVersion {
+        spaceFoods()
+        offline()
+        ok(graph.staples.addStaples(listOf("kardemumma", "saffran")))
+        assertTrue(graph.staples.observeStaples().first().all { it.onHand && it.foodId == null })
+        ok(graph.staples.setOnHand(listOf("kardemumma", "saffran"), onHand = false))
+        ok(graph.staples.setOnHand(listOf("saffran"), onHand = true))
+        val waiting = graph.staples.observeStaples().first().associateBy { it.name }
+        assertFalse(waiting.getValue("kardemumma").onHand)
+        assertTrue(waiting.getValue("saffran").onHand)
+        online()
+
+        ok(graph.staples.resolvePending(graph.remote, background = true))
+        drainAll()
+
+        val cardamom = tandoor.foodId("kardemumma")
+        val saffron = tandoor.foodId("saffran")
+        val staples = graph.staples.observeStaples().first().associateBy { it.name }
+        assertEquals(cardamom, staples.getValue("kardemumma").foodId)
+        assertFalse("[$version]", staples.getValue("kardemumma").onHand)
+        assertTrue("[$version]", staples.getValue("saffran").onHand)
+        assertEquals(listOf(setOf(saffron) to true), batches())
+        assertEquals(setOf(saffron), tandoor.onHand.toSet())
+        // The wish is forgotten once the food is there: from now on the food's own flag counts.
+        assertEquals(null, graph.real.syncStateDao().get(ACCOUNT_ID, DefaultStaplesRepository.UNMARKED_KEY))
+    }
+
     /** Fas S review (fix-data): a switch to another account while a staple's food is created writes nothing there. */
     @Test
     fun anAccountSwitchWhileAFoodIsCreatedNeverWritesIntoTheOtherAccount() = forEachVersion {

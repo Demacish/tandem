@@ -104,6 +104,10 @@ class SyncEngineTest {
         val overviews = server.requestsTo("GET", "/api/recipe/").filter { "page_size=100" in it }
         assertTrue(overviews.isNotEmpty())
         assertTrue(overviews.none { "updatedon_gte" in it })
+        // The status is derived from the engine's state on another coroutine (stateIn), so it may
+        // still say "running" right after run() returns: wait for it instead of reading it at once
+        // (komplettering-2; this assert failed once in CI).
+        waitUntil { !graph.sync.status.value.running }
         assertFalse(graph.sync.status.value.running)
     }
 

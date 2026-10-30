@@ -92,6 +92,8 @@ offline. Import av recept, receptredigering, widgets och dra och släpp kommer i
   till när fotot inte går att läsa i stället för att spara utan det; "Rensa appdata" tar också bort
   kamerans originalfoton av nya drycker; dryckesförslagen i Idag och Veckan delar på ett
   dryckesindex.
+  En basvara som lagts till utan nät och sedan avbockats förblir avbockad när den kopplas till sitt
+  livsmedel vid nästa synk (förut markerades den alltid som hemma).
 - **Större app:** textigenkänningen och streckkodsläsaren ingår i appen (de fungerar utan Googles
   tjänster och utan nät), vilket gör APK-filen ungefär 77 MB i stället för 8 MB.
 - **Kvar till senare:** kvittoläsningen är bara prövad på påhittade kvitton, och hur bra den känner

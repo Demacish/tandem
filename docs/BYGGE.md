@@ -890,7 +890,10 @@ bikarbonat, vaniljsocker, kanel, buljongtärning, honung) med svenska och engels
 hittar spacets livsmedel med samma namn (eller plural), annars med ett annat namn för samma basvara
 ("Black pepper" → "svartpeppar"). Att lägga till markerar *har hemma* med `BATCH_ON_HAND` (av och på
 igen före sändning tar ut varandra). En basvara som spacet saknar skapas med `POST food/` när
-enheten är online, annars vid nästa synk (`resolvePending`). `markSuggestionsShown` är en
+enheten är online, annars vid nästa synk (`resolvePending`). Medan en basvara väntar på sitt
+livsmedel minns telefonen användarens senaste val (`sync_state` `pantry_staples_unmarked`, en
+JSON-lista med namnnycklarna som bockats av; komplettering-2): den visas med det valet, och
+`resolvePending` markerar livsmedlet bara om basvaran fortfarande ska vara hemma. `markSuggestionsShown` är en
 enhetsinställning (`sync_state` `pantry_staples_suggested`). UI:t kan visa
 `StapleCatalog.suggestions` (`displayName("sv"|"en")`) eller egna strängar.
 
@@ -1298,6 +1301,22 @@ proxy eller kompatibel server och för röktestet), och texten om vart fotot gå
 från användarens eget konto. Standardmodeller: `claude-opus-5-5` (Claude), `gemini-2.5-flash-lite`
 (Gemini), `gpt-5-nano` (OpenAI). Modell och bas-URL sparas per tjänst.
 
+*Varför de här standardmodellerna* (B22: Gemini och OpenAI som Tandoors AI-import; kontrollerat
+mot Tandoors publika källkod och dokumentation i komplettering-2): Tandoor har ingen
+standardmodell på servern, man väljer modell när man skapar en AI-leverantör. Webbens
+leverantörsredigerare (`vue3/src/components/model_editors/AiProviderEditor.vue`) föreslår de
+modeller som enligt `docs/features/ai.md` "har testats och fungerar med Tandoor": i 2.6.13
+`gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gpt-5`, `gpt-5-mini` och `gpt-5-nano`;
+i 2.7.1/2.7.2 samma OpenAI-modeller och Gemini som `gemini-pro-latest`, `gemini-flash-latest` och
+`gemini-flash-lite-latest`. Dokumentationens exempel (`gemini-2.5-flash`, `gpt5.2-mini`) är bara
+exempel, och `gpt5.2-mini` finns inte i listan (OpenAI:s modell-id har bindestreck). Appen tar
+därför den **minsta testade modellen** hos varje tjänst: kostnaden dras från användarens eget
+konto, och att känna igen varor i ett kylskåp kräver ingen större modell. Gemini fästs på
+`gemini-2.5-flash-lite` (ur 2.6.13:s lista) i stället för aliaset `gemini-flash-lite-latest`, så att
+modellen inte byts under användaren. Den som vill ha en större modell skriver något annat namn ur
+listan (t.ex. `gemini-2.5-flash`, `gemini-flash-latest`, `gpt-5-mini`) i fältet Modell; det sparas
+per tjänst.
+
 **Nyckeln** (B22): `core:datastore` `EncryptedAiKeyStore` (`files/datastore/secure_ai_keys.pb`, ett
 dokument krypterat med samma Keystore-AEAD som kontona, associated data bunden till filen; den
 anropar **aldrig** `AeadProvider.reset`, eftersom nyckeluppsättningen delas med kontona: ett oläsligt
@@ -1458,11 +1477,11 @@ Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
   levande bilder) prövas bara på en riktig telefon; röktestet går via galleriet. "80 % rätt andra
   gången samma butik används" är bara visat med syntetiska kvitton och inlärda alias, inte mätt på
   riktiga kvitton. Gemini och OpenAI är byggda efter dokumentationen och prövas bara mot falska
-  servrar (inga riktiga AI-anrop i CI; sedan kompletteringen också i röktestet under R8). En
-  basvara som lagts till offline utan livsmedel markeras alltid som hemma när den löses; ML Kits
+  servrar (inga riktiga AI-anrop i CI; sedan kompletteringen också i röktestet under R8). ML Kits
   fullständiga licenstexter (1–2 MB) ligger inte i appen, bara komponentnamnen och länken.
   (Syskon- och barnersättningar i lagret, `POST food/` med ett befintligt namn och typernas
-  ordning med engelska rättades i "Komplettering av Fas S".)
+  ordning med engelska rättades i "Komplettering av Fas S"; basvaran som markerades som hemma
+  fast den avbockats offline rättades i komplettering-2.)
 <!-- /Fas S integration -->
 
 <!-- Fas S fix-data -->
@@ -1632,8 +1651,37 @@ AI-nyckel (fortfarande 0.4.0, före taggningen):
   "Prestanda". Profilgeneratorn föll första gången när emulatorn dog (ingen profil skriven) och
   gick igenom vid omkörning.
 - **Inte gjort (Fas 4):** den valfria notisen "X går ut i morgon – n recept" (kanalen
-  Måltidspåminnelser, plan §8.8) skjuts till Fas 4 med de andra notiserna.
+  Måltidspåminnelser, plan §8.8) skjuts till Fas 4 med de andra notiserna (står i ROADMAP:s Fas 4
+  sedan komplettering-2).
 <!-- /Fas S komplettering-1 -->
+
+<!-- Fas S komplettering-2 -->
+## Komplettering av Fas S, del 2 (0.4.0, komplettering-2)
+
+Fullständighetskontrollens andra omgång (fortfarande 0.4.0, före taggningen), utan telefon eller
+riktig AI-nyckel:
+
+- **Tandoor-bevakningen** kördes för hand (`workflow_dispatch`) på `main` efter komplettering-1, så
+  att de nya kontraktsfakta (`POST food/` med ett befintligt namn, nästlade namnbyten,
+  `substituteTree`) också prövats mot 2.6.15, 2.7.2 och `latest`, inte bara 2.6.13 och 2.7.1.
+- **Basvaror offline:** en basvara som lagts till utan nät (inget livsmedel än) och sedan bockats av
+  markerades ändå som hemma när nästa synk skapade eller hittade livsmedlet. `DefaultStaplesRepository`
+  minns nu valet i `sync_state` `pantry_staples_unmarked` (ingen schemaändring), visar det medan
+  basvaran väntar, och `resolvePending` markerar bara de basvaror som fortfarande ska vara hemma.
+  En avbockad basvara lämnar livsmedlet som hushållet har det: appen avmarkerar aldrig ett livsmedel
+  som en annan telefon markerat, eftersom användaren bara såg basvaran. En basvara som tas bort
+  medan dess livsmedel skapas läggs inte tillbaka. Test:
+  `StaplesSyncTest.aStapleUnmarkedWhileItWaitsForItsFoodIsNotMarkedWhenItIsResolved` (2.6.13 och
+  2.7.1).
+- **AI-standardmodellerna** motiveras under "Foto av kylen och Inställningar → AI" (Tandoors testade
+  modellista, den minsta per tjänst); `AiProvider` är oförändrad.
+- **Notisen** "X går ut i morgon – n recept" (plan §8.8, valfri) byggs inte i 0.4.0. Den står i
+  ROADMAP:s Fas 4 med de andra notiserna (en daglig WorkManager-kontroll, `POST_NOTIFICATIONS` och
+  en inställning för att slå av den).
+- **Instabilt test:** `SyncEngineTest.firstSyncStoresTheIndexOverviewsAndSmallTablesAndReportsProgress`
+  läste `SyncRepository.status` direkt efter `run()`, men statusen härleds på en annan korutin
+  (`stateIn`) och kunde fortfarande säga "kör". Testet väntar nu tills den gör det inte längre.
+<!-- /Fas S komplettering-2 -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)

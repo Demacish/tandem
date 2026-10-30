@@ -38,7 +38,13 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
@@ -51,6 +57,11 @@ import kotlinx.serialization.json.put
  * for is created by name (`POST /api/food/`) when online and then marked; offline it waits without
  * a food until the next sync ([resolvePending], the pantry's sync step) does both. Guests get
  * `DataProblem.READ_ONLY`; demo mode marks the demo database only.
+ *
+ * Fas S (komplettering-2): a staple still waiting for its food keeps the user's latest wish
+ * ("har hemma" or not) in `sync_state` ([UNMARKED_KEY]: the name keys unmarked while waiting). It
+ * shows that wish, and [resolvePending] marks the food only when the wish is still "har hemma";
+ * before, a staple unmarked offline was always marked when its food arrived.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -71,11 +82,17 @@ internal class DefaultStaplesRepository @Inject constructor(
             if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(emptyList<Staple>())
             val database = databases.get(source.kind)
             val staples = database.stapleDao().observeStaples(source.accountId)
-            combine(staples, database.supermarketDao().observeFoods(source.accountId)) { chosen, foods ->
+            val unmarked = database.syncStateDao().observeOne(source.accountId, UNMARKED_KEY).map { unmarkedKeys(it) }
+            combine(staples, database.supermarketDao().observeFoods(source.accountId), unmarked) { chosen, foods, off ->
                 val byId = foods.associateBy { it.id }
                 chosen.map { staple ->
-                    val food = staple.foodId?.let { byId[it] }
-                    Staple(name = staple.name, foodId = staple.foodId, onHand = food?.onHand == true)
+                    val onHand = if (staple.foodId == null) {
+                        // Waiting for its food: the user's latest wish (komplettering-2).
+                        staple.nameKey !in off
+                    } else {
+                        byId[staple.foodId]?.onHand == true
+                    }
+                    Staple(name = staple.name, foodId = staple.foodId, onHand = onHand)
                 }
             }
         }
@@ -110,6 +127,7 @@ internal class DefaultStaplesRepository @Inject constructor(
                 StapleEntity(source.accountId, StapleCatalog.normalize(name), name, StapleCatalog.matchFood(name, foods), now)
             }
             database.stapleDao().upsertStaples(rows)
+            setUnmarked(database, source.accountId, rows.map { it.nameKey }, unmarked = false)
             setOnHandLocked(source, database, rows.mapNotNull { it.foodId }, onHand = true)
         }
         if (stored is Outcome.Failure) return stored
@@ -120,19 +138,26 @@ internal class DefaultStaplesRepository @Inject constructor(
 
     override suspend fun removeStaple(name: String): Outcome<Unit> = write { source, database ->
         // Only the device's list: the food stays "har hemma" until it is unmarked.
-        database.stapleDao().deleteStaple(source.accountId, StapleCatalog.normalize(name))
+        val key = StapleCatalog.normalize(name)
+        database.stapleDao().deleteStaple(source.accountId, key)
+        setUnmarked(database, source.accountId, listOf(key), unmarked = false)
     }
 
     override suspend fun setOnHand(names: List<String>, onHand: Boolean): Outcome<Unit> = write { source, database ->
         val keys = names.mapTo(HashSet()) { StapleCatalog.normalize(it) }
-        val foodIds = database.stapleDao().getStaples(source.accountId).filter { it.nameKey in keys }.mapNotNull { it.foodId }
-        setOnHandLocked(source, database, foodIds, onHand)
+        val chosen = database.stapleDao().getStaples(source.accountId).filter { it.nameKey in keys }
+        // A staple still waiting for its food remembers the wish for [resolvePending].
+        setUnmarked(database, source.accountId, chosen.filter { it.foodId == null }.map { it.nameKey }, unmarked = !onHand)
+        setOnHandLocked(source, database, chosen.mapNotNull { it.foodId }, onHand)
     }
 
     /**
      * Staples without a food (added offline, or a name the space did not know): matched again
      * against the stored foods, else created by name on the server (`POST /api/food/`); then marked
-     * "har hemma". Called after adding and by the pantry's sync step. Never for guests or demo mode.
+     * "har hemma" unless the user unmarked the staple while it waited (komplettering-2): such a food
+     * is left as the household has it, never unmarked on the server, because the user only ever saw
+     * the staple, not the food. Called after adding and by the pantry's sync step. Never for guests
+     * or demo mode.
      */
     suspend fun resolvePending(remote: ActiveSource.Remote, background: Boolean): Outcome<Unit> = catchingUnexpected {
         val database = databases.get(remote.kind)
@@ -158,8 +183,15 @@ internal class DefaultStaplesRepository @Inject constructor(
         writes.withLock {
             if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
             database.pantryDao().inTransaction {
-                database.stapleDao().upsertStaples(resolved)
-                setOnHandLocked(remote, database, resolved.mapNotNull { it.foodId }, onHand = true)
+                // Read inside the lock: an unmark while the food was being created counts.
+                val off = unmarkedKeys(database.syncStateDao().get(accountId, UNMARKED_KEY))
+                val current = database.stapleDao().getStaples(accountId).associateBy { it.nameKey }
+                // A staple removed while its food was being created stays removed.
+                val stillChosen = resolved.filter { current[it.nameKey]?.foodId == null && it.nameKey in current }
+                database.stapleDao().upsertStaples(stillChosen)
+                setUnmarked(database, accountId, stillChosen.map { it.nameKey }, unmarked = false)
+                val marked = stillChosen.filter { it.nameKey !in off }
+                setOnHandLocked(remote, database, marked.mapNotNull { it.foodId }, onHand = true)
             }
         }
         if (sources.source.value.identity == remote.identity) scheduler.scheduleOutbox()
@@ -175,6 +207,28 @@ internal class DefaultStaplesRepository @Inject constructor(
         val row = (created as Outcome.Success).value.toEntity(remote.accountId) ?: return Outcome.Success(null)
         databases.get(remote.kind).referenceDao().upsertFoods(listOf(row))
         return Outcome.Success(row.id)
+    }
+
+    /** The name keys in the [UNMARKED_KEY] row (a JSON array in `hash`); empty for no row or a broken one. */
+    private fun unmarkedKeys(row: SyncStateEntity?): Set<String> {
+        val text = row?.hash ?: return emptySet()
+        return runCatching { Json.parseToJsonElement(text).jsonArray.mapNotNullTo(HashSet()) { it.jsonPrimitive.contentOrNull } }
+            .getOrDefault(emptySet())
+    }
+
+    /** Adds ([unmarked]) or removes [keys] in the [UNMARKED_KEY] row; the row goes when it is empty. */
+    private suspend fun setUnmarked(database: TandemDatabase, accountId: String, keys: List<String>, unmarked: Boolean) {
+        if (keys.isEmpty()) return
+        val states = database.syncStateDao()
+        val before = unmarkedKeys(states.get(accountId, UNMARKED_KEY))
+        val after = if (unmarked) before + keys else before - keys.toSet()
+        if (after == before) return
+        if (after.isEmpty()) {
+            states.delete(accountId, UNMARKED_KEY)
+        } else {
+            val json = JsonArray(after.sorted().map { JsonPrimitive(it) }).toString()
+            states.upsert(SyncStateEntity(accountId = accountId, entity = UNMARKED_KEY, hash = json))
+        }
     }
 
     /** The foods staples are matched against (the account's food list). */
@@ -229,5 +283,11 @@ internal class DefaultStaplesRepository @Inject constructor(
     companion object {
         /** `sync_state`: the first-time staple suggestions were shown or dismissed on this device. */
         const val SUGGESTIONS_KEY: String = "pantry_staples_suggested"
+
+        /**
+         * `sync_state`: staples unmarked while they still wait for their food (komplettering-2),
+         * a JSON array of name keys in `hash`.
+         */
+        const val UNMARKED_KEY: String = "pantry_staples_unmarked"
     }
 }
