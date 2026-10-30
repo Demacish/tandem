@@ -233,6 +233,11 @@ class ShoppingScreenshotTest {
     @Config(qualifiers = TABLET)
     fun listUnpackTabletDark() = capture("tablet_shopping_unpack_dark", ShoppingShot.LIST_UNPACK, darkTheme = true)
 
+    /** Fas S (integration): the "Packa upp" card in both tablet orientations. */
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun listUnpackTabletPortrait() = capture("tablet_portrait_shopping_unpack_light_sv", ShoppingShot.LIST_UNPACK)
+
     private fun capture(
         name: String,
         shot: ShoppingShot,

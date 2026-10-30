@@ -95,6 +95,11 @@ class PantryScreenshotTest {
     @Config(qualifiers = "sv-$TABLET")
     fun entryTablet() = capture("tablet_pantry_entry_light_sv", PantryShot.ENTRY_NEW)
 
+    /** Fas S (integration): every new screen in both tablet orientations (plan §10 Fas S "Surfplatta"). */
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun entryTabletPortraitDark() = capture("tablet_portrait_pantry_entry_dark_sv", PantryShot.ENTRY_EDIT, darkTheme = true)
+
     @Test
     fun unpack() = capture("phone_unpack_light_sv", PantryShot.UNPACK)
 
@@ -110,6 +115,10 @@ class PantryScreenshotTest {
     fun unpackTabletPortrait() = capture("tablet_portrait_unpack_light_sv", PantryShot.UNPACK)
 
     @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun unpackTablet() = capture("tablet_unpack_dark_sv", PantryShot.UNPACK, darkTheme = true)
+
+    @Test
     fun staples() = capture("phone_staples_light_sv", PantryShot.STAPLES)
 
     @Test
@@ -118,6 +127,14 @@ class PantryScreenshotTest {
 
     @Test
     fun staplesGuest() = capture("phone_staples_guest_dark_sv", PantryShot.STAPLES_GUEST, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun staplesTablet() = capture("tablet_staples_light_sv", PantryShot.STAPLES)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun staplesTabletPortraitDark() = capture("tablet_portrait_staples_dark_sv", PantryShot.STAPLES, darkTheme = true)
 
     @Test
     fun makeNow() = capture("phone_make_now_light_sv", PantryShot.MAKE_NOW)

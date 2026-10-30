@@ -108,6 +108,12 @@ class DrinkScreenshotTest {
     @Config(qualifiers = "sv-$TABLET")
     fun detailWithPairingsTablet() = capture("tablet_detail_pairings_light_sv", DrinkShot.DETAIL_WITH_PAIRINGS)
 
+    /** Fas S (integration): the recipe with "Passar med" in both tablet orientations. */
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun detailWithPairingsTabletPortraitDark() =
+        capture("tablet_portrait_detail_pairings_dark_sv", DrinkShot.DETAIL_WITH_PAIRINGS, darkTheme = true)
+
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun pickerForADish() = capture("phone_pairing_picker_light_sv", DrinkShot.PICKER_DISH)
