@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.pantry
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -101,6 +102,27 @@ class PantryScreensTest {
         assertTrue(PantryAction.AddEntry(null) in actions)
     }
 
+    /** Fas S (integration): with an AI key the empty pantry offers the fridge photo too (the chips need a stored item). */
+    @Test
+    fun theEmptyPantryOffersTheFridgePhotoWhenItIsSetUp() {
+        val actions = mutableListOf<PantryAction>()
+        composeRule.setContent {
+            PantryTestTheme {
+                PantryScreen(state = PantryStates.hemma(entries = emptyList(), fridgePhoto = true), onAction = { actions += it })
+            }
+        }
+        composeRule.onAllNodesWithText(FRIDGE_PHOTO_SV).onFirst().performClick()
+        assertTrue(PantryAction.OpenScanner(PantryScanner.FRIDGE, null) in actions)
+    }
+
+    @Test
+    fun theEmptyPantryHasNoFridgePhotoWithoutAKey() {
+        composeRule.setContent {
+            PantryTestTheme { PantryScreen(state = PantryStates.hemma(entries = emptyList()), onAction = {}) }
+        }
+        composeRule.onAllNodesWithText(FRIDGE_PHOTO_SV).assertCountEquals(0)
+    }
+
     @Test
     fun onHandFoodsCanBeTakenOffWithTalkBack() {
         val actions = mutableListOf<PantryAction>()
@@ -145,3 +167,5 @@ class PantryScreensTest {
         assertTrue(MakeNowAction.SelectGroup(MakeNowGroup.HAS_ALL) in actions)
     }
 }
+
+private const val FRIDGE_PHOTO_SV = "Foto av kylen (experimentell)"

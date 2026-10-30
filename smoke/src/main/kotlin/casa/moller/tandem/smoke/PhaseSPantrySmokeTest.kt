@@ -84,8 +84,8 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
         val amount = app.waitForNode("the amount field") { it.viewIdResourceName == ENTRY_AMOUNT }
         assertTrue("Amount not typed", app.setNodeText(amount, "2"))
         app.capture("phaseS-pantry-entry-offline")
-        app.waitForNode("an enabled Save") { it.viewIdResourceName == ENTRY_SAVE && it.isEnabled }
-            .performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        // UiAutomator's view of the button (the accessibility cache can report it disabled after it was enabled).
+        app.waitFor(By.res(ENTRY_SAVE).enabled(true)).click()
 
         val milk = app.waitForNode("the new milk row") { it.contentDescription?.toString()?.startsWith("Mjölk, 2") == true }
         val described = milk.contentDescription?.toString().orEmpty()

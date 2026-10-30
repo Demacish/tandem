@@ -348,6 +348,16 @@ private fun EmptyPantry(state: PantryUiState, onAction: (PantryAction) -> Unit) 
                 leadingIcon = PantryIcons.Receipt,
                 modifier = Modifier.fillMaxWidth(),
             )
+            // Fas S (integration): an empty pantry is where the fridge photo helps most; the chips
+            // above only show once something is stored.
+            if (state.fridgePhoto) {
+                TandemSecondaryButton(
+                    text = stringResource(R.string.pantry_scan_fridge),
+                    onClick = { onAction(PantryAction.OpenScanner(PantryScanner.FRIDGE, null)) },
+                    leadingIcon = PantryIcons.Camera,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             // The "Packa upp" card above offers it already when something was checked off today.
             if (state.unpackCount == 0) {
                 TandemSecondaryButton(

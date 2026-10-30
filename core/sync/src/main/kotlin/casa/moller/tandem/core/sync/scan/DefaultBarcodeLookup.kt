@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.sync.scan
 
+import android.util.Log
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.scan.BarcodeLookup
 import casa.moller.tandem.core.data.scan.FoodAliasRepository
@@ -48,7 +49,12 @@ internal class DefaultBarcodeLookup @Inject constructor(
     private val network: NetworkStatus,
     private val clock: SyncClock,
 ) : BarcodeLookup {
-    override suspend fun lookup(ean: String): Outcome<BarcodeLookupResult> = catchingUnexpected {
+    override suspend fun lookup(ean: String): Outcome<BarcodeLookupResult> = lookupOrFailure(ean).also { outcome ->
+        // The error only (its type and a fixed detail), never the code: diagnosable in the device log.
+        if (outcome is Outcome.Failure) Log.w(TAG, "Barcode lookup failed: ${outcome.error}")
+    }
+
+    private suspend fun lookupOrFailure(ean: String): Outcome<BarcodeLookupResult> = catchingUnexpected {
         val code = ean.trim()
         if (!Gtin.isValid(code)) {
             return@catchingUnexpected Outcome.Failure(TandemError.BadRequest(mapOf(FIELD_EAN to emptyList())))
@@ -114,6 +120,7 @@ internal class DefaultBarcodeLookup @Inject constructor(
 
     companion object {
         const val FIELD_EAN: String = "ean"
+        private const val TAG = "TandemBarcode"
         private const val SWEDISH = "sv"
         val FOUND_MAX_AGE: Duration = 30.days
         val NOT_FOUND_MAX_AGE: Duration = 7.days

@@ -83,8 +83,7 @@ class PhaseSScanSmokeTest : Phase2SmokeBase() {
         }
         if (!isParmesanCard(chosenOrSuggested)) app.clickableOf(chosenOrSuggested)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         app.waitForNode("the card with parmesan", predicate = ::isParmesanCard)
-        app.waitForNode("an enabled \"Put in Fridge\"") { it.viewIdResourceName == BARCODE_PRIMARY && it.isEnabled }
-            .performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        app.waitFor(By.res(BARCODE_PRIMARY).enabled(true)).click()
 
         waitForServer("the learned code and the package") {
             val alias = tandoor.pantry.aliases().singleOrNull { it.param1 == FakeOpenFoodFacts.CODE }
