@@ -30,3 +30,16 @@
 # shape that broke v0.0.1. Retrofit service interfaces belong in this package and nowhere else
 # (TandoorApiServicesTest checks TandoorApi; smoke.yml checks the mapping).
 -keep,allowobfuscation interface casa.moller.tandem.core.network.api.**
+
+# --- Fas S (integration): DTOs that are only a suspend function's return type ---------------
+#
+# A Retrofit `suspend fun` returns Object to R8; its response type lives only in the generic
+# signature of the Continuation parameter. A DTO whose value the caller ignores (KeywordMoveDto of
+# `PUT keyword/{id}/move/{parent}/`, RecipeImageDto of the drink photo's `PUT recipe/{id}/image/`)
+# is therefore referenced by no code, and R8 full mode removed the class. Retrofit then failed to
+# build the call BEFORE sending anything (the release smoke test's drink pairing stopped after the
+# keyword POSTs and never moved the keyword or PATCHed the recipe). Keeping every @Serializable
+# class of the DTO package (names may be obfuscated) also keeps its generated serializer through
+# kotlinx.serialization's own rules. smoke.yml checks that each of them is in the R8 mapping.
+-keep,allowobfuscation @kotlinx.serialization.Serializable class casa.moller.tandem.core.network.dto.**
+-keep,allowobfuscation @kotlinx.serialization.Serializable class casa.moller.tandem.core.network.openfoodfacts.**

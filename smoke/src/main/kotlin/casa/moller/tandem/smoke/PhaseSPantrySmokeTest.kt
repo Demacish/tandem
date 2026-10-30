@@ -208,7 +208,9 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
 
         /** Mer → Hemma ("At home"), at its list or its "no places yet" state. */
         fun openHome(app: TandemApp) {
-            app.tap("More")
+            // From another tab; on Mer already (its tab is then not clickable) the list may be scrolled anywhere.
+            if (app.clickableWithText("More").any { app.device.hasObject(it) }) app.tap("More")
+            app.findInList(By.text("At home"))
             app.tap("At home")
             val deadline = SystemClock.uptimeMillis() + Phase2SmokeBase.FIRST_SYNC_TIMEOUT_MS
             while (!app.device.hasObject(By.res(PANTRY_LIST)) && !app.device.hasObject(By.text("No storage places yet"))) {
@@ -217,7 +219,10 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
             }
         }
 
-        /** Hemma's first use creates Fridge, Freezer and Pantry on the server (or offers it). */
+        /**
+         * Hemma's first use creates Fridge, Freezer and Pantry on the server (or offers it). An
+         * empty pantry shows no place names, so the server's state is what is checked.
+         */
         fun waitForDefaultLocations(app: TandemApp, tandoor: FakeTandoor) {
             app.device.findObject(By.text("Add Fridge, Freezer and Pantry"))?.click()
             val deadline = SystemClock.uptimeMillis() + Phase2SmokeBase.DRAIN_TIMEOUT_MS
@@ -226,7 +231,6 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
                 app.device.findObject(By.text("Add Fridge, Freezer and Pantry"))?.click()
                 SystemClock.sleep(Phase2SmokeBase.POLL_MS)
             }
-            app.waitFor(By.text("Fridge"))
         }
 
         /** The pantry's state for the failure report. */

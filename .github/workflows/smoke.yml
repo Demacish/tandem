@@ -210,8 +210,19 @@ jobs:
           ' "$mapping" || { echo "::error::AllauthService.login(AllauthLoginRequestDto) was removed by R8"; failed=1; }
           grep -q '^casa\.moller\.tandem\.core\.network\.dto\.AllauthLoginRequestDto -> ' "$mapping" \
             || { echo "::error::AllauthLoginRequestDto was removed by R8"; failed=1; }
+          # Fas S (integration): every class of the DTO package survives R8 (a DTO used only as a
+          # suspend function's return type was removed, and Retrofit failed before sending).
+          dtos=0
+          for file in core/network/src/main/kotlin/casa/moller/tandem/core/network/dto/*.kt; do
+            pkg="$(sed -n 's/^package[[:space:]]\{1,\}\([A-Za-z0-9_.]*\).*/\1/p' "$file" | head -n 1)"
+            for name in $(grep -oE '^(internal |public )?(data |enum |sealed |value )?class [A-Za-z0-9_]+' "$file" | awk '{print $NF}'); do
+              dtos=$((dtos + 1))
+              grep -q "^${pkg}.${name} -> " "$mapping" || { echo "::error::DTO ${pkg}.${name} was removed by R8"; failed=1; }
+            done
+          done
+          [ "$dtos" -gt 0 ] || { echo "::error::No DTO classes found"; exit 1; }
           [ "$failed" -eq 0 ] || exit 1
-          echo "All ${checked} service interfaces, both password logins and their request bodies are in the mapping."
+          echo "All ${checked} service interfaces, ${dtos} DTO classes, both password logins and their request bodies are in the mapping."
 
       - name: Upload smoke test results
         if: failure()
