@@ -37,8 +37,34 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
     private val recipeKeywords = HashMap<Long, List<Long>>()
     private var nextKeywordId = FIRST_NEW_KEYWORD
 
-    /** Every request this fake answered, as `METHOD path?query` with its body. */
+    /** Every request this fake answered, as `METHOD path?query` with its body (a photo only as a placeholder). */
     val calls: MutableList<Pair<String, String>> = CopyOnWriteArrayList()
+
+    /**
+     * Fas S komplettering: a drink the app created with `POST /api/recipe/` ("Ny dryck"): its id,
+     * name and request body, and what its photo upload (`PUT /api/recipe/{id}/image/`) carried.
+     */
+    data class CreatedDrink(
+        val id: Long,
+        val name: String,
+        val body: JsonObject,
+        val photoContentType: String? = null,
+        val photoPart: Boolean = false,
+        val photoBytes: Long = 0,
+    )
+
+    private val createdDrinks = LinkedHashMap<Long, CreatedDrink>()
+    private var nextRecipeId = FIRST_NEW_RECIPE
+
+    /** The drinks created by the app so far, in order. */
+    @Synchronized
+    fun created(): List<CreatedDrink> = createdDrinks.values.toList()
+
+    /** The names of the keywords [CreatedDrink.body] asked for (by name) or referenced (by id). */
+    @Synchronized
+    fun requestedKeywordNames(drink: CreatedDrink): List<String> = (drink.body["keywords"] as? JsonArray).orEmpty()
+        .mapNotNull { it as? JsonObject }
+        .mapNotNull { entry -> entry.string("name") ?: entry.long("id")?.let { keywords[it]?.name } }
 
     private val keywordTemplate by lazy { template("fas-s/keyword-get-child") }
     private val drinkTemplate by lazy { template("fas-s/recipe-create-drink-empty-steps") }
@@ -96,8 +122,14 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
         ensureKeywords()
         val method = request.method
         val path = request.url.encodedPath
+        // A photo upload is binary: answered (and logged) before the body is read as text.
+        if (method == "PUT" && IMAGE.matches(path)) {
+            calls += "$method $path" to "<multipart, ${request.bodySize} bytes>"
+            return image(IMAGE.find(path)!!.groupValues[1].toLong(), request)
+        }
         val text = request.body?.utf8().orEmpty()
         val response = when {
+            path == RECIPES && method == "POST" -> createRecipe(parse(text))
             path == KEYWORDS -> keywordsAnswer(method, text)
             KEYWORD.matches(path) || MOVE.matches(path) -> keywordAnswer(method, path)
             RECIPE.matches(path) -> recipeAnswer(method, RECIPE.find(path)!!.groupValues[1].toLong(), text, recorded)
@@ -120,9 +152,41 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
         return keywords[KEYWORD.find(path)!!.groupValues[1].toLong()]?.let { json(OK, keywordJson(it)) } ?: notFound("Keyword")
     }
 
+    /**
+     * Fas S komplettering: `POST /api/recipe/` as Tandoor answers a drink ("Ny dryck", FACTS "Fas S
+     * f"): `steps` is required (400 without), the keywords are get-or-create by name (or kept by
+     * id), and the answer is the recorded drink shape with the new id, name and keywords.
+     */
+    private fun createRecipe(body: JsonObject): MockResponse {
+        if (body["steps"] !is JsonArray) {
+            return json(BAD_REQUEST, JsonObject(mapOf("steps" to JsonArray(listOf(JsonPrimitive("This field is required."))))))
+        }
+        val id = nextRecipeId++
+        val name = body.string("name").orEmpty()
+        recipeKeywords[id] = (body["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.map { entry ->
+            entry.long("id")?.takeIf { it in keywords } ?: getOrCreate(entry.string("name").orEmpty()).id
+        }.distinct()
+        createdDrinks[id] = CreatedDrink(id, name, body)
+        return json(CREATED, recipeObject(id) { null }!!)
+    }
+
+    /** `PUT /api/recipe/{id}/image/` (multipart `image`, FACTS "Fas S f"): 200 `{image, image_url}`. */
+    private fun image(id: Long, request: RecordedRequest): MockResponse {
+        val drink = createdDrinks[id] ?: return notFound("Recipe")
+        val type = request.headers["Content-Type"]
+        val head = request.body?.let { body -> body.substring(0, minOf(body.size, MULTIPART_HEAD)).utf8() }.orEmpty()
+        createdDrinks[id] = drink.copy(
+            photoContentType = type?.substringBefore(';'),
+            photoPart = "name=\"image\"" in head && "image/jpeg" in head,
+            photoBytes = request.bodySize,
+        )
+        val body = template("fas-s/recipe-image-put-drink")
+        return json(OK, JsonObject(body + ("image" to JsonPrimitive("/media/recipes/drink-$id.jpg"))))
+    }
+
     /** A recipe this fake changed (or the drink); null for the others, which the recordings answer. */
     private fun recipeAnswer(method: String, id: Long, text: String, recorded: (Long) -> JsonObject?): MockResponse? = when (method) {
-        "GET" -> if (id == DRINK_ID || id in recipeKeywords) recipeJson(id, recorded) ?: notFound("Recipe") else null
+        "GET" -> if (id == DRINK_ID || id in recipeKeywords || id in createdDrinks) recipeJson(id, recorded) ?: notFound("Recipe") else null
         "PATCH" -> patchRecipe(id, parse(text), recorded)
         else -> null
     }
@@ -194,18 +258,21 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
     private fun recordedIds(id: Long, recorded: (Long) -> JsonObject?): List<Long> =
         (recorded(id)?.get("keywords") as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.long("id") }
 
-    private fun recipeJson(id: Long, recorded: (Long) -> JsonObject?): MockResponse? {
-        val base = if (id == DRINK_ID) {
-            JsonObject(drinkTemplate + mapOf("id" to JsonPrimitive(DRINK_ID), "name" to JsonPrimitive(DRINK_NAME), "image" to JsonNull))
+    private fun recipeJson(id: Long, recorded: (Long) -> JsonObject?): MockResponse? = recipeObject(id, recorded)?.let { json(OK, it) }
+
+    private fun recipeObject(id: Long, recorded: (Long) -> JsonObject?): JsonObject? {
+        val drinkName = if (id == DRINK_ID) DRINK_NAME else createdDrinks[id]?.name
+        val base = if (drinkName != null) {
+            JsonObject(drinkTemplate + mapOf("id" to JsonPrimitive(id), "name" to JsonPrimitive(drinkName), "image" to JsonNull))
         } else {
             recorded(id) ?: return null
         }
         val ids = recipeKeywords[id] ?: recordedIds(id, recorded)
-        return json(OK, JsonObject(base + ("keywords" to JsonArray(ids.mapNotNull { keywords[it] }.map { keywordJson(it) }))))
+        return JsonObject(base + ("keywords" to JsonArray(ids.mapNotNull { keywords[it] }.map { keywordJson(it) })))
     }
 
     private fun patchRecipe(id: Long, body: JsonObject, recorded: (Long) -> JsonObject?): MockResponse {
-        if (id != DRINK_ID && recorded(id) == null) return notFound("Recipe")
+        if (id != DRINK_ID && id !in createdDrinks && recorded(id) == null) return notFound("Recipe")
         val list = body["keywords"] as? JsonArray ?: return json(BAD_REQUEST, JsonObject(emptyMap()))
         recipeKeywords[id] = list.mapNotNull { it as? JsonObject }.map { entry ->
             entry.long("id")?.takeIf { it in keywords } ?: getOrCreate(entry.string("name").orEmpty()).id
@@ -267,6 +334,14 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
         const val WINE_KEYWORD = 101L
 
         private const val FIRST_NEW_KEYWORD = 700L
+
+        /** Recipes created by the app get ids from here (the recordings use 1–11 and the drink 40). */
+        private const val FIRST_NEW_RECIPE = 60L
+
+        /** Bytes of a multipart body read for its part header (the JPEG itself is binary). */
+        private const val MULTIPART_HEAD = 512
+        private const val RECIPES = "/api/recipe/"
+        private val IMAGE = Regex("^/api/recipe/(\\d+)/image/$")
         private const val OK = 200
         private const val CREATED = 201
         private const val BAD_REQUEST = 400

@@ -16,6 +16,7 @@ import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.SamplePantry
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.recipes.R
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
@@ -49,6 +50,19 @@ class DrinkViewModelsTest {
     private val dish = SampleRecipes.MushroomPasta.id
     private val rioja = SamplePantry.rioja
 
+    /** The server's Swedish names as a Swedish UI shows them. */
+    private val swedish = TestLabels(Locale.forLanguageTag("sv"), emptyMap())
+
+    /** An English UI: "Vin" is shown as "Wine" (strings of values/strings_drinks.xml). */
+    private val english = TestLabels(
+        Locale.ENGLISH,
+        mapOf("Vin" to "Wine", "Öl" to "Beer", "Cider" to "Cider", "Alkoholfritt" to "Alcohol-free", "Drink" to "Cocktail"),
+    )
+
+    private class TestLabels(override val locale: Locale, private val shown: Map<String, String>) : DrinkTypeLabels {
+        override fun label(name: String): String = shown[name] ?: name
+    }
+
     private fun TestScope.collect(flow: Flow<*>) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect {} }
     }
@@ -64,7 +78,7 @@ class DrinkViewModelsTest {
     @Test
     fun theListFiltersByTypeAndSearchesNameAndNote() = runTest {
         drinks.drinks.value = SamplePantry.drinks + Drink(id = 63, name = "Äppelmust", types = listOf("Alkoholfritt"), note = "Från gården")
-        val vm = DrinksViewModel(null, drinks, permissions, settings)
+        val vm = DrinksViewModel(null, drinks, permissions, settings, swedish)
         collect(vm.uiState)
         assertEquals(listOf("Ljus lager", "Rioja Crianza", "Äppelmust"), vm.uiState.value.drinks.map { it.name })
         assertTrue("Vin" in vm.uiState.value.types)
@@ -81,7 +95,7 @@ class DrinkViewModelsTest {
 
     @Test
     fun aTypeFromTheKeyIsPreselectedAndTheSystembolagetSwitchIsStored() = runTest {
-        val vm = DrinksViewModel("Öl", drinks, permissions, settings)
+        val vm = DrinksViewModel("Öl", drinks, permissions, settings, swedish)
         collect(vm.uiState)
         assertEquals(listOf("Ljus lager"), vm.uiState.value.drinks.map { it.name })
         vm.onAction(DrinksAction.SetSystembolaget(false))
@@ -93,7 +107,7 @@ class DrinkViewModelsTest {
 
     @Test
     fun aPendingDrinkSaysItOpensOnceSent() = runTest {
-        val vm = DrinksViewModel(null, drinks, permissions, settings)
+        val vm = DrinksViewModel(null, drinks, permissions, settings, swedish)
         val effects = effectsOf(vm.effects)
         vm.onAction(DrinksAction.OpenPending)
         assertEquals(listOf(DrinksEffect.Message(R.string.drinks_pending_message)), effects)
@@ -236,11 +250,43 @@ class DrinkViewModelsTest {
         assertTrue(vm.uiState.value.dishes.first { it.item.id == dish }.selected)
     }
 
+    /**
+     * Fas S komplettering (finding 29): the type chips and each drink's types follow the SHOWN label
+     * in the UI's language, not the server's Swedish names; the drinks stay by name.
+     */
+    @Test
+    fun typesAreSortedByTheirLabelInTheUiLanguage() = runTest {
+        drinks.drinks.value = listOf(
+            Drink(id = 70, name = "Öl från gården", types = listOf("Öl")),
+            Drink(id = 71, name = "Cava", types = listOf("Vin", "Drink")),
+            Drink(id = 72, name = "Äppelmust", types = listOf("Alkoholfritt")),
+        )
+        val all = listOf("Alkoholfritt", "Cider", "Drink", "Vin", "Öl")
+
+        val inEnglish = DrinksViewModel(null, drinks, permissions, settings, english)
+        collect(inEnglish.uiState)
+        val shown = inEnglish.uiState.value
+        assertEquals(listOf("Alcohol-free", "Beer", "Cider", "Cocktail", "Wine"), shown.types.filter { it in all }.map(english::label))
+        assertEquals("Cocktail before Wine", listOf("Drink", "Vin"), shown.drinks.single { it.name == "Cava" }.types)
+        // English collation: Ä is an A, Ö an O.
+        assertEquals(listOf("Äppelmust", "Cava", "Öl från gården"), shown.drinks.map { it.name })
+
+        val inSwedish = DrinksViewModel(null, drinks, permissions, settings, swedish)
+        collect(inSwedish.uiState)
+        assertEquals(all, inSwedish.uiState.value.types.filter { it in all })
+        assertEquals(listOf("Cava", "Äppelmust", "Öl från gården"), inSwedish.uiState.value.drinks.map { it.name })
+
+        val create = CreateDrinkViewModel(null, SavedStateHandle(), drinks, recipes, permissions, english)
+        collect(create.uiState)
+        val chips = create.uiState.value.types.filter { it in all }.map(english::label)
+        assertEquals(listOf("Alcohol-free", "Beer", "Cider", "Cocktail", "Wine"), chips)
+    }
+
     // ------------------------------------------------------------------ "Ny dryck"
 
     @Test
     fun aNameIsRequiredAndANewDrinkIsPairedWithItsDish() = runTest {
-        val vm = CreateDrinkViewModel(dish, SavedStateHandle(), drinks, recipes, permissions)
+        val vm = CreateDrinkViewModel(dish, SavedStateHandle(), drinks, recipes, permissions, swedish)
         collect(vm.uiState)
         val effects = effectsOf(vm.effects)
         assertEquals(SampleRecipes.MushroomPasta.name, vm.uiState.value.pairWithName)
@@ -270,7 +316,7 @@ class DrinkViewModelsTest {
     /** Fas S komplettering (fix-ui #23): an unreadable photo is said in the snackbar; the form stays. */
     @Test
     fun anUnreadablePhotoIsSaidAndTheFormStays() = runTest {
-        val vm = CreateDrinkViewModel(null, SavedStateHandle(), drinks, recipes, permissions)
+        val vm = CreateDrinkViewModel(null, SavedStateHandle(), drinks, recipes, permissions, swedish)
         collect(vm.uiState)
         val effects = effectsOf(vm.effects)
         vm.onAction(CreateDrinkAction.SetName("Husets rosé"))
@@ -288,10 +334,10 @@ class DrinkViewModelsTest {
     @Test
     fun theFormSurvivesProcessDeath() = runTest {
         val handle = SavedStateHandle()
-        val first = CreateDrinkViewModel(null, handle, drinks, recipes, permissions)
+        val first = CreateDrinkViewModel(null, handle, drinks, recipes, permissions, swedish)
         first.onAction(CreateDrinkAction.SetName("Cava"))
         first.onAction(CreateDrinkAction.ToggleType("Vin"))
-        val second = CreateDrinkViewModel(null, handle, drinks, recipes, permissions)
+        val second = CreateDrinkViewModel(null, handle, drinks, recipes, permissions, swedish)
         collect(second.uiState)
         assertEquals("Cava", second.uiState.value.name)
         assertEquals(setOf("Vin"), second.uiState.value.selectedTypes)

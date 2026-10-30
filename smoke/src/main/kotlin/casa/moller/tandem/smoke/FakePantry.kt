@@ -153,17 +153,18 @@ class FakePantry(
             BATCH -> batch(parse(text))
             FOODS -> if (method == "POST") createFood(parse(text)) else null
             RECIPES -> request.url.queryParameter("makenow")?.let(::makeNowPage)
-            else -> byId(method, path, parse(text))
+            // Parsed only for the pantry's own paths (a drink photo upload is a binary multipart body).
+            else -> byId(method, path) { parse(text) }
         } ?: return null
         val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()
         calls += "$method $path$query" to text
         return response
     }
 
-    private fun byId(method: String, path: String, body: JsonObject): MockResponse? = when {
-        LOCATION.matches(path) -> locationAnswer(method, LOCATION.find(path)!!.groupValues[1].toLong(), body)
-        ENTRY.matches(path) -> entryAnswer(method, ENTRY.find(path)!!.groupValues[1].toLong(), body)
-        AUTOMATION.matches(path) -> aliasAnswer(method, AUTOMATION.find(path)!!.groupValues[1].toLong(), body)
+    private fun byId(method: String, path: String, body: () -> JsonObject): MockResponse? = when {
+        LOCATION.matches(path) -> locationAnswer(method, LOCATION.find(path)!!.groupValues[1].toLong(), body())
+        ENTRY.matches(path) -> entryAnswer(method, ENTRY.find(path)!!.groupValues[1].toLong(), body())
+        AUTOMATION.matches(path) -> aliasAnswer(method, AUTOMATION.find(path)!!.groupValues[1].toLong(), body())
         else -> null
     }
 

@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.model.drink.Drink
 import casa.moller.tandem.core.model.drink.Pairing
@@ -114,7 +116,30 @@ internal enum class DrinkShot(val content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun DrinkList(state: DrinksUiState) = DrinksScreen(state = state, onAction = {}, onOpenDrink = {}, onCreateDrink = {}, onBack = {})
+private fun DrinkList(state: DrinksUiState) =
+    DrinksScreen(state = inUiOrder(state), onAction = {}, onOpenDrink = {}, onCreateDrink = {}, onBack = {})
+
+/**
+ * Fas S komplettering: the samples in the order the ViewModel gives them in the shot's language
+ * (the types by their shown label, [DrinkTypeLabels]), so an English shot has "Alcohol-free, Beer,
+ * Cider, Cocktail, Wine".
+ */
+@Composable
+private fun labels(): DrinkTypeLabels {
+    val context = LocalContext.current
+    return remember(context) { ResourceDrinkTypeLabels(context) }
+}
+
+@Composable
+private fun inUiOrder(state: DrinksUiState): DrinksUiState {
+    val labels = labels()
+    // The samples' drinks keep their order (the shots predate this); only the types are re-sorted.
+    val drinks = state.drinks.map { it.copy(types = labels.sortedTypes(it.types)) }
+    return state.copy(types = labels.sortedTypes(state.types), drinks = drinks)
+}
+
+@Composable
+private fun inUiOrder(state: CreateDrinkUiState): CreateDrinkUiState = state.copy(types = labels().sortedTypes(state.types))
 
 @Composable
 private fun Section(state: RecipePairingsUiState, canAddToList: Boolean = false) = Surface { SectionContent(state, canAddToList) }
@@ -135,14 +160,14 @@ private fun Picker(state: PairingPickerUiState) = PairingPickerScreen(state = st
 
 @Composable
 private fun Create(state: CreateDrinkUiState) =
-    CreateDrinkScreen(state = state, onAction = {}, onTakePhoto = {}, onPickPhoto = {}, onBack = {})
+    CreateDrinkScreen(state = inUiOrder(state), onAction = {}, onTakePhoto = {}, onPickPhoto = {}, onBack = {})
 
 /** "Drycker" beside an open drink, like the shell's list-detail scene on wide windows. */
 @Composable
 private fun ListDetail() {
     Row {
         DrinksScreen(
-            state = DrinkSamples.list(),
+            state = inUiOrder(DrinkSamples.list()),
             onAction = {},
             onOpenDrink = {},
             onCreateDrink = {},

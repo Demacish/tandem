@@ -30,9 +30,10 @@ import kotlinx.coroutines.launch
 
 /**
  * "Drycker" (#43, plan §8.8): every drink of the household, filtered by type and search, offline
- * from the cached recipes. [types] are the types in use plus the suggested ones.
+ * from the cached recipes. [types] are the types in use plus the suggested ones, sorted by the shown
+ * label in the UI's language ([DrinkTypeLabels]).
  *
- * @property drinks the drinks shown (type and search applied), by name.
+ * @property drinks the drinks shown (type and search applied), by name; each drink's types by their label.
  * @property totalCount drinks before the filters (empty state vs "nothing matches").
  * @property selectedType the type filter (server name, "Vin"), null = all.
  * @property readOnly a guest: no "Ny dryck".
@@ -74,6 +75,7 @@ class DrinksViewModel @AssistedInject constructor(
     private val drinks: DrinkRepository,
     permissions: SpacePermissionsRepository,
     private val settings: SettingsRepository,
+    private val labels: DrinkTypeLabels,
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
@@ -92,7 +94,10 @@ class DrinksViewModel @AssistedInject constructor(
         drinks.observeDrinkTypes(),
         permissions.permissions.map { it.readOnly },
         settings.settings.map { it.systembolagetLinkShown(language) },
-    ) { all, types, readOnly, systembolaget -> Sources(all, types, readOnly, systembolaget) }
+    ) { all, types, readOnly, systembolaget ->
+        // Fas S komplettering: in the order of the shown labels, for the UI's language.
+        Sources(labels.sortedDrinks(all), labels.sortedTypes(types), readOnly, systembolaget)
+    }
 
     val uiState: StateFlow<DrinksUiState> = combine(sources, filter, refreshing) { sources, filter, refreshing ->
         val words = searchWords(filter.query)

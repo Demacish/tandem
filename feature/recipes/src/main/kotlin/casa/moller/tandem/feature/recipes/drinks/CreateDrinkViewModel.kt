@@ -75,6 +75,7 @@ class CreateDrinkViewModel @AssistedInject constructor(
     private val drinks: DrinkRepository,
     recipes: RecipeRepository,
     permissions: SpacePermissionsRepository,
+    private val labels: DrinkTypeLabels,
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
@@ -109,7 +110,7 @@ class CreateDrinkViewModel @AssistedInject constructor(
         CreateDrinkUiState(
             name = form.name,
             note = form.note,
-            types = (types + form.types).distinct(),
+            types = labels.sortedTypes((types + form.types).distinct()),
             selectedTypes = form.types,
             photoUri = form.photo,
             pairWithName = pairWith,

@@ -119,6 +119,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     /** The address to type as Settings → AI's own base URL for [anthropic]. */
     val baseUrl: String get() = origin
 
+    /** Fas S komplettering: fake Gemini and OpenAI endpoints on the same server ([FakeAiServices]). */
+    val aiServices = FakeAiServices()
+
     private val image: ByteArray by lazy { generatedPng() }
 
     /** What the user types as the server address, e.g. `localhost:41234`. */
@@ -159,6 +162,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         }
         // Fas S (ai-foto lane): the fake Anthropic API is not Tandoor (not in [requests]).
         anthropic.answer(request)?.let { return it }
+        aiServices.answer(request)?.let { return it }
         requests += "$method $path"
         val token = request.headers["Authorization"]?.removePrefix("Bearer ")?.trim()
         val loggedIn = token != null && token in VALID_TOKENS && token !in revoked
