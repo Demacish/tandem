@@ -747,7 +747,9 @@ installation). Bara arm64-v8a skulle ta bort ca 35 MB.
 
 **R8:** ML Kit hittar sina komponentregistrarer via manifestets meta-data och skapar dem med en
 konstruktor utan argument, som R8 full mode tog bort ("Could not instantiate … NoSuchMethodException
-`<init>` []" vid varje start, som röktestets loggkontroll fäller). `feature/scan/consumer-rules.pro`
+`<init>` []" när ML Kit startade, som röktestets loggkontroll fäller). Sedan granskningen (fix-ui)
+startar ML Kit först när en skanner används (`MlKitStartup`), inte i `MlKitInitProvider` vid
+varje processtart. `feature/scan/consumer-rules.pro`
 behåller den (`-keep class * implements com.google.firebase.components.ComponentRegistrar
 { <init>(); }`). Anthropic-SDK:n och CameraX behövde inga egna regler; `release.yml`:s torrkörning
 (R8) och röktestet ("OK (9 tests)") är gröna.
@@ -1104,9 +1106,11 @@ Dryckers meny.
 **Dryckesförslag i Idag och Veckan:** `core:ui` `drink/DrinkSuggestion.kt` (`LocalDrinkSuggestion`,
 `DrinkSuggestionSlot`) är en plats som skalet fyller med feature:recipes `drinkSuggestionSlot`
 (`ShellFeatures.drinkSuggestion`, null i skalets tester), eftersom feature:home och
-feature:mealplan inte får se feature:recipes. `TonightCard` och `MealCard` (inte surfplattans
-`MealTile`) visar "Passar med: Rioja Crianza, Kraftigt rött" när det planerade receptet har
-kopplingar; tryck öppnar den första drycken. Utan kopplingar (och i alla tester) ritas inget.
+feature:mealplan inte får se feature:recipes. `TonightCard` och `MealCard` visar "Passar med:
+Rioja Crianza, Kraftigt rött" när det planerade receptet har kopplingar, och surfplattans
+`MealTile` en kompakt rad (`DrinkSuggestion(compact = true)`, en rad med glaset och dryckerna,
+under rutans knapp så att förslaget är en egen TalkBack-punkt; fix-ui); tryck öppnar den första
+drycken som redan skickats (TalkBack säger dess namn). Utan kopplingar (och i alla tester) ritas inget.
 
 **Skalet:** chipet **Drycker** sist i receptlistans samlingsrad (`RecipeCollection.DRINKS`;
 `DrinksKey` ersätter en öppen bok/dryck som de andra samlingarna), `DrinksKey` list-panel och
@@ -1148,8 +1152,9 @@ till appens sida i Androids inställningar, och utan kamera (`UNAVAILABLE`) finn
 skanningsskärm. Skärmarna är tillståndslösa och får förhandsvisningen som en plats (`preview`), så
 skärmbildstesterna ritar `CameraPlaceholder` i stället.
 
-**Streckkod** (`barcode/`, `BarcodeScanViewModel`): kontinuerlig skanning; samma kod tas en gång
-per session och ignoreras tills kameran inte sett den på 3 s (`RESCAN_AFTER_MILLIS`), varje ny kod
+**Streckkod** (`barcode/`, `BarcodeScanViewModel`): kontinuerlig skanning; samma kod ignoreras
+medan kameran ser den (inom 3 s, `RESCAN_AFTER_MILLIS`), och samma kod igen efter det räknas som en
+förpackning till (raden får mängd 2, 3 …, kortet säger "3 st"; fix-ui). Varje ny eller räknad kod
 ger haptik (`HapticFeedbackType.Confirm`) och kortet läses upp (live region). Uppslaget: inlärt
 alias (`FoodAliasRepository.find`, inget anrop) → `BarcodeLookup.lookup` (Open Food Facts, bara
 koden; ett uppslag online läser också om spacets alias, så aliaset kontrolleras igen efteråt och en
