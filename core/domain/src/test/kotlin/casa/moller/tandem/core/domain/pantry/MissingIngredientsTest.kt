@@ -42,6 +42,58 @@ class MissingIngredientsTest {
         assertEquals(listOf("havredryck"), MissingIngredients.missing(listOf(ingredient(1, oatDrink)), neither).map { it.name })
     }
 
+    /**
+     * Fas S komplettering, the contract's `substituteTree` (FACTS "Fas S a"): the beans
+     * (`substitute_children`) are resolved by their child kidney beans, the red lentils
+     * (`substitute_siblings`) by the green lentils under the same parent "linser", in stock or on
+     * hand; amount 0 does not count, the flag decides, and a parent never stands in for its child.
+     */
+    @Test
+    fun childrenAndSiblingsResolveInStockToo() {
+        val beans = Food(10, "bönor")
+        val red = Food(20, "röda linser")
+        fun tree(kidney: FoodAvailability, green: FoodAvailability, lentils: FoodAvailability = FoodAvailability(21)) = mapOf(
+            10L to FoodAvailability(10, substituteChildren = true),
+            11L to kidney,
+            20L to FoodAvailability(20, parentId = 21, substituteSiblings = true),
+            21L to lentils,
+            22L to green,
+        )
+        val recipes = listOf(ingredient(1, beans), ingredient(2, red))
+        fun missing(foods: Map<Long, FoodAvailability>) = MissingIngredients.missing(recipes, foods).map { it.name }
+
+        val nothing = tree(FoodAvailability(11, parentId = 10), FoodAvailability(22, parentId = 21))
+        assertEquals(listOf("bönor", "röda linser"), missing(nothing))
+        val inStock = tree(FoodAvailability(11, parentId = 10, inStock = true), FoodAvailability(22, parentId = 21, inStock = true))
+        assertEquals(emptyList<String>(), missing(inStock))
+        val childOnHand = tree(FoodAvailability(11, parentId = 10, onHand = true), FoodAvailability(22, parentId = 21))
+        assertEquals(listOf("röda linser"), missing(childOnHand))
+
+        // Without the flag the child does not count; the parent in stock never counts for a child.
+        val flagOff = childOnHand + (10L to FoodAvailability(10))
+        assertEquals(listOf("bönor", "röda linser"), missing(flagOff))
+        val parentInStock = tree(
+            FoodAvailability(11, parentId = 10),
+            FoodAvailability(22, parentId = 21),
+            lentils = FoodAvailability(21, inStock = true),
+        )
+        assertEquals(listOf("bönor", "röda linser"), missing(parentInStock))
+    }
+
+    @Test
+    fun aGrandchildCountsAndABrokenTreeEnds() {
+        val foods = mapOf(
+            1L to FoodAvailability(1, substituteChildren = true),
+            2L to FoodAvailability(2, parentId = 1),
+            3L to FoodAvailability(3, parentId = 2, inStock = true),
+            // A cycle in broken data must not loop.
+            4L to FoodAvailability(4, parentId = 5, substituteChildren = true),
+            5L to FoodAvailability(5, parentId = 4),
+        )
+        val recipe = listOf(ingredient(1, Food(1, "bönor")), ingredient(2, Food(4, "trasig")))
+        assertEquals(listOf("trasig"), MissingIngredients.missing(recipe, foods).map { it.name })
+    }
+
     @Test
     fun anIgnoredFoodThatIsARecipeStillCounts() {
         val foods = mapOf(4L to FoodAvailability(4, ignoreShopping = true, isRecipe = true))

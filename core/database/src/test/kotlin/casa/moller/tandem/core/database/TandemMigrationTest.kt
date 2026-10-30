@@ -49,7 +49,7 @@ class TandemMigrationTest {
 
     @Test
     fun everyVersionHasAMigration() {
-        assertEquals(5, TandemDatabase.VERSION)
+        assertEquals(6, TandemDatabase.VERSION)
         assertEquals((1 until TandemDatabase.VERSION).toList(), TandemMigrations.ALL.map { it.startVersion })
     }
 
@@ -244,9 +244,39 @@ class TandemMigrationTest {
         }
     }
 
+    /**
+     * Fas S komplettering: 5 -> 6 adds the food tree; a stored food keeps every value of schema 5
+     * and is a root without sibling or child substitutes until the next sync.
+     */
+    @Test
+    fun versionFiveMigratesToSixWithARootFood() = runTest {
+        helper.createDatabase(5).apply {
+            execSQL(
+                "INSERT INTO food (account_id, id, name, plural_name, on_hand, ignore_shopping, supermarket_category_id, " +
+                    "substitute_on_hand, substitute_ids, recipe_id) VALUES ('$ACCOUNT_A', 7, 'bönor', NULL, 0, 0, NULL, 1, '[8]', NULL)",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(6, TandemMigrations.ALL).close()
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            val food = database.referenceDao().getFoods(ACCOUNT_A).single()
+            assertEquals("bönor", food.name)
+            assertEquals(true, food.substituteOnHand)
+            assertEquals("[8]", food.substituteIds)
+            assertNull(food.parentId)
+            assertEquals(false, food.substituteSiblings)
+            assertEquals(false, food.substituteChildren)
+        } finally {
+            database.close()
+        }
+    }
+
     /** 0.1.0 straight to 0.4.0: every migration in a row, the queued view is still sent. */
     @Test
-    fun versionOneMigratesToFive() = runTest {
+    fun versionOneMigratesToSix() = runTest {
         helper.createDatabase(1).apply {
             execSQL(
                 "INSERT INTO outbox (account_id, op, entity, server_id, payload, attempts, created_at, state) " +
@@ -255,7 +285,7 @@ class TandemMigrationTest {
             close()
         }
 
-        helper.runMigrationsAndValidate(5, TandemMigrations.ALL).close()
+        helper.runMigrationsAndValidate(6, TandemMigrations.ALL).close()
 
         val database = TandemDatabase.build(context, TEST_DB)
         try {

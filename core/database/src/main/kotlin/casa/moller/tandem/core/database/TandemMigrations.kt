@@ -195,5 +195,25 @@ object TandemMigrations {
             "`created_at` INTEGER NOT NULL, PRIMARY KEY(`account_id`, `local_id`))",
     )
 
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    /**
+     * Fas S komplettering (still 0.4.0, before its tag): the food tree for "Kan laga nu" (FACTS
+     * "Fas S a", `substituteTree`): `food.parent_id`, `food.substitute_siblings` (0) and
+     * `food.substitute_children` (0), so a child or sibling that is only in stock resolves a food
+     * on the device as on the server. Existing rows get the defaults; the next sync of the small
+     * tables replaces the whole food list with the real values.
+     */
+    val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            SCHEMA_6_STATEMENTS.forEach { connection.execSQL(it) }
+        }
+    }
+
+    /** The statements of [MIGRATION_5_6], in order. */
+    internal val SCHEMA_6_STATEMENTS: List<String> = listOf(
+        "ALTER TABLE `food` ADD COLUMN `parent_id` INTEGER",
+        "ALTER TABLE `food` ADD COLUMN `substitute_siblings` INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE `food` ADD COLUMN `substitute_children` INTEGER NOT NULL DEFAULT 0",
+    )
+
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }

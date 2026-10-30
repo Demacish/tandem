@@ -41,6 +41,10 @@ data class FoodEntity(
     @ColumnInfo(name = "substitute_on_hand", defaultValue = "0") val substituteOnHand: Boolean = false,
     @ColumnInfo(name = "substitute_ids", defaultValue = "'[]'") val substituteIds: String = "[]",
     @ColumnInfo(name = "recipe_id") val recipeId: Long? = null,
+    // --- Fas S komplettering (schema 6): the food tree, for substitutes in stock (plan §8.8) ---
+    @ColumnInfo(name = "parent_id") val parentId: Long? = null,
+    @ColumnInfo(name = "substitute_siblings", defaultValue = "0") val substituteSiblings: Boolean = false,
+    @ColumnInfo(name = "substitute_children", defaultValue = "0") val substituteChildren: Boolean = false,
 )
 
 /** A unit of measurement (plan 5.7 `unit`), from the full unit list. */

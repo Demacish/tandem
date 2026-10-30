@@ -160,10 +160,10 @@ abstract class TandemDatabase : RoomDatabase() {
          * 3 = 0.2.0 adds the step's photo ([TandemMigrations.MIGRATION_2_3]); 4 = 0.3.0, the whole of
          * Phase 2 ([TandemMigrations.MIGRATION_3_4]: shopping, stores, books, `id_mapping`); 5 = 0.4.0,
          * the whole of Fas S ([TandemMigrations.MIGRATION_4_5]: pantry, aliases, Open Food Facts,
-         * makenow, staples, drink drafts, food substitutes). Lanes of Fas S do not add a version; a
-         * needed change is 5 -> 6, coordinated in docs/BYGGE.md "Fas S – kontrakt".
+         * makenow, staples, drink drafts, food substitutes); 6 = still 0.4.0, the food tree for
+         * substitutes in stock ([TandemMigrations.MIGRATION_5_6], Fas S komplettering).
          */
-        const val VERSION: Int = 5
+        const val VERSION: Int = 6
 
         /** File name of the real database (the whole database folder is excluded from backup, data_extraction_rules.xml). */
         const val FILE_NAME: String = "tandem.db"

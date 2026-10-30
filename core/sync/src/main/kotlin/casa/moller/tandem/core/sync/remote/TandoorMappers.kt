@@ -209,6 +209,10 @@ internal fun FoodDto.toEntity(accountId: String): FoodEntity? {
         substituteOnHand = substituteOnHand,
         substituteIds = substituteIdsJson(substitute),
         recipeId = ((recipe as? JsonObject)?.get("id") as? JsonPrimitive)?.longOrNull,
+        // Fas S komplettering: the food tree (substitutes through children and siblings in stock).
+        parentId = parent,
+        substituteSiblings = substituteSiblings,
+        substituteChildren = substituteChildren,
     )
 }
 

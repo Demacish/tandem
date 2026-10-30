@@ -472,6 +472,9 @@ internal class DefaultMakeNowRepository @Inject constructor(
                     substituteIds = substituteIdsOf(food.substituteIds),
                     ignoreShopping = food.ignoreShopping,
                     isRecipe = food.recipeId != null,
+                    parentId = food.parentId,
+                    substituteSiblings = food.substituteSiblings,
+                    substituteChildren = food.substituteChildren,
                 )
             }
             for (id in stocked) map.getOrPut(id) { FoodAvailability(foodId = id, inStock = true) }
