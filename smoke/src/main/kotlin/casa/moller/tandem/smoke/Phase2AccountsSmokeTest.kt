@@ -68,6 +68,8 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
         openAccounts()
         scrollToThePendingChange()
         app.capture("phase2-accounts-pending")
+        // Back to the page's top: the More tab keeps the page as it is, and openAccounts knows it by its intro.
+        app.scrollBackTo(By.textStartsWith(ACCOUNTS_INTRO))
 
         // Online with the first account active: the second account's change is NOT sent.
         goOnline()
