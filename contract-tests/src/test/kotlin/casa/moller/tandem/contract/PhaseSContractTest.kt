@@ -950,7 +950,12 @@ class PhaseSContractTest {
          * response description. Every other fact is only recorded; tandoor-watch compares it.
          */
         val EXPECTED: Map<String, Any?> = linkedMapOf(
+            // Every member is in a household; the outsider in ANOTHER one (contract.yml fails the
+            // step otherwise). `present` keeps "no household" from passing as "another household".
+            "household.owner.present" to true,
+            "household.reader.present" to true,
             "household.reader.sameAsOwner" to true,
+            "household.outsider.present" to true,
             "household.outsider.sameAsOwner" to false,
             // e. Foods
             "food.patchOnHand.status" to 200,

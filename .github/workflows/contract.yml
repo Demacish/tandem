@@ -337,27 +337,31 @@ jobs:
           from django.utils import timezone
           from django_scopes import scopes_disabled
           from oauth2_provider.models import AccessToken
-          from cookbook.models import UserSpace
+          from cookbook.models import Household, UserSpace
 
           with scopes_disabled():
               owner = User.objects.get(username=os.environ["CONTRACT_USERNAME"])
-              space = owner.userspace_set.get(active=True).space
+              owner_space = owner.userspace_set.get(active=True)
+              space = owner_space.space
               outsider = User.objects.create_user("contract-outsider")
               member = UserSpace.objects.create(space=space, user=outsider, active=True)
               member.groups.add(Group.objects.get(name="user"))
-              try:
-                  from cookbook.models import Household
-                  other = Household.objects.create(space=space, name="Other Household")
-                  UserSpace.objects.filter(pk=member.pk).update(household=other)
-                  print("other household", other.id, file=sys.stderr)
-              except Exception as error:
-                  print("no household:", type(error).__name__, error, file=sys.stderr)
+              # No try/except: without a SECOND household every "household scoping" fact of
+              # PhaseSContractTest would also hold for a member with NO household (review fix-bygg).
+              other = Household.objects.create(space=space, name="Other Household")
+              UserSpace.objects.filter(pk=member.pk).update(household=other)
+              placed = UserSpace.objects.get(pk=member.pk).household_id
+              if owner_space.household_id is None or placed != other.id or placed == owner_space.household_id:
+                  sys.exit("outsider not in a second household: owner=%s outsider=%s" % (owner_space.household_id, placed))
+              print("other household", other.id, file=sys.stderr)
               token = AccessToken.objects.create(
                   user=outsider, token="tda_" + str(uuid.uuid4()).replace("-", "_"),
                   expires=timezone.now() + timedelta(days=1), scope="read write")
-              print(token.token)
-          ' | tail -n 1)"
-          [ -n "$token" ] || { echo "::error::outsider token creation failed"; exit 1; }
+              print("OUTSIDER_TOKEN=" + token.token)
+          ' | sed -n 's/^OUTSIDER_TOKEN=//p' | tail -n 1)"
+          # The pipe hides python's exit code (bash -e, no pipefail): the token line is only printed
+          # after the household checks, so a missing token is the failure signal.
+          [[ "$token" == tda_* ]] || { echo "::error::outsider household or token creation failed"; exit 1; }
           echo "::add-mask::${token}"
           echo "TANDOOR_OUTSIDER_TOKEN=${token}" >> "$GITHUB_ENV"
 

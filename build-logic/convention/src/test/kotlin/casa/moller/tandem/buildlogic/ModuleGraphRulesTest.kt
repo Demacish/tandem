@@ -24,7 +24,7 @@ class ModuleGraphRulesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = [":core:network", ":core:database", ":core:sync", ":core:datastore", ":core:timer"])
+    @ValueSource(strings = [":core:network", ":core:database", ":core:sync", ":core:datastore", ":core:timer", ":core:ai"])
     fun aFeatureNeverUsesAnImplementationModule(target: String) {
         val found = violations(":feature:recipes", "implementation" to target)
         assertEquals(1, found.size, "$target must be forbidden for features: $found")
@@ -41,12 +41,57 @@ class ModuleGraphRulesTest {
         assertTrue(found.single().contains("never :core:network/:core:database/:core:sync/:core:datastore/:core:timer"), found.single())
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = ["implementation", "api", "debugImplementation", "testImplementation", "compileOnly"])
+    fun theScannersReachTheAiOnlyThroughCoreData(configuration: String) {
+        // Fas S (B22): feature:scan talks to FridgeVision/AiSettingsRepository (core:data); core:ai
+        // reads the user's AI key and is bound by Hilt in :app, in every configuration, tests included.
+        val found = violations(":feature:scan", configuration to ":core:ai")
+        assertEquals(1, found.size, found.toString())
+        assertTrue(found.single().contains("/:core:ai"), found.single())
+    }
+
     @Test
-    fun theForbiddenListIsComplete() {
+    fun theFeatureAllowListIsPlan52() {
         assertEquals(
-            setOf(":core:network", ":core:database", ":core:sync", ":core:datastore", ":core:timer"),
-            ModuleGraphRules.FEATURE_FORBIDDEN,
+            setOf(":core:data", ":core:domain", ":core:ui", ":core:designsystem", ":core:model", ":core:common"),
+            ModuleGraphRules.FEATURE_ALLOWED_CORE,
         )
+    }
+
+    @Test
+    fun aNewCoreModuleIsRefusedForFeaturesUntilItIsAllowed() {
+        // An allow list: a future implementation module is forbidden without editing the rules.
+        val found = violations(":feature:pantry", "implementation" to ":core:somethingnew")
+        assertEquals(1, found.size, found.toString())
+        assertTrue(found.single().startsWith(":feature:pantry (implementation) -> :core:somethingnew:"), found.single())
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = [":core:network", ":core:sync", ":core:database"])
+    fun coreAiNeverReachesTandoorsNetworkStack(target: String) {
+        listOf("implementation", "api", "compileOnly", "testImplementation").forEach { configuration ->
+            val found = violations(":core:ai", configuration to target)
+            assertEquals(1, found.size, "$configuration $target: $found")
+            assertTrue(found.single().contains("core:ai never depends on core:network/core:sync/core:database"), found.single())
+        }
+    }
+
+    @Test
+    fun coreAisOwnDependenciesPass() {
+        assertEquals(
+            emptyList<String>(),
+            violations(
+                ":core:ai",
+                "implementation" to ":core:data",
+                "implementation" to ":core:model",
+                "implementation" to ":core:datastore",
+                "implementation" to ":core:common",
+                "testImplementation" to ":core:testing",
+            ),
+        )
+        // Only core:ai is held to rule 5: core:sync itself naturally uses core:network.
+        assertEquals(emptyList<String>(), violations(":core:sync", "implementation" to ":core:network"))
     }
 
     @Test
@@ -98,6 +143,7 @@ class ModuleGraphRulesTest {
             ":app",
             "implementation" to ":core:timer",
             "implementation" to ":core:sync",
+            "implementation" to ":core:ai",
             "implementation" to ":feature:cook",
             "testImplementation" to ":core:testing",
         )

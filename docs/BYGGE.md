@@ -52,9 +52,9 @@ kan installeras bredvid release-bygget.
 | Modul | Typ | Får bero på |
 |---|---|---|
 | `:app` | applikation | allt den kopplar ihop |
-| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook`, `:feature:shopping`, `:feature:mealplan` (Fas 2), `:feature:pantry`, `:feature:scan` (Fas S) | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer` och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
+| `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook`, `:feature:shopping`, `:feature:mealplan` (Fas 2), `:feature:pantry`, `:feature:scan` (Fas S) | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer`/`core:ai` (tillåtelselista, `checkModuleGraph` regel 1) och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
 | `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes`, `feature:home`, `feature:cook`, `feature:shopping`, `feature:mealplan`, `feature:pantry` och `feature:scan`: skalet är navigationsvärden (se Navigering) |
-| `:core:ai` (Fas S) | Android-bibliotek + Hilt | `core:{data,model,datastore,common}`, aldrig `core:network`; foto av kylen (se "Fas S – kontrakt") |
+| `:core:ai` (Fas S) | Android-bibliotek + Hilt | `core:{data,model,datastore,common}`, aldrig `core:network`/`sync`/`database` (`checkModuleGraph` regel 5); foto av kylen (se "Fas S – kontrakt") |
 | `:core:data` | Android-bibliotek + Hilt | `core:{network,datastore,model,common}`; repository-gränssnitten för Fas 1 |
 | `:core:database` | Android-bibliotek + Hilt + `tandem.android.room` | `core:{model,common}` |
 | `:core:sync` | Android-bibliotek + Hilt + WorkManager/hilt-work | `core:{data,network,database,datastore,domain,model,common}` |
@@ -97,14 +97,18 @@ ktlintFormat` rättar det som går att rätta automatiskt.
 Plan §5.2:s beroenderegler kontrolleras i varje modul av `checkModuleGraph` (en del av `ciLint`,
 alltså av `pr.yml`). Den läser de projektberoenden modulen själv deklarerar och fallerar om:
 
-1. en `:feature:*` beror på `:core:network`, `:core:database`, `:core:sync`, `:core:datastore`
-   eller `:core:timer` (features pratar bara med `:core:data`),
+1. en `:feature:*` beror på någon annan `:core:*` än `:core:{data,domain,ui,designsystem,model,common}`
+   – en tillåtelselista, så `:core:network`, `:core:database`, `:core:sync`, `:core:datastore`,
+   `:core:timer`, `:core:ai` och framtida implementationsmoduler stoppas utan att reglerna ändras
+   (features pratar bara med `:core:data`; `:core:testing` styrs av regel 4),
 2. en `:feature:*` beror på en annan `:feature:*` – utom `:feature:shell`, som är navigationsvärd,
 3. en `:core:*` beror på en `:feature:*`,
-4. något annat än en testkonfiguration (`testImplementation` m.fl.) beror på `:core:testing`.
+4. något annat än en testkonfiguration (`testImplementation` m.fl.) beror på `:core:testing`,
+5. `:core:ai` beror på `:core:network`, `:core:sync` eller `:core:database` (Fas S: AI-anropen har
+   egna HTTP-klienter, så ingen Tandoor-interceptor, header, token eller cookie kan nå dem).
 
 Reglerna står i `build-logic/convention/src/main/kotlin/casa/moller/tandem/buildlogic/ModuleGraph.kt`.
-Reglernas egna tester (`ModuleGraphRulesTest`, bl.a. att `:feature:*` aldrig når `:core:timer` i
+Reglernas egna tester (`ModuleGraphRulesTest`, bl.a. att `:feature:*` aldrig når `:core:timer` eller `:core:ai` i
 någon konfiguration, inte heller i tester) körs i `pr.yml` som `:build-logic:convention:test`.
 
 Gemensamt för Android-moduler:
@@ -687,7 +691,9 @@ väntande `RECIPE_IMAGE` får server-id).
 
 `PhaseSContractTest` körs i `contract.yml` efter Fas 2 (push: 2.6.13 och 2.7.1; `tandoor-watch`
 och manuella körningar även 2.6.15, 2.7.2 och `latest`; `workflow_dispatch` tar nu valfria taggar).
-Steget före lägger till en medlem i ett **andra hushåll**. Det viktigaste (allt i FACTS "Fas S"):
+Steget före lägger till en medlem i ett **andra hushåll**; steget fallerar om hushållet inte kan
+skapas och sättas, och `EXPECTED` kräver `household.*.present = true`, så "inget hushåll" aldrig kan
+passera som "ett annat hushåll". Det viktigaste (allt i FACTS "Fas S"):
 
 - `makenow` är ett heltal (`true` = 0); lager > 0 och *har hemma* i hushållet, ersättningar och
   `ignore_shopping` räknas; ogiltiga värden ignoreras (alla recept), `-1` ger inga; ett recept utan

@@ -8,8 +8,9 @@ import org.gradle.kotlin.dsl.dependencies
 
 /**
  * `tandem.android.feature`: library + compose + hilt, plus what every feature module needs.
- * Dependency rule (plan 5.2): features depend on core:{data,domain,ui,designsystem,model,common},
- * never on core:network, core:database, core:sync or core:datastore directly, and not on other
+ * Dependency rule (plan 5.2): features depend on core:{data,domain,ui,designsystem,model,common}
+ * only (an allow list), never on core:network, core:database, core:sync, core:datastore, core:timer
+ * or core:ai directly, and not on other
  * features (feature:shell, the navigation host, is the one exception). `checkModuleGraph`
  * (tandem.module-graph, part of `ciLint`) fails the build otherwise.
  */

@@ -17,20 +17,33 @@ internal data class DeclaredProjectDependency(val configuration: String, val pat
  * The module dependency rules of plan 5.2, checked on the dependencies a module DECLARES
  * (`implementation(projects.core.network)`, `testImplementation(...)`, ...):
  *
- * 1. `:feature:*` never depends on `:core:network`, `:core:database`, `:core:sync`,
- *    `:core:datastore` or `:core:timer`; features talk to `:core:data` only (repositories and the
- *    Phase 1b `TimerController` hide the implementations).
+ * 1. `:feature:*` depends only on `:core:{data,domain,ui,designsystem,model,common}` (an allow
+ *    list, so a new implementation module such as Fas S's `:core:ai` is refused without editing
+ *    this file); never on `:core:network`, `:core:database`, `:core:sync`, `:core:datastore`,
+ *    `:core:timer` or `:core:ai`. Features talk to `:core:data` (repositories, the Phase 1b
+ *    `TimerController` and Fas S's `FridgeVision`/`AiSettingsRepository` hide the implementations).
+ *    `:core:testing` is allowed in test configurations (rule 4), other features only as rule 2 says.
  * 2. `:feature:*` never depends on another `:feature:*`, except `:feature:shell`, the navigation
  *    host that shows the other features' routes (docs/BYGGE.md "Navigering").
  * 3. `:core:*` never depends on `:feature:*`.
  * 4. `:core:testing` (fakes, fixtures) is only allowed in test configurations, never in code
  *    that ships.
+ * 5. `:core:ai` (Fas S, the only reader of the user's AI key) never depends on `:core:network`,
+ *    `:core:sync` or `:core:database`: it has its own HTTP clients, so no Tandoor interceptor,
+ *    header, token or cookie can reach the AI calls.
  *
  * `:app` wires everything and is only checked for rule 4.
  */
 internal object ModuleGraphRules {
-    /** Modules that features must not use directly (plan 5.2). */
-    val FEATURE_FORBIDDEN: Set<String> = setOf(":core:network", ":core:database", ":core:sync", ":core:datastore", ":core:timer")
+    /** The only `:core:*` modules a feature may use (plan 5.2); everything else is refused. */
+    val FEATURE_ALLOWED_CORE: Set<String> =
+        setOf(":core:data", ":core:domain", ":core:ui", ":core:designsystem", ":core:model", ":core:common")
+
+    /** The AI module (Fas S, B22): reads the user's AI key, has its own HTTP clients. */
+    const val AI: String = ":core:ai"
+
+    /** What [AI] never reaches: Tandoor's network stack and everything that wraps it. */
+    val AI_FORBIDDEN: Set<String> = setOf(":core:network", ":core:sync", ":core:database")
 
     /** The one feature module that may depend on other features: it hosts their routes. */
     const val FEATURE_HOST: String = ":feature:shell"
@@ -52,8 +65,9 @@ internal object ModuleGraphRules {
         return when {
             target == projectPath -> null
 
-            isFeature && target in FEATURE_FORBIDDEN ->
-                "$where: feature modules use :core:data, never :core:network/:core:database/:core:sync/:core:datastore/:core:timer"
+            isFeature && !target.startsWith(":feature:") && target != TESTING && target !in FEATURE_ALLOWED_CORE ->
+                "$where: feature modules use only :core:{data,domain,ui,designsystem,model,common}, " +
+                    "never :core:network/:core:database/:core:sync/:core:datastore/:core:timer/:core:ai"
 
             isFeature && projectPath != FEATURE_HOST && target.startsWith(":feature:") ->
                 "$where: only $FEATURE_HOST may depend on another feature (it hosts their routes)"
@@ -63,6 +77,10 @@ internal object ModuleGraphRules {
 
             target == TESTING && !isTestConfiguration(dependency.configuration) ->
                 "$where: $TESTING is test-only (use testImplementation)"
+
+            projectPath == AI && target in AI_FORBIDDEN ->
+                "$where: core:ai never depends on core:network/core:sync/core:database " +
+                    "(no Tandoor interceptor, header, token or cookie may reach the AI calls)"
 
             else -> null
         }
