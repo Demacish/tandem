@@ -10,6 +10,8 @@ import casa.moller.tandem.core.network.http.TokenBucket
 import casa.moller.tandem.core.network.http.UserAgentInterceptor
 import casa.moller.tandem.core.network.http.await
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -78,9 +80,14 @@ class OpenFoodFactsClient(private val client: OkHttpClient, baseUrl: String = DE
             .addQueryParameter("fields", FIELDS)
             .build()
         val request = Request.Builder().url(url).get().header("Accept", "application/json").build()
-        val answer = apiCall {
-            client.newCall(request).await().use { response ->
-                RawAnswer(response.code, response.header("Retry-After"), response.body.string())
+        // On IO: `await` resumes on the caller's dispatcher (a ViewModel's main thread), and reading
+        // the body there threw NetworkOnMainThreadException on the device (found by the release
+        // smoke test; JVM tests have no such check).
+        val answer = withContext(Dispatchers.IO) {
+            apiCall {
+                client.newCall(request).await().use { response ->
+                    RawAnswer(response.code, response.header("Retry-After"), response.body.string())
+                }
             }
         }
         val raw = when (answer) {

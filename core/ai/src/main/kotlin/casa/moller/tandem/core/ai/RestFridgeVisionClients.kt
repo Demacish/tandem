@@ -8,6 +8,8 @@ import java.io.IOException
 import java.util.Base64
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -32,8 +34,12 @@ private val json = Json { ignoreUnknownKeys = true }
 /** A POST/GET answer: status and body (bounded by the call timeout); the key is never part of it. */
 private class HttpAnswer(val code: Int, val body: String, val retryAfter: String?)
 
-private suspend fun OkHttpClient.send(request: Request): HttpAnswer = newCall(request).await().use { response ->
-    HttpAnswer(response.code, response.body.string(), response.header("Retry-After"))
+// On IO (Fas S integration): `await` resumes on the caller's dispatcher, a ViewModel's main thread,
+// where reading the body throws NetworkOnMainThreadException on a device (JVM tests cannot see it).
+private suspend fun OkHttpClient.send(request: Request): HttpAnswer = withContext(Dispatchers.IO) {
+    newCall(request).await().use { response ->
+        HttpAnswer(response.code, response.body.string(), response.header("Retry-After"))
+    }
 }
 
 /** [base] (the official API or the user's own, e.g. a proxy) plus [segments]; null when [base] is not a URL. */

@@ -730,6 +730,11 @@ inte i röktestet; ai-foto-banan prövar Claude-klienten mot en fejkad server i 
 | `sideloadMinified` (R8, alla fyra ABI, `smoke.yml`) | 7 616 478 B (7,6 MB) | 73 436 724 B (73,4 MB) | +65,8 MB |
 | `sideloadDebug` (artefakten `tandem-sideload-debug` i `pr.yml`, zippad) | 20 612 821 B | 65 967 542 B (APK:n själv 178,7 MB) | +45,4 MB |
 
+**Vid 0.4.0** (integrationen, `smoke.yml` körning 41002843336): 77 174 745 B (77,2 MB) mot
+77 154 264 B på `main` 5628a1d före integrationen och 7 616 478 B före Fas S, alltså +69,6 MB för
+hela fasen (licenstexterna och keep-regeln för DTO:erna är ca 20 KB). Beslutet om ABI-filter eller
+uppdelade APK:er (se förslaget nedan) är fortfarande öppet.
+
 Nästan allt är **ML Kits bundlade bibliotek**: de inbyggda biblioteken är 61,5 MB i APK:n
 (`libmlkit_google_ocr_pipeline.so` 6,8–11,6 MB och `libbarhopper_v3.so` 3,2–6,1 MB per ABI, för
 arm64-v8a, armeabi-v7a, x86 och x86_64; med minSdk 34 lagras de okomprimerade och sidjusterade),
@@ -2981,9 +2986,9 @@ emulator (API 36): mätningarna, med median/min/max och P50–P99 i jobbsammanfa
 (`-Ptandem.baselineProfile.generate=true`, så profilen har riktiga klassnamn som AGP sedan mappar
 om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; checka in den som
 `app/src/main/baselineProfiles/baseline-prof.txt` (`androidx.profileinstaller` installerar den
-även vid sidladdning). Den incheckade profilen (38 082 regler, 7 701 för Tandems egna klasser)
-genererades vid integrationen av 0.3.0 (körning 40306538195 på integrationsgrenen; 0.2.0:s hade
-35 473 / 5 713); förnya den när startvägen, listan eller receptvyn ändrats mycket
+även vid sidladdning). Den incheckade profilen (39 740 regler, 9 258 för Tandems egna klasser)
+genererades vid integrationen av 0.4.0 (körning 41000587527 på integrationsgrenen; 0.3.0:s hade
+38 082 / 7 701, 0.2.0:s 35 473 / 5 713); förnya den när startvägen, listan eller receptvyn ändrats mycket
 (Actions → Benchmark → Run workflow, ladda ned, ersätt filen). Mätjobbet kontrollerar att
 profilen når AGP:s sammanslagna ART-profil (antalet regler för `casa/moller/tandem` står i
 sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i APK:n som mäts:
@@ -2992,23 +2997,31 @@ sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i A
 `StartupBenchmark` och `RecipeListScrollBenchmark` med `BaselineProfileMode.Require`, så en
 APK utan installerbar profil fäller mätningen i stället för att tyst mäta utan profil.
 
-**Senaste mätningen (0.3.0-integrationen, 2026-10-26, körning 40306538195 på
-integrationsgrenen, emulator API 36, med 0.2.0:s profil; jämfört med `main` samma dag, schemalagd
-körning 40296698566 på 82d8664, och 0.2.0-integrationen, körning 40031229148):**
+**Senaste mätningen (0.4.0-integrationen, 2026-10-30, körning 41000587527 på
+integrationsgrenen, emulator API 36, med 0.3.0:s profil; jämfört med 0.3.0-integrationen, körning
+40306538195):**
 
-| Mätning | 0.3.0 median (min–max) | `main` 82d8664 median | 0.2.0 median |
-|---|---|---|---|
-| Kallstart med baslinjeprofil, första bildrutan (`timeToInitialDisplayMs`) | 1 808 ms (1 145–2 851) | 1 947 ms | 1 875 ms |
-| Kallstart med baslinjeprofil, Idag färdig (`timeToFullDisplayMs`) | 3 884 ms (2 994–4 827) | 3 817 ms | 4 457 ms |
-| Kallstart utan kompilering, första bildrutan | 1 429 ms (1 290–1 931) | 1 350 ms | 1 495 ms |
-| Kallstart utan kompilering, Idag färdig | 3 347 ms (3 168–4 029) | 3 047 ms | 3 448 ms |
+| Mätning | 0.4.0 median (min–max) | 0.3.0 median |
+|---|---|---|
+| Kallstart med baslinjeprofil, första bildrutan (`timeToInitialDisplayMs`) | 1 791 ms (1 536–3 407) | 1 808 ms |
+| Kallstart med baslinjeprofil, Idag färdig (`timeToFullDisplayMs`) | 4 105 ms (3 572–4 999) | 3 884 ms |
+| Kallstart utan kompilering, första bildrutan | 1 476 ms (1 289–1 749) | 1 429 ms |
+| Kallstart utan kompilering, Idag färdig | 3 676 ms (3 421–3 984) | 3 347 ms |
 
-Svep i receptlistan: `frameDurationCpuMs` P50 94 ms, P90 162 ms, P99 349 ms; `frameOverrunMs`
-P50 117 ms, P90 217 ms, P99 430 ms (`main`: 86/148/328 och 107/199/459 ms). Kallstarten har inte
-blivit långsammare än 0.2.0; skillnaderna mot `main` samma dag ligger inom emulatorns spridning
-(min–max över 10 iterationer är större än skillnaden). Idag färdig utan kompilering är ca 10 %
-långsammare än `main` (Idag läser nu också favoriterna; på emulatorn går det inte att skilja
-från bruset). Profilen förnyades i samma ändring.
+Svep i receptlistan: `frameDurationCpuMs` P50 93 ms, P90 149 ms, P99 264 ms; `frameOverrunMs`
+P50 117 ms, P90 197 ms, P99 321 ms (0.3.0: 94/162/349 och 117/217/430 ms). Första bildrutan har
+inte blivit långsammare (inom några procent, långt inom spridningen mellan iterationerna). Idag
+färdig är 6–10 % långsammare: Idag läser nu också Kan laga nu och Går ut snart (demoläget har ett
+skafferi), och skillnaden är mindre än spridningen. ML Kit och Anthropic-SDK:n laddas inte vid
+start (bara när en skanner eller foto av kylen öppnas). Profilen förnyades i samma ändring (39 740
+regler, 9 258 för Tandems egna klasser; 0.3.0:s hade 38 082 / 7 701).
+
+<details><summary>0.3.0-mätningen (2026-10-26)</summary>
+
+Körning 40306538195 på 0.3.0:s integrationsgren, jämförd med `main` 82d8664 (40296698566) och
+0.2.0 (40031229148): med profil 1 808 / 3 884 ms (main 1 947 / 3 817, 0.2.0 1 875 / 4 457), utan
+kompilering 1 429 / 3 347 ms (main 1 350 / 3 047, 0.2.0 1 495 / 3 448).
+</details>
 
 **Emulatorns siffror är bara en trend** (programvaru-GPU, 2 vCPU, delad löpare). Kravet i plan
 §10 (kallstart under 1,5 s) mäts på telefonen: appen mäter själv sin kallstart och visar den
