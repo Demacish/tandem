@@ -24,6 +24,8 @@ import casa.moller.tandem.core.model.shopping.ShoppingList
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.engine.DetailFetcher
+import casa.moller.tandem.core.sync.pantry.OfflineFirstPantryRepository
+import casa.moller.tandem.core.sync.pantry.UnpackedToday
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
@@ -215,7 +217,15 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
     }
 
     override suspend fun setChecked(ids: Collection<Long>, checked: Boolean): Outcome<Unit> = write { context ->
-        for (entry in context.entries(ids)) {
+        val entries = context.entries(ids)
+        // Fas S review (fix-data): "Packa upp" offers only what was checked on THIS device, so a
+        // partner's purchases are never unpacked twice (once on each phone).
+        if (checked) {
+            val newlyChecked = entries.filter { !it.checked }.map { it.localId }
+            val key = OfflineFirstPantryRepository.CHECKED_HERE_KEY
+            UnpackedToday.add(context.database, context.accountId, key, clock.today(), newlyChecked)
+        }
+        for (entry in entries) {
             if (entry.checked == checked) continue
             context.save(entry.copy(checked = checked, completedAt = if (checked) context.now else null, updatedAt = context.now))
             if (context.hasUnsentCreate(entry)) {

@@ -4,13 +4,20 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.ShoppingEntryEntity
+import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.pantry.InventoryEntryDraft
 import casa.moller.tandem.core.model.pantry.InventoryEntryUpdate
 import casa.moller.tandem.core.model.pantry.UnpackChoice
+import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.engine.DrainResult
+import casa.moller.tandem.core.sync.shopping.DroppedChanges
+import casa.moller.tandem.core.sync.shopping.FakeShoppingTandoor
+import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import kotlin.time.Duration.Companion.days
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.plus
@@ -223,6 +230,16 @@ class PantrySyncTest {
                 ShoppingEntryEntity(ACCOUNT_ID, 12, 12, foodName = "mjölk", checked = true, completedAt = now - 1.days.inWholeMilliseconds),
                 ShoppingEntryEntity(ACCOUNT_ID, 13, 13, foodName = "ost"),
                 ShoppingEntryEntity(ACCOUNT_ID, 14, 14, foodName = "bröd", checked = true, completedAt = now),
+                // Checked today, but by the partner (another phone): never offered here (Fas S review, fix-data).
+                ShoppingEntryEntity(ACCOUNT_ID, 15, 15, foodName = "ägg", checked = true, completedAt = now),
+            ),
+        )
+        // What this phone checked (OfflineFirstShoppingRepository.setChecked records it).
+        graph.real.syncStateDao().upsert(
+            SyncStateEntity(
+                accountId = ACCOUNT_ID,
+                entity = OfflineFirstPantryRepository.CHECKED_HERE_KEY,
+                hash = UnpackedToday.encode(today, listOf(11L, 12L, 14L)),
             ),
         )
 
@@ -243,6 +260,182 @@ class PantrySyncTest {
         assertEquals(today.plus(DatePeriod(days = 3)).toString(), entry.expires)
         // The next day the list starts over.
         assertTrue(pantry.observeUnpackable(today.plus(DatePeriod(days = 1))).first().isEmpty())
+    }
+
+    /** Fas S review (fix-data): an item unpacked by its temporary list id is not offered again once the list entry is sent. */
+    @Test
+    fun anItemUnpackedBeforeItsListEntryWasSentIsNotOfferedAgain() = forEachVersion {
+        // The shopping fake answers the list; the pantry fake goes in front of it again.
+        FakeShoppingTandoor(version, graph.clock).install(graph.server)
+        tandoor.install(graph.server)
+        val today = graph.clock.today()
+        val fridge = tandoor.seedLocation("Kyl")
+        read()
+        offline()
+        val milk = value(graph.shopping.add(ShoppingEntryDraft("mjölk", amount = 1.0)))
+        assertTrue("[$version] created offline", milk < 0)
+        ok(graph.shopping.setChecked(listOf(milk), checked = true))
+        val item = pantry.observeUnpackable(today).first().single()
+        assertEquals(1, value(pantry.unpack(listOf(UnpackChoice(item, fridge)))))
+        assertTrue(pantry.observeUnpackable(today).first().isEmpty())
+
+        online()
+        drainAll()
+
+        val entry = graph.real.shoppingDao().getEntries(ACCOUNT_ID).single()
+        assertTrue("[$version] the list entry has its server id: $entry", entry.localId > 0)
+        assertTrue("[$version] not offered again", pantry.observeUnpackable(today).first().isEmpty())
+        assertEquals(1, tandoor.entries().size)
+    }
+
+    /** Fas S review (fix-data): a member in no household sees no other household's pantry and cannot change it. */
+    @Test
+    fun withoutAHouseholdNoOtherHouseholdsPantryIsShownOrChanged() = forEachVersion {
+        val theirs = tandoor.seedLocation("Kyl", householdId = FakePantryTandoor.OTHER_HOUSEHOLD)
+        val cream = tandoor.seedEntry(theirs, "grädde", amount = 2.0)
+        graph.real.accountDao().upsert(graph.real.accountDao().get(ACCOUNT_ID)!!.copy(householdId = null, householdName = null))
+        read()
+
+        assertTrue(pantry.observePantry().first().isEmpty())
+        assertTrue(pantry.observeLocations().first().isEmpty())
+        assertTrue(pantry.observeAvailableFoodIds().first().isEmpty())
+        assertTrue(pantry.markEmpty(cream) is Outcome.Failure)
+        assertTrue(pantry.decrement(cream) is Outcome.Failure)
+        ok(pantry.deleteEntry(cream))
+        assertTrue(pantry.renameLocation(theirs, "Min kyl", isFreezer = false) is Outcome.Failure)
+        assertTrue(pantry.addEntry(InventoryEntryDraft(theirs, "mjölk")) is Outcome.Failure)
+        assertEquals(0, outboxCount())
+        drainAll()
+        assertEquals(2.0, tandoor.entries().single().amount, 0.0)
+        assertEquals("Kyl", tandoor.locations().single().name)
+    }
+
+    /** Fas S review (fix-data): two phones opening Hemma for the first time at once share one Kyl, Frys and Skafferi. */
+    @Test
+    fun twoPhonesOpeningHemmaAtOnceShareTheDefaultLocations() = forEachVersion {
+        val phoneB = SyncTestGraph(server = graph.server, databasePrefix = "b-", serverVersion = version)
+        try {
+            PantrySyncEnv.mirror(phoneB)
+            // Both read an empty pantry and queue the defaults before either is sent.
+            ok(pantry.ensureDefaultLocations(graph.remote))
+            ok(phoneB.pantry.ensureDefaultLocations(phoneB.remote))
+            val bFridge = phoneB.pantry.observeLocations().first().single { it.name == "Kyl" }
+            value(phoneB.pantry.addEntry(InventoryEntryDraft(bFridge.id, "mjölk")))
+
+            drainAll()
+            for (attempt in 1..10) {
+                val result = phoneB.outbox.drain(phoneB.remote)
+                if (result == DrainResult.DONE && phoneB.real.outboxDao().observeCount(ACCOUNT_ID).first() == 0) break
+            }
+
+            assertEquals(0, phoneB.real.outboxDao().observeCount(ACCOUNT_ID).first())
+            val own = tandoor.locations().filter { it.householdId == FakePantryTandoor.OWN_HOUSEHOLD }
+            assertEquals(listOf("Kyl", "Frys", "Skafferi"), own.map { it.name })
+            val fridge = own.single { it.name == "Kyl" }
+            assertEquals(fridge.id, tandoor.entries().single().locationId)
+            assertEquals(3, tandoor.requests("POST", "/api/inventory-location/").size)
+        } finally {
+            // Not phoneB.close(): the server is this phone's too.
+            phoneB.scope.cancel()
+            phoneB.real.close()
+            phoneB.demoDatabase.close()
+        }
+    }
+
+    /** Fas S review (fix-data): an entry moved offline to a location created after it never stalls the outbox. */
+    @Test
+    fun anEntryMovedToALaterLocationOfflineIsSentWithIt() = forEachVersion {
+        offline()
+        val fridge = value(pantry.createLocation("Kyl", isFreezer = false))
+        val cream = value(pantry.addEntry(InventoryEntryDraft(fridge.id, "grädde")))
+        val freezer = value(pantry.createLocation("Frys", isFreezer = true))
+        ok(pantry.updateEntry(cream.id, InventoryEntryUpdate(locationId = freezer.id)))
+        val butter = value(pantry.addEntry(InventoryEntryDraft(fridge.id, "smör")))
+        assertTrue(butter.id < 0)
+        online()
+
+        drainAll()
+
+        val locations = tandoor.locations().associateBy { it.name }
+        assertEquals(setOf("Kyl", "Frys"), locations.keys)
+        val entries = tandoor.entries().associateBy { it.foodName }
+        assertEquals(locations.getValue("Frys").id, entries.getValue("grädde").locationId)
+        assertEquals(locations.getValue("Kyl").id, entries.getValue("smör").locationId)
+    }
+
+    /** Fas S review (fix-data): an entry nests the server's current location, so a partner's rename on the web stays. */
+    @Test
+    fun anEntryNeverRenamesTheLocationBackToTheStoredName() = forEachVersion {
+        val fridge = tandoor.seedLocation("Kyl")
+        val chickpeas = tandoor.seedEntry(fridge, "kikärtor", amount = 2.0, by = FakePantryTandoor.OWN_USER)
+        val freezer = tandoor.seedLocation("Frys", isFreezer = true)
+        read()
+        tandoor.partnerEditLocation(fridge, "Kylskåp")
+        tandoor.partnerEditLocation(freezer, "Frysboxen", isFreezer = false)
+
+        value(pantry.addEntry(InventoryEntryDraft(fridge, "mjölk")))
+        ok(pantry.updateEntry(chickpeas, InventoryEntryUpdate(locationId = freezer)))
+        drainAll()
+
+        val names = tandoor.locations().associate { it.id to it.name }
+        assertEquals("Kylskåp", names[fridge])
+        assertEquals("Frysboxen", names[freezer])
+        assertEquals(false, tandoor.locations().single { it.id == freezer }.isFreezer)
+        val (_, body) = tandoor.requests("POST", "/api/inventory-entry/").single()
+        val nested = Json.parseToJsonElement(body).jsonObject.getValue("inventory_location").jsonObject
+        assertEquals("Kylskåp", nested.getValue("name").jsonPrimitive.content)
+        assertEquals(FakePantryTandoor.OWN_HOUSEHOLD_NAME, nested.getValue("household").jsonObject.getValue("name").jsonPrimitive.content)
+        assertTrue("[$version] the device-only field is never sent", "tandem_" !in body)
+        // The device shows the server's names now.
+        assertEquals(setOf("Kylskåp", "Frysboxen"), pantry.observeLocations().first().map { it.name }.toSet())
+    }
+
+    /** Fas S review (fix-data): an entry added offline to a location deleted elsewhere is dropped, never re-created there. */
+    @Test
+    fun anEntryForALocationDeletedElsewhereIsDropped() = forEachVersion {
+        val fridge = tandoor.seedLocation("Kyl")
+        read()
+        offline()
+        value(pantry.addEntry(InventoryEntryDraft(fridge, "mjölk")))
+        tandoor.partnerDeleteLocation(fridge)
+        online()
+
+        drainAll()
+
+        assertTrue(tandoor.locations().isEmpty())
+        assertTrue(tandoor.requests("POST", "/api/inventory-entry/").isEmpty())
+        assertEquals(0, outboxCount())
+        assertTrue(graph.droppedChanges.recent.value.any { it.entity == "inventory_entry" && it.reason == DroppedChanges.NOT_FOUND })
+    }
+
+    /** Fas S review (fix-data): "-1" on two phones takes two, and a stale "-1" keeps a partner's edit. */
+    @Test
+    fun minusOneIsAChangeNotAStaleValue() = forEachVersion {
+        val fridge = tandoor.seedLocation("Kyl")
+        val cream = tandoor.seedEntry(fridge, "grädde", amount = 3.0)
+        val milk = tandoor.seedEntry(fridge, "mjölk", amount = 3.0)
+        read()
+        offline()
+        ok(pantry.decrement(cream))
+        ok(pantry.decrement(milk))
+        // The partner took one cream too, and set the milk to 5, before this phone sends.
+        tandoor.partnerSetAmount(cream, 2.0)
+        tandoor.partnerSetAmount(milk, 5.0)
+        online()
+
+        drainAll()
+
+        assertEquals(1.0, tandoor.entries().single { it.id == cream }.amount, 0.0)
+        assertEquals(4.0, tandoor.entries().single { it.id == milk }.amount, 0.0)
+        assertTrue(tandoor.requests("PATCH", "/api/inventory-entry/").none { (_, body) -> "tandem_" in body })
+
+        // "Slut" and Undo stay values.
+        ok(pantry.markEmpty(milk))
+        ok(pantry.updateEntry(milk, InventoryEntryUpdate(amount = 4.0)))
+        ok(pantry.decrement(milk))
+        tandoor.partnerSetAmount(milk, 9.0)
+        drainAll()
+        assertEquals(3.0, tandoor.entries().single { it.id == milk }.amount, 0.0)
     }
 
     @Test

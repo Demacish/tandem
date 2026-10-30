@@ -15,8 +15,10 @@ import casa.moller.tandem.core.domain.pantry.StapleFood
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.catchingUnexpected
 import casa.moller.tandem.core.model.pantry.Staple
+import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
@@ -148,10 +150,21 @@ internal class DefaultStaplesRepository @Inject constructor(
                 ?: continue
             resolved += staple.copy(foodId = foodId)
         }
-        write { source, writeDatabase ->
-            writeDatabase.stapleDao().upsertStaples(resolved.map { it.copy(accountId = source.accountId) })
-            setOnHandLocked(source, writeDatabase, resolved.mapNotNull { it.foodId }, onHand = true)
+        // Fas S review (fix-data): stored for [remote] itself, never for whatever account is active
+        // now: a switch while the food was being created must not put this account's staples and
+        // food ids into another account's tables and outbox. Aborted on a switch; the food created
+        // here is stored already, so the next run matches it instead of creating it again.
+        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
+        writes.withLock {
+            if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
+            database.pantryDao().inTransaction {
+                database.stapleDao().upsertStaples(resolved)
+                setOnHandLocked(remote, database, resolved.mapNotNull { it.foodId }, onHand = true)
+            }
         }
+        if (sources.source.value.identity == remote.identity) scheduler.scheduleOutbox()
+        changes.notify(accountId)
+        Outcome.Success(Unit)
     }
 
     /** A food named [name] on the server, stored until the next full read of the foods; its id. */

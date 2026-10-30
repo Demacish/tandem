@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.dto.InventoryEntryDto
+import casa.moller.tandem.core.network.dto.InventoryLocationDto
 import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
@@ -69,10 +70,35 @@ internal class PantryReader @Inject constructor(
     /** Held by every pantry read and by the location and entry senders. */
     val lock = Mutex()
 
-    /** Per account: the entry ids (amount 0 included) of the last complete existence check, and when. */
+    /** Per account: the entry ids (amount 0 included) of the last complete existence check, their amounts, and when. */
     private val seen = ConcurrentHashMap<String, Seen>()
 
-    private class Seen(val ids: MutableSet<Long>, val atMillis: Long)
+    private class Seen(val ids: MutableSet<Long>, val amounts: Map<Long, Double>, val atMillis: Long)
+
+    /** Fas S review (fix-data): per account, the server's locations of the last complete read, and when. */
+    private val locationsSeen = ConcurrentHashMap<String, LocationsSeen>()
+
+    private class LocationsSeen(val byId: Map<Long, InventoryLocationDto>, val atMillis: Long)
+
+    /** What a complete read says about one location (the entry senders nest the server's copy, never Room's). */
+    sealed interface LocationOnServer {
+        data class Found(val location: InventoryLocationDto) : LocationOnServer
+
+        /** Not in a complete read made just now: deleted elsewhere. */
+        data object Gone : LocationOnServer
+
+        /** The list could not be read completely (more than [MAX_PAGES] pages). */
+        data object Unknown : LocationOnServer
+    }
+
+    /** What a complete read says about one entry's amount. */
+    sealed interface AmountOnServer {
+        data class Known(val amount: Double) : AmountOnServer
+
+        data object Gone : AmountOnServer
+
+        data object Unknown : AmountOnServer
+    }
 
     /** The full read (a sync run's pantry step, pull to refresh in Hemma). */
     suspend fun sync(remote: ActiveSource.Remote, background: Boolean): Outcome<Unit> = lock.withLock { syncLocked(remote, background) }
@@ -147,6 +173,37 @@ internal class PantryReader @Inject constructor(
     suspend fun entryStillOnServerLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<Boolean> {
         val known = seen[remote.accountId]?.takeIf { clock.nowMillis() - it.atMillis in 0..CHECK_MAX_AGE_MILLIS }
         if (known != null) return Outcome.Success(serverId in known.ids)
+        return when (val read = readEntriesLocked(remote)) {
+            is Outcome.Failure -> read
+            is Outcome.Success -> Outcome.Success(read.value?.let { serverId in it.ids } ?: true)
+        }
+    }
+
+    /**
+     * Fas S review (fix-data): entry [serverId]'s amount on the server right now (a complete read
+     * with `empty`, made now), for "-1" sent as a change rather than a value: two phones that each
+     * take one from 3 leave 1, not 2. Called by the sender under [lock].
+     */
+    suspend fun entryAmountLocked(remote: ActiveSource.Remote, serverId: Long): Outcome<AmountOnServer> =
+        when (val read = readEntriesLocked(remote)) {
+            is Outcome.Failure -> read
+
+            is Outcome.Success -> {
+                val seenNow = read.value
+                val amount = seenNow?.amounts?.get(serverId)
+                Outcome.Success(
+                    when {
+                        seenNow == null -> AmountOnServer.Unknown
+                        amount != null -> AmountOnServer.Known(amount)
+                        serverId in seenNow.ids -> AmountOnServer.Unknown
+                        else -> AmountOnServer.Gone
+                    },
+                )
+            }
+        }
+
+    /** Every entry with `empty` (amount 0 included) read now; null when the list was not read completely. */
+    private suspend fun readEntriesLocked(remote: ActiveSource.Remote): Outcome<Seen?> {
         val listed = caller.call(remote, background = true) {
             val api: TandoorApi = this
             Paginator.fetchAll(maxPages = MAX_PAGES) { page -> api.inventory.entries(page.takeIf { it > 1 }, empty = true) }
@@ -155,12 +212,45 @@ internal class PantryReader @Inject constructor(
             is Outcome.Failure -> listed
 
             is Outcome.Success -> {
-                if (!listed.value.complete) return Outcome.Success(true)
-                val ids = listed.value.items.mapNotNullTo(ConcurrentHashMap.newKeySet<Long>()) { it.id }
-                seen[remote.accountId] = Seen(ids, clock.nowMillis())
-                Outcome.Success(serverId in ids)
+                if (!listed.value.complete) return Outcome.Success(null)
+                val items = listed.value.items.filter { it.id != null }
+                val ids = items.mapNotNullTo(ConcurrentHashMap.newKeySet<Long>()) { it.id }
+                val fresh = Seen(ids, items.associate { it.id!! to it.amount }, clock.nowMillis())
+                seen[remote.accountId] = fresh
+                Outcome.Success(fresh)
             }
         }
+    }
+
+    /**
+     * Fas S review (fix-data): location [id] as the server has it now, for the nested location of
+     * an entry CREATE or move (FACTS "Fas S b": the nested object is WRITTEN, so a stale name from
+     * Room would rename the household's location back, a stale household rename it). A complete
+     * read at most [CHECK_MAX_AGE_MILLIS] old is reused; a location missing from it is read again
+     * (it may have been created in this drain). Called by the sender under [lock].
+     */
+    suspend fun locationOnServerLocked(remote: ActiveSource.Remote, id: Long): Outcome<LocationOnServer> {
+        val cached = locationsSeen[remote.accountId]?.takeIf { clock.nowMillis() - it.atMillis in 0..CHECK_MAX_AGE_MILLIS }
+        cached?.byId?.get(id)?.let { return Outcome.Success(LocationOnServer.Found(it)) }
+        val listed = caller.call(remote, background = true) {
+            val api: TandoorApi = this
+            Paginator.fetchAll(maxPages = MAX_PAGES) { page -> api.inventory.locations(page.takeIf { it > 1 }) }
+        }
+        return when (listed) {
+            is Outcome.Failure -> listed
+
+            is Outcome.Success -> {
+                val byId = listed.value.items.filter { it.id != null }.associateBy { it.id!! }
+                if (!listed.value.complete) return Outcome.Success(byId[id]?.let { LocationOnServer.Found(it) } ?: LocationOnServer.Unknown)
+                locationsSeen[remote.accountId] = LocationsSeen(byId, clock.nowMillis())
+                Outcome.Success(byId[id]?.let { LocationOnServer.Found(it) } ?: LocationOnServer.Gone)
+            }
+        }
+    }
+
+    /** A location was created, changed or deleted by this device: the next nested location is read again. */
+    fun invalidateLocations(accountId: String) {
+        locationsSeen.remove(accountId)
     }
 
     /** An entry this device just created is known to exist. */

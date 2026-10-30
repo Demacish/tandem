@@ -61,7 +61,9 @@ import kotlinx.datetime.toKotlinLocalDate
  *
  * - **Household:** Tandoor lists the whole space's locations (FACTS "Fas S b"); only locations of
  *   the account's household (`server_account.household_id`) are shown, with their entries, plus
- *   locations created on this device. Unknown household (not read yet, demo): all.
+ *   locations created on this device. A real account whose household is unknown (not read yet, or
+ *   a member in no household) sees only those (Fas S review, fix-data: never another household's
+ *   fridge), and every change of a location or entry checks the same rule first. Demo mode: all.
  * - **Offline first:** every change is written to `inventory_location` / `inventory_entry` and
  *   queued with `OutboxDao.enqueue` in ONE transaction, then the outbox is scheduled. An object
  *   created offline gets a negative id (`IdRewriteDao.nextLocalId`); an entry in a location that is
@@ -71,8 +73,10 @@ import kotlinx.datetime.toKotlinLocalDate
  * - **Default locations:** the first time the household's pantry is read empty ([refresh]),
  *   Kyl, Frys (`is_freezer`) and Skafferi are created in the device's language, once per household
  *   (`sync_state` [DEFAULTS_KEY]).
- * - **Packa upp:** today's checked shopping entries (`completed_at` on the device's calendar day)
- *   not yet unpacked or skipped today (`sync_state` [UNPACKED_KEY]).
+ * - **Packa upp:** today's shopping entries checked ON THIS DEVICE (`sync_state` [CHECKED_HERE_KEY],
+ *   still checked with `completed_at` on the device's calendar day; Fas S review, fix-data: a
+ *   partner's purchases are never offered on both phones) not yet unpacked or skipped today
+ *   (`sync_state` [UNPACKED_KEY]). Both sets follow a list entry's temporary id to its server id.
  * - **Guests** get `DataProblem.READ_ONLY` before anything is stored (#42); **demo mode** writes
  *   the demo database and queues nothing.
  */
@@ -188,12 +192,25 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         combine(
             database.shoppingDao().observeEntries(source.accountId),
             database.syncStateDao().observeOne(source.accountId, UNPACKED_KEY),
-        ) { entries, done ->
-            val unpacked = UnpackedToday.decode(done?.hash, today)
-            entries.filter { it.checked && completedOn(it) == today && it.localId !in unpacked && it.foodName.isNotBlank() }
+            database.syncStateDao().observeOne(source.accountId, CHECKED_HERE_KEY),
+        ) { entries, done, here ->
+            // An entry checked or unpacked by its temporary id has its server id since (the shopping
+            // CREATE was answered meanwhile): the mapping is followed, so it is never offered again.
+            val unpacked = withServerIds(database, source.accountId, UnpackedToday.decode(done?.hash, today))
+            val checkedHere = withServerIds(database, source.accountId, UnpackedToday.decode(here?.hash, today))
+            entries.filter {
+                it.checked && completedOn(it) == today && it.localId in checkedHere && it.localId !in unpacked && it.foodName.isNotBlank()
+            }
                 .sortedBy { it.completedAt }
                 .map { it.toUnpackItem() }
         }
+    }
+
+    /** [ids] plus the server id of every temporary one whose CREATE was answered. */
+    private suspend fun withServerIds(database: TandemDatabase, accountId: String, ids: Set<Long>): Set<Long> {
+        if (ids.none { it < 0 }) return ids
+        val rewrite = database.idRewriteDao()
+        return ids + ids.filter { it < 0 }.mapNotNull { rewrite.resolve(accountId, OutboxEntities.SHOPPING_ENTRY, it) }
     }
 
     // ------------------------------------------------------------------------------------ writes
@@ -273,15 +290,25 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         Outcome.Success(Unit)
     }
 
-    override suspend fun markEmpty(id: Long): Outcome<Unit> = setAmount(id) { 0.0 }
+    override suspend fun markEmpty(id: Long): Outcome<Unit> = setAmount(id, relative = false) { 0.0 }
 
-    override suspend fun decrement(id: Long): Outcome<Unit> = setAmount(id) { amount -> (amount - 1.0).coerceAtLeast(0.0) }
+    /**
+     * "-1" is queued as a CHANGE (Fas S review, fix-data): the sender applies it to the server's
+     * amount at sending time, so two phones that each take one from 3 leave 1, and a partner's edit
+     * meanwhile is kept. After an amount the user set that still waits, it stays a value.
+     */
+    override suspend fun decrement(id: Long): Outcome<Unit> = setAmount(id, relative = true) { amount -> (amount - 1.0).coerceAtLeast(0.0) }
 
-    private suspend fun setAmount(id: Long, next: (Double) -> Double): Outcome<Unit> = write { context ->
+    private suspend fun setAmount(id: Long, relative: Boolean, next: (Double) -> Double): Outcome<Unit> = write { context ->
         val entry = context.entry(id) ?: return@write Outcome.Failure(TandemError.NotFound)
         val amount = next(entry.amount)
         context.database.pantryDao().upsertEntries(listOf(entry.copy(amount = amount)))
-        context.queueEntry(entry, OutboxOps.PATCH, PantryPayloads.amount(amount))
+        if (relative && !context.hasQueuedValue(entry)) {
+            val payload = PantryPayloads.relativeAmount(amount)
+            context.queueEntry(entry, OutboxOps.PATCH, payload, base = PantryPayloads.amountBase(entry.amount))
+        } else {
+            context.queueEntry(entry, OutboxOps.PATCH, PantryPayloads.amount(amount))
+        }
         Outcome.Success(Unit)
     }
 
@@ -306,7 +333,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
             )
             if (context.createEntry(draft) != null) created++
         }
-        context.markUnpacked(choices.map { it.item.shoppingEntryId })
+        context.markDone(UNPACKED_KEY, choices.map { it.item.shoppingEntryId })
         Outcome.Success(created)
     }
 
@@ -345,9 +372,10 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         val own = database.pantryDao().getLocations(accountId).filter { it.householdId == household || it.localId < 0 }
         val created = if (own.isEmpty()) {
             write { context ->
-                context.createLocation(names.fridge, isFreezer = false)
-                context.createLocation(names.freezer, isFreezer = true)
-                context.createLocation(names.pantry, isFreezer = false)
+                // Marked as defaults: their sender takes a same-named location another phone created first.
+                context.createLocation(names.fridge, isFreezer = false, isDefault = true)
+                context.createLocation(names.freezer, isFreezer = true, isDefault = true)
+                context.createLocation(names.pantry, isFreezer = false, isDefault = true)
                 Outcome.Success(Unit)
             }
         } else {
@@ -363,7 +391,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
 
     private fun householdUnknown(): Outcome<Nothing> = Outcome.Failure(TandemError.Unknown(HOUSEHOLD_UNKNOWN))
 
-    /** The account's household id as it changes; null = unknown (demo, not read yet): every location is shown. */
+    /** The account's household id as it changes; null = unknown (not read yet, or in no household). */
     private fun household(source: ActiveSource.Stored, database: TandemDatabase): Flow<Long?> = if (source is ActiveSource.Remote) {
         database.accountDao().observe(source.accountId).map { it?.householdId }.distinctUntilChanged()
     } else {
@@ -372,7 +400,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
 
     private fun visibleLocations(source: ActiveSource.Stored, database: TandemDatabase): Flow<List<InventoryLocationEntity>> =
         combine(household(source, database), database.pantryDao().observeLocations(source.accountId)) { household, locations ->
-            locations.filter { isVisible(it, household) }
+            locations.filter { isVisible(it, household, showAll = source !is ActiveSource.Remote) }
         }
 
     private fun <T> stored(empty: T, flow: (ActiveSource.Stored, TandemDatabase) -> Flow<T>): Flow<T> = sources.source
@@ -410,14 +438,48 @@ internal class OfflineFirstPantryRepository @Inject constructor(
 
         suspend fun current(entity: String, id: Long): Long = database.idRewriteDao().current(accountId, entity, id)
 
-        suspend fun location(id: Long): InventoryLocationEntity? =
-            database.pantryDao().getLocation(accountId, current(OutboxEntities.INVENTORY_LOCATION, id))
+        private var household: Long? = null
+        private var householdRead = false
 
-        suspend fun entry(id: Long): InventoryEntryEntity? =
-            database.pantryDao().getEntry(accountId, current(OutboxEntities.INVENTORY_ENTRY, id))
+        /** Fas S review (fix-data): whether this account may see and change [location] (its household's, or one of this device's). */
+        private suspend fun visible(location: InventoryLocationEntity): Boolean {
+            if (!remote) return true
+            if (!householdRead) {
+                household = database.accountDao().get(accountId)?.householdId
+                householdRead = true
+            }
+            return isVisible(location, household, showAll = false)
+        }
+
+        /** A location the account may see; null otherwise (never another household's). */
+        suspend fun location(id: Long): InventoryLocationEntity? =
+            database.pantryDao().getLocation(accountId, current(OutboxEntities.INVENTORY_LOCATION, id))?.takeIf { visible(it) }
+
+        /** An entry in a location the account may see; null otherwise. */
+        suspend fun entry(id: Long): InventoryEntryEntity? {
+            val entry = database.pantryDao().getEntry(accountId, current(OutboxEntities.INVENTORY_ENTRY, id)) ?: return null
+            val location = database.pantryDao().getLocation(accountId, entry.locationId)
+            return entry.takeIf { location != null && visible(location) || location == null && !remote }
+        }
+
+        /** Whether an amount the user SET ("Slut", the editor, Undo) still waits for [entry]: "-1" then stays a value. */
+        suspend fun hasQueuedValue(entry: InventoryEntryEntity): Boolean {
+            if (!remote) return false
+            val rows = database.outboxDao().getUnsentFor(
+                accountId,
+                OutboxEntities.INVENTORY_ENTRY,
+                entry.localId.takeIf { entry.serverId == null },
+                entry.serverId,
+            )
+            return rows.any { row ->
+                val body = PantryPayloads.parse(row.payload) ?: return@any false
+                val hasAmount = PantryPayloads.number(body, PantryPayloads.FIELD_AMOUNT) != null
+                hasAmount && (row.op == OutboxOps.CREATE || !PantryPayloads.isRelative(body))
+            }
+        }
 
         /** A new location of the account's household; null when the household is unknown (a real account only). */
-        suspend fun createLocation(name: String, isFreezer: Boolean): InventoryLocationEntity? {
+        suspend fun createLocation(name: String, isFreezer: Boolean, isDefault: Boolean = false): InventoryLocationEntity? {
             val account = if (remote) database.accountDao().get(accountId) else null
             if (remote && (account?.householdId == null || account.householdName == null)) return null
             val dao = database.pantryDao()
@@ -440,7 +502,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
                         op = OutboxOps.CREATE,
                         entity = OutboxEntities.INVENTORY_LOCATION,
                         localId = row.localId,
-                        payload = PantryPayloads.location(name, isFreezer),
+                        payload = PantryPayloads.location(name, isFreezer, isDefault),
                         createdAtEpochMillis = now,
                     ),
                 )
@@ -503,7 +565,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         }
 
         /** Queues [op] for [entry]; a move to a location not yet on the server names it in `refs` and waits for its CREATE. */
-        suspend fun queueEntry(entry: InventoryEntryEntity, op: String, payload: String, locationRef: Long? = null) {
+        suspend fun queueEntry(entry: InventoryEntryEntity, op: String, payload: String, locationRef: Long? = null, base: String? = null) {
             val waitForLocation = locationRef?.takeIf { it < 0 }?.let { createRowOf(OutboxEntities.INVENTORY_LOCATION, it)?.id }
             queue(
                 entity = OutboxEntities.INVENTORY_ENTRY,
@@ -513,6 +575,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
                 payload = payload,
                 refs = PantryPayloads.locationRefs(locationRef),
                 waitFor = waitForLocation,
+                base = base,
             )
         }
 
@@ -529,6 +592,7 @@ internal class OfflineFirstPantryRepository @Inject constructor(
             payload: String,
             refs: String? = null,
             waitFor: Long? = null,
+            base: String? = null,
         ) {
             if (!remote) return
             // Created offline and its CREATE is gone (cancelled): nothing can ever be sent for it.
@@ -542,18 +606,17 @@ internal class OfflineFirstPantryRepository @Inject constructor(
                     serverId = serverId,
                     payload = payload,
                     refs = refs,
+                    baseSnapshot = base,
                     dependsOn = waitFor ?: if (serverId == null) sendingCreateOf(entity, localId) else null,
                     createdAtEpochMillis = now,
                 ),
             )
         }
 
-        /** Remembers [shoppingEntryIds] as unpacked (or skipped) today. */
-        suspend fun markUnpacked(shoppingEntryIds: List<Long>) {
-            val today = clock.today()
-            val states = database.syncStateDao()
-            val done = UnpackedToday.decode(states.get(accountId, UNPACKED_KEY)?.hash, today) + shoppingEntryIds
-            states.upsert(SyncStateEntity(accountId = accountId, entity = UNPACKED_KEY, hash = UnpackedToday.encode(today, done)))
+        /** Remembers [shoppingEntryIds] as unpacked (or skipped) today, by their server id where they have one. */
+        suspend fun markDone(key: String, shoppingEntryIds: List<Long>) {
+            val ids = shoppingEntryIds.map { current(OutboxEntities.SHOPPING_ENTRY, it) }
+            UnpackedToday.add(database, accountId, key, clock.today(), ids)
         }
 
         private suspend fun createRowOf(entity: String, localId: Long): OutboxEntity? =
@@ -571,14 +634,20 @@ internal class OfflineFirstPantryRepository @Inject constructor(
         /** `sync_state`: today's unpacked or skipped shopping entries (`hash` = `yyyy-MM-dd|id,id`). */
         const val UNPACKED_KEY: String = "pantry_unpacked"
 
+        /** `sync_state` (Fas S review, fix-data): today's shopping entries checked on THIS device (same format). */
+        const val CHECKED_HERE_KEY: String = "pantry_checked_here"
+
         /** A location cannot be created while the account's household is unknown (Tandoor requires one). */
         const val HOUSEHOLD_UNKNOWN: String = "tandem.pantry.household-unknown"
 
         private val UNSENT: Set<OutboxState> = setOf(OutboxState.PENDING, OutboxState.PAUSED)
 
-        /** A location of [household] (null = unknown: all), or one created on this device or without a household. */
-        fun isVisible(location: InventoryLocationEntity, household: Long?): Boolean =
-            household == null || location.localId < 0 || location.householdId == null || location.householdId == household
+        /**
+         * A location of [household], or one created on this device or without a household; every
+         * location only with [showAll] (demo mode). An unknown [household] shows no server location.
+         */
+        fun isVisible(location: InventoryLocationEntity, household: Long?, showAll: Boolean): Boolean =
+            showAll || location.localId < 0 || location.householdId == null || (household != null && location.householdId == household)
 
         /** The device's calendar day an entry was checked on, null when it is not checked. */
         fun completedOn(entry: ShoppingEntryEntity): LocalDate? =
@@ -605,6 +674,14 @@ internal object UnpackedToday {
     }
 
     fun encode(today: LocalDate, ids: Collection<Long>): String = today.toString() + "|" + ids.distinct().sorted().joinToString(",")
+
+    /** Adds [ids] to today's set under [key] (another day's set is replaced). Inside the caller's transaction. */
+    suspend fun add(database: TandemDatabase, accountId: String, key: String, today: LocalDate, ids: Collection<Long>) {
+        if (ids.isEmpty()) return
+        val states = database.syncStateDao()
+        val all = decode(states.get(accountId, key)?.hash, today) + ids
+        states.upsert(SyncStateEntity(accountId = accountId, entity = key, hash = encode(today, all)))
+    }
 }
 
 private fun ShoppingEntryEntity.toUnpackItem(): UnpackItem = UnpackItem(

@@ -9,6 +9,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.api.TandoorApi
 import casa.moller.tandem.core.network.dto.InventoryEntryDto
+import casa.moller.tandem.core.network.dto.InventoryLocationDto
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.SyncSchedule
@@ -51,6 +52,29 @@ internal class PantryLocations @Inject constructor(private val databases: Tandem
             put("id", locationId)
             put("name", row.name)
             put("is_freezer", row.isFreezer)
+            put("household", household)
+        }
+    }
+
+    /**
+     * Fas S review (fix-data): the nested object from the server's own copy of the location (its
+     * current name, `is_freezer` and household, [PantryReader.locationOnServerLocked]), so nesting
+     * it changes nothing on the server.
+     */
+    suspend fun fromServer(
+        remote: ActiveSource.Remote,
+        id: Long,
+        server: InventoryLocationDto,
+        stored: InventoryLocationEntity?,
+    ): JsonObject? {
+        val ownId = server.household?.id
+        val ownName = server.household?.name
+        val household = if (ownId != null && ownName != null) householdObject(ownId, ownName) else household(remote, stored)
+        household ?: return null
+        return buildJsonObject {
+            put("id", id)
+            put("name", server.name)
+            put("is_freezer", server.isFreezer)
             put("household", household)
         }
     }
@@ -98,17 +122,21 @@ internal class InventoryLocationOutboxHandler @Inject constructor(
 ) : OutboxHandler {
     override suspend fun send(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult = reader.lock.withLock {
         val body = PantryPayloads.parse(payload) ?: return@withLock OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        val sent = PantryPayloads.forServer(body)
         val result = when (row.op) {
             OutboxOps.CREATE -> create(remote, row, body)
-            OutboxOps.PATCH -> update(remote, row) { id -> inventory.patchLocation(id, body) }
+            OutboxOps.PATCH -> update(remote, row) { id -> inventory.patchLocation(id, sent) }
             OutboxOps.DELETE -> update(remote, row) { id -> inventory.deleteLocation(id) }
             else -> OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         }
+        // The entry senders nest the server's copy of a location: this device changed one (or may have).
+        reader.invalidateLocations(remote.accountId)
         if (result !is OutboxResult.Failed) changes.notify(remote.accountId)
         result
     }
 
-    private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
+    private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, payload: JsonObject): OutboxResult {
+        val body = PantryPayloads.forServer(payload)
         val database = databases.get(remote.kind)
         val localId = row.localId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val stored = database.pantryDao().getLocation(remote.accountId, localId)
@@ -118,7 +146,14 @@ internal class InventoryLocationOutboxHandler @Inject constructor(
         val createBody = JsonObject(body + (FIELD_HOUSEHOLD to household))
         val householdId = (household["id"] as? JsonPrimitive)?.longOrNull
         val name = (body["name"] as? JsonPrimitive)?.content
-        if (row.attempts > 0) findLostCreate(remote, name, householdId)?.let { return OutboxResult.Created(it) }
+        // A retry after a lost answer looks for its location first; so does a default location (Kyl,
+        // Frys, Skafferi) on its FIRST attempt (Fas S review, fix-data): another phone of the household
+        // that opened Hemma for the first time at the same moment may have created it already, and
+        // both phones then use the oldest one instead of the household getting two of each.
+        val isDefault = PantryPayloads.isDefaultLocation(payload)
+        if (row.attempts > 0 || isDefault) {
+            findLostCreate(remote, name, householdId, oldest = isDefault)?.let { return OutboxResult.Created(it) }
+        }
         return when (val sent = caller.write(remote) { inventory.createLocation(createBody) }) {
             is Outcome.Failure -> OutboxResult.Failed(sent.error)
 
@@ -138,7 +173,7 @@ internal class InventoryLocationOutboxHandler @Inject constructor(
         }
     }
 
-    private suspend fun findLostCreate(remote: ActiveSource.Remote, name: String?, householdId: Long?): Long? {
+    private suspend fun findLostCreate(remote: ActiveSource.Remote, name: String?, householdId: Long?, oldest: Boolean): Long? {
         if (name == null) return null
         val listed = caller.call(remote, background = true) {
             val api: TandoorApi = this
@@ -148,9 +183,9 @@ internal class InventoryLocationOutboxHandler @Inject constructor(
         val claimed = claimedServerIds(databases, remote, OutboxEntities.INVENTORY_LOCATION)
         // A location of the same name in the household that no create of this device claimed is taken
         // (also one a read stored meanwhile: completeCreate drops that copy). Same place, same name.
-        return items.filter { it.id != null && it.id !in claimed && it.name == name && it.household?.id == householdId }
+        val ids = items.filter { it.id != null && it.id !in claimed && it.name == name && it.household?.id == householdId }
             .mapNotNull { it.id }
-            .maxOrNull()
+        return if (oldest) ids.minOrNull() else ids.maxOrNull()
     }
 
     private suspend fun update(remote: ActiveSource.Remote, row: OutboxEntity, request: suspend TandoorApi.(Long) -> Any): OutboxResult {
@@ -213,8 +248,13 @@ internal class InventoryEntryOutboxHandler @Inject constructor(
         result
     }
 
-    private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
-        val full = locations.expandIn(remote, body) ?: return unknownLocation()
+    private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity, payload: JsonObject): OutboxResult {
+        val body = PantryPayloads.forServer(payload)
+        val full = when (val nested = nest(remote, body)) {
+            is Nested.Ready -> nested.body
+            is Nested.Failed -> return OutboxResult.Failed(nested.error)
+            Nested.Gone -> return dropCreate(remote, row)
+        }
         val existing = if (row.attempts > 0) findLostCreate(remote, row, body) else null
         val created = existing ?: when (val sent = caller.write(remote) { inventory.createEntry(full) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
@@ -226,9 +266,21 @@ internal class InventoryEntryOutboxHandler @Inject constructor(
         return OutboxResult.Created(serverId)
     }
 
-    private suspend fun patch(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): OutboxResult {
+    private suspend fun patch(remote: ActiveSource.Remote, row: OutboxEntity, payload: JsonObject): OutboxResult {
         val serverId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(WAITING_FOR_ID))
-        val full = locations.expandIn(remote, body) ?: return unknownLocation()
+        var body = PantryPayloads.forServer(payload)
+        if (PantryPayloads.isRelative(payload)) {
+            body = when (val applied = applyChange(remote, row, serverId, body)) {
+                is Outcome.Failure -> return OutboxResult.Failed(applied.error)
+                is Outcome.Success -> applied.value ?: return gone(remote, row, serverId, DroppedChanges.DELETED_ELSEWHERE)
+            }
+        }
+        val full = when (val nested = nest(remote, body)) {
+            is Nested.Ready -> nested.body
+            is Nested.Failed -> return OutboxResult.Failed(nested.error)
+            // Moved to a location deleted elsewhere: the move goes; the next read shows where the entry is.
+            Nested.Gone -> return dropMove(row, serverId)
+        }
         goneBeforeSending(remote, row, serverId)?.let { return it }
         return when (val sent = caller.write(remote) { inventory.patchEntry(serverId, full) }) {
             is Outcome.Success -> {
@@ -249,9 +301,115 @@ internal class InventoryEntryOutboxHandler @Inject constructor(
         }
     }
 
-    /** The location of a payload is not stored (deleted on this device): a 400-like FAILED, the drain goes on. */
-    private fun unknownLocation(): OutboxResult =
-        OutboxResult.Failed(TandemError.BadRequest(mapOf(PantryPayloads.FIELD_LOCATION to emptyList())))
+    /** The nested location of a CREATE or move: the server's copy, or why there is none. */
+    private sealed interface Nested {
+        data class Ready(val body: JsonObject) : Nested
+
+        data class Failed(val error: TandemError) : Nested
+
+        /** The location is not on the server any more (deleted elsewhere). */
+        data object Gone : Nested
+    }
+
+    /**
+     * Fas S review (fix-data): [body] with its `inventory_location` id replaced by the WHOLE object
+     * as the SERVER has it now (FACTS "Fas S b": the nested object is written, so Room's copy, up to
+     * five minutes old or days offline, would undo a partner's rename or freezer flag, and a stale
+     * household name would rename the household). Room's row takes the server's values. Only a
+     * rename of this device still waiting in the outbox keeps the local values (they are intended).
+     */
+    private suspend fun nest(remote: ActiveSource.Remote, body: JsonObject): Nested {
+        val id = (body[PantryPayloads.FIELD_LOCATION] as? JsonPrimitive)?.longOrNull ?: return Nested.Ready(body)
+        val database = databases.get(remote.kind)
+        val stored = database.pantryDao().getLocation(remote.accountId, id)
+        val renaming = stored != null && database.outboxDao().getAllFor(remote.accountId, OutboxEntities.INVENTORY_LOCATION)
+            .any { it.op == OutboxOps.PATCH && it.serverId == id }
+        if (renaming) return locations.expandIn(remote, body)?.let { Nested.Ready(it) } ?: Nested.Gone
+        val server = when (val read = reader.locationOnServerLocked(remote, id)) {
+            is Outcome.Failure -> return Nested.Failed(read.error)
+            is Outcome.Success -> read.value
+        }
+        return when (server) {
+            PantryReader.LocationOnServer.Gone -> Nested.Gone
+
+            // A list too long to read completely: Room's copy, as before.
+            PantryReader.LocationOnServer.Unknown -> locations.expandIn(remote, body)?.let { Nested.Ready(it) } ?: Nested.Gone
+
+            is PantryReader.LocationOnServer.Found -> {
+                val location = server.location
+                val nested = locations.fromServer(remote, id, location, stored)
+                    ?: return Nested.Failed(TandemError.BadRequest(mapOf(PantryPayloads.FIELD_LOCATION to emptyList())))
+                if (stored != null && (stored.name != location.name || stored.isFreezer != location.isFreezer)) {
+                    database.pantryDao().upsertLocations(
+                        listOf(
+                            stored.copy(
+                                name = location.name,
+                                isFreezer = location.isFreezer,
+                                householdId = location.household?.id ?: stored.householdId,
+                                householdName = location.household?.name ?: stored.householdName,
+                            ),
+                        ),
+                    )
+                }
+                Nested.Ready(JsonObject(body + (PantryPayloads.FIELD_LOCATION to nested)))
+            }
+        }
+    }
+
+    /**
+     * Fas S review (fix-data): "-1" as a change: the server's current amount (read now) plus what
+     * the device took off (`amount - base`), never below 0. Null when the entry is gone; [body] as
+     * it is when the amount cannot be known (an incomplete list) or the row has no base.
+     */
+    private suspend fun applyChange(
+        remote: ActiveSource.Remote,
+        row: OutboxEntity,
+        serverId: Long,
+        body: JsonObject,
+    ): Outcome<JsonObject?> {
+        val wanted = PantryPayloads.number(body, PantryPayloads.FIELD_AMOUNT) ?: return Outcome.Success(body)
+        val base = row.baseSnapshot?.let(PantryPayloads::parse)?.let { PantryPayloads.number(it, PantryPayloads.FIELD_AMOUNT) }
+            ?: return Outcome.Success(body)
+        return when (val read = reader.entryAmountLocked(remote, serverId)) {
+            is Outcome.Failure -> read
+
+            is Outcome.Success -> when (val server = read.value) {
+                PantryReader.AmountOnServer.Gone -> Outcome.Success(null)
+
+                PantryReader.AmountOnServer.Unknown -> Outcome.Success(body)
+
+                is PantryReader.AmountOnServer.Known -> {
+                    val amount = (server.amount + (wanted - base)).coerceAtLeast(0.0)
+                    Outcome.Success(JsonObject(body + (PantryPayloads.FIELD_AMOUNT to JsonPrimitive(amount))))
+                }
+            }
+        }
+    }
+
+    /**
+     * An entry CREATE whose location is gone (deleted elsewhere, or by a read or a 404 here; Fas S
+     * review, fix-data): the entry can never be stored there, so it goes locally with everything
+     * queued for it and is recorded, instead of staying FAILED in "Pending changes" for something
+     * the user can no longer see.
+     */
+    private suspend fun dropCreate(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
+        val database = databases.get(remote.kind)
+        val localId = row.localId
+        if (localId != null) {
+            database.pantryDao().inTransaction {
+                database.outboxDao().deleteObjectRows(remote.accountId, OutboxEntities.INVENTORY_ENTRY, localId, serverId = null)
+                database.pantryDao().deleteEntry(remote.accountId, localId)
+            }
+        }
+        dropped.record(DroppedChange(row.entity, row.op, row.serverId, DroppedChanges.NOT_FOUND, clock.nowMillis()))
+        return OutboxResult.Dropped
+    }
+
+    /** One change that can no longer be applied (its target location is gone): dropped and recorded. */
+    private fun dropMove(row: OutboxEntity, serverId: Long): OutboxResult {
+        dropped.record(DroppedChange(row.entity, row.op, serverId, DroppedChanges.NOT_FOUND, clock.nowMillis()))
+        return OutboxResult.Dropped
+    }
 
     private suspend fun goneBeforeSending(remote: ActiveSource.Remote, row: OutboxEntity, serverId: Long): OutboxResult? =
         when (val onServer = reader.entryStillOnServerLocked(remote, serverId)) {

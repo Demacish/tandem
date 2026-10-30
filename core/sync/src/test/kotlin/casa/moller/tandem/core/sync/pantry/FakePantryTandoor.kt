@@ -62,6 +62,9 @@ internal class FakePantryTandoor(private val version: String) {
     /** `recipe?makenow=N` → the recipe overviews of the answer (the test fills it from the recordings). */
     val makeNow: MutableMap<Int, List<JsonObject>> = ConcurrentHashMap()
 
+    /** `recipe?makenow=N&foods_or=<food>` → the recipes using that food (empty unless the test sets it). */
+    val foodsOr: MutableMap<Long, List<JsonObject>> = ConcurrentHashMap()
+
     /** Every handled request as `METHOD path?query` and its body. */
     val calls: MutableList<Pair<String, String>> = CopyOnWriteArrayList()
 
@@ -116,6 +119,27 @@ internal class FakePantryTandoor(private val version: String) {
         entries.remove(id)
     }
 
+    /** Fas S review (fix-data): a partner renames a location (or changes its freezer flag) on the web. */
+    @Synchronized
+    fun partnerEditLocation(id: Long, name: String, isFreezer: Boolean? = null) {
+        val location = locations.getValue(id)
+        location.name = name
+        isFreezer?.let { location.isFreezer = it }
+    }
+
+    /** A partner deletes a location on the web (its entries go with it, CASCADE). */
+    @Synchronized
+    fun partnerDeleteLocation(id: Long) {
+        locations.remove(id)
+        entries.values.removeAll { it.locationId == id }
+    }
+
+    /** A partner changes an entry's amount on the web or another phone. */
+    @Synchronized
+    fun partnerSetAmount(id: Long, amount: Double) {
+        entries.getValue(id).amount = amount
+    }
+
     @Synchronized
     fun locations(): List<Location> = locations.values.map { it.copy() }
 
@@ -159,8 +183,11 @@ internal class FakePantryTandoor(private val version: String) {
         return response
     }
 
-    private fun makeNowPage(request: RecordedRequest): MockResponse =
-        page(makeNow[request.url.queryParameter("makenow")!!.toInt()].orEmpty())
+    private fun makeNowPage(request: RecordedRequest): MockResponse {
+        val food = request.url.queryParameter("foods_or")?.toLongOrNull()
+        if (food != null) return page(foodsOr[food].orEmpty())
+        return page(makeNow[request.url.queryParameter("makenow")!!.toInt()].orEmpty())
+    }
 
     private fun createLocation(body: JsonObject): MockResponse {
         val household = body["household"] as? JsonObject ?: return badRequest("household", "This field is required.")
@@ -212,6 +239,7 @@ internal class FakePantryTandoor(private val version: String) {
         }
         val location = id?.let { locations[it] } ?: return null to badRequest("inventory_location", "Invalid pk.")
         (obj["name"] as? JsonPrimitive)?.content?.let { location.name = it }
+        (obj["is_freezer"] as? JsonPrimitive)?.booleanOrNull?.let { location.isFreezer = it }
         return location to null
     }
 

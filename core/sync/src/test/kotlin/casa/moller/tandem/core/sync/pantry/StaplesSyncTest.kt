@@ -3,7 +3,9 @@ package casa.moller.tandem.core.sync.pantry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.database.entity.FoodEntity
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
@@ -98,6 +100,30 @@ class StaplesSyncTest {
         ok(graph.staples.resolvePending(graph.remote, background = true))
         drainAll()
         assertEquals(setOf(saffron, tandoor.foodId("kardemumma")), tandoor.onHand.toSet())
+    }
+
+    /** Fas S review (fix-data): a switch to another account while a staple's food is created writes nothing there. */
+    @Test
+    fun anAccountSwitchWhileAFoodIsCreatedNeverWritesIntoTheOtherAccount() = forEachVersion {
+        spaceFoods()
+        offline()
+        ok(graph.staples.addStaples(listOf("saffran")))
+        online()
+        graph.server.respond("POST", "/api/food/") { request ->
+            // The user switches (here: to demo mode) while Tandoor is answering.
+            graph.sources.source.value = ActiveSource.Demo
+            checkNotNull(tandoor.answer(request))
+        }
+
+        val result = graph.staples.resolvePending(graph.remote, background = true)
+
+        assertTrue("[$version] $result", result is Outcome.Failure)
+        assertTrue(graph.demoDatabase.stapleDao().getStaples(ActiveSource.Demo.accountId).isEmpty())
+        assertTrue(graph.demoDatabase.outboxDao().getAllFor(ActiveSource.Demo.accountId, OutboxEntities.FOOD).isEmpty())
+        assertTrue(graph.real.outboxDao().getAllFor(ACCOUNT_ID, OutboxEntities.FOOD).isEmpty())
+        // The food is stored for its own account: the next run matches it instead of creating it again.
+        assertEquals(null, graph.real.stapleDao().getStaples(ACCOUNT_ID).single().foodId)
+        assertTrue(graph.real.referenceDao().getFoods(ACCOUNT_ID).any { it.name == "saffran" })
     }
 
     @Test

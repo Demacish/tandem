@@ -66,12 +66,33 @@ internal object PantryPayloads {
     const val FIELD_SUB_LOCATION: String = "sub_location"
     const val FIELD_ON_HAND: String = "on_hand"
 
+    /**
+     * Fas S review (fix-data), never sent: `true` when the row's `amount` is "-1" from the device's
+     * value (`base_snapshot` holds the amount it started from), so the sender applies the CHANGE to
+     * the server's current amount; `false` for an amount the user set ("Slut", the editor, Undo).
+     */
+    const val FIELD_RELATIVE: String = "tandem_relative"
+
+    /** Fas S review (fix-data), never sent: a default location (Kyl, Frys, Skafferi) created on first use. */
+    const val FIELD_DEFAULT: String = "tandem_default"
+
+    /** The fields only the device reads; the senders strip them before a request. */
+    private val LOCAL_FIELDS = setOf(FIELD_RELATIVE, FIELD_DEFAULT)
+
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun location(name: String, isFreezer: Boolean): String = buildJsonObject {
+    fun location(name: String, isFreezer: Boolean, isDefault: Boolean = false): String = buildJsonObject {
         put("name", name)
         put("is_freezer", isFreezer)
+        if (isDefault) put(FIELD_DEFAULT, true)
     }.toString()
+
+    /** [body] without the device-only fields ([FIELD_RELATIVE], [FIELD_DEFAULT]): what goes to Tandoor. */
+    fun forServer(body: JsonObject): JsonObject = if (body.keys.none { it in LOCAL_FIELDS }) body else JsonObject(body - LOCAL_FIELDS)
+
+    fun isDefaultLocation(body: JsonObject): Boolean = (body[FIELD_DEFAULT] as? JsonPrimitive)?.content == "true"
+
+    fun isRelative(body: JsonObject): Boolean = (body[FIELD_RELATIVE] as? JsonPrimitive)?.content == "true"
 
     @Suppress("LongParameterList") // The entry's fields.
     fun createEntry(
@@ -104,7 +125,20 @@ internal object PantryPayloads {
     fun locationRefs(locationId: Long?): String? =
         if (locationId != null && locationId < 0) OutboxRefs.encode(mapOf(FIELD_LOCATION to OutboxEntities.INVENTORY_LOCATION)) else null
 
-    fun amount(amount: Double): String = buildJsonObject { put(FIELD_AMOUNT, amount) }.toString()
+    /** An amount the user set ("Slut", Undo): sent as it is. */
+    fun amount(amount: Double): String = buildJsonObject {
+        put(FIELD_AMOUNT, amount)
+        put(FIELD_RELATIVE, false)
+    }.toString()
+
+    /** "-1": [amount] is the device's new value; the sender applies `amount - base` to the server's amount. */
+    fun relativeAmount(amount: Double): String = buildJsonObject {
+        put(FIELD_AMOUNT, amount)
+        put(FIELD_RELATIVE, true)
+    }.toString()
+
+    /** The `base_snapshot` of a relative amount: what the device had before. */
+    fun amountBase(amount: Double): String = buildJsonObject { put(FIELD_AMOUNT, amount) }.toString()
 
     /** A PATCH of the changed fields only (null = unchanged; [clearExpires] sends `expires: null`). */
     @Suppress("LongParameterList") // The entry's fields.
@@ -116,7 +150,10 @@ internal object PantryPayloads {
         note: String?,
         subLocation: String?,
     ): String = buildJsonObject {
-        if (amount != null) put(FIELD_AMOUNT, amount)
+        if (amount != null) {
+            put(FIELD_AMOUNT, amount)
+            put(FIELD_RELATIVE, false)
+        }
         if (locationId != null) put(FIELD_LOCATION, locationId)
         when {
             clearExpires -> put(FIELD_EXPIRES, JsonNull)
