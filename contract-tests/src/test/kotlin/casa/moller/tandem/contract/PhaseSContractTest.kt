@@ -523,6 +523,85 @@ class PhaseSContractTest {
         observe("makenow.1.random", mapOf("status" to random.status, "recipes" to ours(random).sorted()))
     }
 
+    // --- a2. Substitutes through the food tree (Fas S komplettering) ------------------------------
+
+    /**
+     * What `makenow` counts for a food whose CHILDREN (`substitute_children`) or SIBLINGS
+     * (`substitute_siblings`, the same parent) are available, in stock or on hand (core:domain
+     * `MissingIngredients` names the missing foods the same way). Fresh foods and recipes of their
+     * own ([TREE_RECIPES]), so the facts above stay as they are; nothing is recorded.
+     */
+    @Test
+    @Order(55)
+    fun substituteTree() {
+        val fridge = locations["Kyl"] ?: return observe("substituteTree.skipped", "no location")
+        val tree = LinkedHashMap<String, Long>()
+        for ((name, foods) in TREE_RECIPES) {
+            val created = api("seed-tree-$name", "POST", "/api/recipe/", recipeBody(name, foods), record = false)
+            val ingredients = objOf(created)?.arrAt("steps").objects().flatMap { it.arrAt("ingredients").objects() }
+            for (food in ingredients.mapNotNull { it.objAt("food") }) {
+                val id = food.longAt("id") ?: continue
+                food.stringAt("name")?.let { tree[it] = id }
+            }
+        }
+        for (name in listOf(BEANS_CHILD, LENTILS_PARENT, LENTILS_SIBLING)) {
+            idOf(api("seed-tree-food", "POST", "/api/food/", obj("name" to name), record = false))?.let { tree[name] = it }
+        }
+        observe("substituteTree.foods", tree.keys.sorted())
+        val beans = tree[BEANS] ?: return
+        val kidney = tree[BEANS_CHILD] ?: return
+        val red = tree[LENTILS] ?: return
+        val lentils = tree[LENTILS_PARENT] ?: return
+        val green = tree[LENTILS_SIBLING] ?: return
+        val move = api("food-move", "PUT", "/api/food/$kidney/move/$beans/", null, record = false)
+        observe("substituteTree.move", describe(move, includeBody = move.status != OK))
+        api("food-move-red", "PUT", "/api/food/$red/move/$lentils/", null, record = false)
+        api("food-move-green", "PUT", "/api/food/$green/move/$lentils/", null, record = false)
+        observe("substituteTree.child.parent", foodField(kidney, "parent")?.let { (it as? JsonPrimitive)?.content == beans.toString() })
+        observe("substituteTree.sibling.parent", foodField(green, "parent")?.let { (it as? JsonPrimitive)?.content == lentils.toString() })
+        observe("substituteTree.patchChildren.status", patchFood(beans, "substitute_children" to true))
+        observe("substituteTree.patchSiblings.status", patchFood(red, "substitute_siblings" to true))
+        observe("substituteTree.makenow0.before", treeRecipes())
+
+        // In stock (amount > 0 in the household's fridge), not on hand.
+        val kidneyEntry = stock(fridge, BEANS_CHILD)
+        val greenEntry = stock(fridge, LENTILS_SIBLING)
+        observe("substituteTree.makenow0.inStock", treeRecipes())
+        observe("substituteTree.inStock.substituteOnhand", foodField(beans, "substitute_onhand"))
+        for (entry in listOfNotNull(kidneyEntry, greenEntry)) {
+            api("tree-entry-zero", "PATCH", "/api/inventory-entry/$entry/", obj("amount" to 0.0), record = false)
+        }
+        observe("substituteTree.makenow0.stockZero", treeRecipes())
+
+        // On hand instead: the child of the beans.
+        patchFood(kidney, "food_onhand" to true)
+        observe("substituteTree.makenow0.childOnHand", treeRecipes())
+        observe("substituteTree.childOnHand.substituteOnhand", foodField(beans, "substitute_onhand"))
+        // The flag decides: without substitute_children the child on hand no longer counts.
+        patchFood(beans, "substitute_children" to false)
+        observe("substituteTree.makenow0.flagOff", treeRecipes())
+        // The other way round: a PARENT in stock does not stand in for its child (red lentils' parent).
+        patchFood(kidney, "food_onhand" to false)
+        val parentEntry = stock(fridge, LENTILS_PARENT)
+        observe("substituteTree.makenow0.parentInStock", treeRecipes())
+        for (entry in listOfNotNull(kidneyEntry, greenEntry, parentEntry)) delete("inventory-entry", entry)
+    }
+
+    /** The [TREE_RECIPES] that `makenow=0` lists, sorted. */
+    private fun treeRecipes(): List<String> {
+        val names = TREE_RECIPES.map { it.first }.toSet()
+        val listed = pageOrArray(read("/api/recipe/?makenow=0&page_size=100").json).mapNotNull { it.stringAt("name") }
+        return listed.filter { it in names }.sorted()
+    }
+
+    /** PATCHes one field of a food (not recorded); the status. */
+    private fun patchFood(id: Long, field: Pair<String, Any?>): Int =
+        api("tree-food-patch", "PATCH", "/api/food/$id/", obj(field), record = false).status
+
+    /** One [food] in [location] (amount 1, unit "st"), not recorded; the entry's id. */
+    private fun stock(location: JsonObject, food: String): Long? =
+        idOf(api("tree-entry", "POST", "/api/inventory-entry/", entryBody(location, food, 1.0, "st", null), record = false))
+
     // --- c. Keywords: pairing tree, move, keywords_or + include_children, the partner's recipe ------
 
     @Test
@@ -1000,6 +1079,21 @@ class PhaseSContractTest {
             "Gröt med blåbär" to listOf("havregryn", "havredryck", "blåbär"),
             "Falafel" to listOf("kikärtor", "persilja", "spiskummin", "kikärtsmjöl"),
         )
+
+        /**
+         * Fas S komplettering: recipes of one food each, substituted through the food tree: the
+         * beans by their child (`substitute_children`), the red lentils by their sibling under
+         * the lentils (`substitute_siblings`).
+         */
+        val TREE_RECIPES: List<Pair<String, List<String>>> = listOf(
+            "Bönsallad" to listOf("bönor"),
+            "Linssoppa" to listOf("röda linser"),
+        )
+        const val BEANS = "bönor"
+        const val BEANS_CHILD = "kidneybönor"
+        const val LENTILS = "röda linser"
+        const val LENTILS_PARENT = "linser"
+        const val LENTILS_SIBLING = "gröna linser"
 
         /** Every Fas S recipe of [MAKENOW_RECIPES], sorted (what an ignored makenow filter lists). */
         val ALL_FOUR: List<String> = MAKENOW_RECIPES.map { it.first }.sorted()
