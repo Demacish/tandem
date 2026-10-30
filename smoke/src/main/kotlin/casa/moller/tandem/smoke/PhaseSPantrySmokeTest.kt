@@ -220,17 +220,18 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
         }
 
         /**
-         * Hemma's first use creates Fridge, Freezer and Pantry on the server (or offers it). An
-         * empty pantry shows no place names, so the server's state is what is checked.
+         * Hemma's first use creates Fridge, Freezer and Pantry on the server by itself
+         * (`PantryRepository.refresh()`); "Add Fridge, Freezer and Pantry" may show for a moment
+         * before that and is NOT tapped (that would race the automatic creation). An empty pantry
+         * shows no place names, so the server is checked, then that the page left "no places".
          */
         fun waitForDefaultLocations(app: TandemApp, tandoor: FakeTandoor) {
-            app.device.findObject(By.text("Add Fridge, Freezer and Pantry"))?.click()
             val deadline = SystemClock.uptimeMillis() + Phase2SmokeBase.DRAIN_TIMEOUT_MS
             while (tandoor.pantry.locations().map { it.name }.sorted() != listOf("Freezer", "Fridge", "Pantry")) {
                 if (SystemClock.uptimeMillis() > deadline) throw AssertionError("No default places: ${tandoor.pantry.locations()}")
-                app.device.findObject(By.text("Add Fridge, Freezer and Pantry"))?.click()
                 SystemClock.sleep(Phase2SmokeBase.POLL_MS)
             }
+            app.waitUntilGone(By.text("No storage places yet"))
         }
 
         /** The pantry's state for the failure report. */
