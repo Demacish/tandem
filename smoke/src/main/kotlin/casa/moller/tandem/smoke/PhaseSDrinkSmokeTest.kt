@@ -45,11 +45,11 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
         app.tap("Recipes")
         openDrinks()
         // The extended FAB: through its accessibility action, else a tap on its label or description.
-        app.waitFor(By.text(FakeDrinks.DRINK_NAME))
         waitForAction("the New drink page") {
             val clicked = app.clickNodeWithText(NEW_DRINK) ||
                 (app.device.findObject(By.text(NEW_DRINK)) ?: app.device.findObject(By.desc(NEW_DRINK)))
-                    ?.let { runCatching { it.click() }.isSuccess } == true
+                    ?.let { runCatching { it.click() }.isSuccess } == true ||
+                tapFloatingButton()
             clicked && app.device.wait(Until.hasObject(By.text(SAVE_DRINK)), TAP_WAIT_MS) == true
         }
         val name = app.waitForNode("the name field") { it.className?.toString() == EDIT_TEXT }
@@ -144,6 +144,24 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
         }
     }
 
+    /**
+     * The extended floating button at the bottom right ("New drink") by its place: on the CI
+     * emulator its label was not always in the window hierarchy while the list settled.
+     */
+    private fun tapFloatingButton(): Boolean {
+        val device = app.device
+        // Only on Drycker (its search field), never on a recipe card of the list behind it.
+        if (!device.hasObject(By.text(SEARCH_DRINKS))) return false
+        val width = device.displayWidth
+        val height = device.displayHeight
+        val button = device.findObjects(By.pkg(TandemApp.PACKAGE))
+            .mapNotNull { node -> runCatching { node.visibleBounds }.getOrNull() }
+            .filter { it.left > width / 2 && it.top > height * FAB_TOP && it.bottom < height * FAB_BOTTOM }
+            .filter { it.width() > width / FAB_MIN_PARTS }
+            .maxByOrNull { it.width() * it.height() } ?: return false
+        return device.click(button.centerX(), button.centerY())
+    }
+
     /** Repeats [action] until it succeeds (a node that is not there yet), at most [ACTION_TIMEOUT_MS]. */
     private fun waitForAction(what: String, action: () -> Boolean) {
         val deadline = SystemClock.uptimeMillis() + ACTION_TIMEOUT_MS
@@ -156,6 +174,10 @@ class PhaseSDrinkSmokeTest : Phase2SmokeBase() {
     private companion object {
         const val DRINKS = "Drinks"
         const val WANT_TO_COOK = "Want to cook"
+        const val SEARCH_DRINKS = "Search drinks"
+        const val FAB_TOP = 0.75
+        const val FAB_BOTTOM = 0.9
+        const val FAB_MIN_PARTS = 5
         const val SWIPE_PARTS = 10
         const val SWIPE_FROM = 9
         const val SWIPE_STEPS = 20
