@@ -86,12 +86,18 @@ offline. Import av recept, receptredigering, widgets och dra och släpp kommer i
   stor text och i liggande läge med tangentbordet uppe; Packa upp-kortet står under listan i Handla
   och har "Inte nu"; en borttagen koppling i Passar med kan ångras; dryckesförslaget syns också i
   surfplattans veckorutnät; kamerans originalfoton av nya drycker sparas inte kvar.
+- **Rättat i kompletteringen före 0.4.0:** Kan laga nu räknar ett barn eller syskon i
+  livsmedelsträdet som ersättning också när det bara finns i skafferiet, som Tandoor; dryckernas
+  typer sorteras efter namnen på appens språk (Alcohol-free, Beer … på engelska); Ny dryck säger
+  till när fotot inte går att läsa i stället för att spara utan det; "Rensa appdata" tar också bort
+  kamerans originalfoton av nya drycker; dryckesförslagen i Idag och Veckan delar på ett
+  dryckesindex.
 - **Större app:** textigenkänningen och streckkodsläsaren ingår i appen (de fungerar utan Googles
   tjänster och utan nät), vilket gör APK-filen ungefär 77 MB i stället för 8 MB.
 - **Kvar till senare:** kvittoläsningen är bara prövad på påhittade kvitton, och hur bra den känner
   igen en butiks kvitton andra gången har inte mätts på riktiga kvitton än. Gemini och OpenAI är
-  byggda efter tjänsternas dokumentation och har inte prövats mot de riktiga tjänsterna (bara
-  Claude-vägen körs i appens röktest, mot en falsk tjänst). Importen av recept kommer i Fas 3.
+  byggda efter tjänsternas dokumentation och har inte prövats mot de riktiga tjänsterna (appens
+  röktest kör alla tre, mot falska tjänster). Importen av recept kommer i Fas 3.
 
 ## [0.3.0] – 2026-10-26
 

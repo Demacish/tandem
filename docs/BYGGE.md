@@ -640,12 +640,14 @@ fejkade nycklar (`sk-test-not-a-real-key`) och fejkade servrar, aldrig ett rikti
 | `pantry.UseUpRanking` | `rank(recipes, recipeFoods, pantry, today, days = 3)`: recept med en vara som går ut inom 3 dagar först (tidigast först, sedan fler), annars serverns ordning; `expiringByFood` |
 | `scan.ReceiptLineFilter` | `classify(line)` → `ReceiptLineKind`, `items(lines)` → `ReceiptItem` utan pris; ett första skelett (summa, moms, pant, rabatt, kort, rubrik) som skanningsbanan fyller i |
 
-### Room-schema 5 (`MIGRATION_4_5`, hela fasens enda migrering)
+### Room-schema 5 (`MIGRATION_4_5`) och 6 (`MIGRATION_5_6`)
 
-Tabellerna och migreringen är **slutliga för Fas S**: banorna lägger till frågor i sina DAO:er men
-ingen tabell, kolumn eller version. Behövs ändå en ändring blir den 5 → 6 och samordnas här först.
-`5.json` är incheckad; `TandemMigrationTest` prövar 4 → 5 och 1 → 5; `OutboxPhaseSTest` prövar
-id-omskrivningen och sammanslagningen.
+Tabellerna och migreringen var **slutliga för Fas S-banorna**: de lade till frågor i sina DAO:er men
+ingen tabell, kolumn eller version. `5.json` är incheckad; `TandemMigrationTest` prövar 4 → 5;
+`OutboxPhaseSTest` prövar id-omskrivningen och sammanslagningen. **Schema 6** (kompletteringen,
+fortfarande 0.4.0) lägger bara till livsmedelsträdet i `food` (`parent_id`,
+`substitute_siblings`, `substitute_children`, se "Komplettering av Fas S"); `TandemMigrationTest`
+prövar 5 → 6 och 1 → 6.
 
 | Tabell | Nyckel | Innehåll | DAO (bana) |
 |---|---|---|---|
@@ -1456,11 +1458,11 @@ Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
   levande bilder) prövas bara på en riktig telefon; röktestet går via galleriet. "80 % rätt andra
   gången samma butik används" är bara visat med syntetiska kvitton och inlärda alias, inte mätt på
   riktiga kvitton. Gemini och OpenAI är byggda efter dokumentationen och prövas bara mot falska
-  servrar (inga riktiga AI-anrop i CI). En basvara som lagts till offline utan livsmedel markeras
-  alltid som hemma när den löses; `MissingIngredients` ser inte ett syskon- eller barnsubstitut som
-  bara finns i lagret (serverns `makenow` avgör grupperna); `POST food/` för en okänd basvara har
-  inget kontraktstest; typerna sorteras efter de svenska servernamnen även med engelska i appen;
-  ML Kits fullständiga licenstexter (1–2 MB) ligger inte i appen, bara komponentnamnen och länken.
+  servrar (inga riktiga AI-anrop i CI; sedan kompletteringen också i röktestet under R8). En
+  basvara som lagts till offline utan livsmedel markeras alltid som hemma när den löses; ML Kits
+  fullständiga licenstexter (1–2 MB) ligger inte i appen, bara komponentnamnen och länken.
+  (Syskon- och barnersättningar i lagret, `POST food/` med ett befintligt namn och typernas
+  ordning med engelska rättades i "Komplettering av Fas S".)
 <!-- /Fas S integration -->
 
 <!-- Fas S fix-data -->
@@ -1549,8 +1551,9 @@ Rättelser efter granskningen av 0.4.0 i `feature/**`, `core:ui` och några små
   behåller bildväljarens läsrätt (`takePersistableUriPermission`) tills drycken sparats, så att ett
   formulär efter processdöd har kvar fotot.
 - **`:core:sync` (litet block):** dryckesindexet byggs på `Dispatchers.Default` och utkasten läses en
-  gång (`observeDrinkIndexAndDrafts`). Indexet delas INTE mellan läsare: en läsare direkt efter en
-  skrivning måste se den (repositorytesterna läser så).
+  gång (`observeDrinkIndexAndDrafts`). Indexet delades inte mellan läsare här; kompletteringen
+  delar det per konto utan att en läsare efter en skrivning missar den (`SharedDrinkIndex`, se
+  "Komplettering av Fas S").
 - **Referensbilder** (Screenshots-körning 41043360492 på grenen, bara dessa togs):
   - nya: `pantry/tablet_make_now_font2_light_sv`, `phone_landscape_pantry_entry_light_sv`,
     `phone_landscape_pantry_entry_keyboard_dark`, `phone_landscape_staples_light_sv`;
@@ -1565,6 +1568,61 @@ Rättelser efter granskningen av 0.4.0 i `feature/**`, `core:ui` och några små
   - Hemmas telefonbilder spelades in med ca 120 pixlar annorlunda kantutjämning men samma innehåll
     och togs INTE (verifieringen godtar de gamla: varorna som egna lazy-objekt ritar likadant).
 <!-- /Fas S fix-ui -->
+
+<!-- Fas S komplettering-1 -->
+## Komplettering av Fas S (0.4.0, komplettering-1)
+
+Luckor som fullständighetskontrollen hittade och som gick att rätta utan telefon eller riktig
+AI-nyckel (fortfarande 0.4.0, före taggningen):
+
+- **Ersättningar genom livsmedelsträdet** (`MissingIngredients`, plan §8.8): `FoodAvailability`
+  har `parentId`, `substituteSiblings` och `substituteChildren`. Ett barn eller barnbarn
+  (`substitute_children`) eller ett syskon under samma förälder (`substitute_siblings`) som finns
+  i lagret (mängd > 0) eller är *har hemma* löser livsmedlet, som Tandoors `makenow`
+  (`PhaseSContractTest.substituteTree`, FACTS "Fas S a"); en förälder ersätter aldrig sitt barn,
+  och en rot har inga syskon. **Schema 6** (`MIGRATION_5_6`, `6.json` ur CI:s export):
+  `food.parent_id`, `food.substitute_siblings` (0) och `food.substitute_children` (0); den
+  hela livsmedelslistan i synkens små tabeller fyller dem (`FoodDto.toEntity`).
+- **Kontraktet** (FACTS "Fas S" för 2.6.13 och 2.7.1, `EXPECTED`): `POST /api/food/` med ett namn
+  som redan finns är get-or-create (201, samma livsmedel också i annan versalisering, *har hemma*
+  kvar), så en basvara som en annan telefon hunnit skapa aldrig blir en dubblett; en nästlad plats
+  i en post-PATCH och ett nästlat nyckelord `{id, name}` med ett annat namn **döper om** platsen
+  respektive nyckelordet för hela spacet (inget nytt skapas), därför skickar appen kända nyckelord
+  bara med id och platsen ur serverns senaste svar. Nya inspelningar: `food-create-existing`,
+  `inventory-entry-patch-renamed-location`, `recipe-patch-keyword-other-name`.
+- **Dryckesindexet delas** (`core:sync` `drink/SharedDrinkIndex`, fix-ui #24): en
+  `DrinkIndex`-pipeline per konto och databas (`shareIn`, `WhileSubscribed(5 s)`, replay 1) för
+  alla läsare av `DrinkRepository` (varje måltidskort i Idag och Veckan visar ett
+  dryckesförslag). Varje byggt index bär räknaren för `invalidate()` det startades vid; en ny
+  läsare invaliderar en gång och hoppar över äldre index, och repositoryn invaliderar efter varje
+  lokal skrivning och `refresh()`. En läsare ser alltså alltid det som skrivits innan den började,
+  också det synken nyss skrev (Room meddelar den delade pipelinen först en stund efter en commit);
+  flera nya läsare samtidigt kostar en ombyggnad, inte en pipeline var. `DrinkRepositoryTest`:
+  fem kort, en pipeline, en koppling syns direkt.
+- **Ny dryck med ett oläsbart foto** (fix-ui #23): `DrinkProblem.PHOTO_UNREADABLE` när fotot inte
+  går att kopiera (borttaget, behörigheten borta, ingen bild); inget sparas och Ny dryck säger
+  "Fotot gick inte att läsa. Välj det igen, eller spara drycken utan foto." i en snackbar.
+- **Kamerans original** (fix-ui #3/#22): `cache/drink-camera/` (`core:data`
+  `files/CacheDirectories.DRINK_CAMERA`, samma konstant som `DrinkCameraFiles`) töms av "Rensa
+  appdata" (`DefaultAccountRepository.clearAppData`) och när inget konto finns kvar
+  (`AccountMirror` → `AndroidDrinkImageStore.deleteAll`; `DrinkCameraCleanupTest`).
+- **Dryckestyperna i UI-språkets ordning** (fynd 29): `feature:recipes` `DrinkTypeLabels`
+  (`ResourceDrinkTypeLabels`, Hilt) sorterar typchipsen i Drycker och Ny dryck och varje dryckes
+  typer efter den **visade** etiketten (`drinkTypeLabel`) med en `Collator` för UI-språket;
+  dryckerna efter namn med samma `Collator`. Med engelska: Alcohol-free, Beer, Cider, Cocktail,
+  Wine. Referensbilderna med engelska typchips togs om (se nedan).
+- **AI-inställningarnas felkoder** (`core:data` `ai/AiSettingsProblem`): `core:ai`,
+  `FakeAiSettingsRepository` och Inställningar → AI använder samma koder
+  (`tandem.ai.key-empty`, `tandem.ai.base-url-invalid` …); testet väntar sig `EMPTY`, inte den
+  särskilda lagringsmappningen.
+- **Idag:** `TodayPantryViewModelTest` har ett Använd upp-recept utan nedladdad detalj
+  (`missingFoods == null`) som räknas under "Går ut snart" och visas i Kan laga nu.
+- **Röktestet** (21 tester): Ny dryck med galleribild (`PhaseSDrinkSmokeTest`, `FakeDrinks`
+  svarar `POST /api/recipe/` och `PUT /api/recipe/{id}/image/`), och Gemini och OpenAI med "Test
+  the key" och ett kylfoto mot `FakeAiServices` (`PhaseSAiSmokeTest`), se "Release-röktest".
+- **Inte gjort (Fas 4):** den valfria notisen "X går ut i morgon – n recept" (kanalen
+  Måltidspåminnelser, plan §8.8) skjuts till Fas 4 med de andra notiserna.
+<!-- /Fas S komplettering-1 -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
@@ -3337,7 +3395,15 @@ den kod som skickas:
   galleriet går genom SDK:ns `beta().messages().create` (JPEG i base64, JSON-schema, betahuvudet
   för reservmodellen) till `FakeAnthropic`, som svarar med tre varor; granskningen öppnas utan att
   något sparats, den osäkra raden (0,3) är överhoppad, och "Save 2 items in the pantry" ger mjölk
-  och smör men inget alias. Röktestet hittade en R8-bugg: DTO:er som bara är en suspend-funktions
+  och smör men inget alias. Kompletteringen (g): Gemini och OpenAI på samma sätt mot
+  `FakeAiServices` på `FakeTandoor`s server (egen bas-URL `…/gemini/v1beta` och `…/openai/v1`):
+  "Test the key" (`models/gemini-2.5-flash-lite`, `models/gpt-5-nano`) och ett kylfoto genom
+  `core:ai`s egna REST-klienter under R8 (`generateContent` med `inlineData` och svarsschema,
+  `responses` med `input_image` och strikt JSON-schema), bara AI-nyckeln i begäran (ingen Tandoor-
+  token, ingen kaka), granskningen och "Save 2 items"; (h) Ny dryck: "Cava Exempel" med typen Wine
+  och en syntetisk bild ur galleriet blir `POST /api/recipe/` med `steps: []`, `internal: true`
+  och nyckelordet Dryck, och sedan `PUT /api/recipe/{id}/image/` med en JPEG-del `image`
+  (multipart). Röktestet hittade en R8-bugg: DTO:er som bara är en suspend-funktions
   returtyp (`KeywordMoveDto`, `RecipeImageDto`) togs bort, så kopplingen aldrig flyttade sitt
   nyckelord (se `core/network/consumer-rules.pro`); mappningssteget kontrollerar nu alla DTO:er.
   `smoke.yml` kan köras för hand med bara vissa testklasser (`tests`), push och `main` kör allt.
