@@ -96,7 +96,11 @@
     <string name="shell_license_bricolage" translatable="false">Bricolage Grotesque</string>
     <string name="shell_license_dm_sans" translatable="false">DM Sans</string>
     <string name="shell_license_material_symbols" translatable="false">Material Symbols Rounded</string>
-    <string name="shell_license_libraries" translatable="false">AndroidX (Activity, Core, Lifecycle, Navigation 3, Room, WorkManager, DataStore, Browser, SplashScreen), Jetpack Compose, Material 3, Kotlin, kotlinx (coroutines, serialization, datetime), Dagger Hilt, OkHttp, Okio, Retrofit, Coil, Tink</string>
+    <string name="shell_license_libraries" translatable="false">AndroidX (Activity, Core, Lifecycle, Navigation 3, Room, WorkManager, DataStore, Browser, SplashScreen, CameraX), Jetpack Compose, Material 3, Kotlin (with kotlin-reflect), kotlinx (coroutines, serialization, datetime), Dagger Hilt, OkHttp, Okio, Retrofit, Coil, Tink, Jackson, OpenTelemetry API, victools JSON Schema Generator, Swagger annotations</string>
+    <string name="shell_license_anthropic_java" translatable="false">Anthropic Java SDK</string>
+    <string name="shell_license_ml_kit" translatable="false">Google ML Kit (barcode scanning, text recognition)</string>
+    <string name="shell_license_mit" translatable="false">MIT License</string>
+    <string name="shell_license_ml_kit_terms" translatable="false">ML Kit Terms of Service</string>
     <string name="shell_license_ofl" translatable="false">SIL Open Font License 1.1</string>
     <string name="shell_license_apache" translatable="false">Apache License 2.0</string>
 

@@ -66,7 +66,10 @@ internal fun LicensesScreen(onOpenLicense: (BundledLicense) -> Unit, onNavigateB
                 }
                 SectionHeader(stringResource(R.string.shell_licenses_libraries))
                 SettingsGroup {
-                    LicenseRow(BundledLicense.LIBRARIES, onOpenLicense)
+                    LIBRARY_ROWS.forEachIndexed { index, license ->
+                        if (index > 0) GroupDivider()
+                        LicenseRow(license, onOpenLicense)
+                    }
                 }
             }
         }
@@ -76,12 +79,15 @@ internal fun LicensesScreen(onOpenLicense: (BundledLicense) -> Unit, onNavigateB
 @Composable
 private fun LicenseRow(license: BundledLicense, onOpen: (BundledLicense) -> Unit) {
     SettingsRow(
-        icon = if (license == BundledLicense.LIBRARIES) TandemIcons.MenuBook else TandemIcons.Info,
+        icon = if (license in LIBRARY_ROWS) TandemIcons.MenuBook else TandemIcons.Info,
         title = stringResource(license.title),
         supporting = stringResource(license.licenseName),
         onClick = { onOpen(license) },
     )
 }
+
+/** The libraries group: everything Apache 2.0 in one row, then the SDKs with other terms (Fas S). */
+private val LIBRARY_ROWS = listOf(BundledLicense.LIBRARIES, BundledLicense.ANTHROPIC_JAVA, BundledLicense.ML_KIT)
 
 /** The full licence text, read from core:designsystem's `assets/licenses/`. */
 @Composable

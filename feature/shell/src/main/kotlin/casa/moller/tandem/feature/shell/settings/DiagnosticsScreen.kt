@@ -245,6 +245,10 @@ private fun kindLabel(kind: OutboxKind): Int = when (kind) {
     OutboxKind.FOOD -> R.string.settings_diagnostics_kind_food
     OutboxKind.AISLE_ORDER -> R.string.settings_diagnostics_kind_aisle_order
     OutboxKind.PREFERENCES -> R.string.settings_diagnostics_kind_preferences
+    OutboxKind.PANTRY -> R.string.settings_diagnostics_kind_pantry
+    OutboxKind.LEARNED_ALIAS -> R.string.settings_diagnostics_kind_learned_alias
+    OutboxKind.DRINK -> R.string.settings_diagnostics_kind_drink
+    OutboxKind.PAIRING -> R.string.settings_diagnostics_kind_pairing
     OutboxKind.COOK_LOG -> R.string.settings_diagnostics_kind_cook_log
     OutboxKind.VIEW_LOG -> R.string.settings_diagnostics_kind_view_log
     OutboxKind.OTHER -> R.string.settings_diagnostics_kind_other

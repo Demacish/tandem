@@ -179,6 +179,10 @@
     <string name="settings_diagnostics_kind_food">Livsmedel (avdelning, har hemma)</string>
     <string name="settings_diagnostics_kind_aisle_order">Avdelningsordning</string>
     <string name="settings_diagnostics_kind_preferences">Tandoor-inställningar</string>
+    <string name="settings_diagnostics_kind_pantry">Skafferiet</string>
+    <string name="settings_diagnostics_kind_learned_alias">Inlärda streckkoder och kvittonamn</string>
+    <string name="settings_diagnostics_kind_drink">Nya drycker</string>
+    <string name="settings_diagnostics_kind_pairing">Passar med</string>
     <string name="settings_diagnostics_kind_cook_log">Kokloggen</string>
     <string name="settings_diagnostics_kind_view_log">Senast visade</string>
     <string name="settings_diagnostics_kind_other">Övrigt</string>

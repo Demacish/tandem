@@ -1,0 +1,55 @@
+Google ML Kit
+=============
+
+Tandem uses two Google ML Kit libraries with their models bundled in the app, so they work
+without Google Play services and entirely on the phone:
+
+  com.google.mlkit:barcode-scanning 17.3.0   (barcodes on packages)
+  com.google.mlkit:text-recognition 16.0.1   (Latin text on receipts)
+
+ML Kit is provided by Google under the ML Kit Terms of Service:
+https://developers.google.com/ml-kit/terms
+
+Barcodes and receipts are read on the device; Tandem does not send those photos anywhere.
+
+ML Kit contains open-source components. Google publishes their names and full licence texts
+with each library (third_party_licenses.txt in the published packages on maven.google.com).
+The components are:
+
+  Abseil, address_sorting, Android SDK Platforms, AndroidX activity library,
+  AndroidX annotation experimental library, AndroidX annotation library,
+  AndroidX architecture core common library, AndroidX architecture core runtime library,
+  AndroidX asynclayoutinflater library, AndroidX collection library,
+  AndroidX concurrent futures library, AndroidX coordinatorlayout library,
+  AndroidX core ktx library, AndroidX core library, AndroidX cursoradapter library,
+  AndroidX customview library, AndroidX documentfile library, AndroidX drawerlayout library,
+  AndroidX exifinterface library, AndroidX fragment library, AndroidX interpolator library,
+  AndroidX legacy coreui library, AndroidX legacy coreutils library, AndroidX legacy v4 library,
+  AndroidX lifecycle common library, AndroidX lifecycle livedatacore library,
+  AndroidX lifecycle runtime library, AndroidX lifecycle viewmodel library,
+  AndroidX lifecycle viewmodel savedstate library, AndroidX loader library,
+  AndroidX localbroadcastmanager library, AndroidX media base library, AndroidX print library,
+  AndroidX savedstate library, AndroidX swiperefreshlayout library, AndroidX tracing library,
+  AndroidX versionedparcelable library, AndroidX viewpager library, angle, Animal Sniffer,
+  apksig, Bazel Platforms, Boost, BoringSSL, Brotli, bzip2, c-ares, cblas,
+  Checker Framework Annotations, Chrome Certificate Verifier, cnpy, cppitertools, cpu_features,
+  cpuinfo, Crunchy Crypt, cutlass, Dagger, Darts-clone, dav1d, dawn, Dimsum, double-conversion,
+  ducc, ecclesia, Edge TPU (0), Edge TPU (1), Edge TPU firmware callback, Eigen 3, Error Prone,
+  expat, f2reduce, fast_hash, Firebase, FlatBuffers, FP16, from_libaom (0), from_libaom (1),
+  FXdiv, gcc_14_1_0, gemmlowp, giflib, glslang, Google Auto, Google Toolbox for Mac, gRPC,
+  gRPC Protos, gsfclient, Guava JDK5, Guava JDK7, Halide, highway, HighwayHash, hwloc, ICU4C,
+  imath, intel_dnnl, J2ObjC, Jakarta Inject, java_annotations, jpegxl, JsInterop Annotations,
+  JSpecify, JSR 250, JSR 305, JSR 330, Khronos OpenGL headers, KleidiAI, Kotlin,
+  Kotlin coroutines, kotlinx_atomicfu, LAPACK, legacy_libcxx_sort, Leptonica, libaom, libavif,
+  libdeflate, libexecinfo, libjpeg-turbo, libpfm4, liburing, libwebp, Libxml2, libyuv,
+  Little CMS, LLVM, mecab, MediaPipe, minizip, ml_dtypes, Mosys, mozilla_psl,
+  Nano Protocol Buffers, nanoflann, NCurses, neon2sse, nsync, NVIDIA Management Library,
+  Ooura FFT, open_platforms_util_subtle, OpenCensus, opencl_headers, opencl_icd_loader, OpenCV,
+  openexr, openssh, PCG Random Number Generator, pdlp, perfetto, piex, PNG, pngnq,
+  program_image_remapper, Proto Converter, Protocol Buffers, Protocol Buffers for Java,
+  pthreadpool, RE2, Riegeli, ruy, SafeParcelable library, sentencepiece, sequence_lock, sha3,
+  sjpeg, Skia, sobol_data, spirv_headers, spirv_tools, splitfile, stablehlo, SwiftShader, tbb,
+  TCMalloc, TensorFlow, TensorFlow Lite Support, TensorFlow Models, TensorFlow Serving,
+  tf_runtime, tf_runtime_eigen, tf_runtime_llvm, tiff, Tink, tz database, Unsmear, UTF,
+  utf8_range, vulkan_headers, vulkan_loader, vulkan_memory_allocator, vulkan_volk, X.Org,
+  XCB library, xmp_toolkit, XNNPACK, xxhash, Zippy, zlib, Zstandard

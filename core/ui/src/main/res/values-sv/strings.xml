@@ -64,5 +64,4 @@
     <string name="ui_crash_dialog_note">Appversion, Androidversion, enhetsmodell och var i koden Tandem stannade. Lösenord, token och webbadresser är borttagna.</string>
     <string name="ui_crash_share_subject">Kraschlogg från Tandem</string>
     <string name="ui_crash_share_chooser">Dela kraschlogg</string>
-    <string name="ui_placeholder_body">Den här sidan byggs till Tandem 0.4.0.</string>
 </resources>

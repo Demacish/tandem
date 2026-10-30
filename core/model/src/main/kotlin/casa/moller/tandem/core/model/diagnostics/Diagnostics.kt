@@ -82,6 +82,18 @@ enum class OutboxKind {
     FOOD,
     AISLE_ORDER,
     PREFERENCES,
+
+    /** Fas S: storage places and pantry items (`inventory_location`, `inventory_entry`). */
+    PANTRY,
+
+    /** Fas S: learned barcodes and receipt names (`FOOD_ALIAS` automations). */
+    LEARNED_ALIAS,
+
+    /** Fas S: drinks created on the phone and their photos. */
+    DRINK,
+
+    /** Fas S: "Passar med" pairings (`RECIPE_KEYWORDS` rows with pairing fields only). */
+    PAIRING,
     COOK_LOG,
     VIEW_LOG,
     OTHER,

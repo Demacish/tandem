@@ -4,6 +4,7 @@ import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
+import casa.moller.tandem.core.database.entity.RecipeKeywordFields
 import casa.moller.tandem.core.model.diagnostics.OutboxKind
 import casa.moller.tandem.core.model.diagnostics.OutboxProblem
 import casa.moller.tandem.core.model.diagnostics.OutboxSummary
@@ -48,7 +49,7 @@ internal object OutboxHealth {
 
         row.op == OutboxOps.VIEW_LOG -> OutboxKind.VIEW_LOG
 
-        row.op == OutboxOps.RECIPE_KEYWORDS -> OutboxKind.WANT_TO_COOK
+        row.op == OutboxOps.RECIPE_KEYWORDS -> if (isPairingOnly(row.payload)) OutboxKind.PAIRING else OutboxKind.WANT_TO_COOK
 
         else -> when (row.entity) {
             OutboxEntities.SHOPPING_ENTRY -> OutboxKind.SHOPPING_ENTRY
@@ -60,9 +61,22 @@ internal object OutboxHealth {
             OutboxEntities.FOOD -> OutboxKind.FOOD
             OutboxEntities.SUPERMARKET_CATEGORY_RELATION -> OutboxKind.AISLE_ORDER
             OutboxEntities.USER_PREFERENCE -> OutboxKind.PREFERENCES
+            OutboxEntities.INVENTORY_LOCATION, OutboxEntities.INVENTORY_ENTRY -> OutboxKind.PANTRY
+            OutboxEntities.FOOD_ALIAS -> OutboxKind.LEARNED_ALIAS
+            OutboxEntities.DRINK -> OutboxKind.DRINK
+            OutboxEntities.KEYWORD -> OutboxKind.PAIRING
             else -> OutboxKind.OTHER
         }
     }
+
+    /**
+     * Fas S (integration): a `RECIPE_KEYWORDS` row that only adds or removes pairings and drink
+     * types (`keyword:<id>`, `pairing:<name>`, `RecipeKeywordFields`); a row with "Vill laga"
+     * (`keywords`) in it, or an old row without fields, counts as "Vill laga".
+     */
+    private fun isPairingOnly(payload: String): Boolean =
+        "\"${RecipeKeywordFields.WANT_TO_COOK}\"" !in payload &&
+            ("\"${RecipeKeywordFields.KEYWORD_PREFIX}" in payload || "\"${RecipeKeywordFields.PAIRING_PREFIX}" in payload)
 
     /** A row's `last_error` (an `ErrorCodes` code or a lane's own code) as a reason people can read. */
     fun problemOf(code: String): OutboxProblem = when {

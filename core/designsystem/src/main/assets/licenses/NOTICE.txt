@@ -24,3 +24,12 @@ above when they were downloaded (2026-10-09; the recipe screens' icons in
 icon/TandemIconsRecipes.kt on 2026-10-11, cook mode's in icon/TandemIconsCook.kt on 2026-10-16,
 the books' in icon/TandemIconsBooks.kt on 2026-10-25 and the drinks' in icon/TandemIconsDrinks.kt
 on 2026-10-29, same commit).
+
+Fas S (0.4.0, integration): licence texts of libraries added for the pantry
+  MIT-AnthropicJava.txt  the MIT licence of the Anthropic Java SDK, copied from
+                         META-INF/licenses/anthropic-java-core/LICENSE in
+                         com.anthropic:anthropic-java-core 2.72.0 (Maven Central, SHA-1
+                         3ce24004240ef1d7b7dabe47448e6828a9506207 checked against the published .sha1)
+  MLKit-NOTICE.txt       a notice for Google ML Kit (ML Kit Terms of Service) with the names of
+                         the open-source components in third_party_licenses.json of
+                         com.google.mlkit:barcode-scanning 17.3.0 and text-recognition 16.0.1
