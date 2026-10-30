@@ -38,9 +38,10 @@ import kotlinx.coroutines.flow.map
  *
  * [SpacePermissions.householdMissing] (0.3.0 review, fix-data; plan 6.2, 8.6): the role was read
  * (the same answer carries the household), `household` was null, and the server's resolved
- * capabilities ([ServerStatus.capabilitiesResolved]) show no finished household setup (no [ServerFeature.HOUSEHOLDS]: `space.household_setup_completed` is
- * false, plan 8.6 "UserSpace.household == null medan household_setup_completed == false"). Tandoor
- * then shares neither the list nor the meal plan with the other members.
+ * capabilities ([ServerStatus.capabilitiesResolved]) show no finished household setup (no
+ * [ServerFeature.HOUSEHOLDS]: `space.household_setup_completed` is false, plan 8.6
+ * "UserSpace.household == null medan household_setup_completed == false"). Tandoor then shares
+ * neither the list nor the meal plan with the other members.
  *
  * [SpacePermissions.sharedWith] (0.3.0 komplettering, plan 8.6 "Delad med: …"): core:domain
  * `HouseholdMembers` over what [HouseholdMembersSync] stored and the creators of the stored list
