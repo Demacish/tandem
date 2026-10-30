@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.shopping.recipe
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -32,6 +33,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.StatusChip
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
@@ -126,21 +129,33 @@ fun RecipeShoppingSheet(state: RecipeShoppingUiState, onAction: (RecipeShoppingA
  * the end of the scrolling content, so with a recipe of nine ingredients it was below the fold on
  * a phone: the user had to scroll past every row to find it (and the release smoke test found no
  * node for it, since Compose leaves fully clipped nodes out of the accessibility tree).
+ *
+ * Fas S (rester lane): in a sheet lower than [COMPACT_SHEET_HEIGHT] (a phone in landscape) the
+ * title and the servings share a row and "Avbryt" stands beside the add button, so the rows get
+ * room to scroll; before, the title, servings, chips and the pinned buttons filled the whole sheet.
  */
 @Composable
 fun RecipeShoppingSheetLayout(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.sm)) {
-        RecipeShoppingContent(
-            state = state,
-            onAction = onAction,
-            actions = false,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .verticalScroll(rememberScrollState()),
-        )
-        RecipeShoppingActions(state = state, onAction = onAction)
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val compact = maxHeight < COMPACT_SHEET_HEIGHT
+        val spacing = TandemTheme.spacing
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) spacing.xs else spacing.sm)) {
+            RecipeShoppingContent(
+                state = state,
+                onAction = onAction,
+                actions = false,
+                compact = compact,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState()),
+            )
+            RecipeShoppingActions(state = state, onAction = onAction, compact = compact)
+        }
     }
 }
+
+/** Below this height [RecipeShoppingSheetLayout] uses its compact header (Material's compact window height). */
+internal val COMPACT_SHEET_HEIGHT: Dp = 480.dp
 
 /**
  * The sheet's content (Stitch l_gg_p_listan_ark): where the rows go (Tandoor's named lists, when
@@ -149,6 +164,7 @@ fun RecipeShoppingSheetLayout(state: RecipeShoppingUiState, onAction: (RecipeSho
  * TalkBack item with its checkbox state.
  *
  * @param actions false when the caller pins the buttons below the content ([RecipeShoppingSheetLayout]).
+ * @param compact (Fas S, rester lane) a low sheet: the title and the servings share one row.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -157,17 +173,17 @@ fun RecipeShoppingContent(
     onAction: (RecipeShoppingAction) -> Unit,
     modifier: Modifier = Modifier,
     actions: Boolean = true,
+    compact: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
-    val locale = LocalConfiguration.current.locales[0]
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-            Text(
-                text = stringResource(R.string.recipe_shopping_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(text = state.recipeName, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) spacing.sm else spacing.md)) {
+        if (compact) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+                SheetTitle(state = state, modifier = Modifier.weight(1f))
+                Servings(state = state, onAction = onAction, modifier = Modifier.weight(1f))
+            }
+        } else {
+            SheetTitle(state = state)
         }
         if (state.lists.isNotEmpty()) {
             Text(text = stringResource(R.string.recipe_shopping_list_label), style = MaterialTheme.typography.labelLarge)
@@ -188,19 +204,7 @@ fun RecipeShoppingContent(
                 }
             }
         }
-        val amount = servingsNumber(state.servings, locale)
-        ServingsStepper(
-            label = stringResource(R.string.recipe_shopping_servings_label),
-            valueText = if (state.servingsText.isNotBlank()) {
-                stringResource(R.string.recipe_shopping_servings_with_text, amount, state.servingsText)
-            } else {
-                pluralStringResource(R.plurals.recipe_shopping_servings, if (state.servings == 1.0) 1 else PLURAL_OTHER, amount)
-            },
-            amountText = amount,
-            onDecrease = { onAction(RecipeShoppingAction.DecreaseServings) },
-            onIncrease = { onAction(RecipeShoppingAction.IncreaseServings) },
-            decreaseEnabled = state.canDecreaseServings,
-        )
+        if (!compact) Servings(state = state, onAction = onAction)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             FilterChip(
                 selected = state.allChosen,
@@ -248,31 +252,87 @@ fun RecipeShoppingContent(
     }
 }
 
-/** "Lägg till n varor i inköpslistan" and "Avbryt" (below the content, or pinned in [RecipeShoppingSheetLayout]). */
+/** "Lägg på inköpslistan" and the recipe's name. */
 @Composable
-private fun RecipeShoppingActions(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md)) {
-        val count = state.chosenCount
-        TandemPrimaryButton(
-            text = if (count > 0) {
-                pluralStringResource(R.plurals.recipe_shopping_add, count, count)
-            } else {
-                stringResource(R.string.recipe_shopping_add_none)
-            },
-            onClick = { onAction(RecipeShoppingAction.Add) },
-            enabled = count > 0 && !state.adding,
-            leadingIcon = TandemIcons.ShoppingCart,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
-                .testTag(RECIPE_SHOPPING_ADD_TAG),
+private fun SheetTitle(state: RecipeShoppingUiState, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xxs)) {
+        Text(
+            text = stringResource(R.string.recipe_shopping_title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.semantics { heading() },
         )
-        TandemTextButton(
-            text = stringResource(R.string.recipe_shopping_cancel),
-            onClick = { onAction(RecipeShoppingAction.Dismiss) },
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
+        Text(text = state.recipeName, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+/** The servings stepper (the rows' amounts follow it). */
+@Composable
+private fun Servings(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit, modifier: Modifier = Modifier) {
+    val amount = servingsNumber(state.servings, LocalConfiguration.current.locales[0])
+    ServingsStepper(
+        label = stringResource(R.string.recipe_shopping_servings_label),
+        valueText = if (state.servingsText.isNotBlank()) {
+            stringResource(R.string.recipe_shopping_servings_with_text, amount, state.servingsText)
+        } else {
+            pluralStringResource(R.plurals.recipe_shopping_servings, if (state.servings == 1.0) 1 else PLURAL_OTHER, amount)
+        },
+        amountText = amount,
+        onDecrease = { onAction(RecipeShoppingAction.DecreaseServings) },
+        onIncrease = { onAction(RecipeShoppingAction.IncreaseServings) },
+        decreaseEnabled = state.canDecreaseServings,
+        modifier = modifier,
+    )
+}
+
+/**
+ * "Lägg till n varor i inköpslistan" and "Avbryt" (below the content, or pinned in
+ * [RecipeShoppingSheetLayout]); [compact]: side by side, "Avbryt" first.
+ */
+@Composable
+private fun RecipeShoppingActions(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit, compact: Boolean = false) {
+    val spacing = TandemTheme.spacing
+    if (compact) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            CancelButton(onAction = onAction)
+            AddButton(state = state, onAction = onAction, modifier = Modifier.weight(1f))
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+            AddButton(state = state, onAction = onAction, modifier = Modifier.fillMaxWidth())
+            CancelButton(onAction = onAction, modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
+    }
+}
+
+@Composable
+private fun AddButton(state: RecipeShoppingUiState, onAction: (RecipeShoppingAction) -> Unit, modifier: Modifier = Modifier) {
+    val count = state.chosenCount
+    TandemPrimaryButton(
+        text = if (count > 0) {
+            pluralStringResource(R.plurals.recipe_shopping_add, count, count)
+        } else {
+            stringResource(R.string.recipe_shopping_add_none)
+        },
+        onClick = { onAction(RecipeShoppingAction.Add) },
+        enabled = count > 0 && !state.adding,
+        leadingIcon = TandemIcons.ShoppingCart,
+        modifier = modifier
+            .heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
+            .testTag(RECIPE_SHOPPING_ADD_TAG),
+    )
+}
+
+@Composable
+private fun CancelButton(onAction: (RecipeShoppingAction) -> Unit, modifier: Modifier = Modifier) {
+    TandemTextButton(
+        text = stringResource(R.string.recipe_shopping_cancel),
+        onClick = { onAction(RecipeShoppingAction.Dismiss) },
+        modifier = modifier,
+    )
 }
 
 @Composable

@@ -133,6 +133,11 @@ class ShoppingAccessibilityTest {
     @Test
     fun recipeSheetPinned() = check(ShoppingShot.RECIPE_SHEET_PINNED)
 
+    // Fas S (rester lane): the compact header and buttons of a low sheet (a phone in landscape).
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun recipeSheetPinnedLandscapeDark() = check(ShoppingShot.RECIPE_SHEET_PINNED, darkTheme = true)
+
     @Test
     fun recipeButton() = check(ShoppingShot.RECIPE_BUTTON, fontScale = 2f)
 
