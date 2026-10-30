@@ -3137,6 +3137,40 @@ den kod som skickas:
   ingen hushållsvarning; utan hushåll (`household = false`, som inspelat, hushållsinställningen
   inte klar) visar Handla "You are not in a household" direkt efter första synken och inget
   "Shared with".
+- **Fas S (0.4.0, plan §10 Fas S "Klart när"):** `FakeTandoor` har ett tillståndsfullt skafferi
+  (`FakePantry`, portad från `core:sync`s `FakePantryTandoor`: platser, poster, `FOOD_ALIAS`,
+  `food/batch_update/`, `POST food/`) som räknar ut `recipe?makenow=N` som Tandoor (har hemma eller
+  en post med mängd > 0 i hushållet; ett recept utan livsmedel är alltid med), och nyckelord
+  (`FakeDrinks`, portad från `FakeDrinkTandoor`: get-or-create, `move`, PATCH som ersätter hela
+  listan, och med `drinks.enabled` drycken "Rioja Exempel" med `Dryck > Vin`). Livsmedlen bär
+  skafferiets "har hemma". `PhaseSPantrySmokeTest`: (a) Kan laga nu: servern har 14 livsmedel
+  hemma och potatis i kylen som går ut i morgon; flikarna räknar exakt serverns grupper, Rårakor
+  och Grönsakssoppa (potatisen) står före Shakshuka och svamppastan, raderna säger vad som saknas,
+  och "Add what is missing to the list" ger ett ark med exakt "Add 2 items" och en listrecept med
+  bara vispgrädde och parmesan på servern; (b) offline läggs mjölk till för hand och markeras
+  "Used up" (tillgänglighetsåtgärden): med nät kommer **ett** `POST /api/inventory-entry/` med
+  mängd 0 i kylen och ingen PATCH/DELETE. `PhaseSScanSmokeTest` (ML Kit, bundlade modeller, under
+  R8): (c) ett syntetiskt kvitto (PASTA, PARMESAN, VISPGRÄDDE, TOTALT, KORT) läggs i galleriet
+  (`Gallery`: testets egen bild i MediaStore, borttagen efteråt; röktestets skärmbilder ligger i en
+  mapp med `.nomedia`) och väljs i systemets bildväljare; texten läses i telefonen, granskas och
+  sparas som poster (minst pasta och parmesan, ingen kortrad); (d) en syntetisk EAN-13 i GS1:s
+  spärrade 20-serie väljs ur galleriet, slås upp i `FakeOpenFoodFacts` (fast adress
+  `https://localhost:47654/`, bara i byggtypen `minified`, se "Integration av Fas S") med bara
+  koden och fältlistan, Tandems User-Agent och utan token eller kaka; produktnamnet föreslår
+  "parmesan", och "Put in Fridge" ger ett `FOOD_ALIAS` (koden → parmesan) och en post i kylen.
+  `PhaseSDrinkSmokeTest` (e): drycken kopplas offline till svamppastan i väljaren, partnern lägger
+  under tiden till nyckelordet "Snabbt" på webben; med nät läser appen receptet på nytt och
+  PATCHar hela listan, så Pasta, Vegetariskt, Snabbt och "Rioja Exempel" finns kvar, nyckelordet
+  ligger under "Passar med" (flyttat, eftersom POST struntar i `parent`) och drycken bär det
+  också. `PhaseSAiSmokeTest` (f): Claude med den falska nyckeln och `FakeTandoor`s adress som egen
+  bas-URL; Hemmas "Fridge photo (experimental)" visar först varningen, ett syntetiskt foto ur
+  galleriet går genom SDK:ns `beta().messages().create` (JPEG i base64, JSON-schema, betahuvudet
+  för reservmodellen) till `FakeAnthropic`, som svarar med tre varor; granskningen öppnas utan att
+  något sparats, den osäkra raden (0,3) är överhoppad, och "Save 2 items in the pantry" ger mjölk
+  och smör men inget alias. Röktestet hittade en R8-bugg: DTO:er som bara är en suspend-funktions
+  returtyp (`KeywordMoveDto`, `RecipeImageDto`) togs bort, så kopplingen aldrig flyttade sitt
+  nyckelord (se `core/network/consumer-rules.pro`); mappningssteget kontrollerar nu alla DTO:er.
+  `smoke.yml` kan köras för hand med bara vissa testklasser (`tests`), push och `main` kör allt.
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt

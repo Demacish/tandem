@@ -20,7 +20,9 @@ class BundledLicenseTest {
     @Test
     fun theMlKitNoticeLinksTheTermsAndTheAnthropicTextIsMit() {
         val assets = File("../../core/designsystem/src/main/assets")
-        assertTrue(File(assets, BundledLicense.ML_KIT.assetPath).readText().contains("https://developers.google.com/ml-kit/terms"))
-        assertTrue(File(assets, BundledLicense.ANTHROPIC_JAVA.assetPath).readText().contains("Permission is hereby granted, free of charge"))
+        val mlKit = File(assets, BundledLicense.ML_KIT.assetPath).readText()
+        val anthropic = File(assets, BundledLicense.ANTHROPIC_JAVA.assetPath).readText()
+        assertTrue(mlKit.contains("https://developers.google.com/ml-kit/terms"))
+        assertTrue(anthropic.contains("Permission is hereby granted, free of charge"))
     }
 }
