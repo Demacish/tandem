@@ -87,9 +87,10 @@ class PhaseSPantrySmokeTest : Phase2SmokeBase() {
         // UiAutomator's view of the button (the accessibility cache can report it disabled after it was enabled).
         app.waitFor(By.res(ENTRY_SAVE).enabled(true)).click()
 
+        // The row says it waits to be sent (read through UiAutomator: the accessibility cache can lag
+        // behind the row's first frame, seen once on main), then is used up through its action.
+        app.waitFor(By.desc(Pattern.compile("Mjölk, 2 .*waiting to be sent.*")))
         val milk = app.waitForNode("the new milk row") { it.contentDescription?.toString()?.startsWith("Mjölk, 2") == true }
-        val described = milk.contentDescription?.toString().orEmpty()
-        assertTrue("The row is not waiting to be sent: $described", "waiting to be sent" in described)
         val (target, action) = requireNotNull(customAction(milk, "Used up")) { "No \"Used up\" action on ${milk.contentDescription}" }
         assertTrue("\"Used up\" did nothing", target.performAction(action))
         app.waitFor(By.text("Mjölk is used up"))
