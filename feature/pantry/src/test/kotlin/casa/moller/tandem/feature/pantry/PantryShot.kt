@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.testing.data.SamplePantry
 import casa.moller.tandem.core.ui.pantry.ExpiryUrgency
+import casa.moller.tandem.feature.pantry.entry.PantryEntryLayout
 import casa.moller.tandem.feature.pantry.entry.PantryEntryScreen
 import casa.moller.tandem.feature.pantry.entry.PantryEntryUiState
 import casa.moller.tandem.feature.pantry.hemma.OnHandFood
@@ -24,6 +25,7 @@ import casa.moller.tandem.feature.pantry.makenow.MakeNowRow
 import casa.moller.tandem.feature.pantry.makenow.MakeNowScreen
 import casa.moller.tandem.feature.pantry.makenow.MakeNowUiState
 import casa.moller.tandem.feature.pantry.staples.StapleRow
+import casa.moller.tandem.feature.pantry.staples.StaplesLayout
 import casa.moller.tandem.feature.pantry.staples.StaplesScreen
 import casa.moller.tandem.feature.pantry.staples.StaplesUiState
 import casa.moller.tandem.feature.pantry.unpack.UnpackRow
@@ -54,6 +56,13 @@ internal enum class PantryShot(val content: @Composable () -> Unit) {
     MAKE_NOW_MISSING({ MakeNowShot(PantryStates.makeNow(selected = MakeNowGroup.MISSING_2)) }),
     MAKE_NOW_FIRST_TIME({ MakeNowShot(PantryStates.makeNow(staplesPrompt = true)) }),
     MAKE_NOW_EMPTY_FILTERED({ MakeNowShot(PantryStates.makeNowEmptyFiltered) }),
+
+    // Fas S review (fix-ui): every notice above the columns (offline, first time, Använd upp).
+    MAKE_NOW_CROWDED({ MakeNowShot(PantryStates.makeNow(staplesPrompt = true).copy(stale = true)) }),
+
+    // The keyboard is open in a low window (Robolectric has no keyboard, so the layout is told).
+    ENTRY_EDIT_KEYBOARD({ PantryEntryLayout(state = PantryStates.entryEdit, onAction = {}, keyboardOpen = true) }),
+    STAPLES_KEYBOARD({ StaplesLayout(state = PantryStates.staples, onAction = {}, keyboardOpen = true) }),
 }
 
 @Composable

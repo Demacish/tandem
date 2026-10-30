@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.pantry.hemma
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -59,6 +61,7 @@ import casa.moller.tandem.feature.pantry.navigation.PantryScanner
 import casa.moller.tandem.feature.pantry.ui.PantryIcons
 import casa.moller.tandem.feature.pantry.ui.PantryNotices
 import casa.moller.tandem.feature.pantry.ui.PendingChip
+import kotlinx.datetime.LocalDate
 
 /** From this width of the list the places stand in two columns (plan §10 Fas S "Klart när": surfplatta). */
 internal val PantryTwoColumnWidth = 600.dp
@@ -188,13 +191,25 @@ private fun PantryContent(state: PantryUiState, onAction: (PantryAction) -> Unit
             maxWidth >= PantryTwoColumnWidth -> 2
             else -> 1
         }
-        val horizontal = if (columns == 1) spacing.screenHorizontal else spacing.xl
+        val single = columns == 1
+        val horizontal = if (single) spacing.screenHorizontal else spacing.xl
+        // Fas S review (fix-ui): in one column every entry is a lazy item of its own (a place with
+        // 150 entries was composed at once). The rows of a place must touch, so the items carry
+        // the space between blocks themselves ([gap]) instead of the grid's item spacing.
+        val gap = if (single) Modifier.padding(top = spacing.lg) else Modifier
+        val onOpenSection: (PantrySection) -> (() -> Unit)? = { section ->
+            if (state.location == null) {
+                { onAction(PantryAction.OpenLocation(section.location.id)) }
+            } else {
+                null
+            }
+        }
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize().testTag(PANTRY_LIST_TAG),
             // Room for the "+ Lägg till" button below the last row.
             contentPadding = PaddingValues(start = horizontal, end = horizontal, top = spacing.sm, bottom = 96.dp),
-            verticalItemSpacing = spacing.lg,
+            verticalItemSpacing = if (single) 0.dp else spacing.lg,
             horizontalArrangement = Arrangement.spacedBy(spacing.lg),
         ) {
             item(key = "notices", span = StaggeredGridItemSpan.FullLine) {
@@ -207,15 +222,30 @@ private fun PantryContent(state: PantryUiState, onAction: (PantryAction) -> Unit
                 )
             }
             if (state.location == null) {
-                item(key = "shortcuts", span = StaggeredGridItemSpan.FullLine) { Shortcuts(state = state, onAction = onAction) }
+                item(key = "shortcuts", span = StaggeredGridItemSpan.FullLine) {
+                    Shortcuts(state = state, onAction = onAction, modifier = gap)
+                }
             }
             when {
                 state.noLocations -> item(key = "no-locations", span = StaggeredGridItemSpan.FullLine) {
-                    NoLocations(canEdit = state.canEdit, onAction = onAction)
+                    Box(modifier = gap) { NoLocations(canEdit = state.canEdit, onAction = onAction) }
                 }
 
                 state.isEmpty && state.location == null -> item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
-                    EmptyPantry(state = state, onAction = onAction)
+                    Box(modifier = gap) { EmptyPantry(state = state, onAction = onAction) }
+                }
+
+                single -> {
+                    state.sections.forEach { section ->
+                        locationItems(
+                            section = section,
+                            today = today,
+                            canEdit = state.canEdit,
+                            onAction = onAction,
+                            onOpen = onOpenSection(section),
+                        )
+                    }
+                    if (state.onHand.isNotEmpty()) onHandItems(foods = state.onHand, canEdit = state.canEdit, onAction = onAction)
                 }
 
                 else -> {
@@ -226,11 +256,7 @@ private fun PantryContent(state: PantryUiState, onAction: (PantryAction) -> Unit
                                 today = today,
                                 canEdit = state.canEdit,
                                 onAction = onAction,
-                                onOpen = if (state.location == null) {
-                                    { onAction(PantryAction.OpenLocation(section.location.id)) }
-                                } else {
-                                    null
-                                },
+                                onOpen = onOpenSection(section),
                             )
                         }
                     }
@@ -245,11 +271,65 @@ private fun PantryContent(state: PantryUiState, onAction: (PantryAction) -> Unit
     }
 }
 
+/** One place in one column: its header, then each entry as a lazy item, drawn as one card. */
+private fun LazyStaggeredGridScope.locationItems(
+    section: PantrySection,
+    today: LocalDate,
+    canEdit: Boolean,
+    onAction: (PantryAction) -> Unit,
+    onOpen: (() -> Unit)?,
+) {
+    val id = section.location.id
+    item(key = "section-$id", span = StaggeredGridItemSpan.FullLine) {
+        LocationHeader(
+            section = section,
+            canEdit = canEdit,
+            onAction = onAction,
+            onOpen = onOpen,
+            modifier = Modifier.padding(top = TandemTheme.spacing.lg).testTag(pantrySectionTag(id)),
+        )
+    }
+    if (section.rows.isEmpty()) {
+        item(key = "section-$id-empty", span = StaggeredGridItemSpan.FullLine) {
+            LocationEmpty(modifier = Modifier.padding(top = TandemTheme.spacing.sm))
+        }
+    }
+    section.rows.forEachIndexed { index, row ->
+        item(key = "entry-${row.entry.id}", span = StaggeredGridItemSpan.FullLine) {
+            PantryCardRow(
+                first = index == 0,
+                last = index == section.rows.lastIndex,
+                modifier = if (index == 0) Modifier.padding(top = TandemTheme.spacing.sm) else Modifier,
+            ) {
+                PantryEntryRow(row = row, today = today, canEdit = canEdit, onAction = onAction)
+            }
+        }
+    }
+}
+
+/** "Har hemma" in one column: its header, then each food as a lazy item, drawn as one card. */
+private fun LazyStaggeredGridScope.onHandItems(foods: List<OnHandFood>, canEdit: Boolean, onAction: (PantryAction) -> Unit) {
+    item(key = "on-hand", span = StaggeredGridItemSpan.FullLine) {
+        OnHandHeader(modifier = Modifier.padding(top = TandemTheme.spacing.lg))
+    }
+    foods.forEachIndexed { index, food ->
+        item(key = "on-hand-${food.name.lowercase()}", span = StaggeredGridItemSpan.FullLine) {
+            PantryCardRow(
+                first = index == 0,
+                last = index == foods.lastIndex,
+                modifier = if (index == 0) Modifier.padding(top = TandemTheme.spacing.sm) else Modifier,
+            ) {
+                OnHandRow(food = food, canEdit = canEdit, onAction = onAction)
+            }
+        }
+    }
+}
+
 /** "Kan laga nu", "Packa upp" after shopping, and the scanners (members only). */
 @Composable
-private fun Shortcuts(state: PantryUiState, onAction: (PantryAction) -> Unit) {
+private fun Shortcuts(state: PantryUiState, onAction: (PantryAction) -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
-    Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(spacing.md)) {
         if (state.unpackCount > 0) {
             CalloutCard(
                 title = stringResource(R.string.pantry_unpack_prompt_title),

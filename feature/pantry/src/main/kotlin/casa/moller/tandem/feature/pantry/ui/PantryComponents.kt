@@ -15,6 +15,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.InfoCard
 import casa.moller.tandem.core.designsystem.component.StatusChip
@@ -114,6 +115,12 @@ internal fun PantryHeading(title: String, modifier: Modifier = Modifier, end: St
         }
     }
 }
+
+/**
+ * Fas S review (fix-ui): below this window height (a phone in landscape) the pinned action bars
+ * shrink and step aside for the keyboard, like RecipeShoppingSheetLayout's compact sheet.
+ */
+internal val PantryCompactHeight = 480.dp
 
 /** A rounded group of rows on the low container colour (like Handla's aisles). */
 @Composable

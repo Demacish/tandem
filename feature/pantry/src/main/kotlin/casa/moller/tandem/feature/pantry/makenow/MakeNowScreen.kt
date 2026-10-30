@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.pantry.makenow
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -9,12 +10,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -119,7 +126,7 @@ fun MakeNowScreen(
                     maxWidth >= MakeNowThreeColumnsWidth -> 3
                     else -> 2
                 }
-                if (columns == 1) PhoneLayout(state, onAction) else ColumnsLayout(state, onAction, columns)
+                if (columns == 1) PhoneLayout(state, onAction) else ColumnsLayout(state, onAction, columns, laneHeight = maxHeight)
             }
         }
     }
@@ -141,18 +148,32 @@ private fun PhoneLayout(state: MakeNowUiState, onAction: (MakeNowAction) -> Unit
     }
 }
 
-/** Tablets: the header across, then the groups as columns (Har allt | Saknar 1 + 2, or one column each). */
+/**
+ * Tablets: the header across, then the groups as columns (Har allt | Saknar 1 + 2, or one column
+ * each). Fas S review (fix-ui): the header scrolls away instead of permanently taking the columns'
+ * height. Each column is as tall as the page ([laneHeight]); dragging a column up first moves the
+ * header out of view ([HeaderFirst]), and a drag down past a column's top brings it back, so at
+ * font scale 2 with every notice the recipes are still reachable.
+ */
 @Composable
-private fun ColumnsLayout(state: MakeNowUiState, onAction: (MakeNowAction) -> Unit, columns: Int) {
+private fun ColumnsLayout(state: MakeNowUiState, onAction: (MakeNowAction) -> Unit, columns: Int, laneHeight: Dp) {
     val spacing = TandemTheme.spacing
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = spacing.xl)) {
+    val outer = rememberScrollState()
+    val headerFirst = remember(outer) { HeaderFirst(outer) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(headerFirst)
+            .verticalScroll(outer)
+            .padding(horizontal = spacing.xl),
+    ) {
         Header(state, onAction, Modifier.padding(vertical = spacing.sm))
         val lanes: List<List<MakeNowGroup>> = if (columns >= 3) {
             MakeNowGroup.entries.map { listOf(it) }
         } else {
             listOf(listOf(MakeNowGroup.HAS_ALL), listOf(MakeNowGroup.MISSING_1, MakeNowGroup.MISSING_2))
         }
-        Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(spacing.lg)) {
+        Row(modifier = Modifier.fillMaxWidth().height(laneHeight), horizontalArrangement = Arrangement.spacedBy(spacing.lg)) {
             lanes.forEach { groups ->
                 LazyColumn(
                     modifier = Modifier.weight(1f).fillMaxHeight().testTag(makeNowListTag(groups.first())),
@@ -166,6 +187,19 @@ private fun ColumnsLayout(state: MakeNowUiState, onAction: (MakeNowAction) -> Un
                 }
             }
         }
+    }
+}
+
+/**
+ * Scrolling a column up moves the page (the header) first until the header is gone; what is left
+ * goes to the column. Scrolling down is the column's first and the page's afterwards (the page's
+ * own verticalScroll takes the leftovers), so the header comes back once the column is at its top.
+ */
+private class HeaderFirst(private val outer: ScrollState) : NestedScrollConnection {
+    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+        if (available.y >= 0f) return Offset.Zero
+        val consumed = outer.dispatchRawDelta(-available.y)
+        return Offset(0f, -consumed)
     }
 }
 

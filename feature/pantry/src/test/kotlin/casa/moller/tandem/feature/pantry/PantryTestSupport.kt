@@ -30,6 +30,9 @@ internal object Devices {
     /** Tall enough that no row is cut at the bottom at font scale 2 (ATF would measure a sliver). */
     const val PHONE_XTALL = "w412dp-h3600dp-port-xhdpi"
     const val PHONE_LANDSCAPE = "w915dp-h412dp-land-xhdpi"
+
+    /** A phone in landscape with the keyboard open: what is left above it (fix-ui). */
+    const val PHONE_LANDSCAPE_KEYBOARD = "w915dp-h220dp-land-xhdpi"
     const val TABLET_PORTRAIT = "w800dp-h1280dp-port-mdpi"
     const val TABLET = "w1280dp-h800dp-land-mdpi"
 }

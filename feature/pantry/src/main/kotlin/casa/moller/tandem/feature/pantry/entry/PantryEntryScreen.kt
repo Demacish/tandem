@@ -2,14 +2,18 @@ package casa.moller.tandem.feature.pantry.entry
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -66,6 +70,7 @@ import casa.moller.tandem.core.ui.pantry.formatDay
 import casa.moller.tandem.core.ui.pantry.isCountedExpiry
 import casa.moller.tandem.core.ui.recipe.currentLocale
 import casa.moller.tandem.feature.pantry.R
+import casa.moller.tandem.feature.pantry.ui.PantryCompactHeight
 import casa.moller.tandem.feature.pantry.ui.PantryIcons
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
@@ -75,6 +80,9 @@ import kotlinx.datetime.toLocalDateTime
 
 /** Test tag of the entry page's save button. */
 const val PANTRY_ENTRY_SAVE_TAG = "pantry-entry:save"
+
+/** Test tag of "Ta bort varan". */
+const val PANTRY_ENTRY_DELETE_TAG = "pantry-entry:delete"
 
 /** Test tag of the food field. */
 const val PANTRY_ENTRY_FOOD_TAG = "pantry-entry:food"
@@ -88,7 +96,7 @@ const val PANTRY_ENTRY_AMOUNT_TAG = "pantry-entry:amount"
  * any day) and a note. "Spara" (and "Ta bort" for an existing entry) stay pinned below the
  * scrolling form and above the keyboard. On a wide window the form keeps a readable width.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PantryEntryScreen(
     state: PantryEntryUiState,
@@ -96,47 +104,84 @@ fun PantryEntryScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    PantryEntryLayout(
+        state = state,
+        onAction = onAction,
+        keyboardOpen = WindowInsets.isImeVisible,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+    )
+}
+
+/**
+ * [PantryEntryScreen] with the keyboard state given ([keyboardOpen], tests have no keyboard).
+ * Fas S review (fix-ui): in a low window (a phone in landscape, under [PantryCompactHeight]) the
+ * pinned bar is only "Spara" ("Ta bort varan" moves to the end of the form), and while the
+ * keyboard is open there it steps aside entirely, so the field being typed in stays visible.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun PantryEntryLayout(
+    state: PantryEntryUiState,
+    onAction: (PantryEntryAction) -> Unit,
+    keyboardOpen: Boolean,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+) {
     var pickingDate by rememberSaveable { mutableStateOf(false) }
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TandemTopAppBar(
-                title = stringResource(if (state.isNew) R.string.pantry_entry_new_title else R.string.pantry_entry_edit_title),
-                onNavigateBack = { onAction(PantryEntryAction.Close) },
-            )
-        },
-        bottomBar = {
-            if (!state.loading && !state.missing && !state.readOnly) EntryActions(state = state, onAction = onAction)
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        when {
-            state.loading -> LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
-
-            state.missing -> EmptyState(
-                icon = PantryIcons.Kitchen,
-                title = stringResource(R.string.pantry_entry_missing_title),
-                body = stringResource(R.string.pantry_entry_missing_body),
-                modifier = Modifier.fillMaxSize().padding(padding),
-            )
-
-            else -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState()),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                EntryForm(
-                    state = state,
-                    onAction = onAction,
-                    onPickDate = { pickingDate = true },
-                    modifier = Modifier
-                        .widthIn(max = TandemTheme.sizes.maxReadingWidth)
-                        .fillMaxWidth()
-                        .padding(horizontal = TandemTheme.spacing.screenHorizontal, vertical = TandemTheme.spacing.md),
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val compact = maxHeight < PantryCompactHeight
+        val showActions = !state.loading && !state.missing && !state.readOnly && !(compact && keyboardOpen)
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                TandemTopAppBar(
+                    title = stringResource(if (state.isNew) R.string.pantry_entry_new_title else R.string.pantry_entry_edit_title),
+                    onNavigateBack = { onAction(PantryEntryAction.Close) },
                 )
+            },
+            bottomBar = {
+                if (showActions) EntryActions(state = state, onAction = onAction, compact = compact)
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            containerColor = MaterialTheme.colorScheme.background,
+        ) { padding ->
+            when {
+                state.loading -> LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
+
+                state.missing -> EmptyState(
+                    icon = PantryIcons.Kitchen,
+                    title = stringResource(R.string.pantry_entry_missing_title),
+                    body = stringResource(R.string.pantry_entry_missing_body),
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                )
+
+                else -> Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        // Above the keyboard also when the pinned bar has stepped aside.
+                        .consumeWindowInsets(padding)
+                        .imePadding()
+                        .verticalScroll(rememberScrollState()),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = TandemTheme.sizes.maxReadingWidth)
+                            .fillMaxWidth()
+                            .padding(horizontal = TandemTheme.spacing.screenHorizontal, vertical = TandemTheme.spacing.md),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        EntryForm(
+                            state = state,
+                            onAction = onAction,
+                            onPickDate = { pickingDate = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        if (compact && !state.isNew && !state.readOnly) DeleteEntryButton(onAction = onAction)
+                    }
+                }
             }
         }
     }
@@ -339,16 +384,19 @@ private fun FormHeading(text: String) {
     Text(text = text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
 }
 
-/** "Spara" and, for an existing entry, "Ta bort": pinned below the form, above the keyboard. */
+/**
+ * "Spara" and, for an existing entry, "Ta bort": pinned below the form, above the keyboard. In a
+ * low window ([compact]) only "Spara", at the normal button height ("Ta bort" is in the form).
+ */
 @Composable
-private fun EntryActions(state: PantryEntryUiState, onAction: (PantryEntryAction) -> Unit) {
+private fun EntryActions(state: PantryEntryUiState, onAction: (PantryEntryAction) -> Unit, compact: Boolean) {
     val spacing = TandemTheme.spacing
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = spacing.screenHorizontal, vertical = spacing.md),
+                .padding(horizontal = spacing.screenHorizontal, vertical = if (compact) spacing.sm else spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing.xs),
         ) {
@@ -360,19 +408,22 @@ private fun EntryActions(state: PantryEntryUiState, onAction: (PantryEntryAction
                 modifier = Modifier
                     .widthIn(max = TandemTheme.sizes.maxReadingWidth)
                     .fillMaxWidth()
-                    .heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
+                    .heightIn(min = if (compact) TandemTheme.sizes.minTouchTarget else TandemTheme.sizes.kitchenTouchTarget)
                     .testTag(PANTRY_ENTRY_SAVE_TAG),
             )
-            if (!state.isNew) {
-                TandemTextButton(
-                    text = stringResource(R.string.pantry_entry_delete),
-                    onClick = { onAction(PantryEntryAction.AskDelete) },
-                    leadingIcon = TandemIcons.Delete,
-                    modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget),
-                )
-            }
+            if (!state.isNew && !compact) DeleteEntryButton(onAction = onAction)
         }
     }
+}
+
+@Composable
+private fun DeleteEntryButton(onAction: (PantryEntryAction) -> Unit) {
+    TandemTextButton(
+        text = stringResource(R.string.pantry_entry_delete),
+        onClick = { onAction(PantryEntryAction.AskDelete) },
+        leadingIcon = TandemIcons.Delete,
+        modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget).testTag(PANTRY_ENTRY_DELETE_TAG),
+    )
 }
 
 /** The calendar for "Välj datum" (the picker works in UTC days). */

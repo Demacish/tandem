@@ -7,6 +7,7 @@ import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.feature.pantry.Devices.PHONE
 import casa.moller.tandem.feature.pantry.Devices.PHONE_LANDSCAPE
+import casa.moller.tandem.feature.pantry.Devices.PHONE_LANDSCAPE_KEYBOARD
 import casa.moller.tandem.feature.pantry.Devices.PHONE_TALL
 import casa.moller.tandem.feature.pantry.Devices.TABLET
 import casa.moller.tandem.feature.pantry.Devices.TABLET_PORTRAIT
@@ -167,6 +168,24 @@ class PantryScreenshotTest {
     @Test
     @Config(qualifiers = "sv-$TABLET_PORTRAIT")
     fun makeNowTabletPortraitDark() = capture("tablet_portrait_make_now_dark_sv", PantryShot.MAKE_NOW, darkTheme = true)
+
+    // Fas S review (fix-ui): Kan laga nu on a tablet at font scale 2 with every notice (the header
+    // scrolls away above the columns), and the entry editor in landscape and with the keyboard.
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun makeNowTabletCrowdedFontScale2() = capture("tablet_make_now_font2_light_sv", PantryShot.MAKE_NOW_CROWDED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun entryLandscape() = capture("phone_landscape_pantry_entry_light_sv", PantryShot.ENTRY_EDIT)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE_KEYBOARD)
+    fun entryKeyboardDark() = capture("phone_landscape_pantry_entry_keyboard_dark", PantryShot.ENTRY_EDIT_KEYBOARD, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun staplesLandscape() = capture("phone_landscape_staples_light_sv", PantryShot.STAPLES)
 
     private fun capture(
         name: String,

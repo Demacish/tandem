@@ -1,13 +1,18 @@
 package casa.moller.tandem.feature.pantry.staples
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -48,9 +53,13 @@ import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.pantry.foodTitle
 import casa.moller.tandem.core.ui.recipe.currentLocale
 import casa.moller.tandem.feature.pantry.R
+import casa.moller.tandem.feature.pantry.ui.PantryCompactHeight
 
 /** Test tag of "Spara" on Basvaror. */
 const val STAPLES_SAVE_TAG = "staples:save"
+
+/** Test tag of "Lägg till en egen". */
+const val STAPLES_ADD_TAG = "staples:add"
 
 /** Test tag of one staple. */
 fun stapleRowTag(name: String): String = "staples:row:${name.lowercase()}"
@@ -60,6 +69,7 @@ fun stapleRowTag(name: String): String = "staples:row:${name.lowercase()}"
  * checklist (ticked = har hemma), "Lägg till en egen", and "Spara" with "Inte nu" pinned below.
  * A guest sees the list without checkboxes.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StaplesScreen(
     state: StaplesUiState,
@@ -67,15 +77,57 @@ fun StaplesScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
+    StaplesLayout(
+        state = state,
+        onAction = onAction,
+        keyboardOpen = WindowInsets.isImeVisible,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+    )
+}
+
+/**
+ * [StaplesScreen] with the keyboard state given (tests have none). Fas S review (fix-ui): in a low
+ * window "Inte nu" leaves the pinned bar (the back arrow does the same) and the bar steps aside
+ * while the keyboard is open, so "Lägg till en egen" stays visible while typing.
+ */
+@Composable
+internal fun StaplesLayout(
+    state: StaplesUiState,
+    onAction: (StaplesAction) -> Unit,
+    keyboardOpen: Boolean,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val compact = maxHeight < PantryCompactHeight
+        StaplesScaffold(
+            state = state,
+            onAction = onAction,
+            compact = compact,
+            showActions = !state.loading && !state.readOnly && !(compact && keyboardOpen),
+            snackbarHostState = snackbarHostState,
+        )
+    }
+}
+
+@Composable
+private fun StaplesScaffold(
+    state: StaplesUiState,
+    onAction: (StaplesAction) -> Unit,
+    compact: Boolean,
+    showActions: Boolean,
+    snackbarHostState: SnackbarHostState,
+) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TandemTopAppBar(
                 title = stringResource(R.string.pantry_staples_title),
                 onNavigateBack = { onAction(StaplesAction.Close) },
             )
         },
-        bottomBar = { if (!state.loading && !state.readOnly) StaplesActions(state = state, onAction = onAction) },
+        bottomBar = { if (showActions) StaplesActions(state = state, onAction = onAction, compact = compact) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
@@ -89,7 +141,8 @@ fun StaplesScreen(
             .fillMaxWidth()
             .padding(horizontal = spacing.screenHorizontal)
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            // Above the keyboard also when the pinned bar has stepped aside (the padding below is the bar's).
+            modifier = Modifier.fillMaxSize().consumeWindowInsets(padding).imePadding(),
             contentPadding = PaddingValues(
                 top = padding.calculateTopPadding() + spacing.sm,
                 bottom = padding.calculateBottomPadding() + spacing.xl,
@@ -186,7 +239,7 @@ private fun AddStaple(text: String, onAction: (StaplesAction) -> Unit, modifier:
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onAction(StaplesAction.AddTyped) }),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag(STAPLES_ADD_TAG),
         )
         IconButton(onClick = { onAction(StaplesAction.AddTyped) }, enabled = text.isNotBlank()) {
             Icon(TandemIcons.Add, contentDescription = stringResource(R.string.pantry_staples_add))
@@ -194,16 +247,16 @@ private fun AddStaple(text: String, onAction: (StaplesAction) -> Unit, modifier:
     }
 }
 
-/** "Spara" and "Inte nu", pinned below the list (and above the keyboard). */
+/** "Spara" and "Inte nu", pinned below the list (and above the keyboard); only "Spara" in a low window ([compact]). */
 @Composable
-private fun StaplesActions(state: StaplesUiState, onAction: (StaplesAction) -> Unit) {
+private fun StaplesActions(state: StaplesUiState, onAction: (StaplesAction) -> Unit, compact: Boolean) {
     val spacing = TandemTheme.spacing
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = spacing.screenHorizontal, vertical = spacing.md),
+                .padding(horizontal = spacing.screenHorizontal, vertical = if (compact) spacing.sm else spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing.xs),
         ) {
@@ -215,14 +268,16 @@ private fun StaplesActions(state: StaplesUiState, onAction: (StaplesAction) -> U
                 modifier = Modifier
                     .widthIn(max = TandemTheme.sizes.maxReadingWidth)
                     .fillMaxWidth()
-                    .heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
+                    .heightIn(min = if (compact) TandemTheme.sizes.minTouchTarget else TandemTheme.sizes.kitchenTouchTarget)
                     .testTag(STAPLES_SAVE_TAG),
             )
-            TandemTextButton(
-                text = stringResource(R.string.pantry_staples_not_now),
-                onClick = { onAction(StaplesAction.Close) },
-                modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget),
-            )
+            if (!compact) {
+                TandemTextButton(
+                    text = stringResource(R.string.pantry_staples_not_now),
+                    onClick = { onAction(StaplesAction.Close) },
+                    modifier = Modifier.heightIn(min = TandemTheme.sizes.minTouchTarget),
+                )
+            }
         }
     }
 }

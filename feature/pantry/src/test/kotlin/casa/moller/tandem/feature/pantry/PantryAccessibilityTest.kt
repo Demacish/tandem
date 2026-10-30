@@ -114,6 +114,20 @@ class PantryAccessibilityTest {
     @Config(qualifiers = TABLET_PORTRAIT)
     fun makeNowTabletPortrait() = check(PantryShot.MAKE_NOW)
 
+    // Fas S review (fix-ui): the tablet's columns at font scale 2 with every notice, and the
+    // forms in landscape (compact bar; PantryLayoutTest covers the open keyboard).
+    @Test
+    @Config(qualifiers = TABLET)
+    fun makeNowTabletCrowdedFontScale2() = check(PantryShot.MAKE_NOW_CROWDED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun entryLandscape() = check(PantryShot.ENTRY_EDIT)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun staplesLandscape() = check(PantryShot.STAPLES)
+
     private fun check(shot: PantryShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {
             PantryTestTheme(darkTheme = darkTheme, fontScale = fontScale, chrome = chrome) { shot.content() }
