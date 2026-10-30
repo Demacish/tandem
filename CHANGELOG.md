@@ -70,6 +70,14 @@ offline. Import av recept, receptredigering, widgets och dra och släpp kommer i
   rad; varningen "Du är inte med i något hushåll" syns direkt efter inloggningen; receptets
   inköpsark i liggande läge har rubriken och portionerna på en rad så att ingredienserna får plats;
   telefonen rensar gamla anteckningar om tillfälliga id efter 30 dagar.
+- **Rättat i granskningen före 0.4.0:** Packa upp erbjuder bara det som bockats av på den här
+  telefonen, så att partnerns inköp inte hamnar två gånger i skafferiet; "−1" på två telefoner
+  räknar av två; en plats som bytt namn på webben byts inte tillbaka; två telefoner som öppnar Hemma
+  första gången får samma Kyl, Frys och Skafferi; drycker under en engelsk rot eller med bara en
+  typ syns aldrig i Kan laga nu; recept med något som går ut snart lyfts även om receptet aldrig
+  öppnats; en kod som en annan telefon nyss lärt sig känns igen direkt, också UPC-E-koder; den som
+  inte är med i något hushåll ser inga andra hushålls skafferier; att lämna fotot av kylen avbryter
+  anropet till AI-tjänsten direkt.
 - **Större app:** textigenkänningen och streckkodsläsaren ingår i appen (de fungerar utan Googles
   tjänster och utan nät), vilket gör APK-filen ungefär 75 MB i stället för 8 MB.
 - **Kvar till senare:** kvittoläsningen är bara prövad på påhittade kvitton, och hur bra den känner

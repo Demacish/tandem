@@ -822,14 +822,19 @@ Platsernas ordning (`reorderLocations`) finns bara på enheten (`location_order`
 
 **Hushållet:** listorna är space-breda (FACTS "Fas S b"). Allt lagras; `observeLocations`,
 `observePantry`, `observeExpiring` och `observeAvailableFoodIds` visar bara platser med kontots
-`server_account.household_id` (plus de som skapats på enheten). Okänt hushåll (demo, inte läst än)
-= alla. En plats kan inte skapas medan hushållet är okänt (`tandem.pantry.household-unknown`).
+`server_account.household_id` (plus de som skapats på enheten). Ett riktigt konto vars hushåll är
+okänt (inte läst än, eller medlem utan hushåll) ser bara enhetens egna platser, aldrig andras; bara
+demoläget visar alla (Fas S-granskningen, fix-data). Varje ändring av en plats eller post (döp om,
+radera, "Slut", "−1", flytta, ny post, Packa upp) prövar samma regel först. En plats kan inte skapas
+medan hushållet är okänt (`tandem.pantry.household-unknown`).
 
 **Standardplatserna** Kyl, Frys (`is_freezer`) och Skafferi (enhetens språk, `strings_pantry.xml`)
 skapas av `PantryRepository.refresh()` när hushållets lager är tomt efter en komplett läsning, en
 gång per hushåll och enhet (`sync_state` `pantry_default_locations`). **Hemma-skärmen ska anropa
 `refresh()` när den öppnas** (det är "första användningen"); raderar man alla platser senare kommer
-de inte tillbaka.
+de inte tillbaka. Deras CREATE är märkt (`tandem_default`, skickas aldrig): avsändaren letar redan
+vid första försöket efter en plats med samma namn i hushållet som ingen CREATE på enheten tagit och
+tar den äldsta, så två telefoner som öppnar Hemma samtidigt får en Kyl, en Frys och ett Skafferi.
 
 **Läsningar** (`PantryReader`, låset delas med avsändarna): alla platser och poster med mängd > 0
 (utan `empty`, så "Slut"-poster lämnar enheten), komplett eller inget. Rader med köad PATCH behåller
@@ -844,14 +849,30 @@ sidor på listorna, så motorns andra tester inte får 404.
 som ingen annan CREATE på enheten tagit), `inventory_entry` (CREATE med hela platsen och samma
 omförsöksregel som inköpslistan; PATCH/DELETE kontrolleras först mot en komplett läsning med
 `empty=true`, högst en per minut, så en post som en annan telefon raderat släpps **utan** 404) och
-`food_alias`. `BATCH_ON_HAND` går genom inköpsbanans `FoodOutboxHandler` (en rad) till
+`food_alias`. Fas S-granskningen (fix-data):
+- Den nästlade platsen i en ny post eller en flytt byggs av **serverns** plats (en komplett
+  läsning av platserna, högst en minut gammal och läst om efter varje egen platsändring), inte av
+  Room: annars döpte en gammal kopia om partnerns plats tillbaka (FACTS "Fas S b": objektet
+  skrivs). Room tar serverns namn och `is_freezer`. Bara en egen namnändring som fortfarande väntar
+  skickar de lokala värdena. En plats som inte finns längre: posten släpps med sina köade
+  ändringar (`DroppedChanges.NOT_FOUND`) i stället för att bli FAILED eller skapa platsen igen.
+- "−1" köas som en **ändring** (`tandem_relative`, `base_snapshot` = mängden före): avsändaren
+  läser postens mängd nu och skickar `max(0, server + (ny − före))`, så två telefoner som tar en
+  var från 3 lämnar 1. "Slut", redigeraren och Ångra skickar värdet som det är.
+- En rad som väntar på en CREATE som köats **efter** den (en post flyttad offline till en plats
+  skapad senare) väntar på den (`depends_on`) och tömningen fortsätter, i stället för att hela
+  kontots outbox fastnar; vid en sammanslagning ärver raden det nyare av de två beroendena. `BATCH_ON_HAND` går genom inköpsbanans `FoodOutboxHandler` (en rad) till
 `FoodOnHandBatchSender`: alla redo rader med samma batchnyckel i **ett** `PUT food/batch_update/`.
 `ShoppingTables.reapplyQueuedFoods` lägger på köade `on_hand` igen efter omläsningen av livsmedlen.
 Varje skickad skafferirad meddelar `PantryChanges` (Kan laga nu läses om).
 
-**Packa upp** (`observeUnpackable(today)`/`unpack`): dagens avbockade inköpsposter (`completed_at`
-på enhetens kalenderdag), utom de som packats upp eller hoppats över i dag (`sync_state`
-`pantry_unpacked`, `yyyy-MM-dd|id,...`; nästa dag börjar listan om). Mängd 0 blir 1.
+**Packa upp** (`observeUnpackable(today)`/`unpack`): dagens inköpsposter som bockats av **på den här
+telefonen** (`sync_state` `pantry_checked_here`, skrivs av `setChecked`; Fas S-granskningen,
+fix-data: partnerns inköp erbjuds inte på båda telefonerna) och fortfarande är avbockade med
+`completed_at` på enhetens kalenderdag, utom de som packats upp eller hoppats över i dag (`sync_state`
+`pantry_unpacked`, `yyyy-MM-dd|id,...`; nästa dag börjar listan om). Båda mängderna följer en posts
+tillfälliga id till dess server-id (`id_mapping`), så en vara som packats upp före sändningen inte
+erbjuds igen. Mängd 0 blir 1.
 
 **Basvaror** (`DefaultStaplesRepository`, `core:domain` `StapleCatalog`): en kurerad lista (salt,
 svartpeppar, vitpeppar, olivolja, rapsolja, vatten, socker, vetemjöl, smör, ättika, soja, bakpulver,
@@ -871,13 +892,18 @@ enhetsinställning (`sync_state` `pantry_staples_suggested`). UI:t kan visa
   gång i minuten om inte `force`.
 - **Filtren** används på enheten (nyckelord med barn i ett led, maxtid där 0 = okänd tid tas med);
   Tandoors receptsök har inget måltidsfilter, så `MakeNowFilter.mealTypeId` används inte.
-- **Bort:** drycker (nyckelordet `Dryck`) och nedladdade recept utan livsmedel (de ligger alltid i
-  `makenow=0`).
+- **Bort:** drycker enligt `DrinkIndex` (samma regel som Drycker: en dryckesrot som `Dryck`,
+  `Drycker` eller `Beverages`, eller ett barn till en, `DrinkIndex.isDrinkKeyword`) och nedladdade
+  recept utan livsmedel (de ligger alltid i `makenow=0`). Ett Har allt-recept utan lagrad detalj
+  hämtas i bakgrunden (högst 20 per runda), så ett recept utan livsmedel försvinner.
 - **Saknade varor** räknas live med `MissingIngredients` för recept med nedladdad detalj (`food`
   med `substitute_*`/`ignore_shopping`/`recipe_id`, *har hemma* och hushållets lager > 0). För ett
   recept utan detalj hämtar `missingFoods(id)` detaljen genom `DetailFetcher`s bakgrundskö, högst
   20 samtidigt (annars `Throttled`), och sparar listan i `make_now.missing_foods`.
 - **Ordning:** "Använd upp" först (`UseUpRanking`, inom 3 dagar), annars namnordning som serverns.
+  Vilka recept som använder något som går ut snart frågas också servern: ett
+  `recipe?makenow=2&foods_or=<livsmedel>` per livsmedel (de fyra som går ut först), sparat per konto
+  i `sync_state` `make_now_use_up`, så ett recept lyfts även utan nedladdad detalj.
   "Överraska mig" (`surprise`) väljer slumpvis bland gruppens recept med samma filter (fungerar
   offline och i demoläget; inget extra `random=true`-anrop).
 - `FoodDto.toEntity` fyller nu `substitute_on_hand`, `substitute_ids` och `recipe_id`.
@@ -887,13 +913,16 @@ in i `food_alias`; `find` matchar utan versaler (nyckeln = trimmad, gemen, högs
 `learn` gör aldrig en dubblett: samma text (utan versaler) pekas om (PATCH `param_2`) eller lämnas
 när den redan pekar på livsmedlet; ett alias från webben (typ OTHER) vinner och ändras inte.
 Avsändaren kontrollerar spacets alias (en komplett läsning, högst en minut gammal) före en CREATE
-och tar över samma `param_1` från en annan telefon i stället för att skapa en till. `name` =
+och tar över samma `param_1` från en annan telefon i stället för att skapa en till; ett alias från
+webben pekas aldrig om, enhetens rad tar serverns livsmedel. `name` =
 "Tandem: streckkod"/"Tandem: kvitto" (OTHER = "Tandem"). Gäster: `READ_ONLY`, och listan läses inte.
 
-**Streckkod** (`DefaultBarcodeLookup`): giltig EAN-8/UPC-A/EAN-13 (GS1-kontrollsiffra) annars fel
-utan anrop; sedan inlärt alias (livsmedlets namn, inget anrop; online läses spacets alias om först
-när senaste läsningen är en minut gammal, så en kod som telefon A just kopplat känns igen direkt
-på telefon B), cachen `barcode_product` (hittad
+**Streckkod** (`DefaultBarcodeLookup`): giltig EAN-8/UPC-A/UPC-E/EAN-13 (GS1-kontrollsiffra) annars
+fel utan anrop. En UPC-E (8 siffror, kontrollsiffran är den utvidgade UPC-A:ns) slås upp och cachas
+som sin UPC-A (`Gtin.expandUpcE`), aliaset ligger kvar på koden som den skannades. Sedan inlärt
+alias (livsmedlets namn, inget anrop; online läses spacets alias om först när den senaste
+**lagrade** läsningen är äldre än 5 s, så en kod som telefon A just kopplat känns igen direkt på
+telefon B, också strax efter en synk), cachen `barcode_product` (hittad
 30 dagar, "finns inte" 7 dagar), sist Open Food Facts. Produktnamnet på enhetens språk
 (`product_name_sv`/`_en`) när det finns. Offline används en gammal cache hellre än inget.
 Demoläget frågar aldrig Open Food Facts.
@@ -1416,13 +1445,48 @@ Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
   levande bilder) prövas bara på en riktig telefon; röktestet går via galleriet. "80 % rätt andra
   gången samma butik används" är bara visat med syntetiska kvitton och inlärda alias, inte mätt på
   riktiga kvitton. Gemini och OpenAI är byggda efter dokumentationen och prövas bara mot falska
-  servrar (inga riktiga AI-anrop i CI). Två telefoner som öppnar Hemma första gången samtidigt kan
-  båda skapa Kyl, Frys och Skafferi; en basvara som lagts till offline utan livsmedel markeras
+  servrar (inga riktiga AI-anrop i CI). En basvara som lagts till offline utan livsmedel markeras
   alltid som hemma när den löses; `MissingIngredients` ser inte ett syskon- eller barnsubstitut som
   bara finns i lagret (serverns `makenow` avgör grupperna); `POST food/` för en okänd basvara har
   inget kontraktstest; typerna sorteras efter de svenska servernamnen även med engelska i appen;
   ML Kits fullständiga licenstexter (1–2 MB) ligger inte i appen, bara komponentnamnen och länken.
 <!-- /Fas S integration -->
+
+<!-- Fas S fix-data -->
+## Fas S-granskningen: data (fix-data)
+
+Granskningen av Fas S hittade fel i datalagret; de rättades före taggningen av 0.4.0. Skafferiet,
+Kan laga nu, Packa upp och streckkoden står i "Skafferiet – data och synk" ovan. Resten:
+
+- **Outboxen** (`OutboxDao.enqueue`, `OutboxSender`): en sammanslagen rad ärver det nyare av två
+  beroenden; en rad vars referens bara väntar på en CREATE som ligger senare i kön väntar på den
+  (`depends_on`) och tömningen fortsätter, i stället för att kontots hela outbox fastnar (en
+  misslyckad CREATE gör raden FAILED). `BATCH_ON_HAND` slås aldrig ihop förbi en nyare `PATCH`
+  av samma livsmedel (Handlas `food_onhand`), så serverns *har hemma* slutar som enhetens.
+- **Basvaror** (`resolvePending`): skrivs för det konto som synkas, aldrig för det som råkar vara
+  aktivt; byter användaren konto medan livsmedlet skapas avbryts det (`SyncStop.SourceChanged`).
+- **Drycker:** `PairingKeywords` svarar med serverns namn (`KeywordRef`): dryckens CREATE skickar
+  hushållets egen rot ("Beverages") och typen som servern stavar den, och `RECIPE_KEYWORDS`
+  lägger till nyckelord **bara med id** (FACTS "Fas S c"), så ett gammalt namn i cachen eller
+  användarens versaler aldrig döper om ett nyckelord. Ett omförsök letar efter ett förlorat svar
+  bara om receptets POST kan ha gått iväg (`sync_state` `drink_posted:<id>`), och bara bland den
+  här användarens recept skapade efter ändringen: aldrig någon annans dryck med samma namn, och
+  fotot hamnar aldrig på den. En koppling som görs medan dryckens CREATE skickas (eller efter ett
+  försök) köas också för receptet med dryckens tillfälliga id efter CREATE:n; `completeCreate`
+  ger den receptets id. Exporten av väntande ändringar har dryckens innehåll (`drink`: namn,
+  beskrivning, portioner, nyckelord, `photo`) och fotot bara som `{"photo": true}`, aldrig sökvägen.
+  Fotokopiorna i `files/drink-images/` tas bort med kontots rader (`AccountMirror`) och när inget
+  konto finns kvar.
+- **Claude** (`ClaudeFridgeVisionClient`): varje anrop följer aldrig en omdirigering
+  (`RequestOptions.followRedirects(false)`; en 3xx är ett misslyckat anrop), så nyckeln och fotot
+  aldrig går till en annan värd bakom en egen bas-URL. Att lämna sidan avbryter anropet direkt:
+  SDK:ns blockerande anrop körs bredvid korutinen och en avbrytning stänger anropets socketar
+  (`ClosableSockets`, plattformens TLS som förut); prövat mot en HTTPS-MockWebServer.
+- **Inte i den här banan:** typchipsen i Drycker och Ny dryck sorteras fortfarande efter de svenska
+  servernamnen (en ändring i `:feature:recipes`); kamerans tillfälliga fil i `cache/drink-camera`
+  tas bort av `:feature:recipes`, inte här; Idag och Hemma har kvar sina egna namnfilter för
+  drycker, men `MakeNowRepository` släpper redan alla drycker enligt `DrinkIndex`.
+<!-- /Fas S fix-data -->
 
 <!-- Fas 2 inköp-data -->
 ## Inköpslistan – data och synk (`:core:sync`, `:core:network`, Fas 2)
