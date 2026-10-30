@@ -82,12 +82,15 @@ data class ShoppingServerSettings(val addOnHand: Boolean, val excludeOnHand: Boo
  * @property showBattery the battery row is shown on phones known to stop background work
  *   (Samsung and similar, design correction).
  * @property showFullScreen the build can show the alarm over the lock screen (sideload).
+ * @property cameraAllowed the scanners may use the camera (Fas S); null when unknown or the device
+ *   has no camera (no row).
  */
 data class PermissionsUiState(
     val capabilities: TimerCapabilities = TimerCapabilities.AllGranted,
     val batteryUnrestricted: Boolean? = null,
     val showBattery: Boolean = false,
     val showFullScreen: Boolean = false,
+    val cameraAllowed: Boolean? = null,
 ) {
     /** Exact alarms are granted by the build (sideload) and cannot be switched off. */
     val exactAlarmsFixed: Boolean
@@ -121,9 +124,10 @@ sealed interface SettingsAction {
 
     /**
      * The permissions screen came (back) to the foreground: read the permissions again (the user
-     * may have changed them in Android's settings). [batteryUnrestricted] is read by the screen.
+     * may have changed them in Android's settings). [batteryUnrestricted] and [cameraAllowed] are
+     * read by the screen.
      */
-    data class RefreshPermissions(val batteryUnrestricted: Boolean?) : SettingsAction
+    data class RefreshPermissions(val batteryUnrestricted: Boolean?, val cameraAllowed: Boolean? = null) : SettingsAction
 }
 
 /** One-off results the screens show. */

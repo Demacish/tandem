@@ -83,6 +83,8 @@ internal val SAMPLE_PERMISSIONS = PermissionsUiState(
     batteryUnrestricted = false,
     showBattery = true,
     showFullScreen = true,
+    // Fas S review (fix-ui): the scanners' camera, not allowed yet (asked at the first scan).
+    cameraAllowed = false,
 )
 
 internal val SAMPLE_DIAGNOSTICS = DiagnosticsUiState(

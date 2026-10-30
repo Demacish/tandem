@@ -48,13 +48,30 @@ class TodayPantryViewModelTest {
     private val calendar = FakeCalendarDays(SamplePantry.TODAY)
 
     @Test
-    fun haveItAllFirstThenMissingOneWithoutDrinks() = runTest {
+    fun onlyHaveItAllWhenThereIsAnyWithoutDrinks() = runTest {
         val vm = TodayPantryViewModel(makeNow, pantry, calendar)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         advanceUntilIdle()
         val state = vm.uiState.value
-        assertEquals(listOf("Pannkakor", "Krämig kycklinggryta", "Potatisgratäng"), state.makeNow.map { it.name })
+        // Fas S review (fix-ui): no "Saknar 1" card under "2 recept där allt finns hemma".
+        assertEquals(listOf("Pannkakor", "Krämig kycklinggryta"), state.makeNow.map { it.name })
         assertEquals(2, state.hasAll)
+    }
+
+    @Test
+    fun missingOneWhenNothingHasEverything() = runTest {
+        val almost = FakeMakeNowRepository(
+            mapOf(
+                MakeNowGroup.HAS_ALL to listOf(MakeNowRecipe(wine, MakeNowGroup.HAS_ALL, missingFoods = emptyList())),
+                MakeNowGroup.MISSING_1 to listOf(MakeNowRecipe(SamplePantry.gratin, MakeNowGroup.MISSING_1, expiring = listOf(cream))),
+            ),
+        )
+        val vm = TodayPantryViewModel(almost, pantry, calendar)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val state = vm.uiState.value
+        assertEquals(listOf("Potatisgratäng"), state.makeNow.map { it.name })
+        assertEquals(0, state.hasAll)
     }
 
     @Test

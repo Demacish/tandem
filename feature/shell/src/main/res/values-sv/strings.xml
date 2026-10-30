@@ -80,7 +80,7 @@
     <string name="shell_about_independent_title">Inte associerad med Tandoor-projektet</string>
     <string name="shell_about_independent_body">Tandem är en fristående app gjord för Tandoor. Rapportera problem med Tandem till Tandem, inte till Tandoor-projektet.</string>
     <string name="shell_about_privacy_title">Din data är din</string>
-    <string name="shell_about_privacy_body">Tandem pratar bara med den Tandoor-server du ansluter appen till. Ingen reklam, ingen analys, ingen spårning.</string>
+    <string name="shell_about_privacy_body">Tandem pratar med den Tandoor-server du ansluter appen till. Bara när du använder dem: en okänd streckkod slås upp i Open Food Facts (bara koden skickas), och det experimentella fotot av kylen skickas till den AI-tjänst du själv lagt in en nyckel till. Ingen reklam, ingen analys, ingen spårning.</string>
     <string name="shell_about_licenses">Licenser</string>
     <string name="shell_about_licenses_body">Typsnitt, ikoner och bibliotek med öppen källkod</string>
 

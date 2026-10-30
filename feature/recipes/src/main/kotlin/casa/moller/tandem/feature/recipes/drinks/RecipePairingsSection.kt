@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +45,7 @@ import casa.moller.tandem.core.designsystem.icon.WineBar
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.recipes.R
+import kotlinx.coroutines.launch
 
 /** Test tag of the detail's "Passar med" / "Passar till" section. */
 const val RECIPE_PAIRINGS_TAG: String = "recipe:pairings"
@@ -79,6 +82,17 @@ fun RecipePairingsRoute(
                 is RecipePairingsEffect.Message -> snackbarHostState.showSnackbar(
                     effect.argument?.let { resources.getString(effect.text, it) } ?: resources.getString(effect.text),
                 )
+
+                // Fas S review (fix-ui): a removed pairing can be undone, like every other removal of the phase.
+                is RecipePairingsEffect.Removed -> launch {
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    val result = snackbarHostState.showSnackbar(
+                        message = resources.getString(R.string.drinks_pairing_removed, effect.name),
+                        actionLabel = resources.getString(R.string.drinks_undo),
+                        duration = SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onAction(RecipePairingsAction.Undo(effect.undo))
+                }
             }
         }
     }
@@ -126,9 +140,14 @@ fun RecipePairingsSection(
             )
         }
         state.drinks.forEach { paired ->
+            // A drink created offline cannot be opened yet: say why, as Drycker's list does (fix-ui).
+            val pending = if (paired.drink.pending) stringResource(R.string.drinks_pending) else null
             PairedRow(
                 name = paired.drink.name,
-                supporting = paired.drink.types.map { drinkTypeLabel(it) }.joinToString(", ").ifEmpty { null },
+                supporting = listOfNotNull(
+                    paired.drink.types.map { drinkTypeLabel(it) }.joinToString(", ").ifEmpty { null },
+                    pending,
+                ).joinToString(" · ").ifEmpty { null },
                 imageUrl = paired.drink.imageUrl,
                 openLabel = stringResource(R.string.drinks_open_drink, paired.drink.name),
                 onOpen = { onOpenRecipe(paired.drink.id) }.takeUnless { paired.drink.pending },

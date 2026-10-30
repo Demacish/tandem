@@ -85,7 +85,7 @@
     <string name="shell_about_independent_title">Not affiliated with the Tandoor project</string>
     <string name="shell_about_independent_body">Tandem is an independent app made for Tandoor. Please report problems with Tandem to Tandem, not to the Tandoor project.</string>
     <string name="shell_about_privacy_title">Your data stays yours</string>
-    <string name="shell_about_privacy_body">Tandem only talks to the Tandoor server you connect it to. No ads, no analytics, no tracking.</string>
+    <string name="shell_about_privacy_body">Tandem talks to the Tandoor server you connect it to. Only when you use them: an unknown barcode is looked up in Open Food Facts (only the code is sent), and the experimental fridge photo goes to the AI service you set up with your own key. No ads, no analytics, no tracking.</string>
     <string name="shell_about_licenses">Licenses</string>
     <string name="shell_about_licenses_body">Fonts, icons and open-source libraries</string>
 

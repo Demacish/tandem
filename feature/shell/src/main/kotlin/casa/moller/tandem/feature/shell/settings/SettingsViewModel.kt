@@ -88,6 +88,7 @@ class SettingsViewModel internal constructor(
     private val clearingImageCache = MutableStateFlow(false)
     private val exporting = MutableStateFlow(false)
     private val batteryUnrestricted = MutableStateFlow<Boolean?>(null)
+    private val cameraAllowed = MutableStateFlow<Boolean?>(null)
     private val showBattery = BatteryAdvice.appliesTo(manufacturer)
     private val showFullScreen = buildInfo.distribution == SIDELOAD
 
@@ -125,12 +126,17 @@ class SettingsViewModel internal constructor(
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())
 
-    val permissions: StateFlow<PermissionsUiState> = combine(timers.capabilities, batteryUnrestricted) { capabilities, battery ->
+    val permissions: StateFlow<PermissionsUiState> = combine(
+        timers.capabilities,
+        batteryUnrestricted,
+        cameraAllowed,
+    ) { capabilities, battery, camera ->
         PermissionsUiState(
             capabilities = capabilities,
             batteryUnrestricted = battery,
             showBattery = showBattery,
             showFullScreen = showFullScreen,
+            cameraAllowed = camera,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, PermissionsUiState(showBattery = showBattery, showFullScreen = showFullScreen))
 
@@ -170,6 +176,7 @@ class SettingsViewModel internal constructor(
 
             is SettingsAction.RefreshPermissions -> {
                 batteryUnrestricted.value = action.batteryUnrestricted
+                cameraAllowed.value = action.cameraAllowed
                 timers.refreshCapabilities()
             }
         }

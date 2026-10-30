@@ -1,9 +1,11 @@
 package casa.moller.tandem.feature.mealplan
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.ui.AppStatus
+import casa.moller.tandem.core.ui.drink.LocalDrinkSuggestion
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.feature.mealplan.Devices.PHONE
 import casa.moller.tandem.feature.mealplan.Devices.PHONE_LANDSCAPE
@@ -98,6 +100,16 @@ class MealPlanScreenshotTest {
     @Config(qualifiers = TABLET)
     fun tabletDark() = capture("tablet_week_dark", MealPlanShot.WEEK, darkTheme = true)
 
+    // Fas S review (fix-ui, plan §8.8): the drink suggestion on the grid's tiles (a fake slot; the
+    // shell fills it with feature:recipes' DrinkSuggestionRoute).
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun tabletDrinks() = captureWithDrinks("tablet_week_drinks_light_sv")
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun tabletPortraitDrinks() = captureWithDrinks("tablet_portrait_week_drinks_dark_sv", darkTheme = true)
+
     @Test
     @Config(qualifiers = "sv-$TABLET")
     fun tabletGuest() = capture("tablet_week_guest_light_sv", MealPlanShot.WEEK_GUEST)
@@ -177,6 +189,15 @@ class MealPlanScreenshotTest {
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun weekShoppingAtHome() = capture("phone_week_shopping_at_home_light_sv", MealPlanShot.WEEK_SHOPPING_AT_HOME)
+
+    private fun captureWithDrinks(name: String, darkTheme: Boolean = false) {
+        composeRule.setContent {
+            MealPlanTestTheme(darkTheme = darkTheme) {
+                CompositionLocalProvider(LocalDrinkSuggestion provides FakeDrinkSuggestion) { MealPlanShot.WEEK.content() }
+            }
+        }
+        composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/mealplan/$name.png")
+    }
 
     private fun capture(
         name: String,

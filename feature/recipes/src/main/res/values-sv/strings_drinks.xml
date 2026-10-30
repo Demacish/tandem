@@ -20,6 +20,8 @@
     <string name="drinks_no_match_body">Prova ett annat ord eller en annan typ.</string>
     <string name="drinks_pending">Väntar på att skickas</string>
     <string name="drinks_pending_message">Drycken går att öppna när den har skickats till Tandoor.</string>
+    <string name="drinks_pairing_removed">Kopplingen till %1$s togs bort</string>
+    <string name="drinks_undo">Ångra</string>
     <string name="drinks_refresh_failed">Dryckerna kunde inte uppdateras. De sparade visas.</string>
     <string name="drinks_unrated">Inget betyg</string>
 

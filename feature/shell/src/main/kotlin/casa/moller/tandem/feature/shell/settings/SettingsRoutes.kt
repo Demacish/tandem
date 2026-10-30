@@ -99,7 +99,12 @@ internal object RouteSettingsPages : SettingsPages {
         val context = LocalContext.current
         // Read again every time the screen comes back from Android's settings.
         LifecycleResumeEffect(viewModel, context) {
-            viewModel.onAction(SettingsAction.RefreshPermissions(SystemSetting.batteryUnrestricted(context)))
+            viewModel.onAction(
+                SettingsAction.RefreshPermissions(
+                    batteryUnrestricted = SystemSetting.batteryUnrestricted(context),
+                    cameraAllowed = SystemSetting.cameraAllowed(context),
+                ),
+            )
             onPauseOrDispose { }
         }
         PermissionsScreen(

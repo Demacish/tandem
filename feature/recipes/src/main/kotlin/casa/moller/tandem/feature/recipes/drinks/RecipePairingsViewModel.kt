@@ -73,10 +73,28 @@ sealed interface RecipePairingsAction {
 
     /** "Lägg på inköpslistan" for a drink without ingredients: the drink itself goes on the list. */
     data object AddToList : RecipePairingsAction
+
+    /** "Ångra" after a removal: the same links again (the outbox cancels a still-queued removal). */
+    data class Undo(val links: List<PairingLink>) : RecipePairingsAction
+}
+
+/** A pairing as it was before a removal, to restore it with "Ångra" (Fas S review, fix-ui). */
+sealed interface PairingLink {
+    /** A stored pairing keyword on [recipeId]. */
+    data class Keyword(val recipeId: Long, val keywordId: Long) : PairingLink
+
+    /** A kind of drink not sent yet (a temporary id): linked again by its [name]. */
+    data class NewKind(val recipeId: Long, val name: String) : PairingLink
+
+    /** A drink paired with [recipeId] through its own keyword (a drink not sent yet, or a keyword not sent yet). */
+    data class Drink(val recipeId: Long, val drinkId: Long) : PairingLink
 }
 
 sealed interface RecipePairingsEffect {
     data class Message(@StringRes val text: Int, val argument: String? = null) : RecipePairingsEffect
+
+    /** A pairing with [name] was removed: a snackbar with "Ångra" that sends [RecipePairingsAction.Undo] with [undo]. */
+    data class Removed(val name: String, val undo: List<PairingLink>) : RecipePairingsEffect
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -131,17 +149,61 @@ class RecipePairingsViewModel @AssistedInject constructor(
     fun onAction(action: RecipePairingsAction) {
         viewModelScope.launch {
             when (action) {
-                is RecipePairingsAction.RemoveDrink -> action.drink.keywordIds.forEach { report(drinks.removePairing(recipeId, it)) }
+                is RecipePairingsAction.RemoveDrink -> removeDrink(action.drink)
 
-                is RecipePairingsAction.RemoveKind -> report(drinks.removePairing(recipeId, action.pairing.keywordId))
-
-                is RecipePairingsAction.RemoveDish -> drinks.observeRecipePairings(recipeId).first().pairings.forEach {
-                    report(drinks.removePairing(action.dishId, it.keywordId))
+                is RecipePairingsAction.RemoveKind -> {
+                    val kind = action.pairing
+                    if (report(drinks.removePairing(recipeId, kind.keywordId))) {
+                        val undo = if (kind.keywordId < 0) {
+                            PairingLink.NewKind(recipeId, kind.name)
+                        } else {
+                            PairingLink.Keyword(recipeId, kind.keywordId)
+                        }
+                        effectChannel.trySend(RecipePairingsEffect.Removed(kind.name, listOf(undo)))
+                    }
                 }
 
+                is RecipePairingsAction.RemoveDish -> removeDish(action.dishId)
+
                 RecipePairingsAction.AddToList -> addToList()
+
+                is RecipePairingsAction.Undo -> action.links.forEach { link ->
+                    report(
+                        when (link) {
+                            is PairingLink.Keyword -> drinks.addPairing(link.recipeId, link.keywordId)
+                            is PairingLink.NewKind -> drinks.addNewPairing(link.recipeId, link.name)
+                            is PairingLink.Drink -> drinks.pairWithDrink(link.recipeId, link.drinkId)
+                        },
+                    )
+                }
             }
         }
+    }
+
+    private suspend fun removeDrink(paired: PairedDrink) {
+        val removed = paired.keywordIds.filter { report(drinks.removePairing(recipeId, it)) }
+        if (removed.isEmpty()) return
+        // A keyword or drink not sent yet has a temporary id: pair through the drink again.
+        val undo = if (removed.all { it >= 0 } && !paired.drink.pending) {
+            removed.map { PairingLink.Keyword(recipeId, it) }
+        } else {
+            listOf(PairingLink.Drink(recipeId, paired.drink.id))
+        }
+        effectChannel.trySend(RecipePairingsEffect.Removed(paired.drink.name, undo))
+    }
+
+    /** On a drink's page: the drink's pairings are removed from [dishId]. */
+    private suspend fun removeDish(dishId: Long) {
+        val removed = drinks.observeRecipePairings(recipeId).first().pairings.map { it.keywordId }
+            .filter { report(drinks.removePairing(dishId, it)) }
+        if (removed.isEmpty()) return
+        val name = uiState.value.dishes.firstOrNull { it.id == dishId }?.name.orEmpty()
+        val undo = if (removed.all { it >= 0 }) {
+            removed.map { PairingLink.Keyword(dishId, it) }
+        } else {
+            listOf(PairingLink.Drink(dishId, recipeId))
+        }
+        effectChannel.trySend(RecipePairingsEffect.Removed(name, undo))
     }
 
     private suspend fun addToList() {
@@ -152,8 +214,10 @@ class RecipePairingsViewModel @AssistedInject constructor(
         }
     }
 
-    private fun report(outcome: Outcome<*>) {
+    /** True when [outcome] succeeded; a failure is reported. */
+    private fun report(outcome: Outcome<*>): Boolean {
         if (outcome is Outcome.Failure) effectChannel.trySend(RecipePairingsEffect.Message(drinkErrorMessage(outcome.error)))
+        return outcome is Outcome.Success
     }
 
     private companion object {

@@ -14,7 +14,7 @@
     <string name="onboarding_feature_plan_title">Planera veckan, handla tillsammans</string>
     <string name="onboarding_feature_plan_body">Veckomeny och inköpslista som delas med hushållet.</string>
     <string name="onboarding_feature_server_title">Din server, din data</string>
-    <string name="onboarding_feature_server_body">Tandem pratar bara med din egen Tandoor. Ingen reklam, ingen spårning.</string>
+    <string name="onboarding_feature_server_body">Tandem pratar med din egen Tandoor. Bara för skanning och fotot av kylen, och bara om du använder dem, frågar appen Open Food Facts eller den AI-tjänst du valt. Ingen reklam, ingen spårning.</string>
     <string name="onboarding_get_started">Kom igång</string>
     <string name="onboarding_unofficial">Tandem är en inofficiell app för Tandoor Recipes.</string>
 

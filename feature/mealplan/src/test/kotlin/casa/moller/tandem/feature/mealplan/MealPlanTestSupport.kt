@@ -1,9 +1,27 @@
 package casa.moller.tandem.feature.mealplan
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import casa.moller.tandem.core.designsystem.icon.WineBar
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
@@ -14,6 +32,7 @@ import casa.moller.tandem.core.model.mealplan.MealType
 import casa.moller.tandem.core.model.mealplan.WeekShoppingIngredient
 import casa.moller.tandem.core.model.mealplan.WeekShoppingMeal
 import casa.moller.tandem.core.model.recipe.RecipeOverview
+import casa.moller.tandem.core.ui.drink.DrinkSuggestionSlot
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import kotlin.time.Instant
@@ -226,3 +245,28 @@ internal fun MealPlanTestTheme(
         }
     }
 }
+
+/**
+ * Fas S review (fix-ui): a drink suggestion slot for the week's tests, drawn like feature:recipes'
+ * compact row (glass and the drink, one line) and one TalkBack item that can be tapped.
+ */
+internal val FakeDrinkSuggestion = DrinkSuggestionSlot { _, modifier, compact ->
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(onClickLabel = "Öppna Rioja Exempel", role = Role.Button) {}
+            .semantics(mergeDescendants = true) { contentDescription = "Passar med Rioja Exempel" },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs),
+    ) {
+        Icon(TandemIcons.WineBar, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Text(
+            text = if (compact) "Rioja Exempel" else "Passar med: Rioja Exempel",
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+

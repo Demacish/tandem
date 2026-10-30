@@ -139,6 +139,10 @@ class CreateDrinkViewModel @AssistedInject constructor(
         }
     }
 
+    /** The form's photo right now (from the saved state, also before [uiState] has its first value after process death). */
+    internal val currentPhoto: String?
+        get() = handle[KEY_PHOTO]
+
     private fun save() {
         val state = uiState.value
         if (state.saving) return

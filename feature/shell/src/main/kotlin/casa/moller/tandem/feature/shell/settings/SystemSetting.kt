@@ -1,8 +1,10 @@
 package casa.moller.tandem.feature.shell.settings
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
@@ -64,5 +66,13 @@ internal enum class SystemSetting {
         /** True when Android does not optimise Tandem's battery use; null when unknown. */
         fun batteryUnrestricted(context: Context): Boolean? =
             context.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName)
+
+        /** Whether the scanners may use the camera; null on a device without a camera (no row then). */
+        fun cameraAllowed(context: Context): Boolean? =
+            if (!context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+                null
+            } else {
+                context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            }
     }
 }

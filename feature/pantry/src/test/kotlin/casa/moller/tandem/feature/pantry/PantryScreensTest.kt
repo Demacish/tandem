@@ -168,4 +168,4 @@ class PantryScreensTest {
     }
 }
 
-private const val FRIDGE_PHOTO_SV = "Foto av kylen (experimentell)"
+private const val FRIDGE_PHOTO_SV = "Foto av kylen (experimentellt)"

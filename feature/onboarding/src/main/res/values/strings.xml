@@ -18,7 +18,7 @@
     <string name="onboarding_feature_plan_title">Plan the week, shop together</string>
     <string name="onboarding_feature_plan_body">Meal plan and shopping list, shared with your household.</string>
     <string name="onboarding_feature_server_title">Your server, your data</string>
-    <string name="onboarding_feature_server_body">Tandem talks only to your own Tandoor. No ads, no tracking.</string>
+    <string name="onboarding_feature_server_body">Tandem talks to your own Tandoor. Only for scanning and the fridge photo, and only if you use them, does it ask Open Food Facts or your chosen AI service. No ads, no tracking.</string>
     <string name="onboarding_get_started">Get started</string>
     <string name="onboarding_unofficial">Tandem is an unofficial app for Tandoor Recipes.</string>
 

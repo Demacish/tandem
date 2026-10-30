@@ -101,7 +101,7 @@
     <!-- Permissions overview (design k_kets_beh_righeter_systemguide with its corrections) -->
     <string name="settings_permissions_intro">Tandem asks for permissions when it needs them, for example at your first timer. Here you can see what is allowed and change it in Android’s settings.</string>
     <string name="settings_permissions_privacy_title">Everything stays with you</string>
-    <string name="settings_permissions_privacy_body">Tandem only talks to your own Tandoor server. No location, no contacts, no tracking.</string>
+    <string name="settings_permissions_privacy_body">Tandem talks to your own Tandoor server, and only when you use them to Open Food Facts (an unknown barcode, nothing else) and to the AI service you chose (the fridge photo). No location, no contacts, no tracking.</string>
     <string name="settings_permission_notifications">Notifications</string>
     <string name="settings_permission_notifications_body">Timers counting down and ringing, and news about your server.</string>
     <string name="settings_permission_alarm_channel">Alarm sound for timers</string>
@@ -113,6 +113,8 @@
     <string name="settings_permission_full_screen_body">A ringing timer fills the screen, also when the phone is locked.</string>
     <string name="settings_permission_battery">Battery saving</string>
     <string name="settings_permission_battery_body">Some phones stop apps in the background to save power. Set Tandem to “Unrestricted” under Battery so syncs and timers are not stopped.</string>
+    <string name="settings_permission_camera">Camera</string>
+    <string name="settings_permission_camera_body">Scans barcodes and receipts and takes the photos of the fridge and of drinks. Asked the first time you use it; without it you can pick a photo from the gallery instead.</string>
     <string name="settings_permission_allowed">Allowed</string>
     <string name="settings_permission_not_allowed">Not allowed</string>
     <string name="settings_permission_unrestricted">Unrestricted</string>

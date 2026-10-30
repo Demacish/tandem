@@ -209,58 +209,63 @@ internal fun MealTile(
     val description = stringResource(R.string.mealplan_tile_description, meal.mealType.name, day, summary)
     val moveLabel = stringResource(R.string.mealplan_move)
     Box(modifier = modifier) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(mealTag(meal.id))
-                .clip(MaterialTheme.shapes.medium)
-                .then(
-                    if (menu.isNotEmpty()) {
-                        val label = stringResource(R.string.mealplan_show_actions)
-                        Modifier.combinedClickable(
-                            onClickLabel = label,
-                            role = Role.Button,
-                            onLongClickLabel = moveLabel.takeIf { MealMenuItem.MOVE in menu },
-                            onLongClick = { onAction(WeekAction.StartMove(meal)) }.takeIf { MealMenuItem.MOVE in menu },
-                            onClick = { open = true },
-                        )
-                    } else {
-                        Modifier
-                    },
-                )
-                .semantics(mergeDescendants = true) { contentDescription = description },
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-                if (meal.recipe != null) {
-                    RecipeImage(
-                        imageUrl = meal.recipe?.imageUrl,
-                        placeholderIconSize = 24.dp,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(4f / 3f),
-                    )
-                }
-                Column(
-                    modifier = Modifier.padding(horizontal = spacing.sm).padding(bottom = spacing.sm, top = spacing.xs),
-                    verticalArrangement = Arrangement.spacedBy(spacing.xxs),
-                ) {
-                    Text(
-                        text = meal.name(),
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = if (meal.recipe == null) {
-                            stringResource(R.string.mealplan_without_recipe)
+        Column {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(mealTag(meal.id))
+                    .clip(MaterialTheme.shapes.medium)
+                    .then(
+                        if (menu.isNotEmpty()) {
+                            val label = stringResource(R.string.mealplan_show_actions)
+                            Modifier.combinedClickable(
+                                onClickLabel = label,
+                                role = Role.Button,
+                                onLongClickLabel = moveLabel.takeIf { MealMenuItem.MOVE in menu },
+                                onLongClick = { onAction(WeekAction.StartMove(meal)) }.takeIf { MealMenuItem.MOVE in menu },
+                                onClick = { open = true },
+                            )
                         } else {
-                            format.servings(meal.servings, resources)
+                            Modifier
                         },
-                        style = MaterialTheme.typography.bodySmall,
                     )
-                    if (meal.pending) PendingLabel(color = MaterialTheme.colorScheme.onSurface)
+                    .semantics(mergeDescendants = true) { contentDescription = description },
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    if (meal.recipe != null) {
+                        RecipeImage(
+                            imageUrl = meal.recipe?.imageUrl,
+                            placeholderIconSize = 24.dp,
+                            modifier = Modifier.fillMaxWidth().aspectRatio(4f / 3f),
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.padding(horizontal = spacing.sm).padding(bottom = spacing.sm, top = spacing.xs),
+                        verticalArrangement = Arrangement.spacedBy(spacing.xxs),
+                    ) {
+                        Text(
+                            text = meal.name(),
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = if (meal.recipe == null) {
+                                stringResource(R.string.mealplan_without_recipe)
+                            } else {
+                                format.servings(meal.servings, resources)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        if (meal.pending) PendingLabel(color = MaterialTheme.colorScheme.onSurface)
+                    }
                 }
             }
+            // Fas S review (fix-ui, plan §8.8 and §6.5): the drink suggestion on the tablet's grid
+            // too, compact, OUTSIDE the tile's merged clickable node: its own tap and TalkBack item.
+            meal.recipe?.let { recipe -> DrinkSuggestion(recipeId = recipe.id, compact = true) }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             menu.forEach { item ->

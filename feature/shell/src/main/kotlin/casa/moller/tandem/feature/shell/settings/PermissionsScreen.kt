@@ -21,6 +21,7 @@ import casa.moller.tandem.core.designsystem.component.InfoCard
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.BatteryAlert
+import casa.moller.tandem.core.designsystem.icon.PhotoCamera
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.feature.shell.R
@@ -100,6 +101,17 @@ internal fun PermissionsScreen(
                     body = stringResource(R.string.settings_permission_full_screen_body),
                     allowed = capabilities.fullScreenAlarmAllowed,
                     onOpen = { onOpenSystemSetting(SystemSetting.FULL_SCREEN) },
+                )
+            }
+            // Fas S review (fix-ui): the scanners' camera, asked in context; the photo picker needs nothing.
+            state.cameraAllowed?.let { allowed ->
+                GroupDivider()
+                PermissionRow(
+                    icon = TandemIcons.PhotoCamera,
+                    title = stringResource(R.string.settings_permission_camera),
+                    body = stringResource(R.string.settings_permission_camera_body),
+                    allowed = allowed,
+                    onOpen = { onOpenSystemSetting(SystemSetting.APP_DETAILS) },
                 )
             }
             if (state.showBattery) {

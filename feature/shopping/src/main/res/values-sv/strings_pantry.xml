@@ -8,4 +8,5 @@
         <item quantity="other">%d varor bockades av i dag. Lägg in dem i skafferiet med bäst före-datum.</item>
     </plurals>
     <string name="shopping_unpack_action">Packa upp</string>
+    <string name="shopping_unpack_not_now">Inte nu</string>
 </resources>

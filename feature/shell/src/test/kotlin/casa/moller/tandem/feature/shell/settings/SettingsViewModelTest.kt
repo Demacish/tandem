@@ -259,12 +259,17 @@ class SettingsViewModelTest {
         assertTrue("sideload can ring on the lock screen", state.value.showFullScreen)
 
         timers.setCapabilities(CAPABILITIES_LIMITED)
-        vm.onAction(SettingsAction.RefreshPermissions(batteryUnrestricted = true))
+        vm.onAction(SettingsAction.RefreshPermissions(batteryUnrestricted = true, cameraAllowed = false))
 
         assertEquals(1, timers.refreshCount)
         assertEquals(CAPABILITIES_LIMITED, state.value.capabilities)
         assertEquals(true, state.value.batteryUnrestricted)
+        assertEquals(false, state.value.cameraAllowed)
         assertFalse(state.value.exactAlarmsFixed)
+
+        // Allowed in Android's settings meanwhile (Fas S, fix-ui).
+        vm.onAction(SettingsAction.RefreshPermissions(batteryUnrestricted = true, cameraAllowed = true))
+        assertEquals(true, state.value.cameraAllowed)
     }
 
     @Test

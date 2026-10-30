@@ -22,6 +22,8 @@
     <string name="drinks_no_match_body">Try another word or type.</string>
     <string name="drinks_pending">Waiting to be sent</string>
     <string name="drinks_pending_message">The drink opens once it has been sent to Tandoor.</string>
+    <string name="drinks_pairing_removed">Pairing with %1$s removed</string>
+    <string name="drinks_undo">Undo</string>
     <string name="drinks_refresh_failed">Could not refresh the drinks. Showing the saved ones.</string>
     <string name="drinks_unrated">Not rated</string>
 

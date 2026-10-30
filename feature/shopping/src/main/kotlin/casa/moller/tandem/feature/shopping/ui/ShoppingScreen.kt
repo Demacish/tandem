@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.shopping.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -370,8 +371,6 @@ private fun ShoppingList(
                         if (state.canEdit) AddFieldButton(onClick = { onAction(ShoppingAction.OpenAdd) })
                     }
                     if (state.progressTotal > 0) Progress(done = state.progressDone, total = state.progressTotal)
-                    // Fas S (hemma-ui lane, #46): "Packa upp" when something was checked off today.
-                    unpackPrompt()
                 }
             }
             if (grouped.isEmpty) {
@@ -471,6 +470,11 @@ private fun ShoppingList(
                         }
                     }
                 }
+            }
+            // Fas S (#46): "Packa upp" when something was checked off today. Below the list (fix-ui):
+            // at the top it appeared at the first tick and pushed every aisle down mid-shopping.
+            item(key = "unpack", span = StaggeredGridItemSpan.FullLine) {
+                Box(modifier = Modifier.semantics { traversalIndex = afterAisles + 2f }) { unpackPrompt() }
             }
         }
     }

@@ -13,6 +13,7 @@ import casa.moller.tandem.core.domain.drink.PendingDrink
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /**
  * Fas S (drycker lane): the [DrinkIndex] of one account from Room (plan §8.8): the cached keywords
@@ -20,7 +21,18 @@ import kotlinx.coroutines.flow.flowOf
  * win until they are sent, like "Vill laga") and the drinks created offline (`drink_draft`).
  * [withOutbox] false (demo mode) reads the stored rows only.
  */
-internal fun observeDrinkIndex(database: TandemDatabase, accountId: String, withOutbox: Boolean): Flow<DrinkIndex> {
+internal fun observeDrinkIndex(database: TandemDatabase, accountId: String, withOutbox: Boolean): Flow<DrinkIndex> =
+    observeDrinkIndexAndDrafts(database, accountId, withOutbox).map { (index, _) -> index }
+
+/**
+ * [observeDrinkIndex] together with the drafts it was built from (Fas S review, fix-ui: the
+ * repository read `drink_draft` a second time beside the index).
+ */
+internal fun observeDrinkIndexAndDrafts(
+    database: TandemDatabase,
+    accountId: String,
+    withOutbox: Boolean,
+): Flow<Pair<DrinkIndex, List<DrinkDraftEntity>>> {
     val books = database.recipeBookDao()
     val outbox = if (withOutbox) books.observeOutbox(accountId) else flowOf(emptyList())
     return combine(
@@ -28,7 +40,7 @@ internal fun observeDrinkIndex(database: TandemDatabase, accountId: String, with
         books.observeRecipeKeywords(accountId),
         outbox,
         database.drinkDraftDao().observeDrafts(accountId),
-    ) { keywords, links, queued, drafts -> drinkIndexOf(keywords, links, queued, drafts) }
+    ) { keywords, links, queued, drafts -> drinkIndexOf(keywords, links, queued, drafts) to drafts }
 }
 
 /** The same index read once (a write checks the current state). */

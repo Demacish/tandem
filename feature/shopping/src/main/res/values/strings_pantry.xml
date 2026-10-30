@@ -9,4 +9,5 @@
         <item quantity="other">%d items were ticked off today. Put them in the pantry with best-before dates.</item>
     </plurals>
     <string name="shopping_unpack_action">Unpack</string>
+    <string name="shopping_unpack_not_now">Not now</string>
 </resources>

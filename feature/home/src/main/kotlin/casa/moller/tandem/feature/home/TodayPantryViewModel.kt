@@ -72,7 +72,9 @@ class TodayPantryViewModel @Inject internal constructor(makeNow: MakeNowReposito
         }
         return TodayPantryState(
             today = day,
-            makeNow = (hasAll + missingOne).map { it.recipe }.distinctBy { it.id }.take(MAX_RECIPES),
+            // Fas S review (fix-ui): only "Har allt" when there is any (the subtitle says "där allt
+            // finns hemma"); "Saknar 1" only when nothing has everything (its own subtitle).
+            makeNow = hasAll.ifEmpty { missingOne }.map { it.recipe }.distinctBy { it.id }.take(MAX_RECIPES),
             hasAll = hasAll.size.coerceAtMost(MAX_RECIPES),
             expiring = rows,
         )

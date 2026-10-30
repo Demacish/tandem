@@ -34,15 +34,16 @@ import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -209,14 +210,16 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
     private suspend fun currentId(source: ActiveSource.Stored, id: Long): Long =
         databases.get(source.kind).idRewriteDao().current(source.accountId, OutboxEntities.DRINK, id)
 
-    /** The index and the drafts of [source], updated on every change. */
-    private fun snapshotOf(source: ActiveSource.Stored): Flow<Snapshot> {
-        val database = databases.get(source.kind)
-        return combine(
-            observeDrinkIndex(database, source.accountId, withOutbox = source is ActiveSource.Remote),
-            database.drinkDraftDao().observeDrafts(source.accountId),
-        ) { index, drafts -> Snapshot(index, drafts) }
-    }
+    /**
+     * The index and the drafts of [source], updated on every change. Fas S review (fix-ui): built
+     * on Dispatchers.Default (every meal card in Veckan and Idag reads it for its drink suggestion,
+     * and the build ran on the main thread), with the drafts read once, not a second time beside
+     * the index. Not shared between readers: a reader right after a write must see that write.
+     */
+    private fun snapshotOf(source: ActiveSource.Stored): Flow<Snapshot> =
+        observeDrinkIndexAndDrafts(databases.get(source.kind), source.accountId, withOutbox = source is ActiveSource.Remote)
+            .map { (index, drafts) -> Snapshot(index, drafts) }
+            .flowOn(Dispatchers.Default)
 
     private fun <T> snapshots(flow: (ActiveSource.Stored, Snapshot) -> Flow<List<T>>): Flow<List<T>> = sources.source
         .flatMapLatest { source ->

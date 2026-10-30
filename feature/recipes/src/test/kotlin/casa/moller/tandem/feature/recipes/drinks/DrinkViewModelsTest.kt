@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.recipes.drinks
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.model.drink.Drink
+import casa.moller.tandem.core.model.drink.RecipePairings
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.testing.MainDispatcherRule
@@ -114,6 +115,51 @@ class DrinkViewModelsTest {
         vm.onAction(RecipePairingsAction.RemoveDrink(state.drinks.single()))
         vm.onAction(RecipePairingsAction.RemoveKind(state.kinds.single()))
         assertTrue(vm.uiState.value.isEmpty)
+    }
+
+    @Test
+    fun aRemovedDrinkKindOrDishCanBeUndone() = runTest {
+        val links = setOf(SamplePantry.pairing.keywordId, SamplePantry.typeOnly.keywordId)
+        drinks.recipePairings.value = drinks.recipePairings.value + (dish to links)
+        val vm = RecipePairingsViewModel(dish, drinks, recipes, permissions, settings, shopping)
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        val state = vm.uiState.value
+
+        vm.onAction(RecipePairingsAction.RemoveDrink(state.drinks.single()))
+        vm.onAction(RecipePairingsAction.RemoveKind(state.kinds.single()))
+        assertTrue(vm.uiState.value.isEmpty)
+        val removed = effects.filterIsInstance<RecipePairingsEffect.Removed>()
+        assertEquals(listOf("Rioja Crianza", "Friskt vitt"), removed.map { it.name })
+        assertEquals(listOf(PairingLink.Keyword(dish, SamplePantry.pairing.keywordId)), removed[0].undo)
+
+        removed.forEach { vm.onAction(RecipePairingsAction.Undo(it.undo)) }
+        assertEquals(links, drinks.recipePairings.value[dish])
+        assertEquals(listOf(rioja.id), vm.uiState.value.drinks.map { it.drink.id })
+        assertEquals(listOf("Friskt vitt"), vm.uiState.value.kinds.map { it.name })
+    }
+
+    @Test
+    fun aRemovedDishCanBeUndoneFromTheDrink() = runTest {
+        recipes.overviews.value = recipes.overviews.value + SampleRecipes.overviews.first().copy(id = rioja.id, name = rioja.name)
+        drinks.recipePairings.value = drinks.recipePairings.value + (dish to setOf(SamplePantry.pairing.keywordId))
+        val vm = RecipePairingsViewModel(rioja.id, drinks, recipes, permissions, settings, shopping)
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        vm.onAction(RecipePairingsAction.RemoveDish(dish))
+        val removed = effects.filterIsInstance<RecipePairingsEffect.Removed>().single()
+        vm.onAction(RecipePairingsAction.Undo(removed.undo))
+        assertEquals(listOf(dish), vm.uiState.value.dishes.map { it.id })
+    }
+
+    @Test
+    fun theSuggestionOpensAndNamesTheFirstDrinkAlreadySent() {
+        val pending = Drink(id = -3, name = "Aaa hemmagjord glögg", pending = true)
+        val suggestion = RecipePairings(recipeId = dish, drinks = listOf(pending, rioja)).toSuggestion()
+        assertEquals(listOf("Aaa hemmagjord glögg", "Rioja Crianza"), suggestion.names)
+        assertEquals(rioja.id, suggestion.drinkId)
+        assertEquals("Rioja Crianza", suggestion.drinkName)
+        assertNull(RecipePairings(recipeId = dish, drinks = listOf(pending)).toSuggestion().drinkId)
     }
 
     @Test

@@ -98,7 +98,7 @@
     <!-- Behörigheter -->
     <string name="settings_permissions_intro">Tandem frågar om behörigheter när de behövs, till exempel vid din första timer. Här ser du vad som är tillåtet och kan ändra det i Androids inställningar.</string>
     <string name="settings_permissions_privacy_title">Allt stannar hos dig</string>
-    <string name="settings_permissions_privacy_body">Tandem pratar bara med din egen Tandoor-server. Ingen position, inga kontakter, ingen spårning.</string>
+    <string name="settings_permissions_privacy_body">Tandem pratar med din egen Tandoor-server, och bara när du använder dem med Open Food Facts (en okänd streckkod, inget annat) och den AI-tjänst du valt (fotot av kylen). Ingen position, inga kontakter, ingen spårning.</string>
     <string name="settings_permission_notifications">Notiser</string>
     <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, och nyheter om din server.</string>
     <string name="settings_permission_alarm_channel">Larmljud för timers</string>
@@ -110,6 +110,8 @@
     <string name="settings_permission_full_screen_body">En timer som ringer fyller skärmen, även när telefonen är låst.</string>
     <string name="settings_permission_battery">Batterisparläge</string>
     <string name="settings_permission_battery_body">Vissa telefoner stoppar appar i bakgrunden för att spara ström. Ställ in Tandem på ”Obegränsad” under Batteri så att synk och timers inte stoppas.</string>
+    <string name="settings_permission_camera">Kamera</string>
+    <string name="settings_permission_camera_body">Skannar streckkoder och kvitton och tar fotot av kylen och av drycker. Frågas första gången du använder den; utan den kan du välja en bild från galleriet i stället.</string>
     <string name="settings_permission_allowed">Tillåtet</string>
     <string name="settings_permission_not_allowed">Inte tillåtet</string>
     <string name="settings_permission_unrestricted">Obegränsad</string>
