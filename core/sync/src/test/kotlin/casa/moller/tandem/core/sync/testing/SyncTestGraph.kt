@@ -212,7 +212,7 @@ internal class SyncTestGraph(
 
     // Fas S (hemma-data lane): staples (the sync step resolves the ones waiting for a food).
     val staples = DefaultStaplesRepository(sources, databases, permissions, caller, scheduler, network, clock, pantryChanges)
-    val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope)
+    val mirror = AccountMirror(sessions, accountStore, settings, health, databases, demo, imageCache, notifier, clock, scope, drinkImages)
     val serverStatus = DefaultServerStatusRepository(sources, sessions, mirror, settings, CapabilityResolver(), guard, clock)
     val engine = SyncEngine(
         sources,
@@ -366,5 +366,15 @@ internal class TestDrinkImageStore(private val directory: File) : DrinkImageStor
     override suspend fun delete(path: String) {
         deleted += path
         File(path).delete()
+    }
+
+    val deletedAccounts = mutableListOf<String>()
+
+    override suspend fun deleteAccount(accountId: String) {
+        deletedAccounts += accountId
+    }
+
+    override suspend fun deleteAll() {
+        directory.deleteRecursively()
     }
 }

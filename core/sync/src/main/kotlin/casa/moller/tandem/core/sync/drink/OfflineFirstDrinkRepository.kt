@@ -11,6 +11,7 @@ import casa.moller.tandem.core.database.entity.KeywordEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.RecipeKeywordCrossRef
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.relation.RecipeListItem
@@ -277,8 +278,13 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
             val id = currentId(recipeId)
             if (index.pairingsOf(id).any { it.keywordId == pairing.keywordId }) return
             when {
-                id < 0 -> editDraft(id) { keywords -> keywords + DraftKeyword(pairing.name, DraftKeywordRole.PAIRING) }
+                id < 0 -> {
+                    editDraft(id) { keywords -> keywords + DraftKeyword(pairing.name, DraftKeywordRole.PAIRING) }
+                    queueWhileSending(id, pairing.name, add = true)
+                }
+
                 !remote -> drinks.insertKeywordRefs(listOf(RecipeKeywordCrossRef(accountId, id, pairing.keywordId)))
+
                 else -> enqueueToggle(id, pairing, add = true)
             }
         }
@@ -289,8 +295,11 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
             if (index.pairingsOf(id).none { it.keywordId == pairing.keywordId }) return
             val key = DrinkKeywords.key(pairing.name)
             when {
-                id < 0 -> editDraft(id) { list ->
-                    list.filterNot { it.role == DraftKeywordRole.PAIRING && DrinkKeywords.key(it.name) == key }
+                id < 0 -> {
+                    editDraft(id) { list ->
+                        list.filterNot { it.role == DraftKeywordRole.PAIRING && DrinkKeywords.key(it.name) == key }
+                    }
+                    queueWhileSending(id, pairing.name, add = false)
                 }
 
                 !remote -> drinks.deleteKeywordRef(accountId, id, pairing.keywordId)
@@ -351,6 +360,30 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
                 types = keywords.filter { it.role == DraftKeywordRole.TYPE }.map { it.name },
                 note = draft.description.trim().ifEmpty { null },
                 pending = true,
+            )
+        }
+
+        /**
+         * Fas S review (fix-data): a pairing change of a drink whose CREATE is being sent (or was tried
+         * and may be on the server) never reaches it through the draft (the sender read it already, or
+         * a retry takes over the drink it finds). It is queued for the recipe as well, by the drink's
+         * temporary id and after its CREATE; `completeCreate` gives it the recipe's id. A CREATE not
+         * tried yet reads the edited draft itself.
+         */
+        private suspend fun queueWhileSending(localId: Long, name: String, add: Boolean) {
+            val create = database.outboxDao().getCreate(accountId, OutboxEntities.DRINK, localId) ?: return
+            if (create.state != OutboxState.IN_FLIGHT && create.attempts == 0) return
+            database.outboxDao().enqueue(
+                OutboxEntity(
+                    accountId = accountId,
+                    op = OutboxOps.RECIPE_KEYWORDS,
+                    entity = OutboxEntities.RECIPE,
+                    localId = localId,
+                    payload = DrinkPayloads.pairing(name, add),
+                    baseSnapshot = DrinkPayloads.pairing(name, !add),
+                    dependsOn = create.id,
+                    createdAtEpochMillis = now,
+                ),
             )
         }
 

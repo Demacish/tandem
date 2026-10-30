@@ -3,6 +3,7 @@ package casa.moller.tandem.core.sync.drink
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.drink.DrinkProblem
+import casa.moller.tandem.core.database.entity.KeywordEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.ServerAccountEntity
@@ -13,12 +14,19 @@ import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.DEMO_ACCOUNT_ID
+import casa.moller.tandem.core.sync.data.RoomPendingChangesExporter
 import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import mockwebserver3.MockResponse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -196,6 +204,112 @@ class DrinkRepositoryTest {
         assertEquals(listOf(server.id), repo.observeRecipePairings(PANCAKES).first().drinks.map { it.id })
         assertEquals(listOf(server.id), repo.observeDrinks().first().map { it.id })
         assertTrue(graph.real.drinkDraftDao().getDrafts(ACCOUNT_ID).isEmpty())
+    }
+
+    /** Fas S review (fix-data): the household's own root and the server's spelling go out, so nothing is renamed. */
+    @Test
+    fun aDrinkIsSentWithTheServersOwnKeywordNames() = forEachVersion {
+        val beverages = tandoor.seedKeyword("Beverages")
+        val wine = tandoor.seedKeyword("Wine", parent = beverages)
+        graph.real.drinkDraftDao().upsertKeywords(
+            listOf(KeywordEntity(ACCOUNT_ID, beverages, "Beverages"), KeywordEntity(ACCOUNT_ID, wine, "Wine", parentId = beverages)),
+        )
+        ok(repo.createDrink(DrinkDraft(name = "Glögg", types = listOf("wine"))))
+
+        drainAll()
+
+        val post = Json.parseToJsonElement(tandoor.callsTo("POST", "/api/recipe/").single().second).jsonObject
+        val sent = post.getValue("keywords").jsonArray.map { it.jsonObject }
+            .associate { it.getValue("id").jsonPrimitive.long to it.getValue("name").jsonPrimitive.content }
+        assertEquals(mapOf(beverages to "Beverages", wine to "Wine"), sent)
+        assertEquals(null, tandoor.keywordNamed("Dryck"))
+        assertEquals("Beverages", tandoor.keywords.getValue(beverages).name)
+    }
+
+    /** Fas S review (fix-data): a pairing added by id goes out as `{id}`: a stale cached name never renames it back. */
+    @Test
+    fun aPairingAddedByIdIsSentByIdOnly() = forEachVersion {
+        val pairsWith = tandoor.seedKeyword("Passar med")
+        val bold = tandoor.seedKeyword("Fylligt rött", parent = pairsWith)
+        // This phone's cache is older: a partner renamed "Kraftigt rött" on the web since.
+        graph.real.drinkDraftDao().upsertKeywords(
+            listOf(
+                KeywordEntity(ACCOUNT_ID, pairsWith, "Passar med"),
+                KeywordEntity(ACCOUNT_ID, bold, "Kraftigt rött", parentId = pairsWith),
+            ),
+        )
+        ok(repo.addPairing(PASTA, bold))
+
+        drainAll()
+
+        val (_, body) = tandoor.callsTo("PATCH", "/api/recipe/$PASTA/").single()
+        val added = Json.parseToJsonElement(body).jsonObject.getValue("keywords").jsonArray.map { it.jsonObject }
+            .single { it["id"]?.jsonPrimitive?.long == bold }
+        assertEquals(null, added["name"])
+        assertEquals("Fylligt rött", tandoor.keywords.getValue(bold).name)
+        assertTrue("Fylligt rött" in tandoor.keywordNamesOf(PASTA))
+    }
+
+    /** Fas S review (fix-data): a retry after a failed keyword request never takes over another drink of the same name. */
+    @Test
+    fun aRetryNeverTakesOverAnotherDrinkOfTheSameName() = forEachVersion {
+        var fail = true
+        graph.server.respond("POST", "/api/keyword/") { request ->
+            if (fail) {
+                fail = false
+                MockResponse.Builder().code(503).addHeader("Content-Type", "text/html").body("<html>busy</html>").build()
+            } else {
+                checkNotNull(tandoor.answer(request))
+            }
+        }
+        val photo = File(graph.context.cacheDir, "drink-retry-$version.jpg").apply { writeBytes(byteArrayOf(1, 2, 3, 4)) }
+        ok(repo.createDrink(DrinkDraft(name = "Rioja Crianza", types = listOf("Vin"), imageUri = photo.path)))
+        assertEquals(DrainResult.RETRY, graph.outbox.drain(graph.remote))
+
+        drainAll()
+
+        val server = tandoor.created.values.single()
+        assertTrue("[$version] the photo went to the new drink", server.hasImage)
+        // The recipe was never posted before: no lookup by name, so nobody else's "Rioja Crianza" is taken.
+        assertTrue(graph.server.requests.none { it.startsWith("GET /api/recipe/?") && "query=" in it })
+        assertTrue(graph.real.syncStateDao().observe(ACCOUNT_ID).first().none { it.entity.startsWith("drink_posted:") })
+    }
+
+    /** Fas S review (fix-data): a pairing made while the drink's CREATE is on its way still reaches the drink. */
+    @Test
+    fun aPairingMadeWhileTheDrinkIsBeingSentReachesIt() = forEachVersion {
+        val created = ok(repo.createDrink(DrinkDraft(name = "Cava", types = listOf("Vin"))))
+        graph.server.respond("POST", "/api/recipe/") { request ->
+            // The user pairs the drink with a dish while its recipe POST is being answered.
+            runBlocking { ok(repo.pairWithDrink(PANCAKES, created.id)) }
+            checkNotNull(tandoor.answer(request))
+        }
+
+        drainAll()
+
+        val server = tandoor.created.values.single()
+        assertTrue("[$version] ${tandoor.keywordNamesOf(server.id)}", "Cava" in tandoor.keywordNamesOf(server.id))
+        assertTrue("Cava" in tandoor.keywordNamesOf(PANCAKES))
+        assertEquals(1, tandoor.keywords.values.count { it.name == "Cava" })
+    }
+
+    /** Fas S review (fix-data): "Exportera väntande ändringar" carries a drink created offline, never its photo's path. */
+    @Test
+    fun aDrinkCreatedOfflineIsExportedWithWhatItConsistsOf() = forEachVersion {
+        val photo = File(graph.context.cacheDir, "drink-export-$version.jpg").apply { writeBytes(byteArrayOf(1, 2, 3, 4)) }
+        graph.network.online.value = false
+        ok(repo.createDrink(DrinkDraft(name = "Husets rosé", description = "Till fisk", types = listOf("Vin"), imageUri = photo.path)))
+
+        val document = ok(RoomPendingChangesExporter(graph.databases).exportAccount(ACCOUNT_ID))
+
+        val changes = Json.parseToJsonElement(document).jsonObject.getValue("changes").jsonArray.map { it.jsonObject }
+        val create = changes.single { it["type"]?.jsonPrimitive?.content == "drink" && it["operation"]?.jsonPrimitive?.content == "CREATE" }
+        val drink = create.getValue("drink").jsonObject
+        assertEquals("Husets rosé", drink.getValue("name").jsonPrimitive.content)
+        assertEquals("Till fisk", drink.getValue("description").jsonPrimitive.content)
+        assertTrue(drink.getValue("keywords").toString().contains("Vin"))
+        assertEquals("true", drink.getValue("photo").jsonPrimitive.content)
+        assertFalse("[$version] no private path in the export", document.contains("drink-images") || document.contains(".jpg"))
     }
 
     @Test

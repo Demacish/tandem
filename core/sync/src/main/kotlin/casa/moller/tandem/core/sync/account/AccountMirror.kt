@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.sync.demo.DemoSeeder
+import casa.moller.tandem.core.sync.drink.DrinkImageStore
 import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.VersionChangeNotifier
@@ -63,6 +64,8 @@ internal class AccountMirror @Inject constructor(
     private val notifier: VersionChangeNotifier,
     private val clock: SyncClock,
     @ApplicationScope private val scope: CoroutineScope,
+    // Fas S review (fix-data): the photos of drinks created offline go with the account's rows.
+    private val drinkImages: DrinkImageStore,
 ) {
     private val changes = MutableSharedFlow<ServerVersionChange>(extraBufferCapacity = CHANGE_BUFFER)
     private val started = AtomicBoolean(false)
@@ -114,6 +117,7 @@ internal class AccountMirror @Inject constructor(
         if (decision.clearStoredData) {
             databases.clearAccount(DatabaseKind.REAL, account.id)
             imageCache.clear()
+            drinkImages.deleteAccount(account.id)
         }
         val kept = stored?.takeUnless { decision.clearStoredData }
         dao.upsert(
@@ -154,7 +158,10 @@ internal class AccountMirror @Inject constructor(
         val withRows = databases.get(DatabaseKind.REAL).accountDao().getStoredAccountIds()
         val known = accountStore.accounts.first().mapTo(HashSet()) { it.id }
         val forgotten = withRows.filter { it !in known }
-        forgotten.forEach { databases.clearAccount(DatabaseKind.REAL, it) }
+        forgotten.forEach {
+            databases.clearAccount(DatabaseKind.REAL, it)
+            drinkImages.deleteAccount(it)
+        }
         // An in-app version notice for an account that is gone is never shown.
         if (settings.settings.first().versionNotice?.accountId?.let { it !in known } == true) {
             settings.update { current -> current.copy(versionNotice = current.versionNotice?.takeIf { it.accountId in known }) }
@@ -162,6 +169,7 @@ internal class AccountMirror @Inject constructor(
         // Without any account (logout, "Clear app data") no image may stay either, also when an
         // earlier clean-up removed the rows but did not get to the images.
         if (forgotten.isNotEmpty() || (known.isEmpty() && session == Session.NoAccount)) imageCache.clear()
+        if (known.isEmpty() && session == Session.NoAccount) drinkImages.deleteAll()
     }
 
     private companion object {

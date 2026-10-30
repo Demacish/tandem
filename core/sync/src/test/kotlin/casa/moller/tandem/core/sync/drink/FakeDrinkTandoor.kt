@@ -59,6 +59,14 @@ internal class FakeDrinkTandoor(private val version: String) {
     @Synchronized
     fun keywordNamed(name: String): Keyword? = keywords.values.firstOrNull { it.name.equals(name, ignoreCase = true) }
 
+    /** Fas S review (fix-data): a keyword the household made on the web (an English root, a renamed pairing). */
+    @Synchronized
+    fun seedKeyword(name: String, parent: Long? = null): Long {
+        val keyword = Keyword(nextKeywordId++, name, parent)
+        keywords[keyword.id] = keyword
+        return keyword.id
+    }
+
     /** Another member edits [recipe]'s keywords on the web (adds [name]). */
     @Synchronized
     fun partnerAdds(recipe: Long, name: String) {

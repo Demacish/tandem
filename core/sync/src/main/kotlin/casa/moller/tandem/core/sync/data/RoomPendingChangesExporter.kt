@@ -3,9 +3,13 @@ package casa.moller.tandem.core.sync.data
 import casa.moller.tandem.core.data.sync.PendingChangesExporter
 import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.DrinkDraftEntity
+import casa.moller.tandem.core.database.entity.OutboxEntities
+import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.json.TandoorDates
+import casa.moller.tandem.core.sync.drink.DrinkPayloads
 import java.time.Instant
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -30,6 +34,10 @@ import kotlinx.serialization.json.put
  * (plan 5.5), and no server address either. Every Phase 2 type is a plain outbox row too (list
  * entries and recipes, meals and meal types, books and their entries, "Vill laga", foods, aisle
  * order), with its temporary id, references and dependency (Phase 2 koppling lane).
+ *
+ * Fas S review (fix-data): a drink created offline is exported with what its CREATE sends (`drink`:
+ * name, description, servings and keywords from `drink_draft`, whose row goes with the account),
+ * and a drink photo only as `{"photo": true}`: never the app-private path or the file.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RoomPendingChangesExporter @Inject constructor(private val databases: TandemDatabaseFactory) : PendingChangesExporter {
@@ -62,6 +70,11 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
         val changes = buildJsonArray {
             for (accountId in ids) {
                 for (row in database.outboxDao().observeAll(accountId).first()) {
+                    val drink = if (row.entity == OutboxEntities.DRINK && row.op == OutboxOps.CREATE) {
+                        row.localId?.let { database.drinkDraftDao().get(accountId, it) }
+                    } else {
+                        null
+                    }
                     add(
                         buildJsonObject {
                             put("operation", row.op)
@@ -72,7 +85,8 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
                             row.localId?.takeIf { row.serverId == null }?.let { put("localId", it) }
                             row.refs?.let { put("refs", parse(it)) }
                             row.dependsOn?.let { put("dependsOn", it) }
-                            put("payload", parse(row.payload))
+                            put("payload", if (row.op == OutboxOps.RECIPE_IMAGE) PHOTO else parse(row.payload))
+                            drink?.let { put("drink", drinkOf(it)) }
                             put("createdAt", TandoorDates.format(Instant.ofEpochMilli(row.createdAtEpochMillis)))
                             put("attempts", row.attempts)
                             put("state", row.state.name)
@@ -94,6 +108,27 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
         Outcome.Failure(TandemError.Unknown(EXPORT_FAILED))
     }
 
+    /** What a drink created offline consists of (its photo only as a flag). */
+    private fun drinkOf(draft: DrinkDraftEntity): JsonObject = buildJsonObject {
+        put("name", draft.name)
+        put("description", draft.description)
+        put("servings", draft.servings)
+        put(
+            "keywords",
+            buildJsonArray {
+                DrinkPayloads.decodeDraftKeywords(draft.keywords).forEach { keyword ->
+                    add(
+                        buildJsonObject {
+                            put("name", keyword.name)
+                            put("role", keyword.role.name)
+                        },
+                    )
+                }
+            },
+        )
+        put("photo", draft.imagePath != null)
+    }
+
     private fun parse(payload: String): JsonElement = try {
         Json.parseToJsonElement(payload)
     } catch (e: IllegalArgumentException) {
@@ -103,5 +138,6 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
     private companion object {
         const val EXPORT_FAILED = "tandem.sync.export-failed"
         val PRETTY = Json { prettyPrint = true }
+        val PHOTO: JsonObject = buildJsonObject { put("photo", true) }
     }
 }

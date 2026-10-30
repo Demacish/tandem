@@ -291,16 +291,19 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             list = when {
                 !add -> list.filterNot { it.id == id }
                 list.any { it.id == id } -> list
-                else -> list + SentKeyword(id, storedNames[id].orEmpty())
+                // Fas S review (fix-data): by id only (FACTS "Fas S c": `{id}` is enough), never the cached
+                // name, which may be stale and would rename the keyword back for everyone.
+                else -> list + SentKeyword(id, storedNames[id].orEmpty(), sendName = false)
             }
         }
         for ((name, add) in changes.pairings) {
             list = if (add) {
-                val id = when (val found = pairingKeywords.pairing(remote, name)) {
+                val keyword = when (val found = pairingKeywords.pairing(remote, name)) {
                     is Outcome.Failure -> return found
                     is Outcome.Success -> found.value
                 }
-                if (list.any { it.id == id }) list else list + SentKeyword(id, name.trim())
+                // The server's own name (the user's casing could rename it), and only the id is sent.
+                if (list.any { it.id == keyword.id }) list else list + SentKeyword(keyword.id, keyword.name, sendName = false)
             } else {
                 // Only a keyword with a parent (under "Passar med") goes; a root keyword of the same name stays.
                 list.filterNot { it.parentId != null && DrinkKeywords.key(it.name) == DrinkKeywords.key(name) }
@@ -309,11 +312,15 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
         return Outcome.Success(list)
     }
 
-    /** One element of the keyword list sent back: `{id, name}`, or `{name}` for a keyword reused or created by name. */
-    private data class SentKeyword(val id: Long?, val name: String, val parentId: Long? = null) {
+    /**
+     * One element of the keyword list sent back: `{id, name}` as the fresh read gave it, `{name}` for
+     * a keyword reused or created by name, or `{id}` for one added by id ([sendName] false: [name]
+     * is only for the comparisons here).
+     */
+    private data class SentKeyword(val id: Long?, val name: String, val parentId: Long? = null, val sendName: Boolean = true) {
         fun json(): JsonObject = buildJsonObject {
             id?.let { put("id", it) }
-            put("name", name)
+            if (sendName || id == null) put("name", name)
         }
     }
 

@@ -29,6 +29,12 @@ internal interface DrinkImageStore {
     /** Removes a copy that is no longer needed (uploaded, or the drink was cancelled). */
     suspend fun delete(path: String)
 
+    /** Fas S review (fix-data): every copy of [accountId] (the account's rows are gone: removed, or its data cleared). */
+    suspend fun deleteAccount(accountId: String)
+
+    /** Every copy of every account (no account is left: logout, "Rensa appdata"). */
+    suspend fun deleteAll()
+
     companion object {
         const val MAX_SIDE: Int = 1600
         const val JPEG_QUALITY: Int = 85
@@ -55,7 +61,7 @@ internal class AndroidDrinkImageStore @Inject constructor(@ApplicationContext pr
                 decoder.setTargetColorSpace(ColorSpace.get(ColorSpace.Named.SRGB))
                 decoder.memorySizePolicy = ImageDecoder.MEMORY_POLICY_LOW_RAM
             }
-            val directory = File(context.filesDir, "$DIRECTORY/${accountId.hashCode().toUInt()}").apply { mkdirs() }
+            val directory = accountDirectory(accountId).apply { mkdirs() }
             val file = File(directory, "drink-${System.nanoTime()}.jpg")
             file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, DrinkImageStore.JPEG_QUALITY, it) }
             bitmap.recycle()
@@ -76,6 +82,16 @@ internal class AndroidDrinkImageStore @Inject constructor(@ApplicationContext pr
             if (file.canonicalPath.startsWith(File(context.filesDir, DIRECTORY).canonicalPath)) file.delete()
         }
     }
+
+    override suspend fun deleteAccount(accountId: String) {
+        withContext(Dispatchers.IO) { accountDirectory(accountId).deleteRecursively() }
+    }
+
+    override suspend fun deleteAll() {
+        withContext(Dispatchers.IO) { File(context.filesDir, DIRECTORY).deleteRecursively() }
+    }
+
+    private fun accountDirectory(accountId: String): File = File(context.filesDir, "$DIRECTORY/${accountId.hashCode().toUInt()}")
 
     private companion object {
         const val DIRECTORY = "drink-images"

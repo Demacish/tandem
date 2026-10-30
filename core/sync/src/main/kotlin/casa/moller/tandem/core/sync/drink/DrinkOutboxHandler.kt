@@ -4,12 +4,15 @@ import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.domain.drink.DraftKeywordRole
 import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.api.RecipeListQuery
 import casa.moller.tandem.core.network.api.list
+import casa.moller.tandem.core.network.json.TandoorDates
+import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxHandler
@@ -40,7 +43,11 @@ private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
  *   ([PairingKeywords]), then `POST /api/recipe/ {name, description, keywords: [{id, name}...],
  *   servings, steps: [], internal: true}`. The answer is stored as the recipe's detail (the drink
  *   is in the list at once); `completeCreate` removes the draft and gives the photo row its id.
- *   A retry after a lost answer first looks for the drink by name.
+ *   Every keyword goes with the name the server gave it (the household's own root, the POST
+ *   answer), never the draft's spelling or "Dryck" (Fas S review, fix-data: a nested keyword with
+ *   another name renames it). A retry looks for a lost answer first, but only when the recipe POST
+ *   of an earlier attempt may have gone out (a per-row marker in `sync_state`), and only among this
+ *   user's recipes created since the change was made: never another member's drink of that name.
  * - **RECIPE_IMAGE** `PUT /api/recipe/{id}/image/` (multipart `image`) with the app-private copy,
  *   deleted afterwards; the detail is read again for the image URL.
  */
@@ -59,24 +66,31 @@ internal class DrinkOutboxHandler @Inject constructor(
 
     private suspend fun create(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val localId = row.localId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        val draft = databases.get(remote.kind).drinkDraftDao().get(remote.accountId, localId) ?: return OutboxResult.Dropped
-        if (row.attempts > 0) findLostCreate(remote, draft.name)?.let { return OutboxResult.Created(it) }
+        val database = databases.get(remote.kind)
+        val draft = database.drinkDraftDao().get(remote.accountId, localId) ?: return OutboxResult.Dropped
+        val marker = postedKey(localId)
+        if (row.attempts > 0 && database.syncStateDao().get(remote.accountId, marker) != null) {
+            findLostCreate(remote, row, draft.name)?.let { found ->
+                database.syncStateDao().delete(remote.accountId, marker)
+                return OutboxResult.Created(found)
+            }
+        }
         val names = DrinkPayloads.decodeDraftKeywords(draft.keywords)
-        val linked = mutableListOf<Pair<Long, String>>()
+        val linked = mutableListOf<KeywordRef>()
         val root = when (val found = keywords.drinkRoot(remote)) {
             is Outcome.Failure -> return OutboxResult.Failed(found.error)
             is Outcome.Success -> found.value
         }
-        linked += root to DrinkKeywords.DRINK
+        linked += root
         for (keyword in names) {
-            val id = when (keyword.role) {
+            val ref = when (keyword.role) {
                 DraftKeywordRole.DRINK -> continue
                 DraftKeywordRole.TYPE -> keywords.type(remote, keyword.name)
                 DraftKeywordRole.PAIRING -> keywords.pairing(remote, keyword.name)
             }
-            when (id) {
-                is Outcome.Failure -> return OutboxResult.Failed(id.error)
-                is Outcome.Success -> if (linked.none { it.first == id.value }) linked += id.value to keyword.name
+            when (ref) {
+                is Outcome.Failure -> return OutboxResult.Failed(ref.error)
+                is Outcome.Success -> if (linked.none { it.id == ref.value.id }) linked += ref.value
             }
         }
         val body = buildJsonObject {
@@ -85,11 +99,11 @@ internal class DrinkOutboxHandler @Inject constructor(
             put(
                 "keywords",
                 buildJsonArray {
-                    linked.forEach { (id, name) ->
+                    linked.forEach { keyword ->
                         add(
                             buildJsonObject {
-                                put("id", id)
-                                put("name", name)
+                                put("id", keyword.id)
+                                put("name", keyword.name)
                             },
                         )
                     }
@@ -99,30 +113,40 @@ internal class DrinkOutboxHandler @Inject constructor(
             put("steps", JsonArray(emptyList()))
             put("internal", true)
         }
+        // From here on the recipe may reach the server even when its answer is lost: a retry looks first.
+        database.syncStateDao().upsert(SyncStateEntity(accountId = remote.accountId, entity = marker))
         val created = when (val sent = caller.write(remote) { drinks.createRecipe(body) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
         val recipeId = (created["id"] as? JsonPrimitive)?.longOrNull ?: return OutboxResult.Failed(TandemError.Decode("recipe-without-id"))
+        database.syncStateDao().delete(remote.accountId, marker)
         details.store(remote, recipeId, created)
         return OutboxResult.Created(recipeId)
     }
 
     /**
-     * A drink with this name that no other create of this device claimed and that carries a
-     * drink keyword: the answer of an earlier attempt was lost, so the retry never makes a second one.
+     * A drink with this name, created by this user since the change was made, that no other create
+     * of this device claimed and that carries a drink keyword: the answer of an earlier attempt was
+     * lost, so the retry never makes a second one. The lowest such id wins (deterministic).
      */
-    private suspend fun findLostCreate(remote: ActiveSource.Remote, name: String): Long? {
+    private suspend fun findLostCreate(remote: ActiveSource.Remote, row: OutboxEntity, name: String): Long? {
         val listed = caller.call(remote, background = true) { recipes.list(RecipeListQuery(text = name, pageSize = LOST_LOOKUP_PAGE)) }
         val claimed = claimedServerIds(databases, remote, OutboxEntities.DRINK)
-        val found = (listed as? Outcome.Success)?.value?.results.orEmpty().firstOrNull { recipe ->
+        val notBefore = row.createdAtEpochMillis - SyncSchedule.CLOCK_SKEW_TOLERANCE.inWholeMilliseconds
+        val found = (listed as? Outcome.Success)?.value?.results.orEmpty().filter { recipe ->
+            val createdAt = TandoorDates.parseInstantOrNull(recipe.createdAt)?.toEpochMilli()
             recipe.name == name && recipe.id != null && recipe.id !in claimed &&
+                recipe.createdBy?.id == remote.account.userId && createdAt != null && createdAt >= notBefore &&
                 recipe.keywords.any { DrinkKeywords.isDrinkRoot(it.label) }
-        } ?: return null
+        }.minByOrNull { it.id ?: Long.MAX_VALUE } ?: return null
         val id = found.id ?: return null
         details.fetch(remote, id, isBackground = true)
         return id
     }
+
+    /** `sync_state` key: the recipe POST of drink [localId] was started (its answer may be lost). */
+    private fun postedKey(localId: Long): String = "$POSTED_PREFIX$localId"
 
     private suspend fun image(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val recipeId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
@@ -150,5 +174,6 @@ internal class DrinkOutboxHandler @Inject constructor(
     private companion object {
         val JPEG = "image/jpeg".toMediaType()
         const val LOST_LOOKUP_PAGE = 10
+        const val POSTED_PREFIX = "drink_posted:"
     }
 }

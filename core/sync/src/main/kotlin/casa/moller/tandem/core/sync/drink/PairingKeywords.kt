@@ -24,47 +24,51 @@ import kotlinx.serialization.json.put
  *
  * A keyword with the name that already sits under ANOTHER parent is used as it is (never moved
  * away from where the household put it); one at the root is moved under its parent.
+ *
+ * Every keyword comes back with the name the SERVER gave it ([KeywordRef]: the stored root's own
+ * name, the POST answer's): a nested keyword with another name would rename it for the whole space
+ * (Fas S review, fix-data), so the senders never send a name of their own.
  */
 internal class PairingKeywords @Inject constructor(private val databases: TandemDatabaseFactory, private val caller: RemoteCaller) {
-    /** The id of the pairing keyword [name] under "Passar med". */
-    suspend fun pairing(remote: ActiveSource.Remote, name: String): Outcome<Long> = child(remote, name, PAIRS_WITH)
+    /** The pairing keyword [name] under "Passar med". */
+    suspend fun pairing(remote: ActiveSource.Remote, name: String): Outcome<KeywordRef> = child(remote, name, PAIRS_WITH)
 
-    /** The id of the drink type [name] under "Dryck". */
-    suspend fun type(remote: ActiveSource.Remote, name: String): Outcome<Long> = child(remote, name, DRINK)
+    /** The drink type [name] under "Dryck". */
+    suspend fun type(remote: ActiveSource.Remote, name: String): Outcome<KeywordRef> = child(remote, name, DRINK)
 
-    /** The id of the root keyword "Dryck". */
-    suspend fun drinkRoot(remote: ActiveSource.Remote): Outcome<Long> = root(remote, DRINK, useStored = true)
+    /** The root keyword of the drinks ("Dryck", or the household's own "Drycker"/"Beverages"). */
+    suspend fun drinkRoot(remote: ActiveSource.Remote): Outcome<KeywordRef> = root(remote, DRINK, useStored = true)
 
     /** A root keyword: the stored one (unless [useStored] is false, after the server did not know it), or created. */
-    private suspend fun root(remote: ActiveSource.Remote, root: Root, useStored: Boolean): Outcome<Long> {
+    private suspend fun root(remote: ActiveSource.Remote, root: Root, useStored: Boolean): Outcome<KeywordRef> {
         val stored = databases.get(remote.kind).drinkDraftDao().getKeywords(remote.accountId)
             .filter { it.parentId == null && root.matches(it.name) && it.id >= 0 }
             .minByOrNull { it.id }
-        if (useStored && stored != null) return Outcome.Success(stored.id)
+        if (useStored && stored != null) return Outcome.Success(KeywordRef(stored.id, stored.name))
         return when (val created = create(remote, stored?.name ?: root.name)) {
             is Outcome.Failure -> created
-            is Outcome.Success -> Outcome.Success(created.value.id!!)
+            is Outcome.Success -> Outcome.Success(created.value.ref())
         }
     }
 
-    private suspend fun child(remote: ActiveSource.Remote, name: String, root: Root): Outcome<Long> {
+    private suspend fun child(remote: ActiveSource.Remote, name: String, root: Root): Outcome<KeywordRef> {
         var rootId = when (val found = root(remote, root, useStored = true)) {
             is Outcome.Failure -> return found
-            is Outcome.Success -> found.value
+            is Outcome.Success -> found.value.id
         }
         val keyword = when (val created = create(remote, name.trim())) {
             is Outcome.Failure -> return created
             is Outcome.Success -> created.value
         }
         val id = keyword.id!!
-        if (keyword.parent != null) return Outcome.Success(id)
+        if (keyword.parent != null) return Outcome.Success(keyword.ref())
         val body = buildJsonObject { put("name", keyword.name) }
         var moved = caller.write(remote) { drinks.moveKeyword(id, rootId, body) }
         if (moved is Outcome.Failure && moved.error == TandemError.NotFound) {
             // The stored root was deleted on the web: create it again (by name) and move once more.
             rootId = when (val again = root(remote, root, useStored = false)) {
                 is Outcome.Failure -> return again
-                is Outcome.Success -> again.value
+                is Outcome.Success -> again.value.id
             }
             moved = caller.write(remote) { drinks.moveKeyword(id, rootId, body) }
         }
@@ -73,7 +77,7 @@ internal class PairingKeywords @Inject constructor(private val databases: Tandem
 
             is Outcome.Success -> {
                 store(remote, keyword.copy(parent = rootId))
-                Outcome.Success(id)
+                Outcome.Success(keyword.ref())
             }
         }
     }
@@ -112,6 +116,9 @@ internal class PairingKeywords @Inject constructor(private val databases: Tandem
         )
     }
 
+    /** The keyword as the server answered it: its id and ITS name. */
+    private fun KeywordDto.ref(): KeywordRef = KeywordRef(id!!, name.ifBlank { label })
+
     /** A root of the drinks' keywords: its name when Tandem creates it, and which stored names count as it. */
     private class Root(val name: String, val matches: (String) -> Boolean)
 
@@ -120,3 +127,6 @@ internal class PairingKeywords @Inject constructor(private val databases: Tandem
         val PAIRS_WITH = Root(DrinkKeywords.PAIRS_WITH, DrinkKeywords::isPairsWithRoot)
     }
 }
+
+/** Fas S review (fix-data): a keyword as the server has it (id and name), to nest in a recipe write unchanged. */
+internal data class KeywordRef(val id: Long, val name: String)
