@@ -66,9 +66,7 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
         app.capture("phase2-first-account-again")
         app.tap("More")
         openAccounts()
-        app.waitForNode("the second account's waiting change") { node ->
-            listOfNotNull(node.text, node.contentDescription).any { ACCOUNT_PENDING.matcher(it).find() }
-        }
+        scrollToThePendingChange()
         app.capture("phase2-accounts-pending")
 
         // Online with the first account active: the second account's change is NOT sent.
@@ -175,6 +173,24 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
         if (!open) app.tapUntil(ACCOUNTS, By.textStartsWith(ACCOUNTS_INTRO))
     }
 
+    /**
+     * The other account's "1 change waiting to be sent", scrolled into view: the active account's
+     * card can push the other accounts below the fold (Fas S rester lane: with a household it has a
+     * "Household" row too), and the lazy list composes no node for them there.
+     */
+    private fun scrollToThePendingChange() {
+        repeat(PENDING_SCROLLS) {
+            if (nodeShows(TAP_WAIT_MS, ::isAccountPending)) return
+            val x = app.device.displayWidth / 2
+            app.device.swipe(x, app.device.displayHeight * 2 / 3, x, app.device.displayHeight / 3, SWIPE_STEPS)
+            app.device.waitForIdle()
+        }
+        app.waitForNode("the second account's waiting change", predicate = ::isAccountPending)
+    }
+
+    private fun isAccountPending(node: AccessibilityNodeInfo): Boolean =
+        listOfNotNull(node.text, node.contentDescription).any { ACCOUNT_PENDING.matcher(it).find() }
+
     /** The recipe sheet's "Add n items to the shopping list". */
     private fun isRecipeSheetAdd(node: AccessibilityNodeInfo): Boolean =
         node.text?.toString()?.let { ADD_TO_LIST.matcher(it).matches() } == true
@@ -189,5 +205,8 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
 
         /** How long an inactive account's change is watched for NOT being sent. */
         const val INACTIVE_ACCOUNT_WAIT_MS = 15_000L
+
+        /** Swipes down the accounts page at most this often for the other account's card. */
+        const val PENDING_SCROLLS = 3
     }
 }
