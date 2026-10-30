@@ -219,11 +219,11 @@ class TandemApp(val device: UiDevice) {
      * up, until it shows.
      */
     fun findInList(selector: BySelector): UiObject2 {
-        repeat(MAX_SCROLLS + 1) {
+        repeat(LIST_SCROLLS + 1) {
             device.findObject(selector)?.let { return it }
             swipeContent(up = true)
         }
-        repeat(MAX_SCROLLS * 2) {
+        repeat(LIST_SCROLLS * 2) {
             device.findObject(selector)?.let { return it }
             swipeContent(up = false)
         }
@@ -441,6 +441,13 @@ class TandemApp(val device: UiDevice) {
         /** How long a found element may keep moving after a swipe (a fling) before it is clicked anyway. */
         private const val SETTLE_TIMEOUT_MS = 3_000L
         private const val MAX_SCROLLS = 6
+
+        /**
+         * Fas S (integration): a long list needs more than [MAX_SCROLLS] swipes of a third of the
+         * screen. Handla's 29 rows sit below the offline card, "Delad med" and the "Packa upp" card
+         * (0.4.0), so a row near the end was out of reach once (main, Phase2SmokeTest).
+         */
+        private const val LIST_SCROLLS = 12
         private const val SWIPE_STEPS = 20
         private const val MAX_LABEL_DEPTH = 4
         private const val TAP_ATTEMPTS = 3
