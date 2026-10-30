@@ -4,12 +4,21 @@ import casa.moller.tandem.core.model.ai.AiKeyCheck
 import casa.moller.tandem.core.model.ai.FridgeVisionError
 import casa.moller.tandem.core.model.ai.FridgeVisionResult
 import java.time.Duration
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import okhttp3.tls.HandshakeCertificates
+import okhttp3.tls.HeldCertificate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +26,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+
+private const val SLOW_CALL_SECONDS = 30L
+private const val CANCEL_MILLIS = 5_000L
 
 /**
  * Claude through the official Java SDK against an in-process fake Anthropic endpoint (the custom
@@ -121,6 +133,55 @@ class ClaudeFridgeVisionClientTest {
         assertEquals(AiKeyCheck.RATE_LIMITED, claude.checkKey(AiKeyRequest(FAKE_KEY, "x", server.base())))
         server.enqueue(slow())
         assertEquals(AiKeyCheck.NO_NETWORK, claude.checkKey(AiKeyRequest(FAKE_KEY, "x", server.base())))
+    }
+
+    /** Fas S review (fix-data): a redirect of a custom base URL never takes the key or the photo to another host. */
+    @Test
+    fun aRedirectIsNeverFollowed() = runTest {
+        val other = MockWebServer().apply { start() }
+        try {
+            server.enqueue(MockResponse.Builder().code(307).addHeader("Location", other.url("/v1/messages").toString()).build())
+            val result = claude.recognize(request()) as FridgeVisionResult.Failed
+            assertEquals(FridgeVisionError.Network("http-307"), result.error)
+
+            server.enqueue(MockResponse.Builder().code(307).addHeader("Location", other.url("/v1/models/x").toString()).build())
+            assertEquals(AiKeyCheck.FAILED, claude.checkKey(AiKeyRequest(FAKE_KEY, "x", server.base())))
+
+            assertEquals("the other host got nothing (no key, no photo)", 0, other.requestCount)
+        } finally {
+            other.close()
+        }
+    }
+
+    /** Fas S review (fix-data): leaving the page ends a running call at once instead of after the timeout. */
+    @Test
+    fun aCancelledCallEndsAtOnce() = runBlocking {
+        val root = HeldCertificate.Builder().certificateAuthority(0).build()
+        val certificate = HeldCertificate.Builder().commonName("localhost").addSubjectAlternativeName("localhost").signedBy(root).build()
+        val serverTls = HandshakeCertificates.Builder().heldCertificate(certificate, root.certificate).build()
+        val clientTls = HandshakeCertificates.Builder().addTrustedCertificate(root.certificate).build()
+        val secure = MockWebServer().apply {
+            useHttps(serverTls.sslSocketFactory())
+            protocolNegotiationEnabled = false
+            start()
+        }
+        try {
+            secure.enqueue(MockResponse.Builder().code(200).headersDelay(SLOW_CALL_SECONDS, TimeUnit.SECONDS).body("{}").build())
+            val patient = ClaudeFridgeVisionClient(Duration.ofSeconds(SLOW_CALL_SECONDS * 2)) {
+                AiTls(clientTls.sslSocketFactory(), clientTls.trustManager)
+            }
+            val call = launch(Dispatchers.IO) {
+                patient.recognize(FridgeVisionRequest(FAKE_KEY, "claude-opus-5-5", secure.base(), PHOTO, "sv"))
+            }
+            // The photo has reached the server: the user leaves the page.
+            assertTrue(secure.takeRequest(10, TimeUnit.SECONDS) != null)
+            val started = System.nanoTime()
+            withTimeout(CANCEL_MILLIS) { call.cancelAndJoin() }
+            assertTrue(call.isCancelled)
+            assertTrue((System.nanoTime() - started) / 1_000_000 < CANCEL_MILLIS)
+        } finally {
+            secure.close()
+        }
     }
 
     private fun error(type: String) = """{"type":"error","error":{"type":"$type","message":"fake"}}"""

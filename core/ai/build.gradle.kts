@@ -27,4 +27,6 @@ dependencies {
     // ai-foto lane: every provider against an in-process fake server (never a real AI API).
     testImplementation(platform(libs.okhttp.bom))
     testImplementation(libs.okhttp.mockwebserver3)
+    // Fas S review (fix-data): an HTTPS fake for the Claude client's cancellation test.
+    testImplementation(libs.okhttp.tls)
 }

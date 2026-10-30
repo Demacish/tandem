@@ -4,9 +4,18 @@ import casa.moller.tandem.core.model.ai.AiKeyCheck
 import casa.moller.tandem.core.model.ai.FridgeVisionError
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.net.InetAddress
+import java.net.Socket
+import java.security.KeyStore
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.JsonArray
@@ -23,8 +32,8 @@ import okhttp3.Response
  * The HTTP client of the Gemini and OpenAI calls (B22): its OWN OkHttp client, built here and shared
  * by nothing else, so no Tandoor interceptor, header, token or cookie can reach an AI provider
  * (core:ai never depends on core:network). No retries on connection failures and no redirects (the
- * key must not follow a redirect to another host); the call may take a while (a model looks at a
- * photo), so [CALL_TIMEOUT_SECONDS] is generous.
+ * key must not follow a redirect to another host; the Claude client refuses them per call too); the
+ * call may take a while (a model looks at a photo), so [CALL_TIMEOUT_SECONDS] is generous.
  */
 @Singleton
 internal class AiHttpClient @Inject constructor() {
@@ -114,4 +123,72 @@ internal fun Any?.toJson(): JsonElement = when (this) {
     is Map<*, *> -> JsonObject(entries.associate { (key, value) -> key.toString() to value.toJson() })
     is List<*> -> JsonArray(map { it.toJson() })
     else -> error("not JSON: ${this::class.simpleName}")
+}
+
+/**
+ * Fas S review (fix-data): the TLS of the Claude client: the platform's trust (Network Security
+ * Config included, exactly what OkHttp uses by default) unless a test gives its own.
+ */
+internal class AiTls(val socketFactory: SSLSocketFactory, val trustManager: X509TrustManager) {
+    companion object {
+        fun platform(): AiTls {
+            val trust = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                .apply { init(null as KeyStore?) }
+                .trustManagers
+                .filterIsInstance<X509TrustManager>()
+                .first()
+            val context = SSLContext.getInstance("TLS").apply { init(null, arrayOf<TrustManager>(trust), null) }
+            return AiTls(context.socketFactory, trust)
+        }
+    }
+}
+
+/**
+ * Fas S review (fix-data): the sockets of ONE call of the Claude SDK (a client per call), so a
+ * cancelled call can be torn down: closing the raw socket ends a blocking read at once (the SDK's
+ * synchronous call is not tied to the coroutine). Hands out the platform's own sockets unchanged.
+ */
+internal class ClosableSockets(tls: AiTls) : SSLSocketFactory() {
+    private val delegate = tls.socketFactory
+    val trustManager: X509TrustManager = tls.trustManager
+    private val sockets = ConcurrentLinkedQueue<Socket>()
+
+    @Volatile
+    private var closed = false
+
+    /** Closes every socket handed out (raw ones first) and every later one at once. */
+    fun closeAll() {
+        closed = true
+        while (true) {
+            val socket = sockets.poll() ?: return
+            runCatching { socket.close() }
+        }
+    }
+
+    private fun track(socket: Socket): Socket {
+        sockets += socket
+        if (closed) runCatching { socket.close() }
+        return socket
+    }
+
+    override fun getDefaultCipherSuites(): Array<String> = delegate.defaultCipherSuites
+
+    override fun getSupportedCipherSuites(): Array<String> = delegate.supportedCipherSuites
+
+    override fun createSocket(socket: Socket, host: String, port: Int, autoClose: Boolean): Socket {
+        track(socket)
+        return track(delegate.createSocket(socket, host, port, autoClose))
+    }
+
+    override fun createSocket(): Socket = track(delegate.createSocket())
+
+    override fun createSocket(host: String, port: Int): Socket = track(delegate.createSocket(host, port))
+
+    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket =
+        track(delegate.createSocket(host, port, localHost, localPort))
+
+    override fun createSocket(host: InetAddress, port: Int): Socket = track(delegate.createSocket(host, port))
+
+    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket =
+        track(delegate.createSocket(address, port, localAddress, localPort))
 }

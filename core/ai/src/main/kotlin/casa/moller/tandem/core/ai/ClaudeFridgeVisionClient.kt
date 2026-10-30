@@ -7,6 +7,7 @@ import casa.moller.tandem.core.model.ai.FridgeVisionResult
 import com.anthropic.client.AnthropicClient
 import com.anthropic.client.okhttp.AnthropicOkHttpClient
 import com.anthropic.core.JsonValue
+import com.anthropic.core.RequestOptions
 import com.anthropic.errors.AnthropicException
 import com.anthropic.errors.AnthropicIoException
 import com.anthropic.errors.AnthropicServiceException
@@ -23,7 +24,10 @@ import com.anthropic.models.beta.messages.MessageCreateParams
 import java.time.Duration
 import java.util.Base64
 import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 /**
@@ -39,15 +43,25 @@ import kotlinx.coroutines.withContext
  * reaches it. `maxRetries(0)`: no automatic retries (a call costs the user credits, plan 5.4). The
  * key is only in the client for this one call; errors are mapped by type and status, never by
  * message (it could echo request details).
+ *
+ * Fas S review (fix-data): like [AiHttpClient], every call refuses redirects (`RequestOptions`
+ * `followRedirects(false)`: OkHttp would send `x-api-key` and the photo again to another host of a
+ * custom base URL); a 3xx is a failed call. Leaving the page cancels a running call at once: the
+ * SDK's blocking call runs beside the coroutine, and a cancellation closes the call's sockets
+ * ([ClosableSockets]), so a paid request never keeps running for minutes in the background.
  */
-internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeVisionClient {
+internal class ClaudeFridgeVisionClient(
+    private val timeout: Duration,
+    private val tls: () -> AiTls = { AiTls.platform() },
+) : FridgeVisionClient {
     @Inject
     constructor() : this(Duration.ofSeconds(AiHttpClient.CALL_TIMEOUT_SECONDS))
 
     override val provider: AiProvider = AiProvider.CLAUDE
 
     override suspend fun recognize(request: FridgeVisionRequest): FridgeVisionResult = withContext(Dispatchers.IO) {
-        val client = client(request.key, request.baseUrl)
+        val sockets = ClosableSockets(tls())
+        val client = client(request.key, request.baseUrl, sockets)
         try {
             val image = BetaImageBlockParam.builder()
                 .source(
@@ -73,7 +87,7 @@ internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeV
                     listOf(BetaContentBlockParam.ofImage(image), BetaContentBlockParam.ofText(FridgePrompt.USER)),
                 )
                 .build()
-            result(client.beta().messages().create(params))
+            result(abortable(sockets) { client.beta().messages().create(params, NO_REDIRECTS) })
         } catch (e: AnthropicServiceException) {
             FridgeVisionResult.Failed(failure(e))
         } catch (e: AnthropicIoException) {
@@ -87,9 +101,10 @@ internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeV
     }
 
     override suspend fun checkKey(request: AiKeyRequest): AiKeyCheck = withContext(Dispatchers.IO) {
-        val client = client(request.key, request.baseUrl)
+        val sockets = ClosableSockets(tls())
+        val client = client(request.key, request.baseUrl, sockets)
         try {
-            client.models().retrieve(request.model)
+            abortable(sockets) { client.models().retrieve(request.model, NO_REDIRECTS) }
             AiKeyCheck.WORKS
         } catch (e: AnthropicServiceException) {
             when (val failure = failure(e)) {
@@ -108,12 +123,29 @@ internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeV
         }
     }
 
-    private fun client(key: String, baseUrl: String?): AnthropicClient = AnthropicOkHttpClient.builder()
+    private fun client(key: String, baseUrl: String?, sockets: ClosableSockets): AnthropicClient = AnthropicOkHttpClient.builder()
         .apiKey(key)
         .maxRetries(0)
         .timeout(timeout)
+        .sslSocketFactory(sockets)
+        .trustManager(sockets.trustManager)
         .apply { baseUrl?.let { baseUrl(it.trimEnd('/')) } }
         .build()
+
+    /**
+     * Runs the SDK's blocking [call] beside the coroutine: a cancellation (the page was left) closes
+     * the call's sockets, which ends the blocking request at once instead of after the timeout.
+     */
+    private suspend fun <T> abortable(sockets: ClosableSockets, call: () -> T): T = coroutineScope {
+        // runCatching inside: a failed call never cancels this scope, only a real cancellation does.
+        val running = async(Dispatchers.IO) { runCatching(call) }
+        try {
+            running.await()
+        } catch (e: CancellationException) {
+            sockets.closeAll()
+            throw e
+        }
+    }.getOrThrow()
 
     private fun schema(): BetaJsonOutputFormat.Schema = BetaJsonOutputFormat.Schema.builder()
         .apply { FridgePrompt.claudeSchema().forEach { (key, value) -> putAdditionalProperty(key, JsonValue.from(value)) } }
@@ -151,6 +183,9 @@ internal class ClaudeFridgeVisionClient(private val timeout: Duration) : FridgeV
     }
 
     private companion object {
+        /** Every call: no redirects (the key and the photo never go to another host). */
+        val NO_REDIRECTS: RequestOptions = RequestOptions.builder().followRedirects(false).build()
+
         const val HTTP_UNAUTHORIZED = 401
         const val HTTP_FORBIDDEN = 403
         const val HTTP_NOT_FOUND = 404
