@@ -19,6 +19,7 @@ import casa.moller.tandem.feature.scan.ScanMatcher
 import casa.moller.tandem.feature.scan.ScanSamples
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
 import casa.moller.tandem.feature.scan.session.ScanSessionStore
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -182,5 +183,51 @@ class FridgeScanViewModelTest {
         val action = FridgeScanAction.PhotoReady(ByteArray(42))
         assertEquals("PhotoReady(42 bytes)", action.toString())
         assertFalse(FridgeScanUiState().toString().contains("jpeg", ignoreCase = true))
+    }
+
+    @Test
+    fun theCameraStaysBoundWhileAPhotoIsTakenPreparedOrAsked() {
+        val ready = FridgeScanUiState(loading = false, provider = AiProvider.CLAUDE, available = true, warningAcknowledged = true)
+        FridgePhase.entries.forEach { phase ->
+            val state = ready.copy(phase = phase)
+            assertTrue("camera at $phase", state.cameraWanted)
+            assertEquals(phase == FridgePhase.IDLE, state.canScan)
+        }
+        assertFalse(ready.copy(demo = true).cameraWanted)
+        assertFalse(ready.copy(warningAcknowledged = false).cameraWanted)
+    }
+
+    @Test
+    fun thePhotoIsPreparedInTheViewModelAndARecreationNeverLeavesItStuck() = runTest {
+        val vm = viewModel()
+        val effects = open(vm)
+        val gate = CompletableDeferred<ByteArray>()
+        vm.onAction(FridgeScanAction.Preparing)
+        vm.onAction(FridgeScanAction.Prepare { gate.await() })
+        // The page is recreated meanwhile: the preparation is still running, so it stays.
+        vm.onAction(FridgeScanAction.Shown)
+        assertEquals(FridgePhase.PREPARING, vm.uiState.value.phase)
+        gate.complete(photo)
+        assertEquals(listOf(photo.size), vision.calls)
+        assertEquals(1, effects.filterIsInstance<FridgeScanEffect.OpenReview>().size)
+
+        // The shutter was pressed and the capture was lost with the old camera.
+        vm.onAction(FridgeScanAction.Preparing)
+        vm.onAction(FridgeScanAction.Shown)
+        assertEquals(FridgePhase.IDLE, vm.uiState.value.phase)
+
+        // A broken or huge picked image is a problem, not a crash.
+        vm.onAction(FridgeScanAction.Prepare { throw OutOfMemoryError("huge") })
+        assertEquals(FridgeProblem.UNREADABLE, vm.uiState.value.problem)
+        assertEquals(FridgePhase.IDLE, vm.uiState.value.phase)
+    }
+
+    @Test
+    fun anOwnBaseUrlIsNamedByItsHost() = runTest {
+        val vm = viewModel(ready.copy(customBaseUrl = "https://proxy.exempel.se/v1"))
+        open(vm)
+        assertEquals("proxy.exempel.se", vm.uiState.value.customHost)
+        assertNull(customHostOf(null))
+        assertNull(customHostOf("  "))
     }
 }

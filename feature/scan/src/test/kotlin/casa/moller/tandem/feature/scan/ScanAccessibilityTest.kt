@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.scan
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.testing.accessibility.assertAccessible
+import casa.moller.tandem.feature.scan.Devices.PHONE
 import casa.moller.tandem.feature.scan.Devices.PHONE_LANDSCAPE
 import casa.moller.tandem.feature.scan.Devices.PHONE_TALL
 import casa.moller.tandem.feature.scan.Devices.TABLET
@@ -138,6 +139,28 @@ class ScanAccessibilityTest {
     @Test
     @Config(qualifiers = TABLET_PORTRAIT)
     fun reviewTabletPortrait() = check(ScanShot.REVIEW)
+
+    // Fas S review (fix-ui): the permission panel at font scale 2 on a normal phone and in landscape,
+    // where the fixed camera area used to clip "Tillåt kameran".
+    @Test
+    @Config(qualifiers = PHONE)
+    fun barcodeCameraNotAskedPhoneFontScale2() = check(ScanShot.BARCODE_CAMERA_NOT_ASKED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE)
+    fun barcodeCameraBlockedPhoneFontScale2() = check(ScanShot.BARCODE_CAMERA_BLOCKED, darkTheme = true, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun barcodeCameraNotAskedLandscapeFontScale2() = check(ScanShot.BARCODE_CAMERA_NOT_ASKED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE)
+    fun receiptCameraDeniedPhoneFontScale2() = check(ScanShot.RECEIPT_CAMERA_DENIED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun receiptCameraDeniedLandscapeFontScale2() = check(ScanShot.RECEIPT_CAMERA_DENIED, fontScale = 2f)
 
     private fun check(shot: ScanShot, darkTheme: Boolean = false, fontScale: Float = 1f) {
         composeRule.setContent { ScanTestTheme(darkTheme = darkTheme, fontScale = fontScale) { shot.content() } }

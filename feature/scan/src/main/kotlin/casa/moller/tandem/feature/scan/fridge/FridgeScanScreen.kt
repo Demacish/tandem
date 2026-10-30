@@ -55,6 +55,7 @@ import casa.moller.tandem.feature.scan.camera.CameraAccess
 import casa.moller.tandem.feature.scan.ui.CameraAccessPanel
 import casa.moller.tandem.feature.scan.ui.CameraPlaceholder
 import casa.moller.tandem.feature.scan.ui.ScanIcons
+import casa.moller.tandem.feature.scan.ui.rememberBringIntoView
 
 /** Test tag of "Ta foto". */
 const val FRIDGE_SHUTTER_TAG = "scan:fridge:shutter"
@@ -161,7 +162,8 @@ private fun FridgePanel(
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
-    val service = state.provider?.let { stringResource(it.label()) } ?: stringResource(R.string.fridge_service_fallback)
+    // With an own base URL the photo and the key go to that host, so the texts name it (fix-ui).
+    val service = state.customHost ?: state.provider?.let { stringResource(it.label()) } ?: stringResource(R.string.fridge_service_fallback)
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -229,6 +231,8 @@ private fun FridgeInstructions(state: FridgeScanUiState, service: String, onActi
             icon = TandemIcons.Warning,
             tone = TandemTone.Warning,
             onDismiss = { onAction(FridgeScanAction.DismissProblem) },
+            // Below the tips under the camera on a phone: scrolled into view when it appears (fix-ui).
+            modifier = rememberBringIntoView(problem),
         )
     }
     if (state.busy) {
@@ -319,7 +323,7 @@ internal fun ExperimentalWarningDialog(onAccept: () -> Unit, onDecline: () -> Un
     )
 }
 
-private fun FridgeProblem.title(): Int = when (this) {
+internal fun FridgeProblem.title(): Int = when (this) {
     FridgeProblem.INVALID_KEY -> R.string.fridge_problem_key_title
     FridgeProblem.MODEL_UNAVAILABLE -> R.string.fridge_problem_model_title
     FridgeProblem.RATE_LIMITED -> R.string.fridge_problem_rate_title

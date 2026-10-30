@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -13,12 +14,18 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -28,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
@@ -268,15 +276,24 @@ internal fun FoodPicker(
 internal fun CameraAccessPanel(access: CameraAccess, @StringRes rationale: Int, onAllow: () -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
     val context = LocalContext.current
-    Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh), contentAlignment = Alignment.Center) {
+    // Fas S review (fix-ui): the camera area has a fixed height (about 40 % of a phone), so at font
+    // scale 2 or in landscape the text and "Tillåt kameran" did not fit and the button got no
+    // height. The content scrolls when it is taller (the Box still centres it when it fits), and
+    // the hero icon is left out in a short area.
+    BoxWithConstraints(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center,
+    ) {
+        val roomy = maxHeight >= HERO_MIN_HEIGHT
         Column(
             modifier = Modifier
+                .verticalScroll(rememberScrollState())
                 .widthIn(max = TandemTheme.sizes.maxContentWidth)
                 .padding(spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
-            Icon(ScanIcons.Camera, contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.iconHero))
+            if (roomy) Icon(ScanIcons.Camera, contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.iconHero))
             Text(
                 text = stringResource(
                     when (access) {
@@ -317,6 +334,24 @@ internal fun CameraAccessPanel(access: CameraAccess, @StringRes rationale: Int, 
         }
     }
 }
+
+/**
+ * A modifier that scrolls its element into view whenever [key] (a problem) appears or changes:
+ * the scanners' problem cards sit below the tips in a panel under the camera (Fas S review, fix-ui).
+ */
+@Composable
+internal fun rememberBringIntoView(key: Any): Modifier {
+    val requester = remember { BringIntoViewRequester() }
+    LaunchedEffect(key) {
+        // After the frame that laid the card out.
+        withFrameNanos { }
+        requester.bringIntoView()
+    }
+    return Modifier.bringIntoViewRequester(requester)
+}
+
+/** The camera permission panel shows its hero icon only when it has at least this height. */
+private val HERO_MIN_HEIGHT = 300.dp
 
 /** The camera area in screenshot tests and previews (the real preview needs a device camera). */
 @Composable

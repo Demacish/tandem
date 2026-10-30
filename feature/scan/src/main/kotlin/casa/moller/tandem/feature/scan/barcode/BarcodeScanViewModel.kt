@@ -123,7 +123,7 @@ data class BarcodeScanUiState(
 }
 
 sealed interface BarcodeScanAction {
-    /** The camera saw [code] (every frame; repeats are ignored). */
+    /** The camera saw [code] (every frame; repeats within 3 s are ignored, a later one counts one more package). */
     data class CodeScanned(val code: String) : BarcodeScanAction
 
     /** The codes ML Kit read in a picked photo (empty = none found). */
@@ -297,7 +297,15 @@ class BarcodeScanViewModel @AssistedInject internal constructor(
         val items = store.get(sessionId.value)?.items.orEmpty()
         val recent = recentCodes[code]?.let { now - it < RESCAN_AFTER_MILLIS } == true
         recentCodes[code] = now
-        if (recent || items.any { it.barcode == code }) return
+        if (recent) return
+        // Fas S review (fix-ui): the same code again after the camera looked away is one more
+        // package (three cans of tomatoes), not nothing: the row counts it, with a vibration.
+        items.firstOrNull { it.barcode == code }?.let { existing ->
+            edit(existing.key) { it.copy(amount = (it.amount?.takeIf { amount -> amount > 0.0 } ?: 1.0) + 1.0) }
+            local.update { it.copy(selectedKey = existing.key, pickerKey = null) }
+            effectChannel.trySend(BarcodeScanEffect.Scanned)
+            return
+        }
         val item = ScanReviewItem(key = ScanMatcher.newKey(), text = code, source = ScanSource.BARCODE, barcode = code, learn = true)
         store.update(sessionId.value) { it.copy(items = it.items + item) }
         lookups.update { it + (item.key to Lookup(BarcodeLookupState.LOOKING_UP)) }

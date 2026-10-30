@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.scan.receipt
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
@@ -8,13 +9,16 @@ import casa.moller.tandem.core.domain.scan.ReceiptParser
 import casa.moller.tandem.core.domain.scan.TextFragment
 import casa.moller.tandem.core.model.scan.ScanSource
 import casa.moller.tandem.feature.scan.ScanMatcher
+import casa.moller.tandem.feature.scan.engine.ReceiptTextEngine
 import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
 import casa.moller.tandem.feature.scan.session.ScanSessionStore
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +66,18 @@ data class ReceiptScanUiState(
 sealed interface ReceiptScanAction {
     /** A photo is being taken (or a picked one read). */
     data object Reading : ReceiptScanAction
+
+    /**
+     * Read one photo with [read] (decoding and recognising off the main thread). It runs in the
+     * ViewModel, so a rotation, fold or resize meanwhile neither loses it nor leaves "reading"
+     * stuck (Fas S review, fix-ui).
+     */
+    class ReadPage(val read: suspend () -> List<TextFragment>) : ReceiptScanAction {
+        override fun toString(): String = "ReadPage"
+    }
+
+    /** The scanner's page (re)appeared: a photo whose capture was lost with the old camera is no longer awaited. */
+    data object Shown : ReceiptScanAction
 
     /** The recognised text of one photo, with its boxes (only the text is kept, in memory). */
     data class PageRead(val fragments: List<TextFragment>) : ReceiptScanAction
@@ -117,6 +133,8 @@ class ReceiptScanViewModel @AssistedInject internal constructor(
     private val local = MutableStateFlow(Local())
     private val sessionId = MutableStateFlow<String?>(null)
     private var pagesInSession = -1
+    private var readJob: Job? = null
+    private var engine: ReceiptTextEngine? = null
 
     val uiState: StateFlow<ReceiptScanUiState> = combine(pages, local, permissions.permissions) { read, ui, rights ->
         ReceiptScanUiState(
@@ -146,11 +164,34 @@ class ReceiptScanViewModel @AssistedInject internal constructor(
     fun onAction(action: ReceiptScanAction) {
         when (action) {
             ReceiptScanAction.Reading -> local.update { it.copy(reading = true, problem = null) }
+            is ReceiptScanAction.ReadPage -> readPage(action.read)
+            ReceiptScanAction.Shown -> if (readJob?.isActive != true) local.update { it.copy(reading = false) }
             is ReceiptScanAction.PageRead -> pageRead(action.fragments)
             ReceiptScanAction.PageFailed -> local.update { it.copy(reading = false, problem = ReceiptProblem.UNREADABLE) }
             ReceiptScanAction.RemoveLastPage -> pages.update { it.dropLast(1) }
             ReceiptScanAction.Done -> done()
             ReceiptScanAction.DismissProblem -> local.update { it.copy(problem = null) }
+        }
+    }
+
+    /** The text recognizer of this scanner: created once (it outlives a rotation) and closed with the ViewModel. */
+    internal fun engine(context: Context): ReceiptTextEngine = engine ?: ReceiptTextEngine(context).also { engine = it }
+
+    @Suppress("TooGenericExceptionCaught") // ML Kit and the decoder fail a broken or unsupported image with any Exception.
+    private fun readPage(read: suspend () -> List<TextFragment>) {
+        if (readJob?.isActive == true) return
+        local.update { it.copy(reading = true, problem = null) }
+        readJob = viewModelScope.launch {
+            val result = try {
+                ReceiptScanAction.PageRead(read())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ReceiptScanAction.PageFailed
+            } catch (e: OutOfMemoryError) {
+                ReceiptScanAction.PageFailed
+            }
+            onAction(result)
         }
     }
 
@@ -192,6 +233,7 @@ class ReceiptScanViewModel @AssistedInject internal constructor(
 
     override fun onCleared() {
         sessionId.value?.let(store::remove)
+        engine?.close()
     }
 
     private companion object {

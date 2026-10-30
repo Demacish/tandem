@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.ai.AiSettings
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.feature.scan.R
+import casa.moller.tandem.feature.scan.fridge.customHostOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -44,6 +45,7 @@ enum class AiKeyError {
  * @property model the model field as typed; empty = the provider's default ([defaultModel]).
  * @property baseUrl the own base URL as typed; empty = the provider's official API ([officialBaseUrl]).
  * @property check the answer of "Testa nyckeln" (null = not tested since the last change).
+ * @property customHost the host of the SAVED own base URL (the privacy text names it), null for the official API.
  */
 data class AiSettingsUiState(
     val loading: Boolean = true,
@@ -61,6 +63,7 @@ data class AiSettingsUiState(
     val confirmRemove: Boolean = false,
     val warningAcknowledged: Boolean = false,
     val demo: Boolean = false,
+    val customHost: String? = null,
 ) {
     val defaultModel: String?
         get() = provider?.defaultModel
@@ -160,6 +163,7 @@ class AiSettingsViewModel @Inject internal constructor(
             confirmRemove = ui.confirmRemove,
             warningAcknowledged = ai.warningAcknowledged,
             demo = rights.isDemo,
+            customHost = customHostOf(ai.customBaseUrl),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AiSettingsUiState())
 

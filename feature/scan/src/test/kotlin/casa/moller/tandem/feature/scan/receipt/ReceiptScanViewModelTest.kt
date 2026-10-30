@@ -12,6 +12,7 @@ import casa.moller.tandem.feature.scan.ScanMatcher
 import casa.moller.tandem.feature.scan.ScanSamples
 import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
 import casa.moller.tandem.feature.scan.session.ScanSessionStore
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -179,5 +180,38 @@ class ReceiptScanViewModelTest {
         val vm = viewModel()
         open(vm)
         assertTrue(vm.uiState.value.readOnly)
+    }
+
+    @Test
+    fun aPhotoIsReadInTheViewModelSoARecreationNeverLeavesItReading() = runTest {
+        val vm = viewModel()
+        open(vm)
+        val gate = CompletableDeferred<List<TextFragment>>()
+        vm.onAction(ReceiptScanAction.ReadPage { gate.await() })
+        assertTrue(vm.uiState.value.reading)
+        // The page is recreated meanwhile (rotation): the read is still running, so it stays "reading".
+        vm.onAction(ReceiptScanAction.Shown)
+        assertTrue(vm.uiState.value.reading)
+        // A second photo while one is read is ignored.
+        vm.onAction(ReceiptScanAction.ReadPage { photo("MJÖLK" to "17,90") })
+        gate.complete(photo("GRÄDDE 36% 5DL" to "24,90"))
+        assertEquals(1, vm.uiState.value.pages)
+        assertEquals(false, vm.uiState.value.reading)
+    }
+
+    @Test
+    fun aFailedOrLostReadEndsReading() = runTest {
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(ReceiptScanAction.ReadPage { error("unreadable") })
+        assertEquals(false, vm.uiState.value.reading)
+        assertEquals(ReceiptProblem.UNREADABLE, vm.uiState.value.problem)
+        // The shutter was pressed, then the activity was recreated before the capture answered.
+        vm.onAction(ReceiptScanAction.Reading)
+        vm.onAction(ReceiptScanAction.Shown)
+        assertEquals(false, vm.uiState.value.reading)
+        vm.onAction(ReceiptScanAction.ReadPage { throw OutOfMemoryError("huge") })
+        assertEquals(ReceiptProblem.UNREADABLE, vm.uiState.value.problem)
+        assertEquals(0, vm.uiState.value.pages)
     }
 }

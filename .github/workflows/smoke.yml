@@ -224,6 +224,30 @@ jobs:
           [ "$failed" -eq 0 ] || exit 1
           echo "All ${checked} service interfaces, ${dtos} DTO classes, both password logins and their request bodies are in the mapping."
 
+      # Fas S review (fix-ui): no ML Kit telemetry and no eager ML Kit start. The app's manifest
+      # removes datatransport's upload backend (Clearcut) and MlKitInitProvider; a library update
+      # must not bring them back unnoticed.
+      - name: Check the merged manifest (no Google telemetry backend, ML Kit starts lazily)
+        if: ${{ !cancelled() }}
+        run: |
+          aapt2="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -name aapt2 -type f | sort -V | tail -n 1)"
+          [ -x "$aapt2" ] || { echo "::error::aapt2 not found"; exit 1; }
+          failed=0
+          for apk in app/build/outputs/apk/sideload/minified/*.apk; do
+            manifest="$("$aapt2" dump xmltree --file AndroidManifest.xml "$apk")"
+            [ -n "$manifest" ] || { echo "::error::Could not read the manifest of $apk"; exit 1; }
+            for name in CctBackendFactory TransportBackendDiscovery MlKitInitProvider; do
+              if printf '%s\n' "$manifest" | grep -q "$name"; then
+                echo "::error::$(basename "$apk") declares $name"; failed=1
+              fi
+            done
+            # The scanners still need their component registrars.
+            printf '%s\n' "$manifest" | grep -q 'MlKitComponentDiscoveryService' \
+              || { echo "::error::$(basename "$apk") lost MlKitComponentDiscoveryService"; failed=1; }
+          done
+          [ "$failed" -eq 0 ] || exit 1
+          echo "The merged manifest has no datatransport backend and no MlKitInitProvider."
+
       - name: Upload smoke test results
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

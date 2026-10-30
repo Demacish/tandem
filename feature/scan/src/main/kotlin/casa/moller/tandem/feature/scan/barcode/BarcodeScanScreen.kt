@@ -272,7 +272,9 @@ private fun BarcodePanel(
                     )
                 }
             }
-            if (state.rows.isNotEmpty() && !state.readOnly) {
+            // Not while the food picker is open (it has its own "Avbryt"): with the keyboard up in
+            // landscape the pinned buttons left no room for its search field (fix-ui).
+            if (state.rows.isNotEmpty() && !state.readOnly && state.picker == null) {
                 BarcodeActions(state = state, onAction = onAction)
             }
         }
@@ -312,9 +314,12 @@ private fun SelectedCard(row: BarcodeRow, state: BarcodeScanUiState, onAction: (
     ) {
         Column(modifier = Modifier.padding(spacing.lg), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
             val title = item.food?.name ?: row.productName ?: stringResource(R.string.scan_barcode_unknown_item)
-            val subtitle = listOfNotNull(row.productName?.takeIf { item.food != null }, item.barcode).joinToString(" · ")
+            // The same package scanned again counts ("3 st", fix-ui); one package says nothing.
+            val format = rememberScanFormat()
+            val count = item.amount?.takeIf { it > 1.0 }?.let { format.amount(it, item.unit, stringResource(R.string.scan_unit_default)) }
+            val subtitle = listOfNotNull(count, row.productName?.takeIf { item.food != null }, item.barcode).joinToString(" · ")
             val status = stringResource(row.status.label)
-            // One TalkBack item, read again when the lookup finishes ("Grädde, känd vara").
+            // One TalkBack item, read again when the lookup finishes ("Grädde, känd vara") or the count grows.
             Column(
                 modifier = Modifier.clearAndSetSemantics {
                     contentDescription = listOf(title, subtitle, status).filter { it.isNotBlank() }.joinToString(", ")
@@ -394,7 +399,8 @@ private fun OtherRow(row: BarcodeRow, state: BarcodeScanUiState, onSelect: () ->
     val title = row.item.food?.name ?: row.productName ?: row.item.barcode.orEmpty()
     val place = state.locationOf(row)?.name
     val status = stringResource(row.status.label)
-    val description = listOfNotNull(title, place, row.item.expires?.let { format.date(it) }, status).joinToString(", ")
+    val count = row.item.amount?.takeIf { it > 1.0 }?.let { format.amount(it, row.item.unit, stringResource(R.string.scan_unit_default)) }
+    val description = listOfNotNull(title, count, place, row.item.expires?.let { format.date(it) }, status).joinToString(", ")
     val selectLabel = stringResource(R.string.scan_show_item)
     Row(
         modifier = Modifier
@@ -409,8 +415,9 @@ private fun OtherRow(row: BarcodeRow, state: BarcodeScanUiState, onSelect: () ->
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            if (place != null) {
-                Text(text = place, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val detail = listOfNotNull(count, place).joinToString(" · ")
+            if (detail.isNotEmpty()) {
+                Text(text = detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         StatusChip(label = status, tone = row.status.tone)

@@ -87,7 +87,7 @@
     </plurals>
     <string name="pantry_scan_barcode">Skanna streckkod</string>
     <string name="pantry_scan_receipt">Fota kvitto</string>
-    <string name="pantry_scan_fridge">Foto av kylen (experimentell)</string>
+    <string name="pantry_scan_fridge">Foto av kylen (experimentellt)</string>
     <string name="pantry_message_empty">%1$s är slut</string>
     <string name="pantry_message_left">%1$s: %2$s kvar</string>
     <string name="pantry_message_moved">%1$s flyttad till %2$s</string>

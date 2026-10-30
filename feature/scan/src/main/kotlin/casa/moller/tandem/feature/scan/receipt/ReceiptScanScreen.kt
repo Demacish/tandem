@@ -51,6 +51,7 @@ import casa.moller.tandem.feature.scan.camera.CameraAccess
 import casa.moller.tandem.feature.scan.ui.CameraAccessPanel
 import casa.moller.tandem.feature.scan.ui.CameraPlaceholder
 import casa.moller.tandem.feature.scan.ui.ScanIcons
+import casa.moller.tandem.feature.scan.ui.rememberBringIntoView
 
 /** Test tag of "Ta foto". */
 const val RECEIPT_SHUTTER_TAG = "scan:receipt:shutter"
@@ -202,6 +203,8 @@ private fun ReceiptPanel(
                         title = stringResource(problem.title()),
                         body = stringResource(problem.body()),
                         tone = TandemTone.Warning,
+                        // Below the camera on a phone: scrolled into view when it appears (fix-ui).
+                        modifier = rememberBringIntoView(problem),
                     )
                 }
                 if (state.busy) {
@@ -303,7 +306,7 @@ private fun ReceiptActions(
     }
 }
 
-private fun ReceiptProblem.title(): Int = when (this) {
+internal fun ReceiptProblem.title(): Int = when (this) {
     ReceiptProblem.NO_TEXT -> R.string.scan_receipt_no_text_title
     ReceiptProblem.NO_ITEMS -> R.string.scan_receipt_no_items_title
     ReceiptProblem.UNREADABLE -> R.string.scan_image_unreadable

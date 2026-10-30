@@ -4,7 +4,7 @@
     <string name="scan_barcode_title">Skanna streckkod</string>
     <string name="scan_receipt_title">Skanna kvitto</string>
     <!-- The fridge photo is experimental (B22): the title says so. -->
-    <string name="scan_fridge_title">Foto av kylen (experimentell)</string>
+    <string name="scan_fridge_title">Foto av kylen (experimentellt)</string>
     <string name="scan_review_title">Granska innan du sparar</string>
     <string name="scan_ai_settings_title">AI (experimentellt)</string>
 
@@ -115,7 +115,7 @@
     <!-- skanning lane: the shared review list -->
     <string name="scan_review_source_barcode">Streckkoder</string>
     <string name="scan_review_source_receipt">Kvitto</string>
-    <string name="scan_review_source_fridge">Foto av kylen (experimentell)</string>
+    <string name="scan_review_source_fridge">Foto av kylen (experimentellt)</string>
     <string name="scan_review_from_barcode">streckkod %1$s</string>
     <string name="scan_review_from_receipt">kvittorad %1$s</string>
     <string name="scan_review_from_fridge">AI:n såg %1$s</string>

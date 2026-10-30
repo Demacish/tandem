@@ -170,14 +170,35 @@ class BarcodeScanViewModelTest {
     fun theSameCodeInEveryFrameIsTakenOnce() = runTest {
         val vm = viewModel()
         val effects = open(vm)
-        repeat(5) { vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.KNOWN_CODE)) }
-        clock.advanceBy(10.seconds)
-        vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.KNOWN_CODE))
+        repeat(5) {
+            vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.KNOWN_CODE))
+            clock.advanceBy(1.seconds)
+        }
         assertEquals(1, vm.uiState.value.rows.size)
+        assertNull(vm.uiState.value.rows.single().item.amount)
         assertEquals(1, effects.count { it == BarcodeScanEffect.Scanned })
         // Not digits (a QR code's text): ignored.
         vm.onAction(BarcodeScanAction.CodeScanned("https://example.com"))
         assertEquals(1, vm.uiState.value.rows.size)
+    }
+
+    @Test
+    fun theSamePackageAgainAfterTheCameraLookedAwayCountsOneMore() = runTest {
+        val vm = viewModel()
+        val effects = open(vm)
+        vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.KNOWN_CODE))
+        vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.PRODUCT_CODE))
+        clock.advanceBy(4.seconds)
+        vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.KNOWN_CODE))
+        clock.advanceBy(4.seconds)
+        vm.onAction(BarcodeScanAction.CodeScanned(ScanSamples.KNOWN_CODE))
+        val state = vm.uiState.value
+        assertEquals(2, state.rows.size)
+        val counted = state.rows.single { it.item.barcode == ScanSamples.KNOWN_CODE }
+        assertEquals(3.0, counted.item.amount)
+        // The counted package is the one the card shows, and every package vibrated.
+        assertEquals(counted.item.key, state.selected?.item?.key)
+        assertEquals(4, effects.count { it == BarcodeScanEffect.Scanned })
     }
 
     @Test

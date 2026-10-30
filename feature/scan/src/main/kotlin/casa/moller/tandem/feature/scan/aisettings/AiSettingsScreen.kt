@@ -350,7 +350,8 @@ private fun AdvancedGroup(state: AiSettingsUiState, onAction: (AiSettingsAction)
 @Composable
 private fun PrivacyGroup(state: AiSettingsUiState) {
     val spacing = TandemTheme.spacing
-    val service = state.provider?.let { stringResource(it.label()) } ?: stringResource(R.string.fridge_service_fallback)
+    // With an own base URL the photo and the key go to that host, so the text names it (fix-ui).
+    val service = state.customHost ?: state.provider?.let { stringResource(it.label()) } ?: stringResource(R.string.fridge_service_fallback)
     Group {
         GroupHeading(stringResource(R.string.ai_privacy_heading), TandemIcons.Info)
         Text(

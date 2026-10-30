@@ -47,5 +47,27 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+
+        <!--
+            Fas S review (fix-ui, plan §8.8): the bundled ML Kit libraries pull in Google's
+            datatransport (Clearcut) and would send usage and performance metrics to Google.
+            Tandem talks only to the user's Tandoor, Open Food Facts (only the barcode) and the
+            AI service the user set up (only the photo), so the upload backend is removed: without
+            TransportBackendDiscovery no backend is registered and the queued events are dropped
+            on the device. The scheduler service and receiver stay (the runtime names them).
+            smoke.yml checks that the minified APK's manifest has neither of them.
+        -->
+        <service
+            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+            tools:node="remove" />
+
+        <!--
+            ML Kit starts lazily (feature:scan MlKitStartup, when a scanner is first used) instead
+            of in this provider at every process start, a background sync included.
+        -->
+        <provider
+            android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+            android:authorities="${applicationId}.mlkitinitprovider"
+            tools:node="remove" />
     </application>
 </manifest>

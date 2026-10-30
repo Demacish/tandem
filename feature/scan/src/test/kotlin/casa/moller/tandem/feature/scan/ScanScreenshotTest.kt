@@ -185,6 +185,26 @@ class ScanScreenshotTest {
     @Config(qualifiers = "sv-$TABLET_PORTRAIT")
     fun reviewTabletPortrait() = capture("tablet_portrait_scan_review_dark_sv", ScanShot.REVIEW, darkTheme = true)
 
+    // Fas S review (fix-ui): the permission panel scrolls inside the camera area at font scale 2.
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun barcodeCameraFontScale2() = capture("phone_scan_barcode_camera_font2_light_sv", ScanShot.BARCODE_CAMERA_NOT_ASKED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun barcodeCameraLandscapeFontScale2() =
+        capture("phone_landscape_scan_barcode_camera_font2_light", ScanShot.BARCODE_CAMERA_NOT_ASKED, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun receiptCameraDeniedFontScale2() =
+        capture("phone_scan_receipt_camera_denied_font2_dark_sv", ScanShot.RECEIPT_CAMERA_DENIED, darkTheme = true, fontScale = 2f)
+
+    // The food picker in landscape: the pinned buttons step aside while it is open (fix-ui).
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun barcodePickerLandscape() = capture("phone_landscape_scan_barcode_picker_light_sv", ScanShot.BARCODE_PICKER)
+
     private fun capture(name: String, shot: ScanShot, darkTheme: Boolean = false, fontScale: Float = 1f) {
         composeRule.setContent { ScanTestTheme(darkTheme = darkTheme, fontScale = fontScale) { shot.content() } }
         composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/scan/$name.png")

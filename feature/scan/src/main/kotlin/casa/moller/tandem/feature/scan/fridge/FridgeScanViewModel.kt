@@ -16,8 +16,11 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.net.URI
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,10 +67,13 @@ enum class FridgeProblem {
  * @property showWarning the experimental warning must be acknowledged before the first photo.
  * @property demo demo mode: the feature is off (no service is ever called).
  * @property readOnly a guest: the photo can be checked, but the review cannot save.
+ * @property customHost the host of the user's own base URL, where the photo and key go instead of
+ *   the provider's official API (the privacy text names it).
  */
 data class FridgeScanUiState(
     val loading: Boolean = true,
     val provider: AiProvider? = null,
+    val customHost: String? = null,
     val available: Boolean = false,
     val warningAcknowledged: Boolean = false,
     val demo: Boolean = false,
@@ -78,9 +84,17 @@ data class FridgeScanUiState(
     val busy: Boolean
         get() = phase != FridgePhase.IDLE
 
+    /**
+     * The camera stays bound: also while a photo is taken and prepared (Fas S review, fix-ui:
+     * unbinding it when [busy] aborted every capture with ERROR_CAMERA_CLOSED). Only the buttons
+     * follow [canScan].
+     */
+    val cameraWanted: Boolean
+        get() = !loading && available && !demo && warningAcknowledged
+
     /** A photo can be taken now. */
     val canScan: Boolean
-        get() = !loading && available && !demo && warningAcknowledged && !busy
+        get() = cameraWanted && !busy
 
     val showWarning: Boolean
         get() = !loading && available && !demo && !warningAcknowledged
@@ -89,6 +103,17 @@ data class FridgeScanUiState(
 sealed interface FridgeScanAction {
     /** The photo is being taken or a picked one read. */
     data object Preparing : FridgeScanAction
+
+    /**
+     * Scale the taken or picked photo with [prepare] (off the main thread). It runs in the
+     * ViewModel, so a rotation, fold or resize meanwhile neither loses it nor leaves PREPARING stuck.
+     */
+    class Prepare(val prepare: suspend () -> ByteArray) : FridgeScanAction {
+        override fun toString(): String = "Prepare"
+    }
+
+    /** The page (re)appeared: a capture lost with the old camera is no longer awaited. */
+    data object Shown : FridgeScanAction
 
     /** The scaled photo without metadata; it is sent once and not kept. */
     class PhotoReady(val jpeg: ByteArray) : FridgeScanAction {
@@ -140,11 +165,13 @@ class FridgeScanViewModel @AssistedInject internal constructor(
 
     private val local = MutableStateFlow(Local())
     private val sessionId = MutableStateFlow<String?>(null)
+    private var prepareJob: Job? = null
 
     val uiState: StateFlow<FridgeScanUiState> = combine(settings.settings, permissions.permissions, local) { ai, rights, ui ->
         FridgeScanUiState(
             loading = false,
             provider = ai.provider,
+            customHost = customHostOf(ai.customBaseUrl),
             available = ai.fridgePhotoAvailable,
             warningAcknowledged = ai.warningAcknowledged,
             demo = rights.isDemo,
@@ -170,10 +197,32 @@ class FridgeScanViewModel @AssistedInject internal constructor(
     fun onAction(action: FridgeScanAction) {
         when (action) {
             FridgeScanAction.Preparing -> if (uiState.value.canScan) local.value = Local(phase = FridgePhase.PREPARING)
+            is FridgeScanAction.Prepare -> prepare(action.prepare)
+            FridgeScanAction.Shown -> if (prepareJob?.isActive != true && local.value.phase == FridgePhase.PREPARING) local.value = Local()
             is FridgeScanAction.PhotoReady -> recognize(action.jpeg)
             FridgeScanAction.PhotoFailed -> local.value = Local(problem = FridgeProblem.UNREADABLE)
             FridgeScanAction.AcknowledgeWarning -> viewModelScope.launch { settings.acknowledgeWarning() }
             FridgeScanAction.DismissProblem -> local.update { it.copy(problem = null) }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught") // A broken, huge or unsupported image fails with any Exception (or OOM).
+    private fun prepare(block: suspend () -> ByteArray) {
+        val state = uiState.value
+        // After "Preparing" (the shutter was pressed) or straight from the photo picker.
+        if (prepareJob?.isActive == true || !(state.canScan || state.phase == FridgePhase.PREPARING)) return
+        local.value = Local(phase = FridgePhase.PREPARING)
+        prepareJob = viewModelScope.launch {
+            val jpeg = try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                null
+            } catch (e: OutOfMemoryError) {
+                null
+            }
+            if (jpeg == null) onAction(FridgeScanAction.PhotoFailed) else recognize(jpeg)
         }
     }
 
@@ -213,6 +262,11 @@ class FridgeScanViewModel @AssistedInject internal constructor(
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
     }
+}
+
+/** The host of an own base URL ("proxy.exempel.se"), null for the provider's official API or an unreadable one. */
+internal fun customHostOf(baseUrl: String?): String? = baseUrl?.takeIf { it.isNotBlank() }?.let { url ->
+    runCatching { URI(url.trim()).host }.getOrNull()?.takeIf { it.isNotBlank() }
 }
 
 /** The page never sends in demo mode (core:ai refuses too), so DemoMode is only a fallback here. */

@@ -42,7 +42,7 @@
     <string name="scan_status_offline">Offline – choose the food</string>
     <string name="scan_status_failed">Could not look it up</string>
     <string name="scan_error_read_only">Guests cannot change the pantry.</string>
-    <string name="scan_error_no_location">Home has no places yet. Open Home once while online.</string>
+    <string name="scan_error_no_location">At home has no storage places yet. Open At home once while online.</string>
     <string name="scan_error_offline">No connection. Try again later.</string>
     <string name="scan_error_save">Could not save. Try again.</string>
     <plurals name="scan_saved">
