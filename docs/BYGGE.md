@@ -1620,6 +1620,13 @@ AI-nyckel (fortfarande 0.4.0, före taggningen):
 - **Röktestet** (21 tester): Ny dryck med galleribild (`PhaseSDrinkSmokeTest`, `FakeDrinks`
   svarar `POST /api/recipe/` och `PUT /api/recipe/{id}/image/`), och Gemini och OpenAI med "Test
   the key" och ett kylfoto mot `FakeAiServices` (`PhaseSAiSmokeTest`), se "Release-röktest".
+- **Referensbilder** (Screenshots-körning 41078051767 på grenen, bara dessa togs): avsiktligt
+  ändrade `recipes/drinks/phone_drinks_light`, `phone_drinks_dark`, `phone_drinks_font2_light`,
+  `phone_landscape_drinks_light`, `phone_drinks_no_match_light`, `tablet_drinks_dark`,
+  `phone_create_drink_filled_dark`, `phone_create_drink_font2_light` och
+  `phone_landscape_create_drink_light` (engelska typchips i engelsk ordning). Hemmas
+  telefonbilder och `books/phone_landscape_books_light` från samma körning skilde bara i
+  kantutjämning och togs inte. `DrinkShots` sorterar typerna som ViewModel gör.
 - **Inte gjort (Fas 4):** den valfria notisen "X går ut i morgon – n recept" (kanalen
   Måltidspåminnelser, plan §8.8) skjuts till Fas 4 med de andra notiserna.
 <!-- /Fas S komplettering-1 -->
