@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.testing.data
 
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.ai.AiSettingsProblem
 import casa.moller.tandem.core.data.ai.AiSettingsRepository
 import casa.moller.tandem.core.data.ai.FridgeVision
 import casa.moller.tandem.core.data.drink.DrinkRepository
@@ -464,12 +465,12 @@ class FakeAiSettingsRepository(initial: AiSettings = AiSettings()) : AiSettingsR
     override suspend fun setModel(model: String?): Outcome<Unit> = change { it.copy(model = model?.takeIf { value -> value.isNotBlank() }) }
 
     override suspend fun setCustomBaseUrl(url: String?): Outcome<Unit> {
-        if (url != null && !url.startsWith("https://")) return Outcome.Failure(TandemError.Unknown("ai-base-url-not-https"))
+        if (url != null && !url.startsWith("https://")) return Outcome.Failure(AiSettingsProblem.BASE_URL_INVALID.toError())
         return change { it.copy(customBaseUrl = url) }
     }
 
     override suspend fun storeKey(provider: AiProvider, key: String): Outcome<Unit> {
-        if (key.isBlank()) return Outcome.Failure(TandemError.Unknown("ai-key-empty"))
+        if (key.isBlank()) return Outcome.Failure(AiSettingsProblem.KEY_EMPTY.toError())
         keys[provider] = key.trim()
         return change { it.copy(hasKey = it.provider == provider || it.hasKey) }
     }

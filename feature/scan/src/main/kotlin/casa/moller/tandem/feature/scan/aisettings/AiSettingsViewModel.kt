@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.scan.aisettings
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import casa.moller.tandem.core.data.ai.AiSettingsProblem
 import casa.moller.tandem.core.data.ai.AiSettingsRepository
 import casa.moller.tandem.core.data.ai.FridgeVision
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
@@ -278,9 +279,9 @@ class AiSettingsViewModel @Inject internal constructor(
     }
 }
 
-/** core:ai's error codes (DefaultAiSettingsRepository) as the field's error. */
-private fun TandemError.keyError(): AiKeyError = when ((this as? TandemError.Unknown)?.detail) {
-    "tandem.ai.key-empty" -> AiKeyError.EMPTY
-    "tandem.ai.key-invalid" -> AiKeyError.INVALID
+/** The repository's [AiSettingsProblem] as the field's error; anything else is a storage failure. */
+private fun TandemError.keyError(): AiKeyError = when (AiSettingsProblem.of(this)) {
+    AiSettingsProblem.KEY_EMPTY -> AiKeyError.EMPTY
+    AiSettingsProblem.KEY_INVALID -> AiKeyError.INVALID
     else -> AiKeyError.STORAGE
 }

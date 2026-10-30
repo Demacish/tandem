@@ -90,6 +90,33 @@ class TodayPantryViewModelTest {
         assertEquals(ExpiryUrgency.TODAY, vm.uiState.value.expiring.first().urgency)
     }
 
+    /**
+     * Fas S komplettering (fix-data's `make_now_use_up`): a recipe whose detail was never downloaded
+     * (`missingFoods == null`, its ingredients unknown on the device) is still lifted by the
+     * server's `makenow` + `foods_or` answer for the expiring cream. Idag counts it under "Går ut
+     * snart" and, when nothing has it all, shows it in "Kan laga nu" without waiting for the detail.
+     */
+    @Test
+    fun aUseUpRecipeWithoutItsDetailCountsAndShows() = runTest {
+        val soup = RecipeOverview(id = 77, name = "Gräddig svampsoppa")
+        val withoutDetail = FakeMakeNowRepository(
+            mapOf(
+                MakeNowGroup.MISSING_1 to listOf(
+                    MakeNowRecipe(soup, MakeNowGroup.MISSING_1, missingFoods = null, expiring = listOf(cream)),
+                ),
+                MakeNowGroup.MISSING_2 to listOf(MakeNowRecipe(SamplePantry.hummus, MakeNowGroup.MISSING_2)),
+            ),
+        )
+        val vm = TodayPantryViewModel(withoutDetail, pantry, calendar)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val state = vm.uiState.value
+        assertEquals(listOf("Gräddig svampsoppa"), state.makeNow.map { it.name })
+        assertEquals(0, state.hasAll)
+        val creamRow = state.expiring.single { it.entry.food.name == "grädde" }
+        assertEquals("the recipe without a detail is counted", 1, creamRow.recipeCount)
+    }
+
     @Test
     fun emptyWhenThePantryAndCookNowAreEmpty() = runTest {
         val vm = TodayPantryViewModel(FakeMakeNowRepository(emptyMap()), FakePantryRepository(entries = emptyList()), calendar)

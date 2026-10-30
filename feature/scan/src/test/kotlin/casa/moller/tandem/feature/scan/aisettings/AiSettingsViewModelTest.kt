@@ -70,7 +70,9 @@ class AiSettingsViewModelTest {
         vm.onAction(AiSettingsAction.SelectProvider(AiProvider.OPENAI))
         vm.onAction(AiSettingsAction.SaveKey("   "))
         assertTrue(ai.keys.isEmpty())
-        assertTrue(vm.uiState.value.keyError != null)
+        // Fas S komplettering: the fake answers core:ai's own code (AiSettingsProblem.KEY_EMPTY), so
+        // the field says "Paste the key first", not a storage failure.
+        assertEquals(AiKeyError.EMPTY, vm.uiState.value.keyError)
         assertFalse(AiSettingsEffect.KeyStored in effects)
         vm.onAction(AiSettingsAction.KeyEdited)
         assertNull(vm.uiState.value.keyError)

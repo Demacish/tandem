@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.ai
 
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.ai.AiSettingsProblem
 import casa.moller.tandem.core.data.ai.AiSettingsRepository
 import casa.moller.tandem.core.datastore.AiKeyStore
 import casa.moller.tandem.core.datastore.AiPreferences
@@ -102,12 +103,13 @@ internal class DefaultAiSettingsRepository @Inject constructor(private val prefe
     }
 
     companion object {
-        const val KEY_EMPTY = "tandem.ai.key-empty"
-        const val KEY_INVALID = "tandem.ai.key-invalid"
-        const val MODEL_INVALID = "tandem.ai.model-invalid"
-        const val BASE_URL_INVALID = "tandem.ai.base-url-invalid"
-        const val NO_PROVIDER = "tandem.ai.no-provider"
-        const val SAVE_FAILED = "tandem.ai.save-failed"
+        // The codes live in core:data (AiSettingsProblem), shared with the fake and the screen.
+        val KEY_EMPTY: String = AiSettingsProblem.KEY_EMPTY.detail
+        val KEY_INVALID: String = AiSettingsProblem.KEY_INVALID.detail
+        val MODEL_INVALID: String = AiSettingsProblem.MODEL_INVALID.detail
+        val BASE_URL_INVALID: String = AiSettingsProblem.BASE_URL_INVALID.detail
+        val NO_PROVIDER: String = AiSettingsProblem.NO_PROVIDER.detail
+        val SAVE_FAILED: String = AiSettingsProblem.SAVE_FAILED.detail
 
         private const val MAX_KEY_LENGTH = 512
         private const val FIRST_VISIBLE_ASCII = '!'

@@ -87,7 +87,7 @@ offline. Import av recept, receptredigering, widgets och dra och släpp kommer i
   och har "Inte nu"; en borttagen koppling i Passar med kan ångras; dryckesförslaget syns också i
   surfplattans veckorutnät; kamerans originalfoton av nya drycker sparas inte kvar.
 - **Större app:** textigenkänningen och streckkodsläsaren ingår i appen (de fungerar utan Googles
-  tjänster och utan nät), vilket gör APK-filen ungefär 75 MB i stället för 8 MB.
+  tjänster och utan nät), vilket gör APK-filen ungefär 77 MB i stället för 8 MB.
 - **Kvar till senare:** kvittoläsningen är bara prövad på påhittade kvitton, och hur bra den känner
   igen en butiks kvitton andra gången har inte mätts på riktiga kvitton än. Gemini och OpenAI är
   byggda efter tjänsternas dokumentation och har inte prövats mot de riktiga tjänsterna (bara
