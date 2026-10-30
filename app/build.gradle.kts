@@ -183,8 +183,8 @@ dependencies {
     implementation(projects.feature.shopping)
     implementation(projects.feature.mealplan)
     // --- grund lane (Fas S): Hemma and scanning (hosted by the shell; drinks are in feature:recipes)
-    // and core:ai, which binds FridgeVision (the fridge photo, B22). The lanes' real repositories
-    // replace di/TemporaryFasSModule.kt. ---
+    // and core:ai, which binds FridgeVision and AiSettingsRepository (the fridge photo, B22). The
+    // lanes' real repositories replaced the temporary stand-ins (di/TemporaryFasSModule.kt is gone). ---
     implementation(projects.feature.pantry)
     implementation(projects.feature.scan)
     implementation(projects.core.ai)

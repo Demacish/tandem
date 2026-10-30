@@ -1291,6 +1291,10 @@ bas-URL, den fejkade nyckeln sparas ("Key saved"), "Test the key" → "The key w
 fått `GET /v1/models/claude-opus-5-5` med rätt `x-api-key`, `anthropic-version` och **utan**
 `Authorization`. Det visar att SDK:ns klient, Jackson och modelltyperna fungerar efter R8.
 
+**Bindningar:** `core:ai` `AiModule` binder `FridgeVision` och `AiSettingsRepository`,
+`core:datastore` `DatastoreModule` `AiKeyStore` och `AiPreferencesStore`. Det var den sista
+tillfälliga bindningen: `app/.../di/TemporaryFasSModule.kt` är borttagen.
+
 **Tester:** `core:ai` `ClaudeFridgeVisionClientTest`, `RestFridgeVisionClientsTest` (MockWebServer:
 lyckat, fel nyckel, rate limit, vägran/blockerad, trasig JSON, timeout, avbrutet, modellen saknas,
 "Testa nyckeln"), `FridgePromptTest`, `FridgeVisionTest` (valet av tjänst, demo, storlek),
