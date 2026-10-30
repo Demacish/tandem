@@ -60,6 +60,12 @@ import org.junit.rules.ExternalResource
  * what the app did; both start empty. `addshopping` (and, in a test, the web with
  * `mealplan_autoadd_shopping`) puts a recipe's ingredients on the list. Every answer with status
  * 404 is kept in [notFound].
+ *
+ * Fas S (rester lane, Phase 2's open issue): the logged-in user (the recorded `contract-admin`) is
+ * in no household by default, as recorded, so Handla shows the household warning. With
+ * [household] set, `user-space/all_personal/` answers with the recorded household, and the admin's
+ * `user-space/` list (`fas2/user-space-list-admin`) has a second member in it, so Handla shows
+ * "Shared with contract-reader". `GET /api/user/` (what a non-admin reads) answers with two users.
  */
 class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     private val server = MockWebServer()
@@ -83,6 +89,10 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
     /** Phase 2: `METHOD path` of every request answered with 404 ("a 404 in the Caddy log"). */
     val notFound: MutableList<String> = CopyOnWriteArrayList()
+
+    /** Fas S (rester lane): the user is in the recorded household (see the class comment). Set before the login. */
+    @Volatile
+    var household: Boolean = false
 
     /** Phase 2: the stateful shopping list (empty until a test seeds it). */
     val shopping = FakeShoppingList(::template)
@@ -206,6 +216,13 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
         method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
+        // --- Fas S (rester lane): the household ("Delad med: …" and the household warning). ---
+        method == "GET" && path == USER_SPACE_PERSONAL_PATH && household -> fixture("14-user-space-all-personal", ::inHousehold)
+
+        method == "GET" && path == "/api/user-space/" -> fixture("fas2/user-space-list-admin")
+
+        method == "GET" && path == "/api/user/" -> fixture("fas2/user-list-member", ::twoUsers)
+
         // --- Phase 2 (inköp-data lane): every sync reads the shopping list and its small tables. ---
         method == "GET" && path in PHASE2_LISTS -> fixture(PHASE2_LISTS.getValue(path))
 
@@ -309,6 +326,17 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             .build()
     }
 
+    /** Fas S (rester lane): the recorded membership in the household of `fas2/user-space-list-admin`. */
+    private fun inHousehold(recorded: JsonElement): JsonElement {
+        val household = template("fas2/user-space-list-admin").getValue("results").jsonArray
+            .first { it.jsonObject["household"] is JsonObject }.jsonObject.getValue("household")
+        return JsonArray(recorded.jsonArray.map { JsonObject(it.jsonObject + ("household" to household)) })
+    }
+
+    /** Fas S (rester lane): the space's users as a member sees them, here the user and one other member. */
+    private fun twoUsers(recorded: JsonElement): JsonElement =
+        JsonArray(recorded.jsonArray.filter { it.jsonObject["id"]?.jsonPrimitive?.content in TWO_USER_IDS })
+
     /** A recorded DRF page without its results (Fas S: the smoke tests start with an empty pantry). */
     private fun emptyPage(recorded: JsonElement): JsonElement =
         JsonObject(recorded.jsonObject + mapOf("count" to JsonPrimitive(0), "next" to JsonNull, "results" to JsonArray(emptyList())))
@@ -363,6 +391,10 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private val TOKENS_BY_ID = mapOf("1" to LOGIN_TOKEN, "2" to DEVICE_TOKEN)
         private val ACCESS_TOKEN_PATH = Regex("^/api/access-token/(\\d+)/$")
         private val USER_PATH = Regex("^/api/user/\\d+/$")
+        private const val USER_SPACE_PERSONAL_PATH = "/api/user-space/all_personal/"
+
+        /** `contract-admin` (the user) and `contract-reader` from `fas2/user-list-member`. */
+        private val TWO_USER_IDS = setOf("1", "3")
         private val RECIPE_PATH = Regex("^/api/recipe/(\\d+)/$")
         private val PHASE1_LISTS = mapOf(
             "/api/recipe/flat/" to "fas1/recipe-flat",
@@ -376,7 +408,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/supermarket/" to "fas2/supermarket-list",
             "/api/supermarket-category/" to "fas2/supermarket-category-list",
             // Phase 2 (böcker lane): the role (guest mode) and the books are read with the small tables.
-            "/api/user-space/all_personal/" to "14-user-space-all-personal",
+            USER_SPACE_PERSONAL_PATH to "14-user-space-all-personal",
             "/api/recipe-book/" to "fas1/recipe-book-list",
             "/api/recipe-book-entry/" to "fas1/recipe-book-entry-list",
         )
