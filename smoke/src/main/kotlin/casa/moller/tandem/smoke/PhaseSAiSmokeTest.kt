@@ -34,7 +34,9 @@ class PhaseSAiSmokeTest : Phase2SmokeBase() {
         assertTrue("No Claude choice", app.clickNodeWithText("Claude"))
         app.waitForNode("the key status") { it.contentDescription?.toString() == "No key" }
 
-        // The key field comes first on the page (Compose leaves fields scrolled out of view out of the tree).
+        // Compose leaves nodes scrolled out of view out of the tree: bring the key group (field,
+        // "Save key", "Paste") on screen first; the key field is then the first field.
+        app.scrollTo(By.text("Paste"))
         val key = textFields().first()
         assertTrue("Key not typed", app.setNodeText(key, FakeAnthropic.KEY))
         waitUntil("Save key enabled") { app.clickNodeWithText("Save key") }
