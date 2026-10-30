@@ -32,23 +32,27 @@ class PhaseSAiSmokeTest : Phase2SmokeBase() {
         app.tap("AI (experimental)")
         app.waitFor(By.text("Service"))
         assertTrue("No Claude choice", app.clickNodeWithText("Claude"))
-        app.waitForNode("the key field") { it.contentDescription?.toString() == "No key" }
+        app.waitForNode("the key status") { it.contentDescription?.toString() == "No key" }
 
-        // The own base URL (third field: key, model, base URL) = the fake Anthropic endpoint.
-        val baseUrl = textFields()[BASE_URL_FIELD]
-        assertTrue("Base URL not typed", app.setNodeText(baseUrl, tandoor.baseUrl))
-        waitUntil("Save enabled") { app.clickNodeWithText("Save") }
-        app.waitForNode("the snackbar \"Saved\"") { it.text?.toString() == "Saved" }
-
-        val key = textFields()[KEY_FIELD]
+        // The key field comes first on the page (Compose leaves fields scrolled out of view out of the tree).
+        val key = textFields().first()
         assertTrue("Key not typed", app.setNodeText(key, FakeAnthropic.KEY))
         waitUntil("Save key enabled") { app.clickNodeWithText("Save key") }
         app.waitForNode("the stored key") { it.contentDescription?.toString() == "Key saved" }
         // The field is cleared once the key is stored: the key is not on screen any more.
         assertFalse("The key is still in a field", textFields().any { it.text?.toString() == FakeAnthropic.KEY })
 
+        // The own base URL (the last field, right above "Use the defaults") = the fake Anthropic endpoint.
+        app.scrollTo(By.text("Use the defaults"))
+        val baseUrl = textFields().last()
+        assertTrue("Base URL not typed", app.setNodeText(baseUrl, tandoor.baseUrl))
+        waitUntil("Save enabled") { app.clickNodeWithText("Save") }
+        app.waitForNode("the snackbar \"Saved\"") { it.text?.toString() == "Saved" }
+
+        app.scrollBackTo(By.text("Test the key"))
         waitUntil("Test the key enabled") { app.clickNodeWithText("Test the key") }
-        app.waitForNode("the key test's answer", SDK_TIMEOUT_MS) { it.text?.toString() == "The key works" }
+        // The answer card sits below the buttons (maybe just below the fold): scroll to it.
+        app.scrollTo(By.text("The key works"))
         app.capture("phaseS-ai-key-works")
 
         val seen = tandoor.anthropic.requests.single()
@@ -59,10 +63,10 @@ class PhaseSAiSmokeTest : Phase2SmokeBase() {
         assertFalse("A Tandoor Authorization header reached the AI service", seen.hadAuthorization)
     }
 
-    /** The page's text fields in screen order (also those scrolled out of view). */
+    /** The page's text fields on screen, in order (at least one). */
     private fun textFields(): List<AccessibilityNodeInfo> {
-        val fields = app.appNodes().filter { it.className?.toString() == "android.widget.EditText" }
-        assertEquals("Expected the key, model and base URL fields", FIELDS, fields.size)
+        val fields = app.appNodes().filter { it.className?.toString() == EDIT_TEXT }
+        assertTrue("No text field on screen", fields.isNotEmpty())
         return fields
     }
 
@@ -75,10 +79,6 @@ class PhaseSAiSmokeTest : Phase2SmokeBase() {
     }
 
     private companion object {
-        const val KEY_FIELD = 0
-        const val BASE_URL_FIELD = 2
-        const val FIELDS = 3
-        const val SDK_TIMEOUT_MS = 30_000L
         const val ACTION_TIMEOUT_MS = 10_000L
     }
 }

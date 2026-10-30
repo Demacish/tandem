@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -25,6 +26,7 @@ fun AiSettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val resources = LocalResources.current
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var key by remember { mutableStateOf("") }
@@ -33,7 +35,7 @@ fun AiSettingsRoute(onBack: () -> Unit, modifier: Modifier = Modifier, viewModel
         viewModel.effects.collect { effect ->
             when (effect) {
                 AiSettingsEffect.KeyStored -> key = ""
-                is AiSettingsEffect.Message -> snackbarHostState.showSnackbar(context.getString(effect.text))
+                is AiSettingsEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
             }
         }
     }
