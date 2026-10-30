@@ -3,6 +3,7 @@ package casa.moller.tandem.core.sync.engine
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.database.TandemDatabase
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.dao.IdRewriteDao
 import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toEntity
 import casa.moller.tandem.core.datastore.DiagnosticsStore
@@ -49,6 +50,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
@@ -324,6 +326,9 @@ internal class SyncEngine @Inject constructor(
 
             progress(SyncPhase.OUTBOX)
             if (outbox.drain(remote) == DrainResult.RETRY) scheduler.scheduleOutbox()
+
+            // Fas S (rester lane): old temporary-id mappings nothing needs any more, once a day.
+            pruneIdMappings()
 
             markDone(SyncKeys.LAST_SUCCESS)
             return SyncProgress(SyncPhase.DONE).also { onProgress(it) }
@@ -692,6 +697,17 @@ internal class SyncEngine @Inject constructor(
             prefetched.addAll(images.prefetch(urls))
         }
 
+        /**
+         * Fas S (rester lane, Phase 2's open issue): `id_mapping` rows older than
+         * `IdRewriteDao.MAPPING_RETENTION_MILLIS` that no outbox row or local table needs any more
+         * (`IdRewriteDao.pruneMappings`, one transaction), at most every [ID_MAPPING_PRUNE_INTERVAL].
+         */
+        private suspend fun pruneIdMappings() {
+            if (!isDue(SyncKeys.ID_MAPPING_PRUNE, ID_MAPPING_PRUNE_INTERVAL, always = false)) return
+            database.idRewriteDao().pruneMappings(accountId, clock.nowMillis() - IdRewriteDao.MAPPING_RETENTION_MILLIS)
+            markDone(SyncKeys.ID_MAPPING_PRUNE)
+        }
+
         private suspend fun stepImages(recipeIds: List<Long>): List<String> =
             if (recipeIds.isEmpty()) emptyList() else database.recipeDao().getStepImageUrls(accountId, recipeIds.distinct())
     }
@@ -701,5 +717,8 @@ internal class SyncEngine @Inject constructor(
 
         /** Runs that read the whole shopping list (plan 3.5 "vid start"); the others read a delta. */
         val SHOPPING_FULL_READ: Set<SyncReason> = setOf(SyncReason.FIRST_SYNC, SyncReason.APP_START, SyncReason.ACCOUNT_CHANGED)
+
+        /** Fas S (rester lane): how often [SyncRun.pruneIdMappings] runs. */
+        val ID_MAPPING_PRUNE_INTERVAL: Duration = 1.days
     }
 }

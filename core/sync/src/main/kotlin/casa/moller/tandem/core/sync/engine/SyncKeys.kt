@@ -27,4 +27,7 @@ internal object SyncKeys {
 
     /** When a whole sync run last finished ("Last synced"). */
     const val LAST_SUCCESS: String = "last_sync"
+
+    /** Fas S (rester lane): when old `id_mapping` rows were last pruned. */
+    const val ID_MAPPING_PRUNE: String = "id_mapping_prune"
 }

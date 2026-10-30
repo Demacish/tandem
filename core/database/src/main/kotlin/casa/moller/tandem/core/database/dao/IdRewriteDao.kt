@@ -6,6 +6,7 @@ import androidx.room3.Transaction
 import androidx.room3.Upsert
 import casa.moller.tandem.core.database.entity.IdMappingEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
+import casa.moller.tandem.core.database.entity.OutboxOps
 
 /**
  * Temporary ids of objects created offline and their rewrite to server ids (plan 3.5, 5.7; Phase 2,
@@ -24,7 +25,8 @@ import casa.moller.tandem.core.database.entity.OutboxEntities
  *    row is removed (which releases its dependents).
  * 4. Payload references are resolved just before sending (`OutboxRefs.resolve` with [resolve]).
  *
- * Mappings are never pruned in Phase 2 (one small row per offline create).
+ * 5. [pruneMappings] (Fas S, rester lane) removes old mappings nothing can need any more; Phase 2
+ *    never pruned them (one small row per offline create).
  */
 @Dao
 abstract class IdRewriteDao {
@@ -145,6 +147,127 @@ abstract class IdRewriteDao {
             OutboxEntities.DRINK -> deleteDrinkDraft(accountId, localId)
         }
     }
+
+    // ---------------------------------------------------------------- pruning (Fas S, rester lane)
+
+    /**
+     * Removes the mappings of [accountId] recorded before [createdBefore] (the CREATE's rewrite
+     * finished then; callers pass now minus [MAPPING_RETENTION_MILLIS]) that nothing can need any
+     * more, in ONE transaction, and returns how many went. A mapping stays while:
+     *
+     * - it is the lowest (most negative) temporary id of its entity: [nextLocalId] reads it, so a
+     *   temporary id is never handed out twice;
+     * - an outbox row of the object itself waits (same entity and `local_id`), a CREATE of the same
+     *   entity waits (its lost-answer search leaves out the server ids other creates claimed,
+     *   `claimedServerIds` in core:sync), or any outbox row mentions the temporary id in its payload,
+     *   base snapshot or `refs` (a reference resolved just before sending, a `keyword:<id>` field);
+     *   a text match is enough, so a mapping may stay longer than needed, never shorter;
+     * - a local table still holds the temporary id (the object's own row, or a reference to it that
+     *   a screen holding the old id wrote after the rewrite), see [stillReferenced].
+     *
+     * No schema change: `id_mapping` already has `created_at` (schema 4).
+     */
+    @Transaction
+    open suspend fun pruneMappings(accountId: String, createdBefore: Long): Int {
+        var removed = 0
+        for (mapping in pruneCandidates(accountId, createdBefore)) {
+            val id = mapping.localId
+            if (outboxMayNeed(accountId, mapping.entity, id, id.toString())) continue
+            if (stillReferenced(accountId, mapping.entity, id)) continue
+            removed += deleteMapping(accountId, mapping.entity, id)
+        }
+        return removed
+    }
+
+    /** Whether a local table still holds temporary id [id] of [entity]; an unknown entity is kept. */
+    open suspend fun stillReferenced(accountId: String, entity: String, id: Long): Boolean = when (entity) {
+        OutboxEntities.SHOPPING_ENTRY -> shoppingEntryReferenced(accountId, id)
+        OutboxEntities.SHOPPING_LIST_RECIPE -> listRecipeReferenced(accountId, id)
+        OutboxEntities.MEAL_PLAN -> mealPlanReferenced(accountId, id)
+        OutboxEntities.MEAL_TYPE -> mealTypeReferenced(accountId, id)
+        OutboxEntities.RECIPE_BOOK -> recipeBookReferenced(accountId, id)
+        OutboxEntities.RECIPE_BOOK_ENTRY -> recipeBookEntryReferenced(accountId, id)
+        OutboxEntities.INVENTORY_LOCATION -> inventoryLocationReferenced(accountId, id)
+        OutboxEntities.INVENTORY_ENTRY -> inventoryEntryReferenced(accountId, id)
+        OutboxEntities.FOOD_ALIAS -> foodAliasReferenced(accountId, id)
+        OutboxEntities.KEYWORD -> keywordReferenced(accountId, id)
+        OutboxEntities.DRINK -> drinkDraftReferenced(accountId, id)
+        else -> true
+    }
+
+    /** Mappings older than [createdBefore], without the lowest temporary id of each entity. */
+    @Query(
+        "SELECT * FROM id_mapping WHERE account_id = :accountId AND created_at < :createdBefore AND local_id > " +
+            "(SELECT MIN(m.local_id) FROM id_mapping m WHERE m.account_id = id_mapping.account_id AND m.entity = id_mapping.entity) " +
+            "ORDER BY entity, local_id",
+    )
+    abstract suspend fun pruneCandidates(accountId: String, createdBefore: Long): List<IdMappingEntity>
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM outbox WHERE account_id = :accountId AND (" +
+            "(entity = :entity AND (local_id = :localId OR op = '" + OutboxOps.CREATE + "')) " +
+            "OR instr(payload, :idText) > 0 OR instr(IFNULL(base_snapshot, ''), :idText) > 0 OR instr(IFNULL(refs, ''), :idText) > 0))",
+    )
+    abstract suspend fun outboxMayNeed(accountId: String, entity: String, localId: Long, idText: String): Boolean
+
+    @Query("DELETE FROM id_mapping WHERE account_id = :accountId AND entity = :entity AND local_id = :localId")
+    abstract suspend fun deleteMapping(accountId: String, entity: String, localId: Long): Int
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM shopping_entry WHERE account_id = :accountId AND local_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM shopping_history WHERE account_id = :accountId AND entry_id = :id)",
+    )
+    abstract suspend fun shoppingEntryReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM shopping_list_recipe WHERE account_id = :accountId AND local_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM shopping_entry WHERE account_id = :accountId AND list_recipe_id = :id)",
+    )
+    abstract suspend fun listRecipeReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM meal_plan WHERE account_id = :accountId AND local_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM shopping_entry WHERE account_id = :accountId AND meal_plan_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM shopping_list_recipe WHERE account_id = :accountId AND meal_plan_id = :id)",
+    )
+    abstract suspend fun mealPlanReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM meal_type WHERE account_id = :accountId AND id = :id) " +
+            "OR EXISTS(SELECT 1 FROM meal_plan WHERE account_id = :accountId AND meal_type_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM user_preference WHERE account_id = :accountId AND default_meal_type_id = :id)",
+    )
+    abstract suspend fun mealTypeReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM recipe_book WHERE account_id = :accountId AND local_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM recipe_book_entry WHERE account_id = :accountId AND book_id = :id)",
+    )
+    abstract suspend fun recipeBookReferenced(accountId: String, id: Long): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM recipe_book_entry WHERE account_id = :accountId AND local_id = :id)")
+    abstract suspend fun recipeBookEntryReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM inventory_location WHERE account_id = :accountId AND local_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM inventory_entry WHERE account_id = :accountId AND location_id = :id)",
+    )
+    abstract suspend fun inventoryLocationReferenced(accountId: String, id: Long): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM inventory_entry WHERE account_id = :accountId AND local_id = :id)")
+    abstract suspend fun inventoryEntryReferenced(accountId: String, id: Long): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM food_alias WHERE account_id = :accountId AND local_id = :id)")
+    abstract suspend fun foodAliasReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM keyword WHERE account_id = :accountId AND (id = :id OR parent_id = :id)) " +
+            "OR EXISTS(SELECT 1 FROM recipe_keyword WHERE account_id = :accountId AND keyword_id = :id)",
+    )
+    abstract suspend fun keywordReferenced(accountId: String, id: Long): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM drink_draft WHERE account_id = :accountId AND local_id = :id)")
+    abstract suspend fun drinkDraftReferenced(accountId: String, id: Long): Boolean
 
     // ---------------------------------------------------------------- building blocks (Room)
 
@@ -290,10 +413,17 @@ abstract class IdRewriteDao {
     @Query("DELETE FROM drink_draft WHERE account_id = :accountId AND local_id = :localId")
     abstract suspend fun deleteDrinkDraft(accountId: String, localId: Long)
 
-    private companion object {
+    companion object {
+        /**
+         * Fas S (rester lane): how long a mapping is kept after its CREATE was rewritten at least
+         * ([pruneMappings]). A screen or a saved back stack may still hold the old temporary id for
+         * a while (`current`, the meal plan's lookup by an old id); after 30 days it is gone.
+         */
+        const val MAPPING_RETENTION_MILLIS: Long = 30L * 24 * 60 * 60 * 1000
+
         /** `MIN(0, <lowest in the table>, <lowest mapped>, <lowest in the outbox>)`; callers subtract 1. */
-        const val LOWEST_PREFIX: String = "SELECT MIN(0, IFNULL("
-        const val LOWEST_SUFFIX: String =
+        private const val LOWEST_PREFIX: String = "SELECT MIN(0, IFNULL("
+        private const val LOWEST_SUFFIX: String =
             "IFNULL((SELECT MIN(local_id) FROM id_mapping WHERE account_id = :accountId AND entity = :entity), 0), " +
                 "IFNULL((SELECT MIN(local_id) FROM outbox WHERE account_id = :accountId AND entity = :entity), 0))"
     }

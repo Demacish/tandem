@@ -4,7 +4,9 @@ import androidx.room3.useWriterConnection
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.database.TandemMigrations
+import casa.moller.tandem.core.database.dao.IdRewriteDao
 import casa.moller.tandem.core.database.dao.RecipeIndexEntry
+import casa.moller.tandem.core.database.entity.IdMappingEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.model.error.TandemError
@@ -488,5 +490,30 @@ class SyncEngineTest {
             {"id":5,"recipe":4,"rating":null,"created_by":{"id":1},"created_at":"2026-10-02T18:00:00.000000+02:00"}
             ]}
         """.trimIndent()
+    }
+
+    // Fas S (rester lane): old id_mapping rows are pruned at the end of a run, once a day.
+
+    @Test
+    fun aRunPrunesOldMappingsNothingNeedsOnceADay() = runBlocking {
+        val ids = graph.real.idRewriteDao()
+        val now = graph.clock.nowMillis()
+        val old = now - IdRewriteDao.MAPPING_RETENTION_MILLIS - 1
+        // -3 is the lowest temporary id (kept for nextLocalId), -2 is old and unused, -1 is recent.
+        ids.upsertMapping(IdMappingEntity(ACCOUNT_ID, OutboxEntities.SHOPPING_ENTRY, -3, 901, old))
+        ids.upsertMapping(IdMappingEntity(ACCOUNT_ID, OutboxEntities.SHOPPING_ENTRY, -2, 902, old))
+        ids.upsertMapping(IdMappingEntity(ACCOUNT_ID, OutboxEntities.SHOPPING_ENTRY, -1, 903, now))
+
+        assertEquals(SyncPhase.DONE, graph.engine.run(SyncReason.FIRST_SYNC).phase)
+        assertEquals(listOf(-3L, -1L), ids.getMappings(ACCOUNT_ID).map { it.localId })
+
+        // Within the day nothing is pruned again, even when a mapping became old meanwhile.
+        ids.upsertMapping(IdMappingEntity(ACCOUNT_ID, OutboxEntities.SHOPPING_ENTRY, -1, 903, old))
+        assertEquals(SyncPhase.DONE, graph.engine.run(SyncReason.USER_REFRESH).phase)
+        assertEquals(listOf(-3L, -1L), ids.getMappings(ACCOUNT_ID).map { it.localId })
+
+        graph.clock.advance(25.hours)
+        assertEquals(SyncPhase.DONE, graph.engine.run(SyncReason.USER_REFRESH).phase)
+        assertEquals(listOf(-3L), ids.getMappings(ACCOUNT_ID).map { it.localId })
     }
 }
