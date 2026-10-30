@@ -8,6 +8,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.sync.SyncRepository
+import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.sync.SyncReason
@@ -16,7 +17,9 @@ import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.demo.DemoSeeder
+import casa.moller.tandem.core.sync.engine.SyncKeys
 import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -25,6 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -41,7 +46,9 @@ import kotlinx.coroutines.launch
  * - starts the account mirror (server_account rows, logout clean-up, version notices);
  * - follows the active source: a logged-in account gets the periodic sync and its outbox sent;
  *   demo mode seeds the demo database; logging out or demo mode cancel the periodic sync;
- *   switching to another account asks for an ACCOUNT_CHANGED sync;
+ *   switching to another account asks for an ACCOUNT_CHANGED sync, except for an account that was
+ *   just added and has never synced (Fas S rester: the intro's FIRST_SYNC makes its first sync, so
+ *   adding an account while another was logged in synced twice; see [syncsOnAccountChange]);
  * - follows Settings → Sync → Interval (Phase 1b): the periodic sync gets the chosen period at
  *   once, and "manually" cancels it (start, resume and pull to refresh still sync);
  * - asks for a sync when the app comes to the foreground (APP_START once, then APP_RESUMED; the
@@ -61,6 +68,9 @@ class SyncStarter @Inject internal constructor(
     private val imageLoader: Provider<ImageLoader>,
     private val settings: SettingsStore,
     @ApplicationScope private val scope: CoroutineScope,
+    // Fas S (rester lane): whether the new account has synced before (no double sync after adding one).
+    private val databases: TandemDatabaseFactory,
+    private val clock: SyncClock,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -117,13 +127,25 @@ class SyncStarter @Inject internal constructor(
             is ActiveSource.Remote -> {
                 // The periodic sync follows the account and the interval (followSyncInterval).
                 scheduler.scheduleOutbox()
-                if (previous is ActiveSource.Remote) syncRepository.requestSync(SyncReason.ACCOUNT_CHANGED)
+                if (previous is ActiveSource.Remote && syncsOnAccountChange(current)) {
+                    syncRepository.requestSync(SyncReason.ACCOUNT_CHANGED)
+                }
             }
 
             ActiveSource.Demo -> demo.ensureSeeded()
 
             ActiveSource.None, ActiveSource.Loading -> Unit
         }
+    }
+
+    /** [syncsOnAccountChange] for [current], with its stored "last synced" time. */
+    private suspend fun syncsOnAccountChange(current: ActiveSource.Remote): Boolean {
+        val lastSuccess = databases.get(current.kind).syncStateDao().get(current.accountId, SyncKeys.LAST_SUCCESS)
+        return syncsOnAccountChange(
+            addedAtMillis = current.account.addedAt.toEpochMilliseconds(),
+            lastSuccessMillis = lastSuccess?.lastFullRelistEpochMillis,
+            nowMillis = clock.nowMillis(),
+        )
     }
 
     /**
@@ -142,5 +164,25 @@ class SyncStarter @Inject internal constructor(
             .collect { chosen ->
                 if (chosen == null || chosen.minutes == null) scheduler.cancelPeriodic() else scheduler.schedulePeriodic(chosen)
             }
+    }
+
+    internal companion object {
+        /** How long after a login a never-synced account counts as "just added" (its intro is showing). */
+        val JUST_ADDED: Duration = 10.minutes
+
+        /**
+         * Fas S (rester lane, Phase 2's open issue "två synkar i rad"): whether a switch from another
+         * account to this one asks for an ACCOUNT_CHANGED sync. Logging in from the intro while
+         * another account is active makes the new account active at once, and the intro's FIRST_SYNC
+         * (started by "Continue") is its first full sync; an ACCOUNT_CHANGED sync at the login ran
+         * the same full sync a second time. So it is skipped for an account that was added less than
+         * [JUST_ADDED] ago and has never finished a sync ([lastSuccessMillis] null). A switch to an
+         * account that has synced before, or one added long ago whose first sync never finished,
+         * still syncs. A clock set back (added "in the future") counts as just added.
+         */
+        fun syncsOnAccountChange(addedAtMillis: Long, lastSuccessMillis: Long?, nowMillis: Long): Boolean {
+            if (lastSuccessMillis != null) return true
+            return nowMillis - addedAtMillis >= JUST_ADDED.inWholeMilliseconds
+        }
     }
 }
