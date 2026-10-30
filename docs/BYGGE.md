@@ -1406,7 +1406,22 @@ Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
   `tablet_portrait_pantry_entry_dark_sv`, `tablet_unpack_dark_sv`, `tablet_staples_light_sv`,
   `tablet_portrait_staples_dark_sv`, `tablet_portrait_detail_pairings_dark_sv` och
   `tablet_portrait_shopping_unpack_light_sv`.
-- **Release-röktestet** täcker Fas S:s "Klart när", se "Release-röktest" (Fas S).
+- **Release-röktestet** täcker Fas S:s "Klart när", se "Release-röktest" (Fas S). Det hittade
+  tre fel som enhetstesterna inte kunde se: R8 tog bort DTO:er som bara är en suspend-funktions
+  returtyp (kopplingens `move`, dryckens foto), Open Food Facts-svaret och Gemini/OpenAI-svaren
+  lästes på huvudtråden (`NetworkOnMainThreadException`), och foto av kylen gick inte att nå med
+  ett tomt skafferi. `DefaultBarcodeLookup` skriver nu felets typ (aldrig koden) i enhetens logg.
+- **Kvar (avsiktligt eller utanför fasen):** APK:n är ca 77 MB (ML Kit för fyra ABI); ABI-filter
+  eller uppdelade APK:er är användarens beslut. Kameravägen (CameraX-förhandsvisning, ML Kit på
+  levande bilder) prövas bara på en riktig telefon; röktestet går via galleriet. "80 % rätt andra
+  gången samma butik används" är bara visat med syntetiska kvitton och inlärda alias, inte mätt på
+  riktiga kvitton. Gemini och OpenAI är byggda efter dokumentationen och prövas bara mot falska
+  servrar (inga riktiga AI-anrop i CI). Två telefoner som öppnar Hemma första gången samtidigt kan
+  båda skapa Kyl, Frys och Skafferi; en basvara som lagts till offline utan livsmedel markeras
+  alltid som hemma när den löses; `MissingIngredients` ser inte ett syskon- eller barnsubstitut som
+  bara finns i lagret (serverns `makenow` avgör grupperna); `POST food/` för en okänd basvara har
+  inget kontraktstest; typerna sorteras efter de svenska servernamnen även med engelska i appen;
+  ML Kits fullständiga licenstexter (1–2 MB) ligger inte i appen, bara komponentnamnen och länken.
 <!-- /Fas S integration -->
 
 <!-- Fas 2 inköp-data -->
