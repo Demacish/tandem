@@ -6,73 +6,76 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-Skafferi och drycker (Fas S, kommande 0.4.0) byggs nu. Grunden är på plats men syns inte i appen
-än: databasen, typerna och sidorna för Hemma (skafferiet, Kan laga nu, Packa upp, basvaror),
-skanning (streckkod, kvitto och foto av kylen) och drycker finns, och sidorna fylls i av de
-kommande delarna.
+## [0.4.0] – 2026-10-30
 
-- **Tandoor 2.7.2** är testad: appen kör den som 2.7.1, utan säkert läge.
-- **Tandoor-kontrollen** prövar nu också det skafferiet och dryckerna bygger på (Kan laga nu som
-  "saknar högst N varor", lagret och hushållet, nyckelorden för "Passar med", inlärda streckkoder
-  och kvittonamn, en dryck som recept), mot Tandoor 2.6.13, 2.6.15, 2.7.1 och 2.7.2.
-- **Databasen** uppgraderas (version 5) när 0.4.0 installeras; allt som redan finns på telefonen,
-  också osända ändringar, finns kvar.
-- **Foto av kylen (experimentellt):** fotografera kylen, frysen eller skafferiet så föreslår en
-  AI-tjänst vad ni har hemma, med din egen nyckel till Claude, Gemini eller OpenAI under Mer →
-  Inställningar → AI (experimentellt). Där väljer du tjänst och modell, klistrar in nyckeln, testar
-  den och tar bort den. Första gången förklarar appen att AI:n kan missa varor eller tro att något
-  finns som inte finns; allt blir förslag i granskningslistan, osäkra rader är märkta och tas bara
-  med om du vill, och inget sparas förrän du har gått igenom listan. Fotot görs mindre, skickas
-  utan plats- och kameradata bara till den tjänst du valt och sparas inte; kostnaden dras från
-  ditt eget konto där. Nyckeln sparas krypterad på telefonen, följer inte med i säkerhetskopior
-  och tas bort med "Rensa appdata". Funktionen syns inte utan nyckel och fungerar inte i demoläget.
-- Appen ber om kameran först när du skannar, och bilder kan alltid väljas från galleriet i stället.
-- **Skafferiet i bakgrunden:** platserna (Kyl, Frys och Skafferi skapas första gången), lagret,
-  basvarorna och inlärda streckkoder och kvittonamn synkas nu med Tandoor och fungerar offline;
-  bara ditt hushålls platser visas. Kan laga nu räknar ut Har allt, Saknar 1 och Saknar 2 som
-  Tandoor gör, och varor som snart går ut lyfter sina recept. En streckkod som ingen telefon har
-  lärt sig slås upp i Open Food Facts med bara koden.
-- **Hemma** (Mer → Hemma): skafferiet per plats (Kyl, Frys, Skafferi och egna) med mängd och
-  bäst före-dag i färg ("går ut i morgon", "gick ut i går"), snabbknapparna "Slut" och "−1",
-  flytta, ändra och ångra. En ny Tandoor får Kyl, Frys och Skafferi med ett tryck, och "Har hemma"
-  visar det som bara är markerat som hemma. På surfplatta står platserna i kolumner.
-- **Kan laga nu:** Har allt, Saknar 1 och Saknar 2 med det som saknas på varje recept, "Lägg det
-  som saknas på listan" (bara det som saknas är ikryssat), filter för måltidstyp, nyckelord och
-  tid, Överraska mig, och recept som använder något som snart går ut står först. Första gången
-  föreslås basvaror (salt, olja och liknande), annars saknas de i nästan alla recept.
-- **Packa upp:** när något bockats av i Handla i dag erbjuder listan att lägga det i skafferiet,
-  med plats och bäst före-dag för allt på en gång eller för varje vara.
-- **Idag** visar Kan laga nu och Går ut snart när det finns något, och efter Klart! i kokläget kan
-  du, om du vill, markera det som tog slut. Inget räknas av av sig självt.
-- **Skanna till skafferiet:** streckkoder läses med kameran i en följd (en kort vibration för
-  varje ny vara, lampan kan tändas) eller ur en bild från galleriet. En kod som hushållet lärt sig
-  hamnar direkt på rätt livsmedel; en okänd slås upp i Open Food Facts och produktnamnet föreslår
-  ett av dina livsmedel, eller så skapar du ett nytt, och koden känns sedan igen på alla telefoner
-  i hushållet. Välj plats och bäst före med snabbval och lägg in varan, eller lägg den på
-  inköpslistan. **Kvitton** fotograferas (ett långt kvitto i flera foton) och läses i telefonen:
-  summa, moms, pant, rabatter, kort- och medlemsrader tas bort, och varje vara kopplas till ett
-  inlärt kvittonamn eller ett förslag. Allt hamnar i en lista där varje rad kan ändras eller
-  hoppas över innan något sparas, och det du kopplat lärs in till nästa gång. Fotot sparas inte.
+Skafferi och drycker (Fas S): Tandem vet nu vad ni har hemma och föreslår vad ni kan laga av det,
+och dryckerna hänger ihop med rätterna de passar till. Allt sparas i er egen Tandoor (skafferiet,
+inlärda streckkoder och drycker syns på webben och på hushållets andra telefoner) och fungerar
+offline. Import av recept, receptredigering, widgets och dra och släpp kommer i Fas 3.
+
+- **Hemma** (Mer → Hemma): skafferiet per plats (Kyl, Frys, Skafferi och egna platser) med mängd
+  och bäst före-dag i färg ("går ut i morgon", "gick ut i går"). "Slut" och "−1" med ett tryck,
+  flytta, ändra och ångra. En Tandoor utan platser får Kyl, Frys och Skafferi med ett tryck, och
+  "Markerat som hemma" visar det som bara är markerat som hemma i Tandoor. Bara ditt hushålls
+  platser visas. På surfplatta står platserna i kolumner.
+- **Kan laga nu:** recepten i grupperna Har allt, Saknar 1 och Saknar 2, räknade som Tandoor gör
+  (det som är markerat som hemma eller finns i skafferiet), med vad som saknas på varje recept.
+  "Lägg det som saknas på listan" kryssar bara i det som saknas. Filtrera på måltidstyp, nyckelord
+  och tid, eller tryck Överraska mig. På surfplatta står grupperna sida vid sida.
+- **Använd upp:** recept med något som går ut inom tre dagar står först och är märkta, och Idag
+  visar "Går ut snart" och "Kan laga nu" när det finns något.
+- **Basvaror:** första gången föreslår Kan laga nu att du markerar salt, olja och liknande som
+  hemma, annars saknas de i nästan alla recept. Listan finns också i Hemmas meny.
+- **Packa upp:** när du bockat av varor i Handla erbjuder listan att lägga dem i skafferiet, med
+  plats och bäst före-dag för allt på en gång eller för varje vara. Efter Klart! i kokläget kan du,
+  om du vill, markera det som tog slut. Inget räknas av av sig självt.
+- **Streckkod:** skanna förpackningar i en följd med kameran (en kort vibration för varje ny vara,
+  lampan kan tändas) eller välj en bild i galleriet. En kod som hushållet lärt sig hittar sitt
+  livsmedel direkt; en okänd slås upp i Open Food Facts med bara koden, produktnamnet föreslår ett
+  av era livsmedel och koden lärs in, så att hushållets andra telefoner känner igen den. Lägg varan
+  i skafferiet med plats och bäst före, eller på inköpslistan.
+- **Kvitto:** fotografera kvittot (ett långt i flera foton) eller välj en bild. Texten läses i
+  telefonen; summa, moms, pant, rabatter och kort- och medlemsrader tas bort, och varje vara kopplas
+  till ett inlärt kvittonamn eller ett förslag. Fotot sparas inte.
+- **Granskningslistan:** streckkoder, kvitton och foto av kylen hamnar i samma lista, där varje rad
+  kan ändras eller hoppas över innan något sparas; det du kopplat lärs in till nästa gång.
+- **Foto av kylen (experimentellt, kräver en egen nyckel):** välj Claude, Gemini eller OpenAI och
+  klistra in din egen API-nyckel under Mer → Inställningar → AI (experimentellt), där du också kan
+  testa och ta bort den. Fotografera kylen, frysen eller skafferiet så föreslår tjänsten vad ni har
+  hemma. Första gången förklarar appen att AI:n kan missa varor eller tro att något finns som inte
+  finns; allt blir förslag i granskningslistan, osäkra rader är avmarkerade och inget sparas förrän
+  du har gått igenom listan. Fotot görs mindre och skickas utan plats- och kameradata bara till den
+  tjänst du valt, och kostnaden dras från ditt eget konto där. Nyckeln sparas krypterad på
+  telefonen, lämnar den bara i anropet till tjänsten, följer inte med i säkerhetskopior och tas
+  bort med "Rensa appdata". Funktionen syns inte utan nyckel och finns inte i demoläget.
 - **Drycker** (Recept → Drycker): en dryck är ett vanligt recept med nyckelordet "Dryck" och gärna
-  en typ (Vin, Öl, Cider, Alkoholfritt, Drink), så den syns på webben och kan ha bild, betyg och
-  koklogg. Sök och filtrera på typ, och skapa en ny dryck med namn, typ, en anteckning (pris, var
-  den köps) och ett foto från kameran eller galleriet; resten ändras på webben.
-- **Passar med:** receptvyn visar vilka drycker (och sorter som "Kraftigt rött") en rätt passar
-  med, och en dryck vilka rätter den passar till. Koppla och ta bort från båda håll; kopplingen
-  sparas som nyckelord under "Passar med" i Tandoor, så den syns på den andra telefonen och på
-  webben, och den fungerar offline. Gäster ser kopplingarna men kan inte ändra dem.
-- Kvällens måltid i **Idag** och måltiderna i **Veckan** visar ett dryckesförslag när receptet har
-  en koppling. Drycker föreslås aldrig som middag.
-- En dryck utan ingredienser läggs på inköpslistan som en vara. **Sök på Systembolaget** öppnar
-  Systembolagets sök med dryckens namn (bara en länk; på som standard med svenska i appen, går att
-  slå av i Dryckers meny).
-- Att lägga till ett konto medan ett annat är inloggat synkar inte längre två gånger i rad.
-- Varningen "Du är inte med i något hushåll" i Handla och Veckan syns nu direkt efter
-  inloggningen, inte först efter en kvart.
-- **Receptets inköpsark** på en telefon i liggande läge: rubriken och portionerna står på en rad
-  och "Avbryt" bredvid knappen, så att ingredienserna får plats att rulla.
-- Telefonen rensar gamla anteckningar om vilka tillfälliga id som fått server-id (efter 30 dagar,
-  när inget längre behöver dem).
+  en typ (Vin, Öl, Cider, Alkoholfritt, Drink), så den syns på webben med bild, betyg och koklogg.
+  Sök och filtrera på typ, och skapa en ny dryck med namn, typ, en anteckning och ett foto; resten
+  ändras på webben. En dryck utan ingredienser läggs på inköpslistan som en vara, och "Sök på
+  Systembolaget" öppnar Systembolagets sök med dryckens namn (går att slå av i Dryckers meny).
+- **Passar med:** receptet visar vilka drycker (och sorter som "Kraftigt rött") rätten passar
+  med, och drycken vilka rätter den passar till. Koppla och ta bort från båda håll, också offline;
+  kopplingen sparas som nyckelord under "Passar med" i Tandoor, så den syns på den andra telefonen
+  och på webben, och ett nyckelord som någon annan lagt till under tiden finns kvar. Kvällens
+  måltid i Idag och måltiderna i Veckan visar ett dryckesförslag. Drycker föreslås aldrig som
+  middag.
+- **Kameran** efterfrågas först när du skannar, med en förklaring, och allt kan göras med bilder
+  från galleriet i stället. Gäster ser skafferiet, Kan laga nu och dryckerna men kan inte ändra
+  något. Demoläget har ett skafferi, drycker och Kan laga nu utan nät.
+- **Diagnostik** visar väntande ändringar i skafferiet, inlärda koder, nya drycker och kopplingar
+  under egna namn, och **Licenser** listar de nya biblioteken (CameraX, ML Kit, Anthropics SDK).
+- **Tandoor 2.7.2** är testad och körs som 2.7.1. Databasen uppgraderas när 0.4.0 installeras;
+  allt på telefonen, också osända ändringar, finns kvar.
+- **Rättat:** att lägga till ett konto medan ett annat är inloggat synkar inte längre två gånger i
+  rad; varningen "Du är inte med i något hushåll" syns direkt efter inloggningen; receptets
+  inköpsark i liggande läge har rubriken och portionerna på en rad så att ingredienserna får plats;
+  telefonen rensar gamla anteckningar om tillfälliga id efter 30 dagar.
+- **Större app:** textigenkänningen och streckkodsläsaren ingår i appen (de fungerar utan Googles
+  tjänster och utan nät), vilket gör APK-filen ungefär 75 MB i stället för 8 MB.
+- **Kvar till senare:** kvittoläsningen är bara prövad på påhittade kvitton, och hur bra den känner
+  igen en butiks kvitton andra gången har inte mätts på riktiga kvitton än. Gemini och OpenAI är
+  byggda efter tjänsternas dokumentation och har inte prövats mot de riktiga tjänsterna (bara
+  Claude-vägen körs i appens röktest, mot en falsk tjänst). Importen av recept kommer i Fas 3.
 
 ## [0.3.0] – 2026-10-26
 

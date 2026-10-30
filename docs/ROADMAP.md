@@ -45,17 +45,33 @@ Levererades i **0.3.0**.
 - ✅ Hushållets namn och din roll på kontokortet under Mer (0.3.0).
 - ✅ Surfplatta: inköpslistan i två kolumner och veckorutnätet, i båda orienteringarna (0.3.0).
 
+## Fas S: Skafferi och drycker ✅
+Levererades i **0.4.0**, före Fas 3 (beslutat 2026-10-29).
+
+- ✅ Skafferi per plats (Kyl, Frys, Skafferi och egna) med bäst före-datum, "Slut" och "−1",
+  offline och synkat med Tandoor (0.4.0).
+- ✅ Kan laga nu: Har allt, Saknar 1 och Saknar 2 som Tandoor räknar, Överraska mig, och "Lägg det
+  som saknas på listan" (0.4.0).
+- ✅ Använd upp: det som går ut snart lyfter sina recept, också på Idag (0.4.0).
+- ✅ Basvaror och Packa upp efter handlingen (0.4.0).
+- ✅ Streckkodsskanning (Open Food Facts, bara koden skickas) och kvitton som läses i telefonen,
+  med en granskningslista; inlärda koder och kvittonamn delas av hushållets telefoner (0.4.0).
+- ✅ Foto av kylen, experimentellt, med en egen nyckel till Claude, Gemini eller OpenAI (0.4.0).
+- ✅ Drycker som recept och kopplingen "Passar med" mellan rätter och drycker, med dryckesförslag
+  på Idag och i Veckan (0.4.0).
+- ✅ Surfplatta: Hemma och Kan laga nu i kolumner i båda orienteringarna (0.4.0).
+
 ## Fas 3: Skapa och fånga
 - Skapa och redigera recept i appen, lika komplett som i Tandoors webb: ingredienser med
   livsmedel och enheter, steg, bilder, nyckelord och tider.
 - Importera recept genom att dela en länk eller text till appen; foto och PDF tolkas av
   Tandoors AI-import.
 - Widgets, snabbinställningsruta och genvägar.
-- Dra och släpp i matsedeln, "Kan laga nu", "Överraska mig", näringsvärden.
+- Dra och släpp i matsedeln, näringsvärden.
 
 ## Fas 4: Smart hushåll
-- Skafferi med utgångsdatum, streckkodsskanning (Open Food Facts) och textigenkänning.
-- "Använd upp", inlärd butiksordning, återkommande varor, förslag på veckans matsedel.
+- Textigenkänning av recept i telefonen (samma som kvittoskanningen i Fas S).
+- Inlärd butiksordning, återkommande varor, förslag på veckans matsedel.
 - Notiser när någon i hushållet ändrar listan. Appen kontrollerar i bakgrunden, så ingen extra
   tjänst behövs; snabbare push via en valfri liten tjänst som man kan köra själv.
 - Två recept samtidigt i kokläget.
