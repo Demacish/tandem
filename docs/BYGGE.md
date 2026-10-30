@@ -1517,7 +1517,7 @@ Rättelser efter granskningen av 0.4.0 i `feature/**`, `core:ui` och några små
   APK:ns manifest med `aapt2 dump xmltree` (varken `CctBackendFactory`, `TransportBackendDiscovery`
   eller `MlKitInitProvider`, men `MlKitComponentDiscoveryService` kvar), och röktestets skanning
   (streckkod och kvitto) visar att det fungerar. Startmätningen (`benchmark.yml`) och
-  baslinjeprofilen är inte gjorda om.
+  baslinjeprofilen är inte gjorda om här (det gjordes i kompletteringen, se "Prestanda").
 - **Integritetstexterna** (Om, Behörigheter, introduktionen) nämner Open Food Facts (bara koden)
   och den valda AI-tjänsten (bara fotot, med egen nyckel); Behörigheter har en rad för kameran
   (`PermissionsUiState.cameraAllowed`, `SystemSetting.cameraAllowed`, ingen rad utan kamera). Med
@@ -1627,6 +1627,10 @@ AI-nyckel (fortfarande 0.4.0, före taggningen):
   `phone_landscape_create_drink_light` (engelska typchips i engelsk ordning). Hemmas
   telefonbilder och `books/phone_landscape_books_light` från samma körning skilde bara i
   kantutjämning och togs inte. `DrinkShots` sorterar typerna som ViewModel gör.
+- **Prestanda:** `benchmark.yml` på `main` (8600439) gav en ny baslinjeprofil (39 774 regler,
+  9 479 för Tandems klasser), mätt igen på grenen med den nya profilen; siffrorna står under
+  "Prestanda". Profilgeneratorn föll första gången när emulatorn dog (ingen profil skriven) och
+  gick igenom vid omkörning.
 - **Inte gjort (Fas 4):** den valfria notisen "X går ut i morgon – n recept" (kanalen
   Måltidspåminnelser, plan §8.8) skjuts till Fas 4 med de andra notiserna.
 <!-- /Fas S komplettering-1 -->
@@ -3208,9 +3212,10 @@ emulator (API 36): mätningarna, med median/min/max och P50–P99 i jobbsammanfa
 (`-Ptandem.baselineProfile.generate=true`, så profilen har riktiga klassnamn som AGP sedan mappar
 om i varje R8-bygge). Profilen laddas upp som artefakten `baseline-profile`; checka in den som
 `app/src/main/baselineProfiles/baseline-prof.txt` (`androidx.profileinstaller` installerar den
-även vid sidladdning). Den incheckade profilen (39 740 regler, 9 258 för Tandems egna klasser)
-genererades vid integrationen av 0.4.0 (körning 41000587527 på integrationsgrenen; 0.3.0:s hade
-38 082 / 7 701, 0.2.0:s 35 473 / 5 713); förnya den när startvägen, listan eller receptvyn ändrats mycket
+även vid sidladdning). Den incheckade profilen (39 774 regler, 9 479 för Tandems egna klasser)
+genererades i Fas S-kompletteringen på `main` 8600439, efter lat ML Kit och IO-rättelserna
+(körning 41073481790; integrationens hade 39 740 / 9 258, 0.3.0:s 38 082 / 7 701, 0.2.0:s
+35 473 / 5 713); förnya den när startvägen, listan eller receptvyn ändrats mycket
 (Actions → Benchmark → Run workflow, ladda ned, ersätt filen). Mätjobbet kontrollerar att
 profilen når AGP:s sammanslagna ART-profil (antalet regler för `casa/moller/tandem` står i
 sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i APK:n som mäts:
@@ -3219,7 +3224,22 @@ sammanfattningen) och att den R8-omskrivna binära profilen verkligen ligger i A
 `StartupBenchmark` och `RecipeListScrollBenchmark` med `BaselineProfileMode.Require`, så en
 APK utan installerbar profil fäller mätningen i stället för att tyst mäta utan profil.
 
-**Senaste mätningen (0.4.0-integrationen, 2026-10-30, körning 41000587527 på
+**Fas S-kompletteringen (2026-10-30, emulator API 36, medianer och min–max):**
+
+| Mätning | `main` 8600439, integrationens profil (41073481790) | grenen med den nya profilen (41083537033) |
+|---|---|---|
+| Kallstart med profil, första bildrutan | 2 007 ms (1 511–3 420) | 2 159 ms (1 537–2 965) |
+| Kallstart med profil, Idag färdig | 4 728 ms (3 582–5 058) | 4 485 ms (3 593–5 272) |
+| Kallstart utan kompilering, första bildrutan | 1 524 ms (1 444–2 149) | 1 567 ms (1 354–2 724) |
+| Kallstart utan kompilering, Idag färdig | 3 664 ms (3 532–4 184) | 3 511 ms (3 307–4 134) |
+| Svep i receptlistan, `frameDurationCpuMs` P50/P90/P99 | 96 / 155 / 339 ms | 99 / 158 / 383 ms |
+
+Siffrorna ligger inom spridningen från integrationen nedan (första bildrutan 1 791, Idag färdig
+4 105 ms med profil): lat start av ML Kit och IO-rättelserna syns inte som en förbättring på
+emulatorn, och mätningen med profil är här långsammare än utan, vilket bara spridningen mellan
+iterationer och löpare förklarar (min-värdena är lika). Kravet mäts på telefonen (se nedan).
+
+**Mätningen vid 0.4.0-integrationen (2026-10-30, körning 41000587527 på
 integrationsgrenen, emulator API 36, med 0.3.0:s profil; jämfört med 0.3.0-integrationen, körning
 40306538195):**
 
@@ -3236,7 +3256,8 @@ inte blivit långsammare (inom några procent, långt inom spridningen mellan it
 färdig är 6–10 % långsammare: Idag läser nu också Kan laga nu och Går ut snart (demoläget har ett
 skafferi), och skillnaden är mindre än spridningen. ML Kit och Anthropic-SDK:n laddas inte vid
 start (bara när en skanner eller foto av kylen öppnas). Profilen förnyades i samma ändring (39 740
-regler, 9 258 för Tandems egna klasser; 0.3.0:s hade 38 082 / 7 701).
+regler, 9 258 för Tandems egna klasser; 0.3.0:s hade 38 082 / 7 701) och igen i
+kompletteringen (se ovan).
 
 <details><summary>0.3.0-mätningen (2026-10-26)</summary>
 
