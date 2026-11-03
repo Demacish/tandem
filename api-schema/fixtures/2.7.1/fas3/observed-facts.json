@@ -86,6 +86,100 @@
     "isJson": true
   },
   "recipe.delete.guest.stillThere": true,
+  "import.data": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "import.data.name": "Fiskgratäng från Tandem",
+  "import.data.servings": 4,
+  "import.data.workingTime": 20,
+  "import.data.stepCount": 2,
+  "import.data.foods": [
+    "torskfilé",
+    "vispgrädde",
+    "salt"
+  ],
+  "import.data.units": [
+    "g",
+    "dl",
+    null
+  ],
+  "import.data.amounts": [
+    600.0,
+    2.5,
+    0.0
+  ],
+  "import.data.originalTexts": [
+    "600 g torskfilé",
+    "2,5 dl vispgrädde",
+    "salt"
+  ],
+  "import.data.keywords": [
+    "vardag",
+    "fisk"
+  ],
+  "import.data.imageUrl": "https://recipes.invalid/bilder/fiskgratang.jpg",
+  "import.data.images": [],
+  "import.data.error": false,
+  "import.data.duplicates": [],
+  "import.plainText": {
+    "status": 500,
+    "contentType": "text/html",
+    "isJson": false,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "import.badUrl": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "recipe": null,
+      "recipe_id": null,
+      "images": [],
+      "error": true,
+      "msg": "Connection Refused.",
+      "duplicates": []
+    }
+  },
+  "import.empty": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "recipe": null,
+      "recipe_id": null,
+      "images": [],
+      "error": true,
+      "msg": "Nothing to do.",
+      "duplicates": []
+    }
+  },
+  "import.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "import.ai.spaceAiEnabled": true,
+  "import.ai.spaceDefaultProvider": null,
+  "import.ai.noProvider": {
+    "status": 500,
+    "contentType": "text/html",
+    "isJson": false,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "import.imageUrl.unreachable": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "image": null,
+      "image_url": "https://recipes.invalid/bilder/pannkakor.jpg"
+    }
+  },
   "recipe.delete": {
     "status": 204,
     "contentType": null,

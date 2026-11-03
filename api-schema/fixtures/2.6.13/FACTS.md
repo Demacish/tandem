@@ -954,6 +954,33 @@ drf-writable-nested, tagg 2.6.13).
 
 - `DELETE /api/recipe/{id}/` → 204; sedan GET → 404 och ett nytt DELETE → 404 (Fas 1 k). [O]
 
+## Fas 3 e. `POST /api/recipe-from-source/` (import lane)
+
+- `{"data": "<html>…schema.org Recipe som JSON-LD…</html>"}` → **200** `{recipe, images, error:
+  false, msg: "", duplicates}` **utan** att receptet skapas: `recipe.name`, `servings` (4 ur
+  "4 portioner"), `working_time` 20 (ur `prepTime`), två steg med instruktionerna, varje
+  ingrediensrad med `food: {name}`, `unit: {name} | null`, `amount` (`600`, `2.5`, `0` för "salt")
+  och `original_text`; nyckelorden **gemena** (`vardag`, `fisk`); `image_url` = sidans bild;
+  `images` tomt; `duplicates` tomt fast ett recept med samma namn finns (dubbletter söks på
+  källan, inte namnet). [O]
+- Ren text i `data` (inget HTML) → **500** med Djangos HTML-felsida. Appen tolkar därför text
+  på enheten (`core:sync` `TextRecipeParser`) och skickar bara länkar. [O/S]
+- En länk som inte kan hämtas → **400** `{"error": true, "msg": "Connection Refused.", recipe:
+  null, …}`; tom kropp → **400** `{"error": true, "msg": "Nothing to do."}`; gästen → **403**
+  (samma `detail` som andra skrivningar). Appen visar "Inget recept hittades på sidan" för 400
+  och 500. [O]
+
+## Fas 3 f. `POST /api/ai-import/` utan leverantör, bild från webben (import lane)
+
+- Kontraktsutrymmet har `ai_enabled: true` men `ai_default_provider: null`. Multipart
+  `ai_provider_id=999999` + `file` (PNG) → **500** med HTML-felsidan. Appen skickar aldrig utan
+  en leverantör i `space/current`, och tolkar 400/500 som "AI-tjänsten svarade inte". Formen på
+  ett lyckat svar är inte prövad (ingen leverantör i CI): den första användaren med AI i Tandoor
+  verifierar. [O/S]
+- `PUT /api/recipe/{id}/image/` multipart `image_url=<oåtkomlig adress>` → **200** `{"image":
+  null, "image_url": "<adressen>"}`: servern sparar adressen utan att hämta bilden; receptet står
+  utan bild. Appen släpper bildraden och läser om receptet. [O]
+
 ## Fas 3: konsekvenser för appen [S]
 
 1. Skicka hela receptet i CREATE och PATCH, livsmedel och enheter på namn, kända nyckelord som
@@ -961,4 +988,7 @@ drf-writable-nested, tagg 2.6.13).
 2. Läs receptet färskt före PATCH och jämför `updated_at` med kopian som redigerades: annat värde =
    konflikt, skicka inte (outbox `recipe_edit`, docs/BYGGE.md "Fas 3 – kontrakt").
 3. Behåll stegens och ingrediensernas id i utkastet, så att en redigering uppdaterar på plats.
+4. Import: skicka bara **länkar** till `recipe-from-source` (text tolkas på enheten); 400/500 =
+   inget recept; AI-import bara med `ai_default_provider.id`; bilden från källan som `image_url`
+   på bildendpointen efter att receptet skapats.
 

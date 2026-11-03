@@ -1,0 +1,35 @@
+{
+  "name": "recipe-image-url-put",
+  "request": {
+    "method": "PUT",
+    "path": "/api/recipe/23/image/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "multipart/form-data; boundary=2a701d46-e6e0-4767-989e-a92fcd540ce2",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "image_url": "https://recipes.invalid/bilder/pannkakor.jpg"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "PUT, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "image": null,
+      "image_url": "https://recipes.invalid/bilder/pannkakor.jpg"
+    }
+  }
+}

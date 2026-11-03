@@ -325,7 +325,7 @@ internal class SyncTestGraph(
     val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages)
 
     // Fas 3 (import lane): the server-side import (online).
-    val recipeImports = RemoteRecipeImportRepository(sources, caller, permissions, serverStatus)
+    val recipeImports = RemoteRecipeImportRepository(sources, caller, permissions, serverStatus, databases)
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

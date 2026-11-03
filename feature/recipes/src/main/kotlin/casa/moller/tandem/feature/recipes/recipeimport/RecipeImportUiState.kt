@@ -32,9 +32,9 @@ data class RecipeImportUiState(
     val readOnly: Boolean = false,
     val isDemo: Boolean = false,
 ) {
-    /** The link or text can be sent. */
+    /** The link or text can be read (a text is read on the device, so demo mode too; a link needs the server). */
     val canImport: Boolean
-        get() = input.isNotBlank() && !working && !readOnly && !isDemo
+        get() = input.isNotBlank() && !working && !readOnly
 
     /** A photo or PDF can be chosen. */
     val canImportFile: Boolean

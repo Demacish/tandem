@@ -949,7 +949,7 @@ som helst (offline först genom `RecipeEditRepository.createRecipe`). Inget spar
 | `:core:model` `recipe.RecipeImport` | `RecipeImportResult(draft, imageUrls, duplicates)`, `ImportDuplicate(id, name)`, `RecipeImportSource` (`Link(url)`, `Text(text)`, `File(bytes, mimeType, fileName)`); `RecipeDraft.imageUrl` (bilden från källan, laddas ned av servern) |
 | `:core:data` `recipe.RecipeImportRepository` | `observeAiImportAvailable()` (utrymmet har en AI-leverantör, `ServerFeature.AI_IMPORT`; aldrig i demo), `import(source): Outcome<RecipeImportResult>`; `RecipeImportProblem` EMPTY_INPUT/NOTHING_FOUND/AI_UNAVAILABLE/FILE_TOO_LARGE (10 MB)/DEMO_MODE; gäster får `DataProblem.READ_ONLY` |
 | `:core:network` `api.RecipeImportService`, `dto/ImportDtos.kt` | `POST /api/recipe-from-source/` `{url}` \| `{data}` → `RecipeFromSourceResponse` (`recipe`, `images`, `error`, `msg`, `duplicates`); `POST /api/ai-import/` multipart `ai_provider_id`, `file`, `text`; `PUT /api/recipe/{id}/image/` multipart `image_url` (`setImageUrl`). `used-endpoints.txt` listar de två nya |
-| `:core:sync` `recipeimport/` | `RemoteRecipeImportRepository` (förgrundsanrop via `RemoteCaller.call(confirmForbidden)`, aldrig omförsök: ett AI-anrop kostar krediter; leverantören läses färskt ur `space/current` `ai_default_provider.id`; 400 från AI-importen = `AI_UNAVAILABLE`), `RecipeImportMapper` (livsmedel och enheter på namn, en rad utan livsmedel behåller `original_text` som anteckning, `amount` 0 = utan mängd, nyckelord med `import_keyword: false` utelämnas, bilden = `image_url` annars första i `images`, dubbletter) |
+| `:core:sync` `recipeimport/` | `RemoteRecipeImportRepository` (länkar som förgrundsanrop via `RemoteCaller.call(confirmForbidden)`, aldrig omförsök: ett AI-anrop kostar krediter; 400/500 från `recipe-from-source` = `NOTHING_FOUND`; leverantören läses färskt ur `space/current` `ai_default_provider.id`; 400/500 från AI-importen = `AI_UNAVAILABLE`), **`TextRecipeParser`** (en text tolkas **på enheten**: servern svarar 500 för ren text, FACTS "Fas 3 e"; första raden = namnet, "4 portioner", rader som `LocalIngredientParser` läser med mängd eller enhet eller korta rader under "Ingredienser" = ingredienser, rubriker "Ingredienser"/"Gör så här" byter avsnitt, stycken och numrerade rader = steg; fungerar offline och i demo), `RecipeImportMapper` (livsmedel och enheter på namn, en rad utan livsmedel behåller `original_text` som anteckning, `amount` 0 = utan mängd, nyckelord med `import_keyword: false` utelämnas, bilden = `image_url` annars första i `images`, dubbletter) |
 | `:core:sync` `recipeedit/` | `RECIPE_IMAGE` med payload `{"image_url"}`: avsändaren skickar `image_url` i stället för filen (`imageFromWeb`); 400 och 404 släpps (receptet står utan bild). Repositoryt köar den efter CREATE/PATCH när utkastet har `imageUrl` och inget eget foto |
 | `:core:testing` | `FakeRecipeImportRepository`, `SampleImports.pancakes` |
 
@@ -973,6 +973,11 @@ sparat genom redigeraren POSTas och får sin bild från webben; gäst och demo),
 (`RecipeImportShot`: formulär med/utan AI, demo, gäst, laddning, resultat på telefon/mörkt/
 teckenstorlek 2/surfplatta, sida utan recept, offline) med referensbilder under
 `feature/recipes/src/test/screenshots/import/`, `ImportLaunchTest` och `AppViewModelTest` (appen).
+
+**Fakta (FACTS "Fas 3 e–f", båda versionerna, 2026-11-03):** en JSON-LD-sida → 200 med receptet
+(gemena nyckelord, `duplicates` bara på källa), ren text → 500, oåtkomlig länk → 400, tom kropp →
+400, gäst → 403, AI-import utan leverantör → 500, `image_url` som inte kan hämtas → 200 med
+`image: null`.
 
 **Kvar till senare:** AI-importen är bara prövad mot en server utan leverantör (kontraktstestet
 spelar in avslaget); formatet på `POST /api/ai-import/` med en riktig leverantör verifieras av
@@ -1040,7 +1045,7 @@ Ordning (varje punkt är en commit som lämnar CI grön):
 3. ✅ `:feature:recipes` (commit 38b78e2, strängfix 97889eb): importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
    text/länk, bild, PDF i manifestet, `MainActivity` → `AppViewModel` → skalet), redigeraren
    öppnad med det importerade utkastet, strängar, referensbilder och ATF.
-4. 🔧 Kontraktstest (commit 7008009, väntar på grön körning och incheckade fixturer): `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
+4. ✅ Kontraktstest (commit 7008009, grön på 2.6.13 och 2.7.1; fixturer och FACTS incheckade): `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
    leverantör), fixturer för 2.6.13 och 2.7.1, FACTS.
 5. 🔧 Dokumentation: BYGGE "Importera recept" (skrivet), CHANGELOG (skrivet), ROADMAP ✅ (när allt är grönt).
 

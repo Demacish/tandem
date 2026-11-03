@@ -526,6 +526,10 @@ class Phase3ContractTest {
             "import.data.status" to 200,
             "import.data.name" to RECIPE_NAME,
             "import.data.error" to false,
+            "import.data.stepCount" to 2,
+            "import.data.foods" to listOf("torskfilé", "vispgrädde", "salt"),
+            "import.empty.status" to 400,
+            "import.guest.status" to 403,
         )
     }
 }

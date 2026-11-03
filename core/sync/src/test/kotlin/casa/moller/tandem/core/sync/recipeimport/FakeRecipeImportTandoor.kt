@@ -20,9 +20,10 @@ import mockwebserver3.RecordedRequest
 
 /**
  * Tandoor's import for the tests (FACTS "Fas 3 e-f"): `POST /api/recipe-from-source/` answers a
- * parsed recipe for a known link or a text that holds one, `{error: true, msg}` otherwise;
- * `POST /api/ai-import/` answers the same recipe when the space has a provider and the body
- * carries a file, else 400; `GET /api/space/current/` carries [providerId] as the default
+ * parsed recipe for a known link or an HTML page that holds one, `{error: true, msg}` with 200
+ * for a page without a recipe, 400 for a link it cannot fetch and the 500 error page for plain
+ * text; `POST /api/ai-import/` answers the same recipe when the space has a provider and the body
+ * carries a file, the 500 page without a provider; `GET /api/space/current/` carries [providerId] as the default
  * provider. Every other request goes to [edits] (the editor's fake) and then the fixtures.
  */
 internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor, private val version: String) {
@@ -54,16 +55,26 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         val url = (body["url"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         val data = (body["data"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         return when {
-            url == KNOWN_URL || data.contains("Pannkakor") -> json(200, found(sourceUrl = url))
-            url.isNotEmpty() -> json(200, error("No usable data could be found."))
-            else -> json(200, error("No recipe found in the text."))
+            url == KNOWN_URL || data.contains("<html") -> json(200, found(sourceUrl = url))
+            url == NO_RECIPE_URL -> json(200, error("No usable data could be found."))
+            url.isNotEmpty() -> json(400, error("Connection Refused."))
+            data.isNotEmpty() -> html500()
+            else -> json(400, error("Nothing to do."))
         }
     }
 
     private fun aiImport(text: String): MockResponse = when {
-        providerId == null || !text.contains("name=\"file\"") -> json(400, error("AI provider missing"))
+        providerId == null -> html500()
+        !text.contains("name=\"file\"") -> json(400, error("file missing"))
         else -> json(200, found(sourceUrl = ""))
     }
+
+    /** Tandoor's unhandled error page (plain text to recipe-from-source, ai-import without a provider; FACTS "Fas 3 e-f"). */
+    private fun html500(): MockResponse = MockResponse.Builder()
+        .code(500)
+        .addHeader("Content-Type", "text/html; charset=utf-8")
+        .body(ERROR_PAGE)
+        .build()
 
     private fun error(message: String): JsonObject = buildJsonObject {
         put("error", true)
@@ -179,6 +190,9 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
 
     companion object {
         const val KNOWN_URL = "https://example.com/recept/pannkakor"
+        const val NO_RECIPE_URL = "https://example.com/annat"
+        private const val ERROR_PAGE =
+            "<!doctype html><html lang=\"en\"><head><title>Server Error (500)</title></head><body><h1>Server Error (500)</h1></body></html>"
         const val IMAGE = "https://example.com/bilder/pannkakor.jpg"
         private const val FROM_SOURCE = "/api/recipe-from-source/"
         private const val AI_IMPORT = "/api/ai-import/"

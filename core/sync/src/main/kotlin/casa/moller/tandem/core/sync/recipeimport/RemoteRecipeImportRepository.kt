@@ -5,6 +5,7 @@ import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.data.recipe.RecipeImportRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
+import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
@@ -37,8 +38,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * and the login check of [RemoteCaller] apply, a refused write never logs the account out),
  * never retried by itself and never an outbox row.
  *
- * - A link or text: `POST /api/recipe-from-source/` `{url}` or `{data}`; `error: true` or a
- *   recipe without a name is [RecipeImportProblem.NOTHING_FOUND].
+ * - A link: `POST /api/recipe-from-source/` `{url}`; `error: true`, a 400 or 500 (the server
+ *   could not fetch or read the page) or a recipe without a name is [RecipeImportProblem.NOTHING_FOUND].
+ * - A text: read on the device by [TextRecipeParser] (the server answers 500 for plain text),
+ *   with the stored units; works offline and in demo mode.
  * - A file: `POST /api/ai-import/` multipart with the space's default provider
  *   (`space/current` `ai_default_provider.id`, read fresh: the admin may have just set it);
  *   without one, or when the server refuses (400), [RecipeImportProblem.AI_UNAVAILABLE].
@@ -51,6 +54,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
     private val caller: RemoteCaller,
     private val permissions: SpacePermissionsRepository,
     private val status: ServerStatusRepository,
+    private val databases: TandemDatabaseFactory,
 ) : RecipeImportRepository {
     override fun observeAiImportAvailable(): Flow<Boolean> = status.observeStatus()
         .map { !it.isDemo && ServerFeature.AI_IMPORT in it.capabilities }
@@ -58,16 +62,18 @@ internal class RemoteRecipeImportRepository @Inject constructor(
         .distinctUntilChanged()
 
     override suspend fun import(source: RecipeImportSource): Outcome<RecipeImportResult> = catchingUnexpected {
+        if (permissions.permissions.first().readOnly) return@catchingUnexpected Outcome.Failure(DataProblem.READ_ONLY.toError())
+        // A text is read on the device (FACTS "Fas 3 e": the server answers 500 for plain text), also offline and in demo mode.
+        if (source is RecipeImportSource.Text) return@catchingUnexpected fromText(source.text)
         val remote = when (val current = sources.current()) {
             is ActiveSource.Remote -> current
             ActiveSource.Demo -> return@catchingUnexpected Outcome.Failure(RecipeImportProblem.DEMO_MODE.toError())
             ActiveSource.Loading, ActiveSource.None -> return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
-        if (permissions.permissions.first().readOnly) return@catchingUnexpected Outcome.Failure(DataProblem.READ_ONLY.toError())
         val answer = when (source) {
-            is RecipeImportSource.Link -> fromSource(remote, buildJsonObject { put("url", source.url.trim()) }, source.url)
-            is RecipeImportSource.Text -> fromSource(remote, buildJsonObject { put("data", source.text.trim()) }, source.text)
+            is RecipeImportSource.Link -> fromLink(remote, source.url)
             is RecipeImportSource.File -> fromFile(remote, source)
+            is RecipeImportSource.Text -> error("handled above")
         }
         when (answer) {
             is Outcome.Failure -> answer
@@ -78,9 +84,29 @@ internal class RemoteRecipeImportRepository @Inject constructor(
         }
     }
 
-    private suspend fun fromSource(remote: ActiveSource.Remote, body: JsonObject, input: String): Outcome<RecipeFromSourceResponseDto> {
-        if (input.isBlank()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
-        return caller.call(remote, background = false, confirmForbidden = true) { imports.fromSource(body) }
+    private suspend fun fromText(text: String): Outcome<RecipeImportResult> {
+        if (text.isBlank()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
+        val units = (sources.current() as? ActiveSource.Stored)?.let { source ->
+            runCatching { databases.get(source.kind).referenceDao().getUnits(source.accountId).map { it.name } }.getOrDefault(emptyList())
+        }.orEmpty()
+        val draft = TextRecipeParser.parse(text, units) ?: return Outcome.Failure(RecipeImportProblem.NOTHING_FOUND.toError())
+        return Outcome.Success(RecipeImportResult(draft = draft))
+    }
+
+    /**
+     * A page without a recipe answers `error: true` with 200, a link the server cannot fetch 400
+     * (`{"error": true, "msg": "Connection Refused."}`) and a page it cannot read 500 (FACTS "Fas
+     * 3 e"): all three are "nothing found" for the user.
+     */
+    private suspend fun fromLink(remote: ActiveSource.Remote, url: String): Outcome<RecipeFromSourceResponseDto> {
+        if (url.isBlank()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
+        val body = buildJsonObject { put("url", url.trim()) }
+        val sent = caller.call(remote, background = false, confirmForbidden = true) { imports.fromSource(body) }
+        return if (sent is Outcome.Failure && (sent.error is TandemError.BadRequest || sent.error is TandemError.ServerError)) {
+            Outcome.Failure(RecipeImportProblem.NOTHING_FOUND.toError())
+        } else {
+            sent
+        }
     }
 
     private suspend fun fromFile(remote: ActiveSource.Remote, file: RecipeImportSource.File): Outcome<RecipeFromSourceResponseDto> {
@@ -94,7 +120,8 @@ internal class RemoteRecipeImportRepository @Inject constructor(
         val sent = caller.call(remote, background = false, confirmForbidden = true) {
             imports.aiImport(providerId = provider.toString().toRequestBody(TEXT), file = part, text = null)
         }
-        return if (sent is Outcome.Failure && sent.error is TandemError.BadRequest) {
+        // Without a working provider the server answers 500 (FACTS "Fas 3 f"), a refused file 400.
+        return if (sent is Outcome.Failure && (sent.error is TandemError.BadRequest || sent.error is TandemError.ServerError)) {
             Outcome.Failure(RecipeImportProblem.AI_UNAVAILABLE.toError())
         } else {
             sent

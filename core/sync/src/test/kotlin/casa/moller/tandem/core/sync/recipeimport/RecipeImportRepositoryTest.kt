@@ -26,8 +26,9 @@ import org.robolectric.annotation.ConscryptMode
 
 /**
  * The server-side import (plan §8.9 "Importera recept") against [FakeRecipeImportTandoor] in the
- * recorded shapes of 2.6.13 and 2.7.1: a link and a text become a draft with foods and units by
- * name, the source's picture and the duplicates; a page without a recipe is "nothing found"; a
+ * recorded shapes of 2.6.13 and 2.7.1: a link becomes a draft with foods and units by name, the
+ * source's picture and the duplicates; a text is read on the device; a page without a recipe or
+ * an unreachable link is "nothing found"; a
  * photo goes to the AI import with the space's provider, or is refused without one; the imported
  * draft saved through the editor's repository POSTs the recipe and then sets its picture from the
  * web (`image_url`); guests and demo mode.
@@ -105,19 +106,43 @@ class RecipeImportRepositoryTest {
     }
 
     @Test
-    fun aTextIsSentAsData() = forEachVersion {
-        val result = ok(repo.import(RecipeImportSource.Text("Pannkakor\n2,5 dl vetemjöl\n")))
-        assertEquals("Pannkakor", result.draft.name)
-        assertTrue(tandoor.calls.single().second.contains("\"data\":\"Pannkakor"))
+    fun aTextIsReadOnTheDeviceWithTheStoredUnits() = forEachVersion {
+        val text = """
+            Pannkakor
+            4 portioner
+
+            Ingredienser
+            2,5 dl vetemjöl
+            6 dl mjölk
+            3 ägg
+            salt
+
+            Gör så här
+            1. Vispa ihop mjöl och hälften av mjölken.
+            2. Vispa i resten av mjölken och äggen.
+        """.trimIndent()
+        val result = ok(repo.import(RecipeImportSource.Text(text)))
+        val draft = result.draft
+        assertEquals("Pannkakor", draft.name)
+        assertEquals(4, draft.servings)
+        assertEquals(2, draft.steps.size)
+        assertEquals(listOf("vetemjöl", "mjölk", "ägg", "salt"), draft.steps[0].ingredients.map { it.food })
+        assertEquals(listOf("dl", "dl", null, null), draft.steps[0].ingredients.map { it.unit })
+        assertEquals(DraftIngredient(food = "salt", noAmount = true), draft.steps[0].ingredients[3])
+        assertEquals("Vispa ihop mjöl och hälften av mjölken.", draft.steps[0].instruction)
+        assertEquals("Vispa i resten av mjölken och äggen.", draft.steps[1].instruction)
+        assertTrue("no request for a text: ${tandoor.calls}", tandoor.calls.isEmpty())
     }
 
     @Test
-    fun aPageWithoutARecipeIsNothingFound() = forEachVersion {
-        val other = RecipeImportSource.Link("https://example.com/annat")
-        assertEquals(RecipeImportProblem.NOTHING_FOUND.toError(), failure(repo.import(other)))
+    fun aPageWithoutARecipeOrAnUnreachableLinkIsNothingFound() = forEachVersion {
+        val noRecipe = RecipeImportSource.Link(FakeRecipeImportTandoor.NO_RECIPE_URL)
+        assertEquals(RecipeImportProblem.NOTHING_FOUND.toError(), failure(repo.import(noRecipe)))
+        val unreachable = RecipeImportSource.Link("https://recipes.invalid/x")
+        assertEquals(RecipeImportProblem.NOTHING_FOUND.toError(), failure(repo.import(unreachable)))
         assertEquals(RecipeImportProblem.EMPTY_INPUT.toError(), failure(repo.import(RecipeImportSource.Link("  "))))
         assertEquals(RecipeImportProblem.EMPTY_INPUT.toError(), failure(repo.import(RecipeImportSource.Text(""))))
-        assertEquals(1, tandoor.calls.size)
+        assertEquals(2, tandoor.calls.size)
     }
 
     @Test
@@ -160,10 +185,13 @@ class RecipeImportRepositoryTest {
         val link = RecipeImportSource.Link(FakeRecipeImportTandoor.KNOWN_URL)
         graph.permissions.setGuest(true)
         assertEquals(DataProblem.READ_ONLY.toError(), failure(repo.import(link)))
+        assertEquals(DataProblem.READ_ONLY.toError(), failure(repo.import(RecipeImportSource.Text("Pannkakor"))))
         graph.permissions.setGuest(false)
         graph.sources.source.value = ActiveSource.Demo
         assertEquals(RecipeImportProblem.DEMO_MODE.toError(), failure(repo.import(link)))
         assertFalse(repo.observeAiImportAvailable().first())
+        // A text needs no server: it works in demo mode too.
+        assertEquals("Pannkakor", ok(repo.import(RecipeImportSource.Text("Pannkakor\n2 dl mjölk"))).draft.name)
         assertTrue(tandoor.calls.isEmpty())
     }
 

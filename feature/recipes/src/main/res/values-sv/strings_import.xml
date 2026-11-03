@@ -14,7 +14,7 @@
     <string name="recipe_import_take_photo">Ta foto</string>
     <string name="recipe_import_pick_file">Välj bild eller PDF</string>
     <string name="recipe_import_demo_title">Demoläge</string>
-    <string name="recipe_import_demo">Import kräver en Tandoor-server som läser sidan. Anslut din Tandoor för att prova.</string>
+    <string name="recipe_import_demo">En länk kräver en Tandoor-server som läser sidan; en inklistrad text läses här i appen. Anslut din Tandoor för att importera länkar, foton och PDF:er.</string>
     <string name="recipe_import_found">Hittade det här</string>
     <plurals name="recipe_import_steps">
         <item quantity="one">%1$d steg</item>

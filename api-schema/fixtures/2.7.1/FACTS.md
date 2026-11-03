@@ -119,4 +119,8 @@
   skillnaden är formen på 400-svaret för ett nyckelord utan `name`: `{"keywords": {"0": {"name":
   [...]}}}` (ett objekt med index) i stället för en lista. Se
   [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md) "Fas 3"; inspelningarna ligger i [`fas3/`](fas3/). [O]
+- Import (Fas 3 e–f, körning 2026-11-03): **samma fakta** som 2.6.13 – `recipe-from-source` med en
+  JSON-LD-sida → 200 med receptet (gemena nyckelord, `duplicates` tomt), ren text → 500,
+  oåtkomlig länk → 400 `Connection Refused.`, tom kropp → 400 `Nothing to do.`, gästen 403;
+  `ai-import` utan leverantör → 500; `image_url` som inte kan hämtas → 200 med `image: null`. [O]
 

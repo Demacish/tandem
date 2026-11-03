@@ -1,0 +1,111 @@
+{
+  "name": "recipe-from-source-data",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe-from-source/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "data": "<html><head><title>Fiskgratäng från Tandem</title><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Recipe\",\"name\":\"Fiskgratäng från Tandem\",\"description\":\"Importerad av Tandems kontraktstest.\",\"image\":[\"https://recipes.invalid/bilder/fiskgratang.jpg\"],\"recipeYield\":\"4 portioner\",\"prepTime\":\"PT20M\",\"cookTime\":\"PT30M\",\"keywords\":\"Fisk, Vardag\",\"recipeIngredient\":[\"600 g torskfilé\",\"2,5 dl vispgrädde\",\"salt\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"Skär fisken i bitar och lägg i en form.\"},{\"@type\":\"HowToStep\",\"text\":\"Häll över grädden och grädda i 200 grader i 30 minuter.\"}]}</script></head><body><h1>Fiskgratäng från Tandem</h1></body></html>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "POST, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "recipe": {
+        "steps": [
+          {
+            "instruction": "Skär fisken i bitar och lägg i en form.",
+            "ingredients": [
+              {
+                "amount": 600.0,
+                "food": {
+                  "name": "torskfilé"
+                },
+                "unit": {
+                  "name": "g"
+                },
+                "note": "",
+                "order": null,
+                "original_text": "600 g torskfilé"
+              },
+              {
+                "amount": 2.5,
+                "food": {
+                  "name": "vispgrädde"
+                },
+                "unit": {
+                  "name": "dl"
+                },
+                "note": "",
+                "order": null,
+                "original_text": "2,5 dl vispgrädde"
+              },
+              {
+                "amount": 0.0,
+                "food": {
+                  "name": "salt"
+                },
+                "unit": null,
+                "note": "",
+                "order": null,
+                "original_text": "salt"
+              }
+            ],
+            "show_ingredients_table": true
+          },
+          {
+            "instruction": "Häll över grädden och grädda i 200 grader i 30 minuter.",
+            "ingredients": [],
+            "show_ingredients_table": true
+          }
+        ],
+        "internal": true,
+        "source_url": "",
+        "name": "Fiskgratäng från Tandem",
+        "description": "Importerad av Tandems kontraktstest.",
+        "servings": 4,
+        "servings_text": "portioner",
+        "working_time": 20,
+        "waiting_time": 30,
+        "image_url": "https://recipes.invalid/bilder/fiskgratang.jpg",
+        "keywords": [
+          {
+            "id": null,
+            "label": "vardag",
+            "name": "vardag",
+            "import_keyword": false
+          },
+          {
+            "id": null,
+            "label": "fisk",
+            "name": "fisk",
+            "import_keyword": false
+          }
+        ],
+        "properties": []
+      },
+      "recipe_id": null,
+      "images": [],
+      "error": false,
+      "msg": "",
+      "duplicates": []
+    }
+  }
+}

@@ -145,7 +145,9 @@ class RecipeImportViewModelTest {
         permissions.setGuest(false)
         permissions.state.value = permissions.state.value.copy(isDemo = true)
         assertTrue(vm.uiState.value.isDemo)
-        assertFalse(vm.uiState.value.canImport)
+        // A text is read on the device, so the button stays; a link answers "not in demo mode".
+        assertTrue(vm.uiState.value.canImport)
+        assertFalse(vm.uiState.value.canImportFile)
     }
 
     @Test
