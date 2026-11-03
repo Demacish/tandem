@@ -62,6 +62,7 @@ import casa.moller.tandem.core.sync.permissions.HouseholdMembersSync
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.recipeedit.OfflineFirstRecipeEditRepository
 import casa.moller.tandem.core.sync.recipeedit.RecipeEditOutboxHandler
+import casa.moller.tandem.core.sync.recipeimport.RemoteRecipeImportRepository
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.scan.FoodAliasOutboxHandler
 import casa.moller.tandem.core.sync.scan.FoodAliasReader
@@ -322,6 +323,9 @@ internal class SyncTestGraph(
 
     // Fas 3 (redigerare lane): the recipe editor's writes (the photo copies share the drinks' store).
     val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages)
+
+    // Fas 3 (import lane): the server-side import (online).
+    val recipeImports = RemoteRecipeImportRepository(sources, caller, permissions, serverStatus)
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

@@ -29,6 +29,8 @@
     <string name="recipe_editor_take_photo">Ta foto</string>
     <string name="recipe_editor_pick_photo">Välj bild</string>
     <string name="recipe_editor_remove_photo">Ta bort nya fotot</string>
+    <string name="recipe_editor_web_photo">Bild från källan</string>
+    <string name="recipe_editor_remove_web_photo">Ta bort bilden från källan</string>
     <string name="recipe_editor_camera_rationale">Kameran används bara för bilden du tar här. Du kan välja en bild ur galleriet i stället.</string>
     <string name="recipe_editor_camera_denied">Kameran gick inte att använda. Välj en bild i stället.</string>
     <string name="recipe_editor_steps">Steg</string>

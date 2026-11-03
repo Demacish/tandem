@@ -139,3 +139,11 @@ PUT /api/recipe/{id}/image/
 # their ids: updated in place, omitted ones deleted) after reading it fresh for the conflict check,
 # a delete DELETEs it; the photo goes with PUT /api/recipe/{id}/image/ above.
 DELETE /api/recipe/{id}/
+
+# --- Fas 3 (import lane): the server-side recipe import (plan §8.9 "Importera recept"; FACTS "Fas 3 e-f") ---
+# Online calls (the parsing happens on the server), never through the outbox: a shared link or text
+# goes to recipe-from-source, a photo or PDF to ai-import with the space's default provider. The
+# answer is a draft the editor opens; the recipe is then created like any other (POST /api/recipe/
+# above) and its picture from the web is set with PUT /api/recipe/{id}/image/ (field image_url).
+POST /api/recipe-from-source/
+POST /api/ai-import/

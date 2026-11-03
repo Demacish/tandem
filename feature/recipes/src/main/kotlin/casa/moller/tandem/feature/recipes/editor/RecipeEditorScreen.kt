@@ -345,6 +345,7 @@ private fun Photo(state: RecipeEditorUiState, onAction: (RecipeEditorAction) -> 
     val spacing = TandemTheme.spacing
     val chosen = stringResource(R.string.recipe_editor_photo_chosen)
     Heading(stringResource(R.string.recipe_editor_photo))
+    val webImage = state.draft.imageUrl?.takeIf { state.draft.imageUri == null }
     state.draft.imageUri?.let { uri ->
         Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
             Column(modifier = Modifier.padding(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
@@ -356,6 +357,24 @@ private fun Photo(state: RecipeEditorUiState, onAction: (RecipeEditorAction) -> 
                 TandemTextButton(
                     text = stringResource(R.string.recipe_editor_remove_photo),
                     onClick = { onAction(RecipeEditorAction.SetPhoto(null)) },
+                    leadingIcon = TandemIcons.Delete,
+                )
+            }
+        }
+    }
+    // Fas 3 (import lane): the picture the source offered; the server downloads it with the recipe.
+    webImage?.let { url ->
+        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+            Column(modifier = Modifier.padding(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                RecipeImage(
+                    imageUrl = url,
+                    contentDescription = stringResource(R.string.recipe_editor_web_photo),
+                    modifier = Modifier.size(PHOTO_PREVIEW).clip(MaterialTheme.shapes.medium),
+                )
+                Text(stringResource(R.string.recipe_editor_web_photo), style = MaterialTheme.typography.bodySmall)
+                TandemTextButton(
+                    text = stringResource(R.string.recipe_editor_remove_web_photo),
+                    onClick = { onAction(RecipeEditorAction.RemoveWebImage) },
                     leadingIcon = TandemIcons.Delete,
                 )
             }

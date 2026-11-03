@@ -174,7 +174,12 @@ internal object RecipeEditPayloads {
     /** A `RECIPE_IMAGE` row: the app-private copy of the photo. */
     fun image(path: String): String = buildJsonObject { put("file", path) }.toString()
 
+    /** A `RECIPE_IMAGE` row for a picture on the web (an import's `image_url`): the server downloads it. */
+    fun imageUrl(url: String): String = buildJsonObject { put("image_url", url) }.toString()
+
     fun imagePathOf(payload: String): String? = parse(payload)?.string("file")
+
+    fun imageUrlOf(payload: String): String? = parse(payload)?.string("image_url")
 
     fun parse(payload: String): JsonObject? = runCatching { json.parseToJsonElement(payload) }.getOrNull() as? JsonObject
 

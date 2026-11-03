@@ -28,6 +28,7 @@ import kotlinx.serialization.json.longOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /** Error code of a row this version cannot read (kept FAILED for "Pending changes"). */
 private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
@@ -47,7 +48,8 @@ private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
  *   ställen", the editor can open the kept edit). Otherwise `PATCH /api/recipe/{id}/` with the
  *   whole recipe, and the answer is stored. A 404 drops the row and the local recipe.
  * - **DELETE** `DELETE /api/recipe/{id}/` (204); a 404 is dropped (already gone).
- * - **RECIPE_IMAGE** `PUT /api/recipe/{id}/image/` with the app-private copy, deleted afterwards.
+ * - **RECIPE_IMAGE** `PUT /api/recipe/{id}/image/` with the app-private copy, deleted afterwards, or
+ *   with `image_url` (an import's picture on the web, Fas 3 import lane) for the server to download.
  */
 internal class RecipeEditOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
@@ -127,6 +129,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
 
     private suspend fun image(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val recipeId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        RecipeEditPayloads.imageUrlOf(payload)?.let { return imageFromWeb(remote, recipeId, it) }
         val path = RecipeEditPayloads.imagePathOf(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val file = File(path)
         if (!file.isFile) return OutboxResult.Dropped
@@ -147,6 +150,24 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             }
         }
     }
+
+    /**
+     * Fas 3 (import lane): the picture an import offered, downloaded by the server (`image_url`).
+     * A picture the server cannot fetch (a 400, or a gone recipe) is dropped: the recipe keeps
+     * none, which the user can fix in the editor.
+     */
+    private suspend fun imageFromWeb(remote: ActiveSource.Remote, recipeId: Long, url: String): OutboxResult =
+        when (val sent = caller.write(remote) { imports.setImageUrl(recipeId, url.toRequestBody(TEXT)) }) {
+            is Outcome.Failure -> when (sent.error) {
+                TandemError.NotFound, is TandemError.BadRequest -> OutboxResult.Dropped
+                else -> OutboxResult.Failed(sent.error)
+            }
+
+            is Outcome.Success -> {
+                details.fetch(remote, recipeId, isBackground = true, force = true)
+                OutboxResult.Sent
+            }
+        }
 
     /**
      * A recipe with this name, created by this user since the change was made, that no other
@@ -193,6 +214,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
         /** The error an edit held back by a conflict fails with (`last_error` = [RecipeEditPayloads.CONFLICT]). */
         val CONFLICT_ERROR: TandemError = TandemError.Unknown(RecipeEditPayloads.CONFLICT)
         private val JPEG = "image/jpeg".toMediaType()
+        private val TEXT = "text/plain".toMediaType()
         private const val LOST_LOOKUP_PAGE = 10
         private const val POSTED_PREFIX = "recipe_posted:"
     }

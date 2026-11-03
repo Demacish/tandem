@@ -29,6 +29,8 @@
     <string name="recipe_editor_take_photo">Take photo</string>
     <string name="recipe_editor_pick_photo">Choose picture</string>
     <string name="recipe_editor_remove_photo">Remove new photo</string>
+    <string name="recipe_editor_web_photo">Picture from the source</string>
+    <string name="recipe_editor_remove_web_photo">Remove picture from the source</string>
     <string name="recipe_editor_camera_rationale">The camera is only used for the picture you take here. You can choose a picture from the gallery instead.</string>
     <string name="recipe_editor_camera_denied">The camera could not be used. Choose a picture instead.</string>
     <string name="recipe_editor_steps">Steps</string>

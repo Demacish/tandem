@@ -227,6 +227,7 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                 ),
             )
             if (photo != null) queueImage(id, photo, dependsOn = createId)
+            draft.imageUrl?.takeIf { photo == null }?.let { queueImageUrl(id, it, dependsOn = createId) }
             return id
         }
 
@@ -256,6 +257,7 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                 ),
             )
             if (photo != null) queueImage(id, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
+            draft.imageUrl?.takeIf { photo == null }?.let { queueImageUrl(id, it, dependsOn = create?.id ?: patchId.takeIf { id < 0 }) }
             return Outcome.Success(id)
         }
 
@@ -313,10 +315,26 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                 keywords = keywords,
                 foodsByName = foods,
                 unitsByName = units,
-                imageUrl = photo?.let { "file://${it.path}" },
+                imageUrl = photo?.let { "file://${it.path}" } ?: draft.imageUrl,
                 now = Instant.fromEpochMilliseconds(now),
             )
             recipes.replaceDetail(accountId, recipe.toDetailWrite(accountId, rawJson = rawJson, fetchedAtEpochMillis = now))
+        }
+
+        /** Fas 3 (import lane): the picture of an import, on the web, for the server to download after the recipe exists. */
+        private suspend fun queueImageUrl(id: Long, url: String, dependsOn: Long?) {
+            outbox.enqueue(
+                OutboxEntity(
+                    accountId = accountId,
+                    op = OutboxOps.RECIPE_IMAGE,
+                    entity = OutboxEntities.RECIPE_EDIT,
+                    localId = id.takeIf { it < 0 },
+                    serverId = id.takeIf { it >= 0 },
+                    payload = RecipeEditPayloads.imageUrl(url),
+                    dependsOn = dependsOn,
+                    createdAtEpochMillis = now,
+                ),
+            )
         }
 
         private suspend fun queueImage(id: Long, photo: File, dependsOn: Long?) {

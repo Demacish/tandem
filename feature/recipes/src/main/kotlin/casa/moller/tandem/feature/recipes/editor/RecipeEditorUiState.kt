@@ -105,6 +105,9 @@ sealed interface RecipeEditorAction {
     /** A photo from the camera or the photo picker (`content://`), null keeps the recipe's image. */
     data class SetPhoto(val uri: String?) : RecipeEditorAction
 
+    /** Fas 3 (import lane): the recipe gets no picture from the source after all. */
+    data object RemoveWebImage : RecipeEditorAction
+
     /** "Börja om från webbens version": drops the kept edit. */
     data object DiscardKeptEdit : RecipeEditorAction
 

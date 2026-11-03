@@ -931,6 +931,39 @@ och stegrubrikens första aktiva ikonknapp som 46 respektive 38 dp hög fast sem
 skärmbilden vid teckenstorlek 2 finns kvar.
 <!-- /Fas 3 redigerare -->
 
+<!-- Fas 3 läge -->
+## Fas 3 – läge (uppföljning av delstegen)
+
+Fas 3 byggs i delsteg på grenen `claude/vigilant-galileo-1xv20t`. Det här avsnittet uppdateras
+**efter varje commit** så att arbetet kan tas upp igen där det avbröts: vad som är klart, vad som
+pågår och vad nästa steg är. Varje delsteg har sitt eget avsnitt i BYGGE (kontraktet och
+banan), CHANGELOG `[Unreleased]` och ROADMAP "Fas 3".
+
+| Delsteg | Läge | Avsnitt |
+|---|---|---|
+| Receptredigeraren (#22) | ✅ klart 2026-11-03, CI grön (PR, Contract 2.6.13/2.7.1, röktest, referensbilder) | "Fas 3 – kontrakt", "Receptredigeraren" |
+| Import (dela länk/text, foto och PDF via Tandoors AI-import) | 🔧 pågår, påbörjat 2026-11-03 | "Fas 3 – import" |
+| Widgets, snabbinställningsruta och genvägar | ⏳ inte påbörjat | – |
+| Dra och släpp i matsedeln, näringsvärden | ⏳ inte påbörjat | – |
+
+### Pågående: import
+
+Ordning (varje punkt är en commit som lämnar CI grön):
+
+1. ⏳ Kontraktet: `RecipeImportResult`/`RecipeImportProblem` (`:core:model`), `RecipeImportRepository`
+   (`:core:data`), `RecipeImportService` (`POST /api/recipe-from-source/`, `POST /api/ai-import/`,
+   `:core:network`), `used-endpoints.txt`, `RECIPE_IMAGE` med `image_url` (bilden från källan).
+2. ⏳ `:core:sync`: `RemoteRecipeImportRepository` (online-anrop, ingen outbox: tolkningen sker på
+   servern; svaret blir ett `RecipeDraft` som sparas genom `RecipeEditRepository.createRecipe`),
+   fake och tester.
+3. ⏳ `:feature:recipes`: importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
+   text/länk, bild, PDF i manifestet, `MainActivity` → `AppViewModel` → skalet), redigeraren
+   öppnad med det importerade utkastet, strängar, referensbilder och ATF.
+4. ⏳ Kontraktstest: `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
+   leverantör), fixturer för 2.6.13 och 2.7.1, FACTS.
+5. ⏳ Dokumentation: BYGGE "Fas 3 – import", CHANGELOG, ROADMAP ✅.
+<!-- /Fas 3 läge -->
+
 <!-- Fas S hemma-data -->
 ## Skafferiet – data och synk (`:core:sync`, `:core:network`, Fas S)
 

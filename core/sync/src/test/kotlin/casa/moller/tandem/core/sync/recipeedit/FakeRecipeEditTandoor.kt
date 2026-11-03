@@ -90,7 +90,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
             path == RECIPES && method == "POST" -> create(parse(text))
 
-            IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong())
+            IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), fromWeb = text.contains("name=\"image_url\""))
 
             RECIPE.matches(path) && method == "GET" ->
                 recipes[RECIPE.find(path)!!.groupValues[1].toLong()]?.let { json(200, it) } ?: notFound()
@@ -144,10 +144,12 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         return json(200, recipes.getValue(id))
     }
 
-    private fun image(id: Long): MockResponse {
+    /** The photo upload, or (Fas 3 import lane) a picture the server downloads from `image_url`: both end as the recipe's image. */
+    private fun image(id: Long, fromWeb: Boolean): MockResponse {
         val recipe = recipes[id] ?: return notFound()
         recipes[id] = JsonObject(recipe + ("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg")))
-        return json(200, JsonObject(mapOf("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg"), "image_url" to JsonNull)))
+        val imageUrl = if (fromWeb) JsonPrimitive("/media/recipes/recipe_$id.jpg") else JsonNull
+        return json(200, JsonObject(mapOf("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg"), "image_url" to imageUrl)))
     }
 
     /** [body]'s fields applied to [recipe] as the writable-nested serializers do. */
