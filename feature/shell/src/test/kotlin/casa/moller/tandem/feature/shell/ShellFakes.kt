@@ -35,6 +35,7 @@ import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.pantry.navigation.PantryDestination
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
+import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.shell.navigation.ShellFeatures
 import casa.moller.tandem.feature.shell.navigation.ShellTab
@@ -203,7 +204,12 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     }
 
     @Composable
-    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?, onOpenCollection: (RecipeCollection) -> Unit) {
+    override fun Recipes(
+        onOpenRecipe: (Long) -> Unit,
+        selectedRecipeId: Long?,
+        onOpenCollection: (RecipeCollection) -> Unit,
+        onCreateRecipe: () -> Unit,
+    ) {
         Placeholder(ShellTab.RECIPES)
     }
 
@@ -217,9 +223,18 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenShoppingList: () -> Unit,
         onPlanMeal: (Long) -> Unit,
         onNavigate: (NavKey) -> Unit,
+        onEdit: (Long) -> Unit,
+        onDeleted: () -> Unit,
     ) {
         ShellScreenScaffold(title = "Recipe $recipeId", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Recipe detail $recipeId", modifier = Modifier.padding(padding))
+        }
+    }
+
+    @Composable
+    override fun RecipeEditor(key: RecipeEditorKey, onSaved: (recipeId: Long, isNew: Boolean) -> Unit, onBack: () -> Unit) {
+        ShellScreenScaffold(title = "Recipe editor ${key.recipeId}", state = state, onNavigateBack = onBack) { padding ->
+            Text(text = "Recipe editor ${key.recipeId}", modifier = Modifier.padding(padding))
         }
     }
 

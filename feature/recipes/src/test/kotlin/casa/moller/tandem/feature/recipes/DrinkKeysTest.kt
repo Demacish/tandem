@@ -5,6 +5,7 @@ import casa.moller.tandem.feature.recipes.navigation.CreateDrinkKey
 import casa.moller.tandem.feature.recipes.navigation.DrinkDetailKey
 import casa.moller.tandem.feature.recipes.navigation.DrinksKey
 import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -24,5 +25,9 @@ class DrinkKeysTest {
         assertEquals(PairingPickerKey(7), roundTrip(PairingPickerKey.serializer(), PairingPickerKey(7)))
         assertEquals(CreateDrinkKey(7), roundTrip(CreateDrinkKey.serializer(), CreateDrinkKey(7)))
         assertTrue((CreateDrinkKey() as Any) is FullScreenDestination)
+        // Fas 3 (redigerare lane): the editor's key, new and for a stored recipe (also a temporary id).
+        assertEquals(RecipeEditorKey(), roundTrip(RecipeEditorKey.serializer(), RecipeEditorKey()))
+        assertEquals(RecipeEditorKey(-3), roundTrip(RecipeEditorKey.serializer(), RecipeEditorKey(-3)))
+        assertTrue((RecipeEditorKey(7) as Any) is FullScreenDestination)
     }
 }

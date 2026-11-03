@@ -86,6 +86,7 @@ import casa.moller.tandem.feature.recipes.navigation.DrinksKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
@@ -429,6 +430,9 @@ internal fun ShellScaffold(
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                     onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
                     onNavigate = openKey,
+                    // Fas 3 (redigerare lane): a drink is a recipe, so it is edited and deleted the same way.
+                    onEdit = { navigation.navigate(RecipeEditorKey(it)) },
+                    onDeleted = { navigation.goBack() },
                 )
             }
             entry<PairingPickerKey> { drinks(it) }
@@ -456,6 +460,8 @@ internal fun ShellScaffold(
                         navigation.navigate(RecipeDetailKey(id, inListDetail = true), replace = { it is RecipeDetailKey })
                     },
                     selectedRecipeId = (selected as? RecipeDetailKey)?.recipeId,
+                    // Fas 3 (redigerare lane): "Nytt recept".
+                    onCreateRecipe = { navigation.navigate(RecipeEditorKey()) },
                     // Phase 2 (books lane): the collections row; on wide windows beside the list.
                     onOpenCollection = { collection ->
                         val key = when (collection) {
@@ -484,6 +490,24 @@ internal fun ShellScaffold(
                     onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
                     // Fas S (drycker lane): the pairing picker from "Passar med".
                     onNavigate = openKey,
+                    // Fas 3 (redigerare lane): the editor over the detail; a deleted recipe closes it.
+                    onEdit = { navigation.navigate(RecipeEditorKey(it)) },
+                    onDeleted = { navigation.goBack() },
+                )
+            }
+            // Fas 3 (redigerare lane): the editor, full screen over whatever opened it. A new recipe
+            // opens its detail in the editor's place; an edit goes back to the detail.
+            entry<RecipeEditorKey> { key ->
+                features.RecipeEditor(
+                    key = key,
+                    onSaved = { recipeId, isNew ->
+                        if (isNew) {
+                            navigation.navigate(RecipeDetailKey(recipeId), replace = { it is RecipeEditorKey })
+                        } else {
+                            navigation.goBack()
+                        }
+                    },
+                    onBack = { navigation.goBack() },
                 )
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---

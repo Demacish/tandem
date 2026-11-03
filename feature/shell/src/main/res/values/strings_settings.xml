@@ -188,6 +188,7 @@
     <string name="settings_diagnostics_kind_learned_alias">Learned barcodes and receipt names</string>
     <string name="settings_diagnostics_kind_drink">New drinks</string>
     <string name="settings_diagnostics_kind_pairing">Goes with</string>
+    <string name="settings_diagnostics_kind_recipe_edit">Recipe edits</string>
     <string name="settings_diagnostics_kind_cook_log">Cook log</string>
     <string name="settings_diagnostics_kind_view_log">Recently viewed</string>
     <string name="settings_diagnostics_kind_other">Other</string>

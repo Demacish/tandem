@@ -19,6 +19,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     // BackHandler for the keyword side panel on expanded windows (plan 6.5).
     implementation(libs.androidx.activity.compose)
+    // Fas 3 (redigerare lane): the editor's draft survives process death as JSON in SavedStateHandle.
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(projects.core.testing)
     // Web parity of the detail (RecipeDetailWebParityTest) reads the recorded recipes and scaling-golden.json.

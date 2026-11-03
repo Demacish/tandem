@@ -32,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -67,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.Check
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
@@ -123,6 +125,7 @@ fun RecipeListScreen(
     collections: RecipeCollectionsState? = null,
     onOpenCollection: (RecipeCollection) -> Unit = {},
     onToggleFavorite: (Long) -> Unit = {},
+    onCreateRecipe: (() -> Unit)? = null,
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored recipes are shown (Diagnostics).
     ReportContentReady(ready = state.loaded)
@@ -151,6 +154,16 @@ fun RecipeListScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // Fas 3 (redigerare lane): "Nytt recept" (not for guests: the route passes null).
+        floatingActionButton = {
+            if (onCreateRecipe != null && state.loaded) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateRecipe,
+                    icon = { Icon(TandemIcons.Add, contentDescription = null) },
+                    text = { Text(stringResource(R.string.recipes_new)) },
+                )
+            }
+        },
         containerColor = MaterialTheme.colorScheme.background,
         // The keyboard as part of the content insets: the last results can scroll above it and
         // snackbars appear above it.

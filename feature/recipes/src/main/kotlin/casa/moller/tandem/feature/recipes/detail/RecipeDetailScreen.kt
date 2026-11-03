@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -60,8 +62,10 @@ import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.Cooking
+import casa.moller.tandem.core.designsystem.icon.Delete
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
 import casa.moller.tandem.core.designsystem.icon.DownloadForOfflineFilled
+import casa.moller.tandem.core.designsystem.icon.Edit
 import casa.moller.tandem.core.designsystem.icon.History
 import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.MoreVert
@@ -72,6 +76,7 @@ import casa.moller.tandem.core.domain.format.spokenNumbers
 import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow as DisplayRow
 import casa.moller.tandem.core.domain.recipe.UnitAmount
+import casa.moller.tandem.core.model.recipe.RecipeEditStatus
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
@@ -139,8 +144,21 @@ fun RecipeDetailScreen(
     bookActions: (@Composable () -> Unit)? = null,
     shoppingActions: (@Composable () -> Unit)? = null,
     pairings: (@Composable () -> Unit)? = null,
+    editControls: RecipeEditControls? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    // Fas 3 (redigerare lane): "Ta bort" asks first; the answer survives rotation.
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    if (confirmDelete && editControls != null) {
+        DeleteRecipeDialog(
+            name = state.header?.name.orEmpty(),
+            onConfirm = {
+                confirmDelete = false
+                editControls.onDelete()
+            },
+            onDismiss = { confirmDelete = false },
+        )
+    }
     val scrollState = rememberScrollState()
     // The name moves into the top bar once the big title has scrolled away.
     val titleThreshold = with(LocalDensity.current) { TITLE_SCROLL_THRESHOLD.roundToPx() }
@@ -159,7 +177,15 @@ fun RecipeDetailScreen(
                     ?: stringResource(R.string.recipe_detail_title),
                 onNavigateBack = onBack,
                 scrollBehavior = scrollBehavior,
-                actions = { DetailActions(state = state, onAction = onAction, onOpenUrl = onOpenUrl) },
+                actions = {
+                    DetailActions(
+                        state = state,
+                        onAction = onAction,
+                        onOpenUrl = onOpenUrl,
+                        onEdit = editControls?.takeIf { it.canEdit }?.onEdit,
+                        onDelete = editControls?.takeIf { it.canEdit }?.let { { confirmDelete = true } },
+                    )
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -188,13 +214,46 @@ fun RecipeDetailScreen(
                 bookActions = bookActions,
                 shoppingActions = shoppingActions,
                 pairings = pairings,
+                editControls = editControls,
             )
         }
     }
 }
 
+/**
+ * Fas 3 (redigerare lane): the editor's entrances in the detail. [canEdit] false hides "Redigera"
+ * and "Ta bort" (a guest). [status] shows the notice of this device's edit; [onOpenKeptEdit] and
+ * [onDiscardEdit] are the conflict notice's buttons.
+ */
+@Immutable
+data class RecipeEditControls(
+    val canEdit: Boolean,
+    val status: RecipeEditStatus,
+    val onEdit: () -> Unit,
+    val onDelete: () -> Unit,
+    val onOpenKeptEdit: () -> Unit,
+    val onDiscardEdit: () -> Unit,
+)
+
 @Composable
-private fun DetailActions(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit, onOpenUrl: (String) -> Unit) {
+private fun DeleteRecipeDialog(name: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipe_detail_delete_title)) },
+        text = { Text(stringResource(R.string.recipe_detail_delete_body, name)) },
+        confirmButton = { TandemPrimaryButton(text = stringResource(R.string.recipe_detail_delete_confirm), onClick = onConfirm) },
+        dismissButton = { TandemTextButton(text = stringResource(R.string.recipe_detail_delete_cancel), onClick = onDismiss) },
+    )
+}
+
+@Composable
+private fun DetailActions(
+    state: RecipeDetailUiState,
+    onAction: (RecipeDetailAction) -> Unit,
+    onOpenUrl: (String) -> Unit,
+    onEdit: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
+) {
     AppChromeStatusChip(Modifier.padding(end = TandemTheme.spacing.xs))
     if (state.canPin) {
         IconButton(onClick = { onAction(RecipeDetailAction.ToggleOffline) }) {
@@ -212,7 +271,15 @@ private fun DetailActions(state: RecipeDetailUiState, onAction: (RecipeDetailAct
         IconButton(onClick = { menuOpen = true }) {
             Icon(imageVector = TandemIcons.MoreVert, contentDescription = stringResource(R.string.recipe_detail_action_more))
         }
-        OverflowMenu(state = state, expanded = menuOpen, onDismiss = { menuOpen = false }, onAction = onAction, onOpenUrl = onOpenUrl)
+        OverflowMenu(
+            state = state,
+            expanded = menuOpen,
+            onDismiss = { menuOpen = false },
+            onAction = onAction,
+            onOpenUrl = onOpenUrl,
+            onEdit = onEdit,
+            onDelete = onDelete,
+        )
     }
 }
 
@@ -223,8 +290,22 @@ private fun OverflowMenu(
     onDismiss: () -> Unit,
     onAction: (RecipeDetailAction) -> Unit,
     onOpenUrl: (String) -> Unit,
+    onEdit: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        // Fas 3 (redigerare lane): the editor, for every member; the stored detail is what it edits.
+        if (onEdit != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.recipe_detail_action_edit)) },
+                leadingIcon = { Icon(TandemIcons.Edit, contentDescription = null) },
+                enabled = state.hasDetail && !state.isDeleted,
+                onClick = {
+                    onDismiss()
+                    onEdit()
+                },
+            )
+        }
         state.webUrl?.let { url ->
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.recipe_detail_action_open_on_web)) },
@@ -244,6 +325,17 @@ private fun OverflowMenu(
                 onAction(RecipeDetailAction.Refresh)
             },
         )
+        if (onDelete != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.recipe_detail_action_delete)) },
+                leadingIcon = { Icon(TandemIcons.Delete, contentDescription = null) },
+                enabled = !state.isDeleted,
+                onClick = {
+                    onDismiss()
+                    onDelete()
+                },
+            )
+        }
     }
 }
 
@@ -259,11 +351,23 @@ private fun DetailContent(
     bookActions: (@Composable () -> Unit)? = null,
     shoppingActions: (@Composable () -> Unit)? = null,
     pairings: (@Composable () -> Unit)? = null,
+    editControls: RecipeEditControls? = null,
 ) {
     val spacing = TandemTheme.spacing
     BoxWithConstraints(modifier = modifier) {
         if (maxWidth >= TwoPaneMinWidth && state.hasDetail) {
-            TwoPaneContent(state, scrollState, onAction, onOpenUrl, onOpenRecipe, onStartCooking, bookActions, shoppingActions, pairings)
+            TwoPaneContent(
+                state,
+                scrollState,
+                onAction,
+                onOpenUrl,
+                onOpenRecipe,
+                onStartCooking,
+                bookActions,
+                shoppingActions,
+                pairings,
+                editControls,
+            )
         } else {
             Column(
                 modifier = Modifier
@@ -277,6 +381,7 @@ private fun DetailContent(
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
                 Notices(state)
+                EditNotice(editControls)
                 HeaderImage(state, Modifier.fillMaxWidth().aspectRatio(PHOTO_ASPECT_RATIO))
                 Header(state)
                 bookActions?.invoke()
@@ -314,6 +419,7 @@ private fun TwoPaneContent(
     bookActions: (@Composable () -> Unit)? = null,
     shoppingActions: (@Composable () -> Unit)? = null,
     pairings: (@Composable () -> Unit)? = null,
+    editControls: RecipeEditControls? = null,
 ) {
     val spacing = TandemTheme.spacing
     Row(
@@ -351,11 +457,47 @@ private fun TwoPaneContent(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
             Notices(state)
+            EditNotice(editControls)
             Header(state)
             bookActions?.invoke()
             Steps(state, onAction, onOpenRecipe)
             Source(state, onOpenUrl)
         }
+    }
+}
+
+/** Fas 3 (redigerare lane): where this device's edit of the recipe stands (nothing when none). */
+@Composable
+private fun EditNotice(controls: RecipeEditControls?) {
+    when (controls?.status) {
+        RecipeEditStatus.QUEUED -> IconLabel(
+            icon = TandemIcons.Schedule,
+            text = stringResource(R.string.recipe_detail_edit_queued),
+            iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        RecipeEditStatus.CONFLICT -> CalloutCard(
+            title = stringResource(R.string.recipe_detail_edit_conflict_title),
+            body = stringResource(R.string.recipe_detail_edit_conflict_body),
+            icon = TandemIcons.Info,
+            tone = TandemTone.Warning,
+            actions = {
+                TandemTonalButton(text = stringResource(R.string.recipe_detail_edit_conflict_open), onClick = controls.onOpenKeptEdit)
+                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = controls.onDiscardEdit)
+            },
+        )
+
+        RecipeEditStatus.FAILED -> CalloutCard(
+            title = stringResource(R.string.recipe_detail_edit_failed_title),
+            body = stringResource(R.string.recipe_detail_edit_failed_body),
+            icon = TandemIcons.Info,
+            tone = TandemTone.Warning,
+            actions = {
+                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = controls.onDiscardEdit)
+            },
+        )
+
+        RecipeEditStatus.NONE, null -> Unit
     }
 }
 

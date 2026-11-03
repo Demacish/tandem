@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.recipes
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -7,8 +8,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -25,7 +28,10 @@ import casa.moller.tandem.feature.recipes.books.RecipeCollectionsViewModel
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailEffect
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailScreen
 import casa.moller.tandem.feature.recipes.detail.RecipeDetailViewModel
+import casa.moller.tandem.feature.recipes.detail.RecipeEditControls
 import casa.moller.tandem.feature.recipes.drinks.RecipePairingsRoute
+import casa.moller.tandem.feature.recipes.editor.RecipeEditActionsEffect
+import casa.moller.tandem.feature.recipes.editor.RecipeEditActionsViewModel
 import casa.moller.tandem.feature.recipes.list.RecipeListEffect
 import casa.moller.tandem.feature.recipes.list.RecipeListScreen
 import casa.moller.tandem.feature.recipes.list.RecipeListViewModel
@@ -48,6 +54,7 @@ fun RecipesRoute(
     modifier: Modifier = Modifier,
     selectedRecipeId: Long? = null,
     onOpenCollection: (RecipeCollection) -> Unit = {},
+    onCreateRecipe: (() -> Unit)? = null,
 ) {
     val viewModel: RecipeListViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,6 +99,8 @@ fun RecipesRoute(
         collections = collectionsState,
         onOpenCollection = onOpenCollection,
         onToggleFavorite = collections::toggleFavorite,
+        // Fas 3 (redigerare lane): "Nytt recept", hidden for guests.
+        onCreateRecipe = onCreateRecipe?.takeUnless { collectionsState.readOnly },
     )
 }
 
@@ -127,6 +136,8 @@ fun RecipeDetailRoute(
     shoppingAction: (@Composable (servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
     onPlanMeal: ((recipeId: Long) -> Unit)? = null,
     onNavigate: ((NavKey) -> Unit)? = null,
+    onEdit: ((recipeId: Long) -> Unit)? = null,
+    onDeleted: (() -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<RecipeDetailViewModel, RecipeDetailViewModel.Factory>(
         key = "recipe-$recipeId",
@@ -142,6 +153,8 @@ fun RecipeDetailRoute(
             }
         }
     }
+    // Fas 3 (redigerare lane): "Redigera", "Ta bort" and the notice of an edit still to send.
+    val editControls = if (onEdit != null) recipeEditControls(recipeId, snackbarHostState, onEdit, onDeleted ?: onBack) else null
     RecipeDetailScreen(
         state = state,
         onAction = viewModel::onAction,
@@ -150,6 +163,7 @@ fun RecipeDetailRoute(
         onOpenRecipe = onOpenRecipe,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        editControls = editControls,
         onStartCooking = onStartCooking?.let { start -> { start(recipeId, state.servings?.current) } },
         // Phase 2 (books lane): "Favorit", "Vill laga" and "Lägg i bok" under the title.
         bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState, onPlanMeal = onPlanMeal) },
@@ -167,6 +181,46 @@ fun RecipeDetailRoute(
                 )
             }
         },
+    )
+}
+
+/** The editor's entrances of the detail, from their own ViewModel ([RecipeEditActionsViewModel]). */
+@Composable
+private fun recipeEditControls(
+    recipeId: Long,
+    snackbarHostState: SnackbarHostState,
+    onEdit: (Long) -> Unit,
+    onDeleted: () -> Unit,
+): RecipeEditControls {
+    val viewModel = hiltViewModel<RecipeEditActionsViewModel, RecipeEditActionsViewModel.Factory>(
+        key = "recipe-edit-actions-$recipeId",
+        creationCallback = { factory -> factory.create(recipeId) },
+    )
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val resources = LocalResources.current
+    val context = LocalContext.current
+    val currentOnDeleted by rememberUpdatedState(onDeleted)
+    LaunchedEffect(viewModel, snackbarHostState) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is RecipeEditActionsEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+
+                is RecipeEditActionsEffect.Deleted -> {
+                    // The detail closes with its snackbar host, so the confirmation is a short toast.
+                    val text = resources.getString(R.string.recipe_detail_deleted_message, effect.name)
+                    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+                    currentOnDeleted()
+                }
+            }
+        }
+    }
+    return RecipeEditControls(
+        canEdit = state.canEdit,
+        status = state.status,
+        onEdit = { onEdit(recipeId) },
+        onDelete = viewModel::delete,
+        onOpenKeptEdit = { onEdit(recipeId) },
+        onDiscardEdit = viewModel::discardEdit,
     )
 }
 

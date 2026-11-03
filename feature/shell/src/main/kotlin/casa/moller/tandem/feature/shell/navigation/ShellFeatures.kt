@@ -27,7 +27,9 @@ import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.WantToCookRoute
 import casa.moller.tandem.feature.recipes.drinks.DrinkRoute
 import casa.moller.tandem.feature.recipes.drinks.drinkSuggestionSlot
+import casa.moller.tandem.feature.recipes.editor.RecipeEditorRoute
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
+import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.scan.ScanRoute
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
@@ -76,7 +78,12 @@ internal interface ShellFeatures {
      * (Phase 2, books lane) opens Favoriter, Vill laga or the books from the collections row.
      */
     @Composable
-    fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?, onOpenCollection: (RecipeCollection) -> Unit)
+    fun Recipes(
+        onOpenRecipe: (Long) -> Unit,
+        selectedRecipeId: Long?,
+        onOpenCollection: (RecipeCollection) -> Unit,
+        onCreateRecipe: () -> Unit,
+    )
 
     /**
      * A recipe's detail (feature:recipes): full screen on phones, detail pane on wide windows.
@@ -84,6 +91,7 @@ internal interface ShellFeatures {
      * "Visa listan" after "Lägg på inköpslistan" (feature:shopping's sheet in the detail's slot).
      * [onPlanMeal] (fix-ui, plan 6.2 "Receptdetalj: … Planera") plans the recipe in Veckan.
      * Fas S (drycker lane): [onNavigate] opens the pairing picker from "Passar med" / "Passar till".
+     * Fas 3 (redigerare lane): [onEdit] opens the editor; [onDeleted] leaves the detail after "Ta bort".
      */
     @Composable
     fun RecipeDetail(
@@ -95,7 +103,17 @@ internal interface ShellFeatures {
         onOpenShoppingList: () -> Unit,
         onPlanMeal: (Long) -> Unit,
         onNavigate: (NavKey) -> Unit,
+        onEdit: (Long) -> Unit,
+        onDeleted: () -> Unit,
     )
+
+    /**
+     * Fas 3 (redigerare lane): the recipe editor (feature:recipes), full screen. [onSaved] gets
+     * the saved recipe's id (temporary for a new one offline) and whether it was new; [onBack]
+     * closes without saving.
+     */
+    @Composable
+    fun RecipeEditor(key: RecipeEditorKey, onSaved: (recipeId: Long, isNew: Boolean) -> Unit, onBack: () -> Unit)
 
     /** The detail pane before a recipe is picked (wide windows only). */
     @Composable
@@ -259,8 +277,18 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Recipes(onOpenRecipe: (Long) -> Unit, selectedRecipeId: Long?, onOpenCollection: (RecipeCollection) -> Unit) {
-        RecipesRoute(onOpenRecipe = onOpenRecipe, selectedRecipeId = selectedRecipeId, onOpenCollection = onOpenCollection)
+    override fun Recipes(
+        onOpenRecipe: (Long) -> Unit,
+        selectedRecipeId: Long?,
+        onOpenCollection: (RecipeCollection) -> Unit,
+        onCreateRecipe: () -> Unit,
+    ) {
+        RecipesRoute(
+            onOpenRecipe = onOpenRecipe,
+            selectedRecipeId = selectedRecipeId,
+            onOpenCollection = onOpenCollection,
+            onCreateRecipe = onCreateRecipe,
+        )
     }
 
     @Composable
@@ -273,6 +301,8 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenShoppingList: () -> Unit,
         onPlanMeal: (Long) -> Unit,
         onNavigate: (NavKey) -> Unit,
+        onEdit: (Long) -> Unit,
+        onDeleted: () -> Unit,
     ) {
         RecipeDetailRoute(
             recipeId = recipeId,
@@ -288,12 +318,20 @@ internal object RouteShellFeatures : ShellFeatures {
             onPlanMeal = onPlanMeal,
             // Fas S (drycker lane): "Passar med" / "Passar till".
             onNavigate = onNavigate,
+            // Fas 3 (redigerare lane): "Redigera" and "Ta bort".
+            onEdit = onEdit,
+            onDeleted = onDeleted,
         )
     }
 
     @Composable
     override fun EmptyRecipePane() {
         RecipeDetailPanePlaceholder()
+    }
+
+    @Composable
+    override fun RecipeEditor(key: RecipeEditorKey, onSaved: (recipeId: Long, isNew: Boolean) -> Unit, onBack: () -> Unit) {
+        RecipeEditorRoute(key = key, onSaved = onSaved, onBack = onBack)
     }
 
     @Composable
