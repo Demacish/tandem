@@ -1066,38 +1066,18 @@ banan), CHANGELOG `[Unreleased]` och ROADMAP "Fas 3".
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Receptredigeraren (#22) | ✅ klart 2026-11-03, CI grön (PR, Contract 2.6.13/2.7.1, röktest, referensbilder) | "Fas 3 – kontrakt", "Receptredigeraren" |
-| Import (dela länk/text, foto och PDF via Tandoors AI-import) | 🔧 pågår, påbörjat 2026-11-03: datasidan och skärmen inne, kontraktstest och referensbilder kvar | "Importera recept" |
-| Widgets, snabbinställningsruta och genvägar | 🔧 pågår, påbörjat 2026-11-03: modulen, widgetarna, rutan och genvägarna skrivna, CI kvar | "Widgets, snabbinställning och genvägar" |
-| Dra och släpp i matsedeln, näringsvärden | 🔧 pågår, påbörjat 2026-11-03: skrivet, CI och omspelade receptvybilder kvar | "Dra och släpp i matsedeln och näringsvärden" |
+| Import (dela länk/text, foto och PDF via Tandoors AI-import) | ✅ klart 2026-11-03 (commit 318216f), CI grön | "Importera recept" |
+| Widgets, snabbinställningsruta och genvägar | ✅ klart 2026-11-03 (commit 318216f), CI grön | "Widgets, snabbinställning och genvägar" |
+| Dra och släpp i matsedeln, näringsvärden | ✅ klart 2026-11-03 (commit 318216f), CI grön | "Dra och släpp i matsedeln och näringsvärden" |
 
-### Pågående: import
+### Alla delsteg klara 2026-11-03
 
-Ordning (varje punkt är en commit som lämnar CI grön):
-
-1. ✅ Kontraktet (commit 66d2067): `RecipeImportResult`/`RecipeImportProblem` (`:core:model`), `RecipeImportRepository`
-   (`:core:data`), `RecipeImportService` (`POST /api/recipe-from-source/`, `POST /api/ai-import/`,
-   `:core:network`), `used-endpoints.txt`, `RECIPE_IMAGE` med `image_url` (bilden från källan).
-2. ✅ `:core:sync` (commit 66d2067): `RemoteRecipeImportRepository` (online-anrop, ingen outbox: tolkningen sker på
-   servern; svaret blir ett `RecipeDraft` som sparas genom `RecipeEditRepository.createRecipe`),
-   fake och tester.
-3. ✅ `:feature:recipes` (commit 38b78e2, strängfix 97889eb): importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
-   text/länk, bild, PDF i manifestet, `MainActivity` → `AppViewModel` → skalet), redigeraren
-   öppnad med det importerade utkastet, strängar, referensbilder och ATF.
-4. ✅ Kontraktstest (commit 7008009, grön på 2.6.13 och 2.7.1; fixturer och FACTS incheckade): `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
-   leverantör), fixturer för 2.6.13 och 2.7.1, FACTS.
-5. 🔧 Dokumentation: BYGGE "Importera recept" (skrivet), CHANGELOG (skrivet), ROADMAP ✅ (när allt är grönt).
-
-### Pågående: widgets
-
-1. 🔧 `:feature:widgets` (ny modul, commit a72383a, manifestfix 51c765b), `AppOpenIntents` i
-   `core:ui`, `ShellOpenRequest` i skalet, `OpenLaunch` i appen, dynamiska genvägar; tester.
-   Väntar på grön CI.
-2. ⏳ Dokumentation: CHANGELOG (skrivet), ROADMAP ✅ när allt är grönt.
-
-### Pågående: dra och släpp, näringsvärden
-
-1. 🔧 Skrivet (se avsnittet); väntar på grön CI och omspelade `detail_*`-bilder.
-2. ⏳ ROADMAP ✅ när allt är grönt.
+Grenen `claude/vigilant-galileo-1xv20t` (PR Demacish/tandem#4) bär hela Fas 3; PR-, Contract-
+(2.6.13 och 2.7.1), röktest- och Screenshots-körningarna är gröna på `318216f`. Referensbilderna
+för importen (`feature/recipes/src/test/screenshots/import/`) och de tre receptvybilder som
+näringsvärdena ändrar är incheckade. Återstående punkter står under "Kvar till senare" i varje
+avsnitt; ROADMAP "Fas 3" är avprickad. Observerat på CI-runnern men inte incheckat: små
+pixelavvikelser i åtta skafferibilder och en bokbild (inom toleransen, PR-körningen är grön).
 <!-- /Fas 3 läge -->
 
 <!-- Fas S hemma-data -->

@@ -68,10 +68,14 @@ Levereras i **0.5.0**; påbörjat 2026-11-03.
   steg med ingredienser (livsmedel och enheter på namn), offline med tillfälligt id tills det
   skickats, konflikt när receptet ändrats på webben under tiden, ta bort recept (0.5.0).
   Kvar: ta bort en bild, stegfiler, näringsvärden.
-- Importera recept genom att dela en länk eller text till appen; foto och PDF tolkas av
-  Tandoors AI-import.
-- Widgets, snabbinställningsruta och genvägar.
-- Dra och släpp i matsedeln, näringsvärden.
+- ✅ Importera recept genom att dela en länk eller text till appen (en text tolkas i appen, en
+  länk av er Tandoor), med granskning innan receptet öppnas i redigeraren; foto och PDF tolkas
+  av Tandoors AI-import när utrymmet har en AI-leverantör (0.5.0). Kvar: AI-importen är bara
+  prövad mot en server utan leverantör.
+- ✅ Widgets (inköpslistan med avbockning, dagens måltider), snabbinställningsrutan "Handla" och
+  genvägar på appikonen (0.5.0).
+- ✅ Dra och släpp i matsedeln (dag, och måltidstyp på surfplattan) och näringsvärden per portion i
+  receptvyn (0.5.0). Kvar: redigera näringsvärden i appen.
 
 ## Fas 4: Smart hushåll
 - Textigenkänning av recept i telefonen (samma som kvittoskanningen i Fas S).
