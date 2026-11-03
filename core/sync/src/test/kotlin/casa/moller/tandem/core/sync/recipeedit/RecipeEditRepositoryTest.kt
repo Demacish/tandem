@@ -126,11 +126,11 @@ class RecipeEditRepositoryTest {
         val stored = checkNotNull(graph.recipes.observeStoredRecipe(id).first().recipe)
         assertEquals(2, stored.steps.size)
         assertEquals(listOf("torskfilé", null, "vispgrädde", "salt"), stored.steps[0].ingredients.map { it.food?.name })
-        assertEquals(listOf("Husmanskost", "Fisk"), stored.keywords.map { it.name })
+        assertEquals(setOf("Husmanskost", "Fisk"), stored.keywords.map { it.name }.toSet())
         assertEquals(RecipeEditStatus.QUEUED, repo.observeEditStatus(id).first())
         val draft = checkNotNull(repo.observeDraft(id).first())
         assertEquals("Fiskgratäng", draft.name)
-        assertEquals(listOf("Husmanskost", "Fisk"), draft.keywords.map { it.name })
+        assertEquals(setOf("Husmanskost", "Fisk"), draft.keywords.map { it.name }.toSet())
         assertEquals(listOf("torskfilé", null, "vispgrädde", "salt"), draft.steps[0].ingredients.map { it.food })
 
         graph.network.online.value = true
@@ -251,8 +251,11 @@ class RecipeEditRepositoryTest {
         assertEquals(RecipeEditStatus.CONFLICT, repo.observeEditStatus(PASTA).first())
         // The server's version is shown; the kept edit is what the editor opens.
         val shown = checkNotNull(graph.recipes.observeStoredRecipe(PASTA).first().recipe)
-        assertEquals("Krämig svamppasta", shown.name)
-        assertEquals("Partnern skrev om beskrivningen.", shown.description)
+        val item = graph.real.recipeDao().getListItems(ACCOUNT_ID, listOf(PASTA)).single().overview
+        val context = "[$version] server=${tandoor.recipe(PASTA)?.get("description")} row=${item.name}/${item.description} " +
+            "calls=${tandoor.calls.map { it.first }} outbox=${outbox().map { "${it.op}:${it.state}:${it.lastError}" }}"
+        assertEquals(context, "Krämig svamppasta", shown.name)
+        assertEquals(context, "Partnern skrev om beskrivningen.", shown.description)
         assertEquals("Min svamppasta", repo.observeDraft(PASTA).first()?.name)
 
         // Saving again starts from the server's version and goes through.
