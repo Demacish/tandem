@@ -90,7 +90,10 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
             path == RECIPES && method == "POST" -> create(parse(text))
 
-            IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), fromWeb = text.contains("name=\"image_url\""))
+            IMAGE.matches(path) && method == "PUT" -> {
+                val fromWeb = text.contains("name=\"image_url\"")
+                image(IMAGE.find(path)!!.groupValues[1].toLong(), fromWeb)
+            }
 
             RECIPE.matches(path) && method == "GET" ->
                 recipes[RECIPE.find(path)!!.groupValues[1].toLong()]?.let { json(200, it) } ?: notFound()

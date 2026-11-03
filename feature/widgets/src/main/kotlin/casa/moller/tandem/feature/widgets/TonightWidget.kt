@@ -84,7 +84,9 @@ internal fun TonightWidgetContent(state: TonightWidgetState) {
         Spacer(GlanceModifier.height(GAP))
         when {
             !state.signedIn -> Hint(context.getString(R.string.widget_sign_in))
+
             state.meals.isEmpty() -> Hint(context.getString(R.string.widget_tonight_empty))
+
             else -> state.meals.forEach { meal ->
                 val open = meal.recipeId?.let { AppOpenIntents.open(context, AppOpenIntents.recipe(it)) }
                 Column(

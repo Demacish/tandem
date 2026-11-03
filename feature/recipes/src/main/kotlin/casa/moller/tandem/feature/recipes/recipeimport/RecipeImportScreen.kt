@@ -138,12 +138,7 @@ private fun Content(
 }
 
 @Composable
-private fun Form(
-    state: RecipeImportUiState,
-    onAction: (RecipeImportAction) -> Unit,
-    onTakePhoto: () -> Unit,
-    onPickFile: () -> Unit,
-) {
+private fun Form(state: RecipeImportUiState, onAction: (RecipeImportAction) -> Unit, onTakePhoto: () -> Unit, onPickFile: () -> Unit) {
     val spacing = TandemTheme.spacing
     Text(stringResource(R.string.recipe_import_intro), style = MaterialTheme.typography.bodyMedium)
     OutlinedTextField(

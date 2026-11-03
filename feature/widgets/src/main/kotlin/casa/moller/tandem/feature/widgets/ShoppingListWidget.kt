@@ -113,7 +113,9 @@ internal fun ShoppingWidgetContent(state: ShoppingWidgetState) {
         Spacer(GlanceModifier.height(GAP))
         when {
             !state.signedIn -> Hint(context.getString(R.string.widget_sign_in))
+
             state.rows.isEmpty() -> Hint(context.getString(R.string.widget_shopping_empty))
+
             else -> LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
                 items(state.rows, itemId = { it.id }) { row ->
                     Row(

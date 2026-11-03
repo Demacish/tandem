@@ -77,6 +77,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
         }
         when (answer) {
             is Outcome.Failure -> answer
+
             is Outcome.Success -> RecipeImportMapper.toResult(answer.value)
                 ?.takeUnless { answer.value.error }
                 ?.let { Outcome.Success(it) }

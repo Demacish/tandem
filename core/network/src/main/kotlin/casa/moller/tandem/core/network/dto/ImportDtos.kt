@@ -72,4 +72,3 @@ data class SourceImportIngredientDto(
 /** `SourceImportFood` / `SourceImportUnit`: a name only. */
 @Serializable
 data class SourceImportNameDto(val name: String = "")
-

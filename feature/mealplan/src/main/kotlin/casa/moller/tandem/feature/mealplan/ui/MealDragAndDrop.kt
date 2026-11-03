@@ -6,8 +6,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
@@ -49,33 +50,29 @@ internal fun Modifier.mealDragSource(meal: MealPlanEntry, enabled: Boolean): Mod
 }
 
 /**
- * Takes a dragged meal (when [enabled]): [hovering] is true while one is over the target (the
+ * Takes a dragged meal (when [enabled]): [onHover] says whether one is over the target (the
  * highlight), [onDrop] gets the meal's id.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun Modifier.mealDropTarget(enabled: Boolean, hovering: MutableState<Boolean>, onDrop: (mealId: Long) -> Unit): Modifier {
+internal fun Modifier.mealDropTarget(enabled: Boolean, onHover: (Boolean) -> Unit, onDrop: (mealId: Long) -> Unit): Modifier {
     if (!enabled) return this
-    val target = remember(hovering, onDrop) {
+    val currentOnHover by rememberUpdatedState(onHover)
+    val currentOnDrop by rememberUpdatedState(onDrop)
+    val target = remember {
         object : DragAndDropTarget {
             override fun onDrop(event: DragAndDropEvent): Boolean {
-                hovering.value = false
+                currentOnHover(false)
                 val id = MealDragAndDrop.mealIdOf(event) ?: return false
-                onDrop(id)
+                currentOnDrop(id)
                 return true
             }
 
-            override fun onEntered(event: DragAndDropEvent) {
-                hovering.value = true
-            }
+            override fun onEntered(event: DragAndDropEvent) = currentOnHover(true)
 
-            override fun onExited(event: DragAndDropEvent) {
-                hovering.value = false
-            }
+            override fun onExited(event: DragAndDropEvent) = currentOnHover(false)
 
-            override fun onEnded(event: DragAndDropEvent) {
-                hovering.value = false
-            }
+            override fun onEnded(event: DragAndDropEvent) = currentOnHover(false)
         }
     }
     return dragAndDropTarget(shouldStartDragAndDrop = { MealDragAndDrop.isMeal(it) }, target = target)

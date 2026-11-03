@@ -166,19 +166,14 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         put("show_ingredients_table", true)
     }
 
-    private fun ingredient(
-        amount: Double,
-        unit: String?,
-        food: String?,
-        note: String = "",
-        original: String,
-    ): JsonObject = buildJsonObject {
-        put("amount", amount)
-        put("food", if (food == null) JsonNull else buildJsonObject { put("name", food) })
-        put("unit", if (unit == null) JsonNull else buildJsonObject { put("name", unit) })
-        put("note", note)
-        put("original_text", original)
-    }
+    private fun ingredient(amount: Double, unit: String?, food: String?, note: String = "", original: String): JsonObject =
+        buildJsonObject {
+            put("amount", amount)
+            put("food", if (food == null) JsonNull else buildJsonObject { put("name", food) })
+            put("unit", if (unit == null) JsonNull else buildJsonObject { put("name", unit) })
+            put("note", note)
+            put("original_text", original)
+        }
 
     private fun parse(text: String): JsonObject = if (text.isBlank()) JsonObject(emptyMap()) else Json.parseToJsonElement(text).jsonObject
 

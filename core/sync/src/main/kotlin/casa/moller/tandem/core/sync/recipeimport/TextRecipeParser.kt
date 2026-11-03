@@ -23,42 +23,46 @@ internal object TextRecipeParser {
         val lines = text.lines().map { it.trim() }
         val name = lines.firstOrNull { it.isNotEmpty() }?.take(MAX_NAME) ?: return null
         val rest = lines.drop(lines.indexOfFirst { it.isNotEmpty() } + 1)
-        val ingredients = mutableListOf<DraftIngredient>()
-        val paragraphs = mutableListOf<MutableList<String>>()
-        var section = Section.UNKNOWN
-        var servings = 0
-        for (line in rest) {
-            if (line.isEmpty()) {
-                if (paragraphs.lastOrNull()?.isNotEmpty() == true) paragraphs.add(mutableListOf())
-                continue
-            }
-            SERVINGS.find(line)?.groupValues?.get(1)?.toIntOrNull()?.let { if (servings == 0) servings = it }
-            // "4 portioner" on a line of its own is the servings, not an ingredient.
-            if (SERVINGS_LINE.matches(line)) continue
-            val heading = headingOf(line)
-            if (heading != null) {
-                section = heading
-                continue
-            }
-            val numbered = NUMBERED.matchEntire(line)
-            val isIngredient = section != Section.STEPS && numbered == null && looksLikeIngredient(line, knownUnits, section)
-            if (isIngredient) {
-                ingredients += ingredientOf(line, knownUnits)
-            } else {
-                val content = numbered?.groupValues?.get(1) ?: line
-                if (numbered != null || paragraphs.isEmpty()) paragraphs.add(mutableListOf())
-                paragraphs.last() += content
-            }
-        }
-        val steps = paragraphs.filter { it.isNotEmpty() }.map { DraftStep(instruction = it.joinToString(" ")) }
+        val read = Reading(knownUnits)
+        rest.forEach(read::line)
+        val steps = read.paragraphs.filter { it.isNotEmpty() }.map { DraftStep(instruction = it.joinToString(" ")) }
         return RecipeDraft(
             name = name,
-            servings = servings.coerceAtLeast(1),
+            servings = read.servings.coerceAtLeast(1),
             steps = when {
-                steps.isEmpty() -> listOf(DraftStep(ingredients = ingredients))
-                else -> listOf(steps.first().copy(ingredients = ingredients)) + steps.drop(1)
+                steps.isEmpty() -> listOf(DraftStep(ingredients = read.ingredients))
+                else -> listOf(steps.first().copy(ingredients = read.ingredients)) + steps.drop(1)
             },
         ).normalized()
+    }
+
+    /** The lines after the name, sorted into ingredients and step paragraphs. */
+    private class Reading(private val knownUnits: Collection<String>) {
+        val ingredients = mutableListOf<DraftIngredient>()
+        val paragraphs = mutableListOf<MutableList<String>>()
+        var servings = 0
+        private var section = Section.UNKNOWN
+
+        fun line(line: String) {
+            when {
+                line.isEmpty() -> if (paragraphs.lastOrNull()?.isNotEmpty() == true) paragraphs.add(mutableListOf())
+                headingOf(line) != null -> section = headingOf(line) ?: section
+                else -> content(line)
+            }
+        }
+
+        private fun content(line: String) {
+            SERVINGS.find(line)?.groupValues?.get(1)?.toIntOrNull()?.let { if (servings == 0) servings = it }
+            // "4 portioner" on a line of its own is the servings, not an ingredient.
+            if (SERVINGS_LINE.matches(line)) return
+            val numbered = NUMBERED.matchEntire(line)
+            if (section != Section.STEPS && numbered == null && looksLikeIngredient(line, knownUnits, section)) {
+                ingredients += ingredientOf(line, knownUnits)
+            } else {
+                if (numbered != null || paragraphs.isEmpty()) paragraphs.add(mutableListOf())
+                paragraphs.last() += numbered?.groupValues?.get(1) ?: line
+            }
+        }
     }
 
     private fun looksLikeIngredient(line: String, knownUnits: Collection<String>, section: Section): Boolean {

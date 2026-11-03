@@ -11,9 +11,6 @@ import kotlinx.serialization.Serializable
  * result opens the editor through `RecipeEditorKey.importedDraft`.
  */
 @Serializable
-data class RecipeImportKey(
-    val sharedText: String? = null,
-    val sharedFileUri: String? = null,
-    val sharedMimeType: String? = null,
-) : NavKey,
+data class RecipeImportKey(val sharedText: String? = null, val sharedFileUri: String? = null, val sharedMimeType: String? = null) :
+    NavKey,
     FullScreenDestination

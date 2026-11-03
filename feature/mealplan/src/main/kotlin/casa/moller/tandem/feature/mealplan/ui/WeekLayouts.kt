@@ -29,9 +29,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -305,14 +307,14 @@ internal fun DaySection(
     val isToday = day.date == state.today
     val dayName = format.fullDay(day.date)
     // Fas 3 (dra och släpp): the whole day takes a dragged meal (its type stays).
-    val hovering = remember { mutableStateOf(false) }
+    var hovering by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .fillMaxWidth()
             .testTag(dayTag(day.date))
-            .mealDropTarget(enabled = !state.readOnly, hovering = hovering) { onAction(WeekAction.DropMeal(it, day.date)) }
-            .dropHighlight(hovering.value)
-            .padding(if (hovering.value) spacing.xs else 0.dp),
+            .mealDropTarget(enabled = !state.readOnly, onHover = { hovering = it }) { onAction(WeekAction.DropMeal(it, day.date)) }
+            .dropHighlight(hovering)
+            .padding(if (hovering) spacing.xs else 0.dp),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
@@ -451,13 +453,13 @@ private fun GridCell(
     val spacing = TandemTheme.spacing
     val meals = day.meals.filter { it.mealType.id == type.id }
     // Fas 3 (dra och släpp): a cell takes a dragged meal: this day and this meal type.
-    val hovering = remember { mutableStateOf(false) }
+    var hovering by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .width(width)
             .padding(horizontal = spacing.xs)
-            .mealDropTarget(enabled = !state.readOnly, hovering = hovering) { onAction(WeekAction.DropMeal(it, day.date, type.id)) }
-            .dropHighlight(hovering.value),
+            .mealDropTarget(enabled = !state.readOnly, onHover = { hovering = it }) { onAction(WeekAction.DropMeal(it, day.date, type.id)) }
+            .dropHighlight(hovering),
         verticalArrangement = Arrangement.spacedBy(spacing.xs),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

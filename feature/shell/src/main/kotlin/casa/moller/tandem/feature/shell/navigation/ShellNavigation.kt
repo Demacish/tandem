@@ -163,7 +163,7 @@ class ShellNavigationState(
         selectTab(ShellTab.RECIPES)
         navigate(
             RecipeImportKey(sharedText = request.text, sharedFileUri = request.fileUri, sharedMimeType = request.mimeType),
-            replace = { it is RecipeImportKey || it is RecipeEditorKey && it.recipeId == null },
+            replace = { it is RecipeImportKey || (it is RecipeEditorKey && it.recipeId == null) },
         )
     }
 
