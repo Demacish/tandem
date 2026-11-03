@@ -122,10 +122,15 @@ class RecipeEditorViewModel @AssistedInject constructor(
             }
 
             is RecipeEditorAction.SetDescription -> edit { it.copy(description = action.description) }
+
             is RecipeEditorAction.SetServings -> edit { it.copy(servings = action.servings.coerceIn(1, MAX_SERVINGS)) }
+
             is RecipeEditorAction.SetServingsText -> edit { it.copy(servingsText = action.text) }
+
             is RecipeEditorAction.SetWorkingMinutes -> edit { it.copy(workingMinutes = action.minutes.coerceIn(0, MAX_MINUTES)) }
+
             is RecipeEditorAction.SetWaitingMinutes -> edit { it.copy(waitingMinutes = action.minutes.coerceIn(0, MAX_MINUTES)) }
+
             is RecipeEditorAction.SetSourceUrl -> edit { it.copy(sourceUrl = action.url) }
 
             is RecipeEditorAction.AddKeyword -> edit { current ->
@@ -140,13 +145,21 @@ class RecipeEditorViewModel @AssistedInject constructor(
             is RecipeEditorAction.RemoveKeyword -> edit { current ->
                 current.copy(keywords = current.keywords.filterIndexed { index, _ -> index != action.index })
             }
+
             RecipeEditorAction.AddStep -> edit { it.copy(steps = it.steps + DraftStep()) }
+
             is RecipeEditorAction.RemoveStep -> edit { it.copy(steps = it.steps.filterIndexed { index, _ -> index != action.step }) }
+
             is RecipeEditorAction.MoveStep -> edit { it.copy(steps = it.steps.moved(action.step, action.up)) }
+
             is RecipeEditorAction.SetStepName -> editStep(action.step) { it.copy(name = action.name) }
+
             is RecipeEditorAction.SetStepInstruction -> editStep(action.step) { it.copy(instruction = action.instruction) }
+
             is RecipeEditorAction.SetStepMinutes -> editStep(action.step) { it.copy(timeMinutes = action.minutes.coerceIn(0, MAX_MINUTES)) }
+
             is RecipeEditorAction.AddIngredient -> addIngredient(action.step, action.text)
+
             is RecipeEditorAction.AddHeader -> editStep(action.step) { step ->
                 step.copy(ingredients = step.ingredients + DraftIngredient(isHeader = true))
             }
@@ -162,12 +175,19 @@ class RecipeEditorViewModel @AssistedInject constructor(
             }
 
             is RecipeEditorAction.SetIngredientAmount -> setAmount(action.step, action.ingredient, action.text)
+
             is RecipeEditorAction.SetIngredientUnit -> editIngredient(action.step, action.ingredient) { it.copy(unit = action.unit) }
+
             is RecipeEditorAction.SetIngredientFood -> editIngredient(action.step, action.ingredient) { it.copy(food = action.food) }
+
             is RecipeEditorAction.SetIngredientNote -> editIngredient(action.step, action.ingredient) { it.copy(note = action.note) }
+
             is RecipeEditorAction.ToggleNoAmount -> editIngredient(action.step, action.ingredient) { it.copy(noAmount = !it.noAmount) }
+
             is RecipeEditorAction.SetPhoto -> edit { it.copy(imageUri = action.uri) }
+
             RecipeEditorAction.DiscardKeptEdit -> discardKeptEdit()
+
             RecipeEditorAction.Save -> save()
         }
     }

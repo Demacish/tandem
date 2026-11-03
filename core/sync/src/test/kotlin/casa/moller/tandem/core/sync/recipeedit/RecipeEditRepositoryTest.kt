@@ -251,19 +251,17 @@ class RecipeEditRepositoryTest {
         assertEquals(RecipeEditStatus.CONFLICT, repo.observeEditStatus(PASTA).first())
         // The server's version is shown; the kept edit is what the editor opens.
         val shown = checkNotNull(graph.recipes.observeStoredRecipe(PASTA).first().recipe)
-        val item = graph.real.recipeDao().getListItems(ACCOUNT_ID, listOf(PASTA)).single().overview
-        val context = "[$version] server=${tandoor.recipe(PASTA)?.get("description")} row=${item.name}/${item.description} " +
-            "calls=${tandoor.calls.map { it.first }} outbox=${outbox().map { "${it.op}:${it.state}:${it.lastError}" }}"
-        assertEquals(context, "Krämig svamppasta", shown.name)
-        assertEquals(context, "Partnern skrev om beskrivningen.", shown.description)
+        assertEquals("[$version]", "Krämig svamppasta", shown.name)
+        assertEquals("[$version]", "Partnern skrev om beskrivningen.", shown.description)
         assertEquals("Min svamppasta", repo.observeDraft(PASTA).first()?.name)
 
-        // Saving again starts from the server's version and goes through.
-        ok(repo.updateRecipe(PASTA, checkNotNull(repo.observeDraft(PASTA).first()).copy(name = "Min svamppasta")))
+        // Saving the kept edit again sends it over the web's version (what the editor says it does).
+        ok(repo.updateRecipe(PASTA, checkNotNull(repo.observeDraft(PASTA).first())))
         assertEquals(1, outbox().size)
         drainAll()
         assertEquals("Min svamppasta", tandoor.recipe(PASTA)?.get("name")?.jsonPrimitive?.content)
-        assertEquals("Partnern skrev om beskrivningen.", tandoor.recipe(PASTA)?.get("description")?.jsonPrimitive?.content)
+        val sentDescription = tandoor.recipe(PASTA)?.get("description")?.jsonPrimitive?.content
+        assertEquals("the kept edit's description wins", draft.description, sentDescription)
         assertTrue(outbox().isEmpty())
     }
 

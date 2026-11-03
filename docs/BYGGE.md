@@ -867,7 +867,7 @@ versionerna gröna, inga avvikelser), FACTS "Fas 3" sammanfattar dem.
 
 ### Fakes (`:core:testing`)
 
-`Fas3Fakes.kt`: `FakeRecipeEditRepository` (utgångspunkterna ur `SampleRecipes`, `created`,
+`FakeRecipeEditRepository.kt`: `FakeRecipeEditRepository` (utgångspunkterna ur `SampleRecipes`, `created`,
 `updated`, `deleted`, `discarded`, `statuses`, `readOnly`, `failure`); `SampleRecipes.units`.
 
 ### Vem bygger vad

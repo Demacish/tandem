@@ -4,8 +4,8 @@ import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.database.TandemDatabaseFactory
-import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.dao.RecipeDao
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.mapper.toRecipe
 import casa.moller.tandem.core.database.relation.RecipeDetailWithSteps
@@ -153,7 +153,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
                 // Fas 3 (redigerare lane): a recipe created in the app keeps its temporary id in an open
                 // screen after the server answered; the stored copy is found under the server id then.
                 is ActiveSource.Stored -> flow { emit(currentId(source, id)) }.flatMapLatest { detailStates(source, it, revalidate) }
+
                 ActiveSource.Loading -> emptyFlow<RecipeDetailState>()
+
                 ActiveSource.None -> flowOf(RecipeDetailState(recipeId = id, error = DataProblem.NO_ACCOUNT.toError()))
             }
         }

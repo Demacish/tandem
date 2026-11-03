@@ -310,16 +310,15 @@ class Phase3ContractTest {
         order: Int,
         note: String = "",
         noAmount: Boolean = false,
-    ): JsonObject =
-        obj(
-            "food" to obj("name" to food),
-            "unit" to unit?.let { obj("name" to it) },
-            "amount" to amount,
-            "note" to note,
-            "order" to order,
-            "is_header" to false,
-            "no_amount" to noAmount,
-        )
+    ): JsonObject = obj(
+        "food" to obj("name" to food),
+        "unit" to unit?.let { obj("name" to it) },
+        "amount" to amount,
+        "note" to note,
+        "order" to order,
+        "is_header" to false,
+        "no_amount" to noAmount,
+    )
 
     private fun header(text: String, order: Int): JsonObject =
         obj("food" to null, "unit" to null, "amount" to 0, "note" to text, "order" to order, "is_header" to true, "no_amount" to false)

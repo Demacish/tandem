@@ -82,31 +82,27 @@ internal class DetailFetcher @Inject constructor(
      * Stores [json] (a full recipe as `GET /api/recipe/{id}/` answers it, or the answer of a recipe
      * PATCH, Phase 2 "Vill laga") as recipe [recipeId]'s detail, in one transaction.
      */
-    suspend fun store(
-        remote: ActiveSource.Remote,
-        recipeId: Long,
-        json: JsonObject,
-        force: Boolean = false,
-    ): Outcome<Unit> = catchingUnexpected {
-        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
-        if (!force && hasUnsentEdit(remote, recipeId)) return@catchingUnexpected Outcome.Success(Unit)
-        val dto = try {
-            TandoorJson.decodeFromJsonElement(RecipeDto.serializer(), json)
-        } catch (e: SerializationException) {
-            return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
-        } catch (e: IllegalArgumentException) {
-            return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
+    suspend fun store(remote: ActiveSource.Remote, recipeId: Long, json: JsonObject, force: Boolean = false): Outcome<Unit> =
+        catchingUnexpected {
+            if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
+            if (!force && hasUnsentEdit(remote, recipeId)) return@catchingUnexpected Outcome.Success(Unit)
+            val dto = try {
+                TandoorJson.decodeFromJsonElement(RecipeDto.serializer(), json)
+            } catch (e: SerializationException) {
+                return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
+            } catch (e: IllegalArgumentException) {
+                return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
+            }
+            val recipe = dto.toRecipe(ImageResolver.forBaseUrl(remote.baseUrl))
+                ?.takeIf { it.id == recipeId }
+                ?: return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
+            val write = recipe.toDetailWrite(remote.accountId, rawJson = json.toString(), fetchedAtEpochMillis = clock.nowMillis())
+            val database = databases.get(remote.kind)
+            database.recipeDao().replaceDetail(remote.accountId, write)
+            // The detail's rating does not know this device's unsent "Klart!" entries yet.
+            database.cookLogDao().reapplyUnsent(remote.accountId, recipeId, remote.cookStatsRules)
+            Outcome.Success(Unit)
         }
-        val recipe = dto.toRecipe(ImageResolver.forBaseUrl(remote.baseUrl))
-            ?.takeIf { it.id == recipeId }
-            ?: return@catchingUnexpected Outcome.Failure(TandemError.Decode(DECODE_DETAIL))
-        val write = recipe.toDetailWrite(remote.accountId, rawJson = json.toString(), fetchedAtEpochMillis = clock.nowMillis())
-        val database = databases.get(remote.kind)
-        database.recipeDao().replaceDetail(remote.accountId, write)
-        // The detail's rating does not know this device's unsent "Klart!" entries yet.
-        database.cookLogDao().reapplyUnsent(remote.accountId, recipeId, remote.cookStatsRules)
-        Outcome.Success(Unit)
-    }
 
     /** Fas 3: whether this device has an edit of [recipeId] queued (`recipe_edit`, not FAILED). */
     private suspend fun hasUnsentEdit(remote: ActiveSource.Remote, recipeId: Long): Boolean =
