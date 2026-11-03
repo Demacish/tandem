@@ -41,5 +41,5 @@
     <string name="recipe_import_file_too_large">Filen är för stor (högst 10 MB)</string>
     <string name="recipe_import_file_unreadable">Filen kunde inte läsas</string>
     <string name="recipe_import_read_only">Gäster kan inte importera recept</string>
-    <string name="recipe_import_demo">Inte tillgängligt i demoläget</string>
+    <string name="recipe_import_demo_problem">Inte tillgängligt i demoläget</string>
 </resources>

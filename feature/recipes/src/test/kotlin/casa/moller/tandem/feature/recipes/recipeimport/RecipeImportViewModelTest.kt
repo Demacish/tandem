@@ -115,7 +115,7 @@ class RecipeImportViewModelTest {
             RecipeImportProblem.NOTHING_FOUND to R.string.recipe_import_nothing_found,
             RecipeImportProblem.AI_UNAVAILABLE to R.string.recipe_import_ai_unavailable,
             RecipeImportProblem.FILE_TOO_LARGE to R.string.recipe_import_file_too_large,
-            RecipeImportProblem.DEMO_MODE to R.string.recipe_import_demo,
+            RecipeImportProblem.DEMO_MODE to R.string.recipe_import_demo_problem,
         )) {
             imports.failure = problem.toError()
             vm.onAction(RecipeImportAction.Import)

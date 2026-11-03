@@ -126,7 +126,7 @@ class RecipeImportViewModel @AssistedInject constructor(
             if (source is RecipeImportSource.File) R.string.recipe_import_nothing_in_file else R.string.recipe_import_nothing_found
         RecipeImportProblem.AI_UNAVAILABLE -> R.string.recipe_import_ai_unavailable
         RecipeImportProblem.FILE_TOO_LARGE -> R.string.recipe_import_file_too_large
-        RecipeImportProblem.DEMO_MODE -> R.string.recipe_import_demo
+        RecipeImportProblem.DEMO_MODE -> R.string.recipe_import_demo_problem
         null -> when (error.dataProblem()) {
             DataProblem.READ_ONLY -> R.string.recipe_import_read_only
             else -> null

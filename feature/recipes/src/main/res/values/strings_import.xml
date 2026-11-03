@@ -42,5 +42,5 @@
     <string name="recipe_import_file_too_large">The file is too large (at most 10 MB)</string>
     <string name="recipe_import_file_unreadable">The file could not be read</string>
     <string name="recipe_import_read_only">Guests cannot import recipes</string>
-    <string name="recipe_import_demo">Not available in demo mode</string>
+    <string name="recipe_import_demo_problem">Not available in demo mode</string>
 </resources>
