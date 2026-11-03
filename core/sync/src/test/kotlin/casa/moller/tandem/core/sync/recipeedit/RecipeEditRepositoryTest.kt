@@ -146,7 +146,7 @@ class RecipeEditRepositoryTest {
         assertEquals("true", first[1].jsonObject["is_header"]?.jsonPrimitive?.content)
         assertEquals("true", first[3].jsonObject["no_amount"]?.jsonPrimitive?.content)
         val keywords = body["keywords"]!!.jsonArray.map { it.toString() }
-        assertEquals(listOf("""{"id":5}""", """{"name":"Fisk"}"""), keywords)
+        assertEquals(listOf("""{"id":5,"name":"Husmanskost"}""", """{"name":"Fisk"}"""), keywords)
 
         val server = checkNotNull(tandoor.recipeNamed("Fiskgratäng"))
         val serverId = server["id"]!!.jsonPrimitive.long
@@ -226,7 +226,8 @@ class RecipeEditRepositoryTest {
         assertEquals(listOf(1L, 2L, 3L, null), ingredients.map { it["id"]?.jsonPrimitive?.longOrNull })
         assertEquals("""{"name":"timjan"}""", ingredients[3]["food"].toString())
         val keywords = patch["keywords"]!!.jsonArray.map { it.toString() }.toSet()
-        assertEquals("the server's keywords go by id", setOf("""{"id":2}""", """{"id":3}"""), keywords)
+        val expected = setOf("""{"id":2,"name":"Pasta"}""", """{"id":3,"name":"Vegetariskt"}""")
+        assertEquals("the server's keywords go by id, with the server's names", expected, keywords)
         assertEquals("the step without a file keeps it", 2, tandoor.stepsOf(PASTA).size)
         assertEquals(listOf(1L, 3L), tandoor.stepsOf(PASTA).map { it["id"]!!.jsonPrimitive.long })
         assertEquals(4, (tandoor.stepsOf(PASTA)[0]["ingredients"] as JsonArray).size)

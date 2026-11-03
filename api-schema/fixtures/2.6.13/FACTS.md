@@ -930,7 +930,10 @@ första gröna körningen bekräftar dem (`observed-facts.json` i `fas3/`) och r
   show_as_header, show_ingredients_table, ingredients: [{food: {name} | null, unit: {name} | null,
   amount, note, order, is_header, no_amount}]}]}` → 201 med hela receptet: varje steg och
   ingrediens har `id`. [K] Livsmedel, enheter och nyckelord på namn återanvänds utan hänsyn till
-  versaler eller skapas (Fas 1 a). Ett nyckelord som `{id}` behåller sitt namn. [K]
+  versaler eller skapas (Fas 1 a). **Ett nyckelord som bara `{id}` → 400** `{"keywords": [{"name":
+  ["This field is required."]}]}` (körning 2026-11-03) [O]; ett känt nyckelord skickas som
+  `{id, name}`, och eftersom ett annat namn döper om nyckelordet (Fas 2 g) tar avsändaren serverns
+  aktuella namn före PATCH. [S]
 
 ## Fas 3 b. `PATCH /api/recipe/{id}/` med hela receptet
 
@@ -950,7 +953,8 @@ första gröna körningen bekräftar dem (`observed-facts.json` i `fas3/`) och r
 
 ## Fas 3: konsekvenser för appen [S]
 
-1. Skicka hela receptet i CREATE och PATCH, livsmedel och enheter på namn, kända nyckelord bara `{id}`.
+1. Skicka hela receptet i CREATE och PATCH, livsmedel och enheter på namn, kända nyckelord som
+   `{id, name}` (aldrig bara `{id}`) med serverns namn.
 2. Läs receptet färskt före PATCH och jämför `updated_at` med kopian som redigerades: annat värde =
    konflikt, skicka inte (outbox `recipe_edit`, docs/BYGGE.md "Fas 3 – kontrakt").
 3. Behåll stegens och ingrediensernas id i utkastet, så att en redigering uppdaterar på plats.

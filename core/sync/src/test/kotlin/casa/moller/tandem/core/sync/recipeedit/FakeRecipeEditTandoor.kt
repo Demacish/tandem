@@ -120,6 +120,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         if (body["steps"] !is JsonArray) {
             return json(400, JsonObject(mapOf("steps" to JsonArray(listOf(JsonPrimitive("This field is required."))))))
         }
+        keywordsError(body)?.let { return it }
         val id = nextRecipeId++
         val template = recipes.getValue(TEMPLATE_RECIPE)
         val created = JsonObject(
@@ -138,6 +139,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
     private fun patch(id: Long, body: JsonObject): MockResponse {
         val recipe = recipes[id] ?: return notFound()
+        keywordsError(body)?.let { return it }
         recipes[id] = bumped(applied(recipe, body, isCreate = false))
         return json(200, recipes.getValue(id))
     }
@@ -196,6 +198,20 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         }
         fields["conversions"] = JsonArray(emptyList())
         return JsonObject(fields)
+    }
+
+    /** FACTS "Fas 3 a": a keyword without `name` (`{id}` alone) is a 400. */
+    private fun keywordsError(body: JsonObject): MockResponse? {
+        val keywords = (body["keywords"] as? JsonArray)?.mapNotNull { it as? JsonObject } ?: return null
+        if (keywords.all { it.string("name") != null }) return null
+        val errors = keywords.map { keyword ->
+            if (keyword.string("name") == null) {
+                JsonObject(mapOf("name" to JsonArray(listOf(JsonPrimitive("This field is required.")))))
+            } else {
+                JsonObject(emptyMap())
+            }
+        }
+        return json(400, JsonObject(mapOf("keywords" to JsonArray(errors))))
     }
 
     private fun resolveKeyword(keyword: JsonObject): Pair<Long, String> {

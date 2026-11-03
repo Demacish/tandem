@@ -20,6 +20,7 @@ import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.shopping.claimedServerIds
 import java.io.File
 import javax.inject.Inject
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -106,7 +107,9 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             details.store(remote, recipeId, fresh, force = true)
             return OutboxResult.Failed(CONFLICT_ERROR)
         }
-        val answer = when (val sent = caller.write(remote) { recipes.updateRecipe(recipeId, body) }) {
+        // A known keyword goes with the name the server has for it right now: another name would rename it.
+        val sendBody = withServerKeywordNames(body, fresh)
+        val answer = when (val sent = caller.write(remote) { recipes.updateRecipe(recipeId, sendBody) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
@@ -166,6 +169,22 @@ internal class RecipeEditOutboxHandler @Inject constructor(
     }
 
     private fun JsonObject.id(): Long? = (this["id"] as? JsonPrimitive)?.longOrNull
+
+    /** [body] with every `keywords[].name` of a keyword with `id` replaced by the name [fresh] carries for that id. */
+    private fun withServerKeywordNames(body: JsonObject, fresh: JsonObject): JsonObject {
+        val names = (fresh["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+            .mapNotNull { keyword -> keyword.id()?.let { id -> id to (keyword["name"] as? JsonPrimitive)?.contentOrNull } }
+            .toMap()
+        val keywords = (body["keywords"] as? JsonArray) ?: return body
+        val renamed = JsonArray(
+            keywords.map { element ->
+                val keyword = element as? JsonObject ?: return@map element
+                val name = keyword.id()?.let { names[it] } ?: return@map element
+                JsonObject(keyword + ("name" to JsonPrimitive(name)))
+            },
+        )
+        return JsonObject(body + ("keywords" to renamed))
+    }
 
     /** `sync_state` key: the recipe POST of [localId] was started (its answer may be lost). */
     private fun postedKey(localId: Long): String = "$POSTED_PREFIX$localId"

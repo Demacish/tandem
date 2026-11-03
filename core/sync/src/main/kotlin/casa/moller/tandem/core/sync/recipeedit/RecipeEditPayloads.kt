@@ -35,8 +35,10 @@ import kotlinx.serialization.json.put
  * name, instruction, time, order, show_as_header, show_ingredients_table, ingredients: [{id?,
  * food: {name} | null, unit: {name} | null, amount, note, order, is_header, no_amount}]}]}`.
  *
- * - A keyword the device knows goes by `{id}` only (FACTS "Fas 2 g": `{id, name}` with another
- *   name renames it space-wide); a new one by `{name}` (get-or-create, case ignored).
+ * - A keyword always carries `name` (`{id}` alone is a 400, FACTS "Fas 3 a"): a known one as
+ *   `{id, name}` with the name the device has (the sender swaps in the server's current name
+ *   before a PATCH, since another name renames the keyword space-wide, FACTS "Fas 2 g"), a new
+ *   one as `{name}` (get-or-create, case ignored).
  * - Foods and units always go by `{name}` (reused or created by name); a header has neither.
  * - A step or ingredient keeps its `id`, so a PATCH updates it in place and leaves what the app
  *   does not edit (a step's file, a linked sub-recipe) alone; one without `id` is created, and the
@@ -72,7 +74,12 @@ internal object RecipeEditPayloads {
             buildJsonArray {
                 draft.keywords.forEach { keyword ->
                     val id = keyword.id
-                    add(buildJsonObject { if (id != null && id > 0) put("id", id) else put("name", keyword.name) })
+                    add(
+                        buildJsonObject {
+                            if (id != null && id > 0) put("id", id)
+                            put("name", keyword.name)
+                        },
+                    )
                 }
             },
         )

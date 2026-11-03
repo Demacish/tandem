@@ -24,8 +24,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
  * plan §8.9) depends on, exactly as the app's outbox sends them (`core:sync` `RecipeEditPayloads`):
  *
  * - a. `POST /api/recipe/` with the WHOLE recipe: foods, units and keywords by name (reused or
- *   created, case ignored), a keyword by `{id}` only, a header line, a `no_amount` line, steps
- *   with `order`; the answer carries the ids of every step and ingredient; `internal: true`.
+ *   created, case ignored), a known keyword as `{id, name}` (`{id}` alone is a 400), a header
+ *   line, a `no_amount` line, steps with `order`; the answer carries the ids of every step and
+ *   ingredient; `internal: true`.
  * - b. `PATCH /api/recipe/{id}/` with the whole recipe (drf-writable-nested): a step or
  *   ingredient that carries its `id` is updated in place and keeps its id, one without `id` is
  *   created, an omitted one is deleted; a food by name is reused (same id); `updated_at` moves
@@ -87,9 +88,14 @@ class Phase3ContractTest {
         val keywords = read("/api/keyword/?page_size=1").json?.let { pageOrArray(it).firstOrNull() }
         keywordId = keywords?.longAt("id")
         val keywordName = keywords?.stringAt("name")
+        // `{id}` alone is a 400 ("name: This field is required.", observed 2026-11-03): a known keyword goes as {id, name}.
+        val idOnlyBody = recipeBody(RECIPE_NAME, listOfNotNull(keywordId?.let { obj("id" to it) }), emptyList())
+        val idOnly = api("recipe-create-keyword-id-only", "POST", "/api/recipe/", idOnlyBody)
+        observe("recipe.create.keywordIdOnly", describe(idOnly))
+        idOnly.json?.let { (it as? JsonObject)?.longAt("id") }?.let { api("cleanup-recipe", "DELETE", "/api/recipe/$it/", record = false) }
         val body = recipeBody(
             name = RECIPE_NAME,
-            keywords = listOfNotNull(keywordId?.let { obj("id" to it) }, obj("name" to NEW_KEYWORD)),
+            keywords = listOfNotNull(keywordId?.let { obj("id" to it, "name" to keywordName) }, obj("name" to NEW_KEYWORD)),
             steps = listOf(
                 step(
                     name = "Förbered",
@@ -178,7 +184,9 @@ class Phase3ContractTest {
         val body = JsonObject(
             recipeBody(
                 name = "$RECIPE_NAME med timjan",
-                keywords = before.arrAt("keywords").objects().mapNotNull { k -> k.longAt("id")?.let { obj("id" to it) } },
+                keywords = before.arrAt("keywords").objects().mapNotNull { k ->
+                    k.longAt("id")?.let { obj("id" to it, "name" to k.stringAt("name")) }
+                },
                 steps = listOf(editedFirst, newStep),
             ),
         )
@@ -358,6 +366,7 @@ class Phase3ContractTest {
          * response description. Every other fact is only recorded; tandoor-watch compares it.
          */
         val EXPECTED: Map<String, Any?> = linkedMapOf(
+            "recipe.create.keywordIdOnly.status" to 400,
             "recipe.create.status" to 201,
             "recipe.create.internal" to true,
             "recipe.create.stepCount" to 2,

@@ -846,7 +846,7 @@ negativt id och recept med en osänd `recipe_edit`-rad (inte FAILED) från index
 
 | op | entitet | Anrop | Payload / `base_snapshot` | Särskilt (FACTS "Fas 3") |
 |---|---|---|---|---|
-| CREATE | `recipe_edit` | `POST /api/recipe/` | **hela receptet** som webben skickar det: `{name, description, servings, servings_text, working_time, waiting_time, source_url, private, internal: true, keywords: [{id} \| {name}], steps: [{name, instruction, time, order, show_as_header, show_ingredients_table, ingredients: [{food: {name} \| null, unit: {name} \| null, amount, note, order, is_header, no_amount}]}]}`; `local_id` = tillfälligt id | livsmedel, enheter och nyckelord på namn (återanvänds utan hänsyn till versaler); ett känt nyckelord bara `{id}` (`{id, name}` döper om); `steps` krävs; svaret lagras som detalj; ett nytt försök letar först efter ett förlorat svar (markör `recipe_posted:<id>` i `sync_state`, som drycker) |
+| CREATE | `recipe_edit` | `POST /api/recipe/` | **hela receptet** som webben skickar det: `{name, description, servings, servings_text, working_time, waiting_time, source_url, private, internal: true, keywords: [{id, name} \| {name}], steps: [{name, instruction, time, order, show_as_header, show_ingredients_table, ingredients: [{food: {name} \| null, unit: {name} \| null, amount, note, order, is_header, no_amount}]}]}`; `local_id` = tillfälligt id | livsmedel, enheter och nyckelord på namn (återanvänds utan hänsyn till versaler); ett känt nyckelord `{id, name}` (bara `{id}` ger 400; ett annat namn döper om, så avsändaren tar serverns namn före PATCH); `steps` krävs; svaret lagras som detalj; ett nytt försök letar först efter ett förlorat svar (markör `recipe_posted:<id>` i `sync_state`, som drycker) |
 | PATCH | `recipe_edit` | `PATCH /api/recipe/{id}/` | samma kropp, steg och ingredienser **med sina `id`**; `base_snapshot {"updated_at": <kopian som redigerades>}` | läses färskt först: annat `updated_at` ⇒ **inte skickad**, serverns version lagras, raden FAILED med `tandem.recipe.conflict` (`RecipeEditStatus.CONFLICT`); steg/rader med id uppdateras på plats, utan id skapas, utelämnade raderas (drf-writable-nested); PATCH efter CREATE slås ihop i CREATE (`OutboxMerge`); 404 raderar lokalt |
 | DELETE | `recipe_edit` | `DELETE /api/recipe/{id}/` | – | 204; 404 släpps; DELETE efter oförsökt CREATE tar bort allt |
 | RECIPE_IMAGE | `recipe_edit` | `PUT /api/recipe/{id}/image/` | `{"file": <app-privat kopia>}` (dryckernas `DrinkImageStore`), `depends_on` CREATE för ett nytt recept | som dryckernas |
@@ -858,8 +858,8 @@ sig själv), `ErrorCodes` ger koden, `OutboxHealth` visar `OutboxProblem.CONFLIC
 
 `Phase3ContractTest` körs i `contract.yml` efter Fas S (push: 2.6.13 och 2.7.1), spelar in till
 `fas3/` och kräver (`EXPECTED`): POST med hela receptet → 201 med id på varje steg och ingrediens,
-livsmedel och enheter på namn, rubrikrad och `no_amount`, ett nyckelord skickat som `{id}` behåller
-namnet; PATCH med hela receptet → 200, stegets och ingrediensernas id kvar, utelämnat steg och
+livsmedel och enheter på namn, rubrikrad och `no_amount`, ett nyckelord som bara `{id}` → 400,
+som `{id, name}` behåller det namnet; PATCH med hela receptet → 200, stegets och ingrediensernas id kvar, utelämnat steg och
 utelämnade rader raderade, nytt steg och ny rad får id, livsmedlet på namn återanvänds (samma id),
 `updated_at` flyttas; medlemmen får 200, gästen 403 på PATCH och DELETE; DELETE 204, sedan 404.
 Fixturerna i `api-schema/fixtures/<version>/fas3/` checkas in från den första gröna körningens
