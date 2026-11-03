@@ -209,19 +209,18 @@ class WeekViewModelTest {
         // Fas 3 (dra och släpp): the agenda drops on a day (type kept), the grid on a day and type.
         val vm = viewModel()
         val effects = open(vm)
-        vm.onAction(WeekAction.DropMeal(monday.id, day(3)))
-        val moved = vm.uiState.value.days[3].meals.single()
-        assertEquals(monday.id, moved.id)
-        assertEquals(dinner.id, moved.mealType.id)
-        assertEquals(WeekEffect.Show(WeekMessage.Moved(monday.displayTitle, day(3))), effects.single())
-        vm.onAction(WeekAction.DropMeal(monday.id, day(3), lunch.id))
-        assertEquals(lunch.id, vm.uiState.value.days[3].meals.single().mealType.id)
+        fun mealOn(offset: Int) = vm.uiState.value.days[offset].meals.single { it.id == monday.id }
+        vm.onAction(WeekAction.DropMeal(monday.id, day(5)))
+        assertEquals(dinner.id, mealOn(5).mealType.id)
+        assertEquals(WeekEffect.Show(WeekMessage.Moved(monday.displayTitle, day(5))), effects.single())
+        vm.onAction(WeekAction.DropMeal(monday.id, day(5), lunch.id))
+        assertEquals(lunch.id, mealOn(5).mealType.id)
         // Dropped where it already is: nothing; an unknown meal: nothing.
-        vm.onAction(WeekAction.DropMeal(monday.id, day(3), lunch.id))
+        vm.onAction(WeekAction.DropMeal(monday.id, day(5), lunch.id))
         vm.onAction(WeekAction.DropMeal(999, day(1)))
         assertEquals(2, effects.size)
         vm.onAction(WeekAction.Undo)
-        assertEquals(dinner.id, vm.uiState.value.days[3].meals.single().mealType.id)
+        assertEquals(dinner.id, mealOn(5).mealType.id)
     }
 
     @Test
