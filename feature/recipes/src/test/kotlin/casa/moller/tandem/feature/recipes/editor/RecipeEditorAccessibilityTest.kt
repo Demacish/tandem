@@ -1,8 +1,6 @@
 package casa.moller.tandem.feature.recipes.editor
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.printToString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.testing.accessibility.assertAccessible
 import casa.moller.tandem.feature.recipes.PHONE
@@ -31,12 +29,7 @@ class RecipeEditorAccessibilityTest {
     private fun check(shot: RecipeEditorShot, darkTheme: Boolean = false, fontScale: Float? = null) {
         composeRule.setContent { TestFrame(darkTheme = darkTheme, fontScale = fontScale) { shot.content() } }
         composeRule.waitForIdle()
-        try {
-            composeRule.assertAccessible()
-        } catch (e: Throwable) {
-            // TEMPORARY (debug): the semantics tree, to find the clipped touch targets at font scale 2.
-            throw AssertionError(composeRule.onRoot().printToString(maxDepth = 30) + "\n" + e.message, e)
-        }
+        composeRule.assertAccessible()
     }
 
     @Test

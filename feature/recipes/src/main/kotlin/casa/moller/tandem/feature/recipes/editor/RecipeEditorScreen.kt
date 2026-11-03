@@ -248,8 +248,10 @@ private fun Form(
 private fun Servings(servings: Int, onAction: (RecipeEditorAction) -> Unit) {
     val spacing = TandemTheme.spacing
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        // Rows that hold icon buttons are at least 48 dp tall: Compose clips a button's 48 dp touch
+        // target to its row, and a row shorter than that (a large-font title) fails ATF.
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = spacing.md, vertical = spacing.xs),
+            modifier = Modifier.fillMaxWidth().heightIn(min = TOUCH_TARGET).padding(horizontal = spacing.md, vertical = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -380,7 +382,7 @@ private fun StepEditor(index: Int, step: DraftStep, count: Int, state: RecipeEdi
     val number = index + 1
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.heightIn(min = TOUCH_TARGET), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.recipe_editor_step_number, number),
                     style = MaterialTheme.typography.titleMedium,
@@ -441,7 +443,11 @@ private fun QuickAdd(stepIndex: Int, onAction: (RecipeEditorAction) -> Unit) {
         onAction(RecipeEditorAction.AddIngredient(stepIndex, typed))
         typed = ""
     }
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+    Row(
+        modifier = Modifier.heightIn(min = TOUCH_TARGET),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+    ) {
         TandemTextField(
             value = typed,
             onValueChange = { typed = it },
@@ -519,7 +525,7 @@ private fun IngredientEditor(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.heightIn(min = TOUCH_TARGET), verticalAlignment = Alignment.CenterVertically) {
             if (!line.isHeader) {
                 FilterChip(
                     selected = line.noAmount,
@@ -533,7 +539,7 @@ private fun IngredientEditor(
                     modifier = Modifier.heightIn(min = 48.dp),
                 )
             }
-            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
+            Row(modifier = Modifier.weight(1f).heightIn(min = TOUCH_TARGET), horizontalArrangement = Arrangement.End) {
                 IconButton(
                     onClick = { onAction(RecipeEditorAction.MoveIngredient(stepIndex, position, up = true)) },
                     enabled = position > 0,
@@ -642,6 +648,7 @@ private fun Heading(text: String) {
 }
 
 private val FORM_MAX_WIDTH = 640.dp
+private val TOUCH_TARGET = 48.dp
 private val PHOTO_PREVIEW = 160.dp
 private val AMOUNT_WIDTH = 88.dp
 private val UNIT_WIDTH = 112.dp
