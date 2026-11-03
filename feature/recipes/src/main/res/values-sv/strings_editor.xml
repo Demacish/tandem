@@ -47,7 +47,7 @@
     <string name="recipe_editor_ingredient_add_header">Rubrik</string>
     <string name="recipe_editor_ingredient_amount">Mängd</string>
     <string name="recipe_editor_ingredient_unit">Enhet</string>
-    <string name="recipe_editor_ingredient_unit_pick">Välj enhet</string>
+    <string name="recipe_editor_ingredient_unit_pick_for">Enhet för ingrediens %1$d i steg %2$d</string>
     <string name="recipe_editor_ingredient_food">Livsmedel</string>
     <string name="recipe_editor_ingredient_note">Anteckning</string>
     <string name="recipe_editor_ingredient_header">Rubrik</string>

@@ -47,7 +47,7 @@
     <string name="recipe_editor_ingredient_add_header">Heading</string>
     <string name="recipe_editor_ingredient_amount">Amount</string>
     <string name="recipe_editor_ingredient_unit">Unit</string>
-    <string name="recipe_editor_ingredient_unit_pick">Choose unit</string>
+    <string name="recipe_editor_ingredient_unit_pick_for">Unit of ingredient %1$d of step %2$d</string>
     <string name="recipe_editor_ingredient_food">Food</string>
     <string name="recipe_editor_ingredient_note">Note</string>
     <string name="recipe_editor_ingredient_header">Heading</string>

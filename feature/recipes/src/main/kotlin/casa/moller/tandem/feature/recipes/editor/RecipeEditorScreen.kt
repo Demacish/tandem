@@ -498,6 +498,8 @@ private fun IngredientEditor(
                     value = line.unit.orEmpty(),
                     units = state.units,
                     onChange = { onAction(RecipeEditorAction.SetIngredientUnit(stepIndex, position, it)) },
+                    // Every unit field and its menu button name their line (TalkBack: no two alike).
+                    pickDescription = stringResource(R.string.recipe_editor_ingredient_unit_pick_for, lineNumber, stepNumber),
                     modifier = Modifier.width(UNIT_WIDTH),
                 )
                 OutlinedTextField(
@@ -563,13 +565,20 @@ private fun IngredientEditor(
 
 /** The unit as free text, with the stored units in a menu behind the field's trailing button. */
 @Composable
-private fun UnitField(value: String, units: List<String>, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun UnitField(
+    value: String,
+    units: List<String>,
+    onChange: (String) -> Unit,
+    pickDescription: String,
+    modifier: Modifier = Modifier,
+) {
     var open by rememberSaveable { mutableStateOf(false) }
     Box(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onChange,
             label = { Text(stringResource(R.string.recipe_editor_ingredient_unit)) },
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = pickDescription },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Next),
             trailingIcon = if (units.isEmpty()) {
@@ -577,11 +586,10 @@ private fun UnitField(value: String, units: List<String>, onChange: (String) -> 
             } else {
                 {
                     IconButton(onClick = { open = true }) {
-                        Icon(TandemIcons.ExpandMore, contentDescription = stringResource(R.string.recipe_editor_ingredient_unit_pick))
+                        Icon(TandemIcons.ExpandMore, contentDescription = pickDescription)
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
         )
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             units.forEach { unit ->
