@@ -61,7 +61,7 @@ data class WeekUiState(
 }
 
 /**
- * The "Flytta" sheet (plan 6.2: "Lång tryckning → flytta"; drag and drop comes in Phase 3).
+ * The "Flytta" sheet (plan 6.2: "Lång tryckning → flytta"; Fas 3 added drag and drop, [WeekAction.DropMeal]).
  *
  * @property date the chosen first day; the meal keeps its length.
  * @property mealTypeId the chosen meal type.
@@ -117,6 +117,9 @@ sealed interface WeekAction {
     data class MoveMealType(val mealTypeId: Long) : WeekAction
 
     data object ConfirmMove : WeekAction
+
+    /** Fas 3: a meal dropped on [date] (and, in the grid, on [mealTypeId]; null keeps its type). Moves it at once, with "Ångra". */
+    data class DropMeal(val mealId: Long, val date: LocalDate, val mealTypeId: Long? = null) : WeekAction
 
     data object CancelMove : WeekAction
 

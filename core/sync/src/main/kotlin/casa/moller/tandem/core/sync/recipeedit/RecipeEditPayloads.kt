@@ -242,6 +242,7 @@ internal object RecipeEditPayloads {
             isPrivate = draft.isPrivate,
             showIngredientOverview = stored?.showIngredientOverview ?: true,
             nutrition = stored?.nutrition ?: NutritionPresence.NONE,
+            nutritionValues = stored?.nutritionValues.orEmpty(),
             diameter = stored?.diameter ?: 0,
             diameterText = stored?.diameterText.orEmpty(),
             createdAt = stored?.createdAt ?: now,

@@ -111,6 +111,8 @@
     <!-- Sections. -->
     <string name="recipe_detail_ingredients">Ingredients</string>
     <string name="recipe_detail_ingredients_hint">Tap to check off</string>
+    <string name="recipe_detail_nutrition">Nutrition</string>
+    <string name="recipe_detail_nutrition_hint">Per serving</string>
     <string name="recipe_detail_steps">Instructions</string>
     <string name="recipe_detail_step_template_broken">Amounts in this step are not scaled: Tandoor could not read its template, so the step is shown as written.</string>
     <plurals name="recipe_detail_step_count">

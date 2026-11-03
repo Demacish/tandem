@@ -1017,6 +1017,44 @@ utseende prövas inte med skärmbilder (Glance ritar RemoteViews; röktestet ins
 förhandsbilder i widgetväljaren, en "Lägg till vara"-ruta.
 <!-- /Fas 3 widgets -->
 
+<!-- Fas 3 matsedel -->
+## Dra och släpp i matsedeln och näringsvärden (`:feature:mealplan`, `:feature:recipes`, `:core:database`, Fas 3)
+
+**Dra och släpp** (ROADMAP "Fas 3", plan 6.2 "Lång tryckning → flytta; dra och släpp i Fas 3"):
+`feature/mealplan/ui/MealDragAndDrop.kt`. Ett kort i agendan och en ruta i surfplattans rutnät
+är dragkällor (`Modifier.mealDragSource`: Composes `dragAndDropSource`, lång tryckning lyfter
+måltiden, systemet ritar skuggan; överföringen bär bara måltidens id under den egna MIME-typen
+`application/x-tandem-meal`, så inget från andra appar tas emot och inget av vårt hamnar hos dem).
+En dag i agendan (`DaySection`) och en cell i rutnätet (`GridCell`) är mål (`Modifier.mealDropTarget`,
+markerade med en ram medan måltiden hålls över dem): agendan släpper på dagen (måltidstypen
+behålls), rutnätet på dag **och** måltidstyp. `WeekAction.DropMeal(mealId, date, mealTypeId?)` →
+`WeekViewModel.dropMeal` → samma `moveMeal` som "Flytta"-arket (längden behålls, "Flyttad till …"
+med Ångra, inget för gäster, inget när måltiden släpps där den redan ligger). Arket finns kvar via
+menyn "Flytta", TalkBacks egna åtgärd och semantikens långtryckning (`onLongClick` i semantics, så
+`WeekScreenTest.aLongPressOnAMealMovesIt` och TalkBack fungerar som förut); den fysiska
+långtryckningen drar. `combinedClickable` är utbytt mot `clickable` + semantik.
+
+**Näringsvärden** (ROADMAP "Fas 3"; plan 3.2 "properties först, legacy nutrition som reserv"):
+`core:model` `Recipe.nutritionValues: List<NutritionValue(name, amount, unit)>` **per portion**,
+fyllt av `core:database` `mapper/RecipeNutrition.valuesOf(rawJson, servings)` ur den lagrade råa
+JSON:en (inget schemabyte): receptets egna `properties` (`property_amount`, `property_type.name/unit`;
+Tandoors egenskapsredigerare anger dem per portion) när de finns, annars `food_properties`
+(`total_value` per recept, summan över livsmedlen, delat med `servings`; 0 utan `missing_value`
+utelämnas, `missing_value` visas ändå som på webben). Receptvyn visar avsnittet "Näringsvärden –
+Per portion" efter ingredienserna (`RecipeDetailUiState.nutrition: List<NutritionRow>`, talet i
+användarens talstil via `ServingsText.number`); värdena följer **inte** portionsväljaren. Den
+gamla `nutrition`-strukturen (kalorier m.m.) visas inte (`NutritionPresence.LEGACY` är kvar som
+markör). `SampleRecipes.MushroomPasta` har värden, så receptvyns referensbilder visar avsnittet.
+Antagande [S]: att receptets `properties` är per portion följer Tandoors webb ("per serving");
+kontraktsutrymmet saknar egenskapstyper, så det är inte inspelat.
+
+**Tester:** `WeekViewModelTest.aDroppedMealMovesAtOnceAndCanBeUndone` (+ gäst), `RecipeNutritionTest`
+(`:core:database`), receptvyns referensbilder (`detail_*`, omspelade).
+
+**Kvar till senare:** redigera näringsvärden i redigeraren (egenskapstyperna behöver läsas),
+dra mellan veckor, haptik vid lyft.
+<!-- /Fas 3 matsedel -->
+
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)
 
@@ -1030,7 +1068,7 @@ banan), CHANGELOG `[Unreleased]` och ROADMAP "Fas 3".
 | Receptredigeraren (#22) | ✅ klart 2026-11-03, CI grön (PR, Contract 2.6.13/2.7.1, röktest, referensbilder) | "Fas 3 – kontrakt", "Receptredigeraren" |
 | Import (dela länk/text, foto och PDF via Tandoors AI-import) | 🔧 pågår, påbörjat 2026-11-03: datasidan och skärmen inne, kontraktstest och referensbilder kvar | "Importera recept" |
 | Widgets, snabbinställningsruta och genvägar | 🔧 pågår, påbörjat 2026-11-03: modulen, widgetarna, rutan och genvägarna skrivna, CI kvar | "Widgets, snabbinställning och genvägar" |
-| Dra och släpp i matsedeln, näringsvärden | ⏳ inte påbörjat | – |
+| Dra och släpp i matsedeln, näringsvärden | 🔧 pågår, påbörjat 2026-11-03: skrivet, CI och omspelade receptvybilder kvar | "Dra och släpp i matsedeln och näringsvärden" |
 
 ### Pågående: import
 
@@ -1051,9 +1089,15 @@ Ordning (varje punkt är en commit som lämnar CI grön):
 
 ### Pågående: widgets
 
-1. 🔧 `:feature:widgets` (ny modul), `AppOpenIntents` i `core:ui`, `ShellOpenRequest` i skalet,
-   `OpenLaunch` i appen, dynamiska genvägar; tester. Väntar på grön CI.
+1. 🔧 `:feature:widgets` (ny modul, commit a72383a, manifestfix 51c765b), `AppOpenIntents` i
+   `core:ui`, `ShellOpenRequest` i skalet, `OpenLaunch` i appen, dynamiska genvägar; tester.
+   Väntar på grön CI.
 2. ⏳ Dokumentation: CHANGELOG (skrivet), ROADMAP ✅ när allt är grönt.
+
+### Pågående: dra och släpp, näringsvärden
+
+1. 🔧 Skrivet (se avsnittet); väntar på grön CI och omspelade `detail_*`-bilder.
+2. ⏳ ROADMAP ✅ när allt är grönt.
 <!-- /Fas 3 läge -->
 
 <!-- Fas S hemma-data -->

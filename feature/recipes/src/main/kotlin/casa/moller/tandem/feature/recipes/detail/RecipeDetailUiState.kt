@@ -57,6 +57,8 @@ data class RecipeDetailUiState(
     val webUrl: String? = null,
     val struckIngredientIds: Set<Long> = emptySet(),
     val unitChoices: Map<Long, Int> = emptyMap(),
+    /** Fas 3 (näringsvärden): the values per serving ("Energi 520 kcal"), empty when the server has none. */
+    val nutrition: List<NutritionRow> = emptyList(),
 ) {
     /** The server says the recipe no longer exists (deleted or no longer shared). */
     val isDeleted: Boolean
@@ -168,3 +170,7 @@ sealed interface RecipeDetailEffect {
     /** Show a short message (snackbar). */
     data class Message(@StringRes val text: Int) : RecipeDetailEffect
 }
+
+/** Fas 3 (näringsvärden): one nutrition value per serving, its amount already formatted in the user's number style. */
+@Immutable
+data class NutritionRow(val name: String, val amountText: String, val unit: String)

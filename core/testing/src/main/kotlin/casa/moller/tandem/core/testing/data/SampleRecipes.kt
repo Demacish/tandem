@@ -9,6 +9,7 @@ import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Ingredient
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.MeasurementUnit
+import casa.moller.tandem.core.model.recipe.NutritionValue
 import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.Step
@@ -58,6 +59,13 @@ object SampleRecipes {
         name = "Krämig svamppasta",
         description = "Snabb vardagspasta med champinjoner, vitlök och parmesan.",
         servings = 4,
+        // Fas 3 (näringsvärden): per serving, as Tandoor's property types name them.
+        nutritionValues = listOf(
+            NutritionValue("Energi", 520.0, "kcal"),
+            NutritionValue("Protein", 18.0, "g"),
+            NutritionValue("Fett", 24.0, "g"),
+            NutritionValue("Kolhydrater", 58.0, "g"),
+        ),
         servingsText = "portioner",
         workingMinutes = 20,
         waitingMinutes = 5,

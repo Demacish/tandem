@@ -185,6 +185,8 @@ class WeekViewModel @AssistedInject internal constructor(
 
             WeekAction.ConfirmMove -> confirmMove()
 
+            is WeekAction.DropMeal -> dropMeal(action)
+
             WeekAction.CancelMove -> transient.update { it.copy(move = null) }
 
             is WeekAction.ResolveConflict -> resolveConflict(action.keepMine)
@@ -269,20 +271,33 @@ class WeekViewModel @AssistedInject internal constructor(
     private fun confirmMove() {
         val move = transient.value.move ?: return
         transient.update { it.copy(move = null) }
-        if (!canWrite() || !move.changed) return
-        val meal = move.meal
+        if (!move.changed) return
+        moveMeal(move.meal, move.date, move.mealTypeId)
+    }
+
+    /** Fas 3 (dra och släpp): the dropped meal, found in the shown week, moved like the sheet moves it. */
+    private fun dropMeal(action: WeekAction.DropMeal) {
+        val meal = uiState.value.days.flatMap { it.meals }.firstOrNull { it.id == action.mealId } ?: return
+        val mealTypeId = action.mealTypeId ?: meal.mealType.id
+        if (action.date == meal.fromDate && mealTypeId == meal.mealType.id) return
+        moveMeal(meal, action.date, mealTypeId)
+    }
+
+    /** Moves [meal] to [date] (keeping its length) and [mealTypeId], with "Ångra"; nothing for a guest. */
+    private fun moveMeal(meal: MealPlanEntry, date: LocalDate, mealTypeId: Long) {
+        if (!canWrite()) return
         val length = meal.fromDate.daysUntil(meal.toDate).coerceAtLeast(0)
         val update = MealPlanUpdate(
-            fromDate = move.date,
-            toDate = move.date.plus(length, DateTimeUnit.DAY),
-            mealTypeId = move.mealTypeId.takeIf { it != meal.mealType.id },
+            fromDate = date,
+            toDate = date.plus(length, DateTimeUnit.DAY),
+            mealTypeId = mealTypeId.takeIf { it != meal.mealType.id },
         )
         val back = MealPlanUpdate(
             fromDate = meal.fromDate,
             toDate = meal.toDate,
-            mealTypeId = meal.mealType.id.takeIf { it != move.mealTypeId },
+            mealTypeId = meal.mealType.id.takeIf { it != mealTypeId },
         )
-        write(WeekMessage.Moved(meal.displayTitle, move.date), undo = { mealPlans.update(meal.id, back) }) {
+        write(WeekMessage.Moved(meal.displayTitle, date), undo = { mealPlans.update(meal.id, back) }) {
             mealPlans.update(meal.id, update)
         }
     }

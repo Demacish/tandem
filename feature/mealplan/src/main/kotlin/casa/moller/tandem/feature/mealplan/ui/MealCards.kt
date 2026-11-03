@@ -3,7 +3,7 @@ package casa.moller.tandem.feature.mealplan.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -129,24 +130,30 @@ internal fun MealCard(
         border = if (isToday) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
         Column {
+            val movable = MealMenuItem.MOVE in menu
             Row(
                 modifier = Modifier
                     .testTag(mealTag(meal.id))
                     .clip(MaterialTheme.shapes.large)
+                    // Fas 3 (dra och släpp): a long press lifts the card; the sheet stays reachable
+                    // through the menu, TalkBack's custom action and the semantics long click.
+                    .mealDragSource(meal, enabled = movable)
                     .then(
                         if (primary != null) {
-                            Modifier.combinedClickable(
-                                onClickLabel = primary.second,
-                                role = Role.Button,
-                                onLongClickLabel = moveLabel.takeIf { MealMenuItem.MOVE in menu },
-                                onLongClick = { onAction(WeekAction.StartMove(meal)) }.takeIf { MealMenuItem.MOVE in menu },
-                                onClick = { onAction(primary.first) },
-                            )
+                            Modifier.clickable(onClickLabel = primary.second, role = Role.Button, onClick = { onAction(primary.first) })
                         } else {
                             Modifier
                         },
                     )
-                    .semantics(mergeDescendants = true) { this.customActions = customActions }
+                    .semantics(mergeDescendants = true) {
+                        this.customActions = customActions
+                        if (movable) {
+                            onLongClick(label = moveLabel) {
+                                onAction(WeekAction.StartMove(meal))
+                                true
+                            }
+                        }
+                    }
                     .heightIn(min = TandemTheme.sizes.minTouchTarget)
                     .padding(start = spacing.md, top = spacing.md, bottom = spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
@@ -210,26 +217,31 @@ internal fun MealTile(
     val moveLabel = stringResource(R.string.mealplan_move)
     Box(modifier = modifier) {
         Column {
+            val movable = MealMenuItem.MOVE in menu
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag(mealTag(meal.id))
                     .clip(MaterialTheme.shapes.medium)
+                    // Fas 3 (dra och släpp): a long press lifts the tile (see MealCard).
+                    .mealDragSource(meal, enabled = movable)
                     .then(
                         if (menu.isNotEmpty()) {
                             val label = stringResource(R.string.mealplan_show_actions)
-                            Modifier.combinedClickable(
-                                onClickLabel = label,
-                                role = Role.Button,
-                                onLongClickLabel = moveLabel.takeIf { MealMenuItem.MOVE in menu },
-                                onLongClick = { onAction(WeekAction.StartMove(meal)) }.takeIf { MealMenuItem.MOVE in menu },
-                                onClick = { open = true },
-                            )
+                            Modifier.clickable(onClickLabel = label, role = Role.Button, onClick = { open = true })
                         } else {
                             Modifier
                         },
                     )
-                    .semantics(mergeDescendants = true) { contentDescription = description },
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = description
+                        if (movable) {
+                            onLongClick(label = moveLabel) {
+                                onAction(WeekAction.StartMove(meal))
+                                true
+                            }
+                        }
+                    },
                 shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
             ) {

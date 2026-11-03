@@ -29,6 +29,10 @@ Början på Fas 3 ("Skapa och fånga"): recept skapas och redigeras i appen.
   eller matsedeln ändras.
 - **Snabbinställningsrutan "Handla"** öppnar inköpslistan och visar hur många varor som är kvar.
 - **Genvägar** på appikonen (håll inne): Handla, Veckan, Importera recept, Skanna streckkod.
+- **Dra och släpp i Veckan:** håll inne en måltid och dra den till en annan dag (på surfplattan
+  också till en annan måltidstyp). "Flytta" i menyn finns kvar, med Ångra som förut.
+- **Näringsvärden:** receptvyn visar energi, protein och de andra värdena per portion som er
+  Tandoor har för receptet (egna värden, annars summerade från livsmedlen).
 - Gäster kan titta men inte ändra. Diagnostik visar "Receptändringar".
 - **Kvar till senare:** ta bort en bild, stegfiler, delrecept och näringsvärden ändras på webben.
 

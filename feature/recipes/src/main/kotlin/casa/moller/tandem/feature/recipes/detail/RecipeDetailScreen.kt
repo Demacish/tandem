@@ -392,6 +392,7 @@ private fun DetailContent(
                     StartCooking(onStartCooking)
                     Servings(state, onAction)
                     Ingredients(state, onAction)
+                    Nutrition(state)
                     shoppingActions?.invoke()
                     // Fas S: after the ingredients, so the servings and the list stay where they were.
                     pairings?.invoke()
@@ -441,6 +442,7 @@ private fun TwoPaneContent(
             StartCooking(onStartCooking)
             Servings(state, onAction)
             Ingredients(state, onAction)
+            Nutrition(state)
             shoppingActions?.invoke()
             pairings?.invoke()
         }
@@ -695,6 +697,44 @@ private fun Ingredients(state: RecipeDetailUiState, onAction: (RecipeDetailActio
         ) {
             Column(modifier = Modifier.padding(vertical = TandemTheme.spacing.xs)) {
                 IngredientRows(state.ingredients, state, onAction)
+            }
+        }
+    }
+}
+
+/** Fas 3 (näringsvärden): the values per serving as the server holds them (recipe properties, else the foods' sums). */
+@Composable
+private fun Nutrition(state: RecipeDetailUiState) {
+    if (state.nutrition.isEmpty()) return
+    val spacing = TandemTheme.spacing
+    Column {
+        SectionHeading(
+            title = stringResource(R.string.recipe_detail_nutrition),
+            hint = stringResource(R.string.recipe_detail_nutrition_hint),
+        )
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.padding(top = spacing.sm).fillMaxWidth(),
+        ) {
+            FlowRow(
+                modifier = Modifier.padding(horizontal = spacing.md, vertical = spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            ) {
+                state.nutrition.forEach { row ->
+                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                        Text(
+                            text = row.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = listOf(row.amountText, row.unit).filter { it.isNotBlank() }.joinToString(" "),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                }
             }
         }
     }

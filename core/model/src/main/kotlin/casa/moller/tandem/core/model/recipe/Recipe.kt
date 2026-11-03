@@ -24,7 +24,10 @@ import kotlin.time.Instant
  * @property isPrivate Tandoor's `private` flag.
  * @property showIngredientOverview Tandoor's `show_ingredient_overview`: show all ingredients in
  *   one list above the steps (otherwise only per step).
- * @property nutrition which kind of nutrition data the server holds (shown in a later phase).
+ * @property nutrition which kind of nutrition data the server holds.
+ * @property nutritionValues Fas 3 (näringsvärden): the values PER SERVING as the server holds
+ *   them (`properties` entered on the recipe, else the sums of the foods' `food_properties`
+ *   divided by [servings]); empty when none.
  * @property diameter the baking form diameter (`diameter`), 0 when not used.
  * @property diameterText unit/label of [diameter] (`diameter_text`, e.g. "cm").
  * @property createdAt server `created_at`, if known.
@@ -47,6 +50,7 @@ data class Recipe(
     val isPrivate: Boolean = false,
     val showIngredientOverview: Boolean = true,
     val nutrition: NutritionPresence = NutritionPresence.NONE,
+    val nutritionValues: List<NutritionValue> = emptyList(),
     val diameter: Int = 0,
     val diameterText: String = "",
     val createdAt: Instant? = null,
@@ -178,3 +182,9 @@ data class MeasurementUnit(val id: Long, val name: String, val pluralName: Strin
  * @property unitPluralName the unit's plural name, if the server sent one.
  */
 data class UnitConversion(val amount: Double, val unitName: String, val unitPluralName: String? = null)
+
+/**
+ * Fas 3: one nutrition value per serving (Tandoor property types: "Energy" 520 "kcal", "Protein"
+ * 18 "g"). [name] and [unit] are the space's own property type texts, shown as they are.
+ */
+data class NutritionValue(val name: String, val amount: Double, val unit: String)

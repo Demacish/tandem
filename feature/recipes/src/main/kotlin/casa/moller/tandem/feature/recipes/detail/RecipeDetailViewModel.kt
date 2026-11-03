@@ -241,6 +241,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
             webUrl = sources.session.baseUrl?.let { "${it.trimEnd('/')}/recipe/$recipeId/" },
             struckIngredientIds = choices.struck,
             unitChoices = choices.units,
+            // Fas 3 (näringsvärden): per serving, so they do not move with the servings chooser.
+            nutrition = recipe?.nutritionValues.orEmpty().map { NutritionRow(it.name, ServingsText.number(it.amount, style), it.unit) },
         )
     }
 

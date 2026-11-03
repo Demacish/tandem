@@ -140,6 +140,7 @@ fun RecipeDetailWithSteps.toRecipe(overview: RecipeOverviewEntity?, keywords: Li
         isPrivate = overview?.isPrivate ?: false,
         showIngredientOverview = detail.showIngredientOverview,
         nutrition = detail.nutrition,
+        nutritionValues = RecipeNutrition.valuesOf(detail.rawJson, detail.servings),
         diameter = detail.diameter,
         diameterText = detail.diameterText,
         createdAt = overview?.createdAtEpochMillis?.toInstant(),
