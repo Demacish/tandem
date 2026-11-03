@@ -110,3 +110,11 @@
   barn), `POST food/` med ett befintligt namn ger samma livsmedel (201, *har hemma* kvar), och ett
   nästlat nyckelord eller en nästlad plats med ett annat namn döps om, också i en PATCH. Se
   2.6.13 "Fas S a", "b", "c" och "e". [O]
+
+## Fas 3
+
+- `Phase3ContractTest` (receptredigeraren, 0.5.0) körs mot 2.7.1 i samma `contract.yml`-körning
+  som mot 2.6.13 och väntas ge samma fakta (Tandoors receptserializers är desamma på 2.6- och
+  2.7-linjen). Se [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md) "Fas 3"; inspelningarna checkas in i
+  [`fas3/`](fas3/) från den första gröna körningen. [S]
+

@@ -121,7 +121,8 @@ object OutboxOps {
      * A drink's photo: `PUT /api/recipe/{id}/image/` (multipart `image`). Entity
      * [OutboxEntities.DRINK]; queued with the drink's temporary `local_id` and `depends_on` its
      * CREATE (the id rewrite then gives it `server_id`). Payload `{"file": "<app-private path>"}`;
-     * a newer photo replaces the payload of an unsent one.
+     * a newer photo replaces the payload of an unsent one. Fas 3: the same for a recipe's photo
+     * from the editor, entity [OutboxEntities.RECIPE_EDIT] (`server_id` for a stored recipe).
      */
     const val RECIPE_IMAGE: String = "RECIPE_IMAGE"
 }
@@ -184,6 +185,20 @@ object OutboxEntities {
      * drink exists it is an ordinary recipe ([RECIPE]).
      */
     const val DRINK: String = "drink"
+
+    // --- Fas 3 (grund lane; docs/BYGGE.md "Fas 3 – kontrakt", table "Outbox") ---
+
+    /**
+     * A recipe written in the app (#22, plan §8.9): CREATE = `POST /api/recipe/` with the WHOLE
+     * recipe (the payload IS the request body: foods, units and keywords by name, steps and
+     * ingredients in order), under a temporary `local_id` that the recipe tables hold as a negative
+     * `server_id` until the answer; PATCH = `PATCH /api/recipe/{id}/` with the whole recipe (steps
+     * and ingredients with their ids), `base_snapshot` `{"updated_at": <the copy edited>}` for the
+     * conflict check; DELETE = `DELETE /api/recipe/{id}/`; [OutboxOps.RECIPE_IMAGE] its photo. A
+     * separate entity from [RECIPE] (whose rows are the keyword toggles and logs), so each has one
+     * sender and the keyword rows of the same recipe never wait for an edit.
+     */
+    const val RECIPE_EDIT: String = "recipe_edit"
 }
 
 /**

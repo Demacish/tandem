@@ -6,6 +6,21 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+Början på Fas 3 ("Skapa och fånga"): recept skapas och redigeras i appen.
+
+- **Nytt recept och Redigera:** "Nytt recept" i Recept och "Redigera" i receptets meny öppnar en
+  redigerare med namn, beskrivning, foto (kamera eller galleri), portioner, aktiv tid och
+  väntetid, källa, nyckelord (befintliga föreslås, nya skapas) och steg med ingredienser (mängd,
+  enhet med de enheter ni har, livsmedel, anteckning, rubrikrader, "Utan mängd"; en rad kan
+  skrivas som text, "2 dl grädde, kall"). Steg och rader flyttas och tas bort; ett halvskrivet
+  recept överlever att appen stängs. Allt sparas i er Tandoor som på webben och fungerar offline:
+  ett nytt recept syns i listan direkt och skickas när du har nät. Ändras receptet på webben
+  medan din ändring väntar skickas den inte; receptvyn säger "Ändrad på två ställen" och du
+  väljer att öppna din ändring igen eller slänga den.
+- **Ta bort recept** i receptets meny (bekräftas), också offline.
+- Gäster kan titta men inte ändra. Diagnostik visar "Receptändringar".
+- **Kvar till senare:** ta bort en bild, stegfiler, delrecept och näringsvärden ändras på webben.
+
 ## [0.4.0] – 2026-10-30
 
 Skafferi och drycker (Fas S): Tandem vet nu vad ni har hemma och föreslår vad ni kan laga av det,

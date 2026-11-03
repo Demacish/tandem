@@ -301,8 +301,43 @@ abstract class OutboxDao {
             OutboxEntities.INVENTORY_ENTRY -> deleteUnsentInventoryEntries(accountId, localIds)
 
             OutboxEntities.FOOD_ALIAS -> deleteUnsentFoodAliases(accountId, localIds)
+
+            // Fas 3 (grund lane): a recipe created in the app lives in the recipe tables under its negative id.
+            OutboxEntities.RECIPE_EDIT -> {
+                deleteUnsentRecipeFts(accountId, localIds)
+                deleteUnsentRecipeOverviews(accountId, localIds)
+                deleteUnsentRecipeDetails(accountId, localIds)
+                deleteUnsentRecipeSteps(accountId, localIds)
+                deleteUnsentRecipeIngredients(accountId, localIds)
+                deleteUnsentRecipeKeywordLinks(accountId, localIds)
+                deleteUnsentRecipeHomeRows(accountId, localIds)
+            }
         }
     }
+
+    @Query(
+        "DELETE FROM recipe_fts WHERE rowid IN " +
+            "(SELECT local_id FROM recipe_overview WHERE account_id = :accountId AND server_id IN (:localIds))",
+    )
+    abstract suspend fun deleteUnsentRecipeFts(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM recipe_overview WHERE account_id = :accountId AND server_id < 0 AND server_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeOverviews(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM recipe_detail WHERE account_id = :accountId AND recipe_id < 0 AND recipe_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeDetails(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM step WHERE account_id = :accountId AND recipe_id < 0 AND recipe_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeSteps(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM ingredient WHERE account_id = :accountId AND recipe_id < 0 AND recipe_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeIngredients(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM recipe_keyword WHERE account_id = :accountId AND recipe_id < 0 AND recipe_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeKeywordLinks(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM home_section_recipe WHERE account_id = :accountId AND recipe_id < 0 AND recipe_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeHomeRows(accountId: String, localIds: List<Long>)
 
     @Query("DELETE FROM inventory_entry WHERE account_id = :accountId AND location_id IN (:locationIds)")
     abstract suspend fun deleteUnsentEntriesOfLocations(accountId: String, locationIds: List<Long>)

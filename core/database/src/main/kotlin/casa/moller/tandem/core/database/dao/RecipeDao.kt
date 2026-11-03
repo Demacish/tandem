@@ -207,14 +207,31 @@ abstract class RecipeDao {
 
     /**
      * Recipes that must survive an index deletion although the server no longer lists them:
-     * pinned recipes with unsent edits in the outbox (plan 3.5 "utom fästa som redigeras").
+     * pinned recipes with unsent edits in the outbox (plan 3.5 "utom fästa som redigeras"), and
+     * (Fas 3, grund lane) recipes created in the app that are not sent yet (negative `server_id`)
+     * and recipes with an edit of the app still to send (`recipe_edit`, not FAILED: a refused edit
+     * does not keep a recipe the server deleted).
      */
     @Query(
         "SELECT d.recipe_id FROM recipe_detail d WHERE d.account_id = :accountId AND d.pinned = 1 AND EXISTS " +
             "(SELECT 1 FROM outbox ob WHERE ob.account_id = d.account_id AND ob.entity = 'recipe' " +
-            "AND ob.server_id = d.recipe_id AND ob.op NOT IN ('VIEW_LOG', 'COOK_LOG'))",
+            "AND ob.server_id = d.recipe_id AND ob.op NOT IN ('VIEW_LOG', 'COOK_LOG')) " +
+            "UNION SELECT o.server_id FROM recipe_overview o WHERE o.account_id = :accountId AND (o.server_id < 0 OR EXISTS " +
+            "(SELECT 1 FROM outbox ob WHERE ob.account_id = o.account_id AND ob.entity = 'recipe_edit' " +
+            "AND ob.server_id = o.server_id AND ob.state != 'FAILED'))",
     )
     abstract suspend fun getProtectedRecipeIds(accountId: String): List<Long>
+
+    /**
+     * Fas 3 (grund lane): recipes with an edit of this device still to send (`recipe_edit` rows that
+     * are not FAILED), by server id: a sync must not overwrite their stored copy with the server's
+     * before the edit went out (the sender stores the answer itself).
+     */
+    @Query(
+        "SELECT DISTINCT server_id FROM outbox WHERE account_id = :accountId AND entity = 'recipe_edit' " +
+            "AND server_id IS NOT NULL AND state != 'FAILED'",
+    )
+    abstract suspend fun getIdsWithUnsentEdits(accountId: String): List<Long>
 
     // ---------------------------------------------------------------- transactional writes
 
@@ -237,9 +254,11 @@ abstract class RecipeDao {
                 searchName = SearchText.normalize(entry.name),
             )
         }
+        // Fas 3 (grund lane): a recipe with an edit of this device still to send keeps its name and image.
+        val edited = getIdsWithUnsentEdits(accountId).toSet()
         val updates = index.values.mapNotNull { entry ->
             stored[entry.serverId]
-                ?.takeIf { it.name != entry.name || it.imageUrl != entry.imageUrl }
+                ?.takeIf { entry.serverId !in edited && (it.name != entry.name || it.imageUrl != entry.imageUrl) }
                 ?.copy(name = entry.name, imageUrl = entry.imageUrl, searchName = SearchText.normalize(entry.name))
         }
         if (inserts.isNotEmpty()) insertOverviews(inserts)
@@ -270,7 +289,10 @@ abstract class RecipeDao {
     @Transaction
     open suspend fun upsertOverviews(accountId: String, writes: List<RecipeOverviewWrite>) {
         if (writes.isEmpty()) return
-        val unique = writes.associateBy { it.overview.serverId }.values.toList()
+        // Fas 3 (grund lane): a recipe with an edit of this device still to send keeps its stored copy.
+        val edited = getIdsWithUnsentEdits(accountId).toSet()
+        val unique = writes.associateBy { it.overview.serverId }.values.filter { it.overview.serverId !in edited }
+        if (unique.isEmpty()) return
         writeOverviews(accountId, unique.map { it.overview }, fromDetail = false)
         val withKeywords = unique.filter { it.keywords != null }
         if (withKeywords.isNotEmpty()) {

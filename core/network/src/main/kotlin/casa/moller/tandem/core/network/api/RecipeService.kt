@@ -6,7 +6,10 @@ import casa.moller.tandem.core.network.dto.RecipeFlatDto
 import casa.moller.tandem.core.network.dto.RecipeOverviewDto
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.JsonObject
+import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -70,6 +73,20 @@ interface RecipeService {
      */
     @GET("api/recipe/{id}/")
     suspend fun recipeJson(@Path("id") id: Long): JsonObject
+
+    /**
+     * Fas 3 (grund lane): the editor's writes (FACTS "Fas 3"). `POST /api/recipe/` with the whole
+     * recipe (foods, units and keywords by name; `steps` required, `internal: true`) answers 201
+     * with the recipe as raw JSON (stored like a detail); the drinks' `DrinkService.createRecipe`
+     * is the same call. `PATCH` with the whole recipe updates steps and ingredients that carry
+     * their `id` in place, creates those without one and deletes the omitted ones, and answers
+     * 200 with the recipe. `DELETE` answers 204; afterwards GET answers 404.
+     */
+    @PATCH("api/recipe/{id}/")
+    suspend fun updateRecipe(@Path("id") id: Long, @Body body: JsonObject): JsonObject
+
+    @DELETE("api/recipe/{id}/")
+    suspend fun deleteRecipe(@Path("id") id: Long)
 }
 
 /**

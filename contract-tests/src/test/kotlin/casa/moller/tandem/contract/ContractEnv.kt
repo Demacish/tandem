@@ -92,4 +92,7 @@ internal object ContractEnv {
 
     /** Fas S recordings: `<recordDir>/fas-s/<name>.json` (committed to api-schema/fixtures/<tag>/fas-s/). */
     val fasSRecordDir: File = File(recordDir, "fas-s")
+
+    /** Fas 3 recordings: `<recordDir>/fas3/<name>.json` (committed to api-schema/fixtures/<tag>/fas3/). */
+    val fas3RecordDir: File = File(recordDir, "fas3")
 }

@@ -132,3 +132,10 @@ GET /api/keyword/{id}/
 PUT /api/keyword/{id}/move/{parent}/
 POST /api/recipe/
 PUT /api/recipe/{id}/image/
+
+# --- Fas 3 (grund lane): the recipe editor (#22, plan §8.9; FACTS "Fas 3") ---
+# Sent through the outbox (entity recipe_edit): a new recipe is POSTed with its whole body (the
+# drinks' POST /api/recipe/ above), an edit PATCHes the whole recipe (steps and ingredients with
+# their ids: updated in place, omitted ones deleted) after reading it fresh for the conflict check,
+# a delete DELETEs it; the photo goes with PUT /api/recipe/{id}/image/ above.
+DELETE /api/recipe/{id}/

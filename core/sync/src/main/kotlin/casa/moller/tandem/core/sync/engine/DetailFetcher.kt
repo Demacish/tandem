@@ -46,37 +46,50 @@ internal class DetailFetcher @Inject constructor(
 ) {
     private val background = Semaphore(SyncSchedule.MAX_PARALLEL_DETAIL_FETCHES)
 
-    /** Fetches and stores recipe [recipeId] of [remote]; [isBackground] for the prefetch. */
-    suspend fun fetch(remote: ActiveSource.Remote, recipeId: Long, isBackground: Boolean): Outcome<Unit> = if (isBackground) {
-        background.withPermit {
-            fetchNow(remote, recipeId, background = true).also { delay(SyncSchedule.DETAIL_FETCH_PAUSE) }
-        }
-    } else {
-        fetchNow(remote, recipeId, background = false)
-    }
-
-    private suspend fun fetchNow(remote: ActiveSource.Remote, recipeId: Long, background: Boolean): Outcome<Unit> = catchingUnexpected {
-        val response = caller.call(remote, background, confirmUnauthorized = true) { recipes.recipeJson(recipeId) }
-        if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
-        val json = when (response) {
-            is Outcome.Failure -> {
-                if (response.error == TandemError.NotFound) {
-                    databases.get(remote.kind).recipeDao().deleteRecipes(remote.accountId, listOf(recipeId))
-                }
-                return@catchingUnexpected response
+    /**
+     * Fetches and stores recipe [recipeId] of [remote]; [isBackground] for the prefetch. Fas 3
+     * (redigerare lane): a recipe with an edit of this device still to send keeps its stored copy
+     * (the server's would hide the edit until it is sent; the sender stores the answer itself);
+     * only its deletion (404) is applied. [force] stores anyway (the senders).
+     */
+    suspend fun fetch(remote: ActiveSource.Remote, recipeId: Long, isBackground: Boolean, force: Boolean = false): Outcome<Unit> =
+        if (isBackground) {
+            background.withPermit {
+                fetchNow(remote, recipeId, background = true, force = force).also { delay(SyncSchedule.DETAIL_FETCH_PAUSE) }
             }
-
-            is Outcome.Success -> response.value
+        } else {
+            fetchNow(remote, recipeId, background = false, force = force)
         }
-        store(remote, recipeId, json)
-    }
+
+    private suspend fun fetchNow(remote: ActiveSource.Remote, recipeId: Long, background: Boolean, force: Boolean): Outcome<Unit> =
+        catchingUnexpected {
+            val response = caller.call(remote, background, confirmUnauthorized = true) { recipes.recipeJson(recipeId) }
+            if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
+            val json = when (response) {
+                is Outcome.Failure -> {
+                    if (response.error == TandemError.NotFound) {
+                        databases.get(remote.kind).recipeDao().deleteRecipes(remote.accountId, listOf(recipeId))
+                    }
+                    return@catchingUnexpected response
+                }
+
+                is Outcome.Success -> response.value
+            }
+            store(remote, recipeId, json, force)
+        }
 
     /**
      * Stores [json] (a full recipe as `GET /api/recipe/{id}/` answers it, or the answer of a recipe
      * PATCH, Phase 2 "Vill laga") as recipe [recipeId]'s detail, in one transaction.
      */
-    suspend fun store(remote: ActiveSource.Remote, recipeId: Long, json: JsonObject): Outcome<Unit> = catchingUnexpected {
+    suspend fun store(
+        remote: ActiveSource.Remote,
+        recipeId: Long,
+        json: JsonObject,
+        force: Boolean = false,
+    ): Outcome<Unit> = catchingUnexpected {
         if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
+        if (!force && hasUnsentEdit(remote, recipeId)) return@catchingUnexpected Outcome.Success(Unit)
         val dto = try {
             TandoorJson.decodeFromJsonElement(RecipeDto.serializer(), json)
         } catch (e: SerializationException) {
@@ -94,6 +107,10 @@ internal class DetailFetcher @Inject constructor(
         database.cookLogDao().reapplyUnsent(remote.accountId, recipeId, remote.cookStatsRules)
         Outcome.Success(Unit)
     }
+
+    /** Fas 3: whether this device has an edit of [recipeId] queued (`recipe_edit`, not FAILED). */
+    private suspend fun hasUnsentEdit(remote: ActiveSource.Remote, recipeId: Long): Boolean =
+        recipeId in databases.get(remote.kind).recipeDao().getIdsWithUnsentEdits(remote.accountId)
 
     private companion object {
         const val DECODE_DETAIL = "recipe detail"

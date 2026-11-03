@@ -62,8 +62,12 @@ Levererades i **0.4.0**, före Fas 3 (beslutat 2026-10-29).
 - ✅ Surfplatta: Hemma och Kan laga nu i kolumner i båda orienteringarna (0.4.0).
 
 ## Fas 3: Skapa och fånga
-- Skapa och redigera recept i appen, lika komplett som i Tandoors webb: ingredienser med
-  livsmedel och enheter, steg, bilder, nyckelord och tider.
+Levereras i **0.5.0**; påbörjat 2026-11-03.
+
+- ✅ Skapa och redigera recept i appen: namn, beskrivning, foto, portioner, tider, nyckelord,
+  steg med ingredienser (livsmedel och enheter på namn), offline med tillfälligt id tills det
+  skickats, konflikt när receptet ändrats på webben under tiden, ta bort recept (0.5.0).
+  Kvar: ta bort en bild, stegfiler, näringsvärden.
 - Importera recept genom att dela en länk eller text till appen; foto och PDF tolkas av
   Tandoors AI-import.
 - Widgets, snabbinställningsruta och genvägar.

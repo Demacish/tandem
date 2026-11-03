@@ -60,6 +60,8 @@ import casa.moller.tandem.core.sync.pantry.PantrySyncStep
 import casa.moller.tandem.core.sync.permissions.DefaultSpacePermissionsRepository
 import casa.moller.tandem.core.sync.permissions.HouseholdMembersSync
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
+import casa.moller.tandem.core.sync.recipeedit.OfflineFirstRecipeEditRepository
+import casa.moller.tandem.core.sync.recipeedit.RecipeEditOutboxHandler
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.scan.FoodAliasOutboxHandler
 import casa.moller.tandem.core.sync.scan.FoodAliasReader
@@ -203,6 +205,8 @@ internal class SyncTestGraph(
             OutboxEntities.FOOD_ALIAS to FoodAliasOutboxHandler(databases, caller, foodAliasReader, droppedChanges, clock),
             // Fas S (drycker lane): a drink created in the app and its photo.
             OutboxEntities.DRINK to DrinkOutboxHandler(databases, caller, details, pairingKeywords, drinkImages),
+            // Fas 3 (redigerare lane): recipes written in the app and their photos.
+            OutboxEntities.RECIPE_EDIT to RecipeEditOutboxHandler(databases, caller, details, drinkImages),
         ),
         roles = roleSync,
         dropped = droppedChanges,
@@ -315,6 +319,9 @@ internal class SyncTestGraph(
         DrinkSync(databases, caller),
         drinkIndex,
     )
+
+    // Fas 3 (redigerare lane): the recipe editor's writes (the photo copies share the drinks' store).
+    val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages)
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

@@ -4,6 +4,7 @@ import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.dao.RecipeDao
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.mapper.toRecipe
@@ -51,6 +52,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -148,7 +150,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
     private fun recipeStates(id: Long, revalidate: Boolean): Flow<RecipeDetailState> = sources.source
         .flatMapLatest { source ->
             when (source) {
-                is ActiveSource.Stored -> detailStates(source, id, revalidate)
+                // Fas 3 (redigerare lane): a recipe created in the app keeps its temporary id in an open
+                // screen after the server answered; the stored copy is found under the server id then.
+                is ActiveSource.Stored -> flow { emit(currentId(source, id)) }.flatMapLatest { detailStates(source, it, revalidate) }
                 ActiveSource.Loading -> emptyFlow<RecipeDetailState>()
                 ActiveSource.None -> flowOf(RecipeDetailState(recipeId = id, error = DataProblem.NO_ACCOUNT.toError()))
             }
@@ -319,6 +323,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         .flowOn(Dispatchers.Default)
 
     private fun recipeDao(source: ActiveSource.Stored): RecipeDao = databases.get(source.kind).recipeDao()
+
+    private suspend fun currentId(source: ActiveSource.Stored, id: Long): Long =
+        if (id >= 0) id else databases.get(source.kind).idRewriteDao().current(source.accountId, OutboxEntities.RECIPE_EDIT, id)
 
     /** The detail's refresh, combined with the stored rows. */
     private data class RefreshState(val refreshing: Boolean = false, val error: TandemError? = null)

@@ -66,6 +66,10 @@ data class SpacePermissions(
     /** "Klart!" and cook-log entries. */
     val canLogCooking: Boolean
         get() = !readOnly
+
+    /** Fas 3: creating, editing and deleting recipes (every member may; a guest's recipe writes get 403). */
+    val canEditRecipes: Boolean
+        get() = !readOnly
 }
 
 /**

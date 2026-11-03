@@ -94,6 +94,9 @@ enum class OutboxKind {
 
     /** Fas S: "Passar med" pairings (`RECIPE_KEYWORDS` rows with pairing fields only). */
     PAIRING,
+
+    /** Fas 3: recipes created, edited or deleted in the app, and their photos (`recipe_edit`). */
+    RECIPE_EDIT,
     COOK_LOG,
     VIEW_LOG,
     OTHER,

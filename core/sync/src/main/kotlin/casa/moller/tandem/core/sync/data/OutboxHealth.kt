@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.sync.engine.CIRCUIT_BREAKER_CODE
 import casa.moller.tandem.core.sync.guard.GuardState
 import casa.moller.tandem.core.sync.mealplan.MealPlanPayloads
+import casa.moller.tandem.core.sync.recipeedit.RecipeEditPayloads
 import kotlin.time.Instant
 
 /**
@@ -65,6 +66,7 @@ internal object OutboxHealth {
             OutboxEntities.FOOD_ALIAS -> OutboxKind.LEARNED_ALIAS
             OutboxEntities.DRINK -> OutboxKind.DRINK
             OutboxEntities.KEYWORD -> OutboxKind.PAIRING
+            OutboxEntities.RECIPE_EDIT -> OutboxKind.RECIPE_EDIT
             else -> OutboxKind.OTHER
         }
     }
@@ -90,7 +92,7 @@ internal object OutboxHealth {
         code == "http-429" -> OutboxProblem.THROTTLED
         code.startsWith("http-5") -> OutboxProblem.SERVER_ERROR
         code == CIRCUIT_BREAKER_CODE -> OutboxProblem.CIRCUIT_BREAKER
-        code == MealPlanPayloads.CONFLICT -> OutboxProblem.CONFLICT
+        code == MealPlanPayloads.CONFLICT || code == RecipeEditPayloads.CONFLICT -> OutboxProblem.CONFLICT
         else -> OutboxProblem.OTHER
     }
 }

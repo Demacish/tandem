@@ -24,6 +24,7 @@ import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
+import casa.moller.tandem.core.sync.recipeedit.RecipeEditOutboxHandler
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.remote.toEntity
 import casa.moller.tandem.core.sync.shopping.DroppedChange
@@ -417,7 +418,8 @@ internal class OutboxSender @Inject constructor(
                 null
             }
 
-            error is TandemError.BadRequest || error == TandemError.Unknown(UNSUPPORTED) -> {
+            // Fas 3: an edit held back by a conflict is FAILED with its own code, never retried by itself.
+            error is TandemError.BadRequest || error == TandemError.Unknown(UNSUPPORTED) || error == RECIPE_CONFLICT -> {
                 rejected(error.code())
                 null
             }
@@ -465,5 +467,8 @@ internal class OutboxSender @Inject constructor(
 
         /** The cook log's `recipe` field (a 400 on it means the recipe does not exist). */
         const val FIELD_RECIPE = "recipe"
+
+        /** Fas 3 (redigerare lane): a recipe edit held back because the recipe changed on the server. */
+        val RECIPE_CONFLICT: TandemError = RecipeEditOutboxHandler.CONFLICT_ERROR
     }
 }

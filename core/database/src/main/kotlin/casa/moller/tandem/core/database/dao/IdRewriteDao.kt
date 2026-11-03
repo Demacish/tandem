@@ -27,6 +27,8 @@ import casa.moller.tandem.core.database.entity.OutboxOps
  *
  * 5. [pruneMappings] (Fas S, rester lane) removes old mappings nothing can need any more; Phase 2
  *    never pruned them (one small row per offline create).
+ * 6. Fas 3 (grund lane): a recipe created in the app ([OutboxEntities.RECIPE_EDIT]) has no table
+ *    of its own: it lives in the recipe tables under a negative `server_id` (see [rewriteRecipeCreate]).
  */
 @Dao
 abstract class IdRewriteDao {
@@ -53,6 +55,7 @@ abstract class IdRewriteDao {
         OutboxEntities.FOOD_ALIAS -> lowestFoodAliasId(accountId, entity)
         OutboxEntities.KEYWORD -> lowestKeywordId(accountId, entity)
         OutboxEntities.DRINK -> lowestDrinkDraftId(accountId, entity)
+        OutboxEntities.RECIPE_EDIT -> lowestRecipeId(accountId, entity)
         else -> error("no offline creates for $entity")
     } - 1
 
@@ -109,9 +112,34 @@ abstract class IdRewriteDao {
                 rekeyRecipeBookEntry(accountId, localId, serverId)
             }
 
+            OutboxEntities.RECIPE_EDIT -> rewriteRecipeCreate(accountId, localId, serverId)
+
             else -> rewritePhaseSCreate(accountId, entity, localId, serverId)
         }
         deleteOutboxRow(outboxId)
+    }
+
+    /**
+     * Fas 3 (grund lane): the local side of an answered recipe CREATE (part of [completeCreate]'s
+     * transaction). The sender stored the server's answer as the recipe's detail under its server
+     * id already, so the rows under the temporary id go (list entry, detail, steps, ingredients,
+     * keyword links, Today's carousel rows and the FTS row), unsent `recipe` rows of it (view logs)
+     * are dropped, and what pointed at the temporary id (a meal planned with it, "Klart!" entries,
+     * a book entry, the recipe on the shopping list) now names the server id.
+     */
+    open suspend fun rewriteRecipeCreate(accountId: String, localId: Long, serverId: Long) {
+        deleteRecipeFts(accountId, localId)
+        deleteRecipeOverview(accountId, localId)
+        deleteRecipeDetail(accountId, localId)
+        deleteRecipeSteps(accountId, localId)
+        deleteRecipeIngredients(accountId, localId)
+        deleteRecipeKeywordLinks(accountId, localId)
+        deleteRecipeHomeRows(accountId, localId)
+        deleteUnsentRecipeRows(accountId, localId)
+        rewriteMealPlanRecipe(accountId, localId, serverId)
+        rewriteCookLogRecipe(accountId, localId, serverId)
+        rewriteBookEntryRecipe(accountId, localId, serverId)
+        rewriteListRecipeRecipe(accountId, localId, serverId)
     }
 
     /**
@@ -191,6 +219,7 @@ abstract class IdRewriteDao {
         OutboxEntities.FOOD_ALIAS -> foodAliasReferenced(accountId, id)
         OutboxEntities.KEYWORD -> keywordReferenced(accountId, id)
         OutboxEntities.DRINK -> drinkDraftReferenced(accountId, id)
+        OutboxEntities.RECIPE_EDIT -> recipeReferenced(accountId, id)
         else -> true
     }
 
@@ -267,6 +296,15 @@ abstract class IdRewriteDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM drink_draft WHERE account_id = :accountId AND local_id = :id)")
     abstract suspend fun drinkDraftReferenced(accountId: String, id: Long): Boolean
+
+    @Query(
+        "SELECT EXISTS(SELECT 1 FROM recipe_overview WHERE account_id = :accountId AND server_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM meal_plan WHERE account_id = :accountId AND recipe_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM cook_log WHERE account_id = :accountId AND recipe_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM recipe_book_entry WHERE account_id = :accountId AND recipe_id = :id) " +
+            "OR EXISTS(SELECT 1 FROM shopping_list_recipe WHERE account_id = :accountId AND recipe_id = :id)",
+    )
+    abstract suspend fun recipeReferenced(accountId: String, id: Long): Boolean
 
     // ---------------------------------------------------------------- building blocks (Room)
 
@@ -417,6 +455,53 @@ abstract class IdRewriteDao {
             "AND local_id = :localId AND server_id IS NULL",
     )
     abstract suspend fun rewriteRecipeRowsOfDrink(accountId: String, localId: Long, serverId: Long)
+
+    // --- Fas 3 (grund lane): a recipe created in the app lives in the recipe tables under a negative server_id ---
+
+    @Query(LOWEST_PREFIX + "(SELECT MIN(server_id) FROM recipe_overview WHERE account_id = :accountId), 0), " + LOWEST_SUFFIX)
+    abstract suspend fun lowestRecipeId(accountId: String, entity: String): Long
+
+    @Query(
+        "DELETE FROM recipe_fts WHERE rowid IN " +
+            "(SELECT local_id FROM recipe_overview WHERE account_id = :accountId AND server_id = :recipeId)",
+    )
+    abstract suspend fun deleteRecipeFts(accountId: String, recipeId: Long)
+
+    @Query("DELETE FROM recipe_overview WHERE account_id = :accountId AND server_id = :recipeId")
+    abstract suspend fun deleteRecipeOverview(accountId: String, recipeId: Long)
+
+    @Query("DELETE FROM recipe_detail WHERE account_id = :accountId AND recipe_id = :recipeId")
+    abstract suspend fun deleteRecipeDetail(accountId: String, recipeId: Long)
+
+    @Query("DELETE FROM step WHERE account_id = :accountId AND recipe_id = :recipeId")
+    abstract suspend fun deleteRecipeSteps(accountId: String, recipeId: Long)
+
+    @Query("DELETE FROM ingredient WHERE account_id = :accountId AND recipe_id = :recipeId")
+    abstract suspend fun deleteRecipeIngredients(accountId: String, recipeId: Long)
+
+    @Query("DELETE FROM recipe_keyword WHERE account_id = :accountId AND recipe_id = :recipeId")
+    abstract suspend fun deleteRecipeKeywordLinks(accountId: String, recipeId: Long)
+
+    @Query("DELETE FROM home_section_recipe WHERE account_id = :accountId AND recipe_id = :recipeId")
+    abstract suspend fun deleteRecipeHomeRows(accountId: String, recipeId: Long)
+
+    @Query(
+        "DELETE FROM outbox WHERE account_id = :accountId AND entity = 'recipe' AND server_id = :recipeId " +
+            "AND state != 'IN_FLIGHT'",
+    )
+    abstract suspend fun deleteUnsentRecipeRows(accountId: String, recipeId: Long)
+
+    @Query("UPDATE meal_plan SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
+    abstract suspend fun rewriteMealPlanRecipe(accountId: String, localId: Long, serverId: Long)
+
+    @Query("UPDATE cook_log SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
+    abstract suspend fun rewriteCookLogRecipe(accountId: String, localId: Long, serverId: Long)
+
+    @Query("UPDATE recipe_book_entry SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
+    abstract suspend fun rewriteBookEntryRecipe(accountId: String, localId: Long, serverId: Long)
+
+    @Query("UPDATE shopping_list_recipe SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
+    abstract suspend fun rewriteListRecipeRecipe(accountId: String, localId: Long, serverId: Long)
 
     companion object {
         /**

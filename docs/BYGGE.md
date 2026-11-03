@@ -788,6 +788,145 @@ behåller den (`-keep class * implements com.google.firebase.components.Componen
 | rester (`:core:sync`, `:smoke`, `:feature:shell`) | Fas 2:s rester (plan §10 Fas S) | dubbel synk när ett konto läggs till, röktest för hushållsvarningen och "Delad med", rensning av `id_mapping`, bottenark som fönster i skärmbildstester; till sist bort med `PlaceholderPage` |
 <!-- /Fas S kontrakt -->
 
+<!-- Fas 3 kontrakt -->
+## Fas 3 – kontrakt (0.5.0 "Skapa och fånga")
+
+Grunden för Fas 3 (plan §8.9, ROADMAP "Fas 3": skapa och redigera recept i appen, import, widgets,
+dra och släpp) lades 2026-11-03 tillsammans med det första delsteget, **receptredigeraren**
+(redigerare-banan, #22). Samma regler som Fas 2 och S: main-safe gränssnitt i `:core:data`, rena
+typer i `:core:model`, offline först genom outboxen, en demoväg utan nät, gäster nekas före
+lagring. Fakta om servern: `api-schema/fixtures/2.6.13/FACTS.md` "Fas 3" (`Phase3ContractTest`,
+se "Fas 3 – fakta" nedan). **Inget nytt Room-schema**: ett recept som skapas i appen bor i
+recepttabellerna under ett tillfälligt (negativt) `server_id`, och en ändring som väntar bär hela
+receptet i sin outbox-rad.
+
+### Rena typer (`:core:model`)
+
+| Paket | Typer |
+|---|---|
+| `model.recipe` | `RecipeDraft` (namn, beskrivning, portioner, portionstext, aktiv tid, väntetid, källa, nyckelord, steg, nytt foto `imageUri`, privat; `normalized()` trimmar, slänger tomma steg och rader, `from(recipe)`), `DraftKeyword(id?, name)` (id när enheten känner nyckelordet), `DraftStep(id?, name, instruction, timeMinutes, ingredients, showAsHeader, showIngredientsTable)`, `DraftIngredient(id?, amount, unit, food, note, isHeader, noAmount)` (enhet och livsmedel som **namn**), `RecipeEditStatus` NONE/QUEUED/CONFLICT/FAILED |
+| `model.account` | `SpacePermissions.canEditRecipes` (= inte gäst) |
+| `model.diagnostics` | `OutboxKind.RECIPE_EDIT` ("Receptändringar" i Diagnostik) |
+
+### Gränssnitt (`:core:data`) och vem som implementerar
+
+| Gränssnitt | Bana | Innehåll |
+|---|---|---|
+| `recipe.RecipeEditRepository` | redigerare (`:core:sync`) | `observeUnits` (enhetsförslagen), `observeDraft(id)` (redigerarens utgångspunkt: en ändring som hållits tillbaka av en konflikt, annars den lagrade kopian; null = inte lagrad), `observeEditStatus(id)`, `createRecipe(draft): Outcome<Long>` (negativt id tills servern svarat), `updateRecipe(id, draft)`, `deleteRecipe(id)`, `discardEdit(id)`; `RecipeEditProblem` NAME_EMPTY/UNKNOWN_RECIPE/PHOTO_UNREADABLE/CONFLICT |
+
+`RecipeService` (`:core:network`) får `updateRecipe` (`PATCH /api/recipe/{id}/`, hela receptet)
+och `deleteRecipe` (`DELETE /api/recipe/{id}/`); `POST /api/recipe/` är dryckernas
+`DrinkService.createRecipe`. `used-endpoints.txt` listar `DELETE /api/recipe/{id}/`.
+
+### Navigering
+
+| Modul | Nyckel | Route |
+|---|---|---|
+| `:feature:recipes` | `RecipeEditorKey(recipeId?)` (`@Serializable`, `FullScreenDestination`; null = nytt recept; också ett tillfälligt negativt id), `DrinkKeysTest` | `editor/RecipeEditorRoutes.kt` `RecipeEditorRoute(key, onSaved(recipeId, isNew), onBack)` |
+
+Skalet (`ShellFeatures.RecipeEditor`, `entry<RecipeEditorKey>`): ett nytt recept öppnar sin
+receptvy i redigerarens ställe (`replace = { it is RecipeEditorKey }`), en ändring går tillbaka
+till receptvyn. `ShellFeatures.Recipes` får `onCreateRecipe` (FAB "Nytt recept" i receptlistan,
+inte för gäster), `ShellFeatures.RecipeDetail` får `onEdit` och `onDeleted` (också för
+`DrinkDetailKey`: en dryck är ett recept).
+
+### Outboxen (Fas 3)
+
+Ny entitet **`recipe_edit`** (`OutboxEntities.RECIPE_EDIT`), skild från `recipe` (vars rader är
+nyckelordsväxlingarna och loggarna), så att varje entitet har **en** avsändare och ett recepts
+"Vill laga" aldrig väntar på en redigering. `IdRewriteDao.nextLocalId(RECIPE_EDIT)` ger ett id
+under `MIN(recipe_overview.server_id)`; `completeCreate` (`rewriteRecipeCreate`) tar bort raderna
+under det tillfälliga id:t (avsändaren lagrade svaret under server-id:t), släpper osända
+`recipe`-rader (visningsloggar) och skriver om `meal_plan.recipe_id`, `cook_log.recipe_id`,
+`recipe_book_entry.recipe_id` och `shopping_list_recipe.recipe_id`. `OutboxDao.deleteUnsentObjects`
+tar bort ett aldrig skickat recepts rader. `RecipeDao.getProtectedRecipeIds` skyddar recept med
+negativt id och recept med en osänd `recipe_edit`-rad (inte FAILED) från indexets radering, och
+`getIdsWithUnsentEdits` håller `applyIndex`, `upsertOverviews` och `DetailFetcher` från att skriva
+över den lokala kopian innan ändringen gått ut (`force` för avsändarna).
+
+| op | entitet | Anrop | Payload / `base_snapshot` | Särskilt (FACTS "Fas 3") |
+|---|---|---|---|---|
+| CREATE | `recipe_edit` | `POST /api/recipe/` | **hela receptet** som webben skickar det: `{name, description, servings, servings_text, working_time, waiting_time, source_url, private, internal: true, keywords: [{id} \| {name}], steps: [{name, instruction, time, order, show_as_header, show_ingredients_table, ingredients: [{food: {name} \| null, unit: {name} \| null, amount, note, order, is_header, no_amount}]}]}`; `local_id` = tillfälligt id | livsmedel, enheter och nyckelord på namn (återanvänds utan hänsyn till versaler); ett känt nyckelord bara `{id}` (`{id, name}` döper om); `steps` krävs; svaret lagras som detalj; ett nytt försök letar först efter ett förlorat svar (markör `recipe_posted:<id>` i `sync_state`, som drycker) |
+| PATCH | `recipe_edit` | `PATCH /api/recipe/{id}/` | samma kropp, steg och ingredienser **med sina `id`**; `base_snapshot {"updated_at": <kopian som redigerades>}` | läses färskt först: annat `updated_at` ⇒ **inte skickad**, serverns version lagras, raden FAILED med `tandem.recipe.conflict` (`RecipeEditStatus.CONFLICT`); steg/rader med id uppdateras på plats, utan id skapas, utelämnade raderas (drf-writable-nested); PATCH efter CREATE slås ihop i CREATE (`OutboxMerge`); 404 raderar lokalt |
+| DELETE | `recipe_edit` | `DELETE /api/recipe/{id}/` | – | 204; 404 släpps; DELETE efter oförsökt CREATE tar bort allt |
+| RECIPE_IMAGE | `recipe_edit` | `PUT /api/recipe/{id}/image/` | `{"file": <app-privat kopia>}` (dryckernas `DrinkImageStore`), `depends_on` CREATE för ett nytt recept | som dryckernas |
+
+`OutboxSender` räknar `tandem.recipe.conflict` som en avvisning (FAILED, aldrig nytt försök av
+sig själv), `ErrorCodes` ger koden, `OutboxHealth` visar `OutboxProblem.CONFLICT`.
+
+### Fas 3 – fakta
+
+`Phase3ContractTest` körs i `contract.yml` efter Fas S (push: 2.6.13 och 2.7.1), spelar in till
+`fas3/` och kräver (`EXPECTED`): POST med hela receptet → 201 med id på varje steg och ingrediens,
+livsmedel och enheter på namn, rubrikrad och `no_amount`, ett nyckelord skickat som `{id}` behåller
+namnet; PATCH med hela receptet → 200, stegets och ingrediensernas id kvar, utelämnat steg och
+utelämnade rader raderade, nytt steg och ny rad får id, livsmedlet på namn återanvänds (samma id),
+`updated_at` flyttas; medlemmen får 200, gästen 403 på PATCH och DELETE; DELETE 204, sedan 404.
+Fixturerna i `api-schema/fixtures/<version>/fas3/` checkas in från den första gröna körningens
+artefakt (`contract-recordings-<tagg>`), FACTS "Fas 3" sammanfattar dem.
+
+### Fakes (`:core:testing`)
+
+`Fas3Fakes.kt`: `FakeRecipeEditRepository` (utgångspunkterna ur `SampleRecipes`, `created`,
+`updated`, `deleted`, `discarded`, `statuses`, `readOnly`, `failure`); `SampleRecipes.units`.
+
+### Vem bygger vad
+
+| Bana | Bygger på | Levererar |
+|---|---|---|
+| redigerare (`:core:sync`, `:feature:recipes`, `:feature:shell`) | `RecipeDraft`, `RecipeEditRepository`, outbox `recipe_edit`, `RecipeEditorKey` | `OfflineFirstRecipeEditRepository`, `RecipeEditOutboxHandler`, redigeraren, "Redigera"/"Ta bort" i receptvyn, FAB "Nytt recept", referensbilder (se "Receptredigeraren") |
+| import (senare) | – | dela länk/text, Tandoors AI-import |
+| widgets (senare) | – | hemskärmswidgets, snabbinställning, genvägar |
+<!-- /Fas 3 kontrakt -->
+
+<!-- Fas 3 redigerare -->
+## Receptredigeraren (`:feature:recipes`, `:core:sync`, Fas 3, redigerare)
+
+Skapa och redigera recept i appen (#22, plan §8.9; Stitch-skissen `redigera_recept_kr_mig_svamppasta`)
+mot `RecipeEditRepository` i "Fas 3 – kontrakt".
+
+**Datasidan** (`core/sync/.../recipeedit/`): `RecipeEditPayloads` bygger kroppen (`encode`),
+läser tillbaka den (`decode`, redigeraren öppnar en kvarhållen ändring), bygger `Recipe`-modellen
+som enheten lagrar tills servern svarat (`toRecipe`: stegens och ingrediensernas id behålls, nya
+får negativa, livsmedel och enheter slås upp på namn i `food`/`unit` så livsmedelsfiltret och Kan
+laga nu ser dem, bild, betyg och kokstatistik behålls; ett okänt nyckelord får ett stabilt negativt
+id, `DrinkIndex.pendingKeywordId`). `OfflineFirstRecipeEditRepository`: `createRecipe` skriver
+receptet med `replaceDetail` under `nextLocalId(RECIPE_EDIT)` (rå JSON = kroppen) och köar CREATE
+(+ `RECIPE_IMAGE` efter kopiering i `DrinkImageStore`); `updateRecipe` byter ut kopian direkt och
+köar PATCH med `base_snapshot` (en kvarhållen konflikt för samma recept slängs först; ett recept
+som inte skickats får sin PATCH ihopslagen i CREATE); `deleteRecipe` tar bort lokalt med
+`deleteRecipes` (osända bildkopior raderas) och köar DELETE; `discardEdit` tar bort FAILED-rader.
+Demoläget skriver demodatabasen (id från 2000). `observeDraft`/`observeEditStatus` läser outboxen
+(`observeAll`) och löser ett tillfälligt id med `IdRewriteDao.current`; `OfflineFirstRecipeRepository`
+gör detsamma, så en öppen receptvy med tillfälligt id ser receptet efter svaret.
+`RecipeEditOutboxHandler`: se tabellen i kontraktet. `DetailFetcher.store(force)`.
+
+**Skärmen** (`feature/recipes/.../editor/`, helskärm, samma mönster som Ny dryck):
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| ViewModel | `RecipeEditorViewModel.kt`, `RecipeEditorUiState.kt`, `SavedDraft.kt` | utkastet ligger i `SavedStateHandle` som JSON (`SavedDraft`, core:model har inga serialiseringsannotationer) från start, så ett halvskrivet recept överlever processdöd; ett lagrat recept läses en gång ur `observeDraft` (`unknownRecipe` när det inte finns på enheten); mängdfält som text (`amountTexts`) tills de tolkas; "Ny ingrediens" tolkar text med `LocalIngredientParser` och de lagrade enheterna; `keptEdit` efter konflikt med "Börja om från webbens version" (`discardEdit`); `Saved(text, name, recipeId, isNew)` |
+| Skärm | `RecipeEditorScreen.kt` | Grundinformation (namn, beskrivning, foto som i Ny dryck, portioner med −/+, portionstext, aktiv tid, väntetid, källa), Nyckelord (chips med ta bort, fält + förslag ur de lagrade), Steg (kort per steg: flytta upp/ned, ta bort, namn, minuter, ingrediensrader med mängd/enhet (meny med enheterna)/livsmedel, anteckning, "Utan mängd", flytta, ta bort; rubrikrad; snabbfält; instruktion flerradig), "Lägg till steg"; "Spara receptet" fast nedanför; varje ikonknapp säger vilket steg och vilken rad |
+| Route | `RecipeEditorRoutes.kt` | kamera och bildväljare som Ny dryck (samma `DrinkCameraFiles`, originalen raderas), toast vid sparat, `onSaved(recipeId, isNew)` |
+| Receptvyn | `RecipeEditActionsViewModel.kt`, `RecipeDetailScreen` `RecipeEditControls` | "Redigera" och "Ta bort" (bekräftas i dialog) i menyn för medlemmar; "Dina ändringar skickas när du har nät" (QUEUED), "Ändrad på två ställen" med "Öppna min ändring"/"Släng min ändring" (CONFLICT), "Ändringen skickades inte" (FAILED). `RecipeDetailViewModel` är oförändrad |
+| Listan | `RecipeListScreen` `onCreateRecipe` | FAB "Nytt recept" (inte för gäster) |
+
+**Tester:** `RecipeEditRepositoryTest` (`:core:sync`, mot `FakeRecipeEditTandoor` i 2.6.13- och
+2.7.1-form: skapat offline och i listan direkt, POST med livsmedel på namn, tillfälligt id
+omskrivet och en öppen skärm hittar receptet; PATCH med steg-id, utelämnat steg raderat, en synk
+under tiden skriver inte över; konflikt hållen tillbaka, serverns version visas, ändringen kvar och
+kan slängas eller sparas igen; ändring av oskickat recept slås ihop i CREATE; radering (också av
+ett redan raderat och ett oskickat recept); foto efter receptet; gäst; demoläge),
+`RecipeEditorViewModelTest`, `RecipeEditorScreenshotTest` och `RecipeEditorAccessibilityTest`
+(`RecipeEditorShot`: nytt tomt, utan namn, redigering på telefon/hög telefon/liggande/surfplatta,
+mörkt, teckenstorlek 2, kvarhållen ändring, gäst, laddar, okänt recept) med referensbilder under
+`feature/recipes/src/test/screenshots/editor/`, `DrinkKeysTest` (nyckeln). Ikonerna `Edit`,
+`ArrowUpward`, `ArrowDownward` i `core:designsystem` `icon/TandemIconsEditor.kt`.
+
+**Kvar till senare:** ta bort ett recepts bild (webben), stegfiler och länkade delrecept (behålls
+oförändrade via stegets id men kan inte ändras), näringsvärden, `show_as_header`, dra och släpp.
+<!-- /Fas 3 redigerare -->
+
 <!-- Fas S hemma-data -->
 ## Skafferiet – data och synk (`:core:sync`, `:core:network`, Fas S)
 

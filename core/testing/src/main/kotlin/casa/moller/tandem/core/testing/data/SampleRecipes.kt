@@ -44,6 +44,9 @@ object SampleRecipes {
     private val pinch = MeasurementUnit(id = 5, name = "krm")
     private val piece = MeasurementUnit(id = 6, name = "st")
 
+    /** Fas 3: the units of the samples, as the editor's unit suggestions. */
+    val units: List<MeasurementUnit> = listOf(gram, deciliter, tablespoon, teaspoon, pinch, piece)
+
     private fun food(id: Long, name: String, plural: String? = null) = Food(id = id, name = name, pluralName = plural)
 
     private val cookedAt = Instant.parse("2026-10-01T17:30:00Z")

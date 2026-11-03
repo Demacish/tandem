@@ -76,6 +76,10 @@ abstract class ReferenceDao {
     @Query("SELECT * FROM unit WHERE account_id = :accountId ORDER BY name")
     abstract suspend fun getUnits(accountId: String): List<UnitEntity>
 
+    /** Fas 3 (grund lane): the units for the editor's suggestions; the caller sorts with a locale collator. */
+    @Query("SELECT * FROM unit WHERE account_id = :accountId")
+    abstract fun observeUnits(accountId: String): Flow<List<UnitEntity>>
+
     /** Meal types in the server's order. */
     @Query("SELECT * FROM meal_type WHERE account_id = :accountId ORDER BY type_order, id")
     abstract fun observeMealTypes(accountId: String): Flow<List<MealTypeEntity>>

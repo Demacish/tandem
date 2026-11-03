@@ -2,6 +2,8 @@ package casa.moller.tandem.core.sync.engine
 
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.recipeedit.RecipeEditOutboxHandler
+import casa.moller.tandem.core.sync.recipeedit.RecipeEditPayloads
 
 /**
  * A short, stable, non-sensitive description of an error for `outbox.last_error` and the
@@ -39,6 +41,7 @@ internal fun TandemError.code(): String = when (this) {
         SyncGuard.BREAKER_ERROR -> CIRCUIT_BREAKER_CODE
         SyncGuard.IMPORT_ERROR -> "import-running"
         SyncGuard.FORBIDDEN_ERROR -> "forbidden"
+        RecipeEditOutboxHandler.CONFLICT_ERROR -> RecipeEditPayloads.CONFLICT
         else -> "unknown"
     }
 }
