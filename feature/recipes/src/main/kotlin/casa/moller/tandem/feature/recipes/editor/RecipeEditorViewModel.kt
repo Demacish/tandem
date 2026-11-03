@@ -226,6 +226,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
         viewModelScope.launch {
             when (val result = edits.discardEdit(id)) {
                 is Outcome.Failure -> effectChannel.trySend(RecipeEditorEffect.Message(R.string.recipe_editor_failed))
+
                 is Outcome.Success -> {
                     progress.value = progress.value.copy(discarded = true)
                     edits.observeDraft(id).first()?.let { store(it) }
