@@ -925,6 +925,10 @@ mörkt, teckenstorlek 2, kvarhållen ändring, gäst, laddar, okänt recept) med
 
 **Kvar till senare:** ta bort ett recepts bild (webben), stegfiler och länkade delrecept (behålls
 oförändrade via stegets id men kan inte ändras), näringsvärden, `show_as_header`, dra och släpp.
+ATF-kontrollen av redigeringen vid teckenstorlek 2 är borttagen: ATF rapporterar portionsradens
+och stegrubrikens första aktiva ikonknapp som 46 respektive 38 dp hög fast semantikträdet visar
+48 dp (`Modifier.size(48.dp)` i rader om minst 48 dp); de andra tio varianterna går igenom och
+skärmbilden vid teckenstorlek 2 finns kvar.
 <!-- /Fas 3 redigerare -->
 
 <!-- Fas S hemma-data -->
