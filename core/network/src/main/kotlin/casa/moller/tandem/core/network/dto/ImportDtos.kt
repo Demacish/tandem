@@ -2,6 +2,7 @@ package casa.moller.tandem.core.network.dto
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 // Fas 3 (import lane): `POST /api/recipe-from-source/` and `POST /api/ai-import/` answer the same
 // shape (schema `RecipeFromSourceResponse`): the parsed recipe (schema `SourceImportRecipe`, a
@@ -17,7 +18,8 @@ data class RecipeFromSourceResponseDto(
     val images: List<String> = emptyList(),
     val error: Boolean = false,
     val msg: String = "",
-    val duplicates: List<SourceImportDuplicateDto> = emptyList(),
+    /** `[{id, name}]` of the space's recipes with the same source; raw, since the recordings carry none (DtoFixturesTest). */
+    val duplicates: JsonElement? = null,
 )
 
 /** `SourceImportRecipe`. */
@@ -36,7 +38,11 @@ data class SourceImportRecipeDto(
     val steps: List<SourceImportStepDto> = emptyList(),
 )
 
-/** `SourceImportKeyword`: [label] is what the web shows, [name] what is sent; [importKeyword] is the web's checkbox. */
+/**
+ * `SourceImportKeyword`: [label] is what the web shows, [name] what is sent; [importKeyword] is
+ * the web's checkbox, false for every keyword in the recordings (FACTS "Fas 3 e"), so the app
+ * does not go by it.
+ */
 @Serializable
 data class SourceImportKeywordDto(
     val id: Long? = null,
@@ -67,6 +73,3 @@ data class SourceImportIngredientDto(
 @Serializable
 data class SourceImportNameDto(val name: String = "")
 
-/** `SourceImportDuplicate`. */
-@Serializable
-data class SourceImportDuplicateDto(val id: Long? = null, val name: String = "")

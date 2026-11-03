@@ -30,7 +30,7 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
     /** The space's `ai_default_provider.id`, null for a space without one. */
     var providerId: Long? = null
 
-    /** Every import request this fake answered, as `METHOD path` with its body. */
+    /** Every import request this fake answered (not `space/current`, which the sync reads too), as `METHOD path` with its body. */
     val calls: MutableList<Pair<String, String>> = CopyOnWriteArrayList()
 
     fun install(server: FakeTandoorServer) {
@@ -44,7 +44,7 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         val response = when {
             path == FROM_SOURCE && method == "POST" -> fromSource(parse(text))
             path == AI_IMPORT && method == "POST" -> aiImport(text)
-            path == SPACE && method == "GET" -> space()
+            path == SPACE && method == "GET" -> return space()
             else -> return null
         }
         calls += "$method $path" to text

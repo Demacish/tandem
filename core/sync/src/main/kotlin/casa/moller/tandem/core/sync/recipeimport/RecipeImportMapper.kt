@@ -9,6 +9,12 @@ import casa.moller.tandem.core.model.recipe.RecipeImportResult
 import casa.moller.tandem.core.network.dto.RecipeFromSourceResponseDto
 import casa.moller.tandem.core.network.dto.SourceImportIngredientDto
 import casa.moller.tandem.core.network.dto.SourceImportRecipeDto
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.longOrNull
 
 /**
  * Fas 3 (import lane): the server's import answer (`RecipeFromSourceResponse`, FACTS "Fas 3 e")
@@ -16,7 +22,8 @@ import casa.moller.tandem.core.network.dto.SourceImportRecipeDto
  *
  * - foods and units by name (an empty name is none); a line with no food keeps the source's
  *   `original_text` as its note, so nothing of the source is lost; an amount of 0 is "no amount";
- * - the keywords the source carried, except those the server marks `import_keyword: false`;
+ * - the keywords the source carried (`import_keyword` is false for all of them in the
+ *   recordings, so it is not a filter; the editor's chips drop the unwanted ones);
  * - the picture: the recipe's `image_url`, else the first of `images`;
  * - the duplicates the server found (same name or source), for the warning.
  */
@@ -29,8 +36,15 @@ internal object RecipeImportMapper {
         return RecipeImportResult(
             draft = toDraft(recipe, imageUrl = images.firstOrNull()),
             imageUrls = images,
-            duplicates = dto.duplicates.mapNotNull { duplicate -> duplicate.id?.let { ImportDuplicate(it, duplicate.name) } },
+            duplicates = duplicatesOf(dto.duplicates),
         )
+    }
+
+    /** `[{id, name}]`, raw in the DTO (the recordings carry no duplicates, see `ImportDtos.kt`). */
+    private fun duplicatesOf(element: JsonElement?): List<ImportDuplicate> = (element as? JsonArray).orEmpty().mapNotNull { item ->
+        val duplicate = item as? JsonObject ?: return@mapNotNull null
+        val id = (duplicate["id"] as? JsonPrimitive)?.longOrNull ?: return@mapNotNull null
+        ImportDuplicate(id, (duplicate["name"] as? JsonPrimitive)?.contentOrNull.orEmpty())
     }
 
     private fun toDraft(recipe: SourceImportRecipeDto, imageUrl: String?): RecipeDraft = RecipeDraft(
@@ -41,7 +55,7 @@ internal object RecipeImportMapper {
         workingMinutes = recipe.workingTime.coerceAtLeast(0),
         waitingMinutes = recipe.waitingTime.coerceAtLeast(0),
         sourceUrl = recipe.sourceUrl,
-        keywords = recipe.keywords.filter { it.importKeyword }
+        keywords = recipe.keywords
             .map { DraftKeyword(id = it.id?.takeIf { id -> id > 0 }, name = it.name.ifBlank { it.label }) }
             .filter { it.name.isNotBlank() },
         steps = recipe.steps.map { step ->

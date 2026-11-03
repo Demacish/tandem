@@ -120,6 +120,8 @@ class DtoFixturesTest {
         Route("GET", "/api/keyword/\\d+/", KeywordDto.serializer()),
         Route("PUT", "/api/keyword/\\d+/move/\\d+/", KeywordMoveDto.serializer()),
         Route("PUT", "/api/recipe/\\d+/image/", RecipeImageDto.serializer()),
+        // --- Fas 3 (import lane): the server-side import's answer. ---
+        Route("POST", "/api/recipe-from-source/", RecipeFromSourceResponseDto.serializer()),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */

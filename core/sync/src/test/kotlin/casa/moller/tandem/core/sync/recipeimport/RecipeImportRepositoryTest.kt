@@ -91,8 +91,8 @@ class RecipeImportRepositoryTest {
         assertEquals(FakeRecipeImportTandoor.IMAGE, draft.imageUrl)
         assertEquals(listOf(FakeRecipeImportTandoor.IMAGE, "${FakeRecipeImportTandoor.IMAGE}?2"), result.imageUrls)
         assertEquals(listOf("Pannkakor"), result.duplicates.map { it.name })
-        // The keyword the server marked not to import is left out; a known one keeps its id.
-        assertEquals(listOf(5L to "Husmanskost", null to "Mellanmål"), draft.keywords.map { it.id to it.name })
+        // Every keyword comes along (import_keyword is false for all in the recordings); a known one keeps its id.
+        assertEquals(listOf(5L to "Husmanskost", null to "Mellanmål", null to "Skippad"), draft.keywords.map { it.id to it.name })
         assertEquals(2, draft.steps.size)
         val lines = draft.steps[0].ingredients
         assertEquals(DraftIngredient(amount = 2.5, unit = "dl", food = "vetemjöl"), lines[0])

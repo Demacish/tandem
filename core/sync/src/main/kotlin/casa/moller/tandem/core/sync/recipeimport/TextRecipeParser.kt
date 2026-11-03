@@ -33,6 +33,8 @@ internal object TextRecipeParser {
                 continue
             }
             SERVINGS.find(line)?.groupValues?.get(1)?.toIntOrNull()?.let { if (servings == 0) servings = it }
+            // "4 portioner" on a line of its own is the servings, not an ingredient.
+            if (SERVINGS_LINE.matches(line)) continue
             val heading = headingOf(line)
             if (heading != null) {
                 section = heading
@@ -99,6 +101,7 @@ internal object TextRecipeParser {
     private const val MAX_INGREDIENT_LINE = 60
     private const val MAX_INGREDIENT_WORDS = 6
     private val SERVINGS = Regex("""(\d{1,2})\s*(?:portion|pers|serving|bitar|st\b)""", RegexOption.IGNORE_CASE)
+    private val SERVINGS_LINE = Regex("""^(?:för\s+|ca\s+|serves\s+)?\d{1,2}\s*(?:portion|pers|serving)\w*\.?$""", RegexOption.IGNORE_CASE)
     private val NUMBERED = Regex("""^\s*(?:\d{1,2}[.)]|steg\s+\d{1,2}[.:]?)\s+(.+)$""", RegexOption.IGNORE_CASE)
     private val INGREDIENT_HEADINGS = listOf("ingredienser", "ingredients", "du behöver", "det här behöver du")
     private val STEP_HEADINGS =
