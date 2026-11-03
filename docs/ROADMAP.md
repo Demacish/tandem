@@ -61,8 +61,8 @@ Levererades i **0.4.0**, före Fas 3 (beslutat 2026-10-29).
   på Idag och i Veckan (0.4.0).
 - ✅ Surfplatta: Hemma och Kan laga nu i kolumner i båda orienteringarna (0.4.0).
 
-## Fas 3: Skapa och fånga
-Levereras i **0.5.0**; påbörjat 2026-11-03.
+## Fas 3: Skapa och fånga ✅
+Levererades i **0.5.0** (2026-11-03).
 
 - ✅ Skapa och redigera recept i appen: namn, beskrivning, foto, portioner, tider, nyckelord,
   steg med ingredienser (livsmedel och enheter på namn), offline med tillfälligt id tills det

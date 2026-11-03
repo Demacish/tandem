@@ -4,9 +4,10 @@ Alla märkbara ändringar i Tandem. Avsnittet för en version blir texten i dess
 (`release.yml` kräver ett avsnitt för versionen, se [docs/RELEASE.md](docs/RELEASE.md)).
 Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
-## [Unreleased]
+## [0.5.0] – 2026-11-03
 
-Början på Fas 3 ("Skapa och fånga"): recept skapas och redigeras i appen.
+Fas 3 ("Skapa och fånga"): recept skapas, redigeras och importeras i appen, widgets på
+hemskärmen, dra och släpp i Veckan och näringsvärden i receptvyn.
 
 - **Nytt recept och Redigera:** "Nytt recept" i Recept och "Redigera" i receptets meny öppnar en
   redigerare med namn, beskrivning, foto (kamera eller galleri), portioner, aktiv tid och
