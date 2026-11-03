@@ -259,7 +259,11 @@ private fun Servings(servings: Int, onAction: (RecipeEditorAction) -> Unit) {
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = { onAction(RecipeEditorAction.SetServings(servings - 1)) }, enabled = servings > 1) {
+            IconButton(
+                onClick = { onAction(RecipeEditorAction.SetServings(servings - 1)) },
+                enabled = servings > 1,
+                modifier = Modifier.size(TOUCH_TARGET),
+            ) {
                 Icon(TandemIcons.Remove, contentDescription = stringResource(R.string.recipe_editor_servings_fewer))
             }
             Text(
@@ -267,7 +271,7 @@ private fun Servings(servings: Int, onAction: (RecipeEditorAction) -> Unit) {
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = spacing.sm),
             )
-            IconButton(onClick = { onAction(RecipeEditorAction.SetServings(servings + 1)) }) {
+            IconButton(onClick = { onAction(RecipeEditorAction.SetServings(servings + 1)) }, modifier = Modifier.size(TOUCH_TARGET)) {
                 Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_servings_more))
             }
         }
@@ -388,13 +392,21 @@ private fun StepEditor(index: Int, step: DraftStep, count: Int, state: RecipeEdi
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
-                IconButton(onClick = { onAction(RecipeEditorAction.MoveStep(index, up = true)) }, enabled = index > 0) {
+                IconButton(
+                    onClick = { onAction(RecipeEditorAction.MoveStep(index, up = true)) },
+                    enabled = index > 0,
+                    modifier = Modifier.size(TOUCH_TARGET),
+                ) {
                     Icon(TandemIcons.ArrowUpward, contentDescription = stringResource(R.string.recipe_editor_step_move_up, number))
                 }
-                IconButton(onClick = { onAction(RecipeEditorAction.MoveStep(index, up = false)) }, enabled = index < count - 1) {
+                IconButton(
+                    onClick = { onAction(RecipeEditorAction.MoveStep(index, up = false)) },
+                    enabled = index < count - 1,
+                    modifier = Modifier.size(TOUCH_TARGET),
+                ) {
                     Icon(TandemIcons.ArrowDownward, contentDescription = stringResource(R.string.recipe_editor_step_move_down, number))
                 }
-                IconButton(onClick = { onAction(RecipeEditorAction.RemoveStep(index)) }) {
+                IconButton(onClick = { onAction(RecipeEditorAction.RemoveStep(index)) }, modifier = Modifier.size(TOUCH_TARGET)) {
                     Icon(TandemIcons.Delete, contentDescription = stringResource(R.string.recipe_editor_step_remove, number))
                 }
             }
@@ -457,7 +469,7 @@ private fun QuickAdd(stepIndex: Int, onAction: (RecipeEditorAction) -> Unit) {
             keyboardActions = KeyboardActions(onDone = { add() }),
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = add) {
+        IconButton(onClick = add, modifier = Modifier.size(TOUCH_TARGET)) {
             Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_ingredient_add))
         }
     }
@@ -543,6 +555,7 @@ private fun IngredientEditor(
                 IconButton(
                     onClick = { onAction(RecipeEditorAction.MoveIngredient(stepIndex, position, up = true)) },
                     enabled = position > 0,
+                    modifier = Modifier.size(TOUCH_TARGET),
                 ) {
                     Icon(
                         TandemIcons.ArrowUpward,
@@ -552,13 +565,17 @@ private fun IngredientEditor(
                 IconButton(
                     onClick = { onAction(RecipeEditorAction.MoveIngredient(stepIndex, position, up = false)) },
                     enabled = position < count - 1,
+                    modifier = Modifier.size(TOUCH_TARGET),
                 ) {
                     Icon(
                         TandemIcons.ArrowDownward,
                         contentDescription = stringResource(R.string.recipe_editor_ingredient_move_down, lineNumber, stepNumber),
                     )
                 }
-                IconButton(onClick = { onAction(RecipeEditorAction.RemoveIngredient(stepIndex, position)) }) {
+                IconButton(
+                    onClick = { onAction(RecipeEditorAction.RemoveIngredient(stepIndex, position)) },
+                    modifier = Modifier.size(TOUCH_TARGET),
+                ) {
                     Icon(
                         TandemIcons.Delete,
                         contentDescription = stringResource(R.string.recipe_editor_ingredient_remove, lineNumber, stepNumber),
@@ -591,7 +608,7 @@ private fun UnitField(
                 null
             } else {
                 {
-                    IconButton(onClick = { open = true }) {
+                    IconButton(onClick = { open = true }, modifier = Modifier.size(TOUCH_TARGET)) {
                         Icon(TandemIcons.ExpandMore, contentDescription = pickDescription)
                     }
                 }
