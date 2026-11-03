@@ -173,8 +173,10 @@ class RecipeImportRepositoryTest {
         assertTrue(rows[1].payload.contains(FakeRecipeImportTandoor.IMAGE))
         drainAll()
         assertTrue(outbox().isEmpty())
-        val created = edits.recipeNamed("Pannkakor")!!
         val imageCall = edits.callsTo("PUT", "/api/recipe/").single()
+        // The fixtures hold a "Pannkakor" too (fas1): the created one is the recipe the image went to.
+        val createdId = Regex("/api/recipe/(\\d+)/image/").find(imageCall.first)!!.groupValues[1].toLong()
+        val created = edits.recipe(createdId)!!
         val sent = imageCall.second
         assertTrue(sent, sent.contains("name=\"image_url\"") && sent.contains(FakeRecipeImportTandoor.IMAGE))
         assertTrue(created.toString(), created["image"].toString().contains("/media/recipes/"))
