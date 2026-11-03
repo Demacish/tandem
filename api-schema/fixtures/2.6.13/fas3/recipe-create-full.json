@@ -1,0 +1,412 @@
+{
+  "name": "recipe-create-full",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Fiskgratäng från Tandem",
+      "description": "Vardagsmat från appen.",
+      "servings": 4,
+      "servings_text": "portioner",
+      "working_time": 20,
+      "waiting_time": 30,
+      "source_url": "",
+      "private": false,
+      "internal": true,
+      "keywords": [
+        {
+          "id": 4,
+          "name": "Bakning"
+        },
+        {
+          "name": "Tandem-redigerad"
+        }
+      ],
+      "steps": [
+        {
+          "name": "Förbered",
+          "instruction": "Skär {{ ingredients[0] }} i bitar.",
+          "time": 10,
+          "order": 0,
+          "show_as_header": false,
+          "show_ingredients_table": true,
+          "ingredients": [
+            {
+              "food": {
+                "name": "torskfilé"
+              },
+              "unit": {
+                "name": "g"
+              },
+              "amount": 600,
+              "note": "tinad",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": null,
+              "unit": null,
+              "amount": 0,
+              "note": "Sås",
+              "order": 1,
+              "is_header": true,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "vispgrädde"
+              },
+              "unit": {
+                "name": "dl"
+              },
+              "amount": 2.5,
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "salt"
+              },
+              "unit": null,
+              "amount": 0,
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": true
+            }
+          ]
+        },
+        {
+          "name": "",
+          "instruction": "Grädda i 200 grader.",
+          "time": 20,
+          "order": 1,
+          "show_as_header": false,
+          "show_ingredients_table": true,
+          "ingredients": []
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 23,
+      "name": "Fiskgratäng från Tandem",
+      "description": "Vardagsmat från appen.",
+      "image": null,
+      "keywords": [
+        {
+          "id": 4,
+          "name": "Bakning",
+          "label": "Bakning",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Bakning"
+        },
+        {
+          "id": 15,
+          "name": "Tandem-redigerad",
+          "label": "Tandem-redigerad",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Tandem-redigerad"
+        }
+      ],
+      "steps": [
+        {
+          "id": 33,
+          "name": "Förbered",
+          "instruction": "Skär {{ ingredients[0] }} i bitar.",
+          "ingredients": [
+            {
+              "id": 92,
+              "food": {
+                "id": 69,
+                "name": "torskfilé",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "torskfilé",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 600.0,
+              "conversions": [
+                {
+                  "food": "torskfilé",
+                  "unit": "g",
+                  "amount": 600.0
+                },
+                {
+                  "food": "torskfilé",
+                  "unit": "kg",
+                  "amount": 0.6
+                }
+              ],
+              "note": "tinad",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 93,
+              "food": null,
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "Sås",
+              "order": 1,
+              "is_header": true,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 94,
+              "food": {
+                "id": 15,
+                "name": "vispgrädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vispgrädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.5,
+              "conversions": [
+                {
+                  "food": "vispgrädde",
+                  "unit": "dl",
+                  "amount": 2.5
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "ml",
+                  "amount": 250.0
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "cup",
+                  "amount": 1.0566875
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "l",
+                  "amount": 0.25
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "msk",
+                  "amount": 16.907
+                },
+                {
+                  "food": "vispgrädde",
+                  "unit": "tsk",
+                  "amount": 50.721
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 95,
+              "food": {
+                "id": 14,
+                "name": "salt",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "salt",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "",
+              "order": 3,
+              "is_header": false,
+              "no_amount": true,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Skär <scalable-number v-bind:number=\"600.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g torskfilé i bitar.</p>",
+          "time": 10,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 34,
+          "name": "",
+          "instruction": "Grädda i 200 grader.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Grädda i 200 grader.</p>",
+          "time": 20,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 20,
+      "waiting_time": 30,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": "",
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

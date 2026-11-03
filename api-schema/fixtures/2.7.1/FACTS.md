@@ -113,8 +113,10 @@
 
 ## Fas 3
 
-- `Phase3ContractTest` (receptredigeraren, 0.5.0) körs mot 2.7.1 i samma `contract.yml`-körning
-  som mot 2.6.13 och väntas ge samma fakta (Tandoors receptserializers är desamma på 2.6- och
-  2.7-linjen). Se [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md) "Fas 3"; inspelningarna checkas in i
-  [`fas3/`](fas3/) från den första gröna körningen. [S]
+- `Phase3ContractTest` (receptredigeraren, 0.5.0) gav **samma fakta** som 2.6.13 (körning
+  2026-11-03, `fas3/observed-facts.json` utan avvikelser): hela receptet POSTas och PATCHas med
+  steg- och ingrediens-id, utelämnade raderas, medlemmen 200, gästen 403, DELETE 204 → 404. Enda
+  skillnaden är formen på 400-svaret för ett nyckelord utan `name`: `{"keywords": {"0": {"name":
+  [...]}}}` (ett objekt med index) i stället för en lista. Se
+  [`../2.6.13/FACTS.md`](../2.6.13/FACTS.md) "Fas 3"; inspelningarna ligger i [`fas3/`](fas3/). [O]
 

@@ -919,9 +919,9 @@ medlemmen ligger i "Contract Household", gästen i inget hushåll):
 Fas 3 (0.5.0, receptredigeraren #22, plan §8.9) prövar `Phase3ContractTest` efter Fas S mot samma
 server: ett recept POSTas och PATCHas med **hela** kroppen som appens outbox skickar den
 (`core:sync` `RecipeEditPayloads`), medlemmen och gästen prövar PATCH och DELETE, receptet raderas.
-Inspelningarna ligger i `fas3/`. Raderna nedan är **[K]** ur Tandoors källkod (`RecipeSerializer`,
-`StepSerializer`, `IngredientSerializer` på drf-writable-nested, tagg 2.6.13) och **[S]**; den
-första gröna körningen bekräftar dem (`observed-facts.json` i `fas3/`) och raderna blir [O].
+Inspelningarna ligger i `fas3/` (körning 2026-11-03, `observed-facts.json` utan avvikelser mot
+`EXPECTED`; Tandoors källkod: `RecipeSerializer`, `StepSerializer`, `IngredientSerializer` på
+drf-writable-nested, tagg 2.6.13).
 
 ## Fas 3 a. `POST /api/recipe/` med hela receptet
 
@@ -929,23 +929,26 @@ första gröna körningen bekräftar dem (`observed-facts.json` i `fas3/`) och r
   internal: true, keywords: [{id} | {name}], steps: [{name, instruction, time, order,
   show_as_header, show_ingredients_table, ingredients: [{food: {name} | null, unit: {name} | null,
   amount, note, order, is_header, no_amount}]}]}` → 201 med hela receptet: varje steg och
-  ingrediens har `id`. [K] Livsmedel, enheter och nyckelord på namn återanvänds utan hänsyn till
-  versaler eller skapas (Fas 1 a). **Ett nyckelord som bara `{id}` → 400** `{"keywords": [{"name":
-  ["This field is required."]}]}` (körning 2026-11-03) [O]; ett känt nyckelord skickas som
-  `{id, name}`, och eftersom ett annat namn döper om nyckelordet (Fas 2 g) tar avsändaren serverns
+  ingrediens har `id`, `internal: true`, `private: false`, rubrikraden med `is_header` och texten i
+  `note`, `no_amount`-raden, `2.5` som decimal. [O] Livsmedel, enheter och nyckelord på namn
+  återanvänds utan hänsyn till versaler eller skapas (Fas 1 a); det nya nyckelordet
+  *Tandem-redigerad* skapades. [O] **Ett nyckelord som bara `{id}` → 400** `{"keywords": [{"name":
+  ["This field is required."]}]}` [O]; ett känt nyckelord skickas som `{id, name}` och behåller
+  namnet [O], och eftersom ett annat namn döper om nyckelordet (Fas 2 g) tar avsändaren serverns
   aktuella namn före PATCH. [S]
 
 ## Fas 3 b. `PATCH /api/recipe/{id}/` med hela receptet
 
-- Steg och ingredienser **med `id`** uppdateras på plats och behåller id (och det appen inte
-  skickar: stegets fil, delrecept); **utan `id`** skapas; de som **saknas** i listan raderas
-  (drf-writable-nested `update`). [K] `updated_at` flyttas (Fas 1 j). Ett livsmedel på namn får
-  samma id som förut. [S]
+- Steg och ingredienser **med `id`** uppdateras på plats och behåller id (stegets namn och en
+  mängd ändrades, 300 → 700); **utan `id`** skapas (ett nytt steg och en ny rad fick id); de som
+  **saknas** i listan raderas (det utelämnade steget och de utelämnade raderna var borta);
+  `updated_at` flyttades; livsmedlet på namn fick samma id som förut. [O] Det appen inte skickar
+  (stegets fil, delrecept) rörs inte av drf-writable-nested. [K]
 
 ## Fas 3 c. Vem får
 
-- Den andra medlemmen PATCHar hela receptet → 200 (Fas S c: medlemmar får redigera varandras
-  recept); gästen → 403 på PATCH och DELETE, receptet finns kvar. [K]
+- Den andra medlemmen PATCHar hela receptet → 200 med stegen kvar (Fas S c: medlemmar får
+  redigera varandras recept); gästen → 403 på PATCH och DELETE, receptet finns kvar. [O]
 
 ## Fas 3 d. Radering
 

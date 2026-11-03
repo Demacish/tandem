@@ -1,0 +1,353 @@
+{
+  "name": "recipe-patch-full",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/23/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Fiskgratäng från Tandem med timjan",
+      "description": "Vardagsmat från appen.",
+      "servings": 4,
+      "servings_text": "portioner",
+      "working_time": 20,
+      "waiting_time": 30,
+      "source_url": "",
+      "private": false,
+      "internal": true,
+      "keywords": [
+        {
+          "id": 4,
+          "name": "Bakning"
+        },
+        {
+          "id": 15,
+          "name": "Tandem-redigerad"
+        }
+      ],
+      "steps": [
+        {
+          "id": 33,
+          "name": "Förbered allt",
+          "instruction": "Skär {{ ingredients[0] }} i bitar.",
+          "time": 12,
+          "order": 0,
+          "show_as_header": false,
+          "show_ingredients_table": true,
+          "ingredients": [
+            {
+              "id": 92,
+              "food": {
+                "name": "torskfilé"
+              },
+              "unit": {
+                "name": "g"
+              },
+              "amount": 700,
+              "note": "tinad",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false
+            },
+            {
+              "id": 93,
+              "food": null,
+              "unit": null,
+              "amount": 0,
+              "note": "Sås",
+              "order": 1,
+              "is_header": true,
+              "no_amount": false
+            },
+            {
+              "food": {
+                "name": "timjan"
+              },
+              "unit": {
+                "name": "tsk"
+              },
+              "amount": 1,
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false
+            }
+          ]
+        },
+        {
+          "name": "Servera",
+          "instruction": "Servera med kokt potatis.",
+          "time": 0,
+          "order": 1,
+          "show_as_header": false,
+          "show_ingredients_table": true,
+          "ingredients": []
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 23,
+      "name": "Fiskgratäng från Tandem med timjan",
+      "description": "Vardagsmat från appen.",
+      "image": null,
+      "keywords": [
+        {
+          "id": 4,
+          "name": "Bakning",
+          "label": "Bakning",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Bakning"
+        },
+        {
+          "id": 15,
+          "name": "Tandem-redigerad",
+          "label": "Tandem-redigerad",
+          "description": "",
+          "parent": null,
+          "numchild": 0,
+          "created_at": "2000-01-15T00:00:00.000000+01:00",
+          "updated_at": "2000-01-15T00:00:00.000000+01:00",
+          "full_name": "Tandem-redigerad"
+        }
+      ],
+      "steps": [
+        {
+          "id": 33,
+          "name": "Förbered allt",
+          "instruction": "Skär {{ ingredients[0] }} i bitar.",
+          "ingredients": [
+            {
+              "id": 92,
+              "food": {
+                "id": 69,
+                "name": "torskfilé",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "torskfilé",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 700.0,
+              "conversions": [
+                {
+                  "food": "torskfilé",
+                  "unit": "g",
+                  "amount": 700.0
+                },
+                {
+                  "food": "torskfilé",
+                  "unit": "kg",
+                  "amount": 0.7
+                }
+              ],
+              "note": "tinad",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem med timjan"
+                }
+              ]
+            },
+            {
+              "id": 93,
+              "food": null,
+              "unit": null,
+              "amount": 0.0,
+              "conversions": [],
+              "note": "Sås",
+              "order": 1,
+              "is_header": true,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem med timjan"
+                }
+              ]
+            },
+            {
+              "id": 96,
+              "food": {
+                "id": 33,
+                "name": "timjan",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "timjan",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 7,
+                "name": "tsk",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "tsp",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "timjan",
+                  "unit": "tsk",
+                  "amount": 1.0
+                },
+                {
+                  "food": "timjan",
+                  "unit": "cup",
+                  "amount": 0.020833333333333332
+                },
+                {
+                  "food": "timjan",
+                  "unit": "l",
+                  "amount": 0.004928924902900179
+                },
+                {
+                  "food": "timjan",
+                  "unit": "ml",
+                  "amount": 4.92892490290018
+                },
+                {
+                  "food": "timjan",
+                  "unit": "msk",
+                  "amount": 0.3333333333333333
+                }
+              ],
+              "note": "",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 23,
+                  "name": "Fiskgratäng från Tandem med timjan"
+                }
+              ]
+            }
+          ],
+          "instructions_markdown": "<p>Skär <scalable-number v-bind:number=\"700.0\" v-bind:factor=\"ingredient_factor\"></scalable-number> g torskfilé i bitar.</p>",
+          "time": 12,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        },
+        {
+          "id": 35,
+          "name": "Servera",
+          "instruction": "Servera med kokt potatis.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Servera med kokt potatis.</p>",
+          "time": 0,
+          "order": 1,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 20,
+      "waiting_time": 30,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": "",
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 4,
+      "file_path": "",
+      "servings_text": "portioner",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

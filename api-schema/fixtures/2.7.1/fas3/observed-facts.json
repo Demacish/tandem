@@ -1,0 +1,104 @@
+{
+  "tandoorTag": "2.7.1",
+  "runDay": "2000-01-15",
+  "recipe.create.keywordIdOnly": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "keywords": {
+        "0": {
+          "name": [
+            "This field is required."
+          ]
+        }
+      }
+    }
+  },
+  "recipe.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipe.create.internal": true,
+  "recipe.create.private": false,
+  "recipe.create.stepCount": 2,
+  "recipe.create.stepsHaveIds": true,
+  "recipe.create.ingredientsHaveIds": true,
+  "recipe.create.foods": [
+    "torskfilé",
+    null,
+    "vispgrädde",
+    "salt"
+  ],
+  "recipe.create.units": [
+    "g",
+    null,
+    "dl",
+    null
+  ],
+  "recipe.create.header": true,
+  "recipe.create.headerNote": "Sås",
+  "recipe.create.noAmount": true,
+  "recipe.create.amountDecimal": 2.5,
+  "recipe.create.keywords": [
+    "Bakning",
+    "Tandem-redigerad"
+  ],
+  "recipe.create.keywordByIdKeptName": true,
+  "recipe.create.servingsText": "portioner",
+  "recipe.create.workingTime": 20,
+  "recipe.patch": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipe.patch.stepCount": 2,
+  "recipe.patch.firstStepIdKept": true,
+  "recipe.patch.firstStepName": "Förbered allt",
+  "recipe.patch.omittedStepDeleted": true,
+  "recipe.patch.newStepHasNewId": true,
+  "recipe.patch.ingredientIdsKept": true,
+  "recipe.patch.omittedIngredientsDeleted": true,
+  "recipe.patch.amountChanged": 700.0,
+  "recipe.patch.foodReused": true,
+  "recipe.patch.newIngredientHasId": true,
+  "recipe.patch.updatedAtBumped": true,
+  "recipe.patch.keywordByIdKeptName": [
+    "Bakning",
+    "Tandem-redigerad"
+  ],
+  "recipe.patch.name": "Fiskgratäng från Tandem med timjan",
+  "recipe.patch.member": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipe.patch.member.stepsKept": true,
+  "recipe.patch.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipe.delete.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "recipe.delete.guest.stillThere": true,
+  "recipe.delete": {
+    "status": 204,
+    "contentType": null,
+    "isJson": false
+  },
+  "recipe.deleted.get": {
+    "status": 404,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "No Recipe matches the given query."
+    }
+  },
+  "recipe.delete.again.status": 404,
+  "mismatches": []
+}

@@ -862,8 +862,8 @@ livsmedel och enheter på namn, rubrikrad och `no_amount`, ett nyckelord som bar
 som `{id, name}` behåller det namnet; PATCH med hela receptet → 200, stegets och ingrediensernas id kvar, utelämnat steg och
 utelämnade rader raderade, nytt steg och ny rad får id, livsmedlet på namn återanvänds (samma id),
 `updated_at` flyttas; medlemmen får 200, gästen 403 på PATCH och DELETE; DELETE 204, sedan 404.
-Fixturerna i `api-schema/fixtures/<version>/fas3/` checkas in från den första gröna körningens
-artefakt (`contract-recordings-<tagg>`), FACTS "Fas 3" sammanfattar dem.
+Fixturerna i `api-schema/fixtures/<version>/fas3/` är incheckade från körningen 2026-11-03 (båda
+versionerna gröna, inga avvikelser), FACTS "Fas 3" sammanfattar dem.
 
 ### Fakes (`:core:testing`)
 
