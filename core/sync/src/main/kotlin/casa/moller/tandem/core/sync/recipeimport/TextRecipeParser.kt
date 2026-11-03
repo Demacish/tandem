@@ -29,7 +29,7 @@ internal object TextRecipeParser {
         var servings = 0
         for (line in rest) {
             if (line.isEmpty()) {
-                if (paragraphs.lastOrNull()?.isNotEmpty() == true) paragraphs += mutableListOf()
+                if (paragraphs.lastOrNull()?.isNotEmpty() == true) paragraphs.add(mutableListOf())
                 continue
             }
             SERVINGS.find(line)?.groupValues?.get(1)?.toIntOrNull()?.let { if (servings == 0) servings = it }
@@ -44,7 +44,7 @@ internal object TextRecipeParser {
                 ingredients += ingredientOf(line, knownUnits)
             } else {
                 val content = numbered?.groupValues?.get(1) ?: line
-                if (numbered != null || paragraphs.isEmpty()) paragraphs += mutableListOf()
+                if (numbered != null || paragraphs.isEmpty()) paragraphs.add(mutableListOf())
                 paragraphs.last() += content
             }
         }
