@@ -115,6 +115,9 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                     // Phase 1b: a tapped timer notification or lock-screen alarm (MainActivity).
                     timerRequest = state.timerRequest,
                     onTimerRequestHandled = viewModel::onTimerRequestHandled,
+                    // Fas 3 (import lane): "Dela till Tandem" (MainActivity).
+                    importRequest = state.importRequest,
+                    onImportRequestHandled = viewModel::onImportRequestHandled,
                 )
             }
             entry<AppDestination.Recovery> {

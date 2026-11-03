@@ -6,6 +6,7 @@ import casa.moller.tandem.feature.recipes.navigation.DrinkDetailKey
 import casa.moller.tandem.feature.recipes.navigation.DrinksKey
 import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -29,5 +30,11 @@ class DrinkKeysTest {
         assertEquals(RecipeEditorKey(), roundTrip(RecipeEditorKey.serializer(), RecipeEditorKey()))
         assertEquals(RecipeEditorKey(-3), roundTrip(RecipeEditorKey.serializer(), RecipeEditorKey(-3)))
         assertTrue((RecipeEditorKey(7) as Any) is FullScreenDestination)
+        // Fas 3 (import lane): the import's key with what was shared, and the editor's imported draft.
+        val shared = RecipeImportKey(sharedText = "https://example.com/x", sharedFileUri = null, sharedMimeType = null)
+        assertEquals(shared, roundTrip(RecipeImportKey.serializer(), shared))
+        assertTrue((RecipeImportKey() as Any) is FullScreenDestination)
+        val imported = RecipeEditorKey(importedDraft = "{\"name\":\"Pannkakor\"}")
+        assertEquals(imported, roundTrip(RecipeEditorKey.serializer(), imported))
     }
 }

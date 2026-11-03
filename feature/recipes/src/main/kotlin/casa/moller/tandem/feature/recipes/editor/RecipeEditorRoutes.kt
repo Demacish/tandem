@@ -52,8 +52,8 @@ fun RecipeEditorRoute(
 ) {
     val recipeId = key.recipeId
     val viewModel = hiltViewModel<RecipeEditorViewModel, RecipeEditorViewModel.Factory>(
-        key = "recipe-editor-$recipeId",
-        creationCallback = { factory -> factory.create(recipeId) },
+        key = "recipe-editor-$recipeId-${key.importedDraft?.hashCode() ?: 0}",
+        creationCallback = { factory -> factory.create(recipeId, key.importedDraft) },
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }

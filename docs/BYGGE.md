@@ -931,6 +931,54 @@ och stegrubrikens första aktiva ikonknapp som 46 respektive 38 dp hög fast sem
 skärmbilden vid teckenstorlek 2 finns kvar.
 <!-- /Fas 3 redigerare -->
 
+<!-- Fas 3 import -->
+## Importera recept (`:feature:recipes`, `:core:sync`, `:core:network`, Fas 3, import)
+
+Dela en länk eller text till appen, eller fotografera ett recept eller välj en PDF som Tandoors
+AI-import tolkar (ROADMAP "Fas 3", plan §8.9). **Tolkningen sker på servern** (Tandoors egen
+skrapare och sajtpluginer för länkar och text, utrymmets AI-leverantör för foton och PDF), så
+importen är ett onlineanrop och ingen outbox-rad. Svaret blir ett `RecipeDraft` som öppnas i
+receptredigeraren som ett nytt recept, där användaren granskar och sparar det som vilket recept
+som helst (offline först genom `RecipeEditRepository.createRecipe`). Inget sparas förrän då.
+
+### Kontraktet
+
+| Lager | Innehåll |
+|---|---|
+| `:core:model` `recipe.RecipeImport` | `RecipeImportResult(draft, imageUrls, duplicates)`, `ImportDuplicate(id, name)`, `RecipeImportSource` (`Link(url)`, `Text(text)`, `File(bytes, mimeType, fileName)`); `RecipeDraft.imageUrl` (bilden från källan, laddas ned av servern) |
+| `:core:data` `recipe.RecipeImportRepository` | `observeAiImportAvailable()` (utrymmet har en AI-leverantör, `ServerFeature.AI_IMPORT`; aldrig i demo), `import(source): Outcome<RecipeImportResult>`; `RecipeImportProblem` EMPTY_INPUT/NOTHING_FOUND/AI_UNAVAILABLE/FILE_TOO_LARGE (10 MB)/DEMO_MODE; gäster får `DataProblem.READ_ONLY` |
+| `:core:network` `api.RecipeImportService`, `dto/ImportDtos.kt` | `POST /api/recipe-from-source/` `{url}` \| `{data}` → `RecipeFromSourceResponse` (`recipe`, `images`, `error`, `msg`, `duplicates`); `POST /api/ai-import/` multipart `ai_provider_id`, `file`, `text`; `PUT /api/recipe/{id}/image/` multipart `image_url` (`setImageUrl`). `used-endpoints.txt` listar de två nya |
+| `:core:sync` `recipeimport/` | `RemoteRecipeImportRepository` (förgrundsanrop via `RemoteCaller.call(confirmForbidden)`, aldrig omförsök: ett AI-anrop kostar krediter; leverantören läses färskt ur `space/current` `ai_default_provider.id`; 400 från AI-importen = `AI_UNAVAILABLE`), `RecipeImportMapper` (livsmedel och enheter på namn, en rad utan livsmedel behåller `original_text` som anteckning, `amount` 0 = utan mängd, nyckelord med `import_keyword: false` utelämnas, bilden = `image_url` annars första i `images`, dubbletter) |
+| `:core:sync` `recipeedit/` | `RECIPE_IMAGE` med payload `{"image_url"}`: avsändaren skickar `image_url` i stället för filen (`imageFromWeb`); 400 och 404 släpps (receptet står utan bild). Repositoryt köar den efter CREATE/PATCH när utkastet har `imageUrl` och inget eget foto |
+| `:core:testing` | `FakeRecipeImportRepository`, `SampleImports.pancakes` |
+
+### Skärmen och vägen in
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Nyckel | `navigation/RecipeImportKey.kt` (`sharedText`, `sharedFileUri`, `sharedMimeType`), `RecipeEditorKey.importedDraft` (redigerarens `SavedDraft`-JSON) | `DrinkKeysTest` |
+| ViewModel | `recipeimport/RecipeImportViewModel.kt`, `RecipeImportUiState.kt` | inmatningen i `SavedStateHandle` (det delade förifyllt), `sourceOf`: en ren länk eller den första länken i en kort text (< 400 tecken, "Pannkakor https://…" från en webbläsare) skickas som länk, annars som text; resultatet hålls i minnet (en import görs om efter processdöd); `ChooseImage` byter bild bland källans; `OpenEditor` → `SavedDraft.encode`; varje `RecipeImportProblem` har sin text, övriga fel visas med `toErrorText` |
+| Skärm | `RecipeImportScreen.kt` | fält "Länk eller text" + "Hämta receptet"; "Foto eller PDF" med "Ta foto"/"Välj bild eller PDF" när AI finns, annars en förklaring; laddning; resultatkort (bild, namn, steg · ingredienser · min, nyckelord, beskrivning), varning för dubblett, bildval (markerad med kant, `selected`-semantik, "Bild 1 av 2"), "Öppna i redigeraren" fast nedanför; demo-kort och gästbanner |
+| Route | `RecipeImportRoutes.kt`, `ImportFiles.kt` | kameran som Ny dryck (`DrinkCameraFiles`, originalet raderas efter läsning), `OpenDocument` för bild/PDF; filer läses på IO-tråden: bilder avkodas med EXIF-rotation och skalas till högst 1600 px, JPEG 85 utan metadata; PDF som den är; en delad fil läses en gång (`SharedFileTaken`) |
+| Listan | `RecipeListScreen` `onImportRecipe` | länkikonen "Importera recept" i verktygsraden (inte för gäster) |
+| Skalet | `ShellFeatures.RecipeImport`, `entry<RecipeImportKey>`, `ShellNavigationState.openImport`, `ShareImportRequest` | ett godkänt resultat öppnar `RecipeEditorKey(importedDraft)` i importens ställe; en delning öppnar importen på Recept-fliken (ersätter en öppen import) |
+| Appen | manifestet (`ACTION_SEND` text/plain, image/*, application/pdf), `navigation/ImportLaunch.kt`, `MainActivity.openImportFrom`, `AppViewModel.onImportShared` (sparat tills skalet öppnat det, som timerbegäran) | texten begränsas till 20 000 tecken, en ström måste vara `content://`; läsrätten gäller aktiviteten, så importskärmen läser filen direkt |
+
+**Tester:** `RecipeImportRepositoryTest` (`:core:sync`, mot `FakeRecipeImportTandoor` i 2.6.13- och
+2.7.1-form: länk och text → utkast med livsmedel, enheter, bild, dubbletter; sida utan recept;
+foto till AI-importen med utrymmets leverantör, utan leverantör nekas; det importerade utkastet
+sparat genom redigeraren POSTas och får sin bild från webben; gäst och demo),
+`RecipeImportViewModelTest`, `RecipeImportScreenshotTest` och `RecipeImportAccessibilityTest`
+(`RecipeImportShot`: formulär med/utan AI, demo, gäst, laddning, resultat på telefon/mörkt/
+teckenstorlek 2/surfplatta, sida utan recept, offline) med referensbilder under
+`feature/recipes/src/test/screenshots/import/`, `ImportLaunchTest` och `AppViewModelTest` (appen).
+
+**Kvar till senare:** AI-importen är bara prövad mot en server utan leverantör (kontraktstestet
+spelar in avslaget); formatet på `POST /api/ai-import/` med en riktig leverantör verifieras av
+den första användaren med AI i Tandoor. Bookmarklet-import, import av flera recept ur en PDF,
+Tandoors "import_keyword"-val i appen (nyckelorden tas som servern föreslår dem).
+<!-- /Fas 3 import -->
+
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)
 
@@ -942,7 +990,7 @@ banan), CHANGELOG `[Unreleased]` och ROADMAP "Fas 3".
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Receptredigeraren (#22) | ✅ klart 2026-11-03, CI grön (PR, Contract 2.6.13/2.7.1, röktest, referensbilder) | "Fas 3 – kontrakt", "Receptredigeraren" |
-| Import (dela länk/text, foto och PDF via Tandoors AI-import) | 🔧 pågår, påbörjat 2026-11-03 | "Fas 3 – import" |
+| Import (dela länk/text, foto och PDF via Tandoors AI-import) | 🔧 pågår, påbörjat 2026-11-03: datasidan och skärmen inne, kontraktstest och referensbilder kvar | "Importera recept" |
 | Widgets, snabbinställningsruta och genvägar | ⏳ inte påbörjat | – |
 | Dra och släpp i matsedeln, näringsvärden | ⏳ inte påbörjat | – |
 
@@ -950,18 +998,18 @@ banan), CHANGELOG `[Unreleased]` och ROADMAP "Fas 3".
 
 Ordning (varje punkt är en commit som lämnar CI grön):
 
-1. ⏳ Kontraktet: `RecipeImportResult`/`RecipeImportProblem` (`:core:model`), `RecipeImportRepository`
+1. ✅ Kontraktet (commit 66d2067): `RecipeImportResult`/`RecipeImportProblem` (`:core:model`), `RecipeImportRepository`
    (`:core:data`), `RecipeImportService` (`POST /api/recipe-from-source/`, `POST /api/ai-import/`,
    `:core:network`), `used-endpoints.txt`, `RECIPE_IMAGE` med `image_url` (bilden från källan).
-2. ⏳ `:core:sync`: `RemoteRecipeImportRepository` (online-anrop, ingen outbox: tolkningen sker på
+2. ✅ `:core:sync` (commit 66d2067): `RemoteRecipeImportRepository` (online-anrop, ingen outbox: tolkningen sker på
    servern; svaret blir ett `RecipeDraft` som sparas genom `RecipeEditRepository.createRecipe`),
    fake och tester.
-3. ⏳ `:feature:recipes`: importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
+3. 🔧 `:feature:recipes`: importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
    text/länk, bild, PDF i manifestet, `MainActivity` → `AppViewModel` → skalet), redigeraren
    öppnad med det importerade utkastet, strängar, referensbilder och ATF.
 4. ⏳ Kontraktstest: `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
    leverantör), fixturer för 2.6.13 och 2.7.1, FACTS.
-5. ⏳ Dokumentation: BYGGE "Fas 3 – import", CHANGELOG, ROADMAP ✅.
+5. 🔧 Dokumentation: BYGGE "Importera recept" (skrivet), CHANGELOG (skrivet), ROADMAP ✅ (när allt är grönt).
 <!-- /Fas 3 läge -->
 
 <!-- Fas S hemma-data -->

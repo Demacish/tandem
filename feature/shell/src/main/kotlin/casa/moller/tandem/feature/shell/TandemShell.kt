@@ -87,6 +87,7 @@ import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.PairingPickerKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
@@ -120,6 +121,7 @@ import casa.moller.tandem.feature.shell.navigation.ShellNavigationState
 import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigation.ShoppingKey
 import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
+import casa.moller.tandem.feature.shell.navigation.ShareImportRequest
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
@@ -156,6 +158,8 @@ import java.time.LocalDate
  *   with [ShellNavigationState.openTimer], then [onTimerRequestHandled] is called.
  * @param onAddAccount Phase 2 (konto lane): "Add account" under Mer → Konton och servrar; the app
  *   opens the intro at the server step, cancellable back to the current account.
+ * @param importRequest Fas 3 (import lane): a link, text, photo or PDF another app shared to
+ *   Tandem (`ACTION_SEND`), opened once in "Importera recept"; then [onImportRequestHandled].
  */
 @Composable
 fun TandemShell(
@@ -168,6 +172,8 @@ fun TandemShell(
     crashNotice: @Composable () -> Unit = {},
     timerRequest: TimerOpenRequest? = null,
     onTimerRequestHandled: () -> Unit = {},
+    importRequest: ShareImportRequest? = null,
+    onImportRequestHandled: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Plan 3.6 point 3: check the server version again when the app comes back to the
@@ -185,6 +191,14 @@ fun TandemShell(
         if (timerRequest != null && sourceKnown) {
             navigation.openTimer(timerRequest, activeSource = state.timerSource)
             currentOnTimerRequestHandled()
+        }
+    }
+    // Fas 3 (import lane): something shared to Tandem opens "Importera recept" on the Recipes tab.
+    val currentOnImportRequestHandled by rememberUpdatedState(onImportRequestHandled)
+    LaunchedEffect(navigation, importRequest, sourceKnown) {
+        if (importRequest != null && sourceKnown) {
+            navigation.openImport(importRequest)
+            currentOnImportRequestHandled()
         }
     }
     // Phase 2 (konto lane): "Export changes" in the logout dialog opens the share sheet.
@@ -460,8 +474,9 @@ internal fun ShellScaffold(
                         navigation.navigate(RecipeDetailKey(id, inListDetail = true), replace = { it is RecipeDetailKey })
                     },
                     selectedRecipeId = (selected as? RecipeDetailKey)?.recipeId,
-                    // Fas 3 (redigerare lane): "Nytt recept".
+                    // Fas 3 (redigerare lane): "Nytt recept"; (import lane): "Importera recept".
                     onCreateRecipe = { navigation.navigate(RecipeEditorKey()) },
+                    onImportRecipe = { navigation.navigate(RecipeImportKey()) },
                     // Phase 2 (books lane): the collections row; on wide windows beside the list.
                     onOpenCollection = { collection ->
                         val key = when (collection) {
@@ -506,6 +521,16 @@ internal fun ShellScaffold(
                         } else {
                             navigation.goBack()
                         }
+                    },
+                    onBack = { navigation.goBack() },
+                )
+            }
+            // Fas 3 (import lane): the import, full screen; an accepted import opens the editor in its place.
+            entry<RecipeImportKey> { key ->
+                features.RecipeImport(
+                    key = key,
+                    onOpenEditor = { draft ->
+                        navigation.navigate(RecipeEditorKey(importedDraft = draft), replace = { it is RecipeImportKey })
                     },
                     onBack = { navigation.goBack() },
                 )

@@ -30,6 +30,8 @@ import casa.moller.tandem.feature.recipes.drinks.drinkSuggestionSlot
 import casa.moller.tandem.feature.recipes.editor.RecipeEditorRoute
 import casa.moller.tandem.feature.recipes.navigation.DrinkDestination
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import casa.moller.tandem.feature.recipes.recipeimport.RecipeImportRoute
 import casa.moller.tandem.feature.scan.ScanRoute
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
@@ -83,6 +85,7 @@ internal interface ShellFeatures {
         selectedRecipeId: Long?,
         onOpenCollection: (RecipeCollection) -> Unit,
         onCreateRecipe: () -> Unit,
+        onImportRecipe: () -> Unit,
     )
 
     /**
@@ -114,6 +117,13 @@ internal interface ShellFeatures {
      */
     @Composable
     fun RecipeEditor(key: RecipeEditorKey, onSaved: (recipeId: Long, isNew: Boolean) -> Unit, onBack: () -> Unit)
+
+    /**
+     * Fas 3 (import lane): "Importera recept" (feature:recipes), full screen; [onOpenEditor] gets
+     * the accepted import as the editor's saved-draft JSON (`RecipeEditorKey.importedDraft`).
+     */
+    @Composable
+    fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit)
 
     /** The detail pane before a recipe is picked (wide windows only). */
     @Composable
@@ -282,12 +292,14 @@ internal object RouteShellFeatures : ShellFeatures {
         selectedRecipeId: Long?,
         onOpenCollection: (RecipeCollection) -> Unit,
         onCreateRecipe: () -> Unit,
+        onImportRecipe: () -> Unit,
     ) {
         RecipesRoute(
             onOpenRecipe = onOpenRecipe,
             selectedRecipeId = selectedRecipeId,
             onOpenCollection = onOpenCollection,
             onCreateRecipe = onCreateRecipe,
+            onImportRecipe = onImportRecipe,
         )
     }
 
@@ -332,6 +344,11 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun RecipeEditor(key: RecipeEditorKey, onSaved: (recipeId: Long, isNew: Boolean) -> Unit, onBack: () -> Unit) {
         RecipeEditorRoute(key = key, onSaved = onSaved, onBack = onBack)
+    }
+
+    @Composable
+    override fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit) {
+        RecipeImportRoute(key = key, onOpenEditor = onOpenEditor, onBack = onBack)
     }
 
     @Composable

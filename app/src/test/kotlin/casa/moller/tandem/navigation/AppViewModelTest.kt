@@ -16,6 +16,7 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
+import casa.moller.tandem.feature.shell.navigation.ShareImportRequest
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -82,6 +83,21 @@ class AppViewModelTest {
         assertEquals(null, vm.uiState.value.timerRequest)
         vm.onOpenTimer(TimerOpenRequest(recipeId = null, stepIndex = null))
         assertEquals(TimerOpenRequest(null, null), vm.uiState.value.timerRequest)
+    }
+
+    @Test
+    fun anImportRequestIsKeptUntilTheShellOpenedIt() {
+        // Fas 3 (import lane): "Dela till Tandem" before the shell is up, and across process death.
+        sessions.state.value = LOGGED_IN
+        val handle = SavedStateHandle()
+        val vm = newViewModel(handle)
+        vm.onImportShared(ShareImportRequest(text = "https://example.com/x"))
+        assertEquals(ShareImportRequest(text = "https://example.com/x"), vm.uiState.value.importRequest)
+        assertEquals(ShareImportRequest(text = "https://example.com/x"), newViewModel(handle).uiState.value.importRequest)
+        vm.onImportRequestHandled()
+        assertEquals(null, vm.uiState.value.importRequest)
+        vm.onImportShared(ShareImportRequest(fileUri = "content://media/1", mimeType = "image/jpeg"))
+        assertEquals(ShareImportRequest(fileUri = "content://media/1", mimeType = "image/jpeg"), vm.uiState.value.importRequest)
     }
 
     @Test

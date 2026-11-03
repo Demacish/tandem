@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipe_import_title">Importera recept</string>
+    <string name="recipe_import_action">Importera recept</string>
+    <string name="recipe_import_intro">Klistra in en länk till en receptsida, eller receptet som text. Din Tandoor läser det och du granskar resultatet innan det sparas.</string>
+    <string name="recipe_import_input">Länk eller text</string>
+    <string name="recipe_import_input_hint">https://… eller receptet som text</string>
+    <string name="recipe_import_fetch">Hämta receptet</string>
+    <string name="recipe_import_working">Tandoor läser receptet…</string>
+    <string name="recipe_import_file_heading">Foto eller PDF</string>
+    <string name="recipe_import_file_intro">Ett foto av ett recept (en kokbokssida, ett kort) eller en PDF läses av AI-tjänsten som er Tandoor är inställd med. Det kostar hushållets AI-krediter.</string>
+    <string name="recipe_import_file_unavailable">Er Tandoor har ingen AI-tjänst, så foton och PDF:er kan inte läsas. En administratör lägger till en under utrymmets inställningar på webben.</string>
+    <string name="recipe_import_file_demo">Foton och PDF:er kräver en Tandoor med en AI-tjänst.</string>
+    <string name="recipe_import_take_photo">Ta foto</string>
+    <string name="recipe_import_pick_file">Välj bild eller PDF</string>
+    <string name="recipe_import_demo_title">Demoläge</string>
+    <string name="recipe_import_demo">Import kräver en Tandoor-server som läser sidan. Anslut din Tandoor för att prova.</string>
+    <string name="recipe_import_found">Hittade det här</string>
+    <plurals name="recipe_import_steps">
+        <item quantity="one">%1$d steg</item>
+        <item quantity="other">%1$d steg</item>
+    </plurals>
+    <plurals name="recipe_import_ingredients">
+        <item quantity="one">%1$d ingrediens</item>
+        <item quantity="other">%1$d ingredienser</item>
+    </plurals>
+    <string name="recipe_import_minutes">%1$d min</string>
+    <string name="recipe_import_duplicate_title">Du kanske redan har receptet</string>
+    <string name="recipe_import_duplicate_body">Liknar: %1$s. Du kan ändå importera det.</string>
+    <string name="recipe_import_pictures">Bild</string>
+    <string name="recipe_import_picture_n">Bild %1$d av %2$d</string>
+    <string name="recipe_import_check_hint">Granska receptet i redigeraren innan det sparas. Inget är sparat än.</string>
+    <string name="recipe_import_again">Importera något annat</string>
+    <string name="recipe_import_open_editor">Öppna i redigeraren</string>
+    <string name="recipe_import_problem_hint">Kontrollera länken eller texten och försök igen.</string>
+    <string name="recipe_import_failed">Receptet kunde inte hämtas</string>
+    <string name="recipe_import_empty">Inget att importera</string>
+    <string name="recipe_import_nothing_found">Inget recept hittades på sidan</string>
+    <string name="recipe_import_nothing_in_file">Inget recept hittades i filen</string>
+    <string name="recipe_import_ai_unavailable">AI-tjänsten svarade inte</string>
+    <string name="recipe_import_file_too_large">Filen är för stor (högst 10 MB)</string>
+    <string name="recipe_import_file_unreadable">Filen kunde inte läsas</string>
+    <string name="recipe_import_read_only">Gäster kan inte importera recept</string>
+    <string name="recipe_import_demo">Inte tillgängligt i demoläget</string>
+</resources>

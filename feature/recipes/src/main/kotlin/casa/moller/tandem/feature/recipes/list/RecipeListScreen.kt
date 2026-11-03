@@ -73,6 +73,7 @@ import casa.moller.tandem.core.designsystem.icon.Check
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
 import casa.moller.tandem.core.designsystem.icon.GridView
+import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Search
 import casa.moller.tandem.core.designsystem.icon.Sell
@@ -126,6 +127,7 @@ fun RecipeListScreen(
     onOpenCollection: (RecipeCollection) -> Unit = {},
     onToggleFavorite: (Long) -> Unit = {},
     onCreateRecipe: (() -> Unit)? = null,
+    onImportRecipe: (() -> Unit)? = null,
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored recipes are shown (Diagnostics).
     ReportContentReady(ready = state.loaded)
@@ -149,6 +151,12 @@ fun RecipeListScreen(
                 },
                 actions = {
                     AppChromeStatusChip(Modifier.padding(end = TandemTheme.spacing.xs))
+                    // Fas 3 (import lane): "Importera recept" (not for guests: the route passes null).
+                    if (onImportRecipe != null) {
+                        IconButton(onClick = onImportRecipe) {
+                            Icon(imageVector = TandemIcons.Link, contentDescription = stringResource(R.string.recipe_import_action))
+                        }
+                    }
                     LayoutToggle(layout = state.layout, onToggle = { onAction(RecipeListAction.ToggleLayout) })
                 },
             )

@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel(assistedFactory = RecipeEditorViewModel.Factory::class)
 class RecipeEditorViewModel @AssistedInject constructor(
     @Assisted private val recipeId: Long?,
+    @Assisted private val importedDraft: String?,
     private val handle: SavedStateHandle,
     private val edits: RecipeEditRepository,
     recipes: RecipeRepository,
@@ -52,7 +53,8 @@ class RecipeEditorViewModel @AssistedInject constructor(
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
-        fun create(recipeId: Long?): RecipeEditorViewModel
+        /** [importedDraft] (Fas 3 import lane): a new recipe's starting point as `SavedDraft` JSON, else null. */
+        fun create(recipeId: Long?, importedDraft: String?): RecipeEditorViewModel
     }
 
     private val effectChannel = Channel<RecipeEditorEffect>(Channel.BUFFERED)
@@ -97,7 +99,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
     init {
         if (draft.value == null) {
             if (recipeId == null) {
-                store(RecipeDraft())
+                store(SavedDraft.decode(importedDraft) ?: RecipeDraft())
             } else {
                 viewModelScope.launch {
                     val stored = edits.observeDraft(recipeId).first()

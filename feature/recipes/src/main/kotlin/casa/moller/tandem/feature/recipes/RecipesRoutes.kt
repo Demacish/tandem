@@ -55,6 +55,7 @@ fun RecipesRoute(
     selectedRecipeId: Long? = null,
     onOpenCollection: (RecipeCollection) -> Unit = {},
     onCreateRecipe: (() -> Unit)? = null,
+    onImportRecipe: (() -> Unit)? = null,
 ) {
     val viewModel: RecipeListViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -101,6 +102,8 @@ fun RecipesRoute(
         onToggleFavorite = collections::toggleFavorite,
         // Fas 3 (redigerare lane): "Nytt recept", hidden for guests.
         onCreateRecipe = onCreateRecipe?.takeUnless { collectionsState.readOnly },
+        // Fas 3 (import lane): "Importera recept", hidden for guests.
+        onImportRecipe = onImportRecipe?.takeUnless { collectionsState.readOnly },
     )
 }
 

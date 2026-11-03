@@ -18,6 +18,12 @@ Början på Fas 3 ("Skapa och fånga"): recept skapas och redigeras i appen.
   medan din ändring väntar skickas den inte; receptvyn säger "Ändrad på två ställen" och du
   väljer att öppna din ändring igen eller slänga den.
 - **Ta bort recept** i receptets meny (bekräftas), också offline.
+- **Importera recept:** dela en länk eller en text till Tandem från webbläsaren eller en annan
+  app, eller tryck på länkikonen i Recept och klistra in. Er Tandoor läser sidan och appen visar
+  vad den hittade (bild, steg, ingredienser, en varning om ni redan har receptet) innan det öppnas
+  i redigeraren, där du granskar och sparar det som vanligt – också offline. Har er Tandoor en
+  AI-tjänst kan du fotografera ett recept (en kokbokssida, ett kort) eller dela en PDF; det kostar
+  hushållets AI-krediter. Bilden från källan följer med receptet.
 - Gäster kan titta men inte ändra. Diagnostik visar "Receptändringar".
 - **Kvar till senare:** ta bort en bild, stegfiler, delrecept och näringsvärden ändras på webben.
 

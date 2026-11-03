@@ -11,6 +11,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
+import casa.moller.tandem.feature.shell.navigation.ShareImportRequest
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -74,6 +75,8 @@ data class AppUiState(
      * is still opened once.
      */
     val timerRequest: TimerOpenRequest? = null,
+    /** Fas 3 (import lane): something shared to Tandem that "Importera recept" has not opened yet (saved like [timerRequest]). */
+    val importRequest: ShareImportRequest? = null,
 )
 
 /** One-off messages shown as a toast. */
@@ -120,13 +123,17 @@ class AppViewModel @Inject constructor(
         savedStateHandle.getStateFlow<String?>(KEY_TIMER_REQUEST_SOURCE, null),
     ) { ids, source -> ids?.toTimerRequest()?.copy(sourceKey = source) }
 
+    /** [ShareImportRequest] as `[text, fileUri, mimeType]` (nulls as empty strings, Bundle-friendly). */
+    private val importRequest: Flow<ShareImportRequest?> = savedStateHandle.getStateFlow<Array<String>?>(KEY_IMPORT_REQUEST, null)
+        .map { parts -> parts?.toImportRequest() }
+
     val uiState: StateFlow<AppUiState> = combine(
         session,
         introFlags,
         appearanceRepository.themeMode,
         settingsRepository.settings.map { it.dynamicColor }.distinctUntilChanged(),
-        timerRequest,
-    ) { current, flags, theme, dynamicColor, openTimer ->
+        combine(timerRequest, importRequest) { timer, import -> timer to import },
+    ) { current, flags, theme, dynamicColor, (openTimer, openImport) ->
         AppUiState(
             destination = resolveDestination(current, flags.hold),
             session = current,
@@ -137,6 +144,7 @@ class AppViewModel @Inject constructor(
             themeModeLoaded = true,
             dynamicColor = dynamicColor,
             timerRequest = openTimer,
+            importRequest = openImport,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppUiState())
 
@@ -161,6 +169,7 @@ class AppViewModel @Inject constructor(
                         SessionKind.NO_ACCOUNT -> {
                             savedStateHandle[KEY_HOLD_ONBOARDING] = true
                             savedStateHandle[KEY_TIMER_REQUEST] = null
+                            savedStateHandle[KEY_IMPORT_REQUEST] = null
                         }
 
                         // The recovery screen replaced the intro (its ViewModel is gone), so the
@@ -247,6 +256,21 @@ class AppViewModel @Inject constructor(
         savedStateHandle[KEY_TIMER_REQUEST_SOURCE] = null
     }
 
+    /**
+     * Fas 3 (import lane): another app shared a link, text, photo or PDF to Tandem (`MainActivity`
+     * reads `ACTION_SEND`): the shell opens "Importera recept" with it as soon as it is shown
+     * ([onImportRequestHandled]). A share that arrives with no account waits for the login.
+     */
+    fun onImportShared(request: ShareImportRequest) {
+        savedStateHandle[KEY_IMPORT_REQUEST] =
+            arrayOf(request.text.orEmpty(), request.fileUri.orEmpty(), request.mimeType.orEmpty())
+    }
+
+    /** The shell opened [AppUiState.importRequest]. */
+    fun onImportRequestHandled() {
+        savedStateHandle[KEY_IMPORT_REQUEST] = null
+    }
+
     /** "Log in again" on the recovery screen. */
     fun acknowledgeRecovery() = sessionRepository.acknowledgeRecovery()
 
@@ -264,10 +288,21 @@ class AppViewModel @Inject constructor(
         const val KEY_LOG_IN_AGAIN = "app.logInAgain"
         const val KEY_TIMER_REQUEST = "app.timerRequest"
         const val KEY_TIMER_REQUEST_SOURCE = "app.timerRequestSource"
+        const val KEY_IMPORT_REQUEST = "app.importRequest"
 
         /** [AppDestination.Shell.source] in demo mode (account ids are UUIDs). */
         const val SHELL_DEMO = "demo"
         private const val NONE = -1L
+
+        private fun Array<String>.toImportRequest(): ShareImportRequest? {
+            if (size != IMPORT_PARTS) return null
+            val text = this[0].takeIf { it.isNotEmpty() }
+            val fileUri = this[1].takeIf { it.isNotEmpty() }
+            if (text == null && fileUri == null) return null
+            return ShareImportRequest(text = text, fileUri = fileUri, mimeType = this[2].takeIf { it.isNotEmpty() })
+        }
+
+        private const val IMPORT_PARTS = 3
 
         private fun LongArray.toTimerRequest(): TimerOpenRequest? {
             if (size != 2) return null

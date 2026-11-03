@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 3 (import lane): "Importera recept" (plan §8.9). -->
+    <string name="recipe_import_title">Import recipe</string>
+    <string name="recipe_import_action">Import recipe</string>
+    <string name="recipe_import_intro">Paste a link to a recipe page, or the recipe as text. Your Tandoor reads it and you check the result before it is saved.</string>
+    <string name="recipe_import_input">Link or text</string>
+    <string name="recipe_import_input_hint">https://… or the recipe as text</string>
+    <string name="recipe_import_fetch">Fetch the recipe</string>
+    <string name="recipe_import_working">Tandoor is reading the recipe…</string>
+    <string name="recipe_import_file_heading">Photo or PDF</string>
+    <string name="recipe_import_file_intro">A photo of a recipe (a cookbook page, a card) or a PDF is read by the AI service your Tandoor is set up with. It costs the household’s AI credits.</string>
+    <string name="recipe_import_file_unavailable">Your Tandoor has no AI service, so photos and PDFs cannot be read. An admin adds one under Space settings on the web.</string>
+    <string name="recipe_import_file_demo">Photos and PDFs need a Tandoor with an AI service.</string>
+    <string name="recipe_import_take_photo">Take photo</string>
+    <string name="recipe_import_pick_file">Choose picture or PDF</string>
+    <string name="recipe_import_demo_title">Demo mode</string>
+    <string name="recipe_import_demo">Importing needs a Tandoor server that reads the page. Connect your Tandoor to try it.</string>
+    <string name="recipe_import_found">Found this</string>
+    <plurals name="recipe_import_steps">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <plurals name="recipe_import_ingredients">
+        <item quantity="one">%1$d ingredient</item>
+        <item quantity="other">%1$d ingredients</item>
+    </plurals>
+    <string name="recipe_import_minutes">%1$d min</string>
+    <string name="recipe_import_duplicate_title">You may already have this recipe</string>
+    <string name="recipe_import_duplicate_body">Looks like: %1$s. You can still import it.</string>
+    <string name="recipe_import_pictures">Picture</string>
+    <string name="recipe_import_picture_n">Picture %1$d of %2$d</string>
+    <string name="recipe_import_check_hint">Check the recipe in the editor before it is saved. Nothing is saved yet.</string>
+    <string name="recipe_import_again">Import something else</string>
+    <string name="recipe_import_open_editor">Open in the editor</string>
+    <string name="recipe_import_problem_hint">Check the link or text and try again.</string>
+    <string name="recipe_import_failed">The recipe could not be fetched</string>
+    <string name="recipe_import_empty">Nothing to import</string>
+    <string name="recipe_import_nothing_found">No recipe found on that page</string>
+    <string name="recipe_import_nothing_in_file">No recipe found in the file</string>
+    <string name="recipe_import_ai_unavailable">The AI service did not answer</string>
+    <string name="recipe_import_file_too_large">The file is too large (at most 10 MB)</string>
+    <string name="recipe_import_file_unreadable">The file could not be read</string>
+    <string name="recipe_import_read_only">Guests cannot import recipes</string>
+    <string name="recipe_import_demo">Not available in demo mode</string>
+</resources>

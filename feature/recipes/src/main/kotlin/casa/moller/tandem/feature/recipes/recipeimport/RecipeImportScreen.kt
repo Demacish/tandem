@@ -1,0 +1,291 @@
+package casa.moller.tandem.feature.recipes.recipeimport
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import casa.moller.tandem.core.designsystem.component.CalloutCard
+import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
+import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
+import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemTone
+import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.Check
+import casa.moller.tandem.core.designsystem.icon.Edit
+import casa.moller.tandem.core.designsystem.icon.Image
+import casa.moller.tandem.core.designsystem.icon.PhotoCamera
+import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.recipe.RecipeImportResult
+import casa.moller.tandem.core.ui.LoadingState
+import casa.moller.tandem.core.ui.readonly.ReadOnlyBanner
+import casa.moller.tandem.core.ui.recipe.RecipeImage
+import casa.moller.tandem.core.ui.toErrorText
+import casa.moller.tandem.feature.recipes.R
+
+/**
+ * "Importera recept" (Fas 3, import lane; plan §8.9): a field for a link or a text and
+ * "Hämta receptet"; "Ta foto" and "Välj bild eller PDF" when the space has an AI provider; the
+ * answer as a card (picture, name, steps, ingredients, the keywords, a warning for a duplicate,
+ * the other pictures to choose from) and "Öppna i redigeraren" fixed below.
+ */
+@Composable
+fun RecipeImportScreen(
+    state: RecipeImportUiState,
+    onAction: (RecipeImportAction) -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickFile: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = { TandemTopAppBar(title = stringResource(R.string.recipe_import_title), onNavigateBack = onBack) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                Content(
+                    state = state,
+                    onAction = onAction,
+                    onTakePhoto = onTakePhoto,
+                    onPickFile = onPickFile,
+                    modifier = Modifier.widthIn(max = FORM_MAX_WIDTH).verticalScroll(rememberScrollState()),
+                )
+            }
+            if (state.result != null) {
+                HorizontalDivider()
+                Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.recipe_import_open_editor),
+                        onClick = { onAction(RecipeImportAction.OpenEditor) },
+                        leadingIcon = TandemIcons.Edit,
+                        modifier = Modifier
+                            .widthIn(max = FORM_MAX_WIDTH)
+                            .fillMaxWidth()
+                            .padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.md),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Content(
+    state: RecipeImportUiState,
+    onAction: (RecipeImportAction) -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickFile: () -> Unit,
+    modifier: Modifier,
+) {
+    val spacing = TandemTheme.spacing
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = spacing.lg, vertical = spacing.md),
+        verticalArrangement = Arrangement.spacedBy(spacing.md),
+    ) {
+        if (state.readOnly) ReadOnlyBanner(compact = true)
+        if (state.isDemo) {
+            CalloutCard(
+                title = stringResource(R.string.recipe_import_demo_title),
+                body = stringResource(R.string.recipe_import_demo),
+                icon = TandemIcons.Info,
+            )
+        }
+        when {
+            state.working -> LoadingState(message = stringResource(R.string.recipe_import_working))
+            state.result != null -> Result(state.result, onAction)
+            else -> Form(state, onAction, onTakePhoto, onPickFile)
+        }
+    }
+}
+
+@Composable
+private fun Form(
+    state: RecipeImportUiState,
+    onAction: (RecipeImportAction) -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickFile: () -> Unit,
+) {
+    val spacing = TandemTheme.spacing
+    Text(stringResource(R.string.recipe_import_intro), style = MaterialTheme.typography.bodyMedium)
+    OutlinedTextField(
+        value = state.input,
+        onValueChange = { onAction(RecipeImportAction.SetInput(it)) },
+        label = { Text(stringResource(R.string.recipe_import_input)) },
+        placeholder = { Text(stringResource(R.string.recipe_import_input_hint)) },
+        minLines = 3,
+        maxLines = 8,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.None,
+            keyboardType = KeyboardType.Uri,
+            imeAction = ImeAction.Done,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+    TandemPrimaryButton(
+        text = stringResource(R.string.recipe_import_fetch),
+        onClick = { onAction(RecipeImportAction.Import) },
+        enabled = state.canImport,
+        leadingIcon = TandemIcons.Check,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    state.problem?.let { problem ->
+        val detail = state.failure?.toErrorText()?.title
+        CalloutCard(
+            title = stringResource(problem),
+            body = detail ?: stringResource(R.string.recipe_import_problem_hint),
+            icon = TandemIcons.Warning,
+            tone = TandemTone.Warning,
+            onDismiss = { onAction(RecipeImportAction.Clear) },
+        )
+    }
+    Text(stringResource(R.string.recipe_import_file_heading), style = MaterialTheme.typography.titleMedium)
+    if (state.aiAvailable) {
+        Text(stringResource(R.string.recipe_import_file_intro), style = MaterialTheme.typography.bodyMedium)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+            TandemSecondaryButton(
+                text = stringResource(R.string.recipe_import_take_photo),
+                onClick = onTakePhoto,
+                enabled = state.canImportFile,
+                leadingIcon = TandemIcons.PhotoCamera,
+            )
+            TandemSecondaryButton(
+                text = stringResource(R.string.recipe_import_pick_file),
+                onClick = onPickFile,
+                enabled = state.canImportFile,
+                leadingIcon = TandemIcons.Image,
+            )
+        }
+    } else {
+        Text(
+            stringResource(if (state.isDemo) R.string.recipe_import_file_demo else R.string.recipe_import_file_unavailable),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun Result(result: RecipeImportResult, onAction: (RecipeImportAction) -> Unit) {
+    val spacing = TandemTheme.spacing
+    val draft = result.draft
+    val ingredients = draft.ingredients.count { !it.isHeader }
+    Text(stringResource(R.string.recipe_import_found), style = MaterialTheme.typography.titleMedium)
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.padding(spacing.md), horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+            RecipeImage(
+                imageUrl = draft.imageUrl,
+                contentDescription = null,
+                modifier = Modifier.size(PREVIEW).clip(MaterialTheme.shapes.medium),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                Text(draft.name, style = MaterialTheme.typography.titleLarge)
+                Text(
+                    listOfNotNull(
+                        pluralStringResource(R.plurals.recipe_import_steps, draft.steps.size, draft.steps.size),
+                        pluralStringResource(R.plurals.recipe_import_ingredients, ingredients, ingredients),
+                        (draft.workingMinutes + draft.waitingMinutes).takeIf { it > 0 }
+                            ?.let { stringResource(R.string.recipe_import_minutes, it) },
+                    ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (draft.keywords.isNotEmpty()) {
+                    Text(
+                        draft.keywords.joinToString(", ") { it.name },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (draft.description.isNotBlank()) {
+                    Text(draft.description, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+                }
+            }
+        }
+    }
+    if (result.duplicates.isNotEmpty()) {
+        CalloutCard(
+            title = stringResource(R.string.recipe_import_duplicate_title),
+            body = stringResource(R.string.recipe_import_duplicate_body, result.duplicates.joinToString(", ") { it.name }),
+            icon = TandemIcons.Warning,
+            tone = TandemTone.Warning,
+        )
+    }
+    if (result.imageUrls.size > 1) {
+        Text(stringResource(R.string.recipe_import_pictures), style = MaterialTheme.typography.titleSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            result.imageUrls.forEachIndexed { index, url ->
+                val selected = url == draft.imageUrl
+                val label = stringResource(R.string.recipe_import_picture_n, index + 1, result.imageUrls.size)
+                RecipeImage(
+                    imageUrl = url,
+                    contentDescription = label,
+                    modifier = Modifier
+                        .size(THUMBNAIL)
+                        .clip(MaterialTheme.shapes.medium)
+                        .border(
+                            BorderStroke(
+                                width = if (selected) SELECTED_BORDER else 1.dp,
+                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            ),
+                            MaterialTheme.shapes.medium,
+                        )
+                        .semantics { this.selected = selected }
+                        .clickable { onAction(RecipeImportAction.ChooseImage(url)) },
+                )
+            }
+        }
+    }
+    Text(
+        stringResource(R.string.recipe_import_check_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    TandemTextButton(text = stringResource(R.string.recipe_import_again), onClick = { onAction(RecipeImportAction.Clear) })
+}
+
+private val FORM_MAX_WIDTH = 640.dp
+private val PREVIEW = 96.dp
+private val THUMBNAIL = 72.dp
+private val SELECTED_BORDER = 3.dp

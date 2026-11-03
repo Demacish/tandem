@@ -152,6 +152,18 @@ class ShellNavigationState(
     }
 
     /**
+     * Fas 3 (import lane): something another app shared to Tandem opens "Importera recept" on
+     * the Recipes tab (an import already open there is replaced, so two shares never stack).
+     */
+    fun openImport(request: ShareImportRequest) {
+        selectTab(ShellTab.RECIPES)
+        navigate(
+            RecipeImportKey(sharedText = request.text, sharedFileUri = request.fileUri, sharedMimeType = request.mimeType),
+            replace = { it is RecipeImportKey || it is RecipeEditorKey && it.recipeId == null },
+        )
+    }
+
+    /**
      * A timer tapped in the app (the timer bar on every tab, the timer list): like [openTimer]
      * for a notification, with the timer's own recipe, step and source.
      */

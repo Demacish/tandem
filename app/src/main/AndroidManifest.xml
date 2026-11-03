@@ -30,6 +30,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!--
+                Fas 3 (import lane): "Dela till Tandem" from a browser (a link), a notes app (a
+                recipe as text), the gallery (a photo) or a file manager (a PDF) opens
+                "Importera recept" (navigation/ImportLaunch.kt). The text goes to the user's own
+                Tandoor, which reads the page; a photo or PDF to its AI provider.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="application/pdf" />
+            </intent-filter>
         </activity>
 
         <!--

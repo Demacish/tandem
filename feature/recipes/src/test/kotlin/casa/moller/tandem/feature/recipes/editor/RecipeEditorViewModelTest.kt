@@ -43,8 +43,8 @@ class RecipeEditorViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val pasta = SampleRecipes.MushroomPasta.id
 
-    private fun editor(recipeId: Long?, handle: SavedStateHandle = SavedStateHandle()) =
-        RecipeEditorViewModel(recipeId, handle, edits, recipes, permissions)
+    private fun editor(recipeId: Long?, handle: SavedStateHandle = SavedStateHandle(), importedDraft: String? = null) =
+        RecipeEditorViewModel(recipeId, importedDraft, handle, edits, recipes, permissions)
 
     private fun TestScope.collect(flow: Flow<*>) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect {} }

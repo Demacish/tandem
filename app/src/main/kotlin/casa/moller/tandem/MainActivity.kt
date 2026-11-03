@@ -22,6 +22,7 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.diagnostics.ColdStart
 import casa.moller.tandem.navigation.AppDestination
 import casa.moller.tandem.navigation.AppViewModel
+import casa.moller.tandem.navigation.ImportLaunch
 import casa.moller.tandem.navigation.TimerLaunch
 import casa.moller.tandem.ui.TandemApp
 import dagger.hilt.android.AndroidEntryPoint
@@ -49,7 +50,10 @@ class MainActivity : ComponentActivity() {
         measureColdStart()
         // Phase 1b: opened from a timer notification or the lock-screen alarm. Only for a new
         // activity: a recreated one (rotation, process death) has already opened it.
-        if (savedInstanceState == null) openTimerFrom(intent)
+        if (savedInstanceState == null) {
+            openTimerFrom(intent)
+            openImportFrom(intent)
+        }
         // Keep the splash until the stored session is read, so the intro never flashes for a
         // user who is already logged in.
         splashScreen.setKeepOnScreenCondition { appViewModel.uiState.value.destination == AppDestination.Loading }
@@ -90,10 +94,16 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         openTimerFrom(intent)
+        openImportFrom(intent)
     }
 
     private fun openTimerFrom(intent: Intent?) {
         TimerLaunch.requestFrom(intent)?.let(appViewModel::onOpenTimer)
+    }
+
+    /** Fas 3 (import lane): "Dela till Tandem" (a link, text, photo or PDF) opens "Importera recept". */
+    private fun openImportFrom(intent: Intent?) {
+        ImportLaunch.requestFrom(intent)?.let(appViewModel::onImportShared)
     }
 
     /**
