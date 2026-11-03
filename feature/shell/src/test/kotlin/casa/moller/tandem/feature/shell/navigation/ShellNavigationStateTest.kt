@@ -143,15 +143,15 @@ class ShellNavigationStateTest {
         assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(6)), navigation.backStack)
         navigation.open(ShellOpenRequest.Recipe(7))
         assertEquals("one recipe at a time", listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(7)), navigation.backStack)
+        // A request on the tab already shown starts that tab afresh (selectTab's rule), like a shortcut should.
         navigation.open(ShellOpenRequest.Import)
-        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(7), RecipeImportKey()), navigation.backStack)
+        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeImportKey()), navigation.backStack)
         navigation.open(ShellOpenRequest.BarcodeScan)
         assertEquals(listOf<NavKey>(TodayKey, MoreKey, BarcodeScanKey()), navigation.backStack)
         // Fas 3 (import lane): a share opens the import on the Recipes tab, replacing an open import.
-        navigation.open(ShellOpenRequest.Import)
         navigation.openImport(ShareImportRequest(text = "https://example.com/x"))
         assertEquals(
-            listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(7), RecipeImportKey(sharedText = "https://example.com/x")),
+            listOf<NavKey>(TodayKey, RecipesKey, RecipeImportKey(sharedText = "https://example.com/x")),
             navigation.backStack,
         )
     }
