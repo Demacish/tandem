@@ -187,6 +187,8 @@ dependencies {
     // lanes' real repositories replaced the temporary stand-ins (di/TemporaryFasSModule.kt is gone). ---
     implementation(projects.feature.pantry)
     implementation(projects.feature.scan)
+    // Fas 3 (widgets lane): the widgets' receivers, the tile and the updater.
+    implementation(projects.feature.widgets)
     implementation(projects.core.ai)
     // --- sync lane (Phase 1): WorkManager runs core:sync's @HiltWorker workers through the
     // HiltWorkerFactory that TandemApplication provides (Configuration.Provider). ---

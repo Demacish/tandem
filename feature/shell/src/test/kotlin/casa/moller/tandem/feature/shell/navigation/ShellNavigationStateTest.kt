@@ -6,6 +6,8 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import org.junit.Assert.assertEquals
@@ -130,6 +132,28 @@ class ShellNavigationStateTest {
         navigation.openTimer(TimerOpenRequest(recipeId = 6, stepIndex = 1))
         assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(6), CookKey(6, startStep = 1)), navigation.backStack)
         assertTrue("cook mode hides the navigation", navigation.hidesNavigation(compactWidth = false))
+    }
+
+    @Test
+    fun anOpenRequestSelectsTheTabOrOpensTheScreen() {
+        // Fas 3 (widgets lane): shortcuts, widgets and the tile.
+        navigation.open(ShellOpenRequest.Tab(ShellTab.SHOPPING))
+        assertEquals(listOf<NavKey>(TodayKey, ShoppingKey), navigation.backStack)
+        navigation.open(ShellOpenRequest.Recipe(6))
+        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(6)), navigation.backStack)
+        navigation.open(ShellOpenRequest.Recipe(7))
+        assertEquals("one recipe at a time", listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(7)), navigation.backStack)
+        navigation.open(ShellOpenRequest.Import)
+        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(7), RecipeImportKey()), navigation.backStack)
+        navigation.open(ShellOpenRequest.BarcodeScan)
+        assertEquals(listOf<NavKey>(TodayKey, MoreKey, BarcodeScanKey()), navigation.backStack)
+        // Fas 3 (import lane): a share opens the import on the Recipes tab, replacing an open import.
+        navigation.open(ShellOpenRequest.Import)
+        navigation.openImport(ShareImportRequest(text = "https://example.com/x"))
+        assertEquals(
+            listOf<NavKey>(TodayKey, RecipesKey, RecipeDetailKey(7), RecipeImportKey(sharedText = "https://example.com/x")),
+            navigation.backStack,
+        )
     }
 
     @Test

@@ -54,6 +54,7 @@ kan installeras bredvid release-bygget.
 | `:app` | applikation | allt den kopplar ihop |
 | `:feature:onboarding`, `:feature:recipes`, `:feature:home`, `:feature:cook`, `:feature:shopping`, `:feature:mealplan` (Fas 2), `:feature:pantry`, `:feature:scan` (Fas S) | `tandem.android.feature` | `core:{data,domain,ui,designsystem,model,common}` – aldrig `core:network`/`core:database`/`core:sync`/`core:datastore`/`core:timer`/`core:ai` (tillåtelselista, `checkModuleGraph` regel 1) och aldrig en annan feature (timers nås via `TimerController` i `core:data`, se "Fas 1b – kontrakt") |
 | `:feature:shell` | `tandem.android.feature` | som ovan **plus** `feature:recipes`, `feature:home`, `feature:cook`, `feature:shopping`, `feature:mealplan`, `feature:pantry` och `feature:scan`: skalet är navigationsvärden (se Navigering) |
+| `:feature:widgets` (Fas 3) | `tandem.android.feature` + Glance | hemskärmswidgets, snabbinställningsrutan och genvägarna; läser `core:data` genom en Hilt-entry point och öppnar appen med `core:ui` `AppOpenIntents` (se "Widgets, snabbinställning och genvägar") |
 | `:core:ai` (Fas S) | Android-bibliotek + Hilt | `core:{data,model,datastore,common}`, aldrig `core:network`/`sync`/`database` (`checkModuleGraph` regel 5); foto av kylen (se "Fas S – kontrakt") |
 | `:core:data` | Android-bibliotek + Hilt | `core:{network,datastore,model,common}`; repository-gränssnitten för Fas 1 |
 | `:core:database` | Android-bibliotek + Hilt + `tandem.android.room` | `core:{model,common}` |
@@ -979,6 +980,38 @@ den första användaren med AI i Tandoor. Bookmarklet-import, import av flera re
 Tandoors "import_keyword"-val i appen (nyckelorden tas som servern föreslår dem).
 <!-- /Fas 3 import -->
 
+<!-- Fas 3 widgets -->
+## Widgets, snabbinställning och genvägar (`:feature:widgets`, `:core:ui`, Fas 3, widgets)
+
+Hemskärmswidgets, en snabbinställningsruta och genvägar på appikonen (ROADMAP "Fas 3", plan §8.9).
+Allt utanför skalet öppnar appen på samma sätt: `core:ui` `navigation/AppOpenIntents` bygger
+intenten `casa.moller.tandem.action.OPEN` med ett **destinationsnamn** (`shopping`, `week`,
+`recipes`, `import`, `scan`, `recipe:<id>`; `data = tandem-open://<namn>` så att PendingIntents
+skiljer sig åt). Appen (`navigation/OpenLaunch.kt`, `MainActivity.openFrom`) gör namnet till
+skalets `ShellOpenRequest` (`Tab`, `Recipe`, `Import`, `BarcodeScan`), `AppViewModel.onOpenRequested`
+sparar det tills skalet visats (som timer- och delningsbegäran) och `ShellNavigationState.open`
+väljer fliken eller öppnar skärmen (ett okänt namn öppnar bara appen). `MainActivity` är exporterad:
+namnet är bara ett namn och ett recept-id prövas där det används.
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Modul | `feature/widgets/` (`tandem.android.feature` + Glance 1.2) | läser bara `core:data` genom en Hilt-`@EntryPoint` (`WidgetEntryPoint`: `ShoppingRepository`, `HomeRepository`, `SessionRepository`), eftersom widgets och tjänster skapas av systemet |
+| Tillstånd | `WidgetStates.kt` | `ShoppingWidgetState.of(entries, now, signedIn)` (öppna rader i listordning, högst 12, "N kvar", raden som "2 dl grädde"), `TonightWidgetState.of(upcoming, signedIn)` (dagens måltider i måltidstypsordning, högst 4); rena värden, testade utan Glance |
+| Inköpslistan | `ShoppingListWidget.kt` | `ShoppingListWidgetReceiver`/`ShoppingListWidget` (`SizeMode.Exact`): rubrik "Handla" med "N kvar" (öppnar Handla), raderna i en `LazyColumn`; ett tryck på en rad bockar av den (`CheckEntryAction`: `ShoppingRepository.setChecked`, genom outboxen, också offline) och ritar om; "Inget på listan", "Öppna Tandem och logga in" |
+| I dag | `TonightWidget.kt` | dagens måltider med måltidstyp; ett tryck öppnar receptet, rubriken Veckan; "Inget planerat i dag. Tryck för att planera." |
+| Uppdatering | `WidgetUpdater` (startas av `TandemApplication`) | följer `WidgetData.shopping`/`tonight` (efter första värdet, 400 ms debounce) och kör `updateAll` medan processen lever: en synk, en avbockning i appen, en annan medlems ändring, utloggning. `updatePeriodMillis = 0`: ingen egen tidsstyrd uppdatering (synken väcker processen) |
+| Snabbinställning | `ShoppingTileService` | rutan "Handla": undertexten "N kvar"/"Inget på listan"/"Öppna Tandem och logga in" läses när rutan visas; ett tryck öppnar inköpslistan (`startActivityAndCollapse`). Ändrar inget |
+| Genvägar | `AppShortcuts.install(context)` (vid varje start, `TandemApplication`) | dynamiska genvägar (`ShortcutManagerCompat`) Handla, Veckan, Importera recept, Skanna streckkod – dynamiska för att följa språket och flavourns paket (en statisk `shortcuts.xml` kräver ett fast målpaket, dev-flavourn har ett annat) |
+| Manifest | `feature/widgets/src/main/AndroidManifest.xml`, `res/xml/widget_*_info.xml` | receivers (exporterade, `APPWIDGET_UPDATE`), rutan med `BIND_QUICK_SETTINGS_TILE`; 3×2 respektive 3×1 celler, storleksbara, `glance_default_loading_layout` som första layout |
+
+**Tester:** `WidgetStatesTest` (`:feature:widgets`), `OpenLaunchTest` och `AppViewModelTest`
+(appen), `ShellNavigationStateTest.anOpenRequestSelectsTheTabOrOpensTheScreen` (skalet). Widgetarnas
+utseende prövas inte med skärmbilder (Glance ritar RemoteViews; röktestet installerar appen med dem).
+
+**Kvar till senare:** en widget för timers, konfigurerbar lista (listval) i inköpswidgeten,
+förhandsbilder i widgetväljaren, en "Lägg till vara"-ruta.
+<!-- /Fas 3 widgets -->
+
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)
 
@@ -991,7 +1024,7 @@ banan), CHANGELOG `[Unreleased]` och ROADMAP "Fas 3".
 |---|---|---|
 | Receptredigeraren (#22) | ✅ klart 2026-11-03, CI grön (PR, Contract 2.6.13/2.7.1, röktest, referensbilder) | "Fas 3 – kontrakt", "Receptredigeraren" |
 | Import (dela länk/text, foto och PDF via Tandoors AI-import) | 🔧 pågår, påbörjat 2026-11-03: datasidan och skärmen inne, kontraktstest och referensbilder kvar | "Importera recept" |
-| Widgets, snabbinställningsruta och genvägar | ⏳ inte påbörjat | – |
+| Widgets, snabbinställningsruta och genvägar | 🔧 pågår, påbörjat 2026-11-03: modulen, widgetarna, rutan och genvägarna skrivna, CI kvar | "Widgets, snabbinställning och genvägar" |
 | Dra och släpp i matsedeln, näringsvärden | ⏳ inte påbörjat | – |
 
 ### Pågående: import
@@ -1004,12 +1037,18 @@ Ordning (varje punkt är en commit som lämnar CI grön):
 2. ✅ `:core:sync` (commit 66d2067): `RemoteRecipeImportRepository` (online-anrop, ingen outbox: tolkningen sker på
    servern; svaret blir ett `RecipeDraft` som sparas genom `RecipeEditRepository.createRecipe`),
    fake och tester.
-3. 🔧 `:feature:recipes`: importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
+3. ✅ `:feature:recipes` (commit 38b78e2, strängfix 97889eb): importskärmen (`RecipeImportKey`), "Dela till Tandem" (`ACTION_SEND`
    text/länk, bild, PDF i manifestet, `MainActivity` → `AppViewModel` → skalet), redigeraren
    öppnad med det importerade utkastet, strängar, referensbilder och ATF.
-4. ⏳ Kontraktstest: `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
+4. 🔧 Kontraktstest (commit 7008009, väntar på grön körning och incheckade fixturer): `Phase3ContractTest` e–f (`recipe-from-source` med `data`, `ai-import` utan
    leverantör), fixturer för 2.6.13 och 2.7.1, FACTS.
 5. 🔧 Dokumentation: BYGGE "Importera recept" (skrivet), CHANGELOG (skrivet), ROADMAP ✅ (när allt är grönt).
+
+### Pågående: widgets
+
+1. 🔧 `:feature:widgets` (ny modul), `AppOpenIntents` i `core:ui`, `ShellOpenRequest` i skalet,
+   `OpenLaunch` i appen, dynamiska genvägar; tester. Väntar på grön CI.
+2. ⏳ Dokumentation: CHANGELOG (skrivet), ROADMAP ✅ när allt är grönt.
 <!-- /Fas 3 läge -->
 
 <!-- Fas S hemma-data -->

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_shopping_label">Tandem: inköpslista</string>
+    <string name="widget_shopping_description">Er inköpslista. Tryck på en rad för att bocka av den.</string>
+    <string name="widget_shopping_title">Handla</string>
+    <plurals name="widget_shopping_remaining">
+        <item quantity="one">%1$d kvar</item>
+        <item quantity="other">%1$d kvar</item>
+    </plurals>
+    <string name="widget_shopping_empty">Inget på listan.</string>
+    <string name="widget_shopping_empty_short">Inget på listan</string>
+    <string name="widget_shopping_check">Bocka av %1$s</string>
+    <string name="widget_shopping_more">%1$d till i appen</string>
+    <string name="widget_tonight_label">Tandem: i dag</string>
+    <string name="widget_tonight_description">Dagens planerade måltider. Tryck på en måltid för att öppna receptet.</string>
+    <string name="widget_tonight_title">I dag</string>
+    <string name="widget_tonight_empty">Inget planerat i dag. Tryck för att planera.</string>
+    <string name="widget_sign_in">Öppna Tandem och logga in.</string>
+    <!-- The launcher shortcuts (AppShortcuts). -->
+    <string name="shortcut_shopping">Handla</string>
+    <string name="shortcut_shopping_long">Öppna inköpslistan</string>
+    <string name="shortcut_week">Veckan</string>
+    <string name="shortcut_week_long">Öppna matsedeln</string>
+    <string name="shortcut_import">Importera recept</string>
+    <string name="shortcut_import_long">Importera ett recept från en länk eller text</string>
+    <string name="shortcut_scan">Skanna streckkod</string>
+    <string name="shortcut_scan_long">Skanna en streckkod</string>
+</resources>

@@ -14,6 +14,10 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.navigation.FullScreenDestination
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
+import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import kotlinx.serialization.Serializable
 
 /**
@@ -161,6 +165,31 @@ class ShellNavigationState(
             RecipeImportKey(sharedText = request.text, sharedFileUri = request.fileUri, sharedMimeType = request.mimeType),
             replace = { it is RecipeImportKey || it is RecipeEditorKey && it.recipeId == null },
         )
+    }
+
+    /**
+     * Fas 3 (widgets lane): a launcher shortcut, a widget or the quick settings tile opened the
+     * app at [request] ([ShellOpenRequest]): a tab, a recipe, the import or the barcode scanner.
+     */
+    fun open(request: ShellOpenRequest) {
+        when (request) {
+            is ShellOpenRequest.Tab -> selectTab(request.tab)
+
+            is ShellOpenRequest.Recipe -> {
+                selectTab(ShellTab.RECIPES)
+                navigate(RecipeDetailKey(request.recipeId), replace = { it is RecipeDetailKey })
+            }
+
+            ShellOpenRequest.Import -> {
+                selectTab(ShellTab.RECIPES)
+                navigate(RecipeImportKey(), replace = { it is RecipeImportKey })
+            }
+
+            ShellOpenRequest.BarcodeScan -> {
+                selectTab(ShellTab.MORE)
+                navigate(BarcodeScanKey(), replace = { it is BarcodeScanKey })
+            }
+        }
     }
 
     /**

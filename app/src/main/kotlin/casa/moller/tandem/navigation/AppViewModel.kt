@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
 import casa.moller.tandem.feature.shell.navigation.ShareImportRequest
+import casa.moller.tandem.feature.shell.navigation.ShellOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -77,6 +78,8 @@ data class AppUiState(
     val timerRequest: TimerOpenRequest? = null,
     /** Fas 3 (import lane): something shared to Tandem that "Importera recept" has not opened yet (saved like [timerRequest]). */
     val importRequest: ShareImportRequest? = null,
+    /** Fas 3 (widgets lane): where a shortcut, widget or the tile wants the app opened, until the shell did it. */
+    val openRequest: ShellOpenRequest? = null,
 )
 
 /** One-off messages shown as a toast. */
@@ -127,13 +130,17 @@ class AppViewModel @Inject constructor(
     private val importRequest: Flow<ShareImportRequest?> = savedStateHandle.getStateFlow<Array<String>?>(KEY_IMPORT_REQUEST, null)
         .map { parts -> parts?.toImportRequest() }
 
+    /** [ShellOpenRequest] as its destination name (`ShellOpenRequest.nameOf`, Bundle-friendly). */
+    private val openRequest: Flow<ShellOpenRequest?> = savedStateHandle.getStateFlow<String?>(KEY_OPEN_REQUEST, null)
+        .map { ShellOpenRequest.of(it) }
+
     val uiState: StateFlow<AppUiState> = combine(
         session,
         introFlags,
         appearanceRepository.themeMode,
         settingsRepository.settings.map { it.dynamicColor }.distinctUntilChanged(),
-        combine(timerRequest, importRequest) { timer, import -> timer to import },
-    ) { current, flags, theme, dynamicColor, (openTimer, openImport) ->
+        combine(timerRequest, importRequest, openRequest) { timer, import, open -> Triple(timer, import, open) },
+    ) { current, flags, theme, dynamicColor, (openTimer, openImport, open) ->
         AppUiState(
             destination = resolveDestination(current, flags.hold),
             session = current,
@@ -145,6 +152,7 @@ class AppViewModel @Inject constructor(
             dynamicColor = dynamicColor,
             timerRequest = openTimer,
             importRequest = openImport,
+            openRequest = open,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, AppUiState())
 
@@ -170,6 +178,7 @@ class AppViewModel @Inject constructor(
                             savedStateHandle[KEY_HOLD_ONBOARDING] = true
                             savedStateHandle[KEY_TIMER_REQUEST] = null
                             savedStateHandle[KEY_IMPORT_REQUEST] = null
+                            savedStateHandle[KEY_OPEN_REQUEST] = null
                         }
 
                         // The recovery screen replaced the intro (its ViewModel is gone), so the
@@ -271,6 +280,16 @@ class AppViewModel @Inject constructor(
         savedStateHandle[KEY_IMPORT_REQUEST] = null
     }
 
+    /** Fas 3 (widgets lane): a shortcut, a widget or the tile opened the app at [request] (`MainActivity` reads `AppOpenIntents`). */
+    fun onOpenRequested(request: ShellOpenRequest) {
+        savedStateHandle[KEY_OPEN_REQUEST] = ShellOpenRequest.nameOf(request)
+    }
+
+    /** The shell opened [AppUiState.openRequest]. */
+    fun onOpenRequestHandled() {
+        savedStateHandle[KEY_OPEN_REQUEST] = null
+    }
+
     /** "Log in again" on the recovery screen. */
     fun acknowledgeRecovery() = sessionRepository.acknowledgeRecovery()
 
@@ -289,6 +308,7 @@ class AppViewModel @Inject constructor(
         const val KEY_TIMER_REQUEST = "app.timerRequest"
         const val KEY_TIMER_REQUEST_SOURCE = "app.timerRequestSource"
         const val KEY_IMPORT_REQUEST = "app.importRequest"
+        const val KEY_OPEN_REQUEST = "app.openRequest"
 
         /** [AppDestination.Shell.source] in demo mode (account ids are UUIDs). */
         const val SHELL_DEMO = "demo"

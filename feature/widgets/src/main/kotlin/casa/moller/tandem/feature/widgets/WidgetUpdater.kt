@@ -1,0 +1,51 @@
+package casa.moller.tandem.feature.widgets
+
+import android.content.Context
+import androidx.glance.appwidget.updateAll
+import casa.moller.tandem.core.data.di.ApplicationScope
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
+
+/**
+ * Fas 3 (widgets lane): redraws the widgets when what they show changes while the process lives
+ * (a sync, a check in the app, another member's change, logout). Started once by the
+ * application, after Hilt. A redraw of a widget nobody placed is a no-op; a failure (the
+ * launcher is gone) is ignored: the next change tries again.
+ */
+@Singleton
+class WidgetUpdater @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val scope: CoroutineScope,
+    private val entryPointProvider: WidgetEntryPointProvider,
+) {
+    private var started = false
+
+    @OptIn(FlowPreview::class)
+    fun start() {
+        if (started) return
+        started = true
+        val data = WidgetData(entryPointProvider.get())
+        scope.launch {
+            data.shopping.drop(1).debounce(DEBOUNCE_MILLIS).collect { runCatching { ShoppingListWidget().updateAll(context) } }
+        }
+        scope.launch {
+            data.tonight.drop(1).debounce(DEBOUNCE_MILLIS).collect { runCatching { TonightWidget().updateAll(context) } }
+        }
+    }
+
+    private companion object {
+        const val DEBOUNCE_MILLIS = 400L
+    }
+}
+
+/** Hands [WidgetUpdater] the entry point (a Hilt entry point cannot be injected directly). */
+class WidgetEntryPointProvider @Inject constructor(@ApplicationContext private val context: Context) {
+    fun get(): WidgetEntryPoint = EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
+}

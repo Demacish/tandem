@@ -118,6 +118,9 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
                     // Fas 3 (import lane): "Dela till Tandem" (MainActivity).
                     importRequest = state.importRequest,
                     onImportRequestHandled = viewModel::onImportRequestHandled,
+                    // Fas 3 (widgets lane): shortcuts, widgets and the tile.
+                    openRequest = state.openRequest,
+                    onOpenRequestHandled = viewModel::onOpenRequestHandled,
                 )
             }
             entry<AppDestination.Recovery> {

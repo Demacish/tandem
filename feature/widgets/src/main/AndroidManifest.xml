@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!--
+            Fas 3 (widgets lane): the home-screen widgets (Glance). Exported, as app widget
+            receivers must be: the launcher sends APPWIDGET_UPDATE. They read core:data and open
+            the app through core:ui's AppOpenIntents; nothing leaves the device.
+        -->
+        <receiver
+            android:name=".ShoppingListWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_shopping_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shopping_info" />
+        </receiver>
+        <receiver
+            android:name=".TonightWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_tonight_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_tonight_info" />
+        </receiver>
+
+        <!-- The quick settings tile "Handla": opens the shopping list; the subtitle says how many entries are open. -->
+        <service
+            android:name=".ShoppingTileService"
+            android:exported="true"
+            android:icon="@drawable/tandem_ic_shopping_cart"
+            android:label="@string/widget_shopping_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.ACTIVE_TILE"
+                android:value="false" />
+        </service>
+    </application>
+</manifest>

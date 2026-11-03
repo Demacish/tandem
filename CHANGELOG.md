@@ -24,6 +24,11 @@ Början på Fas 3 ("Skapa och fånga"): recept skapas och redigeras i appen.
   i redigeraren, där du granskar och sparar det som vanligt – också offline. Har er Tandoor en
   AI-tjänst kan du fotografera ett recept (en kokbokssida, ett kort) eller dela en PDF; det kostar
   hushållets AI-krediter. Bilden från källan följer med receptet.
+- **Widgets på hemskärmen:** "Handla" visar inköpslistan – tryck på en rad för att bocka av den –
+  och "I dag" dagens planerade måltider, med receptet ett tryck bort. De uppdateras när listan
+  eller matsedeln ändras.
+- **Snabbinställningsrutan "Handla"** öppnar inköpslistan och visar hur många varor som är kvar.
+- **Genvägar** på appikonen (håll inne): Handla, Veckan, Importera recept, Skanna streckkod.
 - Gäster kan titta men inte ändra. Diagnostik visar "Receptändringar".
 - **Kvar till senare:** ta bort en bild, stegfiler, delrecept och näringsvärden ändras på webben.
 

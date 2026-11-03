@@ -122,6 +122,7 @@ import casa.moller.tandem.feature.shell.navigation.ShellTab
 import casa.moller.tandem.feature.shell.navigation.ShoppingKey
 import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
 import casa.moller.tandem.feature.shell.navigation.ShareImportRequest
+import casa.moller.tandem.feature.shell.navigation.ShellOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TodayKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
@@ -160,6 +161,8 @@ import java.time.LocalDate
  *   opens the intro at the server step, cancellable back to the current account.
  * @param importRequest Fas 3 (import lane): a link, text, photo or PDF another app shared to
  *   Tandem (`ACTION_SEND`), opened once in "Importera recept"; then [onImportRequestHandled].
+ * @param openRequest Fas 3 (widgets lane): where a shortcut, widget or the tile wants the app
+ *   opened, done once ([ShellNavigationState.open]); then [onOpenRequestHandled].
  */
 @Composable
 fun TandemShell(
@@ -174,6 +177,8 @@ fun TandemShell(
     onTimerRequestHandled: () -> Unit = {},
     importRequest: ShareImportRequest? = null,
     onImportRequestHandled: () -> Unit = {},
+    openRequest: ShellOpenRequest? = null,
+    onOpenRequestHandled: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     // Plan 3.6 point 3: check the server version again when the app comes back to the
@@ -199,6 +204,14 @@ fun TandemShell(
         if (importRequest != null && sourceKnown) {
             navigation.openImport(importRequest)
             currentOnImportRequestHandled()
+        }
+    }
+    // Fas 3 (widgets lane): a shortcut, a widget or the tile opened the app somewhere.
+    val currentOnOpenRequestHandled by rememberUpdatedState(onOpenRequestHandled)
+    LaunchedEffect(navigation, openRequest, sourceKnown) {
+        if (openRequest != null && sourceKnown) {
+            navigation.open(openRequest)
+            currentOnOpenRequestHandled()
         }
     }
     // Phase 2 (konto lane): "Export changes" in the logout dialog opens the share sheet.

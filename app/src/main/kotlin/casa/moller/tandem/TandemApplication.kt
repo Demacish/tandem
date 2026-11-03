@@ -12,6 +12,8 @@ import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.sync.SyncStarter
 import casa.moller.tandem.diagnostics.ColdStart
+import casa.moller.tandem.feature.widgets.AppShortcuts
+import casa.moller.tandem.feature.widgets.WidgetUpdater
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
 import javax.inject.Inject
@@ -38,6 +40,10 @@ class TandemApplication :
     @field:ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
+    /** Fas 3 (widgets lane): redraws the home-screen widgets when their data changes. */
+    @Inject
+    lateinit var widgetUpdater: WidgetUpdater
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -56,12 +62,15 @@ class TandemApplication :
         // Phase 1 data layer (core:sync): image loader, account mirror, periodic sync, and a sync
         // request whenever the app comes to the foreground.
         syncStarter.start()
+        widgetUpdater.start()
         // Phase 1b (plan 8.7): the channels exist before the first notification, so the system
         // settings and Mer → Behörigheter show them from the first start. Off the main thread
         // (binder calls, not needed for the first frame); a failure only delays them to the first
         // notification, which creates its channel again.
         applicationScope.launch {
             channelInstallers.forEach { installer -> runCatching { installer.createChannels() } }
+            // Fas 3 (widgets lane): the launcher shortcuts, in the current language.
+            AppShortcuts.install(this@TandemApplication)
         }
     }
 

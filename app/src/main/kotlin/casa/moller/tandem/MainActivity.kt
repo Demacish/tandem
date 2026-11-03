@@ -23,6 +23,7 @@ import casa.moller.tandem.diagnostics.ColdStart
 import casa.moller.tandem.navigation.AppDestination
 import casa.moller.tandem.navigation.AppViewModel
 import casa.moller.tandem.navigation.ImportLaunch
+import casa.moller.tandem.navigation.OpenLaunch
 import casa.moller.tandem.navigation.TimerLaunch
 import casa.moller.tandem.ui.TandemApp
 import dagger.hilt.android.AndroidEntryPoint
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) {
             openTimerFrom(intent)
             openImportFrom(intent)
+            openFrom(intent)
         }
         // Keep the splash until the stored session is read, so the intro never flashes for a
         // user who is already logged in.
@@ -95,10 +97,16 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         openTimerFrom(intent)
         openImportFrom(intent)
+        openFrom(intent)
     }
 
     private fun openTimerFrom(intent: Intent?) {
         TimerLaunch.requestFrom(intent)?.let(appViewModel::onOpenTimer)
+    }
+
+    /** Fas 3 (widgets lane): a launcher shortcut, a widget or the quick settings tile opens the app somewhere. */
+    private fun openFrom(intent: Intent?) {
+        OpenLaunch.requestFrom(intent)?.let(appViewModel::onOpenRequested)
     }
 
     /** Fas 3 (import lane): "Dela till Tandem" (a link, text, photo or PDF) opens "Importera recept". */

@@ -60,3 +60,7 @@ include(":feature:mealplan")
 include(":feature:pantry")
 include(":feature:scan")
 include(":core:ai")
+
+// --- widgets lane (Fas 3, 0.5.0 "Skapa och fånga"): home-screen widgets, the quick settings tile
+// and the launcher shortcuts (docs/BYGGE.md "Widgets, snabbinställning och genvägar"). ---
+include(":feature:widgets")

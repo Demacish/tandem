@@ -17,6 +17,7 @@ import casa.moller.tandem.core.testing.data.FakeSettingsRepository
 import casa.moller.tandem.feature.shell.ShellMessage
 import casa.moller.tandem.feature.shell.ShellMessageQueue
 import casa.moller.tandem.feature.shell.navigation.ShareImportRequest
+import casa.moller.tandem.feature.shell.navigation.ShellOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -98,6 +99,19 @@ class AppViewModelTest {
         assertEquals(null, vm.uiState.value.importRequest)
         vm.onImportShared(ShareImportRequest(fileUri = "content://media/1", mimeType = "image/jpeg"))
         assertEquals(ShareImportRequest(fileUri = "content://media/1", mimeType = "image/jpeg"), vm.uiState.value.importRequest)
+    }
+
+    @Test
+    fun anOpenRequestIsKeptUntilTheShellOpenedIt() {
+        // Fas 3 (widgets lane): a shortcut, widget or the tile, also across process death.
+        sessions.state.value = LOGGED_IN
+        val handle = SavedStateHandle()
+        val vm = newViewModel(handle)
+        vm.onOpenRequested(ShellOpenRequest.Recipe(6))
+        assertEquals(ShellOpenRequest.Recipe(6), vm.uiState.value.openRequest)
+        assertEquals(ShellOpenRequest.Recipe(6), newViewModel(handle).uiState.value.openRequest)
+        vm.onOpenRequestHandled()
+        assertEquals(null, vm.uiState.value.openRequest)
     }
 
     @Test
