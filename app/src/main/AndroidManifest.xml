@@ -43,10 +43,6 @@
                 <data android:mimeType="image/*" />
                 <data android:mimeType="application/pdf" />
             </intent-filter>
-            <!-- Fas 3 (widgets lane): the launcher shortcuts (long press on the icon). -->
-            <meta-data
-                android:name="android.app.shortcuts"
-                android:resource="@xml/shortcuts" />
         </activity>
 
         <!--
