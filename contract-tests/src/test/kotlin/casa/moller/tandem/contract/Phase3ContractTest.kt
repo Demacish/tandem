@@ -1,13 +1,17 @@
 package casa.moller.tandem.contract
 
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.time.LocalDate
 import java.time.ZoneId
+import javax.imageio.ImageIO
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -33,6 +37,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
  *   on; a keyword sent as `{id}` keeps its name.
  * - c. Who may: the other member PATCHes too (200); the guest gets 403 on PATCH and DELETE.
  * - d. `DELETE /api/recipe/{id}/` answers 204; afterwards GET answers 404.
+ * - e. (import lane) `POST /api/recipe-from-source/` with `data` (a page with schema.org JSON-LD)
+ *   answers the parsed recipe without creating it: foods and units by name, `original_text`,
+ *   the image, and the space's recipe with the same name as a duplicate; plain text and an
+ *   unreachable link answer `error: true`; the guest's answer is recorded.
+ * - f. (import lane) `POST /api/ai-import/` on a space without an AI provider, and
+ *   `PUT /api/recipe/{id}/image/` with an `image_url` the server cannot fetch: recorded, so the
+ *   app knows what it must drop.
  *
  * Runs after the Fas S steps against the same throwaway server. Recordings go to
  * `build/contract-recordings/<tag>/fas3/` and are committed to `api-schema/fixtures/<version>/fas3/`.
@@ -231,6 +242,89 @@ class Phase3ContractTest {
         observe("recipe.delete.guest.stillThere", read("/api/recipe/$id/").status == OK)
     }
 
+    // --- e. Import from a source (Fas 3 import lane) ---------------------------------------------------
+
+    @Test
+    @Order(35)
+    fun importFromSource() {
+        // The page as the app would send it (`data`): schema.org JSON-LD in HTML, the way recipe sites publish it.
+        val html = jsonLdPage(name = RECIPE_NAME)
+        val fromData = api("recipe-from-source-data", "POST", "/api/recipe-from-source/", obj("data" to html))
+        observe("import.data", describe(fromData, includeBody = fromData.status != OK))
+        val recipe = objOf(fromData)?.objAt("recipe")
+        observe("import.data.name", recipe?.stringAt("name"))
+        observe("import.data.servings", recipe?.get("servings"))
+        observe("import.data.workingTime", recipe?.get("working_time"))
+        observe("import.data.stepCount", recipe?.arrAt("steps")?.size)
+        val lines = recipe?.arrAt("steps")?.objects()?.flatMap { it.arrAt("ingredients").objects() }.orEmpty()
+        observe("import.data.foods", lines.map { it.objAt("food")?.stringAt("name") })
+        observe("import.data.units", lines.map { it.objAt("unit")?.stringAt("name") })
+        observe("import.data.amounts", lines.map { it.doubleAt("amount") })
+        observe("import.data.originalTexts", lines.map { it.stringAt("original_text") })
+        observe("import.data.keywords", recipe?.arrAt("keywords")?.objects()?.map { it.stringAt("name") })
+        observe("import.data.imageUrl", recipe?.stringAt("image_url"))
+        observe("import.data.images", objOf(fromData)?.arrAt("images"))
+        observe("import.data.error", objOf(fromData)?.get("error"))
+        // The recipe of step a has this name: the server names it as a duplicate.
+        observe("import.data.duplicates", objOf(fromData)?.arrAt("duplicates")?.objects()?.map { it.stringAt("name") })
+
+        // A page without a recipe (plain text) and a link the server cannot fetch.
+        val plainBody = obj("data" to "Bara lite text utan recept.")
+        val plain = api("recipe-from-source-plain-text", "POST", "/api/recipe-from-source/", plainBody)
+        observe("import.plainText", describe(plain))
+        val badUrlBody = obj("url" to "https://recipes.invalid/pannkakor")
+        val badUrl = api("recipe-from-source-bad-url", "POST", "/api/recipe-from-source/", badUrlBody)
+        observe("import.badUrl", describe(badUrl))
+        val empty = api("recipe-from-source-empty", "POST", "/api/recipe-from-source/", obj())
+        observe("import.empty", describe(empty))
+        val guestBody = obj("data" to html)
+        val guest = api("recipe-from-source-as-guest", "POST", "/api/recipe-from-source/", guestBody, token = env.guestToken)
+        observe("import.guest", describe(guest, includeBody = guest.status != OK))
+    }
+
+    // --- f. The AI import without a provider (Fas 3 import lane) ---------------------------------------
+
+    @Test
+    @Order(36)
+    fun aiImportWithoutProvider() {
+        // The contract space has no AI provider (`space/current` `ai_default_provider` null): the
+        // app never sends then; this records what a server answers an app that still tries, with
+        // the multipart shape the app uses (`ai_provider_id`, `file`).
+        val space = objOf(read("/api/space/current/"))
+        observe("import.ai.spaceAiEnabled", space?.get("ai_enabled"))
+        observe("import.ai.spaceDefaultProvider", space?.get("ai_default_provider"))
+        val png = tinyPng()
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("ai_provider_id", "999999")
+            .addFormDataPart("file", "recept.png", png.toRequestBody(PNG))
+            .build()
+        val recordBody = obj("ai_provider_id" to "999999", "file" to "<multipart file recept.png, image/png, ${png.size} bytes>")
+        val answer = http.call(
+            "ai-import-no-provider",
+            "POST",
+            "/api/ai-import/",
+            bearer = env.fas1Token,
+            body = form,
+            recordBody = recordBody,
+        )
+        observe("import.ai.noProvider", describe(answer))
+        val imageUrl = recipeId?.let { id ->
+            val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+                .addFormDataPart("image_url", "https://recipes.invalid/bilder/pannkakor.jpg")
+                .build()
+            http.call(
+                "recipe-image-url-put",
+                "PUT",
+                "/api/recipe/$id/image/",
+                bearer = env.fas1Token,
+                body = body,
+                recordBody = obj("image_url" to "https://recipes.invalid/bilder/pannkakor.jpg"),
+            )
+        }
+        // `image_url` the server cannot fetch: the app drops the image row on 400 and keeps the recipe.
+        observe("import.imageUrl.unreachable", imageUrl?.let { describe(it) })
+    }
+
     // --- d. Delete -------------------------------------------------------------------------------------
 
     @Test
@@ -320,6 +414,34 @@ class Phase3ContractTest {
         "no_amount" to noAmount,
     )
 
+    /** A recipe page as sites publish it: schema.org `Recipe` as JSON-LD (what Tandoor's scraper reads first). */
+    private fun jsonLdPage(name: String): String {
+        val ld = obj(
+            "@context" to "https://schema.org",
+            "@type" to "Recipe",
+            "name" to name,
+            "description" to "Importerad av Tandems kontraktstest.",
+            "image" to listOf("https://recipes.invalid/bilder/fiskgratang.jpg"),
+            "recipeYield" to "4 portioner",
+            "prepTime" to "PT20M",
+            "cookTime" to "PT30M",
+            "keywords" to "Fisk, Vardag",
+            "recipeIngredient" to listOf("600 g torskfilé", "2,5 dl vispgrädde", "salt"),
+            "recipeInstructions" to listOf(
+                obj("@type" to "HowToStep", "text" to "Skär fisken i bitar och lägg i en form."),
+                obj("@type" to "HowToStep", "text" to "Häll över grädden och grädda i 200 grader i 30 minuter."),
+            ),
+        )
+        return "<html><head><title>$name</title><script type=\"application/ld+json\">$ld</script></head>" +
+            "<body><h1>$name</h1></body></html>"
+    }
+
+    private fun tinyPng(): ByteArray {
+        val image = BufferedImage(IMAGE_SIZE, IMAGE_SIZE, BufferedImage.TYPE_INT_RGB)
+        for (x in 0 until IMAGE_SIZE) for (y in 0 until IMAGE_SIZE) image.setRGB(x, y, PNG_COLOR)
+        return ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
+    }
+
     private fun header(text: String, order: Int): JsonObject =
         obj("food" to null, "unit" to null, "amount" to 0, "note" to text, "order" to order, "is_header" to true, "no_amount" to false)
 
@@ -346,6 +468,9 @@ class Phase3ContractTest {
 
     private companion object {
         val JSON = "application/json".toMediaType()
+        val PNG = "image/png".toMediaType()
+        const val IMAGE_SIZE = 8
+        const val PNG_COLOR = 0x3A6EA5
         val BODY_METHODS = setOf("POST", "PUT", "PATCH")
         const val OK = 200
         const val CREATED = 201
@@ -397,6 +522,10 @@ class Phase3ContractTest {
             "recipe.delete.status" to 204,
             "recipe.deleted.get.status" to 404,
             "recipe.delete.again.status" to 404,
+            // e. (import lane) the server parses a page with JSON-LD without creating the recipe.
+            "import.data.status" to 200,
+            "import.data.name" to RECIPE_NAME,
+            "import.data.error" to false,
         )
     }
 }
