@@ -90,10 +90,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
             path == RECIPES && method == "POST" -> create(parse(text))
 
-            IMAGE.matches(path) && method == "PUT" -> {
-                val fromWeb = text.contains("name=\"image_url\"")
-                image(IMAGE.find(path)!!.groupValues[1].toLong(), fromWeb)
-            }
+            IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), text)
 
             RECIPE.matches(path) && method == "GET" ->
                 recipes[RECIPE.find(path)!!.groupValues[1].toLong()]?.let { json(200, it) } ?: notFound()
@@ -148,7 +145,8 @@ internal class FakeRecipeEditTandoor(private val version: String) {
     }
 
     /** The photo upload, or (Fas 3 import lane) a picture the server downloads from `image_url`: both end as the recipe's image. */
-    private fun image(id: Long, fromWeb: Boolean): MockResponse {
+    private fun image(id: Long, body: String): MockResponse {
+        val fromWeb = body.contains("name=\"image_url\"")
         val recipe = recipes[id] ?: return notFound()
         recipes[id] = JsonObject(recipe + ("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg")))
         val imageUrl = if (fromWeb) JsonPrimitive("/media/recipes/recipe_$id.jpg") else JsonNull
