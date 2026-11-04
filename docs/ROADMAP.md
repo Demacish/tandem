@@ -78,7 +78,11 @@ Levererades i **0.5.0** (2026-11-03).
   receptvyn (0.5.0). Kvar: redigera näringsvärden i appen.
 
 ## Fas 4: Smart hushåll
-- Textigenkänning av recept i telefonen (samma som kvittoskanningen i Fas S).
+Påbörjat 2026-11-04.
+
+- ✅ Textigenkänning av recept i telefonen (samma ML Kit-läsare som kvittoskanningen i Fas S):
+  "Fota recept" i Importera recept läser en kokbokssida, ett kort eller en utskrift utan AI-tjänst
+  och öppnar texten i redigeraren. Kvar: handskrivet, spalter.
 - Inlärd butiksordning, återkommande varor, förslag på veckans matsedel.
 - Notiser när någon i hushållet ändrar listan. Appen kontrollerar i bakgrunden, så ingen extra
   tjänst behövs; snabbare push via en valfri liten tjänst som man kan köra själv.

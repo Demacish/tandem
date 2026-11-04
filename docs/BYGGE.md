@@ -1064,18 +1064,19 @@ kan tas upp igen där det avbröts.
 
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
-| Textigenkänning av recept i telefonen | 🔧 pågår, påbörjat 2026-11-04: skrivet, CI och referensbilder kvar | "Textigenkänning av recept" |
+| Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
 | Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ⏳ inte påbörjat | – |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
 
-### Pågående: textigenkänning av recept
+### Klart: textigenkänning av recept (2026-11-04)
 
-1. 🔧 `RecipeTextLayout` (`:core:domain`), `RecipeTextScanKey` + `recipetext/` (`:feature:scan`),
-   skalet (`ShellFeatures.Scan.onRecipeText`, `RecipeImport.onScanText`), knappen i "Importera
-   recept"; tester. Väntar på grön CI och inspelade referensbilder (`scan/*recipe_text*`).
-2. ⏳ CHANGELOG (skrivet under `[Unreleased]`), ROADMAP ✅ när allt är grönt.
+`RecipeTextLayout` (`:core:domain`), `RecipeTextScanKey` + `recipetext/` (`:feature:scan`), skalet
+(`ShellFeatures.Scan.onRecipeText`, `RecipeImport.onScanText`), knappen i "Importera recept",
+tester och referensbilder (`scan/*recipe_text*`, importformuläret); CHANGELOG `[Unreleased]`,
+ROADMAP ✅. Release 0.5.0: `main` står på release-committen `03c3597` (PR, torrkörning och röktest
+gröna); taggen `v0.5.0` pushas av ägaren (proxyn i byggsessionen släpper inte igenom taggar).
 <!-- /Fas 4 läge -->
 
 <!-- Fas 4 ocr -->
