@@ -108,6 +108,7 @@ internal fun WeekSuggestionsPanel(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         state.meals.forEach { meal -> SuggestionRow(meal = meal, format = format, enabled = !state.saving, onAction = onAction) }
+        // The buttons on their own rows: "Lägg 4 måltider i veckan" is long in every language.
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.sm, Alignment.End)) {
             if (!state.noFreeDays && !state.noRecipes) {
                 TandemTextButton(
@@ -117,13 +118,14 @@ internal fun WeekSuggestionsPanel(
                 )
             }
             TandemTextButton(text = stringResource(R.string.mealplan_cancel), onClick = { onAction(WeekAction.CancelSuggestions) })
-            if (state.meals.isNotEmpty()) {
-                TandemPrimaryButton(
-                    text = pluralStringResource(R.plurals.mealplan_suggest_accept, state.meals.size, state.meals.size),
-                    onClick = { onAction(WeekAction.AcceptSuggestions) },
-                    enabled = !state.saving,
-                )
-            }
+        }
+        if (state.meals.isNotEmpty()) {
+            TandemPrimaryButton(
+                text = pluralStringResource(R.plurals.mealplan_suggest_accept, state.meals.size, state.meals.size),
+                onClick = { onAction(WeekAction.AcceptSuggestions) },
+                enabled = !state.saving,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
