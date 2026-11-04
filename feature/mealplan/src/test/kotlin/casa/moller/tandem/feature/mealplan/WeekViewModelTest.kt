@@ -245,7 +245,7 @@ class WeekViewModelTest {
         vm.onAction(WeekAction.AcceptSuggestions)
         assertNull(vm.uiState.value.suggestions)
         val planned = vm.uiState.value.days[5].meals.single()
-        assertEquals("Fläskfilé med rotfrukter", planned.recipe?.name)
+        assertEquals(MealPlanSamples.porkTenderloin.id, planned.recipe?.id)
         assertEquals(dinner.id, planned.mealType.id)
         assertEquals("servings like the week's other dinners", 4.0, planned.servings, 0.0)
         assertEquals(WeekEffect.Show(WeekMessage.Suggested(1)), effects.last())
@@ -263,7 +263,7 @@ class WeekViewModelTest {
         val first = vm.uiState.value.suggestions!!
         assertEquals(listOf(day(3), day(4), day(5), day(6)), first.meals.map { it.date })
         assertEquals(4, first.meals.map { it.recipe.id }.distinct().size)
-        assertEquals("Fläskfilé med rotfrukter", first.meals.first().recipe.name)
+        assertEquals("the stew is free this week", "Linsgryta med kokosmjölk", first.meals.first().recipe.name)
 
         vm.onAction(WeekAction.SwapSuggestion(day(3)))
         val swapped = vm.uiState.value.suggestions!!

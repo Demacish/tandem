@@ -47,8 +47,9 @@ class WeekSuggestionsTest {
         val state = WeekSuggestions.suggest(days, mealTypes, suggestionCandidates, today, now)
         assertEquals(listOf(day(3), day(4), day(5), day(6)), state.meals.map { it.date })
         assertTrue(state.meals.all { it.mealType == dinner })
+        // The stew is not planned this week, so its 30 times cooked put it first.
         val expected =
-            listOf("Fläskfilé med rotfrukter", "Fisksoppa med saffran", "Fransk örtomelett med chèvre", "Ugnsstekt citronkyckling")
+            listOf("Linsgryta med kokosmjölk", "Fläskfilé med rotfrukter", "Fisksoppa med saffran", "Fransk örtomelett med chèvre")
         assertEquals(expected, state.meals.map { it.recipe.name })
 
         val shuffled = WeekSuggestions.suggest(days, mealTypes, suggestionCandidates, today, now, seed = 7)
@@ -61,7 +62,7 @@ class WeekSuggestionsTest {
 
     @Test
     fun aFullWeekOrNoRecipesExplainsItself() {
-        val full = week(MealPlanSamples.meals + MealPlanSamples.todayDinner.copy(id = 98, fromDate = day(5)))
+        val full = week(MealPlanSamples.meals + MealPlanSamples.todayDinner.copy(id = 98, fromDate = day(5), toDate = day(5)))
         val noDays = WeekSuggestions.suggest(full, mealTypes, suggestionCandidates, today, now)
         assertTrue(noDays.noFreeDays)
         assertTrue(noDays.meals.isEmpty())
@@ -75,11 +76,11 @@ class WeekSuggestionsTest {
     fun swappingTakesTheNextRecipeInLineAndLeavesOtherDaysAlone() {
         val state = WeekSuggestions.suggest(days, mealTypes, suggestionCandidates, today, now)
         val swapped = WeekSuggestions.swap(state, day(4), days, suggestionCandidates, now)
-        assertEquals("Lasagne", swapped.meals[1].recipe.name)
+        assertEquals("Ugnsstekt citronkyckling", swapped.meals[1].recipe.name)
         assertEquals(state.meals.filterIndexed { index, _ -> index != 1 }, swapped.meals.filterIndexed { index, _ -> index != 1 })
         assertEquals("a day not suggested", swapped, WeekSuggestions.swap(swapped, day(1), days, suggestionCandidates, now))
         val again = WeekSuggestions.swap(swapped, day(5), days, suggestionCandidates, now)
-        assertEquals("the fish soup is free again", "Fisksoppa med saffran", again.meals[2].recipe.name)
+        assertEquals("the pork is free again", "Fläskfilé med rotfrukter", again.meals[2].recipe.name)
         val only = WeekSuggestions.suggest(days, mealTypes, suggestionCandidates.take(1), today, now)
         assertEquals("nothing left to swap to", only, WeekSuggestions.swap(only, day(3), days, suggestionCandidates.take(1), now))
     }
