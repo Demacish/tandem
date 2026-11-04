@@ -1065,7 +1065,7 @@ kan tas upp igen där det avbröts.
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
-| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | 🔄 alla tre bitarna byggda; väntar på grön CI och referensbilder (Screenshots-körningen) | "Smarta förslag" |
+| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ✅ byggt 2026-11-04 (commit a520d09), referensbilder incheckade; CI-körningen för a520d09 bekräftas i nästa commit | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
@@ -1077,9 +1077,9 @@ kan tas upp igen där det avbröts.
 tester och referensbilder (`scan/*recipe_text*`, importformuläret); CHANGELOG `[Unreleased]`,
 ROADMAP ✅. Release 0.5.0: `main` står på release-committen `03c3597` (PR, torrkörning och röktest
 gröna); taggen `v0.5.0` pushas av ägaren (proxyn i byggsessionen släpper inte igenom taggar).
-### Pågår: smarta förslag
+### Klart: smarta förslag (2026-11-04)
 
-Delsteget byggs i tre bitar, var och en med egna tester, strängar (en/sv) och referensbilder:
+Delsteget byggdes i tre bitar, var och en med egna tester, strängar (en/sv) och referensbilder:
 
 1. **Inlärd butiksordning** (`:feature:shopping`): `LearnedAisleOrder` + `LearnedOrder`,
    `StoreModeViewModel` (besökta kategorier och "nej tack" i `SavedStateHandle`, `SaveOrder` →

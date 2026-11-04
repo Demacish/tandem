@@ -83,7 +83,11 @@ Påbörjat 2026-11-04.
 - ✅ Textigenkänning av recept i telefonen (samma ML Kit-läsare som kvittoskanningen i Fas S):
   "Fota recept" i Importera recept läser en kokbokssida, ett kort eller en utskrift utan AI-tjänst
   och öppnar texten i redigeraren. Kvar: handskrivet, spalter.
-- Inlärd butiksordning, återkommande varor, förslag på veckans matsedel.
+- ✅ Inlärd butiksordning, återkommande varor, förslag på veckans matsedel: butiksläget erbjuder
+  att spara ordningen du handlade i som butikens gångordning; "Dags igen?" i Lägg till föreslår
+  varor som brukar köpas med jämna mellanrum; "Föreslå veckans matsedel" i Veckan fyller lediga
+  dagar med recept ni lagar ofta men inte nyligen. Allt räknas lokalt. Kvar: skafferimatchning i
+  förslagen (Stitch-skissens "räddar 3 råvaror").
 - Notiser när någon i hushållet ändrar listan. Appen kontrollerar i bakgrunden, så ingen extra
   tjänst behövs; snabbare push via en valfri liten tjänst som man kan köra själv.
 - Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
