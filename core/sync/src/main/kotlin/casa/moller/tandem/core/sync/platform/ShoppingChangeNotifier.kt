@@ -7,7 +7,7 @@ import casa.moller.tandem.core.model.shopping.ShoppingChange
 // notification while the app is not on screen. No extra service: the phone asks, nothing pushes.
 
 /** Posts "the shopping list changed" in the channel "shopping". */
-internal interface ShoppingChangeNotifier {
+internal fun interface ShoppingChangeNotifier {
     /** Posts one notification for [summary] if allowed; true when it was posted. */
     fun post(summary: ShoppingChangeSummary): Boolean
 }

@@ -87,9 +87,7 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
 private fun Preferences.toAppSettings(): AppSettings {
     val defaults = AppSettings.Default
     return AppSettings(
-        themeMode = this[PreferencesSettingsStore.Keys.THEME_MODE]
-            ?.let { stored -> ThemeMode.entries.firstOrNull { it.name == stored } }
-            ?: defaults.themeMode,
+        themeMode = enumOrNull(PreferencesSettingsStore.Keys.THEME_MODE, ThemeMode.entries) ?: defaults.themeMode,
         onboardingCompleted = this[PreferencesSettingsStore.Keys.ONBOARDING_COMPLETED] ?: defaults.onboardingCompleted,
         demoMode = this[PreferencesSettingsStore.Keys.DEMO_MODE] ?: defaults.demoMode,
         activeAccountId = this[PreferencesSettingsStore.Keys.ACTIVE_ACCOUNT_ID],
@@ -98,12 +96,8 @@ private fun Preferences.toAppSettings(): AppSettings {
         dynamicColor = this[PreferencesSettingsStore.Keys.DYNAMIC_COLOR] ?: defaults.dynamicColor,
         cookTextScale = this[PreferencesSettingsStore.Keys.COOK_TEXT_SCALE]?.let(CookTextScale::coerce) ?: defaults.cookTextScale,
         cookModeAlwaysDark = this[PreferencesSettingsStore.Keys.COOK_MODE_ALWAYS_DARK] ?: defaults.cookModeAlwaysDark,
-        timerMode = this[PreferencesSettingsStore.Keys.TIMER_MODE]
-            ?.let { stored -> TimerMode.entries.firstOrNull { it.name == stored } }
-            ?: defaults.timerMode,
-        syncInterval = this[PreferencesSettingsStore.Keys.SYNC_INTERVAL]
-            ?.let { stored -> SyncInterval.entries.firstOrNull { it.name == stored } }
-            ?: defaults.syncInterval,
+        timerMode = enumOrNull(PreferencesSettingsStore.Keys.TIMER_MODE, TimerMode.entries) ?: defaults.timerMode,
+        syncInterval = enumOrNull(PreferencesSettingsStore.Keys.SYNC_INTERVAL, SyncInterval.entries) ?: defaults.syncInterval,
         downloadAllRecipes = this[PreferencesSettingsStore.Keys.DOWNLOAD_ALL_RECIPES] ?: defaults.downloadAllRecipes,
         notificationPermissionAsked = this[PreferencesSettingsStore.Keys.NOTIFICATION_PERMISSION_ASKED]
             ?: defaults.notificationPermissionAsked,
@@ -115,6 +109,10 @@ private fun Preferences.toAppSettings(): AppSettings {
         systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
     )
 }
+
+/** The enum stored by name under [key], or null when absent or unknown (a newer version, garbage). */
+private fun <T : Enum<T>> Preferences.enumOrNull(key: Preferences.Key<String>, entries: List<T>): T? =
+    this[key]?.let { stored -> entries.firstOrNull { it.name == stored } }
 
 /** The pending version notice, or null when any of its three parts is missing. */
 private fun Preferences.readVersionNotice(): PendingVersionNotice? {
