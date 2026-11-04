@@ -11,8 +11,9 @@ class RecurringItemsTest {
 
     private val now = Instant.parse("2026-11-04T10:00:00Z")
 
-    private fun bought(name: String, vararg daysAgo: Int): List<ShoppingHistoryItem> =
-        daysAgo.mapIndexed { index, ago -> ShoppingHistoryItem(entryId = (name.hashCode() * 100 + index).toLong(), foodName = name, completedAt = now - ago.days) }
+    private fun bought(name: String, vararg daysAgo: Int): List<ShoppingHistoryItem> = daysAgo.mapIndexed { index, ago ->
+        ShoppingHistoryItem(entryId = (name.hashCode() * 100 + index).toLong(), foodName = name, completedAt = now - ago.days)
+    }
 
     @Test
     fun aFoodBoughtEveryWeekIsDueAfterMostOfAWeekTheMostOverdueFirst() {

@@ -33,8 +33,8 @@ import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import casa.moller.tandem.feature.shopping.ui.SHOPPING_SIDE_PANE_TAG
-import casa.moller.tandem.feature.shopping.ui.ShoppingScreen
 import casa.moller.tandem.feature.shopping.ui.STORE_MODE_ORDER_TAG
+import casa.moller.tandem.feature.shopping.ui.ShoppingScreen
 import casa.moller.tandem.feature.shopping.ui.StoreModeScreen
 import casa.moller.tandem.feature.shopping.ui.shoppingRowTag
 import casa.moller.tandem.feature.shopping.ui.shoppingSectionTag
@@ -200,7 +200,8 @@ class ShoppingScreenTest {
         val storeActions = mutableListOf<StoreModeAction>()
         composeRule.setContent {
             ShoppingTestTheme {
-                StoreModeScreen(state = ShoppingSamples.storeModeState(learnedOrder = ShoppingSamples.learnedOrder), onAction = { storeActions += it })
+                val state = ShoppingSamples.storeModeState(learnedOrder = ShoppingSamples.learnedOrder)
+                StoreModeScreen(state = state, onAction = { storeActions += it })
             }
         }
         composeRule.onNodeWithTag(STORE_MODE_ORDER_TAG).assertIsDisplayed()

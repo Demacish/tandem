@@ -207,8 +207,14 @@ private fun LearnedOrderCard(order: LearnedOrder, storeName: String, onAction: (
         icon = TandemIcons.Sort,
         modifier = modifier.testTag(STORE_MODE_ORDER_TAG),
         actions = {
-            TandemPrimaryButton(text = stringResource(R.string.shopping_store_mode_order_save), onClick = { onAction(StoreModeAction.SaveOrder) })
-            TandemTextButton(text = stringResource(R.string.shopping_store_mode_order_dismiss), onClick = { onAction(StoreModeAction.DismissOrder) })
+            TandemPrimaryButton(
+                text = stringResource(R.string.shopping_store_mode_order_save),
+                onClick = { onAction(StoreModeAction.SaveOrder) },
+            )
+            TandemTextButton(
+                text = stringResource(R.string.shopping_store_mode_order_dismiss),
+                onClick = { onAction(StoreModeAction.DismissOrder) },
+            )
         },
     )
 }

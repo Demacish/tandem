@@ -52,7 +52,9 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     STORE_MODE_DONE({ StoreModeScreen(state = ShoppingSamples.storeModeState(entries = listOf(ShoppingSamples.eggs)), onAction = {}) }),
 
     // Fas 4 (inlärd butiksordning): the walked order is offered, on the list and when everything is in the cart.
-    STORE_MODE_LEARNED_ORDER({ StoreModeScreen(state = ShoppingSamples.storeModeState(learnedOrder = ShoppingSamples.learnedOrder), onAction = {}) }),
+    STORE_MODE_LEARNED_ORDER({
+        StoreModeScreen(state = ShoppingSamples.storeModeState(learnedOrder = ShoppingSamples.learnedOrder), onAction = {})
+    }),
     STORE_MODE_DONE_LEARNED_ORDER({
         val state = ShoppingSamples.storeModeState(entries = listOf(ShoppingSamples.eggs), learnedOrder = ShoppingSamples.learnedOrder)
         StoreModeScreen(state = state, onAction = {})

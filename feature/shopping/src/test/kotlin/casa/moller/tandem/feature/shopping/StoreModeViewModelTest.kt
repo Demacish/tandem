@@ -119,6 +119,8 @@ class StoreModeViewModelTest {
 
     // Fas 4 "Inlärd butiksordning".
 
+    private fun aisleNames(): List<String> = supermarkets.supermarkets.value.first().aisles.sortedBy { it.order }.map { it.category.name }
+
     @Test
     fun walkingTheAislesInAnotherOrderOffersToSaveItAndSavingReordersTheStore() = runTest {
         val saved = SavedStateHandle()
@@ -138,7 +140,7 @@ class StoreModeViewModelTest {
         assertEquals(order, again.uiState.value.learnedOrder)
 
         vm.onAction(StoreModeAction.SaveOrder)
-        assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), supermarkets.supermarkets.value.first().aisles.sortedBy { it.order }.map { it.category.name })
+        assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), aisleNames())
         assertEquals(ShoppingEffect.Show(ShoppingMessage.OrderSaved("Testbutiken")), effects.last())
         assertNull("saved: nothing more to offer", vm.uiState.value.learnedOrder)
     }
@@ -160,7 +162,7 @@ class StoreModeViewModelTest {
         assertEquals(listOf("Mejeri", "Frukt & grönt", "Skafferi"), other.uiState.value.learnedOrder?.names)
         other.onAction(StoreModeAction.DismissOrder)
         assertNull(other.uiState.value.learnedOrder)
-        assertEquals("nothing sent", listOf("Frukt & grönt", "Skafferi", "Mejeri"), supermarkets.supermarkets.value.first().aisles.map { it.category.name })
+        assertEquals("nothing sent", listOf("Frukt & grönt", "Skafferi", "Mejeri"), aisleNames())
     }
 
     @Test

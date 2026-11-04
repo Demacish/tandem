@@ -159,7 +159,8 @@ class ShoppingScreenshotTest {
     fun storeModeLearnedOrder() = capture("phone_store_mode_learned_order_light_sv", ShoppingShot.STORE_MODE_LEARNED_ORDER)
 
     @Test
-    fun storeModeDoneLearnedOrderDark() = capture("phone_store_mode_done_learned_order_dark", ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER, darkTheme = true)
+    fun storeModeDoneLearnedOrderDark() =
+        capture("phone_store_mode_done_learned_order_dark", ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER, darkTheme = true)
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
