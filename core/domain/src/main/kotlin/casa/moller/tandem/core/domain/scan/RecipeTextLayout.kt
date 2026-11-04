@@ -38,7 +38,7 @@ object RecipeTextLayout {
         for (row in rows) {
             val top = row.minOf { it.top }
             val gap = previousBottom?.let { top - it } ?: 0
-            if (paragraphs.isEmpty() || gap > lineHeight * PARAGRAPH_GAP) paragraphs += mutableListOf()
+            if (paragraphs.isEmpty() || gap > lineHeight * PARAGRAPH_GAP) paragraphs.add(mutableListOf())
             paragraphs.last() += row.sortedBy { it.left }.joinToString(" ") { it.text.trim() }
             previousBottom = row.maxOf { it.bottom }
         }

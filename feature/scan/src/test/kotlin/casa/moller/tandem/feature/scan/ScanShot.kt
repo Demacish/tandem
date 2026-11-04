@@ -54,6 +54,7 @@ internal enum class ScanShot(val content: @Composable () -> Unit) {
     RECEIPT_NO_ITEMS({ Receipt(ReceiptScanUiState(pages = 1, problem = ReceiptProblem.NO_ITEMS)) }),
     RECEIPT_CAMERA_DENIED({ Receipt(ReceiptScanUiState(), CameraAccess.DENIED) }),
     RECEIPT_NO_CAMERA({ Receipt(ReceiptScanUiState(), CameraAccess.UNAVAILABLE) }),
+
     // Fas 4 (textigenkänning av recept): "Fota recept".
     RECIPE_TEXT_START({ RecipeText(RecipeTextScanUiState()) }),
     RECIPE_TEXT_PAGES({ RecipeText(RecipeTextScanUiState(pages = listOf(RECIPE_PAGE))) }),
