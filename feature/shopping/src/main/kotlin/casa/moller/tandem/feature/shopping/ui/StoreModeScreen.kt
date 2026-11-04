@@ -36,7 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
-import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.Sort
@@ -211,7 +211,7 @@ private fun LearnedOrderCard(order: LearnedOrder, storeName: String, onAction: (
                 text = stringResource(R.string.shopping_store_mode_order_save),
                 onClick = { onAction(StoreModeAction.SaveOrder) },
             )
-            TandemTextButton(
+            TandemSecondaryButton(
                 text = stringResource(R.string.shopping_store_mode_order_dismiss),
                 onClick = { onAction(StoreModeAction.DismissOrder) },
             )

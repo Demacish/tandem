@@ -1,8 +1,11 @@
 package casa.moller.tandem.feature.mealplan
 
 import androidx.lifecycle.SavedStateHandle
+import casa.moller.tandem.core.model.account.SpacePermissions
+import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
+import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.shopping.ShoppingFood
 import casa.moller.tandem.core.model.shopping.ShoppingRecipeLabel

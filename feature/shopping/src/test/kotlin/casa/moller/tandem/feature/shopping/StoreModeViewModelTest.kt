@@ -155,10 +155,11 @@ class StoreModeViewModelTest {
         vm.onAction(StoreModeAction.Check(milk.id))
         assertNull("the whole store's order", vm.uiState.value.learnedOrder)
 
+        // Another trip (the entries above are in the cart now): dairy first, then fruit.
         val other = viewModel()
         open(other)
-        other.onAction(StoreModeAction.Check(milk.id))
-        other.onAction(StoreModeAction.Check(ShoppingSamples.onions.id))
+        other.onAction(StoreModeAction.Check(ShoppingSamples.cream.id))
+        other.onAction(StoreModeAction.Check(ShoppingSamples.potato.id))
         assertEquals(listOf("Mejeri", "Frukt & grönt", "Skafferi"), other.uiState.value.learnedOrder?.names)
         other.onAction(StoreModeAction.DismissOrder)
         assertNull(other.uiState.value.learnedOrder)
