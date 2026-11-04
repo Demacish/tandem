@@ -85,6 +85,7 @@ internal fun SyncSettingsScreen(
                 )
             }
             DownloadAll(state = state, onChange = { onAction(SettingsAction.SetDownloadAll(it)) })
+            ShoppingNotifications(state = state, onChange = { onAction(SettingsAction.SetShoppingNotifications(it)) })
             state.shopping?.let { ShoppingServerSettingsGroup(settings = it) }
         }
         Storage(
@@ -217,6 +218,33 @@ private fun ServerSetting(title: Int, body: Int, on: Boolean) {
             style = MaterialTheme.typography.titleMedium,
             color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * Fas 4 "Notis när någon ändrar listan": the switch, and a note when the system does not let the
+ * app post (the permission is asked when it is switched on; after a refusal the note points to
+ * the system settings via Permissions).
+ */
+@Composable
+private fun ShoppingNotifications(state: SyncSettingsUiState, onChange: (Boolean) -> Unit) {
+    val spacing = TandemTheme.spacing
+    SettingsGroup {
+        SwitchRow(
+            title = stringResource(R.string.settings_shopping_notifications),
+            body = stringResource(R.string.settings_shopping_notifications_body),
+            icon = TandemIcons.ShoppingCart,
+            checked = state.shoppingNotifications,
+            onCheckedChange = onChange,
+        )
+        if (state.shoppingNotifications && !state.notificationsAllowed) {
+            Text(
+                text = stringResource(R.string.settings_shopping_notifications_blocked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = spacing.lg, end = spacing.lg, bottom = spacing.lg),
+            )
+        }
     }
 }
 

@@ -1,14 +1,19 @@
 package casa.moller.tandem.feature.shell.settings
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -87,7 +92,17 @@ internal object RouteSettingsPages : SettingsPages {
     override fun Sync(onNavigateBack: () -> Unit) {
         val viewModel: SettingsViewModel = hiltViewModel()
         val state by viewModel.sync.collectAsStateWithLifecycle()
-        val snackbar = settingsEffects(viewModel)
+        // Fas 4: the notification permission, asked when "Notis när någon ändrar listan" is switched on.
+        val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            viewModel.onAction(SettingsAction.NotificationPermissionResult(granted))
+        }
+        val snackbar = settingsEffects(viewModel) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                viewModel.onAction(SettingsAction.NotificationPermissionResult(granted = true))
+            }
+        }
         SyncSettingsScreen(state = state, onAction = viewModel::onAction, onNavigateBack = onNavigateBack, snackbarHostState = snackbar)
     }
 
@@ -129,15 +144,17 @@ internal object RouteSettingsPages : SettingsPages {
  * snackbar, the exported log in the system share sheet. Returns the screen's snackbar host.
  */
 @Composable
-private fun settingsEffects(viewModel: SettingsViewModel): SnackbarHostState {
+private fun settingsEffects(viewModel: SettingsViewModel, onRequestNotifications: () -> Unit = {}): SnackbarHostState {
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
+    val currentRequest by rememberUpdatedState(onRequestNotifications)
     LaunchedEffect(viewModel, snackbarHostState) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 is SettingsEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
                 is SettingsEffect.ShareLog -> shareLog(context, effect.export)
+                SettingsEffect.RequestNotificationPermission -> currentRequest()
             }
         }
     }

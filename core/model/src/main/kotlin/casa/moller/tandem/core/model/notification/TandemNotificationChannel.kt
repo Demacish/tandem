@@ -50,8 +50,8 @@ enum class TandemNotificationChannel(val id: String, val importance: ChannelImpo
     /** "Tandoor was updated" (plan B18, since 0.1.0; core:sync `AndroidVersionChangeNotifier`). */
     SERVER("server", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = true),
 
-    /** Reserved (Phase 4): someone in the household changed the shopping list. */
-    SHOPPING("shopping", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = false),
+    /** Fas 4: someone in the household changed the shopping list (core:sync `AndroidShoppingChangeNotifier`). */
+    SHOPPING("shopping", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = true),
 
     /** Reserved (Phase 3): an AI import finished. */
     IMPORT_DONE("import_done", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = false),
@@ -76,6 +76,9 @@ object TandemNotificationIds {
 
     /** The single sync-problem notification (core:sync). */
     const val SYNC_PROBLEM: Int = 1101
+
+    /** The single "the shopping list changed" notification (Fas 4, core:sync); a new batch replaces it. */
+    const val SHOPPING_CHANGES: Int = 1201
 
     /** The foreground service notification while an alarm rings (core:timer). */
     const val TIMER_RINGING_SERVICE: Int = 2000

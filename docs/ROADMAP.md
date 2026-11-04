@@ -88,8 +88,9 @@ Påbörjat 2026-11-04.
   varor som brukar köpas med jämna mellanrum; "Föreslå veckans matsedel" i Veckan fyller lediga
   dagar med recept ni lagar ofta men inte nyligen. Allt räknas lokalt. Kvar: skafferimatchning i
   förslagen (Stitch-skissens "räddar 3 råvaror").
-- Notiser när någon i hushållet ändrar listan. Appen kontrollerar i bakgrunden, så ingen extra
-  tjänst behövs; snabbare push via en valfri liten tjänst som man kan köra själv.
+- ✅ Notiser när någon i hushållet ändrar listan: bakgrundssynken ser andras ändringar och en
+  notis (av som standard, slås på under Synk och lagring) visar dem när appen inte är på skärmen.
+  Kvar: snabbare push via en valfri liten tjänst som man kan köra själv.
 - Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
   kontroll i bakgrunden, går att slå av).
 - Två recept samtidigt i kokläget.

@@ -36,6 +36,9 @@ internal class DefaultSettingsRepository @Inject constructor(private val setting
 
     override suspend fun setDownloadAllRecipes(enabled: Boolean): Outcome<Unit> = write { it.copy(downloadAllRecipes = enabled) }
 
+    override suspend fun setShoppingChangeNotifications(enabled: Boolean): Outcome<Unit> =
+        write { it.copy(shoppingChangeNotifications = enabled) }
+
     override suspend fun setNotificationPermissionAsked(asked: Boolean): Outcome<Unit> =
         write { it.copy(notificationPermissionAsked = asked) }
 

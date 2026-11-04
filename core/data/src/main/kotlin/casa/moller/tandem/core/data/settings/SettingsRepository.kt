@@ -46,6 +46,9 @@ interface SettingsRepository {
     /** Play build: the "allow exact alarms" prompt was dismissed. */
     suspend fun setExactAlarmPromptDismissed(dismissed: Boolean): Outcome<Unit>
 
+    /** Fas 4: notify when someone else in the household changes the shopping list. */
+    suspend fun setShoppingChangeNotifications(enabled: Boolean): Outcome<Unit>
+
     /** Fas S (drycker lane): "Sök på Systembolaget" on drinks, null = follow the UI language. */
     suspend fun setSystembolagetLink(shown: Boolean?): Outcome<Unit>
 }

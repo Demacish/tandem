@@ -100,7 +100,7 @@
     <string name="settings_permissions_privacy_title">Allt stannar hos dig</string>
     <string name="settings_permissions_privacy_body">Tandem pratar med din egen Tandoor-server, och bara när du använder dem med Open Food Facts (en okänd streckkod, inget annat) och den AI-tjänst du valt (fotot av kylen). Ingen position, inga kontakter, ingen spårning.</string>
     <string name="settings_permission_notifications">Notiser</string>
-    <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, och nyheter om din server.</string>
+    <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, nyheter om din server och ändringar på inköpslistan om du valt det.</string>
     <string name="settings_permission_alarm_channel">Larmljud för timers</string>
     <string name="settings_permission_alarm_channel_body">Notistypen ”Timers (larm)” måste vara på, med ljud, så att en färdig timer visas över låsskärmen.</string>
     <string name="settings_permission_exact">Larm i rätt tid</string>
@@ -217,4 +217,9 @@
     <string name="sync_breaker_title">Synken tar en kort paus</string>
     <string name="sync_breaker_body">Det blev många fel på kort tid, så Tandem väntar några minuter innan nästa försök. Recepten på telefonen fungerar som vanligt.</string>
     <string name="sync_retry">Försök igen</string>
+
+    <!-- Fas 4: notis när någon annan ändrar inköpslistan (Mer → Synk och lagring). -->
+    <string name="settings_shopping_notifications">Notis när någon ändrar listan</string>
+    <string name="settings_shopping_notifications_body">När bakgrundssynken ser att någon annan i hushållet har lagt till, bockat av eller tagit bort varor får du en notis. Bara när Tandem inte är på skärmen; den följer intervallet för bakgrundssynken.</string>
+    <string name="settings_shopping_notifications_blocked">Tandem får inte visa notiser. Tillåt dem under Behörigheter.</string>
 </resources>

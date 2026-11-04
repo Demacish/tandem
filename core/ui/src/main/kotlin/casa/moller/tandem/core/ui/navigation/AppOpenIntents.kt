@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import casa.moller.tandem.core.model.navigation.AppOpenDestinations
 
 /**
  * Fas 3 (widgets lane): "open the app at …" for everything outside the shell (the widgets, the
@@ -15,28 +16,29 @@ import androidx.core.net.toUri
  * unknown one just opens the app, and a recipe id is checked where it is used.
  */
 object AppOpenIntents {
-    const val ACTION: String = "casa.moller.tandem.action.OPEN"
-    const val EXTRA_DESTINATION: String = "casa.moller.tandem.extra.DESTINATION"
+    // The names live in core:model (Fas 4: core:sync builds the same intent for the shopping notification).
+    const val ACTION: String = AppOpenDestinations.ACTION
+    const val EXTRA_DESTINATION: String = AppOpenDestinations.EXTRA_DESTINATION
 
     /** The Handla tab (the shopping list). */
-    const val SHOPPING: String = "shopping"
+    const val SHOPPING: String = AppOpenDestinations.SHOPPING
 
     /** The Veckan tab (the meal plan). */
-    const val WEEK: String = "week"
+    const val WEEK: String = AppOpenDestinations.WEEK
 
     /** The Recept tab. */
-    const val RECIPES: String = "recipes"
+    const val RECIPES: String = AppOpenDestinations.RECIPES
 
     /** "Importera recept" (Fas 3 import lane). */
-    const val IMPORT: String = "import"
+    const val IMPORT: String = AppOpenDestinations.IMPORT
 
     /** The barcode scanner (Fas S). */
-    const val SCAN: String = "scan"
+    const val SCAN: String = AppOpenDestinations.SCAN
 
     /** A recipe: [RECIPE_PREFIX] followed by its id. */
-    const val RECIPE_PREFIX: String = "recipe:"
+    const val RECIPE_PREFIX: String = AppOpenDestinations.RECIPE_PREFIX
 
-    private const val SCHEME = "tandem-open"
+    private const val SCHEME = AppOpenDestinations.SCHEME
 
     fun recipe(id: Long): String = "$RECIPE_PREFIX$id"
 

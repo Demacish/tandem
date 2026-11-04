@@ -106,7 +106,9 @@ class SettingsViewModel internal constructor(
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, CookingUiState())
 
     val sync: StateFlow<SyncSettingsUiState> = combine(
-        combine(settings, isDemo) { current, demo -> current to demo },
+        combine(settings, isDemo, timers.capabilities) { current, demo, capabilities ->
+            Triple(current, demo, capabilities.notificationsAllowed)
+        },
         offlineStorage.observeStorage(),
         syncRepository.status,
         clearingImageCache,
@@ -114,7 +116,7 @@ class SettingsViewModel internal constructor(
         combine(preferences.observeUserPreferences(), preferences.observeShoppingMinAutoSyncSeconds()) { prefs, floor ->
             ShoppingServerSettings.of(prefs, floor)
         }.distinctUntilChanged(),
-    ) { (current, demo), storage, status, clearing, shopping ->
+    ) { (current, demo, notificationsAllowed), storage, status, clearing, shopping ->
         SyncSettingsUiState(
             isDemo = demo,
             interval = current.syncInterval,
@@ -123,6 +125,8 @@ class SettingsViewModel internal constructor(
             status = status,
             clearingImageCache = clearing,
             shopping = shopping.takeUnless { demo },
+            shoppingNotifications = current.shoppingChangeNotifications,
+            notificationsAllowed = notificationsAllowed,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())
 
@@ -166,6 +170,21 @@ class SettingsViewModel internal constructor(
                     // Start at once instead of at the next periodic sync.
                     syncRepository.requestSync(SyncReason.USER_REFRESH)
                 }
+            }
+
+            // Fas 4: the permission is asked in context, when the notification is switched on.
+            is SettingsAction.SetShoppingNotifications -> viewModelScope.launch {
+                val result = settingsRepository.setShoppingChangeNotifications(action.enabled)
+                if (result is Outcome.Failure) {
+                    effects.send(SettingsEffect.Message(R.string.shell_settings_not_saved))
+                } else if (action.enabled && !timers.capabilities.value.notificationsAllowed) {
+                    effects.send(SettingsEffect.RequestNotificationPermission)
+                }
+            }
+
+            is SettingsAction.NotificationPermissionResult -> viewModelScope.launch {
+                settingsRepository.setNotificationPermissionAsked(true)
+                timers.refreshCapabilities()
             }
 
             SettingsAction.SyncNow -> syncRepository.requestSync(SyncReason.USER_REFRESH)

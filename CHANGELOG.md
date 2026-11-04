@@ -20,6 +20,9 @@ Början på Fas 4 ("Smart hushåll").
 - **Föreslå veckans matsedel:** ett kort i Veckan föreslår en middag för varje dag som saknar
   en, utifrån vad ni lagar ofta och inte lagat nyligen. Byt ut eller hoppa över en dag, slumpa om,
   och lägg in dem i veckan med ett tryck (går att ångra).
+- **Notis när någon ändrar listan:** slå på under Synk och lagring, så säger telefonen till när
+  bakgrundssynken ser att någon annan i hushållet lagt till, bockat av eller tagit bort varor.
+  Bara när Tandem inte är på skärmen; tryck på notisen öppnar listan.
 
 ## [0.5.0] – 2026-11-03
 

@@ -132,6 +132,31 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun shoppingNotificationsAskForThePermissionWhenSwitchedOnWithoutIt() = runTest {
+        // Fas 4: the switch is stored; without the permission the system dialog follows; the answer refreshes the capabilities.
+        timers.setCapabilities(TimerCapabilities.AllGranted.copy(notificationsAllowed = false))
+        val vm = newViewModel()
+        val state = collecting(vm.sync)
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.effect.collect { effects += it } }
+        assertFalse(state.value.notificationsAllowed)
+
+        vm.onAction(SettingsAction.SetShoppingNotifications(true))
+        assertTrue(settings.state.value.shoppingChangeNotifications)
+        assertTrue(state.value.shoppingNotifications)
+        assertEquals(listOf<SettingsEffect>(SettingsEffect.RequestNotificationPermission), effects)
+
+        vm.onAction(SettingsAction.NotificationPermissionResult(granted = true))
+        assertTrue(settings.state.value.notificationPermissionAsked)
+        assertEquals(1, timers.refreshCount)
+
+        timers.setCapabilities(TimerCapabilities.AllGranted)
+        vm.onAction(SettingsAction.SetShoppingNotifications(false))
+        vm.onAction(SettingsAction.SetShoppingNotifications(true))
+        assertEquals("allowed already: no dialog", 1, effects.size)
+    }
+
+    @Test
     fun downloadingAllRecipesStartsASyncAtOnce() = runTest {
         val vm = newViewModel()
         val state = collecting(vm.sync)

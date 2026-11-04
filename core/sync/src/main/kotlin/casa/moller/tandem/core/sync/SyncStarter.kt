@@ -21,6 +21,7 @@ import casa.moller.tandem.core.sync.engine.SyncKeys
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.shopping.ShoppingChangeNotifications
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -71,6 +72,8 @@ class SyncStarter @Inject internal constructor(
     // Fas S (rester lane): whether the new account has synced before (no double sync after adding one).
     private val databases: TandemDatabaseFactory,
     private val clock: SyncClock,
+    // Fas 4: "the shopping list changed" while the app is not on screen.
+    private val shoppingNotifications: ShoppingChangeNotifications,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -102,6 +105,7 @@ class SyncStarter @Inject internal constructor(
         if (!started.compareAndSet(false, true)) return
         SingletonImageLoader.setSafe { imageLoader.get() }
         mirror.start()
+        shoppingNotifications.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

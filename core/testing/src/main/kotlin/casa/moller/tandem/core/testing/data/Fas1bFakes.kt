@@ -171,6 +171,8 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings.Default) : Setti
 
     override suspend fun setNotificationPermissionAsked(asked: Boolean) = write { it.copy(notificationPermissionAsked = asked) }
 
+    override suspend fun setShoppingChangeNotifications(enabled: Boolean) = write { it.copy(shoppingChangeNotifications = enabled) }
+
     override suspend fun setExactAlarmPromptDismissed(dismissed: Boolean) = write { it.copy(exactAlarmPromptDismissed = dismissed) }
 
     override suspend fun setSystembolagetLink(shown: Boolean?) = write { it.copy(systembolagetLink = shown) }

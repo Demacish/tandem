@@ -171,6 +171,7 @@ class PreferencesSettingsStoreTest {
             downloadAllRecipes = true,
             notificationPermissionAsked = true,
             exactAlarmPromptDismissed = true,
+            shoppingChangeNotifications = true,
         )
         open().update { expected }
 

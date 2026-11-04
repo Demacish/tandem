@@ -285,7 +285,8 @@ modulerna är borttagna** (0.2.0): `TimerController` binds i `:core:timer` (`Tim
 | `timer_ongoing` | Pågående timers (nedräkning, Live Update) | låg | tyst | `:core:timer` |
 | `sync_problems` | Synkproblem (blockerad, utloggad, säkert läge) | låg | tyst | `:core:sync` |
 | `server` | Server ("Tandoor uppdaterades", sedan 0.1.0) | standard | notis | `:core:sync` |
-| `shopping`, `import_done`, `meal_reminders` | reserverade för Fas 2–5 | standard | notis | skapas inte än |
+| `shopping` | Inköpslistan ("Anna lade till mjölk", Fas 4, bara när inställningen är på) | standard | notis | `:core:sync` |
+| `import_done`, `meal_reminders` | reserverade | standard | notis | skapas inte än |
 
 Varje modul skapar sina kanaler precis innan den postar, med värdena ur
 `TandemNotificationChannel` och egna översatta namn. Dessutom skapar appen alla kanaler **en gång
@@ -296,8 +297,8 @@ kanalerna i systeminställningarna från första start och *Behörigheter* kan �
 innan något har ringt. Att skapa en befintlig kanal ändrar bara namnet, aldrig användarens val.
 `sync_problems` skapas inte än: inget postar i den. Ett id byts aldrig (användarens val i
 systeminställningarna hänger på id:t); en ny kanal får ett nytt id. Notis-id:n:
-`TandemNotificationIds` (server 1001, synkproblem 1101, ringtjänsten 2000, per timer
-3000–3999 nedräkning och 4000–4999 larm).
+`TandemNotificationIds` (server 1001, synkproblem 1101, inköpslistan 1201, ringtjänsten 2000, per
+timer 3000–3999 nedräkning och 4000–4999 larm).
 
 ### Behörigheter per flavor (timerbanan implementerar)
 
@@ -1066,7 +1067,7 @@ kan tas upp igen där det avbröts.
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
 | Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ✅ klart 2026-11-04 (commit a520d09; PR-körningen grön på a520d09, röktest grönt på 145d2f3), referensbilder incheckade | "Smarta förslag" |
-| Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
+| Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | 🔄 bakgrundskontrollen byggd, väntar på CI och referensbilder (Synk-sidan); push-tjänsten inte påbörjad | "Listnotiser" |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
 
@@ -1197,6 +1198,48 @@ i huvudet.
 Tester: `WeekSuggestionsTest`, `WeekViewModelTest` (förslag/acceptera/ångra, byt/slumpa/hoppa
 över/avbryt, gäst och full vecka).
 <!-- /Fas 4 smart -->
+
+<!-- Fas 4 listnotiser -->
+## Listnotiser (`:core:sync`, `:feature:shell`, Fas 4)
+
+ROADMAP Fas 4 "Notiser när någon i hushållet ändrar listan. Appen kontrollerar i bakgrunden, så
+ingen extra tjänst behövs". Bygger på det som redan finns: den periodiska bakgrundssynken
+(WorkManager, Inställningar → Synk i bakgrunden, 15 min som standard) läser inköpslistan och
+`ShoppingReader` märker vad andra ändrat sedan sist (`ShoppingChangeBus`, samma ström som listans
+egna "Anna lade till mjölk"-snackbar). Ingen ny endpoint, ingen push-tjänst, ingenting lämnar
+telefonen.
+
+- **Inställning:** `AppSettings.shoppingChangeNotifications` (av som standard; DataStore-nyckeln
+  `shopping_change_notifications`, `SettingsRepository.setShoppingChangeNotifications`). Omkopplaren
+  "Notis när någon ändrar listan" ligger på Mer → Synk och lagring (`SyncSettingsScreen`,
+  `SettingsAction.SetShoppingNotifications`). Slås den på utan att appen får posta notiser visas
+  systemdialogen i sammanhanget (`SettingsEffect.RequestNotificationPermission`, Android 13+;
+  `NotificationPermissionResult` läser om `TimerCapabilities`); nekas den står en rad under
+  omkopplaren som pekar på Behörigheter.
+- **Insamling:** `ShoppingChangeNotifications` (`:core:sync`, startas av `SyncStarter`) lyssnar på
+  bussen. Varje ändring släpps bara igenom när inställningen är på och appen inte syns
+  (`AppVisibility` = `ProcessLifecycleOwner` ≥ STARTED); en läsning ger en ändring i taget, så de
+  samlas i 3 s (`BATCH_WINDOW`) och blir en notis. Kommer appen upp på skärmen innan fönstret
+  stängt postas inget (listan visar ändringarna själv).
+- **Notisen:** `AndroidShoppingChangeNotifier` postar i kanalen `shopping` ("Inköpslistan", skapas
+  vid start av `ShoppingChannelInstaller` och före varje postning), id `SHOPPING_CHANGES` = 1201 så
+  en ny omgång ersätter den förra. Titel "Inköpslistan ändrades" / "n ändringar på inköpslistan",
+  en rad per vara (`InboxStyle`, högst fem per sort, "och n till"), samma ordalag som listans
+  snackbar; ikonen `ic_stat_tandem_shopping`. Tryck öppnar Handla via samma intent som widgetarna
+  (`AppOpenDestinations` i `:core:model`, som `AppOpenIntents` i `:core:ui` nu bygger på, eftersom
+  `:core:sync` inte har Compose). `ShoppingNotificationPolicy` är de rena besluten: bara med
+  inställningen på, utanför skärmen, med behörighet, notiser och kanalen på; `summarize` slår ihop
+  per vara (senaste ändringen vinner) och tar bort tomma namn.
+- **Gäst/demo:** bussen får bara ändringar från ett riktigt konto (`ActiveSource.Remote`), så
+  demoläget postar aldrig.
+
+Kvar (ROADMAP): "snabbare push via en valfri liten tjänst som man kan köra själv" – inte påbörjat;
+med bakgrundssynken dröjer notisen upp till synkintervallet.
+
+Tester: `ShoppingNotificationPolicyTest`, `ShoppingChangeNotificationsTest` (samlas till en notis,
+inget på skärmen eller med inställningen av), `SettingsViewModelTest.shoppingNotificationsAskForThePermissionWhenSwitchedOnWithoutIt`,
+`PreferencesSettingsStoreTest` (rundtur). Skärmbilderna av Synk-sidan visar omkopplaren.
+<!-- /Fas 4 listnotiser -->
 
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)

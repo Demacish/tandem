@@ -32,10 +32,15 @@ import casa.moller.tandem.core.sync.image.CoilImagePrefetcher
 import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.image.TandemImageLoader
+import casa.moller.tandem.core.sync.platform.AndroidShoppingChangeNotifier
 import casa.moller.tandem.core.sync.platform.AndroidVersionChangeNotifier
+import casa.moller.tandem.core.sync.platform.AppVisibility
 import casa.moller.tandem.core.sync.platform.ConnectivityMonitor
 import casa.moller.tandem.core.sync.platform.NetworkStatus
+import casa.moller.tandem.core.sync.platform.ProcessAppVisibility
 import casa.moller.tandem.core.sync.platform.ServerChannelInstaller
+import casa.moller.tandem.core.sync.platform.ShoppingChangeNotifier
+import casa.moller.tandem.core.sync.platform.ShoppingChannelInstaller
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.platform.SystemSyncClock
@@ -109,6 +114,17 @@ internal abstract class SyncModule {
     @Binds
     @IntoSet
     abstract fun bindServerChannelInstaller(impl: ServerChannelInstaller): NotificationChannelInstaller
+
+    // Fas 4: "the shopping list changed" (channel "shopping").
+    @Binds
+    abstract fun bindShoppingChangeNotifier(impl: AndroidShoppingChangeNotifier): ShoppingChangeNotifier
+
+    @Binds
+    abstract fun bindAppVisibility(impl: ProcessAppVisibility): AppVisibility
+
+    @Binds
+    @IntoSet
+    abstract fun bindShoppingChannelInstaller(impl: ShoppingChannelInstaller): NotificationChannelInstaller
 
     @Binds
     abstract fun bindSyncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler

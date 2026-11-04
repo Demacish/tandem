@@ -45,6 +45,9 @@ data class SyncSettingsUiState(
     val clearingImageCache: Boolean = false,
     // 0.3.0 review (fix-data): the account's shopping preferences, null in demo mode and before they are known.
     val shopping: ShoppingServerSettings? = null,
+    // Fas 4: "Notis när någon ändrar listan" and whether the system lets the app post at all.
+    val shoppingNotifications: Boolean = false,
+    val notificationsAllowed: Boolean = true,
 )
 
 /**
@@ -116,6 +119,12 @@ sealed interface SettingsAction {
 
     data class SetDownloadAll(val enabled: Boolean) : SettingsAction
 
+    /** Fas 4: a notification when someone else changes the shopping list (asks for the permission when needed). */
+    data class SetShoppingNotifications(val enabled: Boolean) : SettingsAction
+
+    /** Fas 4: the answer to the notification permission dialog. */
+    data class NotificationPermissionResult(val granted: Boolean) : SettingsAction
+
     data object SyncNow : SettingsAction
 
     data object ClearImageCache : SettingsAction
@@ -137,4 +146,7 @@ sealed interface SettingsEffect {
 
     /** A short message (snackbar). */
     data class Message(@StringRes val text: Int) : SettingsEffect
+
+    /** Fas 4: show the system's notification permission dialog (Android 13+). */
+    data object RequestNotificationPermission : SettingsEffect
 }

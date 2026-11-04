@@ -26,6 +26,8 @@ dependencies {
     // --- Phase 1 (recept-ui lane): web pages ("Open on the web", recipe sources) open in a
     // Custom Tab, with the system browser as fallback. ---
     implementation(libs.androidx.browser)
+    // --- Fas 4 (listnotiser): the notification permission asked from Settings → Synk. ---
+    implementation(libs.androidx.activity.compose)
 
     // --- komplettering-3: core:testing's FakeServerStatusRepository (the in-app version notice). ---
     testImplementation(projects.core.testing)

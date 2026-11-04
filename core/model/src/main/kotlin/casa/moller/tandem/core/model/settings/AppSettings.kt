@@ -58,6 +58,8 @@ data class AppSettings(
     val downloadAllRecipes: Boolean = false,
     val notificationPermissionAsked: Boolean = false,
     val exactAlarmPromptDismissed: Boolean = false,
+    /** Fas 4: a notification when someone else in the household changes the shopping list (off until chosen). */
+    val shoppingChangeNotifications: Boolean = false,
     // --- Fas S (drycker lane) ---
     val systembolagetLink: Boolean? = null,
 ) {
