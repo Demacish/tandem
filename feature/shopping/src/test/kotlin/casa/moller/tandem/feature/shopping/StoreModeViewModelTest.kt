@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -49,6 +50,7 @@ class StoreModeViewModelTest {
         savedStateHandle = saved,
         source = ShoppingSource(shopping, supermarkets, permissions, foreground, FakeSyncRepository(), FakePreferencesRepository(), clock),
         shopping = shopping,
+        supermarkets = supermarkets,
         clock = clock,
     )
 
@@ -113,6 +115,52 @@ class StoreModeViewModelTest {
         val again = viewModel(saved = saved)
         open(again)
         assertEquals("store mode keeps the time it opened", 1, again.uiState.value.inCart)
+    }
+
+    // Fas 4 "Inlärd butiksordning".
+
+    @Test
+    fun walkingTheAislesInAnotherOrderOffersToSaveItAndSavingReordersTheStore() = runTest {
+        val saved = SavedStateHandle()
+        val vm = viewModel(saved = saved)
+        val effects = open(vm)
+        assertNull("one aisle says nothing", vm.uiState.value.learnedOrder)
+        vm.onAction(StoreModeAction.Check(milk.id)) // Mejeri (third aisle) first…
+        assertNull(vm.uiState.value.learnedOrder)
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // …then Skafferi.
+        val order = vm.uiState.value.learnedOrder!!
+        assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), order.names)
+        assertEquals(listOf(13L, 12L, 11L), order.relationIds)
+
+        // The walked order survives process death with the trip.
+        val again = viewModel(saved = saved)
+        open(again)
+        assertEquals(order, again.uiState.value.learnedOrder)
+
+        vm.onAction(StoreModeAction.SaveOrder)
+        assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), supermarkets.supermarkets.value.first().aisles.sortedBy { it.order }.map { it.category.name })
+        assertEquals(ShoppingEffect.Show(ShoppingMessage.OrderSaved("Testbutiken")), effects.last())
+        assertNull("saved: nothing more to offer", vm.uiState.value.learnedOrder)
+    }
+
+    @Test
+    fun walkingTheStoresOwnOrderOffersNothingAndNoThanksHidesTheOffer() = runTest {
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.onions.id)) // Frukt & grönt, the first aisle.
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // Skafferi, the second.
+        assertNull(vm.uiState.value.learnedOrder)
+        vm.onAction(StoreModeAction.Check(milk.id))
+        assertNull("the whole store's order", vm.uiState.value.learnedOrder)
+
+        val other = viewModel()
+        open(other)
+        other.onAction(StoreModeAction.Check(milk.id))
+        other.onAction(StoreModeAction.Check(ShoppingSamples.onions.id))
+        assertEquals(listOf("Mejeri", "Frukt & grönt", "Skafferi"), other.uiState.value.learnedOrder?.names)
+        other.onAction(StoreModeAction.DismissOrder)
+        assertNull(other.uiState.value.learnedOrder)
+        assertEquals("nothing sent", listOf("Frukt & grönt", "Skafferi", "Mejeri"), supermarkets.supermarkets.value.first().aisles.map { it.category.name })
     }
 
     @Test

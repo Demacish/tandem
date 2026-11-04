@@ -251,6 +251,9 @@ sealed interface ShoppingMessage {
     data class RecipeRemoved(val name: String) : ShoppingMessage
 
     data object Saved : ShoppingMessage
+
+    /** Fas 4: the walked aisle order is now the store's. */
+    data class OrderSaved(val storeName: String) : ShoppingMessage
 }
 
 /** One-off effects of the shopping ViewModels (plan 5.3). */

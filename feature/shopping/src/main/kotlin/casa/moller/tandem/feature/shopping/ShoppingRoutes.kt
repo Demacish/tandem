@@ -270,6 +270,8 @@ internal fun Resources.messageText(message: ShoppingMessage): String = when (mes
 
     ShoppingMessage.Saved -> getString(R.string.shopping_msg_saved)
 
+    is ShoppingMessage.OrderSaved -> getString(R.string.shopping_msg_order_saved, message.storeName)
+
     is ShoppingMessage.RecipeRemoved -> getString(R.string.shopping_msg_recipe_removed, message.name)
 }
 

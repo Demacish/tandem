@@ -12,6 +12,9 @@ Början på Fas 4 ("Smart hushåll").
   utskrift (eller välja en bild). Texten läses i telefonen, utan AI-tjänst och utan att något
   skickas någonstans, och öppnas i redigeraren där du granskar den innan receptet sparas. Ett
   långt recept kan vara flera foton.
+- **Inlärd butiksordning:** när du i butiksläget bockar av i en annan ordning än butikens
+  gångordning frågar appen om den ska spara ordningen du handlade i. Ordningen blir butikens
+  gångordning i Tandoor, så listan sorteras så nästa gång.
 
 ## [0.5.0] – 2026-11-03
 

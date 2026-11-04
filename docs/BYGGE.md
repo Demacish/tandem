@@ -1065,7 +1065,7 @@ kan tas upp igen där det avbröts.
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
-| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ⏳ inte påbörjat | – |
+| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | 🔄 pågår: butiksordning byggd (väntar på CI); återkommande varor och veckoförslag inte påbörjade | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
@@ -1077,6 +1077,16 @@ kan tas upp igen där det avbröts.
 tester och referensbilder (`scan/*recipe_text*`, importformuläret); CHANGELOG `[Unreleased]`,
 ROADMAP ✅. Release 0.5.0: `main` står på release-committen `03c3597` (PR, torrkörning och röktest
 gröna); taggen `v0.5.0` pushas av ägaren (proxyn i byggsessionen släpper inte igenom taggar).
+### Pågår: smarta förslag
+
+Delsteget byggs i tre bitar, var och en med egna tester, strängar (en/sv) och referensbilder:
+
+1. **Inlärd butiksordning** (`:feature:shopping`): `LearnedAisleOrder` + `LearnedOrder`,
+   `StoreModeViewModel` (besökta kategorier och "nej tack" i `SavedStateHandle`, `SaveOrder` →
+   `SupermarketRepository.reorderAisles`), kortet i `StoreModeScreen` (`STORE_MODE_ORDER_TAG`),
+   `ShoppingMessage.OrderSaved`. Skott `STORE_MODE_LEARNED_ORDER`, `STORE_MODE_DONE_LEARNED_ORDER`.
+2. **Återkommande varor** ("Dags igen?" i lägg till-panelen) – inte påbörjat.
+3. **Förslag på veckans matsedel** (Veckan) – inte påbörjat.
 <!-- /Fas 4 läge -->
 
 <!-- Fas 4 ocr -->
@@ -1105,6 +1115,34 @@ referensbilder `scan/*recipe_text*`), `ScanKeysTest`; importens referensbilder v
 **Kvar till senare:** handskrivna recept (ML Kits latinska modell läser tryckt text), kolumner
 (en tvåspaltig sida läses rad för rad över spalterna), haptik vid läst sida.
 <!-- /Fas 4 ocr -->
+
+<!-- Fas 4 smart -->
+## Smarta förslag (`:feature:shopping`, `:feature:mealplan`, Fas 4)
+
+ROADMAP Fas 4 "Inlärd butiksordning, återkommande varor, förslag på veckans matsedel". Allt är
+lokala regler över data appen redan har (listan, historiken, matsedeln, receptöversikterna):
+ingen ny Tandoor-endpoint, inga schemaändringar, ingenting skickas till någon tjänst.
+
+### Inlärd butiksordning
+
+Butiksläget (`StoreModeViewModel`) minns i vilken ordning kategorierna bockas av (första
+avbockningen i varje kategori; `store-mode.visited` i `SavedStateHandle`, så ordningen överlever
+rotation och processdöd som resten av turen). `LearnedAisleOrder.of(store, visited)` ger
+`LearnedOrder(supermarketId, relationIds, names)`: de besökta hyllorna först i besöksordning, sedan
+resten som förut – eller null när det inte finns någon butik, färre än två av butikens hyllor
+besökts, eller ordningen redan är butikens. Kategorier som inte är hyllor i butiken ("Övrigt",
+okända) påverkar inget.
+
+Kortet "Spara ordningen du handlade i?" (`CalloutCard`, `STORE_MODE_ORDER_TAG`) visas ovanför
+listan och på "Allt är i korgen"-sidan, med "Spara ordningen" (`SupermarketRepository.reorderAisles`,
+köas offline som andra ändringar; snackbar `ShoppingMessage.OrderSaved`) och "Nej tack" (döljs
+för resten av turen, `store-mode.orderDismissed`). Gäster ser inget kort. Tandoors `order` på
+`SupermarketCategoryRelation` är det som sparas – samma fält som butiksredigeringen i Tandoor.
+
+Tester: `LearnedAisleOrderTest`, `StoreModeViewModelTest` (ordning, processdöd, spara, nej tack,
+butikens egen ordning), `ShoppingScreenTest.theLearnedOrderCardSavesOrDeclines`, skott och
+tillgänglighet för `STORE_MODE_LEARNED_ORDER` och `STORE_MODE_DONE_LEARNED_ORDER`.
+<!-- /Fas 4 smart -->
 
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)

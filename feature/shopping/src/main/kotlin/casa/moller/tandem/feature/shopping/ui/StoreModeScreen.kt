@@ -33,15 +33,19 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
+import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.Share
+import casa.moller.tandem.core.designsystem.icon.Sort
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.window.KeepScreenOn
+import casa.moller.tandem.feature.shopping.LearnedOrder
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.ShoppingFormat
 import casa.moller.tandem.feature.shopping.ShoppingSection
@@ -50,6 +54,9 @@ import casa.moller.tandem.feature.shopping.StoreModeUiState
 
 /** Test tag of the store mode list. */
 const val STORE_MODE_LIST_TAG = "shopping:store:list"
+
+/** The learned aisle order card (Fas 4). */
+const val STORE_MODE_ORDER_TAG = "shopping:store:learned-order"
 
 /**
  * Store mode (plan 6.2 "Butiksläge", 6.6, feature #13, Stitch butiksl_ge), stateless: big text,
@@ -98,6 +105,9 @@ fun StoreModeScreen(
                 body = stringResource(R.string.shopping_store_mode_done_body),
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) {
+                state.learnedOrder?.let { order ->
+                    LearnedOrderCard(order = order, storeName = state.store?.name.orEmpty(), onAction = onAction)
+                }
                 TandemPrimaryButton(
                     text = stringResource(R.string.shopping_store_mode_done),
                     onClick = { onAction(StoreModeAction.Close) },
@@ -121,6 +131,18 @@ fun StoreModeScreen(
                             .widthIn(max = TandemTheme.sizes.maxReadingWidth)
                             .padding(horizontal = TandemTheme.spacing.screenHorizontal, vertical = TandemTheme.spacing.sm),
                     )
+                }
+                state.learnedOrder?.let { order ->
+                    item(key = "learned-order") {
+                        LearnedOrderCard(
+                            order = order,
+                            storeName = state.store?.name.orEmpty(),
+                            onAction = onAction,
+                            modifier = Modifier
+                                .widthIn(max = TandemTheme.sizes.maxReadingWidth)
+                                .padding(horizontal = TandemTheme.spacing.screenHorizontal, vertical = TandemTheme.spacing.sm),
+                        )
+                    }
                 }
                 state.sections.forEach { section ->
                     stickyHeader(key = "header-${section.key}") {
@@ -171,6 +193,24 @@ private fun StoreProgress(state: StoreModeUiState, modifier: Modifier = Modifier
             }
         }
     }
+}
+
+/**
+ * Fas 4 "Inlärd butiksordning": the aisles in the order this trip walked them, with "Spara
+ * ordningen" (Tandoor's aisle order for the store) and "Nej tack" (for the rest of the trip).
+ */
+@Composable
+private fun LearnedOrderCard(order: LearnedOrder, storeName: String, onAction: (StoreModeAction) -> Unit, modifier: Modifier = Modifier) {
+    CalloutCard(
+        title = stringResource(R.string.shopping_store_mode_order_title),
+        body = stringResource(R.string.shopping_store_mode_order_body, storeName, order.names.joinToString(" → ")),
+        icon = TandemIcons.Sort,
+        modifier = modifier.testTag(STORE_MODE_ORDER_TAG),
+        actions = {
+            TandemPrimaryButton(text = stringResource(R.string.shopping_store_mode_order_save), onClick = { onAction(StoreModeAction.SaveOrder) })
+            TandemTextButton(text = stringResource(R.string.shopping_store_mode_order_dismiss), onClick = { onAction(StoreModeAction.DismissOrder) })
+        },
+    )
 }
 
 /** A sticky aisle heading: big, on the background so the rows scroll under it. */

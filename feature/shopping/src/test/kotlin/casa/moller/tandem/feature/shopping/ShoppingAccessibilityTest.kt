@@ -99,6 +99,12 @@ class ShoppingAccessibilityTest {
     fun storeMode() = check(ShoppingShot.STORE_MODE)
 
     @Test
+    fun storeModeLearnedOrder() = check(ShoppingShot.STORE_MODE_LEARNED_ORDER)
+
+    @Test
+    fun storeModeDoneLearnedOrder() = check(ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER)
+
+    @Test
     fun storeModeDark() = check(ShoppingShot.STORE_MODE, darkTheme = true)
 
     @Test

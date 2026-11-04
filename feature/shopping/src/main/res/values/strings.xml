@@ -168,4 +168,10 @@
     <string name="shopping_history_empty_title">No history yet</string>
     <string name="shopping_history_empty_body">Checked items that leave Tandoor’s list are kept here on this device.</string>
     <string name="shopping_history_add_again">Add %1$s again</string>
+    <!-- Learned aisle order (Fas 4) -->
+    <string name="shopping_store_mode_order_title">Save the order you shopped in?</string>
+    <string name="shopping_store_mode_order_body">Next time %1$s is sorted like this: %2$s</string>
+    <string name="shopping_store_mode_order_save">Save order</string>
+    <string name="shopping_store_mode_order_dismiss">No thanks</string>
+    <string name="shopping_msg_order_saved">The aisle order of %1$s is saved</string>
 </resources>

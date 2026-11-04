@@ -34,6 +34,7 @@ import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import casa.moller.tandem.feature.shopping.ui.SHOPPING_SIDE_PANE_TAG
 import casa.moller.tandem.feature.shopping.ui.ShoppingScreen
+import casa.moller.tandem.feature.shopping.ui.STORE_MODE_ORDER_TAG
 import casa.moller.tandem.feature.shopping.ui.StoreModeScreen
 import casa.moller.tandem.feature.shopping.ui.shoppingRowTag
 import casa.moller.tandem.feature.shopping.ui.shoppingSectionTag
@@ -192,6 +193,21 @@ class ShoppingScreenTest {
         composeRule.onAllNodesWithTag(shoppingRowTag(ShoppingSamples.eggs.id)).assertCountEquals(0)
         composeRule.onNodeWithTag(shoppingRowTag(milk.id)).performClick()
         assertEquals(listOf<StoreModeAction>(StoreModeAction.Check(milk.id)), storeActions)
+    }
+
+    @Test
+    fun theLearnedOrderCardSavesOrDeclines() {
+        val storeActions = mutableListOf<StoreModeAction>()
+        composeRule.setContent {
+            ShoppingTestTheme {
+                StoreModeScreen(state = ShoppingSamples.storeModeState(learnedOrder = ShoppingSamples.learnedOrder), onAction = { storeActions += it })
+            }
+        }
+        composeRule.onNodeWithTag(STORE_MODE_ORDER_TAG).assertIsDisplayed()
+        composeRule.onNodeWithText("Mejeri → Frukt & grönt → Skafferi", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Save order").performClick()
+        composeRule.onNodeWithText("No thanks").performClick()
+        assertEquals(listOf<StoreModeAction>(StoreModeAction.SaveOrder, StoreModeAction.DismissOrder), storeActions)
     }
 
     @Test

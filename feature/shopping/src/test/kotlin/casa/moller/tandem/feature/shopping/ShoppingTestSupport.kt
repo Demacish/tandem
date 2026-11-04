@@ -108,7 +108,11 @@ internal object ShoppingSamples {
         history = history,
     )
 
-    fun storeModeState(entries: List<ShoppingEntry> = this.entries, readOnly: Boolean = false): StoreModeUiState {
+    fun storeModeState(
+        entries: List<ShoppingEntry> = this.entries,
+        readOnly: Boolean = false,
+        learnedOrder: LearnedOrder? = null,
+    ): StoreModeUiState {
         val grouped = ShoppingGrouping.group(entries, categories, store, now)
         return StoreModeUiState(
             loading = false,
@@ -116,8 +120,12 @@ internal object ShoppingSamples {
             store = store,
             sections = grouped.sections,
             inCart = grouped.checked.size,
+            learnedOrder = learnedOrder,
         )
     }
+
+    /** The order a trip that started with dairy and went on to fruit would offer (Fas 4). */
+    val learnedOrder: LearnedOrder = LearnedAisleOrder.of(store, listOf(dairy.id, fruit.id))!!
 }
 
 /** Theme, app chrome and font scale around a screen under test. */
