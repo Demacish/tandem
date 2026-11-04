@@ -1,7 +1,7 @@
 package casa.moller.tandem.core.domain.scan
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 /** Fas 4: a photographed recipe's lines in reading order, with the page's gaps as blank lines. */
 class RecipeTextLayoutTest {
