@@ -187,6 +187,8 @@ internal fun Resources.messageText(message: WeekMessage, format: MealPlanFormat)
         message.title.ifBlank { getString(R.string.mealplan_untitled) },
         format.fullDayInText(message.date),
     )
+
+    is WeekMessage.Suggested -> getQuantityString(R.plurals.mealplan_msg_suggested, message.count, message.count)
 }
 
 internal fun Resources.errorText(error: TandemError): String = when {

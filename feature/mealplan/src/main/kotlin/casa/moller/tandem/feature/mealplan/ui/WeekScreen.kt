@@ -74,6 +74,8 @@ internal enum class WeekLayout {
  *   and meal types; "Ta bort" asks first when the meal has rows on the shopping list.
  * - **States:** empty week, guest (#42: no plan/change controls at all), demo (the shell's banner),
  *   offline (the status chip; changes wait and show "väntar på att synkas"), a conflict dialog.
+ * - **Fas 4:** "Föreslå veckans matsedel" (a card after the days) opens a sheet with a recipe per
+ *   free day ([WeekSuggestionsPanel]); "Lägg i veckan" plans them with "Ångra".
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,6 +143,25 @@ fun WeekScreen(
                 state = move,
                 mealTypes = state.mealTypes,
                 today = state.today,
+                format = format,
+                onAction = onAction,
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = TandemTheme.spacing.screenHorizontal)
+                    .padding(bottom = TandemTheme.spacing.xl),
+            )
+        }
+    }
+    // Fas 4: "Föreslå veckans matsedel".
+    val suggestions = state.suggestions
+    if (suggestions != null) {
+        val sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        )
+        ModalBottomSheet(onDismissRequest = { onAction(WeekAction.CancelSuggestions) }, sheetState = sheetState) {
+            WeekSuggestionsPanel(
+                state = suggestions,
                 format = format,
                 onAction = onAction,
                 modifier = Modifier

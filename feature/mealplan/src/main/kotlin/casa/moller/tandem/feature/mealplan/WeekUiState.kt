@@ -26,6 +26,7 @@ import kotlinx.datetime.plus
  * @property move the "Flytta" sheet, while open.
  * @property conflict the first change that collided with someone else's ("Ändrad på två ställen").
  * @property deleting "Ta bort måltiden?" for a meal with rows on the shopping list (fix-ui).
+ * @property suggestions Fas 4: the "Föreslå veckans matsedel" sheet, while open.
  */
 data class WeekUiState(
     val loading: Boolean = true,
@@ -41,6 +42,7 @@ data class WeekUiState(
     val move: MoveMealState? = null,
     val conflict: ConflictState? = null,
     val deleting: DeleteMealState? = null,
+    val suggestions: WeekSuggestionsState? = null,
 ) {
     val weekEnd: LocalDate
         get() = weekStart.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY)
@@ -54,6 +56,10 @@ data class WeekUiState(
 
     val isEmpty: Boolean
         get() = !loading && days.all { it.meals.isEmpty() }
+
+    /** Fas 4: "Föreslå matsedel" is offered while the week has a day left and the user may plan. */
+    val canSuggest: Boolean
+        get() = !loading && !readOnly && weekEnd >= today && mealTypes.isNotEmpty()
 
     /** The day shown in the detail pane: the chosen one, else today in this week, else Monday. */
     val shownDay: LocalDate
@@ -128,6 +134,25 @@ sealed interface WeekAction {
 
     /** "Handla för veckan" for the shown week. */
     data object WeekShopping : WeekAction
+
+    // Fas 4 "Förslag på veckans matsedel".
+
+    /** Opens the suggestion sheet with a suggestion per free day. */
+    data object Suggest : WeekAction
+
+    /** "Slumpa om": other recipes from the best candidates. */
+    data object Reshuffle : WeekAction
+
+    /** "Byt ut" on one day: the next recipe in line. */
+    data class SwapSuggestion(val date: LocalDate) : WeekAction
+
+    /** Leaves one day out of the suggestions. */
+    data class RemoveSuggestion(val date: LocalDate) : WeekAction
+
+    /** "Lägg i veckan": plans every suggestion left. */
+    data object AcceptSuggestions : WeekAction
+
+    data object CancelSuggestions : WeekAction
 }
 
 /** One-off messages of the Veckan tab (snackbars). */
@@ -142,4 +167,7 @@ sealed interface WeekMessage {
     data class Removed(val title: String) : WeekMessage
 
     data class Moved(val title: String, val date: LocalDate) : WeekMessage
+
+    /** Fas 4: [count] suggested meals were planned. */
+    data class Suggested(val count: Int) : WeekMessage
 }

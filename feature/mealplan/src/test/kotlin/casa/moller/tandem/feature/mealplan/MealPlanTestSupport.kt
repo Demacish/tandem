@@ -35,6 +35,7 @@ import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.drink.DrinkSuggestionSlot
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -126,6 +127,20 @@ internal object MealPlanSamples {
     )
 
     val moveState = MoveMealState(todayDinner, date = day(5), mealTypeId = dinner.id)
+
+    // Fas 4 "Förslag på veckans matsedel": what the suggestions pick from, best first once ranked.
+    val porkTenderloin =
+        RecipeOverview(21, "Fläskfilé med rotfrukter", workingMinutes = 25, waitingMinutes = 20, timesCooked = 9, rating = 4.5)
+    val omelette = RecipeOverview(22, "Fransk örtomelett med chèvre", workingMinutes = 15, timesCooked = 6, isNew = true)
+    val fishSoup = RecipeOverview(23, "Fisksoppa med saffran", workingMinutes = 40, timesCooked = 4, rating = 5.0)
+    val tacos = RecipeOverview(24, "Fredagstacos", workingMinutes = 20, timesCooked = 20, lastCooked = now - 3.days)
+    val lasagne = RecipeOverview(25, "Lasagne", workingMinutes = 60, timesCooked = 1)
+    val stewAgain = lentils.copy(timesCooked = 30)
+    val suggestionCandidates = listOf(lasagne, tacos, stewAgain, omelette, fishSoup, porkTenderloin, chicken.copy(timesCooked = 2))
+
+    /** The sheet as [WeekViewModel] opens it for the sample week. */
+    val suggestionsState: WeekSuggestionsState =
+        WeekSuggestions.suggest(week(listOf(todayBreakfast)), mealTypes, suggestionCandidates, today, now)
 
     val conflictState = ConflictState(
         MealPlanConflict(todayDinner.id, "from_date", mine = day(5).toString(), theirs = day(4).toString()),

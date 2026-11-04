@@ -14,6 +14,7 @@ import casa.moller.tandem.feature.mealplan.ui.MoveMealPanel
 import casa.moller.tandem.feature.mealplan.ui.PlanMealScreen
 import casa.moller.tandem.feature.mealplan.ui.WeekScreen
 import casa.moller.tandem.feature.mealplan.ui.WeekShoppingScreen
+import casa.moller.tandem.feature.mealplan.ui.WeekSuggestionsPanel
 
 /**
  * Every screen and state of the Veckan tab with sample data, for the screenshot and accessibility
@@ -32,6 +33,16 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     WEEK_DAY_SELECTED({ WeekShot(MealPlanSamples.state(selectedDay = MealPlanSamples.day(6))) }),
     WEEK_CONFLICT({ WeekShot(MealPlanSamples.state(conflict = MealPlanSamples.conflictState)) }),
     MOVE({ Sheet { MoveMealPanel(MealPlanSamples.moveState, MealPlanSamples.mealTypes, MealPlanSamples.today, format(), onAction = {}) } }),
+
+    // Fas 4 (förslag på veckans matsedel): the sheet with a dinner per free day, and with nothing to suggest.
+    SUGGESTIONS({ Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsState, format(), onAction = {}) } }),
+    SUGGESTIONS_SAVING({
+        Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsState.copy(saving = true), format(), onAction = {}) }
+    }),
+    SUGGESTIONS_NO_FREE_DAYS({
+        val state = WeekSuggestionsState(emptyList(), MealPlanSamples.dinner, noFreeDays = true)
+        Sheet { WeekSuggestionsPanel(state, format(), onAction = {}) }
+    }),
     PLAN_SEARCH({ PlanMealScreen(state = MealPlanSamples.planState(), onAction = {}) }),
     PLAN_CHOSEN({ PlanMealScreen(state = MealPlanSamples.planState(recipe = MealPlanSamples.salmon), onAction = {}) }),
     PLAN_TITLE_ERROR({ PlanMealScreen(state = MealPlanSamples.planState(kind = MealKind.TITLE, showErrors = true), onAction = {}) }),

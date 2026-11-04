@@ -87,7 +87,7 @@ sealed interface StoreModeAction {
 @HiltViewModel(assistedFactory = StoreModeViewModel.Factory::class)
 class StoreModeViewModel @AssistedInject internal constructor(
     @Assisted key: StoreModeKey,
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
     source: ShoppingSource,
     private val shopping: ShoppingRepository,
     private val supermarkets: SupermarketRepository,

@@ -17,6 +17,9 @@ Början på Fas 4 ("Smart hushåll").
   gångordning i Tandoor, så listan sorteras så nästa gång.
 - **Dags igen?** Varor du brukar köpa med jämna mellanrum föreslås i "Lägg till" när det är dags
   igen, räknat på listans egen historik i telefonen.
+- **Föreslå veckans matsedel:** ett kort i Veckan föreslår en middag för varje dag som saknar
+  en, utifrån vad ni lagar ofta och inte lagat nyligen. Byt ut eller hoppa över en dag, slumpa om,
+  och lägg in dem i veckan med ett tryck (går att ångra).
 
 ## [0.5.0] – 2026-11-03
 

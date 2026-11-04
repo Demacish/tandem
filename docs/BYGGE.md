@@ -1065,7 +1065,7 @@ kan tas upp igen där det avbröts.
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
-| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | 🔄 pågår: butiksordning och återkommande varor byggda (väntar på CI); veckoförslag inte påbörjat | "Smarta förslag" |
+| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | 🔄 alla tre bitarna byggda; väntar på grön CI och referensbilder (Screenshots-körningen) | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
@@ -1087,7 +1087,11 @@ Delsteget byggs i tre bitar, var och en med egna tester, strängar (en/sv) och r
    `ShoppingMessage.OrderSaved`. Skott `STORE_MODE_LEARNED_ORDER`, `STORE_MODE_DONE_LEARNED_ORDER`.
 2. **Återkommande varor** (`:feature:shopping`): `RecurringItems.due`, `AddItemState.due`,
    "Dags igen?"-chips i `AddItemPanel` (före "Köpt nyligen"). Skottet `ADD_RECENT` visar båda.
-3. **Förslag på veckans matsedel** (Veckan) – inte påbörjat.
+3. **Förslag på veckans matsedel** (`:feature:mealplan`): `WeekSuggestions` + `SuggestedMeal` +
+   `WeekSuggestionsState`, `WeekViewModel` (`Suggest`/`Reshuffle`/`SwapSuggestion`/
+   `RemoveSuggestion`/`AcceptSuggestions`/`CancelSuggestions`, `RecipeRepository` injicerad),
+   `SuggestWeekCard` + `WeekSuggestionsPanel` (`ui/WeekSuggestionsPanel.kt`), `WeekMessage.Suggested`.
+   Skott `SUGGESTIONS`, `SUGGESTIONS_SAVING`, `SUGGESTIONS_NO_FREE_DAYS`; kortet syns i `WEEK*`.
 <!-- /Fas 4 läge -->
 
 <!-- Fas 4 ocr -->
@@ -1160,6 +1164,38 @@ finns bara på den här telefonen (Tandoor sparar inte avbockade rader längre �
 `shopping_recent_days`), så förslagen blir bättre ju längre appen använts.
 
 Tester: `RecurringItemsTest`, `ShoppingViewModelTest.foodsBoughtRegularlyAreDueAgainAndLeaveTheRecentChips`.
+
+### Förslag på veckans matsedel
+
+Stitch-skissen `f_resl_veckan_notiser` (övre halvan) visar förslag med skafferimatchning och
+"smart veckovinst"; det här bygger den enkla kärnan utan skafferi och AI: en lokal rangordning av
+receptöversikterna appen redan har (`RecipeRepository.observeRecipes(RecipeQuery.All)`, läses en
+gång per öppnat ark).
+
+`WeekSuggestions` (`:feature:mealplan`, rena funktioner):
+
+- `mainMealType(days, mealTypes)`: måltidstypen med senast klockslag (middag); utan klockslag den
+  typ flest av veckans receptmåltider har, annars den sista i ordningen.
+- `freeDays`: veckans dagar från och med idag utan en sådan måltid.
+- `ranked(days, candidates, now)`: inte redan i veckan; de som inte lagats de senaste 14 dagarna
+  före de som lagats nyligen; sedan `timesCooked + 2 × betyg + 1,5 för nya`.
+- `suggest(..., seed)`: ett förslag per ledig dag. Frö 0 tar de bästa i ordning; "Slumpa om"
+  (frö n+1) drar samma dagar ur en pott om två kandidater per dag i slumpad men deterministisk
+  ordning, så förslagen förblir bra men byts. `swap` byter en dag till nästa recept i kön som inte
+  redan visas.
+
+`WeekViewModel`: `Suggest` öppnar arket (`WeekUiState.suggestions`, aldrig för gäst;
+`canSuggest` = får planera och veckan har en dag kvar); `AcceptSuggestions` skapar
+`MealPlanDraft` per förslag med samma portioner som flest av veckans måltider av typen (annars 2),
+stannar vid första felet, visar `WeekMessage.Suggested(n)` och "Ångra" tar bort de skapade
+(`removeAll`). Arket (`WeekSuggestionsPanel`, `WEEK_SUGGESTIONS_TAG`, raderna
+`suggestionTag(date)`): veckodag, recept, tid, "Byt ut" och "Hoppa över" per rad; "Slumpa om",
+"Avbryt", "Lägg n måltider i veckan". Kortet `SuggestWeekCard` (`WEEK_SUGGEST_CARD_TAG`) ligger
+efter dagarna i agendan och tvåpanelsvyn, före "Handla för veckan"; i rutnätet är det en textknapp
+i huvudet.
+
+Tester: `WeekSuggestionsTest`, `WeekViewModelTest` (förslag/acceptera/ångra, byt/slumpa/hoppa
+över/avbryt, gäst och full vecka).
 <!-- /Fas 4 smart -->
 
 <!-- Fas 3 läge -->

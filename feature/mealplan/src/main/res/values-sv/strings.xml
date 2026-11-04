@@ -171,4 +171,23 @@
     <string name="mealplan_from_want_to_cook">Från Vill laga</string>
     <string name="mealplan_from_favorites">Från Favoriter</string>
     <string name="mealplan_all_recipes">Alla recept</string>
+    <!-- Förslag på veckans matsedel (Fas 4) -->
+    <string name="mealplan_suggest_title">Föreslå veckans matsedel</string>
+    <string name="mealplan_suggest_card_body">Ett recept för varje dag som saknar middag</string>
+    <string name="mealplan_suggest_body">En %1$s för varje ledig dag, utifrån vad ni lagar ofta och inte har lagat nyligen. Byt ut eller ta bort en dag, och lägg sedan in dem i veckan.</string>
+    <string name="mealplan_suggest_no_free_days">Alla dagar från och med idag har redan en %1$s.</string>
+    <string name="mealplan_suggest_no_recipes">Det finns inga recept att föreslå än.</string>
+    <string name="mealplan_suggest_all_removed">Alla förslag är borttagna. Slumpa om för nya.</string>
+    <string name="mealplan_suggest_reshuffle">Slumpa om</string>
+    <string name="mealplan_suggest_swap">Byt ut receptet på %1$s</string>
+    <string name="mealplan_suggest_remove">Hoppa över %1$s</string>
+    <string name="mealplan_suggestion_description">%1$s: %2$s</string>
+    <plurals name="mealplan_suggest_accept">
+        <item quantity="one">Lägg %1$d måltid i veckan</item>
+        <item quantity="other">Lägg %1$d måltider i veckan</item>
+    </plurals>
+    <plurals name="mealplan_msg_suggested">
+        <item quantity="one">%1$d måltid planerades</item>
+        <item quantity="other">%1$d måltider planerades</item>
+    </plurals>
 </resources>

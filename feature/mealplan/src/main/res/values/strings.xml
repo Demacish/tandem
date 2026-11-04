@@ -171,4 +171,23 @@
     <string name="mealplan_from_want_to_cook">From Want to cook</string>
     <string name="mealplan_from_favorites">From Favourites</string>
     <string name="mealplan_all_recipes">All recipes</string>
+    <!-- Suggested week (Fas 4) -->
+    <string name="mealplan_suggest_title">Suggest the week\'s meals</string>
+    <string name="mealplan_suggest_card_body">A recipe for every day that has no dinner yet</string>
+    <string name="mealplan_suggest_body">One %1$s for every free day, from what you cook often and have not cooked lately. Swap or remove a day, then put them in the week.</string>
+    <string name="mealplan_suggest_no_free_days">Every day of the week from today already has a %1$s.</string>
+    <string name="mealplan_suggest_no_recipes">There are no recipes to suggest yet.</string>
+    <string name="mealplan_suggest_all_removed">Every suggestion was removed. Shuffle for new ones.</string>
+    <string name="mealplan_suggest_reshuffle">Shuffle</string>
+    <string name="mealplan_suggest_swap">Swap the recipe on %1$s</string>
+    <string name="mealplan_suggest_remove">Leave %1$s out</string>
+    <string name="mealplan_suggestion_description">%1$s: %2$s</string>
+    <plurals name="mealplan_suggest_accept">
+        <item quantity="one">Put %1$d meal in the week</item>
+        <item quantity="other">Put %1$d meals in the week</item>
+    </plurals>
+    <plurals name="mealplan_msg_suggested">
+        <item quantity="one">%1$d meal was planned</item>
+        <item quantity="other">%1$d meals were planned</item>
+    </plurals>
 </resources>

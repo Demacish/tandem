@@ -123,6 +123,17 @@ class MealPlanScreenshotTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
+    fun suggestionsSheet() = capture("phone_suggestions_light_sv", MealPlanShot.SUGGESTIONS)
+
+    @Test
+    fun suggestionsSheetDark() = capture("phone_suggestions_dark", MealPlanShot.SUGGESTIONS, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun suggestionsNoFreeDays() = capture("phone_suggestions_no_free_days_light_sv", MealPlanShot.SUGGESTIONS_NO_FREE_DAYS)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
     fun planSearch() = capture("phone_plan_meal_light_sv", MealPlanShot.PLAN_SEARCH)
 
     @Test

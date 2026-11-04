@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.sync.ForegroundTarget
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.time.TestClock
@@ -43,9 +44,10 @@ class WeekViewModelTest {
     private val foreground = FakeForegroundSync()
     private val shopping = FakeShoppingRepository(entries = emptyList(), lists = emptyList())
     private val removedMeals = RemovedMeals()
+    private val recipes = FakeRecipeRepository(overviews = MealPlanSamples.suggestionCandidates)
 
     private fun viewModel(weekStart: String? = null, saved: SavedStateHandle = SavedStateHandle()) =
-        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals)
+        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals, recipes)
 
     /** Starts collecting the state (as the screen does) and the effects. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -221,6 +223,79 @@ class WeekViewModelTest {
         assertEquals(2, effects.size)
         vm.onAction(WeekAction.Undo)
         assertEquals(dinner.id, mealOn(5).mealType.id)
+    }
+
+    // Fas 4 "Förslag på veckans matsedel".
+
+    @Test
+    fun suggestsADinnerForEveryFreeDayFromTodayAndPlansThemWithUndo() = runTest {
+        val vm = viewModel()
+        val effects = open(vm)
+        vm.onAction(WeekAction.Suggest)
+        val suggestions = vm.uiState.value.suggestions!!
+        // Dinner is the week's main meal; Thursday (today), Friday and Sunday have one, Saturday has not.
+        assertEquals(dinner, suggestions.mealType)
+        assertEquals(listOf(day(5)), suggestions.meals.map { it.date })
+        // The best candidate not in the week: often cooked, not cooked lately (the stew is in the week).
+        assertEquals("Fläskfilé med rotfrukter", suggestions.meals.single().recipe.name)
+
+        vm.onAction(WeekAction.AcceptSuggestions)
+        assertNull(vm.uiState.value.suggestions)
+        val planned = vm.uiState.value.days[5].meals.single()
+        assertEquals("Fläskfilé med rotfrukter", planned.recipe?.name)
+        assertEquals(dinner.id, planned.mealType.id)
+        assertEquals("servings like the week's other dinners", 4.0, planned.servings, 0.0)
+        assertEquals(WeekEffect.Show(WeekMessage.Suggested(1)), effects.last())
+
+        vm.onAction(WeekAction.Undo)
+        assertTrue(vm.uiState.value.days[5].meals.isEmpty())
+    }
+
+    @Test
+    fun swappingReshufflingAndRemovingChangeTheSuggestionsBeforeTheyArePlanned() = runTest {
+        mealPlans.meals.value = listOf(MealPlanSamples.todayBreakfast)
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        val first = vm.uiState.value.suggestions!!
+        assertEquals(listOf(day(3), day(4), day(5), day(6)), first.meals.map { it.date })
+        assertEquals(4, first.meals.map { it.recipe.id }.distinct().size)
+        assertEquals("Fläskfilé med rotfrukter", first.meals.first().recipe.name)
+
+        vm.onAction(WeekAction.SwapSuggestion(day(3)))
+        val swapped = vm.uiState.value.suggestions!!
+        assertTrue(swapped.meals.first().recipe.id !in first.meals.map { it.recipe.id })
+        assertEquals(first.meals.drop(1), swapped.meals.drop(1))
+
+        vm.onAction(WeekAction.Reshuffle)
+        val shuffled = vm.uiState.value.suggestions!!
+        assertEquals(4, shuffled.meals.size)
+        assertEquals(4, shuffled.meals.map { it.recipe.id }.distinct().size)
+
+        vm.onAction(WeekAction.RemoveSuggestion(day(6)))
+        assertEquals(listOf(day(3), day(4), day(5)), vm.uiState.value.suggestions!!.meals.map { it.date })
+        vm.onAction(WeekAction.CancelSuggestions)
+        assertNull(vm.uiState.value.suggestions)
+        assertEquals(1, mealPlans.meals.value.size)
+    }
+
+    @Test
+    fun aGuestGetsNoSuggestionsAndAFullWeekSaysSo() = runTest {
+        permissions.state.value = SpacePermissions(SpaceRole.GUEST)
+        val guest = viewModel()
+        open(guest)
+        assertFalse(guest.uiState.value.canSuggest)
+        guest.onAction(WeekAction.Suggest)
+        assertNull(guest.uiState.value.suggestions)
+
+        permissions.state.value = SpacePermissions(SpaceRole.USER)
+        val saturday = MealPlanEntry(19, recipe = MealPlanSamples.salmon, fromDate = day(5), mealType = dinner)
+        mealPlans.meals.value = MealPlanSamples.meals + saturday
+        val full = viewModel()
+        open(full)
+        full.onAction(WeekAction.Suggest)
+        assertTrue(full.uiState.value.suggestions!!.noFreeDays)
+        assertTrue(full.uiState.value.suggestions!!.meals.isEmpty())
     }
 
     @Test

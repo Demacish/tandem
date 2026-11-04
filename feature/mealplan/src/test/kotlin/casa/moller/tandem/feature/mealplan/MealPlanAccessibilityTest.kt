@@ -98,6 +98,15 @@ class MealPlanAccessibilityTest {
     fun move() = check(MealPlanShot.MOVE)
 
     @Test
+    fun suggestions() = check(MealPlanShot.SUGGESTIONS)
+
+    @Test
+    fun suggestionsSaving() = check(MealPlanShot.SUGGESTIONS_SAVING)
+
+    @Test
+    fun suggestionsNoFreeDays() = check(MealPlanShot.SUGGESTIONS_NO_FREE_DAYS)
+
+    @Test
     fun moveDark() = check(MealPlanShot.MOVE, darkTheme = true)
 
     @Test

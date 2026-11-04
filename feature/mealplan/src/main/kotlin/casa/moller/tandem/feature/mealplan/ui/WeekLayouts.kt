@@ -107,6 +107,7 @@ internal fun WeekAgenda(state: WeekUiState, format: MealPlanFormat, onAction: (W
             items(state.days, key = { it.date.toString() }) { day ->
                 DaySection(day = day, state = state, format = format, onAction = onAction)
             }
+            if (state.canSuggest) item(key = "suggest") { SuggestWeekCard(onClick = { onAction(WeekAction.Suggest) }) }
             if (showWeekShopping(state)) item(key = "week-shopping") { WeekShoppingCard(onClick = { onAction(WeekAction.WeekShopping) }) }
         }
     }
@@ -133,6 +134,7 @@ internal fun WeekTwoPane(state: WeekUiState, format: MealPlanFormat, onAction: (
                 items(state.days, key = { it.date.toString() }) { day ->
                     DayRow(day = day, today = day.date == state.today, selected = day.date == shown, format = format, onAction = onAction)
                 }
+                if (state.canSuggest) item(key = "suggest") { SuggestWeekCard(onClick = { onAction(WeekAction.Suggest) }) }
                 if (showWeekShopping(state)) {
                     item(key = "week-shopping") { WeekShoppingCard(onClick = { onAction(WeekAction.WeekShopping) }) }
                 }
@@ -164,6 +166,9 @@ internal fun WeekGrid(state: WeekUiState, format: MealPlanFormat, onAction: (Wee
     Column(modifier = modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = spacing.sm)) {
             WeekHeader(state = state, format = format, onAction = onAction, modifier = Modifier.weight(1f))
+            if (state.canSuggest) {
+                TandemTextButton(text = stringResource(R.string.mealplan_suggest_title), onClick = { onAction(WeekAction.Suggest) })
+            }
             if (showWeekShopping(state)) {
                 WeekShoppingCard(
                     onClick = { onAction(WeekAction.WeekShopping) },
