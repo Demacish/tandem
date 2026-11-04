@@ -38,6 +38,7 @@ internal enum class RecipeImportShot(val content: @Composable () -> Unit) {
     OFFLINE({ Import(RecipeImportSamples.offline()) }),
 }
 
+/** Fas 4: the form offers "Fota recept" (read on the phone) when the shell wires it. */
 @Composable
 private fun Import(state: RecipeImportUiState) =
-    RecipeImportScreen(state = state, onAction = {}, onTakePhoto = {}, onPickFile = {}, onBack = {})
+    RecipeImportScreen(state = state, onAction = {}, onTakePhoto = {}, onPickFile = {}, onBack = {}, onScanText = {})

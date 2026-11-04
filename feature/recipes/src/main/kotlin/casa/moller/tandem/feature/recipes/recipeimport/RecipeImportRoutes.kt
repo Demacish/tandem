@@ -39,6 +39,7 @@ import kotlinx.coroutines.withContext
  * ([ImportFiles]) before they go to the server.
  *
  * @param onOpenEditor the import is accepted: open the editor with the draft (saved-draft JSON).
+ * @param onScanText Fas 4 (textigenkänning): "Fota recept", read on the device (feature:scan through the shell); null hides it.
  */
 @Composable
 fun RecipeImportRoute(
@@ -46,6 +47,7 @@ fun RecipeImportRoute(
     onOpenEditor: (importedDraft: String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onScanText: (() -> Unit)? = null,
 ) {
     val viewModel = hiltViewModel<RecipeImportViewModel, RecipeImportViewModel.Factory>(
         key = "recipe-import-${key.hashCode()}",
@@ -124,6 +126,7 @@ fun RecipeImportRoute(
             }
         },
         onPickFile = { picker.launch(arrayOf("image/*", ImportFiles.PDF)) },
+        onScanText = onScanText,
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,

@@ -241,7 +241,12 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     }
 
     @Composable
-    override fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit) {
+    override fun RecipeImport(
+        key: RecipeImportKey,
+        onOpenEditor: (importedDraft: String) -> Unit,
+        onBack: () -> Unit,
+        onScanText: () -> Unit,
+    ) {
         ShellScreenScaffold(title = "Recipe import", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Recipe import ${key.sharedText}", modifier = Modifier.padding(padding))
         }
@@ -348,7 +353,8 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     ) = Page("Pantry $key", onBack ?: {})
 
     @Composable
-    override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit) = Page("Scan $key", onBack)
+    override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit, onRecipeText: (String) -> Unit) =
+        Page("Scan $key", onBack)
 
     @Composable
     override fun Drinks(

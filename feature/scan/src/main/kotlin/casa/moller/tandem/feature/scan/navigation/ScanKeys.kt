@@ -30,6 +30,15 @@ data class FridgeScanKey(val locationId: Long? = null) :
     FullScreenDestination
 
 /**
+ * Fas 4 (textigenkänning av recept): a photographed recipe read on the device (ML Kit, like the
+ * receipt); the text goes to "Importera recept" (feature:recipes) through the shell.
+ */
+@Serializable
+data object RecipeTextScanKey :
+    ScanDestination,
+    FullScreenDestination
+
+/**
  * The shared review list. [sessionId] names the in-memory review the scan screen filled (held by
  * this module); after process death it is gone and the screen offers to scan again.
  */

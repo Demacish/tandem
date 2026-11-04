@@ -4,6 +4,15 @@ Alla märkbara ändringar i Tandem. Avsnittet för en version blir texten i dess
 (`release.yml` kräver ett avsnitt för versionen, se [docs/RELEASE.md](docs/RELEASE.md)).
 Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
+## [Unreleased]
+
+Början på Fas 4 ("Smart hushåll").
+
+- **Fota recept:** i Importera recept kan du fotografera en kokbokssida, ett kort eller en
+  utskrift (eller välja en bild). Texten läses i telefonen, utan AI-tjänst och utan att något
+  skickas någonstans, och öppnas i redigeraren där du granskar den innan receptet sparas. Ett
+  långt recept kan vara flera foton.
+
 ## [0.5.0] – 2026-11-03
 
 Fas 3 ("Skapa och fånga"): recept skapas, redigeras och importeras i appen, widgets på

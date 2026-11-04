@@ -1055,6 +1055,56 @@ kontraktsutrymmet saknar egenskapstyper, så det är inte inspelat.
 dra mellan veckor, haptik vid lyft.
 <!-- /Fas 3 matsedel -->
 
+<!-- Fas 4 läge -->
+## Fas 4 – läge (uppföljning av delstegen)
+
+Fas 4 "Smart hushåll" byggs i delsteg på grenen `claude/vigilant-galileo-1xv20t` efter att Fas 3
+slogs ihop till `main` (PR #4, 0.5.0). Avsnittet uppdateras **efter varje commit** så att arbetet
+kan tas upp igen där det avbröts.
+
+| Delsteg | Läge | Avsnitt |
+|---|---|---|
+| Textigenkänning av recept i telefonen | 🔧 pågår, påbörjat 2026-11-04: skrivet, CI och referensbilder kvar | "Textigenkänning av recept" |
+| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ⏳ inte påbörjat | – |
+| Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
+| Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
+| Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
+
+### Pågående: textigenkänning av recept
+
+1. 🔧 `RecipeTextLayout` (`:core:domain`), `RecipeTextScanKey` + `recipetext/` (`:feature:scan`),
+   skalet (`ShellFeatures.Scan.onRecipeText`, `RecipeImport.onScanText`), knappen i "Importera
+   recept"; tester. Väntar på grön CI och inspelade referensbilder (`scan/*recipe_text*`).
+2. ⏳ CHANGELOG (skrivet under `[Unreleased]`), ROADMAP ✅ när allt är grönt.
+<!-- /Fas 4 läge -->
+
+<!-- Fas 4 ocr -->
+## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)
+
+ROADMAP "Fas 4": fota ett recept (en kokbokssida, ett kort, en utskrift) och läs det **i
+telefonen**, utan AI-tjänst och utan att något lämnar enheten – samma bundlade ML Kit-läsare
+som kvittot (`ReceiptTextEngine`, Fas S). Resultatet är text som går in i "Importera recept"
+och tolkas där av `TextRecipeParser` (Fas 3, också på enheten), så användaren granskar
+receptet i redigeraren innan det sparas.
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Layout | `core/domain/scan/RecipeTextLayout.kt` | `paragraphs(fragments)`/`text(fragments)`: ML Kits rader grupperas i rader (samma tröskel som `ReceiptLayout`), läses vänster till höger och delas i stycken där det vertikala gapet är > 0,9 radhöjder (namn, ingredienser och steg hamnar i var sitt stycke, som `TextRecipeParser` vill ha dem); `join(pages)` slår ihop flera foton. Rent, `RecipeTextLayoutTest` |
+| Nyckel | `navigation/ScanKeys.kt` `RecipeTextScanKey` (helskärm) | `ScanKeysTest` |
+| ViewModel | `recipetext/RecipeTextScanViewModel.kt` | som kvittots: `ReadPage` läser av huvudtråden, sidor som text (`pages`), `preview` (första sex raderna), `NO_TEXT`/`UNREADABLE`, `Done` → `TextRead(text)`; läsaren skapas en gång och stängs med ViewModeln; gäster får `readOnly` (receptet kunde inte sparas) |
+| Skärm | `RecipeTextScanScreen.kt` | kameran (eller galleriet) bredvid/över panelen som kvittot; råd, integritetstext, förhandsvisning av texten, "Ta foto"/"Ta ett foto till", "Ta bort sista fotot", "Använd texten" fast nedanför |
+| Route | `RecipeTextScanRoute.kt` | kamera med behörighet i sammanhanget, bildväljaren, `ScanImages` (högst 2560 px som kvittot), `onText` |
+| Skalet | `ScanRoute(onRecipeText)`, `ShellFeatures.Scan(onRecipeText)`, `entry<RecipeTextScanKey>` | texten öppnar `RecipeImportKey(sharedText)` i skannerns ställe (en öppen import ersätts) |
+| Importen | `RecipeImportScreen(onScanText)`, `ShellFeatures.RecipeImport(onScanText)` | avsnittet "Fota recept" med knappen som öppnar skannern ovanpå importen |
+
+**Tester:** `RecipeTextLayoutTest` (`:core:domain`), `RecipeTextScanViewModelTest`, `ScanScreenshotTest`
+och `ScanAccessibilityTest` (`RECIPE_TEXT_*`: start, sidor, läser, ingen text, kamera nekad;
+referensbilder `scan/*recipe_text*`), `ScanKeysTest`; importens referensbilder visar knappen.
+
+**Kvar till senare:** handskrivna recept (ML Kits latinska modell läser tryckt text), kolumner
+(en tvåspaltig sida läses rad för rad över spalterna), haptik vid läst sida.
+<!-- /Fas 4 ocr -->
+
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)
 

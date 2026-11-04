@@ -101,6 +101,26 @@ class ScanScreenshotTest {
     @Test
     fun receiptStartEnglish() = capture("phone_scan_receipt_start_light", ScanShot.RECEIPT_START)
 
+    // Fas 4 (textigenkänning av recept): "Fota recept".
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeTextStart() = capture("phone_scan_recipe_text_start_light_sv", ScanShot.RECIPE_TEXT_START)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeTextPages() = capture("phone_scan_recipe_text_pages_light_sv", ScanShot.RECIPE_TEXT_PAGES)
+
+    @Test
+    fun recipeTextPagesDark() = capture("phone_scan_recipe_text_pages_dark", ScanShot.RECIPE_TEXT_PAGES, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeTextNoText() = capture("phone_scan_recipe_text_no_text_light_sv", ScanShot.RECIPE_TEXT_NO_TEXT)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun recipeTextTablet() = capture("tablet_scan_recipe_text_pages_light_sv", ScanShot.RECIPE_TEXT_PAGES)
+
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun receiptPages() = capture("phone_scan_receipt_pages_light_sv", ScanShot.RECEIPT_PAGES)

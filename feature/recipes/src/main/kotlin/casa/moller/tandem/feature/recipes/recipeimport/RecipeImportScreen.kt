@@ -73,6 +73,7 @@ fun RecipeImportScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onScanText: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -87,6 +88,7 @@ fun RecipeImportScreen(
                     onAction = onAction,
                     onTakePhoto = onTakePhoto,
                     onPickFile = onPickFile,
+                    onScanText = onScanText,
                     modifier = Modifier.widthIn(max = FORM_MAX_WIDTH).verticalScroll(rememberScrollState()),
                 )
             }
@@ -114,6 +116,7 @@ private fun Content(
     onAction: (RecipeImportAction) -> Unit,
     onTakePhoto: () -> Unit,
     onPickFile: () -> Unit,
+    onScanText: (() -> Unit)?,
     modifier: Modifier,
 ) {
     val spacing = TandemTheme.spacing
@@ -132,13 +135,19 @@ private fun Content(
         when {
             state.working -> LoadingState(message = stringResource(R.string.recipe_import_working))
             state.result != null -> Result(state.result, onAction)
-            else -> Form(state, onAction, onTakePhoto, onPickFile)
+            else -> Form(state, onAction, onTakePhoto, onPickFile, onScanText)
         }
     }
 }
 
 @Composable
-private fun Form(state: RecipeImportUiState, onAction: (RecipeImportAction) -> Unit, onTakePhoto: () -> Unit, onPickFile: () -> Unit) {
+private fun Form(
+    state: RecipeImportUiState,
+    onAction: (RecipeImportAction) -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickFile: () -> Unit,
+    onScanText: (() -> Unit)?,
+) {
     val spacing = TandemTheme.spacing
     Text(stringResource(R.string.recipe_import_intro), style = MaterialTheme.typography.bodyMedium)
     OutlinedTextField(
@@ -170,6 +179,17 @@ private fun Form(state: RecipeImportUiState, onAction: (RecipeImportAction) -> U
             icon = TandemIcons.Warning,
             tone = TandemTone.Warning,
             onDismiss = { onAction(RecipeImportAction.Clear) },
+        )
+    }
+    // Fas 4 (textigenkänning av recept): a photographed page read on the phone, without any server.
+    if (onScanText != null) {
+        Text(stringResource(R.string.recipe_import_scan_heading), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.recipe_import_scan_intro), style = MaterialTheme.typography.bodyMedium)
+        TandemSecondaryButton(
+            text = stringResource(R.string.recipe_import_scan_button),
+            onClick = onScanText,
+            enabled = !state.working && !state.readOnly,
+            leadingIcon = TandemIcons.PhotoCamera,
         )
     }
     Text(stringResource(R.string.recipe_import_file_heading), style = MaterialTheme.typography.titleMedium)

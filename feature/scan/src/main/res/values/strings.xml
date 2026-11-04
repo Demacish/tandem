@@ -151,4 +151,22 @@
         <item quantity="one">%d row has no food and is not saved</item>
         <item quantity="other">%d rows have no food and are not saved</item>
     </plurals>
+    <!-- Fas 4 (textigenkänning av recept): "Fota recept" (recipetext/). -->
+    <string name="scan_recipe_text_title">Photograph a recipe</string>
+    <string name="scan_camera_recipe_text_rationale">The camera is used to read a recipe page. The text is read on the phone; the photo is not saved.</string>
+    <string name="scan_recipe_text_none_yet">Photograph the recipe</string>
+    <string name="scan_recipe_text_tips">A cookbook page, a card or a printout, flat and in good light. A long recipe can be several photos, top to bottom.</string>
+    <string name="scan_recipe_text_privacy">The text is read on the phone and nothing is sent anywhere. You check it in the editor before it is saved.</string>
+    <string name="scan_recipe_text_take_photo">Take a photo</string>
+    <string name="scan_recipe_text_take_another">Take another photo</string>
+    <string name="scan_recipe_text_remove_last">Remove the last photo</string>
+    <string name="scan_recipe_text_reading">Reading the text…</string>
+    <string name="scan_recipe_text_done">Use the text</string>
+    <string name="scan_recipe_text_no_text_title">No text found</string>
+    <string name="scan_recipe_text_no_text_body">Try again in better light, with the whole page in the photo.</string>
+    <string name="scan_recipe_text_unreadable_body">Take the photo again.</string>
+    <plurals name="scan_recipe_text_pages">
+        <item quantity="one">%1$d photo read</item>
+        <item quantity="other">%1$d photos read</item>
+    </plurals>
 </resources>

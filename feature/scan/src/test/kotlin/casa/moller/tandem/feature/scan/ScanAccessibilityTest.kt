@@ -69,6 +69,22 @@ class ScanAccessibilityTest {
     @Test
     fun receiptNoItems() = check(ScanShot.RECEIPT_NO_ITEMS)
 
+    // Fas 4 (textigenkänning av recept).
+    @Test
+    fun recipeTextStart() = check(ScanShot.RECIPE_TEXT_START)
+
+    @Test
+    fun recipeTextPages() = check(ScanShot.RECIPE_TEXT_PAGES)
+
+    @Test
+    fun recipeTextReading() = check(ScanShot.RECIPE_TEXT_READING)
+
+    @Test
+    fun recipeTextNoText() = check(ScanShot.RECIPE_TEXT_NO_TEXT)
+
+    @Test
+    fun recipeTextCameraDenied() = check(ScanShot.RECIPE_TEXT_CAMERA_DENIED)
+
     @Test
     fun receiptCameraDenied() = check(ScanShot.RECEIPT_CAMERA_DENIED)
 

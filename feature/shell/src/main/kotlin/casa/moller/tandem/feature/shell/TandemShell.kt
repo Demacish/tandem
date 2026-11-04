@@ -93,6 +93,7 @@ import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
 import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
+import casa.moller.tandem.feature.scan.navigation.RecipeTextScanKey
 import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
 import casa.moller.tandem.feature.shell.accounts.AccountsPage
@@ -405,7 +406,15 @@ internal fun ShellScaffold(
             )
         }
         val scan: @Composable (ScanDestination) -> Unit = { key ->
-            features.Scan(key = key, onNavigate = openKey, onBack = { navigation.goBack() })
+            features.Scan(
+                key = key,
+                onNavigate = openKey,
+                onBack = { navigation.goBack() },
+                // Fas 4 (textigenkänning av recept): the photographed text opens the import in the scanner's place.
+                onRecipeText = { text ->
+                    navigation.navigate(RecipeImportKey(sharedText = text), replace = { it is RecipeTextScanKey || it is RecipeImportKey })
+                },
+            )
         }
         val drinks: @Composable (DrinkDestination) -> Unit = { key ->
             features.Drinks(
@@ -426,6 +435,7 @@ internal fun ShellScaffold(
             entry<BarcodeScanKey> { scan(it) }
             entry<ReceiptScanKey> { scan(it) }
             entry<FridgeScanKey> { scan(it) }
+            entry<RecipeTextScanKey> { scan(it) }
             entry<ScanReviewKey> { scan(it) }
             // Settings → AI is a page of the More list (beside it on wide windows), like the other settings.
             entry<AiSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) { scan(it) }
@@ -546,6 +556,8 @@ internal fun ShellScaffold(
                         navigation.navigate(RecipeEditorKey(importedDraft = draft), replace = { it is RecipeImportKey })
                     },
                     onBack = { navigation.goBack() },
+                    // Fas 4: "Fota recept" on top of the import; its text comes back as a new import (above).
+                    onScanText = { navigation.navigate(RecipeTextScanKey) },
                 )
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---

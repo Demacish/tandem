@@ -151,4 +151,22 @@
         <item quantity="one">%d rad saknar livsmedel och sparas inte</item>
         <item quantity="other">%d rader saknar livsmedel och sparas inte</item>
     </plurals>
+    <!-- Fas 4 (textigenkänning av recept): "Fota recept" (recipetext/). -->
+    <string name="scan_recipe_text_title">Fota recept</string>
+    <string name="scan_camera_recipe_text_rationale">Kameran används för att läsa en receptsida. Texten läses i telefonen; fotot sparas inte.</string>
+    <string name="scan_recipe_text_none_yet">Fotografera receptet</string>
+    <string name="scan_recipe_text_tips">En kokbokssida, ett kort eller en utskrift, plant och i bra ljus. Ett långt recept kan vara flera foton, uppifrån och ned.</string>
+    <string name="scan_recipe_text_privacy">Texten läses i telefonen och inget skickas någonstans. Du granskar den i redigeraren innan den sparas.</string>
+    <string name="scan_recipe_text_take_photo">Ta foto</string>
+    <string name="scan_recipe_text_take_another">Ta ett foto till</string>
+    <string name="scan_recipe_text_remove_last">Ta bort sista fotot</string>
+    <string name="scan_recipe_text_reading">Läser texten…</string>
+    <string name="scan_recipe_text_done">Använd texten</string>
+    <string name="scan_recipe_text_no_text_title">Ingen text hittades</string>
+    <string name="scan_recipe_text_no_text_body">Försök igen i bättre ljus, med hela sidan i bild.</string>
+    <string name="scan_recipe_text_unreadable_body">Ta fotot igen.</string>
+    <plurals name="scan_recipe_text_pages">
+        <item quantity="one">%1$d foto läst</item>
+        <item quantity="other">%1$d foton lästa</item>
+    </plurals>
 </resources>

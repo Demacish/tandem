@@ -10,9 +10,11 @@ import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
 import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
+import casa.moller.tandem.feature.scan.navigation.RecipeTextScanKey
 import casa.moller.tandem.feature.scan.navigation.ScanDestination
 import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
 import casa.moller.tandem.feature.scan.receipt.ReceiptScanRoute
+import casa.moller.tandem.feature.scan.recipetext.RecipeTextScanRoute
 import casa.moller.tandem.feature.scan.review.ScanReviewRoute
 
 // Fas S: the ONE route feature:shell shows for every [ScanDestination]. The skanning lane built the
@@ -22,9 +24,16 @@ import casa.moller.tandem.feature.scan.review.ScanReviewRoute
 /**
  * @param onNavigate opens another destination (the review after a scan, Settings → AI).
  * @param onBack closes the page.
+ * @param onRecipeText Fas 4: the text of a photographed recipe ([RecipeTextScanKey]); the shell opens the import with it.
  */
 @Composable
-fun ScanRoute(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun ScanRoute(
+    key: ScanDestination,
+    onNavigate: (NavKey) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRecipeText: (String) -> Unit = {},
+) {
     when (key) {
         is BarcodeScanKey -> BarcodeScanRoute(key = key, onNavigate = onNavigate, onBack = onBack, modifier = modifier)
 
@@ -36,5 +45,8 @@ fun ScanRoute(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> 
         is FridgeScanKey -> FridgeScanRoute(key = key, onNavigate = onNavigate, onBack = onBack, modifier = modifier)
 
         AiSettingsKey -> AiSettingsRoute(onBack = onBack, modifier = modifier)
+
+        // --- Fas 4 (textigenkänning av recept): the photographed recipe's text goes to the import. ---
+        RecipeTextScanKey -> RecipeTextScanRoute(onText = onRecipeText, onBack = onBack, modifier = modifier)
     }
 }

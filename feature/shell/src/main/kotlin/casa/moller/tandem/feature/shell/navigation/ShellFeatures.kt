@@ -120,10 +120,11 @@ internal interface ShellFeatures {
 
     /**
      * Fas 3 (import lane): "Importera recept" (feature:recipes), full screen; [onOpenEditor] gets
-     * the accepted import as the editor's saved-draft JSON (`RecipeEditorKey.importedDraft`).
+     * the accepted import as the editor's saved-draft JSON (`RecipeEditorKey.importedDraft`);
+     * Fas 4: [onScanText] opens "Fota recept" (feature:scan, read on the device).
      */
     @Composable
-    fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit)
+    fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit, onScanText: () -> Unit)
 
     /** The detail pane before a recipe is picked (wide windows only). */
     @Composable
@@ -233,9 +234,12 @@ internal interface ShellFeatures {
         onOpenShoppingList: () -> Unit,
     )
 
-    /** Every scan destination (barcode, receipt, fridge photo, the review, Settings → AI). */
+    /**
+     * Every scan destination (barcode, receipt, fridge photo, the review, Settings → AI; Fas 4:
+     * "Fota recept", whose text [onRecipeText] gets for "Importera recept").
+     */
     @Composable
-    fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit)
+    fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit, onRecipeText: (String) -> Unit)
 
     /**
      * Every drink destination ("Drycker", the pairing picker, "Ny dryck"; a drink itself is shown
@@ -347,8 +351,13 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit) {
-        RecipeImportRoute(key = key, onOpenEditor = onOpenEditor, onBack = onBack)
+    override fun RecipeImport(
+        key: RecipeImportKey,
+        onOpenEditor: (importedDraft: String) -> Unit,
+        onBack: () -> Unit,
+        onScanText: () -> Unit,
+    ) {
+        RecipeImportRoute(key = key, onOpenEditor = onOpenEditor, onBack = onBack, onScanText = onScanText)
     }
 
     @Composable
@@ -507,8 +516,8 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit) {
-        ScanRoute(key = key, onNavigate = onNavigate, onBack = onBack)
+    override fun Scan(key: ScanDestination, onNavigate: (NavKey) -> Unit, onBack: () -> Unit, onRecipeText: (String) -> Unit) {
+        ScanRoute(key = key, onNavigate = onNavigate, onBack = onBack, onRecipeText = onRecipeText)
     }
 
     @Composable

@@ -23,6 +23,9 @@ import casa.moller.tandem.feature.scan.camera.CameraAccess
 import casa.moller.tandem.feature.scan.receipt.ReceiptProblem
 import casa.moller.tandem.feature.scan.receipt.ReceiptScanScreen
 import casa.moller.tandem.feature.scan.receipt.ReceiptScanUiState
+import casa.moller.tandem.feature.scan.recipetext.RecipeTextProblem
+import casa.moller.tandem.feature.scan.recipetext.RecipeTextScanScreen
+import casa.moller.tandem.feature.scan.recipetext.RecipeTextScanUiState
 import casa.moller.tandem.feature.scan.review.ReviewEdit
 import casa.moller.tandem.feature.scan.review.ReviewEditLayout
 import casa.moller.tandem.feature.scan.review.ScanReviewScreen
@@ -51,6 +54,12 @@ internal enum class ScanShot(val content: @Composable () -> Unit) {
     RECEIPT_NO_ITEMS({ Receipt(ReceiptScanUiState(pages = 1, problem = ReceiptProblem.NO_ITEMS)) }),
     RECEIPT_CAMERA_DENIED({ Receipt(ReceiptScanUiState(), CameraAccess.DENIED) }),
     RECEIPT_NO_CAMERA({ Receipt(ReceiptScanUiState(), CameraAccess.UNAVAILABLE) }),
+    // Fas 4 (textigenkänning av recept): "Fota recept".
+    RECIPE_TEXT_START({ RecipeText(RecipeTextScanUiState()) }),
+    RECIPE_TEXT_PAGES({ RecipeText(RecipeTextScanUiState(pages = listOf(RECIPE_PAGE))) }),
+    RECIPE_TEXT_READING({ RecipeText(RecipeTextScanUiState(pages = listOf(RECIPE_PAGE), reading = true)) }),
+    RECIPE_TEXT_NO_TEXT({ RecipeText(RecipeTextScanUiState(problem = RecipeTextProblem.NO_TEXT)) }),
+    RECIPE_TEXT_CAMERA_DENIED({ RecipeText(RecipeTextScanUiState(), CameraAccess.DENIED) }),
     REVIEW({ Review(ScanShots.review()) }),
     REVIEW_FRIDGE({ Review(ScanShots.review(ScanSource.FRIDGE, ScanSamples.fridgeRows())) }),
     REVIEW_EDIT_PANE({ Review(ScanShots.review().copy(edit = ScanShots.edit)) }),
@@ -66,6 +75,12 @@ private fun Barcode(state: BarcodeScanUiState, access: CameraAccess = CameraAcce
 @Composable
 private fun Receipt(state: ReceiptScanUiState, access: CameraAccess = CameraAccess.GRANTED) =
     ReceiptScanScreen(state = state, camera = ScanCameraUi(access), onAction = {}, onCamera = {}, onTakePhoto = {}, onBack = {})
+
+@Composable
+private fun RecipeText(state: RecipeTextScanUiState, access: CameraAccess = CameraAccess.GRANTED) =
+    RecipeTextScanScreen(state = state, camera = ScanCameraUi(access), onAction = {}, onCamera = {}, onTakePhoto = {}, onBack = {})
+
+private const val RECIPE_PAGE = "Pannkakor\n4 portioner\n\n2,5 dl vetemjöl\n6 dl mjölk\n3 ägg\n\nVispa ihop allt och stek."
 
 @Composable
 private fun Review(state: ScanReviewUiState) = ScanReviewScreen(state = state, onAction = {}, onBack = {})

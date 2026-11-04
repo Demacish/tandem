@@ -5,6 +5,7 @@ import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
 import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
+import casa.moller.tandem.feature.scan.navigation.RecipeTextScanKey
 import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -25,6 +26,9 @@ class ScanKeysTest {
         assertEquals(FridgeScanKey(-1), roundTrip(FridgeScanKey.serializer(), FridgeScanKey(-1)))
         assertEquals(ScanReviewKey("abc"), roundTrip(ScanReviewKey.serializer(), ScanReviewKey("abc")))
         assertEquals(AiSettingsKey, roundTrip(AiSettingsKey.serializer(), AiSettingsKey))
+        // Fas 4 (textigenkänning av recept).
+        assertEquals(RecipeTextScanKey, roundTrip(RecipeTextScanKey.serializer(), RecipeTextScanKey))
+        assertTrue((RecipeTextScanKey as Any) is FullScreenDestination)
     }
 
     @Test

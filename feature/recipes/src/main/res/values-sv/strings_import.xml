@@ -42,4 +42,7 @@
     <string name="recipe_import_file_unreadable">Filen kunde inte läsas</string>
     <string name="recipe_import_read_only">Gäster kan inte importera recept</string>
     <string name="recipe_import_demo_problem">Inte tillgängligt i demoläget</string>
+    <string name="recipe_import_scan_heading">Fota recept</string>
+    <string name="recipe_import_scan_intro">En kokbokssida, ett kort eller en utskrift läses i telefonen. Inget skickas någonstans.</string>
+    <string name="recipe_import_scan_button">Fota recept</string>
 </resources>
