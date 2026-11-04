@@ -120,8 +120,19 @@ class ShoppingViewModel @AssistedInject internal constructor(
     /** Tandoor's `default_delay` in hours, from the last snapshot ("köp senare"). */
     private var latestDelayHours: Double = DEFAULT_DELAY_HOURS
 
-    private val addState: Flow<AddItemState> = combine(addText, suggestions, recent) { text, found, recentFoods ->
-        AddItemState(text = text, preview = preview(text), suggestions = found, recent = recentFoods)
+    /** Fas 4 "Dags igen?": foods bought regularly that are due again ([RecurringItems]). */
+    private val due: Flow<List<String>> = combine(shopping.observeHistory(), shopping.observeEntries()) { history, entries ->
+        RecurringItems.due(history, entries.map { it.food.name }, clock.now(), DUE_ITEMS)
+    }
+
+    private val addState: Flow<AddItemState> = combine(addText, suggestions, recent, due) { text, found, recentFoods, dueFoods ->
+        AddItemState(
+            text = text,
+            preview = preview(text),
+            suggestions = found,
+            recent = recentFoods.filterNot { food -> dueFoods.any { it.equals(food, ignoreCase = true) } },
+            due = dueFoods,
+        )
     }
 
     val uiState: StateFlow<ShoppingUiState> = combine(
@@ -492,6 +503,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
         const val KEY_CHECKED_OPEN = "shopping.checkedOpen"
         const val KEY_LATER_OPEN = "shopping.laterOpen"
         const val SUGGESTIONS = 8
+        const val DUE_ITEMS = 6
         const val STOP_TIMEOUT_MILLIS = 5_000L
         const val DEFAULT_DELAY_HOURS = 4.0
         const val MINUTES_PER_HOUR = 60.0

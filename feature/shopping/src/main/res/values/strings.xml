@@ -91,6 +91,7 @@
     <string name="shopping_add_help">Several at once: one per line or separated by commas.</string>
     <string name="shopping_add_preview_title">Will be added as</string>
     <string name="shopping_add_suggestions_title">Suggestions</string>
+    <string name="shopping_add_due_title">Due again?</string>
     <string name="shopping_add_recent_title">Bought recently</string>
     <string name="shopping_add_button">Add</string>
     <plurals name="shopping_add_button_count">

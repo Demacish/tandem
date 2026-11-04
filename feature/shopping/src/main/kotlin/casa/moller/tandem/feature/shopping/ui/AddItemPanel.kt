@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shopping.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -118,23 +119,33 @@ internal fun AddItemPanel(
                 }
             }
         }
+        // Fas 4 "Dags igen?": foods bought regularly that are due again come before the recent ones.
+        if (state.text.isBlank() && state.due.isNotEmpty()) {
+            FoodChips(heading = R.string.shopping_add_due_title, foods = state.due, enabled = !state.adding, onAction = onAction)
+        }
         val chips = if (state.text.isBlank()) state.recent else state.suggestions
         if (chips.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
-                val heading = if (state.text.isBlank()) R.string.shopping_add_recent_title else R.string.shopping_add_suggestions_title
-                SmallHeading(stringResource(heading))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                    chips.forEach { name ->
-                        val description = stringResource(R.string.shopping_add_food_description, name)
-                        AssistChip(
-                            onClick = { onAction(ShoppingAction.AddFood(name)) },
-                            label = { Text(name) },
-                            leadingIcon = { Icon(TandemIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                            enabled = !state.adding,
-                            modifier = Modifier.semantics { contentDescription = description },
-                        )
-                    }
-                }
+            val heading = if (state.text.isBlank()) R.string.shopping_add_recent_title else R.string.shopping_add_suggestions_title
+            FoodChips(heading = heading, foods = chips, enabled = !state.adding, onAction = onAction)
+        }
+    }
+}
+
+@Composable
+private fun FoodChips(@StringRes heading: Int, foods: List<String>, enabled: Boolean, onAction: (ShoppingAction) -> Unit) {
+    val spacing = TandemTheme.spacing
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+        SmallHeading(stringResource(heading))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            foods.forEach { name ->
+                val description = stringResource(R.string.shopping_add_food_description, name)
+                AssistChip(
+                    onClick = { onAction(ShoppingAction.AddFood(name)) },
+                    label = { Text(name) },
+                    leadingIcon = { Icon(TandemIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    enabled = enabled,
+                    modifier = Modifier.semantics { contentDescription = description },
+                )
             }
         }
     }

@@ -62,6 +62,7 @@ data class AddItemState(
     val preview: List<ParsedIngredient> = emptyList(),
     val suggestions: List<String> = emptyList(),
     val recent: List<String> = emptyList(),
+    val due: List<String> = emptyList(),
     val adding: Boolean = false,
 )
 

@@ -11,6 +11,7 @@ import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.shopping.ParsedIngredient
 import casa.moller.tandem.core.model.shopping.ShoppingChange
+import casa.moller.tandem.core.model.shopping.ShoppingHistoryItem
 import casa.moller.tandem.core.model.sync.ForegroundTarget
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
@@ -253,6 +254,19 @@ class ShoppingViewModelTest {
         val vm = viewModel()
         open(vm)
         assertEquals(listOf("havregryn", "bananer", "olivolja"), vm.uiState.value.add.recent)
+    }
+
+    @Test
+    fun foodsBoughtRegularlyAreDueAgainAndLeaveTheRecentChips() = runTest {
+        // Fas 4 "Dags igen?": oats every three weeks, the last time 20 days ago; milk is on the list already.
+        val oats = ShoppingSamples.history.first()
+        val milkHistory = (1..3).map { ShoppingHistoryItem(200L + it, "mjölk", completedAt = ShoppingSamples.now - (7 * it).days) }
+        shopping.history.value = ShoppingSamples.history + oats.copy(entryId = 104, completedAt = oats.completedAt!! - 21.days) +
+            oats.copy(entryId = 105, completedAt = oats.completedAt!! - 42.days) + milkHistory
+        val vm = viewModel()
+        open(vm)
+        assertEquals(listOf("havregryn"), vm.uiState.value.add.due)
+        assertEquals(listOf("bananer", "olivolja", "mjölk"), vm.uiState.value.add.recent)
     }
 
     @Test

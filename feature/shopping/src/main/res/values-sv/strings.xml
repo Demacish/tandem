@@ -91,6 +91,7 @@
     <string name="shopping_add_help">Flera på en gång: en per rad eller med komma emellan.</string>
     <string name="shopping_add_preview_title">Läggs till som</string>
     <string name="shopping_add_suggestions_title">Förslag</string>
+    <string name="shopping_add_due_title">Dags igen?</string>
     <string name="shopping_add_recent_title">Köpt nyligen</string>
     <string name="shopping_add_button">Lägg till</string>
     <plurals name="shopping_add_button_count">

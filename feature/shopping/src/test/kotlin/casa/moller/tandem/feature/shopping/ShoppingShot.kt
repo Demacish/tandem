@@ -89,7 +89,8 @@ private fun ChoiceShot(state: StoreChoiceUiState) = StoreChoiceScreen(state = st
 @Composable
 private fun HistoryShot(state: ShoppingHistoryUiState) = ShoppingHistoryScreen(state = state, onAddAgain = {}, onBack = {})
 
-private val recentState = AddItemState(recent = ShoppingSamples.history.map { it.foodName })
+// Fas 4: "Dags igen?" before "Köpt nyligen".
+private val recentState = AddItemState(recent = ShoppingSamples.history.map { it.foodName }, due = listOf("mjölk", "kaffe"))
 
 private val addState = AddItemState(
     text = "2 dl grädde, mjölk, ka",

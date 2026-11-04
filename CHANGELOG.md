@@ -15,6 +15,8 @@ Början på Fas 4 ("Smart hushåll").
 - **Inlärd butiksordning:** när du i butiksläget bockar av i en annan ordning än butikens
   gångordning frågar appen om den ska spara ordningen du handlade i. Ordningen blir butikens
   gångordning i Tandoor, så listan sorteras så nästa gång.
+- **Dags igen?** Varor du brukar köpa med jämna mellanrum föreslås i "Lägg till" när det är dags
+  igen, räknat på listans egen historik i telefonen.
 
 ## [0.5.0] – 2026-11-03
 

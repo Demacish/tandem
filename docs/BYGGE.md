@@ -1065,7 +1065,7 @@ kan tas upp igen där det avbröts.
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
-| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | 🔄 pågår: butiksordning byggd (väntar på CI); återkommande varor och veckoförslag inte påbörjade | "Smarta förslag" |
+| Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | 🔄 pågår: butiksordning och återkommande varor byggda (väntar på CI); veckoförslag inte påbörjat | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ⏳ inte påbörjat | – |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
@@ -1085,7 +1085,8 @@ Delsteget byggs i tre bitar, var och en med egna tester, strängar (en/sv) och r
    `StoreModeViewModel` (besökta kategorier och "nej tack" i `SavedStateHandle`, `SaveOrder` →
    `SupermarketRepository.reorderAisles`), kortet i `StoreModeScreen` (`STORE_MODE_ORDER_TAG`),
    `ShoppingMessage.OrderSaved`. Skott `STORE_MODE_LEARNED_ORDER`, `STORE_MODE_DONE_LEARNED_ORDER`.
-2. **Återkommande varor** ("Dags igen?" i lägg till-panelen) – inte påbörjat.
+2. **Återkommande varor** (`:feature:shopping`): `RecurringItems.due`, `AddItemState.due`,
+   "Dags igen?"-chips i `AddItemPanel` (före "Köpt nyligen"). Skottet `ADD_RECENT` visar båda.
 3. **Förslag på veckans matsedel** (Veckan) – inte påbörjat.
 <!-- /Fas 4 läge -->
 
@@ -1142,6 +1143,23 @@ för resten av turen, `store-mode.orderDismissed`). Gäster ser inget kort. Tand
 Tester: `LearnedAisleOrderTest`, `StoreModeViewModelTest` (ordning, processdöd, spara, nej tack,
 butikens egen ordning), `ShoppingScreenTest.theLearnedOrderCardSavesOrDeclines`, skott och
 tillgänglighet för `STORE_MODE_LEARNED_ORDER` och `STORE_MODE_DONE_LEARNED_ORDER`.
+
+### Återkommande varor ("Dags igen?")
+
+`RecurringItems.due(history, onList, now, limit)` i `:feature:shopping` läser den lokala
+historiken (`ShoppingRepository.observeHistory`, det som åldrats ut från Tandoors lista, plan 8.2):
+en vara som köpts minst tre gånger på olika dagar, med ett typiskt intervall (medianen) på 2–60
+dagar, är "dags igen" när 80 % av intervallet gått sedan senaste köpet. Varor som redan står på
+listan (avbockade eller inte) föreslås inte; mest försenad först, högst sex; namnet stavas som
+senast. `ShoppingViewModel.due` kombinerar historiken med listan och `AddItemState.due` visas
+som chips under "Dags igen?" före "Köpt nyligen" (som då inte upprepar samma varor) när fältet
+är tomt. Samma `AddFood`-åtgärd som andra chips.
+
+Ingen inställning och ingen lagring: förslagen räknas om från historiken varje gång. Historiken
+finns bara på den här telefonen (Tandoor sparar inte avbockade rader längre än
+`shopping_recent_days`), så förslagen blir bättre ju längre appen använts.
+
+Tester: `RecurringItemsTest`, `ShoppingViewModelTest.foodsBoughtRegularlyAreDueAgainAndLeaveTheRecentChips`.
 <!-- /Fas 4 smart -->
 
 <!-- Fas 3 läge -->
