@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.scan.recipetext
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -267,13 +268,13 @@ private fun Actions(
     }
 }
 
-@Composable
+@StringRes
 internal fun RecipeTextProblem.title(): Int = when (this) {
     RecipeTextProblem.NO_TEXT -> R.string.scan_recipe_text_no_text_title
     RecipeTextProblem.UNREADABLE -> R.string.scan_image_unreadable
 }
 
-@Composable
+@StringRes
 internal fun RecipeTextProblem.body(): Int = when (this) {
     RecipeTextProblem.NO_TEXT -> R.string.scan_recipe_text_no_text_body
     RecipeTextProblem.UNREADABLE -> R.string.scan_recipe_text_unreadable_body
