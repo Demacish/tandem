@@ -45,5 +45,5 @@
     <string name="recipe_import_demo_problem">Not available in demo mode</string>
     <string name="recipe_import_scan_heading">Photograph a recipe</string>
     <string name="recipe_import_scan_intro">A cookbook page, a card or a printout is read on the phone. Nothing is sent anywhere.</string>
-    <string name="recipe_import_scan_button">Photograph a recipe</string>
+    <string name="recipe_import_scan_button">Open the camera</string>
 </resources>
