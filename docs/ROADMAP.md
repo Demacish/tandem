@@ -94,7 +94,9 @@ Påbörjat 2026-11-04.
   till minst 80 %. Allt räknas lokalt (Tandoors auto-plan används inte, se BYGGE).
 - ✅ Notiser när någon i hushållet ändrar listan: bakgrundssynken ser andras ändringar och en
   notis (av som standard, slås på under Synk och lagring) visar dem när appen inte är på skärmen.
-  Kvar: snabbare push via en valfri liten tjänst som man kan köra själv.
+  Snabbare push via en valfri liten tjänst som man kör själv (`push-service/`, docs/PUSH.md):
+  tjänsten kontrollerar listan var 30–60:e sekund och väcker telefonerna via UnifiedPush (t.ex.
+  ntfy), så en ändring syns inom en minut även när appen är stängd. Experimentell, av som standard.
 - ✅ Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
   kontroll i bakgrunden på morgonen, fungerar utan nät, av som standard; erbjuds på Hemma och
   under Synk och lagring). Tryck öppnar Kan laga nu med det som ska användas upp först. Kvar: en

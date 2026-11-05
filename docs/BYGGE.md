@@ -1069,7 +1069,8 @@ kan tas upp igen där det avbröts.
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
 | Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ✅ klart 2026-11-04 (commit a520d09; PR-körningen grön på a520d09, röktest grönt på 145d2f3), referensbilder incheckade | "Smarta förslag" |
 | Smarta förslag enligt "Klart när" (butiksordning efter 3 turer, återkommande varor med lokal historik, autoplan med nyckelord och skafferi) | 🔧 lane fas4-kvar 2026-11-05 (gren `fas4/fas4-kvar`), se "Smarta förslag" | "Smarta förslag" |
-| Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten inte påbörjad | "Listnotiser" |
+| Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
+| Valfri snabb push (push-tjänst + UnifiedPush i appen, grenen `fas4/push`) | 🔄 tjänsten klar och grön i `push-service.yml` (enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1: väckning 8–15 s efter partnerns vara, ca 3 MB RAM); appens del byggs | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | 🔧 byggt på grenen `fas4/skafferinotis` 2026-11-05; CI och referensbilder, se avsnittet | "Notis när något går ut" |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05 (PR, Contract 2.6.13/2.7.1, röktest "OK (21 tests)" och Screenshots gröna på 489d5fb; referensbilder incheckade) | "Fas 3:s rester" |
@@ -1373,6 +1374,102 @@ rader, ingen behörighet/kanal av), `ShellNavigationStateTest`, `OpenLaunchTest`
 båda orienteringarna, mörkt, teckenstorlek 2, sv/en) och Synk-sidans referensbilder med den nya
 omkopplaren.
 <!-- /Fas 4 skafferinotis -->
+
+<!-- Fas 4 push -->
+## Push-tjänst (`push-service/`, `:core:sync`, `:feature:shell`, Fas 4)
+
+Plan §4.3 (A2), B11, #30; "Klart när": en vara som partnern lägger till kommer fram som notis inom
+1 minut utan att appen är öppen. **Valfritt:** utan tjänsten fungerar allt som förut
+(bakgrundssynken och listnotisen). Drift och API för den som kör tjänsten: [PUSH.md](PUSH.md).
+
+**Beslut (design):**
+
+- **Ett hushåll per tjänst.** Operatören ger tjänsten en egen Tandoor-token (`TANDOOR_TOKEN` eller
+  `TANDOOR_TOKEN_FILE`, läsrätt räcker) för en användare i hushållet. Vid start frågar tjänsten
+  `GET /api/user-space/all_personal/` vilket space och hushåll token hör till (det aktiva
+  medlemskapet; FACTS "d") och nyckeln blir `s<space>-h<hushåll>` (`h0` utan hushåll). Fler hushåll
+  = fler containrar. Inköpslistan är hushållets (FACTS "Fas 2 b"), så en token räcker.
+- **Polling, bara antal.** Var `POLL_SECONDS` (30–600, standard 45): `GET
+  /api/shopping-list-entry/?page_size=1` (antalet, `count`, och serverns `timestamp`) och `GET
+  ...?page_size=1&updated_after=<förra timestamp>` (URL-kodad, `>=`). Ändrat = delta > 0 **eller**
+  ett annat antal (radering syns inte med `updated_after`). Första läsningen är baslinjen. Ingen
+  polling alls när ingen telefon är registrerad. Själva posterna läses aldrig.
+- **Väckning utan innehåll.** `POST` till varje registrerad UnifiedPush-adress med
+  `{"tandem":"sync","id":"<registreringens id>"}`, `TTL: 300`, `Urgency: high`; krypterad enligt
+  RFC 8291 (`aes128gcm`, standardbibliotekets ECDH/HKDF/AES-GCM) när appen skickat sina Web
+  Push-nycklar (connectorn ger alltid nycklar), annars i klartext (den säger ändå bara "synka").
+  404/410 från distributören tar bort registreringen.
+- **Registrering med appens token, som glöms.** `POST /v1/register` med `Authorization: Bearer
+  <appens Tandoor-token>` och `{endpoint, p256dh, auth}`. Tjänsten frågar Tandoor en gång
+  (`all_personal`) och jämför space/hushåll; gäster (`guest`-gruppen) och andra hushåll nekas
+  (403). Token sparas aldrig och loggas aldrig. Svaret är ett slumpat **id** (16 byte hex) som
+  appen sparar: avregistrering (`/v1/unregister`) och testnotis (`/v1/test`) räcker med
+  adress + id, så en utloggad telefon kan också avregistrera sig. Alternativet med en hemlighet per
+  hushåll valdes bort: den måste delas ut och roteras, medan Tandoors token redan finns i appen.
+- **Sparat:** per telefon adressen, dess publika nycklar, id, hushållets nyckel och "senast sedd"
+  (`DATA_DIR/registrations.json`, `0600`, skrivs atomärt). Inget annat. Registreringar som inte
+  förnyats på `REGISTRATION_TTL_DAYS` (60) eller hör till ett annat hushåll (token byttes) rensas.
+- **Gränser:** brytare/backoff i pollningen (intervall × 2^fel, högst 15 min; minst `Retry-After`
+  vid 429/503; 15 min direkt vid avvisad token), token bucket per klient-IP på API:t (20/min, skur
+  10), högst 60 Tandoor-kontroller/min, testnotis högst var 10:e s per telefon, `MAX_ENDPOINTS` (20).
+  Adresser måste vara `https://` (`ALLOW_HTTP_ENDPOINTS=true` bara för test/LAN), utan användarinfo.
+- **Loggar:** JSON (`log/slog`), aldrig token, aldrig listinnehåll, bara värdnamnet för
+  väckningsadresser (sökvägen är distributörens hemliga ämne).
+
+**Tjänsten** (`push-service/`, Go 1.27 med bara standardbiblioteket): `config.go` (miljövariabler,
+inga standardvärden som pekar på en server), `tandoor.go` (de två GET-anropen, 401/403 → avvisad,
+429 → `Retry-After`), `poller.go` (`Backoff`, `Poller.PollOnce`/`WakeAll`), `pusher.go`,
+`webpush.go` (RFC 8291), `store.go`, `api.go` (`/healthz`, `/v1/info`, `/v1/register`,
+`/v1/unregister`, `/v1/test`, `RateLimiter`), `main.go` (`-healthcheck` för containerns
+HEALTHCHECK). Dockerfile: `golang:1.27.2-alpine` (digest) → `scratch`, statisk binär, användare
+65532, volym `/data`. **CI** (`push-service.yml`, bara vid ändringar i `push-service/**`): gofmt,
+`go vet`, `go test -race` (falska Tandoor- och distributörsservrar, RFC 5869-testvektor och
+dekryptering som Tinks `WebPushHybridDecrypt`), imagen byggs (pushas aldrig från en gren),
+integrationstest per Tandoor-version (2.6.13, 2.7.1): tillfällig Tandoor, hushåll med operatör,
+telefon och partner plus en utomstående, tjänsten startas från den byggda imagen, telefonen
+registrerar en falsk UnifiedPush-adress, utomstående nekas, testnotisen kommer, partnern lägger
+till en vara via API:t och väckningen måste komma inom 60 s (8–15 s i första körningen) utan
+listinnehåll. Steget skriver imagens storlek och minnet (ca 3 MB) i sammanfattningen.
+**Publicering:** jobbet `publish` körs bara för en `v*`-tagg (`ghcr.io/<ägare>/tandem-push:<version>`
+och `latest`); ägaren bestämmer när. `pr.yml` ignorerar `push-service/**` och röktestet hoppar
+över dem.
+
+**Appen:**
+
+- **Bibliotek:** `org.unifiedpush.android:connector` 3.3.5 (Maven Central, Apache-2.0, släppt
+  2026-08-22, SHA-1 för aar/sources kontrollerade mot Maven Central). Den drar in JVM-`tink`, som
+  är utbytt mot appens `tink-android` (samma klasser) i `core/sync/build.gradle.kts`. Ingen Google-
+  tjänst, så både `sideload` och `play` har funktionen.
+- **`:core:model`** `push/FastPush.kt`: `FastPushState`, `FastPushStatus` (OFF, REGISTERING,
+  ACTIVE, FAILED), `FastPushAvailability` (AVAILABLE, DEMO, GUEST, NO_ACCOUNT), `FastPushError`,
+  `PushDistributor`, `FastPushResult`. **`:core:data`** `push/FastPushRepository`.
+- **`:core:sync`** `push/`: `DefaultFastPushRepository` (implementerar även `FastPushReceiver`),
+  sparat per konto i `sync_state` (`entity = "fast_push"`, JSON i `hash`, ingen schemaändring,
+  försvinner med kontot), `PushServiceClient` (appens delade klient: bara https, appens
+  User-Agent och gränser), `UnifiedPushGateway`/`PushDistributorGateway` (instans = kontots id),
+  `TandemPushService` (connectorns `PushService`, inte exporterad, i `core:sync`s manifest),
+  `WorkManagerPushWakeScheduler` → `work/PushSyncWorker` (`tandem.sync.push`, expedierad, KEEP) →
+  `PushWakeUp` (hel läsning av listan med `ShoppingSync.refresh(full = true)`, sedan 4 s så att
+  `ShoppingChangeNotifications` hinner posta sin samlade notis), `AndroidFastPushNotifier`
+  (testnotisen i kanalen `shopping`, id 1251, utan att röra `TandemNotificationIds`).
+  `SyncStarter.start()` anropar `DefaultFastPushRepository.start()`: aktivt konto med push på →
+  `UnifiedPush.register` igen (distributören skickar adressen igen → tjänsten får "senast sedd"),
+  byte/utloggning → avregistrering hos distributören för det gamla kontot. Meddelanden till en
+  annan instans eller när push är av → avregistrering hos distributören.
+- **`:feature:shell`** `push/`: `FastPushScreen(state, onAction, …)` + `FastPushViewModel`,
+  `FastPushPage`/`RouteFastPushPage` (som `AccountsPage`), nyckeln `FastPushSettingsKey`
+  (en "Mer-sida", detaljpanel på surfplattan), raden "Snabb push (egen tjänst, experimentell)" på
+  Synk-sidan (`SettingsPages.Sync` har fått `onOpenFastPush`). "Slå på" slår också på "Notis när
+  någon ändrar listan" (det är den notisen väckningen leder till) och frågar efter
+  notisbehörigheten i sammanhanget. Utan distributör: vad man ska installera och "Leta igen"
+  (läses också om när skärmen kommer tillbaka). Bara `https://` (appen tillåter ingen klartext,
+  plan 5.5).
+
+**Tester:** `FastPushRepositoryTest` (`:core:sync`, HTTPS-MockWebServer som tjänsten och en falsk
+distributör), `FastPushViewModelTest`, `FastPushScreenTest`, `FastPushScreenshotTest` och
+`FastPushAccessibilityTest` (`:feature:shell`). Referensbilder `shell/fast_push_*.png`; Synk-sidans
+bilder har spelats in igen för den nya raden.
+<!-- /Fas 4 push -->
 
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)

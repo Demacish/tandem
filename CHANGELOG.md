@@ -49,6 +49,11 @@ Början på Fas 4 ("Smart hushåll").
   använder upp det först. Notisen har kanalen "Måltidspåminnelser" i systemets inställningar.
 - **Rättat:** två telefoner som öppnade Hemma för första gången samtidigt kunde skapa Kyl, Frys
   och Skafferi två gånger. Nu behålls de äldsta och den andra telefonens varor flyttas dit.
+- **Snabb push (experimentell, valfri):** under Synk och lagring → Snabb push kan Tandem kopplas
+  till en liten push-tjänst som hushållet kör själv (en container, se docs/PUSH.md). Tjänsten
+  kontrollerar inköpslistan var 30–60:e sekund och väcker telefonen via en UnifiedPush-app som
+  ntfy, så en vara som någon lägger till syns som notis inom en minut även när appen är stängd.
+  Väckningen innehåller inget om listan. Av som standard; inte för gäster eller demoläget.
 
 ## [0.5.0] – 2026-11-03
 
