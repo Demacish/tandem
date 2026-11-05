@@ -143,6 +143,15 @@ class MealPlanScreenshotTest {
         capture("phone_suggestions_keywords_font2_light_sv", MealPlanShot.SUGGESTIONS_KEYWORDS, fontScale = 2f)
 
     @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun suggestionsKeywordsTablet() = capture("tablet_suggestions_keywords_light_sv", MealPlanShot.SUGGESTIONS_KEYWORDS)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun suggestionsKeywordsTabletPortraitDark() =
+        capture("tablet_portrait_suggestions_keywords_dark", MealPlanShot.SUGGESTIONS_KEYWORDS, darkTheme = true)
+
+    @Test
     @Config(qualifiers = "sv-$PHONE")
     fun suggestionsNoKeywordMatch() = capture("phone_suggestions_no_keyword_match_light_sv", MealPlanShot.SUGGESTIONS_NO_KEYWORD_MATCH)
 

@@ -1278,9 +1278,11 @@ med vald måltid och nyckelord för 20 frön, färre recept än dagar, inget mat
 `WeekViewModelTest` (förslag/acceptera/ångra, byt/slumpa/hoppa över/avbryt, sju middagar nästa vecka
 från "Vardag" sparade som måltider, vald måltidstyp, inga träffar, skafferiet), skotten
 `SUGGESTIONS*` (nu med chips och skafferirader), `SUGGESTIONS_KEYWORDS` (också teckenstorlek 2),
-`SUGGESTIONS_NO_KEYWORD_MATCH`, tillgänglighet för alla, och `MealPlanSheetWindowTest`
-(`*window_week_suggestions*`: arket som fönster på telefon stående/liggande, surfplatta i båda
-orienteringarna och teckenstorlek 2, "Lägg i veckan" syns).
+`SUGGESTIONS_NO_KEYWORD_MATCH`, surfplatta liggande och stående (`tablet*_suggestions_keywords_*`),
+tillgänglighet för alla, och `MealPlanSheetWindowTest` (`*window_week_suggestions*`: arket som
+fönster på telefon stående/liggande och med teckenstorlek 2, "Lägg i veckan" syns). Som fönster på
+surfplatta syns veckan bredvid arket under scrimmen, och ATF underkänner den nedtonade veckan; där
+täcks arket av skotten och tillgänglighetstesterna i stället.
 <!-- /Fas 4 smart -->
 
 <!-- Fas 4 listnotiser -->

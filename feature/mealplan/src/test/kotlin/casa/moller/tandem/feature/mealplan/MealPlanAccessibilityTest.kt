@@ -116,6 +116,14 @@ class MealPlanAccessibilityTest {
     fun suggestionsNoKeywordMatch() = check(MealPlanShot.SUGGESTIONS_NO_KEYWORD_MATCH)
 
     @Test
+    @Config(qualifiers = TABLET)
+    fun suggestionsKeywordsTablet() = check(MealPlanShot.SUGGESTIONS_KEYWORDS)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun suggestionsKeywordsTabletPortrait() = check(MealPlanShot.SUGGESTIONS_KEYWORDS)
+
+    @Test
     fun moveDark() = check(MealPlanShot.MOVE, darkTheme = true)
 
     @Test
