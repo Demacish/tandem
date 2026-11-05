@@ -1070,7 +1070,7 @@ kan tas upp igen där det avbröts.
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten inte påbörjad | "Listnotiser" |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
-| Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | 🔄 pågår 2026-11-05 på `fas4/fas3-rester` | "Fas 3:s rester" |
+| Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05 (PR, Contract 2.6.13/2.7.1, röktest "OK (21 tests)" och Screenshots gröna på 489d5fb; referensbilder incheckade) | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
 
