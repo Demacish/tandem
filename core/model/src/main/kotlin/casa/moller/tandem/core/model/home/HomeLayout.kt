@@ -8,10 +8,7 @@ package casa.moller.tandem.core.model.home
  *   follow in their default order ([types]).
  * @property hidden the sections the user turned off.
  */
-data class HomeLayout(
-    val order: List<HomeSectionType> = HomeSectionType.entries.toList(),
-    val hidden: Set<HomeSectionType> = emptySet(),
-) {
+data class HomeLayout(val order: List<HomeSectionType> = HomeSectionType.entries.toList(), val hidden: Set<HomeSectionType> = emptySet()) {
     /** Every section type in the user's order. */
     val types: List<HomeSectionType>
         get() = (order + HomeSectionType.entries).distinct()
