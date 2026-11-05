@@ -54,6 +54,11 @@ Början på Fas 4 ("Smart hushåll").
   kontrollerar inköpslistan var 30–60:e sekund och väcker telefonen via en UnifiedPush-app som
   ntfy, så en vara som någon lägger till syns som notis inom en minut även när appen är stängd.
   Väckningen innehåller inget om listan. Av som standard; inte för gäster eller demoläget.
+- **Två recept samtidigt i kokläget:** "Laga ett recept till" (+) i kokläget öppnar ett recept
+  till. Flikar högst upp växlar mellan dem, och vart och ett minns sitt steg, sina portioner och
+  sitt "Klart!". Timrarna från båda syns i båda, med receptets namn (även i notiserna och larmet
+  på låsskärmen), och alla ringer. Trycker du "Laga" på ett recept medan ett annat recepts timer
+  går öppnas båda. ✕ stänger det recept som visas, och kokläget fortsätter med det andra.
 
 ## [0.5.0] – 2026-11-03
 

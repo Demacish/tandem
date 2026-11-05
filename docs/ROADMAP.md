@@ -101,7 +101,9 @@ Påbörjat 2026-11-04.
   kontroll i bakgrunden på morgonen, fungerar utan nät, av som standard; erbjuds på Hemma och
   under Synk och lagring). Tryck öppnar Kan laga nu med det som ska användas upp först. Kvar: en
   egen tid för påminnelsen.
-- Två recept samtidigt i kokläget.
+- ✅ Två recept samtidigt i kokläget: "Laga ett recept till" öppnar ett andra recept som flik,
+  varje recept har sitt eget steg och "Klart!", och timrarna från båda syns (med receptets namn,
+  även i notiserna) och ringer. Kvar: två recept sida vid sida på riktigt breda skärmar.
 
 ## Fas 5: Plattform
 - Handsfree-kokläge med röst och uppläsning.

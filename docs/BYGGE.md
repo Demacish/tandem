@@ -1072,7 +1072,7 @@ kan tas upp igen där det avbröts.
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
 | Valfri snabb push (push-tjänst + UnifiedPush i appen, grenen `fas4/push`) | 🔄 tjänsten klar och grön i `push-service.yml` (enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1: väckning 8–15 s efter partnerns vara, ca 3 MB RAM); appens del byggs | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | 🔧 byggt på grenen `fas4/skafferinotis` 2026-11-05; CI och referensbilder, se avsnittet | "Notis när något går ut" |
-| Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
+| Två recept samtidigt i kokläget | 🔧 byggt på grenen `fas4/kok2` 2026-11-05 (kod, tester, referensbilder); CI och sammanslagning bekräftas här | "Två recept samtidigt" |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05 (PR, Contract 2.6.13/2.7.1, röktest "OK (21 tests)" och Screenshots gröna på 489d5fb; referensbilder incheckade) | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
@@ -1129,6 +1129,51 @@ leverantör; ett röktestscenario för WebView-läsningen (se nedan); stegfiler.
 (`/blockerad-sida`) med JSON-LD. Scenario: dela länken → "Läser sidan…" → resultatkortet med
 receptets namn → "Öppna i redigeraren".
 <!-- /Fas 4 fas3-rester -->
+
+<!-- Fas 4 kok2 -->
+## Två recept samtidigt (`:feature:cook`, `:core:timer`, Fas 4)
+
+Plan §8.1 och §10 Fas 4 (Kitshn #433): kokläget håller två recept som flikar med gemensamma
+timers. "Klart när": man kan växla mellan två kokläge-flikar, och timers från båda syns och larmar.
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Sessionen (ren) | `session/CookSession.kt` | `CookSession` (1–2 `CookSessionRecipe`, vald flik, `add`/`select`/`remove`, `encode`/`decode` till en sträng), `CookSession.of(CookKey)`; `CookSessionRecipe.viewModelKey` (`cook-<id>` första gången, `cook-<id>-<n>` när ett stängt recept läggs till igen: nytt kokläge) |
+| ViewModel | `session/CookSessionViewModel.kt` | vilka recept som är öppna, vald flik och receptväljaren i `SavedStateHandle` (`cook_session`, `cook_session_picker_open`, `cook_session_query`); väljaren läser de lagrade recepten (`observeRecipes`, senast lagade först, sökningen efter namn, de öppna bortfiltrerade, högst 100) bara medan den är öppen |
+| Flikarna | `session/CookTabs.kt` | `CookSessionUi.of(session, states)`, `CookRecipeTabs`: namn, "Steg 2 av 6"/"Klart!", larmikon när en av receptets timers ringer; en TalkBack-nod per flik, minst 64 dp |
+| Väljaren | `session/CookRecipePicker.kt` | `CookRecipePickerSheet` (ModalBottomSheet) och `CookRecipePickerContent` (rubrik och ✕, förklaring, sök, recepten som en nod var) |
+| Routen | `CookRoutes.kt` `CookRoute` | en `CookViewModel` per öppet recept i samma kokpost (`hiltViewModel(key = viewModelKey)`), skärmen med `key(aktivt recept)` så pager och dialoger hör till receptet; effekter och TalkBack-meddelanden från båda; `CookAction.SetOtherRecipes` till båda |
+| Skärmen | `ui/CookScreen.kt` | `CookScreen(session, onSessionAction)`: "Laga ett recept till" (+) i huvudet medan det finns plats, flikarna under huvudet, ✕ = "Sluta laga <recept>" med två recept; timers visar sitt recept (`TimerBar`/`TimerCard(showRecipe)`) när två recept är öppna eller timrarna kommer från flera recept; en timer från det andra receptet öppnar dess flik på sitt steg |
+| Nyckeln | `navigation/CookKey.kt`, `navigation/CookAlongside.kt` | `CookKey(alongsideRecipeId, alongsideStep)`, `CookKey.recipeIds`, `CookPageRequest`; `cookKeyAlongside(recipeId, servings, timers, activeSource)` |
+| Timers | `:core:model` `CookTimer.recipeName`, `:core:data` `TimerController.start(recipeName)`, `:core:timer` | namnet sparas i timerfilen (`recipe_name`, valfritt: äldre filer läses utan), är undertext i nedräknings- och larmnotisen, står efter etiketten i ringtjänstens notis och på låsskärmslarmet ("Pastan · 10 min (Krämig svamppasta)") |
+| Skalet | `TandemShell`, `ShellNavigation`, `ShellFeatures.Cook` | "Laga" (receptvyn, Idag, Veckan, Böcker) går via `cookKeyAlongside`: har ett annat recept av samma källa en timer igång (inte klar) öppnas kokläget med båda, det receptet först (på den nyaste timerns steg) och det nya valt. `openCook` hittar en kokpost vars andra flik är timerns recept (`onCookRecipesChanged`/`cookRecipesOf`), och `CookPageRequest` väljer fliken. "Laga" i Kan laga nu öppnar fortfarande ett recept |
+
+**Beteende.** Varje recept har eget steg, portioner, överstrukna rader, enheter och "Klart!"-utkast
+(sin `CookViewModel`s `SavedStateHandle`), så allt överlever rotation och processdöd tillsammans
+med sessionen. Med två recept stänger ✕, "Stäng utan att spara" och ett sparat "Klart!" bara det
+receptet (kokläget fortsätter med det andra); systemets bakåt lämnar kokläget. "Klart!" sparar
+receptets koklogg och tar bort receptets klara timers men låter det andra receptets vara. Skärmen
+hålls vaken, textstorleken (A−/A+) och "alltid mörkt" gäller båda; gäster kan laga två recept
+(inget sparas), demoläget läser demots recept.
+
+**Surfplatta (beslut):** flikar på alla bredder, inte två recept sida vid sida. Tvåpanelsläget
+använder redan bredden till ingredienser och timers bredvid steget; två recept bredvid varandra
+skulle ge fyra paneler eller ta bort ingredienserna och den stora texten. Timers från båda syns
+ändå i sidopanelen.
+
+**Tester:** `CookSessionTest` (regler, kodning, `cookKeyAlongside`), `CookSessionViewModelTest`
+(väljaren, sök, flikar, processdöd), `CookViewModelTest` (två recept med egna steg och portioner,
+båda receptens timers i båda och de ringer, "Klart!" lämnar det andra receptets timers),
+`CookTwoRecipesTest` (Compose: växla flik, timers med recept och ringande flik, timer från andra
+receptet, stäng, lägg till, "Klart!" stänger bara receptet), `DefaultTimerControllerTest`
+(`timersOfTwoRecipesSayTheirRecipeAndBothRing`), `TimerStoreTest` (`recipe_name`),
+`CookTwoRecipesAccessibilityTest` (ATF). Referensbilder `cook/*two*` och `cook/*picker*` (telefon
+ljust/mörkt/sv/textstorlek 2, telefon liggande, surfplatta i båda lägena); alla kokläge-bilder
+spelades in igen eftersom huvudet nu har "Laga ett recept till".
+
+**Kvar till senare:** röktestscenario på emulatorn (spec i banans rapport), "Laga ett recept till"
+från Kan laga nu, två recept sida vid sida på mycket breda skärmar.
+<!-- /Fas 4 kok2 -->
 
 <!-- Fas 4 ocr -->
 ## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)
