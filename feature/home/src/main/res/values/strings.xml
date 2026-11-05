@@ -61,4 +61,12 @@
     <string name="home_section_favorites">Favourites</string>
     <string name="home_section_favorites_subtitle">The household\'s favourite recipes</string>
     <string name="home_favorites_all">Show all</string>
+    <!-- Fas 3's leftovers: "Anpassa Idag" (the carousels' order and visibility). -->
+    <string name="home_customize">Customize Today</string>
+    <string name="home_customize_title">Customize Today</string>
+    <string name="home_customize_hint">Choose which recipe rows Today shows and in what order. Saved on this phone.</string>
+    <string name="home_customize_move_up">Move %1$s up</string>
+    <string name="home_customize_move_down">Move %1$s down</string>
+    <string name="home_customize_reset">Reset</string>
+    <string name="home_customize_done">Done</string>
 </resources>

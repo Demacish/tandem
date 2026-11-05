@@ -7,6 +7,7 @@ import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.home.HomeLayout
 import casa.moller.tandem.core.model.home.HomeSection
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.model.preferences.UserPreferences
@@ -139,6 +140,16 @@ class FakeHomeRepository(
     override suspend fun refresh(): Outcome<Unit> {
         refreshCount++
         return refreshResult
+    }
+
+    /** Fas 3's leftovers: the user's layout of the carousels. */
+    val layout = MutableStateFlow(HomeLayout())
+
+    override fun observeLayout(): Flow<HomeLayout> = layout
+
+    override suspend fun setLayout(layout: HomeLayout): Outcome<Unit> {
+        this.layout.value = layout
+        return Outcome.Success(Unit)
     }
 }
 

@@ -6,6 +6,7 @@ import casa.moller.tandem.core.data.home.HomeRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.isConnectivityProblem
+import casa.moller.tandem.core.model.home.HomeLayout
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncReason
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -50,12 +51,17 @@ class HomeViewModel internal constructor(
     /** One-off effects; collect them once (e.g. in a LaunchedEffect). */
     val effects: Flow<HomeEffect> = effectChannel.receiveAsFlow()
 
+    /** Fas 3's leftovers: the user's carousel layout and whether "Anpassa Idag" is open. */
+    private val customizing = MutableStateFlow(false)
+    private val layout = combine(homeRepository.observeLayout(), customizing) { layout, open -> layout to open }
+
     val uiState: StateFlow<HomeUiState> = combine(
         homeRepository.observeUpcomingMeals(),
         homeRepository.observeSections(),
         syncRepository.status,
         refreshes,
-    ) { meals, sections, sync, refreshState ->
+        layout,
+    ) { meals, sections, sync, refreshState, (layout, customizing) ->
         val (tonight, alsoToday) = meals.splitToday()
         HomeUiState(
             loading = false,
@@ -64,11 +70,13 @@ class HomeViewModel internal constructor(
             tonight = tonight,
             alsoToday = alsoToday,
             tomorrow = meals.tomorrowMeals.sortedBy { it.mealType.order },
-            sections = sections.filter { it.recipes.isNotEmpty() },
+            sections = layout.arrange(sections.filter { it.recipes.isNotEmpty() }),
             refreshing = refreshState.running,
             offline = refreshState.offline || sync.pause == SyncPause.OFFLINE,
             lastSynced = sync.lastSuccess,
             syncRunning = sync.running,
+            layout = layout,
+            customizing = customizing,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HomeUiState(dayPart = DayPart.of(currentHour())))
 
@@ -85,7 +93,21 @@ class HomeViewModel internal constructor(
 
             // Navigation is handled by the route.
             is HomeAction.OpenRecipe, HomeAction.OpenRecipes, HomeAction.OpenWeek, is HomeAction.StartCooking -> Unit
+
+            is HomeAction.Customize -> customizing.value = action.open
+
+            is HomeAction.MoveSection -> changeLayout { it.move(action.type, action.offset) }
+
+            is HomeAction.ShowSection -> changeLayout { it.withVisible(action.type, action.visible) }
+
+            HomeAction.ResetSections -> changeLayout { HomeLayout() }
         }
+    }
+
+    /** Stores the changed layout (on the device only); the flows bring it back to the screen. */
+    private fun changeLayout(change: (HomeLayout) -> HomeLayout) {
+        val current = uiState.value.layout
+        viewModelScope.launch { homeRepository.setLayout(change(current)) }
     }
 
     private fun refresh(userAsked: Boolean) {

@@ -3,10 +3,13 @@ package casa.moller.tandem.core.sync.data
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.home.HomeRepository
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toHomeSections
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.relation.RecipeListItem
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.home.HomeLayout
 import casa.moller.tandem.core.model.home.HomeSection
 import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
@@ -119,9 +122,34 @@ internal class OfflineFirstHomeRepository @Inject constructor(
             }
     }
 
+    // Fas 3's leftovers: the user's layout of the carousels, in sync_state (key [LAYOUT_KEY], the
+    // encoded layout in `hash`): on the device only, per account, also in demo mode.
+    override fun observeLayout(): Flow<HomeLayout> = sources.source
+        .flatMapLatest { source ->
+            when (source) {
+                is ActiveSource.Stored -> databases.get(source.kind).syncStateDao().observeOne(source.accountId, LAYOUT_KEY)
+                    .map { HomeLayout.decode(it?.hash) }
+                ActiveSource.Loading, ActiveSource.None -> flowOf(HomeLayout())
+            }
+        }
+        .distinctUntilChanged()
+
+    override suspend fun setLayout(layout: HomeLayout): Outcome<Unit> = catchingUnexpected {
+        val source = sources.current() as? ActiveSource.Stored
+            ?: return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        val row = SyncStateEntity(accountId = source.accountId, entity = LAYOUT_KEY, hash = layout.encode())
+        databases.get(source.kind).syncStateDao().upsert(row)
+        Outcome.Success(Unit)
+    }
+
     override suspend fun refresh(): Outcome<Unit> = when (val source = sources.current()) {
         is ActiveSource.Remote -> engine.refreshHome(source)
         ActiveSource.Demo -> Outcome.Success(Unit)
         ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+    }
+
+    private companion object {
+        /** sync_state key of the user's carousel layout (Fas 3's leftovers). */
+        const val LAYOUT_KEY = "home_layout"
     }
 }

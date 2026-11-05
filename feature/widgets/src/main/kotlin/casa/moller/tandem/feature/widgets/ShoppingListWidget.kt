@@ -39,7 +39,9 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import casa.moller.tandem.core.data.shopping.ShoppingRepository
 import casa.moller.tandem.core.designsystem.R as DesignR
+import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.ui.navigation.AppOpenIntents
 import kotlinx.coroutines.flow.first
 
@@ -66,13 +68,22 @@ class ShoppingListWidgetReceiver : GlanceAppWidgetReceiver() {
 class CheckEntryAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val id = parameters[KEY_ENTRY_ID] ?: return
-        WidgetData(context).entryPoint.shopping().setChecked(listOf(id), checked = true)
+        WidgetActions.check(WidgetData(context).entryPoint.shopping(), id)
         ShoppingListWidget().update(context, glanceId)
     }
 
     companion object {
         val KEY_ENTRY_ID: ActionParameters.Key<Long> = ActionParameters.Key("entryId")
     }
+}
+
+/**
+ * What a tap in the shopping widget does (plan §10 Fas 3 "Klart när": the widget checks an item
+ * off offline and it is synced later): the same `setChecked` as Handla, through the outbox, so
+ * it waits for the network like any other check (core:sync `ShoppingSyncTest`).
+ */
+internal object WidgetActions {
+    suspend fun check(shopping: ShoppingRepository, entryId: Long): Outcome<Unit> = shopping.setChecked(listOf(entryId), checked = true)
 }
 
 @Composable

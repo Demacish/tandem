@@ -56,4 +56,12 @@
     <string name="home_section_favorites">Favoriter</string>
     <string name="home_section_favorites_subtitle">Hushållets favoritrecept</string>
     <string name="home_favorites_all">Visa alla</string>
+    <!-- Fas 3:s rester: "Anpassa Idag" (radernas ordning och vilka som visas). -->
+    <string name="home_customize">Anpassa Idag</string>
+    <string name="home_customize_title">Anpassa Idag</string>
+    <string name="home_customize_hint">Välj vilka receptrader Idag visar och i vilken ordning. Sparas i telefonen.</string>
+    <string name="home_customize_move_up">Flytta upp %1$s</string>
+    <string name="home_customize_move_down">Flytta ned %1$s</string>
+    <string name="home_customize_reset">Återställ</string>
+    <string name="home_customize_done">Klar</string>
 </resources>

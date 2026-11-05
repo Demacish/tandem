@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.Edit
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.home.HomeSection
@@ -94,6 +95,7 @@ fun TodayScreen(
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
     ReportContentReady(ready = !state.loading)
+    if (state.customizing) TodayCustomizeSheet(layout = state.layout, onAction = onAction)
     val spacing = TandemTheme.spacing
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -287,6 +289,15 @@ private fun TodayContent(
                 )
             }
         }
+        // Fas 3's leftovers: "Anpassa Idag" orders and hides the carousels above.
+        item(key = "customize") {
+            TandemTextButton(
+                text = stringResource(R.string.home_customize),
+                onClick = { onAction(HomeAction.Customize(open = true)) },
+                leadingIcon = TandemIcons.Edit,
+                modifier = Modifier.padding(horizontal = horizontal),
+            )
+        }
         if (state.sections.isEmpty()) {
             item(key = "sections-empty") {
                 Text(
@@ -469,7 +480,7 @@ private fun RecipeRow(
 }
 
 /** Title and subtitle of a carousel. */
-private fun HomeSectionType.texts(): Pair<Int, Int> = when (this) {
+internal fun HomeSectionType.texts(): Pair<Int, Int> = when (this) {
     HomeSectionType.PINNED -> R.string.home_section_pinned to R.string.home_section_pinned_subtitle
 
     HomeSectionType.OFTEN_COOKED -> R.string.home_section_often_cooked to R.string.home_section_often_cooked_subtitle

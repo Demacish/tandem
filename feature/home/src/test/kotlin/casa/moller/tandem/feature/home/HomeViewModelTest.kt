@@ -4,6 +4,8 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.home.HomeLayout
+import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.mealplan.MealType
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
@@ -55,6 +57,47 @@ class HomeViewModelTest {
             assertFalse(state.offline)
             assertEquals(DayPart.EVENING, state.dayPart)
         }
+    }
+
+    @Test
+    fun theUserOrdersAndHidesTheCarousels() = runTest {
+        // Fas 3's leftovers ("Hemsektioner som användaren konfigurerar"): saved on the device at once.
+        val viewModel = newViewModel()
+        viewModel.uiState.test {
+            awaitLoaded()
+            viewModel.onAction(HomeAction.Customize(open = true))
+            assertTrue(expectMostRecentItem().customizing)
+            viewModel.onAction(HomeAction.MoveSection(HomeSectionType.NEW, -2))
+            var state = expectMostRecentItem()
+            assertEquals(
+                listOf(HomeSectionType.NEW, HomeSectionType.PINNED, HomeSectionType.OFTEN_COOKED, HomeSectionType.NOT_COOKED_LATELY),
+                state.sections.map { it.type },
+            )
+            viewModel.onAction(HomeAction.ShowSection(HomeSectionType.PINNED, visible = false))
+            state = expectMostRecentItem()
+            val shown = listOf(HomeSectionType.NEW, HomeSectionType.OFTEN_COOKED, HomeSectionType.NOT_COOKED_LATELY)
+            assertEquals(shown, state.sections.map { it.type })
+            assertFalse(state.layout.isVisible(HomeSectionType.PINNED))
+            assertEquals(state.layout, home.layout.value)
+            viewModel.onAction(HomeAction.ResetSections)
+            state = expectMostRecentItem()
+            assertEquals(SampleRecipes.homeSections.map { it.type }, state.sections.map { it.type })
+            viewModel.onAction(HomeAction.Customize(open = false))
+            assertFalse(expectMostRecentItem().customizing)
+        }
+    }
+
+    @Test
+    fun aStoredLayoutSurvivesUnknownNamesAndKeepsNewSectionsLast() {
+        val layout = HomeLayout.decode("NEW,GONE,PINNED;NOT_COOKED_LATELY,GONE")
+        assertEquals(HomeSectionType.NEW, layout.types.first())
+        assertEquals(HomeSectionType.entries.toSet(), layout.types.toSet())
+        assertFalse(layout.isVisible(HomeSectionType.NOT_COOKED_LATELY))
+        val again = HomeLayout.decode(layout.encode())
+        assertEquals(layout.types, again.types)
+        assertEquals(layout.hidden, again.hidden)
+        assertEquals(HomeLayout(), HomeLayout.decode(null))
+        assertEquals(HomeLayout(), HomeLayout.decode("nonsens"))
     }
 
     @Test

@@ -1,7 +1,9 @@
 package casa.moller.tandem.feature.home
 
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.home.HomeLayout
 import casa.moller.tandem.core.model.home.HomeSection
+import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import kotlin.time.Instant
@@ -59,6 +61,8 @@ data class HomeUiState(
     val offline: Boolean = false,
     val lastSynced: Instant? = null,
     val syncRunning: Boolean = false,
+    val layout: HomeLayout = HomeLayout(),
+    val customizing: Boolean = false,
 ) {
     /** Nothing planned today: the "Nothing planned today. Plan the week →" card. */
     val nothingPlannedToday: Boolean
@@ -80,6 +84,20 @@ sealed interface HomeAction {
 
     /** "Plan the week": switch to the Week tab. */
     data object OpenWeek : HomeAction
+
+    // Fas 3's leftovers ("Hemsektioner som användaren konfigurerar"): "Anpassa Idag".
+
+    /** Opens (true) or closes the sheet that orders and hides the carousels. */
+    data class Customize(val open: Boolean) : HomeAction
+
+    /** Moves carousel [type] [offset] places (−1 up, +1 down). */
+    data class MoveSection(val type: HomeSectionType, val offset: Int) : HomeAction
+
+    /** Shows or hides carousel [type]. */
+    data class ShowSection(val type: HomeSectionType, val visible: Boolean) : HomeAction
+
+    /** Back to the default order with every carousel shown. */
+    data object ResetSections : HomeAction
 }
 
 /** One-off effects of [HomeViewModel] (plan 5.3). */

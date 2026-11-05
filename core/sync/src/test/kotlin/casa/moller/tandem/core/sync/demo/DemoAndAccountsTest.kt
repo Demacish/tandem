@@ -8,6 +8,7 @@ import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.recipe.RecipeDisplay
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.home.HomeLayout
 import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.recipe.RecipeQuery
@@ -80,6 +81,20 @@ class DemoAndAccountsTest {
         graph.recipes.markViewed(recipes.first().id)
         assertEquals(0, graph.demoDatabase.outboxDao().observeCount(DEMO_ACCOUNT_ID).first())
 
+        assertTrue("demo mode sends nothing: ${graph.server.requests}", graph.server.requests.isEmpty())
+    }
+
+    @Test
+    fun theTodayLayoutIsKeptOnTheDevicePerDatabaseAndNeverSent() = runBlocking {
+        // Fas 3's leftovers ("Hemsektioner som användaren konfigurerar"): demo mode has its own.
+        useDemo()
+        assertEquals(HomeLayout(), graph.home.observeLayout().first())
+        val changed = HomeLayout().move(HomeSectionType.NEW, -2).withVisible(HomeSectionType.PINNED, visible = false)
+        assertTrue(graph.home.setLayout(changed) is Outcome.Success)
+        val stored = graph.home.observeLayout().first()
+        assertEquals(changed.types, stored.types)
+        assertEquals(setOf(HomeSectionType.PINNED), stored.hidden)
+        assertTrue(graph.real.syncStateDao().get(ACCOUNT_ID, "home_layout") == null)
         assertTrue("demo mode sends nothing: ${graph.server.requests}", graph.server.requests.isEmpty())
     }
 

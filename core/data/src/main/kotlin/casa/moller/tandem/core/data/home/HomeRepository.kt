@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.data.home
 
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.home.HomeLayout
 import casa.moller.tandem.core.model.home.HomeSection
 import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import kotlinx.coroutines.flow.Flow
@@ -33,4 +34,14 @@ interface HomeRepository {
      * emit the result. Fails with the network or server error when offline or refused.
      */
     suspend fun refresh(): Outcome<Unit>
+
+    /**
+     * Fas 3's leftovers ("Hemsektioner som användaren konfigurerar"): the order and visibility of
+     * the carousels the user chose (on this device, per account; also in demo mode). The default
+     * layout until changed. [observeSections] keeps the default order: the screen arranges.
+     */
+    fun observeLayout(): Flow<HomeLayout>
+
+    /** Stores [layout] (on the device only, never sent). */
+    suspend fun setLayout(layout: HomeLayout): Outcome<Unit>
 }

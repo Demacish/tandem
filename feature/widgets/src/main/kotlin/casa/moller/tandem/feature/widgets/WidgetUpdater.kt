@@ -1,6 +1,8 @@
 package casa.moller.tandem.feature.widgets
 
+import android.content.ComponentName
 import android.content.Context
+import android.service.quicksettings.TileService
 import androidx.glance.appwidget.updateAll
 import casa.moller.tandem.core.data.di.ApplicationScope
 import dagger.hilt.android.EntryPointAccessors
@@ -15,7 +17,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Fas 3 (widgets lane): redraws the widgets when what they show changes while the process lives
- * (a sync, a check in the app, another member's change, logout). Started once by the
+ * (a sync, a check in the app, another member's change, logout), and asks the quick settings
+ * tile to read its count again. Started once by the
  * application, after Hilt. A redraw of a widget nobody placed is a no-op; a failure (the
  * launcher is gone) is ignored: the next change tries again.
  */
@@ -33,7 +36,11 @@ class WidgetUpdater @Inject constructor(
         started = true
         val data = WidgetData(entryPointProvider.get())
         scope.launch {
-            data.shopping.drop(1).debounce(DEBOUNCE_MILLIS).collect { runCatching { ShoppingListWidget().updateAll(context) } }
+            data.shopping.drop(1).debounce(DEBOUNCE_MILLIS).collect {
+                runCatching { ShoppingListWidget().updateAll(context) }
+                // Fas 3's leftovers: the tile "Handla" reads its count again too (plan §10 "Klart när").
+                runCatching { TileService.requestListeningState(context, ComponentName(context, ShoppingTileService::class.java)) }
+            }
         }
         scope.launch {
             data.tonight.drop(1).debounce(DEBOUNCE_MILLIS).collect { runCatching { TonightWidget().updateAll(context) } }
