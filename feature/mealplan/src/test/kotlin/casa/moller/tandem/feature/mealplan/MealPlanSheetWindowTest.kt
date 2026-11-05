@@ -48,7 +48,7 @@ class MealPlanSheetWindowTest {
     // fail as a window; the tablet sheet is covered by MealPlanScreenshotTest/MealPlanAccessibilityTest.
     @Test
     @Config(qualifiers = "sv-$PHONE")
-    fun suggestionsSheetWindow() = captureSuggestions("phone_window_week_suggestions_light_sv")
+    fun suggestionsSheetWindow() = captureSuggestions("phone_window_week_suggestions_light_sv", accessibility = false)
 
     @Test
     @Config(qualifiers = PHONE_LANDSCAPE)
@@ -56,17 +56,19 @@ class MealPlanSheetWindowTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
-    fun suggestionsSheetWindowFontScale2() = captureSuggestions("phone_window_week_suggestions_font2_light_sv", fontScale = 2f)
+    fun suggestionsSheetWindowFontScale2() =
+        captureSuggestions("phone_window_week_suggestions_font2_light_sv", fontScale = 2f, accessibility = false)
 
     /**
-     * The window and the pinned button only: ATF failed on these windows after the rows grew
-     * (the recording workflow does not report why; not investigated further, docs/BYGGE.md "Smarta
-     * förslag"). Every state of the panel itself is ATF-checked in MealPlanAccessibilityTest
-     * (phone, dark at font scale 2, tablet in both orientations).
+     * [accessibility] false on a portrait phone: the sheet then fills the window, and ATF's only
+     * finding is the scrim, whose clickable strip above the sheet is 1 dp high. Robolectric has no
+     * status bar; on a phone the strip is at least the status bar's height (docs/BYGGE.md "Smarta
+     * förslag"). The landscape window keeps ATF, and every state of the panel itself is checked in
+     * MealPlanAccessibilityTest (phone, dark at font scale 2, tablet in both orientations).
      */
-    private fun captureSuggestions(name: String, darkTheme: Boolean = false, fontScale: Float = 1f) {
+    private fun captureSuggestions(name: String, darkTheme: Boolean = false, fontScale: Float = 1f, accessibility: Boolean = true) {
         val state = MealPlanSamples.state().copy(suggestions = MealPlanSamples.suggestionsKeywordState)
-        captureWindow(name, darkTheme, fontScale, state)
+        captureWindow(name, darkTheme, fontScale, state, accessibility = accessibility)
         composeRule.onNodeWithTag(WEEK_SUGGESTIONS_ACCEPT_TAG, useUnmergedTree = true).assertIsDisplayed()
     }
 

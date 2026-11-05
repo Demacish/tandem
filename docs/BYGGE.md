@@ -1327,9 +1327,10 @@ från "Vardag" sparade som måltider, vald måltidstyp, inga träffar, skafferie
 `SUGGESTIONS*` (nu med chips och skafferirader), `SUGGESTIONS_KEYWORDS` (också teckenstorlek 2),
 `SUGGESTIONS_NO_KEYWORD_MATCH`, surfplatta liggande och stående (`tablet*_suggestions_keywords_*`),
 tillgänglighet för alla, och `MealPlanSheetWindowTest` (`*window_week_suggestions*`: arket som
-fönster på telefon stående/liggande och med teckenstorlek 2, "Lägg i veckan" syns). Fönstertesten
-kör inte ATF: ATF underkände dem när raderna blev högre, och inspelningskörningen visar inte varför
-(inte utrett; panelens alla tillstånd ATF-kontrolleras i `MealPlanAccessibilityTest`).
+fönster på telefon stående/liggande och med teckenstorlek 2, "Lägg i veckan" syns). Det liggande
+fönstertestet kör ATF. De stående gör det inte: arket fyller då fönstret och ATF:s enda fynd är
+skrimets klickbara remsa ovanför arket, 1 dp hög (Robolectric har ingen statusrad; på en telefon är
+remsan minst statusradens höjd). Panelens alla tillstånd ATF-kontrolleras i `MealPlanAccessibilityTest`.
 <!-- /Fas 4 smart -->
 
 <!-- Fas 4 listnotiser -->
