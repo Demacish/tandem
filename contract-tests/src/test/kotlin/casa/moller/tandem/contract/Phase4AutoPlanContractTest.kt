@@ -146,11 +146,14 @@ class Phase4AutoPlanContractTest {
     @Test
     @Order(20)
     fun theSameWeekAgain() {
+        val before = plansOfWeek(null)
         val body = autoPlan(listOfNotNull(keywordId), servings = SERVINGS)
         val answer = api("auto-plan-again", "POST", "/api/auto-plan/", body, record = false)
         observe("autoplan.again.status", answer.status)
+        observe("autoplan.again.added", newPlans(before).size)
         observe("autoplan.again.total", plansOfWeek(null).size)
-        deletePlansOfWeek()
+        observe("cleanup.deleted", deletePlansOfWeek(recordFirst = true))
+        observe("cleanup.left", plansOfWeek(null).size)
     }
 
     // --- c. Two keywords --------------------------------------------------------------------------------
@@ -158,9 +161,10 @@ class Phase4AutoPlanContractTest {
     @Test
     @Order(30)
     fun twoKeywords() {
+        val before = plansOfWeek(null)
         val answer = api("auto-plan-two-keywords", "POST", "/api/auto-plan/", autoPlan(listOfNotNull(keywordId, quickKeywordId), SERVINGS))
         observe("autoplan.twoKeywords.status", answer.status)
-        val plans = plansOfWeek(null)
+        val plans = newPlans(before)
         observe("autoplan.twoKeywords.created", plans.size)
         observe("autoplan.twoKeywords.distinctRecipes", plans.mapNotNull { it.objAt("recipe")?.longAt("id") }.distinct().size)
         deletePlansOfWeek()
@@ -171,11 +175,13 @@ class Phase4AutoPlanContractTest {
     @Test
     @Order(40)
     fun edges() {
+        var before = plansOfWeek(null)
         val none = api("auto-plan-no-recipes", "POST", "/api/auto-plan/", autoPlan(listOfNotNull(emptyKeywordId), SERVINGS))
         observe("autoplan.noRecipes", describe(none))
-        observe("autoplan.noRecipes.created", plansOfWeek(null).size)
+        observe("autoplan.noRecipes.created", newPlans(before).size)
         deletePlansOfWeek()
 
+        before = plansOfWeek(null)
         val dateOnly = api(
             "auto-plan-date-only",
             "POST",
@@ -183,12 +189,16 @@ class Phase4AutoPlanContractTest {
             autoPlan(listOfNotNull(keywordId), SERVINGS, start = monday.toString(), end = sunday.toString()),
         )
         observe("autoplan.dateOnly", describe(dateOnly))
-        observe("autoplan.dateOnly.created", plansOfWeek(null).size)
+        observe("autoplan.dateOnly.created", newPlans(before).size)
         deletePlansOfWeek()
 
+        before = plansOfWeek(null)
+        val guestBefore = plansOfWeek(null, env.guestToken)
         val guest = api("auto-plan-guest", "POST", "/api/auto-plan/", autoPlan(listOfNotNull(keywordId), SERVINGS), token = env.guestToken)
         observe("autoplan.guest", describe(guest))
-        observe("autoplan.guest.created", plansOfWeek(null).size)
+        observe("autoplan.guest.createdSeenByOwner", newPlans(before).size)
+        observe("autoplan.guest.createdSeenByGuest", newPlans(guestBefore, env.guestToken).size)
+        deletePlansOfWeek(token = env.guestToken)
         deletePlansOfWeek()
     }
 
@@ -243,16 +253,24 @@ class Phase4AutoPlanContractTest {
         "addshopping" to false,
     )
 
-    /** The meal plans of the far week (recorded as [name] when given). */
-    private fun plansOfWeek(name: String?): List<JsonObject> {
-        val path = "/api/meal-plan/?from_date=$monday&to_date=$sunday"
-        val answer = if (name == null) read(path) else api(name, "GET", path)
+    /** The meal plans of the far week as [token] sees them (recorded as [name] when given). */
+    private fun plansOfWeek(name: String?, token: String = env.fas1Token): List<JsonObject> {
+        val path = "/api/meal-plan/?from_date=$monday&to_date=$sunday&page_size=$PAGE_SIZE"
+        val answer = if (name == null) read(path, token) else api(name, "GET", path, token = token)
         return pageOrArray(answer.json)
     }
 
-    private fun deletePlansOfWeek() {
-        plansOfWeek(null).mapNotNull { it.longAt("id") }.forEach { api("cleanup", "DELETE", "/api/meal-plan/$it/", record = false) }
+    /** The plans of the far week that were not in [before] (as [token] sees them). */
+    private fun newPlans(before: List<JsonObject>, token: String = env.fas1Token): List<JsonObject> {
+        val old = before.mapNotNull { it.longAt("id") }.toSet()
+        return plansOfWeek(null, token).filter { it.longAt("id") !in old }
     }
+
+    /** Deletes the far week's plans [token] sees; the statuses (the first one recorded when [recordFirst]). */
+    private fun deletePlansOfWeek(token: String = env.fas1Token, recordFirst: Boolean = false): List<Int> =
+        plansOfWeek(null, token).mapNotNull { it.longAt("id") }.mapIndexed { index, id ->
+            api("meal-plan-delete", "DELETE", "/api/meal-plan/$id/", token = token, record = recordFirst && index == 0).status
+        }.distinct()
 
     private fun api(
         name: String,
@@ -303,6 +321,7 @@ class Phase4AutoPlanContractTest {
         const val MEAL_TYPE_ORDER = 99
         const val SERVINGS = 3
         const val DATE_LENGTH = 10
+        const val PAGE_SIZE = 100
         val RECIPES = listOf("$PREFIX köttbullar", "$PREFIX fiskgratäng", "$PREFIX linsgryta")
 
         /**
@@ -321,10 +340,11 @@ class Phase4AutoPlanContractTest {
             "autoplan.week.days" to 7,
             "autoplan.week.servings" to listOf(3.0),
             "autoplan.week.mealTypeIsTheChosen" to true,
+            "autoplan.again.added" to 7,
             "autoplan.again.total" to 14,
-            "autoplan.twoKeywords.distinctRecipes" to 1,
-            "autoplan.guest.status" to 403,
-            "autoplan.guest.created" to 0,
+            "cleanup.left" to 0,
+            "autoplan.noRecipes.status" to 400,
+            "autoplan.noRecipes.created" to 0,
         )
     }
 }
