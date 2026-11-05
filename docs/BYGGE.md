@@ -1067,6 +1067,7 @@ kan tas upp igen där det avbröts.
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
 | Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ✅ klart 2026-11-04 (commit a520d09; PR-körningen grön på a520d09, röktest grönt på 145d2f3), referensbilder incheckade | "Smarta förslag" |
+| Smarta förslag enligt "Klart när" (butiksordning efter 3 turer, återkommande varor med lokal historik, autoplan med nyckelord och skafferi) | 🔧 lane fas4-kvar 2026-11-05 (gren `fas4/fas4-kvar`), se "Smarta förslag" | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten inte påbörjad | "Listnotiser" |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
@@ -1158,77 +1159,128 @@ referensbilder `scan/*recipe_text*`), `ScanKeysTest`; importens referensbilder v
 ## Smarta förslag (`:feature:shopping`, `:feature:mealplan`, Fas 4)
 
 ROADMAP Fas 4 "Inlärd butiksordning, återkommande varor, förslag på veckans matsedel". Allt är
-lokala regler över data appen redan har (listan, historiken, matsedeln, receptöversikterna):
-ingen ny Tandoor-endpoint, inga schemaändringar, ingenting skickas till någon tjänst.
+lokala regler över data appen redan har (listan, historiken, matsedeln, receptöversikterna,
+"Använd upp"): ingen ny Tandoor-endpoint, ingen schemaändring (butiksturerna ligger i
+`sync_state`), ingenting skickas till någon tjänst förrän användaren sparar. Lane fas4-kvar
+(2026-11-05) gjorde delarna klara mot plan §10 Fas 4 "Klart när".
 
 ### Inlärd butiksordning
 
 Butiksläget (`StoreModeViewModel`) minns i vilken ordning kategorierna bockas av (första
 avbockningen i varje kategori; `store-mode.visited` i `SavedStateHandle`, så ordningen överlever
-rotation och processdöd som resten av turen). `LearnedAisleOrder.of(store, visited)` ger
-`LearnedOrder(supermarketId, relationIds, names)`: de besökta hyllorna först i besöksordning, sedan
-resten som förut – eller null när det inte finns någon butik, färre än två av butikens hyllor
-besökts, eller ordningen redan är butikens. Kategorier som inte är hyllor i butiken ("Övrigt",
-okända) påverkar inget.
+rotation och processdöd som resten av turen) och sparar turen så fort två kategorier besökts:
+`StoreTripRepository` (`:core:data`; `StoreTrip(supermarketId, startedAt, categoryIds)` i
+`:core:model`) implementeras av `SyncStateStoreTripRepository` (`:core:sync`, Hilt-modulen
+`StoreTripModule`): en `sync_state`-rad per konto (`entity = "store_trips"`, JSON i `hash`), högst
+10 turer per butik och 20 butiker, samma tur (butik + start) skrivs över när den växer, demoläget
+har sina egna turer i demodatabasen, en trasig rad läses som inga turer.
+
+`StoreOrderLearning` (`:core:domain`, rent) väger ihop de senaste turerna (högst 5, var och en med
+minst två av butikens kategorier): parvis majoritet (andelen turer med båda som tog a före b minus
+tvärtom, så en tur som hoppade över en kategori inte flyttar den), sedan medelposition, sedan
+butikens ordning; därefter byts grannar så länge det ökar överensstämmelsen. Överensstämmelsen är
+andelen besökta kategorier som ligger i förslagets ordning (per tur den längsta delföljden i turens
+ordning, summerat). Ett förslag ges **först efter 3 turer** och **bara när överensstämmelsen är
+minst 80 %** (plan §10 Fas 4 "Klart när"), och inte när det är butikens ordning redan.
+`LearnedAisleOrder.of(store, trips)` gör om det till `LearnedOrder(supermarketId, relationIds,
+names, trips)`: de besökta hyllorna i den inlärda ordningen, sedan resten som förut. Turen som
+pågår räknas med (dess egen sparade kopia filtreras bort).
 
 Kortet "Spara ordningen du handlade i?" (`CalloutCard`, `STORE_MODE_ORDER_TAG`) visas ovanför
 listan och på "Allt är i korgen"-sidan, med "Spara ordningen" (`SupermarketRepository.reorderAisles`,
 köas offline som andra ändringar; snackbar `ShoppingMessage.OrderSaved`) och "Nej tack" (döljs
 för resten av turen, `store-mode.orderDismissed`). Gäster ser inget kort. Tandoors `order` på
-`SupermarketCategoryRelation` är det som sparas – samma fält som butiksredigeringen i Tandoor.
+`SupermarketCategoryRelation` är det som sparas – samma fält som butiksredigeringen på webben, så
+ordningen syns där efter godkännandet.
 
-Tester: `LearnedAisleOrderTest`, `StoreModeViewModelTest` (ordning, processdöd, spara, nej tack,
-butikens egen ordning), `ShoppingScreenTest.theLearnedOrderCardSavesOrDeclines`, skott och
-tillgänglighet för `STORE_MODE_LEARNED_ORDER` och `STORE_MODE_DONE_LEARNED_ORDER`.
+Tester: `StoreOrderLearningTest` (`:core:domain`: tre turer med en felbockning var ger turens
+ordning; 500 syntetiska butiker med 8–12 kategorier, upp till två överhoppade och ett grannbyte per
+tur ger alltid ett förslag med ≥ 80 %; turer som inte är överens, butikens egen ordning, bara de
+nyaste turerna), `LearnedAisleOrderTest`, `StoreTripRepositoryTest` (`:core:sync`),
+`StoreModeViewModelTest` (tredje turen erbjuder, en eller två räcker inte, varje tur sparas,
+processdöd, spara, nej tack), `ShoppingScreenTest.theLearnedOrderCardSavesOrDeclines`, skott och
+tillgänglighet för `STORE_MODE_LEARNED_ORDER` och `STORE_MODE_DONE_LEARNED_ORDER` (oförändrade).
 
 ### Återkommande varor ("Dags igen?")
 
-`RecurringItems.due(history, onList, now, limit)` i `:feature:shopping` läser den lokala
-historiken (`ShoppingRepository.observeHistory`, det som åldrats ut från Tandoors lista, plan 8.2):
-en vara som köpts minst tre gånger på olika dagar, med ett typiskt intervall (medianen) på 2–60
-dagar, är "dags igen" när 80 % av intervallet gått sedan senaste köpet. Varor som redan står på
-listan (avbockade eller inte) föreslås inte; mest försenad först, högst sex; namnet stavas som
-senast. `ShoppingViewModel.due` kombinerar historiken med listan och `AddItemState.due` visas
-som chips under "Dags igen?" före "Köpt nyligen" (som då inte upprepar samma varor) när fältet
-är tomt. Samma `AddFood`-åtgärd som andra chips.
+`RecurringItems.dueFor(history, entries, now, limit)` i `:feature:shopping` läser **alla köp
+telefonen känner till**: den lokala historiken (`ShoppingRepository.observeHistory`, det som
+åldrats ut ur Tandoors fönster och arkiverats av `ShoppingReader`, plan §3.5/§8.2; raderas aldrig
+utom med kontot, `ShoppingSyncTest` visar arkiveringen efter fönstret) **plus avbockade rader som
+ännu står kvar på listan** (inom fönstret, inte arkiverade än; `RecurringItems.purchases`, samma
+rad räknas en gång). En vara som köpts minst tre gånger på olika dagar, med ett typiskt intervall
+(medianen, medel av de två mittersta vid jämnt antal) på 2–60 dagar, är "dags igen" när 80 % av
+intervallet gått sedan senaste köpet, men inte när intervallet missats tre gånger om (rytmen har
+upphört). Bara **oavbockade** varor på listan utesluts; mest försenad först, högst sex; namnet
+stavas som senast. `ShoppingViewModel.due` kombinerar historiken med listan och `AddItemState.due`
+visas som chips under "Dags igen?" före "Köpt nyligen" (som då inte upprepar samma varor) när
+fältet är tomt. Samma `AddFood`-åtgärd som andra chips.
 
-Ingen inställning och ingen lagring: förslagen räknas om från historiken varje gång. Historiken
-finns bara på den här telefonen (Tandoor sparar inte avbockade rader längre än
-`shopping_recent_days`), så förslagen blir bättre ju längre appen använts.
+Ingen inställning och ingen lagring utöver historiken. Historiken finns bara på den här telefonen
+(Tandoor visar inte avbockade rader längre än `shopping_recent_days`, högst 14 dagar), så förslagen
+blir bättre ju längre appen använts.
 
-Tester: `RecurringItemsTest`, `ShoppingViewModelTest.foodsBoughtRegularlyAreDueAgainAndLeaveTheRecentChips`.
+Tester: `RecurringItemsTest` (syntetiska historiker: tre köp på sex veckor föreslås även när alla
+är äldre än 14 dagar, intervall 3/7/10/14/21 dagar med en–två dagars spridning hittas inom ±3
+dagar, avbockade rader på listan räknas, oavbockade utesluts, avslutad rytm),
+`ShoppingViewModelTest.foodsBoughtRegularlyAreDueAgainAndLeaveTheRecentChips`.
 
-### Förslag på veckans matsedel
+### Förslag på veckans matsedel (autoplan, plan §8.3 #31)
 
-Stitch-skissen `f_resl_veckan_notiser` (övre halvan) visar förslag med skafferimatchning och
-"smart veckovinst"; det här bygger den enkla kärnan utan skafferi och AI: en lokal rangordning av
-receptöversikterna appen redan har (`RecipeRepository.observeRecipes(RecipeQuery.All)`, läses en
-gång per öppnat ark).
+Stitch-skissen `f_resl_veckan_notiser` (övre halvan) visar förslag med skafferimatchning. En
+lokal rangordning av receptöversikterna appen redan har (`RecipeRepository.observeRecipes(RecipeQuery.All)`)
+och "Använd upp" (`MakeNowRepository.observe`, de recept som använder något som går ut inom tre
+dagar, `UseUpRanking`), lästa en gång per öppnat ark.
+
+**Beslut: Tandoors `POST /api/auto-plan/` används inte.** Kontraktstestet
+`Phase4AutoPlanContractTest` (eget steg i `contract.yml`, inspelningar i
+`api-schema/fixtures/<version>/fas4/autoplan/`, FACTS "Fas 4 – auto-plan") visar på 2.6.13 och
+2.7.1: svaret är 200 med ett eko av frågan (inga id för de skapade måltiderna, så "Ångra" och den
+lokala matsedeln skulle behöva läsa om veckan); servern skapar en måltid per dag direkt (de syns på
+webben) men **upprepar recept** när färre recept har nyckelordet än det finns dagar, och **lägger
+till sju nya även om veckan redan är planerad**; inga recept ger 400 `{"error": true, "msg": "No
+recipes found."}`. Det går inte heller offline, i demoläget eller med skafferimatchning. Appen gör
+därför samma sak lokalt och sparar resultatet som **vanliga måltider** (`MealPlanRepository.create`,
+köas offline), som syns på webben som allt annat i matsedeln.
 
 `WeekSuggestions` (`:feature:mealplan`, rena funktioner):
 
 - `mainMealType(days, mealTypes)`: måltidstypen med senast klockslag (middag); utan klockslag den
-  typ flest av veckans receptmåltider har, annars den sista i ordningen.
-- `freeDays`: veckans dagar från och med idag utan en sådan måltid.
-- `ranked(days, candidates, now)`: inte redan i veckan; de som inte lagats de senaste 14 dagarna
-  före de som lagats nyligen; sedan `timesCooked + 2 × betyg + 1,5 för nya`.
-- `suggest(..., seed)`: ett förslag per ledig dag. Frö 0 tar de bästa i ordning; "Slumpa om"
-  (frö n+1) drar samma dagar ur en pott om två kandidater per dag i slumpad men deterministisk
-  ordning, så förslagen förblir bra men byts. `swap` byter en dag till nästa recept i kön som inte
-  redan visas.
+  typ flest av veckans receptmåltider har, annars den sista i ordningen. Användaren kan välja en
+  annan i arket.
+- `freeDays`: veckans dagar från och med idag utan en sådan måltid (nästa vecka: alla sju).
+- `matching(candidates, keywordIds)`: recept med **alla** valda nyckelord (som auto-plans `and`);
+  `keywordChoices`: de tolv mest använda nyckelorden, valda alltid med.
+- `ranked(days, candidates, now, expiring)`: inte redan i veckan; de som inte lagats de senaste 14
+  dagarna före de som lagats nyligen; sedan de som använder flest varor som snart går ut (tidigast
+  först); sedan `timesCooked + 2 × betyg + 1,5 för nya`.
+- `suggest(..., seed, mealTypeId, keywordIds, expiring)`: ett förslag per ledig dag, **aldrig samma
+  recept två gånger** (färre recept än dagar lämnar dagar tomma). Frö 0 tar de bästa i ordning;
+  "Slumpa om" (frö n+1) drar samma dagar ur en pott om två kandidater per dag. `swap` byter en dag
+  till nästa recept i kön (med samma nyckelord) som inte redan visas. `noKeywordMatch` när
+  nyckelorden inte lämnar något men andra recept finns.
 
-`WeekViewModel`: `Suggest` öppnar arket (`WeekUiState.suggestions`, aldrig för gäst;
-`canSuggest` = får planera och veckan har en dag kvar); `AcceptSuggestions` skapar
-`MealPlanDraft` per förslag med samma portioner som flest av veckans måltider av typen (annars 2),
-stannar vid första felet, visar `WeekMessage.Suggested(n)` och "Ångra" tar bort de skapade
-(`removeAll`). Arket (`WeekSuggestionsPanel`, `WEEK_SUGGESTIONS_TAG`, raderna
-`suggestionTag(date)`): veckodag, recept, tid, "Byt ut" och "Hoppa över" per rad; "Slumpa om",
-"Avbryt", "Lägg n måltider i veckan". Kortet `SuggestWeekCard` (`WEEK_SUGGEST_CARD_TAG`) ligger
-efter dagarna i agendan och tvåpanelsvyn, före "Handla för veckan"; i rutnätet är det en textknapp
-i huvudet.
+`WeekViewModel` (nu med `MakeNowRepository`): `Suggest` öppnar arket (aldrig för gäst;
+`canSuggest` = får planera och veckan har en dag kvar); `SuggestMealType(id)` och
+`ToggleSuggestKeyword(id)` föreslår om (valen gäller så länge Veckan är öppen); `AcceptSuggestions`
+skapar `MealPlanDraft` per förslag med samma portioner som flest av veckans måltider av typen
+(annars 2), stannar vid första felet, visar `WeekMessage.Suggested(n)` och "Ångra" tar bort de
+skapade. Arket (`WeekSuggestionsSheetLayout`: innehållet rullar, knapparna "Slumpa om", "Avbryt" och
+"Lägg n måltider i veckan" (`WEEK_SUGGESTIONS_ACCEPT_TAG`) ligger fast under, som
+`RecipeShoppingSheetLayout`): rubrik, förklaring, måltidschips (`suggestionMealTypeTag`),
+nyckelordschips (`suggestionKeywordTag`), raderna (`suggestionTag(date)`): veckodag, recept, tid,
+"Använder n råvaror som går ut snart" (en TalkBack-nod per rad), "Byt ut" och "Hoppa över". Kortet
+`SuggestWeekCard` (`WEEK_SUGGEST_CARD_TAG`) ligger efter dagarna i agendan och tvåpanelsvyn, före
+"Handla för veckan"; i rutnätet är det en textknapp i huvudet.
 
-Tester: `WeekSuggestionsTest`, `WeekViewModelTest` (förslag/acceptera/ångra, byt/slumpa/hoppa
-över/avbryt, gäst och full vecka).
+Tester: `WeekSuggestionsTest` (nyckelord alla måste matcha, valen, sju olika recept på nästa vecka
+med vald måltid och nyckelord för 20 frön, färre recept än dagar, inget matchar, skafferiet först),
+`WeekViewModelTest` (förslag/acceptera/ångra, byt/slumpa/hoppa över/avbryt, sju middagar nästa vecka
+från "Vardag" sparade som måltider, vald måltidstyp, inga träffar, skafferiet), skotten
+`SUGGESTIONS*` (nu med chips och skafferirader), `SUGGESTIONS_KEYWORDS` (också teckenstorlek 2),
+`SUGGESTIONS_NO_KEYWORD_MATCH`, tillgänglighet för alla, och `MealPlanSheetWindowTest`
+(`*window_week_suggestions*`: arket som fönster på telefon stående/liggande, surfplatta i båda
+orienteringarna och teckenstorlek 2, "Lägg i veckan" syns).
 <!-- /Fas 4 smart -->
 
 <!-- Fas 4 listnotiser -->

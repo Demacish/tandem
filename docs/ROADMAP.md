@@ -89,8 +89,9 @@ Påbörjat 2026-11-04.
 - ✅ Inlärd butiksordning, återkommande varor, förslag på veckans matsedel: butiksläget erbjuder
   att spara ordningen du handlade i som butikens gångordning; "Dags igen?" i Lägg till föreslår
   varor som brukar köpas med jämna mellanrum; "Föreslå veckans matsedel" i Veckan fyller lediga
-  dagar med recept ni lagar ofta men inte nyligen. Allt räknas lokalt. Kvar: skafferimatchning i
-  förslagen (Stitch-skissens "räddar 3 råvaror").
+  dagar med recept ni lagar ofta men inte nyligen, med valda nyckelord och måltid, utan dubbletter
+  och med det som snart går ut hemma först. Butiksordningen föreslås efter tre turer som stämmer
+  till minst 80 %. Allt räknas lokalt (Tandoors auto-plan används inte, se BYGGE).
 - ✅ Notiser när någon i hushållet ändrar listan: bakgrundssynken ser andras ändringar och en
   notis (av som standard, slås på under Synk och lagring) visar dem när appen inte är på skärmen.
   Kvar: snabbare push via en valfri liten tjänst som man kan köra själv.

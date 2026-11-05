@@ -12,14 +12,18 @@ Början på Fas 4 ("Smart hushåll").
   utskrift (eller välja en bild). Texten läses i telefonen, utan AI-tjänst och utan att något
   skickas någonstans, och öppnas i redigeraren där du granskar den innan receptet sparas. Ett
   långt recept kan vara flera foton.
-- **Inlärd butiksordning:** när du i butiksläget bockar av i en annan ordning än butikens
-  gångordning frågar appen om den ska spara ordningen du handlade i. Ordningen blir butikens
-  gångordning i Tandoor, så listan sorteras så nästa gång.
+- **Inlärd butiksordning:** butiksläget minns i vilken ordning du bockar av i varje butik. Efter
+  tre turer i ungefär samma ordning (minst 80 % av kategorierna) frågar appen om den ska spara
+  ordningen. Den blir butikens gångordning i Tandoor, så den syns på webben och listan sorteras
+  så nästa gång.
 - **Dags igen?** Varor du brukar köpa med jämna mellanrum föreslås i "Lägg till" när det är dags
-  igen, räknat på listans egen historik i telefonen.
-- **Föreslå veckans matsedel:** ett kort i Veckan föreslår en middag för varje dag som saknar
-  en, utifrån vad ni lagar ofta och inte lagat nyligen. Byt ut eller hoppa över en dag, slumpa om,
-  och lägg in dem i veckan med ett tryck (går att ångra).
+  igen, räknat på listans egen historik i telefonen (också det som Tandoor inte längre visar).
+- **Föreslå veckans matsedel:** ett kort i Veckan föreslår ett recept för varje dag som saknar
+  en middag (eller den måltid du väljer), utifrån vad ni lagar ofta och inte lagat nyligen. Välj
+  nyckelord som "Vardag" eller "Snabbt", så har förslagen dem; samma recept kommer aldrig två
+  gånger. Recept som använder det som snart går ut hemma kommer först ("Använder 2 råvaror som går
+  ut snart"). Byt ut eller hoppa över en dag, slumpa om, och lägg in dem i veckan med ett tryck
+  (går att ångra); de syns på webben som vanliga måltider.
 - **Notis när någon ändrar listan:** slå på under Synk och lagring, så säger telefonen till när
   bakgrundssynken ser att någon annan i hushållet lagt till, bockat av eller tagit bort varor.
   Bara när Tandem inte är på skärmen; tryck på notisen öppnar listan.
