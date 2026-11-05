@@ -122,7 +122,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
 
     /** Fas 4 "Dags igen?": foods bought regularly that are due again ([RecurringItems]). */
     private val due: Flow<List<String>> = combine(shopping.observeHistory(), shopping.observeEntries()) { history, entries ->
-        RecurringItems.due(history, entries.map { it.food.name }, clock.now(), DUE_ITEMS)
+        RecurringItems.dueFor(history, entries, clock.now(), DUE_ITEMS)
     }
 
     private val addState: Flow<AddItemState> = combine(addText, suggestions, recent, due) { text, found, recentFoods, dueFoods ->
