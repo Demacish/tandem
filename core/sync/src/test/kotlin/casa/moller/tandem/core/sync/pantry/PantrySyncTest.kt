@@ -19,6 +19,7 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import kotlin.time.Duration.Companion.days
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.plus
 import kotlinx.serialization.json.Json
@@ -336,6 +337,58 @@ class PantrySyncTest {
             assertEquals(3, tandoor.requests("POST", "/api/inventory-location/").size)
         } finally {
             // Not phoneB.close(): the server is this phone's too.
+            phoneB.scope.cancel()
+            phoneB.real.close()
+            phoneB.demoDatabase.close()
+        }
+    }
+
+    /**
+     * Fas 4 (skafferinotis lane, the Fas S rest): two phones open Hemma for the first time at the same
+     * moment and BOTH find no Kyl before either creates one. Phone B's whole drain runs between phone
+     * A's check and A's POST of Kyl, so A creates a second Kyl; A reads the locations again, finds
+     * B's older Kyl, deletes its own and uses B's: its entry, its local rows and `id_mapping` follow.
+     */
+    @Test
+    fun twoPhonesCreatingTheDefaultsInTheSameMomentKeepTheOlderOnes() = forEachVersion {
+        val phoneB = SyncTestGraph(server = graph.server, databasePrefix = "b-", serverVersion = version)
+        try {
+            PantrySyncEnv.mirror(phoneB)
+            ok(pantry.ensureDefaultLocations(graph.remote))
+            ok(phoneB.pantry.ensureDefaultLocations(phoneB.remote))
+            val aFridge = pantry.observeLocations().first().single { it.name == "Kyl" }
+            val cream = value(pantry.addEntry(InventoryEntryDraft(aFridge.id, "grädde")))
+            val bFridge = phoneB.pantry.observeLocations().first().single { it.name == "Kyl" }
+            value(phoneB.pantry.addEntry(InventoryEntryDraft(bFridge.id, "mjölk")))
+            tandoor.beforeLocationCreate = {
+                runBlocking {
+                    for (attempt in 1..10) {
+                        val result = phoneB.outbox.drain(phoneB.remote)
+                        if (result == DrainResult.DONE && phoneB.real.outboxDao().observeCount(ACCOUNT_ID).first() == 0) break
+                    }
+                }
+            }
+
+            drainAll()
+
+            assertNull("phone B ran in between", tandoor.beforeLocationCreate)
+            assertEquals(0, phoneB.real.outboxDao().observeCount(ACCOUNT_ID).first())
+            val own = tandoor.locations().filter { it.householdId == FakePantryTandoor.OWN_HOUSEHOLD }
+            assertEquals(listOf("Kyl", "Frys", "Skafferi"), own.map { it.name })
+            // B's three, A's duplicate Kyl, and nothing more.
+            assertEquals(4, tandoor.requests("POST", "/api/inventory-location/").size)
+            assertEquals(1, tandoor.requests("DELETE", "/api/inventory-location/").size)
+            val fridge = own.single { it.name == "Kyl" }
+            assertEquals(setOf("grädde", "mjölk"), tandoor.entries().filter { it.locationId == fridge.id }.map { it.foodName }.toSet())
+            assertEquals(2, tandoor.entries().size)
+
+            // Phone A's own rows point at B's locations: no temporary id, no duplicate left.
+            val aLocations = pantry.observeLocations().first()
+            assertEquals(own.map { it.id }.toSet(), aLocations.map { it.id }.toSet())
+            assertEquals(fridge.id, graph.real.idRewriteDao().current(ACCOUNT_ID, "inventory_location", aFridge.id))
+            assertEquals(fridge.id, pantry.observeEntry(cream.id).first()!!.locationId)
+            assertEquals(fridge.id, phoneB.pantry.observeLocations().first().single { it.name == "Kyl" }.id)
+        } finally {
             phoneB.scope.cancel()
             phoneB.real.close()
             phoneB.demoDatabase.close()

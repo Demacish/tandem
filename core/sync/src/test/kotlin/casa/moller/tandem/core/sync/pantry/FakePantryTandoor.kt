@@ -77,10 +77,26 @@ internal class FakePantryTandoor(private val version: String) {
     private val foodTemplate = entryTemplate.getValue("food").jsonObject
     private val householdTemplate = locationTemplate.getValue("household").jsonObject
 
+    /**
+     * Fas 4 (skafferinotis lane): runs ONCE right before the next `POST inventory-location/` is answered,
+     * outside this fake's lock, so "another phone" can send its own changes in between (two phones
+     * that both checked before either created).
+     */
+    @Volatile
+    var beforeLocationCreate: (() -> Unit)? = null
+
     /** Installs this fake in front of whatever [server] answered before (another fake, then the recordings). */
     fun install(server: FakeTandoorServer) {
         val previous = server.handler
-        server.handler = { request -> answer(request) ?: previous?.invoke(request) }
+        server.handler = { request ->
+            if (request.method == "POST" && request.url.encodedPath == LOCATIONS) {
+                beforeLocationCreate?.let { hook ->
+                    beforeLocationCreate = null
+                    hook()
+                }
+            }
+            answer(request) ?: previous?.invoke(request)
+        }
     }
 
     // ------------------------------------------------------------------------------ state

@@ -160,6 +160,9 @@ internal class InventoryLocationOutboxHandler @Inject constructor(
             is Outcome.Success -> {
                 val created = sent.value
                 val serverId = created.id ?: return OutboxResult.Failed(TandemError.Decode("inventory-location-without-id"))
+                // Fas 4 (skafferinotis lane, Fas S rest): two phones that checked at the same moment both
+                // found nothing and both created. Read again: an OLDER same default of the household wins.
+                if (isDefault) olderTwin(remote, name, householdId, serverId)?.let { older -> return mergeInto(remote, older, serverId) }
                 if (stored != null) {
                     // The server's household name (the nested write may have normalised it).
                     val updated = stored.copy(
@@ -171,6 +174,50 @@ internal class InventoryLocationOutboxHandler @Inject constructor(
                 OutboxResult.Created(serverId)
             }
         }
+    }
+
+    /**
+     * Fas 4 (skafferinotis lane), the Fas S rest "two phones opening Hemma at the same moment": after
+     * creating default location [createdId], the household's locations are read again; the oldest
+     * other location with the same name in the same household that no create of this device claimed
+     * (another phone's default, created between this phone's check and its POST) is returned. Null
+     * when there is none or the list cannot be read (the location then simply stays).
+     */
+    private suspend fun olderTwin(remote: ActiveSource.Remote, name: String?, householdId: Long?, createdId: Long): Long? {
+        if (name == null) return null
+        val listed = caller.call(remote, background = true) {
+            val api: TandoorApi = this
+            Paginator.fetchAll(maxPages = PantryReader.MAX_PAGES) { page -> api.inventory.locations(page.takeIf { it > 1 }) }
+        }
+        val items = (listed as? Outcome.Success)?.value?.items ?: return null
+        val claimed = claimedServerIds(databases, remote, OutboxEntities.INVENTORY_LOCATION)
+        return items.asSequence()
+            .mapNotNull { item -> item.id?.takeIf { item.name == name && item.household?.id == householdId } }
+            .filter { it < createdId && it !in claimed }
+            .minOrNull()
+    }
+
+    /**
+     * This phone's new default [duplicateId] gives way to [older]: the create is answered with [older],
+     * so the outbox rewrites this phone's temporary id everywhere (its entries, queued changes,
+     * `id_mapping`) and its entries are created there; nothing was put in the duplicate yet (the
+     * reader lock is held), so it is deleted at once. If that fails, a DELETE is queued, so the
+     * household never keeps two.
+     */
+    private suspend fun mergeInto(remote: ActiveSource.Remote, older: Long, duplicateId: Long): OutboxResult {
+        val deleted = caller.write(remote) { inventory.deleteLocation(duplicateId) }
+        if (deleted is Outcome.Failure && deleted.error != TandemError.NotFound) {
+            databases.get(remote.kind).outboxDao().enqueue(
+                OutboxEntity(
+                    accountId = remote.accountId,
+                    op = OutboxOps.DELETE,
+                    entity = OutboxEntities.INVENTORY_LOCATION,
+                    serverId = duplicateId,
+                    createdAtEpochMillis = clock.nowMillis(),
+                ),
+            )
+        }
+        return OutboxResult.Created(older)
     }
 
     private suspend fun findLostCreate(remote: ActiveSource.Remote, name: String?, householdId: Long?, oldest: Boolean): Long? {
