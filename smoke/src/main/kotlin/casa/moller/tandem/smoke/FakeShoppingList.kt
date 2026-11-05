@@ -89,6 +89,24 @@ class FakeShoppingList(private val template: (String) -> JsonObject) {
         return entry.id
     }
 
+    /** Fas 4 (integration): the partner puts [food] on the list on their phone. */
+    @Synchronized
+    fun partnerAdd(food: String): Long {
+        val now = tick()
+        val entry = Entry(
+            id = nextId++,
+            food = food,
+            foodId = foodId(food),
+            unit = null,
+            amount = 1.0,
+            createdBy = PARTNER,
+            createdAt = now,
+            updatedAt = now,
+        )
+        entries[entry.id] = entry
+        return entry.id
+    }
+
     /** The partner checks (or unchecks) [id] on their phone. */
     @Synchronized
     fun partnerCheck(id: Long, checked: Boolean = true) {

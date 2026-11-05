@@ -11,4 +11,21 @@
     <queries>
         <package android:name="casa.moller.tandem.minified" />
     </queries>
+
+    <application>
+        <!--
+            Fas 4 (integration): this test APK is the emulator's only UnifiedPush distributor, so
+            the minified app's connector, its service and the message decryption run for real
+            (FakeDistributor.kt). The app under test needs no hook for it.
+        -->
+        <receiver
+            android:name=".FakeDistributorReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.distributor.REGISTER" />
+                <action android:name="org.unifiedpush.android.distributor.UNREGISTER" />
+                <action android:name="org.unifiedpush.android.distributor.MESSAGE_ACK" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>

@@ -20,7 +20,14 @@ class DeviceState(private val app: TandemApp) {
     private val context = InstrumentationRegistry.getInstrumentation().context
 
     /** One of the app's active notifications in `dumpsys notification --noredact`. */
-    data class Posted(val id: Int, val channel: String?, val fullScreen: Boolean)
+    data class Posted(
+        val id: Int,
+        val channel: String?,
+        val fullScreen: Boolean,
+        val title: String? = null,
+        val subText: String? = null,
+        val lines: String = "",
+    )
 
     /**
      * The app's active notifications. Each record starts with `NotificationRecord(` and a header
@@ -39,6 +46,10 @@ class DeviceState(private val app: TandemApp) {
                 id = id,
                 channel = CHANNEL.find(header)?.groupValues?.get(1) ?: CHANNEL_ID.find(record)?.groupValues?.get(1),
                 fullScreen = FULL_SCREEN.containsMatchIn(record),
+                // Fas 4 (integration): the extras, printed as `android.title=String (…)`.
+                title = TITLE.find(block)?.groupValues?.get(1),
+                subText = SUB_TEXT.find(block)?.groupValues?.get(1),
+                lines = TEXT_LINES.find(block)?.groupValues?.get(1).orEmpty(),
             )
         }.distinctBy { it.id }
     }
@@ -129,6 +140,9 @@ class DeviceState(private val app: TandemApp) {
         val CHANNEL = Regex("""Notification\(channel=([^\s)]+)""")
         val CHANNEL_ID = Regex("""mId='([^']+)'""")
         val FULL_SCREEN = Regex("""fullscreenintent=PendingIntent""", RegexOption.IGNORE_CASE)
+        val TITLE = Regex("""android\.title=\w+ \((.*)\)""")
+        val SUB_TEXT = Regex("""android\.subText=\w+ \((.*)\)""")
+        val TEXT_LINES = Regex("""android\.textLines=\S+ \((.*)\)""")
         val ALARM_IDS = 4000..4999
         val ONGOING_IDS = 3000..3999
 

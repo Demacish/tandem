@@ -9,6 +9,7 @@ import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.text.Normalizer
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -122,6 +123,21 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     /** Fas S komplettering: fake Gemini and OpenAI endpoints on the same server ([FakeAiServices]). */
     val aiServices = FakeAiServices()
 
+    /** Fas 4 (integration): the fake push service on the same server, `/v1/info` … ([baseUrl] is its address). */
+    val pushService = FakePushService()
+
+    /**
+     * Fas 4 (integration): recipe id -> a sentence added to its last step (which loses its step
+     * time), so cook mode offers short text timers there. Shakshuka always has [TIMER_STEP_TEXT].
+     */
+    val timerTexts: MutableMap<Long, String> = ConcurrentHashMap(mapOf(TIMER_RECIPE_ID.toLong() to TIMER_STEP_TEXT))
+
+    /** Fas 4 (integration): the JSON body of every `POST /api/recipe-from-source/`, in order. */
+    val importPosts: MutableList<String> = CopyOnWriteArrayList()
+
+    /** Fas 4 (integration): a page the server "cannot fetch": only the app's WebView reads it. */
+    val blockedPageUrl: String get() = "$origin$BLOCKED_PAGE_PATH"
+
     private val image: ByteArray by lazy { generatedPng() }
 
     /** What the user types as the server address, e.g. `localhost:41234`. */
@@ -160,6 +176,8 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             requestsWhileOffline += "$method $path"
             return MockResponse.Builder().onResponseStart(SocketEffect.CloseSocket()).build()
         }
+        // Fas 4 (integration): the push service's exact `/v1/…` paths come before Anthropic's `/v1/`.
+        pushService.answer(request)?.let { return it }
         // Fas S (ai-foto lane): the fake Anthropic API is not Tandoor (not in [requests]).
         anthropic.answer(request)?.let { return it }
         aiServices.answer(request)?.let { return it }
@@ -174,6 +192,13 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
                 .code(200)
                 .addHeader("Content-Type", "image/png")
                 .body(Buffer().write(image))
+                .build()
+
+            // Fas 4 (integration): the recipe page itself, as any website serves it (no token).
+            method == "GET" && path == BLOCKED_PAGE_PATH -> MockResponse.Builder()
+                .code(200)
+                .addHeader("Content-Type", "text/html; charset=utf-8")
+                .body(recordedPage())
                 .build()
 
             method == "POST" && path == "/api-token-auth/" -> {
@@ -211,6 +236,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
                 ?: shopping.answer(request)
                 ?: mealPlan.answer(request)
                 ?: householdAnswer(method, path)
+                ?: importAnswer(request, method, path)
                 ?: respondRecorded(request, method, path)
         }
     }
@@ -223,6 +249,24 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         path == "/api/user/" -> fixture("fas2/user-list-member", ::twoUsers)
         else -> null
     }
+
+    /**
+     * Fas 4 (integration, #38): `recipe-from-source` as a server behind a block answers it: a link
+     * alone is refused as recorded (400 "Connection Refused."), and with the page's HTML in `data`
+     * the recipe comes back as recorded. Null for other requests.
+     */
+    private fun importAnswer(request: RecordedRequest, method: String, path: String): MockResponse? {
+        if (method != "POST" || path != "/api/recipe-from-source/") return null
+        val body = request.body?.utf8().orEmpty()
+        importPosts += body
+        val page = (json.parseToJsonElement(body).jsonObject["data"] as? JsonPrimitive)?.content.orEmpty()
+        return fixture(if ("application/ld+json" in page) IMPORT_FROM_PAGE else IMPORT_LINK_REFUSED)
+    }
+
+    /** The page of [IMPORT_FROM_PAGE]'s recording: what the recorded `{url, data}` sent as `data`. */
+    private fun recordedPage(): String =
+        json.parseToJsonElement(assets.open("$IMPORT_FROM_PAGE.json").bufferedReader().use { it.readText() }).jsonObject
+            .getValue("request").jsonObject.getValue("body").jsonObject.getValue("data").jsonPrimitive.content
 
     /** The recorded (stateless) answers after login. */
     private fun respondRecorded(request: RecordedRequest, method: String, path: String): MockResponse = when {
@@ -243,8 +287,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         method == "GET" && RECIPE_PATH.matches(path) -> {
             val id = RECIPE_PATH.find(path)!!.groupValues[1]
             val recording = RECIPES_BY_ID[id] ?: "fas1/recipe-deleted-get"
-            // Phase 1b: the cook-mode recipe gets two short timers in its last step.
-            if (id == TIMER_RECIPE_ID.toString()) fixture(recording, ::withShortTimers) else fixture(recording)
+            // Phase 1b: the cook-mode recipe gets two short timers in its last step; Fas 4: any recipe can.
+            val timers = timerTexts[id.toLong()]
+            if (timers != null) fixture(recording) { withShortTimers(it, timers) } else fixture(recording)
         }
 
         // --- Phase 1b (integration lane): "Klart!" from cook mode, sent by the outbox. ---
@@ -299,16 +344,16 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     }
 
     /**
-     * Shakshuka ([TIMER_RECIPE_ID]) with [TIMER_STEP_TEXT] added to its last step ("Eggs") and no
-     * step time, so cook mode offers exactly two short text timers there (core:domain's
-     * TimerDetector) and the smoke test can let both ring within a minute.
+     * A recipe with [text] ([timerTexts]) added to its last step and no step time. Shakshuka
+     * ([TIMER_RECIPE_ID]) with [TIMER_STEP_TEXT] in "Eggs": cook mode offers exactly two short text
+     * timers there (core:domain's TimerDetector) and the smoke test can let both ring within a minute.
      */
-    private fun withShortTimers(body: JsonElement): JsonElement {
+    private fun withShortTimers(body: JsonElement, text: String): JsonElement {
         val recipe = body.jsonObject
         val steps = recipe.getValue("steps").jsonArray
         val last = steps.last().jsonObject
         val instruction = last.getValue("instruction").jsonPrimitive.content
-        val changed = JsonObject(last + mapOf("instruction" to JsonPrimitive("$instruction $TIMER_STEP_TEXT"), "time" to JsonPrimitive(0)))
+        val changed = JsonObject(last + mapOf("instruction" to JsonPrimitive("$instruction $text"), "time" to JsonPrimitive(0)))
         return JsonObject(recipe + mapOf("steps" to JsonArray(steps.dropLast(1) + changed)))
     }
 
@@ -421,6 +466,14 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         /** The two timers (core:domain TimerDetector, English rules): 50 s and 55 s. */
         const val TIMER_STEP_TEXT = "Let the eggs set for 50 seconds, then warm the bread for 55 seconds."
         private const val COOK_LOG_ID = 4200
+
+        /** Fas 4 (integration, #38): the recordings of Phase4Fas3RestContractTest and Phase 3's refused link. */
+        private const val IMPORT_FROM_PAGE = "fas4/fas3-rester/recipe-from-source-url-and-data"
+        private const val IMPORT_LINK_REFUSED = "fas3/recipe-from-source-bad-url"
+        private const val BLOCKED_PAGE_PATH = "/blockerad-sida"
+
+        /** The recipe in [IMPORT_FROM_PAGE]. */
+        const val BLOCKED_PAGE_RECIPE = "Kanelbullar från en blockerad sida"
 
         private const val CA_ASSET = "tandem-smoke-test-ca.pem"
         private const val FIXTURE_CHECK = "01-server-settings-no-auth.json"
