@@ -48,6 +48,8 @@ internal val NavKey.isMorePage: Boolean
         AccountsKey,
         // Fas S (grund lane): Settings → AI (feature:scan, B22).
         AiSettingsKey,
+        // Fas 4 (push lane): Synk och lagring → Snabb push.
+        FastPushSettingsKey,
         -> true
 
         else -> false

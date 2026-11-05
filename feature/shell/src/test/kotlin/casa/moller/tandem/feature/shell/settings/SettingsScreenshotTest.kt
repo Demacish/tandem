@@ -81,28 +81,28 @@ abstract class SettingsScreenshotTest(private val device: String) {
     }
 
     @Test
-    fun sync() = page("sync_light") { FixedSettingsPages().Sync {} }
+    fun sync() = page("sync_light") { FixedSettingsPages().Sync({}, {}) }
 
     @Test
-    fun syncDark() = page("sync_dark", darkTheme = true) { FixedSettingsPages().Sync {} }
+    fun syncDark() = page("sync_dark", darkTheme = true) { FixedSettingsPages().Sync({}, {}) }
 
     @Test
-    fun syncDownloading() = page("sync_downloading_light") { FixedSettingsPages(sync = SAMPLE_SYNC_DOWNLOADING).Sync {} }
+    fun syncDownloading() = page("sync_downloading_light") { FixedSettingsPages(sync = SAMPLE_SYNC_DOWNLOADING).Sync({}, {}) }
 
     @Test
-    fun syncPausedAllDownloaded() = page("sync_paused_all_downloaded_light") { FixedSettingsPages(sync = SAMPLE_SYNC_PAUSED).Sync {} }
+    fun syncPausedAllDownloaded() = page("sync_paused_all_downloaded_light") { FixedSettingsPages(sync = SAMPLE_SYNC_PAUSED).Sync({}, {}) }
 
     /** 0.3.0 review (fix-data, plan 6.2 "Har hemma-effekten"): the Tandoor account's shopping preferences. */
     @Test
-    fun syncShopping() = page("sync_shopping_light") { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+    fun syncShopping() = page("sync_shopping_light") { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync({}, {}) }
 
     @Test
-    fun syncShoppingDark() = page("sync_shopping_dark", darkTheme = true) { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+    fun syncShoppingDark() = page("sync_shopping_dark", darkTheme = true) { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync({}, {}) }
 
     @Test
     fun syncDemo() = page("sync_demo_light") {
         val demo = SyncSettingsUiState(isDemo = true, storage = SAMPLE_STORAGE.copy(recipeCount = 14, downloadedCount = 14))
-        FixedSettingsPages(sync = demo).Sync {}
+        FixedSettingsPages(sync = demo).Sync({}, {})
     }
 
     @Test
@@ -188,11 +188,11 @@ class SettingsPhoneScreenshotTest : SettingsScreenshotTest("phone") {
 
     @Test
     @Config(qualifiers = PHONE_SV)
-    fun syncSwedish() = page("sync_light_sv") { FixedSettingsPages().Sync {} }
+    fun syncSwedish() = page("sync_light_sv") { FixedSettingsPages().Sync({}, {}) }
 
     @Test
     @Config(qualifiers = PHONE_SV)
-    fun syncShoppingSwedish() = page("sync_shopping_light_sv") { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+    fun syncShoppingSwedish() = page("sync_shopping_light_sv") { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync({}, {}) }
 
     @Test
     @Config(qualifiers = PHONE_SV)
@@ -222,7 +222,7 @@ class SettingsPhoneScreenshotTest : SettingsScreenshotTest("phone") {
     }
 
     @Test
-    fun syncFontScale2() = page("sync_font_scale_2_light", fontScale = 2f) { FixedSettingsPages().Sync {} }
+    fun syncFontScale2() = page("sync_font_scale_2_light", fontScale = 2f) { FixedSettingsPages().Sync({}, {}) }
 
     @Test
     fun permissionsFontScale2() = page("permissions_font_scale_2_light", fontScale = 2f) { FixedSettingsPages().Permissions {} }

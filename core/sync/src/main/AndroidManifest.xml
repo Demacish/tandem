@@ -10,4 +10,18 @@
         notifications for the app (the in-app banner is shown either way).
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <!--
+            Fas 4 (push lane): the optional fast push (docs/PUSH.md). The UnifiedPush connector
+            binds to this service with the distributor's messages; not exported.
+        -->
+        <service
+            android:name="casa.moller.tandem.core.sync.push.TandemPushService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.connector.PUSH_EVENT" />
+            </intent-filter>
+        </service>
+    </application>
 </manifest>

@@ -49,6 +49,13 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
+    // --- Fas 4 (push lane): the optional fast push through UnifiedPush (docs/BYGGE.md
+    // "Push-tjänst"). The connector's JVM Tink is replaced by tink-android (same classes). ---
+    implementation(libs.unifiedpush.connector) {
+        exclude(group = "com.google.crypto.tink", module = "tink")
+    }
+    implementation(libs.tink.android)
+
     testImplementation(projects.core.testing)
     testImplementation(libs.androidx.work.testing)
     testImplementation(platform(libs.okhttp.bom))

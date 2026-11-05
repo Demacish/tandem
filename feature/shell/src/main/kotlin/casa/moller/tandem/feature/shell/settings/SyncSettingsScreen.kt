@@ -25,6 +25,7 @@ import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.icon.Delete
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
+import casa.moller.tandem.core.designsystem.icon.NotificationsActive
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
@@ -36,6 +37,7 @@ import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.ui.GroupDivider
 import casa.moller.tandem.feature.shell.ui.SettingsGroup
+import casa.moller.tandem.feature.shell.ui.SettingsRow
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -54,6 +56,8 @@ internal fun SyncSettingsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    // Fas 4 (push lane): opens Snabb push.
+    onOpenFastPush: () -> Unit = {},
 ) {
     SettingsPage(
         title = stringResource(R.string.settings_sync),
@@ -89,6 +93,15 @@ internal fun SyncSettingsScreen(
             ShoppingNotifications(state = state, onChange = { onAction(SettingsAction.SetShoppingNotifications(it)) })
             PantryExpiryNotifications(state = state, onChange = { onAction(SettingsAction.SetPantryExpiryNotifications(it)) })
             state.shopping?.let { ShoppingServerSettingsGroup(settings = it) }
+        }
+        // Fas 4 (push lane): the optional fast push (its page explains demo mode and guests).
+        SettingsGroup {
+            SettingsRow(
+                icon = TandemIcons.NotificationsActive,
+                title = stringResource(R.string.fast_push_row),
+                supporting = stringResource(R.string.fast_push_row_body),
+                onClick = onOpenFastPush,
+            )
         }
         Storage(
             storage = state.storage,

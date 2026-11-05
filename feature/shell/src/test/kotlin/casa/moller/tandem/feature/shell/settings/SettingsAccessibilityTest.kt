@@ -75,23 +75,23 @@ class SettingsAccessibilityTest {
     }
 
     @Test
-    fun sync() = check { FixedSettingsPages().Sync {} }
+    fun sync() = check { FixedSettingsPages().Sync({}, {}) }
 
     @Test
-    fun syncDark() = check(darkTheme = true) { FixedSettingsPages().Sync {} }
+    fun syncDark() = check(darkTheme = true) { FixedSettingsPages().Sync({}, {}) }
 
     @Test
-    fun syncDownloadingFontScale2() = check(fontScale = 2f) { FixedSettingsPages(sync = SAMPLE_SYNC_DOWNLOADING).Sync {} }
+    fun syncDownloadingFontScale2() = check(fontScale = 2f) { FixedSettingsPages(sync = SAMPLE_SYNC_DOWNLOADING).Sync({}, {}) }
 
     @Test
-    fun syncPaused() = check { FixedSettingsPages(sync = SAMPLE_SYNC_PAUSED).Sync {} }
+    fun syncPaused() = check { FixedSettingsPages(sync = SAMPLE_SYNC_PAUSED).Sync({}, {}) }
 
     @Test
-    fun syncDemo() = check { FixedSettingsPages(sync = SyncSettingsUiState(isDemo = true)).Sync {} }
+    fun syncDemo() = check { FixedSettingsPages(sync = SyncSettingsUiState(isDemo = true)).Sync({}, {}) }
 
     /** 0.3.0 review (fix-data): the read-only shopping preferences. */
     @Test
-    fun syncShopping() = check { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync {} }
+    fun syncShopping() = check { FixedSettingsPages(sync = SAMPLE_SYNC_SHOPPING).Sync({}, {}) }
 
     @Test
     fun permissions() = check { FixedSettingsPages().Permissions {} }

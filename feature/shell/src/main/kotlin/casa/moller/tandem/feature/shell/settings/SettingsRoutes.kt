@@ -40,9 +40,9 @@ internal interface SettingsPages {
     @Composable
     fun Cooking(onNavigateBack: () -> Unit, onOpenPermissions: () -> Unit, onOpenAppearance: () -> Unit)
 
-    /** Mer → Synk och lagring. */
+    /** Mer → Synk och lagring; it links to Snabb push (Fas 4, push lane). */
     @Composable
-    fun Sync(onNavigateBack: () -> Unit)
+    fun Sync(onNavigateBack: () -> Unit, onOpenFastPush: () -> Unit)
 
     /** Mer → Behörigheter (an overview, never a forced step). */
     @Composable
@@ -89,7 +89,7 @@ internal object RouteSettingsPages : SettingsPages {
     }
 
     @Composable
-    override fun Sync(onNavigateBack: () -> Unit) {
+    override fun Sync(onNavigateBack: () -> Unit, onOpenFastPush: () -> Unit) {
         val viewModel: SettingsViewModel = hiltViewModel()
         val state by viewModel.sync.collectAsStateWithLifecycle()
         // Fas 4: the notification permission, asked when "Notis när någon ändrar listan" is switched on.
@@ -103,7 +103,13 @@ internal object RouteSettingsPages : SettingsPages {
                 viewModel.onAction(SettingsAction.NotificationPermissionResult(granted = true))
             }
         }
-        SyncSettingsScreen(state = state, onAction = viewModel::onAction, onNavigateBack = onNavigateBack, snackbarHostState = snackbar)
+        SyncSettingsScreen(
+            state = state,
+            onAction = viewModel::onAction,
+            onNavigateBack = onNavigateBack,
+            snackbarHostState = snackbar,
+            onOpenFastPush = onOpenFastPush,
+        )
     }
 
     @Composable

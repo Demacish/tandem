@@ -46,6 +46,10 @@ tink = "1.23.0"
 room3 = "3.0.3"           # androidx.room3 (fallback: androidx.room 2.8.5)
 paging = "3.5.2"
 work = "2.12.0"
+# --- Fas 4 (push lane): the UnifiedPush connector for the optional fast push (Apache-2.0, Maven
+# Central, released 2026-08-22). It depends on com.google.crypto.tink:tink, which is excluded in
+# core:sync because tink-android (above) has the same classes. ---
+unifiedpush-connector = "3.3.5"
 
 # --- Network / serialization ---
 retrofit = "3.0.0"        # depends on OkHttp 4.12; our explicit OkHttp 5 pin wins (binary compatible)
@@ -153,6 +157,8 @@ androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.r
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+# --- Fas 4 (push lane): UnifiedPush connector (core:sync, docs/BYGGE.md "Push-tjänst"). ---
+unifiedpush-connector = { module = "org.unifiedpush.android:connector", version.ref = "unifiedpush-connector" }
 
 # Widgets / images
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }

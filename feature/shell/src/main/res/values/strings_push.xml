@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 4 (push lane): More → Sync and storage → Fast push (plan §4.3, B11; docs/PUSH.md). -->
+<resources>
+    <string name="fast_push_row">Fast push (own service, experimental)</string>
+    <string name="fast_push_row_body">List changes within a minute through a small service your household runs. Off by default.</string>
+    <string name="fast_push_title">Fast push</string>
+    <string name="fast_push_demo">Demo mode has no server, so there is nothing to push. Connect a Tandoor to use fast push.</string>
+    <string name="fast_push_guest">Guests cannot use fast push. Ask the household\'s administrator for a member account.</string>
+    <string name="fast_push_no_account">Log in to a Tandoor first.</string>
+    <string name="fast_push_intro_title">Experimental, and not needed</string>
+    <string name="fast_push_intro_body">Without it Tandem checks the list in the background as usual. With it, a small push service your household runs itself checks the shopping list and wakes this phone through a UnifiedPush app (for example ntfy), so a change shows up within a minute even when Tandem is closed.</string>
+    <string name="fast_push_privacy">When turning on, Tandem sends its Tandoor token to the service once, so the service can check that you belong to its household; the service does not keep it. A wake-up only says \"sync now\": what changed is read by Tandem itself.</string>
+    <string name="fast_push_status_heading">Status</string>
+    <string name="fast_push_status_off">Off</string>
+    <string name="fast_push_status_off_body">The background sync shows list changes at its own interval.</string>
+    <string name="fast_push_status_registering">Connecting…</string>
+    <string name="fast_push_status_registering_body">Waiting for the UnifiedPush app and the service.</string>
+    <string name="fast_push_status_active">On</string>
+    <plurals name="fast_push_status_active_body">
+        <item quantity="one">The service checks the list every second.</item>
+        <item quantity="other">The service checks the list every %1$d seconds.</item>
+    </plurals>
+    <string name="fast_push_status_failed">Not working</string>
+    <string name="fast_push_last_wake_up">Last wake-up: %1$s</string>
+    <string name="fast_push_notifications_blocked">Tandem is not allowed to show notifications, so changes arrive without a notification.</string>
+    <string name="fast_push_list_notifications_off">The notification only shows while \"Notify when someone changes the list\" is on (Sync and storage).</string>
+    <string name="fast_push_open_permissions">Open Permissions</string>
+    <string name="fast_push_service_heading">Push service</string>
+    <string name="fast_push_service_url">Service address</string>
+    <string name="fast_push_service_url_placeholder">https://push.example.com</string>
+    <string name="fast_push_service_url_help">Only https://. The address of the push service your household runs.</string>
+    <string name="fast_push_distributor_heading">UnifiedPush app</string>
+    <string name="fast_push_distributor_body">The app that keeps the connection and wakes Tandem.</string>
+    <string name="fast_push_distributor_none">No UnifiedPush app found</string>
+    <string name="fast_push_distributor_none_body">Install a UnifiedPush app, for example ntfy (F-Droid or Google Play), open it once and come back here.</string>
+    <string name="fast_push_distributor_refresh">Look again</string>
+    <string name="fast_push_enable">Turn on</string>
+    <string name="fast_push_try_again">Try again</string>
+    <string name="fast_push_send_test">Send test notification</string>
+    <string name="fast_push_disable">Turn off</string>
+    <string name="fast_push_message_enabling">Connecting to the push service…</string>
+    <string name="fast_push_message_disabled">Fast push is off</string>
+    <string name="fast_push_message_test_sent">Test sent. The notification should show in a few seconds.</string>
+    <string name="fast_push_error_invalid_url">Enter an address that starts with https://</string>
+    <string name="fast_push_error_not_a_service">That address is not a Tandem push service.</string>
+    <string name="fast_push_error_unreachable">The push service cannot be reached. Check the address and the connection.</string>
+    <string name="fast_push_error_unauthorized">The service could not confirm your Tandoor account. Is it set up for the same Tandoor?</string>
+    <string name="fast_push_error_other_household">The service belongs to another household.</string>
+    <string name="fast_push_error_guest">Guests cannot use fast push.</string>
+    <string name="fast_push_error_too_many">The service already has as many phones as it allows.</string>
+    <string name="fast_push_error_rate_limited">The service asks you to wait. Try again in a minute.</string>
+    <string name="fast_push_error_service">The push service did not answer as expected. Try again later.</string>
+    <string name="fast_push_error_no_distributor">The UnifiedPush app is missing or let go of Tandem. Choose it again and turn fast push on.</string>
+    <string name="fast_push_error_distributor">The UnifiedPush app could not register Tandem. Open it, check its settings and try again.</string>
+    <string name="fast_push_error_test_unsupported">This service does not offer a test notification.</string>
+</resources>

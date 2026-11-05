@@ -22,6 +22,7 @@ import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.push.DefaultFastPushRepository
 import casa.moller.tandem.core.sync.shopping.ShoppingChangeNotifications
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
@@ -77,6 +78,8 @@ class SyncStarter @Inject internal constructor(
     private val shoppingNotifications: ShoppingChangeNotifications,
     // Fas 4 (skafferinotis lane): the morning "Grädde går ut i morgon" check follows its setting.
     private val pantryExpiryReminders: PantryExpiryReminders,
+    // Fas 4 (push lane): renews the optional fast push registration of the active account.
+    private val fastPush: DefaultFastPushRepository,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -110,6 +113,7 @@ class SyncStarter @Inject internal constructor(
         mirror.start()
         shoppingNotifications.start()
         pantryExpiryReminders.start()
+        fastPush.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

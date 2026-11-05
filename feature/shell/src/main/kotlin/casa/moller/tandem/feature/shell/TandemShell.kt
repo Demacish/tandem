@@ -109,6 +109,7 @@ import casa.moller.tandem.feature.shell.navigation.AccountsKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
+import casa.moller.tandem.feature.shell.navigation.FastPushSettingsKey
 import casa.moller.tandem.feature.shell.navigation.LanguageKey
 import casa.moller.tandem.feature.shell.navigation.LicenseTextKey
 import casa.moller.tandem.feature.shell.navigation.LicensesKey
@@ -130,6 +131,8 @@ import casa.moller.tandem.feature.shell.navigation.WeekKey
 import casa.moller.tandem.feature.shell.navigation.isBookPage
 import casa.moller.tandem.feature.shell.navigation.isMorePage
 import casa.moller.tandem.feature.shell.navigation.rememberShellNavigationState
+import casa.moller.tandem.feature.shell.push.FastPushPage
+import casa.moller.tandem.feature.shell.push.RouteFastPushPage
 import casa.moller.tandem.feature.shell.settings.RouteSettingsPages
 import casa.moller.tandem.feature.shell.settings.SettingsPages
 import casa.moller.tandem.feature.shell.settings.SettingsPanePlaceholder
@@ -322,6 +325,8 @@ internal fun ShellScaffold(
     // Phase 2 (konto lane): Mer → Konton och servrar.
     accountsPage: AccountsPage = RouteAccountsPage,
     onAddAccount: () -> Unit = {},
+    // Fas 4 (push lane): Mer → Synk och lagring → Snabb push.
+    fastPushPage: FastPushPage = RouteFastPushPage,
 ) {
     // The demo banner can be put away for this session; the "Demo" chip in the top bar stays.
     var demoBannerDismissed by rememberSaveable { mutableStateOf(false) }
@@ -663,7 +668,17 @@ internal fun ShellScaffold(
             }
             // --- Phase 1b (inställningar lane): the settings sub-screens. ---
             entry<SyncSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
-                settingsPages.Sync(onNavigateBack = { navigation.goBack() })
+                settingsPages.Sync(
+                    onNavigateBack = { navigation.goBack() },
+                    onOpenFastPush = { navigation.navigate(FastPushSettingsKey) },
+                )
+            }
+            // Fas 4 (push lane): the optional fast push, opened from the sync page.
+            entry<FastPushSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                fastPushPage.FastPush(
+                    onNavigateBack = { navigation.goBack() },
+                    onOpenPermissions = { navigation.navigate(PermissionsKey) },
+                )
             }
             entry<AppearanceSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 settingsPages.Appearance(onNavigateBack = { navigation.goBack() })

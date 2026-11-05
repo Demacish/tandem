@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 4 (push lane): the test notification of the optional fast push (docs/PUSH.md). -->
+<resources>
+    <string name="sync_push_test_title">Fast push works</string>
+    <string name="sync_push_test_body">This test came from your push service. Changes to the shopping list now arrive within a minute.</string>
+</resources>

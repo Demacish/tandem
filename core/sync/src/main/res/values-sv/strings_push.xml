@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 4 (push lane): testnotisen för den valfria snabba pushen (docs/PUSH.md). -->
+<resources>
+    <string name="sync_push_test_title">Snabb push fungerar</string>
+    <string name="sync_push_test_body">Testet kom från din push-tjänst. Ändringar på inköpslistan kommer nu fram inom en minut.</string>
+</resources>

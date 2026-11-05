@@ -155,8 +155,8 @@ internal class FixedSettingsPages(
     }
 
     @Composable
-    override fun Sync(onNavigateBack: () -> Unit) {
-        SyncSettingsScreen(state = sync, onAction = { actions += it }, onNavigateBack = onNavigateBack)
+    override fun Sync(onNavigateBack: () -> Unit, onOpenFastPush: () -> Unit) {
+        SyncSettingsScreen(state = sync, onAction = { actions += it }, onNavigateBack = onNavigateBack, onOpenFastPush = onOpenFastPush)
     }
 
     @Composable
