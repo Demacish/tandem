@@ -56,7 +56,11 @@ class Phase4AutoPlanContractTest {
     private val facts = Facts()
     private val mismatches = mutableListOf<String>()
 
-    /** A Monday far ahead, so nothing else in the space is planned that week. */
+    /**
+     * A Monday far ahead, so nothing else in the space is planned that week, but inside the
+     * window a meal plan without date parameters is found in (−90 to +360 days, FACTS "Fas 2"):
+     * outside it, `DELETE /api/meal-plan/{id}/` answers 404 (observed 2026-11-05 at +420 days).
+     */
     private val monday: LocalDate = today.plusWeeks(WEEKS_AHEAD).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     private val sunday: LocalDate = monday.plusDays(6)
 
@@ -198,7 +202,7 @@ class Phase4AutoPlanContractTest {
         observe("autoplan.guest", describe(guest))
         observe("autoplan.guest.createdSeenByOwner", newPlans(before).size)
         observe("autoplan.guest.createdSeenByGuest", newPlans(guestBefore, env.guestToken).size)
-        deletePlansOfWeek(token = env.guestToken)
+        observe("autoplan.guest.deleteOwn", deletePlansOfWeek(token = env.guestToken))
         deletePlansOfWeek()
     }
 
@@ -317,7 +321,7 @@ class Phase4AutoPlanContractTest {
         val BODY_METHODS = setOf("POST", "PUT", "PATCH")
         const val MAX_TEXT = 300
         const val PREFIX = "Tandem-autoplan"
-        const val WEEKS_AHEAD = 60L
+        const val WEEKS_AHEAD = 40L
         const val MEAL_TYPE_ORDER = 99
         const val SERVINGS = 3
         const val DATE_LENGTH = 10
@@ -342,9 +346,19 @@ class Phase4AutoPlanContractTest {
             "autoplan.week.mealTypeIsTheChosen" to true,
             "autoplan.again.added" to 7,
             "autoplan.again.total" to 14,
+            "cleanup.deleted" to listOf(204),
             "cleanup.left" to 0,
+            "autoplan.twoKeywords.status" to 200,
+            "autoplan.twoKeywords.created" to 7,
+            "autoplan.twoKeywords.distinctRecipes" to 1,
             "autoplan.noRecipes.status" to 400,
             "autoplan.noRecipes.created" to 0,
+            "autoplan.dateOnly.status" to 200,
+            "autoplan.dateOnly.created" to 7,
+            // A guest (read-only in the app) may auto-plan: 200, seven plans only the guest sees.
+            "autoplan.guest.status" to 200,
+            "autoplan.guest.createdSeenByOwner" to 0,
+            "autoplan.guest.createdSeenByGuest" to 7,
         )
     }
 }
