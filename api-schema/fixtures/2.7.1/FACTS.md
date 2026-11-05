@@ -124,3 +124,9 @@
   oåtkomlig länk → 400 `Connection Refused.`, tom kropp → 400 `Nothing to do.`, gästen 403;
   `ai-import` utan leverantör → 500; `image_url` som inte kan hämtas → 200 med `image: null`. [O]
 
+
+## Fas 4: Fas 3:s rester (bana fas3-rester)
+
+Som 2.6.13 (`fas4/fas3-rester/`, 2026-11-05). Enda skillnaden: valideringsfelet för rader utan
+`order` i `ai-step-sort` har formen `{"steps": {"0": {"ingredients": {"0": {"order": […]}}}}}`
+(index som nycklar) i stället för listor. Appen läser bara statusen. [O]

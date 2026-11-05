@@ -1,0 +1,114 @@
+{
+  "name": "ai-step-sort-without-provider-param",
+  "request": {
+    "method": "POST",
+    "path": "/api/ai-step-sort/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "steps": [
+        {
+          "instruction": "Värm mjölken och smöret.",
+          "ingredients": [
+            {
+              "amount": 5.0,
+              "food": {
+                "name": "mjölk"
+              },
+              "unit": {
+                "name": "dl"
+              },
+              "note": "",
+              "order": null,
+              "original_text": "5 dl mjölk"
+            },
+            {
+              "amount": 150.0,
+              "food": {
+                "name": "smör"
+              },
+              "unit": {
+                "name": "g"
+              },
+              "note": "",
+              "order": null,
+              "original_text": "150 g smör"
+            },
+            {
+              "amount": 13.0,
+              "food": {
+                "name": "vetemjöl"
+              },
+              "unit": {
+                "name": "dl"
+              },
+              "note": "",
+              "order": null,
+              "original_text": "13 dl vetemjöl"
+            }
+          ],
+          "show_ingredients_table": true
+        },
+        {
+          "instruction": "Knåda degen och låt jäsa.",
+          "ingredients": [],
+          "show_ingredients_table": true
+        }
+      ],
+      "internal": true,
+      "source_url": "",
+      "name": "Kanelbullar från en blockerad sida",
+      "description": "Saftiga bullar med 100% smör.",
+      "servings": 24,
+      "servings_text": "",
+      "working_time": 40,
+      "waiting_time": 0,
+      "image_url": "https://recipes.invalid/bilder/kanelbullar.jpg",
+      "keywords": [],
+      "properties": []
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "allow": "POST, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "steps": [
+        {
+          "ingredients": [
+            {
+              "order": [
+                "This field may not be null."
+              ]
+            },
+            {
+              "order": [
+                "This field may not be null."
+              ]
+            },
+            {
+              "order": [
+                "This field may not be null."
+              ]
+            }
+          ]
+        },
+        {}
+      ]
+    }
+  }
+}

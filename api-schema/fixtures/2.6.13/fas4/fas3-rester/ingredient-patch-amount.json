@@ -1,0 +1,112 @@
+{
+  "name": "ingredient-patch-amount",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/ingredient/97/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "amount": 3
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 97,
+      "food": {
+        "id": 70,
+        "name": "mjöl",
+        "plural_name": null,
+        "description": "",
+        "recipe": null,
+        "url": "",
+        "properties": [],
+        "properties_food_amount": 100.0,
+        "properties_food_unit": null,
+        "fdc_id": null,
+        "food_onhand": false,
+        "supermarket_category": null,
+        "parent": null,
+        "numchild": 0,
+        "inherit_fields": [],
+        "full_name": "mjöl",
+        "ignore_shopping": false,
+        "substitute": [],
+        "substitute_siblings": false,
+        "substitute_children": false,
+        "substitute_onhand": false,
+        "child_inherit_fields": [],
+        "open_data_slug": null,
+        "shopping_lists": []
+      },
+      "unit": {
+        "id": 5,
+        "name": "dl",
+        "plural_name": "dl",
+        "description": null,
+        "base_unit": null,
+        "open_data_slug": null
+      },
+      "amount": 3.0,
+      "conversions": [
+        {
+          "food": "mjöl",
+          "unit": "dl",
+          "amount": 3.0
+        },
+        {
+          "food": "mjöl",
+          "unit": "ml",
+          "amount": 300.0
+        },
+        {
+          "food": "mjöl",
+          "unit": "cup",
+          "amount": 1.268025
+        },
+        {
+          "food": "mjöl",
+          "unit": "l",
+          "amount": 0.3
+        },
+        {
+          "food": "mjöl",
+          "unit": "msk",
+          "amount": 20.2884
+        },
+        {
+          "food": "mjöl",
+          "unit": "tsk",
+          "amount": 60.865199999999994
+        }
+      ],
+      "note": "",
+      "order": 0,
+      "is_header": false,
+      "no_amount": false,
+      "original_text": null,
+      "used_in_recipes": [
+        {
+          "id": 24,
+          "name": "Tandem bildtest"
+        }
+      ]
+    }
+  }
+}

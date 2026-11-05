@@ -1,0 +1,127 @@
+{
+  "name": "step-patch-instruction",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/step/36/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "instruction": "Blanda allt noga."
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 36,
+      "name": "",
+      "instruction": "Blanda allt noga.",
+      "ingredients": [
+        {
+          "id": 97,
+          "food": {
+            "id": 70,
+            "name": "mjöl",
+            "plural_name": null,
+            "description": "",
+            "recipe": null,
+            "url": "",
+            "properties": [],
+            "properties_food_amount": 100.0,
+            "properties_food_unit": null,
+            "fdc_id": null,
+            "food_onhand": false,
+            "supermarket_category": null,
+            "parent": null,
+            "numchild": 0,
+            "inherit_fields": [],
+            "full_name": "mjöl",
+            "ignore_shopping": false,
+            "substitute": [],
+            "substitute_siblings": false,
+            "substitute_children": false,
+            "substitute_onhand": false,
+            "child_inherit_fields": [],
+            "open_data_slug": null,
+            "shopping_lists": []
+          },
+          "unit": {
+            "id": 5,
+            "name": "dl",
+            "plural_name": "dl",
+            "description": null,
+            "base_unit": null,
+            "open_data_slug": null
+          },
+          "amount": 2.0,
+          "conversions": [
+            {
+              "food": "mjöl",
+              "unit": "dl",
+              "amount": 2.0
+            },
+            {
+              "food": "mjöl",
+              "unit": "ml",
+              "amount": 200.0
+            },
+            {
+              "food": "mjöl",
+              "unit": "cup",
+              "amount": 0.84535
+            },
+            {
+              "food": "mjöl",
+              "unit": "l",
+              "amount": 0.2
+            },
+            {
+              "food": "mjöl",
+              "unit": "msk",
+              "amount": 13.5256
+            },
+            {
+              "food": "mjöl",
+              "unit": "tsk",
+              "amount": 40.5768
+            }
+          ],
+          "note": "",
+          "order": 0,
+          "is_header": false,
+          "no_amount": false,
+          "original_text": null,
+          "used_in_recipes": [
+            {
+              "id": 24,
+              "name": "Tandem bildtest"
+            }
+          ]
+        }
+      ],
+      "instructions_markdown": "<p>Blanda allt noga.</p>",
+      "time": 0,
+      "order": 0,
+      "show_as_header": true,
+      "file": null,
+      "step_recipe": null,
+      "step_recipe_data": null,
+      "show_ingredients_table": true
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "recipe-from-source-url-and-data-as-guest",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe-from-source/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000003",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "url": "https://recipes.invalid/kanelbullar",
+      "data": "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Kanelbullar från en blockerad sida</title><script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Recipe\",\"name\":\"Kanelbullar från en blockerad sida\",\"description\":\"Saftiga bullar med 100% smör.\",\"image\":[\"https://recipes.invalid/bilder/kanelbullar.jpg\"],\"recipeYield\":\"24\",\"prepTime\":\"PT40M\",\"recipeIngredient\":[\"5 dl mjölk\",\"150 g smör\",\"13 dl vetemjöl\"],\"recipeInstructions\":[{\"@type\":\"HowToStep\",\"text\":\"Värm mjölken och smöret.\"},{\"@type\":\"HowToStep\",\"text\":\"Knåda degen och låt jäsa.\"}]}</script></head><body><h1>Kanelbullar från en blockerad sida</h1><p>Saftiga bullar med 100% smör.</p></body></html>"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "allow": "POST, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  }
+}

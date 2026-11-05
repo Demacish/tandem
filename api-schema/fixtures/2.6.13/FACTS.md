@@ -992,3 +992,29 @@ drf-writable-nested, tagg 2.6.13).
    inget recept; AI-import bara med `ai_default_provider.id`; bilden från källan som `image_url`
    på bildendpointen efter att receptet skapats.
 
+
+## Fas 4: Fas 3:s rester (bana fas3-rester)
+
+`Phase4Fas3RestContractTest` körs i `contract.yml` efter Fas 3 (push: 2.6.13 och 2.7.1) och
+spelar in till `fas4/fas3-rester/` (körningar 2026-11-05, båda versionerna gröna, inga
+avvikelser mot `EXPECTED`).
+
+- **a. Sidans HTML med länken (#38).** `{url: <oåtkomlig länk>, data: <sida med JSON-LD>}` →
+  **200** med receptet, `error: false`; länken hämtas **inte** (den är oåtkomlig) och
+  `recipe.source_url` är **tom**: appen sätter länken själv. Ett `%` i sidan ("100% smör") kommer
+  igenom oförändrat. En sida utan recept → **500** (Djangos HTML-felsida); gästen → **403**. [O]
+- **b. `POST /api/ai-step-sort/` (#40).** Kroppen valideras med `RecipeSerializer` **före**
+  leverantören: importens svar som det är (rader utan `order`) → **400** `{"steps": [{"ingredients":
+  [{"order": ["This field may not be null."]}, …]}]}`. Med `order` på steg och rader (som appen
+  skickar): utan `?provider=` → **400** `{"error": true, "msg": "You must select an AI provider to
+  perform your request."}`; en okänd leverantör → **500** `{"error": true, "msg": "An unexpected
+  error occurred while processing your AI request. …"}`; gästen → **403**. Svaret med en riktig
+  leverantör är inte prövat (ingen leverantör i CI). [O/S]
+- **c. Ta bort receptets bild.** `PUT /api/recipe/{id}/image/` multipart: ett **tomt formulär**
+  (webbens "ta bort bild") och en tom **`image_url`** → **200** `{"image": null, "image_url":
+  null}`, bilden borta; en tom **`image`**-del → **500**; `PATCH /api/recipe/{id}/` med `image:
+  null` → 200 men bilden **finns kvar** (fältet är skrivskyddat); gästen → **403**. Appen skickar
+  tom `image_url`. [O]
+- **d. Bara ett steg ändrat.** `PATCH /api/step/{id}/` (instruktionen) och `PATCH
+  /api/ingredient/{id}/` (mängden) → 200, men receptets **`updated_at` flyttas inte**. Redigerarens
+  konfliktkontroll jämför därför också stegen (fingeravtryck i `base_snapshot`). [O/S]

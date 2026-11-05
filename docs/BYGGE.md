@@ -1070,6 +1070,7 @@ kan tas upp igen där det avbröts.
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten inte påbörjad | "Listnotiser" |
 | Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
+| Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | 🔄 pågår 2026-11-05 på `fas4/fas3-rester` | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
 
@@ -1094,6 +1095,37 @@ Delsteget byggdes i tre bitar, var och en med egna tester, strängar (en/sv) och
    `SuggestWeekCard` + `WeekSuggestionsPanel` (`ui/WeekSuggestionsPanel.kt`), `WeekMessage.Suggested`.
    Skott `SUGGESTIONS`, `SUGGESTIONS_SAVING`, `SUGGESTIONS_NO_FREE_DAYS`; kortet syns i `WEEK*`.
 <!-- /Fas 4 läge -->
+
+<!-- Fas 4 fas3-rester -->
+## Fas 3:s rester (`:feature:recipes`, `:core:sync`, `:feature:home`, `:feature:widgets`, Fas 4, bana fas3-rester)
+
+Det som saknades av Fas 3 (plan §10 "Fas 3", leverabler och "Klart när"; §8.4). Kontraktsfakta:
+`Phase4Fas3RestContractTest` (eget steg i `contract.yml` efter Fas 3), inspelningar i
+`api-schema/fixtures/<version>/fas4/fas3-rester/`, FACTS "Fas 4: Fas 3:s rester". Inget nytt
+Room-schema.
+
+| Del | Var | Innehåll |
+|---|---|---|
+| **#38 Sidan läses i appen** | `RecipeImportSource.Page(url, html)` (`:core:model`); `RemoteRecipeImportRepository.fromPage`; `recipeimport/PageReaderWebView.kt`, `PageReading`, `RecipeImportAction.PageLoaded/ReadPageAgain/CancelPage` | en LÄNK som servern inte kan läsa (`NOTHING_FOUND`: 400 "Connection Refused." eller 500) laddas i en WebView i appen (JavaScript bara där, inga filer, inga popup-fönster, inga tredjepartskakor, bara http(s)); varje färdig laddning (efter 1,5 s) skickar `document.documentElement.outerHTML` som `{url, data}` till `recipe-from-source` (högst 3 miljoner tecken). Servern lämnar `source_url` tom, så appen sätter länken. En sida utan recept (500) ger "Inget recept på sidan än" med "Läs sidan igen" (t.ex. efter en bekräftelse i sidan) och "Avbryt". Kakor, webblagring och cache raderas när vyn lämnar skärmen. Skärmen tar vyn som plats (`pageView`), skärmbilderna visar en platshållare |
+| **#40 Fördela ingredienserna på stegen** | `RecipeImportRepository.sortIngredientsIntoSteps(draft)`, `RecipeImportService.aiStepSort`, `RecipeImportMapper.toSourceRecipe/sortedDraft`, `RecipeImportAction.SortSteps/UndoSortSteps` | knappen syns i importens resultat när utrymmet har AI-leverantör och receptet har minst två steg och en rad; texten säger att det kostar ett AI-anrop. `POST /api/ai-step-sort/?provider=<ai_default_provider.id>` med utkastet i importens form **med `order` på steg och rader** (utan `order` svarar servern 400 före leverantörskontrollen). Svaret läses lättsamt; stegens egna texter behålls, bara raderna flyttas. Ändrar AI:n antalet steg eller raderna (livsmedel, enhet, mängd) avvisas svaret (`STEP_SORT_CHANGED`). Ångra återställer |
+| **Importen pausar synken** | `RemoteRecipeImportRepository` + `ImportGate` | länk, sida, foto/PDF och stegsortering körs i `ImportGate.whileImporting` (fanns men användes inte): bakgrundsanrop väntar (`SyncPause.IMPORT_RUNNING`) |
+| **Ta bort bilden** | `RecipeDraft.keepImage`/`currentImageUrl`, `RecipeEditorAction.KeepImage`, `RecipeEditPayloads.imageRemoval`, `RecipeEditOutboxHandler.removeImage` | redigeraren visar receptets bild med "Ta bort bilden" ("Behåll bilden" ångrar); sparat tas bilden bort lokalt direkt och en `RECIPE_IMAGE`-rad `{"remove": true}` skickar `PUT /api/recipe/{id}/image/` med tom `image_url` (200, `image: null`; ett tomt formulär gör detsamma, en tom `image`-del ger 500, `PATCH image: null` ignoreras) |
+| **Konflikt när bara ett steg ändrats** | `RecipeEditPayloads.stepsFingerprint`, `base(updatedAt, steps)` | `PATCH /api/step/{id}/` och `/api/ingredient/{id}/` flyttar **inte** receptets `updated_at`; PATCH-radens `base_snapshot` bär därför också ett SHA-256 över stegen (id, namn, instruktion, tid, ordning; raderna med id, mängd, enhet, livsmedel, anteckning, flaggor, ordning) ur den lagrade serverkopian, och avsändaren jämför med den färska. Bara serverns egen JSON räknas (har `updated_at`); äldre rader utan fingeravtryck jämförs som förut |
+| **kJ/kcal** | `:core:domain` `NutritionEnergy`, `RecipeDetailViewModel` | energi i kcal visas i kJ (× 4,184) när `use_kj` är på, en typ i kJ visas i kcal när den är av; övriga värden som utrymmet angett dem |
+| **Anpassa Idag** | `:core:model` `HomeLayout`, `HomeRepository.observeLayout/setLayout` (`sync_state` nyckel `home_layout`, kolumnen `hash`), `HomeAction.Customize/MoveSection/ShowSection/ResetSections`, `ui/TodayCustomize.kt` | "Anpassa Idag" under receptraderna öppnar ett ark: varje rad med brytare (en nod per rad) och flytta upp/ned; Återställ, Klar. Sparas direkt i telefonen per konto (också demo), skickas aldrig |
+| **Widget och ruta** | `WidgetActions.check`, `ShoppingTileService`, `WidgetUpdater` | widgetens tryck går genom `setChecked` (outboxen, offline; `ShoppingSyncTest` visar att det skickas sedan); rutan följer listan medan den visas och `WidgetUpdater` ber rutan läsa om (`requestListeningState`) när listan ändras, så antalet stämmer direkt efter en synk; efter omstart ritar Glance widgeten ur Room vid `APPWIDGET_UPDATE` och `TandemApplication` startar `WidgetUpdater` |
+
+**Tester:** `Phase4Fas3RestContractTest`; `RecipeImportRepositoryTest` (sida med länk, synken pausad under alla fyra anropen, stegsortering med/utan leverantör, AI som tappar ett steg, gäst, demo); `RecipeImportViewModelTest` (blockerad länk → sidan → resultat, sida utan recept, Läs igen, Avbryt, stegsortering och Ångra); `RecipeEditRepositoryTest` (konflikt vid stegändring, bilden tas bort); `NutritionEnergyTest`, `RecipeNutritionTest` (fem recept mot webbens värden per portion), `RecipeDetailViewModelTest.energyFollowsTheUsersKjPreference`; `HomeViewModelTest` (ordna, dölj, återställ; lagringsformatet), `DemoAndAccountsTest` (layouten i demoläget, inget skickas); `WidgetActionsTest`. Skärmbilder och ATF: `RecipeImportShot.PAGE*`/`RESULT_SORT*` (`feature/recipes/src/test/screenshots/import/`), `TodayCustomizeScreenshotTest` (`feature/home/src/test/screenshots/home/*customize*`).
+
+**Kvar till senare:** stegsorteringen och AI-importen är bara prövade mot en server utan
+leverantör; ett röktestscenario för WebView-läsningen (se nedan); stegfiler.
+
+**Röktest (spec, inte byggt):** FakeTandoor svarar `POST /api/recipe-from-source/` `{url}` med
+400 `{"error": true, "msg": "Connection Refused."}` och `{url, data}` där `data` innehåller
+`application/ld+json` med 200 och ett recept; en lokal HTTPS-sida i samma FakeTandoor
+(`/blockerad-sida`) med JSON-LD. Scenario: dela länken → "Läser sidan…" → resultatkortet med
+receptets namn → "Öppna i redigeraren".
+<!-- /Fas 4 fas3-rester -->
 
 <!-- Fas 4 ocr -->
 ## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)

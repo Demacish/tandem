@@ -23,6 +23,21 @@ Början på Fas 4 ("Smart hushåll").
 - **Notis när någon ändrar listan:** slå på under Synk och lagring, så säger telefonen till när
   bakgrundssynken ser att någon annan i hushållet lagt till, bockat av eller tagit bort varor.
   Bara när Tandem inte är på skärmen; tryck på notisen öppnar listan.
+<!-- Fas 4, bana fas3-rester (Fas 3:s rester) -->
+- **Sidor som stänger ute servern:** kan er Tandoor inte öppna en delad länk läser Tandem sidan
+  i appen i stället ("Läser sidan…", går att avbryta) och skickar den till Tandoor. Ingen AI
+  används. Ber sidan dig bekräfta något gör du det direkt i vyn och läser sidan igen.
+- **Fördela ingredienserna på stegen:** efter en import kan utrymmets AI flytta varje
+  ingrediens till steget där den används (ett AI-anrop till, det står vid knappen). Går att
+  ångra; tappar AI:n steg eller ingredienser behålls receptet som det var.
+- **Ta bort bilden** i receptredigeraren tar bort receptets bild i Tandoor när du sparar.
+- **Ändrat på webben:** redigeraren märker nu också när någon ändrat bara ett steg eller en
+  ingrediens på webben medan din ändring väntade.
+- **Näringsvärden** visas i kJ eller kcal som du valt i Tandoor.
+- **Anpassa Idag:** välj vilka receptrader Idag visar och i vilken ordning (sparas i telefonen).
+- Importen pausar bakgrundssynken medan Tandoor arbetar, och snabbinställningsrutan "Handla"
+  visar rätt antal direkt efter en synk.
+<!-- /Fas 4, bana fas3-rester -->
 
 ## [0.5.0] – 2026-11-03
 

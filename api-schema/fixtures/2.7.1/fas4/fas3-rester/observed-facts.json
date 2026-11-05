@@ -1,0 +1,167 @@
+{
+  "tandoorTag": "2.7.1",
+  "runDay": "2000-01-15",
+  "webview.urlAndData": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "webview.urlAndData.error": false,
+  "webview.urlAndData.name": "Kanelbullar från en blockerad sida",
+  "webview.urlAndData.sourceUrl": "",
+  "webview.urlAndData.stepCount": 2,
+  "webview.urlAndData.description": "Saftiga bullar med 100% smör.",
+  "webview.urlAndData.foods": [
+    "mjölk",
+    "smör",
+    "vetemjöl"
+  ],
+  "webview.urlAndData.imageUrl": "https://recipes.invalid/bilder/kanelbullar.jpg",
+  "webview.urlAndData.duplicates": [],
+  "webview.noRecipe": {
+    "status": 500,
+    "contentType": "text/html",
+    "isJson": false,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "webview.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "detail": "You do not have permission to perform this action."
+    }
+  },
+  "stepSort.spaceDefaultProvider": null,
+  "stepSort.noProviderParam": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "steps": {
+        "0": {
+          "ingredients": {
+            "0": {
+              "order": [
+                "This field may not be null."
+              ]
+            },
+            "1": {
+              "order": [
+                "This field may not be null."
+              ]
+            },
+            "2": {
+              "order": [
+                "This field may not be null."
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "stepSort.unknownProvider": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "steps": {
+        "0": {
+          "ingredients": {
+            "0": {
+              "order": [
+                "This field may not be null."
+              ]
+            },
+            "1": {
+              "order": [
+                "This field may not be null."
+              ]
+            },
+            "2": {
+              "order": [
+                "This field may not be null."
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "stepSort.appShape.noProviderParam": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "error": true,
+      "msg": "You must select an AI provider to perform your request."
+    }
+  },
+  "stepSort.appShape.unknownProvider": {
+    "status": 500,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "error": true,
+      "msg": "An unexpected error occurred while processing your AI request. \n\n'NoneType' object has no attribute 'api_key'"
+    }
+  },
+  "stepSort.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "stepSort.providers": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "image.create.status": 201,
+  "image.upload.emptyForm.status": 200,
+  "image.upload.emptyForm.hasImage": true,
+  "image.remove.emptyForm": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "image": null,
+      "image_url": null
+    }
+  },
+  "image.remove.emptyForm.imageAfter": null,
+  "image.upload.blankImage.status": 200,
+  "image.upload.blankImage.hasImage": true,
+  "image.remove.blankImage": {
+    "status": 500,
+    "contentType": "text/html",
+    "isJson": false,
+    "body": "\n<!doctype html>\n<html lang=\"en\">\n<head>\n  <title>Server Error (500)</title>\n</head>\n<body>\n  <h1>Server Error (500)</h1><p></p>\n</body>\n</html>\n"
+  },
+  "image.remove.blankImage.imageAfter": "https://tandoor.example.com/media/recipes/29ae412e-34bd-4383-958a-effcf667452e_24.png",
+  "image.upload.blankImageUrl.status": 200,
+  "image.upload.blankImageUrl.hasImage": true,
+  "image.remove.blankImageUrl": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "image": null,
+      "image_url": null
+    }
+  },
+  "image.remove.blankImageUrl.imageAfter": null,
+  "image.remove.guest": {
+    "status": 403,
+    "contentType": "application/json",
+    "isJson": true
+  },
+  "image.patchNull.status": 200,
+  "image.patchNull.imageAfter": "https://tandoor.example.com/media/recipes/089fe862-7c54-448e-a9da-70dda1f8b021_24.png",
+  "stepChange.step.status": 200,
+  "stepChange.step.updatedAtMoved": false,
+  "stepChange.step.instructionSeen": "Blanda allt noga.",
+  "stepChange.ingredient.status": 200,
+  "stepChange.ingredient.updatedAtMoved": false,
+  "mismatches": []
+}

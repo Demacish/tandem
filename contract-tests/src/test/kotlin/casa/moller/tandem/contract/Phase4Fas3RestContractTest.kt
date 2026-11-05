@@ -360,6 +360,8 @@ class Phase4Fas3RestContractTest {
             "webview.guest.status" to 403,
             "webview.noRecipe.status" to 500,
             "stepSort.guest.status" to 403,
+            // With `order` on every line the body is valid: without a provider the server says so.
+            "stepSort.appShape.noProviderParam.status" to 400,
             "image.create.status" to 201,
             "image.upload.emptyForm.hasImage" to true,
             "image.remove.emptyForm.status" to 200,

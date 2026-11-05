@@ -1,0 +1,35 @@
+{
+  "name": "recipe-image-remove-blankImageUrl",
+  "request": {
+    "method": "PUT",
+    "path": "/api/recipe/24/image/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "multipart/form-data; boundary=d5edd104-c039-4f9a-8d65-3d19f21c765a",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "variant": "blankImageUrl"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "PUT, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "image": null,
+      "image_url": null
+    }
+  }
+}
