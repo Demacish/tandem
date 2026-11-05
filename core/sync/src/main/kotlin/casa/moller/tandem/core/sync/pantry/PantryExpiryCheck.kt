@@ -129,10 +129,11 @@ internal class PantryExpiryCheck @Inject constructor(
     /** Online: the pantry when it was not read completely lately, then "Kan laga nu" (its own throttle). Failures keep the stored data. */
     private suspend fun refresh(remote: ActiveSource.Remote, nowMillis: Long) {
         val states = databases.get(remote.kind).syncStateDao()
-        val read = states.get(remote.accountId, PantrySyncStep.PANTRY_KEY)?.lastFullRelistEpochMillis
+        val key = PantrySyncStep.PANTRY_KEY
+        val read = states.get(remote.accountId, key)?.lastFullRelistEpochMillis
         if (read == null || nowMillis - read !in 0 until PantrySyncStep.PANTRY_INTERVAL_MILLIS) {
             if (reader.sync(remote, background = true) is Outcome.Success) {
-                states.upsert(SyncStateEntity(accountId = remote.accountId, entity = PantrySyncStep.PANTRY_KEY, lastFullRelistEpochMillis = nowMillis))
+                states.upsert(SyncStateEntity(accountId = remote.accountId, entity = key, lastFullRelistEpochMillis = nowMillis))
             }
         }
         makeNow.refresh(force = false)
@@ -140,7 +141,9 @@ internal class PantryExpiryCheck @Inject constructor(
 
     /** Every recipe of "Kan laga nu" as stored (the first answer of the flow; empty after [READ_TIMEOUT_MILLIS]). */
     private suspend fun makeNowRecipes(today: LocalDate): List<MakeNowRecipe> {
-        val state: MakeNowState = withTimeoutOrNull(READ_TIMEOUT_MILLIS) { makeNow.observe(MakeNowFilter(), today).first() } ?: return emptyList()
+        val state: MakeNowState = withTimeoutOrNull(READ_TIMEOUT_MILLIS) {
+            makeNow.observe(MakeNowFilter(), today).first()
+        } ?: return emptyList()
         return MakeNowGroup.entries.flatMap { state.recipes(it) }
     }
 

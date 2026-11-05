@@ -29,13 +29,7 @@ enum class ExpiryDay {
  * @property key what "the same item" means for "never twice the same day": the food's name and the
  *   expiry date (entry and location ids may still be temporary and change when they are sent).
  */
-data class ExpiryReminderItem(
-    val key: String,
-    val foodId: Long?,
-    val name: String,
-    val locationId: Long,
-    val expires: LocalDate,
-)
+data class ExpiryReminderItem(val key: String, val foodId: Long?, val name: String, val locationId: Long, val expires: LocalDate)
 
 /**
  * What one notification says: "Grädde går ut i morgon – 3 recept", or "Grädde och 2 till går ut i
@@ -99,7 +93,13 @@ object ExpiryReminder {
         .mapNotNull { entry ->
             val expires = entry.expires ?: return@mapNotNull null
             val name = entry.food.name.trim().takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-            ExpiryReminderItem(key = keyOf(name, expires), foodId = entry.food.id, name = name, locationId = entry.locationId, expires = expires)
+            ExpiryReminderItem(
+                key = keyOf(name, expires),
+                foodId = entry.food.id,
+                name = name,
+                locationId = entry.locationId,
+                expires = expires,
+            )
         }
         .distinctBy { it.key }
         .sortedWith(compareBy<ExpiryReminderItem> { it.expires }.thenBy { it.name.lowercase() })

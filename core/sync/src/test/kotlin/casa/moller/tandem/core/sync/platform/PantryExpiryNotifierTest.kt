@@ -33,8 +33,7 @@ class PantryExpiryNotifierTest {
     private fun item(name: String, expires: LocalDate = tomorrow, location: Long = 1) =
         ExpiryReminderItem(ExpiryReminder.keyOf(name, expires), foodId = null, name = name, locationId = location, expires = expires)
 
-    private fun summary(day: ExpiryDay, recipes: Int, vararg names: String) =
-        ExpiryReminderSummary(names.map { item(it) }, day, recipes)
+    private fun summary(day: ExpiryDay, recipes: Int, vararg names: String) = ExpiryReminderSummary(names.map { item(it) }, day, recipes)
 
     @Test
     fun theTitleNamesTheFirstFoodTheOthersAndTheRecipes() {
@@ -42,7 +41,8 @@ class PantryExpiryNotifierTest {
         assertEquals("Cream expires tomorrow – 3 recipes", notifier.title(summary(ExpiryDay.TOMORROW, 3, "cream")))
         assertEquals("Cream expires today – 1 recipe", notifier.title(summary(ExpiryDay.TODAY, 1, "cream")))
         assertEquals("Cream expires tomorrow", notifier.title(summary(ExpiryDay.TOMORROW, 0, "cream")))
-        assertEquals("Cream and 2 more expire tomorrow – 5 recipes", notifier.title(summary(ExpiryDay.TOMORROW, 5, "cream", "milk", "eggs")))
+        val three = summary(ExpiryDay.TOMORROW, 5, "cream", "milk", "eggs")
+        assertEquals("Cream and 2 more expire tomorrow – 5 recipes", notifier.title(three))
         assertEquals("Cream and 1 more expire today and tomorrow", notifier.title(summary(ExpiryDay.MIXED, 0, "cream", "milk")))
     }
 
@@ -51,7 +51,8 @@ class PantryExpiryNotifierTest {
     fun swedishTitles() {
         val notifier = AndroidPantryExpiryNotifier(context)
         assertEquals("Grädde går ut i morgon – 3 recept", notifier.title(summary(ExpiryDay.TOMORROW, 3, "grädde")))
-        assertEquals("Grädde och 2 till går ut i morgon – 5 recept", notifier.title(summary(ExpiryDay.TOMORROW, 5, "grädde", "mjölk", "ägg")))
+        val three = summary(ExpiryDay.TOMORROW, 5, "grädde", "mjölk", "ägg")
+        assertEquals("Grädde och 2 till går ut i morgon – 5 recept", notifier.title(three))
         assertEquals("Grädde och 1 till går ut i dag", notifier.title(summary(ExpiryDay.TODAY, 0, "grädde", "mjölk")))
     }
 

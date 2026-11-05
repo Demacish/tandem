@@ -112,12 +112,16 @@ class ExpiryReminderViewModel @Inject internal constructor(
         private fun List<PantryGroup>.hasExpiryDates(): Boolean = any { group -> group.entries.any { it.expires != null } }
 
         /** The offer for these inputs (pure, tested). */
-        fun offerOf(settings: AppSettings, notificationsAllowed: Boolean, permissions: SpacePermissions, hasExpiryDates: Boolean): ExpiryReminderOffer? =
-            when {
-                permissions.readOnly || permissions.isDemo || settings.pantryExpiryOfferDismissed -> null
-                settings.pantryExpiryNotifications -> if (notificationsAllowed) null else ExpiryReminderOffer(blocked = true)
-                hasExpiryDates -> ExpiryReminderOffer(blocked = false)
-                else -> null
-            }
+        fun offerOf(
+            settings: AppSettings,
+            notificationsAllowed: Boolean,
+            permissions: SpacePermissions,
+            hasExpiryDates: Boolean,
+        ): ExpiryReminderOffer? = when {
+            permissions.readOnly || permissions.isDemo || settings.pantryExpiryOfferDismissed -> null
+            settings.pantryExpiryNotifications -> if (notificationsAllowed) null else ExpiryReminderOffer(blocked = true)
+            hasExpiryDates -> ExpiryReminderOffer(blocked = false)
+            else -> null
+        }
     }
 }

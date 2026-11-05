@@ -60,7 +60,9 @@ class PantryScreensTest {
     fun theExpiryOfferTurnsTheNotificationOnOrGoesAway() {
         val actions = mutableListOf<PantryAction>()
         composeRule.setContent {
-            PantryTestTheme { PantryScreen(state = PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer()), onAction = { actions += it }) }
+            PantryTestTheme {
+                PantryScreen(state = PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer()), onAction = { actions += it })
+            }
         }
         composeRule.onNodeWithText("Vill du få en påminnelse när något går ut?").assertIsDisplayed()
         composeRule.onNodeWithText("Slå på").performClick()
@@ -79,7 +81,8 @@ class PantryScreensTest {
         val actions = mutableListOf<PantryAction>()
         composeRule.setContent {
             PantryTestTheme {
-                PantryScreen(state = PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer(blocked = true)), onAction = { actions += it })
+                val state = PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer(blocked = true))
+                PantryScreen(state = state, onAction = { actions += it })
             }
         }
         composeRule.onNodeWithText("Notiserna är avstängda").assertIsDisplayed()

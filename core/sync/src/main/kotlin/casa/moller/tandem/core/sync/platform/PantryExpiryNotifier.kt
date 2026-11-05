@@ -88,7 +88,9 @@ internal class AndroidPantryExpiryNotifier @Inject constructor(@ApplicationConte
         val resources = context.resources
         val base = when {
             summary.others == 0 && summary.day == ExpiryDay.TODAY -> context.getString(R.string.sync_pantry_expiry_one_today, name)
+
             summary.others == 0 -> context.getString(R.string.sync_pantry_expiry_one_tomorrow, name)
+
             else -> {
                 val plural = when (summary.day) {
                     ExpiryDay.TODAY -> R.plurals.sync_pantry_expiry_many_today
@@ -103,7 +105,8 @@ internal class AndroidPantryExpiryNotifier @Inject constructor(@ApplicationConte
     }
 
     private fun line(item: ExpiryReminderItem, today: LocalDate, locationNames: Map<Long, String>): String {
-        val day = context.getString(if (item.expires == today) R.string.sync_pantry_expiry_day_today else R.string.sync_pantry_expiry_day_tomorrow)
+        val dayText = if (item.expires == today) R.string.sync_pantry_expiry_day_today else R.string.sync_pantry_expiry_day_tomorrow
+        val day = context.getString(dayText)
         val place = locationNames[item.locationId]
         val name = capitalized(item.name)
         return if (place == null) {

@@ -155,8 +155,14 @@ private fun PantryHomeRoute(
         reminder.effects.collect { effect ->
             when (effect) {
                 ExpiryReminderEffect.RequestPermission -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                ExpiryReminderEffect.Enabled -> scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_enabled)) }
-                ExpiryReminderEffect.NotSaved -> scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_not_saved)) }
+
+                ExpiryReminderEffect.Enabled -> scope.launch {
+                    snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_enabled))
+                }
+
+                ExpiryReminderEffect.NotSaved -> scope.launch {
+                    snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_not_saved))
+                }
             }
         }
     }

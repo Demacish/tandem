@@ -108,7 +108,8 @@ class PantryExpiryWorkTest {
             val notifier = object : PantryExpiryNotifier {
                 override fun canPost() = true
 
-                override fun post(summary: ExpiryReminderSummary, today: LocalDate, locationNames: Map<Long, String>): Boolean = posted.add(summary)
+                override fun post(summary: ExpiryReminderSummary, today: LocalDate, locationNames: Map<Long, String>): Boolean =
+                    posted.add(summary)
             }
             val check = PantryExpiryCheck(
                 settings = graph.settings,
@@ -123,8 +124,11 @@ class PantryExpiryWorkTest {
                 clock = FixedClock(LocalDateTime.parse("2026-10-06T08:00").toInstant(stockholm), stockholm),
             )
             val factory = object : WorkerFactory() {
-                override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker =
-                    PantryExpiryWorker(appContext, workerParameters, check)
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: WorkerParameters,
+                ): ListenableWorker = PantryExpiryWorker(appContext, workerParameters, check)
             }
             val worker = TestListenableWorkerBuilder<PantryExpiryWorker>(context).setWorkerFactory(factory).build()
 
