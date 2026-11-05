@@ -292,6 +292,12 @@ sealed interface CookAction {
      * (timer detection ties), from the screen's locale.
      */
     data class SetLocale(val style: NumberStyle, val languageTag: String) : CookAction
+
+    /**
+     * Fas 4 (two recipes at once): every recipe open in this cook mode (the route sends it when
+     * the session changes). Saving "Klart!" then clears only this recipe's finished timers.
+     */
+    data class SetOtherRecipes(val recipeIds: Set<Long>) : CookAction
 }
 
 /** One-off events of cook mode. */

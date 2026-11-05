@@ -121,4 +121,19 @@
     <string name="cook_back">Back</string>
     <!-- Phase 2 (#42): the "Done!" page of a guest. -->
     <string name="cook_done_guest">You are a guest: what you cook is not saved in Tandoor.</string>
+    <!-- Fas 4 (two recipes at once, plan 8.1): "Cook another recipe" and the recipe tabs. -->
+    <string name="cook_add_recipe">Cook another recipe</string>
+    <!-- ✕ with two recipes open: closes the shown recipe only. %1$s is the recipe's name. -->
+    <string name="cook_close_recipe">Stop cooking %1$s</string>
+    <string name="cook_tab_loading">Loading…</string>
+    <!-- TalkBack text of a recipe tab. %1$s is the recipe, %2$s "Step 2 of 6" or "Done!". -->
+    <string name="cook_tab_description">%1$s, %2$s</string>
+    <string name="cook_tab_ringing_description">%1$s, %2$s, a timer is ringing</string>
+    <string name="cook_picker_title">Cook another recipe</string>
+    <string name="cook_picker_hint">Both recipes stay open in cook mode, each at its own step. Switch between them at the top; the timers of both show in both.</string>
+    <string name="cook_picker_search">Search recipes</string>
+    <string name="cook_picker_close">Close</string>
+    <string name="cook_picker_choose">Cook this too</string>
+    <string name="cook_picker_no_recipes">There are no other recipes on this device yet.</string>
+    <string name="cook_picker_no_matches">No recipes match the search.</string>
 </resources>

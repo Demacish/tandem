@@ -89,6 +89,8 @@ internal data class StoredTimer(
     @SerialName("step_index") val stepIndex: Int? = null,
     // Added in the fix lane of 0.2.0; files without it read as null (TimerSource.matches accepts null).
     @SerialName("source") val sourceKey: String? = null,
+    // Fas 4 (two recipes at once); files without it read as null (the timer then shows no recipe name).
+    @SerialName("recipe_name") val recipeName: String? = null,
     @SerialName("duration_ms") val durationMillis: Long,
     @SerialName("state") val state: String,
     @SerialName("ends_at_ms") val endsAtMillis: Long? = null,
@@ -104,6 +106,7 @@ internal data class StoredTimer(
                 recipeId = recipeId,
                 stepIndex = stepIndex,
                 sourceKey = sourceKey,
+                recipeName = recipeName,
                 duration = durationMillis.milliseconds,
                 state = timerState,
                 endsAt = endsAtMillis?.let(Instant::fromEpochMilliseconds),
@@ -122,6 +125,7 @@ internal data class StoredTimer(
             recipeId = timer.recipeId,
             stepIndex = timer.stepIndex,
             sourceKey = timer.sourceKey,
+            recipeName = timer.recipeName,
             durationMillis = timer.duration.inWholeMilliseconds,
             state = timer.state.name,
             endsAtMillis = timer.endsAt?.toEpochMilliseconds(),

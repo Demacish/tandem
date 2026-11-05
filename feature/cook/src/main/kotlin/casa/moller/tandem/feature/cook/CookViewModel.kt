@@ -32,6 +32,7 @@ import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerStartResult
+import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.model.timer.TimerSuggestion
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.ui.stepPlainText
@@ -108,6 +109,12 @@ class CookViewModel @AssistedInject constructor(
     private val locale = MutableStateFlow(LocaleInfo(Locale.getDefault().toNumberStyle(), Locale.getDefault().toLanguageTag()))
 
     private val saving = MutableStateFlow(false)
+
+    /**
+     * Fas 4 (two recipes at once): the other recipe open in the same cook mode, sent by the route
+     * ([CookAction.SetOtherRecipes]); its finished timers stay when this recipe's "Klart!" is saved.
+     */
+    private val otherRecipes = MutableStateFlow<Set<Long>>(emptySet())
 
     /**
      * "Not now" on the notification question: not asked again while this cook mode is open (also
@@ -199,6 +206,7 @@ class CookViewModel @AssistedInject constructor(
             CookAction.SaveCookLog -> saveCookLog()
             CookAction.Retry -> viewModelScope.launch { recipes.refreshRecipe(recipeId) }
             is CookAction.SetLocale -> locale.value = LocaleInfo(action.style, action.languageTag)
+            is CookAction.SetOtherRecipes -> otherRecipes.value = action.recipeIds - recipeId
         }
     }
 
@@ -295,6 +303,8 @@ class CookViewModel @AssistedInject constructor(
                 recipeId = recipeId,
                 stepIndex = pending.stepIndex,
                 sourceKey = TimerSource.of(demoMode = settings.value.demoMode, accountId = settings.value.activeAccountId),
+                // Fas 4 (two recipes at once): the timer bar, the timer list and the notifications say whose timer it is.
+                recipeName = uiState.value.recipeName.takeIf { it.isNotBlank() },
             )
             val message = when (result) {
                 // TalkBack hears that the timer runs (the new row in the timer bar is not announced).
@@ -335,8 +345,7 @@ class CookViewModel @AssistedInject constructor(
         viewModelScope.launch {
             when (cookLog.logCooked(draft)) {
                 is Outcome.Success -> {
-                    // The rung and stopped timers of this meal are done with too (TimerController.clearFinished).
-                    timerController.clearFinished()
+                    clearFinishedTimers()
                     val message = when {
                         state.demo -> R.string.cook_done_saved_demo
                         state.sendState == CookLogSendState.OFFLINE -> R.string.cook_done_saved_offline
@@ -352,6 +361,21 @@ class CookViewModel @AssistedInject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * The rung and stopped timers of this meal are done with too (TimerController.clearFinished).
+     * Fas 4: with another recipe open beside this one, that recipe's finished timers stay.
+     */
+    private suspend fun clearFinishedTimers() {
+        val others = otherRecipes.value
+        if (others.isEmpty()) {
+            timerController.clearFinished()
+            return
+        }
+        timerController.timers.value
+            .filter { it.state == TimerState.FINISHED && it.recipeId !in others }
+            .forEach { timerController.cancel(it.id) }
     }
 
     private fun buildState(recipe: RecipeSources, timers: TimerSources, session: SessionState, settings: AppSettings): CookUiState {

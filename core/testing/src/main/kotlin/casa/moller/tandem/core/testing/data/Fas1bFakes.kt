@@ -74,7 +74,14 @@ class FakeTimerController(
         mutableTimers.update { list -> list.map { it.ring(now) } }
     }
 
-    override suspend fun start(label: String, duration: Duration, recipeId: Long?, stepIndex: Int?, sourceKey: String?): TimerStartResult {
+    override suspend fun start(
+        label: String,
+        duration: Duration,
+        recipeId: Long?,
+        stepIndex: Int?,
+        sourceKey: String?,
+        recipeName: String?,
+    ): TimerStartResult {
         if (label.isBlank() || duration < CookTimer.MIN_DURATION) return TimerStartResult.Invalid
         if (mode == TimerMode.CLOCK_APP) {
             if (!capabilities.value.clockAppAvailable) return TimerStartResult.ClockAppUnavailable
@@ -83,7 +90,7 @@ class FakeTimerController(
         }
         val active = mutableTimers.value.count { it.state != TimerState.FINISHED }
         if (active >= CookTimer.MAX_PARALLEL_TIMERS) return TimerStartResult.TooManyTimers(CookTimer.MAX_PARALLEL_TIMERS)
-        val timer = CookTimer.start(nextId++, label, duration, clock.now(), recipeId, stepIndex, sourceKey)
+        val timer = CookTimer.start(nextId++, label, duration, clock.now(), recipeId, stepIndex, sourceKey, recipeName)
         mutableTimers.update { it + timer }
         return TimerStartResult.Started(timer)
     }

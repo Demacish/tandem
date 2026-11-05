@@ -44,6 +44,8 @@ interface TimerController {
      * @param stepIndex the 0-based step the timer belongs to.
      * @param sourceKey where [recipeId] belongs (`TimerSource.of`: demo mode or the active
      *   account), stored with the timer so it never opens another source's recipe.
+     * @param recipeName Fas 4 (two recipes at once): the recipe's name, kept with the timer so the
+     *   timer bar, the timer list and the notifications say which recipe it belongs to.
      */
     suspend fun start(
         label: String,
@@ -51,6 +53,7 @@ interface TimerController {
         recipeId: Long? = null,
         stepIndex: Int? = null,
         sourceKey: String? = null,
+        recipeName: String? = null,
     ): TimerStartResult
 
     suspend fun pause(id: Long)

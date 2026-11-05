@@ -111,4 +111,17 @@
     <string name="cook_back">Tillbaka</string>
     <!-- Phase 2 (#42): the "Done!" page of a guest. -->
     <string name="cook_done_guest">Du är gäst: det du lagar sparas inte i Tandoor.</string>
+    <!-- Fas 4 (två recept samtidigt, plan 8.1). -->
+    <string name="cook_add_recipe">Laga ett recept till</string>
+    <string name="cook_close_recipe">Sluta laga %1$s</string>
+    <string name="cook_tab_loading">Läser in …</string>
+    <string name="cook_tab_description">%1$s, %2$s</string>
+    <string name="cook_tab_ringing_description">%1$s, %2$s, en timer larmar</string>
+    <string name="cook_picker_title">Laga ett recept till</string>
+    <string name="cook_picker_hint">Båda recepten är öppna i kokläget, vart och ett på sitt eget steg. Växla mellan dem högst upp. Timers från båda recepten syns i båda.</string>
+    <string name="cook_picker_search">Sök recept</string>
+    <string name="cook_picker_close">Stäng</string>
+    <string name="cook_picker_choose">Laga det här också</string>
+    <string name="cook_picker_no_recipes">Det finns inga andra recept på enheten än.</string>
+    <string name="cook_picker_no_matches">Inga recept matchar sökningen.</string>
 </resources>

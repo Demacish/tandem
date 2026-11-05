@@ -39,4 +39,6 @@
         <item quantity="one">%d timer: time\'s up</item>
         <item quantity="other">%d timers: time\'s up</item>
     </plurals>
+    <!-- Fas 4 (two recipes at once): a timer's name with its recipe, e.g. "Pasta · 10 min (Mushroom pasta)". -->
+    <string name="timer_label_with_recipe">%1$s (%2$s)</string>
 </resources>

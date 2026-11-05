@@ -128,9 +128,19 @@ fun timerDurationText(duration: Duration): String {
     ).joinToString(" ")
 }
 
-/** What TalkBack says for a timer: "Pasta · 10 min, 7 min 39 s kvar", "…, tiden är ute". */
+/**
+ * What TalkBack says for a timer: "Pasta · 10 min, 7 min 39 s kvar", "…, tiden är ute"; with
+ * [withRecipe] (Fas 4, two recipes at once) its recipe first: "Krämig svamppasta: Pasta · 10 min, …".
+ */
 @Composable
-fun timerDescription(timer: CookTimer, now: Instant): String = when (timer.state) {
+fun timerDescription(timer: CookTimer, now: Instant, withRecipe: Boolean = false): String {
+    val description = timerStateDescription(timer, now)
+    val recipe = timer.recipeName?.takeIf { withRecipe } ?: return description
+    return stringResource(R.string.ui_timer_with_recipe_description, recipe, description)
+}
+
+@Composable
+private fun timerStateDescription(timer: CookTimer, now: Instant): String = when (timer.state) {
     TimerState.RUNNING -> stringResource(R.string.ui_timer_running_description, timer.label, timerDurationText(timer.remaining(now)))
     TimerState.PAUSED -> stringResource(R.string.ui_timer_paused_description, timer.label, timerDurationText(timer.remaining(now)))
     TimerState.RINGING -> stringResource(R.string.ui_timer_ringing_description, timer.label)
@@ -144,6 +154,7 @@ fun timerDescription(timer: CookTimer, now: Instant): String = when (timer.state
  *
  * @param onOpen tapping a timer's name and time (e.g. jump to its step); null: not tappable.
  * @param maxHeight the bar never takes more than this from the step above it.
+ * @param showRecipe Fas 4 (two recipes at once): each timer says its recipe ([CookTimer.recipeName]).
  */
 @Composable
 fun TimerBar(
@@ -153,6 +164,7 @@ fun TimerBar(
     modifier: Modifier = Modifier,
     onOpen: ((CookTimer) -> Unit)? = null,
     maxHeight: Dp = TimerBarMaxHeight,
+    showRecipe: Boolean = false,
 ) {
     if (timers.isEmpty()) return
     Column(
@@ -163,7 +175,13 @@ fun TimerBar(
         verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.sm),
     ) {
         timers.sortedForDisplay().forEach { timer ->
-            TimerBarItem(timer = timer, now = now, actions = actions, onOpen = onOpen?.let { open -> { open(timer) } })
+            TimerBarItem(
+                timer = timer,
+                now = now,
+                actions = actions,
+                onOpen = onOpen?.let { open -> { open(timer) } },
+                showRecipe = showRecipe,
+            )
         }
     }
 }
@@ -174,7 +192,14 @@ fun List<CookTimer>.sortedForDisplay(): List<CookTimer> =
 
 /** One row of [TimerBar]: name and time, then the timer's buttons. */
 @Composable
-fun TimerBarItem(timer: CookTimer, now: Instant, actions: TimerActions, modifier: Modifier = Modifier, onOpen: (() -> Unit)? = null) {
+fun TimerBarItem(
+    timer: CookTimer,
+    now: Instant,
+    actions: TimerActions,
+    modifier: Modifier = Modifier,
+    onOpen: (() -> Unit)? = null,
+    showRecipe: Boolean = false,
+) {
     val colors = timerColors(timer.state)
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -192,6 +217,7 @@ fun TimerBarItem(timer: CookTimer, now: Instant, actions: TimerActions, modifier
                 colors = colors,
                 timeStyle = MaterialTheme.typography.headlineSmall,
                 onOpen = onOpen,
+                showRecipe = showRecipe,
                 modifier = Modifier.weight(1f),
             )
             TimerButtons(timer = timer, actions = actions, colors = colors)
@@ -211,6 +237,7 @@ fun TimerCard(
     modifier: Modifier = Modifier,
     overline: String? = null,
     onOpen: (() -> Unit)? = null,
+    showRecipe: Boolean = false,
 ) {
     val colors = timerColors(timer.state)
     val spacing = TandemTheme.spacing
@@ -230,6 +257,7 @@ fun TimerCard(
                 colors = colors,
                 timeStyle = MaterialTheme.typography.displaySmall,
                 onOpen = onOpen,
+                showRecipe = showRecipe,
                 modifier = Modifier.fillMaxWidth(),
             )
             LinearProgressIndicator(
@@ -268,8 +296,10 @@ private fun TimerInfo(
     timeStyle: TextStyle,
     onOpen: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    showRecipe: Boolean = false,
 ) {
-    val description = timerDescription(timer, now)
+    val recipe = timer.recipeName?.takeIf { showRecipe }
+    val description = timerDescription(timer, now, withRecipe = recipe != null)
     val openLabel = stringResource(R.string.ui_timer_open_step)
     Column(
         modifier = modifier
@@ -282,6 +312,16 @@ private fun TimerInfo(
             .padding(vertical = TandemTheme.spacing.sm),
         verticalArrangement = Arrangement.Center,
     ) {
+        if (recipe != null) {
+            // Fas 4 (two recipes at once): which recipe the timer belongs to, above its name.
+            Text(
+                text = recipe,
+                style = MaterialTheme.typography.labelMedium,
+                color = colors.accent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs)) {
             Icon(
                 imageVector = timer.state.icon(),

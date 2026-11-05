@@ -133,12 +133,20 @@ internal interface ShellFeatures {
     // --- Phase 1b (kokläge lane): cook mode and the timer list (feature:cook). ---
 
     /**
-     * Cook mode (full screen on every width). [pageRequest] is a step the open cook mode should
+     * Cook mode (full screen on every width). [pageRequest] is a page one of its recipes should
      * turn to (a tapped timer of it), handled once with [onPageRequestHandled]. [onOpenShoppingList]
      * (Phase 2, koppling lane) is "Visa listan" after "Lägg på inköpslistan" on the last page.
+     * Fas 4 (two recipes at once): [onRecipesChanged] reports the recipes open in it.
      */
     @Composable
-    fun Cook(key: CookKey, onClose: () -> Unit, pageRequest: Int?, onPageRequestHandled: () -> Unit, onOpenShoppingList: () -> Unit)
+    fun Cook(
+        key: CookKey,
+        onClose: () -> Unit,
+        pageRequest: CookPageRequest?,
+        onPageRequestHandled: () -> Unit,
+        onOpenShoppingList: () -> Unit,
+        onRecipesChanged: (Set<Long>) -> Unit,
+    )
 
     /**
      * All timers; [onOpenCook] opens cook mode at a timer's recipe and step, offered only for
@@ -364,18 +372,20 @@ internal object RouteShellFeatures : ShellFeatures {
     override fun Cook(
         key: CookKey,
         onClose: () -> Unit,
-        pageRequest: Int?,
+        pageRequest: CookPageRequest?,
         onPageRequestHandled: () -> Unit,
         onOpenShoppingList: () -> Unit,
+        onRecipesChanged: (Set<Long>) -> Unit,
     ) {
         CookRoute(
             key = key,
             onClose = onClose,
             pageRequest = pageRequest,
             onPageRequestHandled = onPageRequestHandled,
-            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page.
-            shoppingAction = { servings, snackbar ->
-                RecipeShoppingRoute(key.recipeId, servings, snackbar, onOpenShoppingList)
+            onRecipesChanged = onRecipesChanged,
+            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page (Fas 4: of the shown recipe).
+            shoppingAction = { recipeId, servings, snackbar ->
+                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
             },
         )
     }

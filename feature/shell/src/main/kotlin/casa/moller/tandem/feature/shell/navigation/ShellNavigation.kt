@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.shell.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -221,7 +222,8 @@ class ShellNavigationState(
      * list on top is replaced).
      */
     fun openCook(recipeId: Long, step: Int?) {
-        val isRecipe: (NavKey) -> Boolean = { it is CookKey && it.recipeId == recipeId }
+        // Fas 4 (two recipes at once): a cook mode whose second tab is the recipe counts too.
+        val isRecipe: (NavKey) -> Boolean = { it is CookKey && recipeId in cookRecipesOf(it) }
         val tab = when {
             stack(currentTab).any(isRecipe) -> currentTab
             stack(ShellTab.TODAY).any(isRecipe) -> ShellTab.TODAY
@@ -242,6 +244,21 @@ class ShellNavigationState(
             if (isRecipe(stack[index])) stack.removeAt(index)
         }
         if (step != null) cookPageRequest = CookPageRequest(recipeId, step)
+    }
+
+    /**
+     * Fas 4 (two recipes at once, plan 8.1): the recipes open in each cook entry, as its route
+     * reports them ([onCookRecipesChanged]). Not saved: the shown cook entry reports again as soon
+     * as it is composed after process death.
+     */
+    private val cookRecipes = mutableStateMapOf<CookKey, Set<Long>>()
+
+    /** The recipes open in the cook entry of [key]: what it reported, else what it opened with. */
+    fun cookRecipesOf(key: CookKey): Set<Long> = cookRecipes[key] ?: key.recipeIds.toSet()
+
+    /** The cook entry of [key] has [recipeIds] open now ("Laga ett recept till", a closed tab). */
+    fun onCookRecipesChanged(key: CookKey, recipeIds: Set<Long>) {
+        cookRecipes[key] = recipeIds
     }
 
     /** The cook entry of [recipeId] turned to the requested page. */
@@ -287,8 +304,12 @@ class ShellNavigationState(
     private fun stack(tab: ShellTab): MutableList<NavKey> = stacks.getValue(tab)
 }
 
-/** A page ([step], 0-based) the open cook mode of [recipeId] should show ([ShellNavigationState.openCook]). */
-data class CookPageRequest(val recipeId: Long, val step: Int)
+/**
+ * A page ([CookPageRequest.step], 0-based) the open cook mode of [CookPageRequest.recipeId] should
+ * show ([ShellNavigationState.openCook]); feature:cook's type since Fas 4, so its route can select
+ * the recipe's tab.
+ */
+typealias CookPageRequest = casa.moller.tandem.feature.cook.navigation.CookPageRequest
 
 /** Remembers the shell's back stacks and selected tab, saved across process death. */
 @Composable

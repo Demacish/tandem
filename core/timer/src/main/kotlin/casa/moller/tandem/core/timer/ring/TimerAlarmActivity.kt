@@ -74,7 +74,7 @@ internal class TimerAlarmActivity : Activity() {
             bind(row, timer, engine)
         }
         val title = if (ringing.size == 1) {
-            getString(R.string.timer_alarm_window_title_one, ringing.single().label)
+            getString(R.string.timer_alarm_window_title_one, labelWithRecipe(ringing.single()))
         } else {
             resources.getQuantityString(R.plurals.timer_alarm_window_title, ringing.size, ringing.size)
         }
@@ -83,14 +83,19 @@ internal class TimerAlarmActivity : Activity() {
     }
 
     private fun bind(row: View, timer: CookTimer, engine: DefaultTimerController) {
-        row.findViewById<TextView>(R.id.timer_alarm_label).text = timer.label
+        // Fas 4 (two recipes at once): which recipe rings, e.g. "Pastan · 10 min (Krämig svamppasta)".
+        val label = labelWithRecipe(timer)
+        row.findViewById<TextView>(R.id.timer_alarm_label).text = label
         row.findViewById<Button>(R.id.timer_alarm_plus_one).apply {
-            contentDescription = getString(R.string.timer_action_plus_one_minute_for, timer.label)
+            contentDescription = getString(R.string.timer_action_plus_one_minute_for, label)
             setOnClickListener { scope.launch { engine.addOneMinute(timer.id) } }
         }
         row.findViewById<Button>(R.id.timer_alarm_stop).apply {
-            contentDescription = getString(R.string.timer_action_stop_for, timer.label)
+            contentDescription = getString(R.string.timer_action_stop_for, label)
             setOnClickListener { scope.launch { engine.stopRinging(timer.id) } }
         }
     }
+
+    private fun labelWithRecipe(timer: CookTimer): String =
+        timer.recipeName?.let { getString(R.string.timer_label_with_recipe, timer.label, it) } ?: timer.label
 }

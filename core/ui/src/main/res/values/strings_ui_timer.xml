@@ -38,4 +38,6 @@
         <item quantity="one">%1$d timer</item>
         <item quantity="other">%1$d timers</item>
     </plurals>
+    <!-- Fas 4 (two recipes at once): TalkBack text of a timer with its recipe. %1$s is the recipe, %2$s the timer ("Pasta · 10 min, 7 min left"). -->
+    <string name="ui_timer_with_recipe_description">%1$s: %2$s</string>
 </resources>

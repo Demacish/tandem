@@ -143,6 +143,8 @@ fun TimersScreen(
                         actions = actions,
                         overline = step?.let { stringResource(R.string.cook_step_heading, it + 1) },
                         onOpen = if (opensCook) ({ onOpenCook(timer) }) else null,
+                        // Fas 4 (two recipes at once): each timer says its recipe.
+                        showRecipe = true,
                         modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth),
                     )
                 }

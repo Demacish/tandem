@@ -30,6 +30,7 @@ import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.timer.LocalTimerClock
 import casa.moller.tandem.core.ui.timer.LocalTimerTicks
 import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.navigation.CookPageRequest
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.pantry.navigation.PantryDestination
@@ -261,13 +262,14 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     override fun Cook(
         key: CookKey,
         onClose: () -> Unit,
-        pageRequest: Int?,
+        pageRequest: CookPageRequest?,
         onPageRequestHandled: () -> Unit,
         onOpenShoppingList: () -> Unit,
+        onRecipesChanged: (Set<Long>) -> Unit,
     ) {
         ShellScreenScaffold(title = "Cook ${key.recipeId}", state = state, onNavigateBack = onClose) { padding ->
             // The step a tapped timer asked for stays visible, so tests can see it arrived.
-            val page = pageRequest?.let { " at step ${it + 1}" }.orEmpty()
+            val page = pageRequest?.let { " at step ${it.step + 1}" }.orEmpty()
             Text(text = "Cook mode ${key.recipeId}$page", modifier = Modifier.padding(padding))
         }
     }

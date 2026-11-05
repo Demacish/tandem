@@ -344,6 +344,7 @@ internal fun CookSidePane(
     onAction: (CookAction) -> Unit,
     warningActions: WarningActions,
     modifier: Modifier = Modifier,
+    showTimerRecipes: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
     val step = state.currentStep
@@ -387,16 +388,24 @@ internal fun CookSidePane(
                     PaneHeading(text = stringResource(R.string.cook_active_timers))
                     state.timers.sortedForDisplay().forEach { timer ->
                         if (shortPane) {
-                            TimerBarItem(timer = timer, now = now, actions = timerActions, onOpen = { onOpenTimer(timer) })
+                            TimerBarItem(
+                                timer = timer,
+                                now = now,
+                                actions = timerActions,
+                                onOpen = { onOpenTimer(timer) },
+                                showRecipe = showTimerRecipes,
+                            )
                         } else {
                             TimerCard(
                                 timer = timer,
                                 now = now,
                                 actions = timerActions,
-                                overline = timer.stepIndex?.takeIf { timer.recipeId == state.recipeId }?.let {
+                                // Fas 4: with the recipes named, every timer's step is shown too.
+                                overline = timer.stepIndex?.takeIf { timer.recipeId == state.recipeId || showTimerRecipes }?.let {
                                     stringResource(R.string.cook_step_heading, it + 1)
                                 },
                                 onOpen = { onOpenTimer(timer) },
+                                showRecipe = showTimerRecipes,
                             )
                         }
                     }

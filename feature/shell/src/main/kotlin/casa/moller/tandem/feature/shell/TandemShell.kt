@@ -63,6 +63,7 @@ import casa.moller.tandem.core.ui.status.SafeModeInfoScreen
 import casa.moller.tandem.core.ui.status.TANDEM_RELEASES_URL
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.cook.navigation.cookKeyAlongside
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
@@ -389,13 +390,18 @@ internal fun ShellScaffold(
                 onOpenUnpack = { navigation.navigate(UnpackKey) },
             )
         }
+        // Fas 4 (two recipes at once, plan 8.1): "Laga" while another recipe's timers run opens
+        // cook mode with both recipes (feature:cook cookKeyAlongside).
+        val startCooking: (Long, Double?) -> Unit = { id, servings ->
+            navigation.navigate(cookKeyAlongside(id, servings, state.timers, state.timerSource))
+        }
         val week: @Composable (String?) -> Unit = { weekStart ->
             features.Week(
                 weekStart = weekStart,
                 onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                 onPlanMeal = { navigation.navigate(it, replace = { key -> key is PlanMealKey }) },
                 onWeekShopping = { navigation.navigate(it, replace = { key -> key is WeekShoppingKey }) },
-                onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                onStartCooking = startCooking,
             )
         }
         // --- Fas S (grund lane): Hemma, scanning and drinks, each through its module's one route. ---
@@ -468,7 +474,7 @@ internal fun ShellScaffold(
                     onBack = { navigation.goBack() },
                     onOpenRecipe = openRecipe,
                     onOpenOnWeb = openOnWeb,
-                    onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                    onStartCooking = startCooking,
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                     onPlanMeal = { id -> navigation.navigate(PlanMealKey(date = LocalDate.now().toString(), recipeId = id)) },
                     onNavigate = openKey,
@@ -484,7 +490,7 @@ internal fun ShellScaffold(
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                     onOpenRecipes = { navigation.selectTab(ShellTab.RECIPES) },
                     onOpenWeek = { navigation.selectTab(ShellTab.WEEK) },
-                    onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                    onStartCooking = startCooking,
                     // Phase 2 (books lane): "Visa alla" on the "Vill laga" row.
                     onOpenWantToCook = { navigation.navigate(WantToCookKey) },
                     // Phase 2 (integration lane): the favourites row and tonight's "Handla".
@@ -526,7 +532,7 @@ internal fun ShellScaffold(
                     // A sub-recipe opens on top, in the same pane as the recipe that links to it.
                     onOpenRecipe = { navigation.navigate(RecipeDetailKey(it, inListDetail = key.inListDetail)) },
                     onOpenOnWeb = openOnWeb,
-                    onStartCooking = { id, servings -> navigation.navigate(CookKey(id, servings)) },
+                    onStartCooking = startCooking,
                     // Phase 2 (koppling lane): "Visa listan" after "Lägg på inköpslistan".
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                     // fix-ui: "Planera" plans the recipe from today, as "Vill laga" does (the page picks the day).
@@ -567,13 +573,16 @@ internal fun ShellScaffold(
             }
             // --- Phase 1b (kokläge lane): cook mode over the tab it was opened from, and all timers. ---
             entry<CookKey> { key ->
+                // fix-ui (0.2.0 review): a timer of this open cook mode turns it to the timer's step;
+                // Fas 4: of either of its recipes.
+                val pageRequest = navigation.cookPageRequest?.takeIf { it.recipeId in navigation.cookRecipesOf(key) }
                 features.Cook(
                     key = key,
                     onClose = { navigation.goBack() },
-                    // fix-ui (0.2.0 review): a timer of this open cook mode turns it to the timer's step.
-                    pageRequest = navigation.cookPageRequest?.takeIf { it.recipeId == key.recipeId }?.step,
-                    onPageRequestHandled = { navigation.onCookPageRequestHandled(key.recipeId) },
+                    pageRequest = pageRequest,
+                    onPageRequestHandled = { pageRequest?.let { navigation.onCookPageRequestHandled(it.recipeId) } },
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+                    onRecipesChanged = { navigation.onCookRecipesChanged(key, it) },
                 )
             }
             entry<TimersKey> {

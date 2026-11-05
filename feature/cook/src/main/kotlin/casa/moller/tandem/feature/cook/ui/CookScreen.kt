@@ -72,6 +72,7 @@ import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
+import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.TextDecrease
 import casa.moller.tandem.core.designsystem.icon.TextIncrease
@@ -92,6 +93,9 @@ import casa.moller.tandem.feature.cook.CookAction
 import casa.moller.tandem.feature.cook.CookUiState
 import casa.moller.tandem.feature.cook.R
 import casa.moller.tandem.feature.cook.SilentAlarmCause
+import casa.moller.tandem.feature.cook.session.CookRecipeTabs
+import casa.moller.tandem.feature.cook.session.CookSessionAction
+import casa.moller.tandem.feature.cook.session.CookSessionUi
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -150,6 +154,11 @@ data class FoldBounds(val top: Float, val bottom: Float) {
  *   hinge, and without one the halves split the screen evenly.
  * @param shoppingActions Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the "Klart!" page.
  * @param pantryActions Fas S (hemma-ui lane, plan §8.8): "Tog något slut?" on the "Klart!" page.
+ * @param session Fas 4 (two recipes at once, plan 8.1): the recipes open in this cook mode. With
+ *   [CookSessionUi.canAdd] the header offers "Laga ett recept till"; with two recipes their tabs
+ *   stand under the header, ✕ closes the shown recipe only ([onClose] is then the route's "close
+ *   this recipe"), and the timers say their recipe. Empty (the default): one recipe, nothing added.
+ * @param onSessionAction what the tabs and "Laga ett recept till" do ([CookSessionAction]).
  */
 @Composable
 fun CookScreen(
@@ -165,6 +174,8 @@ fun CookScreen(
     fold: FoldBounds? = null,
     shoppingActions: (@Composable () -> Unit)? = null,
     pantryActions: (@Composable () -> Unit)? = null,
+    session: CookSessionUi = CookSessionUi(),
+    onSessionAction: (CookSessionAction) -> Unit = {},
 ) {
     val locale = currentLocale()
     val currentOnAction by rememberUpdatedState(onAction)
@@ -212,6 +223,8 @@ fun CookScreen(
                     state = state,
                     onAction = stepAction,
                     onClose = onClose,
+                    session = session,
+                    onSessionAction = onSessionAction,
                     layout = chosen,
                     largeText = maxWidth >= LargeStepTextMinWidth,
                     availableHeight = maxHeight,
@@ -222,7 +235,16 @@ fun CookScreen(
                 )
 
                 else -> Column(Modifier.fillMaxSize()) {
-                    CookHeader(state = state, onAction = onAction, onClose = onClose, showScreenOn = false, progress = null)
+                    CookHeader(
+                        state = state,
+                        onAction = onAction,
+                        onClose = onClose,
+                        showScreenOn = false,
+                        progress = null,
+                        session = session,
+                        onSessionAction = onSessionAction,
+                    )
+                    if (session.isTwo) CookRecipeTabs(session = session, onAction = onSessionAction)
                     MissingRecipe(state = state, onAction = onAction, onClose = onClose)
                 }
             }
@@ -318,6 +340,8 @@ private fun CookContent(
     warningActions: WarningActions,
     shoppingActions: (@Composable () -> Unit)? = null,
     pantryActions: (@Composable () -> Unit)? = null,
+    session: CookSessionUi = CookSessionUi(),
+    onSessionAction: (CookSessionAction) -> Unit = {},
 ) {
     val pagerState = rememberPagerState(initialPage = state.page) { state.pageCount }
     PagerSync(pagerState = pagerState, page = state.page, onAction = onAction)
@@ -331,11 +355,18 @@ private fun CookContent(
             onStopRinging = { onAction(CookAction.StopRinging(it)) },
         )
     }
-    // A timer of this recipe jumps to its step when its name is tapped.
+    // A timer of this recipe jumps to its step when its name is tapped; Fas 4: one of the other
+    // open recipe opens that recipe's tab at its step.
     val openTimer: (CookTimer) -> Unit = { timer ->
         val step = timer.stepIndex
-        if (timer.recipeId == state.recipeId && step != null && step < state.steps.size) onAction(CookAction.GoToPage(step))
+        val recipe = timer.recipeId
+        when {
+            recipe == state.recipeId && step != null && step < state.steps.size -> onAction(CookAction.GoToPage(step))
+            recipe != null && step != null && recipe in session.recipeIds -> onSessionAction(CookSessionAction.OpenTimer(recipe, step))
+        }
     }
+    // Fas 4: timers say their recipe when two recipes are open or the timers come from several.
+    val showTimerRecipes = session.isTwo || state.timers.mapNotNull { it.recipeId }.distinct().size > 1
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(focusRequester) { runCatching { focusRequester.requestFocus() } }
     val progress = (state.page + 1).toFloat() / state.pageCount
@@ -364,7 +395,15 @@ private fun CookContent(
         }
     }
     val header: @Composable () -> Unit = {
-        CookHeader(state = state, onAction = onAction, onClose = onClose, showScreenOn = layout == CookLayout.TWO_PANE, progress = progress)
+        CookHeader(
+            state = state,
+            onAction = onAction,
+            onClose = onClose,
+            showScreenOn = layout == CookLayout.TWO_PANE,
+            progress = progress,
+            session = session,
+            onSessionAction = onSessionAction,
+        )
     }
     val bottomArea: @Composable (Dp) -> Unit = { maxScroll ->
         BottomArea(
@@ -376,6 +415,7 @@ private fun CookContent(
             warningActions = warningActions,
             maxScrollHeight = maxScroll,
             compactHeight = availableHeight < CompactHeight,
+            showTimerRecipes = showTimerRecipes,
         )
     }
     // Where this column starts in the window, to place the tabletop halves around the fold.
@@ -414,6 +454,7 @@ private fun CookContent(
                         onOpenTimer = openTimer,
                         onAction = onAction,
                         warningActions = warningActions,
+                        showTimerRecipes = showTimerRecipes,
                         modifier = Modifier
                             .weight(SIDE_PANE_WEIGHT)
                             .fillMaxHeight()
@@ -498,7 +539,15 @@ private fun PagerSync(pagerState: PagerState, page: Int, onAction: (CookAction) 
  * on "Next").
  */
 @Composable
-private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClose: () -> Unit, showScreenOn: Boolean, progress: Float?) {
+private fun CookHeader(
+    state: CookUiState,
+    onAction: (CookAction) -> Unit,
+    onClose: () -> Unit,
+    showScreenOn: Boolean,
+    progress: Float?,
+    session: CookSessionUi,
+    onSessionAction: (CookSessionAction) -> Unit,
+) {
     val spacing = TandemTheme.spacing
     Column(Modifier.fillMaxWidth()) {
         Row(
@@ -507,7 +556,18 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
                 .padding(horizontal = spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            KitchenIconButton(icon = TandemIcons.Close, description = stringResource(R.string.cook_close), onClick = onClose)
+            // Fas 4: with two recipes ✕ closes the shown one only (the other stays); system back leaves cook mode.
+            val closeDescription = if (session.isTwo) {
+                stringResource(R.string.cook_close_recipe, state.recipeName.ifEmpty { stringResource(R.string.cook_title) })
+            } else {
+                stringResource(R.string.cook_close)
+            }
+            KitchenIconButton(
+                icon = TandemIcons.Close,
+                description = closeDescription,
+                onClick = onClose,
+                modifier = Modifier.testTag(COOK_CLOSE_TAG),
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -554,6 +614,15 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
                     modifier = Modifier.padding(end = spacing.sm),
                 )
             }
+            if (state.hasDetail && session.canAdd) {
+                // Fas 4 (two recipes at once, plan 8.1): "Laga ett recept till".
+                KitchenIconButton(
+                    icon = TandemIcons.Add,
+                    description = stringResource(R.string.cook_add_recipe),
+                    onClick = { onSessionAction(CookSessionAction.OpenPicker) },
+                    modifier = Modifier.testTag(COOK_ADD_RECIPE_TAG),
+                )
+            }
             if (state.hasDetail) {
                 KitchenIconButton(
                     icon = TandemIcons.TextDecrease,
@@ -569,6 +638,7 @@ private fun CookHeader(state: CookUiState, onAction: (CookAction) -> Unit, onClo
                 )
             }
         }
+        if (session.isTwo && progress != null) CookRecipeTabs(session = session, onAction = onSessionAction)
         if (progress != null) {
             LinearProgressIndicator(
                 progress = { progress },
@@ -599,6 +669,7 @@ private fun BottomArea(
     warningActions: WarningActions,
     maxScrollHeight: Dp,
     compactHeight: Boolean,
+    showTimerRecipes: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
     Column(
@@ -623,6 +694,7 @@ private fun BottomArea(
                     actions = timerActions,
                     onOpen = onOpenTimer,
                     maxHeight = PHONE_TIMER_BAR_HEIGHT,
+                    showRecipe = showTimerRecipes,
                     modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
                 )
             }
@@ -797,5 +869,7 @@ internal const val COOK_TABLETOP_CONTROLS_TAG = "cook:tabletop-controls"
 internal const val COOK_TABLETOP_UPPER_TAG = "cook:tabletop-upper"
 internal const val COOK_BOTTOM_TIMERS_TAG = "cook:bottom-timers"
 internal const val COOK_STEP_OF_TAG = "cook:step-of"
+internal const val COOK_CLOSE_TAG = "cook:close"
+internal const val COOK_ADD_RECIPE_TAG = "cook:add-recipe"
 
 private const val NO_ADJUST = -1

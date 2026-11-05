@@ -30,4 +30,5 @@
         <item quantity="one">%1$d timer</item>
         <item quantity="other">%1$d timers</item>
     </plurals>
+    <string name="ui_timer_with_recipe_description">%1$s: %2$s</string>
 </resources>

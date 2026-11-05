@@ -55,6 +55,9 @@ enum class TimerMode {
  * @property sourceKey where [recipeId] comes from ([TimerSource]: an account id or demo mode), so
  *   a timer started in demo mode or for another account never opens cook mode for the active
  *   account's recipe with the same id; null for a free timer or one stored before 0.2.0.
+ * @property recipeName Fas 4 (two recipes at once, plan 8.1): the name of [recipeId] when the
+ *   timer was started, so cook mode, the timer list and the notifications can say which recipe a
+ *   timer belongs to; null for a free timer or one stored before 0.6.0.
  * @property duration the total length, including every "+1 min".
  * @property state see [TimerState].
  * @property endsAt RUNNING: when it rings; RINGING/FINISHED: when it rang; PAUSED: null.
@@ -67,6 +70,7 @@ data class CookTimer(
     val recipeId: Long? = null,
     val stepIndex: Int? = null,
     val sourceKey: String? = null,
+    val recipeName: String? = null,
     val duration: Duration,
     val state: TimerState,
     val endsAt: Instant?,
@@ -139,12 +143,14 @@ data class CookTimer(
             recipeId: Long? = null,
             stepIndex: Int? = null,
             sourceKey: String? = null,
+            recipeName: String? = null,
         ): CookTimer = CookTimer(
             id = id,
             label = label,
             recipeId = recipeId,
             stepIndex = stepIndex,
             sourceKey = sourceKey,
+            recipeName = recipeName?.trim()?.takeIf { it.isNotEmpty() },
             duration = duration,
             state = TimerState.RUNNING,
             endsAt = now + duration,

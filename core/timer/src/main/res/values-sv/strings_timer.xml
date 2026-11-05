@@ -31,4 +31,5 @@
         <item quantity="one">%d timer: tiden är ute</item>
         <item quantity="other">%d timers: tiden är ute</item>
     </plurals>
+    <string name="timer_label_with_recipe">%1$s (%2$s)</string>
 </resources>

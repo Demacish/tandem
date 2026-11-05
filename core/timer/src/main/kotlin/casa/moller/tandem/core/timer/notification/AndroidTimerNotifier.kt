@@ -56,6 +56,9 @@ import kotlin.time.Instant
  *   [realertAlarm] posts a still ringing alarm again whenever another one stops.
  *
  * Every post checks `POST_NOTIFICATIONS` first; without it nothing is shown (the timers still run).
+ *
+ * Fas 4 (two recipes at once in cook mode, plan 8.1): a timer's recipe ([CookTimer.recipeName]) is
+ * the countdown's and the alarm's sub text, and follows its name in the ringing service's list.
  */
 @Singleton
 internal class AndroidTimerNotifier @Inject constructor(
@@ -70,6 +73,8 @@ internal class AndroidTimerNotifier @Inject constructor(
         val builder = NotificationCompat.Builder(context, ONGOING_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_tandem_timer)
             .setContentTitle(timer.label)
+            // Fas 4 (two recipes at once): the recipe in the header ("Tandem • Krämig svamppasta").
+            .setSubText(timer.recipeName)
             .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -187,7 +192,7 @@ internal class AndroidTimerNotifier @Inject constructor(
             .setContentTitle(
                 context.resources.getQuantityString(R.plurals.timer_notification_ringing_summary, ringing.size, ringing.size),
             )
-            .setContentText(ringing.joinToString(", ") { it.label })
+            .setContentText(ringing.joinToString(", ") { labelWithRecipe(it) })
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             // Never a group summary (see the class comment); the alarms themselves ring, this one never alerts.
@@ -233,12 +238,17 @@ internal class AndroidTimerNotifier @Inject constructor(
     private fun alarmBuilder(timer: CookTimer): NotificationCompat.Builder = NotificationCompat.Builder(context, ALARM_CHANNEL)
         .setSmallIcon(R.drawable.ic_stat_tandem_timer)
         .setContentTitle(timer.label)
+        .setSubText(timer.recipeName)
         .setWhen(timer.endsAt?.toEpochMilliseconds() ?: System.currentTimeMillis())
         .setShowWhen(true)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
         .setGroup(ALARM_GROUP)
         .setSortKey(sortKey(timer))
         .setContentIntent(TimerIntents.openTimerPendingIntent(context, timer))
+
+    /** Fas 4 (two recipes at once): "Pastan · 10 min (Krämig svamppasta)", or just the label. */
+    private fun labelWithRecipe(timer: CookTimer): String =
+        timer.recipeName?.let { context.getString(R.string.timer_label_with_recipe, timer.label, it) } ?: timer.label
 
     private fun post(id: Int, notification: Notification) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
