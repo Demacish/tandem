@@ -1,0 +1,245 @@
+name: Push service
+
+# The optional push companion (push-service/, docs/PUSH.md, plan §4.3/B11): unit tests, the
+# container image (built, never pushed from a branch) and an integration test against a REAL,
+# throwaway Tandoor started inside the runner (like contract.yml). Never against production.
+# The image is published to GHCR only from a v* tag (the owner decides when to tag).
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    paths:
+      - "push-service/**"
+      - ".github/workflows/push-service.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: push-service-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.27.2"
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: push-service
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt would change: ${unformatted}"
+            gofmt -d .
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./... && go vet -tags integration ./...
+
+      - name: go test
+        run: go test -race -count=1 -v ./...
+
+  image:
+    name: Image and Tandoor ${{ matrix.tandoor }} integration
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both supported Tandoor lines (plan §10: 2.6.13+ and 2.7.x).
+        tandoor: ["2.6.13", "2.7.1"]
+    env:
+      TANDOOR_IMAGE: vabene1111/recipes:${{ matrix.tandoor }}
+      TANDOOR_URL: http://127.0.0.1:8080
+      PUSH_SERVICE_URL: http://127.0.0.1:8090
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate throwaway credentials
+        run: |
+          secret_key="$(openssl rand -hex 32)"
+          db_password="$(openssl rand -hex 16)"
+          echo "::add-mask::${secret_key}"
+          echo "::add-mask::${db_password}"
+          {
+            echo "TANDOOR_SECRET_KEY=${secret_key}"
+            echo "TANDOOR_DB_PASSWORD=${db_password}"
+          } >> "$GITHUB_ENV"
+
+      - name: Start Postgres 16 and Tandoor
+        run: |
+          docker network create tandoor
+          docker run -d --name tandoor-db --network tandoor \
+            -e POSTGRES_USER=tandoor -e POSTGRES_DB=tandoor -e POSTGRES_PASSWORD="$TANDOOR_DB_PASSWORD" \
+            postgres:16-alpine
+          docker pull --quiet "$TANDOOR_IMAGE"
+          docker run -d --name tandoor --network tandoor -p 127.0.0.1:8080:80 \
+            -e SECRET_KEY="$TANDOOR_SECRET_KEY" \
+            -e DB_ENGINE=django.db.backends.postgresql \
+            -e POSTGRES_HOST=tandoor-db -e POSTGRES_PORT=5432 \
+            -e POSTGRES_USER=tandoor -e POSTGRES_DB=tandoor -e POSTGRES_PASSWORD="$TANDOOR_DB_PASSWORD" \
+            -e ALLOWED_HOSTS=127.0.0.1,localhost \
+            -e TZ=Europe/Stockholm \
+            -e GUNICORN_WORKERS=1 \
+            -e DEBUG=0 \
+            "$TANDOOR_IMAGE"
+
+      # Built while Tandoor migrates. Never pushed from here.
+      - name: Build the image
+        run: |
+          docker build --build-arg VERSION="ci-${GITHUB_SHA::7}" -t tandem-push:ci push-service
+          size="$(docker image inspect --format '{{.Size}}' tandem-push:ci)"
+          echo "Image size: $((size / 1024 / 1024)) MB" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: The image refuses to start without configuration
+        run: |
+          if docker run --rm tandem-push:ci; then
+            echo "::error::the service started without TANDOOR_URL and TANDOOR_TOKEN"
+            exit 1
+          fi
+
+      - name: Wait for Tandoor
+        run: |
+          for attempt in $(seq 1 120); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "$TANDOOR_URL/api/server-settings/current/" || true)"
+            if [ "$code" = "200" ]; then
+              echo "Tandoor answered 200 after ${attempt} checks"
+              exit 0
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' tandoor)" != "true" ]; then
+              echo "::error::The Tandoor container stopped"
+              docker logs tandoor | tail -n 100
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::Tandoor did not answer 200 within 10 minutes"
+          exit 1
+
+      # One space with a household (the operator, the phone, the partner) and an outsider in a
+      # second household; tokens created in the database and masked before use.
+      - name: Create the household and tokens
+        run: |
+          tokens="$(docker exec -w /opt/recipes tandoor /opt/recipes/venv/bin/python manage.py shell -c '
+          import uuid
+          from datetime import timedelta
+          from django.contrib.auth.models import Group, User
+          from django.utils import timezone
+          from django_scopes import scopes_disabled
+          from oauth2_provider.models import AccessToken
+          from cookbook.models import Household, UserSpace
+          from cookbook.helper.permission_helper import create_space_for_user
+
+          def token(user):
+              return AccessToken.objects.create(
+                  user=user, token="tda_" + str(uuid.uuid4()).replace("-", "_"),
+                  expires=timezone.now() + timedelta(days=1), scope="read write").token
+
+          with scopes_disabled():
+              owner = User.objects.create_user("push-operator")
+              owner_space = create_space_for_user(owner, "Push Space")
+              space = owner_space.space
+              household = Household.objects.create(space=space, name="Push Household")
+              UserSpace.objects.filter(user=owner, space=space).update(household=household)
+
+              def member(name, home):
+                  user = User.objects.create_user(name)
+                  user_space = UserSpace.objects.create(space=space, user=user, active=True)
+                  user_space.groups.add(Group.objects.get(name="user"))
+                  UserSpace.objects.filter(pk=user_space.pk).update(household=home)
+                  return user
+
+              phone = member("push-phone", household)
+              partner = member("push-partner", household)
+              outsider = member("push-outsider", Household.objects.create(space=space, name="Other Household"))
+              print(token(owner), token(phone), token(partner), token(outsider))
+          ' | tail -n 1)"
+          read -r operator phone partner outsider <<< "$tokens"
+          [ -n "$operator" ] && [ -n "$phone" ] && [ -n "$partner" ] && [ -n "$outsider" ] || { echo "::error::token creation failed"; exit 1; }
+          for t in "$operator" "$phone" "$partner" "$outsider"; do echo "::add-mask::${t}"; done
+          {
+            echo "OPERATOR_TOKEN=${operator}"
+            echo "PHONE_TOKEN=${phone}"
+            echo "PARTNER_TOKEN=${partner}"
+            echo "OUTSIDER_TOKEN=${outsider}"
+          } >> "$GITHUB_ENV"
+
+      - name: Start the push service (the built image)
+        run: |
+          docker run -d --name tandem-push --network host \
+            -e TANDOOR_URL="$TANDOOR_URL" -e TANDOOR_TOKEN="$OPERATOR_TOKEN" \
+            -e POLL_SECONDS=30 -e LISTEN_ADDR=127.0.0.1:8090 -e ALLOW_HTTP_ENDPOINTS=true \
+            tandem-push:ci
+
+      - name: Integration test (a partner's item wakes the phone within 60 s)
+        working-directory: push-service
+        run: go test -tags integration -count=1 -v -run TestPartnerItemWakesThePhone ./...
+
+      - name: Health, memory and logs
+        if: always()
+        run: |
+          docker inspect -f 'Health: {{.State.Health.Status}}' tandem-push || true
+          mem="$(docker stats --no-stream --format '{{.MemUsage}}' tandem-push || true)"
+          echo "Push service memory (Tandoor ${{ matrix.tandoor }}): ${mem}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Memory: ${mem}"
+          # The service never logs tokens, endpoints' paths or list content.
+          docker logs tandem-push 2>&1 | tail -n 50 || true
+
+  publish:
+    name: Publish the image (v* tags only)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build and push to GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tandem-push"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build --build-arg VERSION="$version" \
+            --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
+            --label org.opencontainers.image.licenses=Apache-2.0 \
+            -t "${image}:${version}" -t "${image}:latest" push-service
+          docker push "${image}:${version}"
+          docker push "${image}:latest"
+          echo "Published ${image}:${version}" >> "$GITHUB_STEP_SUMMARY"

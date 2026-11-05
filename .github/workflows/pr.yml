@@ -8,12 +8,18 @@ on:
     paths-ignore:
       - "docs/**"
       - "**.md"
+      # Fas 4 (push lane): the Go push companion has its own workflow (push-service.yml).
+      - "push-service/**"
+      - ".github/workflows/push-service.yml"
   pull_request:
     # Lanes push their branch (which runs above); PRs, if ever used, only target main.
     branches: [main]
     paths-ignore:
       - "docs/**"
       - "**.md"
+      # Fas 4 (push lane): the Go push companion has its own workflow (push-service.yml).
+      - "push-service/**"
+      - ".github/workflows/push-service.yml"
   workflow_dispatch:
 
 concurrency:
