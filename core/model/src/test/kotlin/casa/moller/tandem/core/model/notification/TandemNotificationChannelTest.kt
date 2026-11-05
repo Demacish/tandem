@@ -35,12 +35,24 @@ class TandemNotificationChannelTest {
     }
 
     @Test
+    fun mealRemindersFollowThePlan() {
+        // Fas 4 (skafferinotis lane): plan 8.7 "Måltidspåminnelser: Standard, valfri", now in use.
+        val channel = TandemNotificationChannel.MEAL_REMINDERS
+        assertEquals(ChannelImportance.DEFAULT, channel.importance)
+        assertEquals(ChannelSound.NOTIFICATION, channel.sound)
+        assertEquals(true, channel.inUse)
+    }
+
+    @Test
     fun notificationIdsNeverCollide() {
         val fixed = setOf(
             TandemNotificationIds.SERVER_VERSION,
             TandemNotificationIds.SYNC_PROBLEM,
             TandemNotificationIds.TIMER_RINGING_SERVICE,
+            TandemNotificationIds.SHOPPING_CHANGES,
+            TandemNotificationIds.PANTRY_EXPIRY,
         )
+        assertEquals(5, fixed.size)
         val perTimer = (0L..999L).flatMap { listOf(TandemNotificationIds.timerOngoing(it), TandemNotificationIds.timerAlarm(it)) }
         assertEquals(2000, perTimer.toSet().size)
         assertEquals(emptySet<Int>(), fixed intersect perTimer.toSet())

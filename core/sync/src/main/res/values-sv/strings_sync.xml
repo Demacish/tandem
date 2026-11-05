@@ -23,4 +23,33 @@
         <item quantity="one">och %1$d till</item>
         <item quantity="other">och %1$d till</item>
     </plurals>
+    <!-- Fas 4 (skafferinotis): kanalen "Måltidspåminnelser" (plan 8.7) och morgonnotisen om varor
+         hemma som går ut. %1$s = ett livsmedel ("Grädde"), %2$d = hur många fler varor eller recept. -->
+    <string name="sync_notification_channel_meal_reminders">Måltidspåminnelser</string>
+    <string name="sync_notification_channel_meal_reminders_description">Valfria påminnelser om maten, till exempel varor hemma som snart går ut.</string>
+    <string name="sync_pantry_expiry_one_today">%1$s går ut i dag</string>
+    <string name="sync_pantry_expiry_one_tomorrow">%1$s går ut i morgon</string>
+    <plurals name="sync_pantry_expiry_many_today">
+        <item quantity="one">%1$s och %2$d till går ut i dag</item>
+        <item quantity="other">%1$s och %2$d till går ut i dag</item>
+    </plurals>
+    <plurals name="sync_pantry_expiry_many_tomorrow">
+        <item quantity="one">%1$s och %2$d till går ut i morgon</item>
+        <item quantity="other">%1$s och %2$d till går ut i morgon</item>
+    </plurals>
+    <plurals name="sync_pantry_expiry_many_mixed">
+        <item quantity="one">%1$s och %2$d till går ut i dag och i morgon</item>
+        <item quantity="other">%1$s och %2$d till går ut i dag och i morgon</item>
+    </plurals>
+    <!-- %1$s = en av rubrikerna ovan, %2$d = recept i "Kan laga nu" som använder varorna. -->
+    <plurals name="sync_pantry_expiry_with_recipes">
+        <item quantity="one">%1$s – %2$d recept</item>
+        <item quantity="other">%1$s – %2$d recept</item>
+    </plurals>
+    <string name="sync_pantry_expiry_text">Tryck för recept som använder det som går ut.</string>
+    <!-- En rad per vara: %1$s = varan, %2$s = platsen ("Kyl"), %3$s = "i dag" eller "i morgon". -->
+    <string name="sync_pantry_expiry_line">%1$s, %2$s, %3$s</string>
+    <string name="sync_pantry_expiry_line_no_place">%1$s, %2$s</string>
+    <string name="sync_pantry_expiry_day_today">i dag</string>
+    <string name="sync_pantry_expiry_day_tomorrow">i morgon</string>
 </resources>

@@ -50,6 +50,7 @@ class OpenLaunchTest {
             ShellOpenRequest.Recipe(-3),
             ShellOpenRequest.Import,
             ShellOpenRequest.BarcodeScan,
+            ShellOpenRequest.UseUp,
         )
         for (request in requests) assertEquals(request, ShellOpenRequest.of(ShellOpenRequest.nameOf(request)))
     }

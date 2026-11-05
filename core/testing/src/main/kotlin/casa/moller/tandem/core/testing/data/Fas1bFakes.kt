@@ -173,6 +173,11 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings.Default) : Setti
 
     override suspend fun setShoppingChangeNotifications(enabled: Boolean) = write { it.copy(shoppingChangeNotifications = enabled) }
 
+    // Fas 4 (skafferinotis lane)
+    override suspend fun setPantryExpiryNotifications(enabled: Boolean) = write { it.copy(pantryExpiryNotifications = enabled) }
+
+    override suspend fun setPantryExpiryOfferDismissed(dismissed: Boolean) = write { it.copy(pantryExpiryOfferDismissed = dismissed) }
+
     override suspend fun setExactAlarmPromptDismissed(dismissed: Boolean) = write { it.copy(exactAlarmPromptDismissed = dismissed) }
 
     override suspend fun setSystembolagetLink(shown: Boolean?) = write { it.copy(systembolagetLink = shown) }

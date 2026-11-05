@@ -19,6 +19,7 @@ import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.engine.SyncKeys
 import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.shopping.ShoppingChangeNotifications
@@ -74,6 +75,8 @@ class SyncStarter @Inject internal constructor(
     private val clock: SyncClock,
     // Fas 4: "the shopping list changed" while the app is not on screen.
     private val shoppingNotifications: ShoppingChangeNotifications,
+    // Fas 4 (skafferinotis lane): the morning "Grädde går ut i morgon" check follows its setting.
+    private val pantryExpiryReminders: PantryExpiryReminders,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -106,6 +109,7 @@ class SyncStarter @Inject internal constructor(
         SingletonImageLoader.setSafe { imageLoader.get() }
         mirror.start()
         shoppingNotifications.start()
+        pantryExpiryReminders.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

@@ -28,6 +28,9 @@ object AppOpenDestinations {
     /** The barcode scanner. */
     const val SCAN: String = "scan"
 
+    /** Fas 4 (skafferinotis lane): "Kan laga nu" with the recipes that use up soon-expiring foods first. */
+    const val USE_UP: String = "use-up"
+
     /** A recipe: [RECIPE_PREFIX] followed by its id. */
     const val RECIPE_PREFIX: String = "recipe:"
 }

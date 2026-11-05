@@ -14,6 +14,7 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.navigation.FullScreenDestination
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.pantry.navigation.MakeNowKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
@@ -188,6 +189,12 @@ class ShellNavigationState(
             ShellOpenRequest.BarcodeScan -> {
                 selectTab(ShellTab.MORE)
                 navigate(BarcodeScanKey(), replace = { it is BarcodeScanKey })
+            }
+
+            // Fas 4 (skafferinotis lane): the expiry notification; Hemma lives under Mer.
+            ShellOpenRequest.UseUp -> {
+                selectTab(ShellTab.MORE)
+                navigate(MakeNowKey(useUpFirst = true), replace = { it is MakeNowKey })
             }
         }
     }

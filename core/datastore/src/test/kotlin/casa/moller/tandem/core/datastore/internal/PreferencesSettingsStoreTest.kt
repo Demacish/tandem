@@ -172,6 +172,8 @@ class PreferencesSettingsStoreTest {
             notificationPermissionAsked = true,
             exactAlarmPromptDismissed = true,
             shoppingChangeNotifications = true,
+            pantryExpiryNotifications = true,
+            pantryExpiryOfferDismissed = true,
         )
         open().update { expected }
 

@@ -21,6 +21,9 @@ sealed interface ShellOpenRequest {
 
     data object BarcodeScan : ShellOpenRequest
 
+    /** Fas 4 (skafferinotis lane): the expiry notification opens "Kan laga nu" with "Använd upp" first. */
+    data object UseUp : ShellOpenRequest
+
     companion object {
         private const val TODAY = "today"
         private const val MORE = "more"
@@ -35,6 +38,7 @@ sealed interface ShellOpenRequest {
             MORE -> Tab(ShellTab.MORE)
             AppOpenIntents.IMPORT -> Import
             AppOpenIntents.SCAN -> BarcodeScan
+            AppOpenIntents.USE_UP -> UseUp
             else -> recipeOf(destination)
         }
 
@@ -51,6 +55,7 @@ sealed interface ShellOpenRequest {
             is Recipe -> AppOpenIntents.recipe(request.recipeId)
             Import -> AppOpenIntents.IMPORT
             BarcodeScan -> AppOpenIntents.SCAN
+            UseUp -> AppOpenIntents.USE_UP
         }
 
         private fun tabName(tab: ShellTab): String = when (tab) {

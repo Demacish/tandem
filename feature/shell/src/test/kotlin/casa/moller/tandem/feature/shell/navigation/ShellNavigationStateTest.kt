@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.pantry.navigation.MakeNowKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
@@ -148,6 +149,9 @@ class ShellNavigationStateTest {
         assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeImportKey()), navigation.backStack)
         navigation.open(ShellOpenRequest.BarcodeScan)
         assertEquals(listOf<NavKey>(TodayKey, MoreKey, BarcodeScanKey()), navigation.backStack)
+        // Fas 4 (skafferinotis lane): the expiry notification opens "Kan laga nu" with "Använd upp" first.
+        navigation.open(ShellOpenRequest.UseUp)
+        assertEquals(listOf<NavKey>(TodayKey, MoreKey, MakeNowKey(useUpFirst = true)), navigation.backStack)
         // Fas 3 (import lane): a share opens the import on the Recipes tab, replacing an open import.
         navigation.openImport(ShareImportRequest(text = "https://example.com/x"))
         assertEquals(

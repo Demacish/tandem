@@ -39,6 +39,13 @@ internal class DefaultSettingsRepository @Inject constructor(private val setting
     override suspend fun setShoppingChangeNotifications(enabled: Boolean): Outcome<Unit> =
         write { it.copy(shoppingChangeNotifications = enabled) }
 
+    // --- Fas 4 (skafferinotis lane) ---
+    override suspend fun setPantryExpiryNotifications(enabled: Boolean): Outcome<Unit> =
+        write { it.copy(pantryExpiryNotifications = enabled) }
+
+    override suspend fun setPantryExpiryOfferDismissed(dismissed: Boolean): Outcome<Unit> =
+        write { it.copy(pantryExpiryOfferDismissed = dismissed) }
+
     override suspend fun setNotificationPermissionAsked(asked: Boolean): Outcome<Unit> =
         write { it.copy(notificationPermissionAsked = asked) }
 

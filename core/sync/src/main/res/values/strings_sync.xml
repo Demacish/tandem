@@ -25,4 +25,33 @@
         <item quantity="one">and %1$d more</item>
         <item quantity="other">and %1$d more</item>
     </plurals>
+    <!-- Fas 4 (skafferinotis lane): the channel "Meal reminders" (plan 8.7) and the morning notice
+         about pantry items that expire. %1$s = a food ("Cream"), %2$d = how many more foods or recipes. -->
+    <string name="sync_notification_channel_meal_reminders">Meal reminders</string>
+    <string name="sync_notification_channel_meal_reminders_description">Optional reminders about food, such as items at home that expire soon.</string>
+    <string name="sync_pantry_expiry_one_today">%1$s expires today</string>
+    <string name="sync_pantry_expiry_one_tomorrow">%1$s expires tomorrow</string>
+    <plurals name="sync_pantry_expiry_many_today">
+        <item quantity="one">%1$s and %2$d more expire today</item>
+        <item quantity="other">%1$s and %2$d more expire today</item>
+    </plurals>
+    <plurals name="sync_pantry_expiry_many_tomorrow">
+        <item quantity="one">%1$s and %2$d more expire tomorrow</item>
+        <item quantity="other">%1$s and %2$d more expire tomorrow</item>
+    </plurals>
+    <plurals name="sync_pantry_expiry_many_mixed">
+        <item quantity="one">%1$s and %2$d more expire today and tomorrow</item>
+        <item quantity="other">%1$s and %2$d more expire today and tomorrow</item>
+    </plurals>
+    <!-- %1$s = one of the titles above, %2$d = recipes in "Cook now" that use the foods. -->
+    <plurals name="sync_pantry_expiry_with_recipes">
+        <item quantity="one">%1$s – %2$d recipe</item>
+        <item quantity="other">%1$s – %2$d recipes</item>
+    </plurals>
+    <string name="sync_pantry_expiry_text">Tap for recipes that use up what expires.</string>
+    <!-- One line per food: %1$s = food, %2$s = place ("Fridge"), %3$s = "today" or "tomorrow". -->
+    <string name="sync_pantry_expiry_line">%1$s, %2$s, %3$s</string>
+    <string name="sync_pantry_expiry_line_no_place">%1$s, %2$s</string>
+    <string name="sync_pantry_expiry_day_today">today</string>
+    <string name="sync_pantry_expiry_day_tomorrow">tomorrow</string>
 </resources>

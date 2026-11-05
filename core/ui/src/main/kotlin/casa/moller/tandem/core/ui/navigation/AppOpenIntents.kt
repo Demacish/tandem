@@ -35,6 +35,9 @@ object AppOpenIntents {
     /** The barcode scanner (Fas S). */
     const val SCAN: String = AppOpenDestinations.SCAN
 
+    /** Fas 4 (skafferinotis lane): "Kan laga nu" with the recipes that use up soon-expiring foods first. */
+    const val USE_UP: String = AppOpenDestinations.USE_UP
+
     /** A recipe: [RECIPE_PREFIX] followed by its id. */
     const val RECIPE_PREFIX: String = AppOpenDestinations.RECIPE_PREFIX
 

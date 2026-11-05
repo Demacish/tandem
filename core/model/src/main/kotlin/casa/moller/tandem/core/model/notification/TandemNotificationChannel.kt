@@ -56,8 +56,12 @@ enum class TandemNotificationChannel(val id: String, val importance: ChannelImpo
     /** Reserved (Phase 3): an AI import finished. */
     IMPORT_DONE("import_done", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = false),
 
-    /** Reserved (later, optional): meal reminders ("take the chicken out of the freezer"). */
-    MEAL_REMINDERS("meal_reminders", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = false),
+    /**
+     * Meal reminders, optional (plan 8.7 "Måltidspåminnelser"). Fas 4 (skafferinotis lane): "Grädde går
+     * ut i morgon – 3 recept" (core:sync `AndroidPantryExpiryNotifier`); later also "take the chicken
+     * out of the freezer".
+     */
+    MEAL_REMINDERS("meal_reminders", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = true),
     ;
 
     companion object {
@@ -79,6 +83,9 @@ object TandemNotificationIds {
 
     /** The single "the shopping list changed" notification (Fas 4, core:sync); a new batch replaces it. */
     const val SHOPPING_CHANGES: Int = 1201
+
+    /** Fas 4 (skafferinotis lane): the single "Grädde går ut i morgon" notification (core:sync); a new day's replaces it. */
+    const val PANTRY_EXPIRY: Int = 1301
 
     /** The foreground service notification while an alarm rings (core:timer). */
     const val TIMER_RINGING_SERVICE: Int = 2000

@@ -62,6 +62,11 @@ data class AppSettings(
     val shoppingChangeNotifications: Boolean = false,
     // --- Fas S (drycker lane) ---
     val systembolagetLink: Boolean? = null,
+    // --- Fas 4 (skafferinotis lane): "Notis när något går ut" (plan §8.8 "Använd upp", §8.7 "Måltidspåminnelser"). ---
+    /** A morning notification when pantry entries expire today or tomorrow (off until chosen). */
+    val pantryExpiryNotifications: Boolean = false,
+    /** Hemma's offer of [pantryExpiryNotifications] was answered with "Inte nu" (never offered again). */
+    val pantryExpiryOfferDismissed: Boolean = false,
 ) {
     /** Whether a drink shows "Sök på Systembolaget" for a UI in [languageTag] ("sv", "en-GB"). */
     fun systembolagetLinkShown(languageTag: String): Boolean =

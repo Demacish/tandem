@@ -67,6 +67,10 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
 
         // --- Fas S (drycker lane): absent = not chosen (follows the UI language). ---
         val SYSTEMBOLAGET_LINK = booleanPreferencesKey("systembolaget_link")
+
+        // --- Fas 4 (skafferinotis lane) ---
+        val PANTRY_EXPIRY_NOTIFICATIONS = booleanPreferencesKey("pantry_expiry_notifications")
+        val PANTRY_EXPIRY_OFFER_DISMISSED = booleanPreferencesKey("pantry_expiry_offer_dismissed")
     }
 
     companion object {
@@ -107,6 +111,11 @@ private fun Preferences.toAppSettings(): AppSettings {
             ?: defaults.shoppingChangeNotifications,
         // --- Fas S (drycker lane) ---
         systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
+        // --- Fas 4 (skafferinotis lane) ---
+        pantryExpiryNotifications = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS]
+            ?: defaults.pantryExpiryNotifications,
+        pantryExpiryOfferDismissed = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_OFFER_DISMISSED]
+            ?: defaults.pantryExpiryOfferDismissed,
     )
 }
 
@@ -159,4 +168,7 @@ private fun MutablePreferences.write(settings: AppSettings) {
     } else {
         this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK] = systembolaget
     }
+    // --- Fas 4 (skafferinotis lane) ---
+    this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS] = settings.pantryExpiryNotifications
+    this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_OFFER_DISMISSED] = settings.pantryExpiryOfferDismissed
 }

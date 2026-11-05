@@ -51,4 +51,12 @@ interface SettingsRepository {
 
     /** Fas S (drycker lane): "Sök på Systembolaget" on drinks, null = follow the UI language. */
     suspend fun setSystembolagetLink(shown: Boolean?): Outcome<Unit>
+
+    // --- Fas 4 (skafferinotis lane) ---
+
+    /** A morning notification when pantry entries expire today or tomorrow (plan §8.8 "Använd upp"). */
+    suspend fun setPantryExpiryNotifications(enabled: Boolean): Outcome<Unit>
+
+    /** Hemma's offer of the expiry notification was answered with "Inte nu". */
+    suspend fun setPantryExpiryOfferDismissed(dismissed: Boolean): Outcome<Unit>
 }
