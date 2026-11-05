@@ -388,6 +388,15 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase4Fas3RestContractTest'
 
+      # Fas 4 (fas4-kvar lane): what POST /api/auto-plan/ does (plan §8.3 "Autoplan", #31): created
+      # meal plans, repeats, the same week twice, keywords AND/OR, the guest. Seeds and deletes its
+      # own keywords, recipes and meal type on a week far ahead; a step of its own after Fas 3.
+      - name: Contract tests (Fas 4, auto-plan)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase4AutoPlanContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)
