@@ -147,3 +147,9 @@ DELETE /api/recipe/{id}/
 # above) and its picture from the web is set with PUT /api/recipe/{id}/image/ (field image_url).
 POST /api/recipe-from-source/
 POST /api/ai-import/
+
+# --- Fas 4, lane fas3-rester: Fas 3's leftovers (FACTS "Fas 4: Fas 3:s rester") ---
+# Online, never through the outbox: ai-step-sort moves an import's ingredient lines to their steps
+# with the space's AI provider (#40). The WebView fallback (#38) sends the page's HTML as data to
+# recipe-from-source above; removing a picture uses PUT /api/recipe/{id}/image/ above.
+POST /api/ai-step-sort/

@@ -190,6 +190,8 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
             RecipeEditorAction.RemoveWebImage -> edit { it.copy(imageUrl = null) }
 
+            is RecipeEditorAction.KeepImage -> edit { it.copy(keepImage = action.keep) }
+
             RecipeEditorAction.DiscardKeptEdit -> discardKeptEdit()
 
             RecipeEditorAction.Save -> save()

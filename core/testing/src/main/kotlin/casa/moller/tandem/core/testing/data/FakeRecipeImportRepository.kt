@@ -35,13 +35,33 @@ class FakeRecipeImportRepository(
         imported += source
         if (readOnly) return Outcome.Failure(DataProblem.READ_ONLY.toError())
         failure?.let { return Outcome.Failure(it) }
+        if (source is RecipeImportSource.Link) linkFailure?.let { return Outcome.Failure(it) }
         val empty = when (source) {
             is RecipeImportSource.Link -> source.url.isBlank()
             is RecipeImportSource.Text -> source.text.isBlank()
+            is RecipeImportSource.Page -> source.html.isBlank()
             is RecipeImportSource.File -> source.bytes.isEmpty()
         }
         if (empty) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
-        return Outcome.Success(result)
+        return Outcome.Success(pageResult?.takeIf { source is RecipeImportSource.Page } ?: result)
+    }
+
+    /** What a [RecipeImportSource.Link] fails with (a site that blocks the server, #38); pages still answer. */
+    var linkFailure: TandemError? = null
+
+    /** What a [RecipeImportSource.Page] answers (#38), when it differs from [result]. */
+    var pageResult: RecipeImportResult? = null
+
+    /** The drafts handed to [sortIngredientsIntoSteps] (#40); [sorted] is its answer, [sortFailure] its error. */
+    val sortRequests = mutableListOf<RecipeDraft>()
+    var sorted: RecipeDraft? = null
+    var sortFailure: TandemError? = null
+
+    override suspend fun sortIngredientsIntoSteps(draft: RecipeDraft): Outcome<RecipeDraft> {
+        sortRequests += draft
+        if (readOnly) return Outcome.Failure(DataProblem.READ_ONLY.toError())
+        sortFailure?.let { return Outcome.Failure(it) }
+        return Outcome.Success(sorted ?: draft)
     }
 }
 

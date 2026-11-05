@@ -128,6 +128,14 @@ class Phase4Fas3RestContractTest {
         observe("stepSort.noProviderParam", describe(noParam))
         val unknown = api("ai-step-sort-unknown-provider", "POST", "/api/ai-step-sort/?provider=999999", body)
         observe("stepSort.unknownProvider", describe(unknown))
+        // The import's answer lacks `order` on its lines, which RecipeSerializer requires (400 before
+        // the provider is looked at, observed 2026-11-05): the app sends every step and line with
+        // its `order` (core:sync `RecipeImportMapper.toSourceRecipe`).
+        val ordered = withOrder(body)
+        val appShapeNoParam = api("ai-step-sort-app-shape-without-provider-param", "POST", "/api/ai-step-sort/", ordered)
+        observe("stepSort.appShape.noProviderParam", describe(appShapeNoParam))
+        val appShape = api("ai-step-sort-app-shape-unknown-provider", "POST", "/api/ai-step-sort/?provider=999999", ordered)
+        observe("stepSort.appShape.unknownProvider", describe(appShape))
         val guest = api("ai-step-sort-as-guest", "POST", "/api/ai-step-sort/?provider=999999", body, token = env.guestToken)
         observe("stepSort.guest", describe(guest, includeBody = false))
         val providers = read("/api/ai-provider/")
@@ -254,6 +262,16 @@ class Phase4Fas3RestContractTest {
         record = record,
     )
 
+    /** [recipe] with `order` on every step and ingredient line, as the app sends it to ai-step-sort. */
+    private fun withOrder(recipe: JsonObject): JsonObject {
+        val steps = recipe.arrAt("steps").objects().mapIndexed { stepIndex, step ->
+            val lines = step.arrAt("ingredients").objects()
+                .mapIndexed { order, line -> JsonObject(line + ("order" to JsonPrimitive(order))) }
+            JsonObject(step + mapOf("order" to JsonPrimitive(stepIndex), "ingredients" to JsonArray(lines)))
+        }
+        return JsonObject(recipe + ("steps" to JsonArray(steps)))
+    }
+
     private fun read(path: String, token: String = env.fas1Token): Exchange = api("read", "GET", path, token = token, record = false)
 
     private fun step(instruction: String, order: Int): JsonObject = obj(
@@ -340,8 +358,20 @@ class Phase4Fas3RestContractTest {
             "webview.urlAndData.stepCount" to 2,
             "webview.urlAndData.foods" to listOf("mjölk", "smör", "vetemjöl"),
             "webview.guest.status" to 403,
+            "webview.noRecipe.status" to 500,
+            "stepSort.guest.status" to 403,
             "image.create.status" to 201,
             "image.upload.emptyForm.hasImage" to true,
+            "image.remove.emptyForm.status" to 200,
+            "image.remove.emptyForm.imageAfter" to null,
+            // What the app sends to remove a picture: a form with an empty `image_url`.
+            "image.remove.blankImageUrl.status" to 200,
+            "image.remove.blankImageUrl.imageAfter" to null,
+            "image.remove.guest.status" to 403,
+            // A step-only change leaves the recipe's `updated_at`: the editor compares the steps too.
+            "stepChange.step.status" to 200,
+            "stepChange.step.updatedAtMoved" to false,
+            "stepChange.ingredient.updatedAtMoved" to false,
         )
     }
 }

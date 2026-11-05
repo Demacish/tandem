@@ -11,6 +11,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 /**
  * Fas 3 (import lane): Tandoor's import, which parses on the server and answers a recipe WITHOUT
@@ -41,8 +42,18 @@ interface RecipeImportService {
     ): RecipeFromSourceResponseDto
 
     /**
+     * Fas 3's leftovers (#40): Tandoor's AI moves the ingredient lines to the steps that use them.
+     * Recipe in (the import's shape), recipe out; `provider` = `space/current`
+     * `ai_default_provider.id`. Without a provider the server refuses (FACTS "Fas 4: Fas 3:s
+     * rester" b). Raw JSON: the answer is the AI's, so the caller reads it leniently.
+     */
+    @POST("api/ai-step-sort/")
+    suspend fun aiStepSort(@Query("provider") provider: Long, @Body recipe: JsonObject): JsonObject
+
+    /**
      * The recipe's picture from the WEB (an import's `image_url`): the server downloads it
      * (multipart field `image_url`, the same endpoint as the photo upload) → 200 `{image, image_url}`.
+     * An EMPTY `image_url` removes the picture (FACTS "Fas 4: Fas 3:s rester" c).
      */
     @Multipart
     @PUT("api/recipe/{id}/image/")

@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -262,6 +263,43 @@ class RecipeEditRepositoryTest {
         assertEquals("Min svamppasta", tandoor.recipe(PASTA)?.get("name")?.jsonPrimitive?.content)
         val sentDescription = tandoor.recipe(PASTA)?.get("description")?.jsonPrimitive?.content
         assertEquals("the kept edit's description wins", draft.description, sentDescription)
+        assertTrue(outbox().isEmpty())
+    }
+
+    @Test
+    fun aChangeOfOnlyAStepOnTheWebIsFoundToo() = forEachVersion {
+        // Plan §10 Fas 3 "Klart när": "även när bara ett steg ändrats" (a step PATCH leaves updated_at).
+        ok(graph.recipes.refreshRecipe(PASTA))
+        val draft = checkNotNull(repo.observeDraft(PASTA).first())
+        ok(repo.updateRecipe(PASTA, draft.copy(name = "Min svamppasta")))
+        tandoor.partnerEditsStep(PASTA, "Partnern skrev om steget.")
+        drainAll()
+
+        assertTrue("no PATCH went out", tandoor.callsTo("PATCH", "/api/recipe/$PASTA/").isEmpty())
+        assertEquals(RecipeEditStatus.CONFLICT, repo.observeEditStatus(PASTA).first())
+        val shown = checkNotNull(graph.recipes.observeStoredRecipe(PASTA).first().recipe)
+        assertEquals("[$version]", "Partnern skrev om steget.", shown.steps.minByOrNull { it.order }?.instruction)
+        // Saved again from the web's version, it goes out.
+        ok(repo.updateRecipe(PASTA, checkNotNull(repo.observeDraft(PASTA).first())))
+        drainAll()
+        assertEquals("Min svamppasta", tandoor.recipe(PASTA)?.get("name")?.jsonPrimitive?.content)
+        assertTrue(outbox().isEmpty())
+    }
+
+    @Test
+    fun theRecipesPictureCanBeRemoved() = forEachVersion {
+        tandoor.hasImage(PASTA)
+        ok(graph.recipes.refreshRecipe(PASTA))
+        val draft = checkNotNull(repo.observeDraft(PASTA).first())
+        assertTrue("[$version] ${draft.currentImageUrl}", draft.currentImageUrl?.contains("recipe_$PASTA") == true)
+        ok(repo.updateRecipe(PASTA, draft.copy(keepImage = false)))
+        // Gone on the device at once, removed on the server with an empty `image_url`.
+        assertEquals(null, graph.recipes.observeStoredRecipe(PASTA).first().recipe?.imageUrl)
+        assertEquals(listOf(OutboxOps.PATCH, OutboxOps.RECIPE_IMAGE), outbox().map { it.op })
+        drainAll()
+        val (_, sent) = tandoor.callsTo("PUT", "/api/recipe/$PASTA/image/").single()
+        assertTrue(sent, sent.contains("name=\"image_url\""))
+        assertEquals(JsonNull, tandoor.recipe(PASTA)?.get("image"))
         assertTrue(outbox().isEmpty())
     }
 

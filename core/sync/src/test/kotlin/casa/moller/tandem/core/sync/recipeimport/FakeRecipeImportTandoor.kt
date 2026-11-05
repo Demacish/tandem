@@ -33,6 +33,12 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
     /** Every import request this fake answered (not `space/current`, which the sync reads too), as `METHOD path` with its body. */
     val calls: MutableList<Pair<String, String>> = CopyOnWriteArrayList()
 
+    /** Runs while an import request is being answered (to look at the sync guard meanwhile). */
+    var duringCall: (() -> Unit)? = null
+
+    /** `ai-step-sort` answers a recipe with one step less (an AI that drops a step). */
+    var stepSortDropsAStep: Boolean = false
+
     fun install(server: FakeTandoorServer) {
         server.handler = { request -> answer(request) ?: edits.answer(request) }
     }
@@ -44,9 +50,11 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         val response = when {
             path == FROM_SOURCE && method == "POST" -> fromSource(parse(text))
             path == AI_IMPORT && method == "POST" -> aiImport(text)
+            path == STEP_SORT && method == "POST" -> stepSort(request.url.queryParameter("provider"), parse(text))
             path == SPACE && method == "GET" -> return space()
             else -> return null
         }
+        duringCall?.invoke()
         calls += "$method $path" to text
         return response
     }
@@ -55,7 +63,9 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         val url = (body["url"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         val data = (body["data"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         return when {
-            url == KNOWN_URL || data.contains("<html") -> json(200, found(sourceUrl = url))
+            // With `data` the link is not fetched and `source_url` stays empty (FACTS "Fas 4: Fas 3:s rester" a).
+            data.contains("<html") -> json(200, found(sourceUrl = ""))
+            url == KNOWN_URL -> json(200, found(sourceUrl = url))
             url == NO_RECIPE_URL -> json(200, error("No usable data could be found."))
             url.isNotEmpty() -> json(400, error("Connection Refused."))
             data.isNotEmpty() -> html500()
@@ -67,6 +77,29 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         providerId == null -> html500()
         !text.contains("name=\"file\"") -> json(400, error("file missing"))
         else -> json(200, found(sourceUrl = ""))
+    }
+
+    /**
+     * `ai-step-sort` (#40): 400 `{error, msg}` without a provider (FACTS "Fas 4: Fas 3:s rester" b);
+     * with one, the recipe back with the LAST line of the first step moved to the second step
+     * (what a sorting AI does), or with the last step dropped ([stepSortDropsAStep]).
+     */
+    private fun stepSort(provider: String?, recipe: JsonObject): MockResponse {
+        val lines = recipe["steps"]?.let { it as? JsonArray }.orEmpty()
+            .flatMap { it.jsonObject["ingredients"] as? JsonArray ?: JsonArray(emptyList()) }
+        if (lines.any { it.jsonObject["order"] == null }) return json(400, error("order: This field may not be null."))
+        if (provider == null || providerId?.toString() != provider) return json(400, error("You must select an AI provider."))
+        val steps = recipe["steps"]?.let { it as? JsonArray }.orEmpty().map { it.jsonObject }.toMutableList()
+        if (stepSortDropsAStep) return json(200, JsonObject(recipe + ("steps" to JsonArray(steps.dropLast(1)))))
+        if (steps.size >= 2) {
+            val first = steps[0]["ingredients"]?.let { it as? JsonArray }.orEmpty()
+            val second = steps[1]["ingredients"]?.let { it as? JsonArray }.orEmpty()
+            if (first.isNotEmpty()) {
+                steps[0] = JsonObject(steps[0] + ("ingredients" to JsonArray(first.dropLast(1))))
+                steps[1] = JsonObject(steps[1] + ("ingredients" to JsonArray(listOf(first.last()) + second)))
+            }
+        }
+        return json(200, JsonObject(recipe + ("steps" to JsonArray(steps))))
     }
 
     /** Tandoor's unhandled error page (plain text to recipe-from-source, ai-import without a provider; FACTS "Fas 3 e-f"). */
@@ -192,5 +225,6 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         private const val FROM_SOURCE = "/api/recipe-from-source/"
         private const val AI_IMPORT = "/api/ai-import/"
         private const val SPACE = "/api/space/current/"
+        private const val STEP_SORT = "/api/ai-step-sort/"
     }
 }

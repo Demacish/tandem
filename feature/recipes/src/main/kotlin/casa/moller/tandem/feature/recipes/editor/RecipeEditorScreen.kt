@@ -380,6 +380,7 @@ private fun Photo(state: RecipeEditorUiState, onAction: (RecipeEditorAction) -> 
             }
         }
     }
+    CurrentImage(state, onAction)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         TandemSecondaryButton(
             text = stringResource(R.string.recipe_editor_take_photo),
@@ -397,6 +398,39 @@ private fun Photo(state: RecipeEditorUiState, onAction: (RecipeEditorAction) -> 
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+/**
+ * Fas 3's leftovers: the stored recipe's picture (no new photo or source picture chosen) with
+ * "Ta bort bilden"; once removed, a line that says so with "Behåll bilden".
+ */
+@Composable
+private fun CurrentImage(state: RecipeEditorUiState, onAction: (RecipeEditorAction) -> Unit) {
+    val draft = state.draft
+    val current = draft.currentImageUrl?.takeIf { draft.imageUri == null && draft.imageUrl == null } ?: return
+    val spacing = TandemTheme.spacing
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Column(modifier = Modifier.padding(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+            if (draft.keepImage) {
+                RecipeImage(
+                    imageUrl = current,
+                    contentDescription = stringResource(R.string.recipe_editor_current_photo),
+                    modifier = Modifier.size(PHOTO_PREVIEW).clip(MaterialTheme.shapes.medium),
+                )
+                TandemTextButton(
+                    text = stringResource(R.string.recipe_editor_remove_current_photo),
+                    onClick = { onAction(RecipeEditorAction.KeepImage(false)) },
+                    leadingIcon = TandemIcons.Delete,
+                )
+            } else {
+                Text(stringResource(R.string.recipe_editor_current_photo_removed), style = MaterialTheme.typography.bodyMedium)
+                TandemTextButton(
+                    text = stringResource(R.string.recipe_editor_keep_current_photo),
+                    onClick = { onAction(RecipeEditorAction.KeepImage(true)) },
+                )
+            }
+        }
+    }
 }
 
 @Composable

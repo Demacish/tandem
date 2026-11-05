@@ -2,6 +2,7 @@ package casa.moller.tandem.core.data.recipe
 
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeImportResult
 import casa.moller.tandem.core.model.recipe.RecipeImportSource
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,16 @@ interface RecipeImportRepository {
      * Never retried by itself (an AI import costs the space credits).
      */
     suspend fun import(source: RecipeImportSource): Outcome<RecipeImportResult>
+
+    /**
+     * Fas 3's leftovers (#40, plan §8.4): Tandoor's `ai-step-sort` moves each ingredient line of
+     * [draft] to the step that uses it, with the space's AI provider (one more AI call: the
+     * screen says so; only offered when [observeAiImportAvailable]). The answer keeps the
+     * draft's picture, link and keywords. Fails with [RecipeImportProblem.AI_UNAVAILABLE] when
+     * the server refuses, [RecipeImportProblem.STEP_SORT_CHANGED] when the AI dropped or invented
+     * steps or ingredients (the draft is then kept as it was), or the network or server error.
+     */
+    suspend fun sortIngredientsIntoSteps(draft: RecipeDraft): Outcome<RecipeDraft>
 }
 
 /** Fas 3: why an import gave no recipe (`TandemError.Unknown(detail)`). */
@@ -45,6 +56,9 @@ enum class RecipeImportProblem(val detail: String) {
 
     /** Demo mode has no server to parse with. */
     DEMO_MODE("tandem.import.demo-mode"),
+
+    /** The AI's sorted recipe lost or invented steps or ingredients: the draft is kept as it was (#40). */
+    STEP_SORT_CHANGED("tandem.import.step-sort-changed"),
     ;
 
     fun toError(): TandemError = TandemError.Unknown(detail)
@@ -52,6 +66,9 @@ enum class RecipeImportProblem(val detail: String) {
     companion object {
         /** The largest file the app sends to the AI import (a scaled photo is far smaller; a PDF of a few pages fits). */
         const val MAX_FILE_BYTES: Int = 10 * 1024 * 1024
+
+        /** The longest page HTML (characters) sent to the server (#38); a longer page is cut (JSON-LD sits in the head). */
+        const val MAX_PAGE_CHARS: Int = 3_000_000
 
         /** The [RecipeImportProblem] this error stands for, or null. */
         fun of(error: TandemError): RecipeImportProblem? = entries.firstOrNull { (error as? TandemError.Unknown)?.detail == it.detail }

@@ -8,6 +8,8 @@ import casa.moller.tandem.feature.recipes.PHONE
 import casa.moller.tandem.feature.recipes.PHONE_TALL
 import casa.moller.tandem.feature.recipes.TABLET
 import casa.moller.tandem.feature.recipes.TestFrame
+import casa.moller.tandem.feature.recipes.books.PHONE_LANDSCAPE
+import casa.moller.tandem.feature.recipes.books.TABLET_PORTRAIT
 import com.github.takahirom.roborazzi.DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -76,6 +78,60 @@ class RecipeImportScreenshotTest {
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun offline() = capture("phone_import_offline_light_sv", RecipeImportShot.OFFLINE)
+
+    // --- Fas 3's leftovers (lane fas3-rester): #38 the page read in the app, #40 the step sort ---
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun page() = capture("phone_import_page_light_sv", RecipeImportShot.PAGE)
+
+    @Test
+    fun pageDark() = capture("phone_import_page_dark", RecipeImportShot.PAGE, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun pageSending() = capture("phone_import_page_sending_light_sv", RecipeImportShot.PAGE_SENDING)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun pageNothingFoundFontScale2() =
+        capture("phone_tall_import_page_nothing_font2_light_sv", RecipeImportShot.PAGE_NOTHING_FOUND, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun pageLandscape() = capture("phone_landscape_import_page_light_sv", RecipeImportShot.PAGE_NOTHING_FOUND)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun pageTablet() = capture("tablet_import_page_light_sv", RecipeImportShot.PAGE)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun pageTabletPortrait() = capture("tablet_portrait_import_page_light_sv", RecipeImportShot.PAGE_NOTHING_FOUND)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun resultSort() = capture("phone_tall_import_result_sort_light_sv", RecipeImportShot.RESULT_SORT)
+
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun resultSortDark() = capture("phone_tall_import_result_sort_dark", RecipeImportShot.RESULT_SORT, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun resultSortFontScale2() = capture("phone_tall_import_result_sort_font2_light_sv", RecipeImportShot.RESULT_SORT, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun resultSorting() = capture("phone_tall_import_result_sorting_light_sv", RecipeImportShot.RESULT_SORTING)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun resultSorted() = capture("phone_tall_import_result_sorted_light_sv", RecipeImportShot.RESULT_SORTED)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun resultSortTabletPortrait() = capture("tablet_portrait_import_result_sort_light_sv", RecipeImportShot.RESULT_SORT)
 
     private fun capture(name: String, shot: RecipeImportShot, darkTheme: Boolean = false, fontScale: Float? = null) {
         composeRule.setContent { TestFrame(darkTheme = darkTheme, chrome = AppChrome(), fontScale = fontScale) { shot.content() } }

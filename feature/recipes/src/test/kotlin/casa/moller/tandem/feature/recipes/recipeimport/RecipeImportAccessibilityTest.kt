@@ -71,4 +71,33 @@ class RecipeImportAccessibilityTest {
 
     @Test
     fun offline() = check(RecipeImportShot.OFFLINE)
+
+    // --- Fas 3's leftovers (lane fas3-rester) ---
+
+    @Test
+    fun page() = check(RecipeImportShot.PAGE)
+
+    @Test
+    fun pageDark() = check(RecipeImportShot.PAGE, darkTheme = true)
+
+    @Test
+    fun pageSending() = check(RecipeImportShot.PAGE_SENDING)
+
+    @Test
+    fun pageNothingFoundFontScale2() = check(RecipeImportShot.PAGE_NOTHING_FOUND, fontScale = 2f)
+
+    @Test
+    fun resultSort() = check(RecipeImportShot.RESULT_SORT)
+
+    @Test
+    fun resultSortDark() = check(RecipeImportShot.RESULT_SORT, darkTheme = true)
+
+    @Test
+    fun resultSortFontScale2() = check(RecipeImportShot.RESULT_SORT, fontScale = 2f)
+
+    @Test
+    fun resultSorting() = check(RecipeImportShot.RESULT_SORTING)
+
+    @Test
+    fun resultSorted() = check(RecipeImportShot.RESULT_SORTED)
 }

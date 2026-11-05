@@ -46,4 +46,20 @@
     <string name="recipe_import_scan_heading">Photograph a recipe</string>
     <string name="recipe_import_scan_intro">A cookbook page, a card or a printout is read on the phone. Nothing is sent anywhere.</string>
     <string name="recipe_import_scan_button">Open the camera</string>
+    <!-- Fas 3's leftovers: reading a page in the app (#38) and sorting the lines into steps (#40). -->
+    <string name="recipe_import_page_title">Reading the page…</string>
+    <string name="recipe_import_page_body">Your Tandoor could not open the page, so Tandem reads it here instead and sends the page to Tandoor. No AI is used.</string>
+    <string name="recipe_import_page_nothing_title">No recipe on the page yet</string>
+    <string name="recipe_import_page_nothing_body">If the page asks you to confirm something, do it below and read the page again.</string>
+    <string name="recipe_import_page_sending">Sending the page to Tandoor…</string>
+    <string name="recipe_import_page_again">Read the page again</string>
+    <string name="recipe_import_page_cancel">Cancel</string>
+    <string name="recipe_import_page_view">The page %1$s</string>
+    <string name="recipe_import_sort">Sort the ingredients into the steps</string>
+    <string name="recipe_import_sort_hint">The space\'s AI moves each ingredient to the step that uses it. This costs one more AI request.</string>
+    <string name="recipe_import_sorting">Sorting the ingredients…</string>
+    <string name="recipe_import_sort_undo">Undo the sorting</string>
+    <string name="recipe_import_sort_done">The ingredients are sorted into the steps</string>
+    <string name="recipe_import_sort_changed">The AI changed the recipe, so it was kept as it was</string>
+    <string name="recipe_import_sort_failed">The ingredients could not be sorted</string>
 </resources>

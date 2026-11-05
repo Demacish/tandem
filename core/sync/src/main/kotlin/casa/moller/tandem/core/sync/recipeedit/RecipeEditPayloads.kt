@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.recipe.NutritionPresence
 import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.Step
+import java.security.MessageDigest
 import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -164,8 +165,44 @@ internal object RecipeEditPayloads {
         },
     )
 
-    /** `base_snapshot` of a PATCH: the `updated_at` of the copy the edit started from (null = no check). */
-    fun base(updatedAt: Instant?): String = buildJsonObject { updatedAt?.let { put("updated_at", it.toString()) } }.toString()
+    /**
+     * `base_snapshot` of a PATCH: the `updated_at` of the copy the edit started from (null = no
+     * check) and, Fas 3's leftovers, the [stepsFingerprint] of that copy: a change of only a step
+     * or an ingredient on the web (`PATCH /api/step/{id}/`, `/api/ingredient/{id}/`) leaves the
+     * recipe's `updated_at` as it was (FACTS "Fas 4: Fas 3:s rester" d).
+     */
+    fun base(updatedAt: Instant?, stepsFingerprint: String? = null): String = buildJsonObject {
+        updatedAt?.let { put("updated_at", it.toString()) }
+        stepsFingerprint?.let { put("steps", it) }
+    }.toString()
+
+    /** The steps fingerprint a base snapshot holds, null when it has none (older rows: only `updated_at` is compared). */
+    fun baseStepsFingerprint(base: String?): String? = base?.let { parse(it) }?.string("steps")
+
+    /**
+     * What a recipe's steps say, as the server's JSON ([recipe], `GET /api/recipe/{id}/`) holds
+     * them: per step (by id) its name, instruction, time and order, per line its id, amount, unit,
+     * food, note, header and no-amount flags and order, as a SHA-256 hex string. Nothing else of
+     * the step goes in (a food's on-hand flag or shopping state changes without an edit). Null
+     * when [recipe] has no steps array.
+     */
+    fun stepsFingerprint(recipe: JsonObject?): String? {
+        val steps = recipe?.get("steps") as? JsonArray ?: return null
+        val text = steps.mapNotNull { it as? JsonObject }.sortedBy { it.long("id") ?: Long.MAX_VALUE }.joinToString("\n") { step ->
+            val lines = step.array("ingredients").mapNotNull { it as? JsonObject }.sortedBy { it.long("id") ?: Long.MAX_VALUE }
+                .joinToString(";") { line ->
+                    listOf(
+                        line.long("id"), (line["amount"] as? JsonPrimitive)?.doubleOrNull, (line["unit"] as? JsonObject)?.string("name"),
+                        (line["food"] as? JsonObject)?.string("name"), line.string("note").orEmpty(), line.bool("is_header"),
+                        line.bool("no_amount"), line.int("order"),
+                    ).joinToString("|")
+                }
+            val own = listOf(step.long("id"), step.string("name").orEmpty(), step.string("instruction").orEmpty(), step.int("time"))
+            own.joinToString("|") + "|" + step.int("order") + "|" + lines
+        }
+        val digest = MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8))
+        return digest.joinToString("") { "%02x".format(it) }
+    }
 
     /** The `updated_at` a base snapshot holds, null when it has none. */
     fun baseUpdatedAt(base: String?): Instant? =
@@ -176,6 +213,11 @@ internal object RecipeEditPayloads {
 
     /** A `RECIPE_IMAGE` row for a picture on the web (an import's `image_url`): the server downloads it. */
     fun imageUrl(url: String): String = buildJsonObject { put("image_url", url) }.toString()
+
+    /** Fas 3's leftovers: a `RECIPE_IMAGE` row that removes the recipe's picture ("Ta bort bilden"). */
+    fun imageRemoval(): String = buildJsonObject { put("remove", true) }.toString()
+
+    fun isImageRemoval(payload: String): Boolean = parse(payload)?.bool("remove") == true
 
     fun imagePathOf(payload: String): String? = parse(payload)?.string("file")
 
@@ -229,7 +271,7 @@ internal object RecipeEditPayloads {
             id = id,
             name = draft.name,
             description = draft.description.ifEmpty { null },
-            imageUrl = imageUrl ?: stored?.imageUrl,
+            imageUrl = imageUrl ?: stored?.imageUrl?.takeIf { draft.keepImage },
             servings = draft.servings,
             servingsText = draft.servingsText,
             workingMinutes = draft.workingMinutes,

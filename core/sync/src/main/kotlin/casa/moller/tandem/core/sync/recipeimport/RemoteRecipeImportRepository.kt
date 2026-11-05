@@ -5,10 +5,12 @@ import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.data.recipe.RecipeImportRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
+import casa.moller.tandem.core.data.sync.ImportGate
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
+import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeImportResult
 import casa.moller.tandem.core.model.recipe.RecipeImportSource
 import casa.moller.tandem.core.model.server.ServerFeature
@@ -45,8 +47,13 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * - A file: `POST /api/ai-import/` multipart with the space's default provider
  *   (`space/current` `ai_default_provider.id`, read fresh: the admin may have just set it);
  *   without one, or when the server refuses (400), [RecipeImportProblem.AI_UNAVAILABLE].
+ * - A page a WebView read (#38, Fas 3's leftovers): `{url, data: <html>}` to the same scraper;
+ *   the link becomes the recipe's source and is not fetched by the server.
  * - Guests: `DataProblem.READ_ONLY` (they could not save the recipe); demo mode:
  *   [RecipeImportProblem.DEMO_MODE].
+ *
+ * Every server call runs inside [ImportGate.whileImporting], so background sync yields the server
+ * to the import (plan §10 Fas 3 "Klart när": "bakgrundssynken pausas under tiden").
  */
 @Singleton
 internal class RemoteRecipeImportRepository @Inject constructor(
@@ -55,6 +62,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
     private val permissions: SpacePermissionsRepository,
     private val status: ServerStatusRepository,
     private val databases: TandemDatabaseFactory,
+    private val gate: ImportGate,
 ) : RecipeImportRepository {
     override fun observeAiImportAvailable(): Flow<Boolean> = status.observeStatus()
         .map { !it.isDemo && ServerFeature.AI_IMPORT in it.capabilities }
@@ -70,19 +78,28 @@ internal class RemoteRecipeImportRepository @Inject constructor(
             ActiveSource.Demo -> return@catchingUnexpected Outcome.Failure(RecipeImportProblem.DEMO_MODE.toError())
             ActiveSource.Loading, ActiveSource.None -> return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
-        val answer = when (source) {
-            is RecipeImportSource.Link -> fromLink(remote, source.url)
-            is RecipeImportSource.File -> fromFile(remote, source)
-            is RecipeImportSource.Text -> error("handled above")
+        val answer = gate.whileImporting {
+            when (source) {
+                is RecipeImportSource.Link -> fromLink(remote, source.url)
+                is RecipeImportSource.Page -> fromPage(remote, source)
+                is RecipeImportSource.File -> fromFile(remote, source)
+                is RecipeImportSource.Text -> error("handled above")
+            }
         }
         when (answer) {
             is Outcome.Failure -> answer
 
             is Outcome.Success -> RecipeImportMapper.toResult(answer.value)
                 ?.takeUnless { answer.value.error }
-                ?.let { Outcome.Success(it) }
+                ?.let { Outcome.Success(it.withPageSource(source)) }
                 ?: Outcome.Failure(RecipeImportProblem.NOTHING_FOUND.toError())
         }
+    }
+
+    /** The server leaves `source_url` empty for a page sent as data (FACTS "Fas 4: Fas 3:s rester" a): the link is the source. */
+    private fun RecipeImportResult.withPageSource(source: RecipeImportSource): RecipeImportResult = when {
+        source is RecipeImportSource.Page && draft.sourceUrl.isBlank() -> copy(draft = draft.copy(sourceUrl = source.url.trim()))
+        else -> this
     }
 
     private suspend fun fromText(text: String): Outcome<RecipeImportResult> {
@@ -110,12 +127,66 @@ internal class RemoteRecipeImportRepository @Inject constructor(
         }
     }
 
+    /**
+     * #38: the page as the app's WebView read it, with the shared link (the server does not fetch
+     * it when `data` is given, and leaves `source_url` empty: the app sets it; FACTS "Fas 4: Fas
+     * 3:s rester" a). A page without a recipe answers 500: "nothing found".
+     */
+    private suspend fun fromPage(remote: ActiveSource.Remote, page: RecipeImportSource.Page): Outcome<RecipeFromSourceResponseDto> {
+        if (page.html.isBlank()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
+        val body = buildJsonObject {
+            put("url", page.url.trim())
+            put("data", page.html.take(RecipeImportProblem.MAX_PAGE_CHARS))
+        }
+        val sent = caller.call(remote, background = false, confirmForbidden = true) { imports.fromSource(body) }
+        return if (sent is Outcome.Failure && (sent.error is TandemError.BadRequest || sent.error is TandemError.ServerError)) {
+            Outcome.Failure(RecipeImportProblem.NOTHING_FOUND.toError())
+        } else {
+            sent
+        }
+    }
+
+    override suspend fun sortIngredientsIntoSteps(draft: RecipeDraft): Outcome<RecipeDraft> = catchingUnexpected {
+        if (permissions.permissions.first().readOnly) return@catchingUnexpected Outcome.Failure(DataProblem.READ_ONLY.toError())
+        val remote = when (val current = sources.current()) {
+            is ActiveSource.Remote -> current
+            ActiveSource.Demo -> return@catchingUnexpected Outcome.Failure(RecipeImportProblem.DEMO_MODE.toError())
+            ActiveSource.Loading, ActiveSource.None -> return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        }
+        gate.whileImporting {
+            val provider = when (val found = providerOf(remote)) {
+                is Outcome.Failure -> return@whileImporting found
+                is Outcome.Success -> found.value ?: return@whileImporting Outcome.Failure(RecipeImportProblem.AI_UNAVAILABLE.toError())
+            }
+            val body = RecipeImportMapper.toSourceRecipe(draft)
+            when (val sent = caller.call(remote, background = false, confirmForbidden = true) { imports.aiStepSort(provider, body) }) {
+                is Outcome.Failure ->
+                    if (sent.error is TandemError.BadRequest || sent.error is TandemError.ServerError) {
+                        Outcome.Failure(RecipeImportProblem.AI_UNAVAILABLE.toError())
+                    } else {
+                        sent
+                    }
+
+                is Outcome.Success -> RecipeImportMapper.sortedDraft(sent.value, draft)
+            }
+        }
+    }
+
+    /** `space/current` `ai_default_provider.id`, read fresh (the admin may have just set it); null without one. */
+    private suspend fun providerOf(remote: ActiveSource.Remote): Outcome<Long?> =
+        when (val space = caller.call(remote, background = false) { space.currentSpace() }) {
+            is Outcome.Failure -> space
+            is Outcome.Success -> Outcome.Success(
+                (space.value.aiDefaultProvider as? JsonObject)?.get("id")?.let { (it as? JsonPrimitive)?.longOrNull },
+            )
+        }
+
     private suspend fun fromFile(remote: ActiveSource.Remote, file: RecipeImportSource.File): Outcome<RecipeFromSourceResponseDto> {
         if (file.bytes.isEmpty()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
         if (file.bytes.size > RecipeImportProblem.MAX_FILE_BYTES) return Outcome.Failure(RecipeImportProblem.FILE_TOO_LARGE.toError())
-        val provider = when (val space = caller.call(remote, background = false) { space.currentSpace() }) {
-            is Outcome.Failure -> return space
-            is Outcome.Success -> (space.value.aiDefaultProvider as? JsonObject)?.get("id")?.let { (it as? JsonPrimitive)?.longOrNull }
+        val provider = when (val found = providerOf(remote)) {
+            is Outcome.Failure -> return found
+            is Outcome.Success -> found.value
         } ?: return Outcome.Failure(RecipeImportProblem.AI_UNAVAILABLE.toError())
         val part = MultipartBody.Part.createFormData("file", file.fileName, file.bytes.toRequestBody(file.mimeType.toMediaType()))
         val sent = caller.call(remote, background = false, confirmForbidden = true) {

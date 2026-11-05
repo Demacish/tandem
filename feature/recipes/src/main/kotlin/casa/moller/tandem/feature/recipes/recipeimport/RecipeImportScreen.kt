@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -18,7 +19,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -33,6 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -74,6 +80,7 @@ fun RecipeImportScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onScanText: (() -> Unit)? = null,
+    pageView: @Composable (reading: PageReading, modifier: Modifier) -> Unit = { _, viewModifier -> PagePlaceholder(viewModifier) },
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -89,6 +96,7 @@ fun RecipeImportScreen(
                     onTakePhoto = onTakePhoto,
                     onPickFile = onPickFile,
                     onScanText = onScanText,
+                    pageView = pageView,
                     modifier = Modifier.widthIn(max = FORM_MAX_WIDTH).verticalScroll(rememberScrollState()),
                 )
             }
@@ -117,6 +125,7 @@ private fun Content(
     onTakePhoto: () -> Unit,
     onPickFile: () -> Unit,
     onScanText: (() -> Unit)?,
+    pageView: @Composable (reading: PageReading, modifier: Modifier) -> Unit,
     modifier: Modifier,
 ) {
     val spacing = TandemTheme.spacing
@@ -134,7 +143,8 @@ private fun Content(
         }
         when {
             state.working -> LoadingState(message = stringResource(R.string.recipe_import_working))
-            state.result != null -> Result(state.result, onAction)
+            state.pageReading != null -> PageReader(state.pageReading, onAction, pageView)
+            state.result != null -> Result(state, state.result, onAction)
             else -> Form(state, onAction, onTakePhoto, onPickFile, onScanText)
         }
     }
@@ -219,7 +229,7 @@ private fun Form(
 }
 
 @Composable
-private fun Result(result: RecipeImportResult, onAction: (RecipeImportAction) -> Unit) {
+private fun Result(state: RecipeImportUiState, result: RecipeImportResult, onAction: (RecipeImportAction) -> Unit) {
     val spacing = TandemTheme.spacing
     val draft = result.draft
     val ingredients = draft.ingredients.count { !it.isHeader }
@@ -292,6 +302,7 @@ private fun Result(result: RecipeImportResult, onAction: (RecipeImportAction) ->
             }
         }
     }
+    StepSort(state, onAction)
     Text(
         stringResource(R.string.recipe_import_check_hint),
         style = MaterialTheme.typography.bodySmall,
@@ -300,7 +311,87 @@ private fun Result(result: RecipeImportResult, onAction: (RecipeImportAction) ->
     TandemTextButton(text = stringResource(R.string.recipe_import_again), onClick = { onAction(RecipeImportAction.Clear) })
 }
 
+/**
+ * #38: the page read in the app. The page itself is shown (the user may have to confirm
+ * something in it), with "Läser sidan…", progress while the HTML is with the server, "Läs sidan
+ * igen" after a page without a recipe, and "Avbryt".
+ */
+@Composable
+private fun PageReader(
+    reading: PageReading,
+    onAction: (RecipeImportAction) -> Unit,
+    pageView: @Composable (reading: PageReading, modifier: Modifier) -> Unit,
+) {
+    val spacing = TandemTheme.spacing
+    val title = stringResource(if (reading.nothingFound) R.string.recipe_import_page_nothing_title else R.string.recipe_import_page_title)
+    Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    Text(
+        stringResource(if (reading.nothingFound) R.string.recipe_import_page_nothing_body else R.string.recipe_import_page_body),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    if (reading.sending) {
+        val sending = stringResource(R.string.recipe_import_page_sending)
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().semantics { contentDescription = sending })
+    }
+    val pageLabel = stringResource(R.string.recipe_import_page_view, reading.url)
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth().height(PAGE_HEIGHT).semantics { paneTitle = pageLabel },
+    ) {
+        pageView(reading, Modifier.fillMaxSize().clip(MaterialTheme.shapes.large))
+    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+        if (reading.nothingFound) {
+            TandemSecondaryButton(
+                text = stringResource(R.string.recipe_import_page_again),
+                onClick = { onAction(RecipeImportAction.ReadPageAgain) },
+                enabled = !reading.sending,
+                leadingIcon = TandemIcons.Check,
+            )
+        }
+        TandemTextButton(text = stringResource(R.string.recipe_import_page_cancel), onClick = { onAction(RecipeImportAction.CancelPage) })
+    }
+}
+
+/** What the screenshots show in the WebView's place (a WebView cannot be drawn there). */
+@Composable
+private fun PagePlaceholder(modifier: Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+/** #40: "Fördela ingredienserna på stegen" (one more AI call, said so), progress, and Ångra after it. */
+@Composable
+private fun StepSort(state: RecipeImportUiState, onAction: (RecipeImportAction) -> Unit) {
+    when {
+        state.sortingSteps -> LoadingState(message = stringResource(R.string.recipe_import_sorting))
+
+        state.stepsSorted -> TandemTextButton(
+            text = stringResource(R.string.recipe_import_sort_undo),
+            onClick = { onAction(RecipeImportAction.UndoSortSteps) },
+        )
+
+        state.canSortSteps -> {
+            TandemSecondaryButton(
+                text = stringResource(R.string.recipe_import_sort),
+                onClick = { onAction(RecipeImportAction.SortSteps) },
+                leadingIcon = TandemIcons.Edit,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(
+                stringResource(R.string.recipe_import_sort_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 private val FORM_MAX_WIDTH = 640.dp
 private val PREVIEW = 96.dp
 private val THUMBNAIL = 72.dp
 private val SELECTED_BORDER = 3.dp
+private val PAGE_HEIGHT = 360.dp

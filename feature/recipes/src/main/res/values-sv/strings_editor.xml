@@ -86,4 +86,9 @@
     <string name="recipe_detail_edit_conflict_discard">Släng min ändring</string>
     <string name="recipe_detail_edit_failed_title">Ändringen skickades inte</string>
     <string name="recipe_detail_edit_failed_body">Tandoor nekade din ändring. Se Diagnostik under Mer för varför.</string>
+    <!-- Fas 3:s rester: ta bort receptets bild. -->
+    <string name="recipe_editor_current_photo">Receptets bild</string>
+    <string name="recipe_editor_remove_current_photo">Ta bort bilden</string>
+    <string name="recipe_editor_current_photo_removed">Bilden tas bort när du sparar receptet.</string>
+    <string name="recipe_editor_keep_current_photo">Behåll bilden</string>
 </resources>

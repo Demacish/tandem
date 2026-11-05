@@ -32,6 +32,17 @@ sealed interface RecipeImportSource {
     data class Text(val text: String) : RecipeImportSource
 
     /**
+     * Fas 3's leftovers (#38, plan §8.4 step 2): the page behind [url] as a WebView in the app
+     * read it ([html]), for a site that blocks the server. Sent to the server's scraper as data
+     * together with the link (no AI credits): JSON-LD on the page is usually enough.
+     */
+    class Page(val url: String, val html: String) : RecipeImportSource {
+        override fun equals(other: Any?): Boolean = other is Page && other.url == url && other.html == html
+        override fun hashCode(): Int = 31 * url.hashCode() + html.hashCode()
+        override fun toString(): String = "Page($url, ${html.length} chars)"
+    }
+
+    /**
      * A photo (JPEG, scaled by the caller) or a PDF, read by the space's AI provider
      * (`ServerFeature.AI_IMPORT`). [fileName] is only a label for the upload.
      */

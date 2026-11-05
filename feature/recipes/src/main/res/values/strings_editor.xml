@@ -86,4 +86,9 @@
     <string name="recipe_detail_edit_conflict_discard">Drop my edit</string>
     <string name="recipe_detail_edit_failed_title">Change not sent</string>
     <string name="recipe_detail_edit_failed_body">Tandoor refused your change. See Diagnostics under More for why.</string>
+    <!-- Fas 3's leftovers: removing the recipe's picture. -->
+    <string name="recipe_editor_current_photo">The recipe\'s picture</string>
+    <string name="recipe_editor_remove_current_photo">Remove the picture</string>
+    <string name="recipe_editor_current_photo_removed">The picture is removed when you save the recipe.</string>
+    <string name="recipe_editor_keep_current_photo">Keep the picture</string>
 </resources>

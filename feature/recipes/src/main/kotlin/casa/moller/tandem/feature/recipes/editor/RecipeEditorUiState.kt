@@ -108,6 +108,9 @@ sealed interface RecipeEditorAction {
     /** Fas 3 (import lane): the recipe gets no picture from the source after all. */
     data object RemoveWebImage : RecipeEditorAction
 
+    /** Fas 3's leftovers: "Ta bort bilden" (false) removes the recipe's stored picture when it is saved; "Behåll bilden" (true). */
+    data class KeepImage(val keep: Boolean) : RecipeEditorAction
+
     /** "Börja om från webbens version": drops the kept edit. */
     data object DiscardKeptEdit : RecipeEditorAction
 

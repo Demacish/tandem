@@ -79,6 +79,26 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         recipes[id] = bumped(JsonObject(recipe + ("description" to JsonPrimitive(description))))
     }
 
+    /**
+     * Another member changes only the first step on the web (`PATCH /api/step/{id}/`): the
+     * recipe's `updated_at` stays (FACTS "Fas 4: Fas 3:s rester" d).
+     */
+    @Synchronized
+    fun partnerEditsStep(id: Long, instruction: String) {
+        val recipe = recipes[id] ?: return
+        val steps = (recipe["steps"] as? JsonArray).orEmpty().mapIndexed { index, step ->
+            if (index == 0) JsonObject((step as JsonObject) + ("instruction" to JsonPrimitive(instruction))) else step
+        }
+        recipes[id] = JsonObject(recipe + ("steps" to JsonArray(steps)))
+    }
+
+    /** The recipe has a picture on the server. */
+    @Synchronized
+    fun hasImage(id: Long) {
+        val recipe = recipes[id] ?: return
+        recipes[id] = JsonObject(recipe + ("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg")))
+    }
+
     @Synchronized
     fun answer(request: RecordedRequest): MockResponse? {
         val method = request.method
@@ -148,6 +168,11 @@ internal class FakeRecipeEditTandoor(private val version: String) {
     private fun image(id: Long, body: String): MockResponse {
         val fromWeb = body.contains("name=\"image_url\"")
         val recipe = recipes[id] ?: return notFound()
+        // An empty `image_url` removes the picture (FACTS "Fas 4: Fas 3:s rester" c).
+        if (fromWeb && !body.contains("http")) {
+            recipes[id] = JsonObject(recipe + ("image" to JsonNull))
+            return json(200, JsonObject(mapOf("image" to JsonNull, "image_url" to JsonNull)))
+        }
         recipes[id] = JsonObject(recipe + ("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg")))
         val imageUrl = if (fromWeb) JsonPrimitive("/media/recipes/recipe_$id.jpg") else JsonNull
         return json(200, JsonObject(mapOf("image" to JsonPrimitive("/media/recipes/recipe_$id.jpg"), "image_url" to imageUrl)))

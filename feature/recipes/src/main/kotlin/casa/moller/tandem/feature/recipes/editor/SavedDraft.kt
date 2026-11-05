@@ -25,6 +25,8 @@ internal data class SavedDraft(
     val imageUri: String? = null,
     val isPrivate: Boolean = false,
     val imageUrl: String? = null,
+    val keepImage: Boolean = true,
+    val currentImageUrl: String? = null,
 ) {
     fun toDraft(): RecipeDraft = RecipeDraft(
         name = name,
@@ -51,6 +53,8 @@ internal data class SavedDraft(
         imageUri = imageUri,
         isPrivate = isPrivate,
         imageUrl = imageUrl,
+        keepImage = keepImage,
+        currentImageUrl = currentImageUrl,
     )
 
     companion object {
@@ -81,6 +85,8 @@ internal data class SavedDraft(
             imageUri = draft.imageUri,
             isPrivate = draft.isPrivate,
             imageUrl = draft.imageUrl,
+            keepImage = draft.keepImage,
+            currentImageUrl = draft.currentImageUrl,
         )
 
         fun encode(draft: RecipeDraft): String = json.encodeToString(serializer(), of(draft))

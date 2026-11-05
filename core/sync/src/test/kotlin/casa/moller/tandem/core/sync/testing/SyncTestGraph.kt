@@ -24,6 +24,7 @@ import casa.moller.tandem.core.sync.book.RecipeBookEntryOutboxHandler
 import casa.moller.tandem.core.sync.book.RecipeBookOutboxHandler
 import casa.moller.tandem.core.sync.book.RecipeKeywordsOutboxHandler
 import casa.moller.tandem.core.sync.book.SmartBookResults
+import casa.moller.tandem.core.sync.data.DefaultImportGate
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.data.DefaultSyncRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
@@ -325,7 +326,7 @@ internal class SyncTestGraph(
     val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages)
 
     // Fas 3 (import lane): the server-side import (online).
-    val recipeImports = RemoteRecipeImportRepository(sources, caller, permissions, serverStatus, databases)
+    val recipeImports = RemoteRecipeImportRepository(sources, caller, permissions, serverStatus, databases, DefaultImportGate(guard))
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

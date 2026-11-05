@@ -10,6 +10,7 @@ import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.data.recipe.RecipeImportRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeImportResult
 import casa.moller.tandem.core.model.recipe.RecipeImportSource
 import casa.moller.tandem.feature.recipes.R
@@ -37,6 +38,10 @@ import kotlinx.coroutines.launch
  * as a new recipe (`RecipeEditorKey.importedDraft`), where it is checked and saved offline first.
  * The input lives in [SavedStateHandle]; the result does not (an import is repeated after
  * process death rather than kept: it is one request, and an AI answer may be stale).
+ *
+ * Fas 3's leftovers: when the server cannot read a shared LINK (a site that blocks it), the page
+ * is read in a WebView in the app and its HTML sent instead (#38, [PageReading]); a result can
+ * have its ingredient lines moved to their steps by the space's AI (#40, one more AI call).
  */
 @HiltViewModel(assistedFactory = RecipeImportViewModel.Factory::class)
 class RecipeImportViewModel @AssistedInject constructor(
@@ -75,6 +80,9 @@ class RecipeImportViewModel @AssistedInject constructor(
             sharedFile = sharedFile?.takeUnless { taken },
             readOnly = permissions.readOnly,
             isDemo = permissions.isDemo,
+            pageReading = progress.pageReading,
+            sortingSteps = progress.sortingSteps,
+            stepsSorted = progress.beforeSort != null,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeImportUiState(input = input.value))
 
@@ -96,25 +104,105 @@ class RecipeImportViewModel @AssistedInject constructor(
                 progress.copy(result = progress.result?.let { it.copy(draft = it.draft.copy(imageUrl = action.url)) })
             }
 
-            RecipeImportAction.Clear -> progress.update { it.copy(result = null, problem = null, failure = null) }
+            RecipeImportAction.Clear -> progress.update { Progress() }
 
             RecipeImportAction.OpenEditor -> progress.value.result?.let { result ->
                 effectChannel.trySend(RecipeImportEffect.OpenEditor(SavedDraft.encode(result.draft)))
             }
+
+            is RecipeImportAction.PageLoaded -> sendPage(action.html)
+
+            RecipeImportAction.ReadPageAgain -> progress.update { progress ->
+                progress.copy(pageReading = progress.pageReading?.let { it.copy(readRequest = it.readRequest + 1) })
+            }
+
+            RecipeImportAction.CancelPage -> progress.update {
+                it.copy(pageReading = null, problem = R.string.recipe_import_nothing_found, failure = null)
+            }
+
+            RecipeImportAction.SortSteps -> sortSteps()
+
+            RecipeImportAction.UndoSortSteps -> progress.update { progress ->
+                val before = progress.beforeSort ?: return@update progress
+                progress.copy(result = progress.result?.copy(draft = before), beforeSort = null)
+            }
+        }
+    }
+
+    /**
+     * #38: the page's HTML from the WebView goes to the server with the link. Each finished load
+     * sends once more (a page that first asked the visitor to confirm something), never two at a time.
+     */
+    private fun sendPage(html: String) {
+        val reading = progress.value.pageReading ?: return
+        if (reading.sending || html.isBlank()) return
+        progress.update { it.copy(pageReading = reading.copy(sending = true)) }
+        viewModelScope.launch {
+            val outcome = imports.import(RecipeImportSource.Page(reading.url, html))
+            // Cancelled meanwhile: the answer is dropped.
+            progress.update { progress -> progress.pageReading?.let { progress.afterPage(it, outcome) } ?: progress }
+        }
+    }
+
+    private fun Progress.afterPage(current: PageReading, outcome: Outcome<RecipeImportResult>): Progress {
+        if (outcome is Outcome.Success) return copy(pageReading = null, result = outcome.value)
+        val error = (outcome as Outcome.Failure).error
+        if (RecipeImportProblem.of(error) == RecipeImportProblem.NOTHING_FOUND) {
+            return copy(pageReading = current.copy(sending = false, nothingFound = true))
+        }
+        val problem = problemOf(error, RecipeImportSource.Link(current.url))
+        return copy(pageReading = null, problem = problem ?: R.string.recipe_import_failed, failure = error.takeIf { problem == null })
+    }
+
+    /** #40: the space's AI moves the result's ingredient lines to their steps; the draft before is kept for Ångra. */
+    private fun sortSteps() {
+        val current = progress.value
+        val result = current.result ?: return
+        if (current.sortingSteps) return
+        progress.update { it.copy(sortingSteps = true) }
+        viewModelScope.launch {
+            val outcome = imports.sortIngredientsIntoSteps(result.draft)
+            val message = when (outcome) {
+                is Outcome.Success -> R.string.recipe_import_sort_done
+                is Outcome.Failure -> when (RecipeImportProblem.of(outcome.error)) {
+                    RecipeImportProblem.STEP_SORT_CHANGED -> R.string.recipe_import_sort_changed
+                    RecipeImportProblem.AI_UNAVAILABLE -> R.string.recipe_import_ai_unavailable
+                    else -> R.string.recipe_import_sort_failed
+                }
+            }
+            progress.update { progress ->
+                if (outcome !is Outcome.Success) return@update progress.copy(sortingSteps = false)
+                progress.copy(
+                    sortingSteps = false,
+                    result = progress.result?.copy(draft = outcome.value),
+                    beforeSort = progress.beforeSort ?: result.draft,
+                )
+            }
+            effectChannel.trySend(RecipeImportEffect.Message(message))
         }
     }
 
     private fun import(source: RecipeImportSource?) {
         if (source == null || progress.value.working) return
-        progress.update { it.copy(working = true, result = null, problem = null, failure = null) }
+        progress.update { Progress(working = true) }
         viewModelScope.launch {
             when (val outcome = imports.import(source)) {
                 is Outcome.Success -> progress.update { it.copy(working = false, result = outcome.value) }
 
                 is Outcome.Failure -> {
                     val problem = problemOf(outcome.error, source)
+                    val blocked = source is RecipeImportSource.Link &&
+                        RecipeImportProblem.of(outcome.error) == RecipeImportProblem.NOTHING_FOUND &&
+                        source.url.startsWith("http", ignoreCase = true)
                     val failure = outcome.error.takeIf { problem == null }
-                    progress.update { it.copy(working = false, problem = problem ?: R.string.recipe_import_failed, failure = failure) }
+                    progress.update {
+                        if (blocked) {
+                            // #38: the server could not read the link: the app reads the page itself.
+                            it.copy(working = false, pageReading = PageReading((source as RecipeImportSource.Link).url))
+                        } else {
+                            it.copy(working = false, problem = problem ?: R.string.recipe_import_failed, failure = failure)
+                        }
+                    }
                 }
             }
         }
@@ -132,6 +220,8 @@ class RecipeImportViewModel @AssistedInject constructor(
 
         RecipeImportProblem.DEMO_MODE -> R.string.recipe_import_demo_problem
 
+        RecipeImportProblem.STEP_SORT_CHANGED -> R.string.recipe_import_sort_changed
+
         null -> when (error.dataProblem()) {
             DataProblem.READ_ONLY -> R.string.recipe_import_read_only
             else -> null
@@ -143,6 +233,9 @@ class RecipeImportViewModel @AssistedInject constructor(
         val result: RecipeImportResult? = null,
         val problem: Int? = null,
         val failure: TandemError? = null,
+        val pageReading: PageReading? = null,
+        val sortingSteps: Boolean = false,
+        val beforeSort: RecipeDraft? = null,
     )
 
     internal companion object {

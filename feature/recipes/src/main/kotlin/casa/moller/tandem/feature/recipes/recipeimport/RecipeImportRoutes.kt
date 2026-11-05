@@ -130,6 +130,14 @@ fun RecipeImportRoute(
         onBack = onBack,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        pageView = { reading, viewModifier ->
+            PageReaderWebView(
+                url = reading.url,
+                readRequest = reading.readRequest,
+                onHtml = { viewModel.onAction(RecipeImportAction.PageLoaded(it)) },
+                modifier = viewModifier,
+            )
+        },
     )
 }
 

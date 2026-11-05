@@ -8,6 +8,8 @@ import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.ServerAccountEntity
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.recipe.DraftIngredient
+import casa.moller.tandem.core.model.recipe.DraftStep
+import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeImportSource
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.account.ActiveSource
@@ -17,6 +19,9 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -183,6 +188,60 @@ class RecipeImportRepositoryTest {
     }
 
     @Test
+    fun aPageReadInTheAppGoesToTheServerWithItsLink() = forEachVersion {
+        // #38: the site blocks the server (400 "Connection Refused."), the app's WebView reads it.
+        val blocked = "https://example.com/blockerad"
+        assertEquals(RecipeImportProblem.NOTHING_FOUND.toError(), failure(repo.import(RecipeImportSource.Link(blocked))))
+        val html = "<html><head><script type=\"application/ld+json\">{}</script></head><body>100% smör</body></html>"
+        val result = ok(repo.import(RecipeImportSource.Page(blocked, html)))
+        assertEquals("Pannkakor", result.draft.name)
+        assertEquals(blocked, result.draft.sourceUrl)
+        val (_, body) = tandoor.calls.last()
+        val sent = Json.parseToJsonElement(body) as JsonObject
+        assertEquals(blocked, (sent["url"] as JsonPrimitive).content)
+        assertEquals(html, (sent["data"] as JsonPrimitive).content)
+        assertEquals(RecipeImportProblem.EMPTY_INPUT.toError(), failure(repo.import(RecipeImportSource.Page(blocked, " "))))
+    }
+
+    @Test
+    fun theBackgroundSyncIsPausedWhileTheServerImports() = forEachVersion {
+        // Plan §10 Fas 3 "Klart när": "bakgrundssynken pausas under tiden" (a link, a page, a photo, the step sort).
+        val seen = mutableListOf<Boolean>()
+        tandoor.duringCall = { seen += graph.guard.check(ACCOUNT_ID, background = true) != null }
+        tandoor.providerId = 7
+        ok(repo.import(RecipeImportSource.Link(FakeRecipeImportTandoor.KNOWN_URL)))
+        ok(repo.import(RecipeImportSource.Page("https://example.com/x", "<html></html>")))
+        ok(repo.import(RecipeImportSource.File(ByteArray(10) { it.toByte() }, "image/jpeg", "recept.jpg")))
+        ok(repo.sortIngredientsIntoSteps(SampleTwoSteps))
+        assertEquals(listOf(true, true, true, true), seen)
+        // Requests the user starts still go out, and the pause ends with the import.
+        assertEquals(null, graph.guard.check(ACCOUNT_ID, background = true))
+    }
+
+    @Test
+    fun theAiMovesTheIngredientLinesToTheirSteps() = forEachVersion {
+        // #40: refused without a provider; with one, the last line of step 1 moves to step 2.
+        assertEquals(RecipeImportProblem.AI_UNAVAILABLE.toError(), failure(repo.sortIngredientsIntoSteps(SampleTwoSteps)))
+        assertTrue(tandoor.calls.none { it.first.startsWith("POST /api/ai-step-sort/") })
+        tandoor.providerId = 7
+        val sorted = ok(repo.sortIngredientsIntoSteps(SampleTwoSteps))
+        assertEquals(listOf("vetemjöl", "mjölk"), sorted.steps[0].ingredients.map { it.food })
+        assertEquals(listOf("smör"), sorted.steps[1].ingredients.map { it.food })
+        assertEquals(SampleTwoSteps.steps.map { it.instruction }, sorted.steps.map { it.instruction })
+        assertEquals(SampleTwoSteps.imageUrl, sorted.imageUrl)
+        val (_, body) = tandoor.calls.last { it.first == "POST /api/ai-step-sort/" }
+        assertTrue(body, body.contains("\"food\":{\"name\":\"smör\"}"))
+        // An AI that drops a step: the draft is kept as it was.
+        tandoor.stepSortDropsAStep = true
+        assertEquals(RecipeImportProblem.STEP_SORT_CHANGED.toError(), failure(repo.sortIngredientsIntoSteps(SampleTwoSteps)))
+        graph.permissions.setGuest(true)
+        assertEquals(DataProblem.READ_ONLY.toError(), failure(repo.sortIngredientsIntoSteps(SampleTwoSteps)))
+        graph.permissions.setGuest(false)
+        graph.sources.source.value = ActiveSource.Demo
+        assertEquals(RecipeImportProblem.DEMO_MODE.toError(), failure(repo.sortIngredientsIntoSteps(SampleTwoSteps)))
+    }
+
+    @Test
     fun aGuestAndDemoModeCannotImport() = forEachVersion {
         val link = RecipeImportSource.Link(FakeRecipeImportTandoor.KNOWN_URL)
         graph.permissions.setGuest(true)
@@ -198,6 +257,23 @@ class RecipeImportRepositoryTest {
     }
 
     private companion object {
+        /** An AI import's draft: every line in the first step. */
+        val SampleTwoSteps = RecipeDraft(
+            name = "Pannkakor",
+            steps = listOf(
+                DraftStep(
+                    instruction = "Vispa en smet.",
+                    ingredients = listOf(
+                        DraftIngredient(amount = 2.5, unit = "dl", food = "vetemjöl"),
+                        DraftIngredient(amount = 6.0, unit = "dl", food = "mjölk"),
+                        DraftIngredient(amount = 2.0, unit = "msk", food = "smör"),
+                    ),
+                ),
+                DraftStep(instruction = "Stek i smör."),
+            ),
+            imageUrl = "https://example.com/bild.jpg",
+        )
+
         val VERSIONS = listOf("2.6.13", "2.7.1")
         const val MAX_DRAINS = 6
     }

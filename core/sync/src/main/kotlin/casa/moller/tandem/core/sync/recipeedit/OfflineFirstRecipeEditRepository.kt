@@ -237,6 +237,12 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             val stored = recipes.getDetail(accountId, id)?.toRecipe(item?.overview, item?.toModel()?.keywords.orEmpty())
                 ?: return Outcome.Failure(RecipeEditProblem.UNKNOWN_RECIPE.toError())
             val body = RecipeEditPayloads.encode(draft)
+            // The steps as the server last sent them, before this edit replaces the stored copy (conflict check).
+            val baseSteps = recipes.getDetailRow(accountId, id)?.rawJson
+                ?.let { RecipeEditPayloads.parse(it) }
+                // Only the server's own JSON (an unsent edit's body stands there until the answer comes).
+                ?.takeIf { id >= 0 && it["updated_at"] != null }
+                ?.let { RecipeEditPayloads.stepsFingerprint(it) }
             store(id, draft, stored, photo, rawJson = body.toString())
             if (!remote) return Outcome.Success(id)
             // A kept conflict of this recipe is superseded by the new edit (which starts from the server's version).
@@ -252,12 +258,14 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                     localId = id.takeIf { it < 0 },
                     serverId = id.takeIf { it >= 0 },
                     payload = body.toString(),
-                    baseSnapshot = RecipeEditPayloads.base(stored.updatedAt),
+                    baseSnapshot = RecipeEditPayloads.base(stored.updatedAt, baseSteps),
                     createdAtEpochMillis = now,
                 ),
             )
             if (photo != null) queueImage(id, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
             draft.imageUrl?.takeIf { photo == null }?.let { queueImageUrl(id, it, dependsOn = create?.id ?: patchId.takeIf { id < 0 }) }
+            // Fas 3's leftovers: "Ta bort bilden" on a recipe the server has (a new one has no picture yet).
+            if (!draft.keepImage && photo == null && draft.imageUrl == null && id >= 0) queueImageRemoval(id)
             return Outcome.Success(id)
         }
 
@@ -332,6 +340,19 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                     serverId = id.takeIf { it >= 0 },
                     payload = RecipeEditPayloads.imageUrl(url),
                     dependsOn = dependsOn,
+                    createdAtEpochMillis = now,
+                ),
+            )
+        }
+
+        private suspend fun queueImageRemoval(id: Long) {
+            outbox.enqueue(
+                OutboxEntity(
+                    accountId = accountId,
+                    op = OutboxOps.RECIPE_IMAGE,
+                    entity = OutboxEntities.RECIPE_EDIT,
+                    serverId = id,
+                    payload = RecipeEditPayloads.imageRemoval(),
                     createdAtEpochMillis = now,
                 ),
             )

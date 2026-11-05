@@ -45,4 +45,20 @@
     <string name="recipe_import_scan_heading">Fota recept</string>
     <string name="recipe_import_scan_intro">En kokbokssida, ett kort eller en utskrift läses i telefonen. Inget skickas någonstans.</string>
     <string name="recipe_import_scan_button">Öppna kameran</string>
+    <!-- Fas 3:s rester: läsa sidan i appen (#38) och fördela raderna på stegen (#40). -->
+    <string name="recipe_import_page_title">Läser sidan…</string>
+    <string name="recipe_import_page_body">Er Tandoor kom inte åt sidan, så Tandem läser den här i stället och skickar sidan till Tandoor. Ingen AI används.</string>
+    <string name="recipe_import_page_nothing_title">Inget recept på sidan än</string>
+    <string name="recipe_import_page_nothing_body">Om sidan ber dig bekräfta något, gör det här nedanför och läs sidan igen.</string>
+    <string name="recipe_import_page_sending">Skickar sidan till Tandoor…</string>
+    <string name="recipe_import_page_again">Läs sidan igen</string>
+    <string name="recipe_import_page_cancel">Avbryt</string>
+    <string name="recipe_import_page_view">Sidan %1$s</string>
+    <string name="recipe_import_sort">Fördela ingredienserna på stegen</string>
+    <string name="recipe_import_sort_hint">Utrymmets AI flyttar varje ingrediens till steget där den används. Det kostar ett AI-anrop till.</string>
+    <string name="recipe_import_sorting">Fördelar ingredienserna…</string>
+    <string name="recipe_import_sort_undo">Ångra fördelningen</string>
+    <string name="recipe_import_sort_done">Ingredienserna är fördelade på stegen</string>
+    <string name="recipe_import_sort_changed">AI:n ändrade receptet, så det behölls som det var</string>
+    <string name="recipe_import_sort_failed">Ingredienserna kunde inte fördelas</string>
 </resources>

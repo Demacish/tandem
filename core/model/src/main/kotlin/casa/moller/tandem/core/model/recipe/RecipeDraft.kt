@@ -13,12 +13,15 @@ package casa.moller.tandem.core.model.recipe
  * and the feature, never here.
  *
  * @property imageUri a NEW photo (`content://` from the picker or camera, `file://` in tests), or
- *   null to keep the recipe's current image. The editor cannot remove an image (the web can).
+ *   null to keep the recipe's current image ([keepImage]).
  * @property imageUrl Fas 3 (import lane): a picture on the WEB the recipe should get when it is
  *   created (the source's picture of an import; Tandoor downloads it, `image_url`). Only used
  *   when [imageUri] is null; the editor shows it as the recipe's picture.
- * @property keepImage whether the recipe keeps its stored image when [imageUri] is null (always
- *   true today; kept explicit so a later "remove photo" has a home).
+ * @property keepImage whether the recipe keeps its stored image when [imageUri] and [imageUrl]
+ *   are null. False = Fas 3's leftovers "Ta bort bilden": the picture is removed on the server
+ *   (`PUT /api/recipe/{id}/image/` with an empty `image_url`, FACTS "Fas 4: Fas 3:s rester" c).
+ * @property currentImageUrl the stored recipe's picture when the edit started (shown in the
+ *   editor, never sent); null for a new recipe or one without a picture.
  */
 data class RecipeDraft(
     val name: String = "",
@@ -34,6 +37,7 @@ data class RecipeDraft(
     val isPrivate: Boolean = false,
     val keepImage: Boolean = true,
     val imageUrl: String? = null,
+    val currentImageUrl: String? = null,
 ) {
     /** Every ingredient of every step, in order (headers included). */
     val ingredients: List<DraftIngredient>
@@ -88,6 +92,7 @@ data class RecipeDraft(
                 )
             },
             isPrivate = recipe.isPrivate,
+            currentImageUrl = recipe.imageUrl,
         )
     }
 }

@@ -19,6 +19,10 @@ import casa.moller.tandem.core.model.recipe.RecipeImportResult
  * @property sharedFile a photo or PDF another app shared, not read yet (the route reads it).
  * @property readOnly a guest: nothing can be imported (the recipe could not be saved).
  * @property isDemo demo mode: there is no server to parse with.
+ * @property pageReading #38: the server could not read the shared link, so the page is being read
+ *   in a WebView in the app (shown with "Läser sidan…" and Avbryt); null otherwise.
+ * @property sortingSteps #40: `ai-step-sort` is running for [result].
+ * @property stepsSorted #40: [result]'s lines were moved to their steps (Ångra puts them back).
  */
 @Immutable
 data class RecipeImportUiState(
@@ -31,15 +35,37 @@ data class RecipeImportUiState(
     val sharedFile: SharedFile? = null,
     val readOnly: Boolean = false,
     val isDemo: Boolean = false,
+    val pageReading: PageReading? = null,
+    val sortingSteps: Boolean = false,
+    val stepsSorted: Boolean = false,
 ) {
     /** The link or text can be read (a text is read on the device, so demo mode too; a link needs the server). */
     val canImport: Boolean
         get() = input.isNotBlank() && !working && !readOnly
 
+    /**
+     * #40: "Fördela ingredienserna på stegen" is offered: the space has an AI provider and the
+     * result has at least two steps and an ingredient line.
+     */
+    val canSortSteps: Boolean
+        get() = aiAvailable && !readOnly && !isDemo && !working && result != null &&
+            result.draft.steps.size >= 2 && result.draft.ingredients.any { !it.isHeader }
+
     /** A photo or PDF can be chosen. */
     val canImportFile: Boolean
         get() = aiAvailable && !working && !readOnly && !isDemo
 }
+
+/**
+ * #38 (plan §8.4 step 2): the page behind [url] is read in the app because the server could not.
+ *
+ * @property sending the page's HTML is with the server.
+ * @property nothingFound the last HTML had no recipe (a page that first asks the visitor to
+ *   confirm something): the user can confirm in the page and read it again.
+ * @property readRequest bumped by "Läs sidan igen": the WebView hands over its HTML once more.
+ */
+@Immutable
+data class PageReading(val url: String, val sending: Boolean = false, val nothingFound: Boolean = false, val readRequest: Int = 0)
 
 /** A photo or PDF another app shared to Tandem (`ACTION_SEND`), by its `content://` uri. */
 @Immutable
@@ -68,6 +94,23 @@ sealed interface RecipeImportAction {
 
     /** "Öppna i redigeraren". */
     data object OpenEditor : RecipeImportAction
+
+    /** #38: the WebView finished loading the page; [html] is its markup. */
+    class PageLoaded(val html: String) : RecipeImportAction {
+        override fun toString(): String = "PageLoaded(${html.length} chars)"
+    }
+
+    /** #38: "Läs sidan igen" after the user confirmed something in the page. */
+    data object ReadPageAgain : RecipeImportAction
+
+    /** #38: "Avbryt": stop reading the page; the server's answer stands. */
+    data object CancelPage : RecipeImportAction
+
+    /** #40: "Fördela ingredienserna på stegen" (one more AI call). */
+    data object SortSteps : RecipeImportAction
+
+    /** #40: "Ångra" after the lines were moved. */
+    data object UndoSortSteps : RecipeImportAction
 }
 
 sealed interface RecipeImportEffect {

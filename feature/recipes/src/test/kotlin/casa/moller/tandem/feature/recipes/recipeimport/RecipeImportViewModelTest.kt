@@ -107,10 +107,87 @@ class RecipeImportViewModelTest {
     }
 
     @Test
+    fun aLinkTheServerCannotReadIsReadInTheApp() = runTest {
+        // #38: the site blocks the server; the page's HTML from the app's WebView goes instead.
+        val link = "https://example.com/blockerad"
+        imports.linkFailure = RecipeImportProblem.NOTHING_FOUND.toError()
+        val vm = viewModel(RecipeImportKey(sharedText = link))
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.Import)
+        assertEquals(PageReading(link), vm.uiState.value.pageReading)
+        assertNull(vm.uiState.value.problem)
+
+        vm.onAction(RecipeImportAction.PageLoaded("<html>sidan</html>"))
+        assertEquals(RecipeImportSource.Page(link, "<html>sidan</html>"), imports.imported.last())
+        assertNull(vm.uiState.value.pageReading)
+        assertEquals(SampleImports.pancakes, vm.uiState.value.result)
+        // A late load of the same page changes nothing.
+        vm.onAction(RecipeImportAction.PageLoaded("<html>igen</html>"))
+        assertEquals(2, imports.imported.size)
+    }
+
+    @Test
+    fun aPageWithoutARecipeCanBeReadAgainOrCancelled() = runTest {
+        val link = "https://example.com/blockerad"
+        imports.linkFailure = RecipeImportProblem.NOTHING_FOUND.toError()
+        val vm = viewModel(RecipeImportKey(sharedText = link))
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.Import)
+        imports.failure = RecipeImportProblem.NOTHING_FOUND.toError()
+        vm.onAction(RecipeImportAction.PageLoaded("<html>bekräfta att du är en människa</html>"))
+        assertEquals(PageReading(link, nothingFound = true), vm.uiState.value.pageReading)
+        vm.onAction(RecipeImportAction.ReadPageAgain)
+        assertEquals(1, vm.uiState.value.pageReading?.readRequest)
+        vm.onAction(RecipeImportAction.CancelPage)
+        assertNull(vm.uiState.value.pageReading)
+        assertEquals(R.string.recipe_import_nothing_found, vm.uiState.value.problem)
+        // Another failure while the page is with the server: the usual message.
+        vm.onAction(RecipeImportAction.Import)
+        imports.failure = TandemError.NetworkUnavailable
+        vm.onAction(RecipeImportAction.PageLoaded("<html></html>"))
+        assertNull(vm.uiState.value.pageReading)
+        assertEquals(TandemError.NetworkUnavailable, vm.uiState.value.failure)
+    }
+
+    @Test
+    fun theAiCanSortTheLinesIntoTheStepsAndItCanBeUndone() = runTest {
+        // #40: offered with an AI provider for a result with steps and lines; one more AI call.
+        val vm = viewModel(RecipeImportKey(sharedText = "https://example.com/recept/pannkakor"))
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        vm.onAction(RecipeImportAction.Import)
+        assertTrue(vm.uiState.value.canSortSteps)
+        val before = SampleImports.pancakes.draft
+        val moved = before.copy(
+            steps = listOf(
+                before.steps[0].copy(ingredients = before.steps[0].ingredients.take(3)),
+                before.steps[1].copy(ingredients = before.steps[0].ingredients.drop(3) + before.steps[1].ingredients),
+            ),
+        )
+        imports.sorted = moved
+        vm.onAction(RecipeImportAction.SortSteps)
+        assertEquals(listOf(before), imports.sortRequests)
+        assertEquals(moved, vm.uiState.value.result?.draft)
+        assertTrue(vm.uiState.value.stepsSorted)
+        assertEquals(RecipeImportEffect.Message(R.string.recipe_import_sort_done), effects.last())
+        vm.onAction(RecipeImportAction.UndoSortSteps)
+        assertEquals(before, vm.uiState.value.result?.draft)
+        assertFalse(vm.uiState.value.stepsSorted)
+
+        imports.sortFailure = RecipeImportProblem.STEP_SORT_CHANGED.toError()
+        vm.onAction(RecipeImportAction.SortSteps)
+        assertEquals(before, vm.uiState.value.result?.draft)
+        assertEquals(RecipeImportEffect.Message(R.string.recipe_import_sort_changed), effects.last())
+        imports.aiAvailable.value = false
+        assertFalse(vm.uiState.value.canSortSteps)
+    }
+
+    @Test
     fun everyProblemHasItsMessage() = runTest {
         val vm = viewModel()
         collect(vm.uiState)
-        vm.onAction(RecipeImportAction.SetInput("https://example.com/annat"))
+        // A text: a link the server cannot read is read in the app instead (aLinkTheServerCannotRead…).
+        vm.onAction(RecipeImportAction.SetInput("Pannkakor utan länk"))
         for ((problem, text) in listOf(
             RecipeImportProblem.NOTHING_FOUND to R.string.recipe_import_nothing_found,
             RecipeImportProblem.AI_UNAVAILABLE to R.string.recipe_import_ai_unavailable,

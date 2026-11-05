@@ -49,7 +49,8 @@ private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
  *   whole recipe, and the answer is stored. A 404 drops the row and the local recipe.
  * - **DELETE** `DELETE /api/recipe/{id}/` (204); a 404 is dropped (already gone).
  * - **RECIPE_IMAGE** `PUT /api/recipe/{id}/image/` with the app-private copy, deleted afterwards, or
- *   with `image_url` (an import's picture on the web, Fas 3 import lane) for the server to download.
+ *   with `image_url` (an import's picture on the web, Fas 3 import lane) for the server to download,
+ *   or with an empty `image_url` to remove the picture (`{"remove": true}`, Fas 3's leftovers).
  */
 internal class RecipeEditOutboxHandler @Inject constructor(
     private val databases: TandemDatabaseFactory,
@@ -109,6 +110,12 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             details.store(remote, recipeId, fresh, force = true)
             return OutboxResult.Failed(CONFLICT_ERROR)
         }
+        // Fas 3's leftovers: a change of only a step on the web leaves `updated_at`; the steps say it.
+        val baseSteps = RecipeEditPayloads.baseStepsFingerprint(row.baseSnapshot)
+        if (baseSteps != null && baseSteps != RecipeEditPayloads.stepsFingerprint(fresh)) {
+            details.store(remote, recipeId, fresh, force = true)
+            return OutboxResult.Failed(CONFLICT_ERROR)
+        }
         // A known keyword goes with the name the server has for it right now: another name would rename it.
         val sendBody = withServerKeywordNames(body, fresh)
         val answer = when (val sent = caller.write(remote) { recipes.updateRecipe(recipeId, sendBody) }) {
@@ -129,6 +136,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
 
     private suspend fun image(remote: ActiveSource.Remote, row: OutboxEntity, payload: String): OutboxResult {
         val recipeId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        if (RecipeEditPayloads.isImageRemoval(payload)) return removeImage(remote, recipeId)
         RecipeEditPayloads.imageUrlOf(payload)?.let { return imageFromWeb(remote, recipeId, it) }
         val path = RecipeEditPayloads.imagePathOf(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val file = File(path)
@@ -150,6 +158,21 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             }
         }
     }
+
+    /**
+     * Fas 3's leftovers ("Ta bort bilden"): the image endpoint with an EMPTY `image_url` removes the
+     * picture (200 `{"image": null}`; what the web sends, an empty form, does too; a blank `image`
+     * part is a 500; FACTS "Fas 4: Fas 3:s rester" c). A gone recipe drops the row.
+     */
+    private suspend fun removeImage(remote: ActiveSource.Remote, recipeId: Long): OutboxResult =
+        when (val sent = caller.write(remote) { imports.setImageUrl(recipeId, "".toRequestBody(TEXT)) }) {
+            is Outcome.Failure -> if (sent.error == TandemError.NotFound) OutboxResult.Dropped else OutboxResult.Failed(sent.error)
+
+            is Outcome.Success -> {
+                details.fetch(remote, recipeId, isBackground = true, force = true)
+                OutboxResult.Sent
+            }
+        }
 
     /**
      * Fas 3 (import lane): the picture an import offered, downloaded by the server (`image_url`).
