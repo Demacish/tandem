@@ -33,6 +33,12 @@ class RecipeEditorAccessibilityTest {
     }
 
     @Test
+    fun editingPicture() = check(RecipeEditorShot.EDITING_PICTURE)
+
+    @Test
+    fun editingPictureRemovedDark() = check(RecipeEditorShot.EDITING_PICTURE_REMOVED, darkTheme = true)
+
+    @Test
     fun newEmpty() = check(RecipeEditorShot.NEW_EMPTY)
 
     @Test

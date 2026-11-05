@@ -52,6 +52,10 @@ internal object RecipeEditorSamples {
         nameMissing = nameMissing,
     )
 
+    /** Fas 3's leftovers: a stored recipe with a picture (never loaded in tests). */
+    fun editingWithPicture(keep: Boolean) =
+        editing().copy(draft = filled.copy(currentImageUrl = "https://example.com/media/recipes/svamppasta.jpg", keepImage = keep))
+
     fun editing(keptEdit: Boolean = false, readOnly: Boolean = false) = RecipeEditorUiState(
         loaded = true,
         isNew = false,
@@ -72,6 +76,10 @@ internal enum class RecipeEditorShot(val content: @Composable () -> Unit) {
     EDITING_GUEST({ Editor(RecipeEditorSamples.editing(readOnly = true)) }),
     LOADING({ Editor(RecipeEditorUiState(isNew = false)) }),
     UNKNOWN({ Editor(RecipeEditorUiState(isNew = false, unknownRecipe = true)) }),
+
+    // Fas 3's leftovers: the recipe's picture with "Ta bort bilden", and after it ("Behåll bilden").
+    EDITING_PICTURE({ Editor(RecipeEditorSamples.editingWithPicture(keep = true)) }),
+    EDITING_PICTURE_REMOVED({ Editor(RecipeEditorSamples.editingWithPicture(keep = false)) }),
 }
 
 @Composable

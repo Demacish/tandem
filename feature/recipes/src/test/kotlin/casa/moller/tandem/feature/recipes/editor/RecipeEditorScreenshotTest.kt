@@ -34,6 +34,14 @@ class RecipeEditorScreenshotTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
+    fun editingPicture() = capture("phone_editor_picture_light_sv", RecipeEditorShot.EDITING_PICTURE)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun editingPictureRemoved() = capture("phone_editor_picture_removed_light_sv", RecipeEditorShot.EDITING_PICTURE_REMOVED)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
     fun newEmpty() = capture("phone_editor_new_light_sv", RecipeEditorShot.NEW_EMPTY)
 
     @Test
