@@ -40,6 +40,8 @@ import org.junit.runner.RunWith
  *   when the wake-up arrives.
  * - [weekSuggestions_chosenKeyword_sevenDifferentDinnersReachTheServer]: "Suggest the week's meals".
  * - [sharedLinkTheServerCannotOpen_pageIsReadInTheApp_andBecomesADraft]: the WebView reader.
+ * - [demoMode_twoRecipesAndWeekSuggestions_withoutFastPush_neverTalkToAServer]: the same features in
+ *   demo mode, without one request.
  */
 @RunWith(AndroidJUnit4::class)
 class Phase4SmokeTest : Phase2SmokeBase() {
@@ -143,15 +145,22 @@ class Phase4SmokeTest : Phase2SmokeBase() {
 
     /** "Cook another recipe" (+), the pasta in the sheet: it opens as the second, selected tab. */
     private fun addSecondRecipe() {
-        app.tapDescription("Cook another recipe")
-        app.waitForNode("the picker's \"$PASTA\"") { it.text?.toString() == PASTA && app.clickableOf(it) != null }
-        app.capture("phase4-recipe-picker")
-        for (attempt in 1..TAP_ATTEMPTS) {
-            app.clickNodeWithText(PASTA)
-            if (app.device.wait(Until.hasObject(tab(PASTA)), TAP_WAIT_MS) == true) break
-        }
+        pickSecondRecipe(PASTA)
         app.waitFor(By.desc(tabDescription(PASTA, 1, PASTA_STEPS)))
         app.waitFor(By.desc(tabDescription(FakeTandoor.TIMER_RECIPE_NAME, SHAKSHUKA_STEPS, SHAKSHUKA_STEPS)))
+    }
+
+    /** The sheet is its own window, and a long list holds [name] below the fold: searched, then through accessibility actions. */
+    private fun pickSecondRecipe(name: String) {
+        app.tapDescription("Cook another recipe")
+        val search = app.waitForNode("the picker's search", predicate = ::isAddField)
+        assertTrue("The search takes text", app.setNodeText(search, name))
+        app.waitForNode("the picker's \"$name\"") { it.text?.toString() == name && app.clickableOf(it) != null }
+        app.capture("phase4-recipe-picker")
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.clickNodeWithText(name)
+            if (app.device.wait(Until.hasObject(tab(name)), TAP_WAIT_MS) == true) break
+        }
     }
 
     /** Starts the step's [seconds] text timer ("Adjust the time", "Start n s"). Returns when it started. */
@@ -409,6 +418,54 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         assertFalse("Nothing is saved yet: ${tandoor.requests}", "POST /api/recipe/" in tandoor.requests)
     }
 
+    // ------------------------------------------------------------------------------ (f) demo mode
+
+    @Test
+    fun demoMode_twoRecipesAndWeekSuggestions_withoutFastPush_neverTalkToAServer() {
+        app.launch()
+        app.waitFor(By.text(WELCOME_TEXT))
+        app.tap("Try demo mode")
+        app.waitFor(By.text(DEMO_TONIGHT))
+
+        // Two recipes from the demo's own, no timer needed: the tabs are what is new here.
+        app.tapDescription("Cook $DEMO_TONIGHT")
+        app.waitFor(By.text(Pattern.compile("Step 1 of \\d+")))
+        pickSecondRecipe(DEMO_SECOND)
+        app.waitFor(tab(DEMO_TONIGHT))
+        app.waitFor(tab(DEMO_SECOND))
+        app.capture("phase4-demo-two-recipes")
+        app.device.pressBack()
+        app.waitFor(By.text(DEMO_TONIGHT))
+
+        // Suggestions are saved in the demo like any meal.
+        app.tap("Week")
+        app.waitFor(By.res(WEEK_AGENDA))
+        app.tapDescription("Next week")
+        val card = By.res(WEEK_SUGGEST_CARD)
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.findInList(card)
+            clickAtRest(listOf(card))
+            if (nodeShows(TAP_WAIT_MS, ::isAcceptButton)) break
+        }
+        app.waitForNode("\"Put n meals in the week\"", predicate = ::isAcceptButton)
+        app.capture("phase4-demo-suggestions")
+        for (attempt in 1..TAP_ATTEMPTS) {
+            app.clickNodeWithText(ACCEPT_ANY)
+            if (nodeGone(TAP_WAIT_MS, ::isAcceptButton)) break
+        }
+
+        // Fast push says why it is not there.
+        app.tap("More")
+        app.tapInList("Sync and storage")
+        app.findInList(By.text(FAST_PUSH_ROW))
+        app.tapUntil(FAST_PUSH_ROW, By.textStartsWith("Demo mode has no server"))
+        app.capture("phase4-demo-fast-push")
+        assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())
+        assertTrue("Nothing reached the push service", tandoor.pushService.phones.isEmpty())
+    }
+
+    private fun isAcceptButton(node: AccessibilityNodeInfo): Boolean = node.text?.toString()?.let { ACCEPT_ANY.matcher(it).matches() } == true
+
     private companion object {
         const val TAG = "Phase4SmokeTest"
         const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
@@ -458,6 +515,11 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         /** feature:mealplan WEEK_AGENDA_TAG and WEEK_SUGGEST_CARD_TAG (resource ids). */
         const val WEEK_AGENDA = "week:agenda"
         const val WEEK_SUGGEST_CARD = "mealplan:suggest-card"
+
+        /** (f) the demo's recipes (core:data assets/demo/en). */
+        const val DEMO_TONIGHT = "Baked salmon with dill potatoes"
+        const val DEMO_SECOND = "Friday tacos"
+        val ACCEPT_ANY: Pattern = Pattern.compile("Put \\d+ meals? in the week")
 
         /** (e) */
         const val MAIN_ACTIVITY = "casa.moller.tandem.MainActivity"
