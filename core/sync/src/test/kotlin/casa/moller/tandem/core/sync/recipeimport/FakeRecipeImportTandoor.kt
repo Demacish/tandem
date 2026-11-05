@@ -65,10 +65,15 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
         return when {
             // With `data` the link is not fetched and `source_url` stays empty (FACTS "Fas 4: Fas 3:s rester" a).
             data.contains("<html") -> json(200, found(sourceUrl = ""))
+
             url == KNOWN_URL -> json(200, found(sourceUrl = url))
+
             url == NO_RECIPE_URL -> json(200, error("No usable data could be found."))
+
             url.isNotEmpty() -> json(400, error("Connection Refused."))
+
             data.isNotEmpty() -> html500()
+
             else -> json(400, error("Nothing to do."))
         }
     }

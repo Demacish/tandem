@@ -237,12 +237,7 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             val stored = recipes.getDetail(accountId, id)?.toRecipe(item?.overview, item?.toModel()?.keywords.orEmpty())
                 ?: return Outcome.Failure(RecipeEditProblem.UNKNOWN_RECIPE.toError())
             val body = RecipeEditPayloads.encode(draft)
-            // The steps as the server last sent them, before this edit replaces the stored copy (conflict check).
-            val baseSteps = recipes.getDetailRow(accountId, id)?.rawJson
-                ?.let { RecipeEditPayloads.parse(it) }
-                // Only the server's own JSON (an unsent edit's body stands there until the answer comes).
-                ?.takeIf { id >= 0 && it["updated_at"] != null }
-                ?.let { RecipeEditPayloads.stepsFingerprint(it) }
+            val baseSteps = storedStepsFingerprint(id)
             store(id, draft, stored, photo, rawJson = body.toString())
             if (!remote) return Outcome.Success(id)
             // A kept conflict of this recipe is superseded by the new edit (which starts from the server's version).
@@ -264,9 +259,25 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             )
             if (photo != null) queueImage(id, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
             draft.imageUrl?.takeIf { photo == null }?.let { queueImageUrl(id, it, dependsOn = create?.id ?: patchId.takeIf { id < 0 }) }
-            // Fas 3's leftovers: "Ta bort bilden" on a recipe the server has (a new one has no picture yet).
-            if (!draft.keepImage && photo == null && draft.imageUrl == null && id >= 0) queueImageRemoval(id)
+            if (removesImage(id, draft, photo)) queueImageRemoval(id)
             return Outcome.Success(id)
+        }
+
+        /**
+         * Fas 3's leftovers: the steps as the server last sent them, before an edit replaces the
+         * stored copy (the conflict check). Only the server's own JSON counts (it has `updated_at`;
+         * an unsent edit's body stands there until the answer comes).
+         */
+        private suspend fun storedStepsFingerprint(id: Long): String? {
+            if (id < 0) return null
+            val raw = recipes.getDetailRow(accountId, id)?.rawJson?.let { RecipeEditPayloads.parse(it) } ?: return null
+            return raw.takeIf { it["updated_at"] != null }?.let { RecipeEditPayloads.stepsFingerprint(it) }
+        }
+
+        /** Fas 3's leftovers: "Ta bort bilden" on a recipe the server has (a new one has no picture yet). */
+        private fun removesImage(id: Long, draft: RecipeDraft, photo: File?): Boolean {
+            if (id < 0 || draft.keepImage) return false
+            return photo == null && draft.imageUrl == null
         }
 
         suspend fun delete(recipeId: Long): Outcome<Unit> {

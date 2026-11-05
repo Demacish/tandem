@@ -164,6 +164,7 @@ class RecipeImportViewModel @AssistedInject constructor(
             val outcome = imports.sortIngredientsIntoSteps(result.draft)
             val message = when (outcome) {
                 is Outcome.Success -> R.string.recipe_import_sort_done
+
                 is Outcome.Failure -> when (RecipeImportProblem.of(outcome.error)) {
                     RecipeImportProblem.STEP_SORT_CHANGED -> R.string.recipe_import_sort_changed
                     RecipeImportProblem.AI_UNAVAILABLE -> R.string.recipe_import_ai_unavailable
@@ -198,7 +199,7 @@ class RecipeImportViewModel @AssistedInject constructor(
                     progress.update {
                         if (blocked) {
                             // #38: the server could not read the link: the app reads the page itself.
-                            it.copy(working = false, pageReading = PageReading((source as RecipeImportSource.Link).url))
+                            it.copy(working = false, pageReading = PageReading(source.url))
                         } else {
                             it.copy(working = false, problem = problem ?: R.string.recipe_import_failed, failure = failure)
                         }

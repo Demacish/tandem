@@ -192,9 +192,14 @@ internal object RecipeEditPayloads {
             val lines = step.array("ingredients").mapNotNull { it as? JsonObject }.sortedBy { it.long("id") ?: Long.MAX_VALUE }
                 .joinToString(";") { line ->
                     listOf(
-                        line.long("id"), (line["amount"] as? JsonPrimitive)?.doubleOrNull, (line["unit"] as? JsonObject)?.string("name"),
-                        (line["food"] as? JsonObject)?.string("name"), line.string("note").orEmpty(), line.bool("is_header"),
-                        line.bool("no_amount"), line.int("order"),
+                        line.long("id"),
+                        (line["amount"] as? JsonPrimitive)?.doubleOrNull,
+                        (line["unit"] as? JsonObject)?.string("name"),
+                        (line["food"] as? JsonObject)?.string("name"),
+                        line.string("note").orEmpty(),
+                        line.bool("is_header"),
+                        line.bool("no_amount"),
+                        line.int("order"),
                     ).joinToString("|")
                 }
             val own = listOf(step.long("id"), step.string("name").orEmpty(), step.string("instruction").orEmpty(), step.int("time"))

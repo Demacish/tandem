@@ -176,6 +176,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
     private suspend fun providerOf(remote: ActiveSource.Remote): Outcome<Long?> =
         when (val space = caller.call(remote, background = false) { space.currentSpace() }) {
             is Outcome.Failure -> space
+
             is Outcome.Success -> Outcome.Success(
                 (space.value.aiDefaultProvider as? JsonObject)?.get("id")?.let { (it as? JsonPrimitive)?.longOrNull },
             )

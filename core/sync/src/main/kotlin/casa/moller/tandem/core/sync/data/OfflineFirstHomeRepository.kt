@@ -129,6 +129,7 @@ internal class OfflineFirstHomeRepository @Inject constructor(
             when (source) {
                 is ActiveSource.Stored -> databases.get(source.kind).syncStateDao().observeOne(source.accountId, LAYOUT_KEY)
                     .map { HomeLayout.decode(it?.hash) }
+
                 ActiveSource.Loading, ActiveSource.None -> flowOf(HomeLayout())
             }
         }
