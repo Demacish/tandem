@@ -468,7 +468,8 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         assertTrue("Nothing reached the push service", tandoor.pushService.phones.isEmpty())
     }
 
-    private fun isAcceptButton(node: AccessibilityNodeInfo): Boolean = node.text?.toString()?.let { ACCEPT_ANY.matcher(it).matches() } == true
+    private fun isAcceptButton(node: AccessibilityNodeInfo): Boolean =
+        node.text?.toString()?.let { ACCEPT_ANY.matcher(it).matches() } == true
 
     private companion object {
         const val TAG = "Phase4SmokeTest"

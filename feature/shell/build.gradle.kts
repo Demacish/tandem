@@ -28,9 +28,9 @@ dependencies {
     implementation(libs.androidx.browser)
     // --- Fas 4 (listnotiser): the notification permission asked from Settings → Synk. ---
     implementation(libs.androidx.activity.compose)
+    // --- Fas 4 (integration): the recipes per cook entry are saved with the back stacks. ---
+    implementation(libs.kotlinx.serialization.json)
 
     // --- komplettering-3: core:testing's FakeServerStatusRepository (the in-app version notice). ---
     testImplementation(projects.core.testing)
-    // --- Phase 1b (grund lane): SettingsKeysTest round-trips the @Serializable settings keys. ---
-    testImplementation(libs.kotlinx.serialization.json)
 }
