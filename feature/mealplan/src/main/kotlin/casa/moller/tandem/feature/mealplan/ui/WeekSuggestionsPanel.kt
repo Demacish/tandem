@@ -268,7 +268,13 @@ private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: 
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(TandemTheme.sizes.iconSmall),
                         )
-                        Text(text = expiring, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                        // The text in onSurfaceVariant like the time above: tertiary text is too close to
+                        // 4.5:1 for small text on a low-density screen (ATF on the tablet shots).
+                        Text(
+                            text = expiring,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
             }
