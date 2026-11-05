@@ -340,7 +340,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             url.queryParameter("new") != null -> "fas1/recipe-list-new"
             else -> return fixture("fas1/recipe-list-default") { drinks.overviews(it, null) }
         }
-        return fixture(recording)
+        return fixture(recording, drinks::withChangedKeywords)
     }
 
     /**

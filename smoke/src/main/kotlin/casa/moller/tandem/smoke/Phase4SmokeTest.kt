@@ -205,8 +205,9 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         tandoor.pantry.seedEntry(fridge, EXPIRING_FOOD, amount = 1.0, unit = "kg", expires = tomorrow.toString())
         logIn()
 
-        // Off (the default): the worker runs and nothing is posted.
-        app.device.pressHome()
+        // Off (the default): the worker runs and nothing is posted. The process is gone as on a
+        // real morning; Tandem still "on screen" (ProcessLifecycleOwner waits 700 ms) would post nothing either.
+        app.killInBackground()
         assertEquals("The worker ran", WORK_SUCCEEDED, runMorningCheck())
         assertTrue("Nothing with the setting off: ${device.postedNotifications()}", expiryNotifications().isEmpty())
 
@@ -216,7 +217,7 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         app.tapInList("Sync and storage")
         switchOn("Notify when something expires")
         app.capture("phase4-expiry-setting")
-        app.device.pressHome()
+        app.killInBackground()
         assertEquals("The worker ran", WORK_SUCCEEDED, runMorningCheck())
         device.waitUntil("the expiry notification") { expiryNotifications().isNotEmpty() }
         device.saveDumps("phase4-expiry")
@@ -296,7 +297,7 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         device.saveDumps("phase4-push")
         val notification = pushNotification(SHOPPING_CHANGES_ID)
         assertEquals("On the planned channel: $notification", SHOPPING_CHANNEL, notification?.channel)
-        assertTrue("It names the item: $notification", PARTNER_FOOD in notification.toString())
+        assertTrue("It names the item: $notification", notification?.text?.contains(PARTNER_FOOD) == true)
         assertTrue("The wake-up read the list", listReads() > reads)
         assertTrue("Within a minute", SystemClock.elapsedRealtime() - partnerAdded < PUSH_TIMEOUT_MS)
 
@@ -346,6 +347,8 @@ class Phase4SmokeTest : Phase2SmokeBase() {
             if (nodeShows(TAP_WAIT_MS, ::isChosenKeyword)) break
         }
         assertTrue("\"$KEYWORD\" is chosen", app.findNode(::isChosenKeyword) != null)
+        // The rows follow the chip a moment later: the button must not take the old suggestions.
+        assertTrue("Only the keyword's recipes", nodeGone(TandemApp.UI_TIMEOUT_MS) { it.text?.toString() in WITHOUT_KEYWORD })
         app.waitForNode("\"$ACCEPT_SEVEN\"") { it.text?.toString() == ACCEPT_SEVEN }
         app.capture("phase4-week-suggestions")
         for (attempt in 1..TAP_ATTEMPTS) {
@@ -399,7 +402,8 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         // The server refuses the link, and the app reads the page itself in its WebView...
         app.waitFor(By.text("Reading the page…"))
         app.capture("phase4-page-reader")
-        app.waitFor(By.text(FakeTandoor.BLOCKED_PAGE_RECIPE), PAGE_TIMEOUT_MS)
+        app.waitFor(By.text("Found this"), PAGE_TIMEOUT_MS)
+        app.waitFor(By.text(FakeTandoor.BLOCKED_PAGE_RECIPE))
         app.capture("phase4-page-read")
         assertTrue("The WebView loaded the page: ${tandoor.requests}", "GET /blockerad-sida" in tandoor.requests)
 
@@ -507,6 +511,7 @@ class Phase4SmokeTest : Phase2SmokeBase() {
 
         /** (d) seven of the recorded recipes get the keyword, the others not. */
         val WEEKDAY_RECIPES = listOf(1L, 2L, 3L, 5L, 6L, 8L, 11L)
+        val WITHOUT_KEYWORD = setOf("Kanelbullar", "Ärtsoppa", "Smörgåstårta", "Äppelkaka", "Tillfälligt recept")
         const val SEVEN = 7
         const val KEYWORD = "Vardag"
         const val KEYWORDS_HEADING = "Keywords (a suggestion has every one you choose)"

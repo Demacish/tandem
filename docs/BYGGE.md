@@ -926,8 +926,8 @@ mörkt, teckenstorlek 2, kvarhållen ändring, gäst, laddar, okänt recept) med
 `feature/recipes/src/test/screenshots/editor/`, `DrinkKeysTest` (nyckeln). Ikonerna `Edit`,
 `ArrowUpward`, `ArrowDownward` i `core:designsystem` `icon/TandemIconsEditor.kt`.
 
-**Kvar till senare:** ta bort ett recepts bild (webben), stegfiler och länkade delrecept (behålls
-oförändrade via stegets id men kan inte ändras), näringsvärden, `show_as_header`, dra och släpp.
+**Kvar till senare:** stegfiler och länkade delrecept (behålls oförändrade via stegets id men kan
+inte ändras), näringsvärden, `show_as_header`, dra och släpp (bild tas bort sedan 0.6.0).
 ATF-kontrollen av redigeringen vid teckenstorlek 2 är borttagen: ATF rapporterar portionsradens
 och stegrubrikens första aktiva ikonknapp som 46 respektive 38 dp hög fast semantikträdet visar
 48 dp (`Modifier.size(48.dp)` i rader om minst 48 dp); de andra tio varianterna går igenom och
@@ -1054,7 +1054,7 @@ kontraktsutrymmet saknar egenskapstyper, så det är inte inspelat.
 (`:core:database`), receptvyns referensbilder (`detail_*`, omspelade).
 
 **Kvar till senare:** redigera näringsvärden i redigeraren (egenskapstyperna behöver läsas),
-dra mellan veckor, haptik vid lyft.
+dra mellan veckor.
 <!-- /Fas 3 matsedel -->
 
 <!-- Fas 4 läge -->
@@ -1123,13 +1123,8 @@ Room-schema.
 **Tester:** `Phase4Fas3RestContractTest`; `RecipeImportRepositoryTest` (sida med länk, synken pausad under alla fyra anropen, stegsortering med/utan leverantör, AI som tappar ett steg, gäst, demo); `RecipeImportViewModelTest` (blockerad länk → sidan → resultat, sida utan recept, Läs igen, Avbryt, stegsortering och Ångra); `RecipeEditRepositoryTest` (konflikt vid stegändring, bilden tas bort); `NutritionEnergyTest`, `RecipeNutritionTest` (fem recept mot webbens värden per portion), `RecipeDetailViewModelTest.energyFollowsTheUsersKjPreference`; `HomeViewModelTest` (ordna, dölj, återställ; lagringsformatet), `DemoAndAccountsTest` (layouten i demoläget, inget skickas); `WidgetActionsTest`. Skärmbilder och ATF: `RecipeImportShot.PAGE*`/`RESULT_SORT*` (`feature/recipes/src/test/screenshots/import/`), `TodayCustomizeScreenshotTest` (`feature/home/src/test/screenshots/home/*customize*`).
 
 **Kvar till senare:** stegsorteringen och AI-importen är bara prövade mot en server utan
-leverantör; ett röktestscenario för WebView-läsningen (se nedan); stegfiler.
-
-**Röktest (spec, inte byggt):** FakeTandoor svarar `POST /api/recipe-from-source/` `{url}` med
-400 `{"error": true, "msg": "Connection Refused."}` och `{url, data}` där `data` innehåller
-`application/ld+json` med 200 och ett recept; en lokal HTTPS-sida i samma FakeTandoor
-(`/blockerad-sida`) med JSON-LD. Scenario: dela länken → "Läser sidan…" → resultatkortet med
-receptets namn → "Öppna i redigeraren".
+leverantör; stegfiler. Röktestet täcker WebView-läsningen sedan integrationen (`Phase4SmokeTest`,
+se "Release-röktest").
 <!-- /Fas 4 fas3-rester -->
 
 <!-- Fas 4 kok2 -->
@@ -1148,7 +1143,7 @@ timers. "Klart när": man kan växla mellan två kokläge-flikar, och timers fr�
 | Skärmen | `ui/CookScreen.kt` | `CookScreen(session, onSessionAction)`: "Laga ett recept till" (+) i huvudet medan det finns plats, flikarna under huvudet, ✕ = "Sluta laga <recept>" med två recept; timers visar sitt recept (`TimerBar`/`TimerCard(showRecipe)`) när två recept är öppna eller timrarna kommer från flera recept; en timer från det andra receptet öppnar dess flik på sitt steg |
 | Nyckeln | `navigation/CookKey.kt`, `navigation/CookAlongside.kt` | `CookKey(alongsideRecipeId, alongsideStep)`, `CookKey.recipeIds`, `CookPageRequest`; `cookKeyAlongside(recipeId, servings, timers, activeSource)` |
 | Timers | `:core:model` `CookTimer.recipeName`, `:core:data` `TimerController.start(recipeName)`, `:core:timer` | namnet sparas i timerfilen (`recipe_name`, valfritt: äldre filer läses utan), är undertext i nedräknings- och larmnotisen, står efter etiketten i ringtjänstens notis och på låsskärmslarmet ("Pastan · 10 min (Krämig svamppasta)") |
-| Skalet | `TandemShell`, `ShellNavigation`, `ShellFeatures.Cook` | "Laga" (receptvyn, Idag, Veckan, Böcker) går via `cookKeyAlongside`: har ett annat recept av samma källa en timer igång (inte klar) öppnas kokläget med båda, det receptet först (på den nyaste timerns steg) och det nya valt. `openCook` hittar en kokpost vars andra flik är timerns recept (`onCookRecipesChanged`/`cookRecipesOf`), och `CookPageRequest` väljer fliken. "Laga" i Kan laga nu öppnar fortfarande ett recept |
+| Skalet | `TandemShell`, `ShellNavigation`, `ShellFeatures.Cook` | "Laga" (receptvyn, Idag, Veckan, Böcker) går via `cookKeyAlongside`: har ett annat recept av samma källa en timer igång (inte klar) öppnas kokläget med båda, det receptet först (på den nyaste timerns steg) och det nya valt. `openCook` hittar en kokpost vars andra flik är timerns recept (`onCookRecipesChanged`/`cookRecipesOf`), och `CookPageRequest` väljer fliken; kartan sparas med backstackarna (`CookRecipesSaver`), så en timernotis för den andra fliken hittar sin kokpost också direkt efter processdöd. "Laga" i Kan laga nu går samma väg (`ShellFeatures.Pantry(onStartCooking)`) |
 
 **Beteende.** Varje recept har eget steg, portioner, överstrukna rader, enheter och "Klart!"-utkast
 (sin `CookViewModel`s `SavedStateHandle`), så allt överlever rotation och processdöd tillsammans
@@ -1173,8 +1168,11 @@ receptet, stäng, lägg till, "Klart!" stänger bara receptet), `DefaultTimerCon
 ljust/mörkt/sv/textstorlek 2, telefon liggande, surfplatta i båda lägena); alla kokläge-bilder
 spelades in igen eftersom huvudet nu har "Laga ett recept till".
 
-**Kvar till senare:** röktestscenario på emulatorn (spec i banans rapport), "Laga ett recept till"
-från Kan laga nu, två recept sida vid sida på mycket breda skärmar.
+På telefonen rymmer timerraden två kort med receptnamn (216 dp i stället för 168), så tiden syns
+på båda utan att rulla; fler rullar inne i raden.
+
+**Kvar till senare:** två recept sida vid sida på mycket breda skärmar (beslut ovan). Emulatorn:
+`Phase4SmokeTest`, se "Release-röktest".
 <!-- /Fas 4 kok2 -->
 
 <!-- Fas 4 ocr -->
@@ -1201,7 +1199,7 @@ och `ScanAccessibilityTest` (`RECIPE_TEXT_*`: start, sidor, läser, ingen text, 
 referensbilder `scan/*recipe_text*`), `ScanKeysTest`; importens referensbilder visar knappen.
 
 **Kvar till senare:** handskrivna recept (ML Kits latinska modell läser tryckt text), kolumner
-(en tvåspaltig sida läses rad för rad över spalterna), haptik vid läst sida.
+(en tvåspaltig sida läses rad för rad över spalterna).
 <!-- /Fas 4 ocr -->
 
 <!-- Fas 4 smart -->
@@ -1367,6 +1365,9 @@ telefonen.
   per vara (senaste ändringen vinner) och tar bort tomma namn.
 - **Gäst/demo:** bussen får bara ändringar från ett riktigt konto (`ActiveSource.Remote`), så
   demoläget postar aldrig.
+- **Konto:** `AccountNotificationCleanup` (`platform/AccountNotifications.kt`, startas av
+  `SyncStarter`) tar bort list-, skafferi- och testnotisen och släpper insamlade ändringar när
+  källan byts (konto, utloggning, demoläge), så inget ur ett hushåll ligger kvar i nästa.
 
 Med bakgrundssynken dröjer notisen upp till synkintervallet; den snabbare vägen är den valfria
 tjänsten, se "Push-tjänst".
@@ -1501,8 +1502,10 @@ och `latest`); ägaren bestämmer när. `pr.yml` ignorerar `push-service/**` och
   (testnotisen i kanalen `shopping`, id 1251, utan att röra `TandemNotificationIds`).
   `SyncStarter.start()` anropar `DefaultFastPushRepository.start()`: aktivt konto med push på →
   `UnifiedPush.register` igen (distributören skickar adressen igen → tjänsten får "senast sedd"),
-  byte/utloggning → avregistrering hos distributören för det gamla kontot. Meddelanden till en
-  annan instans eller när push är av → avregistrering hos distributören.
+  byte/utloggning/demoläge → avregistrering hos distributören **och** hos tjänsten (`Held`, i
+  minnet eftersom kontots rader kan vara borta; ett ntfy-ämne utan lyssnare svarar ändå 200, så
+  tjänsten hade annars väckt det i 60 dagar). Meddelanden till en annan instans eller när push är
+  av → avregistrering hos distributören.
 - **`:feature:shell`** `push/`: `FastPushScreen(state, onAction, …)` + `FastPushViewModel`,
   `FastPushPage`/`RouteFastPushPage` (som `AccountsPage`), nyckeln `FastPushSettingsKey`
   (en "Mer-sida", detaljpanel på surfplattan), raden "Snabb push (egen tjänst, experimentell)" på
@@ -4238,6 +4241,34 @@ den kod som skickas:
   returtyp (`KeywordMoveDto`, `RecipeImageDto`) togs bort, så kopplingen aldrig flyttade sitt
   nyckelord (se `core/network/consumer-rules.pro`); mappningssteget kontrollerar nu alla DTO:er.
   `smoke.yml` kan köras för hand med bara vissa testklasser (`tests`), push och `main` kör allt.
+- **Fas 4 (0.6.0, `Phase4SmokeTest`, plan §10 Fas 4 "Klart när"):** (a) två recept: Shakshuka och
+  svamppastan (`FakeTandoor.timerTexts` ger den en timer i sista steget) som flikar, en timer i
+  vardera, båda med receptets namn på timerkorten från båda flikarna, låst skärm, två larm på
+  `timer_alarm` med `EXTRA_SUB_TEXT` = receptet, "Stop" på båda, processdöd (båda flikarna tillbaka
+  på sina steg), ✕ stänger det visade receptet och "Klart!" på det andra skickar **en** koklogg för
+  det receptet. (b) Utgångsnotisen: en post i kylen som går ut i morgon; morgonkontrollen är
+  periodiskt arbete med första körning kl. 08 och WorkManager vägrar köra det tidigare (också
+  `cmd jobscheduler run`), så byggtypen `minified`, och bara den, har `SmokeWorkerReceiver`
+  (`app/src/minified`, skyddad av `DUMP`, bara skalet kan sända) som kör **samma arbetarklass** en
+  gång genom Hilts fabrik och svarar med resultatet (`am broadcast` → `data="SUCCEEDED"`). Testet
+  ställer emulatorn i den tidszon där klockan är ungefär 12 (`cmd alarm set-timezone`, nattspärren
+  21–07, återställs efteråt). Inställningen av: ingen notis; på: exakt en på `meal_reminders`, id
+  1301, med varans namn; en körning till ändrar inget. (c) Snabb push utan krok i appen: test-APK:n
+  deklarerar `FakeDistributorReceiver` och är emulatorns enda UnifiedPush-distributör
+  (`FakeDistributor`: REGISTER → NEW_ENDPOINT, MESSAGE, MESSAGE_ACK), och `FakeTandoor` svarar som
+  push-tjänsten (`FakePushService`, `/v1/info|register|unregister|test`, krypterar enligt RFC 8291
+  med appens nycklar). "Send test notification" måste ge notisen 1251 på `shopping`: bara ett
+  dekrypterat meddelande bär registreringens id, så det bevisar Tink och connectorns nycklar under
+  R8 (en väckning som inte går att läsa synkar ändå). Sedan dödas processen, partnern lägger till en
+  vara, tjänsten väcker: broadcasten startar appen, `PushSyncWorker` läser listan och list-notisen
+  1201 med varan kommer inom 60 s. "Turn off" tar bort telefonen hos tjänsten och distributören.
+  (d) "Suggest the week's meals" på nästa vecka med nyckelordet "Vardag" (sju av recepten): sju
+  middagar på sju dagar i rad på servern, sju olika recept, exakt nyckelordets. (e) Sidläsaren:
+  länken delas med `ACTION_SEND`, `recipe-from-source` nekar `{url}` (inspelat 400), WebView:n läser
+  `/blockerad-sida` från `FakeTandoor` över HTTPS (test-CA:n gäller också WebView), `{url, data}` med
+  JSON-LD ger det inspelade receptet, "Open in the editor" visar utkastet och inget sparas. (f)
+  Demoläget: två recept, veckoförslag sparade i demot och snabb push som säger varför den saknas,
+  utan en enda begäran.
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt

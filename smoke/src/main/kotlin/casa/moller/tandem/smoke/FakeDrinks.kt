@@ -217,6 +217,19 @@ class FakeDrinks(private val template: (String) -> JsonObject) {
         return JsonObject(body + mapOf("count" to JsonPrimitive(results.size), "next" to JsonNull, "results" to JsonArray(results)))
     }
 
+    /** Fas 4 (integration): any recorded recipe list with the keywords changed since (a carousel on Idag writes the same rows). */
+    @Synchronized
+    fun withChangedKeywords(recorded: JsonElement): JsonElement {
+        ensureKeywords()
+        val body = recorded.jsonObject
+        val results = body.getValue("results").jsonArray.map { listed ->
+            val overview = listed.jsonObject
+            val changed = overview.long("id")?.let { recipeKeywords[it] } ?: return@map overview
+            JsonObject(overview + ("keywords" to JsonArray(changed.mapNotNull { keywords[it] }.map { overviewKeyword(it) })))
+        }
+        return JsonObject(body + ("results" to JsonArray(results)))
+    }
+
     /** `recipe/flat/` with the drink added (when [enabled]). */
     @Synchronized
     fun flat(recorded: JsonElement): JsonElement {

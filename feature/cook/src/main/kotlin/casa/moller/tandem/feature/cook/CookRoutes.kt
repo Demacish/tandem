@@ -79,12 +79,16 @@ fun CookRoute(
     val picker by sessionViewModel.picker.collectAsStateWithLifecycle()
     // One cook mode per open recipe, all in this entry's ViewModelStore (both survive tab switches).
     val viewModels = session.recipes.associate { recipe ->
-        recipe.recipeId to hiltViewModel<CookViewModel, CookViewModel.Factory>(
-            key = recipe.viewModelKey,
-            creationCallback = { factory -> factory.create(recipe.toCookKey()) },
-        )
+        recipe.recipeId to key(recipe.recipeId) {
+            hiltViewModel<CookViewModel, CookViewModel.Factory>(
+                key = recipe.viewModelKey,
+                creationCallback = { factory -> factory.create(recipe.toCookKey()) },
+            )
+        }
     }
-    val states = viewModels.mapValues { (_, viewModel) -> viewModel.uiState.collectAsStateWithLifecycle().value }
+    // key: without it, closing the first tab hands its slot to the other recipe, whose state then
+    // is the closed recipe's for one frame: the pager opened on that page and moved the recipe there.
+    val states = viewModels.mapValues { (recipeId, viewModel) -> key(recipeId) { viewModel.uiState.collectAsStateWithLifecycle().value } }
     val activeId = session.activeRecipeId
     val viewModel = viewModels.getValue(activeId)
     val state = states.getValue(activeId)

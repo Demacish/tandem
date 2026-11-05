@@ -26,7 +26,7 @@ class DeviceState(private val app: TandemApp) {
         val fullScreen: Boolean,
         val title: String? = null,
         val subText: String? = null,
-        val lines: String = "",
+        val text: String? = null,
     )
 
     /**
@@ -49,7 +49,7 @@ class DeviceState(private val app: TandemApp) {
                 // Fas 4 (integration): the extras, printed as `android.title=String (…)`.
                 title = TITLE.find(block)?.groupValues?.get(1),
                 subText = SUB_TEXT.find(block)?.groupValues?.get(1),
-                lines = TEXT_LINES.find(block)?.groupValues?.get(1).orEmpty(),
+                text = TEXT.find(block)?.groupValues?.get(1),
             )
         }.distinctBy { it.id }
     }
@@ -142,7 +142,7 @@ class DeviceState(private val app: TandemApp) {
         val FULL_SCREEN = Regex("""fullscreenintent=PendingIntent""", RegexOption.IGNORE_CASE)
         val TITLE = Regex("""android\.title=\w+ \((.*)\)""")
         val SUB_TEXT = Regex("""android\.subText=\w+ \((.*)\)""")
-        val TEXT_LINES = Regex("""android\.textLines=\S+ \((.*)\)""")
+        val TEXT = Regex("""android\.text=\w+ \((.*)\)""")
         val ALARM_IDS = 4000..4999
         val ONGOING_IDS = 3000..3999
 
