@@ -58,6 +58,7 @@ import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.feature.pantry.R
 import casa.moller.tandem.feature.pantry.navigation.PantryScanner
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderCard
 import casa.moller.tandem.feature.pantry.ui.PantryIcons
 import casa.moller.tandem.feature.pantry.ui.PantryNotices
 import casa.moller.tandem.feature.pantry.ui.PendingChip
@@ -224,6 +225,13 @@ private fun PantryContent(state: PantryUiState, onAction: (PantryAction) -> Unit
             if (state.location == null) {
                 item(key = "shortcuts", span = StaggeredGridItemSpan.FullLine) {
                     Shortcuts(state = state, onAction = onAction, modifier = gap)
+                }
+            }
+            // Fas 4 (skafferinotis lane): "Påminn mig när något går ut?" (only on all of Hemma).
+            val reminder = state.expiryReminder
+            if (state.location == null && reminder != null) {
+                item(key = "expiry-reminder", span = StaggeredGridItemSpan.FullLine) {
+                    ExpiryReminderCard(offer = reminder, onAction = { onAction(PantryAction.ExpiryReminder(it)) }, modifier = gap)
                 }
             }
             when {

@@ -25,6 +25,7 @@ import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.icon.Delete
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
+import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -86,6 +87,7 @@ internal fun SyncSettingsScreen(
             }
             DownloadAll(state = state, onChange = { onAction(SettingsAction.SetDownloadAll(it)) })
             ShoppingNotifications(state = state, onChange = { onAction(SettingsAction.SetShoppingNotifications(it)) })
+            PantryExpiryNotifications(state = state, onChange = { onAction(SettingsAction.SetPantryExpiryNotifications(it)) })
             state.shopping?.let { ShoppingServerSettingsGroup(settings = it) }
         }
         Storage(
@@ -238,6 +240,33 @@ private fun ShoppingNotifications(state: SyncSettingsUiState, onChange: (Boolean
             onCheckedChange = onChange,
         )
         if (state.shoppingNotifications && !state.notificationsAllowed) {
+            Text(
+                text = stringResource(R.string.settings_shopping_notifications_blocked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = spacing.lg, end = spacing.lg, bottom = spacing.lg),
+            )
+        }
+    }
+}
+
+/**
+ * Fas 4 (skafferinotis lane) "Notis när något går ut" (plan §8.8 "Använd upp", channel
+ * "Måltidspåminnelser"): the switch, and the same note as the list's when the system does not let
+ * the app post. Hemma offers the same switch in context.
+ */
+@Composable
+private fun PantryExpiryNotifications(state: SyncSettingsUiState, onChange: (Boolean) -> Unit) {
+    val spacing = TandemTheme.spacing
+    SettingsGroup {
+        SwitchRow(
+            title = stringResource(R.string.settings_pantry_expiry_notifications),
+            body = stringResource(R.string.settings_pantry_expiry_notifications_body),
+            icon = TandemIcons.Restaurant,
+            checked = state.pantryExpiryNotifications,
+            onCheckedChange = onChange,
+        )
+        if (state.pantryExpiryNotifications && !state.notificationsAllowed) {
             Text(
                 text = stringResource(R.string.settings_shopping_notifications_blocked),
                 style = MaterialTheme.typography.bodyMedium,

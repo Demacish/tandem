@@ -157,6 +157,31 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun pantryExpiryNotificationsAreOffByDefaultAndAskForThePermissionWhenSwitchedOn() = runTest {
+        // Fas 4 (skafferinotis lane): "Notis när något går ut", the same rule as the list's notification.
+        timers.setCapabilities(TimerCapabilities.AllGranted.copy(notificationsAllowed = false))
+        val vm = newViewModel()
+        val state = collecting(vm.sync)
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.effect.collect { effects += it } }
+        assertFalse(state.value.pantryExpiryNotifications)
+
+        vm.onAction(SettingsAction.SetPantryExpiryNotifications(true))
+        assertTrue(settings.state.value.pantryExpiryNotifications)
+        assertTrue(state.value.pantryExpiryNotifications)
+        assertFalse("the list's switch is its own", settings.state.value.shoppingChangeNotifications)
+        assertEquals(listOf<SettingsEffect>(SettingsEffect.RequestNotificationPermission), effects)
+
+        vm.onAction(SettingsAction.SetPantryExpiryNotifications(false))
+        assertFalse(settings.state.value.pantryExpiryNotifications)
+        assertEquals("switching off asks nothing", 1, effects.size)
+
+        settings.failWrites = true
+        vm.onAction(SettingsAction.SetPantryExpiryNotifications(true))
+        assertEquals(SettingsEffect.Message(R.string.shell_settings_not_saved), effects.last())
+    }
+
+    @Test
     fun downloadingAllRecipesStartsASyncAtOnce() = runTest {
         val vm = newViewModel()
         val state = collecting(vm.sync)

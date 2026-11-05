@@ -1,6 +1,9 @@
 package casa.moller.tandem.feature.pantry
 
+import android.Manifest
 import android.content.res.Resources
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -44,6 +47,9 @@ import casa.moller.tandem.feature.pantry.navigation.PantryLocationKey
 import casa.moller.tandem.feature.pantry.navigation.PantryScanner
 import casa.moller.tandem.feature.pantry.navigation.StaplesKey
 import casa.moller.tandem.feature.pantry.navigation.UnpackKey
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderAction
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderEffect
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderViewModel
 import casa.moller.tandem.feature.pantry.staples.StaplesAction
 import casa.moller.tandem.feature.pantry.staples.StaplesEffect
 import casa.moller.tandem.feature.pantry.staples.StaplesScreen
@@ -139,10 +145,26 @@ private fun PantryHomeRoute(
             }
         }
     }
+    // Fas 4 (skafferinotis lane): the offer of "Notis när något går ut", with the permission asked here.
+    val reminder: ExpiryReminderViewModel = hiltViewModel()
+    val offer by reminder.offer.collectAsStateWithLifecycle()
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        reminder.onAction(ExpiryReminderAction.PermissionResult(granted))
+    }
+    LaunchedEffect(reminder, snackbarHostState, resources) {
+        reminder.effects.collect { effect ->
+            when (effect) {
+                ExpiryReminderEffect.RequestPermission -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                ExpiryReminderEffect.Enabled -> scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_enabled)) }
+                ExpiryReminderEffect.NotSaved -> scope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_not_saved)) }
+            }
+        }
+    }
     PantryScreen(
-        state = state,
+        state = if (locationId == null) state.copy(expiryReminder = offer) else state,
         onAction = { action ->
             when (action) {
+                is PantryAction.ExpiryReminder -> reminder.onAction(action.action)
                 is PantryAction.OpenEntry -> onNavigate(PantryEntryKey(entryId = action.entryId))
                 is PantryAction.AddEntry -> onNavigate(PantryEntryKey(locationId = action.locationId))
                 is PantryAction.OpenLocation -> onNavigate(PantryLocationKey(action.locationId))

@@ -127,6 +127,7 @@ class SettingsViewModel internal constructor(
             shopping = shopping.takeUnless { demo },
             shoppingNotifications = current.shoppingChangeNotifications,
             notificationsAllowed = notificationsAllowed,
+            pantryExpiryNotifications = current.pantryExpiryNotifications,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())
 
@@ -173,14 +174,12 @@ class SettingsViewModel internal constructor(
             }
 
             // Fas 4: the permission is asked in context, when the notification is switched on.
-            is SettingsAction.SetShoppingNotifications -> viewModelScope.launch {
-                val result = settingsRepository.setShoppingChangeNotifications(action.enabled)
-                if (result is Outcome.Failure) {
-                    effects.send(SettingsEffect.Message(R.string.shell_settings_not_saved))
-                } else if (action.enabled && !timers.capabilities.value.notificationsAllowed) {
-                    effects.send(SettingsEffect.RequestNotificationPermission)
-                }
-            }
+            is SettingsAction.SetShoppingNotifications ->
+                setNotification(action.enabled) { settingsRepository.setShoppingChangeNotifications(action.enabled) }
+
+            // Fas 4 (skafferinotis lane): same rule, the morning expiry notification.
+            is SettingsAction.SetPantryExpiryNotifications ->
+                setNotification(action.enabled) { settingsRepository.setPantryExpiryNotifications(action.enabled) }
 
             is SettingsAction.NotificationPermissionResult -> viewModelScope.launch {
                 settingsRepository.setNotificationPermissionAsked(true)
@@ -197,6 +196,17 @@ class SettingsViewModel internal constructor(
                 batteryUnrestricted.value = action.batteryUnrestricted
                 cameraAllowed.value = action.cameraAllowed
                 timers.refreshCapabilities()
+            }
+        }
+    }
+
+    /** Fas 4 (skafferinotis lane): saves a notification switch; switched on without the permission, asks for it in context. */
+    private fun setNotification(enabled: Boolean, write: suspend () -> Outcome<Unit>) {
+        viewModelScope.launch {
+            if (write() is Outcome.Failure) {
+                effects.send(SettingsEffect.Message(R.string.shell_settings_not_saved))
+            } else if (enabled && !timers.capabilities.value.notificationsAllowed) {
+                effects.send(SettingsEffect.RequestNotificationPermission)
             }
         }
     }

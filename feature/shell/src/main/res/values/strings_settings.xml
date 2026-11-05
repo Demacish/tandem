@@ -225,4 +225,7 @@
     <string name="settings_shopping_notifications">Notify when someone changes the list</string>
     <string name="settings_shopping_notifications_body">When the background sync finds that someone else in the household added, checked off or removed items, you get a notification. Only while Tandem is not on screen; it follows the background sync interval.</string>
     <string name="settings_shopping_notifications_blocked">Tandem is not allowed to show notifications. Allow them under Permissions.</string>
+    <!-- Fas 4 (skafferinotis lane): the morning notification about pantry items that expire. -->
+    <string name="settings_pantry_expiry_notifications">Notify when something expires</string>
+    <string name="settings_pantry_expiry_notifications_body">In the morning you get a notification when something at home expires today or tomorrow, with the recipes that use it up. Works offline; not while Tandem is on screen.</string>
 </resources>

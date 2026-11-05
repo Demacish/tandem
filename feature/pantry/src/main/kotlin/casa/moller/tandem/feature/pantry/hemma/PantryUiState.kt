@@ -6,6 +6,8 @@ import casa.moller.tandem.core.model.pantry.InventoryLocation
 import casa.moller.tandem.core.ui.pantry.ExpiryUrgency
 import casa.moller.tandem.feature.pantry.PantrySyncNotice
 import casa.moller.tandem.feature.pantry.navigation.PantryScanner
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderAction
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderOffer
 import kotlinx.datetime.LocalDate
 
 /**
@@ -60,6 +62,8 @@ data class PantryUiState(
     val moving: PantryRow? = null,
     val locationEditor: LocationEditor? = null,
     val confirmDelete: InventoryLocation? = null,
+    // Fas 4 (skafferinotis lane): the offer of "Notis när något går ut" (set by the route from its own ViewModel).
+    val expiryReminder: ExpiryReminderOffer? = null,
 ) {
     val canEdit: Boolean
         get() = !readOnly
@@ -134,6 +138,9 @@ sealed interface PantryAction {
     data object OpenMakeNow : PantryAction
 
     data object OpenStaples : PantryAction
+
+    /** Fas 4 (skafferinotis lane): the expiry notification card ("Slå på", "Inte nu"); the route's. */
+    data class ExpiryReminder(val action: ExpiryReminderAction) : PantryAction
 }
 
 /** What a snackbar says after a change on Hemma. */

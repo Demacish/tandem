@@ -48,6 +48,8 @@ data class SyncSettingsUiState(
     // Fas 4: "Notis när någon ändrar listan" and whether the system lets the app post at all.
     val shoppingNotifications: Boolean = false,
     val notificationsAllowed: Boolean = true,
+    // Fas 4 (skafferinotis lane): "Notis när något går ut" (plan §8.8 "Använd upp").
+    val pantryExpiryNotifications: Boolean = false,
 )
 
 /**
@@ -121,6 +123,9 @@ sealed interface SettingsAction {
 
     /** Fas 4: a notification when someone else changes the shopping list (asks for the permission when needed). */
     data class SetShoppingNotifications(val enabled: Boolean) : SettingsAction
+
+    /** Fas 4 (skafferinotis lane): a morning notification when something at home expires (asks for the permission when needed). */
+    data class SetPantryExpiryNotifications(val enabled: Boolean) : SettingsAction
 
     /** Fas 4: the answer to the notification permission dialog. */
     data class NotificationPermissionResult(val granted: Boolean) : SettingsAction

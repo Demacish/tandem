@@ -128,6 +128,29 @@ class PantryAccessibilityTest {
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun staplesLandscape() = check(PantryShot.STAPLES)
 
+    // Fas 4 (skafferinotis lane): the expiry notification card.
+    @Test
+    fun hemmaExpiryOffer() = check(PantryShot.HEMMA_EXPIRY_OFFER)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_XTALL")
+    fun hemmaExpiryOfferDarkFontScale2() = check(PantryShot.HEMMA_EXPIRY_OFFER, darkTheme = true, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun hemmaExpiryOfferLandscape() = check(PantryShot.HEMMA_EXPIRY_OFFER)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun hemmaExpiryOfferTablet() = check(PantryShot.HEMMA_EXPIRY_OFFER)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun hemmaExpiryOfferTabletPortraitDark() = check(PantryShot.HEMMA_EXPIRY_OFFER, darkTheme = true)
+
+    @Test
+    fun hemmaExpiryBlockedDark() = check(PantryShot.HEMMA_EXPIRY_BLOCKED, darkTheme = true)
+
     private fun check(shot: PantryShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {
             PantryTestTheme(darkTheme = darkTheme, fontScale = fontScale, chrome = chrome) { shot.content() }

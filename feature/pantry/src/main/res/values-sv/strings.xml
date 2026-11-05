@@ -211,4 +211,15 @@
     <string name="pantry_make_now_add_missing_description">Lägg det som saknas till %1$s på listan</string>
     <string name="pantry_unpack_item_change_description">Ändra plats eller datum för %1$s</string>
     <string name="pantry_entry_expiry_chosen_far">Bäst före %1$s</string>
+
+    <!-- Fas 4 (skafferinotis): Hemmas erbjudande om morgonnotisen när något går ut. -->
+    <string name="pantry_expiry_reminder_title">Vill du få en påminnelse när något går ut?</string>
+    <string name="pantry_expiry_reminder_body">Tandem kan säga till på morgonen när något hemma går ut i dag eller i morgon, med recepten som använder upp det. Du kan stänga av det under Inställningar.</string>
+    <string name="pantry_expiry_reminder_enable">Slå på</string>
+    <string name="pantry_expiry_reminder_not_now">Inte nu</string>
+    <string name="pantry_expiry_reminder_blocked_title">Notiserna är avstängda</string>
+    <string name="pantry_expiry_reminder_blocked_body">Påminnelsen är på, men Tandem får inte visa notiser. Tillåt dem för att få den.</string>
+    <string name="pantry_expiry_reminder_ask_again">Fråga igen</string>
+    <string name="pantry_expiry_reminder_enabled">Du får en notis på morgonen när något går ut.</string>
+    <string name="pantry_expiry_reminder_not_saved">Inställningen kunde inte sparas.</string>
 </resources>

@@ -24,6 +24,7 @@ import casa.moller.tandem.feature.pantry.hemma.PantryUiState
 import casa.moller.tandem.feature.pantry.makenow.MakeNowRow
 import casa.moller.tandem.feature.pantry.makenow.MakeNowScreen
 import casa.moller.tandem.feature.pantry.makenow.MakeNowUiState
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderOffer
 import casa.moller.tandem.feature.pantry.staples.StapleRow
 import casa.moller.tandem.feature.pantry.staples.StaplesLayout
 import casa.moller.tandem.feature.pantry.staples.StaplesScreen
@@ -63,6 +64,10 @@ internal enum class PantryShot(val content: @Composable () -> Unit) {
     // The keyboard is open in a low window (Robolectric has no keyboard, so the layout is told).
     ENTRY_EDIT_KEYBOARD({ PantryEntryLayout(state = PantryStates.entryEdit, onAction = {}, keyboardOpen = true) }),
     STAPLES_KEYBOARD({ StaplesLayout(state = PantryStates.staples, onAction = {}, keyboardOpen = true) }),
+
+    // Fas 4 (skafferinotis lane): the offer of "Notis när något går ut", and the same card when it is on but blocked.
+    HEMMA_EXPIRY_OFFER({ HemmaShot(PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer())) }),
+    HEMMA_EXPIRY_BLOCKED({ HemmaShot(PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer(blocked = true))) }),
 }
 
 @Composable

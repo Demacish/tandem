@@ -95,8 +95,10 @@ Påbörjat 2026-11-04.
 - ✅ Notiser när någon i hushållet ändrar listan: bakgrundssynken ser andras ändringar och en
   notis (av som standard, slås på under Synk och lagring) visar dem när appen inte är på skärmen.
   Kvar: snabbare push via en valfri liten tjänst som man kan köra själv.
-- Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
-  kontroll i bakgrunden, går att slå av).
+- ✅ Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
+  kontroll i bakgrunden på morgonen, fungerar utan nät, av som standard; erbjuds på Hemma och
+  under Synk och lagring). Tryck öppnar Kan laga nu med det som ska användas upp först. Kvar: en
+  egen tid för påminnelsen.
 - Två recept samtidigt i kokläget.
 
 ## Fas 5: Plattform

@@ -42,6 +42,13 @@ Början på Fas 4 ("Smart hushåll").
 - Importen pausar bakgrundssynken medan Tandoor arbetar, och snabbinställningsrutan "Handla"
   visar rätt antal direkt efter en synk.
 <!-- /Fas 4, bana fas3-rester -->
+- **Notis när något går ut:** Hemma frågar om du vill bli påmind när något har ett utgångsdatum
+  (eller slå på under Synk och lagring). På morgonen säger telefonen till om det som går ut i dag
+  eller i morgon, till exempel "Grädde går ut i morgon – 3 recept", i en enda notis och aldrig två
+  gånger samma dag för samma vara. Fungerar utan nät; tryck öppnar Kan laga nu med recepten som
+  använder upp det först. Notisen har kanalen "Måltidspåminnelser" i systemets inställningar.
+- **Rättat:** två telefoner som öppnade Hemma för första gången samtidigt kunde skapa Kyl, Frys
+  och Skafferi två gånger. Nu behålls de äldsta och den andra telefonens varor flyttas dit.
 
 ## [0.5.0] – 2026-11-03
 

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -27,6 +28,9 @@ import casa.moller.tandem.feature.pantry.makenow.MakeNowAction
 import casa.moller.tandem.feature.pantry.makenow.MakeNowScreen
 import casa.moller.tandem.feature.pantry.makenow.makeNowAddMissingTag
 import casa.moller.tandem.feature.pantry.navigation.PantryScanner
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderAction
+import casa.moller.tandem.feature.pantry.reminder.ExpiryReminderOffer
+import casa.moller.tandem.feature.pantry.reminder.PANTRY_EXPIRY_REMINDER_TAG
 import casa.moller.tandem.feature.pantry.unpack.UNPACK_SAVE_TAG
 import casa.moller.tandem.feature.pantry.unpack.UnpackAction
 import casa.moller.tandem.feature.pantry.unpack.UnpackScreen
@@ -50,6 +54,46 @@ class PantryScreensTest {
     val composeRule = createComposeRule()
 
     private val hasNoCustomActions = SemanticsMatcher("has no TalkBack actions") { SemanticsActions.CustomActions !in it.config }
+
+    /** Fas 4 (skafferinotis lane): the expiry card's buttons, and no card on one place's page or without an offer. */
+    @Test
+    fun theExpiryOfferTurnsTheNotificationOnOrGoesAway() {
+        val actions = mutableListOf<PantryAction>()
+        composeRule.setContent {
+            PantryTestTheme { PantryScreen(state = PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer()), onAction = { actions += it }) }
+        }
+        composeRule.onNodeWithText("Vill du få en påminnelse när något går ut?").assertIsDisplayed()
+        composeRule.onNodeWithText("Slå på").performClick()
+        composeRule.onNodeWithText("Inte nu").performClick()
+        assertEquals(
+            listOf<PantryAction>(
+                PantryAction.ExpiryReminder(ExpiryReminderAction.Enable),
+                PantryAction.ExpiryReminder(ExpiryReminderAction.Dismiss),
+            ),
+            actions,
+        )
+    }
+
+    @Test
+    fun theBlockedExpiryReminderAsksAgain() {
+        val actions = mutableListOf<PantryAction>()
+        composeRule.setContent {
+            PantryTestTheme {
+                PantryScreen(state = PantryStates.hemma().copy(expiryReminder = ExpiryReminderOffer(blocked = true)), onAction = { actions += it })
+            }
+        }
+        composeRule.onNodeWithText("Notiserna är avstängda").assertIsDisplayed()
+        composeRule.onNodeWithText("Fråga igen").performClick()
+        assertEquals(listOf<PantryAction>(PantryAction.ExpiryReminder(ExpiryReminderAction.Enable)), actions)
+    }
+
+    @Test
+    fun noExpiryCardWithoutAnOfferOrOnOnePlace() {
+        composeRule.setContent {
+            PantryTestTheme { PantryScreen(state = PantryStates.location().copy(expiryReminder = ExpiryReminderOffer()), onAction = {}) }
+        }
+        composeRule.onAllNodesWithTag(PANTRY_EXPIRY_REMINDER_TAG).assertCountEquals(0)
+    }
 
     @Test
     fun aPantryRowIsReadAsOneItemWithItsActions() {

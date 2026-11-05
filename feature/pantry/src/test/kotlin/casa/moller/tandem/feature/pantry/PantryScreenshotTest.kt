@@ -187,6 +187,35 @@ class PantryScreenshotTest {
     @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
     fun staplesLandscape() = capture("phone_landscape_staples_light_sv", PantryShot.STAPLES)
 
+    // Fas 4 (skafferinotis lane): Hemma's offer of the expiry notification (phone, landscape,
+    // tablet in both orientations, dark, font scale 2, English and Swedish) and its blocked form.
+    @Test
+    fun hemmaExpiryOffer() = capture("phone_pantry_expiry_offer_light_sv", PantryShot.HEMMA_EXPIRY_OFFER)
+
+    @Test
+    @Config(qualifiers = PHONE)
+    fun hemmaExpiryOfferEnglishDark() = capture("phone_pantry_expiry_offer_dark", PantryShot.HEMMA_EXPIRY_OFFER, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun hemmaExpiryOfferFontScale2() = capture("phone_pantry_expiry_offer_font2_light_sv", PantryShot.HEMMA_EXPIRY_OFFER, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun hemmaExpiryOfferLandscape() = capture("phone_landscape_pantry_expiry_offer_light_sv", PantryShot.HEMMA_EXPIRY_OFFER)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun hemmaExpiryOfferTablet() = capture("tablet_pantry_expiry_offer_light_sv", PantryShot.HEMMA_EXPIRY_OFFER)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun hemmaExpiryOfferTabletPortraitDark() =
+        capture("tablet_portrait_pantry_expiry_offer_dark_sv", PantryShot.HEMMA_EXPIRY_OFFER, darkTheme = true)
+
+    @Test
+    fun hemmaExpiryBlocked() = capture("phone_pantry_expiry_blocked_light_sv", PantryShot.HEMMA_EXPIRY_BLOCKED)
+
     private fun capture(
         name: String,
         shot: PantryShot,

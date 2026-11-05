@@ -286,7 +286,8 @@ modulerna är borttagna** (0.2.0): `TimerController` binds i `:core:timer` (`Tim
 | `sync_problems` | Synkproblem (blockerad, utloggad, säkert läge) | låg | tyst | `:core:sync` |
 | `server` | Server ("Tandoor uppdaterades", sedan 0.1.0) | standard | notis | `:core:sync` |
 | `shopping` | Inköpslistan ("Anna lade till mjölk", Fas 4, bara när inställningen är på) | standard | notis | `:core:sync` |
-| `import_done`, `meal_reminders` | reserverade | standard | notis | skapas inte än |
+| `meal_reminders` | Måltidspåminnelser ("Grädde går ut i morgon – 3 recept", Fas 4, valfri) | standard | notis | `:core:sync` |
+| `import_done` | reserverad | standard | notis | skapas inte än |
 
 Varje modul skapar sina kanaler precis innan den postar, med värdena ur
 `TandemNotificationChannel` och egna översatta namn. Dessutom skapar appen alla kanaler **en gång
@@ -1069,7 +1070,7 @@ kan tas upp igen där det avbröts.
 | Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ✅ klart 2026-11-04 (commit a520d09; PR-körningen grön på a520d09, röktest grönt på 145d2f3), referensbilder incheckade | "Smarta förslag" |
 | Smarta förslag enligt "Klart när" (butiksordning efter 3 turer, återkommande varor med lokal historik, autoplan med nyckelord och skafferi) | 🔧 lane fas4-kvar 2026-11-05 (gren `fas4/fas4-kvar`), se "Smarta förslag" | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten inte påbörjad | "Listnotiser" |
-| Valfri notis när något i skafferiet går ut | ⏳ inte påbörjat | – |
+| Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | 🔧 byggt på grenen `fas4/skafferinotis` 2026-11-05; CI och referensbilder, se avsnittet | "Notis när något går ut" |
 | Två recept samtidigt i kokläget | ⏳ inte påbörjat | – |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05 (PR, Contract 2.6.13/2.7.1, röktest "OK (21 tests)" och Screenshots gröna på 489d5fb; referensbilder incheckade) | "Fas 3:s rester" |
 
@@ -1326,6 +1327,52 @@ Tester: `ShoppingNotificationPolicyTest`, `ShoppingChangeNotificationsTest` (sam
 inget på skärmen eller med inställningen av), `SettingsViewModelTest.shoppingNotificationsAskForThePermissionWhenSwitchedOnWithoutIt`,
 `PreferencesSettingsStoreTest` (rundtur). Skärmbilderna av Synk-sidan visar omkopplaren.
 <!-- /Fas 4 listnotiser -->
+
+<!-- Fas 4 skafferinotis -->
+## Notis när något går ut (`:core:sync`, `:core:domain`, `:feature:pantry`, `:feature:shell`, Fas 4)
+
+ROADMAP Fas 4 "Valfri notis när något i skafferiet går ut" (plan §8.8 "Använd upp", §8.7 kanalen
+"Måltidspåminnelser"). Ingen ny endpoint och inget Room-schema: allt bygger på det lokala skafferiet
+(`PantryRepository.observePantry`) och "Kan laga nu" (`MakeNowRepository`), och kontrollen körs i
+telefonen.
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Regler | `core/domain/pantry/ExpiryReminder.kt` | `due` (mängd > 0, går ut i dag eller i morgon, en vara per namn och dag), `summary` (en notis; `null` när allt redan sagts i dag), `recipeCount` (Kan laga nu-recept som använder varorna, inte drycker; samma räkning som Idags "Går ut snart"), `today`/`isQuiet` (21–07)/`delayUntilNext` (nästa 08.00) i enhetens tidszon. `ExpiryReminderTest`: tidszoner, midnatt, sommartid (23/25 timmars natt) |
+| Kontrollen | `core/sync/pantry/PantryExpiryCheck.kt` | i ordning: inställningen (`AppSettings.pantryExpiryNotifications`, av som standard), konto (`ActiveSource.Remote`; demo och utloggad aldrig), gäst (har inget skafferi, 403), natt, appen på skärmen (`AppVisibility`; Idag/Hemma visar samma sak och varan räknas inte som sagd), behörighet/kanal (`PantryExpiryNotifier.canPost`). Med nät läses skafferiet först om det inte lästs helt de senaste 5 min (`PantrySyncStep`s regel) och Kan laga nu får uppdatera med sin egen minutregel; utan nät används det lokala. "Aldrig två gånger samma dag": `sync_state` `pantry_expiry_notified` (`window_from` = dagen, `hash` = JSON med nycklarna `namn@datum`); en ny vara samma dag ger en ny notis med hela listan, som ersätter morgonens |
+| Notisen | `core/sync/platform/PantryExpiryNotifier.kt` | `AndroidPantryExpiryNotifier`: kanalen `meal_reminders` (standard, skapas vid start av `MealRemindersChannelInstaller` och före varje notis), id `TandemNotificationIds.PANTRY_EXPIRY` = 1301, rubrik "Grädde går ut i morgon – 3 recept" / "Grädde och 2 till går ut i morgon – 5 recept" / "… i dag och i morgon" (plural), en rad per vara ("Grädde, Kyl, i morgon", `InboxStyle`), ikon `ic_stat_tandem_pantry`. Tryck: `AppOpenDestinations.USE_UP` → `ShellOpenRequest.UseUp` → Mer + `MakeNowKey(useUpFirst = true)` |
+| Schemat | `core/sync/work/PantryExpiryWork.kt` | `PantryExpiryWorker` (alltid `success`), `WorkManagerPantryExpiryScheduler`: unikt periodiskt arbete `tandem.pantry.expiry` var 24:e timme, batteri inte lågt, **inget nätkrav**, första körningen nästa 08.00, `KEEP` (appstarter flyttar den inte). `PantryExpiryReminders` (startas av `SyncStarter`) schemalägger bara när inställningen är på och ett riktigt konto är aktivt; av, utloggning och demoläget avbryter. Efter ett sommartidsbyte kan den gå 07 eller 09 tills den slås av och på; nattreglerna håller den borta från natten. `PantryExpiryModule` binder allt (egen modul, `SyncModule` orörd) |
+| Inställningen | `AppSettings.pantryExpiryNotifications`, `pantryExpiryOfferDismissed`; `SettingsRepository.setPantryExpiryNotifications`/`setPantryExpiryOfferDismissed`; DataStore `pantry_expiry_notifications`, `pantry_expiry_offer_dismissed` | |
+| Synk och lagring | `SyncSettingsScreen` `PantryExpiryNotifications`, `SettingsAction.SetPantryExpiryNotifications` | omkopplaren "Notis när något går ut" under listnotisens; påslagen utan behörighet → systemdialogen (samma `setNotification` som listnotisen); nekad → raden om Behörigheter. Dold i demoläget som listnotisen |
+| Hemma | `feature/pantry/reminder/` `ExpiryReminderViewModel`, `ExpiryReminderCard` | kortet "Vill du få en påminnelse när något går ut?" ("Slå på", "Inte nu") efter genvägarna på hela Hemma (inte på en plats) när någon post har utgångsdatum, inställningen är av och erbjudandet inte avböjts; aldrig för gäst eller i demoläget. Påslagen men utan behörighet: "Notiserna är avstängda" med "Fråga igen". Behörigheten frågas i sammanhanget (`rememberLauncherForActivityResult`); routen lägger erbjudandet i `PantryUiState.expiryReminder` |
+
+**Beslut:** gäster får ingen notis (Tandoor ger dem inget skafferi); demoläget postar aldrig;
+med Tandem på skärmen postas inget (inte bara på Hemma: Idag visar "Går ut snart"), och varan
+räknas då inte som sagd; ingen egen tid i inställningarna (08.00 i enhetens tidszon, nattspärr
+21–07).
+
+**Fas S-resten: dubbla standardplatser.** Två telefoner som öppnade Hemma för första gången i
+samma ögonblick kunde båda se ett tomt hushåll och skapa Kyl, Frys och Skafferi var.
+Kontrollen före POST fanns redan (fix-data); nu läser `InventoryLocationOutboxHandler` dessutom
+hushållets platser igen **efter** att en standardplats skapats (`olderTwin`): finns en äldre
+plats med samma namn i hushållet som telefonen inte själv skapat svarar sändaren med den
+(`OutboxResult.Created(äldre)`), så utkorgen skriver om det tillfälliga id:t i poster, köade
+ändringar och `id_mapping`, och den nya dubbletten tas bort direkt (misslyckas det köas en
+DELETE). `PantrySyncTest.twoPhonesCreatingTheDefaultsInTheSameMomentKeepTheOlderOnes` låter
+telefon B tömma hela sin utkorg mellan telefon A:s kontroll och A:s POST
+(`FakePantryTandoor.beforeLocationCreate`).
+
+**Tester:** `ExpiryReminderTest` (`:core:domain`), `PantryExpiryCheckTest` (båda versionerna:
+förfallna varor, samma dag, ny vara, ny dag, tidszon och midnatt, natt, inställningen,
+behörigheten, skärmen, offline, gäst, demo), `PantryExpiryWorkTest` (arbetaren, begäran,
+schemat följer inställningen och kontot), `PantryExpiryNotifierTest` (rubriker en/sv, kanal, id,
+rader, ingen behörighet/kanal av), `ShellNavigationStateTest`, `OpenLaunchTest`,
+`SettingsViewModelTest.pantryExpiryNotificationsAreOffByDefaultAndAskForThePermissionWhenSwitchedOn`,
+`ExpiryReminderViewModelTest`, `PantryScreensTest` (kortets knappar), skott och ATF
+`HEMMA_EXPIRY_OFFER`/`HEMMA_EXPIRY_BLOCKED` (`pantry/*expiry*`: telefon, liggande, surfplatta i
+båda orienteringarna, mörkt, teckenstorlek 2, sv/en) och Synk-sidans referensbilder med den nya
+omkopplaren.
+<!-- /Fas 4 skafferinotis -->
 
 <!-- Fas 3 läge -->
 ## Fas 3 – läge (uppföljning av delstegen)

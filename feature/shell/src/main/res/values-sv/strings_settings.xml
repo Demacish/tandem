@@ -222,4 +222,7 @@
     <string name="settings_shopping_notifications">Notis när någon ändrar listan</string>
     <string name="settings_shopping_notifications_body">När bakgrundssynken ser att någon annan i hushållet har lagt till, bockat av eller tagit bort varor får du en notis. Bara när Tandem inte är på skärmen; den följer intervallet för bakgrundssynken.</string>
     <string name="settings_shopping_notifications_blocked">Tandem får inte visa notiser. Tillåt dem under Behörigheter.</string>
+    <!-- Fas 4 (skafferinotis): morgonnotisen om varor hemma som går ut. -->
+    <string name="settings_pantry_expiry_notifications">Notis när något går ut</string>
+    <string name="settings_pantry_expiry_notifications_body">På morgonen får du en notis när något hemma går ut i dag eller i morgon, med recepten som använder upp det. Fungerar utan nät; inte medan Tandem är på skärmen.</string>
 </resources>

@@ -14,6 +14,8 @@ plugins {
 dependencies {
     implementation(libs.bundles.compose.adaptive)
     implementation(libs.coil.compose)
+    // Fas 4 (skafferinotis lane): the notification permission, asked in context by the expiry offer.
+    implementation(libs.androidx.activity.compose)
 
     testImplementation(projects.core.testing)
     // PantryKeysTest round-trips the @Serializable keys.
