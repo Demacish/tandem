@@ -81,8 +81,11 @@ class CookSessionViewModel @AssistedInject constructor(
     fun onAction(action: CookSessionAction) {
         when (action) {
             CookSessionAction.OpenPicker -> if (session.value.canAdd) savedStateHandle[KEY_PICKER_OPEN] = true
+
             CookSessionAction.ClosePicker -> closePicker()
+
             is CookSessionAction.SetQuery -> savedStateHandle[KEY_QUERY] = action.text.take(MAX_QUERY_LENGTH)
+
             is CookSessionAction.AddRecipe -> {
                 update { it.add(action.recipeId) }
                 closePicker()

@@ -21,7 +21,16 @@ class TimerStoreTest {
     @Test
     fun everyStateSurvivesTheRoundTrip() = runTest {
         val now = clock.now()
-        val running = CookTimer.start(1L, "Pasta", 10.minutes, now, recipeId = 4L, stepIndex = 2, sourceKey = "account-1")
+        val running = CookTimer.start(
+            1L,
+            "Pasta",
+            10.minutes,
+            now,
+            recipeId = 4L,
+            stepIndex = 2,
+            sourceKey = "account-1",
+            recipeName = "Krämig svamppasta",
+        )
         val paused = CookTimer.start(2L, "Sås", 20.minutes, now).pause(now + 5.minutes)
         val ringing = CookTimer.start(3L, "Ägg", 6.minutes, now).ring(now + 6.minutes)
         val finished = ringing.copy(id = 4L).stopRinging()
@@ -38,6 +47,16 @@ class TimerStoreTest {
         val json = encode(StoredTimers.of(2L, listOf(CookTimer.start(1L, "Pasta", 10.minutes, clock.now())))).decodeToString()
         listOf("\"version\":1", "\"next_id\":2", "\"duration_ms\":600000", "\"state\":\"RUNNING\"", "\"ends_at_ms\"", "\"created_at_ms\"")
             .forEach { assertTrue("$it in $json", json.contains(it)) }
+    }
+
+    @Test
+    fun aFileFromBeforeTheRecipeNameReadsWithoutIt() = runTest {
+        // Fas 4 added "recipe_name"; 0.5.0's files have no such key.
+        val json = """{"version":1,"next_id":2,"timers":[{"id":1,"label":"Pasta","recipe_id":4,"step_index":0,""" +
+            """"duration_ms":600000,"state":"RUNNING","ends_at_ms":600000,"created_at_ms":0}]}"""
+        val timer = StoredTimersSerializer.readFrom(ByteArrayInputStream(json.encodeToByteArray())).toTimers().single()
+        assertEquals(4L, timer.recipeId)
+        assertEquals(null, timer.recipeName)
     }
 
     @Test

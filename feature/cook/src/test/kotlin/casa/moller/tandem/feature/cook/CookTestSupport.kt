@@ -1,10 +1,12 @@
 package casa.moller.tandem.feature.cook
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
@@ -28,6 +30,10 @@ import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.core.ui.timer.LocalTimerClock
 import casa.moller.tandem.core.ui.timer.LocalTimerTicks
 import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.session.CookRecipePickerContent
+import casa.moller.tandem.feature.cook.session.CookSessionAction
+import casa.moller.tandem.feature.cook.session.CookSessionUi
+import casa.moller.tandem.feature.cook.session.CookSessionViewModel
 import casa.moller.tandem.feature.cook.ui.CookLayout
 import casa.moller.tandem.feature.cook.ui.CookScreen
 import casa.moller.tandem.feature.cook.ui.FoldBounds
@@ -72,8 +78,17 @@ class CookFakes(
     // Phase 2 (books lane, #42): a guest's "Klart!" saves nothing.
     val permissions: FakeSpacePermissionsRepository = FakeSpacePermissionsRepository(),
 ) {
-    internal fun viewModel(key: CookKey): CookViewModel =
-        CookViewModel(key, handle, recipes, preferences, settings, timers, cookLog, sync, clock, permissions)
+    internal fun viewModel(key: CookKey, savedState: SavedStateHandle = handle): CookViewModel =
+        CookViewModel(key, savedState, recipes, preferences, settings, timers, cookLog, sync, clock, permissions)
+
+    /** Fas 4: the cook session of [key] over these fakes (its own SavedStateHandle). */
+    internal fun sessionViewModel(key: CookKey, savedState: SavedStateHandle = SavedStateHandle()): CookSessionViewModel =
+        CookSessionViewModel(key, savedState, recipes)
+
+    /** Fas 4: starts a timer of [recipeId] (with its name, as cook mode does). */
+    fun startTimerOf(recipeId: Long, recipeName: String, stepIndex: Int, label: String, duration: Duration) {
+        runBlocking { timers.start(label, duration, recipeId, stepIndex, recipeName = recipeName) }
+    }
 
     /** Starts a timer from step [stepIndex]'s first suggestion of the sample pasta, like a tap on its button. */
     fun startTimer(stepIndex: Int, label: String, duration: Duration) {
@@ -148,6 +163,9 @@ internal fun CookWithFakes(
     fold: FoldBounds? = null,
     onClose: () -> Unit = {},
     prepare: (CookViewModel) -> Unit = {},
+    // Fas 4: one recipe, and "Laga ett recept till" offered like in the app.
+    session: CookSessionUi = CookSessionUi(canAdd = true),
+    onSessionAction: (CookSessionAction) -> Unit = {},
 ) {
     val viewModel = remember(key) { fakes.viewModel(key).also(prepare) }
     val state by viewModel.uiState.collectAsState()
@@ -156,5 +174,74 @@ internal fun CookWithFakes(
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect -> if (effect is CookEffect.Finished) currentOnClose() }
     }
-    CookScreen(state = state, onAction = viewModel::onAction, onClose = onClose, layout = layout, fold = fold, modifier = modifier)
+    CookScreen(
+        state = state,
+        onAction = viewModel::onAction,
+        onClose = onClose,
+        layout = layout,
+        fold = fold,
+        modifier = modifier,
+        session = session,
+        onSessionAction = onSessionAction,
+    )
+}
+
+/**
+ * Fas 4 (two recipes at once): cook mode for the session of [sessionKey] (by default the pasta and the
+ * buns, the buns shown unless [showFirst]), driven like CookRoute by a real [CookSessionViewModel]
+ * and one real [CookViewModel] per open recipe over [fakes]. ✕ and a saved "Klart!" close the shown
+ * recipe; the last one calls [onClose]. The picker ("Laga ett recept till") is drawn over it when open.
+ */
+@Composable
+internal fun CookSessionWithFakes(
+    fakes: CookFakes,
+    sessionKey: CookKey = CookKey(SampleRecipes.CinnamonBuns.id, alongsideRecipeId = SampleRecipes.MushroomPasta.id),
+    showFirst: Boolean = false,
+    layout: CookLayout? = null,
+    modifier: Modifier = Modifier,
+    onClose: () -> Unit = {},
+) {
+    val sessionViewModel = remember {
+        fakes.sessionViewModel(sessionKey).also { session ->
+            sessionKey.alongsideRecipeId?.takeIf { showFirst }?.let { session.onAction(CookSessionAction.SelectRecipe(it)) }
+        }
+    }
+    val viewModels = remember { mutableMapOf<String, CookViewModel>() }
+    val session by sessionViewModel.session.collectAsState()
+    val picker by sessionViewModel.picker.collectAsState()
+    val models = session.recipes.associate { recipe ->
+        recipe.recipeId to viewModels.getOrPut(recipe.viewModelKey) { fakes.viewModel(recipe.toCookKey(), SavedStateHandle()) }
+    }
+    val states = models.mapValues { (_, model) -> model.uiState.collectAsState().value }
+    val active = session.activeRecipeId
+    val viewModel = models.getValue(active)
+    val currentOnClose by rememberUpdatedState(onClose)
+    val closeRecipe: (Long) -> Unit = { id ->
+        if (session.isTwo) sessionViewModel.onAction(CookSessionAction.CloseRecipe(id)) else currentOnClose()
+    }
+    val currentCloseRecipe by rememberUpdatedState(closeRecipe)
+    val ids = session.recipeIds.toSet()
+    LaunchedEffect(ids) { models.values.forEach { it.onAction(CookAction.SetOtherRecipes(ids)) } }
+    models.forEach { (id, model) ->
+        key(id) {
+            LaunchedEffect(model) { model.effects.collect { effect -> if (effect is CookEffect.Finished) currentCloseRecipe(id) } }
+        }
+    }
+    key(active) {
+        CookScreen(
+            state = states.getValue(active),
+            onAction = viewModel::onAction,
+            onClose = { closeRecipe(active) },
+            layout = layout,
+            modifier = modifier,
+            session = CookSessionUi.of(session, states),
+            onSessionAction = { action ->
+                sessionViewModel.onAction(action)
+                if (action is CookSessionAction.OpenTimer) models[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
+            },
+        )
+    }
+    if (picker.open) {
+        Surface { CookRecipePickerContent(state = picker, onAction = sessionViewModel::onAction) }
+    }
 }

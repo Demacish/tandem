@@ -568,4 +568,69 @@ class CookViewModelTest {
         runCurrent()
         assertEquals(TimerSource.DEMO, timers.timers.value.single().sourceKey)
     }
+
+    // --- Fas 4 (two recipes at once, plan 8.1): two cook modes side by side share the timers. ---
+
+    @Test
+    fun twoRecipesKeepTheirOwnPagesAndServings() = runTest(mainDispatcher.dispatcher) {
+        val buns = SampleRecipes.CinnamonBuns
+        val pastaMode = viewModel(CookKey(pasta.id), SavedStateHandle())
+        val bunsMode = viewModel(CookKey(buns.id), SavedStateHandle())
+
+        pastaMode.onAction(CookAction.GoToPage(2))
+        pastaMode.onAction(CookAction.IncreaseServings)
+        bunsMode.onAction(CookAction.Next)
+        runCurrent()
+
+        assertEquals(2, pastaMode.uiState.value.page)
+        assertEquals(1, bunsMode.uiState.value.page)
+        assertEquals(5.0, pastaMode.uiState.value.servings?.current)
+        assertEquals(30.0, bunsMode.uiState.value.servings?.current)
+        assertEquals("Kanelbullar", bunsMode.uiState.value.recipeName)
+    }
+
+    @Test
+    fun timersOfBothRecipesAreListedInBothAndRing() = runTest(mainDispatcher.dispatcher) {
+        val buns = SampleRecipes.CinnamonBuns
+        val pastaMode = viewModel(CookKey(pasta.id), SavedStateHandle())
+        val bunsMode = viewModel(CookKey(buns.id), SavedStateHandle())
+
+        pastaMode.onAction(CookAction.StartTimer(1, pastaMode.uiState.value.steps[1].suggestions.single()))
+        bunsMode.onAction(CookAction.StartTimer(2, bunsMode.uiState.value.steps[2].suggestions.first()))
+        runCurrent()
+
+        val started = timers.timers.value
+        assertEquals(listOf(pasta.id, buns.id), started.map { it.recipeId })
+        assertEquals(listOf("Krämig svamppasta", "Kanelbullar"), started.map { it.recipeName })
+        assertEquals(started, pastaMode.uiState.value.timers)
+        assertEquals(started, bunsMode.uiState.value.timers)
+
+        timers.advanceTimeBy(10.minutes)
+        runCurrent()
+        assertEquals(listOf(TimerState.RINGING, TimerState.RINGING), bunsMode.uiState.value.timers.map { it.state })
+        assertEquals(listOf(TimerState.RINGING, TimerState.RINGING), pastaMode.uiState.value.timers.map { it.state })
+    }
+
+    @Test
+    fun doneOfOneRecipeKeepsTheOtherRecipesFinishedTimers() = runTest(mainDispatcher.dispatcher) {
+        val buns = SampleRecipes.CinnamonBuns
+        val pastaMode = viewModel(CookKey(pasta.id, startStep = 3), SavedStateHandle())
+        val bunsMode = viewModel(CookKey(buns.id), SavedStateHandle())
+        pastaMode.onAction(CookAction.SetOtherRecipes(setOf(pasta.id, buns.id)))
+        pastaMode.onAction(CookAction.StartTimer(0, pastaMode.uiState.value.steps[0].suggestions.single()))
+        bunsMode.onAction(CookAction.StartTimer(2, bunsMode.uiState.value.steps[2].suggestions.first()))
+        runCurrent()
+        timers.advanceTimeBy(10.minutes)
+        timers.timers.value.forEach { pastaMode.onAction(CookAction.StopRinging(it.id)) }
+        runCurrent()
+
+        pastaMode.effects.test {
+            pastaMode.onAction(CookAction.SaveCookLog)
+            runCurrent()
+            assertEquals(CookEffect.Finished(R.string.cook_done_saved), awaitItem())
+        }
+
+        assertEquals(listOf(pasta.id), cookLog.logged.map { it.recipeId })
+        assertEquals("only the pasta's finished timer is cleared", listOf(buns.id), timers.timers.value.map { it.recipeId })
+    }
 }
