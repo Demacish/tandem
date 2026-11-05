@@ -130,3 +130,11 @@
 Som 2.6.13 (`fas4/fas3-rester/`, 2026-11-05). Enda skillnaden: valideringsfelet för rader utan
 `order` i `ai-step-sort` har formen `{"steps": {"0": {"ingredients": {"0": {"order": […]}}}}}`
 (index som nycklar) i stället för listor. Appen läser bara statusen. [O]
+
+<!-- Fas 4 auto-plan (fas4-kvar lane) -->
+## Fas 4 – auto-plan
+
+`Phase4AutoPlanContractTest`, inspelningar i `fas4/autoplan/`: **samma fakta som 2.6.13**
+(`../2.6.13/FACTS.md` "Fas 4 – auto-plan"): 200 med eko utan id, upprepade recept, ingen hänsyn
+till befintliga måltider, nyckelord som OCH, 400 utan recept, gästen får köra den. [O]
+<!-- /Fas 4 auto-plan -->

@@ -1,0 +1,425 @@
+{
+  "name": "meal-plans-after-auto-plan",
+  "request": {
+    "method": "GET",
+    "path": "/api/meal-plan/?from_date=2027-08-09&to_date=2027-08-15&page_size=100",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "count": 7,
+      "next": null,
+      "previous": null,
+      "timestamp": "2000-01-15T00:00:00.000000+00:00",
+      "results": [
+        {
+          "id": 15,
+          "title": "",
+          "recipe": {
+            "id": 24,
+            "name": "Tandem-autoplan köttbullar",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              },
+              {
+                "id": 17,
+                "label": "Tandem-autoplan Snabbt"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-18T18:00:00+02:00",
+          "to_date": "2000-10-18T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan köttbullar",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        },
+        {
+          "id": 16,
+          "title": "",
+          "recipe": {
+            "id": 25,
+            "name": "Tandem-autoplan fiskgratäng",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-19T18:00:00+02:00",
+          "to_date": "2000-10-19T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan fiskgratäng",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        },
+        {
+          "id": 17,
+          "title": "",
+          "recipe": {
+            "id": 26,
+            "name": "Tandem-autoplan linsgryta",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-20T18:00:00+02:00",
+          "to_date": "2000-10-20T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan linsgryta",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        },
+        {
+          "id": 18,
+          "title": "",
+          "recipe": {
+            "id": 24,
+            "name": "Tandem-autoplan köttbullar",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              },
+              {
+                "id": 17,
+                "label": "Tandem-autoplan Snabbt"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-21T18:00:00+02:00",
+          "to_date": "2000-10-21T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan köttbullar",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        },
+        {
+          "id": 19,
+          "title": "",
+          "recipe": {
+            "id": 25,
+            "name": "Tandem-autoplan fiskgratäng",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-22T18:00:00+02:00",
+          "to_date": "2000-10-22T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan fiskgratäng",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        },
+        {
+          "id": 20,
+          "title": "",
+          "recipe": {
+            "id": 26,
+            "name": "Tandem-autoplan linsgryta",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-23T18:00:00+02:00",
+          "to_date": "2000-10-23T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan linsgryta",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        },
+        {
+          "id": 21,
+          "title": "",
+          "recipe": {
+            "id": 24,
+            "name": "Tandem-autoplan köttbullar",
+            "description": null,
+            "image": null,
+            "keywords": [
+              {
+                "id": 16,
+                "label": "Tandem-autoplan Vardag"
+              },
+              {
+                "id": 17,
+                "label": "Tandem-autoplan Snabbt"
+              }
+            ],
+            "working_time": 0,
+            "waiting_time": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00",
+            "updated_at": "2000-01-15T00:00:00.000000+01:00",
+            "internal": true,
+            "private": false,
+            "servings": 4,
+            "servings_text": "",
+            "rating": null,
+            "last_cooked": null,
+            "new": true
+          },
+          "servings": 3.0,
+          "note": "",
+          "note_markdown": "",
+          "from_date": "2000-10-24T18:00:00+02:00",
+          "to_date": "2000-10-24T18:00:00+02:00",
+          "meal_type": {
+            "id": 4,
+            "name": "Tandem-autoplan middag",
+            "order": 99,
+            "time": "18:00:00",
+            "color": "#003E7E",
+            "created_by": 1
+          },
+          "created_by": 1,
+          "recipe_name": "Tandem-autoplan köttbullar",
+          "meal_type_name": "Tandem-autoplan middag",
+          "shopping": false
+        }
+      ]
+    }
+  }
+}

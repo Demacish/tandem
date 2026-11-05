@@ -1018,3 +1018,31 @@ avvikelser mot `EXPECTED`).
 - **d. Bara ett steg ändrat.** `PATCH /api/step/{id}/` (instruktionen) och `PATCH
   /api/ingredient/{id}/` (mängden) → 200, men receptets **`updated_at` flyttas inte**. Redigerarens
   konfliktkontroll jämför därför också stegen (fingeravtryck i `base_snapshot`). [O/S]
+
+<!-- Fas 4 auto-plan (fas4-kvar lane) -->
+## Fas 4 – auto-plan (`POST /api/auto-plan/`, plan §8.3 #31)
+
+Källa: `Phase4AutoPlanContractTest` (eget steg i `contract.yml`), inspelningar i
+`fas4/autoplan/`. Testet sår egna nyckelord (`Tandem-autoplan Vardag/Snabbt/Tom`), tre recept och
+måltidstypen `Tandem-autoplan middag` (18:00) en vecka 40 veckor fram och raderar allt igen.
+Samma fakta på 2.7.1.
+
+- Begäran `{start_date, end_date, meal_type_id, keywords: [id], keyword_mode, servings, shared,
+  addshopping}`; `start_date`/`end_date` med eller utan tid godtas. Svaret är **200** (inte 201
+  som i schemat) med ett **eko av begäran** (`shared: null`), **inga id** för de skapade
+  måltiderna. [O]
+- Servern skapar **en måltid per dag** (7 för en vecka) med vald måltidstyp och `servings`, utan
+  `shared`, `shopping: false`; bara recept med nyckelordet. Med **färre recept än dagar upprepas
+  recepten** (3 recept → 7 måltider, 3 olika). [O]
+- **Befintliga måltider hoppas inte över:** samma vecka igen ger 7 till (14). [O]
+- Två nyckelord är **OCH** (bara receptet med båda, 7 måltider med samma recept). [O]
+- Inga recept med nyckelorden: **400** `{"error": true, "msg": "No recipes found."}`, inget skapas. [O]
+- En **gäst** får också köra auto-plan: 200, sju måltider som bara gästen ser (inte delade), och
+  gästen kan radera dem (204). [O]
+- En matsedelspost utanför fönstret −90…+360 dagar svarar 404 på `DELETE /api/meal-plan/{id}/`
+  (detaljvyn använder samma standardfönster som listan utan datum). [O]
+
+**Slutsats för appen [S]:** "Föreslå veckans matsedel" använder inte auto-plan (upprepningar,
+dubbelplanering, inga id att ångra med, inget offline/demo, ingen skafferimatchning) utan räknar
+lokalt och sparar vanliga måltider med `POST /api/meal-plan/` (docs/BYGGE.md "Smarta förslag").
+<!-- /Fas 4 auto-plan -->

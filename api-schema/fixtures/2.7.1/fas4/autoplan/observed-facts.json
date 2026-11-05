@@ -1,0 +1,112 @@
+{
+  "tandoorTag": "2.7.1",
+  "runDay": "2000-01-15",
+  "seed.mealType.create": {
+    "status": 201,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "id": 4,
+      "name": "Tandem-autoplan middag",
+      "order": 99,
+      "time": "18:00:00",
+      "color": "#003E7E",
+      "created_by": 1
+    }
+  },
+  "seed.recipes": 3,
+  "autoplan.week": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "start_date": "2000-10-18T00:00:00+02:00",
+      "end_date": "2000-10-24T00:00:00+02:00",
+      "meal_type_id": 4,
+      "keywords": [
+        16
+      ],
+      "keyword_mode": "and",
+      "servings": 3.0,
+      "shared": null,
+      "addshopping": false
+    }
+  },
+  "autoplan.week.answerIsEcho": true,
+  "autoplan.week.created": 7,
+  "autoplan.week.distinctRecipes": 3,
+  "autoplan.week.repeatsRecipes": true,
+  "autoplan.week.onlyKeywordRecipes": true,
+  "autoplan.week.days": 7,
+  "autoplan.week.servings": [
+    3.0
+  ],
+  "autoplan.week.mealTypeIsTheChosen": true,
+  "autoplan.week.shared": [
+    0
+  ],
+  "autoplan.week.addedToShopping": [
+    false
+  ],
+  "autoplan.again.status": 200,
+  "autoplan.again.added": 7,
+  "autoplan.again.total": 14,
+  "cleanup.deleted": [
+    204
+  ],
+  "cleanup.left": 0,
+  "autoplan.twoKeywords.status": 200,
+  "autoplan.twoKeywords.created": 7,
+  "autoplan.twoKeywords.distinctRecipes": 1,
+  "autoplan.noRecipes": {
+    "status": 400,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "error": true,
+      "msg": "No recipes found."
+    }
+  },
+  "autoplan.noRecipes.created": 0,
+  "autoplan.dateOnly": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "start_date": "2000-10-18T00:00:00+02:00",
+      "end_date": "2000-10-24T00:00:00+02:00",
+      "meal_type_id": 4,
+      "keywords": [
+        16
+      ],
+      "keyword_mode": "and",
+      "servings": 3.0,
+      "shared": null,
+      "addshopping": false
+    }
+  },
+  "autoplan.dateOnly.created": 7,
+  "autoplan.guest": {
+    "status": 200,
+    "contentType": "application/json",
+    "isJson": true,
+    "body": {
+      "start_date": "2000-10-18T00:00:00+02:00",
+      "end_date": "2000-10-24T00:00:00+02:00",
+      "meal_type_id": 4,
+      "keywords": [
+        16
+      ],
+      "keyword_mode": "and",
+      "servings": 3.0,
+      "shared": null,
+      "addshopping": false
+    }
+  },
+  "autoplan.guest.createdSeenByOwner": 0,
+  "autoplan.guest.createdSeenByGuest": 7,
+  "autoplan.guest.deleteOwn": [
+    204
+  ],
+  "mismatches": []
+}
