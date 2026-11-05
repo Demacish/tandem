@@ -191,6 +191,36 @@ class FastPushRepositoryTest {
     }
 
     @Test
+    fun leavingTheAccountDropsItsRegistrationEvenWhenItWasTurnedOnInThisProcess() = runBlocking {
+        val repo = repository()
+        repo.start()
+        repo.turnedOn()
+        answer(204)
+
+        // Logging out: the account's rows may be gone already, the phone's registration still goes.
+        graph.sources.source.value = ActiveSource.None
+
+        val unregister = next()
+        assertEquals("/v1/unregister", unregister.url.encodedPath)
+        val body = unregister.body?.utf8().orEmpty()
+        assertTrue(body, body.contains("\"id\":\"reg-1\"") && body.contains(ENDPOINT))
+        assertEquals(listOf(SyncTestGraph.ACCOUNT_ID), gateway.unregistered)
+    }
+
+    @Test
+    fun demoModeLeavesTheAccountToo() = runBlocking {
+        val repo = repository()
+        repo.start()
+        repo.turnedOn()
+        answer(204)
+
+        graph.sources.source.value = ActiveSource.Demo
+
+        assertEquals("/v1/unregister", next().url.encodedPath)
+        assertEquals(listOf(SyncTestGraph.ACCOUNT_ID), gateway.unregistered)
+    }
+
+    @Test
     fun sendTestAsksTheServiceWithTheRegistrationsId() = runBlocking {
         val repo = repository().turnedOn()
         answer(204)

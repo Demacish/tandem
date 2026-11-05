@@ -230,8 +230,10 @@ internal interface ShellFeatures {
 
     /**
      * Every pantry destination ("Hemma", a location, an entry, "Packa upp", "Kan laga nu", "Basvaror").
-     * hemma-ui lane: the scanners and cook mode open through [onNavigate] (the shell's keys), and
+     * hemma-ui lane: the scanners open through [onNavigate] (the shell's keys), and
      * [onOpenShoppingList] is "Visa listan" after "Lägg det som saknas på listan" (the Handla tab).
+     * [onStartCooking] is "Laga" in Kan laga nu, the same entry as the recipe's and Today's "Laga"
+     * (Fas 4: it joins another recipe's running timers).
      */
     @Composable
     fun Pantry(
@@ -240,6 +242,7 @@ internal interface ShellFeatures {
         onOpenRecipe: (Long) -> Unit,
         onBack: (() -> Unit)?,
         onOpenShoppingList: () -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
     )
 
     /**
@@ -502,14 +505,16 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenRecipe: (Long) -> Unit,
         onBack: (() -> Unit)?,
         onOpenShoppingList: () -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
     ) {
         PantryRoute(
             key = key,
             onNavigate = onNavigate,
             onOpenRecipe = onOpenRecipe,
             onBack = onBack,
-            // hemma-ui lane: "Laga" in Kan laga nu, the scanners of feature:scan and the shopping sheet.
-            onStartCooking = { recipeId -> onNavigate(CookKey(recipeId)) },
+            // hemma-ui lane: "Laga" in Kan laga nu (Fas 4: the shell's own entry, so it joins another
+            // recipe's running timers), the scanners of feature:scan and the shopping sheet.
+            onStartCooking = { recipeId -> onStartCooking(recipeId, null) },
             onOpenScanner = { scanner, locationId ->
                 onNavigate(
                     when (scanner) {

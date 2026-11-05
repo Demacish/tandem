@@ -693,7 +693,7 @@ private fun BottomArea(
                     now = now,
                     actions = timerActions,
                     onOpen = onOpenTimer,
-                    maxHeight = PHONE_TIMER_BAR_HEIGHT,
+                    maxHeight = if (showTimerRecipes) PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES else PHONE_TIMER_BAR_HEIGHT,
                     showRecipe = showTimerRecipes,
                     modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
                 )
@@ -849,6 +849,9 @@ private const val STEP_PANE_WEIGHT = 0.62f
 
 /** About two timers at the bottom of a phone; more scroll inside the bar. */
 private val PHONE_TIMER_BAR_HEIGHT = 168.dp
+
+/** Fas 4: two recipes, whose timers carry a line more: the time left of both shows without scrolling. */
+private val PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES = 216.dp
 private val TABLETOP_TIMER_BAR_HEIGHT = 240.dp
 
 /** The warnings and the timer bar take at most this share of a phone's height (less when it is short). */

@@ -11,12 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalResources
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -59,6 +63,13 @@ fun RecipeTextScanRoute(onText: (String) -> Unit, onBack: () -> Unit, modifier: 
                 is RecipeTextScanEffect.TextRead -> currentOnText(effect.text)
             }
         }
+    }
+    // A page that was read: the same tick as a scanned barcode. Not for a removed page.
+    val haptics = LocalHapticFeedback.current
+    var pagesRead by rememberSaveable { mutableIntStateOf(state.pages.size) }
+    LaunchedEffect(state.pages.size) {
+        if (state.pages.size > pagesRead) haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+        pagesRead = state.pages.size
     }
     LaunchedEffect(state.problem, snackbarHostState, resources) {
         val problem = state.problem ?: return@LaunchedEffect

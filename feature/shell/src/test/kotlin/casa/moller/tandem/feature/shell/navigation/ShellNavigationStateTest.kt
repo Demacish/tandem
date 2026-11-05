@@ -1,5 +1,7 @@
 package casa.moller.tandem.feature.shell.navigation
 
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.saveable.SaverScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.model.timer.CookTimer
@@ -84,6 +86,42 @@ class ShellNavigationStateTest {
         navigation.navigate(LanguageKey)
         navigation.navigate(LanguageKey)
         assertEquals(listOf<NavKey>(TodayKey, MoreKey, LanguageKey), navigation.backStack)
+    }
+
+    @Test
+    fun aTimerOfTheSecondTabFindsItsCookEntryAfterProcessDeath() {
+        val recipes = mutableStateMapOf<CookKey, Set<Long>>()
+        val stacks = ShellTab.entries.associateWith { NavBackStack<NavKey>(it.root) }
+        val before = ShellNavigationState(stacks = stacks, cookRecipes = recipes)
+        val key = CookKey(1)
+        before.navigate(key)
+        before.onCookRecipesChanged(key, setOf(1, 2))
+
+        // Process death: the back stacks and the saved recipes come back, nothing is composed yet.
+        val saved = requireNotNull(with(CookRecipesSaver) { SaverScope { true }.save(recipes) })
+        val restored = ShellNavigationState(stacks = stacks, cookRecipes = requireNotNull(CookRecipesSaver.restore(saved)))
+        restored.openTimer(TimerOpenRequest(recipeId = 2, stepIndex = 1))
+
+        assertEquals(listOf<NavKey>(TodayKey, key), restored.backStack)
+        assertEquals(CookPageRequest(2, 1), restored.cookPageRequest)
+    }
+
+    @Test
+    fun savedCookRecipesOfAnotherAppVersionAreDropped() {
+        assertEquals(emptyMap<CookKey, Set<Long>>(), CookRecipesSaver.restore("""[{"old":1}]""")?.toMap())
+    }
+
+    @Test
+    fun aClosedCookEntryIsForgotten() {
+        val closed = CookKey(1)
+        navigation.navigate(closed)
+        navigation.onCookRecipesChanged(closed, setOf(1, 2))
+        navigation.goBack()
+        val open = CookKey(5)
+        navigation.navigate(open)
+        navigation.onCookRecipesChanged(open, setOf(5))
+
+        assertEquals(setOf(1L), navigation.cookRecipesOf(closed))
     }
 
     @Test

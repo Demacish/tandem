@@ -352,6 +352,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenRecipe: (Long) -> Unit,
         onBack: (() -> Unit)?,
         onOpenShoppingList: () -> Unit,
+        onStartCooking: (Long, Double?) -> Unit,
     ) = Page("Pantry $key", onBack ?: {})
 
     @Composable

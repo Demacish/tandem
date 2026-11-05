@@ -15,6 +15,7 @@ import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.shopping.ShoppingSync
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Instant
@@ -59,8 +60,10 @@ internal interface FastPushReceiver {
  *   notification instead. Wake-ups for another account or after turning off unregister at the
  *   distributor, so they stop.
  * - **App start** ([start]): the active account's registration is renewed at the distributor (the
- *   endpoint comes again and is sent to the service, which keeps it "last seen"); switching or
- *   leaving the account drops the old one at the distributor.
+ *   endpoint comes again and is sent to the service, which keeps it "last seen").
+ * - **Leaving the account** (another account, logout, demo mode): its registration is dropped at
+ *   the distributor and, as well as it can be, at the service ([Held]): an ntfy topic nobody
+ *   listens to still answers 200, so the service would otherwise keep waking it for 60 days.
  * - Demo mode, guests and logged-out: nothing (the state says why).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -78,6 +81,15 @@ internal class DefaultFastPushRepository @Inject constructor(
 ) : FastPushRepository,
     FastPushReceiver {
     private val started = AtomicBoolean(false)
+
+    /**
+     * The registration this process asked for. Kept in memory because the account's stored row may
+     * be gone when it is left: logging out deletes the account's rows at the same moment (Fas 4,
+     * integration; before, a registration turned on in this process was never dropped at all).
+     */
+    private data class Held(val accountId: String, val serviceUrl: String, val endpoint: String?, val id: String?)
+
+    private val held = AtomicReference<Held?>(null)
 
     override val state: Flow<FastPushState> = combine(
         sources.source.filter { it != ActiveSource.Loading },
@@ -113,20 +125,19 @@ internal class DefaultFastPushRepository @Inject constructor(
             return FastPushResult.Failure(FastPushError.NO_DISTRIBUTOR)
         }
         val previous = store.load(remote)
-        store.save(
-            remote,
-            StoredFastPush(
-                serviceUrl = url,
-                distributor = distributor,
-                status = FastPushStatus.REGISTERING,
-                // The same endpoint at the same service keeps its id (the service answers it again).
-                endpoint = previous?.endpoint.takeIf { previous?.serviceUrl == url },
-                registrationId = previous?.registrationId.takeIf { previous?.serviceUrl == url },
-                testSupported = info.testSupported,
-                pollSeconds = info.pollSeconds.takeIf { it > 0 },
-                lastWakeUpMillis = previous?.lastWakeUpMillis,
-            ),
+        val registering = StoredFastPush(
+            serviceUrl = url,
+            distributor = distributor,
+            status = FastPushStatus.REGISTERING,
+            // The same endpoint at the same service keeps its id (the service answers it again).
+            endpoint = previous?.endpoint.takeIf { previous?.serviceUrl == url },
+            registrationId = previous?.registrationId.takeIf { previous?.serviceUrl == url },
+            testSupported = info.testSupported,
+            pollSeconds = info.pollSeconds.takeIf { it > 0 },
+            lastWakeUpMillis = previous?.lastWakeUpMillis,
         )
+        store.save(remote, registering)
+        held.set(Held(remote.accountId, url, registering.endpoint, registering.registrationId))
         gateway.register(remote.accountId, distributor)
         return FastPushResult.Success(Unit)
     }
@@ -134,6 +145,7 @@ internal class DefaultFastPushRepository @Inject constructor(
     override suspend fun disable(): FastPushResult<Unit> {
         val remote = sources.current() as? ActiveSource.Remote ?: return FastPushResult.Failure(unavailableError())
         val stored = store.load(remote) ?: StoredFastPush()
+        held.set(null)
         val endpoint = stored.endpoint
         val id = stored.registrationId
         if (endpoint != null && id != null && stored.serviceUrl.isNotEmpty()) {
@@ -184,6 +196,7 @@ internal class DefaultFastPushRepository @Inject constructor(
             is FastPushResult.Failure -> stored.copy(status = FastPushStatus.FAILED, endpoint = endpoint, error = result.error)
         }
         store.save(remote, next)
+        held.set(Held(remote.accountId, next.serviceUrl, next.endpoint, next.registrationId))
     }
 
     override suspend fun onMessage(instance: String, content: ByteArray) {
@@ -217,22 +230,17 @@ internal class DefaultFastPushRepository @Inject constructor(
 
     /**
      * Follows the active account (called once per process by `SyncStarter`): renews the account's
-     * registration at the distributor, drops the previous account's.
+     * registration at the distributor, drops the previous account's ([leave]).
      */
     fun start() {
         if (!started.compareAndSet(false, true)) return
         scope.launch {
-            var registered: String? = null
             sources.source
                 .filter { it != ActiveSource.Loading }
                 .map { it as? ActiveSource.Remote }
                 .distinctUntilChanged { old, new -> old?.accountId == new?.accountId }
                 .collect { remote ->
-                    val previous = registered
-                    if (previous != null && previous != remote?.accountId) {
-                        gateway.unregister(previous)
-                        registered = null
-                    }
+                    leave(next = remote?.accountId)
                     if (remote == null) return@collect
                     val stored = store.load(remote)?.takeIf { it.wanted } ?: return@collect
                     val distributor = stored.distributor ?: return@collect
@@ -240,10 +248,18 @@ internal class DefaultFastPushRepository @Inject constructor(
                         store.save(remote, stored.copy(status = FastPushStatus.FAILED, error = FastPushError.NO_DISTRIBUTOR))
                         return@collect
                     }
+                    held.set(Held(remote.accountId, stored.serviceUrl, stored.endpoint, stored.registrationId))
                     gateway.register(remote.accountId, distributor)
-                    registered = remote.accountId
                 }
         }
+    }
+
+    /** [next] is active now: a registration of another account is dropped. Best effort at the service. */
+    private suspend fun leave(next: String?) {
+        val old = held.get()?.takeIf { it.accountId != next } ?: return
+        held.set(null)
+        gateway.unregister(old.accountId)
+        if (old.endpoint != null && old.id != null) client.unregister(old.serviceUrl, old.endpoint, old.id)
     }
 
     private suspend fun member(): ActiveSource.Remote? {

@@ -20,6 +20,7 @@ import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.engine.SyncKeys
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
+import casa.moller.tandem.core.sync.platform.AccountNotificationCleanup
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.push.DefaultFastPushRepository
@@ -80,6 +81,8 @@ class SyncStarter @Inject internal constructor(
     private val pantryExpiryReminders: PantryExpiryReminders,
     // Fas 4 (push lane): renews the optional fast push registration of the active account.
     private val fastPush: DefaultFastPushRepository,
+    // Fas 4 (integration): a list or pantry notification does not outlive the account on this phone.
+    private val accountNotifications: AccountNotificationCleanup,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -114,6 +117,7 @@ class SyncStarter @Inject internal constructor(
         shoppingNotifications.start()
         pantryExpiryReminders.start()
         fastPush.start()
+        accountNotifications.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

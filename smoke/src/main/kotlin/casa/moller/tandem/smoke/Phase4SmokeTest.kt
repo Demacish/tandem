@@ -57,12 +57,11 @@ class Phase4SmokeTest : Phase2SmokeBase() {
 
     override fun servers(): List<FakeTandoor> = listOf(tandoor)
 
-    override fun extraReport(): List<String> =
-        listOf("--- import posts:") + tandoor.importPosts.map { it.take(REPORT_CHARS) } +
-            listOf("--- cook log:") + tandoor.cookLogPosts +
-            listOf("--- phones:") + tandoor.pushService.phones.map { it.endpoint } +
-            listOf("--- notifications:") + device.postedNotifications().map { it.toString() } +
-            PhaseSPantrySmokeTest.pantryReport(tandoor)
+    override fun extraReport(): List<String> = listOf("--- import posts:") + tandoor.importPosts.map { it.take(REPORT_CHARS) } +
+        listOf("--- cook log:") + tandoor.cookLogPosts +
+        listOf("--- phones:") + tandoor.pushService.phones.map { it.endpoint } +
+        listOf("--- notifications:") + device.postedNotifications().map { it.toString() } +
+        PhaseSPantrySmokeTest.pantryReport(tandoor)
 
     /** After [startFresh]: notifications are allowed (Phase1bSmokeTest covers asking in context). */
     @Before

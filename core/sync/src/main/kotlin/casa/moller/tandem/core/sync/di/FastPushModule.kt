@@ -1,6 +1,8 @@
 package casa.moller.tandem.core.sync.di
 
 import casa.moller.tandem.core.data.push.FastPushRepository
+import casa.moller.tandem.core.sync.platform.AccountNotifications
+import casa.moller.tandem.core.sync.platform.AndroidAccountNotifications
 import casa.moller.tandem.core.sync.push.AndroidFastPushNotifier
 import casa.moller.tandem.core.sync.push.DefaultFastPushRepository
 import casa.moller.tandem.core.sync.push.FastPushNotifier
@@ -39,6 +41,10 @@ internal abstract class FastPushModule {
 
     @Binds
     abstract fun bindFastPushNotifier(impl: AndroidFastPushNotifier): FastPushNotifier
+
+    // Fas 4 (integration): the account's notifications go with the account.
+    @Binds
+    abstract fun bindAccountNotifications(impl: AndroidAccountNotifications): AccountNotifications
 
     companion object {
         /** ShoppingChangeNotifications' 3 s batch plus a margin. */

@@ -414,6 +414,7 @@ internal fun ShellScaffold(
                 onOpenRecipe = openRecipe,
                 onBack = { navigation.goBack() },
                 onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
+                onStartCooking = startCooking,
             )
         }
         val scan: @Composable (ScanDestination) -> Unit = { key ->

@@ -15,6 +15,8 @@ import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.DragAndDropTransferData
 import androidx.compose.ui.draganddrop.mimeTypes
 import androidx.compose.ui.draganddrop.toAndroidDragEvent
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 
 /**
@@ -38,12 +40,14 @@ internal object MealDragAndDrop {
     fun isMeal(event: DragAndDropEvent): Boolean = event.mimeTypes().contains(MIME)
 }
 
-/** Lifts [meal] on a long press (when [enabled]). */
+/** Lifts [meal] on a long press (when [enabled]), with a tick the hand feels. */
 @OptIn(ExperimentalFoundationApi::class)
-internal fun Modifier.mealDragSource(meal: MealPlanEntry, enabled: Boolean): Modifier = if (!enabled) {
-    this
-} else {
-    dragAndDropSource { _ ->
+@Composable
+internal fun Modifier.mealDragSource(meal: MealPlanEntry, enabled: Boolean): Modifier {
+    if (!enabled) return this
+    val haptics = LocalHapticFeedback.current
+    return dragAndDropSource { _ ->
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         val clip = ClipData(ClipDescription("meal", arrayOf(MealDragAndDrop.MIME)), ClipData.Item(meal.id.toString()))
         DragAndDropTransferData(clip)
     }

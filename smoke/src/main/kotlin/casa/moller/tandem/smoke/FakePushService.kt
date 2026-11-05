@@ -49,7 +49,7 @@ class FakePushService {
         val body = request.body?.utf8().orEmpty().ifBlank { "{}" }
         val fields = Json.parseToJsonElement(body).jsonObject
         return when (path) {
-            "/v1/info" -> json(OK, """{"service":"tandem-push","version":"smoke","api":1,"test":true,"encryption":true,"poll_seconds":45}""")
+            "/v1/info" -> json(OK, INFO)
             "/v1/register" -> register(fields, request.headers["Authorization"]?.removePrefix("Bearer ")?.trim())
             "/v1/unregister" -> unregister(fields)
             else -> test(fields)
@@ -80,7 +80,8 @@ class FakePushService {
     private fun test(fields: JsonObject): MockResponse {
         val phone = phones.firstOrNull { it.endpoint == fields.text("endpoint") && it.id == fields.text("id") }
             ?: return json(NOT_FOUND, """{"error":"not_registered"}""")
-        return if (send(phone, "test")) MockResponse.Builder().code(NO_CONTENT).build() else json(BAD_GATEWAY, """{"error":"push_failed"}""")
+        if (!send(phone, "test")) return json(BAD_GATEWAY, """{"error":"push_failed"}""")
+        return MockResponse.Builder().code(NO_CONTENT).build()
     }
 
     private fun send(phone: Phone, kind: String): Boolean {
@@ -95,6 +96,7 @@ class FakePushService {
 
     private companion object {
         val PATHS = setOf("/v1/info", "/v1/register", "/v1/unregister", "/v1/test")
+        const val INFO = """{"service":"tandem-push","version":"smoke","api":1,"test":true,"encryption":true,"poll_seconds":45}"""
         const val OK = 200
         const val NO_CONTENT = 204
         const val NOT_FOUND = 404
@@ -162,8 +164,7 @@ class FakePushService {
             return KeyFactory.getInstance("EC").generatePublic(ECPublicKeySpec(ECPoint(x, y), sameCurve.params)) as ECPublicKey
         }
 
-        private fun encodePoint(point: ECPoint): ByteArray =
-            byteArrayOf(UNCOMPRESSED_POINT) + fixed(point.affineX) + fixed(point.affineY)
+        private fun encodePoint(point: ECPoint): ByteArray = byteArrayOf(UNCOMPRESSED_POINT) + fixed(point.affineX) + fixed(point.affineY)
 
         /** A coordinate as exactly [COORDINATE_SIZE] bytes (BigInteger adds a sign byte or drops leading zeros). */
         private fun fixed(value: BigInteger): ByteArray {

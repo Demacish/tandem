@@ -54,6 +54,15 @@ internal class ShoppingChangeNotifications @Inject constructor(
         }
     }
 
+    /** The account was left: what is gathered from it is never posted (Fas 4, integration). */
+    suspend fun dropPending() {
+        lock.withLock {
+            flush?.cancel()
+            flush = null
+            pending.clear()
+        }
+    }
+
     private suspend fun flushAfter(window: Duration) {
         delay(window)
         val batch = lock.withLock {

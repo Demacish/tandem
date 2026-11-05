@@ -66,7 +66,7 @@ class MealPlanSheetWindowTest {
      */
     private fun captureSuggestions(name: String, darkTheme: Boolean = false, fontScale: Float = 1f) {
         val state = MealPlanSamples.state().copy(suggestions = MealPlanSamples.suggestionsKeywordState)
-        captureWindow(name, darkTheme, fontScale, state, accessibility = false)
+        captureWindow(name, darkTheme, fontScale, state)
         composeRule.onNodeWithTag(WEEK_SUGGESTIONS_ACCEPT_TAG, useUnmergedTree = true).assertIsDisplayed()
     }
 

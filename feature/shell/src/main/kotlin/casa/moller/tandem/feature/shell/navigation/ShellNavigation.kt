@@ -6,8 +6,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -21,6 +23,9 @@ import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.Json
 
 /**
  * Navigation 3 keys of the shell. They are @Serializable so that [rememberNavBackStack] can save
@@ -87,6 +92,7 @@ class ShellNavigationState(
     private val stacks: Map<ShellTab, MutableList<NavKey>>,
     initialTab: ShellTab = ShellTab.TODAY,
     private val onTabChanged: (ShellTab) -> Unit = {},
+    private val cookRecipes: MutableMap<CookKey, Set<Long>> = mutableStateMapOf(),
 ) {
     init {
         require(ShellTab.entries.all { stacks[it]?.isNotEmpty() == true }) { "every tab needs a non-empty stack" }
@@ -247,17 +253,16 @@ class ShellNavigationState(
     }
 
     /**
-     * Fas 4 (two recipes at once, plan 8.1): the recipes open in each cook entry, as its route
-     * reports them ([onCookRecipesChanged]). Not saved: the shown cook entry reports again as soon
-     * as it is composed after process death.
+     * The recipes open in the cook entry of [key]: what it reported ([onCookRecipesChanged]), else
+     * what it opened with. Fas 4 (two recipes at once, plan 8.1); what was reported is saved with
+     * the back stacks ([CookRecipesSaver]), so a timer notification tapped right after process
+     * death finds the cook entry whose second tab is the timer's recipe, before that entry is composed.
      */
-    private val cookRecipes = mutableStateMapOf<CookKey, Set<Long>>()
-
-    /** The recipes open in the cook entry of [key]: what it reported, else what it opened with. */
     fun cookRecipesOf(key: CookKey): Set<Long> = cookRecipes[key] ?: key.recipeIds.toSet()
 
-    /** The cook entry of [key] has [recipeIds] open now ("Laga ett recept till", a closed tab). */
+    /** The cook entry of [key] has [recipeIds] open now ("Laga ett recept till", a closed tab). Closed entries are forgotten. */
     fun onCookRecipesChanged(key: CookKey, recipeIds: Set<Long>) {
+        cookRecipes.keys.retainAll { open -> stacks.values.any { open in it } }
         cookRecipes[key] = recipeIds
     }
 
@@ -311,6 +316,26 @@ class ShellNavigationState(
  */
 typealias CookPageRequest = casa.moller.tandem.feature.cook.navigation.CookPageRequest
 
+/** One entry of [CookRecipesSaver]. */
+@Serializable
+private data class SavedCookRecipes(val key: CookKey, val recipeIds: List<Long>)
+
+private val savedCookRecipes = ListSerializer(SavedCookRecipes.serializer())
+
+/** [ShellNavigationState]'s recipes per cook entry across process death, as JSON like the back stacks' keys. */
+internal val CookRecipesSaver: Saver<SnapshotStateMap<CookKey, Set<Long>>, String> = Saver(
+    save = { recipes -> Json.encodeToString(savedCookRecipes, recipes.map { (key, ids) -> SavedCookRecipes(key, ids.toList()) }) },
+    restore = { saved ->
+        val entries = try {
+            Json.decodeFromString(savedCookRecipes, saved)
+        } catch (e: SerializationException) {
+            // Saved by another version of the app: the cook entries report again when they are shown.
+            emptyList()
+        }
+        mutableStateMapOf<CookKey, Set<Long>>().apply { entries.forEach { put(it.key, it.recipeIds.toSet()) } }
+    },
+)
+
 /** Remembers the shell's back stacks and selected tab, saved across process death. */
 @Composable
 fun rememberShellNavigationState(): ShellNavigationState {
@@ -320,7 +345,8 @@ fun rememberShellNavigationState(): ShellNavigationState {
     val shopping: NavBackStack<NavKey> = rememberNavBackStack(ShoppingKey)
     val more: NavBackStack<NavKey> = rememberNavBackStack(MoreKey)
     var savedTab by rememberSaveable { mutableStateOf(ShellTab.TODAY) }
-    return remember(today, recipes, week, shopping, more) {
+    val cookRecipes = rememberSaveable(saver = CookRecipesSaver) { mutableStateMapOf() }
+    return remember(today, recipes, week, shopping, more, cookRecipes) {
         ShellNavigationState(
             stacks = mapOf(
                 ShellTab.TODAY to today,
@@ -331,6 +357,7 @@ fun rememberShellNavigationState(): ShellNavigationState {
             ),
             initialTab = savedTab,
             onTabChanged = { savedTab = it },
+            cookRecipes = cookRecipes,
         )
     }
 }
