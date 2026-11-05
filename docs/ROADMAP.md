@@ -67,21 +67,22 @@ Levererades i **0.5.0** (2026-11-03).
 - ✅ Skapa och redigera recept i appen: namn, beskrivning, foto, portioner, tider, nyckelord,
   steg med ingredienser (livsmedel och enheter på namn), offline med tillfälligt id tills det
   skickats, konflikt när receptet ändrats på webben under tiden, ta bort recept (0.5.0). Ta bort
-  bilden och konflikt också när bara ett steg ändrats på webben (Fas 4). Kvar: stegfiler.
+  bilden och konflikt också när bara ett steg ändrats på webben (0.6.0). Kvar: stegfiler och
+  delrecept ändras på webben.
 - ✅ Importera recept genom att dela en länk eller text till appen (en text tolkas i appen, en
   länk av er Tandoor), med granskning innan receptet öppnas i redigeraren; foto och PDF tolkas
   av Tandoors AI-import när utrymmet har en AI-leverantör (0.5.0). En sida som stänger ute
   servern läses i appen och skickas till Tandoor utan AI, och AI:n kan fördela ingredienserna
-  på stegen (Fas 4). Kvar: AI-importen och stegfördelningen är bara prövade mot en server utan
+  på stegen (0.6.0). Kvar: AI-importen och stegfördelningen är bara prövade mot en server utan
   leverantör.
 - ✅ Widgets (inköpslistan med avbockning, dagens måltider), snabbinställningsrutan "Handla" och
   genvägar på appikonen (0.5.0).
 - ✅ Dra och släpp i matsedeln (dag, och måltidstyp på surfplattan) och näringsvärden per portion i
-  receptvyn (0.5.0), i kJ eller kcal som i Tandoor (Fas 4). Kvar: redigera näringsvärden i appen.
-- ✅ Hemsektioner som du ordnar och döljer ("Anpassa Idag", Fas 4).
+  receptvyn (0.5.0), i kJ eller kcal som i Tandoor (0.6.0). Kvar: redigera näringsvärden i appen.
+- ✅ Hemsektioner som du ordnar och döljer ("Anpassa Idag", 0.6.0).
 
-## Fas 4: Smart hushåll
-Påbörjat 2026-11-04.
+## Fas 4: Smart hushåll ✅
+Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
 
 - ✅ Textigenkänning av recept i telefonen (samma ML Kit-läsare som kvittoskanningen i Fas S):
   "Fota recept" i Importera recept läser en kokbokssida, ett kort eller en utskrift utan AI-tjänst
@@ -96,14 +97,16 @@ Påbörjat 2026-11-04.
   notis (av som standard, slås på under Synk och lagring) visar dem när appen inte är på skärmen.
   Snabbare push via en valfri liten tjänst som man kör själv (`push-service/`, docs/PUSH.md):
   tjänsten kontrollerar listan var 30–60:e sekund och väcker telefonerna via UnifiedPush (t.ex.
-  ntfy), så en ändring syns inom en minut även när appen är stängd. Experimentell, av som standard.
+  ntfy), så en ändring syns inom en minut även när appen är stängd. Experimentell, av som standard,
+  och kräver en egen tjänst; tjänstens image publiceras med versionstaggen.
 - ✅ Valfri notis när något i skafferiet går ut: "Grädde går ut i morgon – 3 recept" (en daglig
   kontroll i bakgrunden på morgonen, fungerar utan nät, av som standard; erbjuds på Hemma och
   under Synk och lagring). Tryck öppnar Kan laga nu med det som ska användas upp först. Kvar: en
   egen tid för påminnelsen.
 - ✅ Två recept samtidigt i kokläget: "Laga ett recept till" öppnar ett andra recept som flik,
   varje recept har sitt eget steg och "Klart!", och timrarna från båda syns (med receptets namn,
-  även i notiserna) och ringer. Kvar: två recept sida vid sida på riktigt breda skärmar.
+  även i notiserna) och ringer. "Laga" medan ett annat recepts timer går öppnar båda, också från
+  Kan laga nu. Kvar: två recept sida vid sida på riktigt breda skärmar.
 
 ## Fas 5: Plattform
 - Handsfree-kokläge med röst och uppläsning.

@@ -6,20 +6,32 @@ matsedel och inköpslista, offline först. Appen är en generisk Tandoor-klient:
 anges i appen och inget i koden är knutet till en viss server. Tandem är inte associerad med
 Tandoor-projektet.
 
-**Status: tidig utveckling.** Inloggning, flikar och inställningar fungerar; recept, kokläge,
-matsedel och inköpslista byggs nu. Vad som kommer i vilken ordning: [docs/ROADMAP.md](docs/ROADMAP.md).
+**Status: aktiv utveckling, 0.6.0.** Det här finns i dag:
+
+- **Recept:** sök offline och på servern, portioner och enheter som i Tandoors webb, skapa och
+  redigera, importera från en länk, en text eller ett foto (texten läses i telefonen), näringsvärden.
+- **Laga:** kokläge med stor text, timers som hittas i stegen och larmar med låst skärm, två recept
+  samtidigt, "Klart!" med betyg.
+- **Handla och planera:** inköpslista som fungerar offline och synkas i hushållet, butiksläge med
+  inlärd ordning, "Dags igen?", veckans matsedel med förslag och dra och släpp.
+- **Hemma:** skafferi per plats, "Kan laga nu", "Använd upp", streckkod, kvitto, drycker.
+- **Notiser, alla valfria:** när någon ändrar listan, när något går ut, och snabb push via en egen
+  liten tjänst ([docs/PUSH.md](docs/PUSH.md), experimentell).
+- Widgets, snabbinställningsruta, surfplatta i båda orienteringarna, gästläge och demoläge.
+
+Vad som kommer härnäst: [docs/ROADMAP.md](docs/ROADMAP.md). Vad som ändrats: [CHANGELOG.md](CHANGELOG.md).
 
 ## Installera
 
 Tandem släpps som signerad APK under [Releases](https://github.com/Demacish/tandem/releases).
 Enklast är att installera och uppdatera den med [Obtainium](https://github.com/ImranR98/Obtainium),
 se [docs/OBTAINIUM.md](docs/OBTAINIUM.md). Du behöver en egen Tandoor-server (2.6 eller senare).
-Ett demoläge med exempelrecept, utan server, kommer i Fas 1.
+Vill du bara titta finns ett demoläge med exempelrecept, utan server.
 
 ## Teknik
 
 Kotlin, Jetpack Compose med Material 3 (Expressive), Navigation 3, Hilt, Retrofit/OkHttp,
-kotlinx.serialization, DataStore + Tink. minSdk 34, targetSdk 36, compileSdk 37.
+kotlinx.serialization, Room, WorkManager, DataStore + Tink. minSdk 34, targetSdk 36, compileSdk 37.
 Engelska är grundspråk (`values/`) och svenska (`values-sv/`) ska alltid vara komplett.
 
 ## Bygge och CI
@@ -35,8 +47,9 @@ hänger ihop: [docs/BYGGE.md](docs/BYGGE.md). Releaser: [docs/RELEASE.md](docs/R
 | Sökväg | Vad |
 |---|---|
 | `app/` | Application, MainActivity, Hilt-roten |
-| `core/` | `model`, `common`, `domain` (ren Kotlin), `network`, `datastore`, `data`, `designsystem`, `ui` |
-| `feature/` | `onboarding` (intro och inloggning), `shell` (flikar och Mer) |
+| `core/` | `model`, `common`, `domain` (ren Kotlin), `network`, `database`, `datastore`, `data`, `sync`, `timer`, `ai`, `designsystem`, `ui` |
+| `feature/` | `onboarding`, `shell` (flikar och Mer), `home`, `recipes`, `cook`, `shopping`, `mealplan`, `pantry`, `scan`, `widgets` |
+| `push-service/` | Den valfria push-tjänsten (Go, en container), [docs/PUSH.md](docs/PUSH.md) |
 | `contract-tests/` | Kontraktstester mot en tillfällig Tandoor i Actions |
 | `smoke/` | Röktest av release-bygget på en emulator mot en falsk Tandoor |
 | `build-logic/` | Convention plugins (`tandem.*`) |

@@ -49,8 +49,8 @@ android {
 
     defaultConfig {
         applicationId = "casa.moller.tandem"
-        versionCode = 7
-        versionName = "0.5.0"
+        versionCode = 8
+        versionName = "0.6.0"
     }
 
     buildFeatures {

@@ -6,12 +6,15 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-Början på Fas 4 ("Smart hushåll").
+## [0.6.0] – 2026-11-05
 
-- **Fota recept:** i Importera recept kan du fotografera en kokbokssida, ett kort eller en
-  utskrift (eller välja en bild). Texten läses i telefonen, utan AI-tjänst och utan att något
-  skickas någonstans, och öppnas i redigeraren där du granskar den innan receptet sparas. Ett
-  långt recept kan vara flera foton.
+Fas 4 ("Smart hushåll"): Tandem lär sig hur ni handlar och lagar. Butiken sorteras som du går,
+varor som brukar ta slut föreslås, veckans middagar föreslås med ett tryck, två recept kan lagas
+samtidigt och telefonen säger till när listan ändras eller något går ut. Allt räknas ut i
+telefonen, och alla notiser är av tills du slår på dem. Dessutom det som återstod av Fas 3.
+
+**Handla och planera**
+
 - **Inlärd butiksordning:** butiksläget minns i vilken ordning du bockar av i varje butik. Efter
   tre turer i ungefär samma ordning (minst 80 % av kategorierna) frågar appen om den ska spara
   ordningen. Den blir butikens gångordning i Tandoor, så den syns på webben och listan sorteras
@@ -24,10 +27,41 @@ Början på Fas 4 ("Smart hushåll").
   gånger. Recept som använder det som snart går ut hemma kommer först ("Använder 2 råvaror som går
   ut snart"). Byt ut eller hoppa över en dag, slumpa om, och lägg in dem i veckan med ett tryck
   (går att ångra); de syns på webben som vanliga måltider.
+
+**Laga**
+
+- **Två recept samtidigt i kokläget:** "Laga ett recept till" (+) i kokläget öppnar ett recept
+  till. Flikar högst upp växlar mellan dem, och vart och ett minns sitt steg, sina portioner och
+  sitt "Klart!". Timrarna från båda syns i båda, med receptets namn (även i notiserna och larmet
+  på låsskärmen), och alla ringer. Trycker du "Laga" på ett recept, också i Kan laga nu, medan ett
+  annat recepts timer går öppnas båda. ✕ stänger det recept som visas, och kokläget fortsätter med
+  det andra.
+
+**Notiser (alla av som standard, var och en slås på för sig)**
+
 - **Notis när någon ändrar listan:** slå på under Synk och lagring, så säger telefonen till när
   bakgrundssynken ser att någon annan i hushållet lagt till, bockat av eller tagit bort varor.
-  Bara när Tandem inte är på skärmen; tryck på notisen öppnar listan.
-<!-- Fas 4, bana fas3-rester (Fas 3:s rester) -->
+  Bara när Tandem inte är på skärmen; tryck på notisen öppnar listan. Ingen extra tjänst behövs.
+- **Notis när något går ut:** Hemma frågar om du vill bli påmind när något har ett utgångsdatum
+  (eller slå på under Synk och lagring). På morgonen säger telefonen till om det som går ut i dag
+  eller i morgon, till exempel "Grädde går ut i morgon – 3 recept", i en enda notis och aldrig två
+  gånger samma dag för samma vara. Fungerar utan nät; tryck öppnar Kan laga nu med recepten som
+  använder upp det först. Notisen har kanalen "Måltidspåminnelser" i systemets inställningar.
+- **Snabb push (experimentell, valfri, kräver en egen tjänst):** Tandem fungerar precis som förut
+  utan den. Under Synk och lagring → Snabb push kan appen kopplas till en liten push-tjänst som
+  hushållet kör själv (en container, se docs/PUSH.md). Tjänsten kontrollerar inköpslistan var
+  30–60:e sekund och väcker telefonen via en UnifiedPush-app som ntfy, så en vara som någon lägger
+  till syns som notis inom en minut även när appen är stängd. Väckningen innehåller inget om
+  listan. Inte för gäster eller demoläget. Tjänstens image publiceras med versionstaggen.
+- Byter du konto eller loggar ut försvinner notiserna om det kontots lista och skafferi, och
+  snabb push släpps både hos UnifiedPush-appen och hos tjänsten.
+
+**Importera och redigera**
+
+- **Fota recept:** i Importera recept kan du fotografera en kokbokssida, ett kort eller en
+  utskrift (eller välja en bild). Texten läses i telefonen, utan AI-tjänst och utan att något
+  skickas någonstans, och öppnas i redigeraren där du granskar den innan receptet sparas. Ett
+  långt recept kan vara flera foton.
 - **Sidor som stänger ute servern:** kan er Tandoor inte öppna en delad länk läser Tandem sidan
   i appen i stället ("Läser sidan…", går att avbryta) och skickar den till Tandoor. Ingen AI
   används. Ber sidan dig bekräfta något gör du det direkt i vyn och läser sidan igen.
@@ -37,28 +71,22 @@ Början på Fas 4 ("Smart hushåll").
 - **Ta bort bilden** i receptredigeraren tar bort receptets bild i Tandoor när du sparar.
 - **Ändrat på webben:** redigeraren märker nu också när någon ändrat bara ett steg eller en
   ingrediens på webben medan din ändring väntade.
+
+**Övrigt**
+
 - **Näringsvärden** visas i kJ eller kcal som du valt i Tandoor.
 - **Anpassa Idag:** välj vilka receptrader Idag visar och i vilken ordning (sparas i telefonen).
 - Importen pausar bakgrundssynken medan Tandoor arbetar, och snabbinställningsrutan "Handla"
   visar rätt antal direkt efter en synk.
-<!-- /Fas 4, bana fas3-rester -->
-- **Notis när något går ut:** Hemma frågar om du vill bli påmind när något har ett utgångsdatum
-  (eller slå på under Synk och lagring). På morgonen säger telefonen till om det som går ut i dag
-  eller i morgon, till exempel "Grädde går ut i morgon – 3 recept", i en enda notis och aldrig två
-  gånger samma dag för samma vara. Fungerar utan nät; tryck öppnar Kan laga nu med recepten som
-  använder upp det först. Notisen har kanalen "Måltidspåminnelser" i systemets inställningar.
+- En kort vibration när en måltid lyfts i Veckan och när en sida lästs i Fota recept.
 - **Rättat:** två telefoner som öppnade Hemma för första gången samtidigt kunde skapa Kyl, Frys
   och Skafferi två gånger. Nu behålls de äldsta och den andra telefonens varor flyttas dit.
-- **Snabb push (experimentell, valfri):** under Synk och lagring → Snabb push kan Tandem kopplas
-  till en liten push-tjänst som hushållet kör själv (en container, se docs/PUSH.md). Tjänsten
-  kontrollerar inköpslistan var 30–60:e sekund och väcker telefonen via en UnifiedPush-app som
-  ntfy, så en vara som någon lägger till syns som notis inom en minut även när appen är stängd.
-  Väckningen innehåller inget om listan. Av som standard; inte för gäster eller demoläget.
-- **Två recept samtidigt i kokläget:** "Laga ett recept till" (+) i kokläget öppnar ett recept
-  till. Flikar högst upp växlar mellan dem, och vart och ett minns sitt steg, sina portioner och
-  sitt "Klart!". Timrarna från båda syns i båda, med receptets namn (även i notiserna och larmet
-  på låsskärmen), och alla ringer. Trycker du "Laga" på ett recept medan ett annat recepts timer
-  går öppnas båda. ✕ stänger det recept som visas, och kokläget fortsätter med det andra.
+- **Rättat:** en timernotis för den andra fliken i kokläget kunde efter en omstart av appen öppna
+  ett eget kokläge i stället för fliken.
+- **Kvar till senare:** handskrivna recept och tvåspaltiga sidor i Fota recept, en egen tid för
+  utgångsnotisen, två recept sida vid sida på riktigt breda skärmar, att dra måltider mellan
+  veckor. Stegfiler, delrecept och näringsvärden ändras fortfarande på webben.
+  AI-importen och stegfördelningen är bara prövade mot en server utan AI-leverantör.
 
 ## [0.5.0] – 2026-11-03
 

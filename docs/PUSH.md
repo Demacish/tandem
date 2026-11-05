@@ -23,8 +23,8 @@ du själv slår på den.
 
 ### Köra tjänsten
 
-Imagen publiceras som `ghcr.io/demacish/tandem-push` när en version taggas. Exempel med Docker
-Compose:
+Imagen publiceras som `ghcr.io/demacish/tandem-push` när en version taggas (den första med
+versionen 0.6.0; tills dess finns den inte att hämta). Exempel med Docker Compose:
 
 ```yaml
 services:
@@ -59,13 +59,13 @@ volumes:
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 
 En tjänst = ett hushåll (det som tokenens användare tillhör). Har du flera hushåll kör du en
-container per hushåll. Lägg tjänsten bakom HTTPS (Caddy, nginx, Traefik …); appen godtar `http://`
-bara om du bekräftar det.
+container per hushåll. Lägg tjänsten bakom HTTPS (Caddy, nginx, Traefik …): appen godtar bara
+`https://`.
 
 ### I appen
 
 Mer → Synk och lagring → **Snabb push (egen tjänst, experimentell)**: ange tjänstens adress, välj
-distributör (t.ex. ntfy, installera den först), tryck **Aktivera**. "Skicka testnotis" visar en
+distributör (t.ex. ntfy, installera den först), tryck **Slå på**. "Skicka testnotis" visar en
 notis om allt fungerar. Gäster och demoläget kan inte använda funktionen.
 
 ### Säkerhet och data
@@ -76,7 +76,9 @@ notis om allt fungerar. Gäster och demoläget kan inte använda funktionen.
   hushåll nekas. Inga lösenord, inga tokens sparas.
 - **Sparat per telefon:** väckningsadressen, dess publika nycklar, ett slumpat id, hushållets id och
   när telefonen senast registrerade sig. Inget annat. Filen skrivs med rättigheterna `600`.
-- **Avregistrering:** med registreringens id (appen har det) eller en giltig token.
+- **Avregistrering:** med registreringens id (appen har det) eller en giltig token. Appen
+  avregistrerar sig när du stänger av snabb push, byter konto eller loggar ut. Lyckas det inte (inget
+  nät) glöms telefonen efter `REGISTRATION_TTL_DAYS` eller när distributören svarar 404/410.
 - **Gränser:** en kontroll per intervall och hushåll, aldrig när ingen telefon är registrerad;
   vid fel väntar den dubbelt så länge varje gång (högst 15 min), vid 429 minst `Retry-After`, vid
   en avvisad token 15 min. API:t har en gräns per klient-IP och testnotiser högst var 10:e sekund.
@@ -100,7 +102,9 @@ phone then syncs and shows its own notification.
 (`TANDOOR_URL`, `TANDOOR_TOKEN`/`TANDOOR_TOKEN_FILE` required; `POLL_SECONDS` 30–600, default 45;
 `LISTEN_ADDR`, `DATA_DIR`, `ALLOW_HTTP_ENDPOINTS`, `MAX_ENDPOINTS`, `REGISTRATION_TTL_DAYS`,
 `TEST_PUSH`, `LOG_LEVEL`). One container serves one household (the token user's). Put it behind
-HTTPS.
+HTTPS: the app only accepts `https://`. The image is published as
+`ghcr.io/demacish/tandem-push` when a version is tagged (the first with version 0.6.0; until then
+it cannot be pulled).
 
 **In the app:** More → Sync and storage → **Fast push (own service, experimental)**: enter the
 service URL, pick a distributor, tap **Turn on**, then "Send test notification".
@@ -108,7 +112,10 @@ service URL, pick a distributor, tap **Turn on**, then "Send test notification".
 **Security and data:** a phone registers with its own Tandoor token, which the service uses once to
 ask Tandoor for the space and household and then forgets; guests and other households are refused.
 Per phone the service keeps the endpoint, its public Web Push keys, a random id, the household id
-and when it was last seen; nothing else. Unregistering needs the registration id or a valid token.
+and when it was last seen; nothing else. Unregistering needs the registration id or a valid token;
+the app unregisters when you turn fast push off, switch accounts or log out, and a phone that could
+not reach the service then is forgotten after `REGISTRATION_TTL_DAYS` or on a 404/410 from its
+distributor.
 Polling happens once per interval and never without registered phones, backs off exponentially on
 errors (at most 15 min, at least `Retry-After` on 429). Logs are JSON lines without tokens, list
 content or endpoint paths.
