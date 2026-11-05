@@ -1062,18 +1062,20 @@ dra mellan veckor, haptik vid lyft.
 
 Fas 4 "Smart hushåll" byggs i delsteg på grenen `claude/vigilant-galileo-1xv20t` efter att Fas 3
 slogs ihop till `main` (PR #4, 0.5.0). Avsnittet uppdateras **efter varje commit** så att arbetet
-kan tas upp igen där det avbröts.
+kan tas upp igen där det avbröts. De fem sista banorna (`fas4/fas3-rester`, `fas4-kvar`,
+`skafferinotis`, `push`, `kok2`) plockades ihop på `fas4/samla` med alla sina commits och kom in på
+`main` tillsammans; körningarna nedan gäller den samlade grenen.
 
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
 | Textigenkänning av recept i telefonen | ✅ klart 2026-11-04 (commit 79b033d), CI grön, referensbilder incheckade | "Textigenkänning av recept" |
 | Inlärd butiksordning, återkommande varor, förslag på veckans matsedel | ✅ klart 2026-11-04 (commit a520d09; PR-körningen grön på a520d09, röktest grönt på 145d2f3), referensbilder incheckade | "Smarta förslag" |
-| Smarta förslag enligt "Klart när" (butiksordning efter 3 turer, återkommande varor med lokal historik, autoplan med nyckelord och skafferi) | 🔧 lane fas4-kvar 2026-11-05 (gren `fas4/fas4-kvar`), se "Smarta förslag" | "Smarta förslag" |
+| Smarta förslag enligt "Klart när" (butiksordning efter 3 turer, återkommande varor med lokal historik, autoplan med nyckelord och skafferi) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Contract 2.6.13/2.7.1 42112553318 på 3e39331, auto-plan-steget grönt; referensbilder incheckade) | "Smarta förslag" |
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
-| Valfri snabb push (push-tjänst + UnifiedPush i appen, grenen `fas4/push`) | 🔄 tjänsten klar och grön i `push-service.yml` (enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1: väckning 8–15 s efter partnerns vara, ca 3 MB RAM); appens del byggs | "Push-tjänst" |
-| Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | 🔧 byggt på grenen `fas4/skafferinotis` 2026-11-05; CI och referensbilder, se avsnittet | "Notis när något går ut" |
-| Två recept samtidigt i kokläget | 🔧 byggt på grenen `fas4/kok2` 2026-11-05 (kod, tester, referensbilder); CI och sammanslagning bekräftas här | "Två recept samtidigt" |
-| Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05 (PR, Contract 2.6.13/2.7.1, röktest "OK (21 tests)" och Screenshots gröna på 489d5fb; referensbilder incheckade) | "Fas 3:s rester" |
+| Valfri snabb push (push-tjänst + UnifiedPush i appen) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; `push-service.yml` 42112572458 på 3e39331: enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1; imagen är inte publicerad, det sker först med en `v*`-tagg) | "Push-tjänst" |
+| Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Synk-sidans fyra bilder inspelade igen med båda nya raderna, Screenshots 42112568644) | "Notis när något går ut" |
+| Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestet har inget eget scenario för två recept än | "Två recept samtidigt" |
+| Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Contract 2.6.13/2.7.1 42112553318 på 3e39331, Fas 3-resternas steg grönt; referensbilder incheckade) | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
 
@@ -1366,8 +1368,8 @@ telefonen.
 - **Gäst/demo:** bussen får bara ändringar från ett riktigt konto (`ActiveSource.Remote`), så
   demoläget postar aldrig.
 
-Kvar (ROADMAP): "snabbare push via en valfri liten tjänst som man kan köra själv" – inte påbörjat;
-med bakgrundssynken dröjer notisen upp till synkintervallet.
+Med bakgrundssynken dröjer notisen upp till synkintervallet; den snabbare vägen är den valfria
+tjänsten, se "Push-tjänst".
 
 Tester: `ShoppingNotificationPolicyTest`, `ShoppingChangeNotificationsTest` (samlas till en notis,
 inget på skärmen eller med inställningen av), `SettingsViewModelTest.shoppingNotificationsAskForThePermissionWhenSwitchedOnWithoutIt`,
