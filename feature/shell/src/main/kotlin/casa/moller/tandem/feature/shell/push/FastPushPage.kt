@@ -45,6 +45,7 @@ internal object RouteFastPushPage : FastPushPage {
             viewModel.effect.collect { effect ->
                 when (effect) {
                     is FastPushEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+
                     FastPushEffect.RequestNotificationPermission ->
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)

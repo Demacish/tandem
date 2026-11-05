@@ -80,9 +80,13 @@ class FastPushViewModel @Inject constructor(
             }
 
             is FastPushAction.SelectDistributor -> chosen.value = action.packageName
+
             FastPushAction.Enable -> launchAction { enable() }
+
             FastPushAction.Disable -> launchAction { disable() }
+
             FastPushAction.SendTest -> launchAction { sendTest() }
+
             FastPushAction.Refresh -> {
                 refreshDistributors()
                 timers.refreshCapabilities()

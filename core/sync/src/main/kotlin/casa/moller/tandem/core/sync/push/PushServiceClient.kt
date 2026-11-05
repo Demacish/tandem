@@ -46,6 +46,7 @@ internal class PushServiceClient @Inject constructor(@TandoorHttpClient private 
                 }
 
                 response.code >= HTTP_SERVER_ERROR -> FastPushResult.Failure(FastPushError.SERVICE_ERROR)
+
                 else -> FastPushResult.Failure(FastPushError.NOT_A_PUSH_SERVICE)
             }
         }
@@ -130,12 +131,7 @@ internal class PushServiceClient @Inject constructor(@TandoorHttpClient private 
     )
 
     @Serializable
-    private data class RegisterDto(
-        val endpoint: String,
-        val p256dh: String? = null,
-        val auth: String? = null,
-        val id: String? = null,
-    )
+    private data class RegisterDto(val endpoint: String, val p256dh: String? = null, val auth: String? = null, val id: String? = null)
 
     @Serializable
     private data class RegisteredDto(
@@ -169,7 +165,8 @@ internal class PushServiceClient @Inject constructor(@TandoorHttpClient private 
             val trimmed = raw.trim()
             if (!trimmed.startsWith("https://", ignoreCase = true)) return null
             val url = trimmed.toHttpUrlOrNull() ?: return null
-            if (url.username.isNotEmpty() || url.password.isNotEmpty() || url.query != null || url.fragment != null) return null
+            val withUser = url.username.isNotEmpty() || url.password.isNotEmpty()
+            if (withUser || url.query != null || url.fragment != null) return null
             val path = url.encodedPath.trimEnd('/') + "/"
             return url.newBuilder().encodedPath(path).build()
         }

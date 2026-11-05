@@ -53,7 +53,12 @@ class FastPushScreenTest {
     private fun setScreen(state: FastPushUiState) {
         composeRule.setContent {
             TandemTheme {
-                FastPushScreen(state = state, onAction = { actions += it }, onNavigateBack = {}, onOpenPermissions = { permissionsOpened++ })
+                FastPushScreen(
+                    state = state,
+                    onAction = { actions += it },
+                    onNavigateBack = {},
+                    onOpenPermissions = { permissionsOpened++ },
+                )
             }
         }
     }

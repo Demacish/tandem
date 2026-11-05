@@ -113,7 +113,11 @@ class FastPushViewModelTest {
 
     @Test
     fun testAndTurningOffReportBack() = runTest {
-        push.state.value = push.state.value.copy(status = FastPushStatus.ACTIVE, testSupported = true, serviceUrl = "https://push.example.com")
+        push.state.value = push.state.value.copy(
+            status = FastPushStatus.ACTIVE,
+            testSupported = true,
+            serviceUrl = "https://push.example.com",
+        )
         val vm = newViewModel()
         val state = collecting(vm.uiState)
         val effects = effectsOf(vm)

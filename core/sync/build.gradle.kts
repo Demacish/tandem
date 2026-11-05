@@ -6,6 +6,8 @@
 plugins {
     id("tandem.android.library")
     id("tandem.android.hilt")
+    // Fas 4 (push lane): @Serializable for the fast push settings and the push service's JSON.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {

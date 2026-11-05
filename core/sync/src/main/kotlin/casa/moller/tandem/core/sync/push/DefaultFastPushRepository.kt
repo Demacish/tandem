@@ -75,7 +75,8 @@ internal class DefaultFastPushRepository @Inject constructor(
     private val notifier: FastPushNotifier,
     private val clock: SyncClock,
     @ApplicationScope private val scope: CoroutineScope,
-) : FastPushRepository, FastPushReceiver {
+) : FastPushRepository,
+    FastPushReceiver {
     private val started = AtomicBoolean(false)
 
     override val state: Flow<FastPushState> = combine(

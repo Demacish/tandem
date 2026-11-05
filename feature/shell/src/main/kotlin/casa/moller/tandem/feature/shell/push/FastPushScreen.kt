@@ -117,7 +117,9 @@ private fun Status(state: FastPushUiState, onOpenPermissions: () -> Unit) {
         val lines = buildList {
             when (state.status) {
                 FastPushStatus.OFF -> add(stringResource(R.string.fast_push_status_off_body))
+
                 FastPushStatus.REGISTERING -> add(stringResource(R.string.fast_push_status_registering_body))
+
                 FastPushStatus.ACTIVE -> state.pollSeconds?.let {
                     add(pluralStringResource(R.plurals.fast_push_status_active_body, it, it))
                 }
@@ -140,10 +142,13 @@ private fun Status(state: FastPushUiState, onOpenPermissions: () -> Unit) {
                 modifier = Modifier.padding(spacing.lg),
                 verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
+                val warning = if (!state.notificationsAllowed) {
+                    R.string.fast_push_notifications_blocked
+                } else {
+                    R.string.fast_push_list_notifications_off
+                }
                 Text(
-                    text = stringResource(
-                        if (!state.notificationsAllowed) R.string.fast_push_notifications_blocked else R.string.fast_push_list_notifications_off,
-                    ),
+                    text = stringResource(warning),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
