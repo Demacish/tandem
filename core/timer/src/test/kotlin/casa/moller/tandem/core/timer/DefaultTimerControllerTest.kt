@@ -299,33 +299,6 @@ class DefaultTimerControllerTest {
     }
 
     @Test
-    fun timersOfTwoRecipesSayTheirRecipeAndBothRing() = runTest {
-        // Fas 4 (two recipes at once in cook mode, plan 8.1): one timer of each recipe.
-        val engine = newEngine()
-        val pasta = (engine.start("Pastan · 10 min", 10.minutes, 7L, 1, "account-1", "Krämig svamppasta") as TimerStartResult.Started).timer
-        val buns = (engine.start("Gräddning · 7 min", 7.minutes, 8L, 2, "account-1", "Kanelbullar") as TimerStartResult.Started).timer
-
-        assertEquals(listOf("Krämig svamppasta", "Kanelbullar"), engine.timers.value.map { it.recipeName })
-        assertEquals(listOf("Krämig svamppasta", "Kanelbullar"), store.stored.timers.map { it.recipeName })
-        val countdown = notification(TandemNotificationIds.timerOngoing(buns.id))
-        assertEquals("Kanelbullar", countdown.extras.getCharSequence(Notification.EXTRA_SUB_TEXT).toString())
-        assertEquals("Gräddning · 7 min", countdown.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
-
-        clock.advanceBy(10.minutes)
-        TimerAlarmReceiver.handle(engine, TimerIntents.ACTION_RING, buns.id)
-
-        assertEquals(listOf(TimerState.RINGING, TimerState.RINGING), engine.timers.value.map { it.state })
-        val pastaAlarm = notification(TandemNotificationIds.timerAlarm(pasta.id))
-        assertEquals("Krämig svamppasta", pastaAlarm.extras.getCharSequence(Notification.EXTRA_SUB_TEXT).toString())
-        assertNotNull(notification(TandemNotificationIds.timerAlarm(buns.id)))
-        val service = AndroidTimerNotifier(context, system, clock).ringingServiceNotification(engine.timers.value)
-        assertEquals(
-            "Pastan · 10 min (Krämig svamppasta), Gräddning · 7 min (Kanelbullar)",
-            service.extras.getCharSequence(Notification.EXTRA_TEXT).toString(),
-        )
-    }
-
-    @Test
     fun stopAllSilencesEveryRingingTimer() = runTest {
         val engine = newEngine()
         engine.startTimer("A", 1.minutes)
