@@ -69,7 +69,12 @@ class FastPushAccessibilityTest {
     @Test
     fun activeFontScale2() = check(FAST_PUSH_ACTIVE, fontScale = 2f)
 
+    /**
+     * Taller than [PHONE_TALL]: at font scale 2 the page's last line is cut by the window's edge,
+     * and ATF measures the contrast of a half-drawn line (a blend with the background) otherwise.
+     */
     @Test
+    @Config(qualifiers = "w412dp-h2600dp-port-xhdpi")
     fun noDistributorFontScale2() = check(FAST_PUSH_NO_DISTRIBUTOR, fontScale = 2f)
 
     @Test
