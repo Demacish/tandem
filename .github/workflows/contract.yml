@@ -380,6 +380,14 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase3ContractTest'
 
+      # Fas 4, lane fas3-rester (Fas 3's leftovers): recipe-from-source with a WebView's page HTML
+      # and the shared link (#38), ai-step-sort without a provider (#40), removing a recipe image,
+      # and whether a step-only change moves the recipe's updated_at. Its own step after Fas 3.
+      - name: Contract tests (Fas 4, Fas 3's leftovers)
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase4Fas3RestContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)
