@@ -160,12 +160,12 @@ fun WeekScreen(
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
         )
         ModalBottomSheet(onDismissRequest = { onAction(WeekAction.CancelSuggestions) }, sheetState = sheetState) {
-            WeekSuggestionsPanel(
+            // fas4-kvar: the buttons stay below the scrolling content (WeekSuggestionsSheetLayout).
+            WeekSuggestionsSheetLayout(
                 state = suggestions,
                 format = format,
                 onAction = onAction,
                 modifier = Modifier
-                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = TandemTheme.spacing.screenHorizontal)
                     .padding(bottom = TandemTheme.spacing.xl),
             )

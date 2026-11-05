@@ -25,6 +25,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
+import casa.moller.tandem.core.testing.data.FakeMakeNowRepository
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
@@ -244,6 +245,7 @@ class WeekScreenTest {
             FakeShoppingRepository(entries = emptyList(), lists = emptyList()),
             RemovedMeals(),
             FakeRecipeRepository(overviews = MealPlanSamples.suggestionCandidates),
+            FakeMakeNowRepository(emptyMap()),
         )
         val planned = mutableListOf<PlanMealKey>()
         composeRule.setContent {

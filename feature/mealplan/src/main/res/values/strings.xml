@@ -190,4 +190,13 @@
         <item quantity="one">%1$d meal was planned</item>
         <item quantity="other">%1$d meals were planned</item>
     </plurals>
+    <!-- Suggested week: meal type, keywords, pantry (Fas 4, fas4-kvar) -->
+    <string name="mealplan_suggest_meal_type">Meal</string>
+    <string name="mealplan_suggest_keywords">Keywords (a suggestion has every one you choose)</string>
+    <string name="mealplan_suggest_no_keyword_match">No recipe outside the week has every chosen keyword. Choose fewer keywords.</string>
+    <string name="mealplan_suggestion_description_expiring">%1$s: %2$s. %3$s</string>
+    <plurals name="mealplan_suggest_expiring">
+        <item quantity="one">Uses %1$d food that expires soon</item>
+        <item quantity="other">Uses %1$d foods that expire soon</item>
+    </plurals>
 </resources>

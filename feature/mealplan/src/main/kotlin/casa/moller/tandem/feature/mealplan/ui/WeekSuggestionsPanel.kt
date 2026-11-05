@@ -3,10 +3,16 @@ package casa.moller.tandem.feature.mealplan.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,8 +41,10 @@ import casa.moller.tandem.feature.mealplan.SuggestedMeal
 import casa.moller.tandem.feature.mealplan.WeekAction
 import casa.moller.tandem.feature.mealplan.WeekSuggestionsState
 
-// Fas 4 "Förslag på veckans matsedel" (Stitch f_resl_veckan_notiser, upper half, without the
-// pantry and AI parts): a card in the week and a sheet with a suggestion per free day.
+// Fas 4 "Förslag på veckans matsedel" (Stitch f_resl_veckan_notiser, upper half, without the AI
+// part): a card in the week and a sheet with a suggestion per free day. fas4-kvar: the meal type
+// and keywords are chosen in the sheet (plan §8.3 "Autoplan"), and a suggestion that uses
+// soon-expiring pantry foods says so ("Använder 3 som går ut snart", the sketch's "räddar 3 råvaror").
 
 /** The suggestion sheet's root. */
 const val WEEK_SUGGESTIONS_TAG = "mealplan:suggestions"
@@ -76,10 +84,47 @@ internal fun SuggestWeekCard(onClick: () -> Unit, modifier: Modifier = Modifier)
     }
 }
 
+/** The sheet's "Lägg n måltider i veckan" button. */
+const val WEEK_SUGGESTIONS_ACCEPT_TAG = "mealplan:suggestions:accept"
+
+/** A meal type chip of the sheet ([id] the meal type). */
+fun suggestionMealTypeTag(id: Long): String = "mealplan:suggestions:meal-type:$id"
+
+/** A keyword chip of the sheet ([id] the keyword). */
+fun suggestionKeywordTag(id: Long): String = "mealplan:suggestions:keyword:$id"
+
 /**
- * The sheet: one row per free day with the suggested recipe, "Byt ut" and a remove button;
- * "Slumpa om" draws again, "Lägg i veckan" plans what is left. Explains itself when the week has
- * no free day or there is nothing to suggest.
+ * The sheet as Veckan shows it: [WeekSuggestionsPanel] scrolls and the buttons stay fixed below it,
+ * reachable however many days, keywords or how large the text (like RecipeShoppingSheetLayout).
+ */
+@Composable
+internal fun WeekSuggestionsSheetLayout(
+    state: WeekSuggestionsState,
+    format: MealPlanFormat,
+    onAction: (WeekAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md)) {
+        WeekSuggestionsPanel(
+            state = state,
+            format = format,
+            onAction = onAction,
+            actions = false,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState()),
+        )
+        SuggestionActions(state = state, onAction = onAction)
+    }
+}
+
+/**
+ * The sheet's content: the meal type and keywords to choose, then one row per free day with the
+ * suggested recipe, "Byt ut" and a remove button; "Slumpa om" draws again, "Lägg i veckan" plans
+ * what is left. Explains itself when the week has no free day, nothing matches the keywords or
+ * there is nothing to suggest.
+ *
+ * @param actions false when the caller pins the buttons below the content ([WeekSuggestionsSheetLayout]).
  */
 @Composable
 internal fun WeekSuggestionsPanel(
@@ -87,6 +132,7 @@ internal fun WeekSuggestionsPanel(
     format: MealPlanFormat,
     onAction: (WeekAction) -> Unit,
     modifier: Modifier = Modifier,
+    actions: Boolean = true,
 ) {
     val spacing = TandemTheme.spacing
     Column(modifier = modifier.fillMaxWidth().testTag(WEEK_SUGGESTIONS_TAG), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
@@ -98,6 +144,7 @@ internal fun WeekSuggestionsPanel(
         val typeName = state.mealType?.name.orEmpty()
         val body = when {
             state.noFreeDays -> stringResource(R.string.mealplan_suggest_no_free_days, typeName)
+            state.noKeywordMatch -> stringResource(R.string.mealplan_suggest_no_keyword_match)
             state.noRecipes -> stringResource(R.string.mealplan_suggest_no_recipes)
             state.meals.isEmpty() -> stringResource(R.string.mealplan_suggest_all_removed)
             else -> stringResource(R.string.mealplan_suggest_body, typeName)
@@ -107,10 +154,63 @@ internal fun WeekSuggestionsPanel(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        SuggestionChoices(state = state, onAction = onAction)
         state.meals.forEach { meal -> SuggestionRow(meal = meal, format = format, enabled = !state.saving, onAction = onAction) }
+        if (actions) SuggestionActions(state = state, onAction = onAction)
+    }
+}
+
+/** The meal type (one) and the keywords (any number; a suggestion has them all). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SuggestionChoices(state: WeekSuggestionsState, onAction: (WeekAction) -> Unit) {
+    val spacing = TandemTheme.spacing
+    if (state.mealTypes.size > 1) {
+        Text(
+            text = stringResource(R.string.mealplan_suggest_meal_type),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            state.mealTypes.forEach { type ->
+                FilterChip(
+                    selected = type.id == state.mealType?.id,
+                    onClick = { onAction(WeekAction.SuggestMealType(type.id)) },
+                    label = { Text(type.name) },
+                    enabled = !state.saving,
+                    modifier = Modifier.testTag(suggestionMealTypeTag(type.id)),
+                )
+            }
+        }
+    }
+    if (state.keywords.isNotEmpty()) {
+        Text(
+            text = stringResource(R.string.mealplan_suggest_keywords),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            state.keywords.forEach { keyword ->
+                FilterChip(
+                    selected = keyword.id in state.keywordIds,
+                    onClick = { onAction(WeekAction.ToggleSuggestKeyword(keyword.id)) },
+                    label = { Text(keyword.name) },
+                    enabled = !state.saving,
+                    modifier = Modifier.testTag(suggestionKeywordTag(keyword.id)),
+                )
+            }
+        }
+    }
+}
+
+/** "Slumpa om", "Avbryt" and "Lägg n måltider i veckan". */
+@Composable
+private fun SuggestionActions(state: WeekSuggestionsState, onAction: (WeekAction) -> Unit) {
+    val spacing = TandemTheme.spacing
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
         // The buttons on their own rows: "Lägg 4 måltider i veckan" is long in every language.
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.sm, Alignment.End)) {
-            if (!state.noFreeDays && !state.noRecipes) {
+            if (!state.noFreeDays && !state.noRecipes && !state.noKeywordMatch) {
                 TandemTextButton(
                     text = stringResource(R.string.mealplan_suggest_reshuffle),
                     onClick = { onAction(WeekAction.Reshuffle) },
@@ -124,7 +224,7 @@ internal fun WeekSuggestionsPanel(
                 text = pluralStringResource(R.plurals.mealplan_suggest_accept, state.meals.size, state.meals.size),
                 onClick = { onAction(WeekAction.AcceptSuggestions) },
                 enabled = !state.saving,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag(WEEK_SUGGESTIONS_ACCEPT_TAG),
             )
         }
     }
@@ -135,7 +235,12 @@ private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: 
     val spacing = TandemTheme.spacing
     val day = format.weekday(meal.date)
     val time = durationText(meal.recipe.totalMinutes)
-    val description = stringResource(R.string.mealplan_suggestion_description, day, meal.recipe.name)
+    val expiring = meal.expiring.size.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.mealplan_suggest_expiring, it, it) }
+    val description = if (expiring == null) {
+        stringResource(R.string.mealplan_suggestion_description, day, meal.recipe.name)
+    } else {
+        stringResource(R.string.mealplan_suggestion_description_expiring, day, meal.recipe.name, expiring)
+    }
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -154,6 +259,17 @@ private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: 
                 Text(text = meal.recipe.name, style = MaterialTheme.typography.titleMedium)
                 if (time != null) {
                     Text(text = time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (expiring != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                        Icon(
+                            TandemIcons.Schedule,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(TandemTheme.sizes.iconSmall),
+                        )
+                        Text(text = expiring, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
                 }
             }
             IconButton(onClick = { onAction(WeekAction.SwapSuggestion(meal.date)) }, enabled = enabled) {

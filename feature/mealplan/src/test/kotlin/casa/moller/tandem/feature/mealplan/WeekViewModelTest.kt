@@ -4,14 +4,19 @@ import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.makenow.MakeNowGroup
+import casa.moller.tandem.core.model.makenow.MakeNowRecipe
+import casa.moller.tandem.core.model.makenow.MakeNowState
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
+import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.shopping.ShoppingFood
 import casa.moller.tandem.core.model.shopping.ShoppingRecipeLabel
 import casa.moller.tandem.core.model.sync.ForegroundTarget
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
+import casa.moller.tandem.core.testing.data.FakeMakeNowRepository
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
@@ -48,9 +53,10 @@ class WeekViewModelTest {
     private val shopping = FakeShoppingRepository(entries = emptyList(), lists = emptyList())
     private val removedMeals = RemovedMeals()
     private val recipes = FakeRecipeRepository(overviews = MealPlanSamples.suggestionCandidates)
+    private val makeNow = FakeMakeNowRepository(emptyMap())
 
     private fun viewModel(weekStart: String? = null, saved: SavedStateHandle = SavedStateHandle()) =
-        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals, recipes)
+        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals, recipes, makeNow)
 
     /** Starts collecting the state (as the screen does) and the effects. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -280,6 +286,67 @@ class WeekViewModelTest {
         vm.onAction(WeekAction.CancelSuggestions)
         assertNull(vm.uiState.value.suggestions)
         assertEquals(1, mealPlans.meals.value.size)
+    }
+
+    @Test
+    fun nextWeekGetsSevenDinnersFromTheChosenKeywordsWithoutRepeatsAndTheyArePlannedAsMeals() = runTest {
+        // Plan §10 Fas 4 "Klart när" (Autoplan): seven dinners for next week from chosen keywords, no recipe twice.
+        val many = (1..9).map { RecipeOverview(100L + it, "Vardagsrätt $it", keywords = listOf(MealPlanSamples.weekday)) }
+        recipes.overviews.value = MealPlanSamples.suggestionCandidates + many
+        val vm = viewModel(weekStart = day(7).toString())
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        vm.onAction(WeekAction.ToggleSuggestKeyword(MealPlanSamples.weekday.id))
+        val suggestions = vm.uiState.value.suggestions!!
+        assertEquals(setOf(MealPlanSamples.weekday.id), suggestions.keywordIds)
+        assertEquals((7..13).map { day(it) }, suggestions.meals.map { it.date })
+        assertEquals(7, suggestions.meals.map { it.recipe.id }.distinct().size)
+        assertTrue(suggestions.meals.all { meal -> MealPlanSamples.weekday in meal.recipe.keywords })
+        assertTrue(suggestions.meals.all { it.mealType == dinner })
+
+        vm.onAction(WeekAction.AcceptSuggestions)
+        // Saved as ordinary meal plans (what the web shows), one per day.
+        val planned = mealPlans.meals.value.filter { it.fromDate >= day(7) && it.mealType.id == dinner.id }
+        assertEquals(7, planned.map { it.fromDate }.distinct().size)
+        assertEquals(7, planned.mapNotNull { it.recipe?.id }.distinct().size)
+    }
+
+    @Test
+    fun theMealTypeCanBeChosenAndKeywordsWithoutRecipesSaySo() = runTest {
+        mealPlans.meals.value = listOf(MealPlanSamples.todayBreakfast)
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        vm.onAction(WeekAction.SuggestMealType(MealPlanSamples.lunch.id))
+        val lunches = vm.uiState.value.suggestions!!
+        assertEquals(MealPlanSamples.lunch.id, lunches.mealType?.id)
+        assertEquals(listOf(day(3), day(4), day(5), day(6)), lunches.meals.map { it.date })
+
+        vm.onAction(WeekAction.ToggleSuggestKeyword(MealPlanSamples.fish.id))
+        vm.onAction(WeekAction.ToggleSuggestKeyword(MealPlanSamples.quick.id))
+        val none = vm.uiState.value.suggestions!!
+        assertTrue(none.noKeywordMatch)
+        assertTrue(none.meals.isEmpty())
+        vm.onAction(WeekAction.ToggleSuggestKeyword(MealPlanSamples.quick.id))
+        assertEquals(listOf("Fisksoppa med saffran"), vm.uiState.value.suggestions!!.meals.map { it.recipe.name })
+    }
+
+    @Test
+    fun suggestionsPreferRecipesThatUseWhatExpiresSoon() = runTest {
+        mealPlans.meals.value = listOf(MealPlanSamples.todayBreakfast)
+        makeNow.state.value = MakeNowState(
+            mapOf(
+                MakeNowGroup.HAS_ALL to listOf(
+                    MakeNowRecipe(MealPlanSamples.lasagne, MakeNowGroup.HAS_ALL, expiring = MealPlanSamples.expiringCream),
+                ),
+            ),
+        )
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        val first = vm.uiState.value.suggestions!!.meals.first()
+        assertEquals("cooked once, but it uses the cream", "Lasagne", first.recipe.name)
+        assertEquals(MealPlanSamples.expiringCream, first.expiring)
     }
 
     @Test

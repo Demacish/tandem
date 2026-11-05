@@ -149,6 +149,12 @@ sealed interface WeekAction {
     /** Leaves one day out of the suggestions. */
     data class RemoveSuggestion(val date: LocalDate) : WeekAction
 
+    /** fas4-kvar: the suggestions fill meals of this type ([id]) instead; suggests again. */
+    data class SuggestMealType(val id: Long) : WeekAction
+
+    /** fas4-kvar: chooses or drops the keyword [id] (a suggestion has every chosen one); suggests again. */
+    data class ToggleSuggestKeyword(val id: Long) : WeekAction
+
     /** "Lägg i veckan": plans every suggestion left. */
     data object AcceptSuggestions : WeekAction
 

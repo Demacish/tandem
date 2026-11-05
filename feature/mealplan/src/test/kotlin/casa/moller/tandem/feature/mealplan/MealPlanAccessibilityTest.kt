@@ -107,6 +107,15 @@ class MealPlanAccessibilityTest {
     fun suggestionsNoFreeDays() = check(MealPlanShot.SUGGESTIONS_NO_FREE_DAYS)
 
     @Test
+    fun suggestionsKeywords() = check(MealPlanShot.SUGGESTIONS_KEYWORDS)
+
+    @Test
+    fun suggestionsKeywordsFontScale2Dark() = check(MealPlanShot.SUGGESTIONS_KEYWORDS, darkTheme = true, fontScale = 2f)
+
+    @Test
+    fun suggestionsNoKeywordMatch() = check(MealPlanShot.SUGGESTIONS_NO_KEYWORD_MATCH)
+
+    @Test
     fun moveDark() = check(MealPlanShot.MOVE, darkTheme = true)
 
     @Test

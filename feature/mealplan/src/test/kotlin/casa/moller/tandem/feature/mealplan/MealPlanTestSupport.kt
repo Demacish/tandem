@@ -24,6 +24,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.WineBar
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
+import casa.moller.tandem.core.model.makenow.ExpiringFood
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
 import casa.moller.tandem.core.model.mealplan.MealPlanDay
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
@@ -31,6 +32,7 @@ import casa.moller.tandem.core.model.mealplan.MealPlanWeek
 import casa.moller.tandem.core.model.mealplan.MealType
 import casa.moller.tandem.core.model.mealplan.WeekShoppingIngredient
 import casa.moller.tandem.core.model.mealplan.WeekShoppingMeal
+import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.drink.DrinkSuggestionSlot
 import casa.moller.tandem.core.ui.navigation.AppChrome
@@ -129,18 +131,74 @@ internal object MealPlanSamples {
     val moveState = MoveMealState(todayDinner, date = day(5), mealTypeId = dinner.id)
 
     // Fas 4 "Förslag på veckans matsedel": what the suggestions pick from, best first once ranked.
-    val porkTenderloin =
-        RecipeOverview(21, "Fläskfilé med rotfrukter", workingMinutes = 25, waitingMinutes = 20, timesCooked = 9, rating = 4.5)
-    val omelette = RecipeOverview(22, "Fransk örtomelett med chèvre", workingMinutes = 15, timesCooked = 6, isNew = true)
-    val fishSoup = RecipeOverview(23, "Fisksoppa med saffran", workingMinutes = 40, timesCooked = 4, rating = 5.0)
-    val tacos = RecipeOverview(24, "Fredagstacos", workingMinutes = 20, timesCooked = 20, lastCooked = now - 3.days)
-    val lasagne = RecipeOverview(25, "Lasagne", workingMinutes = 60, timesCooked = 1)
+    val weekday = Keyword(101, "Vardag")
+    val quick = Keyword(102, "Snabbt")
+    val fish = Keyword(103, "Fisk")
+    val porkTenderloin = RecipeOverview(
+        21,
+        "Fläskfilé med rotfrukter",
+        workingMinutes = 25,
+        waitingMinutes = 20,
+        timesCooked = 9,
+        rating = 4.5,
+        keywords = listOf(weekday),
+    )
+    val omelette = RecipeOverview(
+        22,
+        "Fransk örtomelett med chèvre",
+        workingMinutes = 15,
+        timesCooked = 6,
+        isNew = true,
+        keywords = listOf(weekday, quick),
+    )
+    val fishSoup =
+        RecipeOverview(23, "Fisksoppa med saffran", workingMinutes = 40, timesCooked = 4, rating = 5.0, keywords = listOf(fish))
+    val tacos = RecipeOverview(
+        24,
+        "Fredagstacos",
+        workingMinutes = 20,
+        timesCooked = 20,
+        lastCooked = now - 3.days,
+        keywords = listOf(weekday, quick),
+    )
+    val lasagne = RecipeOverview(25, "Lasagne", workingMinutes = 60, timesCooked = 1, keywords = listOf(weekday))
     val stewAgain = lentils.copy(timesCooked = 30)
     val suggestionCandidates = listOf(lasagne, tacos, stewAgain, omelette, fishSoup, porkTenderloin, chicken.copy(timesCooked = 2))
 
-    /** The sheet as [WeekViewModel] opens it for the sample week. */
+    /** fas4-kvar: soon-expiring pantry foods ("Använd upp") that some candidates use. */
+    val expiringCream = listOf(ExpiringFood(39, "grädde", today.plus(1, DateTimeUnit.DAY)))
+    val suggestionExpiring: Map<Long, List<ExpiringFood>> = mapOf(
+        porkTenderloin.id to listOf(
+            ExpiringFood(39, "grädde", today.plus(1, DateTimeUnit.DAY)),
+            ExpiringFood(40, "morötter", today.plus(2, DateTimeUnit.DAY)),
+        ),
+        fishSoup.id to listOf(ExpiringFood(41, "purjolök", today.plus(3, DateTimeUnit.DAY))),
+    )
+
+    /** The sheet as [WeekViewModel] opens it for the sample week (with the pantry, no keyword chosen). */
     val suggestionsState: WeekSuggestionsState =
-        WeekSuggestions.suggest(week(listOf(todayBreakfast)), mealTypes, suggestionCandidates, today, now)
+        WeekSuggestions.suggest(week(listOf(todayBreakfast)), mealTypes, suggestionCandidates, today, now, expiring = suggestionExpiring)
+
+    /** fas4-kvar: "Vardag" chosen. */
+    val suggestionsKeywordState: WeekSuggestionsState = WeekSuggestions.suggest(
+        week(listOf(todayBreakfast)),
+        mealTypes,
+        suggestionCandidates,
+        today,
+        now,
+        keywordIds = setOf(weekday.id),
+        expiring = suggestionExpiring,
+    )
+
+    /** fas4-kvar: "Fisk" and "Snabbt" chosen: no recipe has both. */
+    val suggestionsNoMatchState: WeekSuggestionsState = WeekSuggestions.suggest(
+        week(listOf(todayBreakfast)),
+        mealTypes,
+        suggestionCandidates,
+        today,
+        now,
+        keywordIds = setOf(fish.id, quick.id),
+    )
 
     val conflictState = ConflictState(
         MealPlanConflict(todayDinner.id, "from_date", mine = day(5).toString(), theirs = day(4).toString()),

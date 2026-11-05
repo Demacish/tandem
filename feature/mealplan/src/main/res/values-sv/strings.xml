@@ -190,4 +190,13 @@
         <item quantity="one">%1$d måltid planerades</item>
         <item quantity="other">%1$d måltider planerades</item>
     </plurals>
+    <!-- Föreslå veckans matsedel: måltid, nyckelord, skafferi (Fas 4, fas4-kvar) -->
+    <string name="mealplan_suggest_meal_type">Måltid</string>
+    <string name="mealplan_suggest_keywords">Nyckelord (förslagen har alla du väljer)</string>
+    <string name="mealplan_suggest_no_keyword_match">Inget recept utanför veckan har alla valda nyckelord. Välj färre nyckelord.</string>
+    <string name="mealplan_suggestion_description_expiring">%1$s: %2$s. %3$s</string>
+    <plurals name="mealplan_suggest_expiring">
+        <item quantity="one">Använder %1$d råvara som går ut snart</item>
+        <item quantity="other">Använder %1$d råvaror som går ut snart</item>
+    </plurals>
 </resources>
