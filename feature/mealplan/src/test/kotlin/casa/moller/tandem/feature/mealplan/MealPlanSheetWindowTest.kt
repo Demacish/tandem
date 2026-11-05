@@ -59,10 +59,10 @@ class MealPlanSheetWindowTest {
     fun suggestionsSheetWindowFontScale2() = captureSuggestions("phone_window_week_suggestions_font2_light_sv", fontScale = 2f)
 
     /**
-     * The window and the pinned button only: the sheet's list scrolls behind the pinned buttons,
-     * and ATF failed on these windows once the rows grew (most likely the text the buttons cut,
-     * taller than the sliver rule allows). Every state of the panel itself is ATF-checked in
-     * MealPlanAccessibilityTest (phone, dark at font scale 2, tablet in both orientations).
+     * The window and the pinned button only: ATF failed on these windows after the rows grew
+     * (the recording workflow does not report why; not investigated further, docs/BYGGE.md "Smarta
+     * förslag"). Every state of the panel itself is ATF-checked in MealPlanAccessibilityTest
+     * (phone, dark at font scale 2, tablet in both orientations).
      */
     private fun captureSuggestions(name: String, darkTheme: Boolean = false, fontScale: Float = 1f) {
         val state = MealPlanSamples.state().copy(suggestions = MealPlanSamples.suggestionsKeywordState)

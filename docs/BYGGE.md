@@ -1280,9 +1280,9 @@ från "Vardag" sparade som måltider, vald måltidstyp, inga träffar, skafferie
 `SUGGESTIONS*` (nu med chips och skafferirader), `SUGGESTIONS_KEYWORDS` (också teckenstorlek 2),
 `SUGGESTIONS_NO_KEYWORD_MATCH`, surfplatta liggande och stående (`tablet*_suggestions_keywords_*`),
 tillgänglighet för alla, och `MealPlanSheetWindowTest` (`*window_week_suggestions*`: arket som
-fönster på telefon stående/liggande och med teckenstorlek 2, "Lägg i veckan" syns; utan ATF, eftersom
-listan rullar bakom de fasta knapparna och ATF underkände fönstren när raderna växte – panelens alla
-tillstånd ATF-kontrolleras i `MealPlanAccessibilityTest`).
+fönster på telefon stående/liggande och med teckenstorlek 2, "Lägg i veckan" syns). Fönstertesten
+kör inte ATF: ATF underkände dem när raderna blev högre, och inspelningskörningen visar inte varför
+(inte utrett; panelens alla tillstånd ATF-kontrolleras i `MealPlanAccessibilityTest`).
 <!-- /Fas 4 smart -->
 
 <!-- Fas 4 listnotiser -->
