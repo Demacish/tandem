@@ -95,7 +95,7 @@ object ExpiryReminder {
 
     /** The entries with stock that expire on [today] or the day after, soonest first, then by name. */
     fun due(entries: List<InventoryEntry>, today: LocalDate): List<ExpiryReminderItem> = entries.asSequence()
-        .filter { !it.isEmpty && it.daysLeft(today) in 0..DAYS_AHEAD }
+        .filter { entry -> !entry.isEmpty && entry.daysLeft(today)?.let { it in 0..DAYS_AHEAD } == true }
         .mapNotNull { entry ->
             val expires = entry.expires ?: return@mapNotNull null
             val name = entry.food.name.trim().takeIf { it.isNotEmpty() } ?: return@mapNotNull null
