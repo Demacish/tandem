@@ -136,6 +136,11 @@ class DtoFixturesTest {
         "fas2/shopping-list-recipe-bulk-create-entries" to "contract probe; the app creates each entry itself (ids for the outbox)",
         "fas2/user-preference-patch" to "contract setup; the app only reads the preferences",
         "fas2/user-preference-patch-autoadd" to "contract setup; the app only reads the preferences",
+        // Fas 4 (fas4-kvar lane): auto-plan answers an echo of the request; the app does not call it (BYGGE "Smarta förslag").
+        "fas4/autoplan/auto-plan-week" to "contract probe; the app plans the week itself with meal-plan POSTs",
+        "fas4/autoplan/auto-plan-two-keywords" to "contract probe; the app plans the week itself with meal-plan POSTs",
+        "fas4/autoplan/auto-plan-date-only" to "contract probe; the app plans the week itself with meal-plan POSTs",
+        "fas4/autoplan/auto-plan-guest" to "contract probe; the app plans the week itself with meal-plan POSTs",
     )
 
     @Test

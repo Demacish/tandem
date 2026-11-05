@@ -79,15 +79,9 @@ object StoreOrderLearning {
      * walked [b] before [a] (-1..1; 0 when no trip visited both).
      */
     private fun preference(a: Long, b: Long, positions: List<Map<Long, Int>>): Double {
-        var sum = 0
-        var both = 0
-        for (pos in positions) {
-            val pa = pos[a] ?: continue
-            val pb = pos[b] ?: continue
-            both++
-            sum += if (pa < pb) 1 else -1
-        }
-        return if (both == 0) 0.0 else sum.toDouble() / both
+        val both = positions.filter { a in it && b in it }
+        if (both.isEmpty()) return 0.0
+        return both.sumOf { pos -> if (pos.getValue(a) < pos.getValue(b)) 1.0 else -1.0 } / both.size
     }
 
     /** [order] with adjacent swaps applied while each makes it agree better with [trips]. */

@@ -258,7 +258,7 @@ private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: 
                 Text(text = day, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 Text(text = meal.recipe.name, style = MaterialTheme.typography.titleMedium)
                 if (time != null) {
-                    Text(text = time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = time, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (expiring != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
@@ -268,11 +268,11 @@ private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: 
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(TandemTheme.sizes.iconSmall),
                         )
-                        // The text in onSurfaceVariant like the time above: tertiary text is too close to
-                        // 4.5:1 for small text on a low-density screen (ATF on the tablet shots).
+                        // bodyMedium in onSurfaceVariant like the time above: 12 sp text measures below
+                        // 4.5:1 on a low-density screen (ATF on the tablet shots, 3.97:1).
                         Text(
                             text = expiring,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }

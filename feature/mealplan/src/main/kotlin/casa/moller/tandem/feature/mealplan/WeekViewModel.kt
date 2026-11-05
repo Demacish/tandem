@@ -373,13 +373,12 @@ class WeekViewModel @AssistedInject internal constructor(
     }
 
     /** The soon-expiring pantry foods per recipe, from "Kan laga nu" as stored (empty when unknown). */
-    private suspend fun expiringFoods(): Map<Long, List<ExpiringFood>> =
-        makeNow.observe(MakeNowFilter(), today())
-            .catch { emit(MakeNowState()) }
-            .first()
-            .groups.values.flatten()
-            .filter { it.expiring.isNotEmpty() }
-            .associate { it.recipe.id to it.expiring }
+    private suspend fun expiringFoods(): Map<Long, List<ExpiringFood>> = makeNow.observe(MakeNowFilter(), today())
+        .catch { emit(MakeNowState()) }
+        .first()
+        .groups.values.flatten()
+        .filter { it.expiring.isNotEmpty() }
+        .associate { it.recipe.id to it.expiring }
 
     private fun swapSuggestion(date: LocalDate) {
         transient.update { state ->

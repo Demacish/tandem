@@ -43,6 +43,7 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
         val state = WeekSuggestionsState(emptyList(), MealPlanSamples.dinner, noFreeDays = true)
         Sheet { WeekSuggestionsPanel(state, format(), onAction = {}) }
     }),
+
     // fas4-kvar: "Vardag" chosen (plan §8.3 Autoplan) and nothing with both "Fisk" and "Snabbt".
     SUGGESTIONS_KEYWORDS({ Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsKeywordState, format(), onAction = {}) } }),
     SUGGESTIONS_NO_KEYWORD_MATCH({ Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsNoMatchState, format(), onAction = {}) } }),
