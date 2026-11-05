@@ -76,7 +76,8 @@ fun TodayRoute(
                 HomeAction.OpenRecipes -> currentOpenRecipes()
                 HomeAction.OpenWeek -> currentOpenWeek()
                 is HomeAction.StartCooking -> currentStartCooking(action.recipeId, action.servings)
-                HomeAction.Refresh -> viewModel.onAction(action)
+                // Refresh and Fas 3's leftovers "Anpassa Idag" (Customize, MoveSection, ShowSection, ResetSections).
+                else -> viewModel.onAction(action)
             }
         },
         modifier = modifier,
