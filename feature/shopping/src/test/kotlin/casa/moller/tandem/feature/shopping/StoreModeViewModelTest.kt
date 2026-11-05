@@ -3,18 +3,21 @@ package casa.moller.tandem.feature.shopping
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
+import casa.moller.tandem.core.model.shopping.StoreTrip
 import casa.moller.tandem.core.model.sync.ForegroundTarget
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
+import casa.moller.tandem.core.testing.data.FakeStoreTripRepository
 import casa.moller.tandem.core.testing.data.FakeSupermarketRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.shopping.ShoppingSamples.eggs
 import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,6 +44,7 @@ class StoreModeViewModelTest {
     private val supermarkets = FakeSupermarketRepository(ShoppingSamples.supermarkets, ShoppingSamples.categories)
     private val permissions = FakeSpacePermissionsRepository()
     private val foreground = FakeForegroundSync()
+    private val trips = FakeStoreTripRepository()
 
     private fun viewModel(
         key: StoreModeKey = StoreModeKey(supermarketId = ShoppingSamples.store.id),
@@ -51,6 +55,7 @@ class StoreModeViewModelTest {
         source = ShoppingSource(shopping, supermarkets, permissions, foreground, FakeSyncRepository(), FakePreferencesRepository(), clock),
         shopping = shopping,
         supermarkets = supermarkets,
+        trips = trips,
         clock = clock,
     )
 
@@ -121,20 +126,31 @@ class StoreModeViewModelTest {
 
     private fun aisleNames(): List<String> = supermarkets.supermarkets.value.first().aisles.sortedBy { it.order }.map { it.category.name }
 
+    /** Two earlier trips in the test store that walked [categories] (newest first, before this one). */
+    private fun earlierTrips(vararg categories: Long) {
+        trips.trips.value = (1..2).map { ago ->
+            StoreTrip(ShoppingSamples.store.id, (ShoppingSamples.now - ago.hours).toEpochMilliseconds(), categories.toList())
+        }
+    }
+
     @Test
-    fun walkingTheAislesInAnotherOrderOffersToSaveItAndSavingReordersTheStore() = runTest {
+    fun afterThreeTripsInTheSameOrderTheOrderIsOfferedAndSavingReordersTheStore() = runTest {
+        earlierTrips(2, 3, 1) // Mejeri, Skafferi, Frukt & grönt: twice before.
         val saved = SavedStateHandle()
         val vm = viewModel(saved = saved)
         val effects = open(vm)
-        assertNull("one aisle says nothing", vm.uiState.value.learnedOrder)
+        assertNull("this trip has walked nothing yet", vm.uiState.value.learnedOrder)
         vm.onAction(StoreModeAction.Check(milk.id)) // Mejeri (third aisle) first…
-        assertNull(vm.uiState.value.learnedOrder)
+        assertNull("one aisle says nothing", vm.uiState.value.learnedOrder)
         vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // …then Skafferi.
         val order = vm.uiState.value.learnedOrder!!
         assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), order.names)
         assertEquals(listOf(13L, 12L, 11L), order.relationIds)
+        assertEquals(3, order.trips)
+        // This trip is recorded (once, as it grows) for the next ones.
+        assertEquals(listOf(2L, 3L), trips.trips.value.single { it.startedAt == ShoppingSamples.now.toEpochMilliseconds() }.categoryIds)
 
-        // The walked order survives process death with the trip.
+        // The walked order survives process death with the trip, and its own record is not counted twice.
         val again = viewModel(saved = saved)
         open(again)
         assertEquals(order, again.uiState.value.learnedOrder)
@@ -146,7 +162,25 @@ class StoreModeViewModelTest {
     }
 
     @Test
+    fun oneOrTwoTripsAreNotEnoughAndEveryTripIsRecorded() = runTest {
+        val first = viewModel()
+        open(first)
+        first.onAction(StoreModeAction.Check(milk.id))
+        first.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id))
+        assertNull("the first trip", first.uiState.value.learnedOrder)
+
+        clock.advanceBy(7.days)
+        val second = viewModel()
+        open(second)
+        second.onAction(StoreModeAction.Check(ShoppingSamples.cream.id))
+        second.onAction(StoreModeAction.Check(ShoppingSamples.potato.id))
+        assertNull("the second trip", second.uiState.value.learnedOrder)
+        assertEquals(listOf(listOf(2L, 1L), listOf(2L, 3L)), trips.trips.value.map { it.categoryIds })
+    }
+
+    @Test
     fun walkingTheStoresOwnOrderOffersNothingAndNoThanksHidesTheOffer() = runTest {
+        earlierTrips(1, 3, 2)
         val vm = viewModel()
         open(vm)
         vm.onAction(StoreModeAction.Check(ShoppingSamples.onions.id)) // Frukt & grönt, the first aisle.
@@ -154,8 +188,11 @@ class StoreModeViewModelTest {
         assertNull(vm.uiState.value.learnedOrder)
         vm.onAction(StoreModeAction.Check(milk.id))
         assertNull("the whole store's order", vm.uiState.value.learnedOrder)
+    }
 
-        // Another trip (the entries above are in the cart now): dairy first, then fruit.
+    @Test
+    fun noThanksHidesTheOfferAndSendsNothing() = runTest {
+        earlierTrips(2, 1, 3)
         val other = viewModel()
         open(other)
         other.onAction(StoreModeAction.Check(ShoppingSamples.cream.id))

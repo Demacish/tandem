@@ -4,9 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
+import casa.moller.tandem.core.data.shopping.StoreTripRepository
 import casa.moller.tandem.core.data.shopping.SupermarketRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.errorOrNull
+import casa.moller.tandem.core.model.shopping.StoreTrip
 import casa.moller.tandem.core.model.shopping.Supermarket
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import dagger.assisted.Assisted
@@ -15,14 +17,19 @@ import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -34,9 +41,10 @@ import kotlinx.coroutines.launch
  * @property inCart entries checked since store mode opened, on this phone or another (the progress
  *   "5 av 13 i korgen"; fix-ui: not the ones checked on earlier trips, which Tandoor keeps showing
  *   for days).
- * @property learnedOrder Fas 4: the aisle order this trip walked, offered to be saved as the
- *   store's order when it differs ([LearnedAisleOrder]); null when there is nothing to offer, the
- *   offer was declined, or a guest is shopping.
+ * @property learnedOrder Fas 4: the aisle order learned from this trip and the earlier ones in the
+ *   store, offered to be saved as the store's order when three trips agree and it differs
+ *   ([LearnedAisleOrder]); null when there is nothing to offer, the offer was declined, or a guest
+ *   is shopping.
  */
 data class StoreModeUiState(
     val loading: Boolean = true,
@@ -81,9 +89,11 @@ sealed interface StoreModeAction {
  * progress survives rotation and process death.
  *
  * Fas 4 "Inlärd butiksordning": the categories are remembered in the order their first entry was
- * checked here (also in [SavedStateHandle]); when at least two of the store's aisles were walked in
- * another order than the store's, the screen offers to save the walked order ([LearnedAisleOrder]).
+ * checked here (also in [SavedStateHandle]) and recorded as a trip ([StoreTripRepository], on this
+ * device); when three trips in the store (this one included) agree on an order other than the
+ * store's, the screen offers to save it ([LearnedAisleOrder], plan §10 Fas 4 "Klart när").
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = StoreModeViewModel.Factory::class)
 class StoreModeViewModel @AssistedInject internal constructor(
     @Assisted key: StoreModeKey,
@@ -91,6 +101,7 @@ class StoreModeViewModel @AssistedInject internal constructor(
     source: ShoppingSource,
     private val shopping: ShoppingRepository,
     private val supermarkets: SupermarketRepository,
+    private val trips: StoreTripRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -115,11 +126,21 @@ class StoreModeViewModel @AssistedInject internal constructor(
 
     private val orderDismissed = savedStateHandle.getStateFlow(KEY_ORDER_DISMISSED, false)
 
+    private val snapshots = source.observe(MutableStateFlow(key.listId), MutableStateFlow(key.supermarketId))
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), replay = 1)
+
+    /** The earlier trips in the shown store, newest first (this trip's own record left out). */
+    private val earlierTrips: Flow<List<StoreTrip>> = snapshots.map { it.store?.id }
+        .distinctUntilChanged()
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else trips.observeTrips(id) }
+        .map { list -> list.filterNot { it.startedAt == openedAt.toEpochMilliseconds() } }
+
     val uiState: StateFlow<StoreModeUiState> = combine(
-        source.observe(MutableStateFlow(key.listId), MutableStateFlow(key.supermarketId)),
+        snapshots,
         visited,
         orderDismissed,
-    ) { snapshot, visitedIds, dismissed ->
+        earlierTrips,
+    ) { snapshot, visitedIds, dismissed, earlier ->
         val grouped = snapshot.grouped()
         val readOnly = snapshot.permissions.readOnly
         StoreModeUiState(
@@ -131,7 +152,11 @@ class StoreModeViewModel @AssistedInject internal constructor(
             amountStyle = AmountStyle.of(snapshot.preferences),
             pendingCount = snapshot.pendingCount,
             syncNotice = ShoppingSyncNotice.of(snapshot.pause),
-            learnedOrder = if (readOnly || dismissed) null else LearnedAisleOrder.of(snapshot.store, visitedIds.toList()),
+            learnedOrder = if (readOnly || dismissed) {
+                null
+            } else {
+                LearnedAisleOrder.of(snapshot.store, listOf(visitedIds.toList()) + earlier.map { it.categoryIds })
+            },
         )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), StoreModeUiState())
@@ -155,7 +180,7 @@ class StoreModeViewModel @AssistedInject internal constructor(
         val section = state.sections.firstOrNull { section -> section.entries.any { it.id == id } } ?: return
         val entry = section.entries.first { it.id == id }
         val categoryId = section.categoryId
-        if (categoryId != null && categoryId !in visited.value) savedStateHandle[KEY_VISITED] = visited.value + categoryId
+        if (categoryId != null && categoryId !in visited.value) visit(categoryId, state.store?.id)
         viewModelScope.launch {
             when (val result = shopping.setChecked(listOf(id), true)) {
                 is Outcome.Success -> {
@@ -166,6 +191,15 @@ class StoreModeViewModel @AssistedInject internal constructor(
                 is Outcome.Failure -> effectChannel.send(ShoppingEffect.Failed(result.error))
             }
         }
+    }
+
+    /** Remembers [categoryId] as walked and records the trip once it says something (two aisles). */
+    private fun visit(categoryId: Long, storeId: Long?) {
+        val walked = visited.value + categoryId
+        savedStateHandle[KEY_VISITED] = walked
+        if (storeId == null || walked.size < MIN_RECORDED) return
+        val trip = StoreTrip(storeId, openedAt.toEpochMilliseconds(), walked.toList())
+        viewModelScope.launch { trips.record(trip) }
     }
 
     private fun takeBack() {
@@ -192,6 +226,7 @@ class StoreModeViewModel @AssistedInject internal constructor(
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
+        const val MIN_RECORDED = 2
         const val KEY_OPENED_AT = "store-mode.openedAt"
         const val KEY_VISITED = "store-mode.visited"
         const val KEY_ORDER_DISMISSED = "store-mode.orderDismissed"
