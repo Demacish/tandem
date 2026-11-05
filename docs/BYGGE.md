@@ -1239,7 +1239,7 @@ dagar, `UseUpRanking`), lästa en gång per öppnat ark.
 lokala matsedeln skulle behöva läsa om veckan); servern skapar en måltid per dag direkt (de syns på
 webben) men **upprepar recept** när färre recept har nyckelordet än det finns dagar, och **lägger
 till sju nya även om veckan redan är planerad**; inga recept ger 400 `{"error": true, "msg": "No
-recipes found."}`. Det går inte heller offline, i demoläget eller med skafferimatchning. Appen gör
+recipes found."}`; två nyckelord är OCH; en gäst får också köra den. Det går inte heller offline, i demoläget eller med skafferimatchning. Appen gör
 därför samma sak lokalt och sparar resultatet som **vanliga måltider** (`MealPlanRepository.create`,
 köas offline), som syns på webben som allt annat i matsedeln.
 
