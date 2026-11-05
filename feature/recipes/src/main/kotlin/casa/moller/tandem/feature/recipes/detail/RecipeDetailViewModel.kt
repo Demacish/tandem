@@ -11,6 +11,7 @@ import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow
+import casa.moller.tandem.core.domain.recipe.NutritionEnergy
 import casa.moller.tandem.core.domain.recipe.RecipeDisplay
 import casa.moller.tandem.core.domain.recipe.RecipeDisplayModel
 import casa.moller.tandem.core.domain.recipe.ServingsText
@@ -241,8 +242,10 @@ class RecipeDetailViewModel @AssistedInject constructor(
             webUrl = sources.session.baseUrl?.let { "${it.trimEnd('/')}/recipe/$recipeId/" },
             struckIngredientIds = choices.struck,
             unitChoices = choices.units,
-            // Fas 3 (näringsvärden): per serving, so they do not move with the servings chooser.
-            nutrition = recipe?.nutritionValues.orEmpty().map { NutritionRow(it.name, ServingsText.number(it.amount, style), it.unit) },
+            // Fas 3 (näringsvärden): per serving, so they do not move with the servings chooser;
+            // energy in kJ or kcal as the user's `use_kj` says (plan §10 "Klart när").
+            nutrition = NutritionEnergy.inPreferredUnit(recipe?.nutritionValues.orEmpty(), sources.preferences.useKj)
+                .map { NutritionRow(it.name, ServingsText.number(it.amount, style), it.unit) },
         )
     }
 

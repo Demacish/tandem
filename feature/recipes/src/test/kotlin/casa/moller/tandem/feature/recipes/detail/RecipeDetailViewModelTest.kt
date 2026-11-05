@@ -316,6 +316,20 @@ class RecipeDetailViewModelTest {
     }
 
     @Test
+    fun energyFollowsTheUsersKjPreference() = runTest(mainDispatcher.dispatcher) {
+        // Plan §10 "Klart när" (Fas 3, näring): kJ/kcal follows `use_kj`; other values stay as they are.
+        val kcal = viewModel().uiState.value.nutrition
+        assertEquals(NutritionRow("Energi", "520", "kcal"), kcal.first())
+        preferences.preferences.value = UserPreferences(useKj = true)
+        runCurrent()
+        val kj = viewModel().uiState.value.nutrition
+        assertEquals("kJ", kj.first().unit)
+        // 520 kcal × 4.184 = 2 175.68 kJ, in the user's number style (rounded like the web's amounts).
+        assertEquals(2175.68, kj.first().amountText.filter { it.isDigit() || it == '.' }.toDouble(), 0.01)
+        assertEquals(NutritionRow("Protein", "18", "g"), kj[1])
+    }
+
+    @Test
     fun halfAnOnionIsPluralLikeOnTheWeb() = runTest(mainDispatcher.dispatcher) {
         repository.details.value = mapOf(templated.id to templated)
         repository.servingsChoices.value = mapOf(templated.id to 1.0)
