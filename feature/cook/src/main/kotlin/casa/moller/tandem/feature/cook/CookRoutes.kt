@@ -7,13 +7,19 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -33,11 +39,12 @@ import casa.moller.tandem.feature.cook.session.CookRecipePickerSheet
 import casa.moller.tandem.feature.cook.session.CookSessionAction
 import casa.moller.tandem.feature.cook.session.CookSessionUi
 import casa.moller.tandem.feature.cook.session.CookSessionViewModel
+import casa.moller.tandem.feature.cook.session.tabDescription
 import casa.moller.tandem.feature.cook.timers.TimersScreen
 import casa.moller.tandem.feature.cook.timers.TimersViewModel
 import casa.moller.tandem.feature.cook.ui.CookScreen
 import casa.moller.tandem.feature.cook.ui.DarkSystemBars
-
+import kotlinx.coroutines.launch
 /**
  * Cook mode for [key] (plan 6.2 "Kokläge", features #6–#8). Full screen on every width
  * ([CookKey] hides the navigation); keeps the screen on, can be forced dark ("Kokläge alltid
@@ -77,6 +84,7 @@ fun CookRoute(
     )
     val session by sessionViewModel.session.collectAsStateWithLifecycle()
     val picker by sessionViewModel.picker.collectAsStateWithLifecycle()
+    val closedRecipeId by sessionViewModel.closedRecipeId.collectAsStateWithLifecycle()
     // One cook mode per open recipe, all in this entry's ViewModelStore (both survive tab switches).
     val viewModels = session.recipes.associate { recipe ->
         recipe.recipeId to key(recipe.recipeId) {
@@ -92,7 +100,7 @@ fun CookRoute(
     val activeId = session.activeRecipeId
     val viewModel = viewModels.getValue(activeId)
     val state = states.getValue(activeId)
-    val sessionUi = CookSessionUi.of(session, states)
+    val sessionUi = CookSessionUi.of(session, states, closedRecipeId)
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val resources = LocalResources.current
@@ -105,6 +113,21 @@ fun CookRoute(
         if (session.isTwo) sessionViewModel.onAction(CookSessionAction.CloseRecipe(recipeId)) else currentOnClose()
     }
     val currentCloseRecipe by rememberUpdatedState(closeRecipe)
+    val scope = rememberCoroutineScope()
+    // ✕ with two recipes: the closed one's step, servings and draft stay in its ViewModel, so "Ångra"
+    // brings them back. "Stäng utan att spara" and a saved "Klart!" are deliberate and go for good.
+    val closeTab: (Long) -> Unit = { recipeId ->
+        val name = states[recipeId]?.recipeName.orEmpty()
+        sessionViewModel.onAction(CookSessionAction.CloseRecipe(recipeId, undoable = true))
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = resources.getString(R.string.cook_recipe_closed, name),
+                actionLabel = resources.getString(R.string.cook_undo),
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) sessionViewModel.onAction(CookSessionAction.RestoreClosed)
+        }
+    }
     val ids = session.recipeIds.toSet()
     LaunchedEffect(ids) {
         currentOnRecipesChanged(ids)
@@ -116,6 +139,17 @@ fun CookRoute(
         sessionViewModel.onAction(CookSessionAction.SelectRecipe(request.recipeId))
         viewModels[request.recipeId]?.onAction(CookAction.GoToPage(request.step))
         currentOnPageRequestHandled()
+    }
+    // The recipe shown changed (a tab, ✕, a recipe added): TalkBack hears which one and where it is.
+    // The header's live region is another recipe's now, not a change of its text.
+    val shownTab = sessionUi.tabs.firstOrNull { it.selected }
+    val shownDescription = shownTab?.takeIf { it.loaded || it.failed }?.let { tabDescription(it) }
+    var announcedRecipe by rememberSaveable { mutableLongStateOf(activeId) }
+    LaunchedEffect(activeId, shownDescription) {
+        if (activeId != announcedRecipe && shownDescription != null) {
+            announcedRecipe = activeId
+            view.announce(shownDescription)
+        }
     }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         viewModel.onAction(CookAction.NotificationPermissionResult(granted))
@@ -150,28 +184,28 @@ fun CookRoute(
         onPauseOrDispose { }
     }
     CookTheme(alwaysDark = state.alwaysDark) {
-        // Each recipe keeps its own pager and dialogs: switching tabs never carries them over.
-        key(activeId) {
-            CookScreen(
-                state = state,
-                onAction = viewModel::onAction,
-                onClose = { closeRecipe(activeId) },
-                modifier = modifier,
-                snackbarHostState = snackbarHostState,
-                onOpenNotificationSettings = { context.openSettings(notificationSettingsIntent(context)) },
-                onOpenAlarmChannelSettings = { context.openSettings(alarmChannelSettingsIntent(context)) },
-                onOpenExactAlarmSettings = { context.openSettings(exactAlarmSettingsIntent(context)) },
-                shoppingActions = shoppingAction?.let { action -> { action(activeId, state.servings?.current, snackbarHostState) } },
-                // Fas S (hemma-ui lane, plan §8.8): "Tog något slut?" (hidden for a guest and without pantry items).
-                pantryActions = { CookPantryRoute(recipeId = activeId, snackbarHostState = snackbarHostState) },
-                session = sessionUi,
-                onSessionAction = { action ->
-                    sessionViewModel.onAction(action)
-                    if (action is CookSessionAction.OpenTimer) viewModels[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
-                },
-            )
-        }
-        CookRecipePickerSheet(state = picker, onAction = sessionViewModel::onAction)
+        // The pager and the dialogs follow the shown recipe by themselves (CookScreen); the header
+        // with its tabs stays, so a tab switch keeps TalkBack's and the keyboard's focus on the tab.
+        CookScreen(
+            state = state,
+            onAction = viewModel::onAction,
+            onClose = { closeRecipe(activeId) },
+            onCloseTab = if (session.isTwo) ({ closeTab(activeId) }) else null,
+            modifier = modifier,
+            snackbarHostState = snackbarHostState,
+            onOpenNotificationSettings = { context.openSettings(notificationSettingsIntent(context)) },
+            onOpenAlarmChannelSettings = { context.openSettings(alarmChannelSettingsIntent(context)) },
+            onOpenExactAlarmSettings = { context.openSettings(exactAlarmSettingsIntent(context)) },
+            shoppingActions = shoppingAction?.let { action -> { action(activeId, state.servings?.current, snackbarHostState) } },
+            // Fas S (hemma-ui lane, plan §8.8): "Tog något slut?" (hidden for a guest and without pantry items).
+            pantryActions = { key(activeId) { CookPantryRoute(recipeId = activeId, snackbarHostState = snackbarHostState) } },
+            session = sessionUi,
+            onSessionAction = { action ->
+                sessionViewModel.onAction(action)
+                if (action is CookSessionAction.OpenTimer) viewModels[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
+            },
+        )
+        CookRecipePickerSheet(state = picker, onAction = sessionViewModel::onAction, offline = state.offline)
     }
 }
 

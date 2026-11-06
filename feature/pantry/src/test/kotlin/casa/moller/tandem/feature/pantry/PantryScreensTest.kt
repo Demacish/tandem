@@ -66,7 +66,7 @@ class PantryScreensTest {
         }
         composeRule.onNodeWithText("Vill du få en påminnelse när något går ut?").assertIsDisplayed()
         composeRule.onNodeWithText("Slå på").performClick()
-        composeRule.onNodeWithText("Inte nu").performClick()
+        composeRule.onNodeWithText("Nej tack").performClick()
         assertEquals(
             listOf<PantryAction>(
                 PantryAction.ExpiryReminder(ExpiryReminderAction.Enable),

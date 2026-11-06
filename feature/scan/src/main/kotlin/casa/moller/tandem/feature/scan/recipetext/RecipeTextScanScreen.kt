@@ -82,16 +82,19 @@ fun RecipeTextScanScreen(
         BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
             val width = maxWidth
             val height = maxHeight
+            // A low window (a phone in landscape): only the main buttons stay pinned, or the page
+            // count and the read text would be left a sliver above them.
+            val compact = height < COMPACT_HEIGHT
             if (width > height || width >= WIDE) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     CameraArea(camera, onCamera, cameraPreview, Modifier.weight(1f).fillMaxHeight())
-                    Panel(state, camera, onAction, onCamera, onTakePhoto, Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight())
+                    Panel(state, camera, onAction, onCamera, onTakePhoto, compact, Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight())
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     val cameraHeight = maxOf(MIN_CAMERA_HEIGHT, height * CAMERA_SHARE)
                     CameraArea(camera, onCamera, cameraPreview, Modifier.fillMaxWidth().height(cameraHeight))
-                    Panel(state, camera, onAction, onCamera, onTakePhoto, Modifier.weight(1f).fillMaxWidth())
+                    Panel(state, camera, onAction, onCamera, onTakePhoto, compact, Modifier.weight(1f).fillMaxWidth())
                 }
             }
         }
@@ -124,6 +127,7 @@ private fun Panel(
     onAction: (RecipeTextScanAction) -> Unit,
     onCamera: (ScanCameraAction) -> Unit,
     onTakePhoto: () -> Unit,
+    compact: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
@@ -197,10 +201,24 @@ private fun Panel(
                         leadingIcon = TandemIcons.Delete,
                     )
                 }
+                if (compact && camera.access == CameraAccess.GRANTED) {
+                    GalleryButton(state = state, onCamera = onCamera)
+                }
             }
-            Actions(state, camera, onAction, onCamera, onTakePhoto)
+            Actions(state, camera, onAction, onCamera, onTakePhoto, compact)
         }
     }
+}
+
+@Composable
+private fun GalleryButton(state: RecipeTextScanUiState, onCamera: (ScanCameraAction) -> Unit, modifier: Modifier = Modifier) {
+    TandemTextButton(
+        text = stringResource(R.string.scan_pick_image),
+        onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
+        enabled = !state.reading && !state.readOnly,
+        leadingIcon = ScanIcons.Gallery,
+        modifier = modifier,
+    )
 }
 
 /** "Använd texten", "Ta foto"/"Ta ett foto till" and the gallery, pinned below the panel. */
@@ -211,6 +229,7 @@ private fun Actions(
     onAction: (RecipeTextScanAction) -> Unit,
     onCamera: (ScanCameraAction) -> Unit,
     onTakePhoto: () -> Unit,
+    compact: Boolean,
 ) {
     val spacing = TandemTheme.spacing
     val granted = camera.access == CameraAccess.GRANTED
@@ -248,13 +267,7 @@ private fun Actions(
                         modifier = Modifier.fillMaxWidth().testTag(RECIPE_TEXT_SHUTTER_TAG),
                     )
                 }
-                TandemTextButton(
-                    text = stringResource(R.string.scan_pick_image),
-                    onClick = { onCamera(ScanCameraAction.PICK_IMAGE) },
-                    enabled = !state.reading && !state.readOnly,
-                    leadingIcon = ScanIcons.Gallery,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
+                if (!compact) GalleryButton(state = state, onCamera = onCamera, modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
                 TandemSecondaryButton(
                     text = stringResource(R.string.scan_pick_image),
@@ -285,6 +298,7 @@ const val RECIPE_TEXT_SHUTTER_TAG: String = "recipe-text-shutter"
 const val RECIPE_TEXT_PREVIEW_TAG: String = "recipe-text-preview"
 
 private val WIDE = 840.dp
+private val COMPACT_HEIGHT = 480.dp
 private val PANEL_WIDTH = 440.dp
 private val MIN_CAMERA_HEIGHT = 180.dp
 private val LOADING = 32.dp

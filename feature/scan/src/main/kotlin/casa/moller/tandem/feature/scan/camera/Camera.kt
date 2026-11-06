@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
@@ -122,6 +123,42 @@ fun rememberCameraController(useCases: Int, analyzer: ImageAnalysis.Analyzer? = 
         }
     }
     return controller
+}
+
+/**
+ * Hands [onReady] the controller once CameraX has started (`takePicture` throws before that, and a
+ * tap right after the page opens can come first), and null when it leaves. A camera that failed to
+ * start is never handed over: the shutter then does nothing and the gallery still works.
+ */
+@Composable
+fun CameraReadyEffect(controller: LifecycleCameraController, onReady: (LifecycleCameraController?) -> Unit) {
+    val context = LocalContext.current
+    val current by rememberUpdatedState(onReady)
+    DisposableEffect(controller) {
+        var active = true
+        val future = controller.initializationFuture
+        future.addListener({ if (active && runCatching { future.get() }.isSuccess) current(controller) }, context.mainExecutor)
+        onDispose {
+            active = false
+            current(null)
+        }
+    }
+}
+
+/**
+ * [LifecycleCameraController.takePicture] that reports a camera gone since [CameraReadyEffect]
+ * through [onUnavailable]: it throws instead of calling [callback], and the screen would stay "reading".
+ */
+fun LifecycleCameraController.takePictureOr(
+    context: Context,
+    callback: ImageCapture.OnImageCapturedCallback,
+    onUnavailable: () -> Unit,
+) {
+    try {
+        takePicture(context.mainExecutor, callback)
+    } catch (e: IllegalStateException) {
+        onUnavailable()
+    }
 }
 
 /** The live camera picture of [controller] (decorative for TalkBack: the screen says what to do). */

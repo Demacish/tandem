@@ -28,9 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,7 +54,7 @@ import casa.moller.tandem.feature.cook.R
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun CookRecipePickerSheet(state: CookPickerState, onAction: (CookSessionAction) -> Unit) {
+internal fun CookRecipePickerSheet(state: CookPickerState, onAction: (CookSessionAction) -> Unit, offline: Boolean = false) {
     if (!state.open) return
     ModalBottomSheet(
         onDismissRequest = { onAction(CookSessionAction.ClosePicker) },
@@ -60,7 +63,7 @@ internal fun CookRecipePickerSheet(state: CookPickerState, onAction: (CookSessio
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
         ),
     ) {
-        CookRecipePickerContent(state = state, onAction = onAction, modifier = Modifier.imePadding())
+        CookRecipePickerContent(state = state, onAction = onAction, offline = offline, modifier = Modifier.imePadding())
     }
 }
 
@@ -70,8 +73,15 @@ internal fun CookRecipePickerSheet(state: CookPickerState, onAction: (CookSessio
  * mode (the stored recipes). One TalkBack item per recipe ("Kanelbullar, 1 h 30 min").
  */
 @Composable
-internal fun CookRecipePickerContent(state: CookPickerState, onAction: (CookSessionAction) -> Unit, modifier: Modifier = Modifier) {
+internal fun CookRecipePickerContent(
+    state: CookPickerState,
+    onAction: (CookSessionAction) -> Unit,
+    modifier: Modifier = Modifier,
+    offline: Boolean = false,
+) {
     val spacing = TandemTheme.spacing
+    // Offline a recipe without a stored detail cannot open: the ones that can come first.
+    val recipes = if (offline) state.results.sortedBy { !it.availableOffline } else state.results
     // Kept here, not read back from the ViewModel: typing never waits for the search's results.
     var text by rememberSaveable { mutableStateOf(state.query) }
     LazyColumn(
@@ -101,11 +111,13 @@ internal fun CookRecipePickerContent(state: CookPickerState, onAction: (CookSess
                 )
             }
         }
-        item(key = "hint") {
+        // One node that stays, so TalkBack says how a search went (a new item would not be announced).
+        item(key = "status") {
             Text(
-                text = stringResource(R.string.cook_picker_hint),
+                text = pickerStatus(state, text),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
             )
         }
         item(key = "search") {
@@ -121,23 +133,27 @@ internal fun CookRecipePickerContent(state: CookPickerState, onAction: (CookSess
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (!state.loading && state.results.isEmpty()) {
-            item(key = "empty") {
-                Text(
-                    text = stringResource(if (text.isBlank()) R.string.cook_picker_no_recipes else R.string.cook_picker_no_matches),
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(vertical = spacing.md),
-                )
-            }
-        }
-        items(state.results, key = { "recipe-${it.id}" }) { recipe ->
-            PickerRecipe(recipe = recipe, onPick = { onAction(CookSessionAction.AddRecipe(recipe.id)) })
+        items(recipes, key = { "recipe-${it.id}" }) { recipe ->
+            PickerRecipe(recipe = recipe, missingOffline = offline && !recipe.availableOffline, onPick = { onAction(CookSessionAction.AddRecipe(recipe.id)) })
         }
     }
 }
 
+/** What happens here; while searching, how the search went. */
 @Composable
-private fun PickerRecipe(recipe: RecipeOverview, onPick: () -> Unit) {
+private fun pickerStatus(state: CookPickerState, text: String): String {
+    val count = state.results.size
+    return when {
+        state.loading -> stringResource(R.string.cook_picker_hint)
+        count == 0 && text.isBlank() -> stringResource(R.string.cook_picker_no_recipes)
+        count == 0 -> stringResource(R.string.cook_picker_no_matches)
+        text.isBlank() -> stringResource(R.string.cook_picker_hint)
+        else -> pluralStringResource(R.plurals.cook_picker_matches, count, count)
+    }
+}
+
+@Composable
+private fun PickerRecipe(recipe: RecipeOverview, missingOffline: Boolean, onPick: () -> Unit) {
     val spacing = TandemTheme.spacing
     val minutes = recipe.totalMinutes.takeIf { it > 0 }
     Surface(
@@ -168,6 +184,13 @@ private fun PickerRecipe(recipe: RecipeOverview, onPick: () -> Unit) {
                 minutes?.let {
                     Text(
                         text = formatMinutes(it),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (missingOffline) {
+                    Text(
+                        text = stringResource(R.string.cook_picker_not_downloaded),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -62,6 +62,7 @@
     <string name="home_customize_hint">Välj vilka receptrader Idag visar och i vilken ordning. Sparas i telefonen.</string>
     <string name="home_customize_move_up">Flytta upp %1$s</string>
     <string name="home_customize_move_down">Flytta ned %1$s</string>
+    <string name="home_customize_position">%1$s, plats %2$d av %3$d</string>
     <string name="home_customize_reset">Återställ</string>
     <string name="home_customize_done">Klar</string>
 </resources>

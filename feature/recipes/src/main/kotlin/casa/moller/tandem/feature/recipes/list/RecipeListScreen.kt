@@ -64,6 +64,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
@@ -217,6 +218,8 @@ fun RecipeListScreen(
                             onOpenPicker = onOpenPicker,
                             selectedRecipeId = selectedRecipeId,
                             books = collections?.let { BookHooks(it, onOpenCollection, onToggleFavorite) },
+                            // The last row can be scrolled clear of "Nytt recept".
+                            bottomClearance = if (onCreateRecipe != null) FAB_CLEARANCE else 0.dp,
                         )
                     }
                 }
@@ -278,6 +281,7 @@ private fun RecipeGrid(
     onOpenPicker: (FilterPicker) -> Unit,
     selectedRecipeId: Long?,
     books: BookHooks? = null,
+    bottomClearance: Dp = 0.dp,
 ) {
     val spacing = TandemTheme.spacing
     val columns = if (state.layout == RecipeListLayout.GRID) GridCells.Adaptive(GRID_MIN_CELL) else GridCells.Adaptive(LIST_MIN_CELL)
@@ -285,7 +289,7 @@ private fun RecipeGrid(
         columns = columns,
         state = gridState,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.xxl),
+        contentPadding = PaddingValues(start = spacing.lg, end = spacing.lg, bottom = spacing.xxl + bottomClearance),
         horizontalArrangement = Arrangement.spacedBy(spacing.md),
         verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
@@ -588,5 +592,7 @@ private val PANEL_BESIDE_MIN_WIDTH = 640.dp
 private val PANEL_WIDTH = 320.dp
 
 /** Two columns on phones and in the 360 dp list pane beside a recipe, more on wide windows. */
+/** The 56 dp extended button and its 16 dp margin. */
+private val FAB_CLEARANCE = 72.dp
 private val GRID_MIN_CELL = 150.dp
 private val LIST_MIN_CELL = 340.dp

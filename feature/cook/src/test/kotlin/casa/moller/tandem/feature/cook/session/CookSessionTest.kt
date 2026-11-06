@@ -129,4 +129,29 @@ class CookSessionTest {
 
     private fun timer(id: Long, recipeId: Long?, step: Int?, source: String?, at: Long): CookTimer =
         CookTimer.start(id, "Timer $id", 10.minutes, Instant.fromEpochSeconds(0) + at.seconds, recipeId, step, source)
+
+    @Test
+    fun aClosedRecipeComesBackAtItsPlaceWithItsInstance() {
+        val first = CookSessionRecipe(1, instance = 0)
+        val second = CookSessionRecipe(2, instance = 3)
+        val session = CookSession(listOf(first, second), activeRecipeId = 1, nextInstance = 4)
+
+        val left = session.remove(1)!!
+        val restored = left.restore(first, index = 0)
+        assertEquals(session.recipes, restored.recipes)
+        assertEquals(1L, restored.activeRecipeId)
+        assertEquals("cook-1", restored.active.viewModelKey)
+        assertEquals(CookSession.decode(restored.encode()), restored)
+    }
+
+    @Test
+    fun anOpenRecipeOrAFullSessionIsNotRestored() {
+        val first = CookSessionRecipe(1)
+        val second = CookSessionRecipe(2, instance = 1)
+        val full = CookSession(listOf(first, second), activeRecipeId = 2, nextInstance = 2)
+        assertEquals(listOf(first, second), full.restore(first, index = 1).recipes)
+        assertEquals(1L, full.restore(first, index = 1).activeRecipeId)
+        val other = CookSessionRecipe(3, instance = 2)
+        assertEquals(full, full.restore(other, index = 0))
+    }
 }

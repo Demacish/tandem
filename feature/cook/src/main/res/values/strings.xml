@@ -136,4 +136,12 @@
     <string name="cook_picker_choose">Cook this too</string>
     <string name="cook_picker_no_recipes">There are no other recipes on this device yet.</string>
     <string name="cook_picker_no_matches">No recipes match the search.</string>
+    <string name="cook_tab_failed">Cannot be shown</string>
+    <string name="cook_recipe_closed">%1$s was closed</string>
+    <string name="cook_undo">Undo</string>
+    <string name="cook_picker_not_downloaded">Not downloaded</string>
+    <plurals name="cook_picker_matches">
+        <item quantity="one">%1$d recipe</item>
+        <item quantity="other">%1$d recipes</item>
+    </plurals>
 </resources>

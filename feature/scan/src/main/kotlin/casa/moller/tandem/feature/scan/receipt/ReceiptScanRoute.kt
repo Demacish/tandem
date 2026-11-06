@@ -8,7 +8,6 @@ import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,9 +24,11 @@ import casa.moller.tandem.feature.scan.barcode.ScanCameraAction
 import casa.moller.tandem.feature.scan.barcode.ScanCameraUi
 import casa.moller.tandem.feature.scan.camera.CameraAccess
 import casa.moller.tandem.feature.scan.camera.CameraPreview
+import casa.moller.tandem.feature.scan.camera.CameraReadyEffect
 import casa.moller.tandem.feature.scan.camera.rememberCameraController
 import casa.moller.tandem.feature.scan.camera.rememberCameraPermission
 import casa.moller.tandem.feature.scan.camera.rememberPhotoPicker
+import casa.moller.tandem.feature.scan.camera.takePictureOr
 import casa.moller.tandem.feature.scan.engine.ReceiptTextEngine
 import casa.moller.tandem.feature.scan.engine.ScanImages
 import casa.moller.tandem.feature.scan.navigation.ReceiptScanKey
@@ -109,10 +110,7 @@ internal fun ReceiptScanRoute(
         preview = { previewModifier ->
             if (permission.access == CameraAccess.GRANTED) {
                 val bound = rememberCameraController(CameraController.IMAGE_CAPTURE)
-                DisposableEffect(bound) {
-                    controller = bound
-                    onDispose { controller = null }
-                }
+                CameraReadyEffect(bound) { controller = it }
                 CameraPreview(controller = bound, modifier = previewModifier)
             }
         },
@@ -129,8 +127,8 @@ private fun takePhoto(
     engine: ReceiptTextEngine,
     onResult: (ReceiptScanAction) -> Unit,
 ) {
-    controller.takePicture(
-        context.mainExecutor,
+    controller.takePictureOr(
+        context,
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val rotation = image.imageInfo.rotationDegrees
@@ -152,5 +150,5 @@ private fun takePhoto(
                 onResult(ReceiptScanAction.PageFailed)
             }
         },
-    )
+    ) { onResult(ReceiptScanAction.PageFailed) }
 }

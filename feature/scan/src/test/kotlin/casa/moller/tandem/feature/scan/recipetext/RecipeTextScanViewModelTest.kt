@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.scan.recipetext
 
+import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.domain.scan.TextFragment
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
@@ -40,7 +41,7 @@ class RecipeTextScanViewModelTest {
 
     @Test
     fun pagesAreReadIntoTextAndHandedToTheImport() = runTest {
-        val vm = RecipeTextScanViewModel(permissions)
+        val vm = RecipeTextScanViewModel(SavedStateHandle(), permissions)
         collect(vm.uiState)
         val effects = effectsOf(vm.effects)
         vm.onAction(RecipeTextScanAction.ReadPage { listOf(line("Pannkakor", 0), line("2,5 dl vetemjöl", 60)) })
@@ -56,7 +57,7 @@ class RecipeTextScanViewModelTest {
 
     @Test
     fun aPhotoWithoutTextOrAFailedOneIsReported() = runTest {
-        val vm = RecipeTextScanViewModel(permissions)
+        val vm = RecipeTextScanViewModel(SavedStateHandle(), permissions)
         collect(vm.uiState)
         val effects = effectsOf(vm.effects)
         vm.onAction(RecipeTextScanAction.ReadPage { emptyList() })
@@ -74,8 +75,21 @@ class RecipeTextScanViewModelTest {
     @Test
     fun aGuestSeesTheReadOnlyState() = runTest {
         permissions.setGuest(true)
-        val vm = RecipeTextScanViewModel(permissions)
+        val vm = RecipeTextScanViewModel(SavedStateHandle(), permissions)
         collect(vm.uiState)
         assertTrue(vm.uiState.value.readOnly)
+    }
+
+    @Test
+    fun thePagesReadSurviveProcessDeath() = runTest {
+        val handle = SavedStateHandle()
+        val vm = RecipeTextScanViewModel(handle, permissions)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.onAction(RecipeTextScanAction.PageRead(listOf(TextFragment("Pannkakor", 0, 0, 100, 20))))
+        assertEquals(1, vm.uiState.value.pages.size)
+
+        val again = RecipeTextScanViewModel(handle, permissions)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { again.uiState.collect {} }
+        assertEquals(listOf("Pannkakor"), again.uiState.value.pages)
     }
 }

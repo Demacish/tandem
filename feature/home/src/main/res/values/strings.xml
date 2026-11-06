@@ -67,6 +67,7 @@
     <string name="home_customize_hint">Choose which recipe rows Today shows and in what order. Saved on this phone.</string>
     <string name="home_customize_move_up">Move %1$s up</string>
     <string name="home_customize_move_down">Move %1$s down</string>
+    <string name="home_customize_position">%1$s, place %2$d of %3$d</string>
     <string name="home_customize_reset">Reset</string>
     <string name="home_customize_done">Done</string>
 </resources>

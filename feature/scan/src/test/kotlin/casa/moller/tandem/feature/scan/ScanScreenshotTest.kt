@@ -111,6 +111,13 @@ class ScanScreenshotTest {
     fun recipeTextPages() = capture("phone_scan_recipe_text_pages_light_sv", ScanShot.RECIPE_TEXT_PAGES)
 
     @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun recipeTextPagesLandscape() = capture("phone_landscape_scan_recipe_text_pages_light_sv", ScanShot.RECIPE_TEXT_PAGES)
+
+    @Test
+    fun recipeTextPagesFontScale2() = capture("phone_scan_recipe_text_pages_font2_light", ScanShot.RECIPE_TEXT_PAGES, fontScale = 2f)
+
+    @Test
     fun recipeTextPagesDark() = capture("phone_scan_recipe_text_pages_dark", ScanShot.RECIPE_TEXT_PAGES, darkTheme = true)
 
     @Test

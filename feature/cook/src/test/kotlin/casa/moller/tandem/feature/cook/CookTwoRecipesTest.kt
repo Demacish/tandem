@@ -1,7 +1,10 @@
 package casa.moller.tandem.feature.cook
 
+import androidx.compose.runtime.remember
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
@@ -11,14 +14,22 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.session.COOK_TABS_TAG
+import casa.moller.tandem.feature.cook.session.CookRecipeTabs
+import casa.moller.tandem.feature.cook.session.CookSessionAction
+import casa.moller.tandem.feature.cook.session.CookSessionUi
+import casa.moller.tandem.feature.cook.session.CookTab
 import casa.moller.tandem.feature.cook.session.cookPickerRecipeTag
 import casa.moller.tandem.feature.cook.session.cookTabTag
 import casa.moller.tandem.feature.cook.ui.COOK_ADD_RECIPE_TAG
@@ -78,6 +89,75 @@ class CookTwoRecipesTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(COOK_STEP_OF_TAG).assertTextEquals("Step 2 of 3")
         composeRule.onNodeWithTag(cookTabTag(pasta.id)).assert(hasContentDescription("Krämig svamppasta, Step 1 of 3"))
+    }
+
+    /** A key press puts the window in keyboard mode, where a tab can take the focus. */
+    private fun focusTab(recipeId: Long) {
+        composeRule.onRoot().performKeyInput { pressKey(Key.Tab) }
+        composeRule.onNodeWithTag(cookTabTag(recipeId)).requestFocus()
+        composeRule.waitForIdle()
+    }
+
+    @Test
+    fun aTabSwitchKeepsTheTabRowSoFocusStaysOnTheTab() {
+        show()
+        focusTab(pasta.id)
+        composeRule.onNodeWithTag(cookTabTag(pasta.id)).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(cookTabTag(pasta.id)).assertIsSelected().assertIsFocused()
+    }
+
+    @Test
+    fun leftAndRightOnATabMoveTheFocusAndDoNotTurnThePage() {
+        show()
+        focusTab(pasta.id)
+        composeRule.onNodeWithTag(cookTabTag(pasta.id)).performKeyInput { pressKey(Key.DirectionRight) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(COOK_STEP_OF_TAG).assertTextEquals("Step 1 of 3")
+        composeRule.onNodeWithTag(cookTabTag(buns.id)).assertIsFocused()
+    }
+
+    @Test
+    fun theButtonsOfATimerSayWhichRecipeTheyActOn() {
+        val fakes = CookFakes().apply {
+            startTimerOf(pasta.id, pasta.name, 1, "Koka · 10 min", 10.minutes)
+            startTimerOf(buns.id, buns.name, 1, "Koka · 10 min", 10.minutes)
+        }
+        show(fakes)
+        composeRule.onNodeWithContentDescription("Pause Koka · 10 min (Krämig svamppasta)").assertExists()
+        composeRule.onNodeWithContentDescription("Pause Koka · 10 min (Kanelbullar)").assertExists()
+    }
+
+    @Test
+    fun aRecipeClosedWithXComesBackAsItWas() {
+        val fakes = CookFakes()
+        lateinit var restore: () -> Unit
+        composeRule.setContent {
+            TestFrame(clock = fakes.clock) {
+                val session = remember { fakes.sessionViewModel(CookKey(buns.id, alongsideRecipeId = pasta.id)) }
+                restore = { session.onAction(CookSessionAction.RestoreClosed) }
+                CookSessionWithFakes(fakes = fakes, sessionViewModel = session)
+            }
+        }
+        composeRule.onNodeWithText("Next").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(COOK_STEP_OF_TAG).assertTextEquals("Step 2 of 3")
+
+        composeRule.onNodeWithTag(COOK_CLOSE_TAG).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(COOK_STEP_OF_TAG).assertTextEquals("Step 1 of 3")
+
+        restore()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(cookTabTag(buns.id)).assertIsSelected()
+        composeRule.onNodeWithTag(COOK_STEP_OF_TAG).assertTextEquals("Step 2 of 3")
+    }
+
+    @Test
+    fun aTabThatCannotBeShownSaysSo() {
+        val tab = CookTab(recipeId = 9, name = "Kanelbullar", page = 0, stepCount = 0, selected = true, failed = true)
+        composeRule.setContent { TestFrame { CookRecipeTabs(CookSessionUi(tabs = listOf(tab, tab.copy(recipeId = 8, selected = false))), onAction = {}) } }
+        composeRule.onNodeWithTag(cookTabTag(9)).assert(hasContentDescription("Kanelbullar, Cannot be shown"))
     }
 
     @Test

@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -159,6 +160,7 @@ data class FoldBounds(val top: Float, val bottom: Float) {
  *   stand under the header, ✕ closes the shown recipe only ([onClose] is then the route's "close
  *   this recipe"), and the timers say their recipe. Empty (the default): one recipe, nothing added.
  * @param onSessionAction what the tabs and "Laga ett recept till" do ([CookSessionAction]).
+ * @param onCloseTab ✕ with two recipes, when it differs from [onClose] (it can be undone, "Klart!" cannot).
  */
 @Composable
 fun CookScreen(
@@ -176,10 +178,12 @@ fun CookScreen(
     pantryActions: (@Composable () -> Unit)? = null,
     session: CookSessionUi = CookSessionUi(),
     onSessionAction: (CookSessionAction) -> Unit = {},
+    onCloseTab: (() -> Unit)? = null,
 ) {
     val locale = currentLocale()
     val currentOnAction by rememberUpdatedState(onAction)
-    LaunchedEffect(locale) { currentOnAction(CookAction.SetLocale(locale.toNumberStyle(), locale.toLanguageTag())) }
+    // Per recipe too: with two recipes the shown one changes under this same screen.
+    LaunchedEffect(locale, state.recipeId) { currentOnAction(CookAction.SetLocale(locale.toNumberStyle(), locale.toLanguageTag())) }
     KeepScreenOn()
     val posture = currentWindowAdaptiveInfoV2().windowPosture
     val tabletop = posture.isTabletop
@@ -191,9 +195,9 @@ fun CookScreen(
     )
     // "Justera tiden": the step and suggestion whose timer is being set up, and the chosen
     // seconds (kept across rotation). A tapped timer asks here before it starts.
-    var adjustStepIndex by rememberSaveable { mutableIntStateOf(NO_ADJUST) }
-    var adjustSuggestion by rememberSaveable { mutableIntStateOf(0) }
-    var adjustSeconds by rememberSaveable { mutableLongStateOf(0L) }
+    var adjustStepIndex by rememberSaveable(state.recipeId) { mutableIntStateOf(NO_ADJUST) }
+    var adjustSuggestion by rememberSaveable(state.recipeId) { mutableIntStateOf(0) }
+    var adjustSeconds by rememberSaveable(state.recipeId) { mutableLongStateOf(0L) }
     val stepAction: (CookAction) -> Unit = { action ->
         val index = (action as? CookAction.StartTimer)?.takeIf { it.duration == null }
             ?.let { start -> state.steps.getOrNull(start.stepIndex)?.suggestions?.indexOf(start.suggestion) }
@@ -223,6 +227,7 @@ fun CookScreen(
                     state = state,
                     onAction = stepAction,
                     onClose = onClose,
+                    onCloseTab = onCloseTab,
                     session = session,
                     onSessionAction = onSessionAction,
                     layout = chosen,
@@ -238,7 +243,7 @@ fun CookScreen(
                     CookHeader(
                         state = state,
                         onAction = onAction,
-                        onClose = onClose,
+                        onClose = onCloseTab ?: onClose,
                         showScreenOn = false,
                         progress = null,
                         session = session,
@@ -342,9 +347,8 @@ private fun CookContent(
     pantryActions: (@Composable () -> Unit)? = null,
     session: CookSessionUi = CookSessionUi(),
     onSessionAction: (CookSessionAction) -> Unit = {},
+    onCloseTab: (() -> Unit)? = null,
 ) {
-    val pagerState = rememberPagerState(initialPage = state.page) { state.pageCount }
-    PagerSync(pagerState = pagerState, page = state.page, onAction = onAction)
     val now by rememberTimerNow()
     val timerActions = remember(onAction) {
         TimerActions(
@@ -363,6 +367,8 @@ private fun CookContent(
         when {
             recipe == state.recipeId && step != null && step < state.steps.size -> onAction(CookAction.GoToPage(step))
             recipe != null && step != null && recipe in session.recipeIds -> onSessionAction(CookSessionAction.OpenTimer(recipe, step))
+            // Its recipe was closed with ✕ a moment ago: it comes back as it was.
+            recipe != null && recipe == session.closedRecipeId -> onSessionAction(CookSessionAction.RestoreClosed)
         }
     }
     // Fas 4: timers say their recipe when two recipes are open or the timers come from several.
@@ -371,26 +377,32 @@ private fun CookContent(
     LaunchedEffect(focusRequester) { runCatching { focusRequester.requestFocus() } }
     val progress = (state.page + 1).toFloat() / state.pageCount
     val pages: @Composable (Modifier, Boolean) -> Unit = { pagerModifier, showIngredients ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = pagerModifier.testTag(COOK_PAGER_TAG),
-        ) { page ->
-            if (page < state.steps.size) {
-                CookStepPage(
-                    state = state,
-                    step = state.steps[page],
-                    onAction = onAction,
-                    showIngredients = showIngredients,
-                    largeText = largeText,
-                )
-            } else {
-                CookDonePage(
-                    state = state,
-                    onAction = onAction,
-                    onClose = onClose,
-                    shoppingActions = shoppingActions,
-                    pantryActions = pantryActions,
-                )
+        // Only the pager belongs to one recipe: the header and its tabs stay when the tab changes,
+        // so TalkBack and the keyboard keep their focus on the tab (a keyed screen would rebuild them).
+        key(state.recipeId) {
+            val pagerState = rememberPagerState(initialPage = state.page) { state.pageCount }
+            PagerSync(pagerState = pagerState, page = state.page, onAction = onAction)
+            HorizontalPager(
+                state = pagerState,
+                modifier = pagerModifier.testTag(COOK_PAGER_TAG),
+            ) { page ->
+                if (page < state.steps.size) {
+                    CookStepPage(
+                        state = state,
+                        step = state.steps[page],
+                        onAction = onAction,
+                        showIngredients = showIngredients,
+                        largeText = largeText,
+                    )
+                } else {
+                    CookDonePage(
+                        state = state,
+                        onAction = onAction,
+                        onClose = onClose,
+                        shoppingActions = shoppingActions,
+                        pantryActions = pantryActions,
+                    )
+                }
             }
         }
     }
@@ -398,11 +410,12 @@ private fun CookContent(
         CookHeader(
             state = state,
             onAction = onAction,
-            onClose = onClose,
+            onClose = onCloseTab ?: onClose,
             showScreenOn = layout == CookLayout.TWO_PANE,
             progress = progress,
             session = session,
             onSessionAction = onSessionAction,
+            compactHeight = availableHeight < CompactHeight,
         )
     }
     val bottomArea: @Composable (Dp) -> Unit = { maxScroll ->
@@ -547,8 +560,12 @@ private fun CookHeader(
     progress: Float?,
     session: CookSessionUi,
     onSessionAction: (CookSessionAction) -> Unit,
+    compactHeight: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
+    // A low window (a phone in landscape, split screen): the tabs take the title's place, or a row
+    // of their own would leave the step two lines. Each tab has the name and "Steg 2 av 6" already.
+    val tabsInHeader = session.isTwo && progress != null && compactHeight
     Column(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -568,43 +585,47 @@ private fun CookHeader(
                 onClick = onClose,
                 modifier = Modifier.testTag(COOK_CLOSE_TAG),
             )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = spacing.xs),
-            ) {
-                Text(
-                    text = state.recipeName.ifEmpty { stringResource(R.string.cook_title) },
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.semantics { heading() },
-                )
-                if (state.hasDetail) {
-                    val step = state.currentStep
-                    val announcement = when {
-                        state.isDonePage -> stringResource(R.string.cook_done_page)
-
-                        step != null && step.name.isNotBlank() ->
-                            stringResource(R.string.cook_step_of_named, state.page + 1, state.steps.size, step.name)
-
-                        else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
-                    }
+            if (tabsInHeader) {
+                CookRecipeTabs(session = session, onAction = onSessionAction, announceStep = true, modifier = Modifier.weight(1f))
+            } else {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = spacing.xs),
+                ) {
                     Text(
-                        text = if (state.isDonePage) {
-                            stringResource(R.string.cook_done_page)
-                        } else {
-                            stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .testTag(COOK_STEP_OF_TAG)
-                            .semantics {
-                                contentDescription = announcement
-                                liveRegion = LiveRegionMode.Polite
-                            },
+                        text = state.recipeName.ifEmpty { stringResource(R.string.cook_title) },
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
                     )
+                    if (state.hasDetail) {
+                        val step = state.currentStep
+                        val announcement = when {
+                            state.isDonePage -> stringResource(R.string.cook_done_page)
+
+                            step != null && step.name.isNotBlank() ->
+                                stringResource(R.string.cook_step_of_named, state.page + 1, state.steps.size, step.name)
+
+                            else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+                        }
+                        Text(
+                            text = if (state.isDonePage) {
+                                stringResource(R.string.cook_done_page)
+                            } else {
+                                stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .testTag(COOK_STEP_OF_TAG)
+                                .semantics {
+                                    contentDescription = announcement
+                                    liveRegion = LiveRegionMode.Polite
+                                },
+                        )
+                    }
                 }
             }
             if (showScreenOn) {
@@ -638,7 +659,7 @@ private fun CookHeader(
                 )
             }
         }
-        if (session.isTwo && progress != null) CookRecipeTabs(session = session, onAction = onSessionAction)
+        if (session.isTwo && progress != null && !tabsInHeader) CookRecipeTabs(session = session, onAction = onSessionAction)
         if (progress != null) {
             LinearProgressIndicator(
                 progress = { progress },
@@ -693,7 +714,8 @@ private fun BottomArea(
                     now = now,
                     actions = timerActions,
                     onOpen = onOpenTimer,
-                    maxHeight = if (showTimerRecipes) PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES else PHONE_TIMER_BAR_HEIGHT,
+                    // Scaled with the text, so a large font shows both times too; maxScrollHeight still protects the step.
+                    maxHeight = if (showTimerRecipes) PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale else PHONE_TIMER_BAR_HEIGHT,
                     showRecipe = showTimerRecipes,
                     modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
                 )

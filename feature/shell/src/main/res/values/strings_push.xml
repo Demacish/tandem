@@ -2,13 +2,13 @@
 <!-- Fas 4 (push lane): More → Sync and storage → Fast push (plan §4.3, B11; docs/PUSH.md). -->
 <resources>
     <string name="fast_push_row">Fast push (own service, experimental)</string>
-    <string name="fast_push_row_body">List changes within a minute through a small service your household runs. Off by default.</string>
+    <string name="fast_push_row_body">List changes arrive quickly through a small service your household runs. Off by default.</string>
     <string name="fast_push_title">Fast push</string>
     <string name="fast_push_demo">Demo mode has no server, so there is nothing to push. Connect a Tandoor to use fast push.</string>
     <string name="fast_push_guest">Guests cannot use fast push. Ask the household\'s administrator for a member account.</string>
     <string name="fast_push_no_account">Log in to a Tandoor first.</string>
     <string name="fast_push_intro_title">Experimental, and not needed</string>
-    <string name="fast_push_intro_body">Without it Tandem checks the list in the background as usual. With it, a small push service your household runs itself checks the shopping list and wakes this phone through a UnifiedPush app (for example ntfy), so a change shows up within a minute even when Tandem is closed.</string>
+    <string name="fast_push_intro_body">Without it Tandem checks the list in the background as usual. With it, a small push service your household runs itself checks the shopping list and wakes this phone through a UnifiedPush app (for example ntfy), so a change shows up quickly even when Tandem is closed.</string>
     <string name="fast_push_privacy">When turning on, and if the push address changes, Tandem sends its Tandoor token to the service, so the service can check that you belong to its household; the service does not keep it. A wake-up only says \"sync now\": what changed is read by Tandem itself.</string>
     <string name="fast_push_status_heading">Status</string>
     <string name="fast_push_status_off">Off</string>
@@ -25,6 +25,8 @@
     <string name="fast_push_notifications_blocked">Tandem is not allowed to show notifications, so changes arrive without a notification.</string>
     <string name="fast_push_list_notifications_off">The notification only shows while \"Notify when someone changes the list\" is on (Sync and storage).</string>
     <string name="fast_push_open_permissions">Open Permissions</string>
+    <string name="fast_push_setup_help">How to set up the service</string>
+    <string name="fast_push_choose_distributor">Choose a UnifiedPush app above to turn this on.</string>
     <string name="fast_push_service_heading">Push service</string>
     <string name="fast_push_service_url">Service address</string>
     <string name="fast_push_service_url_placeholder">https://push.example.com</string>

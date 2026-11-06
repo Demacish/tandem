@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -69,11 +70,14 @@ internal fun FastPushScreen(
         modifier = modifier.imePadding(),
         snackbarHostState = snackbarHostState,
     ) {
-        when (state.availability) {
-            FastPushAvailability.AVAILABLE -> if (!state.loading) Available(state, onAction, onOpenPermissions)
-            FastPushAvailability.DEMO -> Unavailable(R.string.fast_push_demo)
-            FastPushAvailability.GUEST -> Unavailable(R.string.fast_push_guest)
-            FastPushAvailability.NO_ACCOUNT -> Unavailable(R.string.fast_push_no_account)
+        // Nothing while it loads: the first frame's availability is only the default.
+        if (!state.loading) {
+            when (state.availability) {
+                FastPushAvailability.AVAILABLE -> Available(state, onAction, onOpenPermissions)
+                FastPushAvailability.DEMO -> Unavailable(R.string.fast_push_demo)
+                FastPushAvailability.GUEST -> Unavailable(R.string.fast_push_guest)
+                FastPushAvailability.NO_ACCOUNT -> Unavailable(R.string.fast_push_no_account)
+            }
         }
     }
 }
@@ -90,6 +94,7 @@ private fun Available(state: FastPushUiState, onAction: (FastPushAction) -> Unit
         body = stringResource(R.string.fast_push_intro_body),
         icon = TandemIcons.Science,
     )
+    SetupHelp()
     Status(state, onOpenPermissions)
     Service(state, onAction)
     Distributors(state, onAction)
@@ -99,6 +104,17 @@ private fun Available(state: FastPushUiState, onAction: (FastPushAction) -> Unit
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = TandemTheme.spacing.lg),
+    )
+}
+
+/** The service is the household's own to run: the public instructions are the next step without one. */
+@Composable
+private fun SetupHelp() {
+    val uriHandler = LocalUriHandler.current
+    TandemTextButton(
+        text = stringResource(R.string.fast_push_setup_help),
+        onClick = { runCatching { uriHandler.openUri(SETUP_HELP_URL) } },
+        modifier = Modifier.testTag(FAST_PUSH_SETUP_TAG),
     )
 }
 
@@ -242,6 +258,13 @@ private fun Buttons(state: FastPushUiState, onAction: (FastPushAction) -> Unit) 
     val spacing = TandemTheme.spacing
     Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         if (state.busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        if (!state.isOn && state.distributors.isNotEmpty() && state.selectedDistributor == null) {
+            Text(
+                text = stringResource(R.string.fast_push_choose_distributor),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         if (!state.isOn) {
             TandemPrimaryButton(
                 text = stringResource(
@@ -277,3 +300,9 @@ internal fun explanationOf(error: FastPushError?): Int = when (error) {
     null -> R.string.fast_push_error_service
     else -> messageOf(error)
 }
+
+/** The project's public instructions for the optional service (docs/PUSH.md); no server of anyone's. */
+private const val SETUP_HELP_URL = "https://github.com/Demacish/tandem/blob/main/docs/PUSH.md"
+
+/** "Så sätter du upp tjänsten". */
+internal const val FAST_PUSH_SETUP_TAG = "fast-push:setup"

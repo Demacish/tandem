@@ -77,6 +77,13 @@ class ScanAccessibilityTest {
     fun recipeTextPages() = check(ScanShot.RECIPE_TEXT_PAGES)
 
     @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun recipeTextPagesLandscape() = check(ScanShot.RECIPE_TEXT_PAGES)
+
+    @Test
+    fun recipeTextPagesFontScale2() = check(ScanShot.RECIPE_TEXT_PAGES, fontScale = 2f)
+
+    @Test
     fun recipeTextReading() = check(ScanShot.RECIPE_TEXT_READING)
 
     @Test

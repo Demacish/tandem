@@ -8,7 +8,6 @@ import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,9 +24,11 @@ import casa.moller.tandem.feature.scan.barcode.ScanCameraAction
 import casa.moller.tandem.feature.scan.barcode.ScanCameraUi
 import casa.moller.tandem.feature.scan.camera.CameraAccess
 import casa.moller.tandem.feature.scan.camera.CameraPreview
+import casa.moller.tandem.feature.scan.camera.CameraReadyEffect
 import casa.moller.tandem.feature.scan.camera.rememberCameraController
 import casa.moller.tandem.feature.scan.camera.rememberCameraPermission
 import casa.moller.tandem.feature.scan.camera.rememberPhotoPicker
+import casa.moller.tandem.feature.scan.camera.takePictureOr
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
 import casa.moller.tandem.feature.scan.navigation.FridgeScanKey
 import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
@@ -111,10 +112,7 @@ internal fun FridgeScanRoute(
             // Not gated on "busy": unbinding the camera while it takes the photo aborts the capture.
             if (permission.access == CameraAccess.GRANTED && state.cameraWanted) {
                 val bound = rememberCameraController(CameraController.IMAGE_CAPTURE)
-                DisposableEffect(bound) {
-                    controller = bound
-                    onDispose { controller = null }
-                }
+                CameraReadyEffect(bound) { controller = it }
                 CameraPreview(controller = bound, modifier = previewModifier)
             }
         },
@@ -123,8 +121,8 @@ internal fun FridgeScanRoute(
 
 /** Takes one photo; its bytes are copied and the frame closed at once, then the ViewModel scales it off the main thread. */
 private fun takePhoto(controller: LifecycleCameraController, context: Context, onResult: (FridgeScanAction) -> Unit) {
-    controller.takePicture(
-        context.mainExecutor,
+    controller.takePictureOr(
+        context,
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val rotation = image.imageInfo.rotationDegrees
@@ -141,5 +139,5 @@ private fun takePhoto(controller: LifecycleCameraController, context: Context, o
                 onResult(FridgeScanAction.PhotoFailed)
             }
         },
-    )
+    ) { onResult(FridgeScanAction.PhotoFailed) }
 }

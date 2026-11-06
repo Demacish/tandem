@@ -93,6 +93,21 @@ data class CookSession(val recipes: List<CookSessionRecipe>, val activeRecipeId:
         return copy(recipes = left, activeRecipeId = active)
     }
 
+    /**
+     * Puts [recipe] back at tab [index] and selects it ("Ångra" after ✕). It keeps its [instance][CookSessionRecipe.instance],
+     * so its cook mode, still in the entry's ViewModelStore, comes back as it was. Open or full: nothing changes.
+     */
+    fun restore(recipe: CookSessionRecipe, index: Int): CookSession = when {
+        recipe.recipeId in this -> select(recipe.recipeId)
+
+        !canAdd -> this
+
+        else -> copy(
+            recipes = recipes.toMutableList().apply { add(index.coerceIn(0, size), recipe) },
+            activeRecipeId = recipe.recipeId,
+        )
+    }
+
     /** "active|next|id:step:servings:instance,…" (servings "-" when not chosen). */
     fun encode(): String = buildString {
         append(activeRecipeId).append('|').append(nextInstance).append('|')

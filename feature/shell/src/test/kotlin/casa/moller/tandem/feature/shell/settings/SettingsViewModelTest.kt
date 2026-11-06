@@ -3,6 +3,8 @@ package casa.moller.tandem.feature.shell.settings
 import app.cash.turbine.test
 import casa.moller.tandem.core.common.AppBuildInfo
 import casa.moller.tandem.core.data.session.Session
+import casa.moller.tandem.core.model.account.SpacePermissions
+import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.diagnostics.LogExport
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -17,6 +19,7 @@ import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeDiagnosticsRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.FakeTimerController
 import casa.moller.tandem.feature.shell.FakeAppearanceRepository
@@ -53,6 +56,7 @@ class SettingsViewModelTest {
     private val diagnostics = FakeDiagnosticsRepository()
     private val sessions = FakeSessionRepository()
     private val preferences = FakePreferencesRepository()
+    private val spacePermissions = FakeSpacePermissionsRepository()
 
     private fun newViewModel(distribution: String = "sideload", manufacturer: String = "Google") = SettingsViewModel(
         settingsRepository = settings,
@@ -65,7 +69,17 @@ class SettingsViewModelTest {
         buildInfo = AppBuildInfo(versionName = "0.2.0-dev", versionCode = 20, distribution = distribution, isDebug = true, sdkInt = 36),
         manufacturer = manufacturer,
         preferences = preferences,
+        spacePermissions = spacePermissions,
     )
+
+    @Test
+    fun aGuestHasNoExpirySwitchToTurnOn() = runTest {
+        val viewModel = newViewModel()
+        val sync = collecting(viewModel.sync)
+        assertFalse(sync.value.readOnly)
+        spacePermissions.state.value = SpacePermissions(SpaceRole.GUEST)
+        assertTrue(sync.value.readOnly)
+    }
 
     /** The screens' states are built while collected; keeps one collector for the test. */
     private fun <T> TestScope.collecting(flow: StateFlow<T>): StateFlow<T> {

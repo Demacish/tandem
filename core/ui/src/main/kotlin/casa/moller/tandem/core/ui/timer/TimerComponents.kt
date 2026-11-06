@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -220,7 +221,7 @@ fun TimerBarItem(
                 showRecipe = showRecipe,
                 modifier = Modifier.weight(1f),
             )
-            TimerButtons(timer = timer, actions = actions, colors = colors)
+            TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
         }
     }
 }
@@ -275,10 +276,21 @@ fun TimerCard(
                 horizontalArrangement = Arrangement.spacedBy(spacing.xs, Alignment.End),
                 itemVerticalAlignment = Alignment.CenterVertically,
             ) {
-                TimerButtons(timer = timer, actions = actions, colors = colors)
+                TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
             }
         }
     }
+}
+
+/**
+ * The timer's name for a button's description: with [withRecipe] and a known recipe "Koka · 10 min
+ * (Krämig svamppasta)", as the lock-screen alarm says it. Two recipes' steps are often named alike,
+ * and a button must say which timer it stops.
+ */
+@Composable
+fun timerLabel(timer: CookTimer, withRecipe: Boolean): String {
+    val recipe = timer.recipeName?.takeIf { withRecipe } ?: return timer.label
+    return stringResource(R.string.ui_timer_label_with_recipe, timer.label, recipe)
 }
 
 /** How far the timer has run, 0..1 (1 once it rang). */
@@ -318,7 +330,8 @@ private fun TimerInfo(
                 text = recipe,
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.accent,
-                maxLines = 1,
+                // Two lines at a large font: names that start alike must stay apart.
+                maxLines = if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -352,9 +365,9 @@ private fun TimerInfo(
 
 /** The buttons of one timer, by state: +1 min, pause/resume and remove; Stop while it rings. */
 @Composable
-private fun TimerButtons(timer: CookTimer, actions: TimerActions, colors: TimerColors) {
+private fun TimerButtons(timer: CookTimer, actions: TimerActions, colors: TimerColors, showRecipe: Boolean = false) {
     val id = timer.id
-    val label = timer.label
+    val label = timerLabel(timer, withRecipe = showRecipe)
     if (timer.state != TimerState.FINISHED) {
         PlusOneMinuteButton(label = label, color = colors.content, onClick = { actions.onAddMinute(id) })
     }
@@ -472,3 +485,6 @@ private const val TRACK_ALPHA = 0.24f
 
 /** Digits of equal width, so a countdown does not jitter. */
 private const val TABULAR_NUMBERS = "tnum"
+
+/** From this font scale a recipe's name may take two lines on a timer. */
+private const val LARGE_FONT_SCALE = 1.5f

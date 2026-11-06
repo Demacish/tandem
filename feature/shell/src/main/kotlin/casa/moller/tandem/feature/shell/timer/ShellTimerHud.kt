@@ -48,6 +48,7 @@ import casa.moller.tandem.core.ui.timer.formatRemaining
 import casa.moller.tandem.core.ui.timer.rememberTimerNow
 import casa.moller.tandem.core.ui.timer.sortedForDisplay
 import casa.moller.tandem.core.ui.timer.timerDescription
+import casa.moller.tandem.core.ui.timer.timerLabel
 import casa.moller.tandem.feature.shell.R
 import kotlin.time.Instant
 
@@ -117,6 +118,8 @@ internal fun ShellTimerHud(
 ) {
     val primary = timers.first()
     val now by rememberTimerNow()
+    // Fas 4 (two recipes at once): with timers of two recipes the row says whose this one is.
+    val showRecipe = timers.mapNotNull { it.recipeId }.distinct().size > 1 && primary.recipeName != null
     val ringing = primary.state == TimerState.RINGING
     val scheme = MaterialTheme.colorScheme
     // Like core:ui's timer bar: ringing is the error container, otherwise the inverse surface.
@@ -138,7 +141,7 @@ internal fun ShellTimerHud(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.xs),
         ) {
-            val description = timerDescription(primary, now)
+            val description = timerDescription(primary, now, withRecipe = showRecipe)
             val openLabel = stringResource(R.string.timer_hud_open)
             Row(
                 modifier = Modifier
@@ -163,7 +166,7 @@ internal fun ShellTimerHud(
                 // The name may be cut short, the time never (fix-ui, 0.2.0 review): it is what the
                 // bar is for. Both are drawn only; the button's description says them.
                 Text(
-                    text = primary.label,
+                    text = if (showRecipe) stringResource(R.string.timer_hud_with_recipe, primary.recipeName.orEmpty(), primary.label) else primary.label,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -203,7 +206,7 @@ internal fun ShellTimerHud(
                 }
             }
             if (ringing) {
-                val stopDescription = stringResource(R.string.timer_hud_stop_description, primary.label)
+                val stopDescription = stringResource(R.string.timer_hud_stop_description, timerLabel(primary, withRecipe = showRecipe))
                 // Filled in the bar's own colours, reversed: clearly the one thing to press.
                 Button(
                     onClick = { onStop(primary.id) },

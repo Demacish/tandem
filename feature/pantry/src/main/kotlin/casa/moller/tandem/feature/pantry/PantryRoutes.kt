@@ -1,7 +1,11 @@
 package casa.moller.tandem.feature.pantry
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarDuration
@@ -19,9 +23,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringArrayResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.ui.pantry.foodTitle
@@ -151,10 +157,18 @@ private fun PantryHomeRoute(
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         reminder.onAction(ExpiryReminderAction.PermissionResult(granted))
     }
+    // Notifications may have been allowed in the system's settings meanwhile.
+    LifecycleResumeEffect(reminder) {
+        reminder.onAction(ExpiryReminderAction.Refresh)
+        onPauseOrDispose { }
+    }
+    val context = LocalContext.current
     LaunchedEffect(reminder, snackbarHostState, resources) {
         reminder.effects.collect { effect ->
             when (effect) {
                 ExpiryReminderEffect.RequestPermission -> permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+
+                ExpiryReminderEffect.OpenNotificationSettings -> openNotificationSettings(context)
 
                 ExpiryReminderEffect.Enabled -> scope.launch {
                     snackbarHostState.showSnackbar(resources.getString(R.string.pantry_expiry_reminder_enabled))
@@ -364,5 +378,15 @@ internal fun Resources.text(message: PantryMessage): String {
         is PantryMessage.LocationSaved -> getString(R.string.pantry_message_location_saved, message.name)
 
         is PantryMessage.LocationDeleted -> getString(R.string.pantry_message_location_deleted, message.name)
+    }
+}
+
+/** The app's notification page of the system; a device without it does nothing. */
+private fun openNotificationSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+    try {
+        context.startActivity(intent)
+    } catch (ignored: ActivityNotFoundException) {
+        // Nothing to open.
     }
 }

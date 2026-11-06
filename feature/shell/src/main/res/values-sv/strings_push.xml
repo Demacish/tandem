@@ -2,13 +2,13 @@
 <!-- Fas 4 (push lane): Mer → Synk och lagring → Snabb push (plan §4.3, B11; docs/PUSH.md). -->
 <resources>
     <string name="fast_push_row">Snabb push (egen tjänst, experimentell)</string>
-    <string name="fast_push_row_body">Ändringar på listan inom en minut via en liten tjänst som hushållet kör själv. Av som standard.</string>
+    <string name="fast_push_row_body">Ändringar på listan kommer fram snabbt via en liten tjänst som hushållet kör själv. Av som standard.</string>
     <string name="fast_push_title">Snabb push</string>
     <string name="fast_push_demo">Demoläget har ingen server, så det finns inget att skicka. Anslut en Tandoor för att använda snabb push.</string>
     <string name="fast_push_guest">Gäster kan inte använda snabb push. Be hushållets administratör om ett medlemskonto.</string>
     <string name="fast_push_no_account">Logga in på en Tandoor först.</string>
     <string name="fast_push_intro_title">Experimentellt och inte nödvändigt</string>
-    <string name="fast_push_intro_body">Utan det kontrollerar Tandem listan i bakgrunden som vanligt. Med det kontrollerar en liten push-tjänst som hushållet kör själv inköpslistan och väcker telefonen via en UnifiedPush-app (till exempel ntfy), så att en ändring syns inom en minut även när Tandem är stängd.</string>
+    <string name="fast_push_intro_body">Utan det kontrollerar Tandem listan i bakgrunden som vanligt. Med det kontrollerar en liten push-tjänst som hushållet kör själv inköpslistan och väcker telefonen via en UnifiedPush-app (till exempel ntfy), så att en ändring syns snabbt även när Tandem är stängd.</string>
     <string name="fast_push_privacy">När du slår på det, och om väckningsadressen ändras, skickar Tandem sin Tandoor-token till tjänsten, så att tjänsten kan kontrollera att du hör till dess hushåll; tjänsten sparar den inte. En väckning säger bara \"synka nu\": vad som ändrats läser Tandem själv.</string>
     <string name="fast_push_status_heading">Läge</string>
     <string name="fast_push_status_off">Av</string>
@@ -18,13 +18,15 @@
     <string name="fast_push_status_active">På</string>
     <plurals name="fast_push_status_active_body">
         <item quantity="one">Tjänsten kontrollerar listan varje sekund.</item>
-        <item quantity="other">Tjänsten kontrollerar listan var %1$d:e sekund.</item>
+        <item quantity="other">Tjänsten kontrollerar listan med %1$d sekunders mellanrum.</item>
     </plurals>
     <string name="fast_push_status_failed">Fungerar inte</string>
     <string name="fast_push_last_wake_up">Senaste väckning: %1$s</string>
     <string name="fast_push_notifications_blocked">Tandem får inte visa notiser, så ändringar kommer fram utan notis.</string>
     <string name="fast_push_list_notifications_off">Notisen visas bara när \"Notis när någon ändrar listan\" är på (Synk och lagring).</string>
     <string name="fast_push_open_permissions">Öppna Behörigheter</string>
+    <string name="fast_push_setup_help">Så sätter du upp tjänsten</string>
+    <string name="fast_push_choose_distributor">Välj en UnifiedPush-app ovan för att slå på.</string>
     <string name="fast_push_service_heading">Push-tjänst</string>
     <string name="fast_push_service_url">Tjänstens adress</string>
     <string name="fast_push_service_url_placeholder">https://push.exempel.se</string>

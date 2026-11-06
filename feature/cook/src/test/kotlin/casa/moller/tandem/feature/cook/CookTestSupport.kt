@@ -200,12 +200,12 @@ internal fun CookSessionWithFakes(
     layout: CookLayout? = null,
     modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
-) {
-    val sessionViewModel = remember {
+    sessionViewModel: CookSessionViewModel = remember {
         fakes.sessionViewModel(sessionKey).also { session ->
             sessionKey.alongsideRecipeId?.takeIf { showFirst }?.let { session.onAction(CookSessionAction.SelectRecipe(it)) }
         }
-    }
+    },
+) {
     val viewModels = remember { mutableMapOf<String, CookViewModel>() }
     val session by sessionViewModel.session.collectAsState()
     val picker by sessionViewModel.picker.collectAsState()
@@ -227,20 +227,20 @@ internal fun CookSessionWithFakes(
             LaunchedEffect(model) { model.effects.collect { effect -> if (effect is CookEffect.Finished) currentCloseRecipe(id) } }
         }
     }
-    key(active) {
-        CookScreen(
-            state = states.getValue(active),
-            onAction = viewModel::onAction,
-            onClose = { closeRecipe(active) },
-            layout = layout,
-            modifier = modifier,
-            session = CookSessionUi.of(session, states),
-            onSessionAction = { action ->
-                sessionViewModel.onAction(action)
-                if (action is CookSessionAction.OpenTimer) models[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
-            },
-        )
-    }
+    val closedRecipeId by sessionViewModel.closedRecipeId.collectAsState()
+    CookScreen(
+        state = states.getValue(active),
+        onAction = viewModel::onAction,
+        onClose = { closeRecipe(active) },
+        onCloseTab = if (session.isTwo) ({ sessionViewModel.onAction(CookSessionAction.CloseRecipe(active, undoable = true)) }) else null,
+        layout = layout,
+        modifier = modifier,
+        session = CookSessionUi.of(session, states, closedRecipeId),
+        onSessionAction = { action ->
+            sessionViewModel.onAction(action)
+            if (action is CookSessionAction.OpenTimer) models[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
+        },
+    )
     if (picker.open) {
         Surface { CookRecipePickerContent(state = picker, onAction = sessionViewModel::onAction) }
     }

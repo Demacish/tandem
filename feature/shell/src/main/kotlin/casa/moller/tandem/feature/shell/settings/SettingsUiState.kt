@@ -50,6 +50,8 @@ data class SyncSettingsUiState(
     val notificationsAllowed: Boolean = true,
     // Fas 4 (skafferinotis lane): "Notis när något går ut" (plan §8.8 "Använd upp").
     val pantryExpiryNotifications: Boolean = false,
+    // Review of Fas 4: a guest (the check says GUEST every morning) has no such switch.
+    val readOnly: Boolean = false,
 )
 
 /**

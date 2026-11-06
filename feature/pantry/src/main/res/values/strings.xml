@@ -222,9 +222,11 @@
     <string name="pantry_expiry_reminder_title">Remind you when something expires?</string>
     <string name="pantry_expiry_reminder_body">Tandem can tell you in the morning when something at home expires today or tomorrow, with the recipes that use it up. You can turn it off under Settings.</string>
     <string name="pantry_expiry_reminder_enable">Turn on</string>
-    <string name="pantry_expiry_reminder_not_now">Not now</string>
+    <string name="pantry_expiry_reminder_not_now">No thanks</string>
     <string name="pantry_expiry_reminder_blocked_title">Notifications are off</string>
     <string name="pantry_expiry_reminder_blocked_body">The expiry reminder is on, but Tandem is not allowed to show notifications. Allow them to get it.</string>
+    <string name="pantry_expiry_reminder_settings_body">The system no longer asks. Allow notifications for Tandem in the settings to get the reminder.</string>
+    <string name="pantry_expiry_reminder_open_settings">Open settings</string>
     <string name="pantry_expiry_reminder_ask_again">Ask again</string>
     <string name="pantry_expiry_reminder_enabled">You will get a notification in the morning when something expires.</string>
     <string name="pantry_expiry_reminder_not_saved">The setting could not be saved.</string>

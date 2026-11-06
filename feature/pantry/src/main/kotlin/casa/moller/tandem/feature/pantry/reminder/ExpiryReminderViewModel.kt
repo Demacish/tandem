@@ -29,16 +29,24 @@ import kotlinx.coroutines.launch
  *
  * @property blocked the notification is switched on but the system does not let Tandem post: the
  *   card asks again ("Fråga igen") instead of offering it.
+ * @property openSettings blocked, and Tandem has asked before: after a second no the system answers
+ *   "denied" without a dialog, so the card opens the system's page instead ("Öppna inställningar").
  */
-data class ExpiryReminderOffer(val blocked: Boolean = false)
+data class ExpiryReminderOffer(val blocked: Boolean = false, val openSettings: Boolean = false)
 
 /** What the card asks for. */
 sealed interface ExpiryReminderAction {
     /** "Slå på" (or "Fråga igen"): the setting on, and the permission asked in context when it is missing. */
     data object Enable : ExpiryReminderAction
 
-    /** "Inte nu": never offered again (Settings keeps the switch). */
+    /** "Nej tack": never offered again (Settings keeps the switch). */
     data object Dismiss : ExpiryReminderAction
+
+    /** "Öppna inställningar": the app's notification page of the system. */
+    data object OpenSettings : ExpiryReminderAction
+
+    /** Back on Hemma: notifications may have been allowed in the system's settings. */
+    data object Refresh : ExpiryReminderAction
 
     /** The answer to the system's notification dialog. */
     data class PermissionResult(val granted: Boolean) : ExpiryReminderAction
@@ -48,6 +56,9 @@ sealed interface ExpiryReminderAction {
 sealed interface ExpiryReminderEffect {
     /** Show the system's notification permission dialog (Android 13+). */
     data object RequestPermission : ExpiryReminderEffect
+
+    /** Open the system's notification page for the app. */
+    data object OpenNotificationSettings : ExpiryReminderEffect
 
     /** "Du får en notis på morgonen när något går ut." */
     data object Enabled : ExpiryReminderEffect
@@ -75,10 +86,12 @@ class ExpiryReminderViewModel @Inject internal constructor(
 
     val offer: StateFlow<ExpiryReminderOffer?> = combine(
         settings.settings,
-        timers.capabilities.map { it.notificationsAllowed },
+        timers.capabilities,
         permissions.permissions,
         pantry.observePantry().map { groups -> groups.hasExpiryDates() },
-    ) { current, allowed, perms, dated -> offerOf(current, allowed, perms, dated) }
+    ) { current, capabilities, perms, dated ->
+        offerOf(current, capabilities.notificationsAllowed, perms, dated, capabilities.notificationPermissionAsked)
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
 
     fun onAction(action: ExpiryReminderAction) {
@@ -96,6 +109,10 @@ class ExpiryReminderViewModel @Inject internal constructor(
             ExpiryReminderAction.Dismiss -> viewModelScope.launch {
                 if (settings.setPantryExpiryOfferDismissed(true) is Outcome.Failure) effectChannel.send(ExpiryReminderEffect.NotSaved)
             }
+
+            ExpiryReminderAction.OpenSettings -> effectChannel.trySend(ExpiryReminderEffect.OpenNotificationSettings)
+
+            ExpiryReminderAction.Refresh -> timers.refreshCapabilities()
 
             is ExpiryReminderAction.PermissionResult -> viewModelScope.launch {
                 settings.setNotificationPermissionAsked(true)
@@ -117,9 +134,11 @@ class ExpiryReminderViewModel @Inject internal constructor(
             notificationsAllowed: Boolean,
             permissions: SpacePermissions,
             hasExpiryDates: Boolean,
+            permissionAsked: Boolean = false,
         ): ExpiryReminderOffer? = when {
             permissions.readOnly || permissions.isDemo || settings.pantryExpiryOfferDismissed -> null
-            settings.pantryExpiryNotifications -> if (notificationsAllowed) null else ExpiryReminderOffer(blocked = true)
+            settings.pantryExpiryNotifications ->
+                if (notificationsAllowed) null else ExpiryReminderOffer(blocked = true, openSettings = permissionAsked)
             hasExpiryDates -> ExpiryReminderOffer(blocked = false)
             else -> null
         }

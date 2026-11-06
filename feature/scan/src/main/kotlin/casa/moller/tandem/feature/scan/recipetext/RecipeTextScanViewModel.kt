@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.scan.recipetext
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
@@ -81,13 +82,17 @@ sealed interface RecipeTextScanEffect {
 }
 
 @HiltViewModel
-class RecipeTextScanViewModel @Inject constructor(permissions: SpacePermissionsRepository) : ViewModel() {
+class RecipeTextScanViewModel @Inject constructor(
+    private val handle: SavedStateHandle,
+    permissions: SpacePermissionsRepository,
+) : ViewModel() {
     private data class Local(val reading: Boolean = false, val problem: RecipeTextProblem? = null)
 
     private val effectChannel = Channel<RecipeTextScanEffect>(Channel.BUFFERED)
     val effects: Flow<RecipeTextScanEffect> = effectChannel.receiveAsFlow()
 
-    private val pages = MutableStateFlow<List<String>>(emptyList())
+    /** The text read so far: the camera and the picker are when the system kills the app, and it is small. */
+    private val pages: StateFlow<ArrayList<String>> = handle.getStateFlow(KEY_PAGES, ArrayList())
     private val local = MutableStateFlow(Local())
     private var readJob: Job? = null
     private var engine: ReceiptTextEngine? = null
@@ -103,7 +108,7 @@ class RecipeTextScanViewModel @Inject constructor(permissions: SpacePermissionsR
             RecipeTextScanAction.Shown -> if (readJob?.isActive != true) local.update { it.copy(reading = false) }
             is RecipeTextScanAction.PageRead -> pageRead(action.fragments)
             RecipeTextScanAction.PageFailed -> local.update { it.copy(reading = false, problem = RecipeTextProblem.UNREADABLE) }
-            RecipeTextScanAction.RemoveLastPage -> pages.update { it.dropLast(1) }
+            RecipeTextScanAction.RemoveLastPage -> handle[KEY_PAGES] = ArrayList(pages.value.dropLast(1))
             RecipeTextScanAction.DismissProblem -> local.update { it.copy(problem = null) }
             RecipeTextScanAction.Done -> done()
         }
@@ -136,7 +141,8 @@ class RecipeTextScanViewModel @Inject constructor(permissions: SpacePermissionsR
             local.update { it.copy(reading = false, problem = RecipeTextProblem.NO_TEXT) }
             return
         }
-        pages.update { it + text }
+        val room = MAX_SAVED_CHARS - pages.value.sumOf { it.length }
+        if (room > 0) handle[KEY_PAGES] = ArrayList(pages.value + text.take(room))
         local.update { it.copy(reading = false, problem = null) }
     }
 
@@ -151,7 +157,11 @@ class RecipeTextScanViewModel @Inject constructor(permissions: SpacePermissionsR
         super.onCleared()
     }
 
-    private companion object {
-        const val STOP_TIMEOUT_MILLIS = 5_000L
+    internal companion object {
+        private const val STOP_TIMEOUT_MILLIS = 5_000L
+        private const val KEY_PAGES = "recipe_text_pages"
+
+        /** Far more than a recipe, and small for a saved Bundle (the system's limit is about 1 MB). */
+        const val MAX_SAVED_CHARS: Int = 100_000
     }
 }

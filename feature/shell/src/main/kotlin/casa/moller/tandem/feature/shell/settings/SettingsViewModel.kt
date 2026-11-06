@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.common.AppBuildInfo
 import casa.moller.tandem.core.data.diagnostics.DiagnosticsRepository
+import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -14,6 +15,7 @@ import casa.moller.tandem.core.data.sync.OfflineStorageRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.feature.shell.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -52,6 +54,8 @@ class SettingsViewModel internal constructor(
     manufacturer: String,
     // 0.3.0 review (fix-data): the account's shopping preferences, shown on "Synk och lagring".
     preferences: PreferencesRepository,
+    // Review of Fas 4: a guest gets no expiry notification, so no switch for it.
+    spacePermissions: SpacePermissionsRepository,
 ) : ViewModel() {
 
     @Inject
@@ -65,6 +69,7 @@ class SettingsViewModel internal constructor(
         sessionRepository: SessionRepository,
         buildInfo: AppBuildInfo,
         preferences: PreferencesRepository,
+        spacePermissions: SpacePermissionsRepository,
     ) : this(
         settingsRepository,
         appearanceRepository,
@@ -76,6 +81,7 @@ class SettingsViewModel internal constructor(
         buildInfo,
         manufacturer = Build.MANUFACTURER.orEmpty(),
         preferences = preferences,
+        spacePermissions = spacePermissions,
     )
 
     private val effects = Channel<SettingsEffect>(Channel.BUFFERED)
@@ -106,8 +112,8 @@ class SettingsViewModel internal constructor(
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, CookingUiState())
 
     val sync: StateFlow<SyncSettingsUiState> = combine(
-        combine(settings, isDemo, timers.capabilities) { current, demo, capabilities ->
-            Triple(current, demo, capabilities.notificationsAllowed)
+        combine(settings, isDemo, timers.capabilities, spacePermissions.permissions) { current, demo, capabilities, space ->
+            SyncInputs(current, demo, capabilities.notificationsAllowed, space.readOnly)
         },
         offlineStorage.observeStorage(),
         syncRepository.status,
@@ -116,9 +122,10 @@ class SettingsViewModel internal constructor(
         combine(preferences.observeUserPreferences(), preferences.observeShoppingMinAutoSyncSeconds()) { prefs, floor ->
             ShoppingServerSettings.of(prefs, floor)
         }.distinctUntilChanged(),
-    ) { (current, demo, notificationsAllowed), storage, status, clearing, shopping ->
+    ) { (current, demo, notificationsAllowed, readOnly), storage, status, clearing, shopping ->
         SyncSettingsUiState(
             isDemo = demo,
+            readOnly = readOnly,
             interval = current.syncInterval,
             downloadAll = current.downloadAllRecipes,
             storage = storage,
@@ -130,6 +137,8 @@ class SettingsViewModel internal constructor(
             pantryExpiryNotifications = current.pantryExpiryNotifications,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())
+
+    private data class SyncInputs(val settings: AppSettings, val demo: Boolean, val notificationsAllowed: Boolean, val readOnly: Boolean)
 
     val permissions: StateFlow<PermissionsUiState> = combine(
         timers.capabilities,

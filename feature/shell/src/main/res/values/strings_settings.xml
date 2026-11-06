@@ -103,7 +103,7 @@
     <string name="settings_permissions_privacy_title">Everything stays with you</string>
     <string name="settings_permissions_privacy_body">Tandem talks to your own Tandoor server, and only when you use them to Open Food Facts (an unknown barcode, nothing else) and to the AI service you chose (the fridge photo). No location, no contacts, no tracking.</string>
     <string name="settings_permission_notifications">Notifications</string>
-    <string name="settings_permission_notifications_body">Timers counting down and ringing, news about your server, and changes to the shopping list when you chose that.</string>
+    <string name="settings_permission_notifications_body">Timers counting down and ringing, news about your server, and changes to the shopping list and food about to expire when you chose that.</string>
     <string name="settings_permission_alarm_channel">Alarm sound for timers</string>
     <string name="settings_permission_alarm_channel_body">The notification type “Timers (alarm)” must be on, with sound, so a finished timer is shown over the lock screen.</string>
     <string name="settings_permission_exact">Alarms on time</string>
@@ -211,6 +211,7 @@
     <string name="timer_hud_more">All (%1$d)</string>
     <string name="timer_hud_show_all">Show all %1$d timers</string>
     <string name="timer_hud_open">Open cook mode</string>
+    <string name="timer_hud_with_recipe">%1$s: %2$s</string>
     <string name="timer_hud_stop">Stop</string>
     <string name="timer_hud_stop_description">Stop the alarm for %1$s</string>
 

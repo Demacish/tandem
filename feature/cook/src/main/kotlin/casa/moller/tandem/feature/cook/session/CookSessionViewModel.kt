@@ -14,6 +14,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -96,9 +97,31 @@ class CookSessionViewModel @AssistedInject constructor(
             is CookSessionAction.OpenTimer -> update { it.select(action.recipeId) }
 
             // Removing the only recipe is the route's (cook mode closes); the session keeps it.
-            is CookSessionAction.CloseRecipe -> update { it.remove(action.recipeId) ?: it }
+            is CookSessionAction.CloseRecipe -> {
+                val current = session.value
+                closed = current.recipes.firstOrNull { it.recipeId == action.recipeId }
+                    ?.takeIf { action.undoable && current.isTwo }
+                    ?.let { ClosedRecipe(it, current.recipes.indexOf(it)) }
+                closedRecipeId.value = closed?.recipe?.recipeId
+                update { it.remove(action.recipeId) ?: it }
+            }
+
+            CookSessionAction.RestoreClosed -> {
+                val restored = closed ?: return
+                closed = null
+                closedRecipeId.value = null
+                update { it.restore(restored.recipe, restored.index) }
+            }
         }
     }
+
+    /** What ✕ took away, while "Ångra" or a tapped timer of it can bring it back (not saved: a snackbar's life). */
+    private var closed: ClosedRecipe? = null
+
+    private data class ClosedRecipe(val recipe: CookSessionRecipe, val index: Int)
+
+    /** The recipe ✕ closed, for the timers that are still running for it. */
+    val closedRecipeId = MutableStateFlow<Long?>(null)
 
     private fun closePicker() {
         savedStateHandle[KEY_PICKER_OPEN] = false
@@ -153,8 +176,15 @@ sealed interface CookSessionAction {
     /** A tab was tapped. */
     data class SelectRecipe(val recipeId: Long) : CookSessionAction
 
-    /** ✕ of a recipe in two-recipe mode, or its "Klart!" was saved: the other recipe stays. */
-    data class CloseRecipe(val recipeId: Long) : CookSessionAction
+    /**
+     * ✕ of a recipe in two-recipe mode, or its "Klart!" was saved: the other recipe stays.
+     *
+     * @property undoable ✕: the step, servings and draft can come back ([RestoreClosed]).
+     */
+    data class CloseRecipe(val recipeId: Long, val undoable: Boolean = false) : CookSessionAction
+
+    /** "Ångra" after ✕, or a tapped timer of the closed recipe: it comes back as it was. */
+    data object RestoreClosed : CookSessionAction
 
     /** A timer of [recipeId] was tapped: its tab opens at [step] (the route also turns that recipe's page). */
     data class OpenTimer(val recipeId: Long, val step: Int) : CookSessionAction

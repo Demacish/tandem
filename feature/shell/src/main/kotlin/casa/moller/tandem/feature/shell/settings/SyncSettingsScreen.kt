@@ -91,7 +91,9 @@ internal fun SyncSettingsScreen(
             }
             DownloadAll(state = state, onChange = { onAction(SettingsAction.SetDownloadAll(it)) })
             ShoppingNotifications(state = state, onChange = { onAction(SettingsAction.SetShoppingNotifications(it)) })
-            PantryExpiryNotifications(state = state, onChange = { onAction(SettingsAction.SetPantryExpiryNotifications(it)) })
+            if (!state.readOnly) {
+                PantryExpiryNotifications(state = state, onChange = { onAction(SettingsAction.SetPantryExpiryNotifications(it)) })
+            }
             state.shopping?.let { ShoppingServerSettingsGroup(settings = it) }
         }
         // Fas 4 (push lane): the optional fast push (its page explains demo mode and guests).

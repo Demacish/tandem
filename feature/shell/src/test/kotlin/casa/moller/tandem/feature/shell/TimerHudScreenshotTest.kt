@@ -79,6 +79,15 @@ abstract class TimerHudScreenshotTest(private val device: String) {
         composeRule.onNodeWithTag(TIMER_HUD_STATUS_TAG, useUnmergedTree = true).assertIsDisplayed()
     }
 
+    // Fas 4 (two recipes at once): timers of two recipes, the bar says whose this one is.
+    @Test
+    fun twoRecipesRunning() {
+        val pasta = PASTA_TIMER.copy(recipeId = 1, recipeName = "Krämig svamppasta")
+        val buns = SAUCE_TIMER.copy(recipeId = 2, recipeName = "Kanelbullar")
+        capture("today_timer_two_recipes_light", CONNECTED_STATE.copy(timers = listOf(pasta, buns)), ShellTab.TODAY)
+        composeRule.onNodeWithTag(TIMER_HUD_STATUS_TAG, useUnmergedTree = true).assertIsDisplayed()
+    }
+
     @Test
     fun todayRunningFontScale2() = capture("today_timer_running_font_scale_2_light", ringing, ShellTab.TODAY, fontScale = 2f)
 
