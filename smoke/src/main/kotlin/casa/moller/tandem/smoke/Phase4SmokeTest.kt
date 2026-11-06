@@ -350,7 +350,11 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         }
         assertTrue("\"$KEYWORD\" is chosen", app.findNode(::isChosenKeyword) != null)
         // The rows follow the chip a moment later: the button must not take the old suggestions.
-        assertTrue("Only the keyword's recipes", nodeGone(TandemApp.UI_TIMEOUT_MS) { it.text?.toString() in WITHOUT_KEYWORD })
+        // A row is "<weekday>: <recipe>"; the accessibility cache can hold a replaced row for long.
+        device.waitUntil("only the keyword's recipes in the sheet") {
+            instrumentation.uiAutomation.clearCache()
+            app.findNode { node -> node.contentDescription?.let { WITHOUT_KEYWORD.containsMatchIn(it) } == true } == null
+        }
         app.waitForNode("\"$ACCEPT_SEVEN\"") { it.text?.toString() == ACCEPT_SEVEN }
         app.capture("phase4-week-suggestions")
         for (attempt in 1..TAP_ATTEMPTS) {
@@ -514,7 +518,7 @@ class Phase4SmokeTest : Phase2SmokeBase() {
 
         /** (d) seven of the recorded recipes get the keyword, the others not. */
         val WEEKDAY_RECIPES = listOf(1L, 2L, 3L, 5L, 6L, 8L, 11L)
-        val WITHOUT_KEYWORD = setOf("Kanelbullar", "Ärtsoppa", "Smörgåstårta", "Äppelkaka", "Tillfälligt recept")
+        val WITHOUT_KEYWORD = Regex(": (Kanelbullar|Ärtsoppa|Smörgåstårta|Äppelkaka|Tillfälligt recept)")
         const val SEVEN = 7
         const val KEYWORD = "Vardag"
         const val KEYWORDS_HEADING = "Keywords (a suggestion has every one you choose)"

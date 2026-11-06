@@ -741,7 +741,7 @@ inte i röktestet; ai-foto-banan prövar Claude-klienten mot en fejkad server i 
 | `sideloadMinified` (R8, alla fyra ABI, `smoke.yml`) | 7 616 478 B (7,6 MB) | 73 436 724 B (73,4 MB) | +65,8 MB |
 | `sideloadDebug` (artefakten `tandem-sideload-debug` i `pr.yml`, zippad) | 20 612 821 B | 65 967 542 B (APK:n själv 178,7 MB) | +45,4 MB |
 
-**Vid 0.4.0** (integrationen, `smoke.yml` körning 41002843336): 77 174 745 B (77,2 MB) mot
+**Vid 0.6.0:** se "Integration av Fas 4 (0.6.0)". **Vid 0.4.0** (integrationen, `smoke.yml` körning 41002843336): 77 174 745 B (77,2 MB) mot
 77 154 264 B på `main` 5628a1d före integrationen och 7 616 478 B före Fas S, alltså +69,6 MB för
 hela fasen (licenstexterna och keep-regeln för DTO:erna är ca 20 KB). Beslutet om ABI-filter eller
 uppdelade APK:er (se förslaget nedan) är fortfarande öppet.
@@ -1060,11 +1060,11 @@ dra mellan veckor.
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
 
-Fas 4 "Smart hushåll" byggs i delsteg på grenen `claude/vigilant-galileo-1xv20t` efter att Fas 3
-slogs ihop till `main` (PR #4, 0.5.0). Avsnittet uppdateras **efter varje commit** så att arbetet
-kan tas upp igen där det avbröts. De fem sista banorna (`fas4/fas3-rester`, `fas4-kvar`,
+Fas 4 "Smart hushåll" byggdes i delsteg på grenen `claude/vigilant-galileo-1xv20t` efter att Fas 3
+slogs ihop till `main` (PR #4, 0.5.0). De fem sista banorna (`fas4/fas3-rester`, `fas4-kvar`,
 `skafferinotis`, `push`, `kok2`) plockades ihop på `fas4/samla` med alla sina commits och kom in på
-`main` tillsammans; körningarna nedan gäller den samlade grenen.
+`main` tillsammans; körningarna nedan gäller den samlade grenen. `fas4/integration` gjorde 0.6.0
+hel, se "Integration av Fas 4 (0.6.0)".
 
 | Delsteg | Läge | Avsnitt |
 |---|---|---|
@@ -1074,7 +1074,8 @@ kan tas upp igen där det avbröts. De fem sista banorna (`fas4/fas3-rester`, `f
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
 | Valfri snabb push (push-tjänst + UnifiedPush i appen) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; `push-service.yml` 42112572458 på 3e39331: enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1; imagen är inte publicerad, det sker först med en `v*`-tagg) | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Synk-sidans fyra bilder inspelade igen med båda nya raderna, Screenshots 42112568644) | "Notis när något går ut" |
-| Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestet har inget eget scenario för två recept än | "Två recept samtidigt" |
+| Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
+| Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Contract 2.6.13/2.7.1 42112553318 på 3e39331, Fas 3-resternas steg grönt; referensbilder incheckade) | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
@@ -1100,6 +1101,87 @@ Delsteget byggdes i tre bitar, var och en med egna tester, strängar (en/sv) och
    `SuggestWeekCard` + `WeekSuggestionsPanel` (`ui/WeekSuggestionsPanel.kt`), `WeekMessage.Suggested`.
    Skott `SUGGESTIONS`, `SUGGESTIONS_SAVING`, `SUGGESTIONS_NO_FREE_DAYS`; kortet syns i `WEEK*`.
 <!-- /Fas 4 läge -->
+
+<!-- Fas 4 integration -->
+## Integration av Fas 4 (0.6.0)
+
+**Vad röktestet hittade.** Det var det nya emulatorscenariot, inte enhetstesterna, som visade felet:
+stänger man den **första** fliken i kokläget flyttade det andra receptet till det stängdas sida
+(steg 3 av 3 blev 2 av 3). `CookRoute` samlade tillstånden positionsvis, så det kvarvarande receptet
+tog över platsen och hade under en bildruta det stängda receptets tillstånd; pagern öppnades på den
+sidan och skrev tillbaka den. Varje recept har nu en egen `key` runt sin ViewModel och sitt tillstånd.
+
+**Rättat i integrationen:**
+
+- "Laga" i Kan laga nu går genom skalets `startCooking` (`cookKeyAlongside`).
+- Skalets karta över recepten per kokpost sparas med backstackarna (`CookRecipesSaver`, JSON), så
+  en timernotis för andra fliken hittar sin kokpost direkt efter processdöd. Stängda poster glöms.
+- `DefaultFastPushRepository`: en registrering som slagits på i samma process blev aldrig släppt
+  vid utloggning eller kontobyte, och tjänsten fick aldrig veta något. Nu håller repositoryt den i
+  minnet och släpper den hos distributören och tjänsten när kontot lämnas.
+- `AccountNotificationCleanup`: list-, skafferi- och testnotisen försvinner med kontot.
+- Timerraden på telefon rymmer två kort med receptnamn (216 dp). Kortet nummer två var avklippt
+  (det gick att rulla, men tiden syntes inte).
+- Haptik när en måltid lyfts och när en sida lästs i Fota recept.
+- ATF på förslagsarket: orsaken utredd (se "Smarta förslag"), det liggande fönstret kör ATF igen.
+- PUSH.md sa att appen godtar `http://` efter en bekräftelse (den tar bara `https://`).
+
+**Kontrollerat utan ändring:** demoläget gör inga anrop och har ingen push (`Phase4SmokeTest`,
+scenario f; `DemoAndAccountsTest`). Gäster: Veckans kort och ark visas inte och `canWrite` stoppar
+`AcceptSuggestions`, butiksläget erbjuder ingen ordning och `reorderAisles` svarar `READ_ONLY`,
+`OfflineFirstRecipeEditRepository` stoppar bildborttagningen. Butiksturer, "senast notifierad", snabb
+push och Anpassa Idag ligger per konto i `sync_state` och försvinner med `clearAccount`; demot har
+egen databas. Morgonkontrollen avbryts vid utloggning och demoläge och läser alltid det aktiva
+kontot. Notiskanalerna är planens sex (`timer_alarm`, `timer_ongoing`, `shopping`, `sync_problems`,
+`import_done` reserverad, `meal_reminders`) plus `server` från B18, med planens prioriteter. Alla
+notisfunktioner går att stänga av: lista, skafferi och snabb push i Synk och lagring (av som
+standard), timers och serverversion med kanalerna i systemet.
+
+**Skärmbilder:** `cook/phone_two_{light,light_sv,dark,font2_light,ringing_dark_sv}` (Screenshots
+42132430758). Inga andra skärmar ändrades; surfplattan visar timrarna i sidopanelen. De 9 bilder
+som skiljer byte för byte i en ny inspelning (8 pantry, 1 books) är det kända bruset.
+
+**Mätningen (2026-11-06, `benchmark.yml` 42136417836 på 8796c8a, emulator API 36, profilen från
+Fas S-kompletteringen):**
+
+| Mätning | 0.6.0 median (min–max) | `main` 3938396, 0.4.0 (41436092475) |
+|---|---|---|
+| Kallstart med profil, första bildrutan | 1 875 ms (1 377–2 845) | 2 167 ms |
+| Kallstart med profil, Idag färdig | 3 986 ms (2 896–4 367) | 4 771 ms |
+| Kallstart utan kompilering, första bildrutan | 1 499 ms (1 275–2 161) | 1 688 ms |
+| Kallstart utan kompilering, Idag färdig | 3 241 ms (2 988–3 664) | 3 874 ms |
+
+Svep i receptlistan: `frameDurationCpuMs` P50/P90/P99 86 / 135 / 238 ms, `frameOverrunMs` 107 / 173 /
+344 ms. Kallstarten har inte blivit långsammare (skillnaden är inom löparnas spridning). 0.5.0 har
+ingen egen mätning: `benchmark.yml` kördes inte på 03c3597. Profilen är oförändrad; körningen gav
+en ny (41 628 regler, 10 328 för Tandems klasser, mot 39 774 / 9 479) som inte checkats in, eftersom
+mätningen inte visar något behov.
+
+**APK-storlek (`sideloadMinified`, `smoke.yml`):**
+
+| Version | Commit | Storlek | Mot 0.6.0 |
+|---|---|---|---|
+| 0.4.0 | 3938396 | 77 242 081 B | +1 379 316 B |
+| 0.5.0 | 03c3597 | 78 243 328 B | +378 069 B |
+| 0.6.0 | 8796c8a | 78 621 397 B | |
+
+UnifiedPush-connectorn och Fas 4:s kod är tillsammans under 0,4 MB; ML Kit dominerar som förut.
+
+**Kvar efter 0.6.0, och varför:**
+
+- Taggen `v0.6.0` sätts av ägaren. Först då publiceras `tandem-push`-imagen (`push-service.yml`).
+- AI-import och stegsortering med en riktig leverantör: CI får inte anropa AI-tjänster, och
+  kontraktstestet spelar in avslaget utan leverantör. Formatet verifieras av första användaren.
+- Handskrivna recept (ML Kits latinska modell läser tryckt text) och tvåspaltiga sidor.
+- Egen tid för utgångsnotisen, och 07 eller 09 i stället för 08 efter sommartidsbyte tills
+  inställningen slås av och på: en timme två gånger om året, nattspärren gäller ändå.
+- Två recept sida vid sida på mycket breda skärmar (beslutet i "Två recept samtidigt").
+- Stegfiler, länkade delrecept, näringsvärden, `show_as_header` och dra och släpp i redigeraren;
+  ATF för redigeringen vid teckenstorlek 2. Bookmarklet, flera recept ur en PDF, `import_keyword`.
+  Timerwidget, listval i widgeten, förhandsbilder, "Lägg till vara"-ruta. Dra måltider mellan
+  veckor. Inget av detta står i planens "Klart när" för Fas 3 eller 4; det är nya funktioner, inte
+  fel, och de ligger kvar i respektive avsnitt.
+<!-- /Fas 4 integration -->
 
 <!-- Fas 4 fas3-rester -->
 ## Fas 3:s rester (`:feature:recipes`, `:core:sync`, `:feature:home`, `:feature:widgets`, Fas 4, bana fas3-rester)
