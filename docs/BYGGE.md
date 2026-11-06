@@ -1075,7 +1075,7 @@ hel, se "Integration av Fas 4 (0.6.0)".
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
 | Valfri snabb push (push-tjänst + UnifiedPush i appen) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; `push-service.yml` 42112572458 på 3e39331: enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1; imagen är inte publicerad, det sker först med en `v*`-tagg) | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Synk-sidans fyra bilder inspelade igen med båda nya raderna, Screenshots 42112568644) | "Notis när något går ut" |
-| Komplettering 1: TalkBack-namn, nycklade rader, `core:sync`-felet, sidläsarens http-länk, notis när en AI-import är klar (`fas4/komplettering-1`) | pågår | "Fas 4 komplettering 1" |
+| Komplettering 1: TalkBack-namn, nycklade rader, `core:sync`-felet, sidläsarens http-länk, notis när en AI-import är klar (`fas4/komplettering-1`) | ✅ klart 2026-11-06 (PR 42242196863, röktest "OK (33 tests)" 42242196902 och Contract 42242196881 på 3d34476) | "Fas 4 komplettering 1" |
 | Granskningen av Fas 3 och 4, data och synk (`fas4/fix-data`) | ✅ klart 2026-11-06 (PR 42170268254, röktest "OK (27 tests)" 42170268224 och Contract 42170268319 på 1cbc113; `push-service.yml` 42165724376 på 80afbc7, sista ändringen i tjänsten) | "Fas 4-granskningen: data och synk" |
 | Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
 | Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
@@ -1336,6 +1336,10 @@ i systemet, liksom timers och serverversionen.
 (vilka källor som ger notis) och röktestet
 `Phase4SmokeTest.aiImportEndsWithTheAppAway_theNotificationSaysSo_andTheResultWaits`: FakeTandoor svarar
 efter 25 s, appen är borta under tiden och notisen ska komma innan appen öppnas igen.
+
+**Kvar:** emulatorn visar att kedjan fungerar i R8-appen, men inte att processen hade frusits utan
+workern. Det och kvotens gräns är inte prövade på en fysisk telefon. Mot en riktig AI-leverantör är
+importen fortfarande inte prövad.
 <!-- /Fas 4 komplettering-1 -->
 
 <!-- Fas 4 fas3-rester -->
