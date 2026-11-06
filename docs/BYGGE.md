@@ -1078,7 +1078,7 @@ hel, se "Integration av Fas 4 (0.6.0)".
 | Granskningen av Fas 3 och 4, data och synk (`fas4/fix-data`) | ✅ klart 2026-11-06 (PR 42170268254, röktest "OK (27 tests)" 42170268224 och Contract 42170268319 på 1cbc113; `push-service.yml` 42165724376 på 80afbc7, sista ändringen i tjänsten) | "Fas 4-granskningen: data och synk" |
 | Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
 | Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
-| Granskningen av Fas 3 och 4: skärmarna | ✅ klart 2026-11-06 på `fas4/fix-ui` | "Granskningen av Fas 3 och 4: skärmarna (fix-ui)" |
+| Granskningen av Fas 3 och 4: skärmarna | ✅ klart 2026-11-06 på `fas4/fix-ui` (PR 42213998889, försök 2, och röktest "OK (27 tests)" 42214020473 på 7f9ef107; Contract 42176086742, Push service 42176086762 och Release 42176086707 på 01b1c17, inget i deras sökvägar ändrades efter det) | "Granskningen av Fas 3 och 4: skärmarna (fix-ui)" |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Contract 2.6.13/2.7.1 42112553318 på 3e39331, Fas 3-resternas steg grönt; referensbilder incheckade) | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
@@ -1263,6 +1263,18 @@ Rättelser i `feature/**`, `core:ui` och små block utanför (nämnda här) efte
   CameraX startat (`CameraReadyEffect`, `takePictureOr`, också kvitto och kylfoto); Hemmas kort leder
   till systemets inställningar efter ett nej (`ExpiryReminderOffer.openSettings`); gäster har ingen
   utgångsbrytare på Synk och lagring.
+
+**Kvar efter granskningen:**
+
+- Redigerarens rader nycklas inte: `DraftStep.id` saknas för nya steg, så det kräver ett id som bara
+  finns i utkastet. Flyttar och borttagningar sägs av TalkBack, men fokus står kvar på samma plats.
+- Inget röktest trycker på en riktig widget (Glance-mottagaren är inte exporterad och en widget går
+  inte att placera från testet). `WidgetSessionTest` visar att innehållet följer sitt flöde och
+  mappningskontrollen i `smoke.yml` fäller bygget om `CheckEntryAction()` försvinner igen.
+- `core:sync`-testerna kan fallera slumpmässigt: ett flöde i `DefaultSyncRepository` på
+  `Dispatchers.Default` kan överleva sitt test och träffa en stängd databas, och då får nästa test
+  skulden (`UncaughtExceptionsBeforeTest`, sågs i `StoreTripRepositoryTest` i PR 42213998889 försök 1).
+  Grenen ändrar inget där; omkörningen var grön.
 <!-- /Fas 4 fix-ui -->
 
 <!-- Fas 4 fas3-rester -->
