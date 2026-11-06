@@ -405,6 +405,14 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase4NutritionContractTest'
 
+      # Fas 4, komplettering 2 (#22, decision B9): what the recipe editor's new controls send: the
+      # step and recipe flags, a linked sub-recipe, a step file, the recipe's own nutrition.
+      - name: Contract tests (Fas 4, recipe editor)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase4EditorContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)

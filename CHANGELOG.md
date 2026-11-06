@@ -6,24 +6,13 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
-**Nytt**
-
-- **Notis när en AI-import är klar:** lämnar du appen medan Tandoors AI läser ett foto, en PDF eller
-  en text säger en notis till när receptet väntar på granskning, eller om det inte gick. Kanalen
-  "Import klar" går att stänga av i systemets inställningar.
-
-**Rättat**
-
-- TalkBack säger namnet på "Nytt recept", "Ny dryck" och "Ny bok".
-- I receptredigeraren följer TalkBacks fokus och halvskriven text med ett steg eller en ingrediens
-  som flyttas, och stannar kvar på raderna när en annan tas bort.
-
 ## [0.6.0] – 2026-11-05
 
 Fas 4 ("Smart hushåll"): Tandem lär sig hur ni handlar och lagar. Butiken sorteras som du går,
 varor som brukar ta slut föreslås, veckans middagar föreslås med ett tryck, två recept kan lagas
 samtidigt och telefonen säger till när listan ändras eller något går ut. Allt räknas ut i
-telefonen, och alla notiser är av tills du slår på dem. Dessutom det som återstod av Fas 3.
+telefonen. Notiserna om listan och om det som går ut är av tills du slår på dem. Dessutom det som
+återstod av Fas 3.
 
 **Handla och planera**
 
@@ -50,7 +39,7 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
   annat recepts timer går öppnas båda. ✕ stänger det recept som visas, och kokläget fortsätter med
   det andra.
 
-**Notiser (alla av som standard)**
+**Notiser**
 
 - **Notis när någon ändrar listan:** slå på under Synk och lagring, så säger telefonen till när
   bakgrundssynken ser att någon annan i hushållet lagt till, bockat av eller tagit bort varor.
@@ -68,6 +57,10 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
   listan. Inte för gäster eller demoläget. Slår du på snabb push slås också "Notis när någon
   ändrar listan" på, och den står kvar om du stänger av snabb push. Tjänstens image publiceras med
   versionstaggen, för linux/amd64 och linux/arm64, och docs/PUSH.md går igenom driften steg för steg.
+- **Notis när en AI-import är klar:** lämnar du appen medan Tandoors AI läser ett foto, en PDF eller
+  en text säger en notis till när receptet väntar på granskning, eller om det inte gick. Den här
+  notisen är på när Tandem får visa notiser, och du stänger av den med kanalen "Import klar" i
+  systemets inställningar.
 - Byter du konto eller loggar ut försvinner notiserna om det kontots lista och skafferi, och
   snabb push släpps hos UnifiedPush-appen och, om tjänsten går att nå, hos tjänsten.
 
@@ -109,6 +102,9 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
 - **Hemma och Synk:** kortet om notiser leder till systemets inställningar när frågan inte längre
   går att ställa, och gäster ser ingen knapp för utgångsnotisen.
 - **Om Tandem och introduktionen** nämner nu snabb push och sidor som öppnas från telefonen.
+- **TalkBack** säger namnet på "Nytt recept", "Ny dryck" och "Ny bok". I receptredigeraren följer
+  fokus och halvskriven text med ett steg eller en ingrediens som flyttas, och stannar kvar på
+  raderna när en annan tas bort.
 
 **Övrigt**
 
