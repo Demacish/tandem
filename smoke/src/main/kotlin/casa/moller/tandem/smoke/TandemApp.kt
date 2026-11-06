@@ -8,6 +8,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
@@ -140,8 +141,16 @@ class TandemApp(val device: UiDevice) {
         By.clickable(true).text(text),
     )
 
-    /** Waits for a clickable element labelled [text] (scrolling if needed) and clicks it. */
+    /**
+     * Waits for a clickable element labelled [text] (scrolling if needed) and clicks it. A list that
+     * redraws between finding and clicking leaves a stale node (seen in Fas 4's review): found again.
+     */
     fun tap(text: String) {
+        repeat(TAP_ATTEMPTS - 1) {
+            val tapped = runCatching { scrollToAny(clickableWithText(text)).click() }
+            if (tapped.isSuccess) return
+            if (tapped.exceptionOrNull() !is StaleObjectException) tapped.getOrThrow()
+        }
         scrollToAny(clickableWithText(text)).click()
     }
 

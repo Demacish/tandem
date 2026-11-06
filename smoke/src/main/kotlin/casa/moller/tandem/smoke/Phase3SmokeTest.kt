@@ -160,14 +160,9 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         tabSelected("Week")
         openAt("import")
         app.waitFor(By.text("Import recipe"))
-        app.device.pressBack()
-        openAt("add-item")
-        app.waitFor(By.text(ADD_TITLE))
-        app.device.pressBack()
-        tabSelected("Shopping")
 
         // The tile, from the home screen: the system binds the service and sends the click.
-        app.tap("Week")
+        openAt("week")
         tabSelected("Week")
         app.device.pressHome()
         app.shell("cmd statusbar add-tile $TILE")
@@ -180,6 +175,10 @@ class Phase3SmokeTest : Phase2SmokeBase() {
             app.shell("cmd statusbar remove-tile $TILE")
             app.shell("cmd statusbar collapse")
         }
+
+        // "Ny vara" opens the add panel over Handla.
+        openAt("add-item")
+        app.waitFor(By.text(ADD_TITLE))
     }
 
     // ------------------------------------------------------------------------------ the widget
