@@ -3,15 +3,18 @@ package casa.moller.tandem.core.sync.platform
 import android.Manifest
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
+import casa.moller.tandem.core.model.navigation.AppOpenDestinations
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
 import casa.moller.tandem.core.model.notification.TandemNotificationIds
 import casa.moller.tandem.core.sync.R
@@ -26,13 +29,18 @@ internal interface ImportDoneNotifier {
 
     /** The import failed; the reason is on the import screen. */
     fun failed()
+
+    /** The result is on the screen, whatever way the user came back. */
+    fun dismiss()
 }
 
 /**
  * [ImportDoneNotifier] on Android, in the channel "import_done". Tapping brings the app back as it
- * was left, to the import screen with the result; coming back any other way removes the
- * notification too. Nothing is posted without the notification permission: an import does not ask
- * for it (plan 8.7: it is asked at the first timer), and the channel can be turned off in the system.
+ * was left, to the import screen with the result; a finished import also when the process and the
+ * task are gone ([AppOpenDestinations.IMPORT_RESULT]: the screen reads the kept answer). Coming back any
+ * other way removes the notification too. Nothing is posted without the notification permission: an
+ * import does not ask for it (plan 8.7: it is asked at the first timer), and the channel can be
+ * turned off in the system.
  */
 @Singleton
 internal class AndroidImportDoneNotifier @Inject constructor(@ApplicationContext private val context: Context) : ImportDoneNotifier {
@@ -40,14 +48,18 @@ internal class AndroidImportDoneNotifier @Inject constructor(@ApplicationContext
     override fun finished(recipeName: String) = post(
         title = context.getString(R.string.sync_import_done_title),
         text = recipeName.ifBlank { context.getString(R.string.sync_import_done_text) },
+        tap = openReviewIntent(),
     )
 
     override fun failed() = post(
         title = context.getString(R.string.sync_import_failed_title),
         text = context.getString(R.string.sync_import_failed_text),
+        tap = openAppIntent(),
     )
 
-    private fun post(title: String, text: String) {
+    override fun dismiss() = NotificationManagerCompat.from(context).cancel(TandemNotificationIds.IMPORT_DONE)
+
+    private fun post(title: String, text: String, tap: PendingIntent?) {
         val permission = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
         if (permission != PackageManager.PERMISSION_GRANTED) return
         ensureChannel()
@@ -57,7 +69,7 @@ internal class AndroidImportDoneNotifier @Inject constructor(@ApplicationContext
             .setContentText(text)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
-            .setContentIntent(openAppIntent())
+            .setContentIntent(tap)
             .build()
         try {
             NotificationManagerCompat.from(context).notify(TandemNotificationIds.IMPORT_DONE, notification)
@@ -86,6 +98,18 @@ internal class AndroidImportDoneNotifier @Inject constructor(@ApplicationContext
     private fun openAppIntent(): PendingIntent? {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
         return PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    /** The same intent `AppOpenIntents.open(context, IMPORT_RESULT)` builds (core:ui is not a dependency here). */
+    private fun openReviewIntent(): PendingIntent? {
+        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return null
+        val intent = Intent(AppOpenDestinations.ACTION).apply {
+            component = launch.component
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            data = "${AppOpenDestinations.SCHEME}://${AppOpenDestinations.IMPORT_RESULT}".toUri()
+            putExtra(AppOpenDestinations.EXTRA_DESTINATION, AppOpenDestinations.IMPORT_RESULT)
+        }
+        return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     }
 
     /** Creates the channel (standard importance, plan 8.7); an existing one keeps the user's choices. */

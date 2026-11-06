@@ -1,7 +1,9 @@
 package casa.moller.tandem.core.sync.recipeimport
 
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
+import casa.moller.tandem.core.data.recipe.KeptRecipeImport
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.data.recipe.RecipeImportRepository
 import casa.moller.tandem.core.data.server.ServerStatusRepository
@@ -21,11 +23,13 @@ import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -58,7 +62,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * Every server call runs inside [ImportGate.whileImporting], so background sync yields the server
  * to the import (plan §10 Fas 3 "Klart när": "bakgrundssynken pausas under tiden"). An AI import
  * also runs inside [AiImportWatch.whileRunning]: it says when it is done if the app has left the
- * screen (plan §8.7).
+ * screen (plan §8.7), and its answer is stored first ([KeptImportStore]): it cost credits.
  */
 @Singleton
 internal class RemoteRecipeImportRepository @Inject constructor(
@@ -69,6 +73,8 @@ internal class RemoteRecipeImportRepository @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val gate: ImportGate,
     private val aiWatch: AiImportWatch,
+    private val keptImports: KeptImportStore,
+    @ApplicationScope private val scope: CoroutineScope,
 ) : RecipeImportRepository {
     override fun observeAiImportAvailable(): Flow<Boolean> = status.observeStatus()
         .map { !it.isDemo && ServerFeature.AI_IMPORT in it.capabilities }
@@ -85,10 +91,26 @@ internal class RemoteRecipeImportRepository @Inject constructor(
             ActiveSource.Loading, ActiveSource.None -> return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
         if (source is RecipeImportSource.File || source is RecipeImportSource.AiText) {
-            aiWatch.whileRunning(stillWanted = { sources.current().identity == remote.identity }) { read(remote, source) }
+            aiWatch.whileRunning(
+                stillWanted = { sources.current().identity == remote.identity },
+                keep = { keptImports.save(remote, KeptRecipeImport(it)) },
+            ) { read(remote, source) }
         } else {
             read(remote, source)
         }
+    }
+
+    override suspend fun keptResult(): KeptRecipeImport? {
+        val remote = sources.current() as? ActiveSource.Remote ?: return null
+        return keptImports.read(remote)?.also { aiWatch.reviewed() }
+    }
+
+    override suspend fun keepResult(kept: KeptRecipeImport) {
+        (sources.current() as? ActiveSource.Remote)?.let { keptImports.save(it, kept) }
+    }
+
+    override fun forgetKeptResult() {
+        scope.launch { (sources.current() as? ActiveSource.Remote)?.let { keptImports.clear(it) } }
     }
 
     private suspend fun read(remote: ActiveSource.Remote, source: RecipeImportSource): Outcome<RecipeImportResult> {

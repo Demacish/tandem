@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarHostState
@@ -130,6 +131,12 @@ fun RecipeImportRoute(
         }
     }
     LaunchedEffect(appContext) { withContext(Dispatchers.IO) { ImportFiles.sweep(appContext) } }
+    // Back from the review throws the result away; the system going back through the app's stack is not this.
+    val leave: () -> Unit = {
+        viewModel.onAction(RecipeImportAction.Leave)
+        onBack()
+    }
+    BackHandler(enabled = state.result != null, onBack = leave)
     val view = LocalView.current
     val announcement = importAnnouncement(state)
     var announced by rememberSaveable { mutableStateOf<String?>(null) }
@@ -159,7 +166,7 @@ fun RecipeImportRoute(
         },
         onPickFile = { picker.launch(arrayOf("image/*", ImportFiles.PDF)) },
         onScanText = onScanText,
-        onBack = onBack,
+        onBack = leave,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
         pageView = { reading, viewModifier ->

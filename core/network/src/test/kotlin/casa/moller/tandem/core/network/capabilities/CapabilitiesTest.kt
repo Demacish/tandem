@@ -82,6 +82,15 @@ class CapabilitiesTest {
         assertEquals(emptySet<ServerFeature>(), TandoorCapabilities.plan(TandoorVersionTable.assess("1.5.19"), space).features)
     }
 
+    /** The endpoint answers 403 in such a space (FACTS "Fas 4: dela recept"); a space not read says nothing. */
+    @Test
+    fun aSpaceWithoutSharingHasNoShareLink() {
+        val assessment = TandoorVersionTable.assess("2.6.13")
+        assertFalse(ServerFeature.SHARE_LINK in TandoorCapabilities.plan(assessment, SpaceDto(allowSharing = false)).features)
+        assertTrue(ServerFeature.SHARE_LINK in TandoorCapabilities.plan(assessment, SpaceDto(allowSharing = true)).features)
+        assertTrue(ServerFeature.SHARE_LINK in TandoorCapabilities.plan(assessment, null).features)
+    }
+
     @Test
     fun unrecognizedVersionProbesAtMostThree() {
         val plan = TandoorCapabilities.plan(TandoorVersionTable.assess("develop"), SpaceDto(householdSetupCompleted = true))

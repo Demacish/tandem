@@ -1,12 +1,17 @@
 package casa.moller.tandem.core.sync.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.database.dao.RecipeIndexEntry
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.model.recipe.RecipeQuery
+import casa.moller.tandem.core.model.server.Capabilities
+import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.server.ServerFeature
+import casa.moller.tandem.core.model.server.ServerStatus
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.engine.DrainResult
@@ -14,6 +19,8 @@ import casa.moller.tandem.core.sync.testing.FakeTandoorServer
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import casa.moller.tandem.core.sync.testing.waitUntil
+import casa.moller.tandem.core.testing.data.FakeServerStatusRepository
+import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
 import java.text.Collator
 import java.util.Locale
@@ -27,6 +34,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -53,6 +61,66 @@ class RecipeRepositoryTest {
     private fun renamedRecipe(name: String): String {
         val recorded = Json.parseToJsonElement(TandoorFixtures.exchange("fas1/recipe-svamppasta").body!!).jsonObject
         return JsonObject(recorded + ("name" to JsonPrimitive(name))).toString()
+    }
+
+    /** Plan §4.1, §8.6: exactly one request, without the trailing slash; the link as the server wrote it. */
+    @Test
+    fun aShareLinkIsOneRequestOfItsOwn() = runBlocking {
+        val recorded = TandoorFixtures.exchange("fas4/share/lank").body!!
+        server.respond("GET", "/api/share-link/2") { FakeTandoorServer.json(200, recorded) }
+
+        val outcome = repository.shareLink(2)
+
+        val link = Json.parseToJsonElement(recorded).jsonObject.getValue("link").jsonPrimitive.content
+        assertEquals(Outcome.Success(link), outcome)
+        assertEquals(listOf("GET /api/share-link/2"), server.requests.filter { "share-link" in it })
+    }
+
+    /** FACTS "Fas 4: dela recept": sharing off and a guest both answer 403, which logs nobody out. */
+    @Test
+    fun aRefusedShareLinkSaysSo() = runBlocking {
+        server.respond("GET", "/api/share-link/2") { FakeTandoorServer.json(403, """{"error":"sharing_disabled"}""") }
+
+        assertEquals(Outcome.Failure(DataProblem.SHARING_OFF.toError()), repository.shareLink(2))
+    }
+
+    /** A recipe that is not on the server yet: a request would only be a 404 in the proxy's log (plan 4.1). */
+    @Test
+    fun aRecipeNotSentYetAsksNothing() = runBlocking {
+        assertEquals(Outcome.Failure(TandemError.NotFound), repository.shareLink(-5))
+        assertTrue(server.requests.none { "share-link" in it })
+    }
+
+    @Test
+    fun theLinkIsOfferedOnlyWhereItWorks() = runBlocking {
+        val tandoor = ServerStatus("2.6.13", ServerCompatibility.SUPPORTED, Capabilities.Tandoor26)
+        val statuses = FakeServerStatusRepository(tandoor)
+        val permissions = FakeSpacePermissionsRepository()
+        val offered = OfflineFirstRecipeRepository(
+            graph.sources,
+            graph.databases,
+            graph.caller,
+            graph.details,
+            graph.images,
+            graph.scheduler,
+            graph.network,
+            graph.clock,
+            statuses,
+            permissions,
+            graph.scope,
+        )
+        assertTrue(offered.observeShareLinkAvailable().first())
+
+        permissions.setGuest(true)
+        assertFalse("a guest gets a 403", offered.observeShareLinkAvailable().first())
+        permissions.setGuest(false)
+
+        val withoutSharing = Capabilities("2.6.13", Capabilities.Tandoor26.features - ServerFeature.SHARE_LINK)
+        statuses.status.value = tandoor.copy(capabilities = withoutSharing)
+        assertFalse("the space has sharing off", offered.observeShareLinkAvailable().first())
+
+        statuses.status.value = ServerStatus.Demo
+        assertFalse(offered.observeShareLinkAvailable().first())
     }
 
     @Test

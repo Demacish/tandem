@@ -22,6 +22,8 @@ import mockwebserver3.RecordedRequest
  * PATCH keeps what it does not name, steps and ingredients keep their ids, a new one gets an id. A
  * recipe that changed is answered from here from then on, also in the sync's lists, so the app
  * reads back what it wrote. New foods get a recorded food's shape with the sent name.
+ * `POST /api/user-file/` answers the recorded shape with the sent name, and a step that points at
+ * the file then carries it (FACTS "Fas 4: receptredigeraren" c).
  */
 class FakeRecipeEdits(private val template: (String) -> JsonObject, private val recorded: (Long) -> JsonObject?) {
     /** One write as it reached the server: the body of a multipart request as its text. */
@@ -40,6 +42,7 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
     val propertyTypes: MutableList<JsonObject> = CopyOnWriteArrayList()
 
     private val changed = LinkedHashMap<Long, JsonObject>()
+    private val files = HashMap<Long, JsonObject>()
     private val deleted = HashSet<Long>()
     private var nextRecipeId = FIRST_RECIPE
     private var nextPartId = FIRST_PART
@@ -59,6 +62,7 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         val id = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
         val response = when {
             method == "POST" && path == RECIPES -> create(parse(request))
+            method == "POST" && path == USER_FILES -> uploadFile(request)
             method == "GET" && path == PROPERTY_TYPES -> json(OK, typePage())
             method == "GET" && PROPERTY_TYPE.matches(path) -> propertyType(PROPERTY_TYPE.find(path)!!.groupValues[1].toLong())
             method == "PUT" && IMAGE.matches(path) -> removeImage(IMAGE.find(path)!!.groupValues[1].toLong())
@@ -70,6 +74,14 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         }
         if (response != null && method != "GET") writes += Write(method, path, request.body?.utf8().orEmpty())
         return response
+    }
+
+    private fun uploadFile(request: RecordedRequest): MockResponse {
+        val name = USER_FILE_NAME.find(request.body?.utf8().orEmpty())?.groupValues?.get(1).orEmpty()
+        val id = nextPartId++
+        val file = JsonObject(template(USER_FILE_SHAPE) + mapOf("id" to JsonPrimitive(id), "name" to JsonPrimitive(name)))
+        files[id] = file
+        return json(CREATED, file)
     }
 
     private fun typePage(): JsonObject = JsonObject(
@@ -130,13 +142,15 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
                 val before = current.byId(step.long("id"))
                 val id = step.long("id") ?: nextPartId++
                 val instruction = step["instruction"] ?: JsonPrimitive("")
+                val file = (step["file"] as? JsonObject)?.long("id")?.let { files[it] }
                 val fields = mapOf(
                     "id" to JsonPrimitive(id),
                     "instruction" to instruction,
                     "instruction_markdown" to instruction,
                     "ingredients" to ingredientsOf(step, (before ?: stepTemplate).getValue("ingredients").jsonArray, before != null),
                 )
-                JsonObject((before ?: stepTemplate) + step.filterKeys { it in STEP_FIELDS } + fields)
+                val attached = if (file == null) emptyMap() else mapOf("file" to file)
+                JsonObject((before ?: stepTemplate) + step.filterKeys { it in STEP_FIELDS } + fields + attached)
             },
         )
     }
@@ -217,11 +231,16 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         const val RECIPE_SHAPE = "fas1/recipe-svamppasta"
         const val FIRST_RECIPE = 80L
         const val FIRST_PART = 9000L
+        const val USER_FILE_SHAPE = "fas4/editor/fil-upp"
         const val RECIPES = "/api/recipe/"
+        const val USER_FILES = "/api/user-file/"
         const val PROPERTY_TYPES = "/api/property-type/"
         val PROPERTY_TYPE = Regex("^/api/property-type/(\\d+)/$")
         val RECIPE = Regex("^/api/recipe/(\\d+)/$")
         val IMAGE = Regex("^/api/recipe/(\\d+)/image/$")
+
+        /** The value of the multipart field `name`: its headers, an empty line, the value. */
+        val USER_FILE_NAME = Regex("name=\"name\"[^\\r\\n]*(?:\\r?\\n[^\\r\\n]+)*\\r?\\n\\r?\\n([^\\r\\n]*)")
         val RECIPE_FIELDS = setOf(
             "name", "description", "servings", "servings_text", "working_time", "waiting_time", "source_url", "private", "internal",
             "properties",

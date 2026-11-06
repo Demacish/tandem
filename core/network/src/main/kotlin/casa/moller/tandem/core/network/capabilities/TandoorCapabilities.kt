@@ -30,7 +30,8 @@ data class CapabilityPlan(val features: Set<ServerFeature>, val probes: List<Cap
  *
  * | Feature | Rule |
  * |---|---|
- * | RECIPE_INDEX, COOK_LOG, VIEW_LOG, SHARE_LINK, AUTO_PLAN, ICAL | every Tandoor 2.x |
+ * | RECIPE_INDEX, COOK_LOG, VIEW_LOG, AUTO_PLAN, ICAL | every Tandoor 2.x |
+ * | SHARE_LINK | every Tandoor 2.x, unless the space says `allow_sharing: false` |
  * | INVENTORY | 2.6.0 and later |
  * | HOUSEHOLDS | 2.6.0 and later, and the space finished its household setup |
  * | AI_IMPORT | the space has `ai_enabled` |
@@ -81,6 +82,8 @@ object TandoorCapabilities {
                 }
             }
         }
+        // The endpoint is there but answers 403 (FACTS "Fas 4: dela recept").
+        if (space?.allowSharing == false) features -= ServerFeature.SHARE_LINK
         return CapabilityPlan(features, probes.take(MAX_PROBES))
     }
 

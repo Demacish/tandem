@@ -29,6 +29,9 @@ sealed interface ShellOpenRequest {
 
     data object Import : ShellOpenRequest
 
+    /** Fas 4, komplettering 3: the notification of a finished AI import. */
+    data object ImportResult : ShellOpenRequest
+
     data object BarcodeScan : ShellOpenRequest
 
     /** Fas 4 (skafferinotis lane): the expiry notification opens "Kan laga nu" with "Använd upp" first. */
@@ -48,6 +51,7 @@ sealed interface ShellOpenRequest {
             TODAY -> Tab(ShellTab.TODAY)
             MORE -> Tab(ShellTab.MORE)
             AppOpenIntents.IMPORT -> Import
+            AppOpenIntents.IMPORT_RESULT -> ImportResult
             AppOpenIntents.SCAN -> BarcodeScan
             AppOpenIntents.USE_UP -> UseUp
             else -> withId(destination)
@@ -71,6 +75,7 @@ sealed interface ShellOpenRequest {
             is Cook -> AppOpenIntents.cook(request.recipeId)
             AddItem -> AppOpenIntents.ADD_ITEM
             Import -> AppOpenIntents.IMPORT
+            ImportResult -> AppOpenIntents.IMPORT_RESULT
             BarcodeScan -> AppOpenIntents.SCAN
             UseUp -> AppOpenIntents.USE_UP
         }

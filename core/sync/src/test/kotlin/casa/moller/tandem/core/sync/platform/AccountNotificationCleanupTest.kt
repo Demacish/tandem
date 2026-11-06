@@ -25,13 +25,14 @@ class AccountNotificationCleanupTest {
     private val bus = ShoppingChangeBus()
     private val posted = mutableListOf<ShoppingChangeSummary>()
     private var cancelled = 0
+    private val keptCleared = mutableListOf<ActiveSource.Stored>()
 
     private fun TestScope.start() {
         val scope = TestScope(StandardTestDispatcher(testScheduler))
         val settings = FakeSettingsStore(AppSettings.Default.copy(shoppingChangeNotifications = true))
         val shopping = ShoppingChangeNotifications(bus, settings, { false }, { summary -> posted.add(summary) }, scope)
         shopping.start()
-        AccountNotificationCleanup(sources, shopping, { cancelled++ }, scope).start()
+        AccountNotificationCleanup(sources, shopping, { cancelled++ }, { keptCleared += it }, scope).start()
         runCurrent()
     }
 
@@ -54,6 +55,18 @@ class AccountNotificationCleanupTest {
 
         assertEquals(1, cancelled)
         assertTrue("gathered changes of the old source are dropped: $posted", posted.isEmpty())
+    }
+
+    /** Komplettering 3: an AI answer does not wait for the user to come back to the account. */
+    @Test
+    fun leavingTheSourceForgetsItsKeptImport() = runTest {
+        start()
+        assertTrue("nothing at the start of a process", keptCleared.isEmpty())
+
+        sources.source.value = ActiveSource.None
+        runCurrent()
+
+        assertEquals(listOf<ActiveSource.Stored>(ActiveSource.Demo), keptCleared)
     }
 
     @Test

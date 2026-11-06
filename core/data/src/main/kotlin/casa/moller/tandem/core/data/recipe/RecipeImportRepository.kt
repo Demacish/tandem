@@ -38,7 +38,31 @@ interface RecipeImportRepository {
      * steps or ingredients (the draft is then kept as it was), or the network or server error.
      */
     suspend fun sortIngredientsIntoSteps(draft: RecipeDraft): Outcome<RecipeDraft>
+
+    /**
+     * Fas 4, komplettering 3: the answer of an AI import that waits to be reviewed, for the active
+     * account. [import] stores it the moment it arrives, before the notification goes out, so it
+     * outlives the process; the import screen reads it here when it opens. Repeating the call would
+     * cost the space credits. Null when nothing waits, in demo mode and for an answer too large to store.
+     */
+    suspend fun keptResult(): KeptRecipeImport?
+
+    /** Stores what the review has made of the answer: its file, the link it came from, a paid step sort. */
+    suspend fun keepResult(kept: KeptRecipeImport)
+
+    /**
+     * The review is over: the result went to the editor or was discarded. Not suspending, so that it
+     * also finishes when the screen goes at the same moment. An account switch forgets it too.
+     */
+    fun forgetKeptResult()
 }
+
+/**
+ * [RecipeImportRepository.keptResult].
+ *
+ * @property sourcePath the sent photo or PDF, a cache file; it may be gone by the time it is read.
+ */
+data class KeptRecipeImport(val result: RecipeImportResult, val sourcePath: String? = null)
 
 /** Fas 3: why an import gave no recipe (`TandemError.Unknown(detail)`). */
 enum class RecipeImportProblem(val detail: String) {

@@ -3,6 +3,8 @@ package casa.moller.tandem.feature.recipes.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.session.Session
@@ -79,6 +81,9 @@ class RecipeDetailViewModel @AssistedInject constructor(
 
     private val manualRefresh = MutableStateFlow(false)
 
+    /** A share link is on its way: every call makes a new one on the server, so never two (plan 4.1). */
+    private val fetchingLink = MutableStateFlow(false)
+
     /** Until the screen reports its locale: the process default (the app's language at start). */
     private val numberStyle = MutableStateFlow(Locale.getDefault().toNumberStyle())
 
@@ -108,13 +113,19 @@ class RecipeDetailViewModel @AssistedInject constructor(
         sessionInfo,
     ) { detail, choice, preferences, offline, session -> Sources(detail, choice, preferences, offline, session) }
 
+    private val sharing: Flow<Sharing> = combine(
+        recipes.observeShareLinkAvailable().onStart { emit(false) },
+        fetchingLink,
+    ) { available, fetching -> Sharing(available, fetching) }
+
     val uiState: StateFlow<RecipeDetailUiState> = combine(
         sources,
         sessionChoices,
         manualRefresh,
         numberStyle,
-    ) { current, choices, refreshing, style ->
-        buildState(current, choices, refreshing, style)
+        sharing,
+    ) { current, choices, refreshing, style, sharing ->
+        buildState(current, choices, refreshing, style, sharing)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeDetailUiState(recipeId = recipeId))
 
     init {
@@ -131,6 +142,26 @@ class RecipeDetailViewModel @AssistedInject constructor(
             RecipeDetailAction.Refresh -> refresh()
             RecipeDetailAction.ToggleOffline -> toggleOffline()
             is RecipeDetailAction.SetNumberStyle -> numberStyle.value = action.style
+            RecipeDetailAction.ShareLink -> shareLink()
+            is RecipeDetailAction.ShareText -> share(action.text)
+        }
+    }
+
+    private fun share(text: String) {
+        effectChannel.trySend(RecipeDetailEffect.Share(uiState.value.header?.name.orEmpty(), text))
+    }
+
+    /** Plan §8.6: the name beside the link, since a message shows no subject. */
+    private fun shareLink() {
+        if (fetchingLink.value) return
+        fetchingLink.value = true
+        viewModelScope.launch {
+            val outcome = recipes.shareLink(recipeId)
+            fetchingLink.value = false
+            when (outcome) {
+                is Outcome.Success -> share(listOfNotNull(uiState.value.header?.name, outcome.value).joinToString("\n"))
+                is Outcome.Failure -> effectChannel.trySend(RecipeDetailEffect.Message(shareLinkFailedMessage(outcome.error)))
+            }
         }
     }
 
@@ -191,7 +222,13 @@ class RecipeDetailViewModel @AssistedInject constructor(
         }
     }
 
-    private fun buildState(sources: Sources, choices: SessionChoices, manualRefreshing: Boolean, style: NumberStyle): RecipeDetailUiState {
+    private fun buildState(
+        sources: Sources,
+        choices: SessionChoices,
+        manualRefreshing: Boolean,
+        style: NumberStyle,
+        sharing: Sharing,
+    ): RecipeDetailUiState {
         val detail = sources.detail
         val recipe = detail.recipe
         val overview = detail.overview
@@ -240,6 +277,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
             pinned = overview?.pinned == true,
             canPin = !sources.session.isDemo && (overview != null || recipe != null),
             webUrl = sources.session.baseUrl?.let { "${it.trimEnd('/')}/recipe/$recipeId/" },
+            canShareLink = sharing.available,
+            fetchingShareLink = sharing.fetching,
             struckIngredientIds = choices.struck,
             unitChoices = choices.units,
             // Fas 3 (näringsvärden): per serving, so they do not move with the servings chooser;
@@ -283,6 +322,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
 
     private data class SessionChoices(val struck: Set<Long>, val units: Map<Long, Int>)
 
+    private data class Sharing(val available: Boolean, val fetching: Boolean)
+
     private data class Sources(
         val detail: RecipeDetailState,
         val choice: ServingsChoice?,
@@ -303,6 +344,12 @@ class RecipeDetailViewModel @AssistedInject constructor(
 
         fun refreshFailedMessage(error: TandemError): Int =
             if (error.isConnectionProblem()) R.string.recipe_detail_refresh_failed_offline else R.string.recipe_detail_refresh_failed
+
+        fun shareLinkFailedMessage(error: TandemError): Int = when {
+            error.isConnectionProblem() -> R.string.recipe_detail_share_offline
+            error.dataProblem() == DataProblem.SHARING_OFF -> R.string.recipe_detail_share_refused
+            else -> R.string.recipe_detail_share_failed
+        }
     }
 }
 

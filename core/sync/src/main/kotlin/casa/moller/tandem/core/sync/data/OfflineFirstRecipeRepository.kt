@@ -2,7 +2,9 @@ package casa.moller.tandem.core.sync.data
 
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.di.ApplicationScope
+import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
+import casa.moller.tandem.core.data.server.ServerStatusRepository
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.dao.RecipeDao
 import casa.moller.tandem.core.database.mapper.toModel
@@ -19,12 +21,14 @@ import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.core.model.recipe.ServingsChoice
+import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.network.api.list
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.engine.DetailFetcher
+import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.NetworkStatus
@@ -47,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -84,6 +89,8 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
     private val scheduler: SyncScheduler,
     private val network: NetworkStatus,
     private val clock: SyncClock,
+    private val status: ServerStatusRepository,
+    private val permissions: SpacePermissionsRepository,
     @ApplicationScope private val scope: CoroutineScope,
 ) : RecipeRepository {
 
@@ -243,6 +250,27 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         if (details.fetch(remote, id, isBackground = false) !is Outcome.Success) return
         val image = recipeDao(remote).getListItems(remote.accountId, listOf(id)).firstOrNull()?.overview?.imageUrl ?: return
         images.prefetch(listOf(image))
+    }
+
+    override fun observeShareLinkAvailable(): Flow<Boolean> = combine(status.observeStatus(), permissions.permissions) { server, member ->
+        !server.isDemo && !member.readOnly && ServerFeature.SHARE_LINK in server.capabilities
+    }
+        .catch { emit(false) }
+        .distinctUntilChanged()
+
+    override suspend fun shareLink(id: Long): Outcome<String> = catchingUnexpected {
+        val remote = sources.current() as? ActiveSource.Remote
+            ?: return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
+        // Not sent yet: the server has no such recipe, and a request would only be a 404 in its log (plan 4.1).
+        val serverId = currentId(remote, id).takeIf { it > 0 } ?: return@catchingUnexpected Outcome.Failure(TandemError.NotFound)
+        when (val answer = caller.call(remote, background = false, confirmForbidden = true) { recipes.shareLink(serverId) }) {
+            is Outcome.Failure -> Outcome.Failure(
+                if (answer.error == SyncGuard.FORBIDDEN_ERROR) DataProblem.SHARING_OFF.toError() else answer.error,
+            )
+
+            is Outcome.Success -> answer.value.link.takeIf { it.isNotBlank() }?.let { Outcome.Success(it) }
+                ?: Outcome.Failure(TandemError.NotFound)
+        }
     }
 
     override fun observeServingsChoice(id: Long): Flow<ServingsChoice?> = sources.source

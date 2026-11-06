@@ -118,6 +118,25 @@ class RecipeScreensTest {
         assertEquals(listOf(RecipeListAction.ToggleFood(SampleRecipes.food("kardemumma").id), RecipeListAction.ClearFoods), actions)
     }
 
+    /** Plan §6.2, §8.6: the items name the recipe for TalkBack; no share link where the server has none. */
+    @Test
+    fun theDetailMenuSharesByLinkAndAsText() {
+        val name = SampleRecipes.MushroomPasta.name
+        val link = string(R.string.recipe_detail_action_share_link_description, name)
+        val text = string(R.string.recipe_detail_action_share_text_description, name)
+        val fakes = DetailFakes()
+        composeRule.setContent { TestFrame { DetailWithFakes(SampleRecipes.MushroomPasta.id, fakes = fakes) } }
+
+        composeRule.onNodeWithContentDescription(string(R.string.recipe_detail_action_more)).performClick()
+        composeRule.onNodeWithContentDescription(link).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription(text).assertIsDisplayed()
+
+        fakes.repository.shareLinkAvailable.value = false
+        composeRule.waitForIdle()
+        composeRule.onAllNodes(hasContentDescription(link)).assertCountEquals(0)
+        composeRule.onNodeWithContentDescription(text).assertIsDisplayed()
+    }
+
     @Test
     fun detailBackArrowCallsOnBack() {
         var backs = 0

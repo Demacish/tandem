@@ -32,16 +32,23 @@ internal class AiImportWatch @Inject constructor(
 ) {
     private val running = MutableStateFlow(0)
 
-    /** Runs [read]; [stillWanted] is false when the answer no longer belongs to the active account. */
+    /**
+     * Runs [read]; [stillWanted] is false when the answer no longer belongs to the active account.
+     * [keep] stores a recipe before anyone is told: "klart att granska" holds also if the process dies
+     * right after (`KeptImportStore`).
+     */
     suspend fun whileRunning(
         stillWanted: suspend () -> Boolean,
+        keep: suspend (RecipeImportResult) -> Unit = {},
         read: suspend () -> Outcome<RecipeImportResult>,
     ): Outcome<RecipeImportResult> {
         running.update { it + 1 }
         try {
             keepAlive.request()
             val outcome = read()
-            if (!visibility.isVisible() && stillWanted()) {
+            val wanted = stillWanted()
+            if (wanted && outcome is Outcome.Success) keep(outcome.value)
+            if (wanted && !visibility.isVisible()) {
                 when (outcome) {
                     is Outcome.Success -> notifier.finished(outcome.value.draft.name)
                     is Outcome.Failure -> notifier.failed()
@@ -52,6 +59,9 @@ internal class AiImportWatch @Inject constructor(
             running.update { it - 1 }
         }
     }
+
+    /** The answer is on the screen: after a process death nothing else takes the notification away. */
+    fun reviewed() = notifier.dismiss()
 
     /** Returns when no AI import runs (at once after a process restart: then nothing is left to wait for). */
     suspend fun awaitNoneRunning() {

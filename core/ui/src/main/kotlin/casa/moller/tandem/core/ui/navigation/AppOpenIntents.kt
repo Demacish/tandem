@@ -35,6 +35,9 @@ object AppOpenIntents {
     /** "Importera recept" (Fas 3 import lane). */
     const val IMPORT: String = AppOpenDestinations.IMPORT
 
+    /** Fas 4, komplettering 3: the AI import's result, from its notification. */
+    const val IMPORT_RESULT: String = AppOpenDestinations.IMPORT_RESULT
+
     /** The barcode scanner (Fas S). */
     const val SCAN: String = AppOpenDestinations.SCAN
 

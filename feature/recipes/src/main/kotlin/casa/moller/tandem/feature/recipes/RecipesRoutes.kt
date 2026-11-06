@@ -1,5 +1,8 @@
 package casa.moller.tandem.feature.recipes
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.SnackbarHostState
@@ -149,10 +152,12 @@ fun RecipeDetailRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
+    val context = LocalContext.current
     LaunchedEffect(viewModel, snackbarHostState) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is RecipeDetailEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+                is RecipeDetailEffect.Share -> shareRecipe(context, effect)
             }
         }
     }
@@ -185,6 +190,19 @@ fun RecipeDetailRoute(
             }
         },
     )
+}
+
+/** The system's share sheet; the user picks where it goes. */
+private fun shareRecipe(context: Context, share: RecipeDetailEffect.Share) {
+    val send = Intent(Intent.ACTION_SEND)
+        .setType("text/plain")
+        .putExtra(Intent.EXTRA_SUBJECT, share.subject)
+        .putExtra(Intent.EXTRA_TEXT, share.text)
+    try {
+        context.startActivity(Intent.createChooser(send, context.getString(R.string.recipe_detail_share_chooser)))
+    } catch (e: ActivityNotFoundException) {
+        // Nothing on the phone receives text: the menu just closes.
+    }
 }
 
 /** The editor's entrances of the detail, from their own ViewModel ([RecipeEditActionsViewModel]). */

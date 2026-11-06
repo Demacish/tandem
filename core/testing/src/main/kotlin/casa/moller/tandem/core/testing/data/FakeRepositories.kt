@@ -67,6 +67,11 @@ class FakeRecipeRepository(
     /** What [refreshRecipe] returns. */
     var refreshResult: Outcome<Unit> = Outcome.Success(Unit)
 
+    /** What [observeShareLinkAvailable] says, and what [shareLink] answers; [sharedIds] are the calls. */
+    val shareLinkAvailable = MutableStateFlow(true)
+    var shareLinkResult: Outcome<String> = Outcome.Success("https://tandoor.example.com/recipe/1/?share=0000")
+    val sharedIds = mutableListOf<Long>()
+
     val searchedQueries = mutableListOf<RecipeQuery>()
     val refreshedIds = mutableListOf<Long>()
     val viewedIds = mutableListOf<Long>()
@@ -98,6 +103,13 @@ class FakeRecipeRepository(
             }
         }
         return Outcome.Success(Unit)
+    }
+
+    override fun observeShareLinkAvailable(): Flow<Boolean> = shareLinkAvailable
+
+    override suspend fun shareLink(id: Long): Outcome<String> {
+        sharedIds += id
+        return shareLinkResult
     }
 
     override fun observeServingsChoice(id: Long): Flow<ServingsChoice?> = servingsChoices.map { choices ->

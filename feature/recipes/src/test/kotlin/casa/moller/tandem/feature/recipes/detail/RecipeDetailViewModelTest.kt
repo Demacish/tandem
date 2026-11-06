@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.recipes.detail
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow
@@ -340,7 +341,63 @@ class RecipeDetailViewModelTest {
         assertEquals("lökar", onion.food)
     }
 
+    // Fas 4, komplettering 3 (plan §6.2, §8.6): "Dela".
+
+    @Test
+    fun aShareLinkIsOneCallAndGoesToTheShareSheetWithTheName() = runTest(mainDispatcher.dispatcher) {
+        repository.shareLinkResult = Outcome.Success(LINK)
+        val viewModel = viewModel()
+
+        viewModel.effects.test {
+            viewModel.onAction(RecipeDetailAction.ShareLink)
+            assertEquals(RecipeDetailEffect.Share("Krämig svamppasta", "Krämig svamppasta\n$LINK"), awaitItem())
+        }
+        assertEquals(listOf(pasta), repository.sharedIds)
+        assertFalse(viewModel.uiState.value.fetchingShareLink)
+    }
+
+    @Test
+    fun aLinkThatFailsSaysWhyAndWhatIsLeft() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = viewModel()
+        val failures = mapOf(
+            TandemError.NetworkUnavailable to R.string.recipe_detail_share_offline,
+            DataProblem.SHARING_OFF.toError() to R.string.recipe_detail_share_refused,
+            TandemError.NotFound to R.string.recipe_detail_share_failed,
+        )
+        viewModel.effects.test {
+            for ((error, message) in failures) {
+                repository.shareLinkResult = Outcome.Failure(error)
+                viewModel.onAction(RecipeDetailAction.ShareLink)
+                assertEquals(RecipeDetailEffect.Message(message), awaitItem())
+            }
+        }
+    }
+
+    @Test
+    fun theLinkIsOfferedWhereTheRepositorySaysSo() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = viewModel()
+        assertTrue(viewModel.uiState.value.canShareLink)
+
+        repository.shareLinkAvailable.value = false
+        runCurrent()
+
+        assertFalse(viewModel.uiState.value.canShareLink)
+        assertTrue("the text needs nothing but the stored recipe", viewModel.uiState.value.hasDetail)
+    }
+
+    @Test
+    fun theTextGoesToTheShareSheetAsTheScreenWroteIt() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = viewModel()
+
+        viewModel.effects.test {
+            viewModel.onAction(RecipeDetailAction.ShareText("Hela receptet"))
+            assertEquals(RecipeDetailEffect.Share("Krämig svamppasta", "Hela receptet"), awaitItem())
+        }
+        assertTrue("no request", repository.sharedIds.isEmpty())
+    }
+
     private companion object {
+        const val LINK = "https://tandoor.example.com/recipe/2/?share=00000000-0000-4000-8000-000000000000"
         const val ONION = 9001L
 
         /** Two servings, a unit-less food with a plural name, and templates in the step. */

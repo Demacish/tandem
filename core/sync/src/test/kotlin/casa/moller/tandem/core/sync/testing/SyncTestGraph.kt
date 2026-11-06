@@ -64,6 +64,7 @@ import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.recipeedit.OfflineFirstRecipeEditRepository
 import casa.moller.tandem.core.sync.recipeedit.RecipeEditOutboxHandler
 import casa.moller.tandem.core.sync.recipeimport.AiImportWatch
+import casa.moller.tandem.core.sync.recipeimport.KeptImportStore
 import casa.moller.tandem.core.sync.recipeimport.RemoteRecipeImportRepository
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.scan.FoodAliasOutboxHandler
@@ -246,7 +247,19 @@ internal class SyncTestGraph(
         mealPlanWindow,
         PantrySyncStep(databases, pantryReader, foodAliasReader, staples, clock),
     )
-    val recipes = OfflineFirstRecipeRepository(sources, databases, caller, details, images, scheduler, network, clock, scope)
+    val recipes = OfflineFirstRecipeRepository(
+        sources,
+        databases,
+        caller,
+        details,
+        images,
+        scheduler,
+        network,
+        clock,
+        serverStatus,
+        permissions,
+        scope,
+    )
     val home = OfflineFirstHomeRepository(sources, databases, engine, clock)
     val cookLogs = OfflineFirstCookLogRepository(sources, databases, scheduler, clock)
     val sync = DefaultSyncRepository(sources, databases, engine, scheduler, demo, guard, network, clock, scope)
@@ -342,6 +355,8 @@ internal class SyncTestGraph(
         databases,
         DefaultImportGate(guard),
         AiImportWatch({ appVisible }, importDone) {},
+        KeptImportStore(databases),
+        scope,
     )
 
     val real: TandemDatabase

@@ -1,0 +1,42 @@
+{
+  "tandoorTag": "2.7.1",
+  "runDay": "2000-01-15",
+  "recipe.recept.status": 201,
+  "link.status": 200,
+  "link.fields": {
+    "pk": "number",
+    "share": "string",
+    "link": "string"
+  },
+  "link.pkIsTheRecipe": true,
+  "link.shareIsUuid": true,
+  "link.shape": "https://tandoor.example.com/recipe/<id>/?share=<uuid>",
+  "link.again.status": 200,
+  "link.again.isNew": true,
+  "link.withSlash.status": 200,
+  "link.unknown.status": 404,
+  "link.noToken.status": 403,
+  "open.page.status": 200,
+  "open.page.isHtml": true,
+  "open.api.status": 200,
+  "open.api.name": "Tandem delas",
+  "open.withoutShare.status": 403,
+  "open.wrongShare.status": 404,
+  "member.status": 200,
+  "guest.status": 403,
+  "guest.body": {
+    "error": "sharing_disabled"
+  },
+  "recipe.privat.status": 201,
+  "private.owner.status": 200,
+  "private.member.status": 403,
+  "private.opened.status": 200,
+  "off.space.status": 200,
+  "off.space.allowSharing": false,
+  "recipe.utan-delning.status": 201,
+  "off.status": 403,
+  "off.body": {
+    "error": "sharing_disabled"
+  },
+  "mismatches": []
+}

@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -69,6 +70,7 @@ import casa.moller.tandem.core.designsystem.icon.Edit
 import casa.moller.tandem.core.designsystem.icon.History
 import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.MoreVert
+import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.format.needsSpokenNumbers
@@ -317,6 +319,7 @@ private fun OverflowMenu(
                 },
             )
         }
+        ShareItems(state = state, onDismiss = onDismiss, onAction = onAction)
         DropdownMenuItem(
             text = { Text(stringResource(R.string.recipe_detail_action_refresh)) },
             leadingIcon = { Icon(TandemIcons.Refresh, contentDescription = null) },
@@ -337,6 +340,47 @@ private fun OverflowMenu(
                 },
             )
         }
+    }
+}
+
+/**
+ * Plan §6.2, §8.6: "Dela länk" where the server has it, "Dela som text" once the recipe is stored
+ * (also in demo mode, offline and for a guest). The labels name the recipe for TalkBack.
+ */
+@Composable
+private fun ShareItems(state: RecipeDetailUiState, onDismiss: () -> Unit, onAction: (RecipeDetailAction) -> Unit) {
+    if (state.isDeleted) return
+    val name = state.header?.name.orEmpty()
+    if (state.canShareLink) {
+        val description = stringResource(R.string.recipe_detail_action_share_link_description, name)
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.recipe_detail_action_share_link)) },
+            leadingIcon = { Icon(TandemIcons.Share, contentDescription = null) },
+            enabled = !state.fetchingShareLink,
+            modifier = Modifier.semantics { contentDescription = description },
+            onClick = {
+                onDismiss()
+                onAction(RecipeDetailAction.ShareLink)
+            },
+        )
+    }
+    if (state.hasDetail) {
+        val description = stringResource(R.string.recipe_detail_action_share_text_description, name)
+        val labels = RecipeShareText.Labels(
+            servings = stringResource(R.string.recipe_detail_share_servings, state.servings?.amountText.orEmpty()),
+            ingredients = stringResource(R.string.recipe_detail_share_ingredients),
+            steps = stringResource(R.string.recipe_detail_share_steps),
+            source = stringResource(R.string.recipe_detail_share_source),
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.recipe_detail_action_share_text)) },
+            leadingIcon = { Icon(TandemIcons.Share, contentDescription = null) },
+            modifier = Modifier.semantics { contentDescription = description },
+            onClick = {
+                onDismiss()
+                onAction(RecipeDetailAction.ShareText(RecipeShareText.of(state, labels)))
+            },
+        )
     }
 }
 

@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiObject2
+import java.util.regex.Pattern
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -33,6 +34,9 @@ import org.junit.runner.RunWith
  *   back, and the RECIPE_IMAGE row with an empty `image_url`.
  * - [editorOptions_flagsSubRecipeAndNutrition_goWithThePatch]: the switches, the sub-recipe sheet,
  *   the property types and what a PATCH says of them.
+ * - [stepFile_chosenInTheSystemFilePicker_isUploadedBeforeThePatch]: the system file picker, the copy,
+ *   `POST /api/user-file/` and the step's file in the PATCH.
+ * - [recipeShared_aLinkIsOneRequest_andTheTextNeedsNone]: `share-link` through R8 to the share sheet.
  * - [quickSettingsTileAndShortcuts_openTheRightPlace]: the tile's service, the launcher shortcuts
  *   and their intents.
  * - [shoppingWidget_drawsTheList_andATapChecksTheRow]: a bound widget in a [WidgetHost]: the Glance
@@ -45,6 +49,9 @@ import org.junit.runner.RunWith
 class Phase3SmokeTest : Phase2SmokeBase() {
     @get:Rule(order = 3)
     val gallery = Gallery(instrumentation.context)
+
+    @get:Rule(order = 4)
+    val downloads = Downloads(instrumentation.context)
 
     override fun servers(): List<FakeTandoor> = listOf(tandoor)
 
@@ -193,6 +200,69 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         assertEquals(setOf("id", "name"), value.getValue("property_type").jsonObject.keys)
         nothingWaiting()
         assertTrue("A 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
+    }
+
+    /** Fas 4, komplettering 3: the upload was only tested without R8 (BYGGE "Redigeraren som webben"). */
+    @Test
+    fun stepFile_chosenInTheSystemFilePicker_isUploadedBeforeThePatch() {
+        downloads.add(STEP_FILE, "application/pdf", STEP_FILE_CONTENT.toByteArray())
+        logIn()
+        app.tap("Recipes")
+        app.findInList(By.text(PASTA))
+        app.tap(PASTA)
+        app.scrollTo(By.textStartsWith(PASTA_STEP_SHOWN))
+        menu("Edit")
+        app.waitFor(By.text(SAVE_RECIPE))
+
+        app.scrollTo(By.desc("Attach a file to step 1")).click()
+        downloads.pick(app, STEP_FILE)
+        app.scrollTo(By.text("File: $STEP_FILE"))
+        app.capture("phase4-step-file")
+        save()
+
+        waitForServer("the PATCH") { if (patches().isEmpty()) "no PATCH yet" else null }
+        val writes = tandoor.recipeEdits.writes
+        val upload = writes.single { it.path == "/api/user-file/" }
+        assertTrue("The name goes with it: ${upload.body.take(REPORT_CHARS)}", STEP_FILE in upload.body)
+        assertTrue("The file's own bytes: ${upload.body.take(REPORT_CHARS)}", STEP_FILE_CONTENT in upload.body)
+        assertTrue("The file first: $writes", writes.indexOf(upload) < writes.indexOf(patches().single()))
+        val file = patches().single().json.getValue("steps").jsonArray.first().jsonObject.getValue("file").jsonObject
+        assertEquals("Only what the server needs: $file", setOf("id", "name"), file.keys)
+        assertEquals(STEP_FILE, file.string("name"))
+        assertTrue("The id the server gave it: $file", (file["id"] as? JsonPrimitive)?.longOrNull != null)
+        nothingWaiting()
+        assertTrue("A 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
+    }
+
+    // ------------------------------------------------------------------------------ share
+
+    /** Plan §6.2, §8.6: a link goes through R8 to the share sheet in one request, the text needs none. */
+    @Test
+    fun recipeShared_aLinkIsOneRequest_andTheTextNeedsNone() {
+        logIn()
+        app.tap("Recipes")
+        app.findInList(By.text(PASTA))
+        app.tap(PASTA)
+        app.scrollTo(By.textStartsWith(PASTA_STEP_SHOWN))
+        assertTrue("Never ahead of time: ${shareRequests()}", shareRequests().isEmpty())
+
+        menu("Share link")
+        shareSheet("phase4-share-link")
+        assertEquals(listOf("GET /api/share-link/2"), shareRequests())
+
+        menu("Share as text")
+        shareSheet("phase4-share-text")
+        assertEquals("The text asks the server nothing", listOf("GET /api/share-link/2"), shareRequests())
+    }
+
+    private fun shareRequests(): List<String> = tandoor.requests.filter { "/api/share-link/" in it }
+
+    /** The system's share sheet is up: it leaves a picture, and Back returns to the recipe. */
+    private fun shareSheet(name: String) {
+        app.waitFor(By.pkg(SHARE_SHEET))
+        app.capture(name)
+        app.device.pressBack()
+        app.waitFor(By.desc(MORE_OPTIONS))
     }
 
     // ------------------------------------------------------------------------------ tile, shortcuts
@@ -357,6 +427,11 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         const val PASTA_STEP_RAW = "Skiva {{"
         const val EDITED_INSTRUCTION = "Skiva svampen tunt, ändrat i röktestet."
         const val PRIVATE_RECIPE = "Private recipe"
+        const val STEP_FILE = "Tandem-stegfil.pdf"
+        const val STEP_FILE_CONTENT = "%PDF-1.4 stegfil i röktestet"
+
+        /** The chooser moved out of the framework in Android 14 (`com.android.intentresolver`). */
+        val SHARE_SHEET: Pattern = Pattern.compile("android|.*intentresolver.*")
         const val FORM_SWIPES = 30
         const val FORM_SWIPE_STEPS = 20
         const val SUB_RECIPE = "Äppelkaka"

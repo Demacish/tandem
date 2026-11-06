@@ -153,6 +153,9 @@ sealed interface RecipeImportAction {
     /** Back to the form (the result is dropped). */
     data object Clear : RecipeImportAction
 
+    /** The user goes back from the import screen: a result on it is discarded. */
+    data object Leave : RecipeImportAction
+
     /** "Öppna i redigeraren". */
     data object OpenEditor : RecipeImportAction
 

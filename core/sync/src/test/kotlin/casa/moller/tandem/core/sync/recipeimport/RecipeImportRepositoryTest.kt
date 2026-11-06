@@ -2,6 +2,7 @@ package casa.moller.tandem.core.sync.recipeimport
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.recipe.KeptRecipeImport
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
@@ -17,6 +18,7 @@ import casa.moller.tandem.core.sync.engine.DrainResult
 import casa.moller.tandem.core.sync.recipeedit.FakeRecipeEditTandoor
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import casa.moller.tandem.core.sync.testing.waitUntil
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -24,6 +26,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -280,6 +283,36 @@ class RecipeImportRepositoryTest {
         graph.importDone.calls.clear()
         failure(repo.import(RecipeImportSource.AiText("Pannkakor: 3 dl mjöl.")))
         assertTrue(graph.importDone.calls.isEmpty())
+    }
+
+    /** Komplettering 3: the answer cost credits, so it outlives the process until the review is over. A link is free. */
+    @Test
+    fun anAiAnswerIsKeptUntilTheReviewEnds() = forEachVersion {
+        tandoor.providerId = 7
+        ok(repo.import(RecipeImportSource.Link(FakeRecipeImportTandoor.KNOWN_URL)))
+        assertNull(repo.keptResult())
+
+        val answer = ok(repo.import(RecipeImportSource.AiText("Pannkakor: 3 dl mjöl.")))
+        // What a new process finds: the row, no ViewModel.
+        assertEquals(KeptRecipeImport(answer), KeptImportStore(graph.databases).read(graph.remote))
+
+        graph.importDone.calls.clear()
+        assertEquals(answer, repo.keptResult()?.result)
+        assertEquals("nothing else takes it away after a process death", listOf("dismissed"), graph.importDone.calls)
+
+        repo.keepResult(KeptRecipeImport(answer, sourcePath = "/cache/recipe-import/recept.jpg"))
+        assertEquals("/cache/recipe-import/recept.jpg", repo.keptResult()?.sourcePath)
+
+        repo.forgetKeptResult()
+        waitUntil { repo.keptResult() == null }
+    }
+
+    /** No row for a guest's or a demo's import: nothing was asked, nothing waits. */
+    @Test
+    fun demoModeKeepsNothing() = forEachVersion {
+        graph.sources.source.value = ActiveSource.Demo
+        repo.keepResult(KeptRecipeImport(ok(repo.import(RecipeImportSource.Text("Pannkakor\n2 dl mjölk")))))
+        assertNull(repo.keptResult())
     }
 
     @Test

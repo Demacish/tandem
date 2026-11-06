@@ -52,6 +52,8 @@ class DtoFixturesTest {
         Route("GET", "/api/recipe/\\d+/", RecipeDto.serializer()),
         Route("PATCH", "/api/recipe/\\d+/", RecipeDto.serializer()),
         Route("POST", "/api/user-file/", UserFileDto.serializer()),
+        // Fas 4, komplettering 3 (plan §8.6): no trailing slash; the one with a slash is not this route.
+        Route("GET", "/api/share-link/\\d+", ShareLinkDto.serializer()),
         Route("GET", "/api/property-type/", PageDto.serializer(PropertyTypeDto.serializer())),
         Route("GET", "/api/property-type/\\d+/", PropertyTypeDto.serializer()),
         Route("PATCH", "/api/step/\\d+/", StepDto.serializer()),

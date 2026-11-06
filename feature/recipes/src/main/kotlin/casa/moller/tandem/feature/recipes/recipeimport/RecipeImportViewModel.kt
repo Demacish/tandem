@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
+import casa.moller.tandem.core.data.recipe.KeptRecipeImport
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.data.recipe.RecipeImportRepository
 import casa.moller.tandem.core.model.error.Outcome
@@ -38,8 +39,11 @@ import kotlinx.coroutines.launch
  * text goes to [RecipeImportRepository] (the server parses it), a photo or PDF too when the
  * space has an AI provider. The answer is shown as a card and then opened in the recipe editor
  * as a new recipe (`RecipeEditorKey.importedDraft`), where it is checked and saved offline first.
- * The input lives in [SavedStateHandle]; the result does not (an import is repeated after
- * process death rather than kept: it is one request, and an AI answer may be stale).
+ * The input lives in [SavedStateHandle]; a link's or text's result does not (it is one free request).
+ * An AI answer cost credits and the notification has promised it, so it outlives the process: the
+ * repository stores it when it arrives ([RecipeImportRepository.keptResult]) and it is read here when
+ * the screen opens, until it goes to the editor or is discarded. [SavedStateHandle] cannot hold it:
+ * the answer often comes after `onSaveInstanceState`.
  *
  * Fas 3's leftovers: when the server cannot read a shared LINK (a site that blocks it), the page
  * is read in a WebView in the app and its HTML sent instead (#38, [PageReading]); a result can
@@ -83,13 +87,17 @@ class RecipeImportViewModel @AssistedInject constructor(
     /** The kept file went to the editor with the draft: it is the editor's to delete. */
     private var sourceHandedOver = false
 
+    /** The stored AI answer was looked for. Until then, and while one is reviewed, something shared waits: its import would replace it. */
+    private val keptChecked = MutableStateFlow(false)
+
     val uiState: StateFlow<RecipeImportUiState> = combine(
         input,
         progress,
         imports.observeAiImportAvailable(),
         permissions.permissions,
-        combine(sharedFileTaken, pages) { taken, pages -> taken to pages },
-    ) { input, progress, aiAvailable, permissions, (taken, pages) ->
+        combine(sharedFileTaken, pages, keptChecked) { taken, pages, checked -> Triple(taken, pages, checked) },
+    ) { input, progress, aiAvailable, permissions, (taken, pages, checked) ->
+        val sharedWaits = taken || !checked || progress.result != null
         RecipeImportUiState(
             input = input,
             working = progress.working,
@@ -97,8 +105,8 @@ class RecipeImportViewModel @AssistedInject constructor(
             problem = progress.problem,
             failure = progress.failure,
             aiAvailable = aiAvailable,
-            sharedFile = sharedFile?.takeUnless { taken },
-            sharedPages = if (taken) emptyList() else sharedPages,
+            sharedFile = sharedFile?.takeUnless { sharedWaits },
+            sharedPages = if (sharedWaits) emptyList() else sharedPages,
             readOnly = permissions.readOnly,
             isDemo = permissions.isDemo,
             pageReading = progress.pageReading,
@@ -112,11 +120,28 @@ class RecipeImportViewModel @AssistedInject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeImportUiState(input = input.value))
 
     init {
-        // A result does not survive process death, so neither does its file; pages the system
-        // cleared from the cache are forgotten.
-        ImportFiles.delete(handle.remove<String>(KEY_SOURCE))
+        // Pages the system cleared from the cache are forgotten.
         val kept = pages.value.filter { File(it).isFile }
         if (kept.size != pages.value.size) handle[KEY_PAGES] = ArrayList(kept)
+        restoreKept(handle.remove<String>(KEY_SOURCE))
+    }
+
+    /** Shows the AI answer that waits. [leftSource] is the file of the result before the process died: it stays only with its answer. */
+    private fun restoreKept(leftSource: String?) {
+        viewModelScope.launch {
+            val kept = imports.keptResult()
+            if (leftSource != kept?.sourcePath) ImportFiles.delete(leftSource)
+            if (kept != null) {
+                progress.update { current ->
+                    if (current.working || current.result != null) {
+                        current
+                    } else {
+                        current.copy(result = kept.result, sourcePath = kept.sourcePath?.takeIf { File(it).isFile })
+                    }
+                }
+            }
+            keptChecked.value = true
+        }
     }
 
     override fun onCleared() {
@@ -152,12 +177,16 @@ class RecipeImportViewModel @AssistedInject constructor(
 
             RecipeImportAction.Clear -> {
                 dropSource()
+                imports.forgetKeptResult()
                 progress.update { Progress() }
             }
+
+            RecipeImportAction.Leave -> if (progress.value.result != null) imports.forgetKeptResult()
 
             RecipeImportAction.OpenEditor -> progress.value.result?.let { result ->
                 sourceHandedOver = true
                 handle.remove<String>(KEY_SOURCE)
+                imports.forgetKeptResult()
                 effectChannel.trySend(RecipeImportEffect.OpenEditor(SavedDraft.encode(result.draft), progress.value.sourcePath))
             }
 
@@ -234,6 +263,8 @@ class RecipeImportViewModel @AssistedInject constructor(
         progress.update { it.copy(sortingSteps = true) }
         viewModelScope.launch {
             val outcome = imports.sortIngredientsIntoSteps(result.draft)
+            // A second AI call that was paid for: stored before it shows, like the first.
+            if (outcome is Outcome.Success) imports.keepResult(KeptRecipeImport(result.copy(draft = outcome.value), current.sourcePath))
             val message = when (outcome) {
                 is Outcome.Success -> R.string.recipe_import_sort_done
 
@@ -280,9 +311,12 @@ class RecipeImportViewModel @AssistedInject constructor(
                         handle[KEY_PAGES] = ArrayList<String>()
                     }
                     if (sourcePath != null) handle[KEY_SOURCE] = sourcePath
-                    progress.update {
-                        it.copy(working = false, readingText = false, result = outcome.value.withSource(sourceUrl), sourcePath = sourcePath)
+                    val result = outcome.value.withSource(sourceUrl)
+                    // The repository stored the AI's answer as it came; this adds what only the screen knows.
+                    if (source is RecipeImportSource.File || source is RecipeImportSource.AiText) {
+                        imports.keepResult(KeptRecipeImport(result, sourcePath))
                     }
+                    progress.update { it.copy(working = false, readingText = false, result = result, sourcePath = sourcePath) }
                 }
 
                 is Outcome.Failure -> {

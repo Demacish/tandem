@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.recipes.recipeimport
 
 import androidx.lifecycle.SavedStateHandle
+import casa.moller.tandem.core.data.recipe.KeptRecipeImport
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.RecipeImportSource
@@ -196,15 +197,97 @@ class RecipeImportViewModelTest {
     }
 
     @Test
-    fun aKeptOriginalIsGoneAfterProcessDeathWithItsResult() = runTest {
+    fun anOriginalWithoutItsAnswerIsGoneAfterProcessDeath() = runTest {
         val handle = SavedStateHandle()
         val vm = viewModel(handle = handle)
         collect(vm.uiState)
         val photo = page("photo.jpg")
         vm.onAction(RecipeImportAction.ImportFile(byteArrayOf(1), "image/jpeg", "recept.jpg", photo))
+        imports.kept = null
 
         viewModel(handle = handle)
         assertFalse(File(photo).exists())
+    }
+
+    // Fas 4, komplettering 3: an AI answer cost credits and the notification promised it.
+
+    @Test
+    fun anAiAnswerComesBackAfterProcessDeathWithItsOriginal() = runTest {
+        val vm = viewModel()
+        collect(vm.uiState)
+        val photo = page("photo.jpg")
+        vm.onAction(RecipeImportAction.ImportFile(byteArrayOf(1), "image/jpeg", "recept.jpg", photo))
+
+        // The answer often comes after onSaveInstanceState: the handle knows nothing of it.
+        val restored = viewModel()
+        collect(restored.uiState)
+
+        assertEquals(SampleImports.pancakes, restored.uiState.value.result)
+        assertEquals(photo, restored.uiState.value.sourcePath)
+        assertEquals("nothing is asked twice", 1, imports.imported.size)
+    }
+
+    @Test
+    fun anOriginalTheCacheLostIsNoReasonToLoseTheAnswer() = runTest {
+        imports.kept = KeptRecipeImport(SampleImports.pancakes, sourcePath = File(temp.root, "gone.jpg").path)
+        val vm = viewModel()
+        collect(vm.uiState)
+
+        assertEquals(SampleImports.pancakes, vm.uiState.value.result)
+        assertNull(vm.uiState.value.sourcePath)
+    }
+
+    @Test
+    fun aLinkIsFreeToAskAgainAndIsNotKept() = runTest {
+        val vm = viewModel(RecipeImportKey(sharedText = "https://example.com/recept/pannkakor"))
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.Import)
+
+        assertEquals(SampleImports.pancakes, vm.uiState.value.result)
+        assertNull(imports.kept)
+    }
+
+    @Test
+    fun theKeptAnswerGoesWhenTheReviewEnds() = runTest {
+        for (end in listOf(RecipeImportAction.OpenEditor, RecipeImportAction.Clear, RecipeImportAction.Leave)) {
+            imports.kept = KeptRecipeImport(SampleImports.pancakes)
+            val vm = viewModel()
+            collect(vm.uiState)
+            vm.onAction(end)
+            assertNull("$end", imports.kept)
+        }
+    }
+
+    @Test
+    fun leavingAnEmptyFormForgetsNothing() = runTest {
+        val vm = viewModel()
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.Leave)
+        assertEquals(0, imports.forgotten)
+    }
+
+    @Test
+    fun aPaidStepSortIsKeptToo() = runTest {
+        val sorted = SampleImports.pancakes.draft.copy(description = "Sorterad")
+        imports.sorted = sorted
+        val vm = viewModel()
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.ImportFile(byteArrayOf(1), "image/jpeg", "recept.jpg", page("photo.jpg")))
+        vm.onAction(RecipeImportAction.SortSteps)
+
+        assertEquals(sorted, imports.kept?.result?.draft)
+    }
+
+    /** Its import would replace the answer: it waits until that is dealt with, and then goes on as shared. */
+    @Test
+    fun aSharedFileWaitsForTheKeptAnswer() = runTest {
+        imports.kept = KeptRecipeImport(SampleImports.pancakes)
+        val vm = viewModel(RecipeImportKey(sharedFileUri = "content://example/recept.jpg", sharedMimeType = "image/jpeg"))
+        collect(vm.uiState)
+        assertNull(vm.uiState.value.sharedFile)
+
+        vm.onAction(RecipeImportAction.Clear)
+        assertEquals("content://example/recept.jpg", vm.uiState.value.sharedFile?.uri)
     }
 
     // Fas 4 "Fota recept": what was read on the phone stays there.

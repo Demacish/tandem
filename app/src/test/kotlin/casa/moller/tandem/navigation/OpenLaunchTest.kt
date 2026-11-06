@@ -54,6 +54,7 @@ class OpenLaunchTest {
             ShellOpenRequest.Tab(ShellTab.MORE),
             ShellOpenRequest.Recipe(-3),
             ShellOpenRequest.Import,
+            ShellOpenRequest.ImportResult,
             ShellOpenRequest.BarcodeScan,
             ShellOpenRequest.UseUp,
             ShellOpenRequest.AddItem,

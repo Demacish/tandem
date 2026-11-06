@@ -173,6 +173,25 @@ class ShellNavigationStateTest {
         assertTrue("cook mode hides the navigation", navigation.hidesNavigation(compactWidth = false))
     }
 
+    /** Fas 4, komplettering 3: the notification of a finished AI import. */
+    @Test
+    fun theImportResultIsWhereItWasLeftElseANewPageFindsIt() {
+        // The task is gone: a page of its own, which reads the kept answer.
+        navigation.open(ShellOpenRequest.ImportResult)
+        assertEquals(listOf<NavKey>(TodayKey, RecipesKey, RecipeImportKey()), navigation.backStack)
+
+        // Left with a shared link in another tab: back to it as it was, not a new page.
+        navigation.openImport(ShareImportRequest(text = "https://example.com/x"))
+        val left = navigation.backStack
+        navigation.selectTab(ShellTab.WEEK)
+        navigation.open(ShellOpenRequest.ImportResult)
+        assertEquals(left, navigation.backStack)
+
+        // On the tab already: a shortcut would start it afresh, this does not.
+        navigation.open(ShellOpenRequest.ImportResult)
+        assertEquals(left, navigation.backStack)
+    }
+
     @Test
     fun anOpenRequestSelectsTheTabOrOpensTheScreen() {
         // Fas 3 (widgets lane): shortcuts, widgets and the tile.

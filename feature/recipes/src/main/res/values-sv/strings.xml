@@ -120,6 +120,20 @@
     <string name="recipe_detail_action_more">Fler alternativ</string>
     <string name="recipe_detail_action_open_on_web">Öppna på webben</string>
     <string name="recipe_detail_action_refresh">Uppdatera</string>
+    <string name="recipe_detail_action_share_link">Dela länk</string>
+    <string name="recipe_detail_action_share_link_description">Dela en länk till %1$s</string>
+    <string name="recipe_detail_action_share_text">Dela som text</string>
+    <string name="recipe_detail_action_share_text_description">Dela %1$s som text</string>
+
+    <!-- Dela recept (plan 8.6). -->
+    <string name="recipe_detail_share_chooser">Dela receptet</string>
+    <string name="recipe_detail_share_servings">%1$s portioner</string>
+    <string name="recipe_detail_share_ingredients">Ingredienser</string>
+    <string name="recipe_detail_share_steps">Gör så här</string>
+    <string name="recipe_detail_share_source">Källa:</string>
+    <string name="recipe_detail_share_failed">Det gick inte att skapa en länk. Du kan dela receptet som text.</string>
+    <string name="recipe_detail_share_offline">En länk kräver anslutning. Du kan dela receptet som text.</string>
+    <string name="recipe_detail_share_refused">Servern tillåter inte delningslänkar här. Du kan dela receptet som text.</string>
 
     <string name="recipe_detail_offline_saved">Nedladdat för offline</string>
     <string name="recipe_detail_offline_queued">Laddas ner när du är ansluten igen</string>

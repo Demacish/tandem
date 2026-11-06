@@ -255,6 +255,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             method == "GET" && USER_PATH.matches(path) -> fixture("11-user-by-id")
 
+            // Fas 4, komplettering 3: no trailing slash; every call would make a new link.
+            method == "GET" && SHARE_LINK_PATH.matches(path) -> fixture("fas4/share/lank")
+
             // --- Phase 2 (integration lane): the stateful shopping list and meal plan; Fas S: the
             // pantry and the keywords. ---
             else -> recipeEdits.answer(request)
@@ -519,6 +522,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private val TOKENS_BY_ID = mapOf("1" to LOGIN_TOKEN, "2" to DEVICE_TOKEN)
         private val ACCESS_TOKEN_PATH = Regex("^/api/access-token/(\\d+)/$")
         private val USER_PATH = Regex("^/api/user/\\d+/$")
+        private val SHARE_LINK_PATH = Regex("^/api/share-link/\\d+$")
         private const val USER_SPACE_PERSONAL_PATH = "/api/user-space/all_personal/"
 
         /** `contract-admin` (the user) and `contract-reader` from `fas2/user-list-member`. */

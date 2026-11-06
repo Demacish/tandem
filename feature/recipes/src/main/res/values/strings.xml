@@ -129,6 +129,20 @@
     <string name="recipe_detail_action_more">More options</string>
     <string name="recipe_detail_action_open_on_web">Open on the web</string>
     <string name="recipe_detail_action_refresh">Refresh</string>
+    <string name="recipe_detail_action_share_link">Share link</string>
+    <string name="recipe_detail_action_share_link_description">Share a link to %1$s</string>
+    <string name="recipe_detail_action_share_text">Share as text</string>
+    <string name="recipe_detail_action_share_text_description">Share %1$s as text</string>
+
+    <!-- Sharing a recipe (plan 8.6). -->
+    <string name="recipe_detail_share_chooser">Share the recipe</string>
+    <string name="recipe_detail_share_servings">%1$s servings</string>
+    <string name="recipe_detail_share_ingredients">Ingredients</string>
+    <string name="recipe_detail_share_steps">Method</string>
+    <string name="recipe_detail_share_source">Source:</string>
+    <string name="recipe_detail_share_failed">Couldn\'t get a link. You can share the recipe as text.</string>
+    <string name="recipe_detail_share_offline">A link needs a connection. You can share the recipe as text.</string>
+    <string name="recipe_detail_share_refused">The server doesn\'t allow share links here. You can share the recipe as text.</string>
 
     <!-- Messages (snackbar). -->
     <string name="recipe_detail_offline_saved">Downloaded for offline use</string>

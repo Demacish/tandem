@@ -212,6 +212,13 @@ class ShellNavigationState(
                 navigate(RecipeImportKey(), replace = { it is RecipeImportKey })
             }
 
+            // Unlike a shortcut this never starts the tab afresh: the review stays as it was left, and
+            // with no import in the stack (the task is gone too) the new page finds the kept answer.
+            ShellOpenRequest.ImportResult -> {
+                if (currentTab != ShellTab.RECIPES) selectTab(ShellTab.RECIPES)
+                if (stack(ShellTab.RECIPES).none { it is RecipeImportKey }) navigate(RecipeImportKey())
+            }
+
             ShellOpenRequest.BarcodeScan -> {
                 selectTab(ShellTab.MORE)
                 navigate(BarcodeScanKey(), replace = { it is BarcodeScanKey })

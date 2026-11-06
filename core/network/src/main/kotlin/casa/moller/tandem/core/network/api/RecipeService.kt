@@ -5,6 +5,7 @@ import casa.moller.tandem.core.network.dto.PropertyTypeDto
 import casa.moller.tandem.core.network.dto.RecipeDto
 import casa.moller.tandem.core.network.dto.RecipeFlatDto
 import casa.moller.tandem.core.network.dto.RecipeOverviewDto
+import casa.moller.tandem.core.network.dto.ShareLinkDto
 import casa.moller.tandem.core.network.dto.UserFileDto
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.JsonObject
@@ -102,6 +103,14 @@ interface RecipeService {
     @Multipart
     @POST("api/user-file/")
     suspend fun uploadUserFile(@Part("name") name: RequestBody, @Part file: MultipartBody.Part): UserFileDto
+
+    /**
+     * Fas 4, komplettering 3 (plan §4.1, §8.6): a link that opens the recipe without a login. No trailing
+     * slash (with one the server answers a 302), and every call makes a new link on the server, so
+     * one call per share and never ahead of time (FACTS "Fas 4: dela recept").
+     */
+    @GET("api/share-link/{id}")
+    suspend fun shareLink(@Path("id") id: Long): ShareLinkDto
 
     /** Fas 4 (#22): the space's property types, for the recipe's own nutrition (FACTS "Fas 4: receptredigeraren"). */
     @GET("api/property-type/")

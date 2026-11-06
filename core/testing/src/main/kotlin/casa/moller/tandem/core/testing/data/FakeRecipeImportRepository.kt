@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.testing.data
 
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.recipe.KeptRecipeImport
 import casa.moller.tandem.core.data.recipe.RecipeImportProblem
 import casa.moller.tandem.core.data.recipe.RecipeImportRepository
 import casa.moller.tandem.core.model.error.Outcome
@@ -63,6 +64,21 @@ class FakeRecipeImportRepository(
         if (readOnly) return Outcome.Failure(DataProblem.READ_ONLY.toError())
         sortFailure?.let { return Outcome.Failure(it) }
         return Outcome.Success(sorted ?: draft)
+    }
+
+    /** The AI answer waiting to be reviewed; [forgotten] counts [forgetKeptResult]. */
+    var kept: KeptRecipeImport? = null
+    var forgotten: Int = 0
+
+    override suspend fun keptResult(): KeptRecipeImport? = kept
+
+    override suspend fun keepResult(kept: KeptRecipeImport) {
+        this.kept = kept
+    }
+
+    override fun forgetKeptResult() {
+        kept = null
+        forgotten++
     }
 }
 

@@ -38,6 +38,9 @@ enum class DataProblem(val detail: String) {
 
     /** Phase 2 (plan 3.7): a write to a recipe book someone else owns (the server would answer 403). */
     NOT_OWNER("tandem.data.not-owner"),
+
+    /** Fas 4 (plan §8.6): the server refused a share link: the space has sharing off, or the user is a guest. */
+    SHARING_OFF("tandem.data.sharing-off"),
     ;
 
     fun toError(): TandemError = TandemError.Unknown(detail)

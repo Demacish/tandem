@@ -8,6 +8,7 @@ import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.push.AndroidFastPushNotifier
+import casa.moller.tandem.core.sync.recipeimport.KeptImportCleaner
 import casa.moller.tandem.core.sync.shopping.ShoppingChangeNotifications
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
@@ -15,7 +16,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
@@ -39,13 +39,15 @@ internal class AndroidAccountNotifications @Inject constructor(@ApplicationConte
  * Fas 4 (integration): what the active account's list or pantry said stays with it. When the source
  * changes (another account, logout, demo mode) the open notifications are removed and changes still
  * gathered for one are dropped, so nothing of one household shows in the next (started by
- * `SyncStarter`; the first source of a process is not a change).
+ * `SyncStarter`; the first source of a process is not a change). An AI answer waiting to be reviewed
+ * goes with them: it does not come back when the user switches back to the account.
  */
 @Singleton
 internal class AccountNotificationCleanup @Inject constructor(
     private val sources: ActiveSources,
     private val shopping: ShoppingChangeNotifications,
     private val notifications: AccountNotifications,
+    private val keptImports: KeptImportCleaner,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val started = AtomicBoolean(false)
@@ -53,13 +55,18 @@ internal class AccountNotificationCleanup @Inject constructor(
     fun start() {
         if (!started.compareAndSet(false, true)) return
         scope.launch {
+            var previous: ActiveSource? = null
             sources.source
                 .filter { it != ActiveSource.Loading }
                 .distinctUntilChangedBy { it.identity }
-                .drop(1)
-                .collect {
-                    shopping.dropPending()
-                    notifications.cancelAll()
+                .collect { current ->
+                    val left = previous
+                    previous = current
+                    if (left != null) {
+                        shopping.dropPending()
+                        notifications.cancelAll()
+                        if (left is ActiveSource.Stored) keptImports.clear(left)
+                    }
                 }
         }
     }

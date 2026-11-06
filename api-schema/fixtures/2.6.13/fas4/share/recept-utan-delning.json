@@ -1,0 +1,76 @@
+{
+  "name": "recept-utan-delning",
+  "request": {
+    "method": "POST",
+    "path": "/api/recipe/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000004",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "Tandem utan delning",
+      "description": "",
+      "servings": 2,
+      "servings_text": "",
+      "working_time": 0,
+      "waiting_time": 0,
+      "internal": true,
+      "keywords": [],
+      "steps": []
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 41,
+      "name": "Tandem utan delning",
+      "description": "",
+      "image": null,
+      "keywords": [],
+      "steps": [],
+      "working_time": 0,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 6,
+        "username": "contract-noshare",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-noshare",
+        "is_staff": false,
+        "is_superuser": false,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {},
+      "servings": 2,
+      "file_path": "",
+      "servings_text": "",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

@@ -7,7 +7,7 @@
     "\"Tandoor-bevakning\"). A difference that is not listed, or has another value, still needs attention."
   ],
   "2.6": {
-    "reviewed": "2026-11-06, Tandoor 2.6.15 (Fas 3 and 4 facts, contract-recordings of Tandoor watch 42195359951)",
+    "reviewed": "2026-11-06, Tandoor 2.6.15 (Fas 3 and 4 facts, contract-recordings of Tandoor watch 42195359951); 2026-11-07, the recipe editor's and the share link's facts (Tandoor watch 42309088559): no differences",
     "notes": [
       "Validation errors in nested lists come as an object keyed by index from 2.6.15 on (keywords.0.name, steps.0.ingredients.0.order) instead of a list; the app reads only the field names of a 400 (ErrorClassifier.fieldErrors takes both shapes)."
     ],
@@ -25,8 +25,9 @@
     }
   },
   "2.7": {
-    "reviewed": "2026-10-25, Tandoor 2.7.1 (api-schema/fixtures/2.7.1/FACTS.md)",
+    "reviewed": "2026-10-25, Tandoor 2.7.1 (api-schema/fixtures/2.7.1/FACTS.md); 2026-11-07, the recipe editor's and the share link's facts on 2.7.2 and latest (Tandoor watch 42309088559): the editor's are the same",
     "notes": [
+      "share-link with a trailing slash is an unknown /api/ path: 200 with the web app's HTML, where 2.6 answers a 302 to the login. The app calls it without the slash; the answer without it is the same on both lines.",
       "api-token-auth is gone (302 to /account/login/): the app logs in through allauth headless (login.allauth.*, logout.*), 3 logins per minute, 429 without Retry-After.",
       "No login token any more: the token list has only the device token; the revokeLoginToken.* and login-form/multipart facts are gone.",
       "403 detail texts changed; the app never matches on them.",
@@ -175,7 +176,8 @@
       "fas4.fas3Rest.stepSort.unknownProvider.body.steps": null,
       "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.0.order": "[\"This field may not be null.\"]",
       "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.1.order": "[\"This field may not be null.\"]",
-      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.2.order": "[\"This field may not be null.\"]"
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.2.order": "[\"This field may not be null.\"]",
+      "fas4.share.link.withSlash.status": "200"
     }
   }
 }

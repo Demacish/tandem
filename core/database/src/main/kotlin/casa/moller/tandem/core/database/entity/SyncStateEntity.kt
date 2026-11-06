@@ -60,4 +60,7 @@ object SyncEntities {
      * schema change): `hash` holds core:sync's JSON (`HouseholdMembersSync`), `last_full_relist` when.
      */
     const val HOUSEHOLD_MEMBERS: String = "household_members"
+
+    /** Fas 4, komplettering 3: an AI import's answer waiting to be reviewed; `hash` holds core:sync's JSON (`KeptImportStore`). */
+    const val KEPT_AI_IMPORT: String = "kept_ai_import"
 }

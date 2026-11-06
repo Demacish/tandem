@@ -83,6 +83,21 @@ interface RecipeRepository {
      */
     suspend fun markViewed(id: Long)
 
+    /**
+     * Fas 4 (plan §6.2, §8.6): whether "Dela länk" is offered: a real server that offers
+     * `ServerFeature.SHARE_LINK` (the space may have sharing off), and not a guest, who gets a 403.
+     * Never true in demo mode. Being offline does not change it: [shareLink] says so.
+     */
+    fun observeShareLinkAvailable(): Flow<Boolean>
+
+    /**
+     * A new link to recipe [id] that opens without a login (`GET /api/share-link/{id}`). One
+     * request per call and never retried: every call makes a new link on the server, so this is
+     * called when the user shares and at no other time. Fails with the network or server error, or
+     * `DataProblem.SHARING_OFF` when the server refuses.
+     */
+    suspend fun shareLink(id: Long): Outcome<String>
+
     /** All stored keywords, by name, for the filter chips. Works offline. */
     fun observeKeywords(): Flow<List<Keyword>>
 

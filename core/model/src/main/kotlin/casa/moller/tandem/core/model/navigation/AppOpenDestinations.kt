@@ -28,6 +28,9 @@ object AppOpenDestinations {
     /** "Importera recept". */
     const val IMPORT: String = "import"
 
+    /** Fas 4, komplettering 3: the notification "klart att granska": the import as it was left, else the kept answer. */
+    const val IMPORT_RESULT: String = "import-result"
+
     /** The barcode scanner. */
     const val SCAN: String = "scan"
 

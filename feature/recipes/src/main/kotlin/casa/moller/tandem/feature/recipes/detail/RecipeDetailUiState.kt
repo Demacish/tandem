@@ -33,6 +33,8 @@ import kotlin.time.Instant
  * @property pinned the user chose "Download for offline use".
  * @property canPin the offline toggle is offered (not in demo mode, where everything is local).
  * @property webUrl the recipe in Tandoor's web app ("Open on the web", for editing), null in demo mode.
+ * @property canShareLink "Dela länk" is offered: not in demo mode, for a guest or when the server has no share links.
+ * @property fetchingShareLink the link is being fetched, so a second tap does not make another one.
  * @property struckIngredientIds rows the user struck through (this session only).
  * @property unitChoices which of a row's units is shown, by ingredient id (this session only).
  */
@@ -55,6 +57,8 @@ data class RecipeDetailUiState(
     val pinned: Boolean = false,
     val canPin: Boolean = false,
     val webUrl: String? = null,
+    val canShareLink: Boolean = false,
+    val fetchingShareLink: Boolean = false,
     val struckIngredientIds: Set<Long> = emptySet(),
     val unitChoices: Map<Long, Int> = emptyMap(),
     /** Fas 3 (näringsvärden): the values per serving ("Energi 520 kcal"), empty when the server has none. */
@@ -163,12 +167,21 @@ sealed interface RecipeDetailAction {
      * sends it from its configuration's locale, so the text follows a per-app language change.
      */
     data class SetNumberStyle(val style: NumberStyle) : RecipeDetailAction
+
+    /** "Dela länk" (plan §8.6): one request to the server, then the system's share sheet. */
+    data object ShareLink : RecipeDetailAction
+
+    /** "Dela som text": [text] as the screen wrote it ([RecipeShareText]), through the system's share sheet. */
+    data class ShareText(val text: String) : RecipeDetailAction
 }
 
 /** One-off events of the detail screen. */
 sealed interface RecipeDetailEffect {
     /** Show a short message (snackbar). */
     data class Message(@StringRes val text: Int) : RecipeDetailEffect
+
+    /** Open the system's share sheet with [text]; [subject] is the recipe's name. */
+    data class Share(val subject: String, val text: String) : RecipeDetailEffect
 }
 
 /** Fas 3 (näringsvärden): one nutrition value per serving, its amount already formatted in the user's number style. */

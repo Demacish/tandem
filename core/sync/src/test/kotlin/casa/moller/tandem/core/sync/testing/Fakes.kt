@@ -255,4 +255,8 @@ internal class FakeImportDoneNotifier : ImportDoneNotifier {
     override fun failed() {
         calls += "failed"
     }
+
+    override fun dismiss() {
+        calls += "dismissed"
+    }
 }

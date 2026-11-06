@@ -6,6 +6,8 @@ import casa.moller.tandem.core.sync.platform.AndroidImportDoneNotifier
 import casa.moller.tandem.core.sync.platform.ImportDoneChannelInstaller
 import casa.moller.tandem.core.sync.platform.ImportDoneNotifier
 import casa.moller.tandem.core.sync.recipeimport.ImportKeepAlive
+import casa.moller.tandem.core.sync.recipeimport.KeptImportCleaner
+import casa.moller.tandem.core.sync.recipeimport.KeptImportStore
 import casa.moller.tandem.core.sync.recipeimport.RemoteRecipeImportRepository
 import casa.moller.tandem.core.sync.work.WorkManagerImportKeepAlive
 import dagger.Binds
@@ -26,6 +28,9 @@ internal abstract class RecipeImportModule {
 
     @Binds
     abstract fun bindImportKeepAlive(impl: WorkManagerImportKeepAlive): ImportKeepAlive
+
+    @Binds
+    abstract fun bindKeptImportCleaner(impl: KeptImportStore): KeptImportCleaner
 
     /** The channel "Import klar" exists from the first start (plan 8.7), like the other channels. */
     @Binds

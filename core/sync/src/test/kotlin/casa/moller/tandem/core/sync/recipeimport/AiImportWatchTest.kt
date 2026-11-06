@@ -37,6 +37,26 @@ class AiImportWatchTest {
         assertEquals(1, keepAlives)
     }
 
+    /** Komplettering 3: the notification says "klart att granska", so the answer has to be stored by then. */
+    @Test
+    fun theAnswerIsStoredBeforeAnyoneIsTold() = runTest {
+        val toldWhenKept = mutableListOf<List<String>>()
+        watch.whileRunning(stillWanted = { true }, keep = { toldWhenKept += notifier.calls.toList() }) { recipe }
+        assertEquals(listOf(emptyList<String>()), toldWhenKept)
+        assertEquals(listOf("finished Pannkakor"), notifier.calls)
+    }
+
+    @Test
+    fun onlyAWantedRecipeIsStored() = runTest {
+        var kept = 0
+        watch.whileRunning(stillWanted = { true }, keep = { kept++ }) { failure }
+        watch.whileRunning(stillWanted = { false }, keep = { kept++ }) { recipe }
+        assertEquals(0, kept)
+        visible = true
+        watch.whileRunning(stillWanted = { true }, keep = { kept++ }) { recipe }
+        assertEquals("also with the app on the screen: the process can die later", 1, kept)
+    }
+
     @Test
     fun aFailureWithTheAppAwayIsAnnouncedToo() = runTest {
         assertEquals(failure, watch.whileRunning(stillWanted = { true }) { failure })
