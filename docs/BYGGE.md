@@ -928,8 +928,8 @@ mörkt, teckenstorlek 2, kvarhållen ändring, gäst, laddar, okänt recept) med
 `feature/recipes/src/test/screenshots/editor/`, `DrinkKeysTest` (nyckeln). Ikonerna `Edit`,
 `ArrowUpward`, `ArrowDownward` i `core:designsystem` `icon/TandemIconsEditor.kt`.
 
-**Kvar till senare:** stegfiler och länkade delrecept (behålls oförändrade via stegets id men kan
-inte ändras), näringsvärden, `show_as_header`, dra och släpp (bild tas bort sedan 0.6.0).
+**Kvar till senare:** dra och släpp (bild tas bort sedan 0.6.0; flaggorna, delrecept, stegfiler och
+egna näringsvärden sedan 0.6.0, se "Redigeraren som webben").
 <!-- /Fas 3 redigerare -->
 
 <!-- Fas 3 import -->
@@ -1054,9 +1054,49 @@ serving"), det syns inte i API:t.
 **Tester:** `WeekViewModelTest.aDroppedMealMovesAtOnceAndCanBeUndone` (+ gäst), `RecipeNutritionTest`
 (`:core:database`), `RecipeNutritionFixtureTest` (`:core:sync`, fem inspelade recept), receptvyns referensbilder (`detail_*`, omspelade).
 
-**Kvar till senare:** redigera näringsvärden i redigeraren (egenskapstyperna behöver läsas),
-dra mellan veckor.
+**Kvar till senare:** dra mellan veckor. Näringsvärden redigeras sedan 0.6.0 ("Redigeraren som webben").
 <!-- /Fas 3 matsedel -->
+
+<!-- Fas 4 redigeraren som webben -->
+## Redigeraren som webben (#22, beslut B9, Fas 4)
+
+Komplettering av 0.6.0: det som återstod av webbens receptredigerare, efter att fullständighetskontrollen
+fann att B9 ("lika komplett som webben") inte var uppfyllt. Fakta i `Phase4EditorContractTest` (FACTS
+"Fas 4: receptredigeraren"), inspelningar i `fas4/editor/`, samma på 2.6.13 och 2.7.1.
+
+| Del | Var | Beteende |
+|---|---|---|
+| **Flaggor** | `RecipeEditorOptions.kt` `StepOptions`, `EditorSwitch`; `SetPrivate`, `SetStepShowAsHeader`, `SetStepShowIngredients` | fälten fanns i utkastet och PATCH-kroppen, nu med reglage. Varje rad är en TalkBack-post som nämner steget |
+| **Delrecept** | `DraftStep.stepRecipe`, `StepLinkSheet`, `StepLinkPicker`, `RecipeEditRepository.observeRecipesUsing`, `RecipeDao.observeStepLinks` | arket söker bland lagrade recept. Receptet självt, recept med tillfälligt id och recept som redan använder det här (också genom andra, så långt telefonen vet) visas inte: **Tandoor tar emot både sig självt och en cirkel med 200** |
+| **Stegfil** | `core:model` `StepFile`, `DraftStep.file`, `Step.file` (`RecipeNutrition.stepFilesOf`, ur den lagrade JSON:en efter position; Room har bara bildlänken), `DrinkImageStore.copyFile`, `RecipeEditOutboxHandler.withUploadedFiles`, `RecipeService.uploadUserFile` | valfri filtyp, högst 20 MB (`StepFile.MAX_BYTES`), namnet kortas till 128 tecken med filändelsen kvar (längre är 400). Filen kopieras när du sparar och står i raden som `file.path`. Avsändaren laddar upp den efter konfliktkontrollen och precis före receptet, skriver in id:t i raden direkt (`OutboxDao.updatePayload`) och tar bort kopian, så ett nytt försök aldrig laddar upp samma fil två gånger. En fil som vägras (utrymmets filgräns, 400) lämnar raden FAILED i Väntande ändringar. Kopian ligger bland fotona och försvinner med kontot; en rad som slås ihop eller tas bort tar sin kopia med sig (`OfflineFirstRecipeEditRepository.write`). Exporten av väntande ändringar visar namnet, aldrig sökvägen. Demoläget behåller bara namnet |
+| **Egna näringsvärden** | `core:model` `RecipeProperty`, `PropertyType`, `RecipeDraft.properties`, `Recipe.properties` (`RecipeNutrition.propertiesOf`), `NutritionSection`, `RecipeService.propertyTypes`, `RecipeEditRepository.observePropertyTypes/refreshPropertyTypes` (`sync_state` nyckel `property_types`, kolumnen `hash`) | typerna läses när formuläret öppnas och finns kvar offline. Avsnittet syns bara när det finns typer eller värden. Ett fält som lämnas tomt tas bort när receptet sparas, en lagrad nolla står kvar. Värdena är per portion, som webbens. `property_type` går som `{id, name}`, utan `unit` |
+
+**Det som inte rörts skickas inte.** `RecipeEditPayloads.encode(draft, server)` tar med `step_recipe`,
+`file` och `properties` bara när de skiljer sig från serverns kopia. Det som utelämnas står kvar på
+servern (kontraktstestet), så ett sparande från ett formulär som inte rört dem kan inte ändra dem, och
+en PATCH utan dem ser ut som förut. När den lagrade kopian är en obesvarad kropp finns inget att
+jämföra med, och ett lagrat steg säger då allt (`file: null` tar bort filen). `withStoredNutrition` för
+över `properties` och stegens `file` till den lagrade kopian, annars tappar en andra spara dem innan
+svaret kommit. Raden bär också sådant som bara telefonen behöver (delreceptets namn i
+`step_recipe_data`, typens `unit`); `forSending` tar bort det. En kvarhållen ändring från en äldre
+version saknar fälten: `decode` tar dem från den lagrade receptkopian.
+
+**Konflikter.** `stepsFingerprint` räknar flaggorna, delreceptet och filen först när de skiljer sig från
+ett vanligt steg, så ett recept utan sådant har samma fingeravtryck som förut. Ett köat recept *med*
+sådant ger en falsk konflikt en gång efter uppdateringen; ändringen är kvar och går att spara igen.
+`sameContent` (svaret som kom bort) jämför bara det kroppen säger.
+
+**Rättat på vägen:** `DraftStep.isEmpty` räknade ett steg med bara ett delrecept (eller en fil) som tomt,
+så det togs bort på servern när receptet sparades.
+
+**Tester:** `Phase4EditorContractTest`; `RecipeEditOptionsTest` (`:core:sync`, båda versionerna);
+`RecipeEditorOptionsViewModelTest`; `RecipeEditorShot.EDITING_OPTIONS`, `LINK_PICKER`, `LINK_PICKER_EMPTY`
+i referensbilds- och ATF-testerna.
+
+**Kvar till senare:** en PDF på ett steg visas inte i appen (bilder visas i kokläget; `file_download`
+kräver inloggning och går inte att visa med bildladdaren), den öppnas på webben. En ny egenskapstyp
+skapas på webben. Cirkelkollen ser bara recept vars steg är lagrade.
+<!-- /Fas 4 redigeraren som webben -->
 
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
@@ -1182,8 +1222,7 @@ UnifiedPush-connectorn och Fas 4:s kod är tillsammans under 0,4 MB; ML Kit domi
 - Handskrivna recept (ML Kits latinska modell läser tryckt text).
 - Egen tid för utgångsnotisen.
 - Två recept sida vid sida på mycket breda skärmar (beslutet i "Två recept samtidigt").
-- Stegfiler, länkade delrecept, näringsvärden, `show_as_header` och dra och släpp i redigeraren.
-  Bookmarklet, flera recept ur en PDF, `import_keyword`.
+- Dra och släpp i redigeraren. Bookmarklet, flera recept ur en PDF, `import_keyword`.
   Timerwidget, listval i widgeten, förhandsbilder, "Lägg till vara"-ruta. Dra måltider mellan
   veckor. Inget av detta står i planens "Klart när" för Fas 3 eller 4; det är nya funktioner, inte
   fel, och de ligger kvar i respektive avsnitt.
@@ -1364,7 +1403,7 @@ Room-schema.
 **Tester:** `Phase4Fas3RestContractTest`; `RecipeImportRepositoryTest` (sida med länk, synken pausad under alla fyra anropen, stegsortering med/utan leverantör, AI som tappar ett steg, gäst, demo); `RecipeImportViewModelTest` (blockerad länk → sidan → resultat, sida utan recept, Läs igen, Avbryt, stegsortering och Ångra); `RecipeEditRepositoryTest` (konflikt vid stegändring, bilden tas bort); `NutritionEnergyTest`, `RecipeNutritionTest` (fem recept mot webbens värden per portion), `RecipeDetailViewModelTest.energyFollowsTheUsersKjPreference`; `HomeViewModelTest` (ordna, dölj, återställ; lagringsformatet), `DemoAndAccountsTest` (layouten i demoläget, inget skickas); `WidgetActionsTest`. Skärmbilder och ATF: `RecipeImportShot.PAGE*`/`RESULT_SORT*` (`feature/recipes/src/test/screenshots/import/`), `TodayCustomizeScreenshotTest` (`feature/home/src/test/screenshots/home/*customize*`).
 
 **Kvar till senare:** stegsorteringen och AI-importen är bara prövade mot en server utan
-leverantör; stegfiler. Röktestet täcker WebView-läsningen sedan integrationen (`Phase4SmokeTest`,
+leverantör. Röktestet täcker WebView-läsningen sedan integrationen (`Phase4SmokeTest`,
 se "Release-röktest").
 <!-- /Fas 4 fas3-rester -->
 

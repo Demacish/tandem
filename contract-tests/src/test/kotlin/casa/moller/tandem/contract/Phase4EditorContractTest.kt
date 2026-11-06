@@ -207,6 +207,11 @@ class Phase4EditorContractTest {
         observe("properties.types.shape", typeBody?.keys?.sorted())
         observe("properties.types.fieldNames", typeBody?.arrAt("results").objects().firstOrNull()?.keys?.sorted())
 
+        val one = api("typ-en", "GET", "/api/property-type/${energy.longAt("id")}/")
+        observe("properties.oneType.status", one.status)
+        observe("properties.oneType.fieldNames", (one.json as? JsonObject)?.keys?.sorted())
+        observe("properties.goneType.status", api("typ-okand", "GET", "/api/property-type/$UNKNOWN_ID/").status)
+
         val id = recipe("naring", "Tandem näring", listOf(step("Blanda.", order = 0))) ?: return
         fun property(type: JsonObject, amount: Double?, id: Long? = null): JsonObject {
             val own = obj(
@@ -250,8 +255,8 @@ class Phase4EditorContractTest {
         val nullAmount = patch("naring-null", id, "properties" to JsonArray(listOf(property(energy, null))))
         observe("properties.nullAmount.status", nullAmount.status)
 
-        // The name the device has may be old: does it rename the type (a space-wide change), or make a new one?
-        val staleType = obj("id" to energy.longAt("id"), "name" to "Tandem gammalt namn")
+        // The name the device has may be old: it renames the type for the whole space, like a keyword's.
+        val staleType = obj("id" to energy.longAt("id"), "name" to STALE_NAME)
         val stale = patch(
             "naring-gammalt-namn",
             id,
@@ -262,8 +267,7 @@ class Phase4EditorContractTest {
         observe("properties.staleName.keptTheId", type?.longAt("id") == energy.longAt("id"))
         observe("properties.staleName.nameOnRecipe", type?.stringAt("name"))
         val listed = (api("typ-lista-efter", "GET", "/api/property-type/?page_size=100").json as? JsonObject)?.arrAt("results").objects()
-        observe("properties.staleName.typeNames", listed.mapNotNull { it.stringAt("name") }.filter { it.startsWith("Tandem") }.sorted())
-        (type?.longAt("id"))?.takeIf { it !in types }?.let { types += it }
+        observe("properties.staleName.renamed", listed.any { it.longAt("id") == energy.longAt("id") && it.stringAt("name") == STALE_NAME })
         patch("naring-stad", id, "properties" to JsonArray(emptyList()))
     }
 
@@ -355,7 +359,59 @@ class Phase4EditorContractTest {
         val TINY_PDF: ByteArray = "%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n".toByteArray()
         const val UNKNOWN_ID = 99_999_999L
         const val LONG_NAME = 200
+        const val STALE_NAME = "Tandem gammalt namn"
 
-        val EXPECTED: Map<String, Any?> = linkedMapOf()
+        /** What the app's writes rest on. */
+        val EXPECTED: Map<String, Any?> = linkedMapOf(
+            "flags.patch.status" to 200,
+            "flags.private" to true,
+            "flags.stepKeptItsId" to true,
+            "flags.showAsHeader" to true,
+            "flags.showIngredientsTable" to false,
+            "sub.create.stepRecipe" to true,
+            "sub.create.dataName" to "Tandem del A",
+            "sub.change.status" to 200,
+            "sub.change.stepRecipe" to true,
+            "sub.change.dataName" to "Tandem del B",
+            "sub.leftOut.status" to 200,
+            "sub.leftOut.stepRecipe" to true,
+            "sub.remove.status" to 200,
+            "sub.remove.stepRecipe" to null,
+            "sub.remove.data" to null,
+            "sub.self.status" to 200,
+            "sub.self.readStatus" to 200,
+            "sub.circle.status" to 200,
+            "sub.circle.readStatus" to 200,
+            "sub.unknown.status" to 400,
+            "file.upload.status" to 201,
+            "file.upload.preview" to "",
+            "file.attach.status" to 200,
+            "file.attach.id" to true,
+            "file.attach.name" to "Receptblad.pdf",
+            "file.asRead.status" to 200,
+            "file.leftOut.status" to 200,
+            "file.leftOut.id" to true,
+            "file.remove.status" to 200,
+            "file.remove.file" to null,
+            "file.deleteUnused.status" to 204,
+            "file.longName.status" to 400,
+            "properties.types.status" to 200,
+            "properties.oneType.status" to 200,
+            "properties.goneType.status" to 404,
+            "properties.add.status" to 200,
+            "properties.add.values" to listOf(350.0),
+            "properties.change.status" to 200,
+            "properties.change.values" to listOf(12.5, 400.0),
+            "properties.change.keptItsId" to true,
+            "properties.leftOut.status" to 200,
+            "properties.leftOut.count" to 2,
+            "properties.withoutId.status" to 200,
+            "properties.withoutId.values" to listOf(410.0),
+            "properties.empty.status" to 200,
+            "properties.empty.count" to 0,
+            "properties.staleName.status" to 200,
+            "properties.staleName.keptTheId" to true,
+            "properties.staleName.renamed" to true,
+        )
     }
 }

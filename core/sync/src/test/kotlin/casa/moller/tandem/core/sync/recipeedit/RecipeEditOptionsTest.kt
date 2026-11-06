@@ -305,6 +305,17 @@ class RecipeEditOptionsTest {
     }
 
     @Test
+    fun aValueGoesWithTheTypesNameOfRightNowAndAGoneTypeIsDropped() = forEachVersion {
+        val value = RecipeProperty(typeId = 40, typeName = "Gammalt namn", unit = "kcal", amount = 350.0)
+        val gone = RecipeProperty(typeId = 41, typeName = "Borttagen", unit = "g", amount = 1.0)
+        tandoor.propertyTypes += type(PropertyType(id = 40, name = "Energi på webben", unit = "kcal"))
+        ok(repo.updateRecipe(PASTA, draft().copy(properties = listOf(value, gone))))
+        drainAll()
+        val sent = patchBody().getValue("properties").jsonArray.single().jsonObject
+        assertEquals("Energi på webben", sent.getValue("property_type").jsonObject["name"]?.jsonPrimitive?.content)
+    }
+
+    @Test
     fun aPropertyTypeReadOnceWorksOfflineAndOfflineDoesNotFail() = forEachVersion {
         tandoor.propertyTypes += type(PropertyType(id = 41, name = "Protein", unit = "g"))
         ok(repo.refreshPropertyTypes())

@@ -106,6 +106,10 @@ interface RecipeService {
     /** Fas 4 (#22): the space's property types, for the recipe's own nutrition (FACTS "Fas 4: receptredigeraren"). */
     @GET("api/property-type/")
     suspend fun propertyTypes(@Query("page") page: Int?, @Query("page_size") pageSize: Int?): PageDto<PropertyTypeDto>
+
+    /** One type: a recipe's value goes with the type's name of right now, another name renames it for the space. */
+    @GET("api/property-type/{id}/")
+    suspend fun propertyType(@Path("id") id: Long): PropertyTypeDto
 }
 
 /**

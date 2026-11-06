@@ -67,8 +67,9 @@ Levererades i **0.5.0** (2026-11-03).
 - ✅ Skapa och redigera recept i appen: namn, beskrivning, foto, portioner, tider, nyckelord,
   steg med ingredienser (livsmedel och enheter på namn), offline med tillfälligt id tills det
   skickats, konflikt när receptet ändrats på webben under tiden, ta bort recept (0.5.0). Ta bort
-  bilden och konflikt också när bara ett steg ändrats på webben (0.6.0). Kvar: stegfiler och
-  delrecept ändras på webben.
+  bilden, konflikt också när bara ett steg ändrats på webben, stegets rubrik och ingredienslista,
+  privat recept, delrecept, stegfiler och receptets egna näringsvärden (0.6.0). Kvar: en PDF på ett
+  steg öppnas på webben (appen visar bara bilder).
 - ✅ Importera recept genom att dela en länk eller text till appen (en text tolkas i appen, en
   länk av er Tandoor), med granskning innan receptet öppnas i redigeraren; foto och PDF tolkas
   av Tandoors AI-import när utrymmet har en AI-leverantör (0.5.0). En sida som stänger ute
@@ -83,7 +84,7 @@ Levererades i **0.5.0** (2026-11-03).
   genvägar på appikonen (0.5.0).
 - ✅ Dra och släpp i matsedeln (dag, och måltidstyp på surfplattan) och näringsvärden per portion i
   receptvyn (0.5.0), i kJ eller kcal som i Tandoor (0.6.0). Recept dras in från "Vill laga" och, på
-  bred surfplatta, från en receptsökning bredvid veckan (0.6.0). Kvar: redigera näringsvärden i appen.
+  bred surfplatta, från en receptsökning bredvid veckan (0.6.0).
 - ✅ Hemsektioner som du ordnar och döljer ("Anpassa Idag", 0.6.0).
 
 ## Fas 4: Smart hushåll ✅

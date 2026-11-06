@@ -174,6 +174,11 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         return when {
             path == PROPERTY_TYPES -> page(propertyTypes)
 
+            PROPERTY_TYPE.matches(path) -> {
+                val id = PROPERTY_TYPE.find(path)!!.groupValues[1].toLong()
+                propertyTypes.firstOrNull { it.long("id") == id }?.let { json(200, it) } ?: notFound()
+            }
+
             keyword != null -> keywords[keyword]?.let { json(200, keywordJson(keyword to it)) } ?: notFound()
 
             recipe != null -> recipes[recipe]?.let { json(200, it) } ?: notFound()
@@ -436,6 +441,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         const val RECIPES = "/api/recipe/"
         const val USER_FILES = "/api/user-file/"
         const val PROPERTY_TYPES = "/api/property-type/"
+        val PROPERTY_TYPE = Regex("^/api/property-type/(\\d+)/$")
         val FILE_NAME = Regex("name=\"name\"[^\\n]*\\n(?:[^\\n]*: [^\\n]*\\n)*\\r?\\n([^\\r\\n]*)")
         const val TEMPLATE_RECIPE = 2L
         const val NOW = "2000-01-15T00:00:00.000000+02:00"

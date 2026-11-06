@@ -56,6 +56,7 @@ private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
  *   the keywords the recipe has, `GET /api/keyword/{id}/` for the rest (Fas 4 review, fix-data: the
  *   device's cached name would rename the keyword for everyone). A keyword deleted on the server
  *   goes by name; a failed read holds the row back.
+ * - **A value's property type** goes with the server's current name for the same reason.
  * - **A step's file** chosen in the editor stands in the row by its path until it is uploaded,
  *   right before the POST or PATCH and after the conflict check ([withUploadedFiles]).
  * - **DELETE** `DELETE /api/recipe/{id}/` (204); a 404 is dropped (already gone). Either way a copy
@@ -89,7 +90,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             is Outcome.Failure -> return OutboxResult.Failed(files.error)
             is Outcome.Success -> files.value
         }
-        val sendBody = when (val named = withServerKeywordNames(remote, uploaded, fresh = null)) {
+        val sendBody = when (val named = withServerNames(remote, uploaded, fresh = null)) {
             is Outcome.Failure -> return OutboxResult.Failed(named.error)
             is Outcome.Success -> RecipeEditPayloads.forSending(named.value)
         }
@@ -129,7 +130,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             is Outcome.Success -> files.value
         }
         // A known keyword goes with the name the server has for it right now: another name would rename it.
-        val sendBody = when (val named = withServerKeywordNames(remote, uploaded, fresh)) {
+        val sendBody = when (val named = withServerNames(remote, uploaded, fresh)) {
             is Outcome.Failure -> return OutboxResult.Failed(named.error)
             is Outcome.Success -> RecipeEditPayloads.forSending(named.value)
         }
@@ -316,6 +317,40 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             JsonObject(keyword + ("name" to JsonPrimitive(name)))
         }
         return Outcome.Success(JsonObject(body + ("keywords" to JsonArray(renamed))))
+    }
+
+    private suspend fun withServerNames(remote: ActiveSource.Remote, body: JsonObject, fresh: JsonObject?): Outcome<JsonObject> =
+        when (val named = withServerKeywordNames(remote, body, fresh)) {
+            is Outcome.Failure -> named
+            is Outcome.Success -> withServerPropertyTypeNames(remote, named.value, fresh)
+        }
+
+    /**
+     * Fas 4 (#22): every `properties[].property_type.name` as the server has it right now, from
+     * [fresh], else `GET /api/property-type/{id}/`: like a keyword, the name a type goes with renames
+     * it for the whole space (FACTS "Fas 4: receptredigeraren"). A value of a type gone from the
+     * server is dropped, by name it would make the type anew; any other failed read fails.
+     */
+    private suspend fun withServerPropertyTypeNames(remote: ActiveSource.Remote, body: JsonObject, fresh: JsonObject?): Outcome<JsonObject> {
+        val properties = (body["properties"] as? JsonArray) ?: return Outcome.Success(body)
+        val names = (fresh?.get("properties") as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.get("property_type") as? JsonObject }
+            .mapNotNull { type -> type.id()?.let { id -> id to (type["name"] as? JsonPrimitive)?.contentOrNull } }
+            .toMap()
+        val named = properties.mapNotNull { element ->
+            val property = element as? JsonObject ?: return@mapNotNull element
+            val type = property["property_type"] as? JsonObject ?: return@mapNotNull element
+            val id = type.id() ?: return@mapNotNull element
+            val name = names[id] ?: when (val read = caller.call(remote, background = true) { recipes.propertyType(id) }) {
+                is Outcome.Success -> read.value.name
+
+                is Outcome.Failure -> {
+                    if (read.error != TandemError.NotFound) return read
+                    return@mapNotNull null
+                }
+            }
+            JsonObject(property + ("property_type" to JsonObject(type + ("name" to JsonPrimitive(name)))))
+        }
+        return Outcome.Success(JsonObject(body + ("properties" to JsonArray(named))))
     }
 
     /** `sync_state` key: the recipe POST of [localId] was started (its answer may be lost). */

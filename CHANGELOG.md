@@ -78,6 +78,11 @@ telefonen. Notiserna om listan och om det som går ut är av tills du slår på 
   ingrediens till steget där den används (ett AI-anrop till, det står vid knappen). Går att
   ångra; tappar AI:n steg eller ingredienser behålls receptet som det var.
 - **Ta bort bilden** i receptredigeraren tar bort receptets bild i Tandoor när du sparar.
+- **Redigeraren har nu det som saknades från webben:** välj om ett steg ska visa sitt namn som
+  rubrik och sina ingredienser, om receptet är privat, vilket recept ett steg använder som delrecept
+  (appen föreslår aldrig receptet självt eller ett som redan använder det) och vilken fil steget har.
+  Receptets egna näringsvärden per portion skrivs in för utrymmets egenskaper. Det du inte rör
+  ändras inte i Tandoor. En fil laddas upp när ändringen skickas, så det går att spara offline.
 - **Ändrat på webben:** redigeraren märker nu också när någon ändrat bara ett steg eller en
   ingrediens på webben medan din ändring väntade.
 
@@ -95,7 +100,7 @@ telefonen. Notiserna om listan och om det som går ut är av tills du slår på 
   inte går att ladda eller får WebView att krascha tar inte längre med sig appen.
 - **Redigeraren:** frågar innan osparade ändringar försvinner, borttagna steg och rader går att
   ångra, livsmedel föreslås medan du skriver, mängder står med decimalkomma, och fälten staplas vid
-  stor text.
+  stor text. Ett steg med bara ett delrecept eller en fil försvinner inte längre när receptet sparas.
 - **Kokläge:** flikarna står kvar när du byter recept, ✕ går att ångra, och i ett lågt fönster står
   flikarna i rubriken. TalkBack får höra vilket recept som visas och vilket recept en knapp gäller.
 - **Handla:** "Dags igen?" följer de senaste köpen, så en ändrad rytm slår igenom efter några köp.
@@ -122,7 +127,7 @@ telefonen. Notiserna om listan och om det som går ut är av tills du slår på 
   visar, och utgångsnotisen håller sig till 08.
 - **Kvar till senare:** handskrivna recept i Fota recept, en egen tid för
   utgångsnotisen, två recept sida vid sida på riktigt breda skärmar, att dra måltider mellan
-  veckor. Stegfiler, delrecept och näringsvärden ändras fortfarande på webben.
+  veckor. En PDF på ett steg öppnas på webben; appen visar bara bilder.
   AI-importen och stegfördelningen är bara prövade mot en server utan AI-leverantör.
 
 ## [0.5.0] – 2026-11-03

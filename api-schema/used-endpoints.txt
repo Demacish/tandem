@@ -159,3 +159,4 @@ POST /api/ai-step-sort/
 # the editor offers for the recipe's own nutrition.
 POST /api/user-file/
 GET /api/property-type/
+GET /api/property-type/{id}/
