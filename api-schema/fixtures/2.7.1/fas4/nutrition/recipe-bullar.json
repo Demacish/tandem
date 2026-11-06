@@ -1,0 +1,215 @@
+{
+  "name": "recipe-bullar",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/30/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 30,
+      "name": "Tandem näring bullar",
+      "description": "",
+      "image": null,
+      "keywords": [],
+      "steps": [
+        {
+          "id": 39,
+          "name": "",
+          "instruction": "Blanda.",
+          "ingredients": [
+            {
+              "id": 101,
+              "food": {
+                "id": 71,
+                "name": "tandem-vetemjol",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [
+                  {
+                    "id": 1,
+                    "property_amount": 340.0,
+                    "property_type": {
+                      "id": 1,
+                      "name": "Tandem energi",
+                      "unit": "kcal",
+                      "description": null,
+                      "order": 0,
+                      "open_data_slug": null,
+                      "fdc_id": null
+                    }
+                  },
+                  {
+                    "id": 2,
+                    "property_amount": 10.0,
+                    "property_type": {
+                      "id": 2,
+                      "name": "Tandem protein",
+                      "unit": "g",
+                      "description": null,
+                      "order": 0,
+                      "open_data_slug": null,
+                      "fdc_id": null
+                    }
+                  }
+                ],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": {
+                  "id": 1,
+                  "name": "g",
+                  "plural_name": null,
+                  "description": null,
+                  "base_unit": "g",
+                  "open_data_slug": null
+                },
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "tandem-vetemjol",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 1200.0,
+              "conversions": [
+                {
+                  "food": "tandem-vetemjol",
+                  "unit": "g",
+                  "amount": 1200.0
+                },
+                {
+                  "food": "tandem-vetemjol",
+                  "unit": "kg",
+                  "amount": 1.2
+                }
+              ],
+              "note": "",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 30,
+                  "name": "Tandem näring bullar"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Blanda.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 0,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {
+        "1": {
+          "id": 1,
+          "name": "Tandem energi",
+          "description": null,
+          "unit": "kcal",
+          "order": 0,
+          "food_values": {
+            "71": {
+              "id": 71,
+              "food": {
+                "id": 71,
+                "name": "tandem-vetemjol"
+              },
+              "value": 4080.0
+            }
+          },
+          "total_value": 4080.0,
+          "missing_value": false
+        },
+        "2": {
+          "id": 2,
+          "name": "Tandem protein",
+          "description": null,
+          "unit": "g",
+          "order": 0,
+          "food_values": {
+            "71": {
+              "id": 71,
+              "food": {
+                "id": 71,
+                "name": "tandem-vetemjol"
+              },
+              "value": 120.0
+            }
+          },
+          "total_value": 120.0,
+          "missing_value": false
+        }
+      },
+      "servings": 24,
+      "file_path": "",
+      "servings_text": "",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

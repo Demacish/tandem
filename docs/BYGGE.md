@@ -1049,11 +1049,12 @@ Per portion" efter ingredienserna (`RecipeDetailUiState.nutrition: List<Nutritio
 användarens talstil via `ServingsText.number`); värdena följer **inte** portionsväljaren. Den
 gamla `nutrition`-strukturen (kalorier m.m.) visas inte (`NutritionPresence.LEGACY` är kvar som
 markör). `SampleRecipes.MushroomPasta` har värden, så receptvyns referensbilder visar avsnittet.
-Antagande [S]: att receptets `properties` är per portion följer Tandoors webb ("per serving");
-kontraktsutrymmet saknar egenskapstyper, så det är inte inspelat.
+Formerna och summorna är inspelade från en riktig server (`Phase4NutritionContractTest`, FACTS "Fas
+4 – näringsvärden"); att receptets egna `properties` är per portion följer Tandoors webb ("per
+serving"), det syns inte i API:t.
 
 **Tester:** `WeekViewModelTest.aDroppedMealMovesAtOnceAndCanBeUndone` (+ gäst), `RecipeNutritionTest`
-(`:core:database`), receptvyns referensbilder (`detail_*`, omspelade).
+(`:core:database`), `RecipeNutritionFixtureTest` (`:core:sync`, fem inspelade recept), receptvyns referensbilder (`detail_*`, omspelade).
 
 **Kvar till senare:** redigera näringsvärden i redigeraren (egenskapstyperna behöver läsas),
 dra mellan veckor.

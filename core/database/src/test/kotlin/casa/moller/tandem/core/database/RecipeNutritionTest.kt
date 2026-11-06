@@ -40,9 +40,9 @@ class RecipeNutritionTest {
     }
 
     /**
-     * Plan §10 "Klart när" (Fas 3, näring): five recipes in the shapes Tandoor stores them, each with
-     * the per-serving value its web "Properties" view shows (food sums divided by the recipe's
-     * servings, or the recipe's own per-serving properties).
+     * The rules on five written-out cases (food sums divided by the recipe's servings, or the
+     * recipe's own per-serving properties). What a real Tandoor answers is checked by
+     * `RecipeNutritionFixtureTest` in core:sync, on `fas4/nutrition/`.
      */
     @Test
     fun fiveRecipesMatchTheWebsPerServingValues() {

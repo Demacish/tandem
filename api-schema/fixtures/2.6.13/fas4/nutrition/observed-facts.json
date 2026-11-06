@@ -1,0 +1,55 @@
+{
+  "tandoorTag": "2.6.13",
+  "runDay": "2000-01-15",
+  "type.Tandem energi.status": 201,
+  "type.Tandem protein.status": 201,
+  "food-flour.status": 201,
+  "food-flour.propertyCount": 2,
+  "food-milk.status": 201,
+  "food-milk.propertyCount": 1,
+  "recipe.pannkakor.createStatus": 201,
+  "recipe.pannkakor.servings": 4,
+  "recipe.pannkakor.properties": [],
+  "recipe.pannkakor.foodProperties": {
+    "Tandem energi": 920.0,
+    "Tandem protein": 20.0
+  },
+  "recipe.pannkakor.missing": [
+    "Tandem protein"
+  ],
+  "recipe.mjolgrot.createStatus": 201,
+  "recipe.mjolgrot.servings": 2,
+  "recipe.mjolgrot.properties": [],
+  "recipe.mjolgrot.foodProperties": {
+    "Tandem energi": 340.0,
+    "Tandem protein": 10.0
+  },
+  "recipe.mjolgrot.missing": [],
+  "recipe.bullar.createStatus": 201,
+  "recipe.bullar.servings": 24,
+  "recipe.bullar.properties": [],
+  "recipe.bullar.foodProperties": {
+    "Tandem energi": 4080.0,
+    "Tandem protein": 120.0
+  },
+  "recipe.bullar.missing": [],
+  "recipe.udda.createStatus": 201,
+  "recipe.udda.servings": 3,
+  "recipe.udda.properties": [],
+  "recipe.udda.foodProperties": {
+    "Tandem energi": 510.0,
+    "Tandem protein": 15.0
+  },
+  "recipe.udda.missing": [],
+  "recipe.egna-varden.createStatus": 201,
+  "recipe.egna-varden.servings": 2,
+  "recipe.egna-varden.properties": [
+    350.0
+  ],
+  "recipe.egna-varden.foodProperties": {
+    "Tandem energi": 1020.0,
+    "Tandem protein": 30.0
+  },
+  "recipe.egna-varden.missing": [],
+  "mismatches": []
+}

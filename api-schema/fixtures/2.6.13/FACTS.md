@@ -1046,3 +1046,28 @@ Samma fakta på 2.7.1.
 dubbelplanering, inga id att ångra med, inget offline/demo, ingen skafferimatchning) utan räknar
 lokalt och sparar vanliga måltider med `POST /api/meal-plan/` (docs/BYGGE.md "Smarta förslag").
 <!-- /Fas 4 auto-plan -->
+
+<!-- Fas 4 näring (fix-data) -->
+## Fas 4 – näringsvärden (`properties`, `food_properties`, plan §10 Fas 3 "Klart när")
+
+`Phase4NutritionContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1) och spelar in till
+`fas4/nutrition/` (körning 2026-11-06, båda versionerna gröna, inga avvikelser mot `EXPECTED`).
+
+- **Egenskapstyp:** `POST /api/property-type/` `{name, unit}` → 201 `{id, name, unit, description,
+  order, open_data_slug, fdc_id}`. [O]
+- **Livsmedel:** `POST /api/food/` med `properties_food_amount: 100`, `properties_food_unit: {name:
+  "g"}` och `properties: [{property_type: {id, name}, property_amount}]` → 201. [O]
+- **`food_properties`** i `GET /api/recipe/{id}/` är ett objekt med egenskapstypens id som nyckel:
+  `{"<id>": {id, name, description, unit, order, food_values: {"<livsmedel>": {id, food: {id, name},
+  value}}, total_value, missing_value}}`. `total_value` gäller **hela receptet** (200 g mjöl à 340
+  kcal/100 g och 400 g mjölk à 60 kcal/100 g → 920,0), aldrig per portion. [O]
+- **`missing_value: true`** när ett livsmedel i receptet saknar typen, och `total_value` är då summan
+  av dem som har den (receptet ovan: protein 20,0 trots att mjölken saknar det). [O]
+- **`properties`** på receptet (`POST /api/recipe/` tar dem nästlade) → `[{id, property_amount,
+  property_type: {id, name, unit, description, order, open_data_slug, fdc_id}}]`, och
+  `food_properties` räknas ändå ut bredvid. [O] Webben visar receptets egna värden per portion; appen
+  låter dem gå före summorna. [K]
+
+Appen delar `total_value` med `servings` (`RecipeNutrition`); `RecipeNutritionFixtureTest` i
+`:core:sync` räknar på inspelningarna av fem recept mot värden uträknade för hand.
+<!-- /Fas 4 näring -->

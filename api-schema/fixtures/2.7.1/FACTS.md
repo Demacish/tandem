@@ -138,3 +138,11 @@ Som 2.6.13 (`fas4/fas3-rester/`, 2026-11-05). Enda skillnaden: valideringsfelet 
 (`../2.6.13/FACTS.md` "Fas 4 – auto-plan"): 200 med eko utan id, upprepade recept, ingen hänsyn
 till befintliga måltider, nyckelord som OCH, 400 utan recept, gästen får köra den. [O]
 <!-- /Fas 4 auto-plan -->
+
+<!-- Fas 4 näring (fix-data) -->
+## Fas 4 – näringsvärden
+
+`Phase4NutritionContractTest` ger samma former och summor som 2.6.13 (`../2.6.13/FACTS.md` "Fas 4 –
+näringsvärden"): `food_properties` per egenskapstyp med `total_value` för hela receptet och
+`missing_value`, receptets egna `properties` nästlade med hela typen. [O]
+<!-- /Fas 4 näring -->
