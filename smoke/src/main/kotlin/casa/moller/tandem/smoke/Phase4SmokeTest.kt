@@ -155,10 +155,12 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         app.tapDescription("Cook another recipe")
         val search = app.waitForNode("the picker's search", predicate = ::isAddField)
         assertTrue("The search takes text", app.setNodeText(search, name))
-        app.waitForNode("the picker's \"$name\"") { it.text?.toString() == name && app.clickableOf(it) != null }
+        // The search field says the same as the row: the row is the node that is no text field.
+        val isRow = { node: AccessibilityNodeInfo -> node.text?.toString() == name && !isAddField(node) && app.clickableOf(node) != null }
+        app.waitForNode("the picker's \"$name\"", predicate = isRow)
         app.capture("phase4-recipe-picker")
         for (attempt in 1..TAP_ATTEMPTS) {
-            app.clickNodeWithText(name)
+            app.findNode(isRow)?.let(app::clickableOf)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             if (app.device.wait(Until.hasObject(tab(name)), TAP_WAIT_MS) == true) break
         }
     }
