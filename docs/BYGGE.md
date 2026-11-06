@@ -4178,10 +4178,13 @@ Varje natt (och manuellt, med valfria extra taggar):
    (referensen, de incheckade fixturerna), 2.6.15, den nyaste releasen av varje linje från 2.6
    (t.ex. 2.7.x) och `latest`.
 2. `contract.yml` körs som återanvändbart arbetsflöde (`workflow_call` med `tags`) med hela
-   sviten: Fas 0, Fas 1 och webbens skalningstabell.
-3. `contract-tests/watch/report.py` jämför varje taggs observerade fakta (`observed-facts.json`)
-   med 2.6.13 i samma körning (UUID:er, sekunder och versionen räknas bort) och skriver tabellen
-   och diffen i jobbsammanfattningen.
+   sviten: alla faser (Fas 0–3, Fas S och Fas 4:s klasser) och webbens skalningstabell.
+3. `contract-tests/watch/report.py` jämför varje taggs observerade fakta (varje
+   `observed-facts.json` i `PHASES`: `fas0`, `fas1`, `fas2`, `fasS`, `fas3`, `fas4.autoplan`,
+   `fas4.fas3Rest`, `fas4.nutrition`) med 2.6.13 i samma körning (UUID:er, sekunder, versionen och
+   det testet självt skickade räknas bort, nyckelordens ordning spelar ingen roll) och skriver
+   tabellen och diffen i jobbsammanfattningen. **En ny kontraktsklass som spelar in fakta ska in i
+   `PHASES`,** annars jämförs de aldrig.
 4. Bara på `main` och bara det jobbet har `issues: write` (`GITHUB_TOKEN`): en röd svit, en
    release som är nyare än `TESTED` eller ett ändrat faktum öppnar eller uppdaterar **ett**
    ärende, "Tandoor watch: upstream needs attention" (en kommentar bara när något nytt hänt, via
@@ -4197,7 +4200,9 @@ som i diffen), `null` för ett faktum som försvunnit, `"*"` för ett värde som
 bygge (webbappens HTML med hashade filnamn). Rapporten visar dem i en hopfälld lista och de
 kräver ingen åtgärd; ett faktum som inte står där, eller får ett annat värde, gör det. Filen
 skrivs ur en körnings `contract-recordings-*`-artefakter (diffen mellan 2.6.13 och den nya
-taggen), aldrig för hand utan granskning.
+taggen), aldrig för hand utan granskning. Fas 3:s och Fas 4:s fakta jämfördes inte förrän
+granskningen av Fas 4: skillnaderna (valideringsfel i nästlade listor kommer från 2.6.15 som ett
+objekt med index som nycklar) står därför också på en egen rad "2.6", tagna ur körning 42195359951.
 
 **Tandoor 2.7 (komplettering 2026-10-25):** 2.7.0 tog bort `api-token-auth` (302 till
 `/account/login/`). Appen loggar in via allauth headless (`TandoorAuthenticator`, se "Nätverk"),

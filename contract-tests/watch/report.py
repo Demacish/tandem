@@ -7,7 +7,7 @@ Inputs (from .github/workflows/tandoor-watch.yml):
   --recordings the downloaded contract-recordings-<tag> artifacts
   --run-url    link to the workflow run
 
-For every tag it compares the contract run's observed facts (observed-facts.json, Fas 0, 1, 2 and S)
+For every tag it compares the contract run's observed facts (every observed-facts.json of PHASES)
 with the 2.6.13 baseline OF THE SAME RUN, after removing what differs on every run (image UUIDs,
 the throttle's remaining seconds, the tag and version themselves). Writes Markdown to --out and
 `attention=true|false` plus `fingerprint=<hash>` to --github-output: attention means a red
@@ -29,9 +29,24 @@ import re
 BASELINE = "2.6.13"
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SECONDS = re.compile(r"available in \d+ seconds")
-IGNORED_KEYS = {"tandoorTag", "serverSettings.version"}
+# deviceToken.expiresSent is what the test itself sent: Java drops ":00" when the seconds are 0.
+IGNORED_KEYS = {"tandoorTag", "serverSettings.version", "deviceToken.expiresSent"}
 NUMERIC_NOISE_KEYS = {"throttle.retryAfterHeader"}
+# Lists whose order means nothing and differs between versions (a recipe's keywords from a page).
+UNORDERED_KEYS = {"import.data.keywords"}
 MAX_DIFF_LINES = 80
+# Key prefix -> folder of its observed-facts.json in a recording. A new contract class that records
+# facts belongs here, or the watch never looks at them.
+PHASES = (
+    ("fas0", ""),
+    ("fas1", "fas1"),
+    ("fas2", "fas2"),
+    ("fasS", "fas-s"),
+    ("fas3", "fas3"),
+    ("fas4.autoplan", os.path.join("fas4", "autoplan")),
+    ("fas4.fas3Rest", os.path.join("fas4", "fas3-rester")),
+    ("fas4.nutrition", os.path.join("fas4", "nutrition")),
+)
 
 
 def flatten(value, prefix=""):
@@ -51,6 +66,8 @@ def normalized(path):
     for key, value in facts.items():
         if key in IGNORED_KEYS:
             continue
+        if key in UNORDERED_KEYS and isinstance(value, list):
+            value = sorted(value, key=str)
         text = json.dumps(value, ensure_ascii=False, sort_keys=True)
         text = UUID.sub("<uuid>", text)
         text = SECONDS.sub("available in <n> seconds", text)
@@ -61,17 +78,11 @@ def normalized(path):
 
 
 def facts_of(recordings, tag):
-    """observed-facts.json of Fas 0, 1, 2 and S, keys prefixed with fas0./fas1./fas2./fasS."""
+    """observed-facts.json of every phase, keys prefixed with the phase (fas0., fas4.autoplan., ...)."""
     base = os.path.join(recordings, f"contract-recordings-{tag}", tag)
     merged, found = {}, False
-    phases = (
-        ("fas0", os.path.join(base, "observed-facts.json")),
-        ("fas1", os.path.join(base, "fas1", "observed-facts.json")),
-        ("fas2", os.path.join(base, "fas2", "observed-facts.json")),
-        ("fasS", os.path.join(base, "fas-s", "observed-facts.json")),
-    )
-    for phase, path in phases:
-        facts = normalized(path)
+    for phase, folder in PHASES:
+        facts = normalized(os.path.join(base, folder, "observed-facts.json"))
         if facts is not None:
             found = True
             merged.update({f"{phase}.{key}": value for key, value in facts.items()})

@@ -6,6 +6,24 @@
     "A line belongs here only together with its versions in TandoorVersionTable.TESTED (docs/BYGGE.md",
     "\"Tandoor-bevakning\"). A difference that is not listed, or has another value, still needs attention."
   ],
+  "2.6": {
+    "reviewed": "2026-11-06, Tandoor 2.6.15 (Fas 3 and 4 facts, contract-recordings of Tandoor watch 42195359951)",
+    "notes": [
+      "Validation errors in nested lists come as an object keyed by index from 2.6.15 on (keywords.0.name, steps.0.ingredients.0.order) instead of a list; the app reads only the field names of a 400 (ErrorClassifier.fieldErrors takes both shapes)."
+    ],
+    "facts": {
+      "fas3.recipe.create.keywordIdOnly.body.keywords": null,
+      "fas3.recipe.create.keywordIdOnly.body.keywords.0.name": "[\"This field is required.\"]",
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps": null,
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps.0.ingredients.0.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps.0.ingredients.1.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps.0.ingredients.2.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps": null,
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.0.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.1.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.2.order": "[\"This field may not be null.\"]"
+    }
+  },
   "2.7": {
     "reviewed": "2026-10-25, Tandoor 2.7.1 (api-schema/fixtures/2.7.1/FACTS.md)",
     "notes": [
@@ -15,7 +33,8 @@
       "An account without a space is refused (403 + JSON) on every /api/ path, also the token create and list: password login reports 'no space', a pasted token 'invalid token'.",
       "An unknown /api/ path answers 200 with the web app's HTML (the HTML guard; capability probes stop).",
       "server-settings has three new boolean fields the app ignores.",
-      "CookLog.servings is a DecimalField (3.0): CookLogDto.servings is a Double, rounded when stored."
+      "CookLog.servings is a DecimalField (3.0): CookLogDto.servings is a Double, rounded when stored.",
+      "Validation errors in nested lists come as an object keyed by index from 2.6.15 on (keywords.0.name, steps.0.ingredients.0.order) instead of a list; the app reads only the field names of a 400 (ErrorClassifier.fieldErrors takes both shapes)."
     ],
     "facts": {
       "fas0.accessTokenList.after16s": "[{\"id\": 1, \"masked\": true, \"plaintext\": false, \"scope\": \"read write\", \"token\": \"tda_************_******_***********0001\"}]",
@@ -146,7 +165,17 @@
       "fas0.throttle.response.body.detail": null,
       "fas0.throttle.response.body.status": "429",
       "fas0.throttle.retryAfterHeader": "null",
-      "fas1.cookLog.app.servingsAsSent": "3.0"
+      "fas1.cookLog.app.servingsAsSent": "3.0",
+      "fas3.recipe.create.keywordIdOnly.body.keywords": null,
+      "fas3.recipe.create.keywordIdOnly.body.keywords.0.name": "[\"This field is required.\"]",
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps": null,
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps.0.ingredients.0.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps.0.ingredients.1.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.noProviderParam.body.steps.0.ingredients.2.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps": null,
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.0.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.1.order": "[\"This field may not be null.\"]",
+      "fas4.fas3Rest.stepSort.unknownProvider.body.steps.0.ingredients.2.order": "[\"This field may not be null.\"]"
     }
   }
 }

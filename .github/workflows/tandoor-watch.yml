@@ -2,7 +2,7 @@ name: Tandoor watch
 
 # Nightly check of upstream Tandoor (plan 3.6 / 10, decision B18; docs/BYGGE.md
 # "Tandoor-bevakning"): finds the vabene1111/recipes release tags on Docker Hub, runs the whole
-# contract suite (contract.yml: Fas 0, Fas 1, the web scaling golden table) against a throwaway
+# contract suite (contract.yml: every phase, the web scaling golden table) against a throwaway
 # Tandoor for the 2.6.13 baseline, 2.6.15, the newest release of every line from 2.6 on and
 # "latest", and compares every tag's observed facts with the baseline of the same run.
 #
