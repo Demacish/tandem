@@ -40,6 +40,8 @@ import org.junit.runner.RunWith
  *   when the wake-up arrives.
  * - [weekSuggestions_chosenKeyword_sevenDifferentDinnersReachTheServer]: "Suggest the week's meals".
  * - [sharedLinkTheServerCannotOpen_pageIsReadInTheApp_andBecomesADraft]: the WebView reader.
+ * - [aiImportEndsWithTheAppAway_theNotificationSaysSo_andTheResultWaits]: the keep-alive worker and
+ *   the notification "import_done", with the app off the screen.
  * - [demoMode_twoRecipesAndWeekSuggestions_withoutFastPush_neverTalkToAServer]: the same features in
  *   demo mode, without one request.
  */
@@ -431,6 +433,45 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         assertFalse("Nothing is saved yet: ${tandoor.requests}", "POST /api/recipe/" in tandoor.requests)
     }
 
+    // ------------------------------------------------------------------------------ AI import in the background
+
+    /**
+     * Plan §8.7 "Import klar": the AI takes its time and the user leaves. The app is off the screen
+     * long enough for Android to freeze a cached process, so this also shows that the keep-alive
+     * worker runs in the minified app: the notification comes while the app is away, not on return.
+     */
+    @Test
+    fun aiImportEndsWithTheAppAway_theNotificationSaysSo_andTheResultWaits() {
+        tandoor.aiImportMillis = AI_IMPORT_MS
+        logIn()
+        app.shell(
+            "am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT ${tandoor.textPageUrl} " +
+                "-n ${TandemApp.PACKAGE}/$MAIN_ACTIVITY",
+        )
+        app.waitFor(By.text("Import recipe"))
+        app.tap("Fetch the recipe")
+        app.waitFor(By.text("No recipe on the page yet"), PAGE_TIMEOUT_MS)
+        app.tap("Interpret the text with AI")
+        device.waitUntil("the AI import to start") { "POST /api/ai-import/" in tandoor.requests }
+
+        app.device.pressHome()
+        device.waitUntil("the import notification", AI_IMPORT_MS + PUSH_TIMEOUT_MS) { importNotification() != null }
+        device.saveDumps("phase4-import-done")
+        val posted = requireNotNull(importNotification())
+        assertEquals("On the planned channel: $posted", IMPORT_DONE_CHANNEL, posted.channel)
+        assertEquals("It says it is done: $posted", "Recipe ready to review", posted.title)
+        assertEquals("It names the recipe: $posted", FakeTandoor.BLOCKED_PAGE_RECIPE, posted.text)
+
+        // Back in the app the result is on the import screen, and the notification has said its piece.
+        app.launch()
+        app.waitFor(By.text("Found this"))
+        app.waitFor(By.text(FakeTandoor.BLOCKED_PAGE_RECIPE))
+        app.capture("phase4-import-done")
+        device.waitUntil("the notification to go") { importNotification() == null }
+    }
+
+    private fun importNotification(): DeviceState.Posted? = device.postedNotifications().firstOrNull { it.id == IMPORT_DONE_ID }
+
     // ------------------------------------------------------------------------------ (f) demo mode
 
     @Test
@@ -539,5 +580,8 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         /** (e) */
         const val MAIN_ACTIVITY = "casa.moller.tandem.MainActivity"
         const val PAGE_TIMEOUT_MS = 60_000L
+        const val AI_IMPORT_MS = 25_000L
+        const val IMPORT_DONE_ID = 1401
+        const val IMPORT_DONE_CHANNEL = "import_done"
     }
 }

@@ -287,7 +287,7 @@ modulerna är borttagna** (0.2.0): `TimerController` binds i `:core:timer` (`Tim
 | `server` | Server ("Tandoor uppdaterades", sedan 0.1.0) | standard | notis | `:core:sync` |
 | `shopping` | Inköpslistan ("Anna lade till mjölk", Fas 4, bara när inställningen är på) | standard | notis | `:core:sync` |
 | `meal_reminders` | Måltidspåminnelser ("Grädde går ut i morgon – 3 recept", Fas 4, valfri) | standard | notis | `:core:sync` |
-| `import_done` | reserverad | standard | notis | skapas inte än |
+| `import_done` | Import klar (en AI-import blev klar medan appen inte var på skärmen, sedan Fas 4:s komplettering) | standard | notis | `:core:sync` |
 
 Varje modul skapar sina kanaler precis innan den postar, med värdena ur
 `TandemNotificationChannel` och egna översatta namn. Dessutom skapar appen alla kanaler **en gång
@@ -1075,7 +1075,7 @@ hel, se "Integration av Fas 4 (0.6.0)".
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
 | Valfri snabb push (push-tjänst + UnifiedPush i appen) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; `push-service.yml` 42112572458 på 3e39331: enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1; imagen är inte publicerad, det sker först med en `v*`-tagg) | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Synk-sidans fyra bilder inspelade igen med båda nya raderna, Screenshots 42112568644) | "Notis när något går ut" |
-| Komplettering 1: TalkBack-namn, nycklade rader, `core:sync`-felet, sidläsarens http-länk (`fas4/komplettering-1`) | pågår | "Fas 4 komplettering 1" |
+| Komplettering 1: TalkBack-namn, nycklade rader, `core:sync`-felet, sidläsarens http-länk, notis när en AI-import är klar (`fas4/komplettering-1`) | pågår | "Fas 4 komplettering 1" |
 | Granskningen av Fas 3 och 4, data och synk (`fas4/fix-data`) | ✅ klart 2026-11-06 (PR 42170268254, röktest "OK (27 tests)" 42170268224 och Contract 42170268319 på 1cbc113; `push-service.yml` 42165724376 på 80afbc7, sista ändringen i tjänsten) | "Fas 4-granskningen: data och synk" |
 | Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
 | Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
@@ -1138,9 +1138,9 @@ scenario f; `DemoAndAccountsTest`). Gäster: Veckans kort och ark visas inte och
 push och Anpassa Idag ligger per konto i `sync_state` och försvinner med `clearAccount`; demot har
 egen databas. Morgonkontrollen avbryts vid utloggning och demoläge och läser alltid det aktiva
 kontot. Notiskanalerna är planens sex (`timer_alarm`, `timer_ongoing`, `shopping`, `sync_problems`,
-`import_done` reserverad, `meal_reminders`) plus `server` från B18, med planens prioriteter. Alla
-notisfunktioner går att stänga av: lista, skafferi och snabb push i Synk och lagring (av som
-standard), timers och serverversion med kanalerna i systemet.
+`import_done`, då reserverad, i bruk sedan "Fas 4 komplettering 1", `meal_reminders`) plus `server`
+från B18, med planens prioriteter. Alla notisfunktioner går att stänga av: lista, skafferi och snabb
+push i Synk och lagring (av som standard), timers, serverversion och importen med kanalerna i systemet.
 
 **Skärmbilder:** `cook/phone_two_{light,light_sv,dark,font2_light,ringing_dark_sv}` (Screenshots
 42132430758). Inga andra skärmar ändrades; surfplattan visar timrarna i sidopanelen. De 9 bilder
@@ -1302,6 +1302,40 @@ riktig AI-nyckel.
 - **Sidläsaren med en http-länk:** röktestets sidläsning delar nu länken som `http://`. Appen tillåter
   ingen klartext, så sidan nås bara om vyn verkligen får `PageReading.loadUrl`, och testet kontrollerar
   fortfarande att servern får länken som den delades.
+
+### Notis när en AI-import är klar
+
+Planen §8.7 "Import klar". En AI-import tar 20–30 s och användaren lämnar ofta appen under tiden.
+`AiImportWatch` omger foto, PDF och AI-tolkad text (`RecipeImportSource.File`, `AiText`) i
+`RemoteRecipeImportRepository`; en länk eller text svarar direkt och får ingen notis.
+
+| Läge när importen slutar | Vad händer |
+|---|---|
+| Appen på skärmen | ingen notis, skärmen visar svaret |
+| Appen borta, recept hittat | "Receptet är klart att granska" med receptets namn, id 1401, kanal `import_done` |
+| Appen borta, misslyckad | "Receptet gick inte att läsa"; orsaken står på importskärmen |
+| Användaren backade ur importen | anropet avbryts, ingen notis |
+| Annat konto aktivt, eller utloggad | ingen notis; `AccountNotifications` tar också bort en öppen notis |
+
+Ett tryck tar tillbaka appen som den lämnades, med svaret på importskärmen. Notisen försvinner också
+om användaren kommer tillbaka på annat sätt. Resultatet ligger kvar i `RecipeImportViewModel` som
+förut, så om systemet dödar processen efter notisen får importen göras om (se klassens kommentar).
+
+**Varför en worker:** Android fryser en cachad process några sekunder efter att den lämnat skärmen.
+Anropet ligger i skärmens ViewModel och svaret skulle bli liggande tills användaren kom tillbaka, så
+notisen skulle aldrig komma på en riktig telefon. `ImportKeepAliveWorker` (`tandem.import.keepalive`,
+expedited, kräver nätverk, högst 150 s) gör inget annat än att vänta tills `AiImportWatch` inte har
+något igång; så länge den kör är processen inte cachad. Får appen slut på expedited-kvot körs den som
+vanligt jobb, och då kan notisen komma senare eller först när appen öppnas.
+
+**Tillstånd:** importen frågar inte efter `POST_NOTIFICATIONS` (planen 8.7: frågan kommer vid första
+timern). Utan tillstånd postas ingenting och importen fungerar som förut. Notisen stängs av med kanalen
+i systemet, liksom timers och serverversionen.
+
+**Tester:** `AiImportWatchTest` (lägena ovan, avbruten import, väntan), `RecipeImportRepositoryTest`
+(vilka källor som ger notis) och röktestet
+`Phase4SmokeTest.aiImportEndsWithTheAppAway_theNotificationSaysSo_andTheResultWaits`: FakeTandoor svarar
+efter 25 s, appen är borta under tiden och notisen ska komma innan appen öppnas igen.
 <!-- /Fas 4 komplettering-1 -->
 
 <!-- Fas 4 fas3-rester -->

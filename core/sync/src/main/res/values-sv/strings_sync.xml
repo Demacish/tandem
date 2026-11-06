@@ -53,4 +53,11 @@
     <string name="sync_pantry_expiry_line_no_place">%1$s, %2$s</string>
     <string name="sync_pantry_expiry_day_today">i dag</string>
     <string name="sync_pantry_expiry_day_tomorrow">i morgon</string>
+    <!-- Kanalen "Import klar" (plan 8.7): en AI-import blev klar medan appen inte var på skärmen. -->
+    <string name="sync_notification_channel_import_done">Import klar</string>
+    <string name="sync_notification_channel_import_done_description">När en AI-import du startat är klar och Tandem inte är på skärmen.</string>
+    <string name="sync_import_done_title">Receptet är klart att granska</string>
+    <string name="sync_import_done_text">Öppna Tandem och kontrollera det innan det sparas.</string>
+    <string name="sync_import_failed_title">Receptet gick inte att läsa</string>
+    <string name="sync_import_failed_text">Öppna Tandem för att se varför.</string>
 </resources>

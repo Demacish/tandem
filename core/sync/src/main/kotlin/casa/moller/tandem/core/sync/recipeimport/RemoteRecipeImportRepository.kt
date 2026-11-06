@@ -17,6 +17,7 @@ import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.network.dto.RecipeFromSourceResponseDto
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
+import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -55,7 +56,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  *   [RecipeImportProblem.DEMO_MODE].
  *
  * Every server call runs inside [ImportGate.whileImporting], so background sync yields the server
- * to the import (plan §10 Fas 3 "Klart när": "bakgrundssynken pausas under tiden").
+ * to the import (plan §10 Fas 3 "Klart när": "bakgrundssynken pausas under tiden"). An AI import
+ * also runs inside [AiImportWatch.whileRunning]: it says when it is done if the app has left the
+ * screen (plan §8.7).
  */
 @Singleton
 internal class RemoteRecipeImportRepository @Inject constructor(
@@ -65,6 +68,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
     private val status: ServerStatusRepository,
     private val databases: TandemDatabaseFactory,
     private val gate: ImportGate,
+    private val aiWatch: AiImportWatch,
 ) : RecipeImportRepository {
     override fun observeAiImportAvailable(): Flow<Boolean> = status.observeStatus()
         .map { !it.isDemo && ServerFeature.AI_IMPORT in it.capabilities }
@@ -80,6 +84,14 @@ internal class RemoteRecipeImportRepository @Inject constructor(
             ActiveSource.Demo -> return@catchingUnexpected Outcome.Failure(RecipeImportProblem.DEMO_MODE.toError())
             ActiveSource.Loading, ActiveSource.None -> return@catchingUnexpected Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
+        if (source is RecipeImportSource.File || source is RecipeImportSource.AiText) {
+            aiWatch.whileRunning(stillWanted = { sources.current().identity == remote.identity }) { read(remote, source) }
+        } else {
+            read(remote, source)
+        }
+    }
+
+    private suspend fun read(remote: ActiveSource.Remote, source: RecipeImportSource): Outcome<RecipeImportResult> {
         val answer = gate.whileImporting {
             when (source) {
                 is RecipeImportSource.Link -> fromLink(remote, source.url)
@@ -89,7 +101,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
                 is RecipeImportSource.Text -> error("handled above")
             }
         }
-        when (answer) {
+        return when (answer) {
             is Outcome.Failure -> answer
 
             is Outcome.Success -> RecipeImportMapper.toResult(answer.value)

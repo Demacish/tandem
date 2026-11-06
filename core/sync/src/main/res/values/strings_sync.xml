@@ -55,4 +55,11 @@
     <string name="sync_pantry_expiry_line_no_place">%1$s, %2$s</string>
     <string name="sync_pantry_expiry_day_today">today</string>
     <string name="sync_pantry_expiry_day_tomorrow">tomorrow</string>
+    <!-- The channel "Import done" (plan 8.7): an AI import ended while the app was away from the screen. -->
+    <string name="sync_notification_channel_import_done">Import done</string>
+    <string name="sync_notification_channel_import_done_description">When an AI import you started has finished and Tandem is not on the screen.</string>
+    <string name="sync_import_done_title">Recipe ready to review</string>
+    <string name="sync_import_done_text">Open Tandem to check it before it is saved.</string>
+    <string name="sync_import_failed_title">The recipe could not be read</string>
+    <string name="sync_import_failed_text">Open Tandem to see why.</string>
 </resources>

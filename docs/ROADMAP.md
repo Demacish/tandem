@@ -76,8 +76,9 @@ Levererades i **0.5.0** (2026-11-03).
   tolkas av AI:n på begäran, och AI:n kan fördela ingredienserna på stegen (0.6.0). Flera fotade
   sidor blir ett recept, och granskningen visar originalet bredvid tolkningen (0.6.0). Avsteg från
   planens tvåspaltsimport på surfplatta: en länk eller en text har inget original att visa, så de
-  är en kolumn på alla bredder (se BYGGE). Kvar: AI-importen och stegfördelningen är bara prövade
-  mot en server utan leverantör.
+  är en kolumn på alla bredder (se BYGGE). En notis säger till när en AI-import blir klar medan
+  appen inte är på skärmen. Kvar: AI-importen och stegfördelningen är bara prövade mot en server
+  utan leverantör.
 - ✅ Widgets (inköpslistan med avbockning, dagens måltider), snabbinställningsrutan "Handla" och
   genvägar på appikonen (0.5.0).
 - ✅ Dra och släpp i matsedeln (dag, och måltidstyp på surfplattan) och näringsvärden per portion i

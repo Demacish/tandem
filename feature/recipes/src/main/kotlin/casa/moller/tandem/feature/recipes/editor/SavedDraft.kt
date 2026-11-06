@@ -127,7 +127,7 @@ internal data class SavedIngredient(
 
 /** The highest [DraftStep.rowKey] or [DraftIngredient.rowKey] in the draft; 0 when it has none. */
 internal val RecipeDraft.lastRowKey: Long
-    get() = steps.maxOfOrNull { step -> maxOf(step.rowKey, step.ingredients.maxOfOrNull { it.rowKey } ?: 0) } ?: 0
+    get() = steps.maxOfOrNull { step -> maxOf(step.rowKey, step.ingredients.maxOfOrNull { it.rowKey } ?: 0L) } ?: 0L
 
 /**
  * Every row without a key gets the next one after [after], so no row ever gets the key of a row

@@ -23,6 +23,7 @@ import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.image.ImageCache
 import casa.moller.tandem.core.sync.image.ImagePrefetcher
 import casa.moller.tandem.core.sync.image.PrefetchedImages
+import casa.moller.tandem.core.sync.platform.ImportDoneNotifier
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
@@ -240,5 +241,18 @@ internal class FakeAccountStore(initial: List<ServerAccount>) : SecureAccountSto
 
     override suspend fun clearAll() {
         state.value = emptyList()
+    }
+}
+
+/** Records what the import said ([ImportDoneNotifier]): "finished <name>" or "failed". */
+internal class FakeImportDoneNotifier : ImportDoneNotifier {
+    val calls: MutableList<String> = CopyOnWriteArrayList()
+
+    override fun finished(recipeName: String) {
+        calls += "finished $recipeName"
+    }
+
+    override fun failed() {
+        calls += "failed"
     }
 }

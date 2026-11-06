@@ -141,6 +141,16 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     /** Fas 4 (integration): a page the server "cannot fetch": only the app's WebView reads it. */
     val blockedPageUrl: String get() = "$origin$BLOCKED_PAGE_PATH"
 
+    /** Fas 4 komplettering: a page without a recipe: only the space's AI can read its text. */
+    val textPageUrl: String get() = "$origin$TEXT_PAGE_PATH"
+
+    /**
+     * Fas 4 komplettering: the space has an AI provider (the recording has none) and
+     * `POST /api/ai-import/` answers after this long, as a real provider does. Null: no provider.
+     */
+    @Volatile
+    var aiImportMillis: Long? = null
+
     private val image: ByteArray by lazy { generatedPng() }
 
     /** What the user types as the server address, e.g. `localhost:41234`. */
@@ -204,6 +214,12 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
                 .body(recordedPage())
                 .build()
 
+            method == "GET" && path == TEXT_PAGE_PATH -> MockResponse.Builder()
+                .code(200)
+                .addHeader("Content-Type", "text/html; charset=utf-8")
+                .body("<html><body><p>Kanelbullar: 5 dl mjöl, 2 dl mjölk, kanel och socker.</p></body></html>")
+                .build()
+
             method == "POST" && path == "/api-token-auth/" -> {
                 val body = request.body?.utf8().orEmpty()
                 if ("\"username\"" in body && "\"password\"" in body) {
@@ -226,7 +242,14 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
                 fixture("34-revoke-device-token")
             }
 
-            method == "GET" && path == "/api/space/current/" -> fixture("13-space-current")
+            method == "GET" && path == "/api/space/current/" -> fixture("13-space-current") { space ->
+                if (aiImportMillis == null) space else JsonObject(space.jsonObject + ("ai_default_provider" to AI_PROVIDER))
+            }
+
+            method == "POST" && path == "/api/ai-import/" -> {
+                aiImportMillis?.let { Thread.sleep(it) }
+                fixture(IMPORT_FROM_PAGE)
+            }
 
             method == "GET" && path == "/api/user-preference/" -> fixture("12-user-preference-list")
 
@@ -475,6 +498,8 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         private const val IMPORT_FROM_PAGE = "fas4/fas3-rester/recipe-from-source-url-and-data"
         private const val IMPORT_LINK_REFUSED = "fas3/recipe-from-source-bad-url"
         private const val BLOCKED_PAGE_PATH = "/blockerad-sida"
+        private const val TEXT_PAGE_PATH = "/sida-utan-recept"
+        private val AI_PROVIDER = JsonObject(mapOf("id" to JsonPrimitive(1)))
 
         /** The recipe in [IMPORT_FROM_PAGE]. */
         const val BLOCKED_PAGE_RECIPE = "Kanelbullar från en blockerad sida"

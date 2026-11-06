@@ -63,6 +63,7 @@ import casa.moller.tandem.core.sync.permissions.HouseholdMembersSync
 import casa.moller.tandem.core.sync.permissions.SpaceRoleSync
 import casa.moller.tandem.core.sync.recipeedit.OfflineFirstRecipeEditRepository
 import casa.moller.tandem.core.sync.recipeedit.RecipeEditOutboxHandler
+import casa.moller.tandem.core.sync.recipeimport.AiImportWatch
 import casa.moller.tandem.core.sync.recipeimport.RemoteRecipeImportRepository
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.scan.FoodAliasOutboxHandler
@@ -329,7 +330,19 @@ internal class SyncTestGraph(
     val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages)
 
     // Fas 3 (import lane): the server-side import (online).
-    val recipeImports = RemoteRecipeImportRepository(sources, caller, permissions, serverStatus, databases, DefaultImportGate(guard))
+    val importDone = FakeImportDoneNotifier()
+
+    /** Whether the app is on the screen when an AI import ends. */
+    var appVisible = true
+    val recipeImports = RemoteRecipeImportRepository(
+        sources,
+        caller,
+        permissions,
+        serverStatus,
+        databases,
+        DefaultImportGate(guard),
+        AiImportWatch({ appVisible }, importDone) {},
+    )
 
     val real: TandemDatabase
         get() = databases.get(DatabaseKind.REAL)

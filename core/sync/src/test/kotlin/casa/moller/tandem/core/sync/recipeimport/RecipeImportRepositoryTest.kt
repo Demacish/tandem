@@ -258,6 +258,30 @@ class RecipeImportRepositoryTest {
         assertEquals(RecipeImportProblem.DEMO_MODE.toError(), failure(repo.sortIngredientsIntoSteps(SampleTwoSteps)))
     }
 
+    /** Plan §8.7 "Import klar": the AI's two ways in, and only those: a link answers at once. */
+    @Test
+    fun anAiImportThatEndsWithTheAppAwayIsAnnounced() = forEachVersion {
+        tandoor.providerId = 7
+        graph.appVisible = false
+
+        ok(repo.import(RecipeImportSource.Link(FakeRecipeImportTandoor.KNOWN_URL)))
+        ok(repo.import(RecipeImportSource.Text("Pannkakor\n2 dl mjölk")))
+        assertTrue(graph.importDone.calls.isEmpty())
+
+        ok(repo.import(RecipeImportSource.File(ByteArray(10) { it.toByte() }, "image/jpeg", "recept.jpg")))
+        ok(repo.import(RecipeImportSource.AiText("Pannkakor: 3 dl mjöl.")))
+        assertEquals(listOf("finished Pannkakor", "finished Pannkakor"), graph.importDone.calls)
+
+        tandoor.providerId = null
+        failure(repo.import(RecipeImportSource.AiText("Pannkakor: 3 dl mjöl.")))
+        assertEquals("failed", graph.importDone.calls.last())
+
+        graph.appVisible = true
+        graph.importDone.calls.clear()
+        failure(repo.import(RecipeImportSource.AiText("Pannkakor: 3 dl mjöl.")))
+        assertTrue(graph.importDone.calls.isEmpty())
+    }
+
     @Test
     fun aGuestAndDemoModeCannotImport() = forEachVersion {
         val link = RecipeImportSource.Link(FakeRecipeImportTandoor.KNOWN_URL)

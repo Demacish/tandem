@@ -6,6 +6,12 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**Nytt**
+
+- **Notis när en AI-import är klar:** lämnar du appen medan Tandoors AI läser ett foto, en PDF eller
+  en text säger en notis till när receptet väntar på granskning, eller om det inte gick. Kanalen
+  "Import klar" går att stänga av i systemets inställningar.
+
 **Rättat**
 
 - TalkBack säger namnet på "Nytt recept", "Ny dryck" och "Ny bok".

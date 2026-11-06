@@ -24,12 +24,13 @@ internal fun interface AccountNotifications {
     fun cancelAll()
 }
 
-/** The list, the pantry and the fast push test notification. Timers are not the account's (`TimerSource` tells them apart). */
+/** The list, the pantry, an import and the fast push test notification. Timers are not the account's (`TimerSource` tells them apart). */
 internal class AndroidAccountNotifications @Inject constructor(@ApplicationContext private val context: Context) : AccountNotifications {
     override fun cancelAll() {
         val manager = NotificationManagerCompat.from(context)
         manager.cancel(TandemNotificationIds.SHOPPING_CHANGES)
         manager.cancel(TandemNotificationIds.PANTRY_EXPIRY)
+        manager.cancel(TandemNotificationIds.IMPORT_DONE)
         manager.cancel(AndroidFastPushNotifier.TEST_NOTIFICATION_ID)
     }
 }

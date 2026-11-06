@@ -44,6 +44,15 @@ class TandemNotificationChannelTest {
     }
 
     @Test
+    fun importDoneFollowsThePlan() {
+        // Plan 8.7 "Import klar: Standard".
+        val channel = TandemNotificationChannel.IMPORT_DONE
+        assertEquals(ChannelImportance.DEFAULT, channel.importance)
+        assertEquals(ChannelSound.NOTIFICATION, channel.sound)
+        assertEquals(true, channel.inUse)
+    }
+
+    @Test
     fun notificationIdsNeverCollide() {
         val fixed = setOf(
             TandemNotificationIds.SERVER_VERSION,
@@ -51,8 +60,9 @@ class TandemNotificationChannelTest {
             TandemNotificationIds.TIMER_RINGING_SERVICE,
             TandemNotificationIds.SHOPPING_CHANGES,
             TandemNotificationIds.PANTRY_EXPIRY,
+            TandemNotificationIds.IMPORT_DONE,
         )
-        assertEquals(5, fixed.size)
+        assertEquals(6, fixed.size)
         val perTimer = (0L..999L).flatMap { listOf(TandemNotificationIds.timerOngoing(it), TandemNotificationIds.timerAlarm(it)) }
         assertEquals(2000, perTimer.toSet().size)
         assertEquals(emptySet<Int>(), fixed intersect perTimer.toSet())
