@@ -171,8 +171,8 @@
     <string name="shopping_history_add_again">Lägg till %1$s igen</string>
     <!-- Inlärd butiksordning (Fas 4) -->
     <string name="shopping_store_mode_order_title">Spara ordningen du handlade i?</string>
-    <string name="shopping_store_mode_order_body">Nästa gång sorteras %1$s så här: %2$s</string>
+    <string name="shopping_store_mode_order_body">Sparas i Tandoor för hela hushållet och syns på webben också. Nästa gång sorteras %1$s så här: %2$s</string>
     <string name="shopping_store_mode_order_save">Spara ordningen</string>
-    <string name="shopping_store_mode_order_dismiss">Nej tack</string>
-    <string name="shopping_msg_order_saved">Gångordningen i %1$s är sparad</string>
+    <string name="shopping_store_mode_order_dismiss">Inte nu</string>
+    <string name="shopping_msg_order_saved">Avdelningsordningen i %1$s är sparad</string>
 </resources>

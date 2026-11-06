@@ -35,6 +35,12 @@ internal object RecurringItems {
     /** A rhythm missed this many times over has stopped (the food is no longer bought). */
     private const val STOPPED_SHARE = 3.0
 
+    /**
+     * The rhythm is the median over this many newest purchases: a food bought weekly for a year
+     * and every third week now has its new rhythm after about three purchases.
+     */
+    private const val RECENT_PURCHASES = 5
+
     private const val MILLIS_PER_DAY = 86_400_000L
 
     /**
@@ -51,7 +57,8 @@ internal object RecurringItems {
 
     /**
      * The foods bought regularly (at least [MIN_PURCHASES] times, on distinct days, with a typical
-     * interval of [MIN_INTERVAL_DAYS]..[MAX_INTERVAL_DAYS] days) that are due again at [now]: at
+     * interval of [MIN_INTERVAL_DAYS]..[MAX_INTERVAL_DAYS] days over the [RECENT_PURCHASES] newest
+     * purchases) that are due again at [now]: at
      * least [DUE_SHARE] of the typical interval has passed since the last purchase, and fewer than
      * [STOPPED_SHARE] intervals. Foods in [onList] (the list's unchecked entries) are left out. The
      * most overdue first, at most [limit], named as they were last written.
@@ -81,7 +88,7 @@ internal object RecurringItems {
     private fun rhythmOf(items: List<ShoppingHistoryItem>, today: Long): Rhythm? {
         val days = items.mapNotNull { it.completedAt?.toEpochMilliseconds()?.floorDiv(MILLIS_PER_DAY) }.distinct().sorted()
         if (days.size < MIN_PURCHASES) return null
-        val intervals = days.zipWithNext { a, b -> (b - a).toDouble() }.sorted()
+        val intervals = days.takeLast(RECENT_PURCHASES).zipWithNext { a, b -> (b - a).toDouble() }.sorted()
         val middle = intervals.size / 2
         val typical = if (intervals.size % 2 == 1) intervals[middle] else (intervals[middle - 1] + intervals[middle]) / 2
         if (typical < MIN_INTERVAL_DAYS || typical > MAX_INTERVAL_DAYS) return null

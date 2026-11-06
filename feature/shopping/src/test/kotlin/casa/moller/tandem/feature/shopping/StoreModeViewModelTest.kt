@@ -129,7 +129,7 @@ class StoreModeViewModelTest {
     /** Two earlier trips in the test store that walked [categories] (newest first, before this one). */
     private fun earlierTrips(vararg categories: Long) {
         trips.trips.value = (1..2).map { ago ->
-            StoreTrip(ShoppingSamples.store.id, (ShoppingSamples.now - ago.hours).toEpochMilliseconds(), categories.toList())
+            StoreTrip(ShoppingSamples.store.id, (ShoppingSamples.now - ago.days).toEpochMilliseconds(), categories.toList())
         }
     }
 
@@ -157,8 +157,103 @@ class StoreModeViewModelTest {
 
         vm.onAction(StoreModeAction.SaveOrder)
         assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), aisleNames())
-        assertEquals(ShoppingEffect.Show(ShoppingMessage.OrderSaved("Testbutiken")), effects.last())
+        assertEquals(ShoppingEffect.Show(ShoppingMessage.OrderSaved("Testbutiken"), undoable = true), effects.last())
         assertNull("saved: nothing more to offer", vm.uiState.value.learnedOrder)
+    }
+
+    @Test
+    fun undoPutsTheHouseholdsEarlierOrderBack() = runTest {
+        earlierTrips(2, 3, 1)
+        val vm = viewModel()
+        open(vm)
+        val before = aisleNames()
+        vm.onAction(StoreModeAction.Check(milk.id))
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id))
+        vm.onAction(StoreModeAction.SaveOrder)
+        assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), aisleNames())
+
+        vm.onAction(StoreModeAction.Undo)
+        assertEquals(before, aisleNames())
+    }
+
+    @Test
+    fun leavingAndReopeningDuringOneVisitIsOneTrip() = runTest {
+        val first = viewModel()
+        open(first)
+        first.onAction(StoreModeAction.Check(milk.id)) // Mejeri.
+        first.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // Skafferi.
+
+        // Left to answer a call: a new store mode entry within the same visit.
+        clock.advanceBy(20.minutes)
+        val second = viewModel()
+        open(second)
+        second.onAction(StoreModeAction.Check(ShoppingSamples.onions.id)) // Frukt & grönt.
+
+        clock.advanceBy(20.minutes)
+        val third = viewModel()
+        open(third)
+        third.onAction(StoreModeAction.Check(ShoppingSamples.cream.id))
+        assertEquals(listOf(listOf(2L, 3L, 1L)), trips.trips.value.map { it.categoryIds })
+        assertNull("the pieces of one visit agree with each other, but they are not three trips", third.uiState.value.learnedOrder)
+    }
+
+    @Test
+    fun aVisitHoursLaterIsANewTrip() = runTest {
+        val first = viewModel()
+        open(first)
+        first.onAction(StoreModeAction.Check(milk.id))
+        first.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id))
+
+        clock.advanceBy(5.hours)
+        val second = viewModel()
+        open(second)
+        second.onAction(StoreModeAction.Check(ShoppingSamples.cream.id))
+        second.onAction(StoreModeAction.Check(ShoppingSamples.potato.id))
+        assertEquals(2, trips.trips.value.size)
+    }
+
+    @Test
+    fun aContinuedTripSurvivesProcessDeath() = runTest {
+        val first = viewModel()
+        open(first)
+        first.onAction(StoreModeAction.Check(milk.id))
+        first.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id))
+
+        clock.advanceBy(10.minutes)
+        val saved = SavedStateHandle()
+        val second = viewModel(saved = saved)
+        open(second)
+        second.onAction(StoreModeAction.Check(ShoppingSamples.onions.id))
+
+        val restored = viewModel(saved = saved)
+        open(restored)
+        restored.onAction(StoreModeAction.Check(ShoppingSamples.cream.id))
+        assertEquals(listOf(listOf(2L, 3L, 1L)), trips.trips.value.map { it.categoryIds })
+    }
+
+    @Test
+    fun undoneCheckLeavesNoTraceOfItsAisle() = runTest {
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(StoreModeAction.Check(milk.id)) // Mejeri.
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // Skafferi: recorded now…
+        vm.onAction(StoreModeAction.Undo) // …and it was a mis-tap.
+        assertEquals("the stale two-aisle copy is replaced", listOf(listOf(2L)), trips.trips.value.map { it.categoryIds })
+
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.onions.id)) // Frukt & grönt.
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // Skafferi, at its true place.
+        assertEquals(listOf(listOf(2L, 1L, 3L)), trips.trips.value.map { it.categoryIds })
+    }
+
+    @Test
+    fun undoKeepsAnAisleThatHasAnEarlierCheck() = runTest {
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(StoreModeAction.Check(milk.id)) // Mejeri.
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.tomatoes.id)) // Skafferi.
+        vm.onAction(StoreModeAction.Check(ShoppingSamples.cream.id)) // Mejeri again.
+        vm.onAction(StoreModeAction.Undo)
+        assertEquals(listOf(listOf(2L, 3L)), trips.trips.value.map { it.categoryIds })
     }
 
     @Test

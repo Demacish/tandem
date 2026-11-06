@@ -2,6 +2,8 @@ package casa.moller.tandem.feature.shopping.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,7 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -99,22 +103,7 @@ fun StoreModeScreen(
         when {
             state.loading -> LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
 
-            state.sections.isEmpty() -> EmptyState(
-                icon = TandemIcons.CheckCircle,
-                title = stringResource(R.string.shopping_store_mode_done_title),
-                body = stringResource(R.string.shopping_store_mode_done_body),
-                modifier = Modifier.fillMaxSize().padding(padding),
-            ) {
-                state.learnedOrder?.let { order ->
-                    LearnedOrderCard(order = order, storeName = state.store?.name.orEmpty(), onAction = onAction)
-                }
-                TandemPrimaryButton(
-                    text = stringResource(R.string.shopping_store_mode_done),
-                    onClick = { onAction(StoreModeAction.Close) },
-                    size = TandemButtonSize.Kitchen,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+            state.sections.isEmpty() -> StoreModeDone(state = state, onAction = onAction, modifier = Modifier.fillMaxSize().padding(padding))
 
             else -> LazyColumn(
                 modifier = Modifier
@@ -168,6 +157,36 @@ fun StoreModeScreen(
     }
 }
 
+/**
+ * The finish page. It scrolls, centred when it fits: the learned order is offered here too, and
+ * the card and "Klart" do not fit on a phone in landscape or at a large font size. Here and not in
+ * `StateLayout`: EmptyState also lives in lazy grids, where a scrolling column has no height.
+ */
+@Composable
+private fun StoreModeDone(state: StoreModeUiState, onAction: (StoreModeAction) -> Unit, modifier: Modifier = Modifier) {
+    BoxWithConstraints(modifier = modifier) {
+        val height = maxHeight
+        Box(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+            EmptyState(
+                icon = TandemIcons.CheckCircle,
+                title = stringResource(R.string.shopping_store_mode_done_title),
+                body = stringResource(R.string.shopping_store_mode_done_body),
+                modifier = Modifier.fillMaxWidth().heightIn(min = height),
+            ) {
+                state.learnedOrder?.let { order ->
+                    LearnedOrderCard(order = order, storeName = state.store?.name.orEmpty(), onAction = onAction)
+                }
+                TandemPrimaryButton(
+                    text = stringResource(R.string.shopping_store_mode_done),
+                    onClick = { onAction(StoreModeAction.Close) },
+                    size = TandemButtonSize.Kitchen,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun StoreProgress(state: StoreModeUiState, modifier: Modifier = Modifier) {
     Surface(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
@@ -197,23 +216,26 @@ private fun StoreProgress(state: StoreModeUiState, modifier: Modifier = Modifier
 
 /**
  * Fas 4 "Inlärd butiksordning": the aisles in the order this trip walked them, with "Spara
- * ordningen" (Tandoor's aisle order for the store) and "Nej tack" (for the rest of the trip).
+ * ordningen" (Tandoor's aisle order for the store, the whole household's) and "Inte nu" (for the
+ * rest of the trip). Kitchen-sized buttons as everything else in store mode (plan 6.6).
  */
 @Composable
 private fun LearnedOrderCard(order: LearnedOrder, storeName: String, onAction: (StoreModeAction) -> Unit, modifier: Modifier = Modifier) {
     CalloutCard(
         title = stringResource(R.string.shopping_store_mode_order_title),
-        body = stringResource(R.string.shopping_store_mode_order_body, storeName, order.names.joinToString(" → ")),
+        body = stringResource(R.string.shopping_store_mode_order_body, storeName, order.names.joinToString(", ")),
         icon = TandemIcons.Sort,
         modifier = modifier.testTag(STORE_MODE_ORDER_TAG),
         actions = {
             TandemPrimaryButton(
                 text = stringResource(R.string.shopping_store_mode_order_save),
                 onClick = { onAction(StoreModeAction.SaveOrder) },
+                size = TandemButtonSize.Kitchen,
             )
             TandemSecondaryButton(
                 text = stringResource(R.string.shopping_store_mode_order_dismiss),
                 onClick = { onAction(StoreModeAction.DismissOrder) },
+                size = TandemButtonSize.Kitchen,
             )
         },
     )

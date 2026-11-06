@@ -105,6 +105,13 @@ class ShoppingAccessibilityTest {
     fun storeModeDoneLearnedOrder() = check(ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER)
 
     @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun storeModeDoneLearnedOrderLandscape() = check(ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER)
+
+    @Test
+    fun storeModeDoneLearnedOrderFontScale2() = check(ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER, fontScale = 2f)
+
+    @Test
     fun storeModeDark() = check(ShoppingShot.STORE_MODE, darkTheme = true)
 
     @Test

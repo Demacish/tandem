@@ -163,6 +163,15 @@ class ShoppingScreenshotTest {
         capture("phone_store_mode_done_learned_order_dark", ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER, darkTheme = true)
 
     @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun storeModeDoneLearnedOrderLandscape() =
+        capture("phone_landscape_store_mode_done_learned_order_light_sv", ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER)
+
+    @Test
+    fun storeModeDoneLearnedOrderFontScale2() =
+        capture("phone_store_mode_done_learned_order_font2_light", ShoppingShot.STORE_MODE_DONE_LEARNED_ORDER, fontScale = 2f)
+
+    @Test
     @Config(qualifiers = "sv-$PHONE")
     fun storeChoice() = capture("phone_store_choice_light_sv", ShoppingShot.STORE_CHOICE)
 

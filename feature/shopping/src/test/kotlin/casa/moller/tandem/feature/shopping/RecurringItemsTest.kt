@@ -26,6 +26,17 @@ class RecurringItemsTest {
     }
 
     @Test
+    fun aChangedRhythmTakesOverAfterAFewPurchases() {
+        // Weekly for a long time, then every third week: the last purchases 6, 27, 48 and 69 days ago.
+        val weekly = (0 until 20).map { 70 + it * 7 }.toIntArray()
+        val history = bought("mjölk", 6 + 0, 6 + 21, 6 + 42, 6 + 63, *weekly.map { it + 6 }.toIntArray())
+        assertEquals(21.0, RecurringItems.rhythms(history, now).single().intervalDays, 0.0)
+        assertEquals("day 6 of 21 is not due", emptyList<String>(), RecurringItems.due(history, emptyList(), now, limit = 6))
+        val later = now + 12.days
+        assertEquals("day 18 of 21 is", listOf("mjölk"), RecurringItems.due(history, emptyList(), later, limit = 6))
+    }
+
+    @Test
     fun tooFewPurchasesIrregularRhythmsAndFoodsOnTheListAreNotDue() {
         val history = bought("mjölk", 6, 13) + // Twice: no rhythm yet.
             bought("tandkräm", 70, 140, 210) + // Every ten weeks: too vague.

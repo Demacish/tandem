@@ -171,8 +171,8 @@
     <string name="shopping_history_add_again">Add %1$s again</string>
     <!-- Learned aisle order (Fas 4) -->
     <string name="shopping_store_mode_order_title">Save the order you shopped in?</string>
-    <string name="shopping_store_mode_order_body">Next time %1$s is sorted like this: %2$s</string>
+    <string name="shopping_store_mode_order_body">Saved in Tandoor for the whole household, and shown on the web too. Next time %1$s is sorted like this: %2$s</string>
     <string name="shopping_store_mode_order_save">Save order</string>
-    <string name="shopping_store_mode_order_dismiss">No thanks</string>
+    <string name="shopping_store_mode_order_dismiss">Not now</string>
     <string name="shopping_msg_order_saved">The aisle order of %1$s is saved</string>
 </resources>
