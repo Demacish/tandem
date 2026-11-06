@@ -92,7 +92,10 @@ abstract class RecipeDao {
     abstract suspend fun getDetail(accountId: String, recipeId: Long): RecipeDetailWithSteps?
 
     /** Fas 4 (#22): every step that uses another recipe, for the editor's sub-recipe choice. */
-    @Query("SELECT recipe_id AS recipeId, step_recipe_id AS linkedId FROM step WHERE account_id = :accountId AND step_recipe_id IS NOT NULL")
+    @Query(
+        "SELECT recipe_id AS recipeId, step_recipe_id AS linkedId FROM step " +
+            "WHERE account_id = :accountId AND step_recipe_id IS NOT NULL",
+    )
     abstract fun observeStepLinks(accountId: String): Flow<List<StepLink>>
 
     /** The detail row alone (no steps), null when there is none. */

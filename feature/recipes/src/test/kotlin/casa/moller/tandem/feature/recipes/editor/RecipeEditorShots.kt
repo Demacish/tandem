@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.recipes.editor
 
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import casa.moller.tandem.core.model.recipe.DraftIngredient
 import casa.moller.tandem.core.model.recipe.DraftKeyword
@@ -123,8 +124,8 @@ internal enum class RecipeEditorShot(val content: @Composable () -> Unit) {
 
     // Fas 4 (#22): a step with its flags, sub-recipe and file; the recipe's own nutrition; the sub-recipe sheet.
     EDITING_OPTIONS({ Editor(RecipeEditorSamples.editingOptions()) }),
-    LINK_PICKER({ StepLinkContent(RecipeEditorSamples.linkPicker, onAction = {}) }),
-    LINK_PICKER_EMPTY({ StepLinkContent(StepLinkPicker(step = 0, query = "fisk"), onAction = {}) }),
+    LINK_PICKER({ Surface { StepLinkContent(RecipeEditorSamples.linkPicker, onAction = {}) } }),
+    LINK_PICKER_EMPTY({ Surface { StepLinkContent(StepLinkPicker(step = 0, query = "fisk"), onAction = {}) } }),
 }
 
 @Composable

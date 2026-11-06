@@ -58,6 +58,10 @@ class RecipeEditOptionsTest {
         return checkNotNull(repo.observeDraft(PASTA).first())
     }
 
+    /** This draft with its first step changed. */
+    private fun RecipeDraft.first(change: (DraftStep) -> DraftStep): RecipeDraft =
+        copy(steps = steps.mapIndexed { index, step -> if (index == 0) change(step) else step })
+
     private fun RecipeEditEnv.patchBody(): JsonObject =
         Json.parseToJsonElement(tandoor.callsTo("PATCH", "/api/recipe/$PASTA/").last().second).jsonObject
 
@@ -71,7 +75,7 @@ class RecipeEditOptionsTest {
     private suspend fun RecipeEditEnv.linkOnServer() {
         val draft = draft()
         val link = StepRecipeRef(PANCAKES, "Pannkakor")
-        ok(repo.updateRecipe(PASTA, draft.copy(steps = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(stepRecipe = link) else s })))
+        ok(repo.updateRecipe(PASTA, draft.first { it.copy(stepRecipe = link) }))
         drainAll()
     }
 
@@ -116,7 +120,7 @@ class RecipeEditOptionsTest {
         assertEquals(PANCAKES, stored.steps[0].stepRecipe?.recipeId)
 
         val draft = draft()
-        ok(repo.updateRecipe(PASTA, draft.copy(steps = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(stepRecipe = null) else s })))
+        ok(repo.updateRecipe(PASTA, draft.first { it.copy(stepRecipe = null) }))
         assertEquals(null, graph.recipes.observeStoredRecipe(PASTA).first().recipe?.steps?.get(0)?.stepRecipe)
         drainAll()
         assertEquals(JsonNull, patchBody().steps()[0]["step_recipe"])
@@ -183,17 +187,17 @@ class RecipeEditOptionsTest {
     @Test
     fun aFileTakenOffIsNullAndAnUnreadableOneSavesNothing() = forEachVersion {
         val draft = draft()
-        ok(repo.updateRecipe(PASTA, draft.copy(steps = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(file = chosenFile()) else s })))
+        ok(repo.updateRecipe(PASTA, draft.first { it.copy(file = chosenFile()) }))
         drainAll()
         val withFile = draft()
         assertTrue(withFile.steps[0].file?.id != null)
-        ok(repo.updateRecipe(PASTA, withFile.copy(steps = withFile.steps.mapIndexed { i, s -> if (i == 0) s.copy(file = null) else s })))
+        ok(repo.updateRecipe(PASTA, withFile.first { it.copy(file = null) }))
         drainAll()
         assertEquals(JsonNull, patchBody().steps()[0]["file"])
 
         val after = draft()
         val gone = StepFile(name = "borta.pdf", uri = "file:///nothing/here.pdf")
-        val refused = repo.updateRecipe(PASTA, after.copy(steps = after.steps.mapIndexed { i, s -> if (i == 0) s.copy(file = gone) else s }))
+        val refused = repo.updateRecipe(PASTA, after.first { it.copy(file = gone) })
         assertEquals(RecipeEditProblem.STEP_FILE_UNREADABLE.toError(), (refused as? Outcome.Failure)?.error)
         assertTrue(outbox().isEmpty())
     }
@@ -203,8 +207,7 @@ class RecipeEditOptionsTest {
         graph.network.online.value = false
         val draft = draft()
         val link = StepRecipeRef(PANCAKES, "Pannkakor")
-        val first = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(stepRecipe = link, file = chosenFile()) else s }
-        ok(repo.updateRecipe(PASTA, draft.copy(steps = first)))
+        ok(repo.updateRecipe(PASTA, draft.first { it.copy(stepRecipe = link, file = chosenFile()) }))
         val again = checkNotNull(repo.observeDraft(PASTA).first())
         assertEquals(link, again.steps[0].stepRecipe)
         ok(repo.updateRecipe(PASTA, again.copy(name = "Ändrad två gånger")))
@@ -219,7 +222,7 @@ class RecipeEditOptionsTest {
     @Test
     fun aDiscardedFileLeavesNoCopyBehind() = forEachVersion {
         val draft = draft()
-        ok(repo.updateRecipe(PASTA, draft.copy(steps = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(file = chosenFile()) else s })))
+        ok(repo.updateRecipe(PASTA, draft.first { it.copy(file = chosenFile()) }))
         val copy = RecipeEditPayloads.stepFilePathsOf(outbox().single().payload).single()
         tandoor.partnerEdits(PASTA, "Partnern skrev om beskrivningen.")
         drainAll()
@@ -259,17 +262,11 @@ class RecipeEditOptionsTest {
     fun aLinkChangedOnTheWebIsAConflictAndALostAnswerIsNot() = forEachVersion {
         val draft = draft()
         val plain = RecipeEditPayloads.stepsFingerprint(tandoor.recipe(PASTA))
-        val withLink = JsonObject(
-            tandoor.recipe(PASTA)!! + (
-                "steps" to JsonArray(
-                    tandoor.stepsOf(PASTA).mapIndexed { i, s -> if (i == 0) JsonObject(s + ("step_recipe" to JsonPrimitive(PANCAKES))) else s },
-                )
-                ),
-        )
+        val linked = ("step_recipe" to JsonPrimitive(PANCAKES))
+        val steps = tandoor.stepsOf(PASTA).mapIndexed { index, step -> if (index == 0) JsonObject(step + linked) else step }
+        val withLink = JsonObject(tandoor.recipe(PASTA)!! + ("steps" to JsonArray(steps)))
         assertNotEquals(plain, RecipeEditPayloads.stepsFingerprint(withLink))
-        val ours = RecipeEditPayloads.encode(
-            draft.copy(steps = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(stepRecipe = StepRecipeRef(PANCAKES)) else s }),
-        )
+        val ours = RecipeEditPayloads.encode(draft.first { it.copy(stepRecipe = StepRecipeRef(PANCAKES)) })
         assertTrue(RecipeEditPayloads.sameContent(withLink, ours))
         assertFalse(RecipeEditPayloads.sameContent(tandoor.recipe(PASTA)!!, ours))
     }
@@ -335,7 +332,7 @@ class RecipeEditOptionsTest {
     @Test
     fun theExportNeverShowsAFilesPath() = forEachVersion {
         val draft = draft()
-        ok(repo.updateRecipe(PASTA, draft.copy(steps = draft.steps.mapIndexed { i, s -> if (i == 0) s.copy(file = chosenFile()) else s })))
+        ok(repo.updateRecipe(PASTA, draft.first { it.copy(file = chosenFile()) }))
         val row = outbox().single()
         val export = RecipeEditPayloads.withoutFilePaths(Json.parseToJsonElement(row.payload)).toString()
         assertTrue(export.contains("receptblad.pdf"))

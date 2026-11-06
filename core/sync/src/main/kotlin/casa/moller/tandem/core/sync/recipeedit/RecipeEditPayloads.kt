@@ -222,9 +222,12 @@ internal object RecipeEditPayloads {
                 DraftKeyword(id = id, name = keywordName)
             },
             steps = body.array("steps").mapNotNull { element -> (element as? JsonObject)?.let { decodeStep(it, stored) } },
-            properties = (body["properties"] as? JsonArray)?.mapNotNull { (it as? JsonObject)?.let(::decodeProperty) } ?: stored?.properties,
+            properties = decodeProperties(body) ?: stored?.properties,
         )
     }
+
+    private fun decodeProperties(body: JsonObject): List<RecipeProperty>? =
+        (body["properties"] as? JsonArray)?.mapNotNull { (it as? JsonObject)?.let(::decodeProperty) }
 
     private fun decodeProperty(property: JsonObject): RecipeProperty? {
         val type = property["property_type"] as? JsonObject ?: return null
@@ -397,7 +400,8 @@ internal object RecipeEditPayloads {
         if ("properties" !in body) return true
         fun valuesOf(json: JsonObject) = json.array("properties").mapNotNull { element ->
             val property = element as? JsonObject
-            (property?.get("property_type") as? JsonObject)?.long("id")?.let { it to (property["property_amount"] as? JsonPrimitive)?.doubleOrNull }
+            val type = (property?.get("property_type") as? JsonObject)?.long("id")
+            type?.let { it to (property["property_amount"] as? JsonPrimitive)?.doubleOrNull }
         }.toSet()
         return valuesOf(recipe) == valuesOf(body)
     }

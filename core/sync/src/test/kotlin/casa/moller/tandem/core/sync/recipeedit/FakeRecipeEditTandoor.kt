@@ -101,8 +101,8 @@ internal class FakeRecipeEditTandoor(private val version: String) {
     @Synchronized
     fun hasNutrition(id: Long) {
         val recipe = recipes[id] ?: return
-        val type = JsonObject(mapOf("name" to JsonPrimitive("Energi"), "unit" to JsonPrimitive("kcal")))
-        val property = JsonObject(mapOf("property_amount" to JsonPrimitive(350), "property_type" to type))
+        val type = JsonObject(mapOf("id" to JsonPrimitive(40), "name" to JsonPrimitive("Energi"), "unit" to JsonPrimitive("kcal")))
+        val property = JsonObject(mapOf("id" to JsonPrimitive(77), "property_amount" to JsonPrimitive(350), "property_type" to type))
         recipes[id] = JsonObject(recipe + ("properties" to JsonArray(listOf(property))))
     }
 
@@ -290,7 +290,8 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         step["step_recipe"]?.let { link ->
             val linked = (link as? JsonPrimitive)?.longOrNull?.let { recipes[it] }
             fields["step_recipe"] = link
-            fields["step_recipe_data"] = linked?.let { JsonObject(mapOf("id" to it.getValue("id"), "name" to it.getValue("name"))) } ?: JsonNull
+            val data = linked?.let { JsonObject(mapOf("id" to it.getValue("id"), "name" to it.getValue("name"))) }
+            fields["step_recipe_data"] = data ?: JsonNull
         }
         step["file"]?.let { file ->
             fields["file"] = (file as? JsonObject)?.let { JsonObject(it + ("preview" to JsonPrimitive(""))) } ?: JsonNull

@@ -73,7 +73,8 @@ object RecipeNutrition {
         }
     }
 
-    private fun parse(rawJson: String?): JsonObject? = rawJson?.let { runCatching { json.parseToJsonElement(it) }.getOrNull() } as? JsonObject
+    private fun parse(rawJson: String?): JsonObject? =
+        rawJson?.let { runCatching { json.parseToJsonElement(it) }.getOrNull() } as? JsonObject
 
     private fun JsonElement.toRecipeProperty(): NutritionValue? {
         val property = this as? JsonObject ?: return null

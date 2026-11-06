@@ -119,8 +119,10 @@ internal class AndroidDrinkImageStore @Inject constructor(@ApplicationContext pr
         }
     }
 
-    private fun extensionOf(name: String): String =
-        name.substringAfterLast('.', "").filter { it.isLetterOrDigit() }.take(MAX_EXTENSION).takeIf { it.isNotEmpty() }?.let { ".$it" }.orEmpty()
+    private fun extensionOf(name: String): String {
+        val extension = name.substringAfterLast('.', "").filter { it.isLetterOrDigit() }.take(MAX_EXTENSION)
+        return if (extension.isEmpty()) "" else ".$extension"
+    }
 
     override suspend fun delete(path: String) {
         withContext(Dispatchers.IO) {

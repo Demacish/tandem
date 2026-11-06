@@ -32,7 +32,7 @@ interface RecipeEditRepository {
     /** The stored units (for the unit suggestions), by name. Works offline. */
     fun observeUnits(): Flow<List<MeasurementUnit>>
 
-    /** The space's property types ("Energi", "kcal"), for the recipe's own nutrition. Works offline, from the last [refreshPropertyTypes]. */
+    /** The space's property types ("Energi", "kcal"), for the recipe's own nutrition. Offline: from the last [refreshPropertyTypes]. */
     fun observePropertyTypes(): Flow<List<PropertyType>>
 
     /** Reads the property types from the server; nothing happens offline or in demo mode. */

@@ -80,7 +80,9 @@ class Phase4EditorContractTest {
             id,
             "private" to true,
             "steps" to JsonArray(
-                listOf(step("Blanda.", order = 0, id = stepId, extra = arrayOf("show_as_header" to true, "show_ingredients_table" to false))),
+                listOf(
+                    step("Blanda.", order = 0, id = stepId, extra = arrayOf("show_as_header" to true, "show_ingredients_table" to false)),
+                ),
             ),
         )
         observe("flags.patch.status", patched.status)

@@ -331,9 +331,14 @@ internal class RecipeEditOutboxHandler @Inject constructor(
      * it for the whole space (FACTS "Fas 4: receptredigeraren"). A value of a type gone from the
      * server is dropped, by name it would make the type anew; any other failed read fails.
      */
-    private suspend fun withServerPropertyTypeNames(remote: ActiveSource.Remote, body: JsonObject, fresh: JsonObject?): Outcome<JsonObject> {
+    private suspend fun withServerPropertyTypeNames(
+        remote: ActiveSource.Remote,
+        body: JsonObject,
+        fresh: JsonObject?,
+    ): Outcome<JsonObject> {
         val properties = (body["properties"] as? JsonArray) ?: return Outcome.Success(body)
-        val names = (fresh?.get("properties") as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.get("property_type") as? JsonObject }
+        val names = (fresh?.get("properties") as? JsonArray).orEmpty()
+            .mapNotNull { (it as? JsonObject)?.get("property_type") as? JsonObject }
             .mapNotNull { type -> type.id()?.let { id -> id to (type["name"] as? JsonPrimitive)?.contentOrNull } }
             .toMap()
         val named = properties.mapNotNull { element ->
