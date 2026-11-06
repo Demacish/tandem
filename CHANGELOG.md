@@ -93,9 +93,7 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
 - **Handla:** "Dags igen?" följer de senaste köpen, så en ändrad rytm slår igenom efter några köp.
 - **Hemma och Synk:** kortet om notiser leder till systemets inställningar när frågan inte längre
   går att ställa, och gäster ser ingen knapp för utgångsnotisen.
-- **Snabb push:** texten säger nu att Tandoor-token skickas varje gång telefonen förnyar
-  registreringen, inte bara en gång. Om Tandem och introduktionen nämner snabb push och sidor som
-  öppnas från telefonen.
+- **Om Tandem och introduktionen** nämner nu snabb push och sidor som öppnas från telefonen.
 
 **Övrigt**
 
