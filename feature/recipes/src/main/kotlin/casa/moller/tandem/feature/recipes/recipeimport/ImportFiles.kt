@@ -76,7 +76,9 @@ internal object ImportFiles {
         val jpegs = pages.map { File(it).readBytes() }
         when (jpegs.size) {
             0 -> null
+
             1 -> RecipeImportAction.ImportFile(jpegs.single(), JPEG, "recept.jpg", keep(context, jpegs.single(), JPEG_EXTENSION))
+
             else -> JpegPdf.join(jpegs)?.let { pdf ->
                 RecipeImportAction.ImportFile(pdf, PDF, "recept.pdf", keep(context, pdf, PDF_EXTENSION))
             }

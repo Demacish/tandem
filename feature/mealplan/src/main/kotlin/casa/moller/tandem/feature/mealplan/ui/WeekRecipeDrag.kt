@@ -57,7 +57,7 @@ fun dragRecipeTag(id: Long): String = "week:drag-recipe:$id"
 
 /** From this width the tablet's grid has the recipe panel beside it. */
 internal val RecipePanelMinWidth = 960.dp
-internal val RecipePanelWidth = 280.dp
+internal val RecipePanelWidth = 240.dp
 
 private val StripItemMaxWidth = 200.dp
 private val RecipeThumbnail = 40.dp
