@@ -46,9 +46,8 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("reading registrations: %w", err)
 	}
-	httpClient := &http.Client{Timeout: 30 * time.Second}
-	tandoor := NewTandoor(cfg.TandoorURL, httpClient, version)
-	pusher := &Pusher{client: &http.Client{Timeout: 20 * time.Second}, log: log}
+	tandoor := NewTandoor(cfg.TandoorURL, newTandoorClient(), version)
+	pusher := &Pusher{client: newPushClient(cfg.AllowHTTPEndpoints), log: log}
 
 	log.Info("starting", "version", version, "poll_seconds", int(cfg.Poll.Seconds()), "registrations", store.Len())
 	household, err := operatorHousehold(ctx, tandoor, cfg.TandoorToken, log)
@@ -105,7 +104,12 @@ func operatorHousehold(ctx context.Context, tandoor *Tandoor, token string, log 
 			return "", errors.New("the TANDOOR_TOKEN user has no active space")
 		}
 		wait := backoff.Next(err)
-		log.Warn("cannot reach Tandoor yet", "error", err.Error(), "retry_in", wait.String())
+		if errors.Is(err, ErrUnauthorized) {
+			// The API stays closed until this works, and phones only see an unreachable service.
+			log.Error("Tandoor rejected TANDOOR_TOKEN: fix the token and restart the service", "retry_in", wait.String())
+		} else {
+			log.Warn("cannot reach Tandoor yet", "error", err.Error(), "retry_in", wait.String())
+		}
 		select {
 		case <-ctx.Done():
 			return "", ctx.Err()

@@ -4,6 +4,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdh"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net"
@@ -58,7 +61,18 @@ func TestPartnerItemWakesThePhone(t *testing.T) {
 		t.Fatalf("outsider: %d %v", code, out)
 	}
 
-	code, out := postJSON(t, service+"/v1/register", phone, map[string]string{"endpoint": endpoint})
+	// With Web Push keys, like every real phone: the connector always supplies them.
+	phoneKey, err := ecdh.P256().GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth := make([]byte, 16)
+	_, _ = rand.Read(auth)
+	code, out := postJSON(t, service+"/v1/register", phone, map[string]string{
+		"endpoint": endpoint,
+		"p256dh":   base64.RawURLEncoding.EncodeToString(phoneKey.PublicKey().Bytes()),
+		"auth":     base64.RawURLEncoding.EncodeToString(auth),
+	})
 	if code != http.StatusOK {
 		t.Fatalf("register: %d %v", code, out)
 	}
@@ -71,7 +85,7 @@ func TestPartnerItemWakesThePhone(t *testing.T) {
 	if code, out := postJSON(t, service+"/v1/test", "", map[string]string{"endpoint": endpoint, "id": id}); code != http.StatusNoContent {
 		t.Fatalf("test push: %d %v", code, out)
 	}
-	expectWakeUp(t, received, `{"tandem":"test","id":"`+id+`"}`, 10*time.Second)
+	expectWakeUp(t, received, phoneKey, auth, `{"tandem":"test","id":"`+id+`"}`, 10*time.Second)
 
 	// Let the poller take its baseline (one poll interval of the CI service: 30 s), then the
 	// partner adds an item.
@@ -84,11 +98,8 @@ func TestPartnerItemWakesThePhone(t *testing.T) {
 	}); code != http.StatusCreated {
 		t.Fatalf("adding the item: %d %v", code, out)
 	}
-	body := expectWakeUp(t, received, `{"tandem":"sync","id":"`+id+`"}`, 60*time.Second)
+	expectWakeUp(t, received, phoneKey, auth, `{"tandem":"sync","id":"`+id+`"}`, 60*time.Second)
 	t.Logf("wake-up %s after the partner's item", time.Since(added).Round(time.Second))
-	if bytes.Contains(body, []byte("mjölk")) {
-		t.Fatal("the wake-up must not contain list content")
-	}
 
 	// Unregistering with the id removes the phone: a test push is refused afterwards.
 	if code, _ := postJSON(t, service+"/v1/unregister", "", map[string]string{"endpoint": endpoint, "id": id}); code != http.StatusNoContent {
@@ -143,19 +154,24 @@ func postJSON(t *testing.T, url, token string, body any) (int, map[string]any) {
 	return resp.StatusCode, out
 }
 
-func expectWakeUp(t *testing.T, received chan []byte, want string, within time.Duration) []byte {
+// expectWakeUp decrypts what arrives with the phone's keys and waits for exactly want, so a wake-up
+// with list content in it cannot pass either.
+func expectWakeUp(t *testing.T, received chan []byte, key *ecdh.PrivateKey, auth []byte, want string, within time.Duration) {
 	t.Helper()
 	timeout := time.After(within)
 	for {
 		select {
 		case body := <-received:
-			if string(body) == want {
-				return body
+			plain, err := decryptWebPush(body, key, auth)
+			if err != nil {
+				t.Fatalf("a wake-up the phone cannot decrypt (%d bytes): %v", len(body), err)
 			}
-			t.Logf("ignoring another wake-up: %s", body)
+			if string(plain) == want {
+				return
+			}
+			t.Logf("ignoring another wake-up: %s", plain)
 		case <-timeout:
 			t.Fatalf("no wake-up %s within %s", want, within)
-			return nil
 		}
 	}
 }

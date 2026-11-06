@@ -3,7 +3,9 @@ name: Push service
 # The optional push companion (push-service/, docs/PUSH.md, plan §4.3/B11): unit tests, the
 # container image (built, never pushed from a branch) and an integration test against a REAL,
 # throwaway Tandoor started inside the runner (like contract.yml). Never against production.
-# The image is published to GHCR only from a v* tag (the owner decides when to tag).
+# The image is published to GHCR only from a v* tag (the owner decides when to tag), for
+# linux/amd64 and linux/arm64. The Go version comes from the Dockerfile's FROM line, so a Renovate
+# update of the image also moves the tests.
 on:
   push:
     branches: ["**"]
@@ -20,9 +22,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  GO_VERSION: "1.27.2"
-
 jobs:
   test:
     name: Unit tests
@@ -37,10 +36,17 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Go version of the image
+        id: go
+        run: |
+          version="$(sed -n 's/^FROM .*golang:\([0-9.]*\)-alpine.*/\1/p' Dockerfile)"
+          [ -n "$version" ] || { echo "::error::No golang version on a FROM line in push-service/Dockerfile"; exit 1; }
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: ${{ steps.go.outputs.version }}
           cache: false
 
       - name: gofmt
@@ -114,10 +120,17 @@ jobs:
           size="$(docker image inspect --format '{{.Size}}' tandem-push:ci)"
           echo "Image size: $((size / 1024 / 1024)) MB" >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Go version of the image
+        id: go
+        run: |
+          version="$(sed -n 's/^FROM .*golang:\([0-9.]*\)-alpine.*/\1/p' push-service/Dockerfile)"
+          [ -n "$version" ] || { echo "::error::No golang version on a FROM line in push-service/Dockerfile"; exit 1; }
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: ${{ steps.go.outputs.version }}
           cache: false
 
       - name: The image refuses to start without configuration
@@ -214,10 +227,60 @@ jobs:
           # The service never logs tokens, endpoints' paths or list content.
           docker logs tandem-push 2>&1 | tail -n 50 || true
 
+  platforms:
+    name: Image for amd64 and arm64 (built, never pushed)
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The same builder and flags as "publish", into a file instead of a registry, so a problem
+      # with the cross build or the multi-platform index shows before the first tag.
+      - name: Build both platforms
+        run: |
+          docker buildx create --use --name tandem-push
+          docker buildx build --platform linux/amd64,linux/arm64 --provenance=false \
+            --build-arg VERSION="ci-${GITHUB_SHA::7}" \
+            --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --output "type=oci,dest=${RUNNER_TEMP}/image.tar" push-service
+
+      - name: The index lists both platforms and every binary is built for its own
+        run: |
+          work="${RUNNER_TEMP}/image"
+          mkdir -p "$work" && tar -xf "${RUNNER_TEMP}/image.tar" -C "$work"
+          blob() { echo "${work}/blobs/sha256/${1#sha256:}"; }
+          index="$(blob "$(jq -r '.manifests[0].digest' "${work}/index.json")")"
+          jq . "$index"
+          [ "$(jq -r '[.manifests[].platform.architecture] | sort | join(",")' "$index")" = "amd64,arm64" ] \
+            || { echo "::error::The image index must list exactly amd64 and arm64"; exit 1; }
+          jq -e '.annotations["org.opencontainers.image.source"]' "$index" > /dev/null \
+            || { echo "::error::The image index has no source annotation"; exit 1; }
+          for arch in amd64 arm64; do
+            digest="$(jq -r --arg arch "$arch" '.manifests[] | select(.platform.architecture == $arch) | .digest' "$index")"
+            found=""
+            for layer in $(jq -r '.layers[].digest' "$(blob "$digest")"); do
+              if tar -xzf "$(blob "$layer")" -C "$work" push-service 2> /dev/null; then found=yes; fi
+            done
+            [ -n "$found" ] || { echo "::error::No binary in the ${arch} image"; exit 1; }
+            file "${work}/push-service"
+            case "$arch" in
+              amd64) want="x86-64" ;;
+              arm64) want="aarch64" ;;
+            esac
+            file "${work}/push-service" | grep -q "$want" || { echo "::error::The ${arch} image holds another architecture's binary"; exit 1; }
+            rm -f "${work}/push-service"
+          done
+          echo "The image builds for linux/amd64 and linux/arm64." >> "$GITHUB_STEP_SUMMARY"
+
   publish:
     name: Publish the image (v* tags only)
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, image]
+    needs: [test, image, platforms]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -228,18 +291,64 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      # The same stops as release.yml's "mode": a mistaken tag must not publish an image that
+      # release.yml refuses. Tags can come late here, so `latest` only ever moves forward.
+      - name: Check the tag
+        id: tag
+        run: |
+          version="$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' app/build.gradle.kts | head -n 1)"
+          [ -n "$version" ] || { echo "::error::versionName not found in app/build.gradle.kts"; exit 1; }
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error title=Not a release tag::${GITHUB_REF_NAME} is not vX.Y.Z. Nothing is published."
+            exit 1
+          fi
+          if [ "$GITHUB_REF_NAME" != "v${version}" ]; then
+            echo "::error title=Tag and versionName differ::Tag ${GITHUB_REF_NAME} but versionName is ${version} in app/build.gradle.kts."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error title=Tag not on main::${GITHUB_REF_NAME} points at a commit that is not on main."
+            exit 1
+          fi
+          newest="$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n 1p)"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "latest=$([ "$newest" = "$GITHUB_REF_NAME" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Build and push to GHCR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.tag.outputs.version }}
+          LATEST: ${{ steps.tag.outputs.latest }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tandem-push"
+          source="https://github.com/${GITHUB_REPOSITORY}"
+          tags=(-t "${image}:${VERSION}")
+          [ "$LATEST" = "true" ] && tags+=(-t "${image}:latest")
           echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker build --build-arg VERSION="$version" \
-            --label org.opencontainers.image.source="https://github.com/${GITHUB_REPOSITORY}" \
+          docker buildx create --use --name tandem-push
+          docker buildx build --platform linux/amd64,linux/arm64 --provenance=false \
+            --build-arg VERSION="$VERSION" \
+            --label org.opencontainers.image.source="$source" \
             --label org.opencontainers.image.licenses=Apache-2.0 \
-            -t "${image}:${version}" -t "${image}:latest" push-service
-          docker push "${image}:${version}"
-          docker push "${image}:latest"
-          echo "Published ${image}:${version}" >> "$GITHUB_STEP_SUMMARY"
+            --annotation "index:org.opencontainers.image.source=${source}" \
+            --annotation "index:org.opencontainers.image.licenses=Apache-2.0" \
+            "${tags[@]}" --push push-service
+          echo "Published ${image}:${VERSION} for linux/amd64 and linux/arm64 (latest: ${LATEST})" >> "$GITHUB_STEP_SUMMARY"
+
+      # A new package on GHCR is private until the owner changes it (docs/RELEASE.md section 2),
+      # so this warns instead of failing: the first tag is expected to end up here.
+      - name: Can anyone pull it?
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/tandem-push"
+          docker logout ghcr.io
+          if docker manifest inspect "${image}:${VERSION}" > /dev/null; then
+            echo "Anyone can pull ${image}:${VERSION}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            message="${image} cannot be pulled without logging in. Make the package public: docs/RELEASE.md section 2."
+            echo "::warning title=The image is private::${message}"
+            echo "${message}" >> "$GITHUB_STEP_SUMMARY"
+          fi

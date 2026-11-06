@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 	"sync"
 	"time"
@@ -17,7 +19,7 @@ const APIVersion = 1
 
 // API is the small HTTP API the app talks to:
 //
-//	GET  /healthz         liveness (the container's health check)
+//	GET  /healthz         liveness (the container's health check): only {healthy}
 //	GET  /v1/info         what the service supports (no addresses, no counts)
 //	POST /v1/register     Authorization: Bearer <the app's Tandoor token>, {endpoint, p256dh?, auth?},
 //	                      or for a registered endpoint {endpoint, id, p256dh?, auth?} without the token
@@ -26,6 +28,10 @@ const APIVersion = 1
 //
 // The app's Tandoor token is used once, to ask Tandoor which space and household it belongs to,
 // and then forgotten: it is never stored and never logged.
+//
+// Limits: a request that proves a registration (its endpoint and id) has a bucket of its own, so
+// nobody else can use it up. Everything else that gets as far as Tandoor shares a bucket per client
+// address, and a request with neither an id nor a token is turned away without touching a bucket.
 type API struct {
 	cfg       Config
 	version   string
@@ -48,9 +54,9 @@ func (a *API) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", a.health)
 	mux.HandleFunc("GET /v1/info", a.info)
-	mux.HandleFunc("POST /v1/register", a.limited(a.register))
-	mux.HandleFunc("POST /v1/unregister", a.limited(a.unregister))
-	mux.HandleFunc("POST /v1/test", a.limited(a.test))
+	mux.HandleFunc("POST /v1/register", a.register)
+	mux.HandleFunc("POST /v1/unregister", a.unregister)
+	mux.HandleFunc("POST /v1/test", a.test)
 	return mux
 }
 
@@ -74,8 +80,12 @@ func (a *API) info(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
+type healthResponse struct {
+	Healthy bool `json:"healthy"`
+}
+
 func (a *API) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, a.poller.Status())
+	writeJSON(w, http.StatusOK, healthResponse{Healthy: a.poller.Status().Healthy})
 }
 
 type registerRequest struct {
@@ -102,9 +112,8 @@ func (a *API) register(w http.ResponseWriter, r *http.Request) {
 	}
 	// A phone renewing its own registration proves it with the id, so its token stays on the phone
 	// (it comes here on every app start). The membership was checked when the id was handed out.
-	existing, known := a.store.Get(req.Endpoint)
-	renewing := known && req.ID != "" && existing.ID == req.ID
-	if !renewing && !a.verifyMember(w, r) {
+	renewing, ok := a.admit(w, r, req)
+	if !ok {
 		return
 	}
 	reg, err := a.store.Upsert(req.Endpoint, req.P256DH, req.Auth, a.household, a.now(), a.cfg.MaxEndpoints)
@@ -126,12 +135,9 @@ func (a *API) unregister(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	existing, known := a.store.Get(req.Endpoint)
 	// The registration's own id is enough (the phone may already be logged out); else the token.
-	if !(known && req.ID != "" && existing.ID == req.ID) {
-		if !a.verifyMember(w, r) {
-			return
-		}
+	if _, ok := a.admit(w, r, req); !ok {
+		return
 	}
 	removed, err := a.store.Remove(req.Endpoint)
 	if err != nil {
@@ -156,9 +162,12 @@ func (a *API) test(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	reg, known := a.store.Get(req.Endpoint)
-	if !known || req.ID == "" || reg.ID != req.ID {
+	reg, proven := a.registrationOf(req)
+	if !proven {
 		writeError(w, http.StatusNotFound, "not_registered")
+		return
+	}
+	if !a.allow(w, registrationBucket(reg)) {
 		return
 	}
 	a.testMu.Lock()
@@ -201,12 +210,33 @@ func (a *API) readRequest(w http.ResponseWriter, r *http.Request) (registerReque
 	return req, true
 }
 
+// registrationOf returns the registration the request proves with its endpoint and id.
+func (a *API) registrationOf(req registerRequest) (Registration, bool) {
+	reg, known := a.store.Get(req.Endpoint)
+	if !known || req.ID == "" || subtle.ConstantTimeCompare([]byte(reg.ID), []byte(req.ID)) != 1 {
+		return Registration{}, false
+	}
+	return reg, true
+}
+
+// admit lets a request through on the registration's id, else on a member's token. proven says
+// which; ok is false when the answer has been written.
+func (a *API) admit(w http.ResponseWriter, r *http.Request, req registerRequest) (proven, ok bool) {
+	if reg, proven := a.registrationOf(req); proven {
+		return true, a.allow(w, registrationBucket(reg))
+	}
+	return false, a.verifyMember(w, r)
+}
+
 // verifyMember asks Tandoor whether the request's token belongs to the service's household.
 func (a *API) verifyMember(w http.ResponseWriter, r *http.Request) bool {
 	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 	token = strings.TrimSpace(token)
 	if !ok || token == "" {
 		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return false
+	}
+	if !a.allow(w, a.clientIP(r)) {
 		return false
 	}
 	if !a.verifier.Allow("tandoor", a.now()) {
@@ -234,24 +264,61 @@ func (a *API) verifyMember(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-// limited applies the per-client rate limit.
-func (a *API) limited(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if !a.limiter.Allow(clientIP(r), a.now()) {
-			w.Header().Set("Retry-After", "60")
-			writeError(w, http.StatusTooManyRequests, "rate_limited")
-			return
-		}
-		next(w, r)
+// allow takes one token from key's bucket, or answers 429.
+func (a *API) allow(w http.ResponseWriter, key string) bool {
+	if a.limiter.Allow(key, a.now()) {
+		return true
 	}
+	w.Header().Set("Retry-After", "60")
+	writeError(w, http.StatusTooManyRequests, "rate_limited")
+	return false
 }
 
-func clientIP(r *http.Request) string {
+func registrationBucket(reg Registration) string { return "registration:" + reg.ID }
+
+// clientIP is the address a request is limited by: the peer, or behind a trusted proxy the client
+// that proxy saw.
+func (a *API) clientIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
 	}
-	return host
+	peer, err := netip.ParseAddr(host)
+	if err != nil {
+		return host
+	}
+	return forwardedClient(peer, r.Header.Values("X-Forwarded-For"), a.cfg.TrustedProxies).String()
+}
+
+// forwardedClient walks X-Forwarded-For from the right, where each trusted proxy added the address
+// it saw, to the first hop that is not a trusted proxy. Anything further left was written by the
+// client and proves nothing, and from an untrusted peer the whole header does.
+func forwardedClient(peer netip.Addr, forwarded []string, trusted []netip.Prefix) netip.Addr {
+	client := peer.Unmap().WithZone("")
+	if !isTrustedProxy(client, trusted) {
+		return client
+	}
+	hops := strings.Split(strings.Join(forwarded, ","), ",")
+	for i := len(hops) - 1; i >= 0; i-- {
+		hop, err := netip.ParseAddr(strings.TrimSpace(hops[i]))
+		if err != nil {
+			break
+		}
+		client = hop.Unmap().WithZone("")
+		if !isTrustedProxy(client, trusted) {
+			break
+		}
+	}
+	return client
+}
+
+func isTrustedProxy(ip netip.Addr, trusted []netip.Prefix) bool {
+	for _, prefix := range trusted {
+		if prefix.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {

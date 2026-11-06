@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/netip"
 	"net/url"
 	"os"
 	"strconv"
@@ -23,8 +24,12 @@ type Config struct {
 	ListenAddr string
 	// DataDir holds registrations.json (a volume in the container).
 	DataDir string
-	// AllowHTTPEndpoints permits http:// push endpoints (tests, a LAN-only ntfy). Off by default.
+	// AllowHTTPEndpoints permits http:// push endpoints and endpoints on this machine (tests, a
+	// LAN-only ntfy). Off by default.
 	AllowHTTPEndpoints bool
+	// TrustedProxies are the reverse proxies whose X-Forwarded-For is believed. Empty by default:
+	// the header is ignored and every client behind a proxy shares that proxy's rate limit.
+	TrustedProxies []netip.Prefix
 	// MaxEndpoints caps the registrations of the household.
 	MaxEndpoints int
 	// RegistrationTTL drops registrations not seen (re-registered) for this long.
@@ -105,6 +110,13 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 		}
 		cfg.AllowHTTPEndpoints = b
 	}
+	if v := strings.TrimSpace(getenv("TRUSTED_PROXIES")); v != "" {
+		proxies, err := parseTrustedProxies(v)
+		if err != nil {
+			problems = append(problems, "TRUSTED_PROXIES must be comma-separated IP addresses or CIDR ranges")
+		}
+		cfg.TrustedProxies = proxies
+	}
 	if v := strings.TrimSpace(getenv("TEST_PUSH")); v != "" {
 		b, err := strconv.ParseBool(v)
 		if err != nil {
@@ -142,4 +154,23 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 		return cfg, errors.New(strings.Join(problems, "; "))
 	}
 	return cfg, nil
+}
+
+// parseTrustedProxies reads "10.0.0.1, 172.16.0.0/12": a single address is its own range.
+func parseTrustedProxies(value string) ([]netip.Prefix, error) {
+	var proxies []netip.Prefix
+	for _, part := range strings.Split(value, ",") {
+		part = strings.TrimSpace(part)
+		if prefix, err := netip.ParsePrefix(part); err == nil {
+			proxies = append(proxies, prefix.Masked())
+			continue
+		}
+		addr, err := netip.ParseAddr(part)
+		if err != nil {
+			return nil, err
+		}
+		addr = addr.Unmap().WithZone("")
+		proxies = append(proxies, netip.PrefixFrom(addr, addr.BitLen()))
+	}
+	return proxies, nil
 }

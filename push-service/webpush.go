@@ -78,18 +78,24 @@ func encryptWebPush(plaintext []byte, p256dh, auth string, random io.Reader) ([]
 	if err != nil {
 		return nil, err
 	}
+	salt := make([]byte, webPushSaltSize)
+	if _, err := io.ReadFull(random, salt); err != nil {
+		return nil, err
+	}
+	return sealWebPush(plaintext, uaPublic, authSecret, asPrivate, salt)
+}
+
+// sealWebPush is the encryption itself. Separate from the random key and salt so that a test can
+// check the exact bytes against RFC 8291 Appendix A.
+func sealWebPush(plaintext []byte, uaPublic *ecdh.PublicKey, authSecret []byte, asPrivate *ecdh.PrivateKey, salt []byte) ([]byte, error) {
 	asPublic := asPrivate.PublicKey().Bytes()
 	shared, err := asPrivate.ECDH(uaPublic)
 	if err != nil {
 		return nil, err
 	}
-	keyInfo := append(append([]byte("WebPush: info\x00"), uaPublicBytes...), asPublic...)
+	keyInfo := append(append([]byte("WebPush: info\x00"), uaPublic.Bytes()...), asPublic...)
 	ikm := hkdf(authSecret, shared, keyInfo, 32)
 
-	salt := make([]byte, webPushSaltSize)
-	if _, err := io.ReadFull(random, salt); err != nil {
-		return nil, err
-	}
 	cek := hkdf(salt, ikm, []byte("Content-Encoding: aes128gcm\x00"), 16)
 	nonce := hkdf(salt, ikm, []byte("Content-Encoding: nonce\x00"), 12)
 

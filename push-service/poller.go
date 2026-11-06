@@ -65,14 +65,15 @@ type Poller struct {
 	healthy bool
 }
 
-// PollerStatus is what /healthz reports (no ids, no endpoints).
+// PollerStatus is the poller's state. /healthz publishes only Healthy: it needs no login, and the
+// time of the last wake-up and the number of phones tell an outsider when the household shops.
 type PollerStatus struct {
-	Healthy  bool      `json:"healthy"`
-	LastWake time.Time `json:"last_wake,omitzero"`
-	Phones   int       `json:"phones"`
+	Healthy  bool
+	LastWake time.Time
+	Phones   int
 }
 
-// Status is the poller's state for the health check.
+// Status is the poller's state.
 func (p *Poller) Status() PollerStatus {
 	p.mu.Lock()
 	defer p.mu.Unlock()

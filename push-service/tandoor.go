@@ -23,10 +23,13 @@ type RetryAfterError struct{ Wait time.Duration }
 
 func (e *RetryAfterError) Error() string { return fmt.Sprintf("tandoor asked to wait %s", e.Wait) }
 
-// StatusError is any other unexpected HTTP status.
-type StatusError struct{ Status int }
+// StatusError is any other unexpected HTTP status, from Tandoor or a push endpoint.
+type StatusError struct {
+	From   string
+	Status int
+}
 
-func (e *StatusError) Error() string { return fmt.Sprintf("tandoor answered HTTP %d", e.Status) }
+func (e *StatusError) Error() string { return fmt.Sprintf("%s answered HTTP %d", e.From, e.Status) }
 
 // Membership is who a token belongs to, as far as the service needs it: the active space and the
 // household (nil without one) from GET /api/user-space/all_personal/ (FACTS "d"), and whether the
@@ -59,6 +62,16 @@ type Tandoor struct {
 	base   *url.URL
 	client *http.Client
 	agent  string
+}
+
+// noRedirects hands a 3xx back instead of following it.
+func noRedirects(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+// newTandoorClient follows no redirects, like the app: a token must not travel on to another
+// address, and the only redirect Tandoor's API has is the login page. TANDOOR_URL is therefore the
+// final address; a redirect shows up as "tandoor answered HTTP 30x" in the log.
+func newTandoorClient() *http.Client {
+	return &http.Client{Timeout: 30 * time.Second, CheckRedirect: noRedirects}
 }
 
 // NewTandoor returns a client for base (no trailing slash needed).
@@ -173,7 +186,7 @@ func (t *Tandoor) get(ctx context.Context, token, path string, query url.Values,
 		return &RetryAfterError{Wait: parseRetryAfter(resp.Header.Get("Retry-After"), time.Now())}
 	default:
 		_, _ = io.Copy(io.Discard, body)
-		return &StatusError{Status: resp.StatusCode}
+		return &StatusError{From: "tandoor", Status: resp.StatusCode}
 	}
 }
 

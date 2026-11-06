@@ -1,11 +1,16 @@
 # Tandem push service: a static Go binary on scratch, non-root, ~10 MB image (docs/PUSH.md).
-# Built only in GitHub Actions (push-service.yml); published to GHCR only from a v* tag.
-FROM golang:1.27.2-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS build
+# Built only in GitHub Actions (push-service.yml); published to GHCR only from a v* tag, for
+# linux/amd64 and linux/arm64. The Go toolchain always runs on the builder's own platform and
+# cross-compiles (no cgo), so no emulation is needed. This line is also where push-service.yml
+# reads the Go version it tests with.
+FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS build
 ARG VERSION=dev
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src
 COPY go.mod ./
 COPY *.go ./
-RUN CGO_ENABLED=0 GOFLAGS=-trimpath go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/push-service . \
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH GOFLAGS=-trimpath go build -ldflags "-s -w -X main.version=${VERSION}" -o /out/push-service . \
     && mkdir -p /out/data \
     && apk add --no-cache ca-certificates >/dev/null
 

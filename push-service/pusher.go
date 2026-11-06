@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -23,6 +26,51 @@ const (
 
 // ErrEndpointGone means the distributor forgot the endpoint (404/410): the registration is dropped.
 var ErrEndpointGone = errors.New("push endpoint is gone")
+
+// errInternalEndpoint is the dialer's refusal of an address on this machine.
+var errInternalEndpoint = errors.New("push endpoint resolves to a loopback or link-local address")
+
+// newPushClient is the client for wake-ups. Anyone holding a member's token can register an
+// address, so it must not become a way into the service's own network: a redirect is never
+// followed (an endpoint does not need one, and it could lead to http:// or anywhere else), and
+// without ALLOW_HTTP_ENDPOINTS nothing is dialled on loopback or link-local addresses. The check
+// is on the resolved address, so a name that later points there is covered too. Private LAN
+// addresses stay allowed: a household's own ntfy may live there, and https needs a valid
+// certificate anyway.
+func newPushClient(allowInternal bool) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if !allowInternal {
+		dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second, Control: refuseInternalAddress}
+		transport.DialContext = dialer.DialContext
+	}
+	return &http.Client{Timeout: 20 * time.Second, Transport: transport, CheckRedirect: noRedirects}
+}
+
+func refuseInternalAddress(_, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return err
+	}
+	if ip, err := netip.ParseAddr(host); err == nil && isInternal(ip) {
+		return errInternalEndpoint
+	}
+	return nil
+}
+
+func isInternal(ip netip.Addr) bool {
+	ip = ip.Unmap()
+	return ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified()
+}
+
+// internalHost is the same rule for what an endpoint spells out, refused before it is stored.
+func internalHost(host string) bool {
+	host = strings.ToLower(strings.TrimSuffix(host, "."))
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip, err := netip.ParseAddr(host)
+	return err == nil && isInternal(ip)
+}
 
 // Pusher POSTs wake-ups to UnifiedPush endpoints.
 type Pusher struct {
@@ -74,7 +122,7 @@ func (p *Pusher) Send(ctx context.Context, r Registration, kind string) error {
 	case resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone:
 		return ErrEndpointGone
 	default:
-		return &StatusError{Status: resp.StatusCode}
+		return &StatusError{From: "push endpoint", Status: resp.StatusCode}
 	}
 }
 
@@ -88,6 +136,7 @@ func endpointHost(endpoint string) string {
 }
 
 // validEndpoint accepts https URLs (http only when allowed), without user info, at most 2 KiB.
+// ALLOW_HTTP_ENDPOINTS is for tests and a local distributor, so it also permits this machine.
 func validEndpoint(endpoint string, allowHTTP bool) bool {
 	if len(endpoint) > 2048 || strings.ContainsAny(endpoint, " \n\r\t") {
 		return false
@@ -96,5 +145,8 @@ func validEndpoint(endpoint string, allowHTTP bool) bool {
 	if err != nil || u.Host == "" || u.User != nil || u.Fragment != "" {
 		return false
 	}
-	return u.Scheme == "https" || (allowHTTP && u.Scheme == "http")
+	if allowHTTP {
+		return u.Scheme == "https" || u.Scheme == "http"
+	}
+	return u.Scheme == "https" && !internalHost(u.Hostname())
 }
