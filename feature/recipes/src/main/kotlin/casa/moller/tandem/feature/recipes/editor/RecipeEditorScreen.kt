@@ -369,19 +369,30 @@ private fun Form(
             leadingIcon = null,
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        val workingTime: @Composable (Modifier) -> Unit = { fieldModifier ->
             MinutesField(
                 minutes = draft.workingMinutes,
                 onChange = { onAction(RecipeEditorAction.SetWorkingMinutes(it)) },
                 label = stringResource(R.string.recipe_editor_working_time),
-                modifier = Modifier.weight(1f),
+                modifier = fieldModifier,
             )
+        }
+        val waitingTime: @Composable (Modifier) -> Unit = { fieldModifier ->
             MinutesField(
                 minutes = draft.waitingMinutes,
                 onChange = { onAction(RecipeEditorAction.SetWaitingMinutes(it)) },
                 label = stringResource(R.string.recipe_editor_waiting_time),
-                modifier = Modifier.weight(1f),
+                modifier = fieldModifier,
             )
+        }
+        if (stacked) {
+            workingTime(Modifier.fillMaxWidth())
+            waitingTime(Modifier.fillMaxWidth())
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                workingTime(Modifier.weight(1f))
+                waitingTime(Modifier.weight(1f))
+            }
         }
         TandemTextField(
             value = draft.sourceUrl,

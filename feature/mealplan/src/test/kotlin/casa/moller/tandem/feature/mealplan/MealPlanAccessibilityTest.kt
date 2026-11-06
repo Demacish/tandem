@@ -5,12 +5,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.testing.accessibility.assertAccessible
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.navigation.AppChrome
+import casa.moller.tandem.feature.mealplan.Devices.PHONE
 import casa.moller.tandem.feature.mealplan.Devices.PHONE_LANDSCAPE
 import casa.moller.tandem.feature.mealplan.Devices.PHONE_TALL
 import casa.moller.tandem.feature.mealplan.Devices.TABLET
 import casa.moller.tandem.feature.mealplan.Devices.TABLET_PORTRAIT
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.printToString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,13 +39,11 @@ class MealPlanAccessibilityTest {
     @Test
     fun weekFontScale2() = check(MealPlanShot.WEEK, fontScale = 2f)
 
+    // A phone's height, not PHONE_TALL's: there the whole week fits, the list scrolls back from today,
+    // and Monday's card, clipped above the list, counts as covering the strip in the semantics tree.
     @Test
-    fun weekWant() {
-        composeRule.setContent { MealPlanTestTheme { MealPlanShot.WEEK_WANT.content() } }
-        composeRule.waitForIdle()
-        println("DEBUGTREE " + composeRule.onRoot(useUnmergedTree = false).printToString(maxDepth = 12))
-        composeRule.assertAccessible()
-    }
+    @Config(qualifiers = PHONE)
+    fun weekWant() = check(MealPlanShot.WEEK_WANT)
 
     @Test
     fun weekWantFontScale2Dark() = check(MealPlanShot.WEEK_WANT, darkTheme = true, fontScale = 2f)
