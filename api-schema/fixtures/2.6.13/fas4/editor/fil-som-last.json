@@ -1,0 +1,150 @@
+{
+  "name": "fil-som-last",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/37/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "steps": [
+        {
+          "name": "",
+          "instruction": "Med fil.",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "show_ingredients_table": true,
+          "ingredients": [],
+          "id": 46,
+          "file": {
+            "id": 3,
+            "name": "Receptblad.pdf",
+            "file_download": "https://tandoor.example.com/api/download-file/3/",
+            "preview": "",
+            "file_size_kb": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00"
+          }
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 37,
+      "name": "Tandem stegfil",
+      "description": "",
+      "image": null,
+      "keywords": [],
+      "steps": [
+        {
+          "id": 46,
+          "name": "",
+          "instruction": "Med fil.",
+          "ingredients": [],
+          "instructions_markdown": "<p>Med fil.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": {
+            "id": 3,
+            "name": "Receptblad.pdf",
+            "file_download": "https://tandoor.example.com/api/download-file/3/",
+            "preview": "",
+            "file_size_kb": 0,
+            "created_by": {
+              "id": 1,
+              "username": "contract-admin",
+              "first_name": "",
+              "last_name": "",
+              "display_name": "contract-admin",
+              "is_staff": true,
+              "is_superuser": true,
+              "is_active": true
+            },
+            "created_at": "2000-01-15T00:00:00.000000+01:00"
+          },
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 0,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {
+        "1": {
+          "id": 1,
+          "name": "Tandem energi",
+          "description": null,
+          "unit": "kcal",
+          "order": 0,
+          "food_values": {},
+          "total_value": 0,
+          "missing_value": false
+        },
+        "2": {
+          "id": 2,
+          "name": "Tandem protein",
+          "description": null,
+          "unit": "g",
+          "order": 0,
+          "food_values": {},
+          "total_value": 0,
+          "missing_value": false
+        }
+      },
+      "servings": 2,
+      "file_path": "",
+      "servings_text": "",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

@@ -1071,3 +1071,30 @@ lokalt och sparar vanliga måltider med `POST /api/meal-plan/` (docs/BYGGE.md "S
 Appen delar `total_value` med `servings` (`RecipeNutrition`); `RecipeNutritionFixtureTest` i
 `:core:sync` räknar på inspelningarna av fem recept mot värden uträknade för hand.
 <!-- /Fas 4 näring -->
+
+<!-- Fas 4 redigeraren -->
+## Fas 4: receptredigeraren (#22, beslut B9)
+
+`Phase4EditorContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1, samma fakta) och spelar in
+till `fas4/editor/` (2026-11-06, inga avvikelser mot `EXPECTED`). Allt skrivs som appen gör: en PATCH
+av receptet med stegens id.
+
+- **a. Flaggorna.** `private`, `show_as_header` och `show_ingredients_table` skrivs i PATCH:en, steget
+  behåller sitt id. [O]
+- **b. Delrecept.** `step_recipe` tar ett receptid vid skapande och PATCH; `step_recipe_data.name`
+  följer med i svaret. **Utelämnat står det kvar**, `null` tar bort det (och `step_recipe_data`). Ett
+  okänt id är 400. **Ett recept som använder sig självt, och en cirkel av två, tas emot med 200** och
+  går att läsa. [O] [S] Appen erbjuder aldrig dem.
+- **c. Stegfil.** Efter `POST /api/user-file/` pekar `"file": {"id", "name"}` ut filen ("Fas 1 m"); det
+  går också med hela objektet som det lästes. **Utelämnat står den kvar**, `null` tar bort den, och
+  filen går sedan att radera (204). Ett `name` på 200 tecken är 400 (fältet är 128). `GET
+  /api/user-file/` är paginerad. [O]
+- **d. Receptets egna värden.** `properties: [{id?, property_type: {id, name}, property_amount}]`
+  skrivs i PATCH:en. Med `id` uppdateras raden, utan `id` ersätts den. **Utelämnat står de kvar**, `[]`
+  tar bort dem. Samma typ två gånger och `property_amount: null` tas emot. `GET /api/property-type/`
+  är paginerad (`id, name, unit, order, description, fdc_id, open_data_slug`), `{id}/` svarar 200
+  respektive 404. [O]
+- **e. Ett annat namn döper om typen.** `property_type: {id, name: <annat>}` behåller id:t men **byter
+  namn på typen för hela utrymmet**, som ett nyckelord ("Fas 2 g"). [O] [S] Avsändaren skickar därför
+  serverns namn, och aldrig `unit`.
+<!-- /Fas 4 redigeraren -->

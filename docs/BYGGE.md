@@ -1069,7 +1069,7 @@ fann att B9 ("lika komplett som webben") inte var uppfyllt. Fakta i `Phase4Edito
 | **Flaggor** | `RecipeEditorOptions.kt` `StepOptions`, `EditorSwitch`; `SetPrivate`, `SetStepShowAsHeader`, `SetStepShowIngredients` | fälten fanns i utkastet och PATCH-kroppen, nu med reglage. Varje rad är en TalkBack-post som nämner steget |
 | **Delrecept** | `DraftStep.stepRecipe`, `StepLinkSheet`, `StepLinkPicker`, `RecipeEditRepository.observeRecipesUsing`, `RecipeDao.observeStepLinks` | arket söker bland lagrade recept. Receptet självt, recept med tillfälligt id och recept som redan använder det här (också genom andra, så långt telefonen vet) visas inte: **Tandoor tar emot både sig självt och en cirkel med 200** |
 | **Stegfil** | `core:model` `StepFile`, `DraftStep.file`, `Step.file` (`RecipeNutrition.stepFilesOf`, ur den lagrade JSON:en efter position; Room har bara bildlänken), `DrinkImageStore.copyFile`, `RecipeEditOutboxHandler.withUploadedFiles`, `RecipeService.uploadUserFile` | valfri filtyp, högst 20 MB (`StepFile.MAX_BYTES`), namnet kortas till 128 tecken med filändelsen kvar (längre är 400). Filen kopieras när du sparar och står i raden som `file.path`. Avsändaren laddar upp den efter konfliktkontrollen och precis före receptet, skriver in id:t i raden direkt (`OutboxDao.updatePayload`) och tar bort kopian, så ett nytt försök aldrig laddar upp samma fil två gånger. En fil som vägras (utrymmets filgräns, 400) lämnar raden FAILED i Väntande ändringar. Kopian ligger bland fotona och försvinner med kontot; en rad som slås ihop eller tas bort tar sin kopia med sig (`OfflineFirstRecipeEditRepository.write`). Exporten av väntande ändringar visar namnet, aldrig sökvägen. Demoläget behåller bara namnet |
-| **Egna näringsvärden** | `core:model` `RecipeProperty`, `PropertyType`, `RecipeDraft.properties`, `Recipe.properties` (`RecipeNutrition.propertiesOf`), `NutritionSection`, `RecipeService.propertyTypes`, `RecipeEditRepository.observePropertyTypes/refreshPropertyTypes` (`sync_state` nyckel `property_types`, kolumnen `hash`) | typerna läses när formuläret öppnas och finns kvar offline. Avsnittet syns bara när det finns typer eller värden. Ett fält som lämnas tomt tas bort när receptet sparas, en lagrad nolla står kvar. Värdena är per portion, som webbens. `property_type` går som `{id, name}`, utan `unit` |
+| **Egna näringsvärden** | `core:model` `RecipeProperty`, `PropertyType`, `RecipeDraft.properties`, `Recipe.properties` (`RecipeNutrition.propertiesOf`), `NutritionSection`, `RecipeService.propertyTypes`, `RecipeEditRepository.observePropertyTypes/refreshPropertyTypes` (`sync_state` nyckel `property_types`, kolumnen `hash`) | typerna läses när formuläret öppnas och finns kvar offline. Avsnittet syns bara när det finns typer eller värden. Ett fält som lämnas tomt tas bort när receptet sparas, en lagrad nolla står kvar. Värdena är per portion, som webbens. `property_type` går som `{id, name}` med serverns namn just då, utan `unit`: ett annat namn döper om typen för hela utrymmet (`RecipeEditOutboxHandler.withServerPropertyTypeNames`, som nyckelord). Ett värde av en typ som tagits bort går inte med |
 
 **Det som inte rörts skickas inte.** `RecipeEditPayloads.encode(draft, server)` tar med `step_recipe`,
 `file` och `properties` bara när de skiljer sig från serverns kopia. Det som utelämnas står kvar på
@@ -1091,7 +1091,14 @@ så det togs bort på servern när receptet sparades.
 
 **Tester:** `Phase4EditorContractTest`; `RecipeEditOptionsTest` (`:core:sync`, båda versionerna);
 `RecipeEditorOptionsViewModelTest`; `RecipeEditorShot.EDITING_OPTIONS`, `LINK_PICKER`, `LINK_PICKER_EMPTY`
-i referensbilds- och ATF-testerna.
+i referensbilds- och ATF-testerna; röktestet `Phase3SmokeTest.editorOptions_flagsSubRecipeAndNutrition_goWithThePatch`
+(reglagen, arket och typerna under R8). Filväljaren är systemets och går inte att köra där, så
+uppladdningen är bara testad i `RecipeEditOptionsTest` och kontraktstestet.
+
+**Referensbilder** (Screenshots 42262662432, bara dessa togs): nio ändrade där "Privat recept" eller
+stegets reglage syns (`editor/phone_editor_new_*`, `phone_tall_editor_{editing,kept_edit,original}*`,
+`tablet_portrait_editor_editing_light_sv`) och sju nya (`phone_tall_editor_options_*`,
+`tablet_editor_options_light_sv`, `phone_editor_link_picker_*`).
 
 **Kvar till senare:** en PDF på ett steg visas inte i appen (bilder visas i kokläget; `file_download`
 kräver inloggning och går inte att visa med bildladdaren), den öppnas på webben. En ny egenskapstyp

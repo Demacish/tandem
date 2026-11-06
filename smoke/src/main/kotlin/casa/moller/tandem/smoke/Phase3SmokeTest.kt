@@ -14,6 +14,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -29,6 +30,8 @@ import org.junit.runner.RunWith
  *   outbox, the temporary id replaced, DELETE.
  * - [editedRecipe_stepIsPatched_andThePictureRemoved]: PATCH after the fresh read, the recipe read
  *   back, and the RECIPE_IMAGE row with an empty `image_url`.
+ * - [editorOptions_flagsSubRecipeAndNutrition_goWithThePatch]: the switches, the sub-recipe sheet,
+ *   the property types and what a PATCH says of them.
  * - [quickSettingsTileAndShortcuts_openTheRightPlace]: the tile's service, the launcher shortcuts
  *   and their intents.
  * - [shoppingWidget_drawsTheList_andATapChecksTheRow]: a bound widget in a [WidgetHost]: the Glance
@@ -145,6 +148,49 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         waitForServer("the picture's removal") { if (tandoor.recipeEdits.writes("PUT", image).isEmpty()) "no PUT yet" else null }
         val form = tandoor.recipeEdits.writes("PUT", image).single().body
         assertTrue("A form with an empty image_url: $form", EMPTY_IMAGE_URL.containsMatchIn(form))
+        assertTrue("A 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
+    }
+
+    /** Fas 4 (#22, decision B9): the controls beyond the plain form, through R8: what the PATCH says and what it leaves out. */
+    @Test
+    fun editorOptions_flagsSubRecipeAndNutrition_goWithThePatch() {
+        tandoor.recipeEdits.propertyTypes += ENERGY_TYPE
+        logIn()
+        app.tap("Recipes")
+        app.findInList(By.text(PASTA))
+        app.tap(PASTA)
+        app.scrollTo(By.textStartsWith(PASTA_STEP_SHOWN))
+        menu("Edit")
+        app.waitFor(By.text(SAVE_RECIPE))
+
+        app.scrollTo(By.textStartsWith(PRIVATE_RECIPE)).click()
+        app.scrollTo(By.desc("Step 1: show the name as a heading")).click()
+        app.scrollTo(By.desc("Attach a file to step 1"))
+        app.scrollTo(By.desc("Link a sub-recipe to step 1")).click()
+        app.waitFor(By.text("Sub-recipe for step 1"))
+        app.capture("phase4-link-sheet")
+        app.scrollTo(By.text(SUB_RECIPE)).click()
+        app.waitFor(By.text("Sub-recipe: $SUB_RECIPE"))
+
+        app.scrollTo(By.text(ENERGY)).click()
+        app.waitUntilGone(By.text(ENERGY))
+        fieldsOnScreen().last().text = ENERGY_VALUE
+        app.waitFor(By.clazz(EDIT_TEXT).text(ENERGY_VALUE))
+        app.capture("phase4-editor-options")
+        save()
+
+        waitForServer("the PATCH") { if (patches().isEmpty()) "no PATCH yet" else null }
+        val sent = patches().single().json
+        assertEquals(true, (sent["private"] as? JsonPrimitive)?.booleanOrNull)
+        val steps = sent.getValue("steps").jsonArray.map { it.jsonObject }
+        assertEquals("The recorded step has it on", false, (steps.first()["show_as_header"] as? JsonPrimitive)?.booleanOrNull)
+        assertEquals(SUB_RECIPE_ID, (steps.first()["step_recipe"] as? JsonPrimitive)?.longOrNull)
+        assertFalse("The name is the device's alone", "step_recipe_data" in steps.first())
+        assertTrue("Untouched steps say nothing of it: $steps", steps.drop(1).none { "step_recipe" in it || "file" in it })
+        val value = sent.getValue("properties").jsonArray.single().jsonObject
+        assertEquals(ENERGY_VALUE.toDouble(), (value["property_amount"] as? JsonPrimitive)?.doubleOrNull)
+        assertEquals(setOf("id", "name"), value.getValue("property_type").jsonObject.keys)
+        nothingWaiting()
         assertTrue("A 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
     }
 
@@ -298,6 +344,19 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         const val PASTA_STEP_SHOWN = "Skiva"
         const val PASTA_STEP_RAW = "Skiva {{"
         const val EDITED_INSTRUCTION = "Skiva svampen tunt, ändrat i röktestet."
+        const val PRIVATE_RECIPE = "Private recipe"
+        const val SUB_RECIPE = "Äppelkaka"
+        const val SUB_RECIPE_ID = 10L
+        const val ENERGY = "Energi"
+        const val ENERGY_VALUE = "350"
+        val ENERGY_TYPE = JsonObject(
+            mapOf(
+                "id" to JsonPrimitive(40),
+                "name" to JsonPrimitive(ENERGY),
+                "unit" to JsonPrimitive("kcal"),
+                "order" to JsonPrimitive(0),
+            ),
+        )
         val EMPTY_IMAGE_URL = Regex("name=\"image_url\"[^\\r\\n]*(\\r?\\n[^\\r\\n]+)*\\r?\\n\\r?\\n\\r?\\n?-")
         const val WIDGET_ITEM = "widgetmjölk"
         const val WIDGET_RECEIVER = "casa.moller.tandem.feature.widgets.ShoppingListWidgetReceiver"

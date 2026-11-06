@@ -1,0 +1,52 @@
+{
+  "name": "del-okand",
+  "request": {
+    "method": "PATCH",
+    "path": "/api/recipe/36/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "steps": [
+        {
+          "name": "",
+          "instruction": "Med del.",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "show_ingredients_table": true,
+          "ingredients": [],
+          "id": 45,
+          "step_recipe": 99999999
+        }
+      ]
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "steps": [
+        {
+          "step_recipe": [
+            "Invalid pk \"99999999\" - object does not exist."
+          ]
+        }
+      ]
+    }
+  }
+}

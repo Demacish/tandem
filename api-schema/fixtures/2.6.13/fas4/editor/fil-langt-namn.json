@@ -1,0 +1,37 @@
+{
+  "name": "fil-langt-namn",
+  "request": {
+    "method": "POST",
+    "path": "/api/user-file/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "multipart/form-data; boundary=8a75f99e-5415-44f0-9a87-1d8b36919cbe",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "file": "<multipart file tandem-langt.pdf, application/pdf, 77 bytes>"
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "name": [
+        "Ensure this field has no more than 128 characters."
+      ]
+    }
+  }
+}

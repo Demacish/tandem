@@ -146,3 +146,11 @@ till befintliga måltider, nyckelord som OCH, 400 utan recept, gästen får kör
 näringsvärden"): `food_properties` per egenskapstyp med `total_value` för hela receptet och
 `missing_value`, receptets egna `properties` nästlade med hela typen. [O]
 <!-- /Fas 4 näring -->
+
+<!-- Fas 4 redigeraren -->
+## Fas 4: receptredigeraren (#22, beslut B9)
+
+`Phase4EditorContractTest` ger samma fakta som 2.6.13 (`../2.6.13/FACTS.md` "Fas 4:
+receptredigeraren", `fas4/editor/`, 2026-11-06): flaggorna, `step_recipe`, `file` och `properties`
+skrivs med en PATCH, det som utelämnas står kvar, och ett annat namn på en egenskapstyp döper om den. [O]
+<!-- /Fas 4 redigeraren -->

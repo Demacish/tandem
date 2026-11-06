@@ -36,6 +36,9 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
     /** Every write, in order. */
     val writes: MutableList<Write> = CopyOnWriteArrayList()
 
+    /** Fas 4 (#22): what `GET /api/property-type/` lists: `{id, name, unit, order}`. */
+    val propertyTypes: MutableList<JsonObject> = CopyOnWriteArrayList()
+
     private val changed = LinkedHashMap<Long, JsonObject>()
     private val deleted = HashSet<Long>()
     private var nextRecipeId = FIRST_RECIPE
@@ -56,6 +59,8 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         val id = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
         val response = when {
             method == "POST" && path == RECIPES -> create(parse(request))
+            method == "GET" && path == PROPERTY_TYPES -> json(OK, typePage())
+            method == "GET" && PROPERTY_TYPE.matches(path) -> propertyType(PROPERTY_TYPE.find(path)!!.groupValues[1].toLong())
             method == "PUT" && IMAGE.matches(path) -> removeImage(IMAGE.find(path)!!.groupValues[1].toLong())
             id == null -> null
             method == "GET" -> if (id in deleted) notFound() else changed[id]?.let { json(OK, it) }
@@ -66,6 +71,18 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         if (response != null && method != "GET") writes += Write(method, path, request.body?.utf8().orEmpty())
         return response
     }
+
+    private fun typePage(): JsonObject = JsonObject(
+        mapOf(
+            "count" to JsonPrimitive(propertyTypes.size),
+            "next" to JsonNull,
+            "previous" to JsonNull,
+            "results" to JsonArray(propertyTypes),
+        ),
+    )
+
+    private fun propertyType(id: Long): MockResponse =
+        propertyTypes.firstOrNull { it.long("id") == id }?.let { json(OK, it) } ?: notFound()
 
     private fun create(body: JsonObject): MockResponse {
         val id = nextRecipeId++
@@ -202,12 +219,15 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         const val FIRST_RECIPE = 80L
         const val FIRST_PART = 9000L
         const val RECIPES = "/api/recipe/"
+        const val PROPERTY_TYPES = "/api/property-type/"
+        val PROPERTY_TYPE = Regex("^/api/property-type/(\\d+)/$")
         val RECIPE = Regex("^/api/recipe/(\\d+)/$")
         val IMAGE = Regex("^/api/recipe/(\\d+)/image/$")
         val RECIPE_FIELDS = setOf(
             "name", "description", "servings", "servings_text", "working_time", "waiting_time", "source_url", "private", "internal",
+            "properties",
         )
-        val STEP_FIELDS = setOf("name", "time", "order", "show_as_header", "show_ingredients_table")
+        val STEP_FIELDS = setOf("name", "time", "order", "show_as_header", "show_ingredients_table", "step_recipe")
         val INGREDIENT_FIELDS = setOf("amount", "note", "order", "is_header", "no_amount")
         val OVERVIEW_FIELDS = setOf(
             "id", "name", "description", "image", "servings", "working_time", "waiting_time", "updated_at", "created_at",
