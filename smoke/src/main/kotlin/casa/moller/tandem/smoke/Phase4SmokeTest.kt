@@ -397,7 +397,10 @@ class Phase4SmokeTest : Phase2SmokeBase() {
     @Test
     fun sharedLinkTheServerCannotOpen_pageIsReadInTheApp_andBecomesADraft() {
         logIn()
-        val link = tandoor.blockedPageUrl
+        // Shared as http://: the app allows no cleartext, so only PageReading.loadUrl's https:// can
+        // reach the page. This is the test of that wiring (the route once passed the link as it
+        // was, with everything else green); the server is still told the link as it was shared.
+        val link = tandoor.blockedPageUrl.replaceFirst("https://", "http://")
         app.shell(
             "am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT $link " +
                 "-n ${TandemApp.PACKAGE}/$MAIN_ACTIVITY",

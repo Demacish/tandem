@@ -6,6 +6,12 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**Rättat**
+
+- TalkBack säger namnet på "Nytt recept", "Ny dryck" och "Ny bok".
+- I receptredigeraren följer TalkBacks fokus och halvskriven text med ett steg eller en ingrediens
+  som flyttas, och stannar kvar på raderna när en annan tas bort.
+
 ## [0.6.0] – 2026-11-05
 
 Fas 4 ("Smart hushåll"): Tandem lär sig hur ni handlar och lagar. Butiken sorteras som du går,

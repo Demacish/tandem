@@ -88,6 +88,9 @@ class RecipeEditorViewModel @AssistedInject constructor(
     /** The draft before the last removal, for "Ångra". */
     private var removed: Removal? = null
 
+    /** The last row key handed out ([withRowKeys]). */
+    private var lastRowKey = 0L
+
     private val units: Flow<List<String>> = edits.observeUnits().map { list -> list.map { it.name } }
 
     private val foods: Flow<List<String>> = recipes.observeFoods().map { list -> list.map { it.name }.distinct() }
@@ -115,7 +118,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
             saving = progress.saving,
             readOnly = extras.readOnly,
             foods = extras.foods,
-            hasChanges = draft != null && !extras.readOnly && SavedDraft.encode(current) != extras.baseline,
+            hasChanges = draft != null && !extras.readOnly && SavedDraft.encode(current.withoutRowKeys()) != extras.baseline,
             sourcePath = sourcePath,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeEditorUiState(isNew = recipeId == null))
@@ -335,7 +338,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
     private fun save() {
         val state = uiState.value
         if (state.saving || !state.loaded) return
-        val draft = state.draft.withTrimmedFoods()
+        val draft = state.draft.withTrimmedFoods().withoutRowKeys()
         if (draft.name.isBlank()) {
             progress.value = progress.value.copy(nameMissing = true)
             return
@@ -394,8 +397,11 @@ class RecipeEditorViewModel @AssistedInject constructor(
         current.copy(ingredients = current.ingredients.mapIndexed { i, line -> if (i == ingredient) change(line) else line })
     }
 
+    /** Every draft passes here, so a row has its key from the first frame it is shown (and after process death). */
     private fun store(draft: RecipeDraft) {
-        handle[KEY_DRAFT] = SavedDraft.encode(draft)
+        val keyed = draft.withRowKeys(lastRowKey)
+        lastRowKey = maxOf(lastRowKey, keyed.lastRowKey)
+        handle[KEY_DRAFT] = SavedDraft.encode(keyed)
     }
 
     private fun <T> List<T>.moved(index: Int, up: Boolean): List<T> {

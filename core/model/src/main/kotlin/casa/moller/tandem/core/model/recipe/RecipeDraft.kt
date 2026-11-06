@@ -103,6 +103,10 @@ data class DraftKeyword(val id: Long? = null, val name: String)
 /**
  * One step. [id] is the server's step id for a stored step (kept so an edit updates it in place),
  * null for a new one.
+ *
+ * @property rowKey which row of the editor's form this is, also for a step without [id] (Fas 4's
+ *   completeness check): the form keys its rows with it, so a row keeps its fields and TalkBack's
+ *   focus when it moves. Only the editor sets it; 0 everywhere else, and never sent or stored.
  */
 data class DraftStep(
     val id: Long? = null,
@@ -112,6 +116,7 @@ data class DraftStep(
     val ingredients: List<DraftIngredient> = emptyList(),
     val showAsHeader: Boolean = false,
     val showIngredientsTable: Boolean = true,
+    val rowKey: Long = 0,
 ) {
     /** Nothing written in it: dropped when saving. */
     val isEmpty: Boolean
@@ -128,6 +133,7 @@ data class DraftStep(
 /**
  * One ingredient line. A header ([isHeader]) has its text in [note] and no food, unit or amount;
  * [noAmount] shows the food without an amount ("salt"). [unit] and [food] are names.
+ * [rowKey]: the editor's own id of the line, as on [DraftStep.rowKey].
  */
 data class DraftIngredient(
     val id: Long? = null,
@@ -137,13 +143,14 @@ data class DraftIngredient(
     val note: String = "",
     val isHeader: Boolean = false,
     val noAmount: Boolean = false,
+    val rowKey: Long = 0,
 ) {
     /** Nothing written in it: dropped when saving. */
     val isEmpty: Boolean
         get() = if (isHeader) note.isBlank() else food.isNullOrBlank() && note.isBlank()
 
     fun normalized(): DraftIngredient = if (isHeader) {
-        DraftIngredient(id = id, note = note.trim(), isHeader = true)
+        DraftIngredient(id = id, note = note.trim(), isHeader = true, rowKey = rowKey)
     } else {
         copy(
             amount = if (noAmount) 0.0 else amount.coerceAtLeast(0.0),

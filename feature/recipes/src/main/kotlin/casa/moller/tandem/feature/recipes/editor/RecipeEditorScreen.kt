@@ -43,6 +43,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -410,8 +411,11 @@ private fun Form(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // Keyed by the draft's own row id: a moved step keeps its fields, and with them TalkBack's focus.
         draft.steps.forEachIndexed { index, step ->
-            StepEditor(index = index, step = step, count = draft.steps.size, state = state, stacked = stacked, onAction = onAction)
+            key(step.rowKey) {
+                StepEditor(index = index, step = step, count = draft.steps.size, state = state, stacked = stacked, onAction = onAction)
+            }
         }
         TandemSecondaryButton(
             text = stringResource(R.string.recipe_editor_add_step),
@@ -678,15 +682,17 @@ private fun StepEditor(
             }
             Text(text = stringResource(R.string.recipe_editor_ingredients), style = MaterialTheme.typography.titleSmall)
             step.ingredients.forEachIndexed { position, line ->
-                IngredientEditor(
-                    stepIndex = index,
-                    position = position,
-                    line = line,
-                    count = step.ingredients.size,
-                    state = state,
-                    stacked = stacked,
-                    onAction = onAction,
-                )
+                key(line.rowKey) {
+                    IngredientEditor(
+                        stepIndex = index,
+                        position = position,
+                        line = line,
+                        count = step.ingredients.size,
+                        state = state,
+                        stacked = stacked,
+                        onAction = onAction,
+                    )
+                }
             }
             QuickAdd(index, onAction)
             MultilineField(
@@ -702,7 +708,8 @@ private fun StepEditor(
 @Composable
 private fun QuickAdd(stepIndex: Int, onAction: (RecipeEditorAction) -> Unit) {
     val spacing = TandemTheme.spacing
-    var typed by rememberSaveable(stepIndex) { mutableStateOf("") }
+    // Half-written text belongs to the step (its row key), wherever the step moves.
+    var typed by rememberSaveable { mutableStateOf("") }
     val add = {
         onAction(RecipeEditorAction.AddIngredient(stepIndex, typed))
         typed = ""

@@ -61,6 +61,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -166,10 +167,13 @@ fun RecipeListScreen(
         // Fas 3 (redigerare lane): "Nytt recept" (not for guests: the route passes null).
         floatingActionButton = {
             if (onCreateRecipe != null && state.loaded) {
+                val label = stringResource(R.string.recipes_new)
                 ExtendedFloatingActionButton(
                     onClick = onCreateRecipe,
                     icon = { Icon(TandemIcons.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.recipes_new)) },
+                    text = { Text(label) },
+                    // The button's text does not reach TalkBack by itself (as in ShoppingScreen).
+                    modifier = Modifier.semantics { contentDescription = label },
                 )
             }
         },

@@ -432,6 +432,17 @@ class TandemApp(val device: UiDevice) {
         return button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
     }
 
+    /**
+     * Clicks the enabled button TalkBack calls [description] through its accessibility action; false
+     * when there is none (yet). A floating button must be found this way: by its place, a button
+     * without a name passes (the fault Fas 4's completeness check found in "New recipe").
+     */
+    fun clickNodeDescribed(description: String): Boolean {
+        val button = findNode { node -> node.contentDescription?.toString() == description && clickableOf(node)?.isEnabled == true }
+            ?.let(::clickableOf) ?: return false
+        return button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+    }
+
     /** Sets [text] on [field] through ACTION_SET_TEXT (what [UiObject2.setText] does too). */
     fun setNodeText(field: AccessibilityNodeInfo, text: String): Boolean {
         val arguments = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) }

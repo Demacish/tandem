@@ -59,8 +59,7 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         logIn()
         app.tap("Recipes")
         waitForAction("the editor") {
-            tapFloatingButton()
-            nodeShows(TAP_WAIT_MS) { it.text?.toString() == SAVE_RECIPE }
+            app.clickNodeDescribed(NEW_RECIPE_BUTTON) && nodeShows(TAP_WAIT_MS) { it.text?.toString() == SAVE_RECIPE }
         }
         app.type(0, NEW_RECIPE)
 
@@ -241,18 +240,6 @@ class Phase3SmokeTest : Phase2SmokeBase() {
 
     private fun patches() = tandoor.recipeEdits.writes("PATCH", PASTA_PATH)
 
-    /**
-     * "New recipe" at the bottom right, by its role: on the emulator the floating button's label is
-     * not in the window hierarchy (as in PhaseSDrinkSmokeTest).
-     */
-    private fun tapFloatingButton() {
-        val device = app.device
-        val button = device.findObjects(By.clazz(BUTTON))
-            .mapNotNull { node -> runCatching { node.visibleBounds }.getOrNull() }
-            .firstOrNull { it.left > device.displayWidth / 2 && it.top > device.displayHeight * FAB_TOP } ?: return
-        device.click(button.centerX(), button.centerY())
-    }
-
     /** Saves through the button's accessibility action, until the editor has closed. */
     private fun save() {
         repeat(TAP_ATTEMPTS) {
@@ -302,8 +289,7 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         const val SAVE_RECIPE = "Save recipe"
         const val ADD_STEP = "Add step"
         const val MORE_OPTIONS = "More options"
-        const val BUTTON = "android.widget.Button"
-        const val FAB_TOP = 0.75
+        const val NEW_RECIPE_BUTTON = "New recipe"
         const val NEW_RECIPE = "Röktestets gräddsås"
         const val NEW_LINE = "2 dl cream, cold"
         const val NEW_INSTRUCTION = "Vispa grädden i röktestet."

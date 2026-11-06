@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -99,10 +100,13 @@ fun BooksScreen(
         },
         floatingActionButton = {
             if (state.canCreate && !state.loading) {
+                val label = stringResource(R.string.books_new)
                 ExtendedFloatingActionButton(
                     onClick = { onAction(BooksAction.OpenCreate) },
                     icon = { Icon(TandemIcons.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.books_new)) },
+                    text = { Text(label) },
+                    // The button's text does not reach TalkBack by itself (as in ShoppingScreen).
+                    modifier = Modifier.semantics { contentDescription = label },
                 )
             }
         },

@@ -5,7 +5,7 @@ package casa.moller.tandem.core.data.sync
  * detail prefetch pause, so that the server's other worker thread stays free for what the user
  * is doing. Requests the user starts (opening a recipe, pull to refresh) still go through.
  *
- * Phase 1 has no imports yet; the import feature wraps its request in [whileImporting].
+ * `RemoteRecipeImportRepository` wraps every server call of an import in [whileImporting].
  *
  * - **Threading:** main-safe; [block] runs in the caller's context.
  */

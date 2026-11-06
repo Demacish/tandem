@@ -88,9 +88,12 @@ import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Everything of core:sync wired by hand for one test, the way Hilt wires it in the app, on
@@ -334,14 +337,28 @@ internal class SyncTestGraph(
     val demoDatabase: TandemDatabase
         get() = databases.get(DatabaseKind.DEMO)
 
-    fun close() {
-        scope.cancel()
-        server.close()
+    /**
+     * This phone's end of the test: what runs on [scope] has STOPPED before the databases close.
+     * `cancel()` alone only asks: a flow on Dispatchers.Default (the eager status flow in
+     * DefaultSyncRepository) that was between two suspension points ran on, hit the closed
+     * database, and its exception failed the NEXT test (UncaughtExceptionsBeforeTest). The server
+     * stays up: another phone of the test may share it.
+     */
+    fun closePhone() {
+        runBlocking { withTimeoutOrNull(STOP_TIMEOUT_MILLIS) { scope.coroutineContext.job.cancelAndJoin() } }
         real.close()
         demoDatabase.close()
     }
 
+    fun close() {
+        closePhone()
+        server.close()
+    }
+
     companion object {
+        /** Far longer than any query; a test that hangs here would hide what it waits for. */
+        private const val STOP_TIMEOUT_MILLIS = 10_000L
+
         const val ACCOUNT_ID = "account-a"
 
         fun demoAssetsDir(): File {

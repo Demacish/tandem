@@ -17,7 +17,6 @@ import casa.moller.tandem.core.sync.shopping.FakeShoppingTandoor
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import kotlin.time.Duration.Companion.days
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.DatePeriod
@@ -337,9 +336,7 @@ class PantrySyncTest {
             assertEquals(3, tandoor.requests("POST", "/api/inventory-location/").size)
         } finally {
             // Not phoneB.close(): the server is this phone's too.
-            phoneB.scope.cancel()
-            phoneB.real.close()
-            phoneB.demoDatabase.close()
+            phoneB.closePhone()
         }
     }
 
@@ -389,9 +386,7 @@ class PantrySyncTest {
             assertEquals(fridge.id, pantry.observeEntry(cream.id).first()!!.locationId)
             assertEquals(fridge.id, phoneB.pantry.observeLocations().first().single { it.name == "Kyl" }.id)
         } finally {
-            phoneB.scope.cancel()
-            phoneB.real.close()
-            phoneB.demoDatabase.close()
+            phoneB.closePhone()
         }
     }
 

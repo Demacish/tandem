@@ -44,10 +44,11 @@ internal data class SavedDraft(
                 instruction = step.instruction,
                 timeMinutes = step.timeMinutes,
                 ingredients = step.ingredients.map {
-                    DraftIngredient(it.id, it.amount, it.unit, it.food, it.note, it.isHeader, it.noAmount)
+                    DraftIngredient(it.id, it.amount, it.unit, it.food, it.note, it.isHeader, it.noAmount, it.rowKey)
                 },
                 showAsHeader = step.showAsHeader,
                 showIngredientsTable = step.showIngredientsTable,
+                rowKey = step.rowKey,
             )
         },
         imageUri = imageUri,
@@ -76,10 +77,11 @@ internal data class SavedDraft(
                     instruction = step.instruction,
                     timeMinutes = step.timeMinutes,
                     ingredients = step.ingredients.map {
-                        SavedIngredient(it.id, it.amount, it.unit, it.food, it.note, it.isHeader, it.noAmount)
+                        SavedIngredient(it.id, it.amount, it.unit, it.food, it.note, it.isHeader, it.noAmount, it.rowKey)
                     },
                     showAsHeader = step.showAsHeader,
                     showIngredientsTable = step.showIngredientsTable,
+                    rowKey = step.rowKey,
                 )
             },
             imageUri = draft.imageUri,
@@ -108,6 +110,7 @@ internal data class SavedStep(
     val ingredients: List<SavedIngredient> = emptyList(),
     val showAsHeader: Boolean = false,
     val showIngredientsTable: Boolean = true,
+    val rowKey: Long = 0,
 )
 
 @Serializable
@@ -119,4 +122,30 @@ internal data class SavedIngredient(
     val note: String = "",
     val isHeader: Boolean = false,
     val noAmount: Boolean = false,
+    val rowKey: Long = 0,
+)
+
+/** The highest [DraftStep.rowKey] or [DraftIngredient.rowKey] in the draft; 0 when it has none. */
+internal val RecipeDraft.lastRowKey: Long
+    get() = steps.maxOfOrNull { step -> maxOf(step.rowKey, step.ingredients.maxOfOrNull { it.rowKey } ?: 0) } ?: 0
+
+/**
+ * Every row without a key gets the next one after [after], so no row ever gets the key of a row
+ * that was (a removed row can come back with "Ångra"). Rows that have one keep it.
+ */
+internal fun RecipeDraft.withRowKeys(after: Long): RecipeDraft {
+    var last = maxOf(after, lastRowKey)
+    return copy(
+        steps = steps.map { step ->
+            step.copy(
+                rowKey = step.rowKey.takeIf { it != 0L } ?: ++last,
+                ingredients = step.ingredients.map { line -> line.copy(rowKey = line.rowKey.takeIf { it != 0L } ?: ++last) },
+            )
+        },
+    )
+}
+
+/** The draft as the rest of the app knows it: the row keys are the form's alone. */
+internal fun RecipeDraft.withoutRowKeys(): RecipeDraft = copy(
+    steps = steps.map { step -> step.copy(rowKey = 0, ingredients = step.ingredients.map { it.copy(rowKey = 0) }) },
 )

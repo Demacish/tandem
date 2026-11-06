@@ -27,6 +27,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -278,6 +279,64 @@ class RecipeEditorViewModelTest {
         assertEquals(listOf("A", "C", "B"), viewModel.uiState.value.draft.steps.map { it.name })
         viewModel.onAction(RecipeEditorAction.RemoveStep(1))
         assertEquals(listOf("A", "B"), viewModel.uiState.value.draft.steps.map { it.name })
+    }
+
+    /** The rows' own keys (Fas 4's completeness check): one per row, and they stay with it. */
+    @Test
+    fun everyRowHasAKeyOfItsOwnThatFollowsIt() = runTest {
+        val viewModel = editor(null)
+        collect(viewModel.uiState)
+        repeat(2) { viewModel.onAction(RecipeEditorAction.AddStep) }
+        viewModel.onAction(RecipeEditorAction.AddIngredient(0, "salt"))
+        viewModel.onAction(RecipeEditorAction.AddHeader(0))
+        val steps = viewModel.uiState.value.draft.steps
+        val keys = steps.map { it.rowKey } + steps[0].ingredients.map { it.rowKey }
+        assertEquals(keys.size, keys.toSet().size)
+        assertFalse(0L in keys)
+
+        viewModel.onAction(RecipeEditorAction.MoveStep(1, up = true))
+        viewModel.onAction(RecipeEditorAction.MoveIngredient(1, 1, up = true))
+        val moved = viewModel.uiState.value.draft.steps
+        assertEquals(steps.map { it.rowKey }.reversed(), moved.map { it.rowKey })
+        assertEquals(steps[0].ingredients.map { it.rowKey }.reversed(), moved[1].ingredients.map { it.rowKey })
+    }
+
+    @Test
+    fun aRemovedRowsKeyComesBackOnlyWithTheRow() = runTest {
+        val viewModel = editor(null)
+        collect(viewModel.uiState)
+        viewModel.onAction(RecipeEditorAction.AddStep)
+        viewModel.onAction(RecipeEditorAction.SetStepName(0, "A"))
+        val key = viewModel.uiState.value.draft.steps[0].rowKey
+
+        viewModel.onAction(RecipeEditorAction.RemoveStep(0))
+        viewModel.onAction(RecipeEditorAction.AddStep)
+        assertNotEquals(key, viewModel.uiState.value.draft.steps[0].rowKey)
+
+        viewModel.onAction(RecipeEditorAction.UndoRemove)
+        assertEquals(key, viewModel.uiState.value.draft.steps[0].rowKey)
+    }
+
+    @Test
+    fun rowKeysSurviveProcessDeathButAreNoChangeAndNeverSaved() = runTest {
+        val handle = SavedStateHandle()
+        val first = editor(pasta, handle)
+        collect(first.uiState)
+        val keys = first.uiState.value.draft.steps.map { it.rowKey }
+        assertFalse(0L in keys)
+        assertFalse("keys alone are not an edit", first.uiState.value.hasChanges)
+
+        val second = editor(pasta, handle)
+        collect(second.uiState)
+        assertEquals(keys, second.uiState.value.draft.steps.map { it.rowKey })
+
+        second.onAction(RecipeEditorAction.AddStep)
+        second.onAction(RecipeEditorAction.SetStepName(keys.size, "Ny"))
+        assertFalse(second.uiState.value.draft.steps.last().rowKey in keys)
+        second.onAction(RecipeEditorAction.Save)
+        val (_, saved) = edits.updated.single()
+        assertEquals(setOf(0L), saved.steps.map { it.rowKey }.toSet())
+        assertEquals(setOf(0L), saved.ingredients.map { it.rowKey }.toSet())
     }
 
     // ------------------------------------------------------------------ a stored recipe

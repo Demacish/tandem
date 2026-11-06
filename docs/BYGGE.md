@@ -1075,6 +1075,7 @@ hel, se "Integration av Fas 4 (0.6.0)".
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
 | Valfri snabb push (push-tjänst + UnifiedPush i appen) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; `push-service.yml` 42112572458 på 3e39331: enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1; imagen är inte publicerad, det sker först med en `v*`-tagg) | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Synk-sidans fyra bilder inspelade igen med båda nya raderna, Screenshots 42112568644) | "Notis när något går ut" |
+| Komplettering 1: TalkBack-namn, nycklade rader, `core:sync`-felet, sidläsarens http-länk (`fas4/komplettering-1`) | pågår | "Fas 4 komplettering 1" |
 | Granskningen av Fas 3 och 4, data och synk (`fas4/fix-data`) | ✅ klart 2026-11-06 (PR 42170268254, röktest "OK (27 tests)" 42170268224 och Contract 42170268319 på 1cbc113; `push-service.yml` 42165724376 på 80afbc7, sista ändringen i tjänsten) | "Fas 4-granskningen: data och synk" |
 | Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
 | Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
@@ -1269,16 +1270,39 @@ Rättelser i `feature/**`, `core:ui` och små block utanför (nämnda här) efte
 
 **Kvar efter granskningen:**
 
-- Redigerarens rader nycklas inte: `DraftStep.id` saknas för nya steg, så det kräver ett id som bara
-  finns i utkastet. Flyttar och borttagningar sägs av TalkBack, men fokus står kvar på samma plats.
-- Inget röktest trycker på en riktig widget (Glance-mottagaren är inte exporterad och en widget går
-  inte att placera från testet). `WidgetSessionTest` visar att innehållet följer sitt flöde och
-  mappningskontrollen i `smoke.yml` fäller bygget om `CheckEntryAction()` försvinner igen.
-- `core:sync`-testerna kan fallera slumpmässigt: ett flöde i `DefaultSyncRepository` på
-  `Dispatchers.Default` kan överleva sitt test och träffa en stängd databas, och då får nästa test
-  skulden (`UncaughtExceptionsBeforeTest`, sågs i `StoreTripRepositoryTest` i PR 42213998889 försök 1).
-  Grenen ändrar inget där; omkörningen var grön.
+Inget är kvar härifrån. Radnycklarna och det slumpmässiga felet i `core:sync` är lösta i
+"Fas 4 komplettering 1". Att inget röktest skulle trycka på en riktig widget gäller inte längre:
+`Phase3SmokeTest.shoppingWidget_drawsTheList_andATapChecksTheRow` placerar widgeten i en `WidgetHost`
+och trycker på en rad. `WidgetSessionTest` och mappningskontrollen i `smoke.yml` finns kvar.
 <!-- /Fas 4 fix-ui -->
+
+<!-- Fas 4 komplettering-1 -->
+## Fas 4 komplettering 1
+
+Luckor som fullständighetsgranskningen hittade och som går att täppa till utan fysisk enhet och utan
+riktig AI-nyckel.
+
+- **TalkBack på "Nytt recept", "Ny dryck" och "Ny bok":** material3 1.5.0-beta01 lägger knappens
+  text i `clearAndSetSemantics {}` och ikonen saknar beskrivning, så knappen var en klickbar utan
+  namn. Knapparna har nu `Modifier.semantics { contentDescription = label }` som Handla och Hemma.
+  `NewItemButtonsTest` läser det sammanslagna trädet, det TalkBack ser; ett test med
+  `useUnmergedTree` hittar texten och ser inget fel. `Phase3SmokeTest` och `PhaseSDrinkSmokeTest`
+  hittar knappen på namnet (`TandemApp.clickNodeDescribed`), inte längre på platsen: det var den
+  sökningen som gjorde att felet gick förbi.
+- **Redigerarens rader är nycklade:** `DraftStep.rowKey` och `DraftIngredient.rowKey` finns bara i
+  utkastet. `RecipeEditorViewModel.store` ger varje rad utan nyckel nästa nummer (aldrig ett som
+  använts, en borttagen rad kan komma tillbaka med "Ångra"), `SavedDraft` bär dem över processdöd,
+  och de rensas innan något jämförs med utgångsläget eller lämnar redigeraren. Ingen Room-ändring.
+  Halvskriven text i "Ny ingrediens" följer steget. `RecipeEditorRowsTest` visar på riktig vy och
+  ViewModel att semantiknoden är densamma före och efter en flytt: fokus sitter på noden.
+- **Det slumpmässiga felet i `core:sync`:** `SyncTestGraph.close` avbröt redan scopet, men `cancel()`
+  väntar inte in det som kör. Hjälparen gör nu `cancelAndJoin` innan databaserna stängs
+  (`closePhone`, som också telefon B i testerna med två telefoner använder; där stängdes databaserna
+  med flödena igång). `SyncTestGraphTest` visar att `close` väntar in scopet.
+- **Sidläsaren med en http-länk:** röktestets sidläsning delar nu länken som `http://`. Appen tillåter
+  ingen klartext, så sidan nås bara om vyn verkligen får `PageReading.loadUrl`, och testet kontrollerar
+  fortfarande att servern får länken som den delades.
+<!-- /Fas 4 komplettering-1 -->
 
 <!-- Fas 4 fas3-rester -->
 ## Fas 3:s rester (`:feature:recipes`, `:core:sync`, `:feature:home`, `:feature:widgets`, Fas 4, bana fas3-rester)

@@ -98,10 +98,13 @@ fun DrinksScreen(
         },
         floatingActionButton = {
             if (!state.readOnly && !state.loading) {
+                val label = stringResource(R.string.drinks_new)
                 ExtendedFloatingActionButton(
                     onClick = onCreateDrink,
                     icon = { Icon(TandemIcons.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.drinks_new)) },
+                    text = { Text(label) },
+                    // The button's text does not reach TalkBack by itself (as in ShoppingScreen).
+                    modifier = Modifier.semantics { contentDescription = label },
                 )
             }
         },

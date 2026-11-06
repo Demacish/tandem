@@ -18,7 +18,6 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -174,9 +173,7 @@ class WeekShoppingSyncTest {
             assertTrue(phoneB.real.outboxDao().getAllFor(ACCOUNT_ID, OutboxEntities.SHOPPING_LIST_RECIPE).isEmpty())
         } finally {
             // Not phoneB.close(): the server is this phone's too.
-            phoneB.scope.cancel()
-            phoneB.real.close()
-            phoneB.demoDatabase.close()
+            phoneB.closePhone()
         }
         assertEquals(mapOf(pasta to 1, meatballs to 1), listRecipesByMeal())
     }
