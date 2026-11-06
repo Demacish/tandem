@@ -46,6 +46,8 @@ PHASES = (
     ("fas4.autoplan", os.path.join("fas4", "autoplan")),
     ("fas4.fas3Rest", os.path.join("fas4", "fas3-rester")),
     ("fas4.nutrition", os.path.join("fas4", "nutrition")),
+    ("fas4.editor", os.path.join("fas4", "editor")),
+    ("fas4.share", os.path.join("fas4", "share")),
 )
 
 

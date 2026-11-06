@@ -413,6 +413,40 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase4EditorContractTest'
 
+      # Fas 4, komplettering 3 (plan §6.2, §8.6): the share link. `allow_sharing` is read-only in the
+      # API, so a second space with sharing off is made in the database, after every other class.
+      - name: Create the space without sharing
+        if: ${{ !cancelled() }}
+        run: |
+          token="$(docker exec -w /opt/recipes tandoor /opt/recipes/venv/bin/python manage.py shell -c '
+          import uuid
+          from datetime import timedelta
+          from django.contrib.auth.models import Group, User
+          from django.utils import timezone
+          from django_scopes import scopes_disabled
+          from oauth2_provider.models import AccessToken
+          from cookbook.models import Space, UserSpace
+
+          with scopes_disabled():
+              user = User.objects.create_user("contract-noshare")
+              space = Space.objects.create(name="No sharing", created_by=user, allow_sharing=False)
+              member = UserSpace.objects.create(space=space, user=user, active=True)
+              member.groups.add(Group.objects.get(name="user"))
+              token = AccessToken.objects.create(
+                  user=user, token="tda_" + str(uuid.uuid4()).replace("-", "_"),
+                  expires=timezone.now() + timedelta(days=1), scope="read write")
+              print("NOSHARE_TOKEN=" + token.token)
+          ' | sed -n 's/^NOSHARE_TOKEN=//p' | tail -n 1)"
+          [[ "$token" == tda_* ]] || { echo "::error::space without sharing or token creation failed"; exit 1; }
+          echo "::add-mask::${token}"
+          echo "TANDOOR_NOSHARE_TOKEN=${token}" >> "$GITHUB_ENV"
+
+      - name: Contract tests (Fas 4, share link)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase4ShareContractTest'
+
       # Fas 1 golden table (plan §10 Fas 1): Tandoor's own web frontend code, checked out at the
       # tag under test into the build directory (never committed), scales the recorded recipes.
       - name: Check out the Tandoor web frontend (read only, not committed)
@@ -442,7 +476,7 @@ jobs:
           leaked=0
           for value in "$TANDOOR_PASSWORD" "$TANDOOR_NOSPACE_PASSWORD" "$TANDOOR_SECRET_KEY" "$TANDOOR_DB_PASSWORD" \
             "$TANDOOR_READER_PASSWORD" "${TANDOOR_FAS1_TOKEN:-}" "${TANDOOR_READER_TOKEN:-}" "${TANDOOR_GUEST_TOKEN:-}" \
-            "${TANDOOR_OUTSIDER_TOKEN:-}"; do
+            "${TANDOOR_OUTSIDER_TOKEN:-}" "${TANDOOR_NOSHARE_TOKEN:-}"; do
             if [ -n "$value" ] && grep -rqF -- "$value" "$RECORDINGS"; then leaked=1; fi
           done
           # Real tokens look like tda_<8 hex>_...; recordings may only contain the fake

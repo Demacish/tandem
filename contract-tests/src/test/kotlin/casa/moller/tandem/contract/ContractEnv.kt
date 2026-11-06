@@ -95,4 +95,13 @@ internal object ContractEnv {
 
     /** Fas 3 recordings: `<recordDir>/fas3/<name>.json` (committed to api-schema/fixtures/<tag>/fas3/). */
     val fas3RecordDir: File = File(recordDir, "fas3")
+
+    // --- Fas 4 (Phase4ShareContractTest) ----------------------------------------------------
+
+    /**
+     * A token of the only member of a second space with `allow_sharing` off, created by contract.yml
+     * in the database (the field is read-only in the API). Phase4ShareContractTest is skipped unless
+     * it is set.
+     */
+    val noShareToken: String = System.getenv("TANDOOR_NOSHARE_TOKEN").orEmpty()
 }
