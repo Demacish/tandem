@@ -3,6 +3,7 @@ package casa.moller.tandem.core.network.api
 import casa.moller.tandem.core.network.di.TandoorHttpClient
 import casa.moller.tandem.core.network.http.AuthInterceptor
 import casa.moller.tandem.core.network.http.HtmlResponseGuardInterceptor
+import casa.moller.tandem.core.network.http.TandemHttpClients
 import casa.moller.tandem.core.network.http.TokenProvider
 import casa.moller.tandem.core.network.json.TandoorJson
 import javax.inject.Inject
@@ -45,12 +46,14 @@ class TandoorApi internal constructor(
     val pantryFoods: PantryFoodService,
     // --- Fas S (drycker lane): keywords under "Dryck"/"Passar med", a drink as a recipe, its photo. ---
     val drinks: DrinkService,
-    /** Fas 3 (import lane): the server-side recipe import. */
+    /** Fas 3 (import lane): the server-side recipe import, on [importHttpClient]. */
     val imports: RecipeImportService,
     /** Capability probes; see `CapabilityResolver`. */
     internal val probes: CapabilityProbeService,
     /** The client with this server's [AuthInterceptor]; for raw calls in tests and later image loading. */
     internal val httpClient: OkHttpClient,
+    /** Fas 4 review (fix-data): [httpClient] with the 120 s timeouts of the imports (plan 5.4), which [imports] calls through. */
+    internal val importHttpClient: OkHttpClient,
 )
 
 /**
@@ -76,6 +79,8 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             .client(client)
             .addConverterFactory(TandoorJson.asConverterFactory(JSON))
             .build()
+        // Plan 5.4: the same interceptors, dispatcher, pool and rate limit with the imports' 120 s.
+        val importClient = TandemHttpClients.longRunning(client)
         return TandoorApi(
             baseUrl = url.toString(),
             auth = retrofit.create(AuthService::class.java),
@@ -97,9 +102,10 @@ class TandoorApiFactory @Inject constructor(@TandoorHttpClient private val baseC
             automations = retrofit.create(AutomationService::class.java),
             pantryFoods = retrofit.create(PantryFoodService::class.java),
             drinks = retrofit.create(DrinkService::class.java),
-            imports = retrofit.create(RecipeImportService::class.java),
+            imports = retrofit.newBuilder().client(importClient).build().create(RecipeImportService::class.java),
             probes = retrofit.create(CapabilityProbeService::class.java),
             httpClient = client,
+            importHttpClient = importClient,
         )
     }
 

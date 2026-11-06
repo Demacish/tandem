@@ -75,13 +75,36 @@ class StoreOrderLearningTest {
     }
 
     @Test
-    fun onlyTheNewestTripsCountAndUnvisitedAislesKeepTheirPlaceAfterTheVisitedOnes() {
+    fun onlyTheNewestTripsCountAndUnvisitedAislesKeepTheirPlace() {
         val old = List(5) { store.reversed() }
         val recent = List(5) { listOf(3L, 1L, 2L) }
         val proposal = StoreOrderLearning.propose(store, recent + old)!!
         assertEquals(listOf(3L, 1L, 2L, 4L, 5L, 6L, 7L, 8L), proposal.order)
         assertEquals(StoreOrderLearning.MAX_TRIPS, proposal.trips)
         assertEquals(1.0, proposal.agreement)
+    }
+
+    // Fas 4 review (fix-data): only what the trips contradict moves.
+    @Test
+    fun tripsThatFitTheStoresOrderProposeNothingEvenWhenTheySkipAisles() {
+        assertNull(StoreOrderLearning.propose(store, List(3) { listOf(2L, 3L, 5L) }), "the first aisle skipped")
+        val disjoint = listOf(listOf(1L, 2L), listOf(3L, 4L), listOf(5L, 6L))
+        assertNull(StoreOrderLearning.propose(store, disjoint), "disjoint trips compare nothing")
+    }
+
+    @Test
+    fun aRealSwapLeavesEveryAisleNobodyVisitedInItsPlace() {
+        val proposal = StoreOrderLearning.propose(listOf(1L, 2L, 3L, 4L, 5L), List(3) { listOf(3L, 2L, 5L) })!!
+        assertEquals(listOf(1L, 3L, 2L, 4L, 5L), proposal.order)
+
+        val spread = StoreOrderLearning.propose(listOf(1L, 2L, 3L, 4L, 5L), List(3) { listOf(5L, 2L) })!!
+        assertEquals(listOf(1L, 5L, 3L, 4L, 2L), spread.order)
+    }
+
+    @Test
+    fun pairsNoTripComparedKeepTheStoresOrder() {
+        val proposal = StoreOrderLearning.propose(listOf(1L, 2L, 3L, 4L, 5L, 6L), listOf(listOf(2L, 1L), listOf(3L, 4L), listOf(5L, 6L)))!!
+        assertEquals(listOf(2L, 1L, 3L, 4L, 5L, 6L), proposal.order)
     }
 
     @Test

@@ -62,7 +62,8 @@ internal class AndroidPantryExpiryNotifier @Inject constructor(@ApplicationConte
         val title = title(summary)
         val style = NotificationCompat.InboxStyle()
         summary.items.forEach { style.addLine(line(it, today, locationNames)) }
-        val text = context.getString(R.string.sync_pantry_expiry_text)
+        val hasRecipes = summary.recipeCount > 0
+        val text = context.getString(if (hasRecipes) R.string.sync_pantry_expiry_text else R.string.sync_pantry_expiry_text_no_recipes)
         style.setBigContentTitle(title)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_tandem_pantry)

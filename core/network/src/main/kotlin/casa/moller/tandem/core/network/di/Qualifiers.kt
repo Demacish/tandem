@@ -7,11 +7,6 @@ import javax.inject.Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class TandoorHttpClient
 
-/** Same pipeline with 120 s timeouts, for AI and URL imports (plan 5.4). */
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class TandoorLongRunningHttpClient
-
 /**
  * The base client for images: own dispatcher and rate limit, no token. Per-account clients come
  * from `TandoorImageClientFactory`.

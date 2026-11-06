@@ -4,6 +4,7 @@ import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.makenow.MakeNowRecipe
 import casa.moller.tandem.core.model.pantry.InventoryEntry
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -60,8 +61,11 @@ object ExpiryReminder {
     /** Nothing is posted from this hour ... */
     const val QUIET_FROM_HOUR: Int = 21
 
-    /** ... until this hour: a run deferred into the night waits for the next morning's. */
+    /** ... until this hour: a run deferred into the night posts nothing, the next one is the coming morning's. */
     const val QUIET_UNTIL_HOUR: Int = 7
+
+    /** A run that found Tandem on screen tries again this many hours later, the same day. */
+    const val RETRY_AFTER_HOURS: Int = 2
 
     /** Entries expiring today (0) or tomorrow (1); already expired ones were announced before. */
     const val DAYS_AHEAD: Int = 1
@@ -85,6 +89,19 @@ object ExpiryReminder {
         val todays = LocalDateTime(date, LocalTime(hour, 0)).toInstant(zone)
         val target = if (todays > now) todays else LocalDateTime(date.plus(1, DateTimeUnit.DAY), LocalTime(hour, 0)).toInstant(zone)
         return target - now
+    }
+
+    /**
+     * Fas 4 review (fix-data): how long from [now] until the run after this one. Normally the next
+     * [MORNING_HOUR] in [zone], whenever this run started, so a late run never pushes the next one
+     * later (a plain period would) and a DST change or a new zone is followed at once. With
+     * [retrySoon] (Tandem was on screen, the day's items stay new) [RETRY_AFTER_HOURS] later,
+     * unless that falls in the quiet hours.
+     */
+    fun delayUntilNextRun(now: Instant, zone: TimeZone, retrySoon: Boolean = false): Duration {
+        val morning = delayUntilNext(now, zone)
+        val retry = RETRY_AFTER_HOURS.hours
+        return if (retrySoon && retry < morning && !isQuiet(now + retry, zone)) retry else morning
     }
 
     /** The entries with stock that expire on [today] or the day after, soonest first, then by name. */

@@ -14,11 +14,11 @@ class LearnedAisleOrderTest {
     private fun thrice(vararg categories: Long): List<List<Long>> = List(3) { categories.toList() }
 
     @Test
-    fun afterThreeTripsTheWalkedAislesComeFirstInTheLearnedOrderThenTheRest() {
+    fun afterThreeTripsTheWalkedAislesTakeTheLearnedOrderAndTheRestStayInPlace() {
         val order = LearnedAisleOrder.of(store, thrice(dairy.id, fruit.id))!!
         assertEquals(store.id, order.supermarketId)
-        assertEquals(listOf(13L, 11L, 12L), order.relationIds)
-        assertEquals(listOf("Mejeri", "Frukt & grönt", "Skafferi"), order.names)
+        assertEquals(listOf(13L, 12L, 11L), order.relationIds)
+        assertEquals(listOf("Mejeri", "Skafferi", "Frukt & grönt"), order.names)
         assertEquals(3, order.trips)
     }
 

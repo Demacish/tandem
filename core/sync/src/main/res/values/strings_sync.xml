@@ -49,6 +49,7 @@
         <item quantity="other">%1$s – %2$d recipes</item>
     </plurals>
     <string name="sync_pantry_expiry_text">Tap for recipes that use up what expires.</string>
+    <string name="sync_pantry_expiry_text_no_recipes">Tap to see what you can make.</string>
     <!-- One line per food: %1$s = food, %2$s = place ("Fridge"), %3$s = "today" or "tomorrow". -->
     <string name="sync_pantry_expiry_line">%1$s, %2$s, %3$s</string>
     <string name="sync_pantry_expiry_line_no_place">%1$s, %2$s</string>

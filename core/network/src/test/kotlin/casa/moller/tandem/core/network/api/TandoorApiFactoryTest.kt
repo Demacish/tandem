@@ -12,7 +12,11 @@ import casa.moller.tandem.core.network.testing.HttpsServerRule
 import casa.moller.tandem.core.network.testing.htmlResponse
 import casa.moller.tandem.core.network.testing.jsonResponse
 import casa.moller.tandem.core.network.testing.testClient
+import java.io.InterruptedIOException
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.junit.Assert.assertEquals
@@ -40,6 +44,30 @@ class TandoorApiFactoryTest {
         val request = tandoor.takeRequest()
         assertEquals("/api/space/current/", request.url.encodedPath)
         assertEquals("Bearer tda_device_token", request.headers["Authorization"])
+    }
+
+    // Fas 4 review (fix-data): plan 5.4 asks for 120 s on the imports, and only there.
+    @Test
+    fun theImportsHaveTheLongTimeoutsAndEverythingElseTheShortOnes() {
+        val api = factory.create(tandoor.url("/"), token)
+        assertEquals(30_000, api.httpClient.readTimeoutMillis)
+        assertEquals(60_000, api.httpClient.callTimeoutMillis)
+        assertEquals(120_000, api.importHttpClient.readTimeoutMillis)
+        assertEquals(120_000, api.importHttpClient.writeTimeoutMillis)
+        assertEquals(150_000, api.importHttpClient.callTimeoutMillis)
+        assertEquals("the same interceptors", api.httpClient.interceptors.size, api.importHttpClient.interceptors.size)
+    }
+
+    @Test
+    fun anImportSurvivesAnAnswerTheOtherServicesTimeOutOn() = runBlocking {
+        val impatient = testClient().newBuilder().readTimeout(200, TimeUnit.MILLISECONDS).build()
+        val api = TandoorApiFactory(impatient).create(tandoor.url("/"), token)
+        val slow = jsonResponse(200, "{\"error\": true, \"msg\": \"Nothing\"}").newBuilder().headersDelay(1, TimeUnit.SECONDS).build()
+        tandoor.enqueue(slow, slow)
+
+        assertEquals("Nothing", api.imports.fromSource(buildJsonObject { put("url", "https://example.com/") }).msg)
+        assertThrows(InterruptedIOException::class.java) { runBlocking { api.space.currentSpace() } }
+        Unit
     }
 
     @Test

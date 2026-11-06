@@ -215,6 +215,28 @@ class ShoppingSyncTest {
         assertEquals(7.0, tandoor.entry(ids[3])?.amount ?: 0.0, 0.0)
     }
 
+    /**
+     * Fas 4 review (fix-data): what the partner or the web cleared after a trip was still bought on
+     * this phone's "Dags igen?": a checked entry gone from a full read goes to the history, an
+     * unchecked one (deleted, not bought) does not.
+     */
+    @Test
+    fun aCheckedEntryClearedElsewhereIsKeptInTheHistory() = forEachVersion {
+        val milk = tandoor.seed("mjölk")
+        val bread = tandoor.seed("bröd")
+        tandoor.partnerCheck(milk)
+        read()
+        assertEquals(true, named("mjölk")?.checked)
+
+        tandoor.partnerDelete(listOf(milk, bread))
+        graph.clock.advance(1.hours)
+        read()
+
+        assertNull(named("mjölk"))
+        val history = graph.real.shoppingDao().observeHistory(ACCOUNT_ID).first()
+        assertEquals(listOf("mjölk"), history.map { it.foodName })
+    }
+
     /** Two phones in one household: checks through `updated_after`, deletions through the window rule. */
     @Test
     fun twoPhonesSeeEachOthersChangesWithUpdatedAfterAndTheWindowRule() {

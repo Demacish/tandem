@@ -27,11 +27,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @TandoorLongRunningHttpClient
-    fun provideTandoorLongRunningHttpClient(@TandoorHttpClient base: OkHttpClient): OkHttpClient = TandemHttpClients.longRunning(base)
-
-    @Provides
-    @Singleton
     @TandoorImageHttpClient
     fun provideTandoorImageHttpClient(@TandoorHttpClient base: OkHttpClient): OkHttpClient = TandemHttpClients.images(base)
 }

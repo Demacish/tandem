@@ -11,6 +11,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.sync.drink.DrinkPayloads
+import casa.moller.tandem.core.sync.recipeedit.RecipeEditPayloads
 import java.time.Instant
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -39,6 +40,10 @@ import kotlinx.serialization.json.put
  * Fas S review (fix-data): a drink created offline is exported with what its CREATE sends (`drink`:
  * name, description, servings and keywords from `drink_draft`, whose row goes with the account),
  * and a drink photo only as `{"photo": true}`: never the app-private path or the file.
+ *
+ * Fas 4 review (fix-data): a `RECIPE_IMAGE` row says what it asks for: `{"remove": true}` ("Ta bort
+ * bilden"), `{"image_url": ...}` (an import's picture on the web), else `{"photo": true}`; only
+ * those fields are copied, so a row merged by an older version never gives away its `file` path.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RoomPendingChangesExporter @Inject constructor(private val databases: TandemDatabaseFactory) : PendingChangesExporter {
@@ -102,12 +107,18 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
         row.localId?.takeIf { row.serverId == null }?.let { put("localId", it) }
         row.refs?.let { put("refs", parse(it)) }
         row.dependsOn?.let { put("dependsOn", it) }
-        put("payload", if (row.op == OutboxOps.RECIPE_IMAGE) PHOTO else parse(row.payload))
+        put("payload", if (row.op == OutboxOps.RECIPE_IMAGE) imageChangeOf(row.payload) else parse(row.payload))
         drink?.let { put("drink", drinkOf(it)) }
         put("createdAt", TandoorDates.format(Instant.ofEpochMilli(row.createdAtEpochMillis)))
         put("attempts", row.attempts)
         put("state", row.state.name)
         row.lastError?.let { put("lastError", it) }
+    }
+
+    /** What a `RECIPE_IMAGE` row asks for, in the order the sender reads it; never the app-private path. */
+    private fun imageChangeOf(payload: String): JsonObject {
+        if (RecipeEditPayloads.isImageRemoval(payload)) return REMOVAL
+        return RecipeEditPayloads.imageUrlOf(payload)?.let { url -> buildJsonObject { put("image_url", url) } } ?: PHOTO
     }
 
     /** What a drink created offline consists of (its photo only as a flag). */
@@ -141,5 +152,6 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
         const val EXPORT_FAILED = "tandem.sync.export-failed"
         val PRETTY = Json { prettyPrint = true }
         val PHOTO: JsonObject = buildJsonObject { put("photo", true) }
+        val REMOVAL: JsonObject = buildJsonObject { put("remove", true) }
     }
 }

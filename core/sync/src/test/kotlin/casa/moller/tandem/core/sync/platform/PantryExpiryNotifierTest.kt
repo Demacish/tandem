@@ -90,5 +90,19 @@ class PantryExpiryNotifierTest {
         val lines = notification.extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.map { it.toString() }
         assertEquals(listOf("Grädde, Kyl, tomorrow"), lines)
         assertNotNull("posted under its own id", shadowOf(manager).getNotification(TandemNotificationIds.PANTRY_EXPIRY))
+        assertEquals("Tap for recipes that use up what expires.", notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
+    }
+
+    // Fas 4 review (fix-data): without a recipe the text promises none.
+    @Test
+    fun withoutRecipesTheTextIsNeutral() {
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        val manager = context.getSystemService(NotificationManager::class.java)
+
+        assertTrue(AndroidPantryExpiryNotifier(context).post(summary(ExpiryDay.TOMORROW, 0, "grädde"), today, emptyMap()))
+
+        val notification = shadowOf(manager).allNotifications.single()
+        assertEquals("Grädde expires tomorrow", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals("Tap to see what you can make.", notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
     }
 }

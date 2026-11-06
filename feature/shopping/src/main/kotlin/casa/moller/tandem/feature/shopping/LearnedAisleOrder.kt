@@ -10,8 +10,8 @@ import casa.moller.tandem.core.model.shopping.Supermarket
 // Tandoor, where the web shows it too.
 
 /**
- * A new aisle order for [supermarketId]: the aisles walked on the recent trips first, in the
- * learned order, then the rest as before.
+ * A new aisle order for [supermarketId]: the aisles walked on the recent trips in the learned
+ * order, among the places they held; the rest stay where they were.
  *
  * @property relationIds the `SupermarketCategoryRelation` ids in the new order (what
  *   [casa.moller.tandem.core.data.shopping.SupermarketRepository.reorderAisles] takes).

@@ -44,13 +44,13 @@ internal enum class PantryExpiryOutcome {
     /** A guest has no pantry (Tandoor answers 403 on its lists). */
     GUEST,
 
-    /** Between 21 and 7 o'clock: the next morning's run takes it. */
+    /** Between 21 and 7 o'clock: the coming morning's run takes it (every run sets the next one). */
     QUIET,
 
-    /** Tandem is on screen (Idag's "Går ut snart" and Hemma show it). */
+    /** Tandem is on screen (Idag's "Går ut snart" and Hemma show it): the next run comes a little later the same day. */
     VISIBLE,
 
-    /** No notification permission, notifications or the channel switched off. */
+    /** No notification permission, notifications or the channel switched off: the next morning's run asks again. */
     NOT_ALLOWED,
 
     /** Nothing expires today or tomorrow. */
@@ -71,8 +71,8 @@ internal enum class PantryExpiryOutcome {
  *
  * - Only with Settings → "Notis när något går ut" on (off by default), for a logged-in account of a
  *   household; never in demo mode, never for a guest (no pantry), never at night ([ExpiryReminder.isQuiet])
- *   and never while Tandem is on screen (Idag's "Går ut snart" says the same; the item stays new, so
- *   a later run that day may still post it).
+ *   and never while Tandem is on screen (Idag's "Går ut snart" says the same; the item stays new, and
+ *   the worker runs again later the same day, `ExpiryReminder.delayUntilNextRun`).
  * - Works offline from the local pantry; online it reads the pantry first when the last complete
  *   read is older than the sync's own interval ([PantrySyncStep.PANTRY_INTERVAL_MILLIS]) and lets
  *   "Kan laga nu" refresh by its own once-a-minute rule, so the recipe count is current.

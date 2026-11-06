@@ -134,4 +134,19 @@ class ExpiryReminderTest {
         assertEquals(9.hours, ExpiryReminder.delayUntilNext(at("2026-10-25T00:00"), stockholm))
         assertEquals(7.hours, ExpiryReminder.delayUntilNext(at("2026-03-29T00:00"), stockholm))
     }
+
+    // Fas 4 review (fix-data): what a run sets as the next one.
+    @Test
+    fun theRunAfterALateRunIsStillTheNextMorning() {
+        assertEquals(8.hours + 50.minutes, ExpiryReminder.delayUntilNextRun(at("2026-11-05T23:10"), stockholm))
+        assertEquals(23.hours + 20.minutes, ExpiryReminder.delayUntilNextRun(at("2026-11-05T08:40"), stockholm))
+    }
+
+    @Test
+    fun aRetryComesTheSameDayButNeverInTheQuietHours() {
+        assertEquals(2.hours, ExpiryReminder.delayUntilNextRun(at("2026-11-05T08:00"), stockholm, retrySoon = true))
+        assertEquals(2.hours, ExpiryReminder.delayUntilNextRun(at("2026-11-05T18:30"), stockholm, retrySoon = true))
+        assertEquals(12.hours, ExpiryReminder.delayUntilNextRun(at("2026-11-05T20:00"), stockholm, retrySoon = true))
+        assertEquals(1.hours, ExpiryReminder.delayUntilNextRun(at("2026-11-05T07:00"), stockholm, retrySoon = true))
+    }
 }

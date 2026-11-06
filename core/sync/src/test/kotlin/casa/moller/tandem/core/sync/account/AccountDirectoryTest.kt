@@ -29,6 +29,9 @@ import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import mockwebserver3.MockResponse
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -223,6 +226,42 @@ class AccountDirectoryTest {
         assertFalse("B's rows are gone", ACCOUNT_B in graph.real.accountDao().getStoredAccountIds())
         assertEquals("A keeps its own", 1, pending(ACCOUNT_ID))
         assertEquals(listOf(ACCOUNT_ID), accounts { it.size == 1 }.map { it.account.id })
+    }
+
+    // Fas 4 review (fix-data): a queued picture change says what it asks for, never the app-private path.
+    @Test
+    fun theExportSaysWhatAPictureChangeAsksFor() = runBlocking {
+        storeBothAccounts()
+        val rows = listOf(
+            """{"remove":true}""",
+            """{"image_url":"https://example.com/a.jpg"}""",
+            """{"file":"/private/photo.jpg"}""",
+            """{"remove":true,"file":"/private/merged.jpg"}""",
+        )
+        rows.forEachIndexed { index, payload ->
+            graph.real.outboxDao().insert(
+                OutboxEntity(
+                    accountId = ACCOUNT_ID,
+                    op = OutboxOps.RECIPE_IMAGE,
+                    entity = OutboxEntities.RECIPE_EDIT,
+                    serverId = index + 1L,
+                    payload = payload,
+                    createdAtEpochMillis = 1,
+                ),
+            )
+        }
+
+        val export = directory.exportPendingChanges(ACCOUNT_ID).getOrNull()!!
+
+        val payloads = Json.parseToJsonElement(export).jsonObject.getValue("changes").jsonArray.map { it.jsonObject["payload"].toString() }
+        val expected = listOf(
+            """{"remove":true}""",
+            """{"image_url":"https://example.com/a.jpg"}""",
+            """{"photo":true}""",
+            """{"remove":true}""",
+        )
+        assertEquals(expected, payloads)
+        assertFalse(export, "/private/" in export)
     }
 
     @Test

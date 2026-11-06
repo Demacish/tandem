@@ -47,6 +47,7 @@
         <item quantity="other">%1$s – %2$d recept</item>
     </plurals>
     <string name="sync_pantry_expiry_text">Tryck för recept som använder det som går ut.</string>
+    <string name="sync_pantry_expiry_text_no_recipes">Tryck för att se vad du kan laga.</string>
     <!-- En rad per vara: %1$s = varan, %2$s = platsen ("Kyl"), %3$s = "i dag" eller "i morgon". -->
     <string name="sync_pantry_expiry_line">%1$s, %2$s, %3$s</string>
     <string name="sync_pantry_expiry_line_no_place">%1$s, %2$s</string>

@@ -8,13 +8,17 @@ import java.util.Collections
  * is proposed only when at least [MIN_AGREEMENT] of the visited categories lie in that order.
  *
  * A trip is the list of category ids in the order their first entry was checked. The consensus
- * ranks the categories by pairwise majority (for every other category: the share of the trips
- * with both that walked this one first minus the share that walked it after, so a trip that
- * skipped a category does not move it), then by average relative position, then by the store's
- * current order; adjacent swaps that make it agree better with the trips are then applied.
- * [agreement] measures, over all trips, the share of visited categories that lie in the proposed
- * order: per trip the longest run of its categories that keeps the trip's order (a longest common
- * subsequence), summed and divided by the categories visited.
+ * follows the pairwise majority (the trips with both categories vote, so a trip that skipped one
+ * does not move it) and leaves pairs no trip compared in the store's order; adjacent swaps that
+ * make it agree better with the trips are then applied. [agreement] measures, over all trips, the
+ * share of visited categories that lie in the proposed order: per trip the longest run of its
+ * categories that keeps the trip's order (a longest common subsequence), summed and divided by
+ * the categories visited.
+ *
+ * Fas 4 review (fix-data): only what the trips contradict moves. Trips that fit the store's order
+ * as well as the learned one propose nothing (three trips that skip the first aisle say nothing
+ * against it), and the visited categories are written back into the places they already hold in
+ * the store, so an aisle nobody visited stays where it is.
  */
 object StoreOrderLearning {
 
@@ -31,8 +35,9 @@ object StoreOrderLearning {
     const val MIN_AGREEMENT: Double = 0.8
 
     /**
-     * A proposal: [order] (the visited categories in the learned order, then the rest of the
-     * store's in its order), [agreement] with the trips, and how many [trips] it is based on.
+     * A proposal: [order] (the store's order with the visited categories rearranged among the
+     * places they hold, every other category where it was), [agreement] with the trips, and how
+     * many [trips] it is based on.
      */
     data class Proposal(val order: List<Long>, val agreement: Double, val trips: Int)
 
@@ -40,7 +45,8 @@ object StoreOrderLearning {
      * The order to propose for a store whose categories are [storeOrder] (current order), from
      * [trips] (newest first; only the newest [MAX_TRIPS] with at least [MIN_CATEGORIES_PER_TRIP]
      * of the store's categories count). Null with fewer than [MIN_TRIPS] such trips, when the
-     * trips disagree (agreement below [MIN_AGREEMENT]) or when the order is the store's already.
+     * trips disagree (agreement below [MIN_AGREEMENT]) or when the store's order explains them
+     * just as well.
      */
     fun propose(storeOrder: List<Long>, trips: List<List<Long>>): Proposal? {
         val known = storeOrder.toSet()
@@ -52,13 +58,24 @@ object StoreOrderLearning {
         if (used.size < MIN_TRIPS) return null
         val learned = improved(consensus(used, storeOrder), used)
         val agreement = agreement(learned, used)
-        if (agreement < MIN_AGREEMENT) return null
-        val order = learned + storeOrder.filterNot { it in learned.toSet() }
+        if (agreement < MIN_AGREEMENT || agreement(storeOrder, used) >= agreement) return null
+        val order = inTheirPlaces(learned, storeOrder)
         if (order == storeOrder) return null
         return Proposal(order, agreement, used.size)
     }
 
-    /** The categories visited in [trips], in the consensus order (see the class). */
+    /** [storeOrder] with the categories of [learned], in that order, in the places they hold in it. */
+    private fun inTheirPlaces(learned: List<Long>, storeOrder: List<Long>): List<Long> {
+        val visited = learned.toSet()
+        val next = learned.iterator()
+        return storeOrder.map { if (it in visited) next.next() else it }
+    }
+
+    /**
+     * The categories visited in [trips], in the consensus order (see the class): the next one is
+     * the first in the store's order that no remaining category beats by majority; a cycle of
+     * majorities is broken by the best score (the sum of [preference] against all the others).
+     */
     fun consensus(trips: List<List<Long>>, storeOrder: List<Long>): List<Long> {
         val visited = trips.flatten().distinct()
         val positions = trips.map { trip -> trip.withIndex().associate { (index, id) -> id to index } }
@@ -67,11 +84,19 @@ object StoreOrderLearning {
             trips.filter { id in it }.map { trip -> if (trip.size == 1) 0.5 else trip.indexOf(id).toDouble() / (trip.size - 1) }.average()
         }
         val storeIndex = storeOrder.withIndex().associate { (index, id) -> id to index }
-        return visited.sortedWith(
+        val remaining = visited.sortedWith(
             compareByDescending<Long> { score.getValue(it) }
                 .thenBy { averagePosition.getValue(it) }
                 .thenBy { storeIndex[it] ?: Int.MAX_VALUE },
-        )
+        ).toMutableList()
+        val order = ArrayList<Long>(remaining.size)
+        while (remaining.isNotEmpty()) {
+            val free = remaining.filter { id -> remaining.none { other -> other != id && preference(other, id, positions) > 0 } }
+            val next = free.minByOrNull { storeIndex[it] ?: Int.MAX_VALUE } ?: remaining.first()
+            order += next
+            remaining -= next
+        }
+        return order
     }
 
     /**

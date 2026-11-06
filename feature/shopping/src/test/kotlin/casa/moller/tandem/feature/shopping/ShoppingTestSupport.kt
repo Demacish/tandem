@@ -124,8 +124,8 @@ internal object ShoppingSamples {
         )
     }
 
-    /** The order three trips that started with dairy and went on to fruit would offer (Fas 4). */
-    val learnedOrder: LearnedOrder = LearnedAisleOrder.of(store, List(3) { listOf(dairy.id, fruit.id) })!!
+    /** The order three trips through dairy, fruit and the pantry would offer (Fas 4). */
+    val learnedOrder: LearnedOrder = LearnedAisleOrder.of(store, List(3) { listOf(dairy.id, fruit.id, pantry.id) })!!
 }
 
 /** Theme, app chrome and font scale around a screen under test. */

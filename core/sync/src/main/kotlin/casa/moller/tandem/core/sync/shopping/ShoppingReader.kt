@@ -283,6 +283,9 @@ internal class ShoppingReader @Inject constructor(
             outbox.deleteWithDependents(unsent.map { it.id })
             unsent.forEach { dropped.record(DroppedChange(it.entity, it.op, it.serverId, DroppedChanges.DELETED_ELSEWHERE, now)) }
         }
+        // Fas 4 review (fix-data): what the partner or the web cleared after a trip was still bought ("Dags igen?").
+        val bought = deleted.filter { it.checked && it.completedAt != null }
+        if (bought.isNotEmpty()) dao.archive(accountId, bought.map { it.toHistory(now) }, emptyList())
         if (deleted.isNotEmpty()) dao.deleteEntries(accountId, deleted.map { it.localId })
         if (agedOut.isNotEmpty()) dao.archive(accountId, agedOut.map { it.toHistory(now) }, agedOut.map { it.localId })
         removeOrphanListRecipes(remote, database)

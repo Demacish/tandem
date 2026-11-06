@@ -21,6 +21,7 @@ import casa.moller.tandem.core.sync.platform.PantryExpiryNotifier
 import casa.moller.tandem.core.sync.platform.WallClock
 import casa.moller.tandem.core.sync.testing.FakeSettingsStore
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
@@ -44,7 +45,8 @@ import org.robolectric.annotation.ConscryptMode
 /**
  * Fas 4 (skafferinotis lane): the WorkManager side of the morning expiry check: the worker runs the
  * check and always succeeds, the request (24 hours, battery not low, no network needed, first run
- * at the next 08:00 of the zone), and the schedule following the setting and the account.
+ * at the next 08:00 of the zone), the next run set by each run, and the schedule following the
+ * setting and the account.
  */
 @RunWith(AndroidJUnit4::class)
 @ConscryptMode(ConscryptMode.Mode.OFF)
@@ -68,6 +70,55 @@ class PantryExpiryWorkTest {
         override fun cancel() {
             calls += "cancel"
         }
+
+        override fun reschedule(workId: UUID, retrySoon: Boolean) {
+            calls += if (retrySoon) "retry" else "reschedule"
+        }
+    }
+
+    private fun nextRunAfter(now: Instant, retrySoon: Boolean = false): Instant {
+        val scheduler = WorkManagerPantryExpiryScheduler(context, FixedClock(now, stockholm))
+        scheduler.schedule()
+        val manager = WorkManager.getInstance(context)
+        val name = WorkManagerPantryExpiryScheduler.WORK_NAME
+        scheduler.reschedule(manager.getWorkInfosForUniqueWork(name).get().single().id, retrySoon)
+        return Instant.fromEpochMilliseconds(manager.getWorkInfosForUniqueWork(name).get().single().nextScheduleTimeMillis)
+    }
+
+    private fun local(time: String): Instant = LocalDateTime.parse(time).toInstant(stockholm)
+
+    // Fas 4 review (fix-data): a run that started late never moves the next one.
+    @Test
+    fun aRunDeferredToTheEveningIsFollowedByTheNextMorningsRun() {
+        assertEquals(local("2026-11-06T08:00"), nextRunAfter(local("2026-11-05T23:10")))
+    }
+
+    @Test
+    fun aRunThatStartedLateInTheMorningDoesNotDrift() {
+        assertEquals(local("2026-11-06T08:00"), nextRunAfter(local("2026-11-05T08:40")))
+    }
+
+    @Test
+    fun theNextRunFollowsADstChange() {
+        assertEquals(local("2026-10-25T08:00"), nextRunAfter(local("2026-10-24T08:00")))
+        assertEquals(25.hours, local("2026-10-25T08:00") - local("2026-10-24T08:00"))
+    }
+
+    @Test
+    fun aRunThatFoundTheAppOnScreenTriesAgainTheSameDay() {
+        assertEquals(local("2026-11-05T10:00"), nextRunAfter(local("2026-11-05T08:00"), retrySoon = true))
+    }
+
+    @Test
+    fun aCancelledScheduleStaysCancelledWhenItsRunEnds() {
+        val scheduler = WorkManagerPantryExpiryScheduler(context, FixedClock(local("2026-11-05T08:00"), stockholm))
+        scheduler.schedule()
+        val manager = WorkManager.getInstance(context)
+        val name = WorkManagerPantryExpiryScheduler.WORK_NAME
+        val id = manager.getWorkInfosForUniqueWork(name).get().single().id
+        scheduler.cancel()
+        scheduler.reschedule(id, retrySoon = false)
+        assertTrue(manager.getWorkInfosForUniqueWork(name).get().all { it.state == WorkInfo.State.CANCELLED })
     }
 
     @Before
@@ -111,6 +162,7 @@ class PantryExpiryWorkTest {
                 override fun post(summary: ExpiryReminderSummary, today: LocalDate, locationNames: Map<Long, String>): Boolean =
                     posted.add(summary)
             }
+            val scheduler = RecordingScheduler()
             val check = PantryExpiryCheck(
                 settings = graph.settings,
                 sources = graph.sources,
@@ -128,7 +180,7 @@ class PantryExpiryWorkTest {
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: WorkerParameters,
-                ): ListenableWorker = PantryExpiryWorker(appContext, workerParameters, check)
+                ): ListenableWorker = PantryExpiryWorker(appContext, workerParameters, check, scheduler)
             }
             val worker = TestListenableWorkerBuilder<PantryExpiryWorker>(context).setWorkerFactory(factory).build()
 
@@ -138,6 +190,8 @@ class PantryExpiryWorkTest {
             graph.settings.state.update { it.copy(pantryExpiryNotifications = true) }
             assertEquals(ListenableWorker.Result.success(), runBlocking { worker.doWork() })
             assertTrue(posted.isEmpty())
+            // Every run sets the next one, whatever it found.
+            assertEquals(listOf("reschedule", "reschedule"), scheduler.calls)
         } finally {
             graph.close()
         }
