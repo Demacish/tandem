@@ -366,7 +366,9 @@ private fun CookContent(
         val recipe = timer.recipeId
         when {
             recipe == state.recipeId && step != null && step < state.steps.size -> onAction(CookAction.GoToPage(step))
+
             recipe != null && step != null && recipe in session.recipeIds -> onSessionAction(CookSessionAction.OpenTimer(recipe, step))
+
             // Its recipe was closed with ✕ a moment ago: it comes back as it was.
             recipe != null && recipe == session.closedRecipeId -> onSessionAction(CookSessionAction.RestoreClosed)
         }
@@ -715,7 +717,11 @@ private fun BottomArea(
                     actions = timerActions,
                     onOpen = onOpenTimer,
                     // Scaled with the text, so a large font shows both times too; maxScrollHeight still protects the step.
-                    maxHeight = if (showTimerRecipes) PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale else PHONE_TIMER_BAR_HEIGHT,
+                    maxHeight = if (showTimerRecipes) {
+                        PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale
+                    } else {
+                        PHONE_TIMER_BAR_HEIGHT
+                    },
                     showRecipe = showTimerRecipes,
                     modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
                 )

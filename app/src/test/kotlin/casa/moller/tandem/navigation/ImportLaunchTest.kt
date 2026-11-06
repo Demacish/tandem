@@ -27,14 +27,14 @@ class ImportLaunchTest {
 
     @Test
     fun severalSharedPhotosAreThePagesOfOneRecipe() {
+        fun share(type: String, uris: ArrayList<Uri>) =
+            Intent(Intent.ACTION_SEND_MULTIPLE).setType(type).putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
         val uris = arrayListOf(Uri.parse("content://media/1"), Uri.parse("content://media/2"))
-        val pages = Intent(Intent.ACTION_SEND_MULTIPLE).setType("image/*").putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-        assertEquals(ShareImportRequest(pageUris = uris.map { it.toString() }), ImportLaunch.requestFrom(pages))
+        assertEquals(ShareImportRequest(pageUris = uris.map { it.toString() }), ImportLaunch.requestFrom(share("image/*", uris)))
 
         val unsafe = arrayListOf(Uri.parse("content://media/1"), Uri.parse("file:///data/secret"))
-        assertEquals(null, ImportLaunch.requestFrom(Intent(Intent.ACTION_SEND_MULTIPLE).setType("image/*").putParcelableArrayListExtra(Intent.EXTRA_STREAM, unsafe)))
-        val documents = Intent(Intent.ACTION_SEND_MULTIPLE).setType("application/pdf").putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
-        assertEquals("only images are pages", null, ImportLaunch.requestFrom(documents))
+        assertEquals(null, ImportLaunch.requestFrom(share("image/*", unsafe)))
+        assertEquals("only images are pages", null, ImportLaunch.requestFrom(share("application/pdf", uris)))
     }
 
     @Test

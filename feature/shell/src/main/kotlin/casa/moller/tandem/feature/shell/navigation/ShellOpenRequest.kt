@@ -50,8 +50,12 @@ sealed interface ShellOpenRequest {
             AppOpenIntents.IMPORT -> Import
             AppOpenIntents.SCAN -> BarcodeScan
             AppOpenIntents.USE_UP -> UseUp
-            else -> idOf(destination, AppOpenIntents.RECIPE_PREFIX)?.let { Recipe(it) }
-                ?: idOf(destination, AppOpenIntents.COOK_PREFIX)?.let { Cook(it) }
+            else -> withId(destination)
+        }
+
+        private fun withId(destination: String): ShellOpenRequest? {
+            idOf(destination, AppOpenIntents.RECIPE_PREFIX)?.let { return Recipe(it) }
+            return idOf(destination, AppOpenIntents.COOK_PREFIX)?.let { Cook(it) }
         }
 
         private fun idOf(destination: String, prefix: String): Long? = destination

@@ -31,6 +31,7 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     WEEK_SHARED_MANY({ WeekShot(MealPlanSamples.state().copy(sharedWith = listOf("Anna", "Erik", "Lisa"))) }),
     WEEK_NEXT({ WeekShot(MealPlanSamples.state(start = MealPlanSamples.day(7), meals = listOf(MealPlanSamples.nextWednesday))) }),
     WEEK_DAY_SELECTED({ WeekShot(MealPlanSamples.state(selectedDay = MealPlanSamples.day(6))) }),
+
     // #21: "Vill laga" to drag from, and the tablet's recipe search.
     WEEK_WANT({ WeekShot(MealPlanSamples.state().copy(wantToCook = MealPlanSamples.wantToCook)) }),
     WEEK_RECIPE_SEARCH({

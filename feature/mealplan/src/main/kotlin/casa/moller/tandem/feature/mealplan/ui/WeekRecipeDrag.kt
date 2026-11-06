@@ -152,7 +152,11 @@ private fun DragRecipeRow(recipe: RecipeOverview, onAction: (WeekAction) -> Unit
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(spacing.sm),
         ) {
-            RecipeImage(imageUrl = recipe.imageUrl, contentDescription = null, modifier = Modifier.size(RecipeThumbnail).clip(MaterialTheme.shapes.medium))
+            RecipeImage(
+                imageUrl = recipe.imageUrl,
+                contentDescription = null,
+                modifier = Modifier.size(RecipeThumbnail).clip(MaterialTheme.shapes.medium),
+            )
             Text(
                 text = recipe.name,
                 style = MaterialTheme.typography.bodyMedium,

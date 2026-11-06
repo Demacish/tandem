@@ -123,12 +123,11 @@ internal object WeekSuggestions {
      * The keywords to offer, by use (then by name): the drink and "Passar med" keywords a dish can
      * carry say nothing about what to cook, so [excluded] (pairing keyword ids) and the roots stay out.
      */
-    private fun offered(candidates: List<RecipeOverview>, excluded: Set<Long>): List<List<Keyword>> =
-        candidates.flatMap { it.keywords }
-            .filterNot { it.id in excluded || DrinkKeywords.isDrinkRoot(it.name) || DrinkKeywords.isPairsWithRoot(it.name) }
-            .groupBy { it.id }
-            .values
-            .sortedWith(compareByDescending<List<Keyword>> { it.size }.thenBy { it.first().name.lowercase() })
+    private fun offered(candidates: List<RecipeOverview>, excluded: Set<Long>): List<List<Keyword>> = candidates.flatMap { it.keywords }
+        .filterNot { it.id in excluded || DrinkKeywords.isDrinkRoot(it.name) || DrinkKeywords.isPairsWithRoot(it.name) }
+        .groupBy { it.id }
+        .values
+        .sortedWith(compareByDescending<List<Keyword>> { it.size }.thenBy { it.first().name.lowercase() })
 
     /** The quick choices: the [MAX_KEYWORDS] most used, plus the [chosen] ones. */
     fun keywordChoices(candidates: List<RecipeOverview>, chosen: Set<Long>, excluded: Set<Long> = emptySet()): List<Keyword> {
@@ -138,8 +137,9 @@ internal object WeekSuggestions {
     }
 
     /** Every keyword that can be chosen, by name ("Fler nyckelord": the top [MAX_KEYWORDS] are only quick choices). */
-    fun allKeywords(candidates: List<RecipeOverview>, excluded: Set<Long> = emptySet()): List<Keyword> =
-        offered(candidates, excluded).map { it.first() }.sortedBy { it.name.lowercase() }
+    fun allKeywords(candidates: List<RecipeOverview>, excluded: Set<Long> = emptySet()): List<Keyword> = offered(candidates, excluded)
+        .map { it.first() }
+        .sortedBy { it.name.lowercase() }
 
     private fun RecipeOverview.isRecentlyCooked(now: Instant): Boolean = lastCooked?.let { now - it < RECENTLY_COOKED } == true
 

@@ -9,6 +9,8 @@ import casa.moller.tandem.feature.mealplan.Devices.PHONE_LANDSCAPE
 import casa.moller.tandem.feature.mealplan.Devices.PHONE_TALL
 import casa.moller.tandem.feature.mealplan.Devices.TABLET
 import casa.moller.tandem.feature.mealplan.Devices.TABLET_PORTRAIT
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +41,12 @@ class MealPlanAccessibilityTest {
     fun weekFontScale2() = check(MealPlanShot.WEEK, fontScale = 2f)
 
     @Test
-    fun weekWant() = check(MealPlanShot.WEEK_WANT)
+    fun weekWant() {
+        composeRule.setContent { MealPlanTestTheme { MealPlanShot.WEEK_WANT.content() } }
+        composeRule.waitForIdle()
+        println("DEBUGTREE " + composeRule.onRoot(useUnmergedTree = false).printToString(maxDepth = 12))
+        composeRule.assertAccessible()
+    }
 
     @Test
     fun weekWantFontScale2Dark() = check(MealPlanShot.WEEK_WANT, darkTheme = true, fontScale = 2f)

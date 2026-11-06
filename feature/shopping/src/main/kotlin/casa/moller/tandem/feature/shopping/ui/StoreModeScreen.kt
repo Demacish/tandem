@@ -103,7 +103,11 @@ fun StoreModeScreen(
         when {
             state.loading -> LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
 
-            state.sections.isEmpty() -> StoreModeDone(state = state, onAction = onAction, modifier = Modifier.fillMaxSize().padding(padding))
+            state.sections.isEmpty() -> StoreModeDone(
+                state = state,
+                onAction = onAction,
+                modifier = Modifier.fillMaxSize().padding(padding),
+            )
 
             else -> LazyColumn(
                 modifier = Modifier

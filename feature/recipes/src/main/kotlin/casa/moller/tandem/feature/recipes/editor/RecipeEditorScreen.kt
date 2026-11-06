@@ -281,8 +281,8 @@ internal fun LeaveEditorDialog(onSave: () -> Unit, onDiscard: () -> Unit, onKeep
         confirmButton = { TandemPrimaryButton(text = stringResource(R.string.recipe_editor_save), onClick = onSave) },
         dismissButton = {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs)) {
-                TandemTextButton(text = stringResource(R.string.recipe_editor_leave_discard), onClick = onDiscard)
-                TandemTextButton(text = stringResource(R.string.recipe_editor_leave_keep), onClick = onKeepEditing)
+                TandemTonalButton(text = stringResource(R.string.recipe_editor_leave_discard), onClick = onDiscard)
+                TandemTonalButton(text = stringResource(R.string.recipe_editor_leave_keep), onClick = onKeepEditing)
             }
         },
     )
@@ -296,7 +296,7 @@ internal fun DiscardEditDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         title = { Text(stringResource(R.string.recipe_editor_discard_title)) },
         text = { Text(stringResource(R.string.recipe_editor_discard_body)) },
         confirmButton = { TandemPrimaryButton(text = stringResource(R.string.recipe_editor_discard_confirm), onClick = onConfirm) },
-        dismissButton = { TandemTextButton(text = stringResource(R.string.recipe_editor_discard_cancel), onClick = onDismiss) },
+        dismissButton = { TandemTonalButton(text = stringResource(R.string.recipe_editor_discard_cancel), onClick = onDismiss) },
     )
 }
 
@@ -763,7 +763,8 @@ private fun IngredientEditor(
                     value = line.unit.orEmpty(),
                     units = state.units,
                     onChange = { onAction(RecipeEditorAction.SetIngredientUnit(stepIndex, position, it)) },
-                    // Every menu button names its line (TalkBack: no two alike).
+                    // The field and its menu button name the line, each in its own words (TalkBack: no two alike).
+                    fieldDescription = stringResource(R.string.recipe_editor_ingredient_unit_for, lineNumber, stepNumber),
                     pickDescription = stringResource(R.string.recipe_editor_ingredient_unit_pick_for, lineNumber, stepNumber),
                     modifier = fieldModifier,
                 )
@@ -854,16 +855,19 @@ private fun UnitField(
     value: String,
     units: List<String>,
     onChange: (String) -> Unit,
+    fieldDescription: String,
     pickDescription: String,
     modifier: Modifier = Modifier,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
+    // The value goes first: a description stands in for the field's text.
+    val description = listOf(value, fieldDescription).filter { it.isNotBlank() }.joinToString(", ")
     Box(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onChange,
             label = { Text(stringResource(R.string.recipe_editor_ingredient_unit)) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().semantics { contentDescription = description },
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Next),
             trailingIcon = if (units.isEmpty()) {

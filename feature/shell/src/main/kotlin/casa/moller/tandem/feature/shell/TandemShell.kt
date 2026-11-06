@@ -571,7 +571,10 @@ internal fun ShellScaffold(
                 features.RecipeImport(
                     key = key,
                     onOpenEditor = { draft, sourcePath ->
-                        navigation.navigate(RecipeEditorKey(importedDraft = draft, sourcePath = sourcePath), replace = { it is RecipeImportKey })
+                        navigation.navigate(
+                            RecipeEditorKey(importedDraft = draft, sourcePath = sourcePath),
+                            replace = { it is RecipeImportKey },
+                        )
                     },
                     onBack = { navigation.goBack() },
                     // Fas 4: "Fota recept" on top of the import; its text comes back as a new import (above).

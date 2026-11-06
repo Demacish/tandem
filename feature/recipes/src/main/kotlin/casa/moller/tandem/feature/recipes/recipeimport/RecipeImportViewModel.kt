@@ -130,7 +130,8 @@ class RecipeImportViewModel @AssistedInject constructor(
 
             RecipeImportAction.Import -> import(if (scanned) textOf(input.value) else sourceOf(input.value))
 
-            is RecipeImportAction.ImportFile -> import(RecipeImportSource.File(action.bytes, action.mimeType, action.fileName), sourcePath = action.sourcePath)
+            is RecipeImportAction.ImportFile ->
+                import(RecipeImportSource.File(action.bytes, action.mimeType, action.fileName), sourcePath = action.sourcePath)
 
             is RecipeImportAction.AddPage -> handle[KEY_PAGES] = ArrayList(pages.value + action.path)
 
@@ -169,7 +170,11 @@ class RecipeImportViewModel @AssistedInject constructor(
             RecipeImportAction.CancelPage -> progress.update { it.copy(pageReading = null, problem = null, failure = null) }
 
             RecipeImportAction.PageUnavailable -> progress.update {
-                if (it.pageReading == null) it else it.copy(pageReading = null, problem = R.string.recipe_import_page_unavailable, failure = null)
+                if (it.pageReading == null) {
+                    it
+                } else {
+                    it.copy(pageReading = null, problem = R.string.recipe_import_page_unavailable, failure = null)
+                }
             }
 
             RecipeImportAction.InterpretText -> interpretText()
@@ -292,7 +297,8 @@ class RecipeImportViewModel @AssistedInject constructor(
                             // #38: the server could not read the link: the app reads the page itself.
                             it.copy(working = false, readingText = false, pageReading = PageReading(source.url, caption = caption))
                         } else {
-                            it.copy(working = false, readingText = false, problem = problem ?: R.string.recipe_import_failed, failure = failure)
+                            val shown = problem ?: R.string.recipe_import_failed
+                            it.copy(working = false, readingText = false, problem = shown, failure = failure)
                         }
                     }
                 }

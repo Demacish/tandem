@@ -97,26 +97,25 @@ class RecipeEditorViewModel @AssistedInject constructor(
         units,
         recipes.observeKeywords(),
         if (recipeId == null) flowOf(RecipeEditStatus.NONE) else edits.observeEditStatus(recipeId),
-        combine(permissions.permissions.map { it.readOnly }, progress, amountTexts, foods, baseline) { readOnly, progress, amounts, foods, start ->
-            EditorExtras(readOnly, progress, amounts, foods, start)
-        },
-    ) { draft, units, keywords, status, (readOnly, progress, amounts, foods, start) ->
+        combine(permissions.permissions.map { it.readOnly }, progress, amountTexts, foods, baseline, ::EditorExtras),
+    ) { draft, units, keywords, status, extras ->
+        val progress = extras.progress
         val current = draft ?: RecipeDraft()
         val onRecipe = current.keywords.map { it.name.lowercase() }.toSet()
         RecipeEditorUiState(
             loaded = draft != null,
             isNew = recipeId == null,
             draft = current,
-            amountTexts = amounts,
+            amountTexts = extras.amounts,
             units = units,
             keywordSuggestions = keywords.filter { it.name.lowercase() !in onRecipe }.map { DraftKeyword(it.id, it.name) },
             keptEdit = status == RecipeEditStatus.CONFLICT && !progress.discarded,
             nameMissing = progress.nameMissing,
             unknownRecipe = progress.unknownRecipe,
             saving = progress.saving,
-            readOnly = readOnly,
-            foods = foods,
-            hasChanges = draft != null && !readOnly && SavedDraft.encode(current) != start,
+            readOnly = extras.readOnly,
+            foods = extras.foods,
+            hasChanges = draft != null && !extras.readOnly && SavedDraft.encode(current) != extras.baseline,
             sourcePath = sourcePath,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeEditorUiState(isNew = recipeId == null))

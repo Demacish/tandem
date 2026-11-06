@@ -592,7 +592,7 @@ private val PANEL_BESIDE_MIN_WIDTH = 640.dp
 private val PANEL_WIDTH = 320.dp
 
 /** Two columns on phones and in the 360 dp list pane beside a recipe, more on wide windows. */
-/** The 56 dp extended button and its 16 dp margin. */
+// The 56 dp extended button and its 16 dp margin.
 private val FAB_CLEARANCE = 72.dp
 private val GRID_MIN_CELL = 150.dp
 private val LIST_MIN_CELL = 340.dp

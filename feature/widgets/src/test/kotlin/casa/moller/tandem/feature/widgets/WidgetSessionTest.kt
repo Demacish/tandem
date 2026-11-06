@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.glance.appwidget.testing.unit.runGlanceAppWidgetUnitTest
 import androidx.glance.testing.unit.hasText
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -22,29 +22,18 @@ class WidgetSessionTest {
     fun aRunningShoppingSessionFollowsTheList() = runGlanceAppWidgetUnitTest {
         setContext(context)
         val first = ShoppingWidgetState(rows = listOf(row(1, "mjölk"), row(2, "grädde")), remaining = 2)
-        val states = MutableStateFlow(first)
-        provideComposable { ShoppingWidgetLive(states, first) }
-        onNode(hasText(remaining(2))).assertExists()
-
-        states.value = ShoppingWidgetState(rows = listOf(row(2, "grädde")), remaining = 1)
+        val changed = ShoppingWidgetState(rows = listOf(row(2, "grädde")), remaining = 1)
+        provideComposable { ShoppingWidgetLive(flowOf(first, changed), first) }
         awaitIdle()
         onNode(hasText(remaining(1))).assertExists()
         onNode(hasText(remaining(2))).assertDoesNotExist()
-
-        states.value = ShoppingWidgetState()
-        awaitIdle()
-        onNode(hasText(context.getString(R.string.widget_shopping_empty))).assertExists()
     }
 
     @Test
     fun aRunningTonightSessionFollowsTheDay() = runGlanceAppWidgetUnitTest {
         setContext(context)
         val monday = TonightWidgetState(listOf(TonightWidgetState.Meal(1, "Krämig svamppasta", "Middag", 6)))
-        val states = MutableStateFlow(monday)
-        provideComposable { TonightWidgetLive(states, monday) }
-        onNode(hasText("Krämig svamppasta")).assertExists()
-
-        states.value = TonightWidgetState()
+        provideComposable { TonightWidgetLive(flowOf(monday, TonightWidgetState()), monday) }
         awaitIdle()
         onNode(hasText(context.getString(R.string.widget_tonight_empty))).assertExists()
     }

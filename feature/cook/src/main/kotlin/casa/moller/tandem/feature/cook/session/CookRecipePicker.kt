@@ -134,7 +134,11 @@ internal fun CookRecipePickerContent(
             )
         }
         items(recipes, key = { "recipe-${it.id}" }) { recipe ->
-            PickerRecipe(recipe = recipe, missingOffline = offline && !recipe.availableOffline, onPick = { onAction(CookSessionAction.AddRecipe(recipe.id)) })
+            PickerRecipe(
+                recipe = recipe,
+                missingOffline = offline && !recipe.availableOffline,
+                onPick = { onAction(CookSessionAction.AddRecipe(recipe.id)) },
+            )
         }
     }
 }

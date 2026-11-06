@@ -22,7 +22,11 @@ internal object JpegPdf {
             val length = jpeg.u16(at + 2)
             if (marker in FRAME_MARKERS) {
                 if (at + FRAME_COMPONENTS >= jpeg.size) return null
-                return Frame(width = jpeg.u16(at + FRAME_WIDTH), height = jpeg.u16(at + FRAME_HEIGHT), components = jpeg.u8(at + FRAME_COMPONENTS))
+                return Frame(
+                    width = jpeg.u16(at + FRAME_WIDTH),
+                    height = jpeg.u16(at + FRAME_HEIGHT),
+                    components = jpeg.u8(at + FRAME_COMPONENTS),
+                )
             }
             at += 2 + length
         }

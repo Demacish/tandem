@@ -122,10 +122,12 @@ class SettingsViewModel internal constructor(
         combine(preferences.observeUserPreferences(), preferences.observeShoppingMinAutoSyncSeconds()) { prefs, floor ->
             ShoppingServerSettings.of(prefs, floor)
         }.distinctUntilChanged(),
-    ) { (current, demo, notificationsAllowed, readOnly), storage, status, clearing, shopping ->
+    ) { inputs, storage, status, clearing, shopping ->
+        val current = inputs.settings
+        val demo = inputs.demo
         SyncSettingsUiState(
             isDemo = demo,
-            readOnly = readOnly,
+            readOnly = inputs.readOnly,
             interval = current.syncInterval,
             downloadAll = current.downloadAllRecipes,
             storage = storage,
@@ -133,7 +135,7 @@ class SettingsViewModel internal constructor(
             clearingImageCache = clearing,
             shopping = shopping.takeUnless { demo },
             shoppingNotifications = current.shoppingChangeNotifications,
-            notificationsAllowed = notificationsAllowed,
+            notificationsAllowed = inputs.notificationsAllowed,
             pantryExpiryNotifications = current.pantryExpiryNotifications,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())

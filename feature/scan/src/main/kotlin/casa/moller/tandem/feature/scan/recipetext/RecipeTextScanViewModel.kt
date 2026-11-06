@@ -82,10 +82,8 @@ sealed interface RecipeTextScanEffect {
 }
 
 @HiltViewModel
-class RecipeTextScanViewModel @Inject constructor(
-    private val handle: SavedStateHandle,
-    permissions: SpacePermissionsRepository,
-) : ViewModel() {
+class RecipeTextScanViewModel @Inject constructor(private val handle: SavedStateHandle, permissions: SpacePermissionsRepository) :
+    ViewModel() {
     private data class Local(val reading: Boolean = false, val problem: RecipeTextProblem? = null)
 
     private val effectChannel = Channel<RecipeTextScanEffect>(Channel.BUFFERED)

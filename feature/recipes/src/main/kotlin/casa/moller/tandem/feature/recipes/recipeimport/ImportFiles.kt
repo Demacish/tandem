@@ -45,7 +45,7 @@ internal object ImportFiles {
             type == PDF -> readPdf(context, uri)
             type?.startsWith("image/") == true -> readImage(context, uri)
             else -> null
-        }?.let { file -> RecipeImportAction.ImportFile(file.bytes, file.mimeType, file.fileName, keep(context, file.bytes, extensionOf(file.mimeType))) }
+        }?.let { file -> keepingSource(context, file) }
     } catch (e: IOException) {
         null
     } catch (e: SecurityException) {
@@ -77,7 +77,9 @@ internal object ImportFiles {
         when (jpegs.size) {
             0 -> null
             1 -> RecipeImportAction.ImportFile(jpegs.single(), JPEG, "recept.jpg", keep(context, jpegs.single(), JPEG_EXTENSION))
-            else -> JpegPdf.join(jpegs)?.let { pdf -> RecipeImportAction.ImportFile(pdf, PDF, "recept.pdf", keep(context, pdf, PDF_EXTENSION)) }
+            else -> JpegPdf.join(jpegs)?.let { pdf ->
+                RecipeImportAction.ImportFile(pdf, PDF, "recept.pdf", keep(context, pdf, PDF_EXTENSION))
+            }
         }
     } catch (e: IOException) {
         null
@@ -133,7 +135,10 @@ internal object ImportFiles {
         return file.path
     }
 
-    private fun extensionOf(mimeType: String): String = if (mimeType == PDF) PDF_EXTENSION else JPEG_EXTENSION
+    private fun keepingSource(context: Context, file: RecipeImportAction.ImportFile): RecipeImportAction.ImportFile {
+        val extension = if (file.mimeType == PDF) PDF_EXTENSION else JPEG_EXTENSION
+        return RecipeImportAction.ImportFile(file.bytes, file.mimeType, file.fileName, keep(context, file.bytes, extension))
+    }
 
     private fun readPdf(context: Context, uri: Uri): RecipeImportAction.ImportFile? {
         val bytes = context.contentResolver.openInputStream(uri)?.use { stream ->

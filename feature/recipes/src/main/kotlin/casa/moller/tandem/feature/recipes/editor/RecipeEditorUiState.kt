@@ -56,7 +56,11 @@ data class RecipeEditorUiState(
         if (amount == 0.0) {
             ""
         } else {
-            BigDecimal(amount).setScale(AMOUNT_DECIMALS, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replace('.', decimalSeparator)
+            BigDecimal(amount)
+                .setScale(AMOUNT_DECIMALS, RoundingMode.HALF_UP)
+                .stripTrailingZeros()
+                .toPlainString()
+                .replace('.', decimalSeparator)
         }
     }
 

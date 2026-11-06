@@ -137,9 +137,12 @@ class ExpiryReminderViewModel @Inject internal constructor(
             permissionAsked: Boolean = false,
         ): ExpiryReminderOffer? = when {
             permissions.readOnly || permissions.isDemo || settings.pantryExpiryOfferDismissed -> null
+
             settings.pantryExpiryNotifications ->
                 if (notificationsAllowed) null else ExpiryReminderOffer(blocked = true, openSettings = permissionAsked)
+
             hasExpiryDates -> ExpiryReminderOffer(blocked = false)
+
             else -> null
         }
     }

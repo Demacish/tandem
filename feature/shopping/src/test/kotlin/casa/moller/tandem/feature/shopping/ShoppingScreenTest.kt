@@ -205,7 +205,7 @@ class ShoppingScreenTest {
             }
         }
         composeRule.onNodeWithTag(STORE_MODE_ORDER_TAG).assertIsDisplayed()
-        composeRule.onNodeWithText("Mejeri → Frukt & grönt → Skafferi", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Mejeri, Frukt & grönt, Skafferi", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Save order").performClick()
         composeRule.onNodeWithText("Not now").performClick()
         assertEquals(listOf<StoreModeAction>(StoreModeAction.SaveOrder, StoreModeAction.DismissOrder), storeActions)

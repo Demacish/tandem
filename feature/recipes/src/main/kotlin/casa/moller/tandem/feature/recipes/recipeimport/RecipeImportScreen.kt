@@ -4,8 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -57,6 +57,7 @@ import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.Check
@@ -310,7 +311,11 @@ private fun PagesCard(
                 enabled = state.canImportFile,
                 leadingIcon = TandemIcons.PhotoCamera,
             )
-            TandemTextButton(text = stringResource(R.string.recipe_import_pages_remove_last), onClick = { onAction(RecipeImportAction.RemoveLastPage) })
+            // Tonal: a text button's colour is too faint on the card.
+            TandemTonalButton(
+                text = stringResource(R.string.recipe_import_pages_remove_last),
+                onClick = { onAction(RecipeImportAction.RemoveLastPage) },
+            )
         },
     )
 }

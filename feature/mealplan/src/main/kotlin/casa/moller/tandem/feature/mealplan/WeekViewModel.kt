@@ -441,7 +441,7 @@ class WeekViewModel @AssistedInject internal constructor(
         }
     }
 
-    /** The stored recipes without the drinks: a drink is a recipe with `Dryck`, never a dinner (B20; the index covers `Vin` and the like). */
+    /** The stored recipes without the drinks: a drink is a recipe with `Dryck`, never a dinner (B20; the index covers `Vin` too). */
     private suspend fun mealCandidates(): List<RecipeOverview> {
         val drinkIds = drinks.observeDrinks().catch { emit(emptyList()) }.first().mapTo(HashSet()) { it.id }
         return recipes.observeRecipes(RecipeQuery.All).first().filterNot { it.id in drinkIds }

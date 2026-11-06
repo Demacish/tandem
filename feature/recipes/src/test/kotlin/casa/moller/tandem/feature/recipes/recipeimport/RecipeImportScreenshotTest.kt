@@ -56,7 +56,8 @@ class RecipeImportScreenshotTest {
 
     @Test
     @Config(qualifiers = TABLET_PORTRAIT)
-    fun resultOriginalTabletPortrait() = capture("tablet_portrait_import_result_original_dark", RecipeImportShot.RESULT_ORIGINAL, darkTheme = true)
+    fun resultOriginalTabletPortrait() =
+        capture("tablet_portrait_import_result_original_dark", RecipeImportShot.RESULT_ORIGINAL, darkTheme = true)
 
     @Test
     @Config(qualifiers = "sv-$PHONE")

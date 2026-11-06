@@ -497,7 +497,10 @@ private fun EditNotice(controls: RecipeEditControls?) {
             tone = TandemTone.Warning,
             actions = {
                 TandemTonalButton(text = stringResource(R.string.recipe_detail_edit_conflict_open), onClick = controls.onOpenKeptEdit)
-                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = { confirmingDiscard = true })
+                TandemTextButton(
+                    text = stringResource(R.string.recipe_detail_edit_conflict_discard),
+                    onClick = { confirmingDiscard = true },
+                )
             },
         )
 
@@ -507,7 +510,10 @@ private fun EditNotice(controls: RecipeEditControls?) {
             icon = TandemIcons.Info,
             tone = TandemTone.Warning,
             actions = {
-                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = { confirmingDiscard = true })
+                TandemTextButton(
+                    text = stringResource(R.string.recipe_detail_edit_conflict_discard),
+                    onClick = { confirmingDiscard = true },
+                )
             },
         )
 

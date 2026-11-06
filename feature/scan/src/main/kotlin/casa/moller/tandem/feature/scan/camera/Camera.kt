@@ -149,11 +149,7 @@ fun CameraReadyEffect(controller: LifecycleCameraController, onReady: (Lifecycle
  * [LifecycleCameraController.takePicture] that reports a camera gone since [CameraReadyEffect]
  * through [onUnavailable]: it throws instead of calling [callback], and the screen would stay "reading".
  */
-fun LifecycleCameraController.takePictureOr(
-    context: Context,
-    callback: ImageCapture.OnImageCapturedCallback,
-    onUnavailable: () -> Unit,
-) {
+fun LifecycleCameraController.takePictureOr(context: Context, callback: ImageCapture.OnImageCapturedCallback, onUnavailable: () -> Unit) {
     try {
         takePicture(context.mainExecutor, callback)
     } catch (e: IllegalStateException) {

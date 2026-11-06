@@ -46,7 +46,8 @@ data class ShoppingWidgetState(
             locale: Locale = Locale.getDefault(),
             preferences: UserPreferences = UserPreferences.Default,
         ): ShoppingWidgetState {
-            val format = ShoppingLineFormat(locale.toNumberStyle(FractionStyle.TYPOGRAPHIC), preferences.useFractions, preferences.ingredientDecimals)
+            val style = locale.toNumberStyle(FractionStyle.TYPOGRAPHIC)
+            val format = ShoppingLineFormat(style, preferences.useFractions, preferences.ingredientDecimals)
             val open = entries.filter { !it.checked && !it.isDelayed(now) }.sortedBy { it.order }
             return ShoppingWidgetState(
                 rows = open.take(MAX_ROWS).map { Row(it.id, format.line(it)) },

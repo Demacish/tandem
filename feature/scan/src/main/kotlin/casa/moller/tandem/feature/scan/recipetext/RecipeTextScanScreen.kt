@@ -88,7 +88,8 @@ fun RecipeTextScanScreen(
             if (width > height || width >= WIDE) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     CameraArea(camera, onCamera, cameraPreview, Modifier.weight(1f).fillMaxHeight())
-                    Panel(state, camera, onAction, onCamera, onTakePhoto, compact, Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight())
+                    val panel = Modifier.width(minOf(PANEL_WIDTH, width / 2)).fillMaxHeight()
+                    Panel(state, camera, onAction, onCamera, onTakePhoto, compact, panel)
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {

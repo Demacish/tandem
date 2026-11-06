@@ -50,8 +50,12 @@ class RecipeEditorViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val pasta = SampleRecipes.MushroomPasta.id
 
-    private fun editor(recipeId: Long?, handle: SavedStateHandle = SavedStateHandle(), importedDraft: String? = null, sourcePath: String? = null) =
-        RecipeEditorViewModel(recipeId, importedDraft, sourcePath, handle, edits, recipes, permissions)
+    private fun editor(
+        recipeId: Long?,
+        handle: SavedStateHandle = SavedStateHandle(),
+        importedDraft: String? = null,
+        sourcePath: String? = null,
+    ) = RecipeEditorViewModel(recipeId, importedDraft, sourcePath, handle, edits, recipes, permissions)
 
     private fun TestScope.collect(flow: Flow<*>) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect {} }
@@ -139,7 +143,8 @@ class RecipeEditorViewModelTest {
         assertEquals(before, viewModel.uiState.value.draft)
 
         viewModel.onAction(RecipeEditorAction.RemoveStep(1))
-        assertEquals("an empty step has nothing to undo", RecipeEditorEffect.Announce(R.string.recipe_editor_step_removed, 2), effects.last())
+        val announced = RecipeEditorEffect.Announce(R.string.recipe_editor_step_removed, 2)
+        assertEquals("an empty step has nothing to undo", announced, effects.last())
     }
 
     @Test

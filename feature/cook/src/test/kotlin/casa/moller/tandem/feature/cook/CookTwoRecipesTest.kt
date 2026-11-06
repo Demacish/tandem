@@ -1,7 +1,11 @@
 package casa.moller.tandem.feature.cook
 
 import androidx.compose.runtime.remember
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsFocused
@@ -14,7 +18,6 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
@@ -58,12 +61,15 @@ class CookTwoRecipesTest {
     private val pasta = SampleRecipes.MushroomPasta
     private val buns = SampleRecipes.CinnamonBuns
 
+    private lateinit var inputMode: InputModeManager
+
     private fun show(
         fakes: CookFakes = CookFakes(),
         sessionKey: CookKey = CookKey(buns.id, alongsideRecipeId = pasta.id),
         onClose: () -> Unit = {},
     ): CookFakes {
         composeRule.setContent {
+            inputMode = LocalInputModeManager.current
             TestFrame(clock = fakes.clock) { CookSessionWithFakes(fakes = fakes, sessionKey = sessionKey, onClose = onClose) }
         }
         composeRule.waitForIdle()
@@ -91,9 +97,10 @@ class CookTwoRecipesTest {
         composeRule.onNodeWithTag(cookTabTag(pasta.id)).assert(hasContentDescription("Krämig svamppasta, Step 1 of 3"))
     }
 
-    /** A key press puts the window in keyboard mode, where a tab can take the focus. */
+    /** Keyboard mode, where a tab can take the focus (a test's key events do not switch to it). */
+    @OptIn(ExperimentalComposeUiApi::class)
     private fun focusTab(recipeId: Long) {
-        composeRule.onRoot().performKeyInput { pressKey(Key.Tab) }
+        composeRule.runOnUiThread { inputMode.requestInputMode(InputMode.Keyboard) }
         composeRule.onNodeWithTag(cookTabTag(recipeId)).requestFocus()
         composeRule.waitForIdle()
     }
@@ -102,7 +109,7 @@ class CookTwoRecipesTest {
     fun aTabSwitchKeepsTheTabRowSoFocusStaysOnTheTab() {
         show()
         focusTab(pasta.id)
-        composeRule.onNodeWithTag(cookTabTag(pasta.id)).performClick()
+        composeRule.onNodeWithTag(cookTabTag(pasta.id)).performKeyInput { pressKey(Key.Enter) }
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(cookTabTag(pasta.id)).assertIsSelected().assertIsFocused()
     }
@@ -156,7 +163,8 @@ class CookTwoRecipesTest {
     @Test
     fun aTabThatCannotBeShownSaysSo() {
         val tab = CookTab(recipeId = 9, name = "Kanelbullar", page = 0, stepCount = 0, selected = true, failed = true)
-        composeRule.setContent { TestFrame { CookRecipeTabs(CookSessionUi(tabs = listOf(tab, tab.copy(recipeId = 8, selected = false))), onAction = {}) } }
+        val tabs = listOf(tab, tab.copy(recipeId = 8, selected = false))
+        composeRule.setContent { TestFrame { CookRecipeTabs(CookSessionUi(tabs = tabs), onAction = {}) } }
         composeRule.onNodeWithTag(cookTabTag(9)).assert(hasContentDescription("Kanelbullar, Cannot be shown"))
     }
 

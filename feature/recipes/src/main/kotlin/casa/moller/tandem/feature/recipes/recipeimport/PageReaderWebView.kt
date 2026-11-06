@@ -42,7 +42,13 @@ import org.json.JSONTokener
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-internal fun PageReaderWebView(url: String, readRequest: Int, onPage: (html: String, text: String) -> Unit, onFailed: () -> Unit, modifier: Modifier = Modifier) {
+internal fun PageReaderWebView(
+    url: String,
+    readRequest: Int,
+    onPage: (html: String, text: String) -> Unit,
+    onFailed: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val currentOnPage by rememberUpdatedState(onPage)
     val currentOnFailed by rememberUpdatedState(onFailed)
     var webView by remember { mutableStateOf<WebView?>(null) }

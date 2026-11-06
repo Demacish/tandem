@@ -166,7 +166,11 @@ internal fun ShellTimerHud(
                 // The name may be cut short, the time never (fix-ui, 0.2.0 review): it is what the
                 // bar is for. Both are drawn only; the button's description says them.
                 Text(
-                    text = if (showRecipe) stringResource(R.string.timer_hud_with_recipe, primary.recipeName.orEmpty(), primary.label) else primary.label,
+                    text = if (showRecipe) {
+                        stringResource(R.string.timer_hud_with_recipe, primary.recipeName.orEmpty(), primary.label)
+                    } else {
+                        primary.label
+                    },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
