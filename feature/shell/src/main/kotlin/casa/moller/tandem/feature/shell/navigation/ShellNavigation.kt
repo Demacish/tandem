@@ -146,6 +146,10 @@ class ShellNavigationState(
     var cookPageRequest: CookPageRequest? by mutableStateOf(null)
         private set
 
+    /** The shortcut "Ny vara" ([ShellOpenRequest.AddItem]): the Handla tab opens its add panel, then [onAddItemHandled]. */
+    var addItemRequested: Boolean by mutableStateOf(false)
+        private set
+
     /**
      * Opens what a tapped timer notification or the lock-screen alarm points at (Phase 1b
      * integration): cook mode for the timer's recipe at its step ([openCook]), or the timer list
@@ -178,10 +182,20 @@ class ShellNavigationState(
     /**
      * Fas 3 (widgets lane): a launcher shortcut, a widget or the quick settings tile opened the
      * app at [request] ([ShellOpenRequest]): a tab, a recipe, the import or the barcode scanner.
+     *
+     * @param cookKey what "Laga" opens for a recipe ([ShellOpenRequest.Cook]); the shell passes
+     *   feature:cook's `cookKeyAlongside`, so a recipe with running timers comes along.
      */
-    fun open(request: ShellOpenRequest) {
+    fun open(request: ShellOpenRequest, cookKey: (Long) -> CookKey = { CookKey(it) }) {
         when (request) {
             is ShellOpenRequest.Tab -> selectTab(request.tab)
+
+            is ShellOpenRequest.Cook -> startCook(request.recipeId, cookKey)
+
+            ShellOpenRequest.AddItem -> {
+                selectTab(ShellTab.SHOPPING)
+                addItemRequested = true
+            }
 
             is ShellOpenRequest.Recipe -> {
                 selectTab(ShellTab.RECIPES)
@@ -204,6 +218,22 @@ class ShellNavigationState(
                 navigate(MakeNowKey(useUpFirst = true), replace = { it is MakeNowKey })
             }
         }
+    }
+
+    /** Cook mode for [recipeId]: an open one is shown as it is (no second session), else [cookKey]'s on the Today tab. */
+    private fun startCook(recipeId: Long, cookKey: (Long) -> CookKey) {
+        val isRecipe: (NavKey) -> Boolean = { it is CookKey && recipeId in cookRecipesOf(it) }
+        if (stack(currentTab).any(isRecipe) || stack(ShellTab.TODAY).any(isRecipe)) {
+            openCook(recipeId, step = null)
+        } else {
+            selectTab(ShellTab.TODAY)
+            navigate(cookKey(recipeId))
+        }
+    }
+
+    /** The add panel was opened for [addItemRequested]. */
+    fun onAddItemHandled() {
+        addItemRequested = false
     }
 
     /**

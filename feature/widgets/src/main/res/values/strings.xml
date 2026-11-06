@@ -13,11 +13,13 @@
     <string name="widget_shopping_check">Check off %1$s</string>
     <string name="widget_shopping_more">%1$d more in the app</string>
     <string name="widget_tonight_label">Tandem: today</string>
-    <string name="widget_tonight_description">Today’s planned meals. Tap a meal to open the recipe.</string>
+    <string name="widget_tonight_description">Today\'s planned meals. Tap a meal to start cooking it.</string>
     <string name="widget_tonight_title">Today</string>
     <string name="widget_tonight_empty">Nothing planned today. Tap to plan.</string>
     <string name="widget_sign_in">Open Tandem and log in.</string>
     <!-- The launcher shortcuts (AppShortcuts). -->
+    <string name="shortcut_add_item">New item</string>
+    <string name="shortcut_add_item_long">Add an item to the shopping list</string>
     <string name="shortcut_shopping">Shopping list</string>
     <string name="shortcut_shopping_long">Open the shopping list</string>
     <string name="shortcut_week">Week</string>

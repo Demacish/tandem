@@ -27,6 +27,11 @@ class OpenLaunchTest {
         assertEquals(ShellOpenRequest.Import, OpenLaunch.requestFrom(open(AppOpenIntents.IMPORT)))
         assertEquals(ShellOpenRequest.BarcodeScan, OpenLaunch.requestFrom(open(AppOpenIntents.SCAN)))
         assertEquals(ShellOpenRequest.Recipe(42), OpenLaunch.requestFrom(open(AppOpenIntents.recipe(42))))
+        // Plan 8.7: "Ny vara" and the "I dag" widget's cook mode.
+        assertEquals(ShellOpenRequest.AddItem, OpenLaunch.requestFrom(open(AppOpenIntents.ADD_ITEM)))
+        assertEquals(ShellOpenRequest.Cook(42), OpenLaunch.requestFrom(open(AppOpenIntents.cook(42))))
+        assertNull("an unusable id just opens the app", OpenLaunch.requestFrom(open("${AppOpenIntents.COOK_PREFIX}x")))
+        assertNull("no recipe 0", OpenLaunch.requestFrom(open(AppOpenIntents.cook(0))))
         // The data alone (a PendingIntent whose extras were dropped) is enough.
         val dataOnly = Intent(AppOpenIntents.ACTION).setData("tandem-open://week".toUri())
         assertEquals(ShellOpenRequest.Tab(ShellTab.WEEK), OpenLaunch.requestFrom(dataOnly))
@@ -51,6 +56,8 @@ class OpenLaunchTest {
             ShellOpenRequest.Import,
             ShellOpenRequest.BarcodeScan,
             ShellOpenRequest.UseUp,
+            ShellOpenRequest.AddItem,
+            ShellOpenRequest.Cook(-3),
         )
         for (request in requests) assertEquals(request, ShellOpenRequest.of(ShellOpenRequest.nameOf(request)))
     }

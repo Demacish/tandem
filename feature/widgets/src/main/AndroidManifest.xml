@@ -29,6 +29,11 @@
                 android:resource="@xml/widget_tonight_info" />
         </receiver>
 
+        <!-- The "I dag" widget turns to the new day: only the app's own inexact alarm sends this. -->
+        <receiver
+            android:name=".MidnightRedrawReceiver"
+            android:exported="false" />
+
         <!-- The quick settings tile "Handla": opens the shopping list; the subtitle says how many entries are open. -->
         <service
             android:name=".ShoppingTileService"

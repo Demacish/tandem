@@ -292,6 +292,8 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenHistory: () -> Unit,
         onOpenRecipe: (Long) -> Unit,
         onOpenUnpack: () -> Unit,
+        openAddRequested: Boolean,
+        onOpenAddHandled: () -> Unit,
     ) {
         Placeholder(ShellTab.SHOPPING)
     }

@@ -17,6 +17,16 @@ sealed interface ShellOpenRequest {
         }
     }
 
+    /** Cook mode for a recipe (the "I dag" widget, plan 8.7), through the shell's "Laga" so running timers come along. */
+    data class Cook(val recipeId: Long) : ShellOpenRequest {
+        init {
+            require(recipeId != 0L) { "a recipe id" }
+        }
+    }
+
+    /** Handla with the add panel open (the shortcut "Ny vara", plan 8.7). */
+    data object AddItem : ShellOpenRequest
+
     data object Import : ShellOpenRequest
 
     data object BarcodeScan : ShellOpenRequest
@@ -32,6 +42,7 @@ sealed interface ShellOpenRequest {
         fun of(destination: String?): ShellOpenRequest? = when (destination) {
             null -> null
             AppOpenIntents.SHOPPING -> Tab(ShellTab.SHOPPING)
+            AppOpenIntents.ADD_ITEM -> AddItem
             AppOpenIntents.WEEK -> Tab(ShellTab.WEEK)
             AppOpenIntents.RECIPES -> Tab(ShellTab.RECIPES)
             TODAY -> Tab(ShellTab.TODAY)
@@ -39,20 +50,22 @@ sealed interface ShellOpenRequest {
             AppOpenIntents.IMPORT -> Import
             AppOpenIntents.SCAN -> BarcodeScan
             AppOpenIntents.USE_UP -> UseUp
-            else -> recipeOf(destination)
+            else -> idOf(destination, AppOpenIntents.RECIPE_PREFIX)?.let { Recipe(it) }
+                ?: idOf(destination, AppOpenIntents.COOK_PREFIX)?.let { Cook(it) }
         }
 
-        private fun recipeOf(destination: String): Recipe? = destination
-            .takeIf { it.startsWith(AppOpenIntents.RECIPE_PREFIX) }
-            ?.removePrefix(AppOpenIntents.RECIPE_PREFIX)
+        private fun idOf(destination: String, prefix: String): Long? = destination
+            .takeIf { it.startsWith(prefix) }
+            ?.removePrefix(prefix)
             ?.toLongOrNull()
             ?.takeIf { it != 0L }
-            ?.let { Recipe(it) }
 
         /** The destination name of [request] (what a shortcut or widget would send). */
         fun nameOf(request: ShellOpenRequest): String = when (request) {
             is Tab -> tabName(request.tab)
             is Recipe -> AppOpenIntents.recipe(request.recipeId)
+            is Cook -> AppOpenIntents.cook(request.recipeId)
+            AddItem -> AppOpenIntents.ADD_ITEM
             Import -> AppOpenIntents.IMPORT
             BarcodeScan -> AppOpenIntents.SCAN
             UseUp -> AppOpenIntents.USE_UP

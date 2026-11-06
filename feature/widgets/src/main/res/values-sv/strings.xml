@@ -12,11 +12,13 @@
     <string name="widget_shopping_check">Bocka av %1$s</string>
     <string name="widget_shopping_more">%1$d till i appen</string>
     <string name="widget_tonight_label">Tandem: i dag</string>
-    <string name="widget_tonight_description">Dagens planerade måltider. Tryck på en måltid för att öppna receptet.</string>
+    <string name="widget_tonight_description">Dagens planerade måltider. Tryck på en måltid för att börja laga den.</string>
     <string name="widget_tonight_title">I dag</string>
     <string name="widget_tonight_empty">Inget planerat i dag. Tryck för att planera.</string>
     <string name="widget_sign_in">Öppna Tandem och logga in.</string>
     <!-- The launcher shortcuts (AppShortcuts). -->
+    <string name="shortcut_add_item">Ny vara</string>
+    <string name="shortcut_add_item_long">Lägg till en vara på inköpslistan</string>
     <string name="shortcut_shopping">Handla</string>
     <string name="shortcut_shopping_long">Öppna inköpslistan</string>
     <string name="shortcut_week">Veckan</string>

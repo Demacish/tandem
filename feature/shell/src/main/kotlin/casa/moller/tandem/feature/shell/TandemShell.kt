@@ -215,7 +215,7 @@ fun TandemShell(
     val currentOnOpenRequestHandled by rememberUpdatedState(onOpenRequestHandled)
     LaunchedEffect(navigation, openRequest, sourceKnown) {
         if (openRequest != null && sourceKnown) {
-            navigation.open(openRequest)
+            navigation.open(openRequest) { cookKeyAlongside(it, null, state.timers, state.timerSource) }
             currentOnOpenRequestHandled()
         }
     }
@@ -388,6 +388,9 @@ internal fun ShellScaffold(
                 onOpenRecipe = { navigation.navigate(RecipeDetailKey(it)) },
                 // Fas S (hemma-ui lane, #46): "Packa upp" after shopping.
                 onOpenUnpack = { navigation.navigate(UnpackKey) },
+                // The shortcut "Ny vara" opens the tab's add panel.
+                openAddRequested = listId == null && navigation.addItemRequested,
+                onOpenAddHandled = { navigation.onAddItemHandled() },
             )
         }
         // Fas 4 (two recipes at once, plan 8.1): "Laga" while another recipe's timers run opens

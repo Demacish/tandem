@@ -21,6 +21,11 @@ import kotlinx.coroutines.launch
  * tile to read its count again. Started once by the
  * application, after Hilt. A redraw of a widget nobody placed is a no-op; a failure (the
  * launcher is gone) is ignored: the next change tries again.
+ *
+ * "I dag" is also redrawn at every process start (its first value is NOT dropped): "today" only
+ * moves while something collects, so the first value of a new process can be a new day. A phone
+ * where no process starts gets [MidnightRedraw] just after midnight. An update lands in a running
+ * session through the widgets' own collection; here it only starts a session when none runs.
  */
 @Singleton
 class WidgetUpdater @Inject constructor(
@@ -34,7 +39,7 @@ class WidgetUpdater @Inject constructor(
     fun start() {
         if (started) return
         started = true
-        val data = WidgetData(entryPointProvider.get())
+        val data = WidgetData(entryPointProvider.get(), context.resources.configuration.locales[0])
         scope.launch {
             data.shopping.drop(1).debounce(DEBOUNCE_MILLIS).collect {
                 runCatching { ShoppingListWidget().updateAll(context) }
@@ -43,8 +48,13 @@ class WidgetUpdater @Inject constructor(
             }
         }
         scope.launch {
-            data.tonight.drop(1).debounce(DEBOUNCE_MILLIS).collect { runCatching { TonightWidget().updateAll(context) } }
+            data.tonight.debounce(DEBOUNCE_MILLIS).collect { runCatching { TonightWidget().updateAll(context) } }
         }
+        // Plan 8.7: the shortcuts follow the cook log, and go when the account goes.
+        scope.launch {
+            data.recentRecipes.debounce(DEBOUNCE_MILLIS).collect { AppShortcuts.install(context, it) }
+        }
+        scope.launch { if (MidnightRedraw.wanted(context)) MidnightRedraw.schedule(context) }
     }
 
     private companion object {

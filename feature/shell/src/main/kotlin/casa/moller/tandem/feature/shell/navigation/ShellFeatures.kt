@@ -161,6 +161,7 @@ internal interface ShellFeatures {
     /**
      * The shopping list: the Handla tab root (`listId`/`supermarketId` null) or a `ShoppingListKey`.
      * Fas S (hemma-ui lane): [onOpenUnpack] is "Packa upp" (`UnpackKey`) after shopping (#46).
+     * [openAddRequested] opens the add panel (the shortcut "Ny vara"), then [onOpenAddHandled] runs.
      */
     @Composable
     fun Shopping(
@@ -171,6 +172,8 @@ internal interface ShellFeatures {
         onOpenHistory: () -> Unit,
         onOpenRecipe: (Long) -> Unit,
         onOpenUnpack: () -> Unit,
+        openAddRequested: Boolean,
+        onOpenAddHandled: () -> Unit,
     )
 
     /** Store mode (full screen on every width). */
@@ -409,6 +412,8 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenHistory: () -> Unit,
         onOpenRecipe: (Long) -> Unit,
         onOpenUnpack: () -> Unit,
+        openAddRequested: Boolean,
+        onOpenAddHandled: () -> Unit,
     ) {
         ShoppingRoute(
             onOpenStoreMode = onOpenStoreMode,
@@ -419,6 +424,8 @@ internal object RouteShellFeatures : ShellFeatures {
             supermarketId = supermarketId,
             // Fas S (hemma-ui lane, #46).
             onOpenUnpack = onOpenUnpack,
+            openAddRequested = openAddRequested,
+            onOpenAddHandled = onOpenAddHandled,
         )
     }
 

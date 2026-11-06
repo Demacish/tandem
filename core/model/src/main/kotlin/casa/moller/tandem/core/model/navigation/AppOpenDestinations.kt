@@ -16,6 +16,9 @@ object AppOpenDestinations {
     /** The Handla tab (the shopping list). */
     const val SHOPPING: String = "shopping"
 
+    /** Handla with the add panel open (the shortcut "Ny vara"). */
+    const val ADD_ITEM: String = "add-item"
+
     /** The Veckan tab (the meal plan). */
     const val WEEK: String = "week"
 
@@ -33,4 +36,7 @@ object AppOpenDestinations {
 
     /** A recipe: [RECIPE_PREFIX] followed by its id. */
     const val RECIPE_PREFIX: String = "recipe:"
+
+    /** Cook mode for a recipe: [COOK_PREFIX] followed by its id. */
+    const val COOK_PREFIX: String = "cook:"
 }

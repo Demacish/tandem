@@ -211,6 +211,14 @@ jobs:
           ' "$mapping" || { echo "::error::AllauthService.login(AllauthLoginRequestDto) was removed by R8"; failed=1; }
           grep -q '^casa\.moller\.tandem\.core\.network\.dto\.AllauthLoginRequestDto -> ' "$mapping" \
             || { echo "::error::AllauthLoginRequestDto was removed by R8"; failed=1; }
+          # Glance creates the widget's click callback by reflection: without its constructor a tap
+          # on a row does nothing, silently (feature/widgets/consumer-rules.pro).
+          awk '
+            /^casa\.moller\.tandem\.feature\.widgets\.CheckEntryAction -> / { inside = 1; next }
+            /^[^ #]/ { inside = 0 }
+            inside && /void <init>\(\)/ { found = 1 }
+            END { exit found ? 0 : 1 }
+          ' "$mapping" || { echo "::error::CheckEntryAction's constructor was removed by R8"; failed=1; }
           # Fas S (integration): every class of the DTO package survives R8 (a DTO used only as a
           # suspend function's return type was removed, and Retrofit failed before sending).
           dtos=0

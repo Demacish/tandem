@@ -7,6 +7,7 @@ import casa.moller.tandem.core.model.shopping.ShoppingFood
 import casa.moller.tandem.core.model.shopping.ShoppingUnit
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.testing.data.SampleShopping
+import java.util.Locale
 import kotlin.time.Duration.Companion.hours
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -22,12 +23,30 @@ class WidgetStatesTest {
             ShoppingEntry(6, ShoppingFood(50, "kaffe"), ShoppingUnit(7, "paket"), 1.0, order = -1, delayUntil = now + 2.hours),
             ShoppingEntry(7, ShoppingFood(51, "smör"), null, 0.5, order = 9),
         )
-        val state = ShoppingWidgetState.of(entries, now)
+        val state = ShoppingWidgetState.of(entries, now, locale = SWEDISH)
         assertEquals(5, state.remaining)
         assertEquals(listOf("2 l mjölk", "3 dl grädde", "1 kg potatis", "1 tandkräm", "0,5 smör"), state.rows.map { it.text })
         assertEquals(listOf(1L, 2L, 3L, 4L, 7L), state.rows.map { it.id })
         assertTrue(state.signedIn)
         assertEquals(ShoppingWidgetState(signedIn = false), ShoppingWidgetState.of(emptyList(), now, signedIn = false))
+    }
+
+    @Test
+    fun amountsFollowTheLanguageAndAreRoundedLikeTheList() {
+        val entries = listOf(
+            ShoppingEntry(1, ShoppingFood(1, "smör"), null, 0.5, order = 1),
+            ShoppingEntry(2, ShoppingFood(2, "mjöl"), ShoppingUnit(1, "dl"), 0.1 + 0.2, order = 2),
+        )
+        val english = ShoppingWidgetState.of(entries, SampleShopping.now, locale = Locale.ENGLISH)
+        assertEquals(listOf("0.5 smör", "0.3 dl mjöl"), english.rows.map { it.text })
+        val swedish = ShoppingWidgetState.of(entries, SampleShopping.now, locale = SWEDISH)
+        assertEquals(listOf("0,5 smör", "0,3 dl mjöl"), swedish.rows.map { it.text })
+    }
+
+    @Test
+    fun aGuestsRowsAreReadOnly() {
+        assertTrue(ShoppingWidgetState.of(SampleShopping.entries, SampleShopping.now, readOnly = true).readOnly)
+        assertFalse(ShoppingWidgetState.of(SampleShopping.entries, SampleShopping.now).readOnly)
     }
 
     @Test
@@ -52,5 +71,9 @@ class WidgetStatesTest {
         assertEquals(listOf("Lunch", "Middag"), state.meals.map { it.mealType })
         assertEquals(listOf(null, SampleRecipes.MushroomPasta.id), state.meals.map { it.recipeId })
         assertFalse(TonightWidgetState.of(UpcomingMeals(today = SampleRecipes.Today), signedIn = false).signedIn)
+    }
+
+    private companion object {
+        val SWEDISH: Locale = Locale.forLanguageTag("sv-SE")
     }
 }

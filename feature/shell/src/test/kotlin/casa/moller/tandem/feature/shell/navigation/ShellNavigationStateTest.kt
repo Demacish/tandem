@@ -199,6 +199,26 @@ class ShellNavigationStateTest {
     }
 
     @Test
+    fun theShortcutNewItemOpensHandlaWithItsAddPanel() {
+        navigation.open(ShellOpenRequest.AddItem)
+        assertEquals(listOf<NavKey>(TodayKey, ShoppingKey), navigation.backStack)
+        assertTrue(navigation.addItemRequested)
+        navigation.onAddItemHandled()
+        assertFalse(navigation.addItemRequested)
+    }
+
+    @Test
+    fun theWidgetsCookRequestGoesThroughLagaAndNeverOpensASecondSession() {
+        // cookKeyAlongside's answer when another recipe's timers run.
+        val alongside = CookKey(6, alongsideRecipeId = 9)
+        navigation.selectTab(ShellTab.WEEK)
+        navigation.open(ShellOpenRequest.Cook(6)) { alongside }
+        assertEquals(listOf<NavKey>(TodayKey, alongside), navigation.backStack)
+        navigation.open(ShellOpenRequest.Cook(9)) { CookKey(it) }
+        assertEquals("the recipe is already open as a tab", listOf<NavKey>(TodayKey, alongside), navigation.backStack)
+    }
+
+    @Test
     fun aTimerOfTheOpenCookModeKeepsItAsItIs() {
         navigation.navigate(CookKey(6, servings = 3.0, startStep = 0))
         navigation.openTimer(TimerOpenRequest(recipeId = 6, stepIndex = 1))

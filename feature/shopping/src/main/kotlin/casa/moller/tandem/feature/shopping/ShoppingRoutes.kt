@@ -48,6 +48,7 @@ import java.util.Locale
  * @param onOpenRecipe the recipe an entry came from (edit sheet).
  * @param onOpenUnpack Fas S (hemma-ui lane, #46): "Packa upp" (feature:pantry's UnpackKey, opened by
  *   the shell) when something was checked off today; null shows no prompt.
+ * @param openAddRequested the add panel should open (the shortcut "Ny vara"); [onOpenAddHandled] then runs.
  */
 @Composable
 fun ShoppingRoute(
@@ -59,12 +60,21 @@ fun ShoppingRoute(
     listId: Long? = null,
     supermarketId: Long? = null,
     onOpenUnpack: (() -> Unit)? = null,
+    openAddRequested: Boolean = false,
+    onOpenAddHandled: () -> Unit = {},
 ) {
     val key = ShoppingListKey(listId, supermarketId)
     val viewModel = hiltViewModel<ShoppingViewModel, ShoppingViewModel.Factory>(
         key = "shopping-$listId-$supermarketId",
         creationCallback = { factory -> factory.create(key) },
     )
+    val currentOnOpenAddHandled by rememberUpdatedState(onOpenAddHandled)
+    LaunchedEffect(viewModel, openAddRequested) {
+        if (openAddRequested) {
+            viewModel.onAction(ShoppingAction.OpenAdd)
+            currentOnOpenAddHandled()
+        }
+    }
     ShoppingRoute(
         viewModel = viewModel,
         onOpenStoreMode = onOpenStoreMode,

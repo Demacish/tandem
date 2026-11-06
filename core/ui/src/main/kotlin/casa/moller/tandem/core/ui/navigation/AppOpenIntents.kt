@@ -23,6 +23,9 @@ object AppOpenIntents {
     /** The Handla tab (the shopping list). */
     const val SHOPPING: String = AppOpenDestinations.SHOPPING
 
+    /** Handla with the add panel open (the shortcut "Ny vara"). */
+    const val ADD_ITEM: String = AppOpenDestinations.ADD_ITEM
+
     /** The Veckan tab (the meal plan). */
     const val WEEK: String = AppOpenDestinations.WEEK
 
@@ -41,9 +44,14 @@ object AppOpenIntents {
     /** A recipe: [RECIPE_PREFIX] followed by its id. */
     const val RECIPE_PREFIX: String = AppOpenDestinations.RECIPE_PREFIX
 
+    /** Cook mode for a recipe: [COOK_PREFIX] followed by its id (the "I dag" widget, plan 8.7). */
+    const val COOK_PREFIX: String = AppOpenDestinations.COOK_PREFIX
+
     private const val SCHEME = AppOpenDestinations.SCHEME
 
     fun recipe(id: Long): String = "$RECIPE_PREFIX$id"
+
+    fun cook(id: Long): String = "$COOK_PREFIX$id"
 
     /** The intent that opens the app at [destination], or null without a launcher activity. */
     fun open(context: Context, destination: String): Intent? {
