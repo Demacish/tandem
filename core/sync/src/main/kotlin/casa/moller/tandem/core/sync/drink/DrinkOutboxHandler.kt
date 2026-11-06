@@ -70,16 +70,7 @@ internal class DrinkOutboxHandler @Inject constructor(
         val database = databases.get(remote.kind)
         val draft = database.drinkDraftDao().get(remote.accountId, localId) ?: return OutboxResult.Dropped
         val marker = postedKey(localId)
-        if (row.attempts > 0 && database.syncStateDao().get(remote.accountId, marker) != null) {
-            when (val lost = findLostCreate(remote, row, draft.name)) {
-                is Outcome.Failure -> return OutboxResult.Failed(lost.error)
-
-                is Outcome.Success -> lost.value?.let { found ->
-                    database.syncStateDao().delete(remote.accountId, marker)
-                    return OutboxResult.Created(found)
-                }
-            }
-        }
+        lostAnswer(remote, row, draft.name, marker)?.let { return it }
         val names = DrinkPayloads.decodeDraftKeywords(draft.keywords)
         val linked = mutableListOf<KeywordRef>()
         val root = when (val found = keywords.drinkRoot(remote)) {
@@ -152,6 +143,20 @@ internal class DrinkOutboxHandler @Inject constructor(
         }.mapNotNull { it.id }.minOrNull() ?: return Outcome.Success(null)
         details.fetch(remote, id, isBackground = true)
         return Outcome.Success(id)
+    }
+
+    /** What a retry's lookup settles: the lost recipe, or a failed lookup that holds the row back; null to POST. */
+    private suspend fun lostAnswer(remote: ActiveSource.Remote, row: OutboxEntity, name: String, marker: String): OutboxResult? {
+        val states = databases.get(remote.kind).syncStateDao()
+        if (row.attempts == 0 || states.get(remote.accountId, marker) == null) return null
+        return when (val lost = findLostCreate(remote, row, name)) {
+            is Outcome.Failure -> OutboxResult.Failed(lost.error)
+
+            is Outcome.Success -> lost.value?.let { found ->
+                states.delete(remote.accountId, marker)
+                OutboxResult.Created(found)
+            }
+        }
     }
 
     /** `sync_state` key: the recipe POST of drink [localId] was started (its answer may be lost). */

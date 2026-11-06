@@ -270,24 +270,26 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             }
             if (waitingImages.isNotEmpty()) outbox.deleteRows(waitingImages.map { it.id })
             val create = if (id < 0) outbox.getCreate(accountId, OutboxEntities.RECIPE_EDIT, id) else null
-            val patchId = outbox.enqueue(
-                OutboxEntity(
-                    accountId = accountId,
-                    op = OutboxOps.PATCH,
-                    entity = OutboxEntities.RECIPE_EDIT,
-                    localId = id.takeIf { it < 0 },
-                    serverId = id.takeIf { it >= 0 },
-                    payload = body.toString(),
-                    baseSnapshot = base,
-                    createdAtEpochMillis = now,
-                ),
-            )
+            val patchId = queuePatch(id, body.toString(), base)
             waitingImages.forEach { row ->
                 outbox.enqueue(row.copy(id = 0, state = OutboxState.PENDING, lastError = null, attempts = 0, createdAtEpochMillis = now))
             }
             queueImageChange(id, draft, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
             return Outcome.Success(id)
         }
+
+        private suspend fun queuePatch(id: Long, body: String, base: String): Long? = outbox.enqueue(
+            OutboxEntity(
+                accountId = accountId,
+                op = OutboxOps.PATCH,
+                entity = OutboxEntities.RECIPE_EDIT,
+                localId = id.takeIf { it < 0 },
+                serverId = id.takeIf { it >= 0 },
+                payload = body,
+                baseSnapshot = base,
+                createdAtEpochMillis = now,
+            ),
+        )
 
         /**
          * What the conflict check compares with: the `updated_at` and the steps of the copy the edit

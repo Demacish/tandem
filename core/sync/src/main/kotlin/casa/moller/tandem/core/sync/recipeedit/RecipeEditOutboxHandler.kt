@@ -82,16 +82,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
         val name = (body["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         val database = databases.get(remote.kind)
         val marker = postedKey(localId)
-        if (row.attempts > 0 && database.syncStateDao().get(remote.accountId, marker) != null) {
-            when (val lost = findLostCreate(remote, row, name)) {
-                is Outcome.Failure -> return OutboxResult.Failed(lost.error)
-
-                is Outcome.Success -> lost.value?.let { found ->
-                    database.syncStateDao().delete(remote.accountId, marker)
-                    return OutboxResult.Created(found)
-                }
-            }
-        }
+        lostAnswer(remote, row, name, marker)?.let { return it }
         val sendBody = when (val named = withServerKeywordNames(remote, body, fresh = null)) {
             is Outcome.Failure -> return OutboxResult.Failed(named.error)
             is Outcome.Success -> named.value
@@ -220,6 +211,20 @@ internal class RecipeEditOutboxHandler @Inject constructor(
                 OutboxResult.Sent
             }
         }
+
+    /** What a retry's lookup settles: the lost recipe, or a failed lookup that holds the row back; null to POST. */
+    private suspend fun lostAnswer(remote: ActiveSource.Remote, row: OutboxEntity, name: String, marker: String): OutboxResult? {
+        val states = databases.get(remote.kind).syncStateDao()
+        if (row.attempts == 0 || states.get(remote.accountId, marker) == null) return null
+        return when (val lost = findLostCreate(remote, row, name)) {
+            is Outcome.Failure -> OutboxResult.Failed(lost.error)
+
+            is Outcome.Success -> lost.value?.let { found ->
+                states.delete(remote.accountId, marker)
+                OutboxResult.Created(found)
+            }
+        }
+    }
 
     /**
      * A recipe with this name, created by this user since the change was made, that no other

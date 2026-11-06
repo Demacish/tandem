@@ -257,16 +257,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
 
     override suspend fun update(id: Long, update: MealPlanUpdate): Outcome<Unit> = write { context ->
         val meal = context.meal(id) ?: return@write Outcome.Failure(TandemError.NotFound)
-        val from = LocalDate.parse(meal.fromDate)
-        val to = LocalDate.parse(meal.toDate)
-        val movedFrom = update.fromDate
-        val movedTo = update.toDate
-        val (newFrom, newTo) = when {
-            movedFrom != null && movedTo != null -> movedFrom to maxOf(movedFrom, movedTo)
-            movedFrom != null -> MealPlanDates.moved(from, to, movedFrom)
-            movedTo != null -> from to maxOf(from, movedTo)
-            else -> from to to
-        }
+        val (newFrom, newTo) = datesAfter(update, LocalDate.parse(meal.fromDate), LocalDate.parse(meal.toDate))
         val type = update.mealTypeId?.let { context.mealType(it) ?: return@write Outcome.Failure(TandemError.BadRequest()) }
         val recipeId = update.recipeId?.let { context.database.currentRecipeId(context.accountId, it) } ?: meal.recipeId
         val recipeName = if (recipeId != meal.recipeId) recipeId?.let { context.recipeName(it) } else meal.recipeName
@@ -293,6 +284,18 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             recipeId = changed.recipeId.takeIf { it != meal.recipeId },
         )
         Outcome.Success(Unit)
+    }
+
+    /** The meal's days after [update]: a move keeps its length, a new end never comes before its start. */
+    private fun datesAfter(update: MealPlanUpdate, from: LocalDate, to: LocalDate): Pair<LocalDate, LocalDate> {
+        val movedFrom = update.fromDate
+        val movedTo = update.toDate
+        return when {
+            movedFrom != null && movedTo != null -> movedFrom to maxOf(movedFrom, movedTo)
+            movedFrom != null -> MealPlanDates.moved(from, to, movedFrom)
+            movedTo != null -> from to maxOf(from, movedTo)
+            else -> from to to
+        }
     }
 
     override suspend fun delete(id: Long): Outcome<Unit> = write { context ->

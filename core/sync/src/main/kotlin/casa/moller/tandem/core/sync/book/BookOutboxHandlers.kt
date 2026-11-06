@@ -150,8 +150,9 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
         val body = BookPayloads.parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val bookId = (body["book"] as? JsonPrimitive)?.longOrNull
         val recipeId = (body["recipe"] as? JsonPrimitive)?.longOrNull
+        if (bookId == null || recipeId == null) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         // A temporary id is resolved before this (`refs`); one that is not must never reach the "recipe gone" 400 below.
-        if (bookId == null || recipeId == null || bookId < 0 || recipeId < 0) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        if (bookId < 0 || recipeId < 0) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.attempts > 0) findOnServer(remote, bookId, recipeId)?.let { return OutboxResult.Created(it) }
         return when (val sent = caller.write(remote) { books.createEntry(body) }) {
             is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }

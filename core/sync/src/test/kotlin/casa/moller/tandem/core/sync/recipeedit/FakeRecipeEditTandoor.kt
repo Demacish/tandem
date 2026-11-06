@@ -136,36 +136,45 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         val write = method in WRITES
         val response = when {
             write && guest -> json(403, JsonObject(mapOf("detail" to JsonPrimitive("You do not have permission to perform this action."))))
+            write -> writeAnswer(method, path, text)
+            else -> readAnswer(request, method, path)
+        } ?: return null
+        val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()
+        calls += "$method $path$query" to text
+        return response
+    }
 
+    private fun writeAnswer(method: String, path: String, text: String): MockResponse? {
+        val id = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
+        return when {
             path == RECIPES && method == "POST" -> create(parse(text))
 
             IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), text)
 
-            KEYWORD.matches(path) && method == "GET" -> {
-                val id = KEYWORD.find(path)!!.groupValues[1].toLong()
-                keywords[id]?.let { json(200, keywordJson(id to it)) } ?: notFound()
-            }
+            id != null && method == "PATCH" -> patch(id, parse(text))
 
-            RECIPE.matches(path) && method == "GET" ->
-                recipes[RECIPE.find(path)!!.groupValues[1].toLong()]?.let { json(200, it) } ?: notFound()
+            id != null && method == "DELETE" -> if (recipes.remove(id) == null) notFound() else MockResponse.Builder().code(204).build()
 
-            RECIPE.matches(path) && method == "PATCH" -> patch(RECIPE.find(path)!!.groupValues[1].toLong(), parse(text))
+            else -> null
+        }
+    }
 
-            RECIPE.matches(path) && method == "DELETE" -> {
-                val id = RECIPE.find(path)!!.groupValues[1].toLong()
-                if (recipes.remove(id) == null) notFound() else MockResponse.Builder().code(204).build()
-            }
+    private fun readAnswer(request: RecordedRequest, method: String, path: String): MockResponse? {
+        if (method != "GET") return null
+        val keyword = KEYWORD.find(path)?.groupValues?.get(1)?.toLong()
+        val recipe = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
+        return when {
+            keyword != null -> keywords[keyword]?.let { json(200, keywordJson(keyword to it)) } ?: notFound()
 
-            path == RECIPES && method == "GET" && request.url.queryParameter("query") != null -> {
+            recipe != null -> recipes[recipe]?.let { json(200, it) } ?: notFound()
+
+            path == RECIPES && request.url.queryParameter("query") != null -> {
                 val query = request.url.queryParameter("query").orEmpty()
                 page(recipes.values.filter { it.string("name").orEmpty().contains(query, ignoreCase = true) }.map { overviewOf(it) })
             }
 
-            else -> return null
+            else -> null
         }
-        val query = request.url.encodedQuery?.let { "?$it" }.orEmpty()
-        calls += "$method $path$query" to text
-        return response
     }
 
     // ------------------------------------------------------------------------------ writes

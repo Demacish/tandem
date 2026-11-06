@@ -122,31 +122,35 @@ internal class OutboxSender @Inject constructor(
             if (!network.online.value) return@withLock DrainResult.RETRY
             val row = outbox.nextReady(accountId) ?: return@withLock DrainResult.DONE
             if (outbox.markInFlight(row.id) != 1) return@repeat
-            val temporaryRecipe = row.serverId?.takeIf { row.entity == OutboxEntities.RECIPE && it < 0 }
-            if (temporaryRecipe != null && outbox.hasCreate(accountId, OutboxEntities.RECIPE_EDIT, temporaryRecipe)) {
-                waitForCreates(remote, row, listOf(OutboxEntities.RECIPE_EDIT to temporaryRecipe))?.let { return@withLock it }
-                return@repeat
-            }
-            if (row.op == OutboxOps.COOK_LOG) {
-                sendCookLog(remote, row, storedRecipes)?.let { return@withLock it }
-                return@repeat
-            }
-            val handler = handlers[row.entity]?.takeIf { row.op != OutboxOps.VIEW_LOG }
-            if (handler != null) {
-                sendWithHandler(remote, handler, row, storedRecipes)?.let { return@withLock it }
-                return@repeat
-            }
-            val result = send(remote, row, storedRecipes) ?: run {
-                // Nothing to send for it (unknown operation or a recipe that is gone).
-                outbox.markDone(row.id)
-                return@repeat
-            }
-            when (result) {
-                is Outcome.Success -> outbox.markDone(row.id)
-                is Outcome.Failure -> handleFailure(remote, row, result.error)?.let { return@withLock it }
-            }
+            sendRow(remote, row, storedRecipes)?.let { return@withLock it }
         }
         DrainResult.DONE
+    }
+
+    /** Sends one claimed row; returns how the drain ends, or null to go on with the next row. */
+    private suspend fun sendRow(remote: ActiveSource.Remote, row: OutboxEntity, storedRecipes: MutableSet<Long>): DrainResult? {
+        val outbox = databases.get(remote.kind).outboxDao()
+        val temporaryRecipe = row.serverId?.takeIf { row.entity == OutboxEntities.RECIPE && it < 0 }
+        if (temporaryRecipe != null && outbox.hasCreate(remote.accountId, OutboxEntities.RECIPE_EDIT, temporaryRecipe)) {
+            return waitForCreates(remote, row, listOf(OutboxEntities.RECIPE_EDIT to temporaryRecipe))
+        }
+        if (row.op == OutboxOps.COOK_LOG) return sendCookLog(remote, row, storedRecipes)
+        val handler = handlers[row.entity]?.takeIf { row.op != OutboxOps.VIEW_LOG }
+        if (handler != null) return sendWithHandler(remote, handler, row, storedRecipes)
+        return when (val result = send(remote, row, storedRecipes)) {
+            // Nothing to send for it (unknown operation or a recipe that is gone).
+            null -> {
+                outbox.markDone(row.id)
+                null
+            }
+
+            is Outcome.Success -> {
+                outbox.markDone(row.id)
+                null
+            }
+
+            is Outcome.Failure -> handleFailure(remote, row, result.error)
+        }
     }
 
     /**

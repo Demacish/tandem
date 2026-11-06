@@ -44,8 +44,8 @@ internal suspend fun OutboxDao.rebaseQueuedEdits(
     after: JsonObject,
     keepKeywords: Boolean,
 ) {
-    for (row in getUnsentFor(accountId, OutboxEntities.RECIPE_EDIT, localId = null, serverId = recipeId)) {
-        if (row.op != OutboxOps.PATCH) continue
+    val edits = getUnsentFor(accountId, OutboxEntities.RECIPE_EDIT, localId = null, serverId = recipeId).filter { it.op == OutboxOps.PATCH }
+    for (row in edits) {
         val base = RecipeEditPayloads.rebased(row.baseSnapshot, before, after) ?: continue
         val payload = if (keepKeywords) RecipeEditPayloads.withKeywordChange(row.payload, before, after) else row.payload
         updateMerged(row.id, payload, row.batchKey, row.refs, row.dependsOn, row.createdAtEpochMillis, base)
