@@ -233,6 +233,21 @@ jobs:
           [ "$failed" -eq 0 ] || exit 1
           echo "All ${checked} service interfaces, ${dtos} DTO classes, both password logins and their request bodies are in the mapping."
 
+      # Fas 4 review (fix-bygg): what only the system or a launcher starts, by name or by reflection.
+      # Phase3SmokeTest runs the widget and the tile; this says which class went if they stop.
+      - name: Check the R8 mapping for the widgets and the tile
+        if: ${{ !cancelled() }}
+        run: |
+          mapping=app/build/outputs/mapping/sideloadMinified/mapping.txt
+          [ -s "$mapping" ] || { echo "::error::No R8 mapping at $mapping"; exit 1; }
+          failed=0
+          for name in ShoppingListWidgetReceiver TonightWidgetReceiver MidnightRedrawReceiver ShoppingTileService CheckEntryAction WidgetEntryPoint; do
+            grep -q "^casa\.moller\.tandem\.feature\.widgets\.${name} -> " "$mapping" \
+              || { echo "::error::${name} is not in the R8 mapping (removed)"; failed=1; }
+          done
+          [ "$failed" -eq 0 ] || exit 1
+          echo "The widgets' receivers, the tile, the check action and the entry point are in the mapping."
+
       # Fas S review (fix-ui): no ML Kit telemetry and no eager ML Kit start. The app's manifest
       # removes datatransport's upload backend (Clearcut) and MlKitInitProvider; a library update
       # must not bring them back unnoticed.

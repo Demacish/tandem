@@ -111,6 +111,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
     /** Fas S (integration): keywords, recipe keyword PATCHes and (with `drinks.enabled`) one drink. */
     val drinks = FakeDrinks(::template)
 
+    /** Fas 4 review (fix-bygg): the recipe editor's writes, with `recipeEdits.enabled` (Phase3SmokeTest). */
+    val recipeEdits = FakeRecipeEdits(::template, ::recordedRecipe)
+
     /** `https://localhost:<port>`: replaces the recorded server address in every body. */
     private val origin: String get() = "https://localhost:${server.port}"
 
@@ -231,7 +234,8 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
             // --- Phase 2 (integration lane): the stateful shopping list and meal plan; Fas S: the
             // pantry and the keywords. ---
-            else -> pantry.answer(request)
+            else -> recipeEdits.answer(request)
+                ?: pantry.answer(request)
                 ?: drinks.answer(request, ::recordedRecipe)
                 ?: shopping.answer(request)
                 ?: mealPlan.answer(request)
@@ -277,7 +281,7 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
         // Fas S (integration): the foods carry the pantry's "at home", the index has the drink.
         method == "GET" && path == FOODS_PATH -> fixture(PHASE1_LISTS.getValue(path), pantry::withOnHand)
 
-        method == "GET" && path == FLAT_PATH -> fixture(PHASE1_LISTS.getValue(path), drinks::flat)
+        method == "GET" && path == FLAT_PATH -> fixture(PHASE1_LISTS.getValue(path)) { recipeEdits.flat(drinks.flat(it)) }
 
         method == "GET" && path in PHASE1_LISTS -> fixture(PHASE1_LISTS.getValue(path))
 
@@ -338,9 +342,9 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             url.queryParameter("viewedon_gte") != null -> "fas1/recipe-list-viewedon-gte"
             url.queryParameter("cookedon_lte") != null -> "fas1/recipe-list-cookedon-lte"
             url.queryParameter("new") != null -> "fas1/recipe-list-new"
-            else -> return fixture("fas1/recipe-list-default") { drinks.overviews(it, null) }
+            else -> return fixture("fas1/recipe-list-default") { recipeEdits.overviews(drinks.overviews(it, null)) }
         }
-        return fixture(recording, drinks::withChangedKeywords)
+        return fixture(recording) { recipeEdits.overviews(drinks.withChangedKeywords(it)) }
     }
 
     /**

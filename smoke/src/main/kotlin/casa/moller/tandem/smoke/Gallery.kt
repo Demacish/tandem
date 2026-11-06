@@ -150,6 +150,31 @@ class Gallery(private val context: Context) : ExternalResource() {
             return bitmap
         }
 
+        /** A recipe page in print, for "Fota recept": a title, a line with servings, ingredients and steps. */
+        fun recipe(): Bitmap {
+            val lines = listOf(
+                RECIPE_NAME,
+                "4 portioner",
+                "Ingredienser",
+                "5 morötter",
+                "1 gul lök",
+                "1 liter vatten",
+                "Gör så här",
+                "Skala och skiva morötterna.",
+                "Koka tills de är mjuka.",
+            )
+            val bitmap = Bitmap.createBitmap(RECEIPT_WIDTH, RECEIPT_TOP + lines.size * RECEIPT_LINE + RECEIPT_TOP, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(Color.WHITE)
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.BLACK
+                textSize = RECEIPT_TEXT
+                typeface = Typeface.create(Typeface.SERIF, Typeface.NORMAL)
+            }
+            lines.forEachIndexed { index, text -> canvas.drawText(text, RECEIPT_MARGIN, RECEIPT_TOP + (index + 1) * RECEIPT_LINE.toFloat(), paint) }
+            return bitmap
+        }
+
         /** [code] (13 digits) as an EAN-13 barcode on white, with quiet zones. */
         fun ean13(code: String): Bitmap {
             require(code.length == EAN_DIGITS && code.all { it.isDigit() }) { "EAN-13 needs 13 digits: $code" }
@@ -190,6 +215,9 @@ class Gallery(private val context: Context) : ExternalResource() {
             }
             return bitmap
         }
+
+        /** The title of [recipe]. */
+        const val RECIPE_NAME = "Morotssoppa"
 
         private const val RECEIPT_WIDTH = 1000
         private const val RECEIPT_TOP = 60
