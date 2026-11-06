@@ -72,8 +72,8 @@ Levererades i **0.5.0** (2026-11-03).
 - ✅ Importera recept genom att dela en länk eller text till appen (en text tolkas i appen, en
   länk av er Tandoor), med granskning innan receptet öppnas i redigeraren; foto och PDF tolkas
   av Tandoors AI-import när utrymmet har en AI-leverantör (0.5.0). En sida som stänger ute
-  servern läses i appen och skickas till Tandoor utan AI, och AI:n kan fördela ingredienserna
-  på stegen (0.6.0). Kvar: AI-importen och stegfördelningen är bara prövade mot en server utan
+  servern läses i appen och skickas till Tandoor utan AI, ger den inget kan den delade texten
+  tolkas av AI:n på begäran, och AI:n kan fördela ingredienserna på stegen (0.6.0). Kvar: AI-importen och stegfördelningen är bara prövade mot en server utan
   leverantör.
 - ✅ Widgets (inköpslistan med avbockning, dagens måltider), snabbinställningsrutan "Handla" och
   genvägar på appikonen (0.5.0).

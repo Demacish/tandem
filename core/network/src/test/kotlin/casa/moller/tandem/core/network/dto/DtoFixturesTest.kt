@@ -141,6 +141,9 @@ class DtoFixturesTest {
         "fas4/autoplan/auto-plan-two-keywords" to "contract probe; the app plans the week itself with meal-plan POSTs",
         "fas4/autoplan/auto-plan-date-only" to "contract probe; the app plans the week itself with meal-plan POSTs",
         "fas4/autoplan/auto-plan-guest" to "contract probe; the app plans the week itself with meal-plan POSTs",
+        // Fas 4 review (fix-data): seed of the nutrition recordings; the app only reads what the recipes say.
+        "fas4/nutrition/property-type-kcal" to "contract setup; the app reads property types from the recipes",
+        "fas4/nutrition/property-type-g" to "contract setup; the app reads property types from the recipes",
     )
 
     @Test

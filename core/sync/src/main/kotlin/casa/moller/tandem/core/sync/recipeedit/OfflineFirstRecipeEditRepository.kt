@@ -261,13 +261,7 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                 queueImageChange(id, draft, photo, dependsOn = refused.id)
                 return Outcome.Success(id)
             }
-            // The picture change that came with a superseded edit goes after the new PATCH (a row waits
-            // for older rows of its recipe, so it has to be queued anew): the editor knows nothing of it,
-            // so it must not be lost, and it must not move `updated_at` before the PATCH is compared.
-            // A FAILED one gets the same second chance: left where it is it would hold the PATCH back.
-            val waitingImages = rows.filter { row ->
-                row.isImageOf(id) && row.state != OutboxState.IN_FLIGHT && (superseded.isNotEmpty() || row.state == OutboxState.FAILED)
-            }
+            val waitingImages = imagesToQueueAgain(rows, id, anyEditSuperseded = superseded.isNotEmpty())
             if (waitingImages.isNotEmpty()) outbox.deleteRows(waitingImages.map { it.id })
             val create = if (id < 0) outbox.getCreate(accountId, OutboxEntities.RECIPE_EDIT, id) else null
             val patchId = queuePatch(id, body.toString(), base)
@@ -277,6 +271,17 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             queueImageChange(id, draft, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
             return Outcome.Success(id)
         }
+
+        /**
+         * The picture change that came with a superseded edit goes after the new PATCH (a row waits
+         * for older rows of its recipe, so it has to be queued anew): the editor knows nothing of it,
+         * so it must not be lost, and it must not move `updated_at` before the PATCH is compared.
+         * A FAILED one gets the same second chance: left where it is it would hold the PATCH back.
+         */
+        private fun imagesToQueueAgain(rows: List<OutboxEntity>, id: Long, anyEditSuperseded: Boolean): List<OutboxEntity> =
+            rows.filter { row ->
+                row.isImageOf(id) && row.state != OutboxState.IN_FLIGHT && (anyEditSuperseded || row.state == OutboxState.FAILED)
+            }
 
         private suspend fun queuePatch(id: Long, body: String, base: String): Long? = outbox.enqueue(
             OutboxEntity(

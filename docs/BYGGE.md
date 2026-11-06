@@ -1549,6 +1549,9 @@ Banan `fas4/fix-data` rättade granskningens fynd i `core/**` och `app/**`. Det 
   Ett osänt recepts lagrade JSON behåller `properties` och `food_properties`, aldrig i payloaden.
 - **Historiken.** En avbockad post som partnern eller webben rensat arkiveras innan den tas bort.
 
+Referensbilder från Screenshots 42168176542, bara dessa togs: de 13 `shell/fast_push_*` som visar
+de ändrade texterna om token och "Ansluter…" och den nya `import/phone_tall_import_page_interpret_light_sv`.
+
 ## Push-tjänst (`push-service/`, `:core:sync`, `:feature:shell`, Fas 4)
 
 Efter Fas 4-granskningen: väckningsadressen är ingen hemlighet, så `onMessage` räknar bara ett

@@ -148,13 +148,9 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         val id = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
         return when {
             path == RECIPES && method == "POST" -> create(parse(text))
-
             IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), text)
-
             id != null && method == "PATCH" -> patch(id, parse(text))
-
             id != null && method == "DELETE" -> if (recipes.remove(id) == null) notFound() else MockResponse.Builder().code(204).build()
-
             else -> null
         }
     }
