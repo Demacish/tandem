@@ -73,12 +73,16 @@ Levererades i **0.5.0** (2026-11-03).
   länk av er Tandoor), med granskning innan receptet öppnas i redigeraren; foto och PDF tolkas
   av Tandoors AI-import när utrymmet har en AI-leverantör (0.5.0). En sida som stänger ute
   servern läses i appen och skickas till Tandoor utan AI, ger den inget kan den delade texten
-  tolkas av AI:n på begäran, och AI:n kan fördela ingredienserna på stegen (0.6.0). Kvar: AI-importen och stegfördelningen är bara prövade mot en server utan
-  leverantör.
+  tolkas av AI:n på begäran, och AI:n kan fördela ingredienserna på stegen (0.6.0). Flera fotade
+  sidor blir ett recept, och granskningen visar originalet bredvid tolkningen (0.6.0). Avsteg från
+  planens tvåspaltsimport på surfplatta: en länk eller en text har inget original att visa, så de
+  är en kolumn på alla bredder (se BYGGE). Kvar: AI-importen och stegfördelningen är bara prövade
+  mot en server utan leverantör.
 - ✅ Widgets (inköpslistan med avbockning, dagens måltider), snabbinställningsrutan "Handla" och
   genvägar på appikonen (0.5.0).
 - ✅ Dra och släpp i matsedeln (dag, och måltidstyp på surfplattan) och näringsvärden per portion i
-  receptvyn (0.5.0), i kJ eller kcal som i Tandoor (0.6.0). Kvar: redigera näringsvärden i appen.
+  receptvyn (0.5.0), i kJ eller kcal som i Tandoor (0.6.0). Recept dras in från "Vill laga" och, på
+  bred surfplatta, från en receptsökning bredvid veckan (0.6.0). Kvar: redigera näringsvärden i appen.
 - ✅ Hemsektioner som du ordnar och döljer ("Anpassa Idag", 0.6.0).
 
 ## Fas 4: Smart hushåll ✅
@@ -88,7 +92,7 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   "Fota recept" i Importera recept läser en kokbokssida, ett kort eller en utskrift utan AI-tjänst
   och öppnar texten i redigeraren, även sidor i två spalter. Kvar: handskrivet.
 - ✅ Inlärd butiksordning, återkommande varor, förslag på veckans matsedel: butiksläget erbjuder
-  att spara ordningen du handlade i som butikens gångordning; "Dags igen?" i Lägg till föreslår
+  att spara ordningen du handlade i som butikens avdelningsordning; "Dags igen?" i Lägg till föreslår
   varor som brukar köpas med jämna mellanrum; "Föreslå veckans matsedel" i Veckan fyller lediga
   dagar med recept ni lagar ofta men inte nyligen, med valda nyckelord och måltid, utan dubbletter
   och med det som snart går ut hemma först. Butiksordningen föreslås efter tre turer som stämmer

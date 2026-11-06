@@ -17,8 +17,9 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
 
 - **Inlärd butiksordning:** butiksläget minns i vilken ordning du bockar av i varje butik. Efter
   tre turer i ungefär samma ordning (minst 80 % av kategorierna) frågar appen om den ska spara
-  ordningen. Den blir butikens gångordning i Tandoor, så den syns på webben och listan sorteras
-  så nästa gång.
+  ordningen. Den blir butikens avdelningsordning i Tandoor för hela hushållet, så den syns på webben
+  och listan sorteras så nästa gång. Går att ångra. Lämnar du butiksläget och kommer tillbaka under
+  samma besök räknas det som samma tur.
 - **Dags igen?** Varor du brukar köpa med jämna mellanrum föreslås i "Lägg till" när det är dags
   igen, räknat på listans egen historik i telefonen (också det som Tandoor inte längre visar).
 - **Föreslå veckans matsedel:** ett kort i Veckan föreslår ett recept för varje dag som saknar
@@ -71,6 +72,30 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
 - **Ta bort bilden** i receptredigeraren tar bort receptets bild i Tandoor när du sparar.
 - **Ändrat på webben:** redigeraren märker nu också när någon ändrat bara ett steg eller en
   ingrediens på webben medan din ändring väntade.
+
+**Rättat efter granskningen av 0.6.0**
+
+- **Widgetarna:** ett tryck på en rad i inköpswidgeten bockar nu av varan också i release-bygget,
+  rad efter rad, och båda widgetarna följer ändringar medan de visas. Raderna är 48 dp, gäster får
+  rader utan avbockning, mängder står som i listan, "I dag" byter dag strax efter midnatt, rullar
+  när det inte får plats och öppnar kokläget. Nya genvägar: Ny vara och de senast lagade recepten.
+- **Veckan:** drycker föreslås aldrig som middag, recept dras in i veckan från "Vill laga" (och
+  från receptsökningen bredvid rutnätet på en bred surfplatta), arket har portioner och "Fler
+  nyckelord", och säger när recepten inte räcker.
+- **Importera:** flera fotade sidor skickas som ett recept (ta ett foto till, ta bort sista, skicka;
+  också flera bilder delade på en gång), originalet visas bredvid AI:ns tolkning, och en sida som
+  inte går att ladda eller får WebView att krascha tar inte längre med sig appen.
+- **Redigeraren:** frågar innan osparade ändringar försvinner, borttagna steg och rader går att
+  ångra, livsmedel föreslås medan du skriver, mängder står med decimalkomma, och fälten staplas vid
+  stor text.
+- **Kokläge:** flikarna står kvar när du byter recept, ✕ går att ångra, och i ett lågt fönster står
+  flikarna i rubriken. TalkBack får höra vilket recept som visas och vilket recept en knapp gäller.
+- **Handla:** "Dags igen?" följer de senaste köpen, så en ändrad rytm slår igenom efter några köp.
+- **Hemma och Synk:** kortet om notiser leder till systemets inställningar när frågan inte längre
+  går att ställa, och gäster ser ingen knapp för utgångsnotisen.
+- **Snabb push:** texten säger nu att Tandoor-token skickas varje gång telefonen förnyar
+  registreringen, inte bara en gång. Om Tandem och introduktionen nämner snabb push och sidor som
+  öppnas från telefonen.
 
 **Övrigt**
 

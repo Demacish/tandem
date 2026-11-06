@@ -930,10 +930,6 @@ mörkt, teckenstorlek 2, kvarhållen ändring, gäst, laddar, okänt recept) med
 
 **Kvar till senare:** stegfiler och länkade delrecept (behålls oförändrade via stegets id men kan
 inte ändras), näringsvärden, `show_as_header`, dra och släpp (bild tas bort sedan 0.6.0).
-ATF-kontrollen av redigeringen vid teckenstorlek 2 är borttagen: ATF rapporterar portionsradens
-och stegrubrikens första aktiva ikonknapp som 46 respektive 38 dp hög fast semantikträdet visar
-48 dp (`Modifier.size(48.dp)` i rader om minst 48 dp); de andra tio varianterna går igenom och
-skärmbilden vid teckenstorlek 2 finns kvar.
 <!-- /Fas 3 redigerare -->
 
 <!-- Fas 3 import -->
@@ -1006,16 +1002,18 @@ namnet är bara ett namn och ett recept-id prövas där det används.
 |---|---|---|
 | Modul | `feature/widgets/` (`tandem.android.feature` + Glance 1.2) | läser bara `core:data` genom en Hilt-`@EntryPoint` (`WidgetEntryPoint`: `ShoppingRepository`, `HomeRepository`, `SessionRepository`), eftersom widgets och tjänster skapas av systemet |
 | Tillstånd | `WidgetStates.kt` | `ShoppingWidgetState.of(entries, now, signedIn)` (öppna rader i listordning, högst 12, "N kvar", raden som "2 dl grädde"), `TonightWidgetState.of(upcoming, signedIn)` (dagens måltider i måltidstypsordning, högst 4); rena värden, testade utan Glance |
-| Inköpslistan | `ShoppingListWidget.kt` | `ShoppingListWidgetReceiver`/`ShoppingListWidget` (`SizeMode.Exact`): rubrik "Handla" med "N kvar" (öppnar Handla), raderna i en `LazyColumn`; ett tryck på en rad bockar av den (`CheckEntryAction`: `ShoppingRepository.setChecked`, genom outboxen, också offline) och ritar om; "Inget på listan", "Öppna Tandem och logga in" |
-| I dag | `TonightWidget.kt` | dagens måltider med måltidstyp; ett tryck öppnar receptet, rubriken Veckan; "Inget planerat i dag. Tryck för att planera." |
-| Uppdatering | `WidgetUpdater` (startas av `TandemApplication`) | följer `WidgetData.shopping`/`tonight` (efter första värdet, 400 ms debounce) och kör `updateAll` medan processen lever: en synk, en avbockning i appen, en annan medlems ändring, utloggning. `updatePeriodMillis = 0`: ingen egen tidsstyrd uppdatering (synken väcker processen) |
+| Inköpslistan | `ShoppingListWidget.kt` | `ShoppingListWidgetReceiver`/`ShoppingListWidget` (`SizeMode.Exact`): rubrik "Handla" med "N kvar" (öppnar Handla), raderna i en `LazyColumn`, minst 48 dp genom padding så att texten kan växa (Glance saknar `heightIn`); ett tryck på en rad bockar av den (`CheckEntryAction`: `ShoppingRepository.setChecked`, genom outboxen, också offline) och ritar om; gäster får rader utan ikon och avbockning; "Inget på listan", "Öppna Tandem och logga in". `feature/widgets/consumer-rules.pro` behåller `ActionCallback`-konstruktorn (Glance skapar den med reflektion; R8 full mode tog bort den), `smoke.yml` kontrollerar det i mappningen |
+| I dag | `TonightWidget.kt` | dagens måltider med måltidstyp i en `LazyColumn`; ett tryck startar kokläget (`cook:<id>`, skalets "Laga"), rubriken och det tomma läget Veckan; "Inget planerat i dag. Tryck för att planera."; under 100 dp hög utan rubrik |
+| Uppdatering | `WidgetUpdater` (startas av `TandemApplication`), `MidnightRedraw`; widgetarna själva | en körande Glance-session uppdateras bara av det som följs i kompositionen (`update`/`updateAll` kör inte `provideGlance` igen), så båda widgetarna läser första värdet och samlar sedan flödet i `provideContent`. `WidgetUpdater` följer `WidgetData.shopping`/`tonight` (400 ms debounce) och kör `updateAll` för att starta en session när ingen går; "I dag" också vid varje processtart (första värdet kan vara en ny dag). `MidnightRedraw`: ett oexakt, icke väckande larm strax efter midnatt medan en "I dag"-widget finns (`updatePeriodMillis = 0`, ingen behörighet) |
 | Snabbinställning | `ShoppingTileService` | rutan "Handla": undertexten "N kvar"/"Inget på listan"/"Öppna Tandem och logga in" läses när rutan visas; ett tryck öppnar inköpslistan (`startActivityAndCollapse`). Ändrar inget |
-| Genvägar | `AppShortcuts.install(context)` (vid varje start, `TandemApplication`) | dynamiska genvägar (`ShortcutManagerCompat`) Handla, Veckan, Importera recept, Skanna streckkod – dynamiska för att följa språket och flavourns paket (en statisk `shortcuts.xml` kräver ett fast målpaket, dev-flavourn har ett annat) |
+| Genvägar | `AppShortcuts.install(context, recent)` (vid varje start, `TandemApplication`; `WidgetUpdater` följer kokloggen) | dynamiska genvägar (`ShortcutManagerCompat`) Ny vara (`add-item`: Handla med tilläggspanelen), Veckan, Importera recept, de två senast lagade recepten, Handla, Skanna streckkod, i den ordningen eftersom startskärmen visar de första; dynamiska för att följa språket och flavourns paket (en statisk `shortcuts.xml` kräver ett fast målpaket, dev-flavourn har ett annat) |
 | Manifest | `feature/widgets/src/main/AndroidManifest.xml`, `res/xml/widget_*_info.xml` | receivers (exporterade, `APPWIDGET_UPDATE`), rutan med `BIND_QUICK_SETTINGS_TILE`; 3×2 respektive 3×1 celler, storleksbara, `glance_default_loading_layout` som första layout |
 
-**Tester:** `WidgetStatesTest` (`:feature:widgets`), `OpenLaunchTest` och `AppViewModelTest`
-(appen), `ShellNavigationStateTest.anOpenRequestSelectsTheTabOrOpensTheScreen` (skalet). Widgetarnas
-utseende prövas inte med skärmbilder (Glance ritar RemoteViews; röktestet installerar appen med dem).
+**Tester:** `WidgetStatesTest`, `WidgetSessionTest` (Glances testbibliotek: en körande session följer
+sitt flöde), `MidnightRedrawTest`, `AppShortcutsTest` (`:feature:widgets`), `OpenLaunchTest` och
+`AppViewModelTest` (appen), `ShellNavigationStateTest.anOpenRequestSelectsTheTabOrOpensTheScreen` (skalet).
+Widgetarnas utseende prövas inte med skärmbilder (Glance ritar RemoteViews; röktestet installerar
+appen med dem, och kontrollerar i R8-mappningen att avbockningens konstruktor finns kvar).
 
 **Kvar till senare:** en widget för timers, konfigurerbar lista (listval) i inköpswidgeten,
 förhandsbilder i widgetväljaren, en "Lägg till vara"-ruta.
@@ -1080,6 +1078,7 @@ hel, se "Integration av Fas 4 (0.6.0)".
 | Granskningen av Fas 3 och 4, data och synk (`fas4/fix-data`) | ✅ klart 2026-11-06 (PR 42170268254, röktest "OK (27 tests)" 42170268224 och Contract 42170268319 på 1cbc113; `push-service.yml` 42165724376 på 80afbc7, sista ändringen i tjänsten) | "Fas 4-granskningen: data och synk" |
 | Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
 | Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
+| Granskningen av Fas 3 och 4: skärmarna | ✅ klart 2026-11-06 på `fas4/fix-ui` | "Granskningen av Fas 3 och 4: skärmarna (fix-ui)" |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Contract 2.6.13/2.7.1 42112553318 på 3e39331, Fas 3-resternas steg grönt; referensbilder incheckade) | "Fas 3:s rester" |
 
 ### Klart: textigenkänning av recept (2026-11-04)
@@ -1179,12 +1178,81 @@ UnifiedPush-connectorn och Fas 4:s kod är tillsammans under 0,4 MB; ML Kit domi
 - Handskrivna recept (ML Kits latinska modell läser tryckt text).
 - Egen tid för utgångsnotisen.
 - Två recept sida vid sida på mycket breda skärmar (beslutet i "Två recept samtidigt").
-- Stegfiler, länkade delrecept, näringsvärden, `show_as_header` och dra och släpp i redigeraren;
-  ATF för redigeringen vid teckenstorlek 2. Bookmarklet, flera recept ur en PDF, `import_keyword`.
+- Stegfiler, länkade delrecept, näringsvärden, `show_as_header` och dra och släpp i redigeraren.
+  Bookmarklet, flera recept ur en PDF, `import_keyword`.
   Timerwidget, listval i widgeten, förhandsbilder, "Lägg till vara"-ruta. Dra måltider mellan
   veckor. Inget av detta står i planens "Klart när" för Fas 3 eller 4; det är nya funktioner, inte
   fel, och de ligger kvar i respektive avsnitt.
 <!-- /Fas 4 integration -->
+
+<!-- Fas 4 fix-ui -->
+## Granskningen av Fas 3 och 4: skärmarna (fix-ui)
+
+Rättelser i `feature/**`, `core:ui` och små block utanför (nämnda här) efter granskningen av
+3938396..884cc67. Room är oförändrat (schema 6).
+
+- **Widgetarna:** se "Widgets, snabbinställning och genvägar". Det allvarligaste felet syntes bara i
+  release: R8 full mode tog bort `CheckEntryAction()`, så ett tryck på en rad gjorde ingenting.
+  `ShoppingLineFormat` (`:core:domain`) skriver raden lika i listan och widgeten. Nya destinationer:
+  `add-item` (`ShellOpenRequest.AddItem`, `ShellNavigationState.addItemRequested`) och `cook:<id>`
+  (`ShellOpenRequest.Cook`, genom skalets `cookKeyAlongside`).
+- **Veckan:** `WeekViewModel` tar `DrinkRepository` och `RecipeBookRepository`. Kandidaterna läses utan
+  dryckesindexets recept (också de med bara `Vin`), och `keywordChoices` utan `Dryck`-, `Passar med`-
+  och parningsnyckelord. `WeekSuggestionsState`: `servings`, `uncoveredDays`, `canSwap`, `allKeywords`
+  ("Fler nyckelord" söker i alla, de tolv är snabbval). #21: `WantToCookStrip` ovanför dagarna,
+  `RecipeDragPanel` med sökning bredvid rutnätet från 960 dp, `recipeDragSource` med egen MIME-typ,
+  `WeekAction.DropRecipe`; TalkBack planerar samma recept genom "+". `MealPlanSheetWindowTest` sätter
+  teckenskalan i konfigurationen (`RuntimeEnvironment.setFontScale`), eftersom arkets fönster går
+  tillbaka till vyns densitet: bilden vid skala 2 var förut identisk med skala 1.
+- **Butiksläget:** en öppning inom fyra timmar efter senaste turens start i samma butik fortsätter
+  den turen (`KEY_CONTINUED_TRIP`, löst vid första bocken; "i korgen" går på den riktiga
+  öppningstiden). "Ångra" tar bort avdelningen ur turen om bocken var den första i den, också när
+  turen då har en avdelning kvar (annars blir den gamla kopian liggande). "Spara ordningen" går att
+  ångra (`reorderAisles` med ordningen före). Slutsidan rullar (`StoreModeDone`, här och inte i
+  `StateLayout`: `EmptyState` står också i lazy-rutnät där en rullande kolumn saknar höjd).
+- **Importera:** sidorna ligger som cachefiler (sökvägarna i `SavedStateHandle`), en sida skickas
+  som den är och flera blir en PDF med `JpegPdf`. Det är inte `android.graphics.pdf.PdfDocument`: den
+  ritar genom Canvas och lagrar bilderna packade med deflate, flera gånger större än JPEG 85, så tre
+  sidor kunde gå över 10 MB-gränsen. `JpegPdf` lägger JPEG-filerna orörda i PDF:en (`/DCTDecode`),
+  rent JVM-testbart. `ACTION_SEND_MULTIPLE` med bilder blir `RecipeImportKey.sharedPageUris`. Den
+  skickade filen ligger kvar i `cache/recipe-import/` under granskningen (`ImportFiles.previews`, en
+  PDF genom `PdfRenderer`), följer med till redigeraren (`RecipeEditorKey.sourcePath`) och tas bort
+  när sidan stängs; `ImportFiles.sweep` tar det en dödad process lämnat. Från 840 dp står originalet
+  bredvid resultatet och formuläret, under det bakom "Visa originalet".
+  **Avsteg från plan 6.5:** en länk eller en text har inget original och formuläret lämnar plats för
+  resultatet, så de är en kolumn på alla bredder; WebView-läsningen förstörs när resultatet kommer.
+  `PageReaderWebView`: `onRenderProcessGone` tar bort vyn och går till `PageUnavailable`, en huvudram
+  som inte laddades skickas inte som sida (403/503 räknas inte, det kan vara botkontrollen), ett
+  `http://`-länk laddas som `https://` (`PageReading.loadUrl`, appen tillåter ingen klartext, servern
+  får länken som den var), kakor och lagring rensas också före laddningen. `problemHint`: varje
+  problem har sitt eget råd. Text från "Fota recept" stannar i telefonen (`RecipeImportKey.scanned`).
+  Rutten säger arbete, problem och resultat till TalkBack (`importAnnouncement`, `View.announce` som
+  flyttats till `core:ui` `accessibility/`): en nod som skapas samtidigt med ändringen rapporterar inget.
+- **Redigeraren:** `hasChanges` mot en baslinje i `SavedStateHandle` (en imports baslinje är ett tomt
+  recept); pilen och systemets bakåt går genom `LeaveEditorDialog`. Borttaget med innehåll har
+  "Ångra" (`RecipeEditorEffect.Removed`, `UndoRemove`), flytt och tomma rader sägs bara till TalkBack
+  (`Announce`). Stegrader har fortfarande inget stabilt id (ett nytt steg saknar id), så fokus
+  stannar på platsen; meddelandet säger vart steget gick. `foodSuggestions` under livsmedelsfältet
+  (`recipes.observeFoods()`, menyn tar inte fokus), namnet trimmas när det sparas. `amountText` med
+  språkets decimaltecken, högst tre decimaler, utan att utkastets värde ändras. Vid teckenskala minst
+  1,5 eller under 400 dp staplas fälten (`stackedFields`); med kortare etiketter är ATF vid skala 2
+  tillbaka. Under 480 dp hög med tangentbordet uppe flyttar "Spara" in i formuläret
+  (`RecipeEditorLayout`, samma regel som `PantryEntryLayout`). `DiscardEditDialog` före "Släng min ändring".
+- **Kokläget:** `key(activeId)` runt hela skärmen är borta: bara pagern är nycklad per recept, och
+  dialogens tillstånd och `SetLocale` följer `state.recipeId`, så fliken och dess fokus står kvar.
+  `CookRoute` säger vilket recept som visas. Vänster/höger på en flik flyttar fokus
+  (`onPreviewKeyEvent`). Under `CompactHeight` står flikarna i rubrikraden, och den valda fliken bär
+  sidbytet till TalkBack (`announceStep`). ✕ med två recept har "Ångra" (`CookSession.restore`, samma
+  `instance`, så ViewModel kommer tillbaka) och en timer för det stängda receptet öppnar det igen.
+  Timerknapparna säger receptet (`timerLabel`, `core:ui`), också skalets timerrad med två recept;
+  listens höjd följer teckenskalan. Väljaren sorterar nedladdade först offline, och raden under
+  sökfältet är en nod som står kvar och säger hur sökningen gick.
+- **Övrigt:** `TodayCustomize` nycklar raderna och säger den nya platsen; `RecipeGrid` har plats för
+  "Nytt recept" sist; "Fota recept" håller sidorna i `SavedStateHandle`, släpper knappen först när
+  CameraX startat (`CameraReadyEffect`, `takePictureOr`, också kvitto och kylfoto); Hemmas kort leder
+  till systemets inställningar efter ett nej (`ExpiryReminderOffer.openSettings`); gäster har ingen
+  utgångsbrytare på Synk och lagring.
+<!-- /Fas 4 fix-ui -->
 
 <!-- Fas 4 fas3-rester -->
 ## Fas 3:s rester (`:feature:recipes`, `:core:sync`, `:feature:home`, `:feature:widgets`, Fas 4, bana fas3-rester)
@@ -1346,7 +1414,8 @@ telefonen känner till**: den lokala historiken (`ShoppingRepository.observeHist
 utom med kontot, `ShoppingSyncTest` visar arkiveringen efter fönstret) **plus avbockade rader som
 ännu står kvar på listan** (inom fönstret, inte arkiverade än; `RecurringItems.purchases`, samma
 rad räknas en gång). En vara som köpts minst tre gånger på olika dagar, med ett typiskt intervall
-(medianen, medel av de två mittersta vid jämnt antal) på 2–60 dagar, är "dags igen" när 80 % av
+(medianen över de fem senaste köpen, medel av de två mittersta vid jämnt antal, så att en ändrad
+rytm slår igenom efter ungefär tre köp) på 2–60 dagar, är "dags igen" när 80 % av
 intervallet gått sedan senaste köpet, men inte när intervallet missats tre gånger om (rytmen har
 upphört). Bara **oavbockade** varor på listan utesluts; mest försenad först, högst sex; namnet
 stavas som senast. `ShoppingViewModel.due` kombinerar historiken med listan och `AddItemState.due`
@@ -1401,7 +1470,8 @@ köas offline), som syns på webben som allt annat i matsedeln.
 `canSuggest` = får planera och veckan har en dag kvar); `SuggestMealType(id)` och
 `ToggleSuggestKeyword(id)` föreslår om (valen gäller så länge Veckan är öppen); `AcceptSuggestions`
 skapar `MealPlanDraft` per förslag med samma portioner som flest av veckans måltider av typen
-(annars 2), stannar vid första felet, visar `WeekMessage.Suggested(n)` och "Ångra" tar bort de
+(annars de senaste fyra veckornas, annars planeringssidans standard; `WeekSuggestionsState.servings`
+med en stegare i arket), stannar vid första felet, visar `WeekMessage.Suggested(n)` och "Ångra" tar bort de
 skapade. Arket (`WeekSuggestionsSheetLayout`: innehållet rullar, knapparna "Slumpa om", "Avbryt" och
 "Lägg n måltider i veckan" (`WEEK_SUGGESTIONS_ACCEPT_TAG`) ligger fast under, som
 `RecipeShoppingSheetLayout`): rubrik, förklaring, måltidschips (`suggestionMealTypeTag`),
