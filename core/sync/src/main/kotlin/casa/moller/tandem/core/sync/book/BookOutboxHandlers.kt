@@ -21,6 +21,7 @@ import casa.moller.tandem.core.sync.drink.RecipeKeywordChanges
 import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.engine.OutboxHandler
 import casa.moller.tandem.core.sync.engine.OutboxResult
+import casa.moller.tandem.core.sync.recipeedit.rebaseQueuedEdits
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.shopping.claimedServerIds
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -149,7 +150,8 @@ internal class RecipeBookEntryOutboxHandler @Inject constructor(
         val body = BookPayloads.parse(payload) ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         val bookId = (body["book"] as? JsonPrimitive)?.longOrNull
         val recipeId = (body["recipe"] as? JsonPrimitive)?.longOrNull
-        if (bookId == null || recipeId == null || bookId < 0) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
+        // A temporary id is resolved before this (`refs`); one that is not must never reach the "recipe gone" 400 below.
+        if (bookId == null || recipeId == null || bookId < 0 || recipeId < 0) return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
         if (row.attempts > 0) findOnServer(remote, bookId, recipeId)?.let { return OutboxResult.Created(it) }
         return when (val sent = caller.write(remote) { books.createEntry(body) }) {
             is Outcome.Success -> sent.value.id?.let { OutboxResult.Created(it) }
@@ -256,6 +258,9 @@ internal class RecipeKeywordsOutboxHandler @Inject constructor(
             is Outcome.Success -> sent.value
         }
         details.store(remote, recipeId, patched)
+        // Fas 4 review (fix-data): this PATCH moves `updated_at`; an edit queued behind it is no conflict and keeps the keyword.
+        databases.get(remote.kind).outboxDao()
+            .rebaseQueuedEdits(remote.accountId, recipeId, before = current, after = patched, keepKeywords = true)
         if (changes.wantToCook == true) {
             val keywordId = (patched["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
                 .firstOrNull { RecipeBookRules.isWantToCookKeyword(it.string("name").orEmpty()) }

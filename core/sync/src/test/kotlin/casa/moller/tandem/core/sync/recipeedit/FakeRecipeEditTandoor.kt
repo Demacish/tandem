@@ -41,6 +41,9 @@ internal class FakeRecipeEditTandoor(private val version: String) {
     /** Whether writes are refused with 403 (a guest). */
     var guest: Boolean = false
 
+    /** `created_at` of the recipes POSTed from now on. */
+    var createdAt: String = NOW
+
     init {
         val listed = element("fas1/keyword-list").jsonObject["results"] as JsonArray
         listed.mapNotNull { it as? JsonObject }.forEach { keyword ->
@@ -65,6 +68,32 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
     @Synchronized
     fun recipeNamed(name: String): JsonObject? = recipes.values.firstOrNull { it.string("name") == name }
+
+    /** Another member renames the keyword for the whole space (the recipes follow). */
+    @Synchronized
+    fun renameKeyword(id: Long, name: String) {
+        keywords[id] = name
+    }
+
+    /** The keyword's name on the server. */
+    @Synchronized
+    fun keywordName(id: Long): String? = keywords[id]
+
+    /** Another member changes the servings on the web: `updated_at` moves on. */
+    @Synchronized
+    fun partnerChangesServings(id: Long, servings: Int) {
+        val recipe = recipes[id] ?: return
+        recipes[id] = bumped(JsonObject(recipe + ("servings" to JsonPrimitive(servings))))
+    }
+
+    /** The recipe's own per-serving nutrition (`properties`, as Tandoor's property editor stores it). */
+    @Synchronized
+    fun hasNutrition(id: Long) {
+        val recipe = recipes[id] ?: return
+        val type = JsonObject(mapOf("name" to JsonPrimitive("Energi"), "unit" to JsonPrimitive("kcal")))
+        val property = JsonObject(mapOf("property_amount" to JsonPrimitive(350), "property_type" to type))
+        recipes[id] = JsonObject(recipe + ("properties" to JsonArray(listOf(property))))
+    }
 
     /** Another member deleted the recipe on the web. */
     @Synchronized
@@ -112,6 +141,11 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
             IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), text)
 
+            KEYWORD.matches(path) && method == "GET" -> {
+                val id = KEYWORD.find(path)!!.groupValues[1].toLong()
+                keywords[id]?.let { json(200, keywordJson(id to it)) } ?: notFound()
+            }
+
             RECIPE.matches(path) && method == "GET" ->
                 recipes[RECIPE.find(path)!!.groupValues[1].toLong()]?.let { json(200, it) } ?: notFound()
 
@@ -149,7 +183,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
                 "image" to JsonNull,
                 "rating" to JsonNull,
                 "last_cooked" to JsonNull,
-                "created_at" to JsonPrimitive(NOW),
+                "created_at" to JsonPrimitive(createdAt),
                 "updated_at" to JsonPrimitive(NOW),
             ),
         )
@@ -349,6 +383,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         const val NOW = "2000-01-15T00:00:00.000000+02:00"
         val RECIPE = Regex("^/api/recipe/(\\d+)/$")
         val IMAGE = Regex("^/api/recipe/(\\d+)/image/$")
+        val KEYWORD = Regex("^/api/keyword/(\\d+)/$")
         val WRITES = setOf("POST", "PATCH", "PUT", "DELETE")
         val SCALAR_FIELDS =
             listOf("name", "description", "servings", "servings_text", "working_time", "waiting_time", "source_url", "private", "internal")

@@ -625,7 +625,8 @@ internal class SyncEngine @Inject constructor(
             // Only recipes the index knows: an id from stale data must not become a 404 (plan 4.1).
             val known = recipes.getRecipeIds(accountId).toHashSet()
             return (pinned + planned + viewed + marked).distinct()
-                .filter { it in known }
+                // Fas 4 review (fix-data): a recipe not sent yet has nothing to fetch and takes no place in the batch.
+                .filter { it in known && it >= 0 }
                 .take(SyncSchedule.MAX_DETAIL_PREFETCH_PER_RUN)
         }
 
@@ -643,7 +644,7 @@ internal class SyncEngine @Inject constructor(
             } else {
                 emptyList()
             }
-            return (missing + stale).distinct()
+            return (missing + stale).distinct().filter { it >= 0 }
         }
 
         private suspend fun prefetchDetails(ids: List<Long>) {

@@ -16,6 +16,8 @@ import casa.moller.tandem.core.sync.engine.cookStatsRules
 import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.recipeedit.currentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.recipeCreateRow
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,11 +61,14 @@ internal class OfflineFirstCookLogRepository @Inject constructor(
                     return@catchingUnexpected Outcome.Failure(DataProblem.READ_ONLY.toError())
                 }
                 val cookedAtMillis = draft.cookedAt.epochSeconds * MILLIS_PER_SECOND
+                val database = databases.get(source.kind)
+                // Fas 4 review (fix-data): cook mode may have opened a new recipe before its CREATE was answered.
+                val recipeId = database.currentRecipeId(source.accountId, draft.recipeId)
                 val entry = CookLogEntity(
                     accountId = source.accountId,
                     localId = 0,
                     serverId = null,
-                    recipeId = draft.recipeId,
+                    recipeId = recipeId,
                     servings = draft.servings,
                     rating = draft.rating,
                     comment = draft.commentOrNull,
@@ -72,7 +77,7 @@ internal class OfflineFirstCookLogRepository @Inject constructor(
                 )
                 val payload = remote?.let {
                     val body = CookLogCreateRequestDto(
-                        recipe = draft.recipeId,
+                        recipe = recipeId,
                         servings = draft.servings,
                         rating = draft.rating,
                         comment = draft.commentOrNull,
@@ -80,7 +85,8 @@ internal class OfflineFirstCookLogRepository @Inject constructor(
                     )
                     TandoorJson.encodeToString(CookLogCreateRequestDto.serializer(), body)
                 }
-                databases.get(source.kind).cookLogDao().logLocally(entry, payload, clock.nowMillis(), source.cookStatsRules)
+                val dependsOn = database.recipeCreateRow(source.accountId, recipeId)
+                database.cookLogDao().logLocally(entry, payload, clock.nowMillis(), source.cookStatsRules, dependsOn)
                 if (remote != null) scheduler.scheduleOutbox()
                 Outcome.Success(Unit)
             }

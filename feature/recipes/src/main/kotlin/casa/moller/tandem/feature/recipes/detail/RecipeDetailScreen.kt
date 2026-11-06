@@ -499,6 +499,17 @@ private fun EditNotice(controls: RecipeEditControls?) {
             },
         )
 
+        // Fas 4 review (fix-data): no "drop" here, that would delete the only copy; the delete in the menu asks first.
+        RecipeEditStatus.REFUSED_NEW -> CalloutCard(
+            title = stringResource(R.string.recipe_detail_edit_refused_title),
+            body = stringResource(R.string.recipe_detail_edit_refused_body),
+            icon = TandemIcons.Info,
+            tone = TandemTone.Warning,
+            actions = {
+                TandemTonalButton(text = stringResource(R.string.recipe_detail_edit_refused_open), onClick = controls.onOpenKeptEdit)
+            },
+        )
+
         RecipeEditStatus.NONE, null -> Unit
     }
 }

@@ -41,11 +41,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.JsonObject
 
 /**
  * [RecipeEditRepository] on Room and the outbox (#22, plan §8.9; docs/BYGGE.md "Receptredigeraren"):
@@ -60,11 +60,17 @@ import kotlinx.coroutines.sync.withLock
  *   `RecipeDao.upsertOverviews`); the sender stores the server's answer. An edit of a recipe not
  *   sent yet merges into its CREATE (`OutboxMerge`).
  * - **A delete** removes the recipe locally at once (with its unsent `recipe` rows) and queues a
- *   DELETE; for a recipe not sent yet the CREATE simply cancels.
+ *   DELETE; for a recipe not sent yet the CREATE simply cancels. Fas 4 review (fix-data): FAILED rows
+ *   of the recipe go first, or the DELETE would wait behind them for ever; a CREATE the server
+ *   refused cancels the whole thing.
  * - **A photo** is copied and scaled by [DrinkImageStore] (the drinks' store, shared) and queued as
- *   `RECIPE_IMAGE`, after the CREATE for a new recipe.
+ *   `RECIPE_IMAGE`, after the CREATE for a new recipe. One unsent picture change per recipe: the
+ *   newest replaces the older (`OutboxMerge`) and the older one's copy is deleted here.
  * - **Conflict:** an edit the sender held back ([RecipeEditPayloads.CONFLICT]) is a FAILED row whose
- *   payload [observeDraft] hands the editor; [discardEdit] drops it.
+ *   payload [observeDraft] hands the editor; [discardEdit] drops it, with the picture change it came
+ *   with. A new save supersedes it, and its picture change goes after the new PATCH.
+ * - **A CREATE the server refused** (Fas 4 review, fix-data) is the only copy of the recipe: a new
+ *   save writes its body into that row and puts it back in the queue with what failed with it.
  * - **Demo mode** writes the demo database directly (ids above the demo recipes) and queues nothing.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -98,7 +104,7 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
         .flatMapLatest { source ->
             if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(null)
             val database = databases.get(source.kind)
-            flow { emit(currentId(source, recipeId)) }.flatMapLatest { id ->
+            database.observeCurrentRecipeId(source.accountId, recipeId).flatMapLatest { id ->
                 combine(
                     database.outboxDao().observeAll(source.accountId),
                     database.recipeDao().observeListItem(source.accountId, id),
@@ -117,11 +123,13 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
     override fun observeEditStatus(recipeId: Long): Flow<RecipeEditStatus> = sources.source
         .flatMapLatest { source ->
             if (source !is ActiveSource.Remote) return@flatMapLatest flowOf(RecipeEditStatus.NONE)
-            flow { emit(currentId(source, recipeId)) }.flatMapLatest { id ->
-                databases.get(source.kind).outboxDao().observeAll(source.accountId).map { rows ->
+            val database = databases.get(source.kind)
+            database.observeCurrentRecipeId(source.accountId, recipeId).flatMapLatest { id ->
+                database.outboxDao().observeAll(source.accountId).map { rows ->
                     val own = rows.filter { it.isEditOf(id) }
                     when {
-                        own.any { it.state != OutboxState.FAILED } || id < 0 -> RecipeEditStatus.QUEUED
+                        own.any { it.op == OutboxOps.CREATE && it.state == OutboxState.FAILED } -> RecipeEditStatus.REFUSED_NEW
+                        own.any { it.state != OutboxState.FAILED } || (id < 0 && own.isEmpty()) -> RecipeEditStatus.QUEUED
                         own.any { it.isConflict } -> RecipeEditStatus.CONFLICT
                         own.any { it.state == OutboxState.FAILED } -> RecipeEditStatus.FAILED
                         else -> RecipeEditStatus.NONE
@@ -165,11 +173,12 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
 
     private fun collator(): Collator = Collator.getInstance(Locale.getDefault()).apply { strength = Collator.SECONDARY }
 
-    private suspend fun currentId(source: ActiveSource.Stored, id: Long): Long =
-        databases.get(source.kind).idRewriteDao().current(source.accountId, OutboxEntities.RECIPE_EDIT, id)
-
     private fun OutboxEntity.isEditOf(id: Long): Boolean =
         entity == OutboxEntities.RECIPE_EDIT && op != OutboxOps.RECIPE_IMAGE && (serverId == id || (serverId == null && localId == id))
+
+    /** A picture change of recipe [id] (`RECIPE_IMAGE` has its own rules: it is no edit of the recipe's text). */
+    private fun OutboxEntity.isImageOf(id: Long): Boolean =
+        entity == OutboxEntities.RECIPE_EDIT && op == OutboxOps.RECIPE_IMAGE && (serverId == id || localId == id)
 
     /** An edit the sender held back because the recipe changed on the server meanwhile. */
     private val OutboxEntity.isConflict: Boolean
@@ -237,13 +246,30 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             val stored = recipes.getDetail(accountId, id)?.toRecipe(item?.overview, item?.toModel()?.keywords.orEmpty())
                 ?: return Outcome.Failure(RecipeEditProblem.UNKNOWN_RECIPE.toError())
             val body = RecipeEditPayloads.encode(draft)
-            val baseSteps = storedStepsFingerprint(id)
-            store(id, draft, stored, photo, rawJson = body.toString())
+            val storedJson = recipes.getDetailRow(accountId, id)?.rawJson?.let { RecipeEditPayloads.parse(it) }
+            store(id, draft, stored, photo, rawJson = RecipeEditPayloads.withStoredNutrition(body, storedJson).toString())
             if (!remote) return Outcome.Success(id)
-            // A kept conflict of this recipe is superseded by the new edit (which starts from the server's version).
-            outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
-                .filter { it.isEditOf(id) && it.state == OutboxState.FAILED }
-                .takeIf { it.isNotEmpty() }?.let { outbox.deleteWithDependents(it.map { row -> row.id }) }
+            val rows = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
+            // A FAILED PATCH is superseded by the new edit: a kept conflict (the editor started from the
+            // server's version then), or one the server refused.
+            val superseded = rows.filter { it.isEditOf(id) && it.op == OutboxOps.PATCH && it.state == OutboxState.FAILED }
+            val base = baseOf(id, storedJson, stored, superseded)
+            if (superseded.isNotEmpty()) outbox.deleteWithDependents(superseded.map { it.id })
+            val refused = rows.firstOrNull { it.isEditOf(id) && it.op == OutboxOps.CREATE && it.state == OutboxState.FAILED }
+            if (refused != null) {
+                outbox.requeueRefusedCreate(refused.id, body.toString())
+                queueImageChange(id, draft, photo, dependsOn = refused.id)
+                return Outcome.Success(id)
+            }
+            // The picture change that came with a superseded edit goes after the new PATCH (a row waits
+            // for older rows of its recipe, so it has to be queued anew): the editor knows nothing of it,
+            // so it must not be lost, and it must not move `updated_at` before the PATCH is compared.
+            val waitingImages = if (superseded.isEmpty()) {
+                emptyList()
+            } else {
+                rows.filter { it.isImageOf(id) && it.state != OutboxState.IN_FLIGHT }
+            }
+            if (waitingImages.isNotEmpty()) outbox.deleteRows(waitingImages.map { it.id })
             val create = if (id < 0) outbox.getCreate(accountId, OutboxEntities.RECIPE_EDIT, id) else null
             val patchId = outbox.enqueue(
                 OutboxEntity(
@@ -253,42 +279,92 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                     localId = id.takeIf { it < 0 },
                     serverId = id.takeIf { it >= 0 },
                     payload = body.toString(),
-                    baseSnapshot = RecipeEditPayloads.base(stored.updatedAt, baseSteps),
+                    baseSnapshot = base,
                     createdAtEpochMillis = now,
                 ),
             )
-            if (photo != null) queueImage(id, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
-            draft.imageUrl?.takeIf { photo == null }?.let { queueImageUrl(id, it, dependsOn = create?.id ?: patchId.takeIf { id < 0 }) }
-            if (removesImage(id, draft, photo)) queueImageRemoval(id)
+            waitingImages.forEach { row ->
+                outbox.enqueue(row.copy(id = 0, state = OutboxState.PENDING, lastError = null, attempts = 0, createdAtEpochMillis = now))
+            }
+            queueImageChange(id, draft, photo, dependsOn = create?.id ?: patchId.takeIf { id < 0 })
             return Outcome.Success(id)
         }
 
         /**
-         * Fas 3's leftovers: the steps as the server last sent them, before an edit replaces the
-         * stored copy (the conflict check). Only the server's own JSON counts (it has `updated_at`;
-         * an unsent edit's body stands there until the answer comes).
+         * What the conflict check compares with: the `updated_at` and the steps of the copy the edit
+         * started from. Fas 4 review (fix-data): both come from the stored JSON. The overview's
+         * `updated_at` moves with a sync while the detail stays old, so a web change the draft never
+         * saw would look like the copy it started from. An unsent edit's body stands there until the
+         * answer comes (it has no `updated_at`): a merge keeps the older row's base then, the base of
+         * a FAILED PATCH is taken over, and the overview's value is what is left.
          */
-        private suspend fun storedStepsFingerprint(id: Long): String? {
-            if (id < 0) return null
-            val raw = recipes.getDetailRow(accountId, id)?.rawJson?.let { RecipeEditPayloads.parse(it) } ?: return null
-            return raw.takeIf { it["updated_at"] != null }?.let { RecipeEditPayloads.stepsFingerprint(it) }
+        private fun baseOf(id: Long, storedJson: JsonObject?, stored: Recipe, superseded: List<OutboxEntity>): String {
+            if (id < 0) return RecipeEditPayloads.base(null)
+            val updatedAt = RecipeEditPayloads.updatedAtOf(storedJson)
+            if (updatedAt != null) return RecipeEditPayloads.base(updatedAt, RecipeEditPayloads.stepsFingerprint(storedJson))
+            return superseded.lastOrNull()?.baseSnapshot ?: RecipeEditPayloads.base(stored.updatedAt)
         }
 
-        /** Fas 3's leftovers: "Ta bort bilden" on a recipe the server has (a new one has no picture yet). */
-        private fun removesImage(id: Long, draft: RecipeDraft, photo: File?): Boolean {
-            if (id < 0 || draft.keepImage) return false
-            return photo == null && draft.imageUrl == null
+        /**
+         * The picture change of a save, the newest intent of the recipe's: a new photo, an import's
+         * picture on the web, or "Ta bort bilden" ([draft] without `keepImage`). On a recipe the
+         * server has not got, removing simply cancels what is queued.
+         */
+        private suspend fun queueImageChange(id: Long, draft: RecipeDraft, photo: File?, dependsOn: Long?) {
+            val url = draft.imageUrl
+            when {
+                photo != null -> {
+                    dropReplacedImages(id, keep = photo.path)
+                    queueImage(id, photo, dependsOn)
+                }
+
+                url != null -> {
+                    dropReplacedImages(id, keep = null)
+                    queueImageUrl(id, url, dependsOn)
+                }
+
+                draft.keepImage -> Unit
+
+                id < 0 -> {
+                    dropReplacedImages(id, keep = null)
+                    val queued = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
+                        .filter { it.isImageOf(id) && it.state != OutboxState.IN_FLIGHT }
+                    if (queued.isNotEmpty()) outbox.deleteWithDependents(queued.map { it.id })
+                }
+
+                else -> {
+                    dropReplacedImages(id, keep = null)
+                    queueImageRemoval(id)
+                }
+            }
+        }
+
+        /**
+         * A newer picture change replaces the older one (`OutboxMerge`): the older one's photo copy
+         * goes, except [keep]. A FAILED row never merges and would hold the new one back, so it goes too.
+         */
+        private suspend fun dropReplacedImages(id: Long, keep: String?) {
+            val rows = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
+                .filter { it.isImageOf(id) && it.state != OutboxState.IN_FLIGHT }
+            rows.mapNotNull { RecipeEditPayloads.imagePathOf(it.payload) }.filter { it != keep }.forEach { images.delete(it) }
+            val failed = rows.filter { it.state == OutboxState.FAILED }.map { it.id }
+            if (failed.isNotEmpty()) outbox.deleteRows(failed)
         }
 
         suspend fun delete(recipeId: Long): Outcome<Unit> {
             val id = database.idRewriteDao().current(accountId, OutboxEntities.RECIPE_EDIT, recipeId)
+            val rows = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
             // Photo copies of unsent image rows of the recipe go with them.
-            outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
-                .filter { it.op == OutboxOps.RECIPE_IMAGE && (it.serverId == id || it.localId == id) && it.state != OutboxState.IN_FLIGHT }
+            rows.filter { it.isImageOf(id) && it.state != OutboxState.IN_FLIGHT }
                 .mapNotNull { RecipeEditPayloads.imagePathOf(it.payload) }
                 .forEach { images.delete(it) }
+            // A FAILED row of the recipe would hold its DELETE back for ever.
+            val failed = rows.filter { (it.isEditOf(id) || it.isImageOf(id)) && it.state == OutboxState.FAILED }
+            if (failed.isNotEmpty()) outbox.deleteWithDependents(failed.map { it.id })
             recipes.deleteRecipes(accountId, listOf(id))
-            if (!remote) return Outcome.Success(Unit)
+            // A CREATE the server refused never made a recipe there: nothing to delete. (One that may
+            // have reached it, a lost answer, is not FAILED: findLostCreate settled that.)
+            if (!remote || failed.any { it.op == OutboxOps.CREATE }) return Outcome.Success(Unit)
             outbox.enqueue(
                 OutboxEntity(
                     accountId = accountId,
@@ -306,9 +382,14 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
 
         suspend fun discard(recipeId: Long): Outcome<Unit> {
             val id = database.idRewriteDao().current(accountId, OutboxEntities.RECIPE_EDIT, recipeId)
-            val failed = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
-                .filter { it.isEditOf(id) && it.state == OutboxState.FAILED }
-            if (failed.isNotEmpty()) outbox.deleteWithDependents(failed.map { it.id })
+            val rows = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
+            val failed = rows.filter { it.isEditOf(id) && it.state == OutboxState.FAILED }
+            if (failed.isEmpty()) return Outcome.Success(Unit)
+            // The picture change that came with the edit goes with it: it waited behind the edit and
+            // would otherwise be sent now, a photo or a removal the user just dropped.
+            val pictures = rows.filter { it.isImageOf(id) && it.state != OutboxState.IN_FLIGHT }
+            pictures.mapNotNull { RecipeEditPayloads.imagePathOf(it.payload) }.forEach { images.delete(it) }
+            outbox.deleteWithDependents((failed + pictures).map { it.id })
             return Outcome.Success(Unit)
         }
 

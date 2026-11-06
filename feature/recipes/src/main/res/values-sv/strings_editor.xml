@@ -86,6 +86,9 @@
     <string name="recipe_detail_edit_conflict_discard">Släng min ändring</string>
     <string name="recipe_detail_edit_failed_title">Ändringen skickades inte</string>
     <string name="recipe_detail_edit_failed_body">Tandoor nekade din ändring. Se Diagnostik under Mer för varför.</string>
+    <string name="recipe_detail_edit_refused_title">Receptet sparades inte i Tandoor</string>
+    <string name="recipe_detail_edit_refused_body">Tandoor tog inte emot det nya receptet, så det finns bara på den här telefonen. Rätta det i redigeraren och spara för att skicka det igen.</string>
+    <string name="recipe_detail_edit_refused_open">Öppna i redigeraren</string>
     <!-- Fas 3:s rester: ta bort receptets bild. -->
     <string name="recipe_editor_current_photo">Receptets bild</string>
     <string name="recipe_editor_remove_current_photo">Ta bort bilden</string>

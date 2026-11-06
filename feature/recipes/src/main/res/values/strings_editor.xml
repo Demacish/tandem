@@ -86,6 +86,9 @@
     <string name="recipe_detail_edit_conflict_discard">Drop my edit</string>
     <string name="recipe_detail_edit_failed_title">Change not sent</string>
     <string name="recipe_detail_edit_failed_body">Tandoor refused your change. See Diagnostics under More for why.</string>
+    <string name="recipe_detail_edit_refused_title">Recipe not saved in Tandoor</string>
+    <string name="recipe_detail_edit_refused_body">Tandoor refused this new recipe, so it is only on this phone. Fix it in the editor and save to send it again.</string>
+    <string name="recipe_detail_edit_refused_open">Open in the editor</string>
     <!-- Fas 3's leftovers: removing the recipe's picture. -->
     <string name="recipe_editor_current_photo">The recipe\'s picture</string>
     <string name="recipe_editor_remove_current_photo">Remove the picture</string>

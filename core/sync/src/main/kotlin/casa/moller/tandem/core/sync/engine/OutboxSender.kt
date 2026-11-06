@@ -4,6 +4,7 @@ import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.dao.CookLogKey
 import casa.moller.tandem.core.database.entity.CookLogEntity
 import casa.moller.tandem.core.database.entity.CookLogProblems
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
@@ -79,6 +80,9 @@ internal enum class DrainResult {
  *   dropped. A JSON 403 on a write whose token still works (the request is refused, the login is
  *   fine) marks the row FAILED with [FORBIDDEN], reads the role again and ends the drain, so the
  *   account is never sent back to the login and one refused row is not sent again and again.
+ * - **A recipe created in the app** (Fas 4 review, fix-data): rows of the recipe itself (a "Klart!",
+ *   "Vill laga", a pairing) under its temporary id wait for its CREATE, like rows that name it in
+ *   their `refs`; `completeCreate` then gives them the server id, and they go in the same drain.
  * - **Rows that can never be sent** (0.3.0 review, fix-data): a row that points at an object
  *   created offline whose CREATE is gone (cancelled) and that has no server id is dropped with its
  *   local row ([DroppedChanges.ORPHAN]) instead of holding up every later row of the account.
@@ -110,6 +114,7 @@ internal class OutboxSender @Inject constructor(
         outbox.resumeAll(accountId)
         outbox.resetInFlight(accountId)
         if (isGuest(database, accountId)) refuseForGuest(remote)
+        // Grows with the recipes created in this drain: their "Klart!" rows follow right after them.
         val storedRecipes = database.recipeDao().getRecipeIds(accountId).toHashSet()
         repeat(maxRows) {
             // Phase 2 (konto lane): the user switched to another account: its own drain follows.
@@ -117,13 +122,18 @@ internal class OutboxSender @Inject constructor(
             if (!network.online.value) return@withLock DrainResult.RETRY
             val row = outbox.nextReady(accountId) ?: return@withLock DrainResult.DONE
             if (outbox.markInFlight(row.id) != 1) return@repeat
+            val temporaryRecipe = row.serverId?.takeIf { row.entity == OutboxEntities.RECIPE && it < 0 }
+            if (temporaryRecipe != null && outbox.hasCreate(accountId, OutboxEntities.RECIPE_EDIT, temporaryRecipe)) {
+                waitForCreates(remote, row, listOf(OutboxEntities.RECIPE_EDIT to temporaryRecipe))?.let { return@withLock it }
+                return@repeat
+            }
             if (row.op == OutboxOps.COOK_LOG) {
                 sendCookLog(remote, row, storedRecipes)?.let { return@withLock it }
                 return@repeat
             }
             val handler = handlers[row.entity]?.takeIf { row.op != OutboxOps.VIEW_LOG }
             if (handler != null) {
-                sendWithHandler(remote, handler, row)?.let { return@withLock it }
+                sendWithHandler(remote, handler, row, storedRecipes)?.let { return@withLock it }
                 return@repeat
             }
             val result = send(remote, row, storedRecipes) ?: run {
@@ -191,7 +201,12 @@ internal class OutboxSender @Inject constructor(
      * (a row whose reference has no server id yet waits for the next drain), sends it and applies
      * the result; returns how the drain ends, or null to go on with the next row.
      */
-    private suspend fun sendWithHandler(remote: ActiveSource.Remote, handler: OutboxHandler, row: OutboxEntity): DrainResult? {
+    private suspend fun sendWithHandler(
+        remote: ActiveSource.Remote,
+        handler: OutboxHandler,
+        row: OutboxEntity,
+        storedRecipes: MutableSet<Long>,
+    ): DrainResult? {
         val database = databases.get(remote.kind)
         val outbox = database.outboxDao()
         val ids = database.idRewriteDao()
@@ -222,6 +237,7 @@ internal class OutboxSender @Inject constructor(
                 }
 
                 is OutboxResult.Created -> {
+                    if (row.entity in RECIPE_CREATES) storedRecipes += result.serverId
                     if (localId != null && localId < 0) {
                         ids.completeCreate(remote.accountId, row.id, row.entity, localId, result.serverId, clock.nowMillis())
                     } else {
@@ -240,13 +256,14 @@ internal class OutboxSender @Inject constructor(
      * newest of them from now on (`depends_on`) and the drain goes on, so those CREATEs (often queued
      * AFTER the row, e.g. an entry moved offline to a location created later) are sent in this drain
      * instead of the row blocking the whole account at the head of the queue. A failed CREATE fails
-     * the row with it.
+     * the row with it, as its dependent: it comes back when the CREATE does (`OutboxDao.retryFailed`).
      */
     private suspend fun waitForCreates(remote: ActiveSource.Remote, row: OutboxEntity, missing: List<Pair<String, Long>>): DrainResult? {
         val outbox = databases.get(remote.kind).outboxDao()
         val creates = missing.mapNotNull { (entity, localId) -> outbox.getCreate(remote.accountId, entity, localId) }
         val failed = creates.firstOrNull { it.state == OutboxState.FAILED }
         if (failed != null) {
+            outbox.setDependsOn(row.id, failed.id)
             outbox.markFailed(row.id, failed.lastError ?: WAITING_FOR_ID)
             return null
         }
@@ -467,6 +484,9 @@ internal class OutboxSender @Inject constructor(
 
         /** The cook log's `recipe` field (a 400 on it means the recipe does not exist). */
         const val FIELD_RECIPE = "recipe"
+
+        /** The entities whose CREATE makes a recipe. */
+        val RECIPE_CREATES: Set<String> = setOf(OutboxEntities.RECIPE_EDIT, OutboxEntities.DRINK)
 
         /** Fas 3 (redigerare lane): a recipe edit held back because the recipe changed on the server. */
         val RECIPE_CONFLICT: TandemError = RecipeEditOutboxHandler.CONFLICT_ERROR

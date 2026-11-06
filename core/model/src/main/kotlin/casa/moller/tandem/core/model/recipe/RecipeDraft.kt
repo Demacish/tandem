@@ -164,5 +164,7 @@ data class DraftIngredient(
  *   (`updated_at` differs from the copy the edit started from); the server's version is shown and
  *   the edit is kept so it can be opened again in the editor.
  * - [FAILED]: the edit was refused (a 400, a guest's 403) and is kept in "Pending changes".
+ * - [REFUSED_NEW]: Fas 4 review (fix-data): the server refused a recipe created in the app, so this
+ *   device has the only copy. The way forward is the editor: a new save sends it again.
  */
-enum class RecipeEditStatus { NONE, QUEUED, CONFLICT, FAILED }
+enum class RecipeEditStatus { NONE, QUEUED, CONFLICT, FAILED, REFUSED_NEW }

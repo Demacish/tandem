@@ -154,6 +154,26 @@ class RecipeDaoTest {
         assertEquals(listOf(1L), database.homeSectionDao().getSectionRecipeIds(ACCOUNT_A))
     }
 
+    // Fas 4 review (fix-data): a recipe deleted offline is not stored, and its DELETE is still queued.
+    @Test
+    fun theIndexDoesNotBringBackARecipeWithAQueuedDelete() = runTest {
+        val delete = OutboxEntity(
+            accountId = ACCOUNT_A,
+            op = OutboxOps.DELETE,
+            entity = OutboxEntities.RECIPE_EDIT,
+            serverId = 1,
+            createdAtEpochMillis = 1,
+        )
+        val row = database.outboxDao().insert(delete)
+        dao.applyIndex(ACCOUNT_A, listOf(RecipeIndexEntry(1, "Krämig svamppasta"), RecipeIndexEntry(2, "Annat")))
+        assertEquals(listOf(2L), dao.getRecipeIds(ACCOUNT_A))
+
+        // A DELETE that failed did not happen: the recipe is still on the server and comes back.
+        database.outboxDao().markFailed(row, "400")
+        dao.applyIndex(ACCOUNT_A, listOf(RecipeIndexEntry(1, "Krämig svamppasta"), RecipeIndexEntry(2, "Annat")))
+        assertEquals(listOf(1L, 2L), dao.getRecipeIds(ACCOUNT_A).sorted())
+    }
+
     @Test
     fun anEmptyIndexDeletesNothingUnlessAllowed() = runTest {
         TestRecipes.All.take(2).forEach { database.store(ACCOUNT_A, it) }

@@ -27,8 +27,10 @@ import kotlinx.serialization.json.JsonObject
  * - `BULK_CHECK` or `RECIPE_KEYWORDS` after the same op: merged; when the result equals the older
  *   row's `base_snapshot` (checked, then unchecked again) both cancel.
  * - Fas S: `BATCH_ON_HAND` merges like `BULK_CHECK` (never into a CREATE, and never past a newer row of
- *   another op of the same food), `RECIPE_IMAGE` after an
- *   unsent `RECIPE_IMAGE` replaces its payload (the newest photo is sent once).
+ *   another op of the same food).
+ * - `RECIPE_IMAGE` after an unsent `RECIPE_IMAGE` replaces its whole payload (Fas 4 review, fix-data):
+ *   a photo, a picture on the web and "Ta bort bilden" are three payloads for one intent, and the
+ *   newest one wins, so `{remove}` and `{file}` never end up in one row.
  * - Anything else is inserted as it is (`CREATE`, `VIEW_LOG`, `COOK_LOG` are never merged here).
  *
  * **A CREATE that was attempted before** (`attempts > 0`: a timeout, a 5xx or a process death) may
@@ -126,6 +128,7 @@ object OutboxMerge {
             return Decision.Update(create.id, mergePayload(create.payload, new.payload), create.batchKey)
         }
         val prior = unsent.lastOrNull { it.op == new.op } ?: return Decision.Insert
+        if (new.op == OutboxOps.RECIPE_IMAGE) return Decision.Update(prior.id, new.payload, new.batchKey)
         // Fas S review (fix-data): "har hemma" in batch never jumps over a newer PATCH of the same food
         // (Handla's `food_onhand`): merged into the older row it would be sent before that PATCH and
         // the server would end opposite to the device. A new row waits behind the PATCH instead.

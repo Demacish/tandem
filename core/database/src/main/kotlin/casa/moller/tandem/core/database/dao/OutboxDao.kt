@@ -66,9 +66,37 @@ abstract class OutboxDao {
         return marked
     }
 
-    /** Puts a FAILED row back in the queue ("Try again" in "Pending changes"). */
-    @Query("UPDATE outbox SET state = 'PENDING', last_error = NULL WHERE id = :id AND state = 'FAILED'")
-    abstract suspend fun retryFailed(id: Long)
+    /**
+     * Puts a FAILED row back in the queue ("Try again" in "Pending changes"), with the rows that
+     * failed with it (Fas 4 review, fix-data): what [markFailed] took down comes back up.
+     */
+    @Transaction
+    open suspend fun retryFailed(id: Long) {
+        val seen = mutableListOf<Long>()
+        var level = listOf(id)
+        while (level.isNotEmpty()) {
+            resetFailed(level)
+            seen += level
+            level = getDependents(level).filter { it !in seen }
+        }
+    }
+
+    /**
+     * Fas 4 review (fix-data): the user fixed a CREATE the server refused: the row gets the new
+     * [payload] and goes back in the queue as never attempted (the server said no, so it is not
+     * there and later changes may merge into it again), with the rows that failed with it.
+     */
+    @Transaction
+    open suspend fun requeueRefusedCreate(id: Long, payload: String) {
+        resetRefusedCreate(id, payload)
+        retryFailed(id)
+    }
+
+    @Query("UPDATE outbox SET state = 'PENDING', last_error = NULL WHERE state = 'FAILED' AND id IN (:ids)")
+    abstract suspend fun resetFailed(ids: List<Long>)
+
+    @Query("UPDATE outbox SET payload = :payload, attempts = 0 WHERE id = :id")
+    abstract suspend fun resetRefusedCreate(id: Long, payload: String)
 
     /** After a crash or kill while sending: IN_FLIGHT rows go back to PENDING. */
     @Query("UPDATE outbox SET state = 'PENDING' WHERE account_id = :accountId AND state = 'IN_FLIGHT'")
@@ -311,6 +339,9 @@ abstract class OutboxDao {
                 deleteUnsentRecipeIngredients(accountId, localIds)
                 deleteUnsentRecipeKeywordLinks(accountId, localIds)
                 deleteUnsentRecipeHomeRows(accountId, localIds)
+                // Fas 4 review (fix-data): "Klart!", "Vill laga" and views of it can never be sent either.
+                deleteUnsentRecipeRows(accountId, localIds)
+                dropUnqueuedRecipeCookLogs(accountId, localIds)
             }
         }
     }
@@ -350,6 +381,15 @@ abstract class OutboxDao {
 
     @Query("DELETE FROM food_alias WHERE account_id = :accountId AND server_id IS NULL AND local_id IN (:localIds)")
     abstract suspend fun deleteUnsentFoodAliases(accountId: String, localIds: List<Long>)
+
+    @Query("DELETE FROM outbox WHERE account_id = :accountId AND entity = 'recipe' AND state != 'IN_FLIGHT' AND server_id IN (:localIds)")
+    abstract suspend fun deleteUnsentRecipeRows(accountId: String, localIds: List<Long>)
+
+    @Query(
+        "UPDATE cook_log SET state = 'DROPPED', problem = 'recipe_deleted', outbox_id = NULL WHERE account_id = :accountId " +
+            "AND state = 'PENDING' AND recipe_id IN (:localIds) AND NOT EXISTS (SELECT 1 FROM outbox o WHERE o.id = cook_log.outbox_id)",
+    )
+    abstract suspend fun dropUnqueuedRecipeCookLogs(accountId: String, localIds: List<Long>)
 
     @Query(
         "UPDATE outbox SET payload = :payload, batch_key = :batchKey, refs = :refs, depends_on = :dependsOn, " +

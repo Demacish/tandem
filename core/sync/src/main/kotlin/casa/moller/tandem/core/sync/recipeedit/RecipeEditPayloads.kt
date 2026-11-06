@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.recipe.NutritionPresence
 import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.Step
+import casa.moller.tandem.core.network.json.TandoorDates
 import java.security.MessageDigest
 import kotlin.time.Instant
 import kotlinx.serialization.json.Json
@@ -38,15 +39,18 @@ import kotlinx.serialization.json.put
  *
  * - A keyword always carries `name` (`{id}` alone is a 400, FACTS "Fas 3 a"): a known one as
  *   `{id, name}` with the name the device has (the sender swaps in the server's current name
- *   before a PATCH, since another name renames the keyword space-wide, FACTS "Fas 2 g"), a new
- *   one as `{name}` (get-or-create, case ignored).
+ *   before a POST or PATCH, since another name renames the keyword space-wide, FACTS "Fas 2 g"), a
+ *   new one as `{name}` (get-or-create, case ignored).
  * - Foods and units always go by `{name}` (reused or created by name); a header has neither.
  * - A step or ingredient keeps its `id`, so a PATCH updates it in place and leaves what the app
  *   does not edit (a step's file, a linked sub-recipe) alone; one without `id` is created, and the
  *   server deletes those the PATCH leaves out (drf-writable-nested).
  *
  * `base_snapshot` of a PATCH is `{"updated_at": "<the stored copy's>"}`: the sender reads the
- * recipe fresh and holds the edit back as [CONFLICT] when the server's `updated_at` differs.
+ * recipe fresh and holds the edit back as [CONFLICT] when the server's `updated_at` differs and
+ * the server does not already say what the edit says ([sameContent]). Fas 4 review (fix-data): it
+ * comes from the same stored JSON as the fingerprint, never from the overview, which a sync moves
+ * while the detail the draft was made from stays old.
  * [decode] reads a payload back into a [RecipeDraft] (the editor reopens a kept edit).
  */
 internal object RecipeEditPayloads {
@@ -54,6 +58,13 @@ internal object RecipeEditPayloads {
     const val CONFLICT: String = "tandem.recipe.conflict"
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    /** The recipe's own fields an edit sends; see [sameContent]. */
+    private val COMPARED_FIELDS =
+        listOf("name", "description", "servings", "servings_text", "working_time", "waiting_time", "source_url", "private")
+
+    /** The fields of the server's copy the app does not edit but shows, kept while an edit is unsent (never in the payload). */
+    private val NUTRITION_FIELDS = listOf("properties", "food_properties")
 
     init {
         check(CONFLICT == RecipeEditProblem.CONFLICT.detail)
@@ -213,6 +224,84 @@ internal object RecipeEditPayloads {
     fun baseUpdatedAt(base: String?): Instant? =
         base?.let { parse(it) }?.string("updated_at")?.let { runCatching { Instant.parse(it) }.getOrNull() }
 
+    /** The `updated_at` of the server's JSON [recipe] in the sender's precision; null for an unsent edit's body, which has none. */
+    fun updatedAtOf(recipe: JsonObject?): Instant? =
+        TandoorDates.parseInstantOrNull(recipe?.string("updated_at"))?.toEpochMilli()?.let { Instant.fromEpochMilliseconds(it) }
+
+    /**
+     * The base snapshot an edit that started from [from] has after this device's own write moved
+     * the recipe to [to]; null when [base] did not start from [from] (or has no `updated_at`).
+     */
+    fun rebased(base: String?, from: JsonObject, to: JsonObject): String? {
+        val started = baseUpdatedAt(base) ?: return null
+        val steps = baseStepsFingerprint(base)
+        if (started != updatedAtOf(from) || (steps != null && steps != stepsFingerprint(from))) return null
+        return updatedAtOf(to)?.let { base(it, steps?.let { stepsFingerprint(to) }) }
+    }
+
+    /** The whole-recipe [payload] with the keywords [after] has and [before] lacks added, and the reverse removed. */
+    fun withKeywordChange(payload: String, before: JsonObject, after: JsonObject): String {
+        val body = parse(payload) ?: return payload
+        val had = before.keywordsById()
+        val has = after.keywordsById()
+        val kept = body.array("keywords").filterNot { (it as? JsonObject)?.long("id")?.let { id -> id in had && id !in has } == true }
+        val present = kept.mapNotNull { (it as? JsonObject)?.long("id") }.toSet()
+        val added = has.filterKeys { it !in had && it !in present }.map { (id, name) ->
+            buildJsonObject {
+                put("id", id)
+                put("name", name)
+            }
+        }
+        return JsonObject(body + ("keywords" to JsonArray(kept + added))).toString()
+    }
+
+    private fun JsonObject.keywordsById(): Map<Long, String> = array("keywords").mapNotNull { element ->
+        val keyword = element as? JsonObject ?: return@mapNotNull null
+        keyword.long("id")?.let { id -> id to keyword.string("name").orEmpty() }
+    }.toMap()
+
+    /**
+     * Whether the server's [recipe] already says what the whole-recipe [body] says: the edit's fields,
+     * keywords and steps by content, not by id (rows the edit added got theirs from the server). True
+     * for a PATCH whose answer was lost: it was applied, nobody else changed anything.
+     */
+    fun sameContent(recipe: JsonObject, body: JsonObject): Boolean =
+        COMPARED_FIELDS.all { field -> recipe.text(field) == body.text(field) } &&
+            sameKeywords(recipe, body) &&
+            stepsContent(recipe) == stepsContent(body)
+
+    private fun sameKeywords(recipe: JsonObject, body: JsonObject): Boolean {
+        val theirs = recipe.array("keywords").mapNotNull { it as? JsonObject }
+        val ours = body.array("keywords").mapNotNull { it as? JsonObject }
+        return theirs.size == ours.size && ours.all { keyword ->
+            val id = keyword.long("id")
+            theirs.any { other -> if (id != null) other.long("id") == id else key(other.text("name")) == key(keyword.text("name")) }
+        }
+    }
+
+    private fun stepsContent(recipe: JsonObject): List<List<String>> = recipe.array("steps").mapNotNull { it as? JsonObject }
+        .sortedBy { it.int("order") ?: 0 }
+        .map { step ->
+            val lines = step.array("ingredients").mapNotNull { it as? JsonObject }.sortedBy { it.int("order") ?: 0 }.map { line ->
+                val food = (line["food"] as? JsonObject)?.text("name").orEmpty()
+                val unit = (line["unit"] as? JsonObject)?.text("name").orEmpty()
+                val amount = (line["amount"] as? JsonPrimitive)?.doubleOrNull ?: 0.0
+                listOf(amount, key(unit), key(food), line.text("note"), line.bool("is_header") == true, line.bool("no_amount") == true)
+                    .joinToString("|")
+            }
+            listOf(step.text("name"), step.text("instruction"), step.text("time")) + lines
+        }
+
+    /**
+     * [body] as the stored copy of an unsent edit: an edit's body has no nutrition, and the panel
+     * reads the stored JSON. Nothing else of [stored] comes along: `updated_at` is how a server copy
+     * is told from an unsent body.
+     */
+    fun withStoredNutrition(body: JsonObject, stored: JsonObject?): JsonObject {
+        val kept = NUTRITION_FIELDS.mapNotNull { field -> stored?.get(field)?.let { field to it } }
+        return JsonObject(body + kept)
+    }
+
     /** A `RECIPE_IMAGE` row: the app-private copy of the photo. */
     fun image(path: String): String = buildJsonObject { put("file", path) }.toString()
 
@@ -301,6 +390,9 @@ internal object RecipeEditPayloads {
     fun key(name: String): String = name.trim().lowercase()
 
     private fun JsonObject.string(field: String): String? = (this[field] as? JsonPrimitive)?.takeUnless { it is JsonNull }?.contentOrNull
+
+    /** [field] as text, a missing value and null alike as empty (`description` null and "" say the same). */
+    private fun JsonObject.text(field: String): String = string(field).orEmpty()
 
     private fun JsonObject.int(field: String): Int? = (this[field] as? JsonPrimitive)?.intOrNull
 

@@ -58,9 +58,16 @@ abstract class CookLogDao {
      * @param entry the entry; its `localId`, `serverId`, `state`, `sentAt` and `problem` are ignored.
      * @param outboxPayload the body of `POST /api/cook-log/` to queue, or null when the entry is
      *   never sent (demo mode).
+     * @param dependsOn the CREATE of a recipe that has no server id yet (Fas 4 review, fix-data).
      */
     @Transaction
-    open suspend fun logLocally(entry: CookLogEntity, outboxPayload: String?, nowEpochMillis: Long, rules: CookStatsRules): Long {
+    open suspend fun logLocally(
+        entry: CookLogEntity,
+        outboxPayload: String?,
+        nowEpochMillis: Long,
+        rules: CookStatsRules,
+        dependsOn: Long? = null,
+    ): Long {
         val accountId = entry.accountId
         val localId = minOf(lowestLocalId(accountId) ?: 0L, 0L) - 1
         val outboxId = outboxPayload?.let { payload ->
@@ -71,6 +78,7 @@ abstract class CookLogDao {
                     entity = OutboxEntities.RECIPE,
                     serverId = entry.recipeId,
                     payload = payload,
+                    dependsOn = dependsOn,
                     createdAtEpochMillis = nowEpochMillis,
                 ),
             )

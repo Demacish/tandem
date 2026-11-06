@@ -5,7 +5,6 @@ import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.dao.RecipeDao
-import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.mapper.toRecipe
 import casa.moller.tandem.core.database.relation.RecipeDetailWithSteps
@@ -31,6 +30,8 @@ import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.recipeedit.currentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.observeCurrentRecipeId
 import casa.moller.tandem.core.sync.remote.ImageResolver
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import casa.moller.tandem.core.sync.remote.toListQuery
@@ -52,7 +53,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -70,7 +70,7 @@ import kotlinx.serialization.json.put
  *   real account, stored copy older than [SyncSchedule.DETAIL_FRESH_FOR] or missing) the state
  *   with `refreshing = true`, then the fresh copy from the database, or the old one with the error.
  * - [markViewed] stores the view locally and queues `POST /api/view-log/` (coalesced per recipe
- *   in the outbox, sent by `SyncOutboxWorker`).
+ *   in the outbox, sent by `SyncOutboxWorker`); a recipe not on the server yet has no view log.
  * - Demo mode never touches the network: search runs locally and refresh succeeds at once.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -152,7 +152,9 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
             when (source) {
                 // Fas 3 (redigerare lane): a recipe created in the app keeps its temporary id in an open
                 // screen after the server answered; the stored copy is found under the server id then.
-                is ActiveSource.Stored -> flow { emit(currentId(source, id)) }.flatMapLatest { detailStates(source, it, revalidate) }
+                // Fas 4 review (fix-data): also when the answer comes while the screen is open.
+                is ActiveSource.Stored -> databases.get(source.kind).observeCurrentRecipeId(source.accountId, id)
+                    .flatMapLatest { detailStates(source, it, revalidate) }
 
                 ActiveSource.Loading -> emptyFlow<RecipeDetailState>()
 
@@ -225,7 +227,7 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
     override suspend fun setAvailableOffline(id: Long, available: Boolean): Outcome<Unit> = catchingUnexpected {
         when (val source = sources.current()) {
             is ActiveSource.Stored -> {
-                recipeDao(source).setPinned(source.accountId, id, available)
+                recipeDao(source).setPinned(source.accountId, currentId(source, id), available)
                 // Download now if possible; otherwise the next sync fetches it (pinned without detail).
                 if (available && source is ActiveSource.Remote && network.online.value) {
                     scope.launch { downloadForOffline(source, id) }
@@ -246,7 +248,8 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
     override fun observeServingsChoice(id: Long): Flow<ServingsChoice?> = sources.source
         .flatMapLatest { source ->
             when (source) {
-                is ActiveSource.Stored -> recipeDao(source).observePortionsChosen(source.accountId, id)
+                is ActiveSource.Stored -> databases.get(source.kind).observeCurrentRecipeId(source.accountId, id)
+                    .flatMapLatest { current -> recipeDao(source).observePortionsChosen(source.accountId, current) }
                     .map { servings -> servings?.takeIf { it > 0 }?.let { ServingsChoice(id, it) } }
 
                 ActiveSource.Loading -> emptyFlow<ServingsChoice?>()
@@ -263,7 +266,7 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
         return catchingUnexpected {
             when (val source = sources.current()) {
                 is ActiveSource.Stored -> {
-                    recipeDao(source).setPortionsChosen(source.accountId, id, servings)
+                    recipeDao(source).setPortionsChosen(source.accountId, currentId(source, id), servings)
                     Outcome.Success(Unit)
                 }
 
@@ -277,11 +280,12 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
             val source = sources.current() as? ActiveSource.Stored ?: return
             val now = clock.nowMillis()
             val database = databases.get(source.kind)
-            database.recipeDao().markViewed(source.accountId, id, now)
+            val recipeId = currentId(source, id)
+            database.recipeDao().markViewed(source.accountId, recipeId, now)
             // Phase 2 (böcker lane, #42): nothing is queued for a guest (read-only mode).
-            if (source is ActiveSource.Remote && !isGuest(database, source.accountId)) {
-                val payload = buildJsonObject { put(FIELD_RECIPE, id) }.toString()
-                database.outboxDao().enqueueViewLog(source.accountId, id, payload, now)
+            if (source is ActiveSource.Remote && recipeId >= 0 && !isGuest(database, source.accountId)) {
+                val payload = buildJsonObject { put(FIELD_RECIPE, recipeId) }.toString()
+                database.outboxDao().enqueueViewLog(source.accountId, recipeId, payload, now)
                 scheduler.scheduleOutbox()
             }
         } catch (e: CancellationException) {
@@ -327,7 +331,7 @@ internal class OfflineFirstRecipeRepository @Inject constructor(
     private fun recipeDao(source: ActiveSource.Stored): RecipeDao = databases.get(source.kind).recipeDao()
 
     private suspend fun currentId(source: ActiveSource.Stored, id: Long): Long =
-        if (id >= 0) id else databases.get(source.kind).idRewriteDao().current(source.accountId, OutboxEntities.RECIPE_EDIT, id)
+        databases.get(source.kind).currentRecipeId(source.accountId, id)
 
     /** The detail's refresh, combined with the stored rows. */
     private data class RefreshState(val refreshing: Boolean = false, val error: TandemError? = null)

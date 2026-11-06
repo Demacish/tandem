@@ -29,6 +29,9 @@ import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.recipeedit.currentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.observeCurrentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.recipeCreateRow
 import java.text.Collator
 import java.util.Locale
 import javax.inject.Inject
@@ -138,15 +141,16 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
     override fun observeStatus(recipeId: Long): Flow<RecipeBookStatus> = sources.source
         .flatMapLatest { source ->
             if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(RecipeBookStatus(recipeId))
-            snapshotOf(source).map { snapshot ->
-                val containing = snapshot.entries.filter { it.recipeId == recipeId }.map { it.bookId }.toSet()
+            val currentId = databases.get(source.kind).observeCurrentRecipeId(source.accountId, recipeId)
+            combine(currentId, snapshotOf(source)) { current, snapshot ->
+                val containing = snapshot.entries.filter { it.recipeId == current }.map { it.bookId }.toSet()
                 val books = snapshot.books.filter { it.localId in containing }
                 val favorites = books.filter { storedKind(it.kind) == RecipeBookKind.FAVORITES }
                 RecipeBookStatus(
                     recipeId = recipeId,
                     isFavorite = favorites.any { it.createdBy == snapshot.userId },
                     favoriteOf = favorites.filter { it.createdBy != snapshot.userId }.mapNotNull { it.createdByName }.distinct(),
-                    wantToCook = recipeId in snapshot.wantToCook,
+                    wantToCook = current in snapshot.wantToCook,
                     bookIds = books.map { it.localId }.toSet(),
                 )
             }
@@ -384,7 +388,8 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
         }
 
         /** Adds [recipeId] to [book] (nothing when it is there already). */
-        suspend fun addEntry(book: RecipeBookEntity, recipeId: Long) {
+        suspend fun addEntry(book: RecipeBookEntity, asked: Long) {
+            val recipeId = database.currentRecipeId(accountId, asked)
             if (dao.findEntries(accountId, book.localId, recipeId).isNotEmpty()) return
             val localId = database.idRewriteDao().nextLocalId(accountId, OutboxEntities.RECIPE_BOOK_ENTRY)
             val entry = RecipeBookEntryEntity(accountId, localId, serverId = null, bookId = book.localId, recipeId = recipeId)
@@ -398,16 +403,19 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
                     entity = OutboxEntities.RECIPE_BOOK_ENTRY,
                     localId = localId,
                     payload = BookPayloads.createEntry(bookRef, recipeId),
-                    refs = BookPayloads.createEntryRefs(bookRef),
-                    dependsOn = if (book.serverId == null) createRowOf(OutboxEntities.RECIPE_BOOK, book.localId)?.id else null,
+                    refs = BookPayloads.createEntryRefs(bookRef, recipeId),
+                    dependsOn = listOfNotNull(
+                        createRowOf(OutboxEntities.RECIPE_BOOK, book.localId).takeIf { book.serverId == null }?.id,
+                        database.recipeCreateRow(accountId, recipeId),
+                    ).maxOrNull(),
                     createdAtEpochMillis = now,
                 ),
             )
         }
 
-        /** Removes [recipeId] from [book] here and queues the DELETEs (an unsent CREATE is cancelled instead). */
-        suspend fun removeEntries(book: RecipeBookEntity, recipeId: Long) {
-            for (entry in dao.findEntries(accountId, book.localId, recipeId)) {
+        /** Removes recipe [asked] from [book] here and queues the DELETEs (an unsent CREATE is cancelled instead). */
+        suspend fun removeEntries(book: RecipeBookEntity, asked: Long) {
+            for (entry in dao.findEntries(accountId, book.localId, database.currentRecipeId(accountId, asked))) {
                 dao.deleteEntries(accountId, listOf(entry.localId))
                 if (remote == null) continue
                 val serverId = entry.serverId
@@ -427,7 +435,8 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
         }
 
         /** "Vill laga": queued for the server, or the keyword link itself in demo mode. */
-        suspend fun setWantToCook(recipeId: Long, want: Boolean) {
+        suspend fun setWantToCook(asked: Long, want: Boolean) {
+            val recipeId = database.currentRecipeId(accountId, asked)
             val keywordIds = dao.getKeywordIdsNamed(accountId, WantToCook.KEYWORD)
             if (remote == null) {
                 if (want) {
@@ -448,6 +457,7 @@ internal class OfflineFirstRecipeBookRepository @Inject constructor(
                     serverId = recipeId,
                     payload = BookPayloads.wantToCook(want),
                     baseSnapshot = BookPayloads.wantToCook(!want),
+                    dependsOn = database.recipeCreateRow(accountId, recipeId),
                     createdAtEpochMillis = now,
                 ),
             )

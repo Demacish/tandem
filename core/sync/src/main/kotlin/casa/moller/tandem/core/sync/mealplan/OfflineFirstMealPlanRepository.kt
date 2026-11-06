@@ -36,6 +36,8 @@ import casa.moller.tandem.core.sync.engine.DetailFetcher
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.recipeedit.currentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.recipeCreateRow
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -75,7 +77,8 @@ import kotlinx.serialization.json.put
  *   of its CREATE; removing such a meal removes everything queued for it).
  * - **Temporary ids:** a meal or meal type created here gets a negative id (`IdRewriteDao.nextLocalId`);
  *   every function also accepts that id after the server answered. A meal with a new meal type
- *   refers to it through `refs` (`meal_type.id`) and waits for its CREATE (`depends_on`).
+ *   refers to it through `refs` (`meal_type.id`) and waits for its CREATE (`depends_on`); so does
+ *   a meal with a recipe created in the app (`recipe.id`; Fas 4 review, fix-data).
  * - **Dates** are days in the server's zone ([MealPlanDates]); a move keeps the meal's length and
  *   always sends both dates; the PATCH carries only the changed fields and the values they had, so
  *   the sender can compare them with the server first ([MealPlanOutboxHandler]).
@@ -220,14 +223,15 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
     private suspend fun createMeal(draft: MealPlanDraft): Outcome<Long> = write { context ->
         if (draft.recipeId == null && draft.title.isBlank()) return@write Outcome.Failure(TandemError.BadRequest())
         val type = context.mealType(draft.mealTypeId) ?: return@write Outcome.Failure(TandemError.BadRequest())
-        val recipeName = draft.recipeId?.let { context.recipeName(it) }
+        val recipeId = draft.recipeId?.let { context.database.currentRecipeId(context.accountId, it) }
+        val recipeName = recipeId?.let { context.recipeName(it) }
         val to = draft.toDate?.takeIf { it >= draft.date } ?: draft.date
         val meal = MealPlanEntity(
             accountId = context.accountId,
             localId = context.database.idRewriteDao().nextLocalId(context.accountId, OutboxEntities.MEAL_PLAN),
             serverId = null,
             title = draft.title.trim(),
-            recipeId = draft.recipeId,
+            recipeId = recipeId,
             servings = draft.servings,
             note = draft.note.trim(),
             fromDate = draft.date.toString(),
@@ -237,7 +241,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             // Phase 2 (koppling lane): `addshopping` puts the ingredients on the list on the server;
             // until the answer says so, the meal already counts as "on the list", so "Handla för
             // veckan" never adds it a second time (plan 6.2: no duplicate rows).
-            shopping = draft.addToShopping && draft.recipeId != null && context.source is ActiveSource.Remote,
+            shopping = draft.addToShopping && recipeId != null && context.source is ActiveSource.Remote,
         )
         context.database.mealPlanDao().upsert(listOf(meal))
         context.queue(
@@ -246,6 +250,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             serverId = null,
             payload = MealPlanPayloads.create(meal, type.name, recipeName, draft.addToShopping),
             mealTypeId = type.id,
+            recipeId = recipeId,
         )
         Outcome.Success(meal.localId)
     }
@@ -263,7 +268,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             else -> from to to
         }
         val type = update.mealTypeId?.let { context.mealType(it) ?: return@write Outcome.Failure(TandemError.BadRequest()) }
-        val recipeId = update.recipeId ?: meal.recipeId
+        val recipeId = update.recipeId?.let { context.database.currentRecipeId(context.accountId, it) } ?: meal.recipeId
         val recipeName = if (recipeId != meal.recipeId) recipeId?.let { context.recipeName(it) } else meal.recipeName
         val changed = meal.copy(
             fromDate = newFrom.toString(),
@@ -285,6 +290,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             payload = payload,
             baseSnapshot = base,
             mealTypeId = changed.mealTypeId.takeIf { it != meal.mealTypeId },
+            recipeId = changed.recipeId.takeIf { it != meal.recipeId },
         )
         Outcome.Success(Unit)
     }
@@ -516,8 +522,9 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         suspend fun recipeName(recipeId: Long): String? = database.recipeDao().getOverviews(accountId, listOf(recipeId)).firstOrNull()?.name
 
         /**
-         * Queues a row (a real account only). A meal type that is still temporary is listed in
-         * `refs` and the row waits for its CREATE.
+         * Queues a row (a real account only). A meal type or a recipe that is still temporary is
+         * listed in `refs` and the row waits for its CREATE (the newer of the two; the sender moves
+         * it to the other one if that is still queued when this one is done).
          */
         @Suppress("LongParameterList") // The outbox row's own fields.
         suspend fun queue(
@@ -528,6 +535,7 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             entity: String = OutboxEntities.MEAL_PLAN,
             baseSnapshot: String? = null,
             mealTypeId: Long? = null,
+            recipeId: Long? = null,
         ) {
             if (source !is ActiveSource.Remote) return
             val outbox = database.outboxDao()
@@ -543,9 +551,9 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
                     serverId = serverId,
                     payload = payload,
                     baseSnapshot = baseSnapshot,
-                    dependsOn = typeCreate?.id,
+                    dependsOn = listOfNotNull(typeCreate?.id, database.recipeCreateRow(accountId, recipeId)).maxOrNull(),
                     createdAtEpochMillis = now,
-                    refs = mealTypeId?.let { MealPlanPayloads.refs(it) },
+                    refs = MealPlanPayloads.refs(mealTypeId, recipeId),
                 ),
             )
         }

@@ -29,6 +29,8 @@ import casa.moller.tandem.core.sync.pantry.UnpackedToday
 import casa.moller.tandem.core.sync.platform.NetworkStatus
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.recipeedit.currentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.recipeCreateRow
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Instant
@@ -207,13 +209,15 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
         val source = sources.current()
         if (source is ActiveSource.Remote && readOnly()) return Outcome.Failure(DataProblem.READ_ONLY.toError())
         val stored = source as? ActiveSource.Stored ?: return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
-        val dao = databases.get(stored.kind).shoppingDao()
-        if (dao.getRecipeServings(stored.accountId, request.recipeId) == null && source is ActiveSource.Remote && network.online.value) {
+        val database = databases.get(stored.kind)
+        val dao = database.shoppingDao()
+        val recipeId = database.currentRecipeId(stored.accountId, request.recipeId)
+        if (dao.getRecipeServings(stored.accountId, recipeId) == null && source is ActiveSource.Remote && network.online.value) {
             // Not downloaded yet: read the recipe now (its ingredients are needed to scale them).
-            details.fetch(source, request.recipeId, isBackground = false)
+            details.fetch(source, recipeId, isBackground = false)
         }
-        val servings = dao.getRecipeServings(stored.accountId, request.recipeId) ?: return Outcome.Failure(TandemError.NotFound)
-        return write { context -> context.addRecipe(request, servings) }
+        val servings = dao.getRecipeServings(stored.accountId, recipeId) ?: return Outcome.Failure(TandemError.NotFound)
+        return write { context -> context.addRecipe(request.copy(recipeId = recipeId), servings) }
     }
 
     override suspend fun setChecked(ids: Collection<Long>, checked: Boolean): Outcome<Unit> = write { context ->
@@ -455,8 +459,11 @@ internal class OfflineFirstShoppingRepository @Inject constructor(
                         entity = OutboxEntities.SHOPPING_LIST_RECIPE,
                         localId = listRecipe.localId,
                         payload = ShoppingPayloads.createListRecipe(request.recipeId, request.servings, "", mealPlanId),
-                        refs = ShoppingPayloads.createListRecipeRefs(mealPlanId),
-                        dependsOn = mealPlanId?.takeIf { it < 0 }?.let { createRowOf(OutboxEntities.MEAL_PLAN, it)?.id },
+                        refs = ShoppingPayloads.createListRecipeRefs(mealPlanId, request.recipeId),
+                        dependsOn = listOfNotNull(
+                            mealPlanId?.takeIf { it < 0 }?.let { createRowOf(OutboxEntities.MEAL_PLAN, it)?.id },
+                            database.recipeCreateRow(accountId, request.recipeId),
+                        ).maxOrNull(),
                         createdAtEpochMillis = now,
                     ),
                 )

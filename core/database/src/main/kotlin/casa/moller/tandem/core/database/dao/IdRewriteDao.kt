@@ -1,12 +1,18 @@
 package casa.moller.tandem.core.database.dao
 
 import androidx.room3.Dao
+import androidx.room3.Insert
+import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
 import androidx.room3.Transaction
 import androidx.room3.Upsert
 import casa.moller.tandem.core.database.entity.IdMappingEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
+import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.RecipeDetailEntity
+import casa.moller.tandem.core.database.outbox.OutboxRefs
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Temporary ids of objects created offline and their rewrite to server ids (plan 3.5, 5.7; Phase 2,
@@ -35,6 +41,10 @@ abstract class IdRewriteDao {
     /** The server id that temporary id [localId] of [entity] got, or null while it has none. */
     @Query("SELECT server_id FROM id_mapping WHERE account_id = :accountId AND entity = :entity AND local_id = :localId")
     abstract suspend fun resolve(accountId: String, entity: String, localId: Long): Long?
+
+    /** Fas 4 review (fix-data): [resolve] as a flow, so an open screen follows a CREATE answered while it is open. */
+    @Query("SELECT server_id FROM id_mapping WHERE account_id = :accountId AND entity = :entity AND local_id = :localId")
+    abstract fun observeResolved(accountId: String, entity: String, localId: Long): Flow<Long?>
 
     /** [id] itself when it is a server id (>= 0), its server id when it is a mapped temporary id, else [id]. */
     open suspend fun current(accountId: String, entity: String, id: Long): Long = if (id >= 0) id else resolve(accountId, entity, id) ?: id
@@ -123,11 +133,16 @@ abstract class IdRewriteDao {
      * Fas 3 (grund lane): the local side of an answered recipe CREATE (part of [completeCreate]'s
      * transaction). The sender stored the server's answer as the recipe's detail under its server
      * id already, so the rows under the temporary id go (list entry, detail, steps, ingredients,
-     * keyword links, Today's carousel rows and the FTS row), unsent `recipe` rows of it (view logs)
-     * are dropped, and what pointed at the temporary id (a meal planned with it, "Klart!" entries,
-     * a book entry, the recipe on the shopping list) now names the server id.
+     * keyword links, Today's carousel rows and the FTS row) and what pointed at the temporary id (a
+     * meal planned with it, "Klart!" entries, a book entry, the recipe on the shopping list) now
+     * names the server id.
+     *
+     * Fas 4 review (fix-data): the device's own state of the recipe (pin, chosen servings, last
+     * viewed) moves with it. Of the unsent `recipe` rows only view logs are dropped; "Klart!",
+     * "Vill laga" and pairings go on under the server id ([rewriteRecipeRows]).
      */
     open suspend fun rewriteRecipeCreate(accountId: String, localId: Long, serverId: Long) {
+        carryRecipeLocalState(accountId, localId, serverId)
         deleteRecipeFts(accountId, localId)
         deleteRecipeOverview(accountId, localId)
         deleteRecipeDetail(accountId, localId)
@@ -135,11 +150,34 @@ abstract class IdRewriteDao {
         deleteRecipeIngredients(accountId, localId)
         deleteRecipeKeywordLinks(accountId, localId)
         deleteRecipeHomeRows(accountId, localId)
-        deleteUnsentRecipeRows(accountId, localId)
+        deleteUnsentRecipeViewLogs(accountId, localId)
+        rewriteRecipeRows(accountId, localId, serverId)
         rewriteMealPlanRecipe(accountId, localId, serverId)
         rewriteCookLogRecipe(accountId, localId, serverId)
         rewriteBookEntryRecipe(accountId, localId, serverId)
         rewriteListRecipeRecipe(accountId, localId, serverId)
+        rewriteEntryRecipe(accountId, localId, serverId)
+    }
+
+    /** The pin, chosen servings and last view of the temporary row, on the server id's row (made when the answer stored none). */
+    private suspend fun carryRecipeLocalState(accountId: String, localId: Long, serverId: Long) {
+        val temporary = getRecipeDetail(accountId, localId) ?: return
+        val viewed = temporary.lastViewedLocalEpochMillis
+        val servings = temporary.portionsChosen
+        if (!temporary.pinned && viewed == null && servings == null) return
+        insertRecipeDetailStub(RecipeDetailEntity(accountId = accountId, recipeId = serverId))
+        mergeRecipeLocalState(accountId, serverId, temporary.pinned, viewed, servings)
+    }
+
+    /**
+     * The `recipe` rows of temporary id [localId] (all but view logs) now name [serverId]. A cook
+     * log's payload names the recipe too: the sender compares the two.
+     */
+    private suspend fun rewriteRecipeRows(accountId: String, localId: Long, serverId: Long) {
+        for (row in getRecipeRows(accountId, localId)) {
+            val payload = if (row.op == OutboxOps.COOK_LOG) OutboxRefs.withId(row.payload, FIELD_RECIPE, serverId) else row.payload
+            rewriteRecipeRow(row.id, serverId, payload)
+        }
     }
 
     /**
@@ -487,9 +525,33 @@ abstract class IdRewriteDao {
 
     @Query(
         "DELETE FROM outbox WHERE account_id = :accountId AND entity = 'recipe' AND server_id = :recipeId " +
-            "AND state != 'IN_FLIGHT'",
+            "AND op = '" + OutboxOps.VIEW_LOG + "' AND state != 'IN_FLIGHT'",
     )
-    abstract suspend fun deleteUnsentRecipeRows(accountId: String, recipeId: Long)
+    abstract suspend fun deleteUnsentRecipeViewLogs(accountId: String, recipeId: Long)
+
+    @Query("SELECT * FROM outbox WHERE account_id = :accountId AND entity = 'recipe' AND server_id = :recipeId ORDER BY id")
+    abstract suspend fun getRecipeRows(accountId: String, recipeId: Long): List<OutboxEntity>
+
+    @Query("UPDATE outbox SET server_id = :serverId, payload = :payload WHERE id = :id")
+    abstract suspend fun rewriteRecipeRow(id: Long, serverId: Long, payload: String)
+
+    @Query("SELECT * FROM recipe_detail WHERE account_id = :accountId AND recipe_id = :recipeId")
+    abstract suspend fun getRecipeDetail(accountId: String, recipeId: Long): RecipeDetailEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract suspend fun insertRecipeDetailStub(row: RecipeDetailEntity)
+
+    @Query(
+        "UPDATE recipe_detail SET pinned = (pinned OR :pinned), last_viewed_local = COALESCE(last_viewed_local, :viewedEpochMillis), " +
+            "portions_chosen = COALESCE(portions_chosen, :servings) WHERE account_id = :accountId AND recipe_id = :recipeId",
+    )
+    abstract suspend fun mergeRecipeLocalState(
+        accountId: String,
+        recipeId: Long,
+        pinned: Boolean,
+        viewedEpochMillis: Long?,
+        servings: Double?,
+    )
 
     @Query("UPDATE meal_plan SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
     abstract suspend fun rewriteMealPlanRecipe(accountId: String, localId: Long, serverId: Long)
@@ -503,6 +565,9 @@ abstract class IdRewriteDao {
     @Query("UPDATE shopping_list_recipe SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
     abstract suspend fun rewriteListRecipeRecipe(accountId: String, localId: Long, serverId: Long)
 
+    @Query("UPDATE shopping_entry SET recipe_id = :serverId WHERE account_id = :accountId AND recipe_id = :localId")
+    abstract suspend fun rewriteEntryRecipe(accountId: String, localId: Long, serverId: Long)
+
     companion object {
         /**
          * Fas S (rester lane): how long a mapping is kept after its CREATE was rewritten at least
@@ -510,6 +575,9 @@ abstract class IdRewriteDao {
          * a while (`current`, the meal plan's lookup by an old id); after 30 days it is gone.
          */
         const val MAPPING_RETENTION_MILLIS: Long = 30L * 24 * 60 * 60 * 1000
+
+        /** The recipe's id in a `COOK_LOG` payload. */
+        private const val FIELD_RECIPE: String = "recipe"
 
         /** `MIN(0, <lowest in the table>, <lowest mapped>, <lowest in the outbox>)`; callers subtract 1. */
         private const val LOWEST_PREFIX: String = "SELECT MIN(0, IFNULL("

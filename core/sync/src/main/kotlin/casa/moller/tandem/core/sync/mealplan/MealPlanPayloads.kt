@@ -26,7 +26,8 @@ import kotlinx.serialization.json.put
  *   midnight (the meal type's time is filled in), a moved one keeps its time of day.
  * - **PATCH** carries only the changed fields; its `base_snapshot` holds the same fields as they
  *   were before (dates as `yyyy-MM-dd`), which the sender compares with the server's current meal.
- * - A **temporary meal type** (created offline, negative id) is listed in `refs` as `meal_type.id`.
+ * - A **temporary meal type** (created offline, negative id) is listed in `refs` as `meal_type.id`,
+ *   a **temporary recipe** (created in the app, not answered yet) as `recipe.id`.
  */
 internal object MealPlanPayloads {
     const val TITLE = "title"
@@ -63,9 +64,13 @@ internal object MealPlanPayloads {
         if (addToShopping) put(ADD_SHOPPING, true)
     }.toString()
 
-    /** `refs` of a meal plan row: its meal type when that is still temporary. */
-    fun refs(mealTypeId: Long): String? =
-        if (mealTypeId < 0) OutboxRefs.encode(mapOf("$MEAL_TYPE.id" to OutboxEntities.MEAL_TYPE)) else null
+    /** `refs` of a meal plan row: its meal type and its recipe when they are still temporary. */
+    fun refs(mealTypeId: Long?, recipeId: Long?): String? {
+        val refs = LinkedHashMap<String, String>()
+        if (mealTypeId != null && mealTypeId < 0) refs["$MEAL_TYPE.id"] = OutboxEntities.MEAL_TYPE
+        if (recipeId != null && recipeId < 0) refs["$RECIPE.id"] = OutboxEntities.RECIPE_EDIT
+        return OutboxRefs.encode(refs)
+    }
 
     /** `POST /api/meal-type/` (`time` as `HH:mm`, FACTS "Fas 2 f"). */
     fun createMealType(name: String, time: LocalTime?, color: String?, order: Int): String = buildJsonObject {

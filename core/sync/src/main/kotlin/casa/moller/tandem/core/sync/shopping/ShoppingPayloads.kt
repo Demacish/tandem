@@ -56,7 +56,8 @@ internal object ShoppingPayloads {
         put("amount", amount)
         put("shopping_lists", listArray(listIds))
         listRecipeId?.let { put("list_recipe", it) }
-        ingredientId?.let { put("ingredient", it) }
+        // Fas 4 review (fix-data): the lines of a recipe not on the server yet have no ids it knows.
+        ingredientId?.takeIf { it > 0 }?.let { put("ingredient", it) }
     }.toString()
 
     /** `refs` of an entry CREATE that points at a list recipe created offline. */
@@ -99,8 +100,13 @@ internal object ShoppingPayloads {
         mealPlanId?.let { put("mealplan", it) }
     }.toString()
 
-    fun createListRecipeRefs(mealPlanId: Long?): String? =
-        if (mealPlanId != null && mealPlanId < 0) OutboxRefs.encode(mapOf("mealplan" to OutboxEntities.MEAL_PLAN)) else null
+    /** `refs` of a list recipe: its meal and its recipe when they are still temporary. */
+    fun createListRecipeRefs(mealPlanId: Long?, recipeId: Long): String? {
+        val refs = LinkedHashMap<String, String>()
+        if (mealPlanId != null && mealPlanId < 0) refs["mealplan"] = OutboxEntities.MEAL_PLAN
+        if (recipeId < 0) refs["recipe"] = OutboxEntities.RECIPE_EDIT
+        return OutboxRefs.encode(refs)
+    }
 
     /** A food's aisle (`{supermarket_category: {id, name}}` or null). */
     fun foodCategory(categoryId: Long?, categoryName: String?): String = buildJsonObject {

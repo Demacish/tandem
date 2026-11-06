@@ -34,14 +34,19 @@ internal object BookPayloads {
         if (shareWithSpace) put(SHARE_WITH_SPACE, true)
     }.toString()
 
-    /** `POST /api/recipe-book-entry/` `{book, recipe}`; [bookId] may be a temporary id (see [createEntryRefs]). */
+    /** `POST /api/recipe-book-entry/` `{book, recipe}`; both may be temporary ids (see [createEntryRefs]). */
     fun createEntry(bookId: Long, recipeId: Long): String = buildJsonObject {
         put("book", bookId)
         put("recipe", recipeId)
     }.toString()
 
-    /** `refs` of an entry CREATE whose book has no server id yet. */
-    fun createEntryRefs(bookId: Long): String? = if (bookId < 0) OutboxRefs.encode(mapOf("book" to OutboxEntities.RECIPE_BOOK)) else null
+    /** `refs` of an entry CREATE whose book or recipe has no server id yet. */
+    fun createEntryRefs(bookId: Long, recipeId: Long): String? {
+        val refs = LinkedHashMap<String, String>()
+        if (bookId < 0) refs["book"] = OutboxEntities.RECIPE_BOOK
+        if (recipeId < 0) refs["recipe"] = OutboxEntities.RECIPE_EDIT
+        return OutboxRefs.encode(refs)
+    }
 
     /** `RECIPE_KEYWORDS` (op on the recipe): the wished state of the want-to-cook keyword. */
     fun wantToCook(want: Boolean): String = buildJsonObject {

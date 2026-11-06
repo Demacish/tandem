@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.sync.engine
 
 import casa.moller.tandem.core.database.TandemDatabaseFactory
+import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -36,6 +37,9 @@ import kotlinx.serialization.json.JsonObject
  *   (JSON 403 with a working token) is treated the same way.
  * - An answer that arrives after the active account changed (logout during the fetch) is not
  *   stored, so a logged-out account's recipe never comes back.
+ * - A recipe created in the app (Fas 4 review, fix-data): a temporary id is followed to its server
+ *   id, and one that has none yet is not on the server: nothing is fetched (plan 4.1), which also
+ *   keeps the 404 from wiping the only copy.
  */
 @Singleton
 internal class DetailFetcher @Inject constructor(
@@ -61,8 +65,10 @@ internal class DetailFetcher @Inject constructor(
             fetchNow(remote, recipeId, background = false, force = force)
         }
 
-    private suspend fun fetchNow(remote: ActiveSource.Remote, recipeId: Long, background: Boolean, force: Boolean): Outcome<Unit> =
+    private suspend fun fetchNow(remote: ActiveSource.Remote, requested: Long, background: Boolean, force: Boolean): Outcome<Unit> =
         catchingUnexpected {
+            val recipeId = databases.get(remote.kind).idRewriteDao().current(remote.accountId, OutboxEntities.RECIPE_EDIT, requested)
+            if (recipeId < 0) return@catchingUnexpected Outcome.Success(Unit)
             val response = caller.call(remote, background, confirmUnauthorized = true) { recipes.recipeJson(recipeId) }
             if (sources.source.value.identity != remote.identity) return@catchingUnexpected Outcome.Failure(SyncStop.SourceChanged)
             val json = when (response) {

@@ -29,6 +29,8 @@ import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.recipeedit.currentRecipeId
+import casa.moller.tandem.core.sync.recipeedit.recipeCreateRow
 import java.io.File
 import java.text.Collator
 import java.util.Locale
@@ -415,7 +417,8 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
             }
         }
 
-        private suspend fun enqueue(recipeId: Long, payload: String, base: String) {
+        private suspend fun enqueue(asked: Long, payload: String, base: String) {
+            val recipeId = database.currentRecipeId(accountId, asked)
             database.outboxDao().enqueue(
                 OutboxEntity(
                     accountId = accountId,
@@ -424,6 +427,7 @@ internal class OfflineFirstDrinkRepository @Inject constructor(
                     serverId = recipeId,
                     payload = payload,
                     baseSnapshot = base,
+                    dependsOn = database.recipeCreateRow(accountId, recipeId),
                     createdAtEpochMillis = now,
                 ),
             )

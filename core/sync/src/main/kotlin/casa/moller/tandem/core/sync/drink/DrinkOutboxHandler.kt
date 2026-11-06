@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.api.RecipeListQuery
+import casa.moller.tandem.core.network.api.RecipeSortOrder
 import casa.moller.tandem.core.network.api.list
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.sync.SyncSchedule
@@ -70,9 +71,13 @@ internal class DrinkOutboxHandler @Inject constructor(
         val draft = database.drinkDraftDao().get(remote.accountId, localId) ?: return OutboxResult.Dropped
         val marker = postedKey(localId)
         if (row.attempts > 0 && database.syncStateDao().get(remote.accountId, marker) != null) {
-            findLostCreate(remote, row, draft.name)?.let { found ->
-                database.syncStateDao().delete(remote.accountId, marker)
-                return OutboxResult.Created(found)
+            when (val lost = findLostCreate(remote, row, draft.name)) {
+                is Outcome.Failure -> return OutboxResult.Failed(lost.error)
+
+                is Outcome.Success -> lost.value?.let { found ->
+                    database.syncStateDao().delete(remote.accountId, marker)
+                    return OutboxResult.Created(found)
+                }
             }
         }
         val names = DrinkPayloads.decodeDraftKeywords(draft.keywords)
@@ -128,21 +133,25 @@ internal class DrinkOutboxHandler @Inject constructor(
     /**
      * A drink with this name, created by this user since the change was made, that no other create
      * of this device claimed and that carries a drink keyword: the answer of an earlier attempt was
-     * lost, so the retry never makes a second one. The lowest such id wins (deterministic).
+     * lost, so the retry never makes a second one. The lowest such id wins (deterministic). Fas 4
+     * review (fix-data): newest first, and a failed lookup holds the row back (no second POST).
      */
-    private suspend fun findLostCreate(remote: ActiveSource.Remote, row: OutboxEntity, name: String): Long? {
-        val listed = caller.call(remote, background = true) { recipes.list(RecipeListQuery(text = name, pageSize = LOST_LOOKUP_PAGE)) }
+    private suspend fun findLostCreate(remote: ActiveSource.Remote, row: OutboxEntity, name: String): Outcome<Long?> {
+        val query = RecipeListQuery(text = name, pageSize = LOST_LOOKUP_PAGE, sortOrder = RecipeSortOrder.CREATED_DESC)
+        val listed = when (val read = caller.call(remote, background = true) { recipes.list(query) }) {
+            is Outcome.Failure -> return read
+            is Outcome.Success -> read.value
+        }
         val claimed = claimedServerIds(databases, remote, OutboxEntities.DRINK)
         val notBefore = row.createdAtEpochMillis - SyncSchedule.CLOCK_SKEW_TOLERANCE.inWholeMilliseconds
-        val found = (listed as? Outcome.Success)?.value?.results.orEmpty().filter { recipe ->
+        val id = listed.results.filter { recipe ->
             val createdAt = TandoorDates.parseInstantOrNull(recipe.createdAt)?.toEpochMilli()
             recipe.name == name && recipe.id != null && recipe.id !in claimed &&
                 recipe.createdBy?.id == remote.account.userId && createdAt != null && createdAt >= notBefore &&
                 recipe.keywords.any { DrinkKeywords.isDrinkRoot(it.label) }
-        }.minByOrNull { it.id ?: Long.MAX_VALUE } ?: return null
-        val id = found.id ?: return null
+        }.mapNotNull { it.id }.minOrNull() ?: return Outcome.Success(null)
         details.fetch(remote, id, isBackground = true)
-        return id
+        return Outcome.Success(id)
     }
 
     /** `sync_state` key: the recipe POST of drink [localId] was started (its answer may be lost). */

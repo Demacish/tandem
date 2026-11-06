@@ -45,6 +45,12 @@ object OutboxRefs {
         return json.encodeToString(JsonElement.serializer(), root)
     }
 
+    /** [payload] with its top-level [field] set to [id]; anything that is no JSON object stays as it is. */
+    fun withId(payload: String, field: String, id: Long): String {
+        val root = json.parseToJsonElement(payload) as? JsonObject ?: return payload
+        return json.encodeToString(JsonElement.serializer(), JsonObject(root + (field to JsonPrimitive(id))))
+    }
+
     private fun replaceAt(obj: JsonObject, path: List<String>, entity: String, lookup: (String, Long) -> Long?): JsonObject? {
         val key = path.first()
         val value = obj[key] ?: return obj

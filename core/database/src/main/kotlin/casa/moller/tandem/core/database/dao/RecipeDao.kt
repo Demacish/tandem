@@ -245,7 +245,10 @@ abstract class RecipeDao {
     open suspend fun applyIndex(accountId: String, entries: List<RecipeIndexEntry>, allowEmpty: Boolean = false): IndexChange {
         val index = entries.associateBy { it.serverId }
         val stored = getAllOverviews(accountId).associateBy { it.serverId }
-        val inserts = index.values.filter { it.serverId !in stored }.map { entry ->
+        // Fas 3 (grund lane): a recipe with an edit of this device still to send keeps its name and image.
+        // Fas 4 review (fix-data): one that is not stored has a DELETE waiting; the index does not bring it back.
+        val edited = getIdsWithUnsentEdits(accountId).toSet()
+        val inserts = index.values.filter { it.serverId !in stored && it.serverId !in edited }.map { entry ->
             RecipeOverviewEntity(
                 accountId = accountId,
                 serverId = entry.serverId,
@@ -254,8 +257,6 @@ abstract class RecipeDao {
                 searchName = SearchText.normalize(entry.name),
             )
         }
-        // Fas 3 (grund lane): a recipe with an edit of this device still to send keeps its name and image.
-        val edited = getIdsWithUnsentEdits(accountId).toSet()
         val updates = index.values.mapNotNull { entry ->
             stored[entry.serverId]
                 ?.takeIf { entry.serverId !in edited && (it.name != entry.name || it.imageUrl != entry.imageUrl) }

@@ -11,6 +11,7 @@ import casa.moller.tandem.core.database.entity.MakeNowEntity
 import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
+import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.entity.RecipeKeywordFields
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -312,5 +313,42 @@ class OutboxPhaseSTest {
         makeNow.replaceAll(ACCOUNT_A, listOf(MakeNowEntity(ACCOUNT_A, 3, 2, fetchedAtEpochMillis = 2)))
 
         assertEquals(listOf(3L), makeNow.observeAll(ACCOUNT_A).first().map { it.recipeId })
+    }
+
+    // Fas 4 review (fix-data): one picture change per recipe, the newest whole.
+    @Test
+    fun aNewerPictureChangeReplacesTheOlderAsAWhole() = runTest {
+        fun image(payload: String) = row(OutboxOps.RECIPE_IMAGE, OutboxEntities.RECIPE_EDIT, serverId = 7, payload = payload)
+        val cases = listOf(
+            """{"remove":true}""" to """{"file":"a.jpg"}""",
+            """{"image_url":"https://example.com/a.jpg"}""" to """{"file":"a.jpg"}""",
+            """{"file":"a.jpg"}""" to """{"remove":true}""",
+            """{"file":"a.jpg"}""" to """{"image_url":"https://example.com/a.jpg"}""",
+        )
+        for ((older, newer) in cases) {
+            val id = outbox.enqueue(image(older))!!
+            assertEquals(id, outbox.enqueue(image(newer)))
+            assertEquals(newer, outbox.get(id)?.payload)
+            outbox.deleteRows(listOf(id))
+        }
+    }
+
+    @Test
+    fun aRefusedCreateGoesBackInTheQueueWithItsDependents() = runTest {
+        val create = outbox.insert(row(OutboxOps.CREATE, OutboxEntities.RECIPE_EDIT, localId = -5, payload = """{"name":"Ny"}"""))
+        val photo = row(OutboxOps.RECIPE_IMAGE, OutboxEntities.RECIPE_EDIT, localId = -5, payload = """{"file":"a.jpg"}""")
+        val image = outbox.insert(photo.copy(dependsOn = create))
+        outbox.markInFlight(create)
+        outbox.markFailed(create, "400")
+        assertEquals(1, outbox.get(create)?.attempts)
+
+        outbox.requeueRefusedCreate(create, """{"name":"Rättad"}""")
+
+        val row = checkNotNull(outbox.get(create))
+        assertEquals("""{"name":"Rättad"}""", row.payload)
+        assertEquals(OutboxState.PENDING, row.state)
+        assertEquals(0, row.attempts)
+        assertEquals(null, row.lastError)
+        assertEquals(OutboxState.PENDING, outbox.get(image)?.state)
     }
 }

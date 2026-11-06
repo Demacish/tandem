@@ -8,6 +8,7 @@ import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.network.api.RecipeListQuery
+import casa.moller.tandem.core.network.api.RecipeSortOrder
 import casa.moller.tandem.core.network.api.list
 import casa.moller.tandem.core.network.json.TandoorDates
 import casa.moller.tandem.core.sync.SyncSchedule
@@ -41,13 +42,22 @@ private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
  *   stored as the recipe's detail under its server id; `completeCreate` then drops the rows under
  *   the temporary id. A retry looks for a lost answer first, only when the POST of an earlier
  *   attempt may have gone out (a per-row marker in `sync_state`) and only among this user's
- *   recipes of that name created since the change was made (as a drink's CREATE does).
+ *   recipes of that name created since the change was made (as a drink's CREATE does). A lookup
+ *   that fails holds the row back (Fas 4 review, fix-data): no answer is not "nothing found".
  * - **PATCH** reads the recipe fresh first. When its `updated_at` differs from the copy the edit
  *   started from (`base_snapshot`), the edit is NOT sent: the server's version is stored and the
  *   row becomes FAILED with [RecipeEditPayloads.CONFLICT] (the detail says "Ändrad på två
  *   ställen", the editor can open the kept edit). Otherwise `PATCH /api/recipe/{id}/` with the
  *   whole recipe, and the answer is stored. A 404 drops the row and the local recipe.
- * - **DELETE** `DELETE /api/recipe/{id}/` (204); a 404 is dropped (already gone).
+ *   Fas 4 review (fix-data): this device's own writes are no conflict. A server that already says
+ *   what the edit says (a PATCH whose answer was lost) is the edit done, and after an answer the
+ *   edits queued behind it start from it (`rebaseQueuedEdits`).
+ * - **Keywords** go with the server's current name, on a CREATE too: the fresh read gives it for
+ *   the keywords the recipe has, `GET /api/keyword/{id}/` for the rest (Fas 4 review, fix-data: the
+ *   device's cached name would rename the keyword for everyone). A keyword deleted on the server
+ *   goes by name; a failed read holds the row back.
+ * - **DELETE** `DELETE /api/recipe/{id}/` (204); a 404 is dropped (already gone). Either way a copy
+ *   stored meanwhile goes.
  * - **RECIPE_IMAGE** `PUT /api/recipe/{id}/image/` with the app-private copy, deleted afterwards, or
  *   with `image_url` (an import's picture on the web, Fas 3 import lane) for the server to download,
  *   or with an empty `image_url` to remove the picture (`{"remove": true}`, Fas 3's leftovers).
@@ -73,14 +83,22 @@ internal class RecipeEditOutboxHandler @Inject constructor(
         val database = databases.get(remote.kind)
         val marker = postedKey(localId)
         if (row.attempts > 0 && database.syncStateDao().get(remote.accountId, marker) != null) {
-            findLostCreate(remote, row, name)?.let { found ->
-                database.syncStateDao().delete(remote.accountId, marker)
-                return OutboxResult.Created(found)
+            when (val lost = findLostCreate(remote, row, name)) {
+                is Outcome.Failure -> return OutboxResult.Failed(lost.error)
+
+                is Outcome.Success -> lost.value?.let { found ->
+                    database.syncStateDao().delete(remote.accountId, marker)
+                    return OutboxResult.Created(found)
+                }
             }
+        }
+        val sendBody = when (val named = withServerKeywordNames(remote, body, fresh = null)) {
+            is Outcome.Failure -> return OutboxResult.Failed(named.error)
+            is Outcome.Success -> named.value
         }
         // From here on the recipe may reach the server even when its answer is lost: a retry looks first.
         database.syncStateDao().upsert(SyncStateEntity(accountId = remote.accountId, entity = marker))
-        val created = when (val sent = caller.write(remote) { drinks.createRecipe(body) }) {
+        val created = when (val sent = caller.write(remote) { drinks.createRecipe(sendBody) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
@@ -102,33 +120,44 @@ internal class RecipeEditOutboxHandler @Inject constructor(
 
             is Outcome.Success -> read.value
         }
-        val base = RecipeEditPayloads.baseUpdatedAt(row.baseSnapshot)
-        val theirs = TandoorDates.parseInstantOrNull((fresh["updated_at"] as? JsonPrimitive)?.contentOrNull)?.toEpochMilli()
-        if (base != null && theirs != null && theirs != base.toEpochMilliseconds()) {
+        if (changedSinceBase(row, fresh)) {
             // Changed on the server since the edit started: the server's version wins on the device,
-            // the edit is kept for the editor (FAILED with CONFLICT, never retried by itself).
+            // the edit is kept for the editor (FAILED with CONFLICT, never retried by itself), unless
+            // the server already says what the edit says: then that change was the edit itself.
             details.store(remote, recipeId, fresh, force = true)
-            return OutboxResult.Failed(CONFLICT_ERROR)
-        }
-        // Fas 3's leftovers: a change of only a step on the web leaves `updated_at`; the steps say it.
-        val baseSteps = RecipeEditPayloads.baseStepsFingerprint(row.baseSnapshot)
-        if (baseSteps != null && baseSteps != RecipeEditPayloads.stepsFingerprint(fresh)) {
-            details.store(remote, recipeId, fresh, force = true)
-            return OutboxResult.Failed(CONFLICT_ERROR)
+            return if (RecipeEditPayloads.sameContent(fresh, body)) OutboxResult.Sent else OutboxResult.Failed(CONFLICT_ERROR)
         }
         // A known keyword goes with the name the server has for it right now: another name would rename it.
-        val sendBody = withServerKeywordNames(body, fresh)
+        val sendBody = when (val named = withServerKeywordNames(remote, body, fresh)) {
+            is Outcome.Failure -> return OutboxResult.Failed(named.error)
+            is Outcome.Success -> named.value
+        }
         val answer = when (val sent = caller.write(remote) { recipes.updateRecipe(recipeId, sendBody) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
             is Outcome.Success -> sent.value
         }
         details.store(remote, recipeId, answer, force = true)
+        database.outboxDao().rebaseQueuedEdits(remote.accountId, recipeId, before = fresh, after = answer, keepKeywords = false)
         return OutboxResult.Sent
+    }
+
+    /** Whether [fresh] moved on from the copy the edit started from (Fas 3's leftovers: a change of only a step leaves `updated_at`). */
+    private fun changedSinceBase(row: OutboxEntity, fresh: JsonObject): Boolean {
+        val base = RecipeEditPayloads.baseUpdatedAt(row.baseSnapshot)
+        val theirs = RecipeEditPayloads.updatedAtOf(fresh)
+        if (base != null && theirs != null && theirs != base) return true
+        val baseSteps = RecipeEditPayloads.baseStepsFingerprint(row.baseSnapshot)
+        return baseSteps != null && baseSteps != RecipeEditPayloads.stepsFingerprint(fresh)
     }
 
     private suspend fun delete(remote: ActiveSource.Remote, row: OutboxEntity): OutboxResult {
         val recipeId = row.serverId ?: return OutboxResult.Failed(TandemError.Unknown(UNSUPPORTED))
-        return when (val sent = caller.write(remote) { recipes.deleteRecipe(recipeId) }) {
+        val sent = caller.write(remote) { recipes.deleteRecipe(recipeId) }
+        // Fas 4 review (fix-data): an index read before this DELETE may have stored the recipe again.
+        if (sent is Outcome.Success || (sent as? Outcome.Failure)?.error == TandemError.NotFound) {
+            databases.get(remote.kind).recipeDao().deleteRecipes(remote.accountId, listOf(recipeId))
+        }
+        return when (sent) {
             is Outcome.Failure -> OutboxResult.Failed(sent.error)
             is Outcome.Success -> OutboxResult.Sent
         }
@@ -195,39 +224,54 @@ internal class RecipeEditOutboxHandler @Inject constructor(
     /**
      * A recipe with this name, created by this user since the change was made, that no other
      * create of this device claimed: the answer of an earlier attempt was lost, so the retry never
-     * makes a second one. The lowest such id wins (deterministic).
+     * makes a second one. The lowest such id wins (deterministic). Fas 4 review (fix-data): newest
+     * first, so it is on the page among many recipes of a similar name; a failed lookup is a
+     * Failure, and the row waits instead of POSTing a second recipe.
      */
-    private suspend fun findLostCreate(remote: ActiveSource.Remote, row: OutboxEntity, name: String): Long? {
-        if (name.isEmpty()) return null
-        val listed = caller.call(remote, background = true) { recipes.list(RecipeListQuery(text = name, pageSize = LOST_LOOKUP_PAGE)) }
+    private suspend fun findLostCreate(remote: ActiveSource.Remote, row: OutboxEntity, name: String): Outcome<Long?> {
+        if (name.isEmpty()) return Outcome.Success(null)
+        val query = RecipeListQuery(text = name, pageSize = LOST_LOOKUP_PAGE, sortOrder = RecipeSortOrder.CREATED_DESC)
+        val listed = when (val read = caller.call(remote, background = true) { recipes.list(query) }) {
+            is Outcome.Failure -> return read
+            is Outcome.Success -> read.value
+        }
         val claimed = claimedServerIds(databases, remote, OutboxEntities.RECIPE_EDIT)
         val notBefore = row.createdAtEpochMillis - SyncSchedule.CLOCK_SKEW_TOLERANCE.inWholeMilliseconds
-        val found = (listed as? Outcome.Success)?.value?.results.orEmpty().filter { recipe ->
+        val id = listed.results.filter { recipe ->
             val createdAt = TandoorDates.parseInstantOrNull(recipe.createdAt)?.toEpochMilli()
             recipe.name == name && recipe.id != null && recipe.id !in claimed &&
                 recipe.createdBy?.id == remote.account.userId && createdAt != null && createdAt >= notBefore
-        }.minByOrNull { it.id ?: Long.MAX_VALUE } ?: return null
-        val id = found.id ?: return null
+        }.mapNotNull { it.id }.minOrNull() ?: return Outcome.Success(null)
         details.fetch(remote, id, isBackground = true, force = true)
-        return id
+        return Outcome.Success(id)
     }
 
     private fun JsonObject.id(): Long? = (this["id"] as? JsonPrimitive)?.longOrNull
 
-    /** [body] with every `keywords[].name` of a keyword with `id` replaced by the name [fresh] carries for that id. */
-    private fun withServerKeywordNames(body: JsonObject, fresh: JsonObject): JsonObject {
-        val names = (fresh["keywords"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+    /**
+     * [body] with every `keywords[].name` of a keyword with `id` replaced by the server's current
+     * name: from [fresh] (the recipe as just read, null for a new one), else `GET /api/keyword/{id}/`.
+     * A keyword gone from the server goes by name alone (get-or-create); any other failed read fails.
+     */
+    private suspend fun withServerKeywordNames(remote: ActiveSource.Remote, body: JsonObject, fresh: JsonObject?): Outcome<JsonObject> {
+        val keywords = (body["keywords"] as? JsonArray) ?: return Outcome.Success(body)
+        val names = (fresh?.get("keywords") as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
             .mapNotNull { keyword -> keyword.id()?.let { id -> id to (keyword["name"] as? JsonPrimitive)?.contentOrNull } }
             .toMap()
-        val keywords = (body["keywords"] as? JsonArray) ?: return body
-        val renamed = JsonArray(
-            keywords.map { element ->
-                val keyword = element as? JsonObject ?: return@map element
-                val name = keyword.id()?.let { names[it] } ?: return@map element
-                JsonObject(keyword + ("name" to JsonPrimitive(name)))
-            },
-        )
-        return JsonObject(body + ("keywords" to renamed))
+        val renamed = keywords.map { element ->
+            val keyword = element as? JsonObject ?: return@map element
+            val id = keyword.id() ?: return@map element
+            val name = names[id] ?: when (val read = caller.call(remote, background = true) { drinks.keyword(id) }) {
+                is Outcome.Success -> read.value.name
+
+                is Outcome.Failure -> {
+                    if (read.error != TandemError.NotFound) return read
+                    return@map JsonObject(keyword - "id")
+                }
+            }
+            JsonObject(keyword + ("name" to JsonPrimitive(name)))
+        }
+        return Outcome.Success(JsonObject(body + ("keywords" to JsonArray(renamed))))
     }
 
     /** `sync_state` key: the recipe POST of [localId] was started (its answer may be lost). */
