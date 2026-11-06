@@ -15,8 +15,9 @@ import org.robolectric.annotation.Config
 /**
  * Fas 4 (two recipes at once, plan 8.1): cook mode with the pasta and the buns as tabs, their
  * timers shared (each labelled with its recipe), a ringing timer in the other tab, and the picker
- * "Laga ett recept till". Phone light, dark, Swedish and font scale 2, phone in landscape and the
- * tablet in both orientations (tabs on every width, see docs/BYGGE.md "Två recept samtidigt").
+ * "Laga ett recept till". Phone light, dark, Swedish and font scale 2, phone in landscape (also at
+ * font scale 2) and split screen, where the tabs sit in the header, and the tablet in both
+ * orientations (tabs on every width, see docs/BYGGE.md "Två recept samtidigt").
  */
 internal object TwoRecipes {
     val pasta = SampleRecipes.MushroomPasta
@@ -103,6 +104,20 @@ class CookTwoRecipesPhoneScreenshotTest : CookScreenshotTest("phone") {
 @RunWith(AndroidJUnit4::class)
 @Config(qualifiers = PHONE_LANDSCAPE)
 class CookTwoRecipesLandscapeScreenshotTest : CookScreenshotTest("phone_landscape") {
+
+    @Test
+    fun two() = capture("two_light", fakes = TwoRecipes.timers()) { CookSessionWithFakes(fakes = it, sessionKey = TwoRecipes.key) }
+
+    @Test
+    fun twoFontScale2() = capture("two_font2_light", fontScale = 2f, fakes = TwoRecipes.timers()) {
+        CookSessionWithFakes(fakes = it, sessionKey = TwoRecipes.key)
+    }
+}
+
+/** Split screen: the short window with both recipes' timers, the worst case for the step's room. */
+@RunWith(AndroidJUnit4::class)
+@Config(qualifiers = PHONE_SHORT)
+class CookTwoRecipesShortPhoneScreenshotTest : CookScreenshotTest("phone_short") {
 
     @Test
     fun two() = capture("two_light", fakes = TwoRecipes.timers()) { CookSessionWithFakes(fakes = it, sessionKey = TwoRecipes.key) }

@@ -14,7 +14,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * ATF checks (plan 5.6) of two recipes at once (Fas 4): the tabs with both recipes' timers, a
- * ringing timer in the other tab, font scale 2, the tablet, and the picker; light and dark.
+ * ringing timer in the other tab, font scale 2, the low windows where the tabs sit in the header,
+ * the tablet, and the picker; light and dark.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -48,6 +49,16 @@ class CookTwoRecipesAccessibilityTest {
 
     @Test
     fun ringingInTheOtherTab() = check(fakes = TwoRecipes.ringing()) { CookSessionWithFakes(fakes = it, sessionKey = TwoRecipes.key) }
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun twoInLandscapeFontScale2() = check(fontScale = 2f, fakes = TwoRecipes.timers()) {
+        CookSessionWithFakes(fakes = it, sessionKey = TwoRecipes.key)
+    }
+
+    @Test
+    @Config(qualifiers = PHONE_SHORT)
+    fun twoInSplitScreen() = check(fakes = TwoRecipes.timers()) { CookSessionWithFakes(fakes = it, sessionKey = TwoRecipes.key) }
 
     @Test
     @Config(qualifiers = TABLET)

@@ -53,7 +53,7 @@
     <string name="recipe_import_page_sending">Skickar sidan till Tandoor…</string>
     <string name="recipe_import_page_again">Läs sidan igen</string>
     <string name="recipe_import_page_interpret_ai">Tolka texten med AI</string>
-    <string name="recipe_import_page_ai_note">Skickar texten till din Tandoors AI. Det är ett AI-anrop och kan kosta krediter.</string>
+    <string name="recipe_import_page_ai_note">Skickar texten till er Tandoors AI. Det är ett AI-anrop och kan kosta krediter.</string>
     <string name="recipe_import_page_read_text">Läs den delade texten</string>
     <string name="recipe_import_page_cancel">Avbryt</string>
     <string name="recipe_import_page_view">Sidan %1$s</string>

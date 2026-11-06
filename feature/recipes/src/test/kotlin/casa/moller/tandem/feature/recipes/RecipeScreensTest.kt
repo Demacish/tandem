@@ -4,8 +4,10 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onFirst
@@ -13,6 +15,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.designsystem.R as DesignR
@@ -24,6 +29,7 @@ import casa.moller.tandem.feature.recipes.list.RecipeListAction
 import casa.moller.tandem.feature.recipes.list.RecipeListScreen
 import casa.moller.tandem.feature.recipes.list.RecipeListUiState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,6 +56,23 @@ class RecipeScreensTest {
         }
         composeRule.onNodeWithText(SampleRecipes.MushroomPasta.name).performClick()
         assertEquals(listOf(SampleRecipes.MushroomPasta.id), opened)
+    }
+
+    /** The end of a long list: "Nytt recept" is always shown and must not cover the last row for good. */
+    @Test
+    fun theLastRecipesScrollClearOfTheNewRecipeButton() {
+        val longList = List(12) { SampleRecipes.overviews.first().copy(id = 1_000L + it, name = "Recept $it") }
+        composeRule.setContent {
+            TestFrame {
+                RecipeListScreen(state = listState { copy(recipes = longList) }, onAction = {}, onOpenRecipe = {}, onCreateRecipe = {})
+            }
+        }
+        val list = composeRule.onAllNodes(hasScrollToNodeAction()).onFirst()
+        list.performScrollToNode(hasText("Recept 11"))
+        repeat(3) { list.performTouchInput { swipeUp() } }
+        val lastRecipe = composeRule.onNodeWithText("Recept 11").getBoundsInRoot()
+        val button = composeRule.onNodeWithText(string(R.string.recipes_new)).getBoundsInRoot()
+        assertTrue("the last recipe ends at ${lastRecipe.bottom}, the button starts at ${button.top}", lastRecipe.bottom <= button.top)
     }
 
     @Test
