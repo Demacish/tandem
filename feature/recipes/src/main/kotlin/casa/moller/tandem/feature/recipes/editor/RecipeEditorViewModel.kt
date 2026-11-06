@@ -13,14 +13,19 @@ import casa.moller.tandem.core.model.error.map
 import casa.moller.tandem.core.model.recipe.DraftIngredient
 import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.DraftStep
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
+import casa.moller.tandem.core.model.recipe.RecipeProperty
+import casa.moller.tandem.core.model.recipe.RecipeQuery
+import casa.moller.tandem.core.model.recipe.RecipeSort
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.recipeimport.ImportFiles
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +33,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -47,7 +53,12 @@ import kotlinx.coroutines.launch
  * first; an import's baseline is an empty recipe, because the import page is gone. A removed step
  * or line with content has "Ångra". The file an import was read from belongs to this page: it is
  * shown with the form and deleted when the page closes.
+ *
+ * Fas 4 (#22, decision B9): each step can use a sub-recipe (chosen in a sheet, searched among the
+ * stored recipes) and have a file, and the recipe can have nutrition values of its own, for the
+ * space's property types (read when the form opens, from the last time offline).
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = RecipeEditorViewModel.Factory::class)
 class RecipeEditorViewModel @AssistedInject constructor(
     @Assisted private val recipeId: Long?,
@@ -95,12 +106,32 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
     private val foods: Flow<List<String>> = recipes.observeFoods().map { list -> list.map { it.name }.distinct() }
 
+    private val linkStep: StateFlow<Int?> = handle.getStateFlow(KEY_LINK_STEP, null)
+    private val linkQuery: StateFlow<String> = handle.getStateFlow(KEY_LINK_QUERY, "")
+
+    private val linkPicker: Flow<StepLinkPicker?> = combine(linkStep, linkQuery) { step, query -> step to query }
+        .flatMapLatest { (step, query) ->
+            if (step == null) return@flatMapLatest flowOf(null)
+            val search = RecipeQuery(text = query.trim(), sort = if (query.isBlank()) RecipeSort.LAST_COOKED else RecipeSort.NAME)
+            val users = if (recipeId == null) flowOf(emptySet()) else edits.observeRecipesUsing(recipeId)
+            combine(recipes.observeRecipes(search), users) { found, using ->
+                val choices = found.filter { it.id > 0 && it.id != recipeId && it.id !in using }.take(MAX_LINK_RESULTS)
+                StepLinkPicker(step = step, query = query, results = choices)
+            }
+        }
+
     val uiState: StateFlow<RecipeEditorUiState> = combine(
         draft,
         units,
         recipes.observeKeywords(),
         if (recipeId == null) flowOf(RecipeEditStatus.NONE) else edits.observeEditStatus(recipeId),
-        combine(permissions.permissions.map { it.readOnly }, progress, amountTexts, foods, baseline, ::EditorExtras),
+        combine(
+            permissions.permissions.map { it.readOnly },
+            progress,
+            amountTexts,
+            combine(foods, baseline, edits.observePropertyTypes(), linkPicker, ::FormChoices),
+            ::EditorExtras,
+        ),
     ) { draft, units, keywords, status, extras ->
         val progress = extras.progress
         val current = draft ?: RecipeDraft()
@@ -117,16 +148,19 @@ class RecipeEditorViewModel @AssistedInject constructor(
             unknownRecipe = progress.unknownRecipe,
             saving = progress.saving,
             readOnly = extras.readOnly,
-            foods = extras.foods,
-            hasChanges = draft != null && !extras.readOnly && SavedDraft.encode(current.withoutRowKeys()) != extras.baseline,
+            foods = extras.choices.foods,
+            hasChanges = draft != null && !extras.readOnly && SavedDraft.encode(current.comparable()) != extras.choices.baseline,
             sourcePath = sourcePath,
+            propertyTypes = extras.choices.propertyTypes.filter { type -> current.properties.orEmpty().none { it.typeId == type.id } },
+            linkPicker = extras.choices.linkPicker,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeEditorUiState(isNew = recipeId == null))
 
     init {
+        viewModelScope.launch { edits.refreshPropertyTypes() }
         if (draft.value == null) {
             if (recipeId == null) {
-                handle[KEY_BASELINE] = SavedDraft.encode(RecipeDraft())
+                handle[KEY_BASELINE] = SavedDraft.encode(RecipeDraft().comparable())
                 store(SavedDraft.decode(importedDraft) ?: RecipeDraft())
             } else {
                 viewModelScope.launch {
@@ -146,13 +180,17 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
     /** [stored] is what the form opens with. */
     private fun open(stored: RecipeDraft) {
-        handle[KEY_BASELINE] = SavedDraft.encode(stored)
+        handle[KEY_BASELINE] = SavedDraft.encode(stored.comparable())
         store(stored)
     }
 
     /** The form's new photo right now (from the saved state, also before [uiState] has its first value after process death). */
     internal val currentPhoto: String?
         get() = draft.value?.imageUri
+
+    /** The files chosen in this form and not saved yet, whose read grants the route lets go of. */
+    internal val chosenFiles: List<String>
+        get() = draft.value?.steps.orEmpty().mapNotNull { it.file?.uri }
 
     fun onAction(action: RecipeEditorAction) {
         when (action) {
@@ -172,6 +210,8 @@ class RecipeEditorViewModel @AssistedInject constructor(
             is RecipeEditorAction.SetWaitingMinutes -> edit { it.copy(waitingMinutes = action.minutes.coerceIn(0, MAX_MINUTES)) }
 
             is RecipeEditorAction.SetSourceUrl -> edit { it.copy(sourceUrl = action.url) }
+
+            is RecipeEditorAction.SetPrivate -> edit { it.copy(isPrivate = action.isPrivate) }
 
             is RecipeEditorAction.AddKeyword -> edit { current ->
                 val name = action.keyword.name.trim()
@@ -199,6 +239,32 @@ class RecipeEditorViewModel @AssistedInject constructor(
             is RecipeEditorAction.SetStepInstruction -> editStep(action.step) { it.copy(instruction = action.instruction) }
 
             is RecipeEditorAction.SetStepMinutes -> editStep(action.step) { it.copy(timeMinutes = action.minutes.coerceIn(0, MAX_MINUTES)) }
+
+            is RecipeEditorAction.SetStepShowAsHeader -> editStep(action.step) { it.copy(showAsHeader = action.show) }
+
+            is RecipeEditorAction.SetStepShowIngredients -> editStep(action.step) { it.copy(showIngredientsTable = action.show) }
+
+            is RecipeEditorAction.OpenStepLink -> {
+                handle[KEY_LINK_QUERY] = ""
+                handle[KEY_LINK_STEP] = action.step
+            }
+
+            is RecipeEditorAction.SearchStepLink -> handle[KEY_LINK_QUERY] = action.query
+
+            RecipeEditorAction.CloseStepLink -> handle[KEY_LINK_STEP] = null
+
+            is RecipeEditorAction.SetStepRecipe -> {
+                handle[KEY_LINK_STEP] = null
+                editStep(action.step) { it.copy(stepRecipe = action.recipe) }
+            }
+
+            is RecipeEditorAction.SetStepFile -> editStep(action.step) { it.copy(file = action.file) }
+
+            is RecipeEditorAction.AddProperty -> addProperty(action.type)
+
+            is RecipeEditorAction.SetPropertyAmount -> setPropertyAmount(action.typeId, action.text)
+
+            is RecipeEditorAction.RemoveProperty -> removeProperty(action.typeId)
 
             is RecipeEditorAction.AddIngredient -> addIngredient(action.step, action.text)
 
@@ -237,7 +303,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
         val current = draft.value ?: return
         if (step !in current.steps.indices || target !in current.steps.indices) return
         edit { it.copy(steps = it.steps.moved(step, up)) }
-        amountTexts.value = emptyMap()
+        forgetLineAmounts()
         effectChannel.trySend(RecipeEditorEffect.Announce(R.string.recipe_editor_step_moved, step + 1, target + 1))
     }
 
@@ -256,8 +322,8 @@ class RecipeEditorViewModel @AssistedInject constructor(
         val gone = current.steps.getOrNull(step) ?: return
         removed = Removal(current, amountTexts.value)
         edit { it.copy(steps = it.steps.filterIndexed { index, _ -> index != step }) }
-        amountTexts.value = emptyMap()
-        val blank = gone.name.isBlank() && gone.instruction.isBlank() && gone.timeMinutes == 0 && gone.ingredients.isEmpty()
+        forgetLineAmounts()
+        val blank = gone.isEmpty && gone.timeMinutes == 0 && gone.ingredients.isEmpty()
         effectChannel.trySend(
             if (blank) {
                 RecipeEditorEffect.Announce(R.string.recipe_editor_step_removed, step + 1)
@@ -319,6 +385,43 @@ class RecipeEditorViewModel @AssistedInject constructor(
         }
     }
 
+    /** The typed amounts go by position, so they go when the lines move; a nutrition field's stays. */
+    private fun forgetLineAmounts() {
+        amountTexts.value = amountTexts.value.filterKeys { it.startsWith(RecipeEditorUiState.PROPERTY_PREFIX) }
+    }
+
+    private fun addProperty(type: PropertyType) {
+        edit { current ->
+            val present = current.properties.orEmpty()
+            if (present.any { it.typeId == type.id }) {
+                current
+            } else {
+                current.copy(properties = present + RecipeProperty(typeId = type.id, typeName = type.name, unit = type.unit, amount = 0.0))
+            }
+        }
+        amountTexts.value = amountTexts.value + (RecipeEditorUiState.propertyKey(type.id) to "")
+    }
+
+    private fun setPropertyAmount(typeId: Long, text: String) {
+        amountTexts.value = amountTexts.value + (RecipeEditorUiState.propertyKey(typeId) to text)
+        val amount = text.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 } ?: return
+        editProperty(typeId) { it.copy(amount = amount) }
+    }
+
+    private fun removeProperty(typeId: Long) {
+        edit { current -> current.copy(properties = current.properties?.filterNot { it.typeId == typeId }) }
+        amountTexts.value = amountTexts.value - RecipeEditorUiState.propertyKey(typeId)
+    }
+
+    private fun editProperty(typeId: Long, change: (RecipeProperty) -> RecipeProperty) = edit { current ->
+        current.copy(properties = current.properties?.map { if (it.typeId == typeId) change(it) else it })
+    }
+
+    /** A nutrition field left blank is no value: the web has none either. */
+    private fun RecipeDraft.withoutBlankProperties(texts: Map<String, String>): RecipeDraft = copy(
+        properties = properties?.filterNot { texts[RecipeEditorUiState.propertyKey(it.typeId)]?.isBlank() == true },
+    )
+
     private fun discardKeptEdit() {
         val id = recipeId ?: return
         viewModelScope.launch {
@@ -327,8 +430,8 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
                 is Outcome.Success -> {
                     progress.value = progress.value.copy(discarded = true)
-                    edits.observeDraft(id).first()?.let { open(it) }
                     amountTexts.value = emptyMap()
+                    edits.observeDraft(id).first()?.let { open(it) }
                     effectChannel.trySend(RecipeEditorEffect.Message(R.string.recipe_editor_kept_edit_discarded))
                 }
             }
@@ -338,7 +441,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
     private fun save() {
         val state = uiState.value
         if (state.saving || !state.loaded) return
-        val draft = state.draft.withTrimmedFoods().withoutRowKeys()
+        val draft = state.draft.withTrimmedFoods().withoutBlankProperties(state.amountTexts).withoutRowKeys()
         if (draft.name.isBlank()) {
             progress.value = progress.value.copy(nameMissing = true)
             return
@@ -355,6 +458,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
                         RecipeEditorEffect.Message(
                             when (problem) {
                                 RecipeEditProblem.PHOTO_UNREADABLE -> R.string.recipe_editor_photo_unreadable
+                                RecipeEditProblem.STEP_FILE_UNREADABLE -> R.string.recipe_editor_file_unreadable
                                 RecipeEditProblem.UNKNOWN_RECIPE -> R.string.recipe_editor_unknown_recipe
                                 else -> R.string.recipe_editor_failed
                             },
@@ -417,8 +521,14 @@ class RecipeEditorViewModel @AssistedInject constructor(
         val readOnly: Boolean,
         val progress: Progress,
         val amounts: Map<String, String>,
+        val choices: FormChoices,
+    )
+
+    private data class FormChoices(
         val foods: List<String>,
         val baseline: String?,
+        val propertyTypes: List<PropertyType>,
+        val linkPicker: StepLinkPicker?,
     )
 
     private data class Progress(
@@ -431,6 +541,9 @@ class RecipeEditorViewModel @AssistedInject constructor(
     private companion object {
         const val KEY_DRAFT = "recipe_editor_draft"
         const val KEY_BASELINE = "recipe_editor_baseline"
+        const val KEY_LINK_STEP = "recipe_editor_link_step"
+        const val KEY_LINK_QUERY = "recipe_editor_link_query"
+        const val MAX_LINK_RESULTS = 30
         const val STOP_TIMEOUT_MILLIS = 5_000L
         const val MAX_SERVINGS = 999
         const val MAX_MINUTES = 100_000

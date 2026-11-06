@@ -126,6 +126,7 @@ fun RecipeEditorScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onPickStepFile: (Int) -> Unit = {},
 ) {
     RecipeEditorLayout(
         state = state,
@@ -136,6 +137,7 @@ fun RecipeEditorScreen(
         keyboardOpen = WindowInsets.isImeVisible,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onPickStepFile = onPickStepFile,
     )
 }
 
@@ -156,7 +158,9 @@ internal fun RecipeEditorLayout(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     originalView: OriginalView = { path, viewModifier -> OriginalPages(path, viewModifier) },
+    onPickStepFile: (Int) -> Unit = {},
 ) {
+    state.linkPicker?.let { StepLinkSheet(it, onAction) }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val saveInForm = keyboardOpen && maxHeight < COMPACT_HEIGHT
         val canSave = state.loaded && !state.saving && !state.readOnly && !state.unknownRecipe
@@ -177,6 +181,7 @@ internal fun RecipeEditorLayout(
                     onAction = onAction,
                     onTakePhoto = onTakePhoto,
                     onPickPhoto = onPickPhoto,
+                    onPickStepFile = onPickStepFile,
                     originalView = originalView,
                     save = if (saveInForm) ({ SaveButton(enabled = canSave, onAction = onAction) }) else null,
                     modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -216,6 +221,7 @@ private fun EditorBody(
     onAction: (RecipeEditorAction) -> Unit,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
+    onPickStepFile: (Int) -> Unit,
     originalView: OriginalView,
     save: (@Composable () -> Unit)?,
     modifier: Modifier,
@@ -239,6 +245,7 @@ private fun EditorBody(
                     onAction = onAction,
                     onTakePhoto = onTakePhoto,
                     onPickPhoto = onPickPhoto,
+                    onPickStepFile = onPickStepFile,
                     stacked = stacked,
                     originalView = originalView.takeUnless { beside },
                     save = save,
@@ -307,6 +314,7 @@ private fun Form(
     onAction: (RecipeEditorAction) -> Unit,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
+    onPickStepFile: (Int) -> Unit,
     stacked: Boolean,
     originalView: OriginalView?,
     save: (@Composable () -> Unit)?,
@@ -403,6 +411,13 @@ private fun Form(
             leadingIcon = null,
             modifier = Modifier.fillMaxWidth(),
         )
+        EditorSwitch(
+            title = stringResource(R.string.recipe_editor_private),
+            body = stringResource(R.string.recipe_editor_private_body),
+            checked = draft.isPrivate,
+            onChange = { onAction(RecipeEditorAction.SetPrivate(it)) },
+            modifier = Modifier.testTag(EDITOR_PRIVATE_TAG),
+        )
         Heading(stringResource(R.string.recipe_editor_keywords))
         Keywords(state, onAction)
         Heading(stringResource(R.string.recipe_editor_steps))
@@ -414,7 +429,15 @@ private fun Form(
         // Keyed by the draft's own row id: a moved step keeps its fields, and with them TalkBack's focus.
         draft.steps.forEachIndexed { index, step ->
             key(step.rowKey) {
-                StepEditor(index = index, step = step, count = draft.steps.size, state = state, stacked = stacked, onAction = onAction)
+                StepEditor(
+                    index = index,
+                    step = step,
+                    count = draft.steps.size,
+                    state = state,
+                    stacked = stacked,
+                    onAction = onAction,
+                    onPickFile = onPickStepFile,
+                )
             }
         }
         TandemSecondaryButton(
@@ -423,6 +446,7 @@ private fun Form(
             leadingIcon = TandemIcons.Add,
             modifier = Modifier.fillMaxWidth(),
         )
+        NutritionSection(state, onAction)
         save?.invoke()
     }
 }
@@ -625,6 +649,7 @@ private fun StepEditor(
     state: RecipeEditorUiState,
     stacked: Boolean,
     onAction: (RecipeEditorAction) -> Unit,
+    onPickFile: (Int) -> Unit,
 ) {
     val spacing = TandemTheme.spacing
     val number = index + 1
@@ -701,6 +726,7 @@ private fun StepEditor(
                 label = stringResource(R.string.recipe_editor_step_instruction),
                 placeholder = null,
             )
+            StepOptions(index = index, step = step, onAction = onAction, onPickFile = onPickFile)
         }
     }
 }
@@ -991,9 +1017,12 @@ private fun MultilineField(value: String, onValueChange: (String) -> Unit, label
 }
 
 @Composable
-private fun Heading(text: String) {
+internal fun Heading(text: String) {
     Text(text = text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
 }
+
+/** The switch "Privat recept". */
+const val EDITOR_PRIVATE_TAG = "recipe-editor:private"
 
 /** The form's "Spara", wherever it stands. */
 const val EDITOR_SAVE_TAG = "recipe-editor:save"

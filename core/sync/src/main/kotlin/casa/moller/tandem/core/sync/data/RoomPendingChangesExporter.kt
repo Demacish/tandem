@@ -44,6 +44,7 @@ import kotlinx.serialization.json.put
  * Fas 4 review (fix-data): a `RECIPE_IMAGE` row says what it asks for: `{"remove": true}` ("Ta bort
  * bilden"), `{"image_url": ...}` (an import's picture on the web), else `{"photo": true}`; only
  * those fields are copied, so a row merged by an older version never gives away its `file` path.
+ * Fas 4 (#22): a step's file not sent yet says so by its name, without the path.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class RoomPendingChangesExporter @Inject constructor(private val databases: TandemDatabaseFactory) : PendingChangesExporter {
@@ -107,12 +108,18 @@ internal class RoomPendingChangesExporter @Inject constructor(private val databa
         row.localId?.takeIf { row.serverId == null }?.let { put("localId", it) }
         row.refs?.let { put("refs", parse(it)) }
         row.dependsOn?.let { put("dependsOn", it) }
-        put("payload", if (row.op == OutboxOps.RECIPE_IMAGE) imageChangeOf(row.payload) else parse(row.payload))
+        put("payload", payloadOf(row))
         drink?.let { put("drink", drinkOf(it)) }
         put("createdAt", TandoorDates.format(Instant.ofEpochMilli(row.createdAtEpochMillis)))
         put("attempts", row.attempts)
         put("state", row.state.name)
         row.lastError?.let { put("lastError", it) }
+    }
+
+    private fun payloadOf(row: OutboxEntity): JsonElement = when {
+        row.op == OutboxOps.RECIPE_IMAGE -> imageChangeOf(row.payload)
+        row.entity == OutboxEntities.RECIPE_EDIT -> RecipeEditPayloads.withoutFilePaths(parse(row.payload))
+        else -> parse(row.payload)
     }
 
     /** What a `RECIPE_IMAGE` row asks for, in the order the sender reads it; never the app-private path. */

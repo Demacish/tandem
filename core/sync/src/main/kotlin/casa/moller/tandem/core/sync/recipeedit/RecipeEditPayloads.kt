@@ -9,16 +9,22 @@ import casa.moller.tandem.core.model.recipe.Ingredient
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.MeasurementUnit
 import casa.moller.tandem.core.model.recipe.NutritionPresence
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeDraft
+import casa.moller.tandem.core.model.recipe.RecipeProperty
 import casa.moller.tandem.core.model.recipe.Step
+import casa.moller.tandem.core.model.recipe.StepFile
+import casa.moller.tandem.core.model.recipe.StepRecipeRef
 import casa.moller.tandem.core.network.json.TandoorDates
 import java.security.MessageDigest
 import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
@@ -42,9 +48,15 @@ import kotlinx.serialization.json.put
  *   before a POST or PATCH, since another name renames the keyword space-wide, FACTS "Fas 2 g"), a
  *   new one as `{name}` (get-or-create, case ignored).
  * - Foods and units always go by `{name}` (reused or created by name); a header has neither.
- * - A step or ingredient keeps its `id`, so a PATCH updates it in place and leaves what the app
- *   does not edit (a step's file, a linked sub-recipe) alone; one without `id` is created, and the
- *   server deletes those the PATCH leaves out (drf-writable-nested).
+ * - A step or ingredient keeps its `id`, so a PATCH updates it in place; one without `id` is
+ *   created, and the server deletes those the PATCH leaves out (drf-writable-nested).
+ * - Fas 4 (#22, FACTS "Fas 4: receptredigeraren"): `step_recipe`, a step's `file` and the recipe's
+ *   own `properties` go only when they differ from the server's copy the edit started from: what is
+ *   left out stays as it is on the server, so a save from a form that never touched them cannot
+ *   change them. On a copy the server has not answered yet there is nothing to compare with, so a
+ *   stored step says all of it. A row keeps what only the device needs, and [forSending] takes it
+ *   off: a sub-recipe's name (`step_recipe_data`), a property type's `unit` and a chosen file's
+ *   `path` (the sender has uploaded it by then).
  *
  * `base_snapshot` of a PATCH is `{"updated_at": "<the stored copy's>"}`: the sender reads the
  * recipe fresh and holds the edit back as [CONFLICT] when the server's `updated_at` differs and
@@ -66,12 +78,18 @@ internal object RecipeEditPayloads {
     /** The fields of the server's copy the app does not edit but shows, kept while an edit is unsent (never in the payload). */
     private val NUTRITION_FIELDS = listOf("properties", "food_properties")
 
+    /** A step's file in a row: the app-private copy of a file chosen and not uploaded yet. */
+    private const val PATH = "path"
+
     init {
         check(CONFLICT == RecipeEditProblem.CONFLICT.detail)
     }
 
-    /** The request body (and payload) of [draft], already normalized. */
-    fun encode(draft: RecipeDraft): JsonObject = buildJsonObject {
+    /**
+     * The payload of [draft], already normalized. [server] is the recipe as the server last said it:
+     * null for a new recipe and for one with an edit not answered yet.
+     */
+    fun encode(draft: RecipeDraft, server: Recipe? = null): JsonObject = buildJsonObject {
         put("name", draft.name)
         put("description", draft.description)
         put("servings", draft.servings)
@@ -98,12 +116,31 @@ internal object RecipeEditPayloads {
         put(
             "steps",
             buildJsonArray {
-                draft.steps.forEachIndexed { order, step -> add(encodeStep(step, order)) }
+                draft.steps.forEachIndexed { order, step -> add(encodeStep(step, order, server)) }
             },
         )
+        draft.properties?.takeIf { server == null || !sameProperties(it, server.properties) }?.let { properties ->
+            put("properties", JsonArray(properties.map(::encodeProperty)))
+        }
     }
 
-    private fun encodeStep(step: DraftStep, order: Int): JsonObject = buildJsonObject {
+    private fun sameProperties(ours: List<RecipeProperty>, theirs: List<RecipeProperty>): Boolean =
+        ours.map { it.typeId to it.amount }.toSet() == theirs.map { it.typeId to it.amount }.toSet()
+
+    private fun encodeProperty(property: RecipeProperty): JsonObject = buildJsonObject {
+        property.id?.let { put("id", it) }
+        put(
+            "property_type",
+            buildJsonObject {
+                put("id", property.typeId)
+                put("name", property.typeName)
+                put("unit", property.unit)
+            },
+        )
+        put("property_amount", property.amount)
+    }
+
+    private fun encodeStep(step: DraftStep, order: Int, server: Recipe?): JsonObject = buildJsonObject {
         step.id?.let { put("id", it) }
         put("name", step.name)
         put("instruction", step.instruction)
@@ -111,12 +148,42 @@ internal object RecipeEditPayloads {
         put("order", order)
         put("show_as_header", step.showAsHeader)
         put("show_ingredients_table", step.showIngredientsTable)
+        val known = server?.steps?.firstOrNull { it.id == step.id }
+        // A step nobody has an answer for says it all; a new one has nothing to take off.
+        val saysAll = server == null && step.id != null
+        val linkChanged = known?.let { it.stepRecipe?.recipeId != step.stepRecipe?.recipeId } ?: (saysAll || step.stepRecipe != null)
+        if (linkChanged) encodeLink(step.stepRecipe)
+        val fileChanged = known?.let { it.file?.id != step.file?.id || step.file?.uri != null } ?: (saysAll || step.file != null)
+        if (fileChanged) put("file", encodeFile(step.file))
         put(
             "ingredients",
             buildJsonArray {
                 step.ingredients.forEachIndexed { position, ingredient -> add(encodeIngredient(ingredient, position)) }
             },
         )
+    }
+
+    private fun JsonObjectBuilder.encodeLink(link: StepRecipeRef?) {
+        put("step_recipe", link?.recipeId)
+        link?.name?.let { name ->
+            put(
+                "step_recipe_data",
+                buildJsonObject {
+                    put("id", link.recipeId)
+                    put("name", name)
+                },
+            )
+        }
+    }
+
+    private fun encodeFile(file: StepFile?): JsonElement = if (file == null) {
+        JsonNull
+    } else {
+        buildJsonObject {
+            file.id?.let { put("id", it) }
+            put("name", file.name)
+            file.uri?.let { put(PATH, it) }
+        }
     }
 
     private fun encodeIngredient(ingredient: DraftIngredient, order: Int): JsonObject = buildJsonObject {
@@ -132,8 +199,11 @@ internal object RecipeEditPayloads {
         put("no_amount", ingredient.noAmount && !ingredient.isHeader)
     }
 
-    /** The draft a CREATE or PATCH payload stands for (keyword names come from [keywordsById]); null for anything else. */
-    fun decode(payload: String, keywordsById: Map<Long, String> = emptyMap()): RecipeDraft? {
+    /**
+     * The draft a CREATE or PATCH payload stands for (keyword names come from [keywordsById]); null
+     * for anything else. What the payload left out is as it is on the server: [stored] says it.
+     */
+    fun decode(payload: String, keywordsById: Map<Long, String> = emptyMap(), stored: Recipe? = null): RecipeDraft? {
         val body = parse(payload) ?: return null
         val name = body.string("name") ?: return null
         return RecipeDraft(
@@ -151,11 +221,37 @@ internal object RecipeEditPayloads {
                 val keywordName = keyword.string("name") ?: id?.let { keywordsById[it] } ?: return@mapNotNull null
                 DraftKeyword(id = id, name = keywordName)
             },
-            steps = body.array("steps").mapNotNull { element -> (element as? JsonObject)?.let(::decodeStep) },
+            steps = body.array("steps").mapNotNull { element -> (element as? JsonObject)?.let { decodeStep(it, stored) } },
+            properties = (body["properties"] as? JsonArray)?.mapNotNull { (it as? JsonObject)?.let(::decodeProperty) } ?: stored?.properties,
         )
     }
 
-    private fun decodeStep(step: JsonObject): DraftStep = DraftStep(
+    private fun decodeProperty(property: JsonObject): RecipeProperty? {
+        val type = property["property_type"] as? JsonObject ?: return null
+        return RecipeProperty(
+            id = property.long("id"),
+            typeId = type.long("id") ?: return null,
+            typeName = type.string("name") ?: return null,
+            unit = type.string("unit").orEmpty(),
+            amount = (property["property_amount"] as? JsonPrimitive)?.doubleOrNull ?: return null,
+        )
+    }
+
+    private fun decodeLink(step: JsonObject): StepRecipeRef? = step.long("step_recipe")?.let { id ->
+        StepRecipeRef(recipeId = id, name = (step["step_recipe_data"] as? JsonObject)?.string("name"))
+    }
+
+    private fun decodeFile(step: JsonObject): StepFile? = (step["file"] as? JsonObject)?.let { file ->
+        file.string("name")?.let { name -> StepFile(id = file.long("id"), name = name, uri = file.string(PATH)) }
+    }
+
+    private fun decodeStep(step: JsonObject, stored: Recipe?): DraftStep = DraftStep(
+        stepRecipe = if ("step_recipe" in step) {
+            decodeLink(step)
+        } else {
+            stored?.steps?.firstOrNull { it.id == step.long("id") }?.stepRecipe
+        },
+        file = if ("file" in step) decodeFile(step) else stored?.steps?.firstOrNull { it.id == step.long("id") }?.file,
         id = step.long("id"),
         name = step.string("name").orEmpty(),
         instruction = step.string("instruction").orEmpty(),
@@ -195,7 +291,9 @@ internal object RecipeEditPayloads {
      * them: per step (by id) its name, instruction, time and order, per line its id, amount, unit,
      * food, note, header and no-amount flags and order, as a SHA-256 hex string. Nothing else of
      * the step goes in (a food's on-hand flag or shopping state changes without an edit). Null
-     * when [recipe] has no steps array.
+     * when [recipe] has no steps array. Fas 4 (#22): the step's flags, sub-recipe and file count once
+     * they differ from a plain step's, so a recipe without any has the fingerprint it always had: a
+     * queued edit made by an older version of the app is compared with what it saw.
      */
     fun stepsFingerprint(recipe: JsonObject?): String? {
         val steps = recipe?.get("steps") as? JsonArray ?: return null
@@ -214,11 +312,18 @@ internal object RecipeEditPayloads {
                     ).joinToString("|")
                 }
             val own = listOf(step.long("id"), step.string("name").orEmpty(), step.string("instruction").orEmpty(), step.int("time"))
-            own.joinToString("|") + "|" + step.int("order") + "|" + lines
+            own.joinToString("|") + "|" + step.int("order") + "|" + lines + stepExtras(step)
         }
         val digest = MessageDigest.getInstance("SHA-256").digest(text.toByteArray(Charsets.UTF_8))
         return digest.joinToString("") { "%02x".format(it) }
     }
+
+    private fun stepExtras(step: JsonObject): String = listOfNotNull(
+        "header".takeIf { step.bool("show_as_header") == true },
+        "no-table".takeIf { step.bool("show_ingredients_table") == false },
+        step.long("step_recipe")?.let { "recipe=$it" },
+        (step["file"] as? JsonObject)?.long("id")?.let { "file=$it" },
+    ).joinToString("") { "|$it" }
 
     /** The `updated_at` a base snapshot holds, null when it has none. */
     fun baseUpdatedAt(base: String?): Instant? =
@@ -269,7 +374,33 @@ internal object RecipeEditPayloads {
     fun sameContent(recipe: JsonObject, body: JsonObject): Boolean =
         COMPARED_FIELDS.all { field -> recipe.text(field) == body.text(field) } &&
             sameKeywords(recipe, body) &&
-            stepsContent(recipe) == stepsContent(body)
+            stepsContent(recipe) == stepsContent(body) &&
+            sameStepExtras(recipe, body) &&
+            sameOwnProperties(recipe, body)
+
+    /** Fas 4 (#22): what an edit left out it did not change, so only what it says is compared. */
+    private fun sameStepExtras(recipe: JsonObject, body: JsonObject): Boolean {
+        val theirs = stepsInOrder(recipe)
+        return stepsInOrder(body).withIndex().all { (index, ours) ->
+            val their = theirs.getOrNull(index) ?: return@all false
+            ours.bool("show_as_header") == their.bool("show_as_header") &&
+                ours.bool("show_ingredients_table") == their.bool("show_ingredients_table") &&
+                ("step_recipe" !in ours || ours.long("step_recipe") == their.long("step_recipe")) &&
+                ("file" !in ours || (ours["file"] as? JsonObject)?.long("id") == (their["file"] as? JsonObject)?.long("id"))
+        }
+    }
+
+    private fun stepsInOrder(recipe: JsonObject): List<JsonObject> =
+        recipe.array("steps").mapNotNull { it as? JsonObject }.sortedBy { it.int("order") ?: 0 }
+
+    private fun sameOwnProperties(recipe: JsonObject, body: JsonObject): Boolean {
+        if ("properties" !in body) return true
+        fun valuesOf(json: JsonObject) = json.array("properties").mapNotNull { element ->
+            val property = element as? JsonObject
+            (property?.get("property_type") as? JsonObject)?.long("id")?.let { it to (property["property_amount"] as? JsonPrimitive)?.doubleOrNull }
+        }.toSet()
+        return valuesOf(recipe) == valuesOf(body)
+    }
 
     private fun sameKeywords(recipe: JsonObject, body: JsonObject): Boolean {
         val theirs = recipe.array("keywords").mapNotNull { it as? JsonObject }
@@ -294,13 +425,102 @@ internal object RecipeEditPayloads {
         }
 
     /**
-     * [body] as the stored copy of an unsent edit: an edit's body has no nutrition, and the panel
-     * reads the stored JSON. Nothing else of [stored] comes along: `updated_at` is how a server copy
-     * is told from an unsent body.
+     * [body] as the stored copy of an unsent edit: an edit's body has no sums of the foods, and may
+     * leave out `properties` and a step's `file`, while the panel and the editor read the stored
+     * JSON. Nothing else of [stored] comes along: `updated_at` is how a server copy is told from an
+     * unsent body.
      */
     fun withStoredNutrition(body: JsonObject, stored: JsonObject?): JsonObject {
-        val kept = NUTRITION_FIELDS.mapNotNull { field -> stored?.get(field)?.let { field to it } }
-        return JsonObject(body + kept)
+        val kept = NUTRITION_FIELDS.mapNotNull { field -> stored?.get(field)?.takeIf { field !in body }?.let { field to it } }
+        val storedSteps = stored?.array("steps").orEmpty().mapNotNull { it as? JsonObject }.associateBy { it.long("id") }
+        val steps = body.array("steps").map { element ->
+            val step = element as? JsonObject ?: return@map element
+            val file = storedSteps[step.long("id")]?.get("file")?.takeIf { "file" !in step && step.long("id") != null }
+            if (file == null) step else JsonObject(step + ("file" to file))
+        }
+        return JsonObject(body + kept + ("steps" to JsonArray(steps)))
+    }
+
+    /** The property types as `sync_state` keeps them. */
+    fun encodePropertyTypes(types: List<PropertyType>): String = buildJsonArray {
+        types.forEach { type ->
+            add(
+                buildJsonObject {
+                    put("id", type.id)
+                    put("name", type.name)
+                    put("unit", type.unit)
+                    put("order", type.order)
+                },
+            )
+        }
+    }.toString()
+
+    fun decodePropertyTypes(text: String?): List<PropertyType> {
+        val types = text?.let { runCatching { json.parseToJsonElement(it) }.getOrNull() } as? JsonArray ?: return emptyList()
+        return types.mapNotNull { element ->
+            val type = element as? JsonObject ?: return@mapNotNull null
+            PropertyType(
+                id = type.long("id") ?: return@mapNotNull null,
+                name = type.string("name") ?: return@mapNotNull null,
+                unit = type.string("unit").orEmpty(),
+                order = type.int("order") ?: 0,
+            )
+        }
+    }
+
+    /** The app-private copies of chosen step files [payload] stands for. */
+    fun stepFilePathsOf(payload: String): List<String> = parse(payload)?.array("steps").orEmpty().mapNotNull { step ->
+        filePathOf(step)
+    }
+
+    /** [body] with its step at [index] pointing at [fileId], the file it asked for now uploaded. */
+    fun withUploadedFile(body: JsonObject, index: Int, fileId: Long): JsonObject = withStep(body, index) { step ->
+        val file = buildJsonObject {
+            put("id", fileId)
+            put("name", fileNameOf(step))
+        }
+        step + ("file" to file)
+    }
+
+    /** [body] without the file of its step at [index]: the copy is gone, so the step stays as the server has it. */
+    fun withoutFile(body: JsonObject, index: Int): JsonObject = withStep(body, index) { it - "file" }
+
+    private fun withStep(body: JsonObject, index: Int, change: (JsonObject) -> Map<String, JsonElement>): JsonObject {
+        val steps = body.array("steps").mapIndexed { position, element ->
+            if (position == index && element is JsonObject) JsonObject(change(element)) else element
+        }
+        return JsonObject(body + ("steps" to JsonArray(steps)))
+    }
+
+    /** The name of the file of [step] in a row. */
+    fun fileNameOf(step: JsonElement): String = ((step as? JsonObject)?.get("file") as? JsonObject)?.string("name").orEmpty()
+
+    /** The app-private path of the file of [step] in a row, or null. */
+    fun filePathOf(step: JsonElement): String? = ((step as? JsonObject)?.get("file") as? JsonObject)?.string(PATH)
+
+    /** What goes to the server of a row whose files are uploaded: only the fields Tandoor reads. */
+    fun forSending(body: JsonObject): JsonObject {
+        if ("steps" !in body && "properties" !in body) return body
+        val steps = body.array("steps").map { step -> if (step is JsonObject) JsonObject(step - "step_recipe_data") else step }
+        val sent = JsonObject(body + ("steps" to JsonArray(steps)))
+        if ("properties" !in body) return sent
+        val properties = body.array("properties").map { element ->
+            val property = element as? JsonObject ?: return@map element
+            val type = property["property_type"] as? JsonObject ?: return@map element
+            JsonObject(property + ("property_type" to JsonObject(type - "unit")))
+        }
+        return JsonObject(sent + ("properties" to JsonArray(properties)))
+    }
+
+    /** [payload] as an export shows it: a step's file by its name, never the app-private path. */
+    fun withoutFilePaths(payload: JsonElement): JsonElement {
+        val body = payload as? JsonObject ?: return payload
+        if ("steps" !in body) return body
+        val steps = body.array("steps").map { step ->
+            val file = (step as? JsonObject)?.get("file") as? JsonObject
+            if (file == null) step else JsonObject(step + ("file" to JsonObject(file - PATH)))
+        }
+        return JsonObject(body + ("steps" to JsonArray(steps)))
     }
 
     /** A `RECIPE_IMAGE` row: the app-private copy of the photo. */
@@ -346,8 +566,8 @@ internal object RecipeEditPayloads {
                 order = order,
                 showAsHeader = step.showAsHeader,
                 showIngredientsTable = step.showIngredientsTable,
-                stepRecipe = stored?.steps?.firstOrNull { it.id == step.id }?.stepRecipe,
-                imageUrl = stored?.steps?.firstOrNull { it.id == step.id }?.imageUrl,
+                stepRecipe = step.stepRecipe,
+                imageUrl = stored?.steps?.firstOrNull { it.id == step.id }?.takeIf { it.file?.id == step.file?.id }?.imageUrl,
                 ingredients = step.ingredients.mapIndexed { position, ingredient ->
                     Ingredient(
                         id = ingredient.id ?: nextId--,
@@ -380,6 +600,7 @@ internal object RecipeEditPayloads {
             showIngredientOverview = stored?.showIngredientOverview ?: true,
             nutrition = stored?.nutrition ?: NutritionPresence.NONE,
             nutritionValues = stored?.nutritionValues.orEmpty(),
+            properties = draft.properties ?: stored?.properties.orEmpty(),
             diameter = stored?.diameter ?: 0,
             diameterText = stored?.diameterText.orEmpty(),
             createdAt = stored?.createdAt ?: now,

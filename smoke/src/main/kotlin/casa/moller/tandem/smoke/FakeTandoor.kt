@@ -328,6 +328,13 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
 
         method == "POST" && path == "/api/view-log/" -> fixture("fas1/view-log-create")
 
+        // Fas 4 (#22): the editor asks when it opens; a space without property types shows no nutrition section.
+        method == "GET" && path == "/api/property-type/" -> MockResponse.Builder()
+            .code(200)
+            .addHeader("Content-Type", "application/json")
+            .body("""{"count": 0, "next": null, "previous": null, "results": []}""")
+            .build()
+
         // Tandoor sends unknown paths to its login page (FACTS g).
         else -> fixture("29-not-found-unknown-path")
     }

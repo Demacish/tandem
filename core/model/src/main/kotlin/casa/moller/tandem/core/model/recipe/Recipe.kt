@@ -28,6 +28,8 @@ import kotlin.time.Instant
  * @property nutritionValues Fas 3 (näringsvärden): the values PER SERVING as the server holds
  *   them (`properties` entered on the recipe, else the sums of the foods' `food_properties`
  *   divided by [servings]); empty when none.
+ * @property properties the values entered on the recipe itself (`properties`), which the editor
+ *   changes; [nutritionValues] is what is shown.
  * @property diameter the baking form diameter (`diameter`), 0 when not used.
  * @property diameterText unit/label of [diameter] (`diameter_text`, e.g. "cm").
  * @property createdAt server `created_at`, if known.
@@ -51,6 +53,7 @@ data class Recipe(
     val showIngredientOverview: Boolean = true,
     val nutrition: NutritionPresence = NutritionPresence.NONE,
     val nutritionValues: List<NutritionValue> = emptyList(),
+    val properties: List<RecipeProperty> = emptyList(),
     val diameter: Int = 0,
     val diameterText: String = "",
     val createdAt: Instant? = null,
@@ -96,6 +99,8 @@ enum class NutritionPresence {
  * @property imageUrl the step's photo (Tandoor `file.preview`, an absolute URL like the recipe
  *   image), null when the step has no file or the file is no image. Cook mode shows it under the
  *   step text (plan 6.2 "Stegbild om den finns").
+ * @property file the step's file of any type (`file`), which the editor changes. [imageUrl] is its
+ *   picture, when it is one.
  */
 data class Step(
     val id: Long,
@@ -108,7 +113,33 @@ data class Step(
     val showIngredientsTable: Boolean = true,
     val stepRecipe: StepRecipeRef? = null,
     val imageUrl: String? = null,
+    val file: StepFile? = null,
 )
+
+/**
+ * Tandoor's `file` of a step, a user file of any type. A stored one has [id]; one chosen in the
+ * editor and not sent yet has [uri] instead (`content://`, or the app-private copy of a queued
+ * edit). Demo mode has neither: it never uploads.
+ *
+ * @property name the file's name as Tandoor shows it (at most [MAX_NAME_LENGTH] characters).
+ */
+data class StepFile(val id: Long? = null, val name: String, val uri: String? = null) {
+    companion object {
+        /** Tandoor's `UserFile.name`. */
+        const val MAX_NAME_LENGTH: Int = 128
+
+        /** The largest file the editor takes: the app copies it and sends it whole. */
+        const val MAX_BYTES: Long = 20L * 1024 * 1024
+
+        /** [name] within [MAX_NAME_LENGTH], with its extension kept. */
+        fun fittingName(name: String): String {
+            if (name.length <= MAX_NAME_LENGTH) return name
+            val extension = name.substringAfterLast('.', "").takeIf { it.isNotEmpty() && it.length < MAX_NAME_LENGTH / 2 }
+            val tail = extension?.let { ".$it" }.orEmpty()
+            return name.take(MAX_NAME_LENGTH - tail.length) + tail
+        }
+    }
+}
 
 /**
  * A recipe referenced from a step (Tandoor `step_recipe` + `step_recipe_data`).
@@ -188,3 +219,15 @@ data class UnitConversion(val amount: Double, val unitName: String, val unitPlur
  * 18 "g"). [name] and [unit] are the space's own property type texts, shown as they are.
  */
 data class NutritionValue(val name: String, val amount: Double, val unit: String)
+
+/**
+ * A kind of value a recipe or a food can have (Tandoor `PropertyType`: "Energi", "kcal"); the space's
+ * own list, in [order].
+ */
+data class PropertyType(val id: Long, val name: String, val unit: String = "", val order: Int = 0)
+
+/**
+ * One value entered on a recipe itself (Tandoor `Property`), PER SERVING as on the web. [id] is the
+ * server's for a stored value, null for a new one. [typeId], [typeName] and [unit] are its [PropertyType].
+ */
+data class RecipeProperty(val id: Long? = null, val typeId: Long, val typeName: String, val unit: String = "", val amount: Double)

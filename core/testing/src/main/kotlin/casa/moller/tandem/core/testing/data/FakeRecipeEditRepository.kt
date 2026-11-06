@@ -6,6 +6,7 @@ import casa.moller.tandem.core.data.recipe.RecipeEditRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.MeasurementUnit
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,9 @@ class FakeRecipeEditRepository(
     val drafts = MutableStateFlow(recipes)
     val units = MutableStateFlow(units)
     val statuses = MutableStateFlow<Map<Long, RecipeEditStatus>>(emptyMap())
+    val propertyTypes = MutableStateFlow<List<PropertyType>>(emptyList())
+    var propertyTypeRefreshes = 0
+    val recipesUsing = MutableStateFlow<Map<Long, Set<Long>>>(emptyMap())
 
     /** What was written, in order. */
     val created = mutableListOf<RecipeDraft>()
@@ -42,6 +46,15 @@ class FakeRecipeEditRepository(
     private var nextId = -1L
 
     override fun observeUnits(): Flow<List<MeasurementUnit>> = units.map { list -> list.sortedBy { it.name } }
+
+    override fun observePropertyTypes(): Flow<List<PropertyType>> = propertyTypes
+
+    override suspend fun refreshPropertyTypes(): Outcome<Unit> {
+        propertyTypeRefreshes++
+        return Outcome.Success(Unit)
+    }
+
+    override fun observeRecipesUsing(recipeId: Long): Flow<Set<Long>> = recipesUsing.map { it[recipeId].orEmpty() }
 
     override fun observeDraft(recipeId: Long): Flow<RecipeDraft?> = drafts.map { it[recipeId] }
 

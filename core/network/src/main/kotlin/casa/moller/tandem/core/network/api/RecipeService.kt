@@ -1,15 +1,22 @@
 package casa.moller.tandem.core.network.api
 
 import casa.moller.tandem.core.network.dto.PageDto
+import casa.moller.tandem.core.network.dto.PropertyTypeDto
 import casa.moller.tandem.core.network.dto.RecipeDto
 import casa.moller.tandem.core.network.dto.RecipeFlatDto
 import casa.moller.tandem.core.network.dto.RecipeOverviewDto
+import casa.moller.tandem.core.network.dto.UserFileDto
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.json.JsonObject
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.PATCH
+import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -87,6 +94,18 @@ interface RecipeService {
 
     @DELETE("api/recipe/{id}/")
     suspend fun deleteRecipe(@Path("id") id: Long)
+
+    /**
+     * Fas 4 (#22): a step's file, multipart `name` + `file` → 201 (FACTS "Fas 1 m"). The step then
+     * points at it with `"file": {"id", "name"}`.
+     */
+    @Multipart
+    @POST("api/user-file/")
+    suspend fun uploadUserFile(@Part("name") name: RequestBody, @Part file: MultipartBody.Part): UserFileDto
+
+    /** Fas 4 (#22): the space's property types, for the recipe's own nutrition (FACTS "Fas 4: receptredigeraren"). */
+    @GET("api/property-type/")
+    suspend fun propertyTypes(@Query("page") page: Int?, @Query("page_size") pageSize: Int?): PageDto<PropertyTypeDto>
 }
 
 /**

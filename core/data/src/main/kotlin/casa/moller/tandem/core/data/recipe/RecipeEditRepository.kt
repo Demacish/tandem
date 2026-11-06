@@ -3,6 +3,7 @@ package casa.moller.tandem.core.data.recipe
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.MeasurementUnit
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
 import kotlinx.coroutines.flow.Flow
@@ -22,12 +23,26 @@ import kotlinx.coroutines.flow.Flow
  * - A delete removes the recipe locally at once and queues `DELETE /api/recipe/{id}/`.
  * - A photo chosen in the editor is copied (scaled) and uploaded after the recipe as
  *   `RECIPE_IMAGE`, like a drink's.
+ * - A file chosen for a step is copied and stands in the row by its path; the sender uploads it
+ *   (`POST /api/user-file/`) right before the recipe goes.
  * - Guests get `DataProblem.READ_ONLY` before anything is stored; demo mode writes the demo
  *   database directly. Implemented by the redigerare lane in :core:sync.
  */
 interface RecipeEditRepository {
     /** The stored units (for the unit suggestions), by name. Works offline. */
     fun observeUnits(): Flow<List<MeasurementUnit>>
+
+    /** The space's property types ("Energi", "kcal"), for the recipe's own nutrition. Works offline, from the last [refreshPropertyTypes]. */
+    fun observePropertyTypes(): Flow<List<PropertyType>>
+
+    /** Reads the property types from the server; nothing happens offline or in demo mode. */
+    suspend fun refreshPropertyTypes(): Outcome<Unit>
+
+    /**
+     * The recipes that use recipe [recipeId], also through another one, as far as the device knows
+     * (the steps of stored recipes). Tandoor takes a circle of sub-recipes, so the editor leaves them out.
+     */
+    fun observeRecipesUsing(recipeId: Long): Flow<Set<Long>>
 
     /**
      * The editor's starting point for recipe [recipeId]: the edit still queued or kept after a
@@ -62,6 +77,9 @@ enum class RecipeEditProblem(val detail: String) {
 
     /** The chosen photo could not be read or copied; nothing was saved. */
     PHOTO_UNREADABLE("tandem.recipe.photo-unreadable"),
+
+    /** A step's chosen file could not be read or copied; nothing was saved. */
+    STEP_FILE_UNREADABLE("tandem.recipe.step-file-unreadable"),
 
     /** The sender's code: the recipe changed on the server since the edit started, so the edit was kept, not sent. */
     CONFLICT("tandem.recipe.conflict"),

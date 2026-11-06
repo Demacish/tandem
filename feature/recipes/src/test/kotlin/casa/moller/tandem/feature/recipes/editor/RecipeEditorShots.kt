@@ -4,7 +4,11 @@ import androidx.compose.runtime.Composable
 import casa.moller.tandem.core.model.recipe.DraftIngredient
 import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.DraftStep
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.RecipeDraft
+import casa.moller.tandem.core.model.recipe.RecipeProperty
+import casa.moller.tandem.core.model.recipe.StepFile
+import casa.moller.tandem.core.model.recipe.StepRecipeRef
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.recipes.recipeimport.FakeOriginal
 
@@ -44,6 +48,35 @@ internal object RecipeEditorSamples {
             ),
         ),
     )
+
+    /** Fas 4 (#22): everything that goes beyond the plain form on one step, and the recipe's own nutrition. */
+    val withOptions: RecipeDraft = filled.copy(
+        description = "",
+        isPrivate = true,
+        keywords = emptyList(),
+        steps = listOf(
+            DraftStep(
+                id = 1,
+                name = "Deg",
+                instruction = "Gör degen som i receptet.",
+                showAsHeader = true,
+                showIngredientsTable = false,
+                stepRecipe = StepRecipeRef(105, "Pannkakor"),
+                file = StepFile(id = 9, name = "Receptblad.pdf"),
+            ),
+        ),
+        properties = listOf(
+            RecipeProperty(id = 1, typeId = 1, typeName = "Energi", unit = "kcal", amount = 520.0),
+            RecipeProperty(id = 2, typeId = 2, typeName = "Protein", unit = "g", amount = 18.5),
+        ),
+    )
+
+    fun editingOptions() = editing().copy(
+        draft = withOptions,
+        propertyTypes = listOf(PropertyType(3, "Fett", "g"), PropertyType(4, "Kolhydrater", "g")),
+    )
+
+    val linkPicker = StepLinkPicker(step = 1, results = SampleRecipes.overviews.take(4))
 
     fun empty(nameMissing: Boolean = false) = RecipeEditorUiState(
         loaded = true,
@@ -87,6 +120,11 @@ internal enum class RecipeEditorShot(val content: @Composable () -> Unit) {
     // Fas 3's leftovers: the recipe's picture with "Ta bort bilden", and after it ("Behåll bilden").
     EDITING_PICTURE({ Editor(RecipeEditorSamples.editingWithPicture(keep = true)) }),
     EDITING_PICTURE_REMOVED({ Editor(RecipeEditorSamples.editingWithPicture(keep = false)) }),
+
+    // Fas 4 (#22): a step with its flags, sub-recipe and file; the recipe's own nutrition; the sub-recipe sheet.
+    EDITING_OPTIONS({ Editor(RecipeEditorSamples.editingOptions()) }),
+    LINK_PICKER({ StepLinkContent(RecipeEditorSamples.linkPicker, onAction = {}) }),
+    LINK_PICKER_EMPTY({ StepLinkContent(StepLinkPicker(step = 0, query = "fisk"), onAction = {}) }),
 }
 
 @Composable

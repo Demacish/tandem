@@ -4,6 +4,9 @@ import casa.moller.tandem.core.model.recipe.DraftIngredient
 import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.DraftStep
 import casa.moller.tandem.core.model.recipe.RecipeDraft
+import casa.moller.tandem.core.model.recipe.RecipeProperty
+import casa.moller.tandem.core.model.recipe.StepFile
+import casa.moller.tandem.core.model.recipe.StepRecipeRef
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -27,6 +30,7 @@ internal data class SavedDraft(
     val imageUrl: String? = null,
     val keepImage: Boolean = true,
     val currentImageUrl: String? = null,
+    val properties: List<SavedProperty>? = null,
 ) {
     fun toDraft(): RecipeDraft = RecipeDraft(
         name = name,
@@ -48,6 +52,8 @@ internal data class SavedDraft(
                 },
                 showAsHeader = step.showAsHeader,
                 showIngredientsTable = step.showIngredientsTable,
+                stepRecipe = step.stepRecipeId?.let { StepRecipeRef(it, step.stepRecipeName) },
+                file = step.fileName?.let { StepFile(step.fileId, it, step.fileUri) },
                 rowKey = step.rowKey,
             )
         },
@@ -56,6 +62,7 @@ internal data class SavedDraft(
         imageUrl = imageUrl,
         keepImage = keepImage,
         currentImageUrl = currentImageUrl,
+        properties = properties?.map { RecipeProperty(it.id, it.typeId, it.typeName, it.unit, it.amount) },
     )
 
     companion object {
@@ -81,6 +88,11 @@ internal data class SavedDraft(
                     },
                     showAsHeader = step.showAsHeader,
                     showIngredientsTable = step.showIngredientsTable,
+                    stepRecipeId = step.stepRecipe?.recipeId,
+                    stepRecipeName = step.stepRecipe?.name,
+                    fileId = step.file?.id,
+                    fileName = step.file?.name,
+                    fileUri = step.file?.uri,
                     rowKey = step.rowKey,
                 )
             },
@@ -89,6 +101,7 @@ internal data class SavedDraft(
             imageUrl = draft.imageUrl,
             keepImage = draft.keepImage,
             currentImageUrl = draft.currentImageUrl,
+            properties = draft.properties?.map { SavedProperty(it.id, it.typeId, it.typeName, it.unit, it.amount) },
         )
 
         fun encode(draft: RecipeDraft): String = json.encodeToString(serializer(), of(draft))
@@ -111,7 +124,15 @@ internal data class SavedStep(
     val showAsHeader: Boolean = false,
     val showIngredientsTable: Boolean = true,
     val rowKey: Long = 0,
+    val stepRecipeId: Long? = null,
+    val stepRecipeName: String? = null,
+    val fileId: Long? = null,
+    val fileName: String? = null,
+    val fileUri: String? = null,
 )
+
+@Serializable
+internal data class SavedProperty(val id: Long? = null, val typeId: Long, val typeName: String, val unit: String = "", val amount: Double)
 
 @Serializable
 internal data class SavedIngredient(
@@ -144,6 +165,9 @@ internal fun RecipeDraft.withRowKeys(after: Long): RecipeDraft {
         },
     )
 }
+
+/** What "has anything changed" compares: no values of its own and an empty list say the same to the user. */
+internal fun RecipeDraft.comparable(): RecipeDraft = withoutRowKeys().copy(properties = properties.orEmpty())
 
 /** The draft as the rest of the app knows it: the row keys are the form's alone. */
 internal fun RecipeDraft.withoutRowKeys(): RecipeDraft = copy(

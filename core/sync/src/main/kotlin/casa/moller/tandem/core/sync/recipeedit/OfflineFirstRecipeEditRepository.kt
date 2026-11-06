@@ -10,6 +10,7 @@ import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxEntity
 import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
+import casa.moller.tandem.core.database.entity.SyncStateEntity
 import casa.moller.tandem.core.database.mapper.toDetailWrite
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.database.mapper.toRecipe
@@ -20,14 +21,18 @@ import casa.moller.tandem.core.model.error.map
 import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.MeasurementUnit
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.Recipe
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
+import casa.moller.tandem.core.model.recipe.StepFile
+import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.drink.DrinkImageStore
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
+import casa.moller.tandem.core.sync.remote.RemoteCaller
 import java.io.File
 import java.text.Collator
 import java.util.Locale
@@ -66,6 +71,8 @@ import kotlinx.serialization.json.JsonObject
  * - **A photo** is copied and scaled by [DrinkImageStore] (the drinks' store, shared) and queued as
  *   `RECIPE_IMAGE`, after the CREATE for a new recipe. One unsent picture change per recipe: the
  *   newest replaces the older (`OutboxMerge`) and the older one's copy is deleted here.
+ * - **A step's file** is copied byte for byte by the same store and stands in the row by its path;
+ *   the sender uploads it. A copy goes when the last row that names it does.
  * - **Conflict:** an edit the sender held back ([RecipeEditPayloads.CONFLICT]) is a FAILED row whose
  *   payload [observeDraft] hands the editor; [discardEdit] drops it, with the picture change it came
  *   with. A new save supersedes it, and its picture change goes after the new PATCH.
@@ -82,6 +89,7 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
     private val scheduler: SyncScheduler,
     private val clock: SyncClock,
     private val images: DrinkImageStore,
+    private val caller: RemoteCaller,
 ) : RecipeEditRepository {
     /** Serializes local writes, so two taps never get the same temporary id. */
     private val writes = Mutex()
@@ -100,6 +108,51 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
         .catch { emit(emptyList()) }
         .distinctUntilChanged()
 
+    override fun observePropertyTypes(): Flow<List<PropertyType>> = sources.source
+        .flatMapLatest { source ->
+            if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(emptyList())
+            databases.get(source.kind).syncStateDao().observeOne(source.accountId, PROPERTY_TYPES_KEY)
+                .map { row -> RecipeEditPayloads.decodePropertyTypes(row?.hash) }
+        }
+        .catch { emit(emptyList()) }
+        .distinctUntilChanged()
+
+    override suspend fun refreshPropertyTypes(): Outcome<Unit> = catchingUnexpected {
+        val remote = sources.current() as? ActiveSource.Remote ?: return@catchingUnexpected Outcome.Success(Unit)
+        val read = caller.call(remote, background = true) {
+            Paginator.fetchAll { page -> recipes.propertyTypes(page, PROPERTY_TYPE_PAGE) }
+        }
+        when (read) {
+            is Outcome.Failure -> read
+
+            is Outcome.Success -> {
+                val types = read.value.items.mapNotNull { dto ->
+                    val id = dto.id ?: return@mapNotNull null
+                    PropertyType(id = id, name = dto.name, unit = dto.unit.orEmpty(), order = dto.order)
+                }.sortedBy { it.order }
+                val row = SyncStateEntity(remote.accountId, PROPERTY_TYPES_KEY, hash = RecipeEditPayloads.encodePropertyTypes(types))
+                databases.get(remote.kind).syncStateDao().upsert(row)
+                Outcome.Success(Unit)
+            }
+        }
+    }
+
+    override fun observeRecipesUsing(recipeId: Long): Flow<Set<Long>> = sources.source
+        .flatMapLatest { source ->
+            if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(emptySet())
+            databases.get(source.kind).recipeDao().observeStepLinks(source.accountId).map { links ->
+                val usedBy = links.groupBy({ it.linkedId }) { it.recipeId }
+                val found = mutableSetOf<Long>()
+                val waiting = ArrayDeque(listOf(recipeId))
+                while (waiting.isNotEmpty()) {
+                    usedBy[waiting.removeFirst()].orEmpty().filter(found::add).forEach(waiting::addLast)
+                }
+                found
+            }
+        }
+        .catch { emit(emptySet()) }
+        .distinctUntilChanged()
+
     override fun observeDraft(recipeId: Long): Flow<RecipeDraft?> = sources.source
         .flatMapLatest { source ->
             if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(null)
@@ -112,8 +165,9 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                     database.recipeDao().observeKeywords(source.accountId),
                 ) { rows, item, detail, keywords ->
                     val kept = rows.lastOrNull { it.isEditOf(id) && it.isConflict }
-                    kept?.let { RecipeEditPayloads.decode(it.payload, keywords.associate { k -> k.id to k.name }) }
-                        ?: detail?.toRecipe(item?.overview, item?.toModel()?.keywords.orEmpty())?.let { RecipeDraft.from(it) }
+                    val stored = detail?.toRecipe(item?.overview, item?.toModel()?.keywords.orEmpty())
+                    kept?.let { RecipeEditPayloads.decode(it.payload, keywords.associate { k -> k.id to k.name }, stored) }
+                        ?: stored?.let { RecipeDraft.from(it) }
                 }
             }
         }
@@ -156,11 +210,56 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
         if (normalized.imageUri != null && accountId != null && photo == null) {
             return Outcome.Failure(RecipeEditProblem.PHOTO_UNREADABLE.toError())
         }
-        val result = write { context ->
-            if (recipeId == null) Outcome.Success(context.create(normalized, photo)) else context.update(recipeId, normalized, photo)
+        val copies = mutableListOf<String>()
+        val withFiles = copyStepFiles(normalized, recipeId, copies)
+        if (withFiles == null) {
+            copies.forEach { images.delete(it) }
+            if (photo != null) images.delete(photo.path)
+            return Outcome.Failure(RecipeEditProblem.STEP_FILE_UNREADABLE.toError())
         }
-        if (result is Outcome.Failure && photo != null) images.delete(photo.path)
+        val result = write { context ->
+            if (recipeId == null) Outcome.Success(context.create(withFiles, photo)) else context.update(recipeId, withFiles, photo)
+        }
+        if (result is Outcome.Failure) {
+            copies.forEach { images.delete(it) }
+            if (photo != null) images.delete(photo.path)
+        }
         return result
+    }
+
+    /**
+     * [draft] with every step file chosen in the form as an app-private copy (added to [copies]), so
+     * it survives until it is sent; null when one cannot be read. A file already copied for a queued
+     * edit stays, and when that edit went out meanwhile the stored recipe has the file. Demo mode
+     * never uploads: only the name is kept.
+     */
+    private suspend fun copyStepFiles(draft: RecipeDraft, recipeId: Long?, copies: MutableList<String>): RecipeDraft? {
+        val source = sources.current() as? ActiveSource.Stored ?: return draft
+        val steps = draft.steps.map { step ->
+            val file = step.file
+            val uri = file?.uri
+            when {
+                file == null || uri == null -> step
+
+                source !is ActiveSource.Remote -> step.copy(file = file.copy(uri = null))
+
+                uri.startsWith("/") -> if (File(uri).isFile) step else step.copy(file = sentFile(source, recipeId, step.id) ?: return null)
+
+                else -> {
+                    val copy = images.copyFile(source.accountId, uri, file.name) ?: return null
+                    copies += copy.path
+                    step.copy(file = file.copy(uri = copy.path))
+                }
+            }
+        }
+        return draft.copy(steps = steps)
+    }
+
+    /** The file stored for step [stepId] of recipe [recipeId], once the server has answered. */
+    private suspend fun sentFile(source: ActiveSource.Stored, recipeId: Long?, stepId: Long?): StepFile? {
+        val recipes = databases.get(source.kind).recipeDao()
+        val detail = recipeId?.let { recipes.getDetail(source.accountId, it) } ?: return null
+        return detail.toRecipe(overview = null)?.steps?.firstOrNull { it.id == stepId }?.file?.takeIf { it.id != null }
     }
 
     override suspend fun deleteRecipe(recipeId: Long): Outcome<Unit> = write { context -> context.delete(recipeId) }
@@ -196,8 +295,11 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
                 }
                 val database = databases.get(source.kind)
                 val result = writes.withLock {
+                    val filesBefore = queuedStepFiles(database, source)
                     var value: Outcome<T>? = null
                     database.recipeBookDao().inTransaction { value = block(WriteContext(source, database, clock.nowMillis())) }
+                    // A row merged, superseded or dropped takes the copy of its file along, unless another row has it.
+                    (filesBefore - queuedStepFiles(database, source)).forEach { images.delete(it) }
                     @Suppress("UNCHECKED_CAST") // Set by the block before the transaction returns.
                     value as Outcome<T>
                 }
@@ -208,6 +310,12 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             ActiveSource.Loading, ActiveSource.None -> Outcome.Failure(DataProblem.NO_ACCOUNT.toError())
         }
     }
+
+    private suspend fun queuedStepFiles(database: TandemDatabase, source: ActiveSource.Stored): Set<String> =
+        database.outboxDao().getAllFor(source.accountId, OutboxEntities.RECIPE_EDIT)
+            .filter { it.op != OutboxOps.RECIPE_IMAGE }
+            .flatMap { RecipeEditPayloads.stepFilePathsOf(it.payload) }
+            .toSet()
 
     /** One local change: the source, its database and "now". */
     private inner class WriteContext(val source: ActiveSource.Stored, val database: TandemDatabase, val now: Long) {
@@ -245,8 +353,9 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
             val item = recipes.getListItems(accountId, listOf(id)).firstOrNull()
             val stored = recipes.getDetail(accountId, id)?.toRecipe(item?.overview, item?.toModel()?.keywords.orEmpty())
                 ?: return Outcome.Failure(RecipeEditProblem.UNKNOWN_RECIPE.toError())
-            val body = RecipeEditPayloads.encode(draft)
             val storedJson = recipes.getDetailRow(accountId, id)?.rawJson?.let { RecipeEditPayloads.parse(it) }
+            // Only the server's own copy can say what an edit leaves alone (an unsent body has no `updated_at`).
+            val body = RecipeEditPayloads.encode(draft, server = stored.takeIf { RecipeEditPayloads.updatedAtOf(storedJson) != null })
             store(id, draft, stored, photo, rawJson = RecipeEditPayloads.withStoredNutrition(body, storedJson).toString())
             if (!remote) return Outcome.Success(id)
             val rows = outbox.getAllFor(accountId, OutboxEntities.RECIPE_EDIT)
@@ -475,5 +584,9 @@ internal class OfflineFirstRecipeEditRepository @Inject constructor(
     private companion object {
         /** Demo mode: recipes created in the app get ids from here (above the demo content and the demo drinks). */
         const val DEMO_CREATED_FIRST_ID = 2_000L
+
+        /** `sync_state`: the space's property types as JSON in `hash` (no table of their own; `RecipeEditPayloads`). */
+        const val PROPERTY_TYPES_KEY = "property_types"
+        const val PROPERTY_TYPE_PAGE = 100
     }
 }

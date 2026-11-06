@@ -34,12 +34,23 @@ internal class FakeRecipeEditTandoor(private val version: String) {
     private var nextFoodId = 700L
     private var nextUnitId = 700L
     private var bumps = 0
+    private var nextFileId = 600L
+    private var nextPropertyId = 500L
 
     /** Every request this fake answered, as `METHOD path?query` with its body. */
     val calls: MutableList<Pair<String, String>> = CopyOnWriteArrayList()
 
     /** Whether writes are refused with 403 (a guest). */
     var guest: Boolean = false
+
+    /** Fas 4 (#22): what `GET /api/property-type/` lists. */
+    val propertyTypes: MutableList<JsonObject> = CopyOnWriteArrayList()
+
+    /** The next uploads refused with this many 400s (a space's file limit). */
+    var refusedUploads: Int = 0
+
+    /** Uploads after this many are refused with a 400, null for none. */
+    var refuseAfterUploads: Int? = null
 
     /** `created_at` of the recipes POSTed from now on. */
     var createdAt: String = NOW
@@ -148,6 +159,7 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         val id = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
         return when {
             path == RECIPES && method == "POST" -> create(parse(text))
+            path == USER_FILES && method == "POST" -> userFile(text)
             IMAGE.matches(path) && method == "PUT" -> image(IMAGE.find(path)!!.groupValues[1].toLong(), text)
             id != null && method == "PATCH" -> patch(id, parse(text))
             id != null && method == "DELETE" -> if (recipes.remove(id) == null) notFound() else MockResponse.Builder().code(204).build()
@@ -160,6 +172,8 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         val keyword = KEYWORD.find(path)?.groupValues?.get(1)?.toLong()
         val recipe = RECIPE.find(path)?.groupValues?.get(1)?.toLong()
         return when {
+            path == PROPERTY_TYPES -> page(propertyTypes)
+
             keyword != null -> keywords[keyword]?.let { json(200, keywordJson(keyword to it)) } ?: notFound()
 
             recipe != null -> recipes[recipe]?.let { json(200, it) } ?: notFound()
@@ -203,6 +217,24 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         return json(200, recipes.getValue(id))
     }
 
+    /** Fas 4 (#22): the multipart `name` is what comes back; `preview` is empty unless it is a picture (FACTS "Fas 1 m"). */
+    private fun userFile(body: String): MockResponse {
+        val limit = refuseAfterUploads
+        if (refusedUploads > 0 || (limit != null && calls.count { it.first.startsWith("POST $USER_FILES") } >= limit)) {
+            refusedUploads = (refusedUploads - 1).coerceAtLeast(0)
+            return json(400, JsonObject(mapOf("detail" to JsonPrimitive("You have reached your file upload limit."))))
+        }
+        val name = FILE_NAME.find(body)?.groupValues?.get(1).orEmpty()
+        val file = mapOf(
+            "id" to JsonPrimitive(nextFileId++),
+            "name" to JsonPrimitive(name),
+            "file_download" to JsonPrimitive("https://tandoor.example.com/api/download-file/1/"),
+            "preview" to JsonPrimitive(""),
+            "file_size_kb" to JsonPrimitive(1),
+        )
+        return json(201, JsonObject(file))
+    }
+
     /** The photo upload, or (Fas 3 import lane) a picture the server downloads from `image_url`: both end as the recipe's image. */
     private fun image(id: Long, body: String): MockResponse {
         val fromWeb = body.contains("name=\"image_url\"")
@@ -224,6 +256,15 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         body["keywords"]?.let { list ->
             fields["keywords"] = JsonArray((list as JsonArray).mapNotNull { it as? JsonObject }.map { keywordJson(resolveKeyword(it)) })
         }
+        // Fas 4 (#22): the recipe's own values; a value with an id stays that row, the others are made anew.
+        body["properties"]?.let { list ->
+            val properties = (list as JsonArray).mapNotNull { it as? JsonObject }.map { property ->
+                val type = property.getValue("property_type") as JsonObject
+                val known = propertyTypes.firstOrNull { it.long("id") == type.long("id") } ?: type
+                JsonObject(property + ("id" to (property["id"] ?: JsonPrimitive(nextPropertyId++))) + ("property_type" to known))
+            }
+            fields["properties"] = JsonArray(properties)
+        }
         body["steps"]?.let { list ->
             val stored = (recipe["steps"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }.associateBy { it.long("id") }
             fields["steps"] = JsonArray(
@@ -240,6 +281,15 @@ internal class FakeRecipeEditTandoor(private val version: String) {
         val fields = (existing ?: emptyStep()).toMutableMap()
         if (existing == null) fields["id"] = JsonPrimitive(nextStepId++)
         for (field in STEP_FIELDS) step[field]?.let { fields[field] = it }
+        // Fas 4 (#22): the server's own read-only fields say what the writable ones point at.
+        step["step_recipe"]?.let { link ->
+            val linked = (link as? JsonPrimitive)?.longOrNull?.let { recipes[it] }
+            fields["step_recipe"] = link
+            fields["step_recipe_data"] = linked?.let { JsonObject(mapOf("id" to it.getValue("id"), "name" to it.getValue("name"))) } ?: JsonNull
+        }
+        step["file"]?.let { file ->
+            fields["file"] = (file as? JsonObject)?.let { JsonObject(it + ("preview" to JsonPrimitive(""))) } ?: JsonNull
+        }
         step["ingredients"]?.let { list ->
             val stored = (existing?.get("ingredients") as? JsonArray).orEmpty()
                 .mapNotNull { it as? JsonObject }
@@ -384,6 +434,9 @@ internal class FakeRecipeEditTandoor(private val version: String) {
 
     private companion object {
         const val RECIPES = "/api/recipe/"
+        const val USER_FILES = "/api/user-file/"
+        const val PROPERTY_TYPES = "/api/property-type/"
+        val FILE_NAME = Regex("name=\"name\"[^\\n]*\\n(?:[^\\n]*: [^\\n]*\\n)*\\r?\\n([^\\r\\n]*)")
         const val TEMPLATE_RECIPE = 2L
         const val NOW = "2000-01-15T00:00:00.000000+02:00"
         val RECIPE = Regex("^/api/recipe/(\\d+)/$")

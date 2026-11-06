@@ -6,9 +6,12 @@ import android.graphics.ColorSpace
 import android.graphics.ImageDecoder
 import android.net.Uri
 import casa.moller.tandem.core.data.files.CacheDirectories
+import casa.moller.tandem.core.model.recipe.StepFile
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.max
@@ -26,6 +29,13 @@ import kotlinx.coroutines.withContext
 internal interface DrinkImageStore {
     /** An app-private copy of [uri] for [accountId], or null when it cannot be read. */
     suspend fun copy(accountId: String, uri: String): File?
+
+    /**
+     * Fas 4 (#22): an app-private copy of [uri], a step's file of any type, byte for byte, with the
+     * extension of [name] (Tandoor tells a picture by it); null when it cannot be read or is larger
+     * than `StepFile.MAX_BYTES`. It lives with the photos, so it goes with them.
+     */
+    suspend fun copyFile(accountId: String, uri: String, name: String): File?
 
     /** Removes a copy that is no longer needed (uploaded, or the drink was cancelled). */
     suspend fun delete(path: String)
@@ -79,6 +89,39 @@ internal class AndroidDrinkImageStore @Inject constructor(@ApplicationContext pr
         }
     }
 
+    override suspend fun copyFile(accountId: String, uri: String, name: String): File? = withContext(Dispatchers.IO) {
+        val target = File(accountDirectory(accountId).apply { mkdirs() }, "step-${System.nanoTime()}${extensionOf(name)}")
+        val copied = try {
+            context.contentResolver.openInputStream(Uri.parse(uri))?.use { input ->
+                target.outputStream().use { output -> copyWithin(input, output) }
+            } == true
+        } catch (e: IOException) {
+            false
+        } catch (e: IllegalArgumentException) {
+            false
+        } catch (e: SecurityException) {
+            false
+        }
+        if (!copied) target.delete()
+        target.takeIf { copied }
+    }
+
+    /** False when [input] holds more than `StepFile.MAX_BYTES`. */
+    private fun copyWithin(input: InputStream, output: OutputStream): Boolean {
+        val buffer = ByteArray(COPY_BUFFER)
+        var total = 0L
+        while (true) {
+            val read = input.read(buffer)
+            if (read < 0) return true
+            total += read
+            if (total > StepFile.MAX_BYTES) return false
+            output.write(buffer, 0, read)
+        }
+    }
+
+    private fun extensionOf(name: String): String =
+        name.substringAfterLast('.', "").filter { it.isLetterOrDigit() }.take(MAX_EXTENSION).takeIf { it.isNotEmpty() }?.let { ".$it" }.orEmpty()
+
     override suspend fun delete(path: String) {
         withContext(Dispatchers.IO) {
             val file = File(path)
@@ -102,5 +145,7 @@ internal class AndroidDrinkImageStore @Inject constructor(@ApplicationContext pr
 
     private companion object {
         const val DIRECTORY = "drink-images"
+        const val COPY_BUFFER = 64 * 1024
+        const val MAX_EXTENSION = 12
     }
 }

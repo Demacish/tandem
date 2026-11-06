@@ -6,8 +6,7 @@ package casa.moller.tandem.core.model.recipe
  * Foods, units and keywords go by NAME (Tandoor reuses or creates them by name, case ignored,
  * FACTS "Fas 1 a"); a keyword the device knows carries its id too, so a rename on the web never
  * duplicates it. Steps and ingredients keep the ids they had ([DraftStep.id], [DraftIngredient.id])
- * so an edit updates them in place and keeps what the app does not edit (a step's file, a linked
- * sub-recipe); new ones have none.
+ * so an edit updates them in place; new ones have none.
  *
  * Plain Kotlin (decision B2): the JSON of the request and of the saved state is built in :core:sync
  * and the feature, never here.
@@ -22,6 +21,8 @@ package casa.moller.tandem.core.model.recipe
  *   (`PUT /api/recipe/{id}/image/` with an empty `image_url`, FACTS "Fas 4: Fas 3:s rester" c).
  * @property currentImageUrl the stored recipe's picture when the edit started (shown in the
  *   editor, never sent); null for a new recipe or one without a picture.
+ * @property properties the values entered on the recipe itself, per serving. Null leaves them as
+ *   they are (an import, or a kept edit from before the editor had them).
  */
 data class RecipeDraft(
     val name: String = "",
@@ -38,6 +39,7 @@ data class RecipeDraft(
     val keepImage: Boolean = true,
     val imageUrl: String? = null,
     val currentImageUrl: String? = null,
+    val properties: List<RecipeProperty>? = null,
 ) {
     /** Every ingredient of every step, in order (headers included). */
     val ingredients: List<DraftIngredient>
@@ -89,10 +91,13 @@ data class RecipeDraft(
                     },
                     showAsHeader = step.showAsHeader,
                     showIngredientsTable = step.showIngredientsTable,
+                    stepRecipe = step.stepRecipe,
+                    file = step.file,
                 )
             },
             isPrivate = recipe.isPrivate,
             currentImageUrl = recipe.imageUrl,
+            properties = recipe.properties,
         )
     }
 }
@@ -104,6 +109,9 @@ data class DraftKeyword(val id: Long? = null, val name: String)
  * One step. [id] is the server's step id for a stored step (kept so an edit updates it in place),
  * null for a new one.
  *
+ * @property stepRecipe the recipe this step uses as a sub-recipe (`step_recipe`). Never a recipe
+ *   with a temporary id: the server would not know it.
+ * @property file the step's file (`file`).
  * @property rowKey which row of the editor's form this is, also for a step without [id] (Fas 4's
  *   completeness check): the form keys its rows with it, so a row keeps its fields and TalkBack's
  *   focus when it moves. Only the editor sets it; 0 everywhere else, and never sent or stored.
@@ -116,11 +124,13 @@ data class DraftStep(
     val ingredients: List<DraftIngredient> = emptyList(),
     val showAsHeader: Boolean = false,
     val showIngredientsTable: Boolean = true,
+    val stepRecipe: StepRecipeRef? = null,
+    val file: StepFile? = null,
     val rowKey: Long = 0,
 ) {
-    /** Nothing written in it: dropped when saving. */
+    /** Nothing written in it and nothing linked to it: dropped when saving. */
     val isEmpty: Boolean
-        get() = name.isBlank() && instruction.isBlank() && ingredients.none { !it.isEmpty }
+        get() = name.isBlank() && instruction.isBlank() && ingredients.none { !it.isEmpty } && stepRecipe == null && file == null
 
     fun normalized(): DraftStep = copy(
         name = name.trim(),

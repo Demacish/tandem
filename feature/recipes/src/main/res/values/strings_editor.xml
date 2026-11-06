@@ -115,4 +115,32 @@
     <string name="recipe_editor_ingredient_no_amount_for">No amount, ingredient %1$d in step %2$d</string>
     <string name="recipe_editor_ingredient_food_pick">%1$s, for ingredient %2$d in step %3$d</string>
     <string name="recipe_editor_ingredient_unit_for">Unit for ingredient %1$d in step %2$d</string>
+
+    <!-- Fas 4 (#22, decision B9): the rest of what the web's editor has. -->
+    <string name="recipe_editor_private">Private recipe</string>
+    <string name="recipe_editor_private_body">Only you and the people you share it with can see it.</string>
+    <string name="recipe_editor_step_show_as_header">Show the name as a heading</string>
+    <string name="recipe_editor_step_show_as_header_for">Step %1$d: show the name as a heading</string>
+    <string name="recipe_editor_step_show_ingredients">Show the ingredients with the step</string>
+    <string name="recipe_editor_step_show_ingredients_for">Step %1$d: show the ingredients with the step</string>
+    <string name="recipe_editor_step_link">Link a sub-recipe</string>
+    <string name="recipe_editor_step_link_for">Link a sub-recipe to step %1$d</string>
+    <string name="recipe_editor_step_linked">Sub-recipe: %1$s</string>
+    <string name="recipe_editor_step_linked_unnamed">Sub-recipe</string>
+    <string name="recipe_editor_step_unlink_for">Remove the sub-recipe from step %1$d</string>
+    <string name="recipe_editor_step_attach">Attach a file</string>
+    <string name="recipe_editor_step_attach_for">Attach a file to step %1$d</string>
+    <string name="recipe_editor_step_file">File: %1$s</string>
+    <string name="recipe_editor_step_file_remove_for">Remove the file from step %1$d</string>
+    <string name="recipe_editor_file_unreadable">The file could not be read. Nothing was saved.</string>
+    <string name="recipe_editor_file_too_large">The file is larger than 20 MB.</string>
+    <string name="recipe_editor_link_title">Sub-recipe for step %1$d</string>
+    <string name="recipe_editor_link_hint">The step shows a link to the recipe you choose.</string>
+    <string name="recipe_editor_link_search">Search recipes</string>
+    <string name="recipe_editor_link_empty">No recipes to choose from.</string>
+    <string name="recipe_editor_nutrition">Nutrition</string>
+    <string name="recipe_editor_nutrition_hint">Per serving. With no values here, Tandoor adds them up from the foods.</string>
+    <string name="recipe_editor_nutrition_add">Add a value</string>
+    <string name="recipe_editor_nutrition_label">%1$s (%2$s)</string>
+    <string name="recipe_editor_nutrition_remove">Remove %1$s</string>
 </resources>

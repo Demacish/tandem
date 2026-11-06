@@ -40,6 +40,27 @@ class RecipeEditorAccessibilityTest {
     fun editingPictureRemovedDark() = check(RecipeEditorShot.EDITING_PICTURE_REMOVED, darkTheme = true)
 
     @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun editingOptions() = check(RecipeEditorShot.EDITING_OPTIONS)
+
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun editingOptionsDark() = check(RecipeEditorShot.EDITING_OPTIONS, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun editingOptionsFontScale2() = check(RecipeEditorShot.EDITING_OPTIONS, fontScale = 2f)
+
+    @Test
+    fun linkPicker() = check(RecipeEditorShot.LINK_PICKER)
+
+    @Test
+    fun linkPickerDark() = check(RecipeEditorShot.LINK_PICKER, darkTheme = true)
+
+    @Test
+    fun linkPickerEmpty() = check(RecipeEditorShot.LINK_PICKER_EMPTY)
+
+    @Test
     fun newEmpty() = check(RecipeEditorShot.NEW_EMPTY)
 
     @Test

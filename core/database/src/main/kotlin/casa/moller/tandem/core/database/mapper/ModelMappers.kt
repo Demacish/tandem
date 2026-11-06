@@ -120,8 +120,10 @@ fun MealPlanRow.toModel(pending: Boolean = false): MealPlanEntry {
 fun RecipeDetailWithSteps.toRecipe(overview: RecipeOverviewEntity?, keywords: List<Keyword> = emptyList()): Recipe? {
     if (detail.rawJson == null) return null
     val ingredientsByStep = ingredients.groupBy { it.stepPosition }
-    val modelSteps = steps.sortedBy { it.position }.map { step ->
+    val files = RecipeNutrition.stepFilesOf(detail.rawJson)
+    val modelSteps = steps.sortedBy { it.position }.mapIndexed { index, step ->
         step.toModel(ingredientsByStep[step.position].orEmpty().sortedBy { it.position }.map { it.toModel() })
+            .copy(file = files.getOrNull(index))
     }
     return Recipe(
         id = detail.recipeId,
@@ -141,6 +143,7 @@ fun RecipeDetailWithSteps.toRecipe(overview: RecipeOverviewEntity?, keywords: Li
         showIngredientOverview = detail.showIngredientOverview,
         nutrition = detail.nutrition,
         nutritionValues = RecipeNutrition.valuesOf(detail.rawJson, detail.servings),
+        properties = RecipeNutrition.propertiesOf(detail.rawJson),
         diameter = detail.diameter,
         diameterText = detail.diameterText,
         createdAt = overview?.createdAtEpochMillis?.toInstant(),

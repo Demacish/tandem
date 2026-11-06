@@ -91,6 +91,10 @@ abstract class RecipeDao {
     @Query("SELECT * FROM recipe_detail WHERE account_id = :accountId AND recipe_id = :recipeId")
     abstract suspend fun getDetail(accountId: String, recipeId: Long): RecipeDetailWithSteps?
 
+    /** Fas 4 (#22): every step that uses another recipe, for the editor's sub-recipe choice. */
+    @Query("SELECT recipe_id AS recipeId, step_recipe_id AS linkedId FROM step WHERE account_id = :accountId AND step_recipe_id IS NOT NULL")
+    abstract fun observeStepLinks(accountId: String): Flow<List<StepLink>>
+
     /** The detail row alone (no steps), null when there is none. */
     @Query("SELECT * FROM recipe_detail WHERE account_id = :accountId AND recipe_id = :recipeId")
     abstract suspend fun getDetailRow(accountId: String, recipeId: Long): RecipeDetailEntity?
@@ -610,3 +614,6 @@ private fun RecipeOverviewEntity.mergedOnto(stored: RecipeOverviewEntity, fromDe
     createdAtEpochMillis = createdAtEpochMillis ?: stored.createdAtEpochMillis,
     updatedAtEpochMillis = updatedAtEpochMillis ?: stored.updatedAtEpochMillis,
 )
+
+/** Fas 4 (#22): recipe [recipeId] uses recipe [linkedId] in a step. */
+data class StepLink(val recipeId: Long, val linkedId: Long)

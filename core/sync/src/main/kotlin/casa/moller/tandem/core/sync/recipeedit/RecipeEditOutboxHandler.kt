@@ -56,6 +56,8 @@ private const val UNSUPPORTED: String = "tandem.sync.unsupported-outbox-op"
  *   the keywords the recipe has, `GET /api/keyword/{id}/` for the rest (Fas 4 review, fix-data: the
  *   device's cached name would rename the keyword for everyone). A keyword deleted on the server
  *   goes by name; a failed read holds the row back.
+ * - **A step's file** chosen in the editor stands in the row by its path until it is uploaded,
+ *   right before the POST or PATCH and after the conflict check ([withUploadedFiles]).
  * - **DELETE** `DELETE /api/recipe/{id}/` (204); a 404 is dropped (already gone). Either way a copy
  *   stored meanwhile goes.
  * - **RECIPE_IMAGE** `PUT /api/recipe/{id}/image/` with the app-private copy, deleted afterwards, or
@@ -83,9 +85,13 @@ internal class RecipeEditOutboxHandler @Inject constructor(
         val database = databases.get(remote.kind)
         val marker = postedKey(localId)
         lostAnswer(remote, row, name, marker)?.let { return it }
-        val sendBody = when (val named = withServerKeywordNames(remote, body, fresh = null)) {
+        val uploaded = when (val files = withUploadedFiles(remote, row, body)) {
+            is Outcome.Failure -> return OutboxResult.Failed(files.error)
+            is Outcome.Success -> files.value
+        }
+        val sendBody = when (val named = withServerKeywordNames(remote, uploaded, fresh = null)) {
             is Outcome.Failure -> return OutboxResult.Failed(named.error)
-            is Outcome.Success -> named.value
+            is Outcome.Success -> RecipeEditPayloads.forSending(named.value)
         }
         // From here on the recipe may reach the server even when its answer is lost: a retry looks first.
         database.syncStateDao().upsert(SyncStateEntity(accountId = remote.accountId, entity = marker))
@@ -118,10 +124,14 @@ internal class RecipeEditOutboxHandler @Inject constructor(
             details.store(remote, recipeId, fresh, force = true)
             return if (RecipeEditPayloads.sameContent(fresh, body)) OutboxResult.Sent else OutboxResult.Failed(CONFLICT_ERROR)
         }
+        val uploaded = when (val files = withUploadedFiles(remote, row, body)) {
+            is Outcome.Failure -> return OutboxResult.Failed(files.error)
+            is Outcome.Success -> files.value
+        }
         // A known keyword goes with the name the server has for it right now: another name would rename it.
-        val sendBody = when (val named = withServerKeywordNames(remote, body, fresh)) {
+        val sendBody = when (val named = withServerKeywordNames(remote, uploaded, fresh)) {
             is Outcome.Failure -> return OutboxResult.Failed(named.error)
-            is Outcome.Success -> named.value
+            is Outcome.Success -> RecipeEditPayloads.forSending(named.value)
         }
         val answer = when (val sent = caller.write(remote) { recipes.updateRecipe(recipeId, sendBody) }) {
             is Outcome.Failure -> return OutboxResult.Failed(sent.error)
@@ -130,6 +140,35 @@ internal class RecipeEditOutboxHandler @Inject constructor(
         details.store(remote, recipeId, answer, force = true)
         database.outboxDao().rebaseQueuedEdits(remote.accountId, recipeId, before = fresh, after = answer, keepKeywords = false)
         return OutboxResult.Sent
+    }
+
+    /**
+     * Fas 4 (#22): uploads the files chosen for [body]'s steps (`POST /api/user-file/`, FACTS "Fas 1
+     * m"), one at a time. Each one that is up goes into the row at once and its copy is deleted, so
+     * a retry after a failure sends only what is left. A copy that is gone (the account's data was
+     * cleared) leaves the step's file as the server has it. A refused file (a space's file limit is a
+     * 400) fails the row, which waits in "Väntande ändringar" with its copy.
+     */
+    private suspend fun withUploadedFiles(remote: ActiveSource.Remote, row: OutboxEntity, body: JsonObject): Outcome<JsonObject> {
+        var current = body
+        (body["steps"] as? JsonArray).orEmpty().forEachIndexed { index, step ->
+            val path = RecipeEditPayloads.filePathOf(step) ?: return@forEachIndexed
+            val file = File(path)
+            current = if (!file.isFile) {
+                RecipeEditPayloads.withoutFile(current, index)
+            } else {
+                val name = RecipeEditPayloads.fileNameOf(step).toRequestBody(TEXT)
+                val part = MultipartBody.Part.createFormData("file", file.name, file.asRequestBody(BINARY))
+                val fileId = when (val sent = caller.write(remote) { recipes.uploadUserFile(name, part) }) {
+                    is Outcome.Failure -> return sent
+                    is Outcome.Success -> sent.value.id ?: return Outcome.Failure(TandemError.Decode("user-file-without-id"))
+                }
+                RecipeEditPayloads.withUploadedFile(current, index, fileId)
+            }
+            databases.get(remote.kind).outboxDao().updatePayload(row.id, current.toString())
+            images.delete(path)
+        }
+        return Outcome.Success(current)
     }
 
     /** Whether [fresh] moved on from the copy the edit started from (Fas 3's leftovers: a change of only a step leaves `updated_at`). */
@@ -287,6 +326,7 @@ internal class RecipeEditOutboxHandler @Inject constructor(
         val CONFLICT_ERROR: TandemError = TandemError.Unknown(RecipeEditPayloads.CONFLICT)
         private val JPEG = "image/jpeg".toMediaType()
         private val TEXT = "text/plain".toMediaType()
+        private val BINARY = "application/octet-stream".toMediaType()
         private const val LOST_LOOKUP_PAGE = 10
         private const val POSTED_PREFIX = "recipe_posted:"
     }

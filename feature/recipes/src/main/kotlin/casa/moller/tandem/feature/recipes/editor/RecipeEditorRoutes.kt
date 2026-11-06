@@ -2,10 +2,12 @@ package casa.moller.tandem.feature.recipes.editor
 
 import android.Manifest
 import android.content.ActivityNotFoundException
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import casa.moller.tandem.core.model.recipe.StepFile
 import casa.moller.tandem.core.ui.accessibility.announce
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.drinks.DrinkCameraFiles
@@ -91,6 +94,26 @@ fun RecipeEditorRoute(
         if (taken && uri != null) photoChanged(uri) else DrinkCameraFiles.delete(context, uri)
         pendingCapture = null
     }
+    // Fas 4 (#22): the step a file is being chosen for; the page may be gone and back by the time it comes.
+    var fileStep by rememberSaveable { mutableStateOf<Int?>(null) }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val step = fileStep
+        fileStep = null
+        if (uri != null && step != null) {
+            val picked = pickedFile(context, uri)
+            when {
+                picked == null -> showMessage(R.string.recipe_editor_file_unreadable)
+
+                picked.size > StepFile.MAX_BYTES -> showMessage(R.string.recipe_editor_file_too_large)
+
+                else -> {
+                    keepPickedPhoto(context, uri)
+                    val name = StepFile.fittingName(picked.name)
+                    viewModel.onAction(RecipeEditorAction.SetStepFile(step, StepFile(name = name, uri = uri.toString())))
+                }
+            }
+        }
+    }
     val launchCamera: () -> Unit = {
         val uri = cameraUri(context)
         pendingCapture = uri.toString()
@@ -108,6 +131,7 @@ fun RecipeEditorRoute(
     }
     val release: () -> Unit = {
         viewModel.currentPhoto?.let { releasePickedPhoto(context, it) }
+        viewModel.chosenFiles.filter { it.startsWith(ContentResolver.SCHEME_CONTENT) }.forEach { releasePickedPhoto(context, it) }
         DrinkCameraFiles.sweep(context)
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -161,6 +185,15 @@ fun RecipeEditorRoute(
         onBack = requestLeave,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onPickStepFile = { step ->
+            fileStep = step
+            try {
+                filePicker.launch(arrayOf(ANY_FILE))
+            } catch (e: ActivityNotFoundException) {
+                fileStep = null
+                showMessage(R.string.recipe_editor_file_unreadable)
+            }
+        },
     )
     if (askingToLeave) {
         LeaveEditorDialog(
@@ -180,6 +213,24 @@ fun RecipeEditorRoute(
 /** A new file in the app's cache for the camera (`res/xml/drink_photo_paths.xml`); the repository copies and scales it. */
 private fun cameraUri(context: Context): Uri =
     FileProvider.getUriForFile(context, context.packageName + DrinkCameraFiles.AUTHORITY_SUFFIX, DrinkCameraFiles.newFile(context))
+
+private const val ANY_FILE = "*/*"
+
+/** A document's name and size as its provider tells them. */
+private class PickedFile(val name: String, val size: Long)
+
+/** What [uri] is called and how large it is; null when the provider will not say. A size it does not know counts as 0: the copy checks. */
+private fun pickedFile(context: Context, uri: Uri): PickedFile? = try {
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+        if (!cursor.moveToFirst()) return@use null
+        val name = cursor.getString(0)?.takeIf { it.isNotBlank() } ?: return@use null
+        PickedFile(name = name, size = if (cursor.isNull(1)) 0L else cursor.getLong(1))
+    }
+} catch (e: SecurityException) {
+    null
+} catch (e: IllegalArgumentException) {
+    null
+}
 
 /** Keeps the read grant of a photo-picker image past the process (released by [releasePickedPhoto]). */
 private fun keepPickedPhoto(context: Context, uri: Uri) {

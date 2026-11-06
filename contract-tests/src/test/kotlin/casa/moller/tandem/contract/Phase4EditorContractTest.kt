@@ -249,6 +249,21 @@ class Phase4EditorContractTest {
         observe("properties.sameTypeTwice.count", read("naring-dubbel-las").size)
         val nullAmount = patch("naring-null", id, "properties" to JsonArray(listOf(property(energy, null))))
         observe("properties.nullAmount.status", nullAmount.status)
+
+        // The name the device has may be old: does it rename the type (a space-wide change), or make a new one?
+        val staleType = obj("id" to energy.longAt("id"), "name" to "Tandem gammalt namn")
+        val stale = patch(
+            "naring-gammalt-namn",
+            id,
+            "properties" to JsonArray(listOf(obj("property_type" to staleType, "property_amount" to 5.0))),
+        )
+        observe("properties.staleName.status", stale.status)
+        val type = read("naring-gammalt-namn-las").firstOrNull()?.objAt("property_type")
+        observe("properties.staleName.keptTheId", type?.longAt("id") == energy.longAt("id"))
+        observe("properties.staleName.nameOnRecipe", type?.stringAt("name"))
+        val listed = (api("typ-lista-efter", "GET", "/api/property-type/?page_size=100").json as? JsonObject)?.arrAt("results").objects()
+        observe("properties.staleName.typeNames", listed.mapNotNull { it.stringAt("name") }.filter { it.startsWith("Tandem") }.sorted())
+        (type?.longAt("id"))?.takeIf { it !in types }?.let { types += it }
         patch("naring-stad", id, "properties" to JsonArray(emptyList()))
     }
 

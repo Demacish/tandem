@@ -282,3 +282,11 @@ data class RecipeBookEntryDto(
 /** `GET /api/share-link/{id}` (Phase 1b; path WITHOUT a trailing slash, plan 4.1). */
 @Serializable
 data class ShareLinkDto(val pk: Long? = null, val share: String = "", val link: String = "")
+
+/** Fas 4 (#22): the answer of `POST /api/user-file/`; the fields the app reads. */
+@Serializable
+data class UserFileDto(val id: Long? = null, val name: String = "")
+
+/** Fas 4 (#22): a `GET /api/property-type/` row; the fields the app reads. */
+@Serializable
+data class PropertyTypeDto(val id: Long? = null, val name: String = "", val unit: String? = null, val order: Int = 0)

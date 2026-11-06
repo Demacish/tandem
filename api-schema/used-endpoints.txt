@@ -153,3 +153,9 @@ POST /api/ai-import/
 # with the space's AI provider (#40). The WebView fallback (#38) sends the page's HTML as data to
 # recipe-from-source above; removing a picture uses PUT /api/recipe/{id}/image/ above.
 POST /api/ai-step-sort/
+
+# --- Fas 4, komplettering 2: the recipe editor (#22, decision B9; FACTS "Fas 4: receptredigeraren") ---
+# A step's file is uploaded right before the recipe that points at it; the property types are what
+# the editor offers for the recipe's own nutrition.
+POST /api/user-file/
+GET /api/property-type/

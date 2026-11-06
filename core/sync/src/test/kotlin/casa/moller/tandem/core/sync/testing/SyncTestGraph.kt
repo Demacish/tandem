@@ -327,7 +327,7 @@ internal class SyncTestGraph(
     )
 
     // Fas 3 (redigerare lane): the recipe editor's writes (the photo copies share the drinks' store).
-    val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages)
+    val recipeEdits = OfflineFirstRecipeEditRepository(sources, databases, permissions, scheduler, clock, drinkImages, caller)
 
     // Fas 3 (import lane): the server-side import (online).
     val importDone = FakeImportDoneNotifier()
@@ -415,6 +415,13 @@ internal class TestDrinkImageStore(private val directory: File) : DrinkImageStor
         if (!source.isFile) return null
         directory.mkdirs()
         return File(directory, "drink-${System.nanoTime()}.jpg").also { source.copyTo(it) }
+    }
+
+    override suspend fun copyFile(accountId: String, uri: String, name: String): File? {
+        val source = File(uri.removePrefix("file://"))
+        if (!source.isFile) return null
+        directory.mkdirs()
+        return File(directory, "step-${System.nanoTime()}-$name").also { source.copyTo(it) }
     }
 
     override suspend fun delete(path: String) {

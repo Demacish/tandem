@@ -3,7 +3,11 @@ package casa.moller.tandem.feature.recipes.editor
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import casa.moller.tandem.core.model.recipe.DraftKeyword
+import casa.moller.tandem.core.model.recipe.PropertyType
 import casa.moller.tandem.core.model.recipe.RecipeDraft
+import casa.moller.tandem.core.model.recipe.RecipeOverview
+import casa.moller.tandem.core.model.recipe.StepFile
+import casa.moller.tandem.core.model.recipe.StepRecipeRef
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -28,6 +32,9 @@ import java.math.RoundingMode
  * @property hasChanges leaving now would lose something: what was opened changed, or the draft is
  *   an import (the import page is gone).
  * @property sourcePath the photo or PDF an import was read from, shown with the form (plan §8.4).
+ * @property propertyTypes Fas 4 (#22): the space's property types the recipe has no value of yet.
+ *   The nutrition section shows when there are any, or when the recipe has values.
+ * @property linkPicker the sheet that chooses a sub-recipe for a step, null while it is closed.
  */
 @Immutable
 data class RecipeEditorUiState(
@@ -45,6 +52,8 @@ data class RecipeEditorUiState(
     val foods: List<String> = emptyList(),
     val hasChanges: Boolean = false,
     val sourcePath: String? = null,
+    val propertyTypes: List<PropertyType> = emptyList(),
+    val linkPicker: StepLinkPicker? = null,
 ) {
     /**
      * The text of an amount field: what was typed, else the draft's number ("" for 0) with
@@ -53,16 +62,19 @@ data class RecipeEditorUiState(
      */
     fun amountText(step: Int, ingredient: Int, decimalSeparator: Char = '.'): String = amountTexts[amountKey(step, ingredient)] ?: run {
         val amount = draft.steps.getOrNull(step)?.ingredients?.getOrNull(ingredient)?.amount ?: 0.0
-        if (amount == 0.0) {
-            ""
-        } else {
-            BigDecimal(amount)
-                .setScale(AMOUNT_DECIMALS, RoundingMode.HALF_UP)
-                .stripTrailingZeros()
-                .toPlainString()
-                .replace('.', decimalSeparator)
-        }
+        if (amount == 0.0) "" else plainNumber(amount, decimalSeparator)
     }
+
+    /** The text of a nutrition field: what was typed, else the value (a stored 0 stays "0", it says something). */
+    fun propertyText(typeId: Long, decimalSeparator: Char = '.'): String = amountTexts[propertyKey(typeId)] ?: run {
+        draft.properties?.firstOrNull { it.typeId == typeId }?.let { plainNumber(it.amount, decimalSeparator) }.orEmpty()
+    }
+
+    private fun plainNumber(amount: Double, decimalSeparator: Char): String = BigDecimal(amount)
+        .setScale(AMOUNT_DECIMALS, RoundingMode.HALF_UP)
+        .stripTrailingZeros()
+        .toPlainString()
+        .replace('.', decimalSeparator)
 
     /** The stored foods that match what is typed; nothing once it is a stored food as it stands. */
     fun foodSuggestions(typed: String): List<String> {
@@ -76,10 +88,23 @@ data class RecipeEditorUiState(
     companion object {
         fun amountKey(step: Int, ingredient: Int): String = "$step:$ingredient"
 
+        fun propertyKey(typeId: Long): String = "$PROPERTY_PREFIX$typeId"
+
+        /** How an [amountKey]-like key of a nutrition field starts. */
+        const val PROPERTY_PREFIX: String = "p:"
+
         private const val AMOUNT_DECIMALS = 3
         private const val MAX_FOOD_SUGGESTIONS = 6
     }
 }
+
+/**
+ * The sheet that chooses a sub-recipe for step [step]: the stored recipes that match [query]
+ * (leaving out this recipe, those not on the server yet, and those that use this one: Tandoor
+ * would take the circle).
+ */
+@Immutable
+data class StepLinkPicker(val step: Int, val query: String = "", val results: List<RecipeOverview> = emptyList())
 
 /** One change of the form; indices are positions in [RecipeDraft.steps] and a step's ingredients. */
 sealed interface RecipeEditorAction {
@@ -96,6 +121,9 @@ sealed interface RecipeEditorAction {
     data class SetWaitingMinutes(val minutes: Int) : RecipeEditorAction
 
     data class SetSourceUrl(val url: String) : RecipeEditorAction
+
+    /** Tandoor's `private`: only the owner and those it is shared with see the recipe. */
+    data class SetPrivate(val isPrivate: Boolean) : RecipeEditorAction
 
     /** Adds a keyword: a suggestion (with its id) or a new one typed by name. */
     data class AddKeyword(val keyword: DraftKeyword) : RecipeEditorAction
@@ -117,6 +145,33 @@ sealed interface RecipeEditorAction {
     data class SetStepInstruction(val step: Int, val instruction: String) : RecipeEditorAction
 
     data class SetStepMinutes(val step: Int, val minutes: Int) : RecipeEditorAction
+
+    /** Tandoor's `show_as_header`: the step's name stands as a heading. */
+    data class SetStepShowAsHeader(val step: Int, val show: Boolean) : RecipeEditorAction
+
+    /** Tandoor's `show_ingredients_table`: the step's ingredients show with its text. */
+    data class SetStepShowIngredients(val step: Int, val show: Boolean) : RecipeEditorAction
+
+    /** Opens the sheet that chooses a sub-recipe for [step]. */
+    data class OpenStepLink(val step: Int) : RecipeEditorAction
+
+    data class SearchStepLink(val query: String) : RecipeEditorAction
+
+    data object CloseStepLink : RecipeEditorAction
+
+    /** The sub-recipe of [step]; null takes it off. Closes the sheet. */
+    data class SetStepRecipe(val step: Int, val recipe: StepRecipeRef?) : RecipeEditorAction
+
+    /** The file of [step]: one just chosen (with its `content://` uri), or null to take it off. */
+    data class SetStepFile(val step: Int, val file: StepFile?) : RecipeEditorAction
+
+    /** A value of [type] on the recipe itself, not filled in yet. */
+    data class AddProperty(val type: PropertyType) : RecipeEditorAction
+
+    /** The value as typed (decimal comma or point; blank = no value, the row is left out when saving). */
+    data class SetPropertyAmount(val typeId: Long, val text: String) : RecipeEditorAction
+
+    data class RemoveProperty(val typeId: Long) : RecipeEditorAction
 
     /** "Ny ingrediens": an empty line, or one parsed from [text] ("2 dl grädde, kall"). */
     data class AddIngredient(val step: Int, val text: String = "") : RecipeEditorAction

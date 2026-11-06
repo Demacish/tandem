@@ -41,6 +41,33 @@ class RecipeEditorScreenshotTest {
     fun editingPictureRemoved() = capture("phone_editor_picture_removed_light_sv", RecipeEditorShot.EDITING_PICTURE_REMOVED)
 
     @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun editingOptions() = capture("phone_tall_editor_options_light_sv", RecipeEditorShot.EDITING_OPTIONS)
+
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun editingOptionsDark() = capture("phone_tall_editor_options_dark", RecipeEditorShot.EDITING_OPTIONS, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun editingOptionsFontScale2() = capture("phone_tall_editor_options_font2_light_sv", RecipeEditorShot.EDITING_OPTIONS, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun editingOptionsTablet() = capture("tablet_editor_options_light_sv", RecipeEditorShot.EDITING_OPTIONS)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun linkPicker() = capture("phone_editor_link_picker_light_sv", RecipeEditorShot.LINK_PICKER)
+
+    @Test
+    fun linkPickerDark() = capture("phone_editor_link_picker_dark", RecipeEditorShot.LINK_PICKER, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun linkPickerEmpty() = capture("phone_editor_link_picker_empty_light_sv", RecipeEditorShot.LINK_PICKER_EMPTY)
+
+    @Test
     @Config(qualifiers = "sv-$PHONE")
     fun newEmpty() = capture("phone_editor_new_light_sv", RecipeEditorShot.NEW_EMPTY)
 

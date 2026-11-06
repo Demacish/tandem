@@ -98,6 +98,10 @@ abstract class OutboxDao {
     @Query("UPDATE outbox SET payload = :payload, attempts = 0 WHERE id = :id")
     abstract suspend fun resetRefusedCreate(id: Long, payload: String)
 
+    /** Fas 4 (#22): what a row sends next, after a part of it was done (an uploaded step file is not sent again). */
+    @Query("UPDATE outbox SET payload = :payload WHERE id = :id")
+    abstract suspend fun updatePayload(id: Long, payload: String)
+
     /** After a crash or kill while sending: IN_FLIGHT rows go back to PENDING. */
     @Query("UPDATE outbox SET state = 'PENDING' WHERE account_id = :accountId AND state = 'IN_FLIGHT'")
     abstract suspend fun resetInFlight(accountId: String)

@@ -115,4 +115,32 @@
     <string name="recipe_editor_ingredient_no_amount_for">Utan mängd, ingrediens %1$d i steg %2$d</string>
     <string name="recipe_editor_ingredient_food_pick">%1$s, för ingrediens %2$d i steg %3$d</string>
     <string name="recipe_editor_ingredient_unit_for">Enhet för ingrediens %1$d i steg %2$d</string>
+
+    <!-- Fas 4 (#22, beslut B9): det som är kvar av webbens redigerare. -->
+    <string name="recipe_editor_private">Privat recept</string>
+    <string name="recipe_editor_private_body">Bara du och de du delar receptet med ser det.</string>
+    <string name="recipe_editor_step_show_as_header">Visa namnet som rubrik</string>
+    <string name="recipe_editor_step_show_as_header_for">Steg %1$d: visa namnet som rubrik</string>
+    <string name="recipe_editor_step_show_ingredients">Visa ingredienserna i steget</string>
+    <string name="recipe_editor_step_show_ingredients_for">Steg %1$d: visa ingredienserna i steget</string>
+    <string name="recipe_editor_step_link">Länka delrecept</string>
+    <string name="recipe_editor_step_link_for">Länka ett delrecept till steg %1$d</string>
+    <string name="recipe_editor_step_linked">Delrecept: %1$s</string>
+    <string name="recipe_editor_step_linked_unnamed">Delrecept</string>
+    <string name="recipe_editor_step_unlink_for">Ta bort delreceptet från steg %1$d</string>
+    <string name="recipe_editor_step_attach">Bifoga fil</string>
+    <string name="recipe_editor_step_attach_for">Bifoga en fil till steg %1$d</string>
+    <string name="recipe_editor_step_file">Fil: %1$s</string>
+    <string name="recipe_editor_step_file_remove_for">Ta bort filen från steg %1$d</string>
+    <string name="recipe_editor_file_unreadable">Filen gick inte att läsa. Inget sparades.</string>
+    <string name="recipe_editor_file_too_large">Filen är större än 20 MB.</string>
+    <string name="recipe_editor_link_title">Delrecept till steg %1$d</string>
+    <string name="recipe_editor_link_hint">Steget visar en länk till receptet du väljer.</string>
+    <string name="recipe_editor_link_search">Sök recept</string>
+    <string name="recipe_editor_link_empty">Inga recept att välja.</string>
+    <string name="recipe_editor_nutrition">Näringsvärden</string>
+    <string name="recipe_editor_nutrition_hint">Per portion. Står inget här räknar Tandoor ihop dem från livsmedlen.</string>
+    <string name="recipe_editor_nutrition_add">Lägg till ett värde</string>
+    <string name="recipe_editor_nutrition_label">%1$s (%2$s)</string>
+    <string name="recipe_editor_nutrition_remove">Ta bort %1$s</string>
 </resources>
