@@ -81,8 +81,7 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         ),
     )
 
-    private fun propertyType(id: Long): MockResponse =
-        propertyTypes.firstOrNull { it.long("id") == id }?.let { json(OK, it) } ?: notFound()
+    private fun propertyType(id: Long): MockResponse = propertyTypes.firstOrNull { it.long("id") == id }?.let { json(OK, it) } ?: notFound()
 
     private fun create(body: JsonObject): MockResponse {
         val id = nextRecipeId++

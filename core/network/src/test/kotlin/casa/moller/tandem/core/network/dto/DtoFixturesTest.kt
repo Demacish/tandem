@@ -51,6 +51,9 @@ class DtoFixturesTest {
         Route("POST", "/api/recipe/", RecipeDto.serializer()),
         Route("GET", "/api/recipe/\\d+/", RecipeDto.serializer()),
         Route("PATCH", "/api/recipe/\\d+/", RecipeDto.serializer()),
+        Route("POST", "/api/user-file/", UserFileDto.serializer()),
+        Route("GET", "/api/property-type/", PageDto.serializer(PropertyTypeDto.serializer())),
+        Route("GET", "/api/property-type/\\d+/", PropertyTypeDto.serializer()),
         Route("PATCH", "/api/step/\\d+/", StepDto.serializer()),
         Route("PATCH", "/api/ingredient/\\d+/", IngredientDto.serializer()),
         Route("GET", "/api/keyword/", PageDto.serializer(KeywordDto.serializer())),
@@ -144,6 +147,10 @@ class DtoFixturesTest {
         // Fas 4 review (fix-data): seed of the nutrition recordings; the app only reads what the recipes say.
         "fas4/nutrition/property-type-kcal" to "contract setup; the app reads property types from the recipes",
         "fas4/nutrition/property-type-g" to "contract setup; the app reads property types from the recipes",
+        // Fas 4, komplettering 2: setup and a probe of the editor's recordings.
+        "fas4/editor/typ-energi" to "contract setup; property types are made on the web",
+        "fas4/editor/typ-protein" to "contract setup; property types are made on the web",
+        "fas4/editor/fil-lista" to "contract probe; the app only uploads a step's file",
     )
 
     @Test

@@ -3,6 +3,7 @@ package casa.moller.tandem.smoke
 import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiObject2
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -172,7 +173,7 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         app.scrollTo(By.text(SUB_RECIPE)).click()
         app.waitFor(By.text("Sub-recipe: $SUB_RECIPE"))
 
-        app.scrollTo(By.text(ENERGY)).click()
+        scrollThroughTheForm(By.text(ENERGY)).click()
         app.waitUntilGone(By.text(ENERGY))
         fieldsOnScreen().last().text = ENERGY_VALUE
         app.waitFor(By.clazz(EDIT_TEXT).text(ENERGY_VALUE))
@@ -286,6 +287,17 @@ class Phase3SmokeTest : Phase2SmokeBase() {
 
     private fun patches() = tandoor.recipeEdits.writes("PATCH", PASTA_PATH)
 
+    /** The recipe's three steps are longer than [TandemApp.scrollTo] goes: it gives up after a few swipes. */
+    private fun scrollThroughTheForm(selector: BySelector): UiObject2 {
+        val x = app.device.displayWidth / 2
+        repeat(FORM_SWIPES) {
+            if (app.device.hasObject(selector)) return app.scrollTo(selector)
+            app.device.swipe(x, app.device.displayHeight * 2 / 3, x, app.device.displayHeight / 3, FORM_SWIPE_STEPS)
+            app.device.waitForIdle()
+        }
+        return app.scrollTo(selector)
+    }
+
     /** Saves through the button's accessibility action, until the editor has closed. */
     private fun save() {
         repeat(TAP_ATTEMPTS) {
@@ -345,6 +357,8 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         const val PASTA_STEP_RAW = "Skiva {{"
         const val EDITED_INSTRUCTION = "Skiva svampen tunt, ändrat i röktestet."
         const val PRIVATE_RECIPE = "Private recipe"
+        const val FORM_SWIPES = 30
+        const val FORM_SWIPE_STEPS = 20
         const val SUB_RECIPE = "Äppelkaka"
         const val SUB_RECIPE_ID = 10L
         const val ENERGY = "Energi"
