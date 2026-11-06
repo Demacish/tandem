@@ -1254,6 +1254,9 @@ Rättelser i `feature/**`, `core:ui` och små block utanför (nämnda här) efte
   timerraden med två recept. Avsiktligt ändrade: Veckans surfplatta, förslagsarket, redigeraren,
   importen, butikens inlärda ordning, tvåreceptsbilderna i landskap och vid skala 2, väljaren utan
   träffar, Snabb push, Behörigheter, Om, Synk med demo, introduktionens sida och Hemmas utgångskort.
+  Två recept i landskap vid skala 2 och i delad skärm (Screenshots 42210263539) tillkom sist, och de
+  visade att timerkortet behövde staplas: från skala 1,5 med receptnamn får texterna kortets bredd och
+  knapparna hamnar under (`TimerBarItem`), annars bröts namnet mitt i ordet och tiden försvann.
   Hemmas åtta `phone_pantry_*` och `phone_landscape_books_light` skiljer sig med känt brus och togs inte.
 - **Övrigt:** `TodayCustomize` nycklar raderna och säger den nya platsen; `RecipeGrid` har plats för
   "Nytt recept" sist; "Fota recept" håller sidorna i `SavedStateHandle`, släpper knappen först när

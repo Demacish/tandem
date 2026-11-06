@@ -71,7 +71,7 @@ class RecipeScreensTest {
         list.performScrollToNode(hasText("Recept 11"))
         repeat(3) { list.performTouchInput { swipeUp() } }
         val lastRecipe = composeRule.onNodeWithText("Recept 11").getBoundsInRoot()
-        val button = composeRule.onNodeWithText(string(R.string.recipes_new), useUnmergedNode = true).getBoundsInRoot()
+        val button = composeRule.onNodeWithText(string(R.string.recipes_new), useUnmergedTree = true).getBoundsInRoot()
         assertTrue("the last recipe ends at ${lastRecipe.bottom}, the button starts at ${button.top}", lastRecipe.bottom <= button.top)
     }
 
