@@ -202,26 +202,46 @@ fun TimerBarItem(
     showRecipe: Boolean = false,
 ) {
     val colors = timerColors(timer.state)
+    val spacing = TandemTheme.spacing
+    // Fas 4 (two recipes at once): at a large font the buttons beside the texts leave them a strip,
+    // so the recipe breaks mid-word and the time goes out of view. The texts get the card's width.
+    val stacked = showRecipe && timer.recipeName != null && LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+    val info: @Composable (Modifier) -> Unit = { infoModifier ->
+        TimerInfo(
+            timer = timer,
+            now = now,
+            colors = colors,
+            timeStyle = MaterialTheme.typography.headlineSmall,
+            onOpen = onOpen,
+            showRecipe = showRecipe,
+            modifier = infoModifier,
+        )
+    }
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = colors.container,
         contentColor = colors.content,
     ) {
-        Row(
-            modifier = Modifier.padding(start = TandemTheme.spacing.lg, end = TandemTheme.spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TimerInfo(
-                timer = timer,
-                now = now,
-                colors = colors,
-                timeStyle = MaterialTheme.typography.headlineSmall,
-                onOpen = onOpen,
-                showRecipe = showRecipe,
-                modifier = Modifier.weight(1f),
-            )
-            TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
+        if (stacked) {
+            Column(modifier = Modifier.padding(start = spacing.lg, end = spacing.xs)) {
+                info(Modifier.fillMaxWidth())
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.xs, Alignment.End),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.padding(start = spacing.lg, end = spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                info(Modifier.weight(1f))
+                TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
+            }
         }
     }
 }
@@ -330,7 +350,8 @@ private fun TimerInfo(
                 text = recipe,
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.accent,
-                // Two lines at a large font: names that start alike must stay apart.
+                // Two lines at a large font: names that start alike must stay apart. The bar's card
+                // gives the name its full width there (TimerBarItem).
                 maxLines = if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
