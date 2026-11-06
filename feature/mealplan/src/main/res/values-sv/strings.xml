@@ -174,8 +174,8 @@
     <!-- Förslag på veckans matsedel (Fas 4) -->
     <string name="mealplan_suggest_title">Föreslå veckans matsedel</string>
     <string name="mealplan_suggest_card_body">Ett recept för varje dag som saknar middag</string>
-    <string name="mealplan_suggest_body">En %1$s för varje ledig dag, utifrån vad ni lagar ofta och inte har lagat nyligen. Byt ut eller ta bort en dag, och lägg sedan in dem i veckan.</string>
-    <string name="mealplan_suggest_no_free_days">Alla dagar från och med idag har redan en %1$s.</string>
+    <string name="mealplan_suggest_body">Måltid: %1$s. Ett recept för varje ledig dag, utifrån vad ni lagar ofta och inte har lagat nyligen. Byt ut eller ta bort en dag, och lägg sedan in dem i veckan.</string>
+    <string name="mealplan_suggest_no_free_days">Alla dagar från och med i dag har redan något planerat för %1$s.</string>
     <string name="mealplan_suggest_no_recipes">Det finns inga recept att föreslå än.</string>
     <string name="mealplan_suggest_all_removed">Alla förslag är borttagna. Slumpa om för nya.</string>
     <string name="mealplan_suggest_reshuffle">Slumpa om</string>
@@ -199,4 +199,34 @@
         <item quantity="one">Använder %1$d råvara som går ut snart</item>
         <item quantity="other">Använder %1$d råvaror som går ut snart</item>
     </plurals>
+    <!-- Granskningen av Fas 4: förslag och recept som dras in i veckan -->
+    <string name="mealplan_suggestion_with_time">%1$s, %2$s</string>
+    <string name="mealplan_suggest_swapped">%1$s: %2$s</string>
+    <plurals name="mealplan_suggest_count">
+        <item quantity="one">%1$d förslag</item>
+        <item quantity="other">%1$d förslag</item>
+    </plurals>
+    <plurals name="mealplan_suggest_too_few">
+        <item quantity="one">Bara %1$d recept att föreslå, så några dagar blir kvar.</item>
+        <item quantity="other">Bara %1$d recept att föreslå, så några dagar blir kvar.</item>
+    </plurals>
+    <plurals name="mealplan_suggest_too_few_keywords">
+        <item quantity="one">Bara %1$d recept passar. Välj färre nyckelord för fler.</item>
+        <item quantity="other">Bara %1$d recept passar. Välj färre nyckelord för fler.</item>
+    </plurals>
+    <string name="mealplan_suggest_servings">Portioner</string>
+    <plurals name="mealplan_suggest_servings_value">
+        <item quantity="one">%1$s portion per måltid</item>
+        <item quantity="other">%1$s portioner per måltid</item>
+    </plurals>
+    <string name="mealplan_suggest_more_keywords">Fler nyckelord</string>
+    <string name="mealplan_suggest_keyword_search">Sök nyckelord</string>
+    <string name="mealplan_suggest_keyword_none">Inget annat nyckelord matchar.</string>
+    <string name="mealplan_want_title">Vill laga</string>
+    <string name="mealplan_want_drag_hint">Håll ned och dra ett recept till en dag.</string>
+    <string name="mealplan_want_empty">Inget i kön. Sök efter ett recept och dra det till en dag.</string>
+    <string name="mealplan_recipe_search">Sök recept</string>
+    <string name="mealplan_recipe_results">Recept</string>
+    <string name="mealplan_recipe_no_results">Inga recept matchar sökningen.</string>
+    <string name="mealplan_msg_planned">%1$s planerades in %2$s</string>
 </resources>

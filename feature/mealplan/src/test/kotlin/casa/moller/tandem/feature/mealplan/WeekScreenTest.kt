@@ -1,6 +1,9 @@
 package casa.moller.tandem.feature.mealplan
 
 import android.content.Context
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -18,15 +21,19 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.SavedStateHandle
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.domain.mealplan.WeekShoppingMerge
+import casa.moller.tandem.core.model.recipe.Keyword
+import casa.moller.tandem.core.testing.data.FakeDrinkRepository
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeMakeNowRepository
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeBookRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
@@ -44,11 +51,15 @@ import casa.moller.tandem.feature.mealplan.ui.WEEK_DAYS_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_DAY_PANE_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_GRID_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_SHOPPING_LIST_TAG
+import casa.moller.tandem.feature.mealplan.ui.WEEK_SUGGESTIONS_MORE_KEYWORDS_TAG
 import casa.moller.tandem.feature.mealplan.ui.WeekScreen
 import casa.moller.tandem.feature.mealplan.ui.WeekShoppingScreen
+import casa.moller.tandem.feature.mealplan.ui.WeekSuggestionsPanel
 import casa.moller.tandem.feature.mealplan.ui.dayTag
+import casa.moller.tandem.feature.mealplan.ui.dragRecipeTag
 import casa.moller.tandem.feature.mealplan.ui.mealTag
 import casa.moller.tandem.feature.mealplan.ui.planMealRecipeTag
+import casa.moller.tandem.feature.mealplan.ui.suggestionKeywordTag
 import casa.moller.tandem.feature.mealplan.ui.weekShoppingLineTag
 import casa.moller.tandem.feature.mealplan.ui.weekShoppingMealTag
 import org.junit.Assert.assertEquals
@@ -110,6 +121,27 @@ class WeekScreenTest {
         composeRule.onNodeWithTag(WEEK_AGENDA_TAG).performScrollToNode(hasContentDescription(saturday))
         composeRule.onNodeWithContentDescription(saturday).performClick()
         assertEquals(WeekAction.PlanMeal(day(5)), actions.last())
+    }
+
+    @Test
+    fun aRecipeInTheQueueOpensOnATap() {
+        show(MealPlanSamples.state().copy(wantToCook = MealPlanSamples.wantToCook))
+        composeRule.onNodeWithTag(dragRecipeTag(MealPlanSamples.lasagne.id)).performClick()
+        assertEquals(WeekAction.OpenRecipe(MealPlanSamples.lasagne.id), actions.last())
+    }
+
+    @Test
+    fun theSheetFindsAKeywordOutsideTheQuickChoices() {
+        val rare = Keyword(2000, "Vegetariskt")
+        val state = MealPlanSamples.suggestionsState.copy(allKeywords = MealPlanSamples.suggestionsState.keywords + rare)
+        composeRule.setContent {
+            MealPlanTestTheme {
+                WeekSuggestionsPanel(state, format, onAction = { actions += it }, modifier = Modifier.verticalScroll(rememberScrollState()))
+            }
+        }
+        composeRule.onNodeWithTag(WEEK_SUGGESTIONS_MORE_KEYWORDS_TAG).performScrollTo().performClick()
+        composeRule.onNodeWithTag(suggestionKeywordTag(rare.id)).performScrollTo().performClick()
+        assertEquals(WeekAction.ToggleSuggestKeyword(rare.id), actions.last())
     }
 
     @Test
@@ -246,6 +278,8 @@ class WeekScreenTest {
             RemovedMeals(),
             FakeRecipeRepository(overviews = MealPlanSamples.suggestionCandidates),
             FakeMakeNowRepository(emptyMap()),
+            FakeRecipeBookRepository(recipes = MealPlanSamples.suggestionCandidates),
+            FakeDrinkRepository(drinks = emptyList(), pairings = emptyList()),
         )
         val planned = mutableListOf<PlanMealKey>()
         composeRule.setContent {

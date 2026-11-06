@@ -39,6 +39,31 @@ class MealPlanAccessibilityTest {
     fun weekFontScale2() = check(MealPlanShot.WEEK, fontScale = 2f)
 
     @Test
+    fun weekWant() = check(MealPlanShot.WEEK_WANT)
+
+    @Test
+    fun weekWantFontScale2Dark() = check(MealPlanShot.WEEK_WANT, darkTheme = true, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun weekWantLandscape() = check(MealPlanShot.WEEK_WANT)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun weekWantTablet() = check(MealPlanShot.WEEK_WANT)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun weekRecipeSearchTabletDark() = check(MealPlanShot.WEEK_RECIPE_SEARCH, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun weekWantTabletPortrait() = check(MealPlanShot.WEEK_WANT)
+
+    @Test
+    fun suggestionsFew() = check(MealPlanShot.SUGGESTIONS_FEW)
+
+    @Test
     fun weekEmpty() = check(MealPlanShot.WEEK_EMPTY)
 
     @Test

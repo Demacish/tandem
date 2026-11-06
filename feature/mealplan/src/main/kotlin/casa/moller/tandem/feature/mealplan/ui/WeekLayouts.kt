@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -98,6 +99,7 @@ internal fun WeekAgenda(state: WeekUiState, format: MealPlanFormat, onAction: (W
         val notePadding = Modifier.padding(horizontal = spacing.lg, vertical = spacing.xs)
         if (state.readOnly) ReadOnlyNote(modifier = notePadding)
         if (state.isEmpty) EmptyWeekNote(readOnly = state.readOnly, modifier = notePadding)
+        WantToCookStrip(state = state, onAction = onAction)
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().testTag(WEEK_AGENDA_TAG),
@@ -132,7 +134,14 @@ internal fun WeekTwoPane(state: WeekUiState, format: MealPlanFormat, onAction: (
             ) {
                 if (state.readOnly) item(key = "read-only") { ReadOnlyNote() }
                 items(state.days, key = { it.date.toString() }) { day ->
-                    DayRow(day = day, today = day.date == state.today, selected = day.date == shown, format = format, onAction = onAction)
+                    DayRow(
+                        day = day,
+                        today = day.date == state.today,
+                        selected = day.date == shown,
+                        readOnly = state.readOnly,
+                        format = format,
+                        onAction = onAction,
+                    )
                 }
                 if (state.canSuggest) item(key = "suggest") { SuggestWeekCard(onClick = { onAction(WeekAction.Suggest) }) }
                 if (showWeekShopping(state)) {
@@ -141,13 +150,18 @@ internal fun WeekTwoPane(state: WeekUiState, format: MealPlanFormat, onAction: (
             }
         }
         val day = state.days.firstOrNull { it.date == shown }
-        LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxSize().testTag(WEEK_DAY_PANE_TAG),
-            contentPadding = PaddingValues(start = spacing.lg, end = spacing.xl, top = spacing.lg, bottom = spacing.xxl),
-            verticalArrangement = Arrangement.spacedBy(spacing.lg),
-        ) {
-            if (state.isEmpty) item(key = "empty") { EmptyWeekNote(readOnly = state.readOnly) }
-            if (day != null) item(key = day.date.toString()) { DaySection(day = day, state = state, format = format, onAction = onAction) }
+        Column(modifier = Modifier.weight(1f).fillMaxSize()) {
+            WantToCookStrip(state = state, onAction = onAction)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().testTag(WEEK_DAY_PANE_TAG),
+                contentPadding = PaddingValues(start = spacing.lg, end = spacing.xl, top = spacing.lg, bottom = spacing.xxl),
+                verticalArrangement = Arrangement.spacedBy(spacing.lg),
+            ) {
+                if (state.isEmpty) item(key = "empty") { EmptyWeekNote(readOnly = state.readOnly) }
+                if (day != null) {
+                    item(key = day.date.toString()) { DaySection(day = day, state = state, format = format, onAction = onAction) }
+                }
+            }
         }
     }
 }
@@ -177,43 +191,62 @@ internal fun WeekGrid(state: WeekUiState, format: MealPlanFormat, onAction: (Wee
             }
         }
         if (state.readOnly) ReadOnlyNote(modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.xs))
-        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth().testTag(WEEK_GRID_TAG)) {
-            val shown = maxWidth - GridTypeColumn - spacing.lg * 2
-            val cell = maxOf(shown / state.days.size.coerceAtLeast(1), GridMinCell)
-            val rows = gridRows(state)
-            // Today's column in view when the week is wider than the window (portrait).
-            val todayIndex = state.days.indexOfFirst { it.date == state.today }
-            val todayOffset = with(LocalDensity.current) { (cell * (todayIndex + 1) - shown).coerceAtLeast(0.dp).roundToPx() }
-            val sideways = rememberSaveable(state.weekStart, saver = ScrollState.Saver) { ScrollState(todayOffset) }
+        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            // Plan 6.5: the recipe search beside the week; a narrower tablet keeps every column of
+            // the grid and has "Vill laga" above it.
+            val panel = !state.readOnly && maxWidth >= RecipePanelMinWidth
             Column(modifier = Modifier.fillMaxSize()) {
-                Row(
-                    verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier
-                        .horizontalScroll(sideways)
-                        .padding(start = spacing.lg, end = spacing.lg, top = spacing.sm),
-                ) {
-                    Text(
-                        text = stringResource(R.string.mealplan_meal_type_column),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(GridTypeColumn).padding(spacing.sm),
-                    )
-                    state.days.forEach { day -> GridDayHead(day.date, today = day.date == state.today, format = format, width = cell) }
-                }
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .horizontalScroll(sideways)
-                        .padding(horizontal = spacing.lg, vertical = spacing.sm),
-                    verticalArrangement = Arrangement.spacedBy(spacing.sm),
-                ) {
-                    GridBody(state = state, rows = rows, format = format, onAction = onAction, cell = cell)
+                if (!panel) WantToCookStrip(state = state, onAction = onAction)
+                Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    WeekGridColumns(state = state, format = format, onAction = onAction, modifier = Modifier.weight(1f))
+                    if (panel) RecipeDragPanel(state = state, onAction = onAction, modifier = Modifier.width(RecipePanelWidth))
                 }
             }
         }
     }
+}
+
+/** The grid itself: the day headings and the meal types' rows. */
+@Composable
+private fun WeekGridColumns(state: WeekUiState, format: MealPlanFormat, onAction: (WeekAction) -> Unit, modifier: Modifier = Modifier) {
+    val spacing = TandemTheme.spacing
+    BoxWithConstraints(modifier = modifier.fillMaxHeight().testTag(WEEK_GRID_TAG)) {
+        val shown = maxWidth - GridTypeColumn - spacing.lg * 2
+        val cell = maxOf(shown / state.days.size.coerceAtLeast(1), GridMinCell)
+        val rows = gridRows(state)
+        // Today's column in view when the week is wider than the window (portrait).
+        val todayIndex = state.days.indexOfFirst { it.date == state.today }
+        val todayOffset = with(LocalDensity.current) { (cell * (todayIndex + 1) - shown).coerceAtLeast(0.dp).roundToPx() }
+        val sideways = rememberSaveable(state.weekStart, saver = ScrollState.Saver) { ScrollState(todayOffset) }
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier
+                    .horizontalScroll(sideways)
+                    .padding(start = spacing.lg, end = spacing.lg, top = spacing.sm),
+            ) {
+                Text(
+                    text = stringResource(R.string.mealplan_meal_type_column),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(GridTypeColumn).padding(spacing.sm),
+                )
+                state.days.forEach { day -> GridDayHead(day.date, today = day.date == state.today, format = format, width = cell) }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .horizontalScroll(sideways)
+                    .padding(horizontal = spacing.lg, vertical = spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
+            ) {
+                GridBody(state = state, rows = rows, format = format, onAction = onAction, cell = cell)
+            }
+        }
+    }
+}
 }
 
 /** The grid's rows (one per meal type), under the fixed day headings. */
@@ -317,7 +350,11 @@ internal fun DaySection(
         modifier = modifier
             .fillMaxWidth()
             .testTag(dayTag(day.date))
-            .mealDropTarget(enabled = !state.readOnly, onHover = { hovering = it }) { onAction(WeekAction.DropMeal(it, day.date)) }
+            .mealDropTarget(
+                enabled = !state.readOnly,
+                onHover = { hovering = it },
+                onDropRecipe = { onAction(WeekAction.DropRecipe(it, day.date)) },
+            ) { onAction(WeekAction.DropMeal(it, day.date)) }
             .dropHighlight(hovering)
             .padding(if (hovering) spacing.xs else 0.dp),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
@@ -366,13 +403,28 @@ internal fun DaySection(
 
 /** A day in the two-pane list: its name and its meals' names; selecting it shows it beside. */
 @Composable
-private fun DayRow(day: MealPlanDay, today: Boolean, selected: Boolean, format: MealPlanFormat, onAction: (WeekAction) -> Unit) {
+private fun DayRow(
+    day: MealPlanDay,
+    today: Boolean,
+    selected: Boolean,
+    readOnly: Boolean,
+    format: MealPlanFormat,
+    onAction: (WeekAction) -> Unit,
+) {
     val spacing = TandemTheme.spacing
     val dayName = format.fullDay(day.date)
+    // #21: a day in the list takes a dragged meal or recipe as the shown day does.
+    var hovering by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .testTag(dayTag(day.date))
+            .mealDropTarget(
+                enabled = !readOnly,
+                onHover = { hovering = it },
+                onDropRecipe = { onAction(WeekAction.DropRecipe(it, day.date)) },
+            ) { onAction(WeekAction.DropMeal(it, day.date)) }
+            .dropHighlight(hovering)
             .clip(MaterialTheme.shapes.large)
             .selectable(selected = selected, role = Role.Tab, onClick = { onAction(WeekAction.SelectDay(day.date)) }),
         shape = MaterialTheme.shapes.large,
@@ -463,7 +515,11 @@ private fun GridCell(
         modifier = Modifier
             .width(width)
             .padding(horizontal = spacing.xs)
-            .mealDropTarget(enabled = !state.readOnly, onHover = { hovering = it }) { onAction(WeekAction.DropMeal(it, day.date, type.id)) }
+            .mealDropTarget(
+                enabled = !state.readOnly,
+                onHover = { hovering = it },
+                onDropRecipe = { onAction(WeekAction.DropRecipe(it, day.date, type.id)) },
+            ) { onAction(WeekAction.DropMeal(it, day.date, type.id)) }
             .dropHighlight(hovering),
         verticalArrangement = Arrangement.spacedBy(spacing.xs),
         horizontalAlignment = Alignment.CenterHorizontally,

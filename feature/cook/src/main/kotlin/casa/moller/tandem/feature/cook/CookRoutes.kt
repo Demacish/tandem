@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import android.view.View
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -215,12 +214,6 @@ private fun notificationSettingsIntent(context: Context): Intent =
 private fun alarmChannelSettingsIntent(context: Context): Intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
     .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
     .putExtra(Settings.EXTRA_CHANNEL_ID, TandemNotificationChannel.TIMER_ALARM.id)
-
-/** TalkBack says [text] (announceForAccessibility is deprecated from API 36, there is no polite alternative without a visible node). */
-@Suppress("DEPRECATION")
-private fun View.announce(text: String) {
-    announceForAccessibility(text)
-}
 
 /** Play build: the system page where the user allows exact alarms for Tandem (plan 4.4). */
 private fun exactAlarmSettingsIntent(context: Context): Intent =

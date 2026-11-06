@@ -17,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -54,10 +55,21 @@ class MealPlanSheetWindowTest {
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun suggestionsSheetWindowLandscapeDark() = captureSuggestions("phone_landscape_window_week_suggestions_dark", darkTheme = true)
 
+    /**
+     * The scale comes from the configuration: the sheet is a window of its own and goes back to the
+     * view's density, so MealPlanTestTheme's LocalDensity never reached it (the image used to be the
+     * same as at scale 1). The theme stays at 1: it multiplies, and both together would make 4.
+     */
     @Test
     @Config(qualifiers = "sv-$PHONE")
-    fun suggestionsSheetWindowFontScale2() =
-        captureSuggestions("phone_window_week_suggestions_font2_light_sv", fontScale = 2f, accessibility = false)
+    fun suggestionsSheetWindowFontScale2() {
+        RuntimeEnvironment.setFontScale(2f)
+        try {
+            captureSuggestions("phone_window_week_suggestions_font2_light_sv", accessibility = false)
+        } finally {
+            RuntimeEnvironment.setFontScale(1f)
+        }
+    }
 
     /**
      * [accessibility] false on a portrait phone: the sheet then fills the window, and ATF's only

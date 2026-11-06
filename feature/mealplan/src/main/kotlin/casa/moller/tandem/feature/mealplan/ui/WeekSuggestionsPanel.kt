@@ -19,22 +19,39 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemTextField
 import casa.moller.tandem.core.designsystem.icon.ChevronRight
 import casa.moller.tandem.core.designsystem.icon.Restaurant
+import casa.moller.tandem.core.designsystem.icon.Search
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.domain.format.toNumberStyle
+import casa.moller.tandem.core.domain.recipe.ServingsText
+import casa.moller.tandem.core.ui.accessibility.announce
+import casa.moller.tandem.core.ui.recipe.ServingsStepper
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
 import casa.moller.tandem.feature.mealplan.R
 import casa.moller.tandem.feature.mealplan.SuggestedMeal
@@ -93,6 +110,12 @@ fun suggestionMealTypeTag(id: Long): String = "mealplan:suggestions:meal-type:$i
 /** A keyword chip of the sheet ([id] the keyword). */
 fun suggestionKeywordTag(id: Long): String = "mealplan:suggestions:keyword:$id"
 
+/** "Fler nyckelord". */
+const val WEEK_SUGGESTIONS_MORE_KEYWORDS_TAG = "mealplan:suggestions:more-keywords"
+
+/** How many keywords the search shows at a time. */
+private const val MAX_SEARCHED_KEYWORDS = 20
+
 /**
  * The sheet as Veckan shows it: [WeekSuggestionsPanel] scrolls and the buttons stay fixed below it,
  * reachable however many days, keywords or how large the text (like RecipeShoppingSheetLayout).
@@ -135,6 +158,7 @@ internal fun WeekSuggestionsPanel(
     actions: Boolean = true,
 ) {
     val spacing = TandemTheme.spacing
+    SuggestionAnnouncements(state = state, format = format)
     Column(modifier = modifier.fillMaxWidth().testTag(WEEK_SUGGESTIONS_TAG), verticalArrangement = Arrangement.spacedBy(spacing.md)) {
         Text(
             text = stringResource(R.string.mealplan_suggest_title),
@@ -149,15 +173,81 @@ internal fun WeekSuggestionsPanel(
             state.meals.isEmpty() -> stringResource(R.string.mealplan_suggest_all_removed)
             else -> stringResource(R.string.mealplan_suggest_body, typeName)
         }
+        // A node that stays while the sheet changes: TalkBack says "nothing matches" and the like.
         Text(
             text = body,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
         SuggestionChoices(state = state, onAction = onAction)
-        state.meals.forEach { meal -> SuggestionRow(meal = meal, format = format, enabled = !state.saving, onAction = onAction) }
+        if (state.uncoveredDays > 0 && state.meals.isNotEmpty()) UncoveredDays(state)
+        SuggestionServings(state = state, onAction = onAction)
+        state.meals.forEach { meal ->
+            SuggestionRow(meal = meal, format = format, enabled = !state.saving, canSwap = state.canSwap, onAction = onAction)
+        }
         if (actions) SuggestionActions(state = state, onAction = onAction)
     }
+}
+
+/**
+ * TalkBack hears the result of "Byt ut" (the new recipe) and of a new round of suggestions (how
+ * many): focus stays on the button, and live regions on every row would queue up to seven texts.
+ */
+@Composable
+private fun SuggestionAnnouncements(state: WeekSuggestionsState, format: MealPlanFormat) {
+    val view = LocalView.current
+    val resources = LocalResources.current
+    var previous by remember { mutableStateOf(state.meals) }
+    LaunchedEffect(state.meals) {
+        val before = previous
+        previous = state.meals
+        if (before == state.meals) return@LaunchedEffect
+        val sameDays = before.map { it.date } == state.meals.map { it.date }
+        val changed = state.meals.filter { it !in before }
+        val text = when {
+            sameDays && changed.size == 1 -> changed.single().let {
+                resources.getString(R.string.mealplan_suggest_swapped, format.weekday(it.date), it.recipe.name)
+            }
+
+            state.meals.size < before.size && sameDays.not() && changed.isEmpty() -> null
+
+            else -> resources.getQuantityString(R.plurals.mealplan_suggest_count, state.meals.size, state.meals.size)
+        }
+        text?.let(view::announce)
+    }
+}
+
+/** Fewer recipes than free days: says so, and how to get more when keywords are the reason. */
+@Composable
+private fun UncoveredDays(state: WeekSuggestionsState) {
+    val count = state.meals.size
+    Text(
+        text = if (state.keywordIds.isEmpty()) {
+            pluralStringResource(R.plurals.mealplan_suggest_too_few, count, count)
+        } else {
+            pluralStringResource(R.plurals.mealplan_suggest_too_few_keywords, count, count)
+        },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** Plan §8.3 "nyckelord, portioner": what the meals are planned with. */
+@Composable
+private fun SuggestionServings(state: WeekSuggestionsState, onAction: (WeekAction) -> Unit) {
+    if (state.meals.isEmpty()) return
+    val locale = LocalConfiguration.current.locales[0]
+    val amount = ServingsText.number(state.servings, locale.toNumberStyle())
+    val count = state.servings.toInt()
+    ServingsStepper(
+        label = stringResource(R.string.mealplan_suggest_servings),
+        valueText = pluralStringResource(R.plurals.mealplan_suggest_servings_value, count, amount),
+        amountText = amount,
+        onDecrease = { onAction(WeekAction.FewerSuggestServings) },
+        onIncrease = { onAction(WeekAction.MoreSuggestServings) },
+        decreaseEnabled = state.servings > 1,
+    )
 }
 
 /** The meal type (one) and the keywords (any number; a suggestion has them all). */
@@ -200,6 +290,56 @@ private fun SuggestionChoices(state: WeekSuggestionsState, onAction: (WeekAction
                 )
             }
         }
+        if (state.allKeywords.size > state.keywords.size) MoreKeywords(state = state, onAction = onAction)
+    }
+}
+
+/**
+ * "Fler nyckelord": the chips are only the most used; this finds any keyword of the recipes. A
+ * chosen one then stands among the chips above.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MoreKeywords(state: WeekSuggestionsState, onAction: (WeekAction) -> Unit) {
+    val spacing = TandemTheme.spacing
+    var open by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    if (!open) {
+        TandemTextButton(
+            text = stringResource(R.string.mealplan_suggest_more_keywords),
+            onClick = { open = true },
+            modifier = Modifier.testTag(WEEK_SUGGESTIONS_MORE_KEYWORDS_TAG),
+        )
+        return
+    }
+    TandemTextField(
+        value = query,
+        onValueChange = { query = it },
+        label = stringResource(R.string.mealplan_suggest_keyword_search),
+        leadingIcon = TandemIcons.Search,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    val shown = state.keywords.map { it.id }.toSet()
+    val found = state.allKeywords
+        .filter { it.id !in shown && it.name.contains(query.trim(), ignoreCase = true) }
+        .take(MAX_SEARCHED_KEYWORDS)
+    if (found.isEmpty()) {
+        Text(
+            text = stringResource(R.string.mealplan_suggest_keyword_none),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        found.forEach { keyword ->
+            FilterChip(
+                selected = false,
+                onClick = { onAction(WeekAction.ToggleSuggestKeyword(keyword.id)) },
+                label = { Text(keyword.name) },
+                enabled = !state.saving,
+                modifier = Modifier.testTag(suggestionKeywordTag(keyword.id)),
+            )
+        }
     }
 }
 
@@ -231,15 +371,17 @@ private fun SuggestionActions(state: WeekSuggestionsState, onAction: (WeekAction
 }
 
 @Composable
-private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: Boolean, onAction: (WeekAction) -> Unit) {
+private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: Boolean, canSwap: Boolean, onAction: (WeekAction) -> Unit) {
     val spacing = TandemTheme.spacing
     val day = format.weekday(meal.date)
     val time = durationText(meal.recipe.totalMinutes)
     val expiring = meal.expiring.size.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.mealplan_suggest_expiring, it, it) }
+    // The row's description replaces its texts, so it says everything they say.
+    val recipe = if (time == null) meal.recipe.name else stringResource(R.string.mealplan_suggestion_with_time, meal.recipe.name, time)
     val description = if (expiring == null) {
-        stringResource(R.string.mealplan_suggestion_description, day, meal.recipe.name)
+        stringResource(R.string.mealplan_suggestion_description, day, recipe)
     } else {
-        stringResource(R.string.mealplan_suggestion_description_expiring, day, meal.recipe.name, expiring)
+        stringResource(R.string.mealplan_suggestion_description_expiring, day, recipe, expiring)
     }
     Surface(
         shape = MaterialTheme.shapes.large,
@@ -278,7 +420,7 @@ private fun SuggestionRow(meal: SuggestedMeal, format: MealPlanFormat, enabled: 
                     }
                 }
             }
-            IconButton(onClick = { onAction(WeekAction.SwapSuggestion(meal.date)) }, enabled = enabled) {
+            IconButton(onClick = { onAction(WeekAction.SwapSuggestion(meal.date)) }, enabled = enabled && canSwap) {
                 Icon(TandemIcons.Refresh, contentDescription = stringResource(R.string.mealplan_suggest_swap, day))
             }
             IconButton(onClick = { onAction(WeekAction.RemoveSuggestion(meal.date)) }, enabled = enabled) {

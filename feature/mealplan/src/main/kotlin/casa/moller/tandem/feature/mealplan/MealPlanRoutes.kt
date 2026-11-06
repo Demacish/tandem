@@ -188,6 +188,12 @@ internal fun Resources.messageText(message: WeekMessage, format: MealPlanFormat)
         format.fullDayInText(message.date),
     )
 
+    is WeekMessage.Planned -> getString(
+        R.string.mealplan_msg_planned,
+        message.title.ifBlank { getString(R.string.mealplan_untitled) },
+        format.fullDayInText(message.date),
+    )
+
     is WeekMessage.Suggested -> getQuantityString(R.plurals.mealplan_msg_suggested, message.count, message.count)
 }
 

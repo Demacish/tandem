@@ -174,8 +174,8 @@
     <!-- Suggested week (Fas 4) -->
     <string name="mealplan_suggest_title">Suggest the week\'s meals</string>
     <string name="mealplan_suggest_card_body">A recipe for every day that has no dinner yet</string>
-    <string name="mealplan_suggest_body">One %1$s for every free day, from what you cook often and have not cooked lately. Swap or remove a day, then put them in the week.</string>
-    <string name="mealplan_suggest_no_free_days">Every day of the week from today already has a %1$s.</string>
+    <string name="mealplan_suggest_body">Meal: %1$s. One recipe for every free day, from what you cook often and have not cooked lately. Swap or remove a day, then put them in the week.</string>
+    <string name="mealplan_suggest_no_free_days">Every day of the week from today already has something planned for %1$s.</string>
     <string name="mealplan_suggest_no_recipes">There are no recipes to suggest yet.</string>
     <string name="mealplan_suggest_all_removed">Every suggestion was removed. Shuffle for new ones.</string>
     <string name="mealplan_suggest_reshuffle">Shuffle</string>
@@ -199,4 +199,34 @@
         <item quantity="one">Uses %1$d food that expires soon</item>
         <item quantity="other">Uses %1$d foods that expire soon</item>
     </plurals>
+    <!-- Review of Fas 4: suggestions and dragging recipes into the week -->
+    <string name="mealplan_suggestion_with_time">%1$s, %2$s</string>
+    <string name="mealplan_suggest_swapped">%1$s: %2$s</string>
+    <plurals name="mealplan_suggest_count">
+        <item quantity="one">%1$d suggestion</item>
+        <item quantity="other">%1$d suggestions</item>
+    </plurals>
+    <plurals name="mealplan_suggest_too_few">
+        <item quantity="one">Only %1$d recipe to suggest, so some days stay free.</item>
+        <item quantity="other">Only %1$d recipes to suggest, so some days stay free.</item>
+    </plurals>
+    <plurals name="mealplan_suggest_too_few_keywords">
+        <item quantity="one">Only %1$d recipe fits. Choose fewer keywords for more.</item>
+        <item quantity="other">Only %1$d recipes fit. Choose fewer keywords for more.</item>
+    </plurals>
+    <string name="mealplan_suggest_servings">Servings</string>
+    <plurals name="mealplan_suggest_servings_value">
+        <item quantity="one">%1$s serving per meal</item>
+        <item quantity="other">%1$s servings per meal</item>
+    </plurals>
+    <string name="mealplan_suggest_more_keywords">More keywords</string>
+    <string name="mealplan_suggest_keyword_search">Search keywords</string>
+    <string name="mealplan_suggest_keyword_none">No other keyword matches.</string>
+    <string name="mealplan_want_title">Want to cook</string>
+    <string name="mealplan_want_drag_hint">Press and hold to drag a recipe to a day.</string>
+    <string name="mealplan_want_empty">Nothing in the queue. Search for a recipe to drag it to a day.</string>
+    <string name="mealplan_recipe_search">Search recipes</string>
+    <string name="mealplan_recipe_results">Recipes</string>
+    <string name="mealplan_recipe_no_results">No recipes match the search.</string>
+    <string name="mealplan_msg_planned">%1$s planned for %2$s</string>
 </resources>

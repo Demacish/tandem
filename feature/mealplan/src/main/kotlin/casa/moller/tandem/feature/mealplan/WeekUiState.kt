@@ -6,6 +6,7 @@ import casa.moller.tandem.core.model.mealplan.MealPlanDay
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.mealplan.MealPlanWeek
 import casa.moller.tandem.core.model.mealplan.MealType
+import casa.moller.tandem.core.model.recipe.RecipeOverview
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -27,6 +28,9 @@ import kotlinx.datetime.plus
  * @property conflict the first change that collided with someone else's ("Ändrad på två ställen").
  * @property deleting "Ta bort måltiden?" for a meal with rows on the shopping list (fix-ui).
  * @property suggestions Fas 4: the "Föreslå veckans matsedel" sheet, while open.
+ * @property wantToCook the household's "Vill laga" queue, to drag into the week (#21, plan 8.3).
+ * @property recipeQuery the tablet's recipe search (plan 6.5 "receptsökning som stödpanel").
+ * @property recipeResults what [recipeQuery] found among the stored recipes.
  */
 data class WeekUiState(
     val loading: Boolean = true,
@@ -43,6 +47,9 @@ data class WeekUiState(
     val conflict: ConflictState? = null,
     val deleting: DeleteMealState? = null,
     val suggestions: WeekSuggestionsState? = null,
+    val wantToCook: List<RecipeOverview> = emptyList(),
+    val recipeQuery: String = "",
+    val recipeResults: List<RecipeOverview> = emptyList(),
 ) {
     val weekEnd: LocalDate
         get() = weekStart.plus(MealPlanWeek.DAYS - 1, DateTimeUnit.DAY)
@@ -127,6 +134,15 @@ sealed interface WeekAction {
     /** Fas 3: a meal dropped on [date] (and, in the grid, on [mealTypeId]; null keeps its type). Moves it at once, with "Ångra". */
     data class DropMeal(val mealId: Long, val date: LocalDate, val mealTypeId: Long? = null) : WeekAction
 
+    /**
+     * #21: a recipe from "Vill laga" or the tablet's search dropped on [date] (and, in the grid, on
+     * [mealTypeId]; null: the main meal). Plans it at once with the usual servings, with "Ångra".
+     */
+    data class DropRecipe(val recipeId: Long, val date: LocalDate, val mealTypeId: Long? = null) : WeekAction
+
+    /** The tablet's recipe search. */
+    data class SearchRecipes(val text: String) : WeekAction
+
     data object CancelMove : WeekAction
 
     /** "Behåll min ändring" (true) or "Ta deras ändring" (false) for [WeekUiState.conflict]. */
@@ -155,6 +171,11 @@ sealed interface WeekAction {
     /** fas4-kvar: chooses or drops the keyword [id] (a suggestion has every chosen one); suggests again. */
     data class ToggleSuggestKeyword(val id: Long) : WeekAction
 
+    /** The servings the suggestions are planned with, one more or fewer. */
+    data object MoreSuggestServings : WeekAction
+
+    data object FewerSuggestServings : WeekAction
+
     /** "Lägg i veckan": plans every suggestion left. */
     data object AcceptSuggestions : WeekAction
 
@@ -173,6 +194,9 @@ sealed interface WeekMessage {
     data class Removed(val title: String) : WeekMessage
 
     data class Moved(val title: String, val date: LocalDate) : WeekMessage
+
+    /** #21: a dragged recipe was planned on [date]. */
+    data class Planned(val title: String, val date: LocalDate) : WeekMessage
 
     /** Fas 4: [count] suggested meals were planned. */
     data class Suggested(val count: Int) : WeekMessage

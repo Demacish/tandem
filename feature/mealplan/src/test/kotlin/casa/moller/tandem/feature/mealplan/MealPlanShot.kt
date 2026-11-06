@@ -31,6 +31,12 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
     WEEK_SHARED_MANY({ WeekShot(MealPlanSamples.state().copy(sharedWith = listOf("Anna", "Erik", "Lisa"))) }),
     WEEK_NEXT({ WeekShot(MealPlanSamples.state(start = MealPlanSamples.day(7), meals = listOf(MealPlanSamples.nextWednesday))) }),
     WEEK_DAY_SELECTED({ WeekShot(MealPlanSamples.state(selectedDay = MealPlanSamples.day(6))) }),
+    // #21: "Vill laga" to drag from, and the tablet's recipe search.
+    WEEK_WANT({ WeekShot(MealPlanSamples.state().copy(wantToCook = MealPlanSamples.wantToCook)) }),
+    WEEK_RECIPE_SEARCH({
+        val found = MealPlanSamples.suggestionCandidates.take(3)
+        WeekShot(MealPlanSamples.state().copy(wantToCook = MealPlanSamples.wantToCook, recipeQuery = "pa", recipeResults = found))
+    }),
     WEEK_CONFLICT({ WeekShot(MealPlanSamples.state(conflict = MealPlanSamples.conflictState)) }),
     MOVE({ Sheet { MoveMealPanel(MealPlanSamples.moveState, MealPlanSamples.mealTypes, MealPlanSamples.today, format(), onAction = {}) } }),
 
@@ -46,6 +52,7 @@ internal enum class MealPlanShot(val content: @Composable () -> Unit) {
 
     // fas4-kvar: "Vardag" chosen (plan §8.3 Autoplan) and nothing with both "Fisk" and "Snabbt".
     SUGGESTIONS_KEYWORDS({ Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsKeywordState, format(), onAction = {}) } }),
+    SUGGESTIONS_FEW({ Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsFewState, format(), onAction = {}) } }),
     SUGGESTIONS_NO_KEYWORD_MATCH({ Sheet { WeekSuggestionsPanel(MealPlanSamples.suggestionsNoMatchState, format(), onAction = {}) } }),
     PLAN_SEARCH({ PlanMealScreen(state = MealPlanSamples.planState(), onAction = {}) }),
     PLAN_CHOSEN({ PlanMealScreen(state = MealPlanSamples.planState(recipe = MealPlanSamples.salmon), onAction = {}) }),

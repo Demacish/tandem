@@ -191,6 +191,18 @@ internal object MealPlanSamples {
     )
 
     /** fas4-kvar: "Fisk" and "Snabbt" chosen: no recipe has both. */
+    /** The household's "Vill laga" queue. */
+    val wantToCook = listOf(lasagne, tacos, omelette)
+
+    /** Fewer recipes with the keyword than free days. */
+    val suggestionsFewState: WeekSuggestionsState = WeekSuggestions.suggest(
+        week(listOf(todayBreakfast)),
+        mealTypes,
+        suggestionCandidates.take(2),
+        today,
+        now,
+    ).copy(keywordIds = setOf(quick.id))
+
     val suggestionsNoMatchState: WeekSuggestionsState = WeekSuggestions.suggest(
         week(listOf(todayBreakfast)),
         mealTypes,

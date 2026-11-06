@@ -3,6 +3,8 @@ package casa.moller.tandem.feature.mealplan
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import casa.moller.tandem.core.data.book.RecipeBookRepository
+import casa.moller.tandem.core.data.drink.DrinkRepository
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.data.pantry.MakeNowRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
@@ -14,6 +16,7 @@ import casa.moller.tandem.core.model.error.errorOrNull
 import casa.moller.tandem.core.model.makenow.ExpiringFood
 import casa.moller.tandem.core.model.makenow.MakeNowFilter
 import casa.moller.tandem.core.model.makenow.MakeNowState
+import casa.moller.tandem.core.model.mealplan.MealPlanDay
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.mealplan.MealPlanUpdate
@@ -41,6 +44,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -87,6 +91,10 @@ class WeekViewModel @AssistedInject internal constructor(
     private val recipes: RecipeRepository,
     // Fas 4 (fas4-kvar): "Använd upp", so suggestions prefer recipes that use what expires soon.
     private val makeNow: MakeNowRepository,
+    // #21: "Vill laga" to drag into the week.
+    books: RecipeBookRepository,
+    // Review of Fas 4: a drink is never a suggested dinner, and its keywords are no choices.
+    private val drinks: DrinkRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -134,13 +142,25 @@ class WeekViewModel @AssistedInject internal constructor(
         ) { week, _ -> week }
     }
 
+    /** #21: the queue and the search results to drag from. */
+    private val dragRecipes: Flow<Pair<List<RecipeOverview>, List<RecipeOverview>>> = combine(
+        books.observeWantToCook().map { it.take(MAX_DRAG_RECIPES) }.catch { emit(emptyList()) },
+        transient.map { it.recipeQuery.trim() }.distinctUntilChanged().flatMapLatest { query ->
+            if (query.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                recipes.observeRecipes(RecipeQuery(text = query)).map { it.take(MAX_DRAG_RECIPES) }.catch { emit(emptyList()) }
+            }
+        },
+    ) { queue, found -> queue to found }
+
     val uiState: StateFlow<WeekUiState> = combine(
         week,
         mealPlans.observeMealTypes(),
         permissions.permissions,
-        combine(mealPlans.observeConflicts(), selectedDay) { conflicts, day -> conflicts to day },
+        combine(mealPlans.observeConflicts(), selectedDay, dragRecipes) { conflicts, day, drag -> Triple(conflicts, day, drag) },
         transient,
-    ) { week, types, perms, (conflicts, day), local ->
+    ) { week, types, perms, (conflicts, day, drag), local ->
         val readOnly = perms.readOnly
         val meals = week.days.flatMap { it.meals }
         WeekUiState(
@@ -157,6 +177,9 @@ class WeekViewModel @AssistedInject internal constructor(
             move = local.move.takeUnless { readOnly },
             deleting = local.deleting.takeUnless { readOnly },
             suggestions = local.suggestions.takeUnless { readOnly },
+            wantToCook = if (readOnly) emptyList() else drag.first,
+            recipeQuery = local.recipeQuery,
+            recipeResults = if (readOnly) emptyList() else drag.second,
             conflict = conflicts.firstOrNull()?.takeUnless { readOnly }?.let { conflict ->
                 ConflictState(conflict, meals.firstOrNull { it.id == conflict.mealPlanId }?.displayTitle.orEmpty())
             },
@@ -200,6 +223,10 @@ class WeekViewModel @AssistedInject internal constructor(
 
             is WeekAction.DropMeal -> dropMeal(action)
 
+            is WeekAction.DropRecipe -> dropRecipe(action)
+
+            is WeekAction.SearchRecipes -> transient.update { it.copy(recipeQuery = action.text) }
+
             WeekAction.CancelMove -> transient.update { it.copy(move = null) }
 
             is WeekAction.ResolveConflict -> resolveConflict(action.keepMine)
@@ -214,6 +241,10 @@ class WeekViewModel @AssistedInject internal constructor(
 
             WeekAction.AcceptSuggestions -> acceptSuggestions()
 
+            WeekAction.MoreSuggestServings -> setSuggestServings(1.0)
+
+            WeekAction.FewerSuggestServings -> setSuggestServings(-1.0)
+
             is WeekAction.SuggestMealType -> {
                 transient.update { it.copy(suggestMealTypeId = action.id) }
                 suggest(seed = 0)
@@ -227,9 +258,7 @@ class WeekViewModel @AssistedInject internal constructor(
                 suggest(seed = 0)
             }
 
-            WeekAction.CancelSuggestions -> transient.update {
-                it.copy(suggestions = null, candidates = emptyList(), expiring = emptyMap())
-            }
+            WeekAction.CancelSuggestions -> transient.update { it.closedSuggestions() }
 
             else -> Unit // Navigation (plan, edit, recipe, cook, "Handla för veckan") is the route's.
         }
@@ -323,6 +352,33 @@ class WeekViewModel @AssistedInject internal constructor(
         moveMeal(meal, action.date, mealTypeId)
     }
 
+    /**
+     * #21 (plan 8.3 "Vill laga-kö + dra och släpp till veckan"): the dropped recipe becomes a meal
+     * on the day, with the usual servings of its meal type and "Ångra"; nothing for a guest.
+     */
+    private fun dropRecipe(action: WeekAction.DropRecipe) {
+        if (!canWrite()) return
+        val state = uiState.value
+        val mealTypeId = action.mealTypeId ?: WeekSuggestions.mainMealType(state.days, state.mealTypes)?.id ?: return
+        val title = (state.wantToCook + state.recipeResults).firstOrNull { it.id == action.recipeId }?.name.orEmpty()
+        viewModelScope.launch {
+            val draft = MealPlanDraft(
+                date = action.date,
+                mealTypeId = mealTypeId,
+                recipeId = action.recipeId,
+                servings = defaultServings(mealTypeId),
+            )
+            when (val result = mealPlans.create(draft)) {
+                is Outcome.Success -> {
+                    undo = { mealPlans.delete(result.value) }
+                    effectChannel.send(WeekEffect.Show(WeekMessage.Planned(title, action.date)))
+                }
+
+                is Outcome.Failure -> effectChannel.send(WeekEffect.Failed(result.error))
+            }
+        }
+    }
+
     /** Moves [meal] to [date] (keeping its length) and [mealTypeId], with "Ångra"; nothing for a guest. */
     private fun moveMeal(meal: MealPlanEntry, date: LocalDate, mealTypeId: Long) {
         if (!canWrite()) return
@@ -353,10 +409,13 @@ class WeekViewModel @AssistedInject internal constructor(
         if (!canWrite()) return
         viewModelScope.launch {
             val before = transient.value
-            val candidates = before.candidates.ifEmpty { recipes.observeRecipes(RecipeQuery.All).first() }
-            val expiring = if (before.candidates.isEmpty()) expiringFoods() else before.expiring
+            val firstRead = before.candidates.isEmpty()
+            val candidates = if (firstRead) mealCandidates() else before.candidates
+            val expiring = if (firstRead) expiringFoods() else before.expiring
+            val excluded = if (firstRead) pairingKeywords() else before.excludedKeywords
             val state = uiState.value
             val chosen = transient.value
+            val mealType = chosen.suggestMealTypeId ?: WeekSuggestions.mainMealType(state.days, state.mealTypes)?.id
             val suggestions = WeekSuggestions.suggest(
                 days = state.days,
                 mealTypes = state.mealTypes,
@@ -367,10 +426,30 @@ class WeekViewModel @AssistedInject internal constructor(
                 mealTypeId = chosen.suggestMealTypeId,
                 keywordIds = chosen.suggestKeywordIds,
                 expiring = expiring,
+                excludedKeywords = excluded,
+                servings = chosen.suggestServings ?: defaultServings(mealType),
             )
-            transient.update { it.copy(suggestions = suggestions, candidates = candidates, expiring = expiring, suggestionSeed = seed) }
+            transient.update {
+                it.copy(
+                    suggestions = suggestions,
+                    candidates = candidates,
+                    expiring = expiring,
+                    excludedKeywords = excluded,
+                    suggestionSeed = seed,
+                )
+            }
         }
     }
+
+    /** The stored recipes without the drinks: a drink is a recipe with `Dryck`, never a dinner (B20; the index covers `Vin` and the like). */
+    private suspend fun mealCandidates(): List<RecipeOverview> {
+        val drinkIds = drinks.observeDrinks().catch { emit(emptyList()) }.first().mapTo(HashSet()) { it.id }
+        return recipes.observeRecipes(RecipeQuery.All).first().filterNot { it.id in drinkIds }
+    }
+
+    /** The pairing keywords (`Passar med › …`): dishes carry them too, so they are not choices of what to cook. */
+    private suspend fun pairingKeywords(): Set<Long> =
+        drinks.observePairings().catch { emit(emptyList()) }.first().mapTo(HashSet()) { it.keywordId }
 
     /** The soon-expiring pantry foods per recipe, from "Kan laga nu" as stored (empty when unknown). */
     private suspend fun expiringFoods(): Map<Long, List<ExpiringFood>> = makeNow.observe(MakeNowFilter(), today())
@@ -390,16 +469,26 @@ class WeekViewModel @AssistedInject internal constructor(
 
     private fun removeSuggestion(date: LocalDate) {
         transient.update { state ->
-            state.copy(suggestions = state.suggestions?.let { it.copy(meals = it.meals.filterNot { meal -> meal.date == date }) })
+            val suggestions = state.suggestions ?: return@update state
+            state.copy(suggestions = WeekSuggestions.remove(suggestions, date, uiState.value.days, state.candidates, clock.now()))
         }
     }
 
-    /** Plans every suggestion left, with servings like the week's other meals; "Ångra" removes them again. */
+    /** The servings of the sheet, kept while the week is open; never below one. */
+    private fun setSuggestServings(change: Double) {
+        transient.update { state ->
+            val suggestions = state.suggestions ?: return@update state
+            val servings = (suggestions.servings + change).coerceAtLeast(MIN_SERVINGS)
+            state.copy(suggestions = suggestions.copy(servings = servings), suggestServings = servings)
+        }
+    }
+
+    /** Plans every suggestion left with the sheet's servings; "Ångra" removes them again. */
     private fun acceptSuggestions() {
         val suggestions = transient.value.suggestions ?: return
         if (!canWrite() || suggestions.saving || suggestions.meals.isEmpty()) return
         transient.update { it.copy(suggestions = suggestions.copy(saving = true)) }
-        val servings = usualServings(suggestions.mealType?.id)
+        val servings = suggestions.servings
         viewModelScope.launch {
             val created = mutableListOf<Long>()
             var failure: Outcome.Failure? = null
@@ -414,7 +503,7 @@ class WeekViewModel @AssistedInject internal constructor(
                     }
                 }
             }
-            transient.update { it.copy(suggestions = null, candidates = emptyList(), expiring = emptyMap()) }
+            transient.update { it.closedSuggestions() }
             if (created.isNotEmpty()) {
                 undo = { removeAll(created) }
                 effectChannel.send(WeekEffect.Show(WeekMessage.Suggested(created.size)))
@@ -433,11 +522,23 @@ class WeekViewModel @AssistedInject internal constructor(
         return last
     }
 
-    /** The servings most of the week's meals of [mealTypeId] have, else [DEFAULT_SERVINGS]. */
-    private fun usualServings(mealTypeId: Long?): Double {
-        val servings = uiState.value.days.flatMap { it.meals }.filter { it.mealType.id == mealTypeId }.map { it.servings }
-        return servings.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: DEFAULT_SERVINGS
+    /**
+     * The servings a new meal of [mealTypeId] starts with: what most meals of the type have in the
+     * shown week, else in the weeks before it (an empty next week is the usual case, and a household
+     * of four should not get seven meals for two), else the plan-meal page's default.
+     */
+    private suspend fun defaultServings(mealTypeId: Long?): Double {
+        usualServings(uiState.value.days, mealTypeId)?.let { return it }
+        for (weeksBack in 1..RECENT_WEEKS) {
+            val start = currentWeek().minus(weeksBack * MealPlanWeek.DAYS, DateTimeUnit.DAY)
+            usualServings(mealPlans.observeWeek(start).first().days, mealTypeId)?.let { return it }
+        }
+        return PlanMealUiState.DEFAULT_SERVINGS
     }
+
+    private fun usualServings(days: List<MealPlanDay>, mealTypeId: Long?): Double? =
+        days.flatMap { it.meals }.filter { it.mealType.id == mealTypeId }.map { it.servings }
+            .groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
 
     private fun resolveConflict(keepMine: Boolean) {
         val conflict = uiState.value.conflict?.conflict ?: return
@@ -478,13 +579,28 @@ class WeekViewModel @AssistedInject internal constructor(
         /** fas4-kvar: the chosen meal type and keywords (kept while the week is open). */
         val suggestMealTypeId: Long? = null,
         val suggestKeywordIds: Set<Long> = emptySet(),
-    )
+        /** The pairing keywords left out of the sheet's choices (read once per sheet). */
+        val excludedKeywords: Set<Long> = emptySet(),
+        /** The servings the user chose in the sheet; null: the usual ones. */
+        val suggestServings: Double? = null,
+        /** #21: the tablet's recipe search. */
+        val recipeQuery: String = "",
+    ) {
+        fun closedSuggestions(): Transient =
+            copy(suggestions = null, candidates = emptyList(), expiring = emptyMap(), excludedKeywords = emptySet())
+    }
 
     private companion object {
         const val KEY_WEEK = "week.start"
         const val KEY_DAY = "week.day"
         const val STOP_TIMEOUT_MILLIS = 5_000L
-        const val DEFAULT_SERVINGS = 2.0
+        const val MIN_SERVINGS = 1.0
+
+        /** How far back the usual servings are looked for. */
+        const val RECENT_WEEKS = 4
+
+        /** The most recipes offered to drag from. */
+        const val MAX_DRAG_RECIPES = 30
     }
 }
 

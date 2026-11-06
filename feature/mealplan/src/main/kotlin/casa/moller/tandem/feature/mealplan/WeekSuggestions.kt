@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.mealplan
 
+import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.makenow.ExpiringFood
 import casa.moller.tandem.core.model.mealplan.MealPlanDay
 import casa.moller.tandem.core.model.mealplan.MealType
@@ -41,9 +42,13 @@ data class SuggestedMeal(
  * @property noRecipes nothing to suggest: no recipes, or every one is already in the week.
  * @property saving "Lägg i veckan" is on its way.
  * @property mealTypes the meal types to choose from.
- * @property keywords the keywords to choose from (the most used of the recipes, chosen ones included).
+ * @property keywords the quick choices (the most used of the recipes, chosen ones included).
+ * @property allKeywords every keyword that can be chosen ("Fler nyckelord"), by name.
  * @property keywordIds the chosen keywords: a suggestion has every one of them.
  * @property noKeywordMatch no recipe outside the week has every chosen keyword.
+ * @property servings the servings the meals are planned with (plan §8.3 "nyckelord, portioner").
+ * @property uncoveredDays free days without a suggestion, because too few recipes are left.
+ * @property canSwap "Byt ut" has another recipe to offer.
  */
 data class WeekSuggestionsState(
     val meals: List<SuggestedMeal>,
@@ -55,6 +60,10 @@ data class WeekSuggestionsState(
     val keywords: List<Keyword> = emptyList(),
     val keywordIds: Set<Long> = emptySet(),
     val noKeywordMatch: Boolean = false,
+    val servings: Double = PlanMealUiState.DEFAULT_SERVINGS,
+    val uncoveredDays: Int = 0,
+    val canSwap: Boolean = false,
+    val allKeywords: List<Keyword> = emptyList(),
 )
 
 internal object WeekSuggestions {
@@ -110,14 +119,27 @@ internal object WeekSuggestions {
     fun matching(candidates: List<RecipeOverview>, keywordIds: Set<Long>): List<RecipeOverview> =
         if (keywordIds.isEmpty()) candidates else candidates.filter { recipe -> recipe.keywords.map { it.id }.containsAll(keywordIds) }
 
-    /** The keywords to offer: the [MAX_KEYWORDS] most used by [candidates] (then by name), plus the [chosen] ones. */
-    fun keywordChoices(candidates: List<RecipeOverview>, chosen: Set<Long>): List<Keyword> {
-        val counts = candidates.flatMap { it.keywords }.groupBy { it.id }
-        val top = counts.values.sortedWith(compareByDescending<List<Keyword>> { it.size }.thenBy { it.first().name.lowercase() })
-            .take(MAX_KEYWORDS)
-            .map { it.first() }
-        return top + counts.filterKeys { it in chosen && top.none { keyword -> keyword.id == it } }.values.map { it.first() }
+    /**
+     * The keywords to offer, by use (then by name): the drink and "Passar med" keywords a dish can
+     * carry say nothing about what to cook, so [excluded] (pairing keyword ids) and the roots stay out.
+     */
+    private fun offered(candidates: List<RecipeOverview>, excluded: Set<Long>): List<List<Keyword>> =
+        candidates.flatMap { it.keywords }
+            .filterNot { it.id in excluded || DrinkKeywords.isDrinkRoot(it.name) || DrinkKeywords.isPairsWithRoot(it.name) }
+            .groupBy { it.id }
+            .values
+            .sortedWith(compareByDescending<List<Keyword>> { it.size }.thenBy { it.first().name.lowercase() })
+
+    /** The quick choices: the [MAX_KEYWORDS] most used, plus the [chosen] ones. */
+    fun keywordChoices(candidates: List<RecipeOverview>, chosen: Set<Long>, excluded: Set<Long> = emptySet()): List<Keyword> {
+        val all = offered(candidates, excluded).map { it.first() }
+        val top = all.take(MAX_KEYWORDS)
+        return top + all.drop(MAX_KEYWORDS).filter { it.id in chosen }
     }
+
+    /** Every keyword that can be chosen, by name ("Fler nyckelord": the top [MAX_KEYWORDS] are only quick choices). */
+    fun allKeywords(candidates: List<RecipeOverview>, excluded: Set<Long> = emptySet()): List<Keyword> =
+        offered(candidates, excluded).map { it.first() }.sortedBy { it.name.lowercase() }
 
     private fun RecipeOverview.isRecentlyCooked(now: Instant): Boolean = lastCooked?.let { now - it < RECENTLY_COOKED } == true
 
@@ -129,7 +151,9 @@ internal object WeekSuggestions {
      * another seed draws the same days from a pool of the best ([POOL_PER_DAY] per day) in a
      * random order ("Slumpa om"), so the suggestions stay good but change. [mealTypeId] is the
      * chosen meal type (else [mainMealType]); [keywordIds] the chosen keywords ([matching]). A
-     * recipe is never suggested twice: fewer recipes than free days leave days empty.
+     * recipe is never suggested twice: fewer recipes than free days leave days empty
+     * ([WeekSuggestionsState.uncoveredDays]). [candidates] hold no drinks (the caller's rule, a
+     * drink is never a dinner); [excludedKeywords] are the pairing keywords dishes carry too.
      */
     fun suggest(
         days: List<MealPlanDay>,
@@ -141,13 +165,17 @@ internal object WeekSuggestions {
         mealTypeId: Long? = null,
         keywordIds: Set<Long> = emptySet(),
         expiring: Map<Long, List<ExpiringFood>> = emptyMap(),
+        excludedKeywords: Set<Long> = emptySet(),
+        servings: Double = PlanMealUiState.DEFAULT_SERVINGS,
     ): WeekSuggestionsState {
         val choices = WeekSuggestionsState(
             meals = emptyList(),
             mealType = null,
             mealTypes = mealTypes,
-            keywords = keywordChoices(candidates, keywordIds),
+            keywords = keywordChoices(candidates, keywordIds, excludedKeywords),
+            allKeywords = allKeywords(candidates, excludedKeywords),
             keywordIds = keywordIds,
+            servings = servings,
         )
         val mealType = mealTypes.firstOrNull { it.id == mealTypeId } ?: mainMealType(days, mealTypes)
             ?: return choices.copy(noRecipes = true)
@@ -162,7 +190,18 @@ internal object WeekSuggestions {
         val pool = ranked.take(free.size * POOL_PER_DAY)
         val picks = if (seed == 0) pool else pool.shuffled(Random(seed))
         val meals = free.zip(picks).map { (date, recipe) -> SuggestedMeal(date, mealType, recipe, expiring[recipe.id].orEmpty()) }
-        return choices.copy(meals = meals, mealType = mealType)
+        return choices.copy(
+            meals = meals,
+            mealType = mealType,
+            uncoveredDays = free.size - meals.size,
+            canSwap = hasAnother(meals, ranked),
+        )
+    }
+
+    /** True when a recipe of [ranked] is not among [meals]: "Byt ut" has something to offer. */
+    private fun hasAnother(meals: List<SuggestedMeal>, ranked: List<RecipeOverview>): Boolean {
+        val shown = meals.map { it.recipe.id }.toSet()
+        return ranked.any { it.id !in shown }
     }
 
     /** [state] with the suggestion on [date] replaced by the next ranked recipe not suggested yet. */
@@ -176,9 +215,22 @@ internal object WeekSuggestions {
     ): WeekSuggestionsState {
         if (state.meals.none { it.date == date }) return state
         val shown = state.meals.map { it.recipe.id }.toSet()
-        val next = ranked(days, matching(candidates, state.keywordIds), now, expiring).firstOrNull { it.id !in shown } ?: return state
+        val ranked = ranked(days, matching(candidates, state.keywordIds), now, expiring)
+        val next = ranked.firstOrNull { it.id !in shown } ?: return state
         val swapped = state.meals.map { if (it.date == date) it.copy(recipe = next, expiring = expiring[next.id].orEmpty()) else it }
-        return state.copy(meals = swapped)
+        return state.copy(meals = swapped, canSwap = hasAnother(swapped, ranked))
+    }
+
+    /** [state] without the suggestion on [date]; its recipe can be swapped in again. */
+    fun remove(
+        state: WeekSuggestionsState,
+        date: LocalDate,
+        days: List<MealPlanDay>,
+        candidates: List<RecipeOverview>,
+        now: Instant,
+    ): WeekSuggestionsState {
+        val left = state.meals.filterNot { it.date == date }
+        return state.copy(meals = left, canSwap = hasAnother(left, ranked(days, matching(candidates, state.keywordIds), now)))
     }
 
     /** Keywords offered in the sheet (the most used ones). */

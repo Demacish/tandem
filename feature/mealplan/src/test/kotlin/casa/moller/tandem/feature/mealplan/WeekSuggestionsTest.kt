@@ -156,4 +156,42 @@ class WeekSuggestionsTest {
         val swapped = WeekSuggestions.swap(state, day(3), days, suggestionCandidates, now, MealPlanSamples.suggestionExpiring)
         assertTrue(swapped.meals.first().expiring.isEmpty())
     }
+
+    @Test
+    fun aKeywordOutsideTheTopIsFoundAmongAllKeywordsAndStaysShownOnceChosen() {
+        val many = (1L..20L).map { Keyword(1000 + it, "Nyckelord $it") }
+        val popular = suggestionCandidates.map { it.copy(keywords = many.take(15)) }
+        val rare = Keyword(2000, "Vegetariskt")
+        val candidates = popular + MealPlanSamples.lasagne.copy(id = 999, keywords = listOf(rare))
+        val quick = WeekSuggestions.keywordChoices(candidates, emptySet())
+        assertFalse(rare in quick)
+        assertTrue(rare in WeekSuggestions.allKeywords(candidates))
+        assertTrue(rare in WeekSuggestions.keywordChoices(candidates, setOf(rare.id)))
+        val state = WeekSuggestions.suggest(days, mealTypes, candidates, today, now, keywordIds = setOf(rare.id))
+        assertEquals(listOf(999L), state.meals.map { it.recipe.id })
+    }
+
+    @Test
+    fun theDrinkAndPairingRootsAreNoChoices() {
+        val dryck = Keyword(3000, "Dryck")
+        val pairs = Keyword(3001, "Passar med")
+        val pairing = Keyword(3002, "Till fisk")
+        val dish = MealPlanSamples.lasagne.copy(keywords = listOf(dryck, pairs, pairing, MealPlanSamples.quick))
+        assertEquals(listOf(MealPlanSamples.quick), WeekSuggestions.keywordChoices(listOf(dish), emptySet(), excluded = setOf(pairing.id)))
+    }
+
+    @Test
+    fun tooFewRecipesSayHowManyDaysAreLeftAndWhetherThereIsAnotherToSwapTo() {
+        val few = WeekSuggestions.suggest(days, mealTypes, suggestionCandidates.take(2), today, now)
+        assertEquals(2, few.meals.size)
+        assertEquals(WeekSuggestions.freeDays(days, MealPlanSamples.dinner, today).size - 2, few.uncoveredDays)
+        assertFalse("both are shown already", few.canSwap)
+
+        val removed = WeekSuggestions.remove(few, few.meals.first().date, days, suggestionCandidates.take(2), now)
+        assertTrue("the removed recipe can come back", removed.canSwap)
+
+        val plenty = WeekSuggestions.suggest(days, mealTypes, suggestionCandidates, today, now)
+        assertEquals(0, plenty.uncoveredDays)
+        assertTrue(plenty.canSwap)
+    }
 }

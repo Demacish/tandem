@@ -3,21 +3,26 @@ package casa.moller.tandem.feature.mealplan
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
+import casa.moller.tandem.core.model.drink.Drink
+import casa.moller.tandem.core.model.drink.Pairing
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.makenow.MakeNowGroup
 import casa.moller.tandem.core.model.makenow.MakeNowRecipe
 import casa.moller.tandem.core.model.makenow.MakeNowState
 import casa.moller.tandem.core.model.mealplan.MealPlanConflict
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
+import casa.moller.tandem.core.model.recipe.Keyword
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.shopping.ShoppingFood
 import casa.moller.tandem.core.model.shopping.ShoppingRecipeLabel
 import casa.moller.tandem.core.model.sync.ForegroundTarget
 import casa.moller.tandem.core.testing.MainDispatcherRule
+import casa.moller.tandem.core.testing.data.FakeDrinkRepository
 import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeMakeNowRepository
 import casa.moller.tandem.core.testing.data.FakeMealPlanRepository
+import casa.moller.tandem.core.testing.data.FakeRecipeBookRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
@@ -54,9 +59,11 @@ class WeekViewModelTest {
     private val removedMeals = RemovedMeals()
     private val recipes = FakeRecipeRepository(overviews = MealPlanSamples.suggestionCandidates)
     private val makeNow = FakeMakeNowRepository(emptyMap())
+    private val books = FakeRecipeBookRepository(recipes = MealPlanSamples.suggestionCandidates)
+    private val drinks = FakeDrinkRepository(drinks = emptyList(), pairings = emptyList())
 
     private fun viewModel(weekStart: String? = null, saved: SavedStateHandle = SavedStateHandle()) =
-        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals, recipes, makeNow)
+        WeekViewModel(weekStart, saved, mealPlans, permissions, foreground, clock, shopping, removedMeals, recipes, makeNow, books, drinks)
 
     /** Starts collecting the state (as the screen does) and the effects. */
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -234,7 +241,96 @@ class WeekViewModelTest {
         assertEquals(dinner.id, mealOn(5).mealType.id)
     }
 
+    // #21: a recipe dragged from "Vill laga" or the tablet's search.
+
+    @Test
+    fun aDroppedRecipeBecomesAMealWithUsualServingsAndUndo() = runTest {
+        books.wantToCook.value = setOf(MealPlanSamples.lasagne.id)
+        val vm = viewModel()
+        val effects = open(vm)
+        assertEquals(listOf(MealPlanSamples.lasagne.id), vm.uiState.value.wantToCook.map { it.id })
+
+        vm.onAction(WeekAction.DropRecipe(MealPlanSamples.lasagne.id, day(5)))
+        val planned = vm.uiState.value.days[5].meals.single()
+        assertEquals(MealPlanSamples.lasagne.id, planned.recipe?.id)
+        assertEquals("the main meal without a cell", dinner.id, planned.mealType.id)
+        assertEquals("the week's other dinners", 4.0, planned.servings, 0.0)
+        assertEquals(WeekEffect.Show(WeekMessage.Planned(MealPlanSamples.lasagne.name, day(5))), effects.last())
+
+        vm.onAction(WeekAction.Undo)
+        assertTrue(vm.uiState.value.days[5].meals.isEmpty())
+
+        vm.onAction(WeekAction.DropRecipe(MealPlanSamples.lasagne.id, day(5), lunch.id))
+        assertEquals("a cell of the grid names its meal type", lunch.id, vm.uiState.value.days[5].meals.single().mealType.id)
+    }
+
+    @Test
+    fun aGuestNeitherSeesTheQueueNorPlansADroppedRecipe() = runTest {
+        books.wantToCook.value = setOf(MealPlanSamples.lasagne.id)
+        permissions.state.value = SpacePermissions(SpaceRole.GUEST)
+        val vm = viewModel()
+        val effects = open(vm)
+        assertTrue(vm.uiState.value.wantToCook.isEmpty())
+        val before = mealPlans.meals.value
+        vm.onAction(WeekAction.DropRecipe(MealPlanSamples.lasagne.id, day(5)))
+        assertEquals(before, mealPlans.meals.value)
+        assertTrue(effects.isEmpty())
+    }
+
+    @Test
+    fun theRecipeSearchFindsStoredRecipes() = runTest {
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(WeekAction.SearchRecipes("lasagne"))
+        assertEquals(listOf(MealPlanSamples.lasagne.id), vm.uiState.value.recipeResults.map { it.id })
+        vm.onAction(WeekAction.SearchRecipes(""))
+        assertTrue(vm.uiState.value.recipeResults.isEmpty())
+    }
+
     // Fas 4 "Förslag på veckans matsedel".
+
+    @Test
+    fun aDrinkIsNeverSuggestedAndItsKeywordsAreNoChoices() = runTest {
+        val wine = Keyword(901, "Vin")
+        val pairs = Keyword(902, "Till fisk")
+        val rioja = MealPlanSamples.porkTenderloin.copy(id = 900, name = "Rioja", keywords = listOf(wine), rating = 5.0, timesCooked = 99)
+        val dish = MealPlanSamples.lasagne.copy(keywords = MealPlanSamples.lasagne.keywords + pairs)
+        recipes.overviews.value = MealPlanSamples.suggestionCandidates.filterNot { it.id == dish.id } + dish + rioja
+        drinks.drinks.value = listOf(Drink(id = rioja.id, name = rioja.name, types = listOf("Vin")))
+        drinks.pairings.value = listOf(Pairing(pairs.id, pairs.name))
+        val vm = viewModel(day(7).toString())
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        val suggestions = vm.uiState.value.suggestions!!
+        assertTrue(suggestions.meals.isNotEmpty())
+        assertFalse("the highest rated recipe is a wine", suggestions.meals.any { it.recipe.id == rioja.id })
+        assertFalse(wine in suggestions.keywords)
+        assertFalse(pairs in suggestions.keywords)
+        assertFalse(pairs in suggestions.allKeywords)
+    }
+
+    @Test
+    fun anEmptyWeekPlansTheServingsOfRecentMealsAndTheChoiceInTheSheet() = runTest {
+        val vm = viewModel(day(7).toString())
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        assertEquals("this week's dinners, though next week is empty", 4.0, vm.uiState.value.suggestions!!.servings, 0.0)
+        vm.onAction(WeekAction.MoreSuggestServings)
+        vm.onAction(WeekAction.MoreSuggestServings)
+        vm.onAction(WeekAction.FewerSuggestServings)
+        assertEquals(5.0, vm.uiState.value.suggestions!!.servings, 0.0)
+        vm.onAction(WeekAction.AcceptSuggestions)
+        assertEquals(5.0, vm.uiState.value.days.first().meals.first().servings, 0.0)
+    }
+
+    @Test
+    fun withoutAnyMealsTheServingsAreThePlanPagesDefault() = runTest {
+        mealPlans.meals.value = emptyList()
+        val vm = viewModel()
+        open(vm)
+        vm.onAction(WeekAction.Suggest)
+        assertEquals(PlanMealUiState.DEFAULT_SERVINGS, vm.uiState.value.suggestions!!.servings, 0.0)
+    }
 
     @Test
     fun suggestsADinnerForEveryFreeDayFromTodayAndPlansThemWithUndo() = runTest {

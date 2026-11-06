@@ -110,6 +110,30 @@ class MealPlanScreenshotTest {
     @Config(qualifiers = "sv-$TABLET_PORTRAIT")
     fun tabletPortraitDrinks() = captureWithDrinks("tablet_portrait_week_drinks_dark_sv", darkTheme = true)
 
+    // #21: "Vill laga" as a strip, and the panel beside the tablet's grid.
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun phoneWant() = capture("phone_week_want_light_sv", MealPlanShot.WEEK_WANT)
+
+    @Test
+    fun phoneWantFontScale2() = capture("phone_week_want_font2_light", MealPlanShot.WEEK_WANT, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun phoneLandscapeWantDark() = capture("phone_landscape_week_want_dark", MealPlanShot.WEEK_WANT, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun tabletWant() = capture("tablet_week_want_light_sv", MealPlanShot.WEEK_WANT)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun tabletRecipeSearchDark() = capture("tablet_week_recipe_search_dark", MealPlanShot.WEEK_RECIPE_SEARCH, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun tabletPortraitWant() = capture("tablet_portrait_week_want_light", MealPlanShot.WEEK_WANT)
+
     @Test
     @Config(qualifiers = "sv-$TABLET")
     fun tabletGuest() = capture("tablet_week_guest_light_sv", MealPlanShot.WEEK_GUEST)
@@ -150,6 +174,10 @@ class MealPlanScreenshotTest {
     @Config(qualifiers = TABLET_PORTRAIT)
     fun suggestionsKeywordsTabletPortraitDark() =
         capture("tablet_portrait_suggestions_keywords_dark", MealPlanShot.SUGGESTIONS_KEYWORDS, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun suggestionsFew() = capture("phone_suggestions_few_light_sv", MealPlanShot.SUGGESTIONS_FEW)
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
