@@ -9,12 +9,12 @@
     <string name="fast_push_no_account">Log in to a Tandoor first.</string>
     <string name="fast_push_intro_title">Experimental, and not needed</string>
     <string name="fast_push_intro_body">Without it Tandem checks the list in the background as usual. With it, a small push service your household runs itself checks the shopping list and wakes this phone through a UnifiedPush app (for example ntfy), so a change shows up within a minute even when Tandem is closed.</string>
-    <string name="fast_push_privacy">When turning on, Tandem sends its Tandoor token to the service once, so the service can check that you belong to its household; the service does not keep it. A wake-up only says \"sync now\": what changed is read by Tandem itself.</string>
+    <string name="fast_push_privacy">When turning on, and if the push address changes, Tandem sends its Tandoor token to the service, so the service can check that you belong to its household; the service does not keep it. A wake-up only says \"sync now\": what changed is read by Tandem itself.</string>
     <string name="fast_push_status_heading">Status</string>
     <string name="fast_push_status_off">Off</string>
     <string name="fast_push_status_off_body">The background sync shows list changes at its own interval.</string>
     <string name="fast_push_status_registering">Connecting…</string>
-    <string name="fast_push_status_registering_body">Waiting for the UnifiedPush app and the service.</string>
+    <string name="fast_push_status_registering_body">Waiting for the UnifiedPush app and the service. If this takes long, open the UnifiedPush app and check that it is connected, or turn this off and try again.</string>
     <string name="fast_push_status_active">On</string>
     <plurals name="fast_push_status_active_body">
         <item quantity="one">The service checks the list every second.</item>

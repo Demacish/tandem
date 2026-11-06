@@ -33,6 +33,8 @@ internal data class StoredFastPush(
     val pollSeconds: Int? = null,
     val error: FastPushError? = null,
     val lastWakeUpMillis: Long? = null,
+    /** The last wake-up that started a read (a test wake-up shows `lastWakeUpMillis`, but reads nothing). */
+    val lastSyncWakeMillis: Long? = null,
 ) {
     /** Whether the phone should hold a UnifiedPush registration for the account. */
     val wanted: Boolean

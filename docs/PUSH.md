@@ -73,7 +73,13 @@ notis om allt fungerar. Gäster och demoläget kan inte använda funktionen.
 - **Registrering:** appen skickar sin UnifiedPush-adress (och sina Web Push-nycklar) med **sin egen
   Tandoor-token**. Tjänsten frågar Tandoor en gång (`/api/user-space/all_personal/`) vilket space och
   hushåll token hör till, jämför med sitt eget hushåll och **glömmer token direkt**. Gäster och andra
-  hushåll nekas. Inga lösenord, inga tokens sparas.
+  hushåll nekas. Inga lösenord, inga tokens sparas. Token skickas när du slår på snabb push och när
+  väckningsadressen ändras; vid varje appstart förnyas registreringen i stället med dess slumpade id,
+  utan token. Det betyder att medlemskapet inte kontrolleras om vid förnyelsen: den som tas bort ur
+  hushållet kan få tomma väckningar tills telefonen avregistreras eller glöms.
+- **Väckningar:** adressen är ingen hemlighet (distributörens server känner den). Appen bryr sig
+  därför bara om en väckning som går att dekryptera och som bär registreringens eget id, och läser
+  listan högst var 25:e sekund. Annat som skickas till adressen gör ingenting.
 - **Sparat per telefon:** väckningsadressen, dess publika nycklar, ett slumpat id, hushållets id och
   när telefonen senast registrerade sig. Inget annat. Filen skrivs med rättigheterna `600`.
 - **Avregistrering:** med registreringens id (appen har det) eller en giltig token. Appen
@@ -111,6 +117,11 @@ service URL, pick a distributor, tap **Turn on**, then "Send test notification".
 
 **Security and data:** a phone registers with its own Tandoor token, which the service uses once to
 ask Tandoor for the space and household and then forgets; guests and other households are refused.
+The token is sent when you turn fast push on and when the push address changes; every app start
+renews the registration with its random id instead, without the token (so the membership is not
+checked again then: someone removed from the household may get empty wake-ups until the phone
+unregisters or is forgotten). The address is no secret, so the app only acts on a wake-up it can
+decrypt and that carries the registration's own id, and reads the list at most every 25 seconds.
 Per phone the service keeps the endpoint, its public Web Push keys, a random id, the household id
 and when it was last seen; nothing else. Unregistering needs the registration id or a valid token;
 the app unregisters when you turn fast push off, switch accounts or log out, and a phone that could
@@ -127,6 +138,7 @@ content or endpoint paths.
 | `GET /healthz` | – | `200 {healthy, last_wake, phones}` |
 | `GET /v1/info` | – | `200 {service: "tandem-push", version, api: 1, test, encryption, poll_seconds}` |
 | `POST /v1/register` + `Authorization: Bearer <Tandoor token>` | `{endpoint, p256dh?, auth?}` | `200 {id, poll_seconds, test}`; `400 invalid_endpoint/invalid_keys`, `401 unauthorized`, `403 guest/other_household`, `409 too_many`, `429 rate_limited`, `502 tandoor_unavailable` |
+| `POST /v1/register` (renewal, no token) | `{endpoint, id, p256dh?, auth?}` | as above; `401 unauthorized` when the id does not match: the app then registers with the token |
 | `POST /v1/unregister` | `{endpoint, id}` (or the token header instead of `id`) | `204` |
 | `POST /v1/test` | `{endpoint, id}` | `204`; `404 not_registered/test_disabled`, `429`, `502 push_failed` |
 

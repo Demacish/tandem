@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -41,11 +43,15 @@ import kotlinx.serialization.json.Json
 internal interface FastPushReceiver {
     suspend fun onNewEndpoint(instance: String, endpoint: String, p256dh: String?, auth: String?)
 
-    suspend fun onMessage(instance: String, content: ByteArray)
+    /** [decrypted]: the connector could read the message with the registration's Web Push keys. */
+    suspend fun onMessage(instance: String, content: ByteArray, decrypted: Boolean)
 
     suspend fun onRegistrationFailed(instance: String)
 
     suspend fun onUnregistered(instance: String)
+
+    /** [PushRetryScheduler]'s work: asks the distributor again when a registration failed for a passing reason. */
+    suspend fun retryRegistration()
 }
 
 /**
@@ -56,11 +62,23 @@ internal interface FastPushReceiver {
  *   [onNewEndpoint]; it goes to the service with the account's in-memory Tandoor token (the service
  *   asks Tandoor for the household once and forgets the token), and the answer's opaque id is kept.
  * - **A wake-up** ([onMessage]) for the active account enqueues the shopping list's read
- *   ([PushWakeScheduler]); `{"tandem":"test"}` with the registration's id shows the test
- *   notification instead. Wake-ups for another account or after turning off unregister at the
- *   distributor, so they stop.
+ *   ([PushWakeScheduler]); `{"tandem":"test"}` shows the test notification instead. Wake-ups for
+ *   another account or after turning off unregister at the distributor, so they stop.
+ *   Fas 4 review (fix-data): the endpoint is no secret (the distributor's server has it, a public
+ *   ntfy topic is a URL), so a message counts only when it carries the registration's id, which
+ *   travels inside the RFC 8291 encryption, and could be decrypted (a registration made without
+ *   keys has no encryption to ask for). Reads at most every [MIN_WAKE_INTERVAL_MILLIS], kept in
+ *   the row across process deaths, so a replayed message costs no more than the service's own pace.
  * - **App start** ([start]): the active account's registration is renewed at the distributor (the
- *   endpoint comes again and is sent to the service, which keeps it "last seen").
+ *   endpoint comes again). Fas 4 review (fix-data): the same endpoint is renewed at the service
+ *   with the registration's id alone, so the token leaves the phone only when turning on or when
+ *   the address changed. A renewal that fails for a passing reason changes nothing: the service
+ *   still has the phone. A new address or a first registration that fails that way is tried again
+ *   ([PushRetryScheduler]); until then the old address and id stay, so they can be unregistered.
+ * - **The distributor dropped us** ([onUnregistered]): the service is told, and fast push stays
+ *   off until the user turns it on again.
+ * - A registration answered after turning off or leaving the account is undone, never saved
+ *   (state changes run under [rows], never across a request).
  * - **Leaving the account** (another account, logout, demo mode): its registration is dropped at
  *   the distributor and, as well as it can be, at the service ([Held]): an ntfy topic nobody
  *   listens to still answers 200, so the service would otherwise keep waking it for 60 days.
@@ -77,10 +95,14 @@ internal class DefaultFastPushRepository @Inject constructor(
     private val scheduler: PushWakeScheduler,
     private val notifier: FastPushNotifier,
     private val clock: SyncClock,
+    private val retry: PushRetryScheduler,
     @ApplicationScope private val scope: CoroutineScope,
 ) : FastPushRepository,
     FastPushReceiver {
     private val started = AtomicBoolean(false)
+
+    /** Serializes reading, changing and saving the row; never held across a request. */
+    private val rows = Mutex()
 
     /**
      * The registration this process asked for. Kept in memory because the account's stored row may
@@ -124,19 +146,21 @@ internal class DefaultFastPushRepository @Inject constructor(
         if (gateway.distributors().none { it.packageName == distributor }) {
             return FastPushResult.Failure(FastPushError.NO_DISTRIBUTOR)
         }
-        val previous = store.load(remote)
-        val registering = StoredFastPush(
-            serviceUrl = url,
-            distributor = distributor,
-            status = FastPushStatus.REGISTERING,
-            // The same endpoint at the same service keeps its id (the service answers it again).
-            endpoint = previous?.endpoint.takeIf { previous?.serviceUrl == url },
-            registrationId = previous?.registrationId.takeIf { previous?.serviceUrl == url },
-            testSupported = info.testSupported,
-            pollSeconds = info.pollSeconds.takeIf { it > 0 },
-            lastWakeUpMillis = previous?.lastWakeUpMillis,
-        )
-        store.save(remote, registering)
+        val registering = rows.withLock {
+            val previous = store.load(remote)
+            StoredFastPush(
+                serviceUrl = url,
+                distributor = distributor,
+                status = FastPushStatus.REGISTERING,
+                // The same endpoint at the same service keeps its id (the service answers it again).
+                endpoint = previous?.endpoint.takeIf { previous?.serviceUrl == url },
+                registrationId = previous?.registrationId.takeIf { previous?.serviceUrl == url },
+                testSupported = info.testSupported,
+                pollSeconds = info.pollSeconds.takeIf { it > 0 },
+                lastWakeUpMillis = previous?.lastWakeUpMillis,
+                lastSyncWakeMillis = previous?.lastSyncWakeMillis,
+            ).also { store.save(remote, it) }
+        }
         held.set(Held(remote.accountId, url, registering.endpoint, registering.registrationId))
         gateway.register(remote.accountId, distributor)
         return FastPushResult.Success(Unit)
@@ -144,17 +168,23 @@ internal class DefaultFastPushRepository @Inject constructor(
 
     override suspend fun disable(): FastPushResult<Unit> {
         val remote = sources.current() as? ActiveSource.Remote ?: return FastPushResult.Failure(unavailableError())
-        val stored = store.load(remote) ?: StoredFastPush()
+        // Off first: a registration answered from now on sees it and is undone (onNewEndpoint).
+        val stored = rows.withLock {
+            val row = store.load(remote) ?: StoredFastPush()
+            store.save(remote, StoredFastPush(serviceUrl = row.serviceUrl, distributor = row.distributor))
+            row
+        }
         held.set(null)
+        unregisterAtService(stored)
+        gateway.unregister(remote.accountId)
+        return FastPushResult.Success(Unit)
+    }
+
+    /** Best effort: the service also drops endpoints the distributor forgot (404/410). */
+    private suspend fun unregisterAtService(stored: StoredFastPush) {
         val endpoint = stored.endpoint
         val id = stored.registrationId
-        if (endpoint != null && id != null && stored.serviceUrl.isNotEmpty()) {
-            // Best effort: the service also drops endpoints the distributor forgot (404/410).
-            client.unregister(stored.serviceUrl, endpoint, id)
-        }
-        gateway.unregister(remote.accountId)
-        store.save(remote, StoredFastPush(serviceUrl = stored.serviceUrl, distributor = stored.distributor))
-        return FastPushResult.Success(Unit)
+        if (endpoint != null && id != null && stored.serviceUrl.isNotEmpty()) client.unregister(stored.serviceUrl, endpoint, id)
     }
 
     override suspend fun sendTest(): FastPushResult<Unit> {
@@ -173,57 +203,145 @@ internal class DefaultFastPushRepository @Inject constructor(
 
     override suspend fun onNewEndpoint(instance: String, endpoint: String, p256dh: String?, auth: String?) {
         val remote = activeFor(instance) ?: return
-        val stored = store.load(remote)?.takeIf { it.wanted } ?: return dropRegistration(instance)
-        val token = sources.tokenProvider(remote.accountId).currentToken()
-        if (token.isNullOrBlank()) {
-            store.save(remote, stored.copy(status = FastPushStatus.FAILED, error = FastPushError.UNAUTHORIZED))
-            return
-        }
+        val asked = store.load(remote)?.takeIf { it.wanted } ?: return dropRegistration(instance)
         // Both Web Push keys or none (the service encrypts only with both).
         val keys = if (!p256dh.isNullOrBlank() && !auth.isNullOrBlank()) p256dh to auth else null
-        val next = when (val result = client.register(stored.serviceUrl, token, endpoint, keys?.first, keys?.second)) {
-            is FastPushResult.Success -> stored.copy(
-                status = FastPushStatus.ACTIVE,
-                endpoint = endpoint,
-                p256dh = keys?.first,
-                auth = keys?.second,
-                registrationId = result.value.id,
-                testSupported = result.value.testSupported,
-                pollSeconds = result.value.pollSeconds ?: stored.pollSeconds,
-                error = null,
-            )
-
-            is FastPushResult.Failure -> stored.copy(status = FastPushStatus.FAILED, endpoint = endpoint, error = result.error)
+        val result = register(remote, asked, endpoint, keys)
+        val settled = rows.withLock {
+            val current = stillWanted(remote, asked) ?: return@withLock null
+            current.after(result, endpoint, keys).also { next ->
+                store.save(remote, next)
+                held.set(Held(remote.accountId, next.serviceUrl, next.endpoint, next.registrationId))
+            }
         }
-        store.save(remote, next)
-        held.set(Held(remote.accountId, next.serviceUrl, next.endpoint, next.registrationId))
+        if (settled == null) {
+            // Turned off, or the account left, during the request: nothing of it may stay.
+            if (result is FastPushResult.Success) client.unregister(asked.serviceUrl, endpoint, result.value.id)
+            gateway.unregister(instance)
+            return
+        }
+        if (result is FastPushResult.Success) {
+            // A new address replaced the old one: the service would keep waking it until its TTL.
+            if (asked.endpoint != endpoint) unregisterAtService(asked)
+        } else if (settled.status == FastPushStatus.FAILED && settled.error in PASSING_ERRORS) {
+            retry.retryLater()
+        }
     }
 
-    override suspend fun onMessage(instance: String, content: ByteArray) {
-        val remote = activeFor(instance) ?: return
-        val stored = store.load(remote)?.takeIf { it.wanted } ?: return dropRegistration(instance)
-        val wakeUp = parse(content)
-        store.save(remote, stored.copy(lastWakeUpMillis = clock.nowMillis()))
-        if (wakeUp?.tandem == KIND_TEST && wakeUp.id != null && wakeUp.id == stored.registrationId) {
-            notifier.postTest()
-        } else {
-            // Anything else on the account's registration is a "sync now"; the read is cheap and
-            // unique work, so even a stray message costs at most one shopping list read.
-            scheduler.wake()
+    /**
+     * The endpoint's registration at the service: by the registration's id when the service has
+     * this endpoint (no token), and with the token for a new endpoint or when the service has
+     * forgotten the phone (it asks for the token then: 401).
+     */
+    private suspend fun register(
+        remote: ActiveSource.Remote,
+        asked: StoredFastPush,
+        endpoint: String,
+        keys: Pair<String, String>?,
+    ): FastPushResult<PushServiceClient.Registered> {
+        val id = asked.registrationId.takeIf { asked.endpoint == endpoint }
+        if (id != null) {
+            val renewed = client.renew(asked.serviceUrl, endpoint, id, keys?.first, keys?.second)
+            if ((renewed as? FastPushResult.Failure)?.error != FastPushError.UNAUTHORIZED) return renewed
         }
+        val token = sources.tokenProvider(remote.accountId).currentToken()
+        if (token.isNullOrBlank()) return FastPushResult.Failure(FastPushError.UNAUTHORIZED)
+        return client.register(asked.serviceUrl, token, endpoint, keys?.first, keys?.second)
+    }
+
+    /** The row now, unless fast push was turned off, moved to another service or the account left since [asked] was read. */
+    private suspend fun stillWanted(remote: ActiveSource.Remote, asked: StoredFastPush): StoredFastPush? {
+        if ((sources.current() as? ActiveSource.Remote)?.accountId != remote.accountId) return null
+        return store.load(remote)?.takeIf { it.wanted && it.serviceUrl == asked.serviceUrl }
+    }
+
+    private fun StoredFastPush.after(
+        result: FastPushResult<PushServiceClient.Registered>,
+        endpoint: String,
+        keys: Pair<String, String>?,
+    ): StoredFastPush = when (result) {
+        is FastPushResult.Success -> copy(
+            status = FastPushStatus.ACTIVE,
+            endpoint = endpoint,
+            p256dh = keys?.first,
+            auth = keys?.second,
+            registrationId = result.value.id,
+            testSupported = result.value.testSupported,
+            pollSeconds = result.value.pollSeconds ?: pollSeconds,
+            error = null,
+        )
+
+        // The service still has this phone: only "last seen" was not moved.
+        is FastPushResult.Failure -> if (isRegistered(endpoint, keys) && result.error in PASSING_ERRORS) {
+            this
+        } else {
+            // The old address and id stay: they are what can be unregistered.
+            copy(status = FastPushStatus.FAILED, error = result.error)
+        }
+    }
+
+    private fun StoredFastPush.isRegistered(endpoint: String, keys: Pair<String, String>?): Boolean = status == FastPushStatus.ACTIVE &&
+        registrationId != null && this.endpoint == endpoint && p256dh == keys?.first && auth == keys?.second
+
+    override suspend fun onMessage(instance: String, content: ByteArray, decrypted: Boolean) {
+        val remote = activeFor(instance) ?: return
+        val test = rows.withLock {
+            val stored = store.load(remote)?.takeIf { it.wanted } ?: return dropRegistration(instance)
+            if (!decrypted && stored.p256dh != null) return
+            val wakeUp = parse(content)
+            if (wakeUp?.id == null || wakeUp.id != stored.registrationId) return
+            val test = wakeUp.tandem == KIND_TEST
+            val now = clock.nowMillis()
+            if (!test && stored.lastSyncWakeMillis?.let { now - it in 0 until MIN_WAKE_INTERVAL_MILLIS } == true) return
+            store.save(remote, stored.copy(lastWakeUpMillis = now, lastSyncWakeMillis = if (test) stored.lastSyncWakeMillis else now))
+            test
+        }
+        if (test) notifier.postTest() else scheduler.wake()
     }
 
     override suspend fun onRegistrationFailed(instance: String) {
         val remote = activeFor(instance) ?: return
-        val stored = store.load(remote)?.takeIf { it.wanted } ?: return
-        store.save(remote, stored.copy(status = FastPushStatus.FAILED, error = FastPushError.DISTRIBUTOR_FAILED))
+        rows.withLock {
+            val stored = store.load(remote)?.takeIf { it.wanted } ?: return
+            store.save(remote, stored.copy(status = FastPushStatus.FAILED, error = FastPushError.DISTRIBUTOR_FAILED))
+        }
     }
 
     override suspend fun onUnregistered(instance: String) {
         val remote = activeFor(instance) ?: return
+        distributorGone(remote)
+    }
+
+    /**
+     * The distributor dropped us (removed, or its own setting): the user has to turn it on again.
+     * The service is told as well as it can be: the address may keep answering 200 with nobody
+     * listening, and it would keep being woken until its TTL.
+     */
+    private suspend fun distributorGone(remote: ActiveSource.Remote) {
+        val stored = rows.withLock {
+            val stored = store.load(remote)?.takeIf { it.wanted } ?: return
+            store.save(
+                remote,
+                stored.copy(
+                    status = FastPushStatus.FAILED,
+                    error = FastPushError.NO_DISTRIBUTOR,
+                    endpoint = null,
+                    p256dh = null,
+                    auth = null,
+                    registrationId = null,
+                ),
+            )
+            stored
+        }
+        held.set(null)
+        unregisterAtService(stored)
+    }
+
+    override suspend fun retryRegistration() {
+        val remote = sources.current() as? ActiveSource.Remote ?: return
         val stored = store.load(remote)?.takeIf { it.wanted } ?: return
-        // The distributor dropped us (removed, or its own setting): the user has to turn it on again.
-        store.save(remote, stored.copy(status = FastPushStatus.FAILED, error = FastPushError.NO_DISTRIBUTOR))
+        val distributor = stored.distributor ?: return
+        if (stored.status == FastPushStatus.FAILED && stored.error in PASSING_ERRORS) gateway.register(remote.accountId, distributor)
     }
 
     // --- App start ---
@@ -244,8 +362,10 @@ internal class DefaultFastPushRepository @Inject constructor(
                     if (remote == null) return@collect
                     val stored = store.load(remote)?.takeIf { it.wanted } ?: return@collect
                     val distributor = stored.distributor ?: return@collect
+                    // Dropped at the distributor: that stands until the user turns it on again.
+                    if (stored.status == FastPushStatus.FAILED && stored.error == FastPushError.NO_DISTRIBUTOR) return@collect
                     if (gateway.distributors().none { it.packageName == distributor }) {
-                        store.save(remote, stored.copy(status = FastPushStatus.FAILED, error = FastPushError.NO_DISTRIBUTOR))
+                        distributorGone(remote)
                         return@collect
                     }
                     held.set(Held(remote.accountId, stored.serviceUrl, stored.endpoint, stored.registrationId))
@@ -308,6 +428,12 @@ internal class DefaultFastPushRepository @Inject constructor(
 
     private companion object {
         const val KIND_TEST = "test"
+
+        /** Just under the service's own minimum poll (30 s), so a genuine wake-up is never dropped. */
+        const val MIN_WAKE_INTERVAL_MILLIS = 25_000L
+
+        /** Failures that pass by themselves (no network, a service restarting or busy); the others need the user. */
+        val PASSING_ERRORS = setOf(FastPushError.UNREACHABLE, FastPushError.SERVICE_ERROR, FastPushError.RATE_LIMITED)
         val json = Json { ignoreUnknownKeys = true }
     }
 }

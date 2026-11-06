@@ -19,7 +19,8 @@ const APIVersion = 1
 //
 //	GET  /healthz         liveness (the container's health check)
 //	GET  /v1/info         what the service supports (no addresses, no counts)
-//	POST /v1/register     Authorization: Bearer <the app's Tandoor token>, {endpoint, p256dh?, auth?}
+//	POST /v1/register     Authorization: Bearer <the app's Tandoor token>, {endpoint, p256dh?, auth?},
+//	                      or for a registered endpoint {endpoint, id, p256dh?, auth?} without the token
 //	POST /v1/unregister   {endpoint, id} or the token instead of the id
 //	POST /v1/test         {endpoint, id}: one test wake-up
 //
@@ -99,7 +100,11 @@ func (a *API) register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_keys")
 		return
 	}
-	if !a.verifyMember(w, r) {
+	// A phone renewing its own registration proves it with the id, so its token stays on the phone
+	// (it comes here on every app start). The membership was checked when the id was handed out.
+	existing, known := a.store.Get(req.Endpoint)
+	renewing := known && req.ID != "" && existing.ID == req.ID
+	if !renewing && !a.verifyMember(w, r) {
 		return
 	}
 	reg, err := a.store.Upsert(req.Endpoint, req.P256DH, req.Auth, a.household, a.now(), a.cfg.MaxEndpoints)
@@ -112,7 +117,7 @@ func (a *API) register(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "storage")
 		return
 	}
-	a.log.Info("phone registered", "endpoint_host", endpointHost(req.Endpoint), "encrypted", req.P256DH != "")
+	a.log.Info("phone registered", "endpoint_host", endpointHost(req.Endpoint), "encrypted", req.P256DH != "", "renewed", renewing)
 	writeJSON(w, http.StatusOK, registerResponse{ID: reg.ID, PollSeconds: int(a.cfg.Poll.Seconds()), Test: a.cfg.TestPush})
 }
 

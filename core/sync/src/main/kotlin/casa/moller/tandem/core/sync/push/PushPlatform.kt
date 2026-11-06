@@ -17,8 +17,10 @@ import casa.moller.tandem.core.model.push.PushDistributor
 import casa.moller.tandem.core.sync.R
 import casa.moller.tandem.core.sync.SyncSchedule
 import casa.moller.tandem.core.sync.platform.AndroidShoppingChangeNotifier
+import casa.moller.tandem.core.sync.work.PushRegisterWorker
 import casa.moller.tandem.core.sync.work.PushSyncWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.unifiedpush.android.connector.UnifiedPush
@@ -75,7 +77,8 @@ internal fun interface PushWakeScheduler {
 
 /**
  * `tandem.sync.push`: expedited when the quota allows, with a network; a wake-up while one waits
- * or runs is dropped (KEEP): the service sends at most one per poll interval.
+ * or runs is dropped (KEEP). Only a wake-up the repository accepted gets here: the registration's
+ * own id, and at most one per `MIN_WAKE_INTERVAL_MILLIS` (just under the service's fastest poll).
  */
 @Singleton
 internal class WorkManagerPushWakeScheduler @Inject constructor(@ApplicationContext private val context: Context) : PushWakeScheduler {
@@ -90,6 +93,32 @@ internal class WorkManagerPushWakeScheduler @Inject constructor(@ApplicationCont
 
     companion object {
         const val WORK_NAME: String = "tandem.sync.push"
+    }
+}
+
+/** Asks the distributor again a while after a registration failed for a passing reason ([PushRegisterWorker]). */
+internal fun interface PushRetryScheduler {
+    fun retryLater()
+}
+
+/**
+ * `tandem.push.register`: once, with a network, [RETRY_DELAY_MINUTES] later (KEEP: one at a time).
+ * Without it a new endpoint the service never got would stay unknown until the process restarts.
+ */
+@Singleton
+internal class WorkManagerPushRetryScheduler @Inject constructor(@ApplicationContext private val context: Context) : PushRetryScheduler {
+    override fun retryLater() {
+        val request = OneTimeWorkRequestBuilder<PushRegisterWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInitialDelay(RETRY_DELAY_MINUTES, TimeUnit.MINUTES)
+            .addTag(SyncSchedule.TAG_SYNC)
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)
+    }
+
+    companion object {
+        const val WORK_NAME: String = "tandem.push.register"
+        const val RETRY_DELAY_MINUTES: Long = 15
     }
 }
 

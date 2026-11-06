@@ -8,9 +8,11 @@ import casa.moller.tandem.core.sync.push.DefaultFastPushRepository
 import casa.moller.tandem.core.sync.push.FastPushNotifier
 import casa.moller.tandem.core.sync.push.FastPushReceiver
 import casa.moller.tandem.core.sync.push.PushDistributorGateway
+import casa.moller.tandem.core.sync.push.PushRetryScheduler
 import casa.moller.tandem.core.sync.push.PushWakeScheduler
 import casa.moller.tandem.core.sync.push.PushWakeWait
 import casa.moller.tandem.core.sync.push.UnifiedPushGateway
+import casa.moller.tandem.core.sync.push.WorkManagerPushRetryScheduler
 import casa.moller.tandem.core.sync.push.WorkManagerPushWakeScheduler
 import dagger.Binds
 import dagger.Module
@@ -38,6 +40,9 @@ internal abstract class FastPushModule {
 
     @Binds
     abstract fun bindPushWakeScheduler(impl: WorkManagerPushWakeScheduler): PushWakeScheduler
+
+    @Binds
+    abstract fun bindPushRetryScheduler(impl: WorkManagerPushRetryScheduler): PushRetryScheduler
 
     @Binds
     abstract fun bindFastPushNotifier(impl: AndroidFastPushNotifier): FastPushNotifier

@@ -31,7 +31,8 @@ internal class TandemPushService : PushService() {
 
     override fun onMessage(message: PushMessage, instance: String) {
         val content = message.content
-        scope.launch { receiver.onMessage(instance, content) }
+        val decrypted = message.decrypted
+        scope.launch { receiver.onMessage(instance, content, decrypted) }
     }
 
     override fun onRegistrationFailed(reason: FailedReason, instance: String) {

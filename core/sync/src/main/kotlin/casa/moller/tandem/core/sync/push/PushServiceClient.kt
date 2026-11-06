@@ -24,7 +24,8 @@ import okhttp3.Response
 /**
  * The app's side of the push service's API version 1 (push-service/, docs/PUSH.md "API"):
  * `GET /v1/info`, `POST /v1/register` (with the account's Tandoor token, which the service uses
- * once and forgets), `POST /v1/unregister` and `POST /v1/test` (with the registration's id).
+ * once and forgets; for an endpoint it knows, with the registration's id instead), and
+ * `POST /v1/unregister` and `POST /v1/test` (with the registration's id).
  * Built on the app's shared client: HTTPS only, the app's User-Agent and limits, no redirects.
  */
 @Singleton
@@ -60,17 +61,23 @@ internal class PushServiceClient @Inject constructor(@TandoorHttpClient private 
             .header("Authorization", "Bearer $token")
             .post(body.toRequestBody(JSON))
             .build()
-        return execute(request) { response ->
-            if (response.code == HTTP_OK) {
-                val answer = decode<RegisteredDto>(response)
-                if (answer == null || answer.id.isBlank()) {
-                    FastPushResult.Failure(FastPushError.NOT_A_PUSH_SERVICE)
-                } else {
-                    FastPushResult.Success(Registered(answer.id, answer.pollSeconds, answer.test))
-                }
-            } else {
-                FastPushResult.Failure(errorOf(response))
-            }
+        return execute(request, ::registered)
+    }
+
+    /** Fas 4 review (fix-data): "last seen" of a registered endpoint, by its [id]: the token stays on the phone. */
+    suspend fun renew(serviceUrl: String, endpoint: String, id: String, p256dh: String?, auth: String?): FastPushResult<Registered> {
+        val url = baseUrl(serviceUrl) ?: return FastPushResult.Failure(FastPushError.INVALID_URL)
+        val body = json.encodeToString(RegisterDto.serializer(), RegisterDto(endpoint = endpoint, p256dh = p256dh, auth = auth, id = id))
+        return execute(Request.Builder().url(url.resolve("v1/register")!!).post(body.toRequestBody(JSON)).build(), ::registered)
+    }
+
+    private fun registered(response: Response): FastPushResult<Registered> {
+        if (response.code != HTTP_OK) return FastPushResult.Failure(errorOf(response))
+        val answer = decode<RegisteredDto>(response)
+        return if (answer == null || answer.id.isBlank()) {
+            FastPushResult.Failure(FastPushError.NOT_A_PUSH_SERVICE)
+        } else {
+            FastPushResult.Success(Registered(answer.id, answer.pollSeconds, answer.test))
         }
     }
 

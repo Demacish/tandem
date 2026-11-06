@@ -303,6 +303,33 @@ func TestRegisterChecksTheAccount(t *testing.T) {
 	}
 }
 
+func TestARegisteredPhoneRenewsWithItsIdInsteadOfTheToken(t *testing.T) {
+	h := newHarness(t)
+	body := map[string]string{"endpoint": h.pushURL}
+	_, out := h.post(t, "/v1/register", "partner", body)
+	id, _ := out["id"].(string)
+	seen, _ := h.store.Get(h.pushURL)
+
+	h.now = h.now.Add(time.Hour)
+	code, again := h.post(t, "/v1/register", "", map[string]string{"endpoint": h.pushURL, "id": id})
+	if code != http.StatusOK || again["id"] != id {
+		t.Fatalf("renewal by id: %d %v", code, again)
+	}
+	renewed, _ := h.store.Get(h.pushURL)
+	if !renewed.LastSeen.After(seen.LastSeen) {
+		t.Fatalf("last seen did not move: %v -> %v", seen.LastSeen, renewed.LastSeen)
+	}
+
+	// Another id is no proof, and neither is an id for an endpoint the service does not have.
+	if code, out := h.post(t, "/v1/register", "", map[string]string{"endpoint": h.pushURL, "id": "wrong"}); code != http.StatusUnauthorized {
+		t.Fatalf("wrong id: %d %v", code, out)
+	}
+	other := h.pushURL + "&n=2"
+	if code, out := h.post(t, "/v1/register", "", map[string]string{"endpoint": other, "id": id}); code != http.StatusUnauthorized {
+		t.Fatalf("unknown endpoint: %d %v", code, out)
+	}
+}
+
 func TestRegisterRejectsBadEndpointsAndKeys(t *testing.T) {
 	h := newHarness(t)
 	for _, endpoint := range []string{"", "ftp://example.com/x", "https://user:pw@example.com/x", "not a url"} {

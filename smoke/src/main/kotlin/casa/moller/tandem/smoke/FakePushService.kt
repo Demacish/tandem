@@ -28,12 +28,12 @@ import mockwebserver3.RecordedRequest
  * Fas 4 (integration): the optional push service (push-service/, docs/PUSH.md "API") inside
  * [FakeTandoor]'s HTTPS server, so the app's `PushServiceClient` and its DTOs run under R8.
  * Messages are encrypted like `push-service/webpush.go` (RFC 8291, one aes128gcm record) with the
- * keys the app registered, and go to [deliver] (the test wires [FakeDistributor]). A wake-up that
- * cannot be decrypted would still sync, so only the test message, which the app acts on when it
- * reads its own registration id, proves the decryption.
+ * keys the app registered, and go to [deliver] (the test wires [FakeDistributor]). The app acts on
+ * a message only when it decrypts and carries its own registration id, so every message here
+ * proves the decryption.
  */
 class FakePushService {
-    /** One registered phone; [token] is what `Authorization` carried. */
+    /** One registered phone; [token] is what `Authorization` carried on its first registration. */
     data class Phone(val id: String, val endpoint: String, val p256dh: String, val auth: String, val token: String?)
 
     val phones: MutableList<Phone> = CopyOnWriteArrayList()

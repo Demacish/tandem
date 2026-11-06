@@ -13,6 +13,12 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.TestTls
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -43,6 +49,7 @@ class FastPushRepositoryTest {
     private val gateway = FakeDistributorGateway()
     private val wakes = FakeWakeScheduler()
     private val notifier = FakeFastPushNotifier()
+    private val retries = FakeRetryScheduler()
 
     @Before
     fun setUp() {
@@ -70,12 +77,15 @@ class FastPushRepositoryTest {
         scheduler = wakes,
         notifier = notifier,
         clock = graph.clock,
+        retry = retries,
         scope = graph.scope,
     )
 
     private fun answer(code: Int, body: String = "") {
         service.enqueue(MockResponse.Builder().code(code).addHeader("Content-Type", "application/json").body(body).build())
     }
+
+    private fun wake(kind: String, id: String = "reg-1"): ByteArray = """{"tandem":"$kind","id":"$id"}""".toByteArray()
 
     private fun next(): RecordedRequest = requireNotNull(service.takeRequest(5, TimeUnit.SECONDS)) { "no request" }
 
@@ -162,30 +172,284 @@ class FastPushRepositoryTest {
     fun aWakeUpReadsTheListAndATestShowsTheTestNotification() = runBlocking {
         val repo = repository().turnedOn()
 
-        repo.onMessage(SyncTestGraph.ACCOUNT_ID, """{"tandem":"sync","id":"reg-1"}""".toByteArray())
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true)
         assertEquals(1, wakes.count)
         assertEquals(0, notifier.tests)
         assertNotNull(repo.current().lastWakeUp)
 
-        repo.onMessage(SyncTestGraph.ACCOUNT_ID, """{"tandem":"test","id":"reg-1"}""".toByteArray())
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("test"), decrypted = true)
         assertEquals(1, wakes.count)
         assertEquals(1, notifier.tests)
 
-        // A test with another registration's id is only a wake-up (no notification someone else asked for).
-        repo.onMessage(SyncTestGraph.ACCOUNT_ID, """{"tandem":"test","id":"someone-else"}""".toByteArray())
-        assertEquals(2, wakes.count)
+        // Someone else's id means nothing, whatever it asks for.
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("test", id = "someone-else"), decrypted = true)
+        assertEquals(1, wakes.count)
         assertEquals(1, notifier.tests)
+    }
+
+    // Fas 4 review (fix-data): the endpoint is no secret, so neither is a message to it.
+    @Test
+    fun aMessageThatCannotBeDecryptedOrHasAnotherIdDoesNothing() = runBlocking {
+        val repo = repository().turnedOn()
+
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, "garbage".toByteArray(), decrypted = false)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = false)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, "garbage".toByteArray(), decrypted = true)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync", id = "someone-else"), decrypted = true)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, """{"tandem":"sync"}""".toByteArray(), decrypted = true)
+
+        assertEquals(0, wakes.count)
+        assertNull("nothing is written", repo.current().lastWakeUp)
+    }
+
+    @Test
+    fun aRegistrationWithoutKeysHasNoEncryptionToAskFor() = runBlocking {
+        val repo = repository()
+        answer(200, INFO)
+        repo.enable(serviceUrl, DISTRIBUTOR)
+        next()
+        answer(200, """{"id":"reg-1","poll_seconds":45,"test":true}""")
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, ENDPOINT, null, null)
+        next()
+
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = false)
+        assertEquals(1, wakes.count)
+
+        graph.clock.advance(1.minutes)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync", id = "someone-else"), decrypted = false)
+        assertEquals("the id still counts", 1, wakes.count)
+    }
+
+    @Test
+    fun aBurstOfWakeUpsReadsOnce() = runBlocking {
+        val repo = repository().turnedOn()
+
+        repeat(5) { repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true) }
+        assertEquals(1, wakes.count)
+
+        graph.clock.advance(20.seconds)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true)
+        assertEquals(1, wakes.count)
+
+        // A new process remembers: the pace is in the stored row.
+        val again = repository()
+        again.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true)
+        assertEquals(1, wakes.count)
+
+        graph.clock.advance(6.seconds)
+        again.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true)
+        assertEquals("the service's fastest pace gets through", 2, wakes.count)
+    }
+
+    @Test
+    fun aTestWakeUpNeverHoldsBackARead() = runBlocking {
+        val repo = repository().turnedOn()
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("test"), decrypted = true)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true)
+        assertEquals(1, notifier.tests)
+        assertEquals(1, wakes.count)
+    }
+
+    // Fas 4 review (fix-data): the token leaves the phone when turning on, not on every process start.
+    @Test
+    fun theSameEndpointIsRenewedWithTheIdAlone() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(200, """{"id":"reg-1","poll_seconds":45,"test":true}""")
+
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, ENDPOINT, "BPublicKey", "authSecret")
+
+        val renewal = next()
+        assertEquals("/v1/register", renewal.url.encodedPath)
+        assertNull("no token", renewal.headers["Authorization"])
+        val body = renewal.body?.utf8().orEmpty()
+        assertTrue(body, body.contains("\"id\":\"reg-1\"") && body.contains(ENDPOINT))
+        assertEquals(FastPushStatus.ACTIVE, repo.current().status)
+        assertEquals(0, retries.count)
+    }
+
+    @Test
+    fun aServiceThatForgotThePhoneGetsTheTokenAfterAll() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(401, """{"error":"unauthorized"}""")
+        answer(200, """{"id":"reg-2","poll_seconds":45,"test":true}""")
+
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, ENDPOINT, "BPublicKey", "authSecret")
+
+        assertNull(next().headers["Authorization"])
+        assertEquals("Bearer ${FakeSources.TOKEN}", next().headers["Authorization"])
+        assertEquals(FastPushStatus.ACTIVE, repo.current().status)
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync", id = "reg-2"), decrypted = true)
+        assertEquals(1, wakes.count)
+    }
+
+    @Test
+    fun aNewEndpointGoesWithTheTokenAndTheOldOneIsUnregistered() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(200, """{"id":"reg-2","poll_seconds":45,"test":true}""")
+        answer(204)
+
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, OTHER_ENDPOINT, "BPublicKey", "authSecret")
+
+        assertEquals("Bearer ${FakeSources.TOKEN}", next().headers["Authorization"])
+        val unregister = next()
+        assertEquals("/v1/unregister", unregister.url.encodedPath)
+        val body = unregister.body?.utf8().orEmpty()
+        assertTrue(body, body.contains("\"id\":\"reg-1\"") && body.contains(ENDPOINT))
+    }
+
+    @Test
+    fun aFailedRenewalLeavesWorkingPushAlone() = runBlocking {
+        val repo = repository().turnedOn()
+        for ((code, body) in listOf(503 to "{}", 429 to """{"error":"rate_limited"}""", 502 to """{"error":"tandoor_unavailable"}""")) {
+            answer(code, body)
+            repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, ENDPOINT, "BPublicKey", "authSecret")
+            next()
+            assertEquals("$code", FastPushStatus.ACTIVE, repo.current().status)
+            assertNull("$code", repo.current().error)
+        }
+        assertEquals("nothing to retry: the service has the phone", 0, retries.count)
+        answer(204)
+        assertEquals(FastPushResult.Success(Unit), repo.sendTest())
+    }
+
+    @Test
+    fun aNewEndpointThatFailsForAPassingReasonIsTriedAgainAndKeepsTheOldRegistration() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(503, "{}")
+
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, OTHER_ENDPOINT, "BPublicKey", "authSecret")
+        next()
+
+        assertEquals(1, retries.count)
+        assertEquals(FastPushStatus.FAILED, repo.current().status)
+        assertEquals(FastPushError.SERVICE_ERROR, repo.current().error)
+        repo.retryRegistration()
+        assertEquals(listOf(SyncTestGraph.ACCOUNT_ID to DISTRIBUTOR, SyncTestGraph.ACCOUNT_ID to DISTRIBUTOR), gateway.registered)
+
+        answer(204)
+        repo.disable()
+        val body = next().body?.utf8().orEmpty()
+        assertTrue("the registration the service has: $body", body.contains("\"id\":\"reg-1\"") && body.contains(ENDPOINT))
+    }
+
+    @Test
+    fun aRefusalIsNotTriedAgain() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(401, """{"error":"unauthorized"}""")
+
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, OTHER_ENDPOINT, "BPublicKey", "authSecret")
+        next()
+
+        assertEquals(FastPushError.UNAUTHORIZED, repo.current().error)
+        assertEquals(0, retries.count)
+        repo.retryRegistration()
+        assertEquals("only the first registration", 1, gateway.registered.size)
+    }
+
+    // Fas 4 review (fix-data): a slow answer never undoes "Stäng av" or a logout.
+    private suspend fun DefaultFastPushRepository.registering(block: suspend () -> Unit) = coroutineScope {
+        answer(200, INFO)
+        enable(serviceUrl, DISTRIBUTOR)
+        next()
+        val slow = MockResponse.Builder()
+            .code(200)
+            .addHeader("Content-Type", "application/json")
+            .body("""{"id":"reg-1","poll_seconds":45,"test":true}""")
+            .headersDelay(300, TimeUnit.MILLISECONDS)
+            .build()
+        service.enqueue(slow)
+        val registered = async(Dispatchers.IO) { onNewEndpoint(SyncTestGraph.ACCOUNT_ID, ENDPOINT, "BPublicKey", "authSecret") }
+        assertEquals("/v1/register", next().url.encodedPath)
+        block()
+        answer(204)
+        registered.await()
+    }
+
+    @Test
+    fun turningOffDuringARegistrationStaysOffAndUndoesIt() = runBlocking {
+        val repo = repository()
+
+        repo.registering { assertEquals(FastPushResult.Success(Unit), repo.disable()) }
+
+        val unregister = next()
+        assertEquals("/v1/unregister", unregister.url.encodedPath)
+        assertTrue(unregister.body?.utf8().orEmpty().contains("\"id\":\"reg-1\""))
+        assertEquals(FastPushStatus.OFF, repo.current().status)
+        assertEquals(listOf(SyncTestGraph.ACCOUNT_ID, SyncTestGraph.ACCOUNT_ID), gateway.unregistered)
+    }
+
+    @Test
+    fun loggingOutDuringARegistrationLeavesNothingBehind() = runBlocking {
+        val repo = repository()
+        val store = FastPushStore(graph.databases)
+
+        repo.registering {
+            graph.real.syncStateDao().delete(SyncTestGraph.ACCOUNT_ID, FastPushStore.ENTITY)
+            graph.sources.source.value = ActiveSource.None
+        }
+
+        assertEquals("/v1/unregister", next().url.encodedPath)
+        assertNull(store.load(graph.remote))
+        assertEquals(listOf(SyncTestGraph.ACCOUNT_ID), gateway.unregistered)
+    }
+
+    @Test
+    fun aWakeUpDuringARegistrationIsNotOverwritten() = runBlocking {
+        val repo = repository().turnedOn()
+        val slow = MockResponse.Builder().code(200).addHeader("Content-Type", "application/json")
+            .body("""{"id":"reg-1","poll_seconds":45,"test":true}""").headersDelay(300, TimeUnit.MILLISECONDS).build()
+        service.enqueue(slow)
+        coroutineScope {
+            val renewed = async(Dispatchers.IO) { repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, ENDPOINT, "BPublicKey", "authSecret") }
+            next()
+            repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync"), decrypted = true)
+            renewed.await()
+        }
+        assertNotNull(repo.current().lastWakeUp)
+    }
+
+    // Fas 4 review (fix-data): the distributor dropped us.
+    @Test
+    fun anUnregistrationTellsTheServiceAndTheNextStartLeavesItOff() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(204)
+
+        repo.onUnregistered(SyncTestGraph.ACCOUNT_ID)
+
+        val unregister = next()
+        assertEquals("/v1/unregister", unregister.url.encodedPath)
+        assertTrue(unregister.body?.utf8().orEmpty().contains("\"id\":\"reg-1\""))
+        assertEquals(FastPushError.NO_DISTRIBUTOR, repo.current().error)
+
+        gateway.registered.clear()
+        repository().start()
+        delay(200)
+        assertTrue("the user's choice stands: ${gateway.registered}", gateway.registered.isEmpty())
+    }
+
+    @Test
+    fun aFailureThatPassesIsStillRenewedAtTheNextStart() = runBlocking {
+        val repo = repository().turnedOn()
+        answer(503, "{}")
+        repo.onNewEndpoint(SyncTestGraph.ACCOUNT_ID, OTHER_ENDPOINT, "BPublicKey", "authSecret")
+        next()
+        gateway.registered.clear()
+
+        repository().start()
+
+        withTimeout(5_000) { while (gateway.registered.isEmpty()) delay(10) }
+        assertEquals(listOf(SyncTestGraph.ACCOUNT_ID to DISTRIBUTOR), gateway.registered)
     }
 
     @Test
     fun messagesForAnotherAccountOrAfterTurningOffStopTheRegistration() = runBlocking {
         val repo = repository()
-        repo.onMessage("another-account", """{"tandem":"sync","id":"x"}""".toByteArray())
+        repo.onMessage("another-account", wake("sync", id = "x"), decrypted = true)
         assertEquals(listOf("another-account"), gateway.unregistered)
         assertEquals(0, wakes.count)
 
         // The active account without fast push on: dropped at the distributor as well.
-        repo.onMessage(SyncTestGraph.ACCOUNT_ID, """{"tandem":"sync","id":"x"}""".toByteArray())
+        repo.onMessage(SyncTestGraph.ACCOUNT_ID, wake("sync", id = "x"), decrypted = true)
         assertEquals(listOf("another-account", SyncTestGraph.ACCOUNT_ID), gateway.unregistered)
         assertEquals(0, wakes.count)
     }
@@ -307,6 +571,7 @@ class FastPushRepositoryTest {
     private companion object {
         const val DISTRIBUTOR = "org.example.distributor"
         const val ENDPOINT = "https://ntfy.example.com/upAbc123?up=1"
+        const val OTHER_ENDPOINT = "https://ntfy.example.com/upDef456?up=1"
         const val INFO = """{"service":"tandem-push","version":"1.0.0","api":1,"test":true,"encryption":true,"poll_seconds":45}"""
     }
 }
@@ -334,6 +599,15 @@ internal class FakeWakeScheduler : PushWakeScheduler {
     var count = 0
 
     override fun wake() {
+        count++
+    }
+}
+
+internal class FakeRetryScheduler : PushRetryScheduler {
+    @Volatile
+    var count = 0
+
+    override fun retryLater() {
         count++
     }
 }
