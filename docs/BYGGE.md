@@ -1247,6 +1247,14 @@ Rättelser i `feature/**`, `core:ui` och små block utanför (nämnda här) efte
   Timerknapparna säger receptet (`timerLabel`, `core:ui`), också skalets timerrad med två recept;
   listens höjd följer teckenskalan. Väljaren sorterar nedladdade först offline, och raden under
   sökfältet är en nod som står kvar och säger hur sökningen gick.
+- **Referensbilder** (Screenshots 42170146853 och, för surfplattans Vecka efter att panelen blev 240 dp,
+  42173531111, bara dessa togs): nya för Vill laga och receptpanelen, förslagsarket med få recept,
+  importens sidsteg, originalet och filfelet, redigerarens 360 dp-telefon, tangentbord i landskap och
+  originalet, butiksslutsidan i landskap och vid skala 2, "Fota recept" i landskap och vid skala 2,
+  timerraden med två recept. Avsiktligt ändrade: Veckans surfplatta, förslagsarket, redigeraren,
+  importen, butikens inlärda ordning, tvåreceptsbilderna i landskap och vid skala 2, väljaren utan
+  träffar, Snabb push, Behörigheter, Om, Synk med demo, introduktionens sida och Hemmas utgångskort.
+  Hemmas åtta `phone_pantry_*` och `phone_landscape_books_light` skiljer sig med känt brus och togs inte.
 - **Övrigt:** `TodayCustomize` nycklar raderna och säger den nya platsen; `RecipeGrid` har plats för
   "Nytt recept" sist; "Fota recept" håller sidorna i `SavedStateHandle`, släpper knappen först när
   CameraX startat (`CameraReadyEffect`, `takePictureOr`, också kvitto och kylfoto); Hemmas kort leder
