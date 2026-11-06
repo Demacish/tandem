@@ -23,14 +23,14 @@ import org.json.JSONTokener
  * server could not fetch it (a site that blocks servers). JavaScript is on for this WebView only
  * (many recipe pages build their JSON-LD or pass a bot check with it); files, content uris, pop-up
  * windows, geolocation and third-party cookies are off, and links that are not http(s) are not
- * followed. Each finished load hands the page's HTML to [onHtml] (after [SETTLE_MILLIS], so a
- * script can finish), and so does every new [readRequest]. When it leaves the screen the WebView
+ * followed. Each finished load hands the page's HTML and visible text to [onPage] (after
+ * [SETTLE_MILLIS], so a script can finish), and so does every new [readRequest]. When it leaves the screen the WebView
  * is destroyed and its cookies, web storage and cache are deleted: nothing of the visit stays.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-internal fun PageReaderWebView(url: String, readRequest: Int, onHtml: (String) -> Unit, modifier: Modifier = Modifier) {
-    val currentOnHtml by rememberUpdatedState(onHtml)
+internal fun PageReaderWebView(url: String, readRequest: Int, onPage: (html: String, text: String) -> Unit, modifier: Modifier = Modifier) {
+    val currentOnPage by rememberUpdatedState(onPage)
     var webView by remember { mutableStateOf<WebView?>(null) }
     AndroidView(
         modifier = modifier,
@@ -51,7 +51,8 @@ internal fun PageReaderWebView(url: String, readRequest: Int, onHtml: (String) -
                     }
 
                     override fun onPageFinished(view: WebView, finishedUrl: String?) {
-                        view.postDelayed({ if (view.isAttachedToWindow) view.readHtml { currentOnHtml(it) } }, SETTLE_MILLIS)
+                        val read = Runnable { if (view.isAttachedToWindow) view.readPage { html, text -> currentOnPage(html, text) } }
+                        view.postDelayed(read, SETTLE_MILLIS)
                     }
                 }
                 loadUrl(url)
@@ -60,7 +61,7 @@ internal fun PageReaderWebView(url: String, readRequest: Int, onHtml: (String) -
         },
     )
     LaunchedEffect(readRequest) {
-        if (readRequest > 0) webView?.readHtml { currentOnHtml(it) }
+        if (readRequest > 0) webView?.readPage { html, text -> currentOnPage(html, text) }
     }
     DisposableEffect(Unit) {
         onDispose {
@@ -78,16 +79,19 @@ internal fun PageReaderWebView(url: String, readRequest: Int, onHtml: (String) -
     }
 }
 
-/** The page's markup as the browser holds it now (after scripts ran); nothing when it cannot be read. */
-private fun WebView.readHtml(onHtml: (String) -> Unit) {
+/** The page's markup and visible text as the browser holds them now (after scripts ran); nothing when it cannot be read. */
+private fun WebView.readPage(onPage: (html: String, text: String) -> Unit) {
     evaluateJavascript(OUTER_HTML) { result ->
-        // The result is a JSON value: a quoted string, or null.
-        val html = runCatching { JSONTokener(result).nextValue() as? String }.getOrNull()
-        if (!html.isNullOrBlank()) onHtml(html)
+        val html = javaScriptString(result)
+        if (!html.isNullOrBlank()) evaluateJavascript(BODY_TEXT) { text -> onPage(html, javaScriptString(text).orEmpty()) }
     }
 }
 
+/** A result of `evaluateJavascript` is a JSON value: a quoted string, or null. */
+private fun javaScriptString(result: String?): String? = runCatching { JSONTokener(result).nextValue() as? String }.getOrNull()
+
 private const val OUTER_HTML = "(function() { return document.documentElement.outerHTML; })()"
+private const val BODY_TEXT = "(function() { return document.body ? document.body.innerText : ''; })()"
 
 /** Time for a page's scripts after it finished loading, before its HTML is read. */
 private const val SETTLE_MILLIS = 1_500L

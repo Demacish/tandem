@@ -89,6 +89,10 @@ class RecipeImportScreenshotTest {
     fun pageDark() = capture("phone_import_page_dark", RecipeImportShot.PAGE, darkTheme = true)
 
     @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun pageInterpret() = capture("phone_tall_import_page_interpret_light_sv", RecipeImportShot.PAGE_INTERPRET)
+
+    @Test
     @Config(qualifiers = "sv-$PHONE")
     fun pageSending() = capture("phone_import_page_sending_light_sv", RecipeImportShot.PAGE_SENDING)
 

@@ -150,6 +150,23 @@ class RecipeImportRepositoryTest {
         assertEquals(2, tandoor.calls.size)
     }
 
+    // Fas 4 review (fix-data; plan §8.4 step 3): the caption or the page's text, when nothing else could read the link.
+    @Test
+    fun aTextGoesToTheAiImportWhenAskedFor() = forEachVersion {
+        val text = RecipeImportSource.AiText("  Pannkakor: 3 dl mjöl, 6 dl mjölk och 3 ägg.  ")
+        assertEquals("no provider", RecipeImportProblem.AI_UNAVAILABLE.toError(), failure(repo.import(text)))
+        assertTrue(tandoor.calls.none { it.first.startsWith("POST /api/ai-import/") })
+        tandoor.providerId = 7
+
+        assertEquals("Pannkakor", ok(repo.import(text)).draft.name)
+
+        val (_, body) = tandoor.calls.last { it.first == "POST /api/ai-import/" }
+        assertTrue(body, body.contains("name=\"ai_provider_id\"") && body.contains("\r\n7\r\n"))
+        assertTrue(body, body.contains("name=\"text\"") && body.contains("\r\nPannkakor: 3 dl mjöl, 6 dl mjölk och 3 ägg.\r\n"))
+        assertFalse("no file", body.contains("filename="))
+        assertEquals(RecipeImportProblem.EMPTY_INPUT.toError(), failure(repo.import(RecipeImportSource.AiText(" "))))
+    }
+
     @Test
     fun aPhotoGoesToTheAiImportWithTheSpacesProvider() = forEachVersion {
         val photo = RecipeImportSource.File(ByteArray(10) { it.toByte() }, "image/jpeg", "recept.jpg")

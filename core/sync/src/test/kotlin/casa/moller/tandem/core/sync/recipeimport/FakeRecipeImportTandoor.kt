@@ -23,7 +23,7 @@ import mockwebserver3.RecordedRequest
  * parsed recipe for a known link or an HTML page that holds one, `{error: true, msg}` with 200
  * for a page without a recipe, 400 for a link it cannot fetch and the 500 error page for plain
  * text; `POST /api/ai-import/` answers the same recipe when the space has a provider and the body
- * carries a file, the 500 page without a provider; `GET /api/space/current/` carries [providerId] as the default
+ * carries a file or a text, the 500 page without a provider; `GET /api/space/current/` carries [providerId] as the default
  * provider. Every other request goes to [edits] (the editor's fake) and then the fixtures.
  */
 internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor, private val version: String) {
@@ -80,7 +80,7 @@ internal class FakeRecipeImportTandoor(private val edits: FakeRecipeEditTandoor,
 
     private fun aiImport(text: String): MockResponse = when {
         providerId == null -> html500()
-        !text.contains("name=\"file\"") -> json(400, error("file missing"))
+        !text.contains("name=\"file\"") && !text.contains("name=\"text\"") -> json(400, error("file missing"))
         else -> json(200, found(sourceUrl = ""))
     }
 

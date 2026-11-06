@@ -143,7 +143,7 @@ private fun Content(
         }
         when {
             state.working -> LoadingState(message = stringResource(R.string.recipe_import_working))
-            state.pageReading != null -> PageReader(state.pageReading, onAction, pageView)
+            state.pageReading != null -> PageReader(state, state.pageReading, onAction, pageView)
             state.result != null -> Result(state, state.result, onAction)
             else -> Form(state, onAction, onTakePhoto, onPickFile, onScanText)
         }
@@ -314,10 +314,13 @@ private fun Result(state: RecipeImportUiState, result: RecipeImportResult, onAct
 /**
  * #38: the page read in the app. The page itself is shown (the user may have to confirm
  * something in it), with "Läser sidan…", progress while the HTML is with the server, "Läs sidan
- * igen" after a page without a recipe, and "Avbryt".
+ * igen" after a page without a recipe, and "Avbryt". Fas 4 review (fix-data): after a page without
+ * a recipe also "Tolka texten med AI", which says that it is an AI call, or without a provider
+ * "Läs den delade texten".
  */
 @Composable
 private fun PageReader(
+    state: RecipeImportUiState,
     reading: PageReading,
     onAction: (RecipeImportAction) -> Unit,
     pageView: @Composable (reading: PageReading, modifier: Modifier) -> Unit,
@@ -342,7 +345,14 @@ private fun PageReader(
     ) {
         pageView(reading, Modifier.fillMaxSize().clip(MaterialTheme.shapes.large))
     }
+    if (state.canInterpretText && state.aiAvailable) {
+        Text(stringResource(R.string.recipe_import_page_ai_note), style = MaterialTheme.typography.bodySmall)
+    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+        if (state.canInterpretText) {
+            val label = if (state.aiAvailable) R.string.recipe_import_page_interpret_ai else R.string.recipe_import_page_read_text
+            TandemSecondaryButton(text = stringResource(label), onClick = { onAction(RecipeImportAction.InterpretText) })
+        }
         if (reading.nothingFound) {
             TandemSecondaryButton(
                 text = stringResource(R.string.recipe_import_page_again),

@@ -134,7 +134,7 @@ fun RecipeImportRoute(
             PageReaderWebView(
                 url = reading.url,
                 readRequest = reading.readRequest,
-                onHtml = { viewModel.onAction(RecipeImportAction.PageLoaded(it)) },
+                onPage = { html, text -> viewModel.onAction(RecipeImportAction.PageLoaded(html, text)) },
                 modifier = viewModifier,
             )
         },

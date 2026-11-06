@@ -43,6 +43,13 @@ sealed interface RecipeImportSource {
     }
 
     /**
+     * Fas 4 review (fix-data; plan §8.4 step 3, #18): a text read by the space's AI provider, when
+     * the link and the page gave nothing: the caption shared with a link, or the page's visible
+     * text. One AI call, so only ever sent when the user asks for it.
+     */
+    data class AiText(val text: String) : RecipeImportSource
+
+    /**
      * A photo (JPEG, scaled by the caller) or a PDF, read by the space's AI provider
      * (`ServerFeature.AI_IMPORT`). [fileName] is only a label for the upload.
      */

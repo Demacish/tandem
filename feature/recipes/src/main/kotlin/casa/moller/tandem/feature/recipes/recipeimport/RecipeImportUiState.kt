@@ -54,6 +54,14 @@ data class RecipeImportUiState(
     /** A photo or PDF can be chosen. */
     val canImportFile: Boolean
         get() = aiAvailable && !working && !readOnly && !isDemo
+
+    /**
+     * Fas 4 review (fix-data; plan §8.4 step 3): the link and the page gave nothing, and there is a
+     * text left to try: the shared caption, or with an AI provider also the page's visible text.
+     */
+    val canInterpretText: Boolean
+        get() = pageReading?.takeIf { it.nothingFound && !it.sending }
+            ?.let { it.caption.isNotBlank() || (aiAvailable && it.pageText.isNotBlank()) } == true
 }
 
 /**
@@ -63,9 +71,18 @@ data class RecipeImportUiState(
  * @property nothingFound the last HTML had no recipe (a page that first asks the visitor to
  *   confirm something): the user can confirm in the page and read it again.
  * @property readRequest bumped by "Läs sidan igen": the WebView hands over its HTML once more.
+ * @property caption what was shared together with the link (an Instagram caption often IS the recipe).
+ * @property pageText the page's visible text as last read.
  */
 @Immutable
-data class PageReading(val url: String, val sending: Boolean = false, val nothingFound: Boolean = false, val readRequest: Int = 0)
+data class PageReading(
+    val url: String,
+    val sending: Boolean = false,
+    val nothingFound: Boolean = false,
+    val readRequest: Int = 0,
+    val caption: String = "",
+    val pageText: String = "",
+)
 
 /** A photo or PDF another app shared to Tandem (`ACTION_SEND`), by its `content://` uri. */
 @Immutable
@@ -95,8 +112,8 @@ sealed interface RecipeImportAction {
     /** "Öppna i redigeraren". */
     data object OpenEditor : RecipeImportAction
 
-    /** #38: the WebView finished loading the page; [html] is its markup. */
-    class PageLoaded(val html: String) : RecipeImportAction {
+    /** #38: the WebView finished loading the page; [html] is its markup, [text] what it shows. */
+    class PageLoaded(val html: String, val text: String = "") : RecipeImportAction {
         override fun toString(): String = "PageLoaded(${html.length} chars)"
     }
 
@@ -105,6 +122,9 @@ sealed interface RecipeImportAction {
 
     /** #38: "Avbryt": stop reading the page; the server's answer stands. */
     data object CancelPage : RecipeImportAction
+
+    /** Plan §8.4 step 3: "Tolka texten med AI" (one AI call), without a provider "Läs den delade texten". */
+    data object InterpretText : RecipeImportAction
 
     /** #40: "Fördela ingredienserna på stegen" (one more AI call). */
     data object SortSteps : RecipeImportAction

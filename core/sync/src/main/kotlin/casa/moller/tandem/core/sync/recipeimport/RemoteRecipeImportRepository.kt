@@ -49,6 +49,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  *   without one, or when the server refuses (400), [RecipeImportProblem.AI_UNAVAILABLE].
  * - A page a WebView read (#38, Fas 3's leftovers): `{url, data: <html>}` to the same scraper;
  *   the link becomes the recipe's source and is not fetched by the server.
+ * - A text for the AI (Fas 4 review, fix-data; plan §8.4 step 3): the same `POST /api/ai-import/`
+ *   with `text` instead of a file, the last step of the chain for a link nothing else could read.
  * - Guests: `DataProblem.READ_ONLY` (they could not save the recipe); demo mode:
  *   [RecipeImportProblem.DEMO_MODE].
  *
@@ -83,6 +85,7 @@ internal class RemoteRecipeImportRepository @Inject constructor(
                 is RecipeImportSource.Link -> fromLink(remote, source.url)
                 is RecipeImportSource.Page -> fromPage(remote, source)
                 is RecipeImportSource.File -> fromFile(remote, source)
+                is RecipeImportSource.AiText -> fromAiText(remote, source.text)
                 is RecipeImportSource.Text -> error("handled above")
             }
         }
@@ -185,13 +188,26 @@ internal class RemoteRecipeImportRepository @Inject constructor(
     private suspend fun fromFile(remote: ActiveSource.Remote, file: RecipeImportSource.File): Outcome<RecipeFromSourceResponseDto> {
         if (file.bytes.isEmpty()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
         if (file.bytes.size > RecipeImportProblem.MAX_FILE_BYTES) return Outcome.Failure(RecipeImportProblem.FILE_TOO_LARGE.toError())
+        val part = MultipartBody.Part.createFormData("file", file.fileName, file.bytes.toRequestBody(file.mimeType.toMediaType()))
+        return aiImport(remote, part, text = null)
+    }
+
+    private suspend fun fromAiText(remote: ActiveSource.Remote, text: String): Outcome<RecipeFromSourceResponseDto> {
+        if (text.isBlank()) return Outcome.Failure(RecipeImportProblem.EMPTY_INPUT.toError())
+        return aiImport(remote, file = null, text = text.trim().take(MAX_AI_TEXT_CHARS))
+    }
+
+    private suspend fun aiImport(
+        remote: ActiveSource.Remote,
+        file: MultipartBody.Part?,
+        text: String?,
+    ): Outcome<RecipeFromSourceResponseDto> {
         val provider = when (val found = providerOf(remote)) {
             is Outcome.Failure -> return found
             is Outcome.Success -> found.value
         } ?: return Outcome.Failure(RecipeImportProblem.AI_UNAVAILABLE.toError())
-        val part = MultipartBody.Part.createFormData("file", file.fileName, file.bytes.toRequestBody(file.mimeType.toMediaType()))
         val sent = caller.call(remote, background = false, confirmForbidden = true) {
-            imports.aiImport(providerId = provider.toString().toRequestBody(TEXT), file = part, text = null)
+            imports.aiImport(providerId = provider.toString().toRequestBody(TEXT), file = file, text = text?.toRequestBody(TEXT))
         }
         // Without a working provider the server answers 500 (FACTS "Fas 3 f"), a refused file 400.
         return if (sent is Outcome.Failure && (sent.error is TandemError.BadRequest || sent.error is TandemError.ServerError)) {
@@ -203,5 +219,8 @@ internal class RemoteRecipeImportRepository @Inject constructor(
 
     private companion object {
         val TEXT = "text/plain".toMediaType()
+
+        /** A recipe fits with room to spare; what is sent is what the provider charges for. */
+        const val MAX_AI_TEXT_CHARS = 20_000
     }
 }

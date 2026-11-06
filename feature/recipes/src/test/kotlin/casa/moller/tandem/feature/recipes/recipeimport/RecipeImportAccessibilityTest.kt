@@ -87,6 +87,9 @@ class RecipeImportAccessibilityTest {
     fun pageNothingFoundFontScale2() = check(RecipeImportShot.PAGE_NOTHING_FOUND, fontScale = 2f)
 
     @Test
+    fun pageInterpret() = check(RecipeImportShot.PAGE_INTERPRET)
+
+    @Test
     fun resultSort() = check(RecipeImportShot.RESULT_SORT)
 
     @Test

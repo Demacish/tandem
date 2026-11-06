@@ -23,6 +23,13 @@ internal object RecipeImportSamples {
         pageReading = PageReading("https://example.com/recept/kanelbullar", sending = sending, nothingFound = nothingFound),
     )
 
+    /** Fas 4 review (fix-data): nothing on the page, and the shared caption can go to the AI. */
+    fun pageInterpret() = RecipeImportUiState(
+        input = "Kanelbullar med kardemumma https://example.com/p/abc",
+        aiAvailable = true,
+        pageReading = PageReading("https://example.com/p/abc", nothingFound = true, caption = "Kanelbullar med kardemumma"),
+    )
+
     fun problem() = RecipeImportUiState(
         input = "https://example.com/annat",
         aiAvailable = false,
@@ -52,6 +59,7 @@ internal enum class RecipeImportShot(val content: @Composable () -> Unit) {
     PAGE({ Import(RecipeImportSamples.page()) }),
     PAGE_SENDING({ Import(RecipeImportSamples.page(sending = true)) }),
     PAGE_NOTHING_FOUND({ Import(RecipeImportSamples.page(nothingFound = true)) }),
+    PAGE_INTERPRET({ Import(RecipeImportSamples.pageInterpret()) }),
     RESULT_SORT({ Import(RecipeImportSamples.resultWithAi()) }),
     RESULT_SORTING({ Import(RecipeImportSamples.resultWithAi(sorting = true)) }),
     RESULT_SORTED({ Import(RecipeImportSamples.resultWithAi(sorted = true)) }),

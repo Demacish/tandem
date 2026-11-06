@@ -39,6 +39,7 @@ class FakeRecipeImportRepository(
         val empty = when (source) {
             is RecipeImportSource.Link -> source.url.isBlank()
             is RecipeImportSource.Text -> source.text.isBlank()
+            is RecipeImportSource.AiText -> source.text.isBlank()
             is RecipeImportSource.Page -> source.html.isBlank()
             is RecipeImportSource.File -> source.bytes.isEmpty()
         }

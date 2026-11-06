@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -42,6 +43,11 @@ import kotlinx.coroutines.launch
  * Fas 3's leftovers: when the server cannot read a shared LINK (a site that blocks it), the page
  * is read in a WebView in the app and its HTML sent instead (#38, [PageReading]); a result can
  * have its ingredient lines moved to their steps by the space's AI (#40, one more AI call).
+ *
+ * Fas 4 review (fix-data; plan §8.4 step 3, #18, B12): a link nothing could read (an Instagram login
+ * wall) is not the end: the text shared with it, or the page's visible text, goes to the AI when the
+ * user asks for it, never by itself since it costs credits. Without a provider the shared text is
+ * read on the device.
  */
 @HiltViewModel(assistedFactory = RecipeImportViewModel.Factory::class)
 class RecipeImportViewModel @AssistedInject constructor(
@@ -110,7 +116,7 @@ class RecipeImportViewModel @AssistedInject constructor(
                 effectChannel.trySend(RecipeImportEffect.OpenEditor(SavedDraft.encode(result.draft)))
             }
 
-            is RecipeImportAction.PageLoaded -> sendPage(action.html)
+            is RecipeImportAction.PageLoaded -> sendPage(action.html, action.text)
 
             RecipeImportAction.ReadPageAgain -> progress.update { progress ->
                 progress.copy(pageReading = progress.pageReading?.let { it.copy(readRequest = it.readRequest + 1) })
@@ -119,6 +125,8 @@ class RecipeImportViewModel @AssistedInject constructor(
             RecipeImportAction.CancelPage -> progress.update {
                 it.copy(pageReading = null, problem = R.string.recipe_import_nothing_found, failure = null)
             }
+
+            RecipeImportAction.InterpretText -> interpretText()
 
             RecipeImportAction.SortSteps -> sortSteps()
 
@@ -133,10 +141,10 @@ class RecipeImportViewModel @AssistedInject constructor(
      * #38: the page's HTML from the WebView goes to the server with the link. Each finished load
      * sends once more (a page that first asked the visitor to confirm something), never two at a time.
      */
-    private fun sendPage(html: String) {
+    private fun sendPage(html: String, text: String) {
         val reading = progress.value.pageReading ?: return
         if (reading.sending || html.isBlank()) return
-        progress.update { it.copy(pageReading = reading.copy(sending = true)) }
+        progress.update { it.copy(pageReading = reading.copy(sending = true, pageText = text.ifBlank { reading.pageText })) }
         viewModelScope.launch {
             val outcome = imports.import(RecipeImportSource.Page(reading.url, html))
             // Cancelled meanwhile: the answer is dropped.
@@ -152,6 +160,19 @@ class RecipeImportViewModel @AssistedInject constructor(
         }
         val problem = problemOf(error, RecipeImportSource.Link(current.url))
         return copy(pageReading = null, problem = problem ?: R.string.recipe_import_failed, failure = error.takeIf { problem == null })
+    }
+
+    /** The last step of the chain: the AI reads the caption or the page's text, or the device the caption. */
+    private fun interpretText() {
+        val reading = progress.value.pageReading ?: return
+        viewModelScope.launch {
+            val source = if (imports.observeAiImportAvailable().first()) {
+                RecipeImportSource.AiText(reading.caption.ifBlank { reading.pageText })
+            } else {
+                RecipeImportSource.Text(reading.caption)
+            }
+            import(source, sourceUrl = reading.url)
+        }
     }
 
     /** #40: the space's AI moves the result's ingredient lines to their steps; the draft before is kept for Ångra. */
@@ -183,12 +204,14 @@ class RecipeImportViewModel @AssistedInject constructor(
         }
     }
 
-    private fun import(source: RecipeImportSource?) {
+    /** [sourceUrl]: the link a text came with, the recipe's source unless the import found one. */
+    private fun import(source: RecipeImportSource?, sourceUrl: String? = null) {
         if (source == null || progress.value.working) return
+        val caption = (source as? RecipeImportSource.Link)?.let { captionOf(input.value, it.url) }.orEmpty()
         progress.update { Progress(working = true) }
         viewModelScope.launch {
             when (val outcome = imports.import(source)) {
-                is Outcome.Success -> progress.update { it.copy(working = false, result = outcome.value) }
+                is Outcome.Success -> progress.update { it.copy(working = false, result = outcome.value.withSource(sourceUrl)) }
 
                 is Outcome.Failure -> {
                     val problem = problemOf(outcome.error, source)
@@ -199,7 +222,7 @@ class RecipeImportViewModel @AssistedInject constructor(
                     progress.update {
                         if (blocked) {
                             // #38: the server could not read the link: the app reads the page itself.
-                            it.copy(working = false, pageReading = PageReading(source.url))
+                            it.copy(working = false, pageReading = PageReading(source.url, caption = caption))
                         } else {
                             it.copy(working = false, problem = problem ?: R.string.recipe_import_failed, failure = failure)
                         }
@@ -208,6 +231,9 @@ class RecipeImportViewModel @AssistedInject constructor(
             }
         }
     }
+
+    private fun RecipeImportResult.withSource(url: String?): RecipeImportResult =
+        if (url == null || draft.sourceUrl.isNotBlank()) this else copy(draft = draft.copy(sourceUrl = url))
 
     private fun problemOf(error: TandemError, source: RecipeImportSource): Int? = when (RecipeImportProblem.of(error)) {
         RecipeImportProblem.EMPTY_INPUT -> R.string.recipe_import_empty
@@ -247,6 +273,9 @@ class RecipeImportViewModel @AssistedInject constructor(
         /** Shared texts rarely are a bare link ("Pannkakor https://…" from a browser): the first link in a short text wins. */
         private const val LINK_IN_TEXT_MAX_LENGTH = 400
         private val LINK = Regex("""https?://\S+""")
+
+        /** What was shared together with [url] ("Pannkakor https://…"): [text] without the link. */
+        fun captionOf(text: String, url: String): String = text.replace(url, " ").trim(' ', '\n', '\t', '.', ',', ':', '-', '–')
 
         /** [text] as the source to send: a link when it is (or carries) one, else the text; null when blank. */
         fun sourceOf(text: String): RecipeImportSource? {

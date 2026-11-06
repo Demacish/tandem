@@ -53,6 +53,9 @@
     <string name="recipe_import_page_nothing_body">If the page asks you to confirm something, do it below and read the page again.</string>
     <string name="recipe_import_page_sending">Sending the page to Tandoor…</string>
     <string name="recipe_import_page_again">Read the page again</string>
+    <string name="recipe_import_page_interpret_ai">Interpret the text with AI</string>
+    <string name="recipe_import_page_ai_note">Sends the text to your Tandoor\'s AI. That is one AI call and can cost credits.</string>
+    <string name="recipe_import_page_read_text">Read the shared text</string>
     <string name="recipe_import_page_cancel">Cancel</string>
     <string name="recipe_import_page_view">The page %1$s</string>
     <string name="recipe_import_sort">Sort the ingredients into the steps</string>

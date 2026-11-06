@@ -126,6 +126,57 @@ class RecipeImportViewModelTest {
         assertEquals(2, imports.imported.size)
     }
 
+    // Fas 4 review (fix-data; plan §8.4 step 3): an Instagram link behind a login wall.
+    private fun TestScope.nothingOnThePage(shared: String): RecipeImportViewModel {
+        imports.linkFailure = RecipeImportProblem.NOTHING_FOUND.toError()
+        val vm = viewModel(RecipeImportKey(sharedText = shared))
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.Import)
+        imports.failure = RecipeImportProblem.NOTHING_FOUND.toError()
+        vm.onAction(RecipeImportAction.PageLoaded("<html>logga in</html>", "Logga in för att se"))
+        imports.failure = null
+        return vm
+    }
+
+    @Test
+    fun theSharedCaptionIsKeptAndGoesToTheAiOnlyWhenAskedFor() = runTest {
+        val link = "https://example.com/p/abc"
+        val vm = nothingOnThePage("Pannkakor: 3 dl mjöl, 6 dl mjölk $link")
+        assertEquals("Pannkakor: 3 dl mjöl, 6 dl mjölk", vm.uiState.value.pageReading?.caption)
+        assertTrue(vm.uiState.value.canInterpretText)
+        assertTrue("nothing goes to the AI by itself", imports.imported.none { it is RecipeImportSource.AiText })
+
+        vm.onAction(RecipeImportAction.InterpretText)
+
+        assertEquals(RecipeImportSource.AiText("Pannkakor: 3 dl mjöl, 6 dl mjölk"), imports.imported.last())
+        assertNull(vm.uiState.value.pageReading)
+        assertEquals(SampleImports.pancakes.draft.name, vm.uiState.value.result?.draft?.name)
+    }
+
+    @Test
+    fun withoutACaptionTheAiGetsThePagesText() = runTest {
+        val vm = nothingOnThePage("https://example.com/p/abc")
+        assertTrue(vm.uiState.value.canInterpretText)
+        vm.onAction(RecipeImportAction.InterpretText)
+        assertEquals(RecipeImportSource.AiText("Logga in för att se"), imports.imported.last())
+    }
+
+    @Test
+    fun withoutAnAiProviderTheCaptionIsReadOnTheDevice() = runTest {
+        imports.aiAvailable.value = false
+        val vm = nothingOnThePage("3 dl mjöl och 6 dl mjölk https://example.com/p/abc")
+        assertTrue(vm.uiState.value.canInterpretText)
+        vm.onAction(RecipeImportAction.InterpretText)
+        assertEquals(RecipeImportSource.Text("3 dl mjöl och 6 dl mjölk"), imports.imported.last())
+    }
+
+    @Test
+    fun withoutAProviderAndACaptionThereIsNothingToTry() = runTest {
+        imports.aiAvailable.value = false
+        val vm = nothingOnThePage("https://example.com/p/abc")
+        assertFalse(vm.uiState.value.canInterpretText)
+    }
+
     @Test
     fun aPageWithoutARecipeCanBeReadAgainOrCancelled() = runTest {
         val link = "https://example.com/blockerad"
