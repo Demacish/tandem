@@ -125,7 +125,8 @@ fun RecipeImportRoute(
     LaunchedEffect(viewModel, sharedPages) {
         if (sharedPages.isNotEmpty()) {
             viewModel.onAction(RecipeImportAction.SharedFileTaken)
-            sharedPages.forEach { addPage(Uri.parse(it)) }
+            // In the screen's scope: "taken" empties the list, which restarts this effect.
+            scope.launch { sharedPages.forEach { addPage(Uri.parse(it)) } }
         }
     }
     LaunchedEffect(appContext) { withContext(Dispatchers.IO) { ImportFiles.sweep(appContext) } }

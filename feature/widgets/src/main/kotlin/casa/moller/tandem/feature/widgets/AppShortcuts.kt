@@ -78,9 +78,9 @@ object AppShortcuts {
 
     /**
      * Installs (replaces) the shortcuts; a launcher that refuses (too many, no launcher) is ignored.
-     * The application calls it without [recent] at start; [WidgetUpdater] follows with the cook log.
+     * [WidgetUpdater] calls it, so one caller decides what the list holds.
      */
-    fun install(context: Context, recent: List<RecentRecipe> = emptyList()) {
+    fun install(context: Context, recent: List<RecentRecipe>) {
         val limit = runCatching { ShortcutManagerCompat.getMaxShortcutCountPerActivity(context) }.getOrDefault(FIRST.size)
         val shortcuts = plan(recent, limit).mapIndexedNotNull { rank, item ->
             when (item) {

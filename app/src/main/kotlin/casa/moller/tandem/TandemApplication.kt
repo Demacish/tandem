@@ -12,7 +12,6 @@ import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.sync.SyncStarter
 import casa.moller.tandem.diagnostics.ColdStart
-import casa.moller.tandem.feature.widgets.AppShortcuts
 import casa.moller.tandem.feature.widgets.WidgetUpdater
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
@@ -69,8 +68,6 @@ class TandemApplication :
         // notification, which creates its channel again.
         applicationScope.launch {
             channelInstallers.forEach { installer -> runCatching { installer.createChannels() } }
-            // Fas 3 (widgets lane): the launcher shortcuts, in the current language.
-            AppShortcuts.install(this@TandemApplication)
         }
     }
 

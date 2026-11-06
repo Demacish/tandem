@@ -50,7 +50,8 @@ class WidgetUpdater @Inject constructor(
         scope.launch {
             data.tonight.debounce(DEBOUNCE_MILLIS).collect { runCatching { TonightWidget().updateAll(context) } }
         }
-        // Plan 8.7: the shortcuts follow the cook log, and go when the account goes.
+        // Plan 8.7: the launcher shortcuts, in the current language, at every start and when the
+        // cook log changes; the recipes go when the account goes.
         scope.launch {
             data.recentRecipes.debounce(DEBOUNCE_MILLIS).collect { AppShortcuts.install(context, it) }
         }
