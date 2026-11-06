@@ -89,8 +89,9 @@ Levererades i **0.5.0** (2026-11-03).
 Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
 
 - ✅ Textigenkänning av recept i telefonen (samma ML Kit-läsare som kvittoskanningen i Fas S):
-  "Fota recept" i Importera recept läser en kokbokssida, ett kort eller en utskrift utan AI-tjänst
-  och öppnar texten i redigeraren, även sidor i två spalter. Kvar: handskrivet.
+  "Fota recept" i Importera recept läser en kokbokssida, ett kort eller en utskrift utan AI-tjänst,
+  även sidor i två spalter. Texten hamnar i Importera recept och blir ett utkast som öppnas i
+  redigeraren. Kvar: handskrivet.
 - ✅ Inlärd butiksordning, återkommande varor, förslag på veckans matsedel: butiksläget erbjuder
   att spara ordningen du handlade i som butikens avdelningsordning; "Dags igen?" i Lägg till föreslår
   varor som brukar köpas med jämna mellanrum; "Föreslå veckans matsedel" i Veckan fyller lediga

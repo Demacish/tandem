@@ -38,7 +38,7 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
   annat recepts timer går öppnas båda. ✕ stänger det recept som visas, och kokläget fortsätter med
   det andra.
 
-**Notiser (alla av som standard, var och en slås på för sig)**
+**Notiser (alla av som standard)**
 
 - **Notis när någon ändrar listan:** slå på under Synk och lagring, så säger telefonen till när
   bakgrundssynken ser att någon annan i hushållet lagt till, bockat av eller tagit bort varor.
@@ -53,16 +53,19 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
   hushållet kör själv (en container, se docs/PUSH.md). Tjänsten kontrollerar inköpslistan var
   30–60:e sekund och väcker telefonen via en UnifiedPush-app som ntfy, så en vara som någon lägger
   till syns som notis inom en minut även när appen är stängd. Väckningen innehåller inget om
-  listan. Inte för gäster eller demoläget. Tjänstens image publiceras med versionstaggen.
+  listan. Inte för gäster eller demoläget. Slår du på snabb push slås också "Notis när någon
+  ändrar listan" på, och den står kvar om du stänger av snabb push. Tjänstens image publiceras med
+  versionstaggen, för linux/amd64 och linux/arm64, och docs/PUSH.md går igenom driften steg för steg.
 - Byter du konto eller loggar ut försvinner notiserna om det kontots lista och skafferi, och
-  snabb push släpps både hos UnifiedPush-appen och hos tjänsten.
+  snabb push släpps hos UnifiedPush-appen och, om tjänsten går att nå, hos tjänsten.
 
 **Importera och redigera**
 
 - **Fota recept:** i Importera recept kan du fotografera en kokbokssida, ett kort eller en
   utskrift (eller välja en bild). Texten läses i telefonen, utan AI-tjänst och utan att något
-  skickas någonstans, och öppnas i redigeraren där du granskar den innan receptet sparas. Ett
-  långt recept kan vara flera foton.
+  skickas någonstans, och hamnar i Importera recept. Där gör "Hämta receptet" den till ett utkast
+  som du granskar och öppnar i redigeraren innan receptet sparas. Ett långt recept kan vara flera
+  foton.
 - **Sidor som stänger ute servern:** kan er Tandoor inte öppna en delad länk läser Tandem sidan
   i appen i stället ("Läser sidan…", går att avbryta) och skickar den till Tandoor. Ingen AI
   används. Ber sidan dig bekräfta något gör du det direkt i vyn och läser sidan igen.
@@ -98,14 +101,13 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
 **Övrigt**
 
 - **Näringsvärden** visas i kJ eller kcal som du valt i Tandoor.
-- **Anpassa Idag:** välj vilka receptrader Idag visar och i vilken ordning (sparas i telefonen).
+- **Anpassa Idag:** välj vilka receptkaruseller Idag visar och i vilken ordning (sparas i
+  telefonen). Kan laga nu, Vill laga och Favoriter ligger kvar som de är.
 - Importen pausar bakgrundssynken medan Tandoor arbetar, och snabbinställningsrutan "Handla"
   visar rätt antal direkt efter en synk.
 - En kort vibration när en måltid lyfts i Veckan och när en sida lästs i Fota recept.
 - **Rättat:** två telefoner som öppnade Hemma för första gången samtidigt kunde skapa Kyl, Frys
   och Skafferi två gånger. Nu behålls de äldsta och den andra telefonens varor flyttas dit.
-- **Rättat:** en timernotis för den andra fliken i kokläget kunde efter en omstart av appen öppna
-  ett eget kokläge i stället för fliken.
 - **Efter granskningen:** recept skapade offline följs av måltider, inköp, böcker och Klart!, ett
   recept som Tandoor nekat kan rättas och skickas igen, sidor i två spalter läses rätt, en länk utan
   recept kan tolkas med AI från den delade texten, inlärd butiksordning flyttar bara det turerna

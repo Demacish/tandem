@@ -1172,7 +1172,9 @@ UnifiedPush-connectorn och Fas 4:s kod är tillsammans under 0,4 MB; ML Kit domi
 
 **Kvar efter 0.6.0, och varför:**
 
-- Taggen `v0.6.0` sätts av ägaren. Först då publiceras `tandem-push`-imagen (`push-service.yml`).
+- Taggen `v0.6.0` sätts av ägaren. Först då publiceras `tandem-push`-imagen (`push-service.yml`),
+  och ägaren gör paketet publikt en gång, annars går det inte att hämta ([RELEASE.md](RELEASE.md)
+  avsnitt 2 steg 4).
 - AI-import och stegsortering med en riktig leverantör: CI får inte anropa AI-tjänster, och
   kontraktstestet spelar in avslaget utan leverantör. Formatet verifieras av första användaren.
 - Handskrivna recept (ML Kits latinska modell läser tryckt text).
@@ -1691,9 +1693,23 @@ Plan §4.3 (A2), B11, #30; "Klart när": en vara som partnern lägger till komme
   (`DATA_DIR/registrations.json`, `0600`, skrivs atomärt). Inget annat. Registreringar som inte
   förnyats på `REGISTRATION_TTL_DAYS` (60) eller hör till ett annat hushåll (token byttes) rensas.
 - **Gränser:** brytare/backoff i pollningen (intervall × 2^fel, högst 15 min; minst `Retry-After`
-  vid 429/503; 15 min direkt vid avvisad token), token bucket per klient-IP på API:t (20/min, skur
-  10), högst 60 Tandoor-kontroller/min, testnotis högst var 10:e s per telefon, `MAX_ENDPOINTS` (20).
-  Adresser måste vara `https://` (`ALLOW_HTTP_ENDPOINTS=true` bara för test/LAN), utan användarinfo.
+  vid 429/503; 15 min direkt vid avvisad token), högst 60 Tandoor-kontroller/min, testnotis högst
+  var 10:e s per telefon, `MAX_ENDPOINTS` (20). Token bucket på API:t (20/min, skur 10) i två slag:
+  en begäran som bevisar en registrering (adress och id) har en egen hink per registrering, så en
+  flod från en främling aldrig når telefoner som redan är registrerade; övriga som kommer så långt
+  att Tandoor ska frågas har en hink per klient-IP. Den som varken har id eller token nekas utan att
+  röra en hink. Bakom en proxy är klient-IP proxyns tills `TRUSTED_PROXIES` (CIDR, av som standard)
+  är satt; då går `forwardedClient` från höger i `X-Forwarded-For` till första adress som inte är
+  en betrodd proxy, och från en obetrodd avsändare ignoreras huvudet helt. Hinken för Tandoor är en
+  enda med flit: den skyddar Tandoor.
+- **Adresser:** `https://`, utan användarinfo, och utan `ALLOW_HTTP_ENDPOINTS=true` (bara test/LAN)
+  aldrig den egna maskinen: `validEndpoint` nekar `localhost`, loopback, link-local och oangivna
+  adresser i klartext, och dialerns `Control` samma sak på den uppslagna adressen. Privata adresser
+  är tillåtna med flit (ett hushålls ntfy på LAN; https kräver ändå ett giltigt certifikat).
+  **Ingen klient följer omdirigeringar** (`noRedirects`): en väckning ska aldrig skickas vidare, och
+  en Tandoor-token får inte följa med till en annan adress, så `TANDOOR_URL` är den slutliga
+  adressen. En 3xx blir `StatusError`, och registreringen ligger kvar.
+- **`/healthz`** har ingen inloggning och är nåbar genom proxyn, så den säger bara `{healthy}`.
 - **Loggar:** JSON (`log/slog`), aldrig token, aldrig listinnehåll, bara värdnamnet för
   väckningsadresser (sökvägen är distributörens hemliga ämne).
 
@@ -1702,18 +1718,29 @@ inga standardvärden som pekar på en server), `tandoor.go` (de två GET-anropen
 429 → `Retry-After`), `poller.go` (`Backoff`, `Poller.PollOnce`/`WakeAll`), `pusher.go`,
 `webpush.go` (RFC 8291), `store.go`, `api.go` (`/healthz`, `/v1/info`, `/v1/register`,
 `/v1/unregister`, `/v1/test`, `RateLimiter`), `main.go` (`-healthcheck` för containerns
-HEALTHCHECK). Dockerfile: `golang:1.27.2-alpine` (digest) → `scratch`, statisk binär, användare
-65532, volym `/data`. **CI** (`push-service.yml`, bara vid ändringar i `push-service/**`): gofmt,
-`go vet`, `go test -race` (falska Tandoor- och distributörsservrar, RFC 5869-testvektor och
-dekryptering som Tinks `WebPushHybridDecrypt`), imagen byggs (pushas aldrig från en gren),
+HEALTHCHECK). Dockerfile: `golang:1.27.2-alpine` (digest, alltid på byggarens egen plattform,
+korskompilerar med `TARGETOS`/`TARGETARCH`) → `scratch`, statisk binär, användare 65532, volym
+`/data`. **CI** (`push-service.yml`, bara vid ändringar i `push-service/**`, Go-versionen läses ur
+Dockerfile så att tester och image alltid har samma): gofmt, `go vet`, `go test -race` (falska
+Tandoor- och distributörsservrar, RFC 5869-testvektorn och RFC 8291 bilaga A: `sealWebPush` ger
+exakt RFC:ns meddelande, och `WebPushVectorTest` i `:core:sync` dekrypterar samma meddelande med
+connectorns `WebPushHybridDecrypt`, så webpush.go och telefonens kod är bundna till varandra genom
+RFC:n; röktestets `FakePushService` är en egen Kotlin-kopia och bevisar connectorn och Tink under
+R8, inte webpush.go), imagen byggs (pushas aldrig från en gren), jobbet `platforms` bygger båda
+plattformarna med samma flaggor som publiceringen till en fil och kontrollerar index och binärer,
 integrationstest per Tandoor-version (2.6.13, 2.7.1): tillfällig Tandoor, hushåll med operatör,
 telefon och partner plus en utomstående, tjänsten startas från den byggda imagen, telefonen
-registrerar en falsk UnifiedPush-adress, utomstående nekas, testnotisen kommer, partnern lägger
-till en vara via API:t och väckningen måste komma inom 60 s (8–15 s i första körningen) utan
-listinnehåll. Steget skriver imagens storlek och minnet (ca 3 MB) i sammanfattningen.
-**Publicering:** jobbet `publish` körs bara för en `v*`-tagg (`ghcr.io/<ägare>/tandem-push:<version>`
-och `latest`); ägaren bestämmer när. `pr.yml` ignorerar `push-service/**` och röktestet hoppar
-över dem.
+registrerar en falsk UnifiedPush-adress med Web Push-nycklar, utomstående nekas, testnotisen kommer,
+partnern lägger till en vara via API:t och väckningen måste komma inom 60 s (8–15 s i första
+körningen) och dekrypteras till exakt `{"tandem":"sync","id":…}`. Steget skriver imagens storlek och
+minnet (ca 3 MB) i sammanfattningen.
+**Publicering:** jobbet `publish` körs bara för en `v*`-tagg (`ghcr.io/<ägare>/tandem-push:<version>`,
+linux/amd64 och linux/arm64); ägaren bestämmer när. Det stoppar som `release.yml` om taggen inte är
+`v<versionName>` eller inte finns på `main`, flyttar `latest` bara för den högsta taggen (taggar
+sätts här ibland i efterhand) och varnar till sist om imagen inte går att hämta utan inloggning: ett
+nytt paket är privat tills ägaren ändrat det ([RELEASE.md](RELEASE.md) avsnitt 2). Bygget i `publish`
+är ett nytt bygge, inte imagen som testades (`VERSION` skiljer med flit, och `apk add ca-certificates`
+är inte låst). `pr.yml` ignorerar `push-service/**` och röktestet hoppar över dem.
 
 **Appen:**
 
@@ -4238,6 +4265,8 @@ automerge-gren som ligger efter `main` rebasas först och slås ihop först när
 utan automerge rebasas bara vid konflikt, så att de inte kör om röktestet varje gång `main` rör
 sig. Allt annat granskas för hand.
 Dependency Dashboard-ärendet visar vad som väntar. Fixturer och skript undantas.
+Go har bara en version att uppdatera: `golang:…-alpine` i `push-service/Dockerfile`.
+`push-service.yml` läser den ur `FROM`-raden, så samma PR flyttar tester och image.
 
 ### Prestanda (`:benchmark`, `benchmark.yml`)
 

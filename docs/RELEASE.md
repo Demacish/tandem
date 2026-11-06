@@ -61,6 +61,18 @@ avinstallera appen (och förlora lokal data) och installera om.
    git push origin v0.0.1
    ```
 
+4. **Bara första gången en tagg publicerar push-tjänsten (`v0.6.0`):** gör imagen publik, annars
+   nekas alla som följer [PUSH.md](PUSH.md). Ett nytt paket på GHCR är privat, och det ärver inte
+   repots synlighet. När `push-service.yml` är klart (dess sista steg varnar om imagen inte går att
+   hämta utan inloggning): öppna paketet `tandem-push` under repots eller kontots **Packages**,
+   kontrollera att det är kopplat till repot, och välj **Package settings → Change visibility →
+   Public** (det går inte att ångra). Kontrollera sedan från en utloggad dator, inte
+   produktionsservern: `docker pull ghcr.io/demacish/tandem-push:0.6.0`.
+
+Samma tagg publicerar imagen, för linux/amd64 och linux/arm64. `push-service.yml` har samma stopp
+som `release.yml` (taggen är `v<versionName>`, på `main`), och `latest` flyttas bara om taggen är den
+högsta, så en tagg som sätts i efterhand drar inte `latest` bakåt.
+
 ## 3. Vad `release.yml` gör
 
 Workflowet har två egna jobb och anropar ett tredje (`smoke`, se tabellen). **build** kör all byggkod (Gradle, AGP, KSP, beroenden) med en token
