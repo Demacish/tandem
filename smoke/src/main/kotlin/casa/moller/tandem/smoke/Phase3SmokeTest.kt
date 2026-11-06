@@ -14,7 +14,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -60,7 +59,7 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         logIn()
         app.tap("Recipes")
         waitForAction("the editor") {
-            app.clickNodeWithText("New recipe")
+            tapFloatingButton()
             nodeShows(TAP_WAIT_MS) { it.text?.toString() == SAVE_RECIPE }
         }
         app.type(0, NEW_RECIPE)
@@ -117,10 +116,8 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         menu("Edit")
         app.waitFor(By.text(SAVE_RECIPE))
 
-        val instruction = app.waitForNode("the first step's instructions") { node ->
-            node.className?.toString() == EDIT_TEXT && node.text?.toString()?.startsWith(PASTA_STEP_RAW) == true
-        }
-        assertTrue("The step's text not changed", app.setNodeText(instruction, EDITED_INSTRUCTION))
+        app.scrollTo(By.clazz(EDIT_TEXT).textStartsWith(PASTA_STEP_RAW)).text = EDITED_INSTRUCTION
+        app.waitFor(By.clazz(EDIT_TEXT).text(EDITED_INSTRUCTION))
         save()
 
         waitForServer("the PATCH") { if (patches().isEmpty()) "no PATCH yet" else null }
@@ -145,8 +142,9 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         app.capture("phase3-picture-removed")
         save()
 
-        waitForServer("the picture's removal") { if (tandoor.recipeEdits.writes("PUT", "/api/recipe/$PASTA_ID/image/").isEmpty()) "no PUT yet" else null }
-        val form = tandoor.recipeEdits.writes("PUT", "/api/recipe/$PASTA_ID/image/").single().body
+        val image = "/api/recipe/$PASTA_ID/image/"
+        waitForServer("the picture's removal") { if (tandoor.recipeEdits.writes("PUT", image).isEmpty()) "no PUT yet" else null }
+        val form = tandoor.recipeEdits.writes("PUT", image).single().body
         assertTrue("A form with an empty image_url: $form", EMPTY_IMAGE_URL.containsMatchIn(form))
         assertTrue("A 404: ${tandoor.notFound}", tandoor.notFound.isEmpty())
     }
@@ -244,6 +242,18 @@ class Phase3SmokeTest : Phase2SmokeBase() {
 
     private fun patches() = tandoor.recipeEdits.writes("PATCH", PASTA_PATH)
 
+    /**
+     * "New recipe" at the bottom right, by its role: on the emulator the floating button's label is
+     * not in the window hierarchy (as in PhaseSDrinkSmokeTest).
+     */
+    private fun tapFloatingButton() {
+        val device = app.device
+        val button = device.findObjects(By.clazz(BUTTON))
+            .mapNotNull { node -> runCatching { node.visibleBounds }.getOrNull() }
+            .firstOrNull { it.left > device.displayWidth / 2 && it.top > device.displayHeight * FAB_TOP } ?: return
+        device.click(button.centerX(), button.centerY())
+    }
+
     /** Saves through the button's accessibility action, until the editor has closed. */
     private fun save() {
         repeat(TAP_ATTEMPTS) {
@@ -276,9 +286,7 @@ class Phase3SmokeTest : Phase2SmokeBase() {
     }
 
     private fun tabSelected(label: String) {
-        app.waitForNode("the selected tab $label") { node ->
-            node.text?.toString() == label && generateSequence(node) { it.parent }.take(MAX_ANCESTORS).any { it.isSelected }
-        }
+        app.waitFor(By.selected(true).hasDescendant(By.text(label), MAX_ANCESTORS))
     }
 
     private fun waitForAction(what: String, action: () -> Boolean) {
@@ -295,6 +303,8 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         const val SAVE_RECIPE = "Save recipe"
         const val ADD_STEP = "Add step"
         const val MORE_OPTIONS = "More options"
+        const val BUTTON = "android.widget.Button"
+        const val FAB_TOP = 0.75
         const val NEW_RECIPE = "Röktestets gräddsås"
         const val NEW_LINE = "2 dl cream, cold"
         const val NEW_INSTRUCTION = "Vispa grädden i röktestet."

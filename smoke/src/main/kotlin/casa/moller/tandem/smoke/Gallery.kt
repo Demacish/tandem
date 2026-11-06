@@ -171,7 +171,9 @@ class Gallery(private val context: Context) : ExternalResource() {
                 textSize = RECEIPT_TEXT
                 typeface = Typeface.create(Typeface.SERIF, Typeface.NORMAL)
             }
-            lines.forEachIndexed { index, text -> canvas.drawText(text, RECEIPT_MARGIN, RECEIPT_TOP + (index + 1) * RECEIPT_LINE.toFloat(), paint) }
+            lines.forEachIndexed { index, text ->
+                canvas.drawText(text, RECEIPT_MARGIN, RECEIPT_TOP + (index + 1) * RECEIPT_LINE.toFloat(), paint)
+            }
             return bitmap
         }
 

@@ -62,9 +62,13 @@ class WidgetHost(private val app: TandemApp, private val instrumentation: Instru
         }
     }
 
-    /** Clicks the view described as [description] and tells whether it was there and handled the click. */
+    /**
+     * Clicks the view described as [description] and tells whether it was there and took the click:
+     * Glance puts the click on a frame around the row, the description on the row.
+     */
     fun click(description: String): Boolean = onMain {
-        views().firstOrNull { it.contentDescription?.toString() == description }?.performClick() == true
+        val target = views().firstOrNull { it.contentDescription?.toString() == description }
+        generateSequence(target) { it.parent as? View }.firstOrNull { it.hasOnClickListeners() }?.performClick() == true
     }
 
     private fun <T> onMain(block: () -> T): T {
@@ -79,7 +83,8 @@ class WidgetHost(private val app: TandemApp, private val instrumentation: Instru
         val density = context.resources.displayMetrics.density
         val width = (WIDTH_DP * density).toInt()
         val height = (HEIGHT_DP * density).toInt()
-        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+        val exactly = View.MeasureSpec.EXACTLY
+        root.measure(View.MeasureSpec.makeMeasureSpec(width, exactly), View.MeasureSpec.makeMeasureSpec(height, exactly))
         root.layout(0, 0, width, height)
         val found = mutableListOf<View>()
         val queue = ArrayDeque(listOf<View>(root))

@@ -131,15 +131,19 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
             sent.map { element ->
                 val line = element.jsonObject
                 val before = current.byId(line.long("id")).takeIf { known }
-                val named = if (before == null) mapOf("food" to named(line["food"], "food"), "unit" to named(line["unit"], "unit")) else emptyMap()
+                val names = when (before) {
+                    null -> mapOf("food" to newPart(line["food"], "food"), "unit" to newPart(line["unit"], "unit"))
+                    else -> emptyMap()
+                }
                 val id = line.long("id") ?: nextPartId++
-                JsonObject((before ?: ingredientTemplate) + line.filterKeys { it in INGREDIENT_FIELDS } + named + ("id" to JsonPrimitive(id)))
+                val fields = line.filterKeys { it in INGREDIENT_FIELDS }
+                JsonObject((before ?: ingredientTemplate) + fields + names + ("id" to JsonPrimitive(id)))
             },
         )
     }
 
     /** A new food or unit: the recorded [key]'s shape with the sent name. */
-    private fun named(sent: JsonElement?, key: String): JsonElement {
+    private fun newPart(sent: JsonElement?, key: String): JsonElement {
         val name = (sent as? JsonObject)?.string("name") ?: return JsonNull
         val shape = ingredientTemplate.getValue(key).jsonObject
         return JsonObject(shape + mapOf("id" to JsonPrimitive(nextPartId++), "name" to JsonPrimitive(name)))
@@ -152,10 +156,12 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         val body = list.jsonObject
         val listed = body.getValue("results").jsonArray.map { it.jsonObject }
         val sample = listed.firstOrNull() ?: return list
-        val results = (listed.map { overview -> overview.long("id") ?: 0L to overview } + changed.keys.map { it to sample })
+        val results = (listed.map { overview -> (overview.long("id") ?: 0L) to overview } + changed.keys.map { it to sample })
             .distinctBy { (id, _) -> id }
             .filter { (id, _) -> id !in deleted }
-            .map { (id, overview) -> changed[id]?.let { JsonObject(overview + it.filterKeys { key -> key in OVERVIEW_FIELDS }) } ?: overview }
+            .map { (id, overview) ->
+                changed[id]?.let { recipe -> JsonObject(overview + recipe.filterKeys { it in OVERVIEW_FIELDS }) } ?: overview
+            }
         return JsonObject(body + mapOf("count" to JsonPrimitive(results.size), "next" to JsonNull, "results" to JsonArray(results)))
     }
 
@@ -176,7 +182,8 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
 
     private fun now(): JsonPrimitive = JsonPrimitive(Instant.now().toString())
 
-    private fun notFound(): MockResponse = json(NOT_FOUND, JsonObject(mapOf("detail" to JsonPrimitive("No Recipe matches the given query."))))
+    private fun notFound(): MockResponse =
+        json(NOT_FOUND, JsonObject(mapOf("detail" to JsonPrimitive("No Recipe matches the given query."))))
 
     private fun json(code: Int, body: JsonElement): MockResponse = MockResponse.Builder()
         .code(code)
@@ -202,7 +209,9 @@ class FakeRecipeEdits(private val template: (String) -> JsonObject, private val 
         )
         val STEP_FIELDS = setOf("name", "time", "order", "show_as_header", "show_ingredients_table")
         val INGREDIENT_FIELDS = setOf("amount", "note", "order", "is_header", "no_amount")
-        val OVERVIEW_FIELDS = setOf("id", "name", "description", "image", "servings", "working_time", "waiting_time", "updated_at", "created_at")
+        val OVERVIEW_FIELDS = setOf(
+            "id", "name", "description", "image", "servings", "working_time", "waiting_time", "updated_at", "created_at",
+        )
         const val OK = 200
         const val CREATED = 201
         const val NO_CONTENT = 204

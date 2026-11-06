@@ -4536,6 +4536,28 @@ den kod som skickas:
   JSON-LD ger det inspelade receptet, "Open in the editor" visar utkastet och inget sparas. (f)
   Demoläget: två recept, veckoförslag sparade i demot och snabb push som säger varför den saknas,
   utan en enda begäran.
+- **Fas 3 (0.5.0, `Phase3SmokeTest`, tillagd i granskningen av Fas 4):** det Fas 3 lade till hade
+  aldrig körts minifierat. `FakeRecipeEdits` (`FakeTandoor.recipeEdits`, med `enabled` före
+  inloggningen) svarar som Tandoor på redigerarens skrivningar, och en ändring läses tillbaka, också
+  i synkens listor. (a) Nytt recept i redigeraren med ett steg och raden "2 dl cream, cold": `POST
+  /api/recipe/` genom outboxen med hela receptet (livsmedel, enhet, mängd, anteckning), receptet
+  öppnas under serverns id, "Delete" ger `DELETE`. (b) Svamppastans första steg ändras: `PATCH` efter
+  den färska läsningen, alla tre stegen med sina id, nyckelorden med namn, och detaljen visar svaret;
+  "Remove the picture" ger `PUT /api/recipe/2/image/` med tomt `image_url`. (c)
+  Snabbinställningsrutan och genvägarna: `dumpsys shortcut` har genvägarna,
+  `AppOpenIntents`-intenten öppnar Veckan, Importera recept och Handla med lägg till-panelen, och
+  `cmd statusbar add-tile`/`click-tile` från hemskärmen startar `ShoppingTileService`, som öppnar
+  Handla. (d) Widgeten på riktigt: `WidgetHost` är en liten startskärm i test-APK:n (`appwidget
+  grantbind`, som Androids egna CTS-tester) som binder `ShoppingListWidgetReceiver`, så att
+  mottagaren, `provideGlance` och Hilts entry point körs som på en telefon; raden klickas i vyn som
+  RemoteViews blev och avbockningen ska nå servern genom `CheckEntryAction`, som Glance skapar med
+  reflektion. Det är det fel som granskningen hittade (konstruktorn saknades i varje R8-bygge).
+  Glance lägger klicket på en ram runt raden och beskrivningen på raden, så `click` går uppåt till
+  närmaste vy med en lyssnare. (e) Fota recept från galleriet: `Gallery.recipe()` genom ML Kits
+  textmodell, skalets väg in i Importera recept, utkastet i redigeraren, inget skickat. `smoke.yml`
+  kontrollerar dessutom i mappningen att widgetarnas mottagare, rutan, `CheckEntryAction` och
+  `WidgetEntryPoint` finns kvar, så att ett fel säger vilken klass som försvann. Bilden i
+  `Gallery.recipe()` är tryckt text; widgeten "I dag" och larmen från den körs inte här.
 - **Stabilitet:** på CI-emulatorn försvinner ett tryck ibland medan en skärm fortfarande landar.
   `TandemApp.tapUntil(text, expected)` trycker igen (högst tre gånger, bara medan knappen finns
   kvar) tills målskärmen syns, och `findInList` söker åt båda hållen där en skärm behåller sitt
