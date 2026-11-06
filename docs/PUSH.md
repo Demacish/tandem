@@ -101,7 +101,8 @@ container per hushåll.
 
 Mer → Synk och lagring → **Snabb push (egen tjänst, experimentell)**: ange tjänstens adress, välj
 distributör (t.ex. ntfy, installera den först), tryck **Slå på**. "Skicka testnotis" visar en
-notis om allt fungerar. Gäster och demoläget kan inte använda funktionen.
+notis om allt fungerar. Att slå på snabb push slår också på "Notis när någon ändrar listan", och den
+står kvar om du stänger av snabb push. Gäster och demoläget kan inte använda funktionen.
 
 ### När det inte fungerar
 
@@ -226,7 +227,8 @@ user's).
 ### In the app
 
 More → Sync and storage → **Fast push (own service, experimental)**: enter the service URL, pick a
-distributor, tap **Turn on**, then "Send test notification".
+distributor, tap **Turn on**, then "Send test notification". Turning fast push on also turns on the
+notification for list changes, and it stays on if you turn fast push off.
 
 ### Security and data
 
