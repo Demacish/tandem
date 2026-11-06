@@ -285,7 +285,7 @@ internal class DefaultFastPushRepository @Inject constructor(
 
     override suspend fun onMessage(instance: String, content: ByteArray, decrypted: Boolean) {
         val remote = activeFor(instance) ?: return
-        val test = rows.withLock {
+        val isTest = rows.withLock {
             val stored = store.load(remote)?.takeIf { it.wanted } ?: return dropRegistration(instance)
             if (!decrypted && stored.p256dh != null) return
             val wakeUp = parse(content)
@@ -296,7 +296,7 @@ internal class DefaultFastPushRepository @Inject constructor(
             store.save(remote, stored.copy(lastWakeUpMillis = now, lastSyncWakeMillis = if (test) stored.lastSyncWakeMillis else now))
             test
         }
-        if (test) notifier.postTest() else scheduler.wake()
+        if (isTest) notifier.postTest() else scheduler.wake()
     }
 
     override suspend fun onRegistrationFailed(instance: String) {

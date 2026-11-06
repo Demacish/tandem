@@ -230,13 +230,14 @@ internal object RecipeEditPayloads {
 
     /**
      * The base snapshot an edit that started from [from] has after this device's own write moved
-     * the recipe to [to]; null when [base] did not start from [from] (or has no `updated_at`).
+     * the recipe to [to]; null when [snapshot] did not start from [from] (or has no `updated_at`).
      */
-    fun rebased(base: String?, from: JsonObject, to: JsonObject): String? {
-        val started = baseUpdatedAt(base) ?: return null
-        val steps = baseStepsFingerprint(base)
+    fun rebased(snapshot: String?, from: JsonObject, to: JsonObject): String? {
+        val started = baseUpdatedAt(snapshot) ?: return null
+        val steps = baseStepsFingerprint(snapshot)
         if (started != updatedAtOf(from) || (steps != null && steps != stepsFingerprint(from))) return null
-        return updatedAtOf(to)?.let { base(it, steps?.let { stepsFingerprint(to) }) }
+        val moved = updatedAtOf(to) ?: return null
+        return base(moved, if (steps != null) stepsFingerprint(to) else null)
     }
 
     /** The whole-recipe [payload] with the keywords [after] has and [before] lacks added, and the reverse removed. */

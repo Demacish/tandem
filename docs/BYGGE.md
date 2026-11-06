@@ -839,9 +839,11 @@ Ny entitet **`recipe_edit`** (`OutboxEntities.RECIPE_EDIT`), skild från `recipe
 nyckelordsväxlingarna och loggarna), så att varje entitet har **en** avsändare och ett recepts
 "Vill laga" aldrig väntar på en redigering. `IdRewriteDao.nextLocalId(RECIPE_EDIT)` ger ett id
 under `MIN(recipe_overview.server_id)`; `completeCreate` (`rewriteRecipeCreate`) tar bort raderna
-under det tillfälliga id:t (avsändaren lagrade svaret under server-id:t), släpper osända
-`recipe`-rader (visningsloggar) och skriver om `meal_plan.recipe_id`, `cook_log.recipe_id`,
-`recipe_book_entry.recipe_id` och `shopping_list_recipe.recipe_id`. `OutboxDao.deleteUnsentObjects`
+under det tillfälliga id:t (avsändaren lagrade svaret under server-id:t), flyttar pin, valda
+portioner och senast visad, släpper osända visningsloggar, ger övriga `recipe`-rader (Klart!, Vill
+laga, parningar) server-id:t (loggens payload med) och skriver om `meal_plan.recipe_id`,
+`cook_log.recipe_id`, `recipe_book_entry.recipe_id`, `shopping_list_recipe.recipe_id` och
+`shopping_entry.recipe_id`. `OutboxDao.deleteUnsentObjects`
 tar bort ett aldrig skickat recepts rader. `RecipeDao.getProtectedRecipeIds` skyddar recept med
 negativt id och recept med en osänd `recipe_edit`-rad (inte FAILED) från indexets radering, och
 `getIdsWithUnsentEdits` håller `applyIndex`, `upsertOverviews` och `DetailFetcher` från att skriva
@@ -1074,6 +1076,7 @@ hel, se "Integration av Fas 4 (0.6.0)".
 | Notiser när någon i hushållet ändrar listan (bakgrundskontroll, valfri push-tjänst) | ✅ bakgrundskontrollen klar 2026-11-04 (referensbilder incheckade; CI bekräftas på main); push-tjänsten: se nästa rad | "Listnotiser" |
 | Valfri snabb push (push-tjänst + UnifiedPush i appen) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; `push-service.yml` 42112572458 på 3e39331: enhetstester, imagen, integrationstest mot Tandoor 2.6.13 och 2.7.1; imagen är inte publicerad, det sker först med en `v*`-tagg) | "Push-tjänst" |
 | Valfri notis när något i skafferiet går ut (+ Fas S-resten: dubbla standardplatser) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Synk-sidans fyra bilder inspelade igen med båda nya raderna, Screenshots 42112568644) | "Notis när något går ut" |
+| Granskningen av Fas 3 och 4, data och synk (`fas4/fix-data`) | se "Fas 4-granskningen: data och synk" | "Fas 4-granskningen: data och synk" |
 | Två recept samtidigt i kokläget | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18, där de nya UI-, ATF- och ViewModel-testen är med; kokbilderna från Screenshots 41998323633). Röktestets scenario kom med integrationen | "Två recept samtidigt" |
 | Integration: 0.6.0 hel, sex nya röktestscenarier, rättelser, mätningar | ✅ klart 2026-11-06 på `fas4/integration`, se "Integration av Fas 4 (0.6.0)" | "Integration av Fas 4 (0.6.0)" |
 | Fas 3:s rester (bana fas3-rester: WebView-läsning, ai-step-sort, ta bort bild, stegkonflikt, kJ/kcal, Anpassa Idag, widgetkontroller) | ✅ klart 2026-11-05, samlat på `fas4/samla` (PR 42117539877, röktest "OK (21 tests)" 42117538368 på 24eba18; Contract 2.6.13/2.7.1 42112553318 på 3e39331, Fas 3-resternas steg grönt; referensbilder incheckade) | "Fas 3:s rester" |
@@ -1172,9 +1175,8 @@ UnifiedPush-connectorn och Fas 4:s kod är tillsammans under 0,4 MB; ML Kit domi
 - Taggen `v0.6.0` sätts av ägaren. Först då publiceras `tandem-push`-imagen (`push-service.yml`).
 - AI-import och stegsortering med en riktig leverantör: CI får inte anropa AI-tjänster, och
   kontraktstestet spelar in avslaget utan leverantör. Formatet verifieras av första användaren.
-- Handskrivna recept (ML Kits latinska modell läser tryckt text) och tvåspaltiga sidor.
-- Egen tid för utgångsnotisen, och 07 eller 09 i stället för 08 efter sommartidsbyte tills
-  inställningen slås av och på: en timme två gånger om året, nattspärren gäller ändå.
+- Handskrivna recept (ML Kits latinska modell läser tryckt text).
+- Egen tid för utgångsnotisen.
 - Två recept sida vid sida på mycket breda skärmar (beslutet i "Två recept samtidigt").
 - Stegfiler, länkade delrecept, näringsvärden, `show_as_header` och dra och släpp i redigeraren;
   ATF för redigeringen vid teckenstorlek 2. Bookmarklet, flera recept ur en PDF, `import_keyword`.
@@ -1280,8 +1282,12 @@ receptet i redigeraren innan det sparas.
 och `ScanAccessibilityTest` (`RECIPE_TEXT_*`: start, sidor, läser, ingen text, kamera nekad;
 referensbilder `scan/*recipe_text*`), `ScanKeysTest`; importens referensbilder visar knappen.
 
-**Kvar till senare:** handskrivna recept (ML Kits latinska modell läser tryckt text), kolumner
-(en tvåspaltig sida läses rad för rad över spalterna).
+**Spalter (Fas 4-granskningen):** `RecipeTextLayout` letar efter ett tomt lodrätt band, minst 0,8
+radhöjder brett, med minst tre rader på var sida som delar rader. Finns det läses vänster spalt och
+sedan höger; rader som korsar bandet (rubriken, en not under båda) står kvar som egna avsnitt. En
+ingredienstabell där mängderna står i en egen kolumn ("2,5 dl", "vetemjöl") är inget spaltbrott.
+
+**Kvar till senare:** handskrivna recept (ML Kits latinska modell läser tryckt text).
 <!-- /Fas 4 ocr -->
 
 <!-- Fas 4 smart -->
@@ -1305,15 +1311,16 @@ rotation och processdöd som resten av turen) och sparar turen så fort två kat
 har sina egna turer i demodatabasen, en trasig rad läses som inga turer.
 
 `StoreOrderLearning` (`:core:domain`, rent) väger ihop de senaste turerna (högst 5, var och en med
-minst två av butikens kategorier): parvis majoritet (andelen turer med båda som tog a före b minus
-tvärtom, så en tur som hoppade över en kategori inte flyttar den), sedan medelposition, sedan
-butikens ordning; därefter byts grannar så länge det ökar överensstämmelsen. Överensstämmelsen är
-andelen besökta kategorier som ligger i förslagets ordning (per tur den längsta delföljden i turens
-ordning, summerat). Ett förslag ges **först efter 3 turer** och **bara när överensstämmelsen är
-minst 80 %** (plan §10 Fas 4 "Klart när"), och inte när det är butikens ordning redan.
-`LearnedAisleOrder.of(store, trips)` gör om det till `LearnedOrder(supermarketId, relationIds,
-names, trips)`: de besökta hyllorna i den inlärda ordningen, sedan resten som förut. Turen som
-pågår räknas med (dess egen sparade kopia filtreras bort).
+minst två av butikens kategorier): parvis majoritet (turerna med båda röstar, så en tur som hoppade
+över en kategori inte flyttar den), och par som ingen tur jämfört behåller butikens ordning;
+därefter byts grannar så länge det ökar överensstämmelsen. Överensstämmelsen är andelen besökta
+kategorier som ligger i förslagets ordning (per tur den längsta delföljden i turens ordning,
+summerat). Ett förslag ges **först efter 3 turer** och **bara när överensstämmelsen är minst 80 %**
+(plan §10 Fas 4 "Klart när"), och aldrig när butikens ordning förklarar turerna lika bra: bara det
+turerna motsäger flyttas. `LearnedAisleOrder.of(store, trips)` gör om det till
+`LearnedOrder(supermarketId, relationIds, names, trips)`: de besökta hyllorna i den inlärda
+ordningen på de platser de redan har, obesökta hyllor står kvar. Turen som pågår räknas med (dess
+egen sparade kopia filtreras bort).
 
 Kortet "Spara ordningen du handlade i?" (`CalloutCard`, `STORE_MODE_ORDER_TAG`) visas ovanför
 listan och på "Allt är i korgen"-sidan, med "Spara ordningen" (`SupermarketRepository.reorderAisles`,
@@ -1473,7 +1480,7 @@ telefonen.
 | Regler | `core/domain/pantry/ExpiryReminder.kt` | `due` (mängd > 0, går ut i dag eller i morgon, en vara per namn och dag), `summary` (en notis; `null` när allt redan sagts i dag), `recipeCount` (Kan laga nu-recept som använder varorna, inte drycker; samma räkning som Idags "Går ut snart"), `today`/`isQuiet` (21–07)/`delayUntilNext` (nästa 08.00) i enhetens tidszon. `ExpiryReminderTest`: tidszoner, midnatt, sommartid (23/25 timmars natt) |
 | Kontrollen | `core/sync/pantry/PantryExpiryCheck.kt` | i ordning: inställningen (`AppSettings.pantryExpiryNotifications`, av som standard), konto (`ActiveSource.Remote`; demo och utloggad aldrig), gäst (har inget skafferi, 403), natt, appen på skärmen (`AppVisibility`; Idag/Hemma visar samma sak och varan räknas inte som sagd), behörighet/kanal (`PantryExpiryNotifier.canPost`). Med nät läses skafferiet först om det inte lästs helt de senaste 5 min (`PantrySyncStep`s regel) och Kan laga nu får uppdatera med sin egen minutregel; utan nät används det lokala. "Aldrig två gånger samma dag": `sync_state` `pantry_expiry_notified` (`window_from` = dagen, `hash` = JSON med nycklarna `namn@datum`); en ny vara samma dag ger en ny notis med hela listan, som ersätter morgonens |
 | Notisen | `core/sync/platform/PantryExpiryNotifier.kt` | `AndroidPantryExpiryNotifier`: kanalen `meal_reminders` (standard, skapas vid start av `MealRemindersChannelInstaller` och före varje notis), id `TandemNotificationIds.PANTRY_EXPIRY` = 1301, rubrik "Grädde går ut i morgon – 3 recept" / "Grädde och 2 till går ut i morgon – 5 recept" / "… i dag och i morgon" (plural), en rad per vara ("Grädde, Kyl, i morgon", `InboxStyle`), ikon `ic_stat_tandem_pantry`. Tryck: `AppOpenDestinations.USE_UP` → `ShellOpenRequest.UseUp` → Mer + `MakeNowKey(useUpFirst = true)` |
-| Schemat | `core/sync/work/PantryExpiryWork.kt` | `PantryExpiryWorker` (alltid `success`), `WorkManagerPantryExpiryScheduler`: unikt periodiskt arbete `tandem.pantry.expiry` var 24:e timme, batteri inte lågt, **inget nätkrav**, första körningen nästa 08.00, `KEEP` (appstarter flyttar den inte). `PantryExpiryReminders` (startas av `SyncStarter`) schemalägger bara när inställningen är på och ett riktigt konto är aktivt; av, utloggning och demoläget avbryter. Efter ett sommartidsbyte kan den gå 07 eller 09 tills den slås av och på; nattreglerna håller den borta från natten. `PantryExpiryModule` binder allt (egen modul, `SyncModule` orörd) |
+| Schemat | `core/sync/work/PantryExpiryWork.kt` | `PantryExpiryWorker` (alltid `success`), `WorkManagerPantryExpiryScheduler`: unikt periodiskt arbete `tandem.pantry.expiry`, batteri inte lågt, **inget nätkrav**, första körningen nästa 08.00, `KEEP` (appstarter flyttar den inte). Varje körning sätter själv nästa (`reschedule`: `updateWork` med `setNextScheduleTimeOverride`, `ExpiryReminder.delayUntilNextRun`): nästa 08.00 lokal tid, oavsett hur sent den här startade, så sena starter inte glider och en körning som hamnar på natten inte låser fast schemat, och sommartid och resor följs. Hittade den appen på skärmen försöker den igen två timmar senare samma dag. Perioden på 24 timmar gäller bara om en körning aldrig kommer så långt. `PantryExpiryReminders` (startas av `SyncStarter`) schemalägger bara när inställningen är på och ett riktigt konto är aktivt; av, utloggning och demoläget avbryter. `PantryExpiryModule` binder allt (egen modul, `SyncModule` orörd) |
 | Inställningen | `AppSettings.pantryExpiryNotifications`, `pantryExpiryOfferDismissed`; `SettingsRepository.setPantryExpiryNotifications`/`setPantryExpiryOfferDismissed`; DataStore `pantry_expiry_notifications`, `pantry_expiry_offer_dismissed` | |
 | Synk och lagring | `SyncSettingsScreen` `PantryExpiryNotifications`, `SettingsAction.SetPantryExpiryNotifications` | omkopplaren "Notis när något går ut" under listnotisens; påslagen utan behörighet → systemdialogen (samma `setNotification` som listnotisen); nekad → raden om Behörigheter. Dold i demoläget som listnotisen |
 | Hemma | `feature/pantry/reminder/` `ExpiryReminderViewModel`, `ExpiryReminderCard` | kortet "Vill du få en påminnelse när något går ut?" ("Slå på", "Inte nu") efter genvägarna på hela Hemma (inte på en plats) när någon post har utgångsdatum, inställningen är av och erbjudandet inte avböjts; aldrig för gäst eller i demoläget. Påslagen men utan behörighet: "Notiserna är avstängda" med "Fråga igen". Behörigheten frågas i sammanhanget (`rememberLauncherForActivityResult`); routen lägger erbjudandet i `PantryUiState.expiryReminder` |
@@ -1507,7 +1514,53 @@ omkopplaren.
 <!-- /Fas 4 skafferinotis -->
 
 <!-- Fas 4 push -->
+## Fas 4-granskningen: data och synk
+
+Banan `fas4/fix-data` rättade granskningens fynd i `core/**` och `app/**`. Det som ändrade reglerna:
+
+- **Recept med tillfälligt id.** Allt som namnger ett recept går genom `recipeedit/RecipeIds.kt`:
+  id:t följs till server-id:t först (en skärm kan hålla det gamla), och en rad som fortfarande
+  namnger ett negativt id listar det i `refs` (`recipe.id` för måltider, `recipe` för listrecept och
+  bokposter) och väntar på receptets CREATE. Rader av receptet självt (Klart!, Vill laga, parningar)
+  väntar i `OutboxSender` och får server-id:t av `rewriteRecipeCreate`, och går i samma tömning
+  (`storedRecipes` växer med svaret). Ett recept utan server-id har ingen visningslogg och hämtas
+  aldrig (`DetailFetcher`), så en 404 kan inte radera den enda kopian. Öppna skärmar följer svaret
+  (`observeCurrentRecipeId`).
+- **En CREATE som servern nekat** är enda kopian av receptet. En ny sparning skriver kroppen i raden
+  och lägger tillbaka den i kön med det som föll med den (`requeueRefusedCreate`), status
+  `REFUSED_NEW` och kortet erbjuder redigeraren, inte "släpp". `retryFailed` tar nu med beroenden.
+- **Bildändringar.** En nyare `RECIPE_IMAGE` ersätter den äldre helt och kopian tas bort. "Släpp min
+  ändring" tar bildändringen med sig; en utsläppt redigering som sparas igen köar bildraden om efter
+  PATCH:en (en rad väntar på äldre rader av samma recept, så `depends_on` på en nyare rad låser).
+- **Konfliktkontrollen.** Basen kommer ur den lagrade JSON:en, aldrig översikten, som en synk flyttar
+  medan detaljen står kvar. Enhetens egna skrivningar är ingen konflikt: en server som redan säger
+  det redigeringen säger (`sameContent`, svar som tappats) är klar, och efter ett svar flyttas basen
+  på köade redigeringar (`rebaseQueuedEdits`, från Vill laga med nyckelordsändringen).
+- **Nyckelord** går med serverns namn också på CREATE (`GET /api/keyword/{id}/` för de receptet inte
+  har); ett borttaget går på namn, en misslyckad läsning håller raden kvar.
+- **`findLostCreate`** (recept och dryck) svarar `Outcome`: en misslyckad sökning ger ingen andra POST.
+- **Importkedjan.** Länk, sida och sist text: `RecipeImportSource.AiText` till `ai-import` när
+  användaren ber om det, utan leverantör läses bildtexten på enheten. Importtjänsten går genom en
+  klient med 120 s (`TandoorApi.importHttpClient`); kvalificeraren för en klient utan
+  `AuthInterceptor` är borttagen.
+- **Näring.** `Phase4NutritionContractTest` skapar egenskapstyper, livsmedel och fem recept på riktig
+  server; `RecipeNutritionFixtureTest` (`:core:sync`) räknar på inspelningarna i `fas4/nutrition/`.
+  Ett osänt recepts lagrade JSON behåller `properties` och `food_properties`, aldrig i payloaden.
+- **Historiken.** En avbockad post som partnern eller webben rensat arkiveras innan den tas bort.
+
 ## Push-tjänst (`push-service/`, `:core:sync`, `:feature:shell`, Fas 4)
+
+Efter Fas 4-granskningen: väckningsadressen är ingen hemlighet, så `onMessage` räknar bara ett
+meddelande som går att dekryptera (när registreringen har nycklar) och bär registreringens id, och
+en väckning läser listan högst var 25:e sekund (`lastSyncWakeMillis` i raden, så det gäller över
+processdöd). Samma adress förnyas vid appstart med `{endpoint, id}` utan token (`POST /v1/register`);
+tjänsten svarar 401 om den glömt telefonen och appen skickar då token. Token lämnar alltså telefonen
+när man slår på och när adressen ändras. Ett förnyande som misslyckas av övergående skäl
+(`UNREACHABLE`, `SERVICE_ERROR`, `RATE_LIMITED`) lämnar ACTIVE orört; en ny adress som misslyckas
+så behåller den gamla adressen och dess id och prövas igen om 15 minuter (`tandem.push.register`).
+Radens läsa-ändra-spara går under en mutex som aldrig hålls över ett anrop, och ett svar som kommer
+efter Stäng av eller utloggning avregistreras i stället för att sparas. När distributören släpper
+oss får tjänsten veta det, och starten låter den stå tills användaren slår på igen.
 
 Plan §4.3 (A2), B11, #30; "Klart när": en vara som partnern lägger till kommer fram som notis inom
 1 minut utan att appen är öppen. **Valfritt:** utan tjänsten fungerar allt som förut

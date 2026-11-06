@@ -83,7 +83,11 @@ telefonen, och alla notiser är av tills du slår på dem. Dessutom det som åte
   och Skafferi två gånger. Nu behålls de äldsta och den andra telefonens varor flyttas dit.
 - **Rättat:** en timernotis för den andra fliken i kokläget kunde efter en omstart av appen öppna
   ett eget kokläge i stället för fliken.
-- **Kvar till senare:** handskrivna recept och tvåspaltiga sidor i Fota recept, en egen tid för
+- **Efter granskningen:** recept skapade offline följs av måltider, inköp, böcker och Klart!, ett
+  recept som Tandoor nekat kan rättas och skickas igen, sidor i två spalter läses rätt, en länk utan
+  recept kan tolkas med AI från den delade texten, inlärd butiksordning flyttar bara det turerna
+  visar, och utgångsnotisen håller sig till 08.
+- **Kvar till senare:** handskrivna recept i Fota recept, en egen tid för
   utgångsnotisen, två recept sida vid sida på riktigt breda skärmar, att dra måltider mellan
   veckor. Stegfiler, delrecept och näringsvärden ändras fortfarande på webben.
   AI-importen och stegfördelningen är bara prövade mot en server utan AI-leverantör.
