@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.RecipeDraft
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * What the recipe editor shows (Fas 3, redigerare lane; #22, plan §8.9; the Stitch sketch
@@ -21,6 +23,11 @@ import casa.moller.tandem.core.model.recipe.RecipeDraft
  * @property nameMissing "Spara" was tapped without a name.
  * @property unknownRecipe the recipe is not stored on the device (edit needs the detail first).
  * @property readOnly a guest: everything shown, nothing can be saved.
+ * @property foods the stored foods' names, for the food field's suggestions (B9): foods go by name,
+ *   so a slip would make another food in the household's library.
+ * @property hasChanges leaving now would lose something: what was opened changed, or the draft is
+ *   an import (the import page is gone).
+ * @property sourcePath the photo or PDF an import was read from, shown with the form (plan §8.4).
  */
 @Immutable
 data class RecipeEditorUiState(
@@ -35,15 +42,38 @@ data class RecipeEditorUiState(
     val unknownRecipe: Boolean = false,
     val saving: Boolean = false,
     val readOnly: Boolean = false,
+    val foods: List<String> = emptyList(),
+    val hasChanges: Boolean = false,
+    val sourcePath: String? = null,
 ) {
-    /** The text of an amount field: what was typed, else the draft's number ("" for 0). */
-    fun amountText(step: Int, ingredient: Int): String = amountTexts[amountKey(step, ingredient)] ?: run {
+    /**
+     * The text of an amount field: what was typed, else the draft's number ("" for 0) with
+     * [decimalSeparator] (plan 6.7). For display only: the draft keeps its exact value until the
+     * user changes the field, so a third stays a third.
+     */
+    fun amountText(step: Int, ingredient: Int, decimalSeparator: Char = '.'): String = amountTexts[amountKey(step, ingredient)] ?: run {
         val amount = draft.steps.getOrNull(step)?.ingredients?.getOrNull(ingredient)?.amount ?: 0.0
-        if (amount == 0.0) "" else amount.toString().removeSuffix(".0")
+        if (amount == 0.0) {
+            ""
+        } else {
+            BigDecimal(amount).setScale(AMOUNT_DECIMALS, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString().replace('.', decimalSeparator)
+        }
+    }
+
+    /** The stored foods that match what is typed; nothing once it is a stored food as it stands. */
+    fun foodSuggestions(typed: String): List<String> {
+        val text = typed.trim()
+        if (text.isEmpty() || foods.any { it == text }) return emptyList()
+        return foods.filter { it.contains(text, ignoreCase = true) }
+            .sortedWith(compareBy({ !it.startsWith(text, ignoreCase = true) }, { it.lowercase() }))
+            .take(MAX_FOOD_SUGGESTIONS)
     }
 
     companion object {
         fun amountKey(step: Int, ingredient: Int): String = "$step:$ingredient"
+
+        private const val AMOUNT_DECIMALS = 3
+        private const val MAX_FOOD_SUGGESTIONS = 6
     }
 }
 
@@ -71,6 +101,9 @@ sealed interface RecipeEditorAction {
     data object AddStep : RecipeEditorAction
 
     data class RemoveStep(val step: Int) : RecipeEditorAction
+
+    /** "Ångra" after a step or an ingredient line was removed. */
+    data object UndoRemove : RecipeEditorAction
 
     /** Moves a step one place up ([up]) or down. */
     data class MoveStep(val step: Int, val up: Boolean) : RecipeEditorAction
@@ -122,4 +155,10 @@ sealed interface RecipeEditorEffect {
     data class Saved(@StringRes val text: Int, val name: String, val recipeId: Long, val isNew: Boolean) : RecipeEditorEffect
 
     data class Message(@StringRes val text: Int) : RecipeEditorEffect
+
+    /** Something with content was removed: [text] (with step or line numbers) in a snackbar with "Ångra". */
+    data class Removed(@StringRes val text: Int, val first: Int, val second: Int = 0) : RecipeEditorEffect
+
+    /** Only TalkBack hears [text]: a move or an empty row removed, which shows on the screen by itself. */
+    data class Announce(@StringRes val text: Int, val first: Int, val second: Int = 0) : RecipeEditorEffect
 }

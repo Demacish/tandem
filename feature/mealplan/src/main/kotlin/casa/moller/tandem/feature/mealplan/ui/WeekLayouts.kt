@@ -247,7 +247,6 @@ private fun WeekGridColumns(state: WeekUiState, format: MealPlanFormat, onAction
         }
     }
 }
-}
 
 /** The grid's rows (one per meal type), under the fixed day headings. */
 @Composable

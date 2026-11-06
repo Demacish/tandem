@@ -120,11 +120,17 @@ internal interface ShellFeatures {
 
     /**
      * Fas 3 (import lane): "Importera recept" (feature:recipes), full screen; [onOpenEditor] gets
-     * the accepted import as the editor's saved-draft JSON (`RecipeEditorKey.importedDraft`);
+     * the accepted import as the editor's saved-draft JSON (`RecipeEditorKey.importedDraft`) and
+     * the photo or PDF it was read from (`RecipeEditorKey.sourcePath`);
      * Fas 4: [onScanText] opens "Fota recept" (feature:scan, read on the device).
      */
     @Composable
-    fun RecipeImport(key: RecipeImportKey, onOpenEditor: (importedDraft: String) -> Unit, onBack: () -> Unit, onScanText: () -> Unit)
+    fun RecipeImport(
+        key: RecipeImportKey,
+        onOpenEditor: (importedDraft: String, sourcePath: String?) -> Unit,
+        onBack: () -> Unit,
+        onScanText: () -> Unit,
+    )
 
     /** The detail pane before a recipe is picked (wide windows only). */
     @Composable
@@ -367,7 +373,7 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun RecipeImport(
         key: RecipeImportKey,
-        onOpenEditor: (importedDraft: String) -> Unit,
+        onOpenEditor: (importedDraft: String, sourcePath: String?) -> Unit,
         onBack: () -> Unit,
         onScanText: () -> Unit,
     ) {

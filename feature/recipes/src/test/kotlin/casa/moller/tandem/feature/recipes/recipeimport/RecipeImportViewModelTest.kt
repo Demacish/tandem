@@ -11,6 +11,7 @@ import casa.moller.tandem.core.testing.data.SampleImports
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.editor.SavedDraft
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
@@ -24,6 +25,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 /**
  * "Importera recept" on core:testing's fakes (Fas 3, import lane): a shared link is sent as a
@@ -36,6 +38,9 @@ class RecipeImportViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    @get:Rule
+    val temp = TemporaryFolder()
 
     private val imports = FakeRecipeImportRepository()
     private val permissions = FakeSpacePermissionsRepository()
@@ -104,6 +109,149 @@ class RecipeImportViewModelTest {
         assertEquals("image/jpeg", sent.mimeType)
         assertEquals(3, sent.bytes.size)
         assertEquals(SampleImports.pancakes, vm.uiState.value.result)
+    }
+
+    // Plan §8.4: several photographed pages are one recipe; the review has the original.
+
+    private fun page(name: String): String = temp.newFile(name).apply { writeBytes(byteArrayOf(1)) }.path
+
+    @Test
+    fun pagesAreCollectedAndTheLastCanBeRemoved() = runTest {
+        val vm = viewModel()
+        collect(vm.uiState)
+        val first = page("1.jpg")
+        val second = page("2.jpg")
+        vm.onAction(RecipeImportAction.AddPage(first))
+        vm.onAction(RecipeImportAction.AddPage(second))
+        assertEquals(listOf(first, second), vm.uiState.value.pages)
+        assertTrue("nothing is sent before Skicka", imports.imported.isEmpty())
+
+        vm.onAction(RecipeImportAction.RemoveLastPage)
+        assertEquals(listOf(first), vm.uiState.value.pages)
+        assertFalse(File(second).exists())
+    }
+
+    @Test
+    fun pagesSurviveProcessDeathButNotTheCachesCleaning() = runTest {
+        val handle = SavedStateHandle()
+        val vm = viewModel(handle = handle)
+        collect(vm.uiState)
+        val kept = page("1.jpg")
+        val cleared = page("2.jpg")
+        vm.onAction(RecipeImportAction.AddPage(kept))
+        vm.onAction(RecipeImportAction.AddPage(cleared))
+        File(cleared).delete()
+
+        val again = viewModel(handle = handle)
+        collect(again.uiState)
+        assertEquals(listOf(kept), again.uiState.value.pages)
+    }
+
+    @Test
+    fun sentPagesGoAndTheFileStaysForTheReviewAndGoesWithTheEditor() = runTest {
+        val vm = viewModel()
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        val first = page("1.jpg")
+        val joined = page("joined.pdf")
+        vm.onAction(RecipeImportAction.AddPage(first))
+        vm.onAction(RecipeImportAction.ImportFile(byteArrayOf(1, 2), "application/pdf", "recept.pdf", joined))
+
+        assertTrue(vm.uiState.value.pages.isEmpty())
+        assertFalse("the page has done its part", File(first).exists())
+        assertEquals(joined, vm.uiState.value.sourcePath)
+
+        vm.onAction(RecipeImportAction.OpenEditor)
+        assertEquals(joined, (effects.last() as RecipeImportEffect.OpenEditor).sourcePath)
+        assertTrue("the editor shows it now", File(joined).exists())
+    }
+
+    @Test
+    fun aFailedSendKeepsThePagesToTryAgain() = runTest {
+        imports.failure = RecipeImportProblem.FILE_TOO_LARGE.toError()
+        val vm = viewModel()
+        collect(vm.uiState)
+        val first = page("1.jpg")
+        val joined = page("joined.pdf")
+        vm.onAction(RecipeImportAction.AddPage(first))
+        vm.onAction(RecipeImportAction.ImportFile(ByteArray(1), "application/pdf", "recept.pdf", joined))
+
+        assertEquals(R.string.recipe_import_file_too_large, vm.uiState.value.problem)
+        assertEquals(R.string.recipe_import_hint_file_too_large, vm.uiState.value.problemHint)
+        assertEquals(listOf(first), vm.uiState.value.pages)
+        assertFalse(File(joined).exists())
+        assertNull(vm.uiState.value.sourcePath)
+    }
+
+    @Test
+    fun leavingTheResultDeletesTheOriginal() = runTest {
+        val vm = viewModel()
+        collect(vm.uiState)
+        val photo = page("photo.jpg")
+        vm.onAction(RecipeImportAction.ImportFile(byteArrayOf(1), "image/jpeg", "recept.jpg", photo))
+        assertEquals(photo, vm.uiState.value.sourcePath)
+        vm.onAction(RecipeImportAction.Clear)
+        assertNull(vm.uiState.value.sourcePath)
+        assertFalse(File(photo).exists())
+    }
+
+    @Test
+    fun aKeptOriginalIsGoneAfterProcessDeathWithItsResult() = runTest {
+        val handle = SavedStateHandle()
+        val vm = viewModel(handle = handle)
+        collect(vm.uiState)
+        val photo = page("photo.jpg")
+        vm.onAction(RecipeImportAction.ImportFile(byteArrayOf(1), "image/jpeg", "recept.jpg", photo))
+
+        viewModel(handle = handle)
+        assertFalse(File(photo).exists())
+    }
+
+    // Fas 4 "Fota recept": what was read on the phone stays there.
+
+    @Test
+    fun scannedTextStaysATextEvenWithALinkInIt() = runTest {
+        val text = "Pannkakor från https://example.com/recept"
+        val vm = viewModel(RecipeImportKey(sharedText = text, scanned = true))
+        collect(vm.uiState)
+        assertTrue(vm.uiState.value.scanned)
+        vm.onAction(RecipeImportAction.Import)
+        assertEquals(RecipeImportSource.Text(text), imports.imported.single())
+    }
+
+    // Every problem says what to do about it.
+
+    @Test
+    fun aProblemHasAHintOfItsOwn() {
+        fun hint(problem: Int?) = RecipeImportUiState(problem = problem).problemHint
+        assertEquals(R.string.recipe_import_problem_hint, hint(R.string.recipe_import_nothing_found))
+        assertEquals(R.string.recipe_import_hint_ai_unavailable, hint(R.string.recipe_import_ai_unavailable))
+        assertEquals(R.string.recipe_import_hint_demo, hint(R.string.recipe_import_demo_problem))
+        assertEquals(R.string.recipe_import_hint_nothing_in_file, hint(R.string.recipe_import_nothing_in_file))
+        assertNull(hint(R.string.recipe_import_read_only))
+        assertNull(hint(null))
+    }
+
+    // #38: a page that never loaded is not a page without a recipe.
+
+    @Test
+    fun aPageThatCouldNotBeLoadedSaysSo() = runTest {
+        val link = "https://example.com/blockerad"
+        imports.linkFailure = RecipeImportProblem.NOTHING_FOUND.toError()
+        val vm = viewModel(RecipeImportKey(sharedText = link))
+        collect(vm.uiState)
+        vm.onAction(RecipeImportAction.Import)
+        vm.onAction(RecipeImportAction.PageUnavailable)
+        assertNull(vm.uiState.value.pageReading)
+        assertEquals(R.string.recipe_import_page_unavailable, vm.uiState.value.problem)
+        assertEquals("nothing is sent as if it were the page", 1, imports.imported.size)
+    }
+
+    @Test
+    fun anHttpLinkIsLoadedOverHttpsAndKeptForTheServer() {
+        assertEquals("https://example.com/x", PageReading("http://example.com/x").loadUrl)
+        assertEquals("https://example.com/x", PageReading("HTTP://example.com/x").loadUrl)
+        assertEquals("https://example.com/x", PageReading("https://example.com/x").loadUrl)
     }
 
     @Test
@@ -191,7 +339,7 @@ class RecipeImportViewModelTest {
         assertEquals(1, vm.uiState.value.pageReading?.readRequest)
         vm.onAction(RecipeImportAction.CancelPage)
         assertNull(vm.uiState.value.pageReading)
-        assertEquals(R.string.recipe_import_nothing_found, vm.uiState.value.problem)
+        assertNull("the user's own cancel is no problem to report", vm.uiState.value.problem)
         // Another failure while the page is with the server: the usual message.
         vm.onAction(RecipeImportAction.Import)
         imports.failure = TandemError.NetworkUnavailable

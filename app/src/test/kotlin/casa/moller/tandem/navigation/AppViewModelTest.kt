@@ -99,6 +99,10 @@ class AppViewModelTest {
         assertEquals(null, vm.uiState.value.importRequest)
         vm.onImportShared(ShareImportRequest(fileUri = "content://media/1", mimeType = "image/jpeg"))
         assertEquals(ShareImportRequest(fileUri = "content://media/1", mimeType = "image/jpeg"), vm.uiState.value.importRequest)
+        // Several photos at once: the pages survive like the rest.
+        val pages = ShareImportRequest(pageUris = listOf("content://media/1", "content://media/2"))
+        vm.onImportShared(pages)
+        assertEquals(pages, newViewModel(handle).uiState.value.importRequest)
     }
 
     @Test

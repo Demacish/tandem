@@ -174,7 +174,12 @@ class ShellNavigationState(
     fun openImport(request: ShareImportRequest) {
         selectTab(ShellTab.RECIPES)
         navigate(
-            RecipeImportKey(sharedText = request.text, sharedFileUri = request.fileUri, sharedMimeType = request.mimeType),
+            RecipeImportKey(
+                sharedText = request.text,
+                sharedFileUri = request.fileUri,
+                sharedMimeType = request.mimeType,
+                sharedPageUris = request.pageUris,
+            ),
             replace = { it is RecipeImportKey || (it is RecipeEditorKey && it.recipeId == null) },
         )
     }

@@ -81,7 +81,7 @@ class RecipeEditActionsViewModel @AssistedInject constructor(
     fun discardEdit() {
         viewModelScope.launch {
             if (edits.discardEdit(recipeId) is Outcome.Failure) {
-                effectChannel.trySend(RecipeEditActionsEffect.Message(R.string.recipe_detail_delete_failed))
+                effectChannel.trySend(RecipeEditActionsEffect.Message(R.string.recipe_detail_edit_discard_failed))
             }
         }
     }

@@ -94,6 +94,7 @@ import casa.moller.tandem.core.ui.recipe.currentLocale
 import casa.moller.tandem.core.ui.recipe.formatMinutes
 import casa.moller.tandem.core.ui.recipe.formatRating
 import casa.moller.tandem.feature.recipes.R
+import casa.moller.tandem.feature.recipes.editor.DiscardEditDialog
 import java.net.URI
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -471,6 +472,17 @@ private fun TwoPaneContent(
 /** Fas 3 (redigerare lane): where this device's edit of the recipe stands (nothing when none). */
 @Composable
 private fun EditNotice(controls: RecipeEditControls?) {
+    // A held edit cannot be got back: one tap beside "Öppna min ändring" must not drop it.
+    var confirmingDiscard by rememberSaveable { mutableStateOf(false) }
+    if (confirmingDiscard && controls != null) {
+        DiscardEditDialog(
+            onConfirm = {
+                confirmingDiscard = false
+                controls.onDiscardEdit()
+            },
+            onDismiss = { confirmingDiscard = false },
+        )
+    }
     when (controls?.status) {
         RecipeEditStatus.QUEUED -> IconLabel(
             icon = TandemIcons.Schedule,
@@ -485,7 +497,7 @@ private fun EditNotice(controls: RecipeEditControls?) {
             tone = TandemTone.Warning,
             actions = {
                 TandemTonalButton(text = stringResource(R.string.recipe_detail_edit_conflict_open), onClick = controls.onOpenKeptEdit)
-                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = controls.onDiscardEdit)
+                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = { confirmingDiscard = true })
             },
         )
 
@@ -495,7 +507,7 @@ private fun EditNotice(controls: RecipeEditControls?) {
             icon = TandemIcons.Info,
             tone = TandemTone.Warning,
             actions = {
-                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = controls.onDiscardEdit)
+                TandemTextButton(text = stringResource(R.string.recipe_detail_edit_conflict_discard), onClick = { confirmingDiscard = true })
             },
         )
 

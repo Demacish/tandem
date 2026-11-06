@@ -20,6 +20,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +49,11 @@ import kotlinx.coroutines.launch
  * wall) is not the end: the text shared with it, or the page's visible text, goes to the AI when the
  * user asks for it, never by itself since it costs credits. Without a provider the shared text is
  * read on the device.
+ *
+ * Plan §8.4: photographed pages are collected as cache files (their paths in [SavedStateHandle],
+ * never the bytes) and sent as one recipe; the sent photo or PDF stays in the cache while the
+ * review lasts, so the AI's reading can be held against the original. It goes when the import
+ * ends, or with the editor when the import is accepted.
  */
 @HiltViewModel(assistedFactory = RecipeImportViewModel.Factory::class)
 class RecipeImportViewModel @AssistedInject constructor(
@@ -67,15 +73,23 @@ class RecipeImportViewModel @AssistedInject constructor(
     private val input: StateFlow<String> = handle.getStateFlow(KEY_INPUT, key.sharedText.orEmpty())
     private val sharedFileTaken: StateFlow<Boolean> = handle.getStateFlow(KEY_SHARED_FILE_TAKEN, false)
     private val sharedFile: SharedFile? = key.sharedFileUri?.let { SharedFile(it, key.sharedMimeType) }
+    private val sharedPages: List<String> = key.sharedPageUris
     private val progress = MutableStateFlow(Progress())
+    private val pages: StateFlow<ArrayList<String>> = handle.getStateFlow(KEY_PAGES, ArrayList())
+
+    /** "Fota recept": the text is read on the phone, whatever it looks like (plan §8.4 #39). */
+    private val scanned: Boolean = key.scanned
+
+    /** The kept file went to the editor with the draft: it is the editor's to delete. */
+    private var sourceHandedOver = false
 
     val uiState: StateFlow<RecipeImportUiState> = combine(
         input,
         progress,
         imports.observeAiImportAvailable(),
         permissions.permissions,
-        sharedFileTaken,
-    ) { input, progress, aiAvailable, permissions, taken ->
+        combine(sharedFileTaken, pages) { taken, pages -> taken to pages },
+    ) { input, progress, aiAvailable, permissions, (taken, pages) ->
         RecipeImportUiState(
             input = input,
             working = progress.working,
@@ -84,21 +98,46 @@ class RecipeImportViewModel @AssistedInject constructor(
             failure = progress.failure,
             aiAvailable = aiAvailable,
             sharedFile = sharedFile?.takeUnless { taken },
+            sharedPages = if (taken) emptyList() else sharedPages,
             readOnly = permissions.readOnly,
             isDemo = permissions.isDemo,
             pageReading = progress.pageReading,
             sortingSteps = progress.sortingSteps,
             stepsSorted = progress.beforeSort != null,
+            pages = pages.toList(),
+            sourcePath = progress.sourcePath,
+            readingText = progress.readingText,
+            scanned = scanned,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeImportUiState(input = input.value))
+
+    init {
+        // A result does not survive process death, so neither does its file; pages the system
+        // cleared from the cache are forgotten.
+        ImportFiles.delete(handle.remove<String>(KEY_SOURCE))
+        val kept = pages.value.filter { File(it).isFile }
+        if (kept.size != pages.value.size) handle[KEY_PAGES] = ArrayList(kept)
+    }
+
+    override fun onCleared() {
+        if (!sourceHandedOver) ImportFiles.delete(progress.value.sourcePath)
+        pages.value.forEach(ImportFiles::delete)
+    }
 
     fun onAction(action: RecipeImportAction) {
         when (action) {
             is RecipeImportAction.SetInput -> handle[KEY_INPUT] = action.text
 
-            RecipeImportAction.Import -> import(sourceOf(input.value))
+            RecipeImportAction.Import -> import(if (scanned) textOf(input.value) else sourceOf(input.value))
 
-            is RecipeImportAction.ImportFile -> import(RecipeImportSource.File(action.bytes, action.mimeType, action.fileName))
+            is RecipeImportAction.ImportFile -> import(RecipeImportSource.File(action.bytes, action.mimeType, action.fileName), sourcePath = action.sourcePath)
+
+            is RecipeImportAction.AddPage -> handle[KEY_PAGES] = ArrayList(pages.value + action.path)
+
+            RecipeImportAction.RemoveLastPage -> pages.value.lastOrNull()?.let { last ->
+                ImportFiles.delete(last)
+                handle[KEY_PAGES] = ArrayList(pages.value.dropLast(1))
+            }
 
             RecipeImportAction.FileUnreadable -> progress.update {
                 it.copy(problem = R.string.recipe_import_file_unreadable, failure = null)
@@ -110,10 +149,15 @@ class RecipeImportViewModel @AssistedInject constructor(
                 progress.copy(result = progress.result?.let { it.copy(draft = it.draft.copy(imageUrl = action.url)) })
             }
 
-            RecipeImportAction.Clear -> progress.update { Progress() }
+            RecipeImportAction.Clear -> {
+                dropSource()
+                progress.update { Progress() }
+            }
 
             RecipeImportAction.OpenEditor -> progress.value.result?.let { result ->
-                effectChannel.trySend(RecipeImportEffect.OpenEditor(SavedDraft.encode(result.draft)))
+                sourceHandedOver = true
+                handle.remove<String>(KEY_SOURCE)
+                effectChannel.trySend(RecipeImportEffect.OpenEditor(SavedDraft.encode(result.draft), progress.value.sourcePath))
             }
 
             is RecipeImportAction.PageLoaded -> sendPage(action.html, action.text)
@@ -122,8 +166,10 @@ class RecipeImportViewModel @AssistedInject constructor(
                 progress.copy(pageReading = progress.pageReading?.let { it.copy(readRequest = it.readRequest + 1) })
             }
 
-            RecipeImportAction.CancelPage -> progress.update {
-                it.copy(pageReading = null, problem = R.string.recipe_import_nothing_found, failure = null)
+            RecipeImportAction.CancelPage -> progress.update { it.copy(pageReading = null, problem = null, failure = null) }
+
+            RecipeImportAction.PageUnavailable -> progress.update {
+                if (it.pageReading == null) it else it.copy(pageReading = null, problem = R.string.recipe_import_page_unavailable, failure = null)
             }
 
             RecipeImportAction.InterpretText -> interpretText()
@@ -204,16 +250,38 @@ class RecipeImportViewModel @AssistedInject constructor(
         }
     }
 
-    /** [sourceUrl]: the link a text came with, the recipe's source unless the import found one. */
-    private fun import(source: RecipeImportSource?, sourceUrl: String? = null) {
-        if (source == null || progress.value.working) return
+    private fun dropSource() {
+        ImportFiles.delete(progress.value.sourcePath)
+        handle.remove<String>(KEY_SOURCE)
+    }
+
+    /**
+     * [sourceUrl]: the link a text came with, the recipe's source unless the import found one.
+     * [sourcePath]: the file that was sent, kept for the review when it was read.
+     */
+    private fun import(source: RecipeImportSource?, sourceUrl: String? = null, sourcePath: String? = null) {
+        if (source == null || progress.value.working) {
+            ImportFiles.delete(sourcePath)
+            return
+        }
         val caption = (source as? RecipeImportSource.Link)?.let { captionOf(input.value, it.url) }.orEmpty()
-        progress.update { Progress(working = true) }
+        progress.update { Progress(working = true, readingText = source is RecipeImportSource.Text) }
         viewModelScope.launch {
             when (val outcome = imports.import(source)) {
-                is Outcome.Success -> progress.update { it.copy(working = false, result = outcome.value.withSource(sourceUrl)) }
+                is Outcome.Success -> {
+                    if (source is RecipeImportSource.File) {
+                        // What was sent is now the file; the pages have done their part.
+                        pages.value.forEach(ImportFiles::delete)
+                        handle[KEY_PAGES] = ArrayList<String>()
+                    }
+                    if (sourcePath != null) handle[KEY_SOURCE] = sourcePath
+                    progress.update {
+                        it.copy(working = false, readingText = false, result = outcome.value.withSource(sourceUrl), sourcePath = sourcePath)
+                    }
+                }
 
                 is Outcome.Failure -> {
+                    ImportFiles.delete(sourcePath)
                     val problem = problemOf(outcome.error, source)
                     val blocked = source is RecipeImportSource.Link &&
                         RecipeImportProblem.of(outcome.error) == RecipeImportProblem.NOTHING_FOUND &&
@@ -222,9 +290,9 @@ class RecipeImportViewModel @AssistedInject constructor(
                     progress.update {
                         if (blocked) {
                             // #38: the server could not read the link: the app reads the page itself.
-                            it.copy(working = false, pageReading = PageReading(source.url, caption = caption))
+                            it.copy(working = false, readingText = false, pageReading = PageReading(source.url, caption = caption))
                         } else {
-                            it.copy(working = false, problem = problem ?: R.string.recipe_import_failed, failure = failure)
+                            it.copy(working = false, readingText = false, problem = problem ?: R.string.recipe_import_failed, failure = failure)
                         }
                     }
                 }
@@ -263,11 +331,15 @@ class RecipeImportViewModel @AssistedInject constructor(
         val pageReading: PageReading? = null,
         val sortingSteps: Boolean = false,
         val beforeSort: RecipeDraft? = null,
+        val sourcePath: String? = null,
+        val readingText: Boolean = false,
     )
 
     internal companion object {
         const val KEY_INPUT = "recipe_import_input"
         const val KEY_SHARED_FILE_TAKEN = "recipe_import_shared_file_taken"
+        const val KEY_PAGES = "recipe_import_pages"
+        const val KEY_SOURCE = "recipe_import_source"
         private const val STOP_TIMEOUT_MILLIS = 5_000L
 
         /** Shared texts rarely are a bare link ("Pannkakor https://…" from a browser): the first link in a short text wins. */
@@ -276,6 +348,9 @@ class RecipeImportViewModel @AssistedInject constructor(
 
         /** What was shared together with [url] ("Pannkakor https://…"): [text] without the link. */
         fun captionOf(text: String, url: String): String = text.replace(url, " ").trim(' ', '\n', '\t', '.', ',', ':', '-', '–')
+
+        /** [text] from "Fota recept": always a text, a link in it never goes to the server; null when blank. */
+        fun textOf(text: String): RecipeImportSource? = text.trim().takeIf { it.isNotEmpty() }?.let { RecipeImportSource.Text(it) }
 
         /** [text] as the source to send: a link when it is (or carries) one, else the text; null when blank. */
         fun sourceOf(text: String): RecipeImportSource? {

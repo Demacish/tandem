@@ -244,7 +244,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     @Composable
     override fun RecipeImport(
         key: RecipeImportKey,
-        onOpenEditor: (importedDraft: String) -> Unit,
+        onOpenEditor: (importedDraft: String, sourcePath: String?) -> Unit,
         onBack: () -> Unit,
         onScanText: () -> Unit,
     ) {

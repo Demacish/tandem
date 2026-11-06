@@ -14,7 +14,7 @@
     <string name="recipe_editor_servings">Portioner</string>
     <string name="recipe_editor_servings_fewer">Färre portioner</string>
     <string name="recipe_editor_servings_more">Fler portioner</string>
-    <string name="recipe_editor_servings_text">Portionerna kallas (portioner, bitar, bullar)</string>
+    <string name="recipe_editor_servings_text">Portionerna kallas</string>
     <string name="recipe_editor_working_time">Aktiv tid (minuter)</string>
     <string name="recipe_editor_waiting_time">Väntetid (minuter)</string>
     <string name="recipe_editor_source_url">Källa (länk)</string>
@@ -36,7 +36,7 @@
     <string name="recipe_editor_steps">Steg</string>
     <string name="recipe_editor_steps_hint">Varje steg har sina egna ingredienser, som på webben. Mängder i texten skalas med {{ scale(…) }}.</string>
     <string name="recipe_editor_step_number">Steg %1$d</string>
-    <string name="recipe_editor_step_name">Stegets namn (valfritt)</string>
+    <string name="recipe_editor_step_name">Stegets namn</string>
     <string name="recipe_editor_step_instruction">Gör så här</string>
     <string name="recipe_editor_step_minutes">Minuter</string>
     <string name="recipe_editor_step_move_up">Flytta steg %1$d upp</string>
@@ -94,4 +94,24 @@
     <string name="recipe_editor_remove_current_photo">Ta bort bilden</string>
     <string name="recipe_editor_current_photo_removed">Bilden tas bort när du sparar receptet.</string>
     <string name="recipe_editor_keep_current_photo">Behåll bilden</string>
+    <!-- Granskningen av Fas 3: lämna sidan, ångra, vad TalkBack hör -->
+    <string name="recipe_editor_servings_text_hint">portioner, bitar, bullar</string>
+    <string name="recipe_editor_leave_title">Spara ändringarna?</string>
+    <string name="recipe_editor_leave_body">Receptet har ändringar som inte är sparade. De försvinner om du lämnar sidan.</string>
+    <string name="recipe_editor_leave_discard">Släng</string>
+    <string name="recipe_editor_leave_keep">Fortsätt redigera</string>
+    <string name="recipe_editor_discard_title">Släng din ändring?</string>
+    <string name="recipe_editor_discard_body">Din ändring försvinner och går inte att få tillbaka.</string>
+    <string name="recipe_editor_discard_confirm">Släng</string>
+    <string name="recipe_editor_discard_cancel">Avbryt</string>
+    <string name="recipe_detail_edit_discard_failed">Din ändring gick inte att slänga.</string>
+    <string name="recipe_editor_undo">Ångra</string>
+    <string name="recipe_editor_step_moved">Steg %1$d flyttat till plats %2$d</string>
+    <string name="recipe_editor_step_removed">Steg %1$d borttaget</string>
+    <string name="recipe_editor_ingredient_moved">Ingrediens %1$d flyttad till plats %2$d</string>
+    <string name="recipe_editor_ingredient_removed">Ingrediens %1$d i steg %2$d borttagen</string>
+    <string name="recipe_editor_ingredient_add_to">Lägg till ingrediens i steg %1$d</string>
+    <string name="recipe_editor_ingredient_add_header_to">Lägg till rubrik i steg %1$d</string>
+    <string name="recipe_editor_ingredient_no_amount_for">Utan mängd, ingrediens %1$d i steg %2$d</string>
+    <string name="recipe_editor_ingredient_food_pick">%1$s, för ingrediens %2$d i steg %3$d</string>
 </resources>

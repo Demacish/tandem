@@ -3,7 +3,13 @@ package casa.moller.tandem.feature.recipes.editor
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.recipe.RecipeEditProblem
+import casa.moller.tandem.core.model.account.SpacePermissions
+import casa.moller.tandem.core.model.account.SpaceRole
+import casa.moller.tandem.core.model.recipe.DraftIngredient
 import casa.moller.tandem.core.model.recipe.DraftKeyword
+import casa.moller.tandem.core.model.recipe.DraftStep
+import casa.moller.tandem.core.model.recipe.Food
+import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeRecipeEditRepository
@@ -11,6 +17,7 @@ import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.recipes.R
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
@@ -43,8 +50,8 @@ class RecipeEditorViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val pasta = SampleRecipes.MushroomPasta.id
 
-    private fun editor(recipeId: Long?, handle: SavedStateHandle = SavedStateHandle(), importedDraft: String? = null) =
-        RecipeEditorViewModel(recipeId, importedDraft, handle, edits, recipes, permissions)
+    private fun editor(recipeId: Long?, handle: SavedStateHandle = SavedStateHandle(), importedDraft: String? = null, sourcePath: String? = null) =
+        RecipeEditorViewModel(recipeId, importedDraft, sourcePath, handle, edits, recipes, permissions)
 
     private fun TestScope.collect(flow: Flow<*>) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect {} }
@@ -54,6 +61,147 @@ class RecipeEditorViewModelTest {
         val effects = mutableListOf<T>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.toList(effects) }
         return effects
+    }
+
+    // ------------------------------------------------------------------ leaving
+
+    @Test
+    fun anUnchangedFormHasNothingToLose() = runTest {
+        val viewModel = editor(pasta)
+        collect(viewModel.uiState)
+        assertTrue(viewModel.uiState.value.loaded)
+        assertFalse(viewModel.uiState.value.hasChanges)
+        assertFalse(editor(null).also { collect(it.uiState) }.uiState.value.hasChanges)
+    }
+
+    @Test
+    fun anEditIsAChangeUntilItIsTakenBack() = runTest {
+        val viewModel = editor(null)
+        collect(viewModel.uiState)
+        viewModel.onAction(RecipeEditorAction.SetName("Fiskgratäng"))
+        assertTrue(viewModel.uiState.value.hasChanges)
+        viewModel.onAction(RecipeEditorAction.SetName(""))
+        assertFalse(viewModel.uiState.value.hasChanges)
+    }
+
+    @Test
+    fun anImportIsUnsavedFromTheStartAndAfterProcessDeath() = runTest {
+        val handle = SavedStateHandle()
+        val viewModel = editor(null, handle, importedDraft = SavedDraft.encode(RecipeDraft(name = "Pannkakor")))
+        collect(viewModel.uiState)
+        assertTrue("the import page is gone", viewModel.uiState.value.hasChanges)
+
+        val restored = editor(null, handle, importedDraft = SavedDraft.encode(RecipeDraft(name = "Pannkakor")))
+        collect(restored.uiState)
+        assertTrue(restored.uiState.value.hasChanges)
+    }
+
+    @Test
+    fun aGuestHasNothingToLose() = runTest {
+        permissions.state.value = SpacePermissions(SpaceRole.GUEST)
+        val viewModel = editor(null)
+        collect(viewModel.uiState)
+        viewModel.onAction(RecipeEditorAction.SetName("Fiskgratäng"))
+        assertFalse(viewModel.uiState.value.hasChanges)
+    }
+
+    // ------------------------------------------------------------------ removing, moving
+
+    private fun TestScope.filledEditor(): RecipeEditorViewModel = editor(null).also { viewModel ->
+        collect(viewModel.uiState)
+        viewModel.onAction(RecipeEditorAction.AddStep)
+        viewModel.onAction(RecipeEditorAction.SetStepInstruction(0, "Koka"))
+        viewModel.onAction(RecipeEditorAction.AddIngredient(0, "2 dl grädde"))
+        viewModel.onAction(RecipeEditorAction.AddStep)
+    }
+
+    @Test
+    fun aRemovedStepComesBackWithItsLines() = runTest {
+        val viewModel = filledEditor()
+        val effects = effectsOf(viewModel.effects)
+        val before = viewModel.uiState.value.draft
+        viewModel.onAction(RecipeEditorAction.RemoveStep(0))
+        assertEquals(1, viewModel.uiState.value.draft.steps.size)
+        assertEquals(RecipeEditorEffect.Removed(R.string.recipe_editor_step_removed, 1), effects.last())
+
+        viewModel.onAction(RecipeEditorAction.UndoRemove)
+        assertEquals(before, viewModel.uiState.value.draft)
+    }
+
+    @Test
+    fun aRemovedLineComesBackAndAnEmptyOneOnlySaysSo() = runTest {
+        val viewModel = filledEditor()
+        val effects = effectsOf(viewModel.effects)
+        val before = viewModel.uiState.value.draft
+        viewModel.onAction(RecipeEditorAction.RemoveIngredient(0, 0))
+        assertEquals(RecipeEditorEffect.Removed(R.string.recipe_editor_ingredient_removed, 1, 1), effects.last())
+        viewModel.onAction(RecipeEditorAction.UndoRemove)
+        assertEquals(before, viewModel.uiState.value.draft)
+
+        viewModel.onAction(RecipeEditorAction.RemoveStep(1))
+        assertEquals("an empty step has nothing to undo", RecipeEditorEffect.Announce(R.string.recipe_editor_step_removed, 2), effects.last())
+    }
+
+    @Test
+    fun aMovedStepIsAnnouncedAndTheAmountsFollowTheDraft() = runTest {
+        val viewModel = filledEditor()
+        val effects = effectsOf(viewModel.effects)
+        viewModel.onAction(RecipeEditorAction.SetIngredientAmount(0, 0, "3"))
+        viewModel.onAction(RecipeEditorAction.MoveStep(0, up = false))
+        assertEquals(RecipeEditorEffect.Announce(R.string.recipe_editor_step_moved, 1, 2), effects.last())
+        assertEquals("3", viewModel.uiState.value.amountText(1, 0))
+        assertEquals("nothing to read at the old place", "", viewModel.uiState.value.amountText(0, 0))
+
+        val count = effects.size
+        viewModel.onAction(RecipeEditorAction.MoveStep(1, up = false))
+        assertEquals("the last step stays", count, effects.size)
+    }
+
+    // ------------------------------------------------------------------ amounts and foods
+
+    private fun stateWith(amount: Double) = RecipeEditorUiState(
+        draft = RecipeDraft(steps = listOf(DraftStep(ingredients = listOf(DraftIngredient(amount = amount))))),
+    )
+
+    @Test
+    fun amountsAreShownInTheLanguagesFormatAndRounded() {
+        assertEquals("1,5", stateWith(1.5).amountText(0, 0, ','))
+        assertEquals("1.5", stateWith(1.5).amountText(0, 0))
+        assertEquals("0,333", stateWith(1.0 / 3).amountText(0, 0, ','))
+        assertEquals("no scientific notation", "0", stateWith(0.0001).amountText(0, 0))
+        assertEquals("300", stateWith(300.0).amountText(0, 0, ','))
+    }
+
+    @Test
+    fun storedFoodsAreOfferedWhileTyping() {
+        val state = RecipeEditorUiState(foods = listOf("Vispgrädde", "Gräddfil", "Mjölk", "Matlagningsgrädde"))
+        assertEquals("first the ones that start so", listOf("Gräddfil", "Matlagningsgrädde", "Vispgrädde"), state.foodSuggestions("grädd"))
+        assertEquals(emptyList<String>(), state.foodSuggestions(""))
+        assertEquals("it is a stored food already", emptyList<String>(), state.foodSuggestions("Mjölk"))
+        assertEquals("a new name is fine", emptyList<String>(), state.foodSuggestions("Rödbetor"))
+    }
+
+    @Test
+    fun aChosenFoodIsStoredAndATypedOneIsTrimmedWhenSaved() = runTest {
+        recipes.foods.value = listOf(Food(1, "Vispgrädde"))
+        val viewModel = filledEditor()
+        assertEquals(listOf("Vispgrädde"), viewModel.uiState.value.foods)
+        viewModel.onAction(RecipeEditorAction.SetName("Sås"))
+        viewModel.onAction(RecipeEditorAction.SetIngredientFood(0, 0, "Vispgrädde "))
+        viewModel.onAction(RecipeEditorAction.Save)
+        assertEquals("Vispgrädde", edits.created.single().steps[0].ingredients[0].food)
+    }
+
+    // ------------------------------------------------------------------ the original of an import
+
+    @Test
+    fun theOriginalIsShownAndGoesWithThePage() = runTest {
+        val original = File.createTempFile("original", ".jpg")
+        val viewModel = editor(null, sourcePath = original.path)
+        collect(viewModel.uiState)
+        assertEquals(original.path, viewModel.uiState.value.sourcePath)
+        assertTrue(original.exists())
+        original.delete()
     }
 
     // ------------------------------------------------------------------ a new recipe

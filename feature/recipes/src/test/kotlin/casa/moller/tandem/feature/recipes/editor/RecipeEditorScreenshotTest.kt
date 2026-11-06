@@ -91,6 +91,23 @@ class RecipeEditorScreenshotTest {
     @Config(qualifiers = "sv-$PHONE")
     fun unknown() = capture("phone_editor_unknown_light_sv", RecipeEditorShot.UNKNOWN)
 
+    /** A 360 dp phone: the ingredient row stacks there at every font size. */
+    @Test
+    @Config(qualifiers = "sv-w360dp-h800dp-xhdpi")
+    fun editingNarrow() = capture("phone_narrow_editor_editing_light_sv", RecipeEditorShot.EDITING)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun editingKeyboard() = capture("phone_landscape_editor_keyboard_light_sv", RecipeEditorShot.EDITING_KEYBOARD)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun editingOriginal() = capture("phone_tall_editor_original_light_sv", RecipeEditorShot.EDITING_ORIGINAL)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun editingOriginalTablet() = capture("tablet_editor_original_light_sv", RecipeEditorShot.EDITING_ORIGINAL)
+
     private fun capture(name: String, shot: RecipeEditorShot, darkTheme: Boolean = false, fontScale: Float? = null) {
         composeRule.setContent { TestFrame(darkTheme = darkTheme, chrome = AppChrome(), fontScale = fontScale) { shot.content() } }
         composeRule.waitForIdle()

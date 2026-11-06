@@ -41,6 +41,29 @@ class RecipeImportScreenshotTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
+    fun pages() = capture("phone_import_pages_light_sv", RecipeImportShot.PAGES)
+
+    @Test
+    fun pagesDarkFontScale2() = capture("phone_import_pages_font2_dark", RecipeImportShot.PAGES, darkTheme = true, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun resultOriginal() = capture("phone_tall_import_result_original_light_sv", RecipeImportShot.RESULT_ORIGINAL)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun resultOriginalTablet() = capture("tablet_import_result_original_light_sv", RecipeImportShot.RESULT_ORIGINAL)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun resultOriginalTabletPortrait() = capture("tablet_portrait_import_result_original_dark", RecipeImportShot.RESULT_ORIGINAL, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun fileTooLarge() = capture("phone_import_file_too_large_light_sv", RecipeImportShot.FILE_TOO_LARGE)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
     fun formNoAi() = capture("phone_import_form_no_ai_light_sv", RecipeImportShot.FORM_NO_AI)
 
     @Test

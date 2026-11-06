@@ -11,8 +11,10 @@ import kotlinx.serialization.Serializable
  *
  * @property importedDraft Fas 3 (import lane): a new recipe that starts from an import
  *   (`RecipeImportKey`), as the editor's saved-draft JSON (`SavedDraft`); null for an empty form.
+ * @property sourcePath the photo or PDF the draft was read from, a cache file the editor shows
+ *   beside the form (plan §8.4) and deletes when it closes; null otherwise.
  */
 @Serializable
-data class RecipeEditorKey(val recipeId: Long? = null, val importedDraft: String? = null) :
+data class RecipeEditorKey(val recipeId: Long? = null, val importedDraft: String? = null, val sourcePath: String? = null) :
     NavKey,
     FullScreenDestination

@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.recipe.RecipeImportResult
+import casa.moller.tandem.feature.recipes.R
 
 /**
  * What "Importera recept" shows (Fas 3, import lane; plan §8.9), built by [RecipeImportViewModel].
@@ -17,12 +18,19 @@ import casa.moller.tandem.core.model.recipe.RecipeImportResult
  *   network error behind it when there is one (shown with core:ui's error text).
  * @property aiAvailable the space has an AI provider: photos and PDFs can be imported.
  * @property sharedFile a photo or PDF another app shared, not read yet (the route reads it).
+ * @property sharedPages several images another app shared, not read yet: pages of one recipe.
  * @property readOnly a guest: nothing can be imported (the recipe could not be saved).
  * @property isDemo demo mode: there is no server to parse with.
  * @property pageReading #38: the server could not read the shared link, so the page is being read
  *   in a WebView in the app (shown with "Läser sidan…" and Avbryt); null otherwise.
  * @property sortingSteps #40: `ai-step-sort` is running for [result].
  * @property stepsSorted #40: [result]'s lines were moved to their steps (Ångra puts them back).
+ * @property pages photographed pages waiting to be sent as one recipe (plan §8.4: several pages
+ *   become one PDF), as cache files; empty when none.
+ * @property sourcePath the sent photo or PDF, kept in the cache for this session: the review shows
+ *   it beside the AI's reading (plan §8.4); null for a link or a text.
+ * @property readingText the working message is about a text read on the phone, not the server.
+ * @property scanned the text came from "Fota recept": it stays on the phone (plan §8.4 #39).
  */
 @Immutable
 data class RecipeImportUiState(
@@ -33,12 +41,31 @@ data class RecipeImportUiState(
     val failure: TandemError? = null,
     val aiAvailable: Boolean = false,
     val sharedFile: SharedFile? = null,
+    val sharedPages: List<String> = emptyList(),
     val readOnly: Boolean = false,
     val isDemo: Boolean = false,
     val pageReading: PageReading? = null,
     val sortingSteps: Boolean = false,
     val stepsSorted: Boolean = false,
+    val pages: List<String> = emptyList(),
+    val sourcePath: String? = null,
+    val readingText: Boolean = false,
+    val scanned: Boolean = false,
 ) {
+    /** What to do about [problem]; null when there is nothing to add. */
+    @get:StringRes
+    val problemHint: Int?
+        get() = when (problem) {
+            null, R.string.recipe_import_read_only -> null
+            R.string.recipe_import_file_too_large -> R.string.recipe_import_hint_file_too_large
+            R.string.recipe_import_file_unreadable -> R.string.recipe_import_hint_file_unreadable
+            R.string.recipe_import_nothing_in_file -> R.string.recipe_import_hint_nothing_in_file
+            R.string.recipe_import_ai_unavailable -> R.string.recipe_import_hint_ai_unavailable
+            R.string.recipe_import_demo_problem -> R.string.recipe_import_hint_demo
+            R.string.recipe_import_page_unavailable -> R.string.recipe_import_hint_page_unavailable
+            else -> R.string.recipe_import_problem_hint
+        }
+
     /** The link or text can be read (a text is read on the device, so demo mode too; a link needs the server). */
     val canImport: Boolean
         get() = input.isNotBlank() && !working && !readOnly
@@ -82,7 +109,14 @@ data class PageReading(
     val readRequest: Int = 0,
     val caption: String = "",
     val pageText: String = "",
-)
+) {
+    /**
+     * What the WebView loads: the app allows no cleartext, so an `http://` link is tried as
+     * `https://` (nearly every recipe site has it); [url] stays what the server is told.
+     */
+    val loadUrl: String
+        get() = if (url.startsWith("http://", ignoreCase = true)) "https://" + url.substring("http://".length) else url
+}
 
 /** A photo or PDF another app shared to Tandem (`ACTION_SEND`), by its `content://` uri. */
 @Immutable
@@ -94,8 +128,18 @@ sealed interface RecipeImportAction {
     /** "Hämta receptet": the input as a link when it is one, else as text. */
     data object Import : RecipeImportAction
 
-    /** A photo (already scaled to a JPEG) or a PDF, read by the route. */
-    class ImportFile(val bytes: ByteArray, val mimeType: String, val fileName: String) : RecipeImportAction
+    /**
+     * A photo (already scaled to a JPEG) or a PDF, read by the route.
+     *
+     * @property sourcePath the copy kept in the cache for the review ([RecipeImportUiState.sourcePath]).
+     */
+    class ImportFile(val bytes: ByteArray, val mimeType: String, val fileName: String, val sourcePath: String? = null) : RecipeImportAction
+
+    /** A photographed page, scaled to a JPEG in the cache at [path] (plan §8.4: several pages, one recipe). */
+    data class AddPage(val path: String) : RecipeImportAction
+
+    /** "Ta bort sista": the last page is dropped. */
+    data object RemoveLastPage : RecipeImportAction
 
     /** The route could not read the chosen or shared file. */
     data object FileUnreadable : RecipeImportAction
@@ -120,11 +164,14 @@ sealed interface RecipeImportAction {
     /** #38: "Läs sidan igen" after the user confirmed something in the page. */
     data object ReadPageAgain : RecipeImportAction
 
-    /** #38: "Avbryt": stop reading the page; the server's answer stands. */
+    /** #38: "Avbryt": back to the form, no problem to report: the user chose it. */
     data object CancelPage : RecipeImportAction
 
     /** Plan §8.4 step 3: "Tolka texten med AI" (one AI call), without a provider "Läs den delade texten". */
     data object InterpretText : RecipeImportAction
+
+    /** #38: the page could not be loaded at all, or the WebView went away: nothing was read. */
+    data object PageUnavailable : RecipeImportAction
 
     /** #40: "Fördela ingredienserna på stegen" (one more AI call). */
     data object SortSteps : RecipeImportAction
@@ -134,8 +181,8 @@ sealed interface RecipeImportAction {
 }
 
 sealed interface RecipeImportEffect {
-    /** The editor opens with [importedDraft] (the editor's saved-draft JSON) as a new recipe. */
-    data class OpenEditor(val importedDraft: String) : RecipeImportEffect
+    /** The editor opens with [importedDraft] (the editor's saved-draft JSON) as a new recipe, and the sent file at [sourcePath]. */
+    data class OpenEditor(val importedDraft: String, val sourcePath: String? = null) : RecipeImportEffect
 
     data class Message(@StringRes val text: Int) : RecipeImportEffect
 }

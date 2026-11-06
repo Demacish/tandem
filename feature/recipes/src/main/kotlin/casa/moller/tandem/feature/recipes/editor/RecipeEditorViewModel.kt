@@ -16,6 +16,7 @@ import casa.moller.tandem.core.model.recipe.DraftStep
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
 import casa.moller.tandem.feature.recipes.R
+import casa.moller.tandem.feature.recipes.recipeimport.ImportFiles
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -41,11 +42,17 @@ import kotlinx.coroutines.launch
  * stored copy); until then the form is not shown. Ingredient lines typed as text ("2 dl grädde,
  * kall") are split by core:domain's [LocalIngredientParser] with the stored units. Saving stores
  * the recipe at once and queues it (offline: the id is temporary until it is sent).
+ *
+ * What the form opened with stays beside the draft (the baseline), so leaving with changes can ask
+ * first; an import's baseline is an empty recipe, because the import page is gone. A removed step
+ * or line with content has "Ångra". The file an import was read from belongs to this page: it is
+ * shown with the form and deleted when the page closes.
  */
 @HiltViewModel(assistedFactory = RecipeEditorViewModel.Factory::class)
 class RecipeEditorViewModel @AssistedInject constructor(
     @Assisted private val recipeId: Long?,
-    @Assisted private val importedDraft: String?,
+    @Assisted("importedDraft") private val importedDraft: String?,
+    @Assisted("sourcePath") private val sourcePath: String?,
     private val handle: SavedStateHandle,
     private val edits: RecipeEditRepository,
     recipes: RecipeRepository,
@@ -53,8 +60,15 @@ class RecipeEditorViewModel @AssistedInject constructor(
 ) : ViewModel() {
     @AssistedFactory
     interface Factory {
-        /** [importedDraft] (Fas 3 import lane): a new recipe's starting point as `SavedDraft` JSON, else null. */
-        fun create(recipeId: Long?, importedDraft: String?): RecipeEditorViewModel
+        /**
+         * [importedDraft] (Fas 3 import lane): a new recipe's starting point as `SavedDraft` JSON, else
+         * null; [sourcePath] the photo or PDF it was read from.
+         */
+        fun create(
+            recipeId: Long?,
+            @Assisted("importedDraft") importedDraft: String?,
+            @Assisted("sourcePath") sourcePath: String?,
+        ): RecipeEditorViewModel
     }
 
     private val effectChannel = Channel<RecipeEditorEffect>(Channel.BUFFERED)
@@ -68,17 +82,25 @@ class RecipeEditorViewModel @AssistedInject constructor(
         .map { SavedDraft.decode(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SavedDraft.decode(handle[KEY_DRAFT]))
 
+    /** What the form opened with, as stored: leaving with anything else asks first. */
+    private val baseline: StateFlow<String?> = handle.getStateFlow(KEY_BASELINE, null)
+
+    /** The draft before the last removal, for "Ångra". */
+    private var removed: Removal? = null
+
     private val units: Flow<List<String>> = edits.observeUnits().map { list -> list.map { it.name } }
+
+    private val foods: Flow<List<String>> = recipes.observeFoods().map { list -> list.map { it.name }.distinct() }
 
     val uiState: StateFlow<RecipeEditorUiState> = combine(
         draft,
         units,
         recipes.observeKeywords(),
         if (recipeId == null) flowOf(RecipeEditStatus.NONE) else edits.observeEditStatus(recipeId),
-        combine(permissions.permissions.map { it.readOnly }, progress, amountTexts) { readOnly, progress, amounts ->
-            Triple(readOnly, progress, amounts)
+        combine(permissions.permissions.map { it.readOnly }, progress, amountTexts, foods, baseline) { readOnly, progress, amounts, foods, start ->
+            EditorExtras(readOnly, progress, amounts, foods, start)
         },
-    ) { draft, units, keywords, status, (readOnly, progress, amounts) ->
+    ) { draft, units, keywords, status, (readOnly, progress, amounts, foods, start) ->
         val current = draft ?: RecipeDraft()
         val onRecipe = current.keywords.map { it.name.lowercase() }.toSet()
         RecipeEditorUiState(
@@ -93,23 +115,37 @@ class RecipeEditorViewModel @AssistedInject constructor(
             unknownRecipe = progress.unknownRecipe,
             saving = progress.saving,
             readOnly = readOnly,
+            foods = foods,
+            hasChanges = draft != null && !readOnly && SavedDraft.encode(current) != start,
+            sourcePath = sourcePath,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeEditorUiState(isNew = recipeId == null))
 
     init {
         if (draft.value == null) {
             if (recipeId == null) {
+                handle[KEY_BASELINE] = SavedDraft.encode(RecipeDraft())
                 store(SavedDraft.decode(importedDraft) ?: RecipeDraft())
             } else {
                 viewModelScope.launch {
                     val stored = edits.observeDraft(recipeId).first()
                     when {
                         stored == null -> progress.value = progress.value.copy(unknownRecipe = true)
-                        draft.value == null -> store(stored)
+                        draft.value == null -> open(stored)
                     }
                 }
             }
         }
+    }
+
+    override fun onCleared() {
+        ImportFiles.delete(sourcePath)
+    }
+
+    /** [stored] is what the form opens with. */
+    private fun open(stored: RecipeDraft) {
+        handle[KEY_BASELINE] = SavedDraft.encode(stored)
+        store(stored)
     }
 
     /** The form's new photo right now (from the saved state, also before [uiState] has its first value after process death). */
@@ -150,9 +186,11 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
             RecipeEditorAction.AddStep -> edit { it.copy(steps = it.steps + DraftStep()) }
 
-            is RecipeEditorAction.RemoveStep -> edit { it.copy(steps = it.steps.filterIndexed { index, _ -> index != action.step }) }
+            is RecipeEditorAction.RemoveStep -> removeStep(action.step)
 
-            is RecipeEditorAction.MoveStep -> edit { it.copy(steps = it.steps.moved(action.step, action.up)) }
+            RecipeEditorAction.UndoRemove -> undoRemove()
+
+            is RecipeEditorAction.MoveStep -> moveStep(action.step, action.up)
 
             is RecipeEditorAction.SetStepName -> editStep(action.step) { it.copy(name = action.name) }
 
@@ -166,15 +204,9 @@ class RecipeEditorViewModel @AssistedInject constructor(
                 step.copy(ingredients = step.ingredients + DraftIngredient(isHeader = true))
             }
 
-            is RecipeEditorAction.RemoveIngredient -> {
-                editStep(action.step) { it.copy(ingredients = it.ingredients.filterIndexed { index, _ -> index != action.ingredient }) }
-                amountTexts.value = amountTexts.value.filterKeys { !it.startsWith("${action.step}:") }
-            }
+            is RecipeEditorAction.RemoveIngredient -> removeIngredient(action.step, action.ingredient)
 
-            is RecipeEditorAction.MoveIngredient -> {
-                editStep(action.step) { it.copy(ingredients = it.ingredients.moved(action.ingredient, action.up)) }
-                amountTexts.value = amountTexts.value.filterKeys { !it.startsWith("${action.step}:") }
-            }
+            is RecipeEditorAction.MoveIngredient -> moveIngredient(action.step, action.ingredient, action.up)
 
             is RecipeEditorAction.SetIngredientAmount -> setAmount(action.step, action.ingredient, action.text)
 
@@ -196,6 +228,64 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
             RecipeEditorAction.Save -> save()
         }
+    }
+
+    private fun moveStep(step: Int, up: Boolean) {
+        val target = if (up) step - 1 else step + 1
+        val current = draft.value ?: return
+        if (step !in current.steps.indices || target !in current.steps.indices) return
+        edit { it.copy(steps = it.steps.moved(step, up)) }
+        amountTexts.value = emptyMap()
+        effectChannel.trySend(RecipeEditorEffect.Announce(R.string.recipe_editor_step_moved, step + 1, target + 1))
+    }
+
+    private fun moveIngredient(step: Int, ingredient: Int, up: Boolean) {
+        val target = if (up) ingredient - 1 else ingredient + 1
+        val lines = draft.value?.steps?.getOrNull(step)?.ingredients ?: return
+        if (ingredient !in lines.indices || target !in lines.indices) return
+        editStep(step) { it.copy(ingredients = it.ingredients.moved(ingredient, up)) }
+        amountTexts.value = amountTexts.value.filterKeys { !it.startsWith("$step:") }
+        effectChannel.trySend(RecipeEditorEffect.Announce(R.string.recipe_editor_ingredient_moved, ingredient + 1, target + 1))
+    }
+
+    /** A step goes at once; with anything in it, "Ångra" brings it back with its lines. */
+    private fun removeStep(step: Int) {
+        val current = draft.value ?: return
+        val gone = current.steps.getOrNull(step) ?: return
+        removed = Removal(current, amountTexts.value)
+        edit { it.copy(steps = it.steps.filterIndexed { index, _ -> index != step }) }
+        amountTexts.value = emptyMap()
+        val blank = gone.name.isBlank() && gone.instruction.isBlank() && gone.timeMinutes == 0 && gone.ingredients.isEmpty()
+        effectChannel.trySend(
+            if (blank) {
+                RecipeEditorEffect.Announce(R.string.recipe_editor_step_removed, step + 1)
+            } else {
+                RecipeEditorEffect.Removed(R.string.recipe_editor_step_removed, step + 1)
+            },
+        )
+    }
+
+    private fun removeIngredient(step: Int, ingredient: Int) {
+        val current = draft.value ?: return
+        val gone = current.steps.getOrNull(step)?.ingredients?.getOrNull(ingredient) ?: return
+        removed = Removal(current, amountTexts.value)
+        editStep(step) { it.copy(ingredients = it.ingredients.filterIndexed { index, _ -> index != ingredient }) }
+        amountTexts.value = amountTexts.value.filterKeys { !it.startsWith("$step:") }
+        val blank = gone.food.isNullOrBlank() && gone.unit.isNullOrBlank() && gone.note.isBlank() && gone.amount == 0.0
+        effectChannel.trySend(
+            if (blank) {
+                RecipeEditorEffect.Announce(R.string.recipe_editor_ingredient_removed, ingredient + 1, step + 1)
+            } else {
+                RecipeEditorEffect.Removed(R.string.recipe_editor_ingredient_removed, ingredient + 1, step + 1)
+            },
+        )
+    }
+
+    private fun undoRemove() {
+        val removal = removed ?: return
+        removed = null
+        store(removal.draft)
+        amountTexts.value = removal.amounts
     }
 
     private fun addIngredient(step: Int, text: String) {
@@ -235,7 +325,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
                 is Outcome.Success -> {
                     progress.value = progress.value.copy(discarded = true)
-                    edits.observeDraft(id).first()?.let { store(it) }
+                    edits.observeDraft(id).first()?.let { open(it) }
                     amountTexts.value = emptyMap()
                     effectChannel.trySend(RecipeEditorEffect.Message(R.string.recipe_editor_kept_edit_discarded))
                 }
@@ -246,7 +336,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
     private fun save() {
         val state = uiState.value
         if (state.saving || !state.loaded) return
-        val draft = state.draft
+        val draft = state.draft.withTrimmedFoods()
         if (draft.name.isBlank()) {
             progress.value = progress.value.copy(nameMissing = true)
             return
@@ -283,6 +373,11 @@ class RecipeEditorViewModel @AssistedInject constructor(
         }
     }
 
+    /** Foods go by name: "Vispgrädde " would be another food in the library than "Vispgrädde". */
+    private fun RecipeDraft.withTrimmedFoods(): RecipeDraft = copy(
+        steps = steps.map { step -> step.copy(ingredients = step.ingredients.map { it.copy(food = it.food?.trim()) }) },
+    )
+
     private fun edit(change: (RecipeDraft) -> RecipeDraft) {
         val current = draft.value ?: return
         store(change(current))
@@ -310,6 +405,17 @@ class RecipeEditorViewModel @AssistedInject constructor(
         return toMutableList().apply { add(target, removeAt(index)) }
     }
 
+    /** The form before a removal. */
+    private data class Removal(val draft: RecipeDraft, val amounts: Map<String, String>)
+
+    private data class EditorExtras(
+        val readOnly: Boolean,
+        val progress: Progress,
+        val amounts: Map<String, String>,
+        val foods: List<String>,
+        val baseline: String?,
+    )
+
     private data class Progress(
         val saving: Boolean = false,
         val nameMissing: Boolean = false,
@@ -319,6 +425,7 @@ class RecipeEditorViewModel @AssistedInject constructor(
 
     private companion object {
         const val KEY_DRAFT = "recipe_editor_draft"
+        const val KEY_BASELINE = "recipe_editor_baseline"
         const val STOP_TIMEOUT_MILLIS = 5_000L
         const val MAX_SERVINGS = 999
         const val MAX_MINUTES = 100_000

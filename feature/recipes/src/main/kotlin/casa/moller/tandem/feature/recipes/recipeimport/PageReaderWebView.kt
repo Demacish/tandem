@@ -1,7 +1,13 @@
 package casa.moller.tandem.feature.recipes.recipeimport
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.util.AndroidRuntimeException
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -24,18 +30,33 @@ import org.json.JSONTokener
  * (many recipe pages build their JSON-LD or pass a bot check with it); files, content uris, pop-up
  * windows, geolocation and third-party cookies are off, and links that are not http(s) are not
  * followed. Each finished load hands the page's HTML and visible text to [onPage] (after
- * [SETTLE_MILLIS], so a script can finish), and so does every new [readRequest]. When it leaves the screen the WebView
- * is destroyed and its cookies, web storage and cache are deleted: nothing of the visit stays.
+ * [SETTLE_MILLIS], so a script can finish), and so does every new [readRequest]. Cookies, web
+ * storage and the cache are deleted before the page loads (what an interrupted visit left behind)
+ * and when it leaves the screen, so a visit leaves nothing for the next one.
+ *
+ * A page that never loaded (no network, a TLS error; only the main frame counts) is not sent as if
+ * it were the recipe page: [onFailed] says so. A 403 or 503 page is not a failure here: it may be
+ * the bot check the user has to pass. [onFailed] also covers a renderer that died (a hostile or
+ * huge page, or the system's memory pressure: without [WebViewClient.onRenderProcessGone] that
+ * takes the whole app down) and a device whose WebView package is missing or updating.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-internal fun PageReaderWebView(url: String, readRequest: Int, onPage: (html: String, text: String) -> Unit, modifier: Modifier = Modifier) {
+internal fun PageReaderWebView(url: String, readRequest: Int, onPage: (html: String, text: String) -> Unit, onFailed: () -> Unit, modifier: Modifier = Modifier) {
     val currentOnPage by rememberUpdatedState(onPage)
+    val currentOnFailed by rememberUpdatedState(onFailed)
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var loadFailed by remember { mutableStateOf(false) }
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            WebView(context).apply {
+            val created = try {
+                WebView(context)
+            } catch (e: AndroidRuntimeException) {
+                // No WebView package on the device right now (being updated, or removed).
+                return@AndroidView View(context).apply { post { currentOnFailed() } }
+            }
+            created.apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = false
@@ -50,18 +71,44 @@ internal fun PageReaderWebView(url: String, readRequest: Int, onPage: (html: Str
                         return scheme != "https" && scheme != "http"
                     }
 
+                    override fun onPageStarted(view: WebView, startedUrl: String?, favicon: Bitmap?) {
+                        loadFailed = false
+                    }
+
+                    override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                        if (request.isForMainFrame) {
+                            loadFailed = true
+                            currentOnFailed()
+                        }
+                    }
+
                     override fun onPageFinished(view: WebView, finishedUrl: String?) {
-                        val read = Runnable { if (view.isAttachedToWindow) view.readPage { html, text -> currentOnPage(html, text) } }
+                        val read = Runnable {
+                            if (view.isAttachedToWindow && !loadFailed) view.readPage { html, text -> currentOnPage(html, text) }
+                        }
                         view.postDelayed(read, SETTLE_MILLIS)
                     }
+
+                    override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+                        // The dead view must not be touched again: the effects below go through webView.
+                        if (webView === view) webView = null
+                        (view.parent as? ViewGroup)?.removeView(view)
+                        view.destroy()
+                        currentOnFailed()
+                        return true
+                    }
                 }
-                loadUrl(url)
                 webView = this
+                // What an interrupted visit left (a crash, a force stop) goes first. Removing
+                // cookies is asynchronous, so the page loads in its callback.
+                clearCache(true)
+                WebStorage.getInstance().deleteAllData()
+                CookieManager.getInstance().removeAllCookies { if (webView === this) loadUrl(url) }
             }
         },
     )
     LaunchedEffect(readRequest) {
-        if (readRequest > 0) webView?.readPage { html, text -> currentOnPage(html, text) }
+        if (readRequest > 0 && !loadFailed) webView?.readPage { html, text -> currentOnPage(html, text) }
     }
     DisposableEffect(Unit) {
         onDispose {

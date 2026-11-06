@@ -9,8 +9,16 @@ import kotlinx.serialization.Serializable
  * list, or with what another app shared to Tandem (`ACTION_SEND`): [sharedText] (a link or a
  * text) or [sharedFileUri] (a photo or a PDF, `content://`, with its [sharedMimeType]). The
  * result opens the editor through `RecipeEditorKey.importedDraft`.
+ *
+ * @property sharedPageUris several images shared at once (`ACTION_SEND_MULTIPLE`): the pages of one recipe.
+ * @property scanned [sharedText] comes from "Fota recept": it is read on the phone, even with a link in it.
  */
 @Serializable
-data class RecipeImportKey(val sharedText: String? = null, val sharedFileUri: String? = null, val sharedMimeType: String? = null) :
-    NavKey,
+data class RecipeImportKey(
+    val sharedText: String? = null,
+    val sharedFileUri: String? = null,
+    val sharedMimeType: String? = null,
+    val sharedPageUris: List<String> = emptyList(),
+    val scanned: Boolean = false,
+) : NavKey,
     FullScreenDestination

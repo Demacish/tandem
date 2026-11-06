@@ -8,9 +8,15 @@ package casa.moller.tandem.feature.shell.navigation
  * @property text the shared text (a link, or a recipe as text), null for a file.
  * @property fileUri the shared photo or PDF as a `content://` uri, null for a text.
  * @property mimeType the file's type as the sender declared it, when known.
+ * @property pageUris several photos shared at once (`ACTION_SEND_MULTIPLE`): one recipe's pages.
  */
-data class ShareImportRequest(val text: String? = null, val fileUri: String? = null, val mimeType: String? = null) {
+data class ShareImportRequest(
+    val text: String? = null,
+    val fileUri: String? = null,
+    val mimeType: String? = null,
+    val pageUris: List<String> = emptyList(),
+) {
     init {
-        require(text != null || fileUri != null) { "a shared text or file is needed" }
+        require(text != null || fileUri != null || pageUris.isNotEmpty()) { "a shared text or file is needed" }
     }
 }

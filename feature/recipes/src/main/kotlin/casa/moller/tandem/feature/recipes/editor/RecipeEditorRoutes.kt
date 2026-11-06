@@ -7,10 +7,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,10 +26,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import casa.moller.tandem.core.ui.accessibility.announce
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.drinks.DrinkCameraFiles
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
@@ -41,7 +46,8 @@ import kotlinx.coroutines.withContext
  * copy) or the system photo picker; the camera is asked for only when "Ta foto" is tapped.
  *
  * @param onSaved the recipe was saved: [RecipeEditorEffect.Saved] (a new recipe is then opened).
- * @param onBack closes the editor (what was typed is kept in the saved state until the page is gone).
+ * @param onBack closes the editor. With unsaved changes the arrow and the system's back ask first
+ *   ("Spara / Släng / Fortsätt redigera"): the draft lives only as long as this page.
  */
 @Composable
 fun RecipeEditorRoute(
@@ -53,7 +59,7 @@ fun RecipeEditorRoute(
     val recipeId = key.recipeId
     val viewModel = hiltViewModel<RecipeEditorViewModel, RecipeEditorViewModel.Factory>(
         key = "recipe-editor-$recipeId-${key.importedDraft?.hashCode() ?: 0}",
-        creationCallback = { factory -> factory.create(recipeId, key.importedDraft) },
+        creationCallback = { factory -> factory.create(recipeId, key.importedDraft, key.sourcePath) },
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -108,10 +114,29 @@ fun RecipeEditorRoute(
         if (granted) launchCamera() else showMessage(R.string.recipe_editor_camera_denied)
     }
 
+    val view = LocalView.current
+    var askingToLeave by rememberSaveable { mutableStateOf(false) }
+    val leave: () -> Unit = {
+        release()
+        currentOnBack()
+    }
+    val requestLeave: () -> Unit = { if (state.hasChanges && !state.saving) askingToLeave = true else leave() }
+    BackHandler(onBack = requestLeave)
     LaunchedEffect(viewModel, snackbarHostState, context) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is RecipeEditorEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
+
+                is RecipeEditorEffect.Announce -> view.announce(resources.getString(effect.text, effect.first, effect.second))
+
+                is RecipeEditorEffect.Removed -> launch {
+                    val result = snackbarHostState.showSnackbar(
+                        message = resources.getString(effect.text, effect.first, effect.second),
+                        actionLabel = resources.getString(R.string.recipe_editor_undo),
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.onAction(RecipeEditorAction.UndoRemove)
+                }
 
                 is RecipeEditorEffect.Saved -> {
                     // This page closes with its snackbar host, so the confirmation is a short toast.
@@ -133,13 +158,23 @@ fun RecipeEditorRoute(
             }
         },
         onPickPhoto = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-        onBack = {
-            release()
-            currentOnBack()
-        },
+        onBack = requestLeave,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
     )
+    if (askingToLeave) {
+        LeaveEditorDialog(
+            onSave = {
+                askingToLeave = false
+                viewModel.onAction(RecipeEditorAction.Save)
+            },
+            onDiscard = {
+                askingToLeave = false
+                leave()
+            },
+            onKeepEditing = { askingToLeave = false },
+        )
+    }
 }
 
 /** A new file in the app's cache for the camera (`res/xml/drink_photo_paths.xml`); the repository copies and scales it. */

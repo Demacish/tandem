@@ -3,19 +3,19 @@
     <!-- Fas 3 (import lane): "Importera recept" (plan §8.9). -->
     <string name="recipe_import_title">Import recipe</string>
     <string name="recipe_import_action">Import recipe</string>
-    <string name="recipe_import_intro">Paste a link to a recipe page, or the recipe as text. Your Tandoor reads it and you check the result before it is saved.</string>
+    <string name="recipe_import_intro">Paste a link to a recipe page, or the recipe as text. A link is read by your Tandoor and a text here on the phone. You check the result before it is saved.</string>
     <string name="recipe_import_input">Link or text</string>
     <string name="recipe_import_input_hint">https://… or the recipe as text</string>
     <string name="recipe_import_fetch">Fetch the recipe</string>
     <string name="recipe_import_working">Tandoor is reading the recipe…</string>
-    <string name="recipe_import_file_heading">Photo or PDF</string>
+    <string name="recipe_import_file_heading">AI reading of a photo or PDF</string>
     <string name="recipe_import_file_intro">A photo of a recipe (a cookbook page, a card) or a PDF is read by the AI service your Tandoor is set up with. It costs the household’s AI credits.</string>
-    <string name="recipe_import_file_unavailable">Your Tandoor has no AI service, so photos and PDFs cannot be read. An admin adds one under Space settings on the web.</string>
-    <string name="recipe_import_file_demo">Photos and PDFs need a Tandoor with an AI service.</string>
+    <string name="recipe_import_file_unavailable">Your Tandoor has no AI service, so AI reading of photos and PDFs is not available. An administrator adds one under the space settings on the web.</string>
+    <string name="recipe_import_file_demo">AI reading of photos and PDFs needs a Tandoor with an AI service.</string>
     <string name="recipe_import_take_photo">Take photo</string>
     <string name="recipe_import_pick_file">Choose picture or PDF</string>
     <string name="recipe_import_demo_title">Demo mode</string>
-    <string name="recipe_import_demo">A link needs a Tandoor server that reads the page; a pasted text is read here in the app. Connect your Tandoor to import links, photos and PDFs.</string>
+    <string name="recipe_import_demo">A link needs a Tandoor server to read the page; a pasted text is read here in the app. Connect your Tandoor to import links and to have photos and PDFs read by AI.</string>
     <string name="recipe_import_found">Found this</string>
     <plurals name="recipe_import_steps">
         <item quantity="one">%1$d step</item>
@@ -59,10 +59,34 @@
     <string name="recipe_import_page_cancel">Cancel</string>
     <string name="recipe_import_page_view">The page %1$s</string>
     <string name="recipe_import_sort">Sort the ingredients into the steps</string>
-    <string name="recipe_import_sort_hint">The space\'s AI moves each ingredient to the step that uses it. This costs one more AI request.</string>
+    <string name="recipe_import_sort_hint">The AI service moves every ingredient to the step where it is used. That is one more AI call.</string>
     <string name="recipe_import_sorting">Sorting the ingredients…</string>
     <string name="recipe_import_sort_undo">Undo the sorting</string>
     <string name="recipe_import_sort_done">The ingredients are sorted into the steps</string>
     <string name="recipe_import_sort_changed">The AI changed the recipe, so it was kept as it was</string>
     <string name="recipe_import_sort_failed">The ingredients could not be sorted</string>
+    <!-- Review of Fas 3/4: pages, the original, problems and what TalkBack is told -->
+    <string name="recipe_import_intro_scanned">The text from the photo is read here on the phone. Nothing is sent anywhere, and you check the result before it is saved.</string>
+    <string name="recipe_import_working_text">Reading the text…</string>
+    <plurals name="recipe_import_pages_title">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <string name="recipe_import_pages_body">Take another photo for the next page, or send what you have. All pages become one recipe.</string>
+    <string name="recipe_import_pages_send">Send</string>
+    <string name="recipe_import_pages_more">Take another photo</string>
+    <string name="recipe_import_pages_remove_last">Remove the last</string>
+    <string name="recipe_import_found_name">Found %1$s</string>
+    <string name="recipe_import_original">The original</string>
+    <string name="recipe_import_original_show">Show the original</string>
+    <string name="recipe_import_original_hide">Hide the original</string>
+    <string name="recipe_import_original_description">The page the recipe was read from</string>
+    <string name="recipe_import_original_gone">The original can no longer be shown.</string>
+    <string name="recipe_import_page_unavailable">The page could not be loaded</string>
+    <string name="recipe_import_hint_page_unavailable">Check the connection and that the link works, then try again.</string>
+    <string name="recipe_import_hint_file_too_large">Choose a smaller file, or send fewer pages.</string>
+    <string name="recipe_import_hint_file_unreadable">Choose another file, or take a new photo.</string>
+    <string name="recipe_import_hint_nothing_in_file">Try a sharper photo where the whole recipe is in the picture.</string>
+    <string name="recipe_import_hint_ai_unavailable">Try again later, or ask an administrator to check the space\'s AI service.</string>
+    <string name="recipe_import_hint_demo">Connect your Tandoor to use this.</string>
 </resources>

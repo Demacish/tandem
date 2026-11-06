@@ -14,7 +14,7 @@
     <string name="recipe_editor_servings">Servings</string>
     <string name="recipe_editor_servings_fewer">Fewer servings</string>
     <string name="recipe_editor_servings_more">More servings</string>
-    <string name="recipe_editor_servings_text">Servings called (portions, pieces, buns)</string>
+    <string name="recipe_editor_servings_text">Servings are called</string>
     <string name="recipe_editor_working_time">Active time (minutes)</string>
     <string name="recipe_editor_waiting_time">Waiting time (minutes)</string>
     <string name="recipe_editor_source_url">Source (link)</string>
@@ -36,7 +36,7 @@
     <string name="recipe_editor_steps">Steps</string>
     <string name="recipe_editor_steps_hint">Each step has its own ingredients, as on the web. Amounts in the text scale with {{ scale(…) }}.</string>
     <string name="recipe_editor_step_number">Step %1$d</string>
-    <string name="recipe_editor_step_name">Step name (optional)</string>
+    <string name="recipe_editor_step_name">Step name</string>
     <string name="recipe_editor_step_instruction">Instructions</string>
     <string name="recipe_editor_step_minutes">Minutes</string>
     <string name="recipe_editor_step_move_up">Move step %1$d up</string>
@@ -94,4 +94,24 @@
     <string name="recipe_editor_remove_current_photo">Remove the picture</string>
     <string name="recipe_editor_current_photo_removed">The picture is removed when you save the recipe.</string>
     <string name="recipe_editor_keep_current_photo">Keep the picture</string>
+    <!-- Review of Fas 3: leaving, undo, what TalkBack hears -->
+    <string name="recipe_editor_servings_text_hint">portions, pieces, buns</string>
+    <string name="recipe_editor_leave_title">Save your changes?</string>
+    <string name="recipe_editor_leave_body">The recipe has changes that are not saved. They are lost if you leave.</string>
+    <string name="recipe_editor_leave_discard">Discard</string>
+    <string name="recipe_editor_leave_keep">Keep editing</string>
+    <string name="recipe_editor_discard_title">Drop your edit?</string>
+    <string name="recipe_editor_discard_body">Your edit disappears and cannot be got back.</string>
+    <string name="recipe_editor_discard_confirm">Drop</string>
+    <string name="recipe_editor_discard_cancel">Cancel</string>
+    <string name="recipe_detail_edit_discard_failed">Your edit could not be dropped.</string>
+    <string name="recipe_editor_undo">Undo</string>
+    <string name="recipe_editor_step_moved">Step %1$d moved to place %2$d</string>
+    <string name="recipe_editor_step_removed">Step %1$d removed</string>
+    <string name="recipe_editor_ingredient_moved">Ingredient %1$d moved to place %2$d</string>
+    <string name="recipe_editor_ingredient_removed">Ingredient %1$d in step %2$d removed</string>
+    <string name="recipe_editor_ingredient_add_to">Add an ingredient to step %1$d</string>
+    <string name="recipe_editor_ingredient_add_header_to">Add a heading to step %1$d</string>
+    <string name="recipe_editor_ingredient_no_amount_for">No amount, ingredient %1$d in step %2$d</string>
+    <string name="recipe_editor_ingredient_food_pick">%1$s, for ingredient %2$d in step %3$d</string>
 </resources>

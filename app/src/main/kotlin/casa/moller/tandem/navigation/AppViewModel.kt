@@ -126,7 +126,7 @@ class AppViewModel @Inject constructor(
         savedStateHandle.getStateFlow<String?>(KEY_TIMER_REQUEST_SOURCE, null),
     ) { ids, source -> ids?.toTimerRequest()?.copy(sourceKey = source) }
 
-    /** [ShareImportRequest] as `[text, fileUri, mimeType]` (nulls as empty strings, Bundle-friendly). */
+    /** [ShareImportRequest] as `[text, fileUri, mimeType, pageUris]` (nulls as empty strings, the pages by line, Bundle-friendly). */
     private val importRequest: Flow<ShareImportRequest?> = savedStateHandle.getStateFlow<Array<String>?>(KEY_IMPORT_REQUEST, null)
         .map { parts -> parts?.toImportRequest() }
 
@@ -272,7 +272,7 @@ class AppViewModel @Inject constructor(
      */
     fun onImportShared(request: ShareImportRequest) {
         savedStateHandle[KEY_IMPORT_REQUEST] =
-            arrayOf(request.text.orEmpty(), request.fileUri.orEmpty(), request.mimeType.orEmpty())
+            arrayOf(request.text.orEmpty(), request.fileUri.orEmpty(), request.mimeType.orEmpty(), request.pageUris.joinToString("\n"))
     }
 
     /** The shell opened [AppUiState.importRequest]. */
@@ -318,11 +318,12 @@ class AppViewModel @Inject constructor(
             if (size != IMPORT_PARTS) return null
             val text = this[0].takeIf { it.isNotEmpty() }
             val fileUri = this[1].takeIf { it.isNotEmpty() }
-            if (text == null && fileUri == null) return null
-            return ShareImportRequest(text = text, fileUri = fileUri, mimeType = this[2].takeIf { it.isNotEmpty() })
+            val pages = this[3].split('\n').filter { it.isNotEmpty() }
+            if (text == null && fileUri == null && pages.isEmpty()) return null
+            return ShareImportRequest(text = text, fileUri = fileUri, mimeType = this[2].takeIf { it.isNotEmpty() }, pageUris = pages)
         }
 
-        private const val IMPORT_PARTS = 3
+        private const val IMPORT_PARTS = 4
 
         private fun LongArray.toTimerRequest(): TimerOpenRequest? {
             if (size != 2) return null

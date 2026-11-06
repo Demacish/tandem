@@ -7,6 +7,7 @@ import casa.moller.tandem.feature.recipes.PHONE
 import casa.moller.tandem.feature.recipes.PHONE_TALL
 import casa.moller.tandem.feature.recipes.TABLET
 import casa.moller.tandem.feature.recipes.TestFrame
+import casa.moller.tandem.feature.recipes.books.PHONE_LANDSCAPE
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,10 +53,26 @@ class RecipeEditorAccessibilityTest {
     @Config(qualifiers = PHONE_TALL)
     fun editingDark() = check(RecipeEditorShot.EDITING, darkTheme = true)
 
-    // Font scale 2 is covered by the screenshot (phone_tall_editor_editing_font2_light_sv): ATF
-    // reports the first enabled icon button of the servings row and of a step's header row as
-    // 46 dp and 38 dp tall at that scale although the semantics tree shows them 48 dp
-    // (Modifier.size(48.dp)) inside rows of at least 48 dp; every other variant passes.
+    @Test
+    @Config(qualifiers = PHONE_TALL)
+    fun editingFontScale2() = check(RecipeEditorShot.EDITING, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun editingKeyboard() = check(RecipeEditorShot.EDITING_KEYBOARD)
+
+    @Test
+    fun editingOriginal() = check(RecipeEditorShot.EDITING_ORIGINAL)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun editingOriginalTablet() = check(RecipeEditorShot.EDITING_ORIGINAL)
+
+    @Test
+    fun leaveDialog() = check(RecipeEditorShot.LEAVE_DIALOG)
+
+    @Test
+    fun discardDialog() = check(RecipeEditorShot.DISCARD_DIALOG)
 
     @Test
     @Config(qualifiers = TABLET)

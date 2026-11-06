@@ -1,13 +1,17 @@
 package casa.moller.tandem.feature.recipes.recipeimport
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,10 +34,14 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -68,7 +76,11 @@ import casa.moller.tandem.feature.recipes.R
  * "Importera recept" (Fas 3, import lane; plan §8.9): a field for a link or a text and
  * "Hämta receptet"; "Ta foto" and "Välj bild eller PDF" when the space has an AI provider; the
  * answer as a card (picture, name, steps, ingredients, the keywords, a warning for a duplicate,
- * the other pictures to choose from) and "Öppna i redigeraren" fixed below.
+ * the other pictures to choose from) and "Öppna i redigeraren" fixed below. A photographed page
+ * waits for the next ones ("Ta ett foto till", "Ta bort sista", "Skicka": one recipe, plan §8.4).
+ * A photo or PDF that was read by the AI is shown with the result (plan §8.4), beside it from
+ * [ORIGINAL_BESIDE_MIN_WIDTH] (plan 6.5), else behind "Visa originalet". A link or a text has
+ * nothing to put there, and the form makes way for the result: one column at every width.
  */
 @Composable
 fun RecipeImportScreen(
@@ -81,6 +93,8 @@ fun RecipeImportScreen(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onScanText: (() -> Unit)? = null,
     pageView: @Composable (reading: PageReading, modifier: Modifier) -> Unit = { _, viewModifier -> PagePlaceholder(viewModifier) },
+    onSendPages: () -> Unit = {},
+    originalView: OriginalView = { path, viewModifier -> OriginalPages(path, viewModifier) },
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -89,16 +103,38 @@ fun RecipeImportScreen(
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                Content(
-                    state = state,
-                    onAction = onAction,
-                    onTakePhoto = onTakePhoto,
-                    onPickFile = onPickFile,
-                    onScanText = onScanText,
-                    pageView = pageView,
-                    modifier = Modifier.widthIn(max = FORM_MAX_WIDTH).verticalScroll(rememberScrollState()),
-                )
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                val original = state.sourcePath?.takeIf { state.result != null }
+                val beside = original != null && maxWidth >= ORIGINAL_BESIDE_MIN_WIDTH
+                val content: @Composable (Modifier) -> Unit = { contentModifier ->
+                    Content(
+                        state = state,
+                        onAction = onAction,
+                        onTakePhoto = onTakePhoto,
+                        onPickFile = onPickFile,
+                        onSendPages = onSendPages,
+                        onScanText = onScanText,
+                        pageView = pageView,
+                        originalView = originalView.takeUnless { beside },
+                        modifier = contentModifier.verticalScroll(rememberScrollState()),
+                    )
+                }
+                if (beside && original != null) {
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        OriginalPane(
+                            path = original,
+                            view = originalView,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.md),
+                        )
+                        content(Modifier.weight(1f))
+                    }
+                } else {
+                    content(Modifier.widthIn(max = FORM_MAX_WIDTH))
+                }
             }
             if (state.result != null) {
                 HorizontalDivider()
@@ -124,8 +160,10 @@ private fun Content(
     onAction: (RecipeImportAction) -> Unit,
     onTakePhoto: () -> Unit,
     onPickFile: () -> Unit,
+    onSendPages: () -> Unit,
     onScanText: (() -> Unit)?,
     pageView: @Composable (reading: PageReading, modifier: Modifier) -> Unit,
+    originalView: OriginalView?,
     modifier: Modifier,
 ) {
     val spacing = TandemTheme.spacing
@@ -142,13 +180,18 @@ private fun Content(
             )
         }
         when {
-            state.working -> LoadingState(message = stringResource(R.string.recipe_import_working))
+            state.working -> LoadingState(message = stringResource(workingText(state)))
             state.pageReading != null -> PageReader(state, state.pageReading, onAction, pageView)
-            state.result != null -> Result(state, state.result, onAction)
-            else -> Form(state, onAction, onTakePhoto, onPickFile, onScanText)
+            state.result != null -> Result(state, state.result, onAction, originalView)
+            else -> Form(state, onAction, onTakePhoto, onPickFile, onSendPages, onScanText)
         }
     }
 }
+
+/** A text is read on the phone: the server's name does not belong on that message (plan §8.4 #39). */
+@StringRes
+internal fun workingText(state: RecipeImportUiState): Int =
+    if (state.readingText) R.string.recipe_import_working_text else R.string.recipe_import_working
 
 @Composable
 private fun Form(
@@ -156,10 +199,14 @@ private fun Form(
     onAction: (RecipeImportAction) -> Unit,
     onTakePhoto: () -> Unit,
     onPickFile: () -> Unit,
+    onSendPages: () -> Unit,
     onScanText: (() -> Unit)?,
 ) {
     val spacing = TandemTheme.spacing
-    Text(stringResource(R.string.recipe_import_intro), style = MaterialTheme.typography.bodyMedium)
+    Text(
+        stringResource(if (state.scanned) R.string.recipe_import_intro_scanned else R.string.recipe_import_intro),
+        style = MaterialTheme.typography.bodyMedium,
+    )
     OutlinedTextField(
         value = state.input,
         onValueChange = { onAction(RecipeImportAction.SetInput(it)) },
@@ -185,7 +232,7 @@ private fun Form(
         val detail = state.failure?.toErrorText()?.title
         CalloutCard(
             title = stringResource(problem),
-            body = detail ?: stringResource(R.string.recipe_import_problem_hint),
+            body = detail ?: state.problemHint?.let { stringResource(it) }.orEmpty(),
             icon = TandemIcons.Warning,
             tone = TandemTone.Warning,
             onDismiss = { onAction(RecipeImportAction.Clear) },
@@ -193,7 +240,7 @@ private fun Form(
     }
     // Fas 4 (textigenkänning av recept): a photographed page read on the phone, without any server.
     if (onScanText != null) {
-        Text(stringResource(R.string.recipe_import_scan_heading), style = MaterialTheme.typography.titleMedium)
+        SectionHeading(stringResource(R.string.recipe_import_scan_heading))
         Text(stringResource(R.string.recipe_import_scan_intro), style = MaterialTheme.typography.bodyMedium)
         TandemSecondaryButton(
             text = stringResource(R.string.recipe_import_scan_button),
@@ -202,8 +249,10 @@ private fun Form(
             leadingIcon = TandemIcons.PhotoCamera,
         )
     }
-    Text(stringResource(R.string.recipe_import_file_heading), style = MaterialTheme.typography.titleMedium)
-    if (state.aiAvailable) {
+    SectionHeading(stringResource(R.string.recipe_import_file_heading))
+    if (state.aiAvailable && state.pages.isNotEmpty()) {
+        PagesCard(state = state, onTakePhoto = onTakePhoto, onSendPages = onSendPages, onAction = onAction)
+    } else if (state.aiAvailable) {
         Text(stringResource(R.string.recipe_import_file_intro), style = MaterialTheme.typography.bodyMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
             TandemSecondaryButton(
@@ -228,12 +277,59 @@ private fun Form(
     }
 }
 
+/** A section's title: a heading for TalkBack too. */
 @Composable
-private fun Result(state: RecipeImportUiState, result: RecipeImportResult, onAction: (RecipeImportAction) -> Unit) {
+private fun SectionHeading(text: String, modifier: Modifier = Modifier) {
+    Text(text, style = MaterialTheme.typography.titleMedium, modifier = modifier.semantics { heading() })
+}
+
+/** The photographed pages so far: another one, the last one away, or send them as one recipe. */
+@Composable
+private fun PagesCard(
+    state: RecipeImportUiState,
+    onTakePhoto: () -> Unit,
+    onSendPages: () -> Unit,
+    onAction: (RecipeImportAction) -> Unit,
+) {
+    val count = state.pages.size
+    CalloutCard(
+        title = pluralStringResource(R.plurals.recipe_import_pages_title, count, count),
+        body = stringResource(R.string.recipe_import_pages_body),
+        icon = TandemIcons.PhotoCamera,
+        modifier = Modifier.testTag(IMPORT_PAGES_TAG),
+        actions = {
+            TandemPrimaryButton(
+                text = stringResource(R.string.recipe_import_pages_send),
+                onClick = onSendPages,
+                enabled = state.canImportFile,
+                modifier = Modifier.testTag(IMPORT_PAGES_SEND_TAG),
+            )
+            TandemSecondaryButton(
+                text = stringResource(R.string.recipe_import_pages_more),
+                onClick = onTakePhoto,
+                enabled = state.canImportFile,
+                leadingIcon = TandemIcons.PhotoCamera,
+            )
+            TandemTextButton(text = stringResource(R.string.recipe_import_pages_remove_last), onClick = { onAction(RecipeImportAction.RemoveLastPage) })
+        },
+    )
+}
+
+@Composable
+private fun Result(
+    state: RecipeImportUiState,
+    result: RecipeImportResult,
+    onAction: (RecipeImportAction) -> Unit,
+    originalView: OriginalView?,
+) {
     val spacing = TandemTheme.spacing
     val draft = result.draft
     val ingredients = draft.ingredients.count { !it.isHeader }
-    Text(stringResource(R.string.recipe_import_found), style = MaterialTheme.typography.titleMedium)
+    // The form with the focused button is gone: focus goes to what replaced it.
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(focus) { focus.requestFocus() }
+    SectionHeading(stringResource(R.string.recipe_import_found), modifier = Modifier.focusRequester(focus).focusable())
+    if (originalView != null) state.sourcePath?.let { OriginalFold(path = it, view = originalView) }
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -278,7 +374,11 @@ private fun Result(state: RecipeImportUiState, result: RecipeImportResult, onAct
         )
     }
     if (result.imageUrls.size > 1) {
-        Text(stringResource(R.string.recipe_import_pictures), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(R.string.recipe_import_pictures),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.semantics { heading() },
+        )
         FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
             result.imageUrls.forEachIndexed { index, url ->
                 val selected = url == draft.imageUrl
@@ -399,6 +499,10 @@ private fun StepSort(state: RecipeImportUiState, onAction: (RecipeImportAction) 
         }
     }
 }
+
+/** The photographed pages' card and its "Skicka". */
+const val IMPORT_PAGES_TAG = "recipe-import:pages"
+const val IMPORT_PAGES_SEND_TAG = "recipe-import:pages:send"
 
 private val FORM_MAX_WIDTH = 640.dp
 private val PREVIEW = 96.dp

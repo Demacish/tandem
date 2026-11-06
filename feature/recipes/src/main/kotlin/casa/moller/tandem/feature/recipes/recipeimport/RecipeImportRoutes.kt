@@ -20,10 +20,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import casa.moller.tandem.core.ui.accessibility.announce
 import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.drinks.DrinkCameraFiles
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
@@ -36,15 +39,19 @@ import kotlinx.coroutines.withContext
  * comes from the camera (a cache file through the drinks' FileProvider, [DrinkCameraFiles],
  * deleted once read) or the document picker (images and PDFs); a shared file
  * ([RecipeImportKey.sharedFileUri]) is read once. Files are read off the main thread and scaled
- * ([ImportFiles]) before they go to the server.
+ * ([ImportFiles]) before they go to the server. A photo is a page that waits for the next ones
+ * (plan §8.4), as are several images shared at once ([RecipeImportKey.sharedPageUris]).
  *
- * @param onOpenEditor the import is accepted: open the editor with the draft (saved-draft JSON).
+ * TalkBack is told what happened: the form with the focused button is replaced by the work and the
+ * result in one frame, so nothing else would say it ([importAnnouncement]).
+ *
+ * @param onOpenEditor the import is accepted: open the editor with the draft (saved-draft JSON) and the file it was read from.
  * @param onScanText Fas 4 (textigenkänning): "Fota recept", read on the device (feature:scan through the shell); null hides it.
  */
 @Composable
 fun RecipeImportRoute(
     key: RecipeImportKey,
-    onOpenEditor: (importedDraft: String) -> Unit,
+    onOpenEditor: (importedDraft: String, sourcePath: String?) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onScanText: (() -> Unit)? = null,
@@ -69,16 +76,23 @@ fun RecipeImportRoute(
             viewModel.onAction(if (file == null) RecipeImportAction.FileUnreadable else file)
         }
     }
+    val addPage: suspend (Uri) -> Unit = { uri ->
+        val path = withContext(Dispatchers.IO) { ImportFiles.storePage(appContext, uri) }
+        viewModel.onAction(if (path == null) RecipeImportAction.FileUnreadable else RecipeImportAction.AddPage(path))
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) readFile(uri, appContext.contentResolver.getType(uri))
+        if (uri != null) {
+            val type = ImportFiles.typeOf(appContext, uri, null)
+            // A picture is one more page; a PDF is complete as it is.
+            if (type?.startsWith("image/") == true) scope.launch { addPage(uri) } else readFile(uri, type)
+        }
     }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
         val uri = pendingCapture
         if (taken && uri != null) {
             scope.launch {
-                val file = withContext(Dispatchers.IO) { ImportFiles.read(appContext, Uri.parse(uri), ImportFiles.JPEG) }
+                addPage(Uri.parse(uri))
                 DrinkCameraFiles.delete(appContext, uri)
-                viewModel.onAction(if (file == null) RecipeImportAction.FileUnreadable else file)
             }
         } else {
             DrinkCameraFiles.delete(appContext, uri)
@@ -107,11 +121,28 @@ fun RecipeImportRoute(
             readFile(Uri.parse(shared.uri), shared.mimeType)
         }
     }
+    val sharedPages = state.sharedPages
+    LaunchedEffect(viewModel, sharedPages) {
+        if (sharedPages.isNotEmpty()) {
+            viewModel.onAction(RecipeImportAction.SharedFileTaken)
+            sharedPages.forEach { addPage(Uri.parse(it)) }
+        }
+    }
+    LaunchedEffect(appContext) { withContext(Dispatchers.IO) { ImportFiles.sweep(appContext) } }
+    val view = LocalView.current
+    val announcement = importAnnouncement(state)
+    var announced by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(announcement) {
+        if (announcement != announced) {
+            announced = announcement
+            if (announcement != null) view.announce(announcement)
+        }
+    }
     LaunchedEffect(viewModel, snackbarHostState) {
         viewModel.effects.collect { effect ->
             when (effect) {
                 is RecipeImportEffect.Message -> snackbarHostState.showSnackbar(resources.getString(effect.text))
-                is RecipeImportEffect.OpenEditor -> currentOnOpenEditor(effect.importedDraft)
+                is RecipeImportEffect.OpenEditor -> currentOnOpenEditor(effect.importedDraft, effect.sourcePath)
             }
         }
     }
@@ -135,10 +166,34 @@ fun RecipeImportRoute(
                 url = reading.url,
                 readRequest = reading.readRequest,
                 onPage = { html, text -> viewModel.onAction(RecipeImportAction.PageLoaded(html, text)) },
+                onFailed = { viewModel.onAction(RecipeImportAction.PageUnavailable) },
                 modifier = viewModifier,
             )
         },
+        onSendPages = {
+            val pages = state.pages
+            scope.launch {
+                val file = withContext(Dispatchers.IO) { ImportFiles.join(appContext, pages) }
+                viewModel.onAction(if (file == null) RecipeImportAction.FileUnreadable else file)
+            }
+        },
     )
+}
+
+/** What TalkBack is told about the import's progress: the work, a problem, the page reader, the result. */
+@Composable
+private fun importAnnouncement(state: RecipeImportUiState): String? {
+    val reading = state.pageReading
+    val problem = state.problem
+    val result = state.result
+    return when {
+        state.working -> stringResource(workingText(state))
+        reading?.nothingFound == true -> stringResource(R.string.recipe_import_page_nothing_title)
+        reading != null -> stringResource(R.string.recipe_import_page_title)
+        result != null -> stringResource(R.string.recipe_import_found_name, result.draft.name)
+        problem != null -> listOfNotNull(stringResource(problem), state.problemHint?.let { stringResource(it) }).joinToString(" ")
+        else -> null
+    }
 }
 
 private fun cameraUri(context: Context): Uri =

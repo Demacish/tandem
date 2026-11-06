@@ -39,6 +39,22 @@ class RecipeImportAccessibilityTest {
     fun formDark() = check(RecipeImportShot.FORM, darkTheme = true)
 
     @Test
+    fun pages() = check(RecipeImportShot.PAGES)
+
+    @Test
+    fun pagesDarkFontScale2() = check(RecipeImportShot.PAGES, darkTheme = true, fontScale = 2f)
+
+    @Test
+    fun resultOriginal() = check(RecipeImportShot.RESULT_ORIGINAL)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun resultOriginalTablet() = check(RecipeImportShot.RESULT_ORIGINAL)
+
+    @Test
+    fun fileTooLarge() = check(RecipeImportShot.FILE_TOO_LARGE)
+
+    @Test
     fun formNoAi() = check(RecipeImportShot.FORM_NO_AI)
 
     @Test

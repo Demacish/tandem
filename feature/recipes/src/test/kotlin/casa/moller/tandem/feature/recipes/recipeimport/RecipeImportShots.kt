@@ -1,6 +1,12 @@
 package casa.moller.tandem.feature.recipes.recipeimport
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.testing.data.SampleImports
 import casa.moller.tandem.feature.recipes.R
@@ -29,6 +35,15 @@ internal object RecipeImportSamples {
         aiAvailable = true,
         pageReading = PageReading("https://example.com/p/abc", nothingFound = true, caption = "Kanelbullar med kardemumma"),
     )
+
+    /** Plan §8.4: two photographed pages waiting to be sent. */
+    fun pages() = form().copy(pages = listOf("sida-1.jpg", "sida-2.jpg"))
+
+    /** Plan §8.4: an AI reading of a photo, with the original kept for the review. */
+    fun resultWithOriginal() = result().copy(aiAvailable = true, sourcePath = "original.jpg")
+
+    /** A problem with its own advice. */
+    fun fileTooLarge() = form().copy(problem = R.string.recipe_import_file_too_large)
 
     fun problem() = RecipeImportUiState(
         input = "https://example.com/annat",
@@ -63,9 +78,27 @@ internal enum class RecipeImportShot(val content: @Composable () -> Unit) {
     RESULT_SORT({ Import(RecipeImportSamples.resultWithAi()) }),
     RESULT_SORTING({ Import(RecipeImportSamples.resultWithAi(sorting = true)) }),
     RESULT_SORTED({ Import(RecipeImportSamples.resultWithAi(sorted = true)) }),
+
+    // Review of Fas 3/4: the page step, the original beside the reading, a problem's own advice.
+    PAGES({ Import(RecipeImportSamples.pages()) }),
+    RESULT_ORIGINAL({ Import(RecipeImportSamples.resultWithOriginal()) }),
+    FILE_TOO_LARGE({ Import(RecipeImportSamples.fileTooLarge()) }),
 }
 
 /** Fas 4: the form offers "Fota recept" (read on the phone) when the shell wires it. */
 @Composable
-private fun Import(state: RecipeImportUiState) =
-    RecipeImportScreen(state = state, onAction = {}, onTakePhoto = {}, onPickFile = {}, onBack = {}, onScanText = {})
+private fun Import(state: RecipeImportUiState) = RecipeImportScreen(
+    state = state,
+    onAction = {},
+    onTakePhoto = {},
+    onPickFile = {},
+    onBack = {},
+    onScanText = {},
+    originalView = { _, modifier -> FakeOriginal(modifier) },
+)
+
+/** A stand-in for the photographed page: the real one is decoded on another thread. */
+@Composable
+internal fun FakeOriginal(modifier: Modifier) {
+    Box(modifier = modifier.height(320.dp).background(MaterialTheme.colorScheme.surfaceVariant))
+}

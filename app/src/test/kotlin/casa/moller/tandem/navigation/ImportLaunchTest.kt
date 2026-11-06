@@ -26,6 +26,18 @@ class ImportLaunchTest {
     }
 
     @Test
+    fun severalSharedPhotosAreThePagesOfOneRecipe() {
+        val uris = arrayListOf(Uri.parse("content://media/1"), Uri.parse("content://media/2"))
+        val pages = Intent(Intent.ACTION_SEND_MULTIPLE).setType("image/*").putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        assertEquals(ShareImportRequest(pageUris = uris.map { it.toString() }), ImportLaunch.requestFrom(pages))
+
+        val unsafe = arrayListOf(Uri.parse("content://media/1"), Uri.parse("file:///data/secret"))
+        assertEquals(null, ImportLaunch.requestFrom(Intent(Intent.ACTION_SEND_MULTIPLE).setType("image/*").putParcelableArrayListExtra(Intent.EXTRA_STREAM, unsafe)))
+        val documents = Intent(Intent.ACTION_SEND_MULTIPLE).setType("application/pdf").putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+        assertEquals("only images are pages", null, ImportLaunch.requestFrom(documents))
+    }
+
+    @Test
     fun aSharedPhotoOrPdfIsAnImportOfTheFile() {
         val photo = Intent(Intent.ACTION_SEND).setType("image/jpeg")
             .putExtra(Intent.EXTRA_STREAM, Uri.parse("content://media/external/images/1"))

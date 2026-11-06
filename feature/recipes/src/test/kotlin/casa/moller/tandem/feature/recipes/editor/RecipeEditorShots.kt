@@ -6,6 +6,7 @@ import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.DraftStep
 import casa.moller.tandem.core.model.recipe.RecipeDraft
 import casa.moller.tandem.core.testing.data.SampleRecipes
+import casa.moller.tandem.feature.recipes.recipeimport.FakeOriginal
 
 /** Sample editor states (#22, plan §8.9); no images (tests never load any). */
 internal object RecipeEditorSamples {
@@ -77,11 +78,24 @@ internal enum class RecipeEditorShot(val content: @Composable () -> Unit) {
     LOADING({ Editor(RecipeEditorUiState(isNew = false)) }),
     UNKNOWN({ Editor(RecipeEditorUiState(isNew = false, unknownRecipe = true)) }),
 
+    // Review of Fas 3: the keyboard up in a low window, the original of an import, the dialogs.
+    EDITING_KEYBOARD({ Editor(RecipeEditorSamples.editing(), keyboardOpen = true) }),
+    EDITING_ORIGINAL({ Editor(RecipeEditorSamples.editing().copy(isNew = true, sourcePath = "original.jpg")) }),
+    LEAVE_DIALOG({ LeaveEditorDialog(onSave = {}, onDiscard = {}, onKeepEditing = {}) }),
+    DISCARD_DIALOG({ DiscardEditDialog(onConfirm = {}, onDismiss = {}) }),
+
     // Fas 3's leftovers: the recipe's picture with "Ta bort bilden", and after it ("Behåll bilden").
     EDITING_PICTURE({ Editor(RecipeEditorSamples.editingWithPicture(keep = true)) }),
     EDITING_PICTURE_REMOVED({ Editor(RecipeEditorSamples.editingWithPicture(keep = false)) }),
 }
 
 @Composable
-private fun Editor(state: RecipeEditorUiState) =
-    RecipeEditorScreen(state = state, onAction = {}, onTakePhoto = {}, onPickPhoto = {}, onBack = {})
+private fun Editor(state: RecipeEditorUiState, keyboardOpen: Boolean = false) = RecipeEditorLayout(
+    state = state,
+    onAction = {},
+    onTakePhoto = {},
+    onPickPhoto = {},
+    onBack = {},
+    keyboardOpen = keyboardOpen,
+    originalView = { _, modifier -> FakeOriginal(modifier) },
+)

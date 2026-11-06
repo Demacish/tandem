@@ -2,13 +2,19 @@ package casa.moller.tandem.feature.recipes.editor
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,6 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -43,14 +50,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.PopupProperties
 import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
@@ -71,6 +86,7 @@ import casa.moller.tandem.core.designsystem.icon.PhotoCamera
 import casa.moller.tandem.core.designsystem.icon.Remove
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.model.recipe.DraftIngredient
 import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.DraftStep
@@ -79,6 +95,11 @@ import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.readonly.ReadOnlyBanner
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.recipes.R
+import casa.moller.tandem.feature.recipes.recipeimport.ORIGINAL_BESIDE_MIN_WIDTH
+import casa.moller.tandem.feature.recipes.recipeimport.OriginalFold
+import casa.moller.tandem.feature.recipes.recipeimport.OriginalPages
+import casa.moller.tandem.feature.recipes.recipeimport.OriginalPane
+import casa.moller.tandem.feature.recipes.recipeimport.OriginalView
 
 /**
  * The recipe editor (Fas 3, redigerare lane; #22, plan §8.9; Stitch sketch
@@ -86,10 +107,15 @@ import casa.moller.tandem.feature.recipes.R
  * servings, times, keywords) and the steps, each with its ingredients, in one scrolling form with
  * the save button fixed below it (above the keyboard and the navigation bar, as "Ny dryck"). Every
  * control is a plain text field or a 48 dp button, so it works with a large font and TalkBack
- * (every icon button names its step and line). Width-limited on tablets.
+ * (every button that repeats names its step and line). Width-limited on tablets.
+ *
+ * At a large font or on a narrow phone the fields of a row stack ([stackedFields]). An import read
+ * from a photo or PDF has the original above the form, or beside it from
+ * [ORIGINAL_BESIDE_MIN_WIDTH] (plan §8.4, 6.5).
  *
  * @param onTakePhoto / [onPickPhoto] start the camera / the photo picker (the route owns the launchers).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RecipeEditorScreen(
     state: RecipeEditorUiState,
@@ -100,52 +126,178 @@ fun RecipeEditorScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TandemTopAppBar(
-                title = stringResource(if (state.isNew) R.string.recipe_editor_title_new else R.string.recipe_editor_title_edit),
-                onNavigateBack = onBack,
-            )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).imePadding()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                when {
-                    state.unknownRecipe -> EmptyState(
-                        icon = TandemIcons.MenuBook,
-                        title = stringResource(R.string.recipe_editor_unknown_title),
-                        body = stringResource(R.string.recipe_editor_unknown_body),
-                    )
+    RecipeEditorLayout(
+        state = state,
+        onAction = onAction,
+        onTakePhoto = onTakePhoto,
+        onPickPhoto = onPickPhoto,
+        onBack = onBack,
+        keyboardOpen = WindowInsets.isImeVisible,
+        modifier = modifier,
+        snackbarHostState = snackbarHostState,
+    )
+}
 
-                    !state.loaded -> LoadingState(message = stringResource(R.string.recipe_editor_loading))
-
-                    else -> Form(
-                        state = state,
-                        onAction = onAction,
-                        onTakePhoto = onTakePhoto,
-                        onPickPhoto = onPickPhoto,
-                        modifier = Modifier.widthIn(max = FORM_MAX_WIDTH).verticalScroll(rememberScrollState()),
-                    )
-                }
-            }
-            HorizontalDivider()
-            Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
-                TandemPrimaryButton(
-                    text = stringResource(R.string.recipe_editor_save),
-                    onClick = { onAction(RecipeEditorAction.Save) },
-                    enabled = state.loaded && !state.saving && !state.readOnly && !state.unknownRecipe,
-                    leadingIcon = TandemIcons.Check,
-                    modifier = Modifier
-                        .widthIn(max = FORM_MAX_WIDTH)
-                        .fillMaxWidth()
-                        .padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.md),
+/**
+ * [RecipeEditorScreen] with the keyboard state given ([keyboardOpen], tests have no keyboard).
+ * In a low window (a phone in landscape, under [COMPACT_HEIGHT]) the fixed save bar steps aside
+ * while the keyboard is open, or nothing is left of the form above it, and "Spara" stands last in
+ * the form instead (the same rule as `PantryEntryLayout`).
+ */
+@Composable
+internal fun RecipeEditorLayout(
+    state: RecipeEditorUiState,
+    onAction: (RecipeEditorAction) -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickPhoto: () -> Unit,
+    onBack: () -> Unit,
+    keyboardOpen: Boolean,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    originalView: OriginalView = { path, viewModifier -> OriginalPages(path, viewModifier) },
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val saveInForm = keyboardOpen && maxHeight < COMPACT_HEIGHT
+        val canSave = state.loaded && !state.saving && !state.readOnly && !state.unknownRecipe
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                TandemTopAppBar(
+                    title = stringResource(if (state.isNew) R.string.recipe_editor_title_new else R.string.recipe_editor_title_edit),
+                    onNavigateBack = onBack,
                 )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            containerColor = MaterialTheme.colorScheme.background,
+        ) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
+                EditorBody(
+                    state = state,
+                    onAction = onAction,
+                    onTakePhoto = onTakePhoto,
+                    onPickPhoto = onPickPhoto,
+                    originalView = originalView,
+                    save = if (saveInForm) ({ SaveButton(enabled = canSave, onAction = onAction) }) else null,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                )
+                if (!saveInForm) {
+                    HorizontalDivider()
+                    Box(modifier = Modifier.fillMaxWidth().navigationBarsPadding(), contentAlignment = Alignment.Center) {
+                        SaveButton(
+                            enabled = canSave,
+                            onAction = onAction,
+                            modifier = Modifier
+                                .widthIn(max = FORM_MAX_WIDTH)
+                                .padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.md),
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun SaveButton(enabled: Boolean, onAction: (RecipeEditorAction) -> Unit, modifier: Modifier = Modifier) {
+    TandemPrimaryButton(
+        text = stringResource(R.string.recipe_editor_save),
+        onClick = { onAction(RecipeEditorAction.Save) },
+        enabled = enabled,
+        leadingIcon = TandemIcons.Check,
+        modifier = modifier.fillMaxWidth().testTag(EDITOR_SAVE_TAG),
+    )
+}
+
+/** The form, with the original above it or, on a wide window, beside it. */
+@Composable
+private fun EditorBody(
+    state: RecipeEditorUiState,
+    onAction: (RecipeEditorAction) -> Unit,
+    onTakePhoto: () -> Unit,
+    onPickPhoto: () -> Unit,
+    originalView: OriginalView,
+    save: (@Composable () -> Unit)?,
+    modifier: Modifier,
+) {
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.TopCenter) {
+        val stacked = stackedFields(maxWidth)
+        val original = state.sourcePath
+        val beside = original != null && maxWidth >= ORIGINAL_BESIDE_MIN_WIDTH
+        val form: @Composable (Modifier) -> Unit = { formModifier ->
+            when {
+                state.unknownRecipe -> EmptyState(
+                    icon = TandemIcons.MenuBook,
+                    title = stringResource(R.string.recipe_editor_unknown_title),
+                    body = stringResource(R.string.recipe_editor_unknown_body),
+                )
+
+                !state.loaded -> LoadingState(message = stringResource(R.string.recipe_editor_loading))
+
+                else -> Form(
+                    state = state,
+                    onAction = onAction,
+                    onTakePhoto = onTakePhoto,
+                    onPickPhoto = onPickPhoto,
+                    stacked = stacked,
+                    originalView = originalView.takeUnless { beside },
+                    save = save,
+                    modifier = formModifier.verticalScroll(rememberScrollState()),
+                )
+            }
+        }
+        if (beside && original != null) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                OriginalPane(
+                    path = original,
+                    view = originalView,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.md),
+                )
+                form(Modifier.weight(1f))
+            }
+        } else {
+            form(Modifier.widthIn(max = FORM_MAX_WIDTH))
+        }
+    }
+}
+
+/**
+ * Plan 6.6 (font scale 2.0 without clipping): at a large font, or in a narrow window, fields that
+ * share a row at their fixed widths break their labels mid-word and hide the value, so they stack.
+ */
+@Composable
+private fun stackedFields(width: Dp): Boolean = LocalDensity.current.fontScale >= LARGE_FONT_SCALE || width < NARROW_WIDTH
+
+/** Leaving with unsaved changes: the draft lives only as long as the page. */
+@Composable
+internal fun LeaveEditorDialog(onSave: () -> Unit, onDiscard: () -> Unit, onKeepEditing: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onKeepEditing,
+        title = { Text(stringResource(R.string.recipe_editor_leave_title)) },
+        text = { Text(stringResource(R.string.recipe_editor_leave_body)) },
+        confirmButton = { TandemPrimaryButton(text = stringResource(R.string.recipe_editor_save), onClick = onSave) },
+        dismissButton = {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xs)) {
+                TandemTextButton(text = stringResource(R.string.recipe_editor_leave_discard), onClick = onDiscard)
+                TandemTextButton(text = stringResource(R.string.recipe_editor_leave_keep), onClick = onKeepEditing)
+            }
+        },
+    )
+}
+
+/** "Släng min ändring": a held edit cannot be got back (the detail's notice and the editor's). */
+@Composable
+internal fun DiscardEditDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipe_editor_discard_title)) },
+        text = { Text(stringResource(R.string.recipe_editor_discard_body)) },
+        confirmButton = { TandemPrimaryButton(text = stringResource(R.string.recipe_editor_discard_confirm), onClick = onConfirm) },
+        dismissButton = { TandemTextButton(text = stringResource(R.string.recipe_editor_discard_cancel), onClick = onDismiss) },
+    )
 }
 
 @Composable
@@ -154,10 +306,23 @@ private fun Form(
     onAction: (RecipeEditorAction) -> Unit,
     onTakePhoto: () -> Unit,
     onPickPhoto: () -> Unit,
+    stacked: Boolean,
+    originalView: OriginalView?,
+    save: (@Composable () -> Unit)?,
     modifier: Modifier,
 ) {
     val spacing = TandemTheme.spacing
     val draft = state.draft
+    var confirmingDiscard by rememberSaveable { mutableStateOf(false) }
+    if (confirmingDiscard) {
+        DiscardEditDialog(
+            onConfirm = {
+                confirmingDiscard = false
+                onAction(RecipeEditorAction.DiscardKeptEdit)
+            },
+            onDismiss = { confirmingDiscard = false },
+        )
+    }
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = spacing.lg, vertical = spacing.md),
         verticalArrangement = Arrangement.spacedBy(spacing.md),
@@ -172,11 +337,12 @@ private fun Form(
                 actions = {
                     TandemTonalButton(
                         text = stringResource(R.string.recipe_editor_kept_edit_discard),
-                        onClick = { onAction(RecipeEditorAction.DiscardKeptEdit) },
+                        onClick = { confirmingDiscard = true },
                     )
                 },
             )
         }
+        if (originalView != null) state.sourcePath?.let { OriginalFold(path = it, view = originalView) }
         Heading(stringResource(R.string.recipe_editor_basics))
         TandemTextField(
             value = draft.name,
@@ -199,6 +365,7 @@ private fun Form(
             value = draft.servingsText,
             onValueChange = { onAction(RecipeEditorAction.SetServingsText(it)) },
             label = stringResource(R.string.recipe_editor_servings_text),
+            placeholder = stringResource(R.string.recipe_editor_servings_text_hint),
             leadingIcon = null,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -233,7 +400,7 @@ private fun Form(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         draft.steps.forEachIndexed { index, step ->
-            StepEditor(index = index, step = step, count = draft.steps.size, state = state, onAction = onAction)
+            StepEditor(index = index, step = step, count = draft.steps.size, state = state, stacked = stacked, onAction = onAction)
         }
         TandemSecondaryButton(
             text = stringResource(R.string.recipe_editor_add_step),
@@ -241,6 +408,7 @@ private fun Form(
             leadingIcon = TandemIcons.Add,
             modifier = Modifier.fillMaxWidth(),
         )
+        save?.invoke()
     }
 }
 
@@ -269,7 +437,8 @@ private fun Servings(servings: Int, onAction: (RecipeEditorAction) -> Unit) {
             Text(
                 text = servings.toString(),
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = spacing.sm),
+                // A node that stays: TalkBack says the new value after + and −.
+                modifier = Modifier.padding(horizontal = spacing.sm).semantics { liveRegion = LiveRegionMode.Polite },
             )
             IconButton(onClick = { onAction(RecipeEditorAction.SetServings(servings + 1)) }, modifier = Modifier.size(TOUCH_TARGET)) {
                 Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_servings_more))
@@ -434,7 +603,14 @@ private fun CurrentImage(state: RecipeEditorUiState, onAction: (RecipeEditorActi
 }
 
 @Composable
-private fun StepEditor(index: Int, step: DraftStep, count: Int, state: RecipeEditorUiState, onAction: (RecipeEditorAction) -> Unit) {
+private fun StepEditor(
+    index: Int,
+    step: DraftStep,
+    count: Int,
+    state: RecipeEditorUiState,
+    stacked: Boolean,
+    onAction: (RecipeEditorAction) -> Unit,
+) {
     val spacing = TandemTheme.spacing
     val number = index + 1
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
@@ -463,20 +639,31 @@ private fun StepEditor(index: Int, step: DraftStep, count: Int, state: RecipeEdi
                     Icon(TandemIcons.Delete, contentDescription = stringResource(R.string.recipe_editor_step_remove, number))
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            val stepName: @Composable (Modifier) -> Unit = { fieldModifier ->
                 TandemTextField(
                     value = step.name,
                     onValueChange = { onAction(RecipeEditorAction.SetStepName(index, it)) },
                     label = stringResource(R.string.recipe_editor_step_name),
                     leadingIcon = null,
-                    modifier = Modifier.weight(1f),
+                    modifier = fieldModifier,
                 )
+            }
+            val stepMinutes: @Composable (Modifier) -> Unit = { fieldModifier ->
                 MinutesField(
                     minutes = step.timeMinutes,
                     onChange = { onAction(RecipeEditorAction.SetStepMinutes(index, it)) },
                     label = stringResource(R.string.recipe_editor_step_minutes),
-                    modifier = Modifier.width(MINUTES_WIDTH),
+                    modifier = fieldModifier,
                 )
+            }
+            if (stacked) {
+                stepName(Modifier.fillMaxWidth())
+                stepMinutes(Modifier.fillMaxWidth())
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                    stepName(Modifier.weight(1f))
+                    stepMinutes(Modifier.width(MINUTES_WIDTH))
+                }
             }
             Text(text = stringResource(R.string.recipe_editor_ingredients), style = MaterialTheme.typography.titleSmall)
             step.ingredients.forEachIndexed { position, line ->
@@ -486,6 +673,7 @@ private fun StepEditor(index: Int, step: DraftStep, count: Int, state: RecipeEdi
                     line = line,
                     count = step.ingredients.size,
                     state = state,
+                    stacked = stacked,
                     onAction = onAction,
                 )
             }
@@ -523,13 +711,15 @@ private fun QuickAdd(stepIndex: Int, onAction: (RecipeEditorAction) -> Unit) {
             modifier = Modifier.weight(1f),
         )
         IconButton(onClick = add, modifier = Modifier.size(TOUCH_TARGET)) {
-            Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_ingredient_add))
+            Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_ingredient_add_to, stepIndex + 1))
         }
     }
+    val addHeader = stringResource(R.string.recipe_editor_ingredient_add_header_to, stepIndex + 1)
     TandemTextButton(
         text = stringResource(R.string.recipe_editor_ingredient_add_header),
         onClick = { onAction(RecipeEditorAction.AddHeader(stepIndex)) },
         leadingIcon = TandemIcons.Add,
+        modifier = Modifier.semantics { contentDescription = addHeader },
     )
 }
 
@@ -540,11 +730,13 @@ private fun IngredientEditor(
     line: DraftIngredient,
     count: Int,
     state: RecipeEditorUiState,
+    stacked: Boolean,
     onAction: (RecipeEditorAction) -> Unit,
 ) {
     val spacing = TandemTheme.spacing
     val stepNumber = stepIndex + 1
     val lineNumber = position + 1
+    val separator = LocalConfiguration.current.locales[0].toNumberStyle().decimalSeparator
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         if (line.isHeader) {
             TandemTextField(
@@ -555,32 +747,48 @@ private fun IngredientEditor(
                 modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+            val amount: @Composable (Modifier) -> Unit = { fieldModifier ->
                 OutlinedTextField(
-                    value = state.amountText(stepIndex, position),
+                    value = state.amountText(stepIndex, position, separator),
                     onValueChange = { onAction(RecipeEditorAction.SetIngredientAmount(stepIndex, position, it)) },
                     label = { Text(stringResource(R.string.recipe_editor_ingredient_amount)) },
                     enabled = !line.noAmount,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
-                    modifier = Modifier.width(AMOUNT_WIDTH),
+                    modifier = fieldModifier,
                 )
+            }
+            val unit: @Composable (Modifier) -> Unit = { fieldModifier ->
                 UnitField(
                     value = line.unit.orEmpty(),
                     units = state.units,
                     onChange = { onAction(RecipeEditorAction.SetIngredientUnit(stepIndex, position, it)) },
-                    // Every unit field and its menu button name their line (TalkBack: no two alike).
+                    // Every menu button names its line (TalkBack: no two alike).
                     pickDescription = stringResource(R.string.recipe_editor_ingredient_unit_pick_for, lineNumber, stepNumber),
-                    modifier = Modifier.width(UNIT_WIDTH),
+                    modifier = fieldModifier,
                 )
-                OutlinedTextField(
+            }
+            val food: @Composable (Modifier) -> Unit = { fieldModifier ->
+                FoodField(
                     value = line.food.orEmpty(),
-                    onValueChange = { onAction(RecipeEditorAction.SetIngredientFood(stepIndex, position, it)) },
-                    label = { Text(stringResource(R.string.recipe_editor_ingredient_food)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Next),
-                    modifier = Modifier.weight(1f),
+                    suggestions = state.foodSuggestions(line.food.orEmpty()),
+                    onChange = { onAction(RecipeEditorAction.SetIngredientFood(stepIndex, position, it)) },
+                    suggestionDescription = { stringResource(R.string.recipe_editor_ingredient_food_pick, it, lineNumber, stepNumber) },
+                    modifier = fieldModifier,
                 )
+            }
+            if (stacked) {
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    amount(Modifier.weight(1f))
+                    unit(Modifier.weight(1f))
+                }
+                food(Modifier.fillMaxWidth())
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    amount(Modifier.width(AMOUNT_WIDTH))
+                    unit(Modifier.width(UNIT_WIDTH))
+                    food(Modifier.weight(1f))
+                }
             }
             TandemTextField(
                 value = line.note,
@@ -592,6 +800,7 @@ private fun IngredientEditor(
         }
         Row(modifier = Modifier.heightIn(min = TOUCH_TARGET), verticalAlignment = Alignment.CenterVertically) {
             if (!line.isHeader) {
+                val noAmount = stringResource(R.string.recipe_editor_ingredient_no_amount_for, lineNumber, stepNumber)
                 FilterChip(
                     selected = line.noAmount,
                     onClick = { onAction(RecipeEditorAction.ToggleNoAmount(stepIndex, position)) },
@@ -601,7 +810,7 @@ private fun IngredientEditor(
                     } else {
                         null
                     },
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = noAmount },
                 )
             }
             Row(modifier = Modifier.weight(1f).heightIn(min = TOUCH_TARGET), horizontalArrangement = Arrangement.End) {
@@ -654,7 +863,7 @@ private fun UnitField(
             value = value,
             onValueChange = onChange,
             label = { Text(stringResource(R.string.recipe_editor_ingredient_unit)) },
-            modifier = Modifier.fillMaxWidth().semantics { contentDescription = pickDescription },
+            modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Next),
             trailingIcon = if (units.isEmpty()) {
@@ -675,6 +884,53 @@ private fun UnitField(
                         open = false
                         onChange(unit)
                     },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The food as free text, with the stored foods that match under the field (B9): foods go by name,
+ * so a slip would make another food in the library. The menu does not take the focus, so typing
+ * goes on; a new name is simply kept.
+ */
+@Composable
+private fun FoodField(
+    value: String,
+    suggestions: List<String>,
+    onChange: (String) -> Unit,
+    suggestionDescription: @Composable (String) -> String,
+    modifier: Modifier = Modifier,
+) {
+    var focused by remember { mutableStateOf(false) }
+    var dismissed by rememberSaveable { mutableStateOf(false) }
+    Box(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {
+                dismissed = false
+                onChange(it)
+            },
+            label = { Text(stringResource(R.string.recipe_editor_ingredient_food)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None, imeAction = ImeAction.Next),
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
+        )
+        DropdownMenu(
+            expanded = focused && !dismissed && suggestions.isNotEmpty(),
+            onDismissRequest = { dismissed = true },
+            properties = PopupProperties(focusable = false),
+        ) {
+            suggestions.forEach { food ->
+                val description = suggestionDescription(food)
+                DropdownMenuItem(
+                    text = { Text(food) },
+                    onClick = {
+                        dismissed = true
+                        onChange(food)
+                    },
+                    modifier = Modifier.testTag(foodSuggestionTag(food)).semantics { contentDescription = description },
                 )
             }
         }
@@ -717,8 +973,21 @@ private fun Heading(text: String) {
     Text(text = text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
 }
 
+/** The form's "Spara", wherever it stands. */
+const val EDITOR_SAVE_TAG = "recipe-editor:save"
+
+/** A stored food offered under the food field. */
+fun foodSuggestionTag(food: String): String = "recipe-editor:food:$food"
+
 private val FORM_MAX_WIDTH = 640.dp
 private val TOUCH_TARGET = 48.dp
+
+/** Below this height the keyboard leaves no room for the save bar (a phone in landscape). */
+private val COMPACT_HEIGHT = 480.dp
+
+/** Below this width the ingredient row's fixed fields leave the food no room (a 360 dp phone). */
+private val NARROW_WIDTH = 400.dp
+private const val LARGE_FONT_SCALE = 1.5f
 private val PHOTO_PREVIEW = 160.dp
 private val AMOUNT_WIDTH = 88.dp
 private val UNIT_WIDTH = 112.dp

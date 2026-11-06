@@ -2,19 +2,19 @@
 <resources>
     <string name="recipe_import_title">Importera recept</string>
     <string name="recipe_import_action">Importera recept</string>
-    <string name="recipe_import_intro">Klistra in en länk till en receptsida, eller receptet som text. Din Tandoor läser det och du granskar resultatet innan det sparas.</string>
+    <string name="recipe_import_intro">Klistra in en länk till en receptsida, eller receptet som text. En länk läses av er Tandoor och en text här i telefonen. Du granskar resultatet innan det sparas.</string>
     <string name="recipe_import_input">Länk eller text</string>
     <string name="recipe_import_input_hint">https://… eller receptet som text</string>
     <string name="recipe_import_fetch">Hämta receptet</string>
     <string name="recipe_import_working">Tandoor läser receptet…</string>
-    <string name="recipe_import_file_heading">Foto eller PDF</string>
+    <string name="recipe_import_file_heading">AI-läsning av foto eller PDF</string>
     <string name="recipe_import_file_intro">Ett foto av ett recept (en kokbokssida, ett kort) eller en PDF läses av AI-tjänsten som er Tandoor är inställd med. Det kostar hushållets AI-krediter.</string>
-    <string name="recipe_import_file_unavailable">Er Tandoor har ingen AI-tjänst, så foton och PDF:er kan inte läsas. En administratör lägger till en under utrymmets inställningar på webben.</string>
-    <string name="recipe_import_file_demo">Foton och PDF:er kräver en Tandoor med en AI-tjänst.</string>
+    <string name="recipe_import_file_unavailable">Er Tandoor har ingen AI-tjänst, så AI-läsning av foton och PDF:er går inte. En administratör lägger till en under utrymmets inställningar på webben.</string>
+    <string name="recipe_import_file_demo">AI-läsning av foton och PDF:er kräver en Tandoor med en AI-tjänst.</string>
     <string name="recipe_import_take_photo">Ta foto</string>
     <string name="recipe_import_pick_file">Välj bild eller PDF</string>
     <string name="recipe_import_demo_title">Demoläge</string>
-    <string name="recipe_import_demo">En länk kräver en Tandoor-server som läser sidan; en inklistrad text läses här i appen. Anslut din Tandoor för att importera länkar, foton och PDF:er.</string>
+    <string name="recipe_import_demo">En länk kräver en Tandoor-server som läser sidan; en inklistrad text läses här i appen. Anslut er Tandoor för att importera länkar och få foton och PDF:er lästa av AI.</string>
     <string name="recipe_import_found">Hittade det här</string>
     <plurals name="recipe_import_steps">
         <item quantity="one">%1$d steg</item>
@@ -58,10 +58,34 @@
     <string name="recipe_import_page_cancel">Avbryt</string>
     <string name="recipe_import_page_view">Sidan %1$s</string>
     <string name="recipe_import_sort">Fördela ingredienserna på stegen</string>
-    <string name="recipe_import_sort_hint">Utrymmets AI flyttar varje ingrediens till steget där den används. Det kostar ett AI-anrop till.</string>
+    <string name="recipe_import_sort_hint">AI-tjänsten flyttar varje ingrediens till steget där den används. Det kostar ett AI-anrop till.</string>
     <string name="recipe_import_sorting">Fördelar ingredienserna…</string>
     <string name="recipe_import_sort_undo">Ångra fördelningen</string>
     <string name="recipe_import_sort_done">Ingredienserna är fördelade på stegen</string>
     <string name="recipe_import_sort_changed">AI:n ändrade receptet, så det behölls som det var</string>
     <string name="recipe_import_sort_failed">Ingredienserna kunde inte fördelas</string>
+    <!-- Granskningen av Fas 3/4: sidor, originalet, problem och vad TalkBack får höra -->
+    <string name="recipe_import_intro_scanned">Texten från fotot läses här i telefonen. Inget skickas någonstans, och du granskar resultatet innan det sparas.</string>
+    <string name="recipe_import_working_text">Läser texten…</string>
+    <plurals name="recipe_import_pages_title">
+        <item quantity="one">%1$d sida</item>
+        <item quantity="other">%1$d sidor</item>
+    </plurals>
+    <string name="recipe_import_pages_body">Ta ett foto till för nästa sida, eller skicka det du har. Alla sidor blir ett recept.</string>
+    <string name="recipe_import_pages_send">Skicka</string>
+    <string name="recipe_import_pages_more">Ta ett foto till</string>
+    <string name="recipe_import_pages_remove_last">Ta bort sista</string>
+    <string name="recipe_import_found_name">Hittade %1$s</string>
+    <string name="recipe_import_original">Originalet</string>
+    <string name="recipe_import_original_show">Visa originalet</string>
+    <string name="recipe_import_original_hide">Dölj originalet</string>
+    <string name="recipe_import_original_description">Sidan som receptet lästes från</string>
+    <string name="recipe_import_original_gone">Originalet går inte längre att visa.</string>
+    <string name="recipe_import_page_unavailable">Sidan gick inte att ladda</string>
+    <string name="recipe_import_hint_page_unavailable">Kontrollera anslutningen och att länken fungerar, och försök igen.</string>
+    <string name="recipe_import_hint_file_too_large">Välj en mindre fil, eller skicka färre sidor.</string>
+    <string name="recipe_import_hint_file_unreadable">Välj en annan fil, eller ta ett nytt foto.</string>
+    <string name="recipe_import_hint_nothing_in_file">Prova ett skarpare foto där hela receptet syns.</string>
+    <string name="recipe_import_hint_ai_unavailable">Försök igen senare, eller be en administratör kontrollera utrymmets AI-tjänst.</string>
+    <string name="recipe_import_hint_demo">Anslut er Tandoor för att använda det här.</string>
 </resources>
