@@ -131,7 +131,8 @@ fun RecipeImportRoute(
         }
     }
     LaunchedEffect(appContext) { withContext(Dispatchers.IO) { ImportFiles.sweep(appContext) } }
-    // Back from the review throws the result away; the system going back through the app's stack is not this.
+    // Going back from the review discards the result. Anything else that ends the page (a process
+    // death, the tab selected again) leaves a kept AI answer for the next time the page opens.
     val leave: () -> Unit = {
         viewModel.onAction(RecipeImportAction.Leave)
         onBack()

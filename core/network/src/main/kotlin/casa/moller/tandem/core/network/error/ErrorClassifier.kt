@@ -45,6 +45,7 @@ import retrofit2.HttpException
  * | other 3xx | [NotTandoorReason.REDIRECT] |
  * | 401 | [TandemError.Unauthorized] from a proxy (Tandoor never sends 401) |
  * | 403 + JSON object with `detail` | [TandemError.Unauthorized] (missing/invalid/expired/revoked token) |
+ * | 403 + `{"error": "sharing_disabled"}` | [TandemError.Unauthorized] too: Tandoor's own refusal of a share link, no firewall's |
  * | 403 otherwise | [TandemError.Blocked] (firewall, WAF or auth proxy with its own body, plan 4.1) |
  * | 404 + JSON object | [TandemError.NotFound] |
  * | 404 without JSON | [NotTandoorReason.UNEXPECTED_STATUS] |
@@ -98,8 +99,10 @@ class ErrorClassifier(private val clock: Clock = Clock.systemUTC()) {
     fun classifyHttp(status: Int, headers: Headers, contentType: MediaType?, bodyText: String?): TandemError? {
         val json = parseJsonOrNull(bodyText)
         val isJsonObject = json is JsonObject
-        // Tandoor's own refusals always carry `detail` (FACTS "Konsekvenser" 1); a proxy's JSON does not.
-        val hasDetail = (json as? JsonObject)?.get("detail") is JsonPrimitive
+        // Tandoor's own refusals carry `detail` (FACTS "Konsekvenser" 1); a proxy's JSON does not. The
+        // share link has a body of its own (FACTS "Fas 4: dela recept"), and as "blocked" it would pause the sync.
+        val hasDetail = (json as? JsonObject)?.get("detail") is JsonPrimitive ||
+            ((json as? JsonObject)?.get("error") as? JsonPrimitive)?.content == SHARING_DISABLED
         return when {
             status in 200..299 ->
                 if (looksLikeHtml(contentType, bodyText)) {
@@ -206,6 +209,7 @@ class ErrorClassifier(private val clock: Clock = Clock.systemUTC()) {
 
     companion object {
         private const val LOGIN_PATH = "/accounts/login"
+        private const val SHARING_DISABLED = "sharing_disabled"
         private const val MAX_CAUSE_DEPTH = 10
         private const val MAX_RELATED = 32
 

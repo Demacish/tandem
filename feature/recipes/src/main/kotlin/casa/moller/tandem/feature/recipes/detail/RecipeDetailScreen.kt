@@ -349,8 +349,7 @@ private fun OverflowMenu(
  */
 @Composable
 private fun ShareItems(state: RecipeDetailUiState, onDismiss: () -> Unit, onAction: (RecipeDetailAction) -> Unit) {
-    if (state.isDeleted) return
-    val name = state.header?.name.orEmpty()
+    val name = state.header?.name?.takeUnless { state.isDeleted } ?: return
     if (state.canShareLink) {
         val description = stringResource(R.string.recipe_detail_action_share_link_description, name)
         DropdownMenuItem(

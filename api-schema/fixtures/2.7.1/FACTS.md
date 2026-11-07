@@ -154,3 +154,12 @@ näringsvärden"): `food_properties` per egenskapstyp med `total_value` för hel
 receptredigeraren", `fas4/editor/`, 2026-11-06): flaggorna, `step_recipe`, `file` och `properties`
 skrivs med en PATCH, det som utelämnas står kvar, och ett annat namn på en egenskapstyp döper om den. [O]
 <!-- /Fas 4 redigeraren -->
+
+<!-- Fas 4 dela recept -->
+## Fas 4: dela recept (plan §6.2, §8.6)
+
+`Phase4ShareContractTest` ger samma fakta som 2.6.13 (`../2.6.13/FACTS.md` "Fas 4: dela recept",
+`fas4/share/`, 2026-11-07), också på 2.7.2 och `latest`. Enda skillnaden: med avslutande `/` svarar
+sökvägen 200 med webbappens HTML, som varje okänd `/api/`-väg på 2.7, i stället för 302. Appen
+anropar den utan `/`. [O]
+<!-- /Fas 4 dela recept -->

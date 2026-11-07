@@ -160,3 +160,7 @@ POST /api/ai-step-sort/
 POST /api/user-file/
 GET /api/property-type/
 GET /api/property-type/{id}/
+
+# --- Fas 4, komplettering 3: "Dela recept" (plan §6.2, §8.6; FACTS "Fas 4: dela recept") ---
+# No trailing slash; every call makes a new link, so one per share and never ahead of time.
+GET /api/share-link/{id}

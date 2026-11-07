@@ -214,9 +214,9 @@ class Phase3SmokeTest : Phase2SmokeBase() {
         menu("Edit")
         app.waitFor(By.text(SAVE_RECIPE))
 
-        app.scrollTo(By.desc("Attach a file to step 1")).click()
+        scrollThroughTheForm(By.desc("Attach a file to step 1")).click()
         downloads.pick(app, STEP_FILE)
-        app.scrollTo(By.text("File: $STEP_FILE"))
+        app.waitFor(By.text("File: $STEP_FILE"))
         app.capture("phase4-step-file")
         save()
 

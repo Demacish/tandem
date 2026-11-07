@@ -78,8 +78,8 @@ Levererades i **0.5.0** (2026-11-03).
   sidor blir ett recept, och granskningen visar originalet bredvid tolkningen (0.6.0). Avsteg från
   planens tvåspaltsimport på surfplatta: en länk eller en text har inget original att visa, så de
   är en kolumn på alla bredder (se BYGGE). En notis säger till när en AI-import blir klar medan
-  appen inte är på skärmen. Kvar: AI-importen och stegfördelningen är bara prövade mot en server
-  utan leverantör.
+  appen inte är på skärmen, och svaret finns kvar även om systemet stänger appen under tiden. Kvar:
+  AI-importen och stegfördelningen är bara prövade mot en server utan leverantör.
 - ✅ Widgets (inköpslistan med avbockning, dagens måltider), snabbinställningsrutan "Handla" och
   genvägar på appikonen (0.5.0).
 - ✅ Dra och släpp i matsedeln (dag, och måltidstyp på surfplattan) och näringsvärden per portion i
@@ -114,11 +114,17 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   varje recept har sitt eget steg och "Klart!", och timrarna från båda syns (med receptets namn,
   även i notiserna) och ringer. "Laga" medan ett annat recepts timer går öppnar båda, också från
   Kan laga nu. Kvar: två recept sida vid sida på riktigt breda skärmar.
+- ✅ Dela recept: receptets meny delar en Tandoor-länk, som öppnas utan inloggning, eller receptet som
+  text (0.6.0). Länken finns inte i demoläget, för gäster eller när utrymmet har delning avstängd.
 
 ## Fas 5: Plattform
 - Handsfree-kokläge med röst och uppläsning.
 - Wear OS-app (till exempel Samsung Galaxy Watch 4 och senare): inköpslista och timers.
 - Påminnelse nära butiken, matsedeln i kalendern (iCal), köksskärmsläge för surfplattan.
+- Pannstorlek: skala ett recept efter formen, till exempel från 24 till 20 cm.
+- Sammanslagning i inköpslistans vy: samma vara i enheter som går att räkna om på en rad.
+- Rutnätsvy med stora rutor på inköpslistan, som tillval.
+- Påminnelse kvällen innan, till exempel "Tina ut kycklingen", från en tagg i måltidens anteckning.
 
 ## Övrigt
 - **Distribution:** GitHub Releases + Obtainium nu, Google Play senare. F-Droid är inte planerat.

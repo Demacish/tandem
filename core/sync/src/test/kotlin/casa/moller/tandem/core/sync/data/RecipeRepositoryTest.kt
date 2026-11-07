@@ -82,6 +82,9 @@ class RecipeRepositoryTest {
         server.respond("GET", "/api/share-link/2") { FakeTandoorServer.json(403, """{"error":"sharing_disabled"}""") }
 
         assertEquals(Outcome.Failure(DataProblem.SHARING_OFF.toError()), repository.shareLink(2))
+        val guard = graph.guard.state.value
+        assertEquals("the sync goes on: no firewall", 0L, guard.blockedUntil)
+        assertNull("and nobody is logged out", guard.unauthorizedAccount)
     }
 
     /** A recipe that is not on the server yet: a request would only be a 404 in the proxy's log (plan 4.1). */

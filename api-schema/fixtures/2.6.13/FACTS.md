@@ -1098,3 +1098,27 @@ av receptet med stegens id.
   namn på typen för hela utrymmet**, som ett nyckelord ("Fas 2 g"). [O] [S] Avsändaren skickar därför
   serverns namn, och aldrig `unit`.
 <!-- /Fas 4 redigeraren -->
+
+<!-- Fas 4 dela recept -->
+## Fas 4: dela recept (plan §6.2, §8.6)
+
+`Phase4ShareContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1) och spelar in till
+`fas4/share/` (2026-11-07, inga avvikelser mot `EXPECTED`). Bevakningen jämför faktan (`fas4.share`).
+
+- **a. Länken.** `GET /api/share-link/{id}` utan avslutande `/` → 200 `{pk, share, link}`: `pk` är
+  receptets id, `share` ett UUID och `link` `https://<värden>/recipe/<id>/?share=<uuid>`, byggd av
+  `Host` och `X-Forwarded-Proto`. **Varje anrop ger en ny länk** (ett nytt `share`). [O] Därför ett
+  anrop per delning och aldrig i förväg.
+- **b. Fel väg.** Med avslutande `/` är sökvägen okänd: 302 till inloggningen. Ett okänt recept är
+  404, utan token 403. [O]
+- **c. Vad länken öppnar utan inloggning.** Sidan svarar 200 med HTML och `GET
+  /api/recipe/{id}/?share=<uuid>` 200 med receptet. Utan `share` är det 403, med fel `share` 404. Ett
+  privat recept går att öppna med sin länk. [O]
+- **d. Vem får en länk.** Ägaren och en medlem får 200. **En gäst får 403 `{"error":
+  "sharing_disabled"}`**, och en medlem 403 för någon annans privata recept. [O]
+- **e. Utrymme utan delning.** `allow_sharing` är skrivskyddat i API:t, så `contract.yml` skapar ett
+  andra utrymme i databasen. `space/current` säger `false` och `share-link` svarar 403
+  `{"error": "sharing_disabled"}`. [O] Appen läser fältet (`ServerFeature.SHARE_LINK`).
+- **f. Kroppen har inget `detail`** (d, e), till skillnad från Tandoors andra 403. `ErrorClassifier`
+  känner igen den: annars vore det "blockerad av brandvägg", som pausar synken. [S]
+<!-- /Fas 4 dela recept -->

@@ -743,18 +743,17 @@ inte i röktestet; ai-foto-banan prövar Claude-klienten mot en fejkad server i 
 
 **Vid 0.6.0:** se "Integration av Fas 4 (0.6.0)". **Vid 0.4.0** (integrationen, `smoke.yml` körning 41002843336): 77 174 745 B (77,2 MB) mot
 77 154 264 B på `main` 5628a1d före integrationen och 7 616 478 B före Fas S, alltså +69,6 MB för
-hela fasen (licenstexterna och keep-regeln för DTO:erna är ca 20 KB). Beslutet om ABI-filter eller
-uppdelade APK:er (se förslaget nedan) är fortfarande öppet.
+hela fasen (licenstexterna och keep-regeln för DTO:erna är ca 20 KB).
+
+**Beslutat 2026-11-07 (ägaren): APK:n behåller alla fyra ABI.** Inga ABI-filter och inga uppdelade
+APK:er; en enda fil fungerar på alla telefoner och i röktestets emulator.
 
 Nästan allt är **ML Kits bundlade bibliotek**: de inbyggda biblioteken är 61,5 MB i APK:n
 (`libmlkit_google_ocr_pipeline.so` 6,8–11,6 MB och `libbarhopper_v3.so` 3,2–6,1 MB per ABI, för
 arm64-v8a, armeabi-v7a, x86 och x86_64; med minSdk 34 lagras de okomprimerade och sidjusterade),
 modellerna i `assets/` ca 3 MB. Anthropic-SDK:n (Jackson, `kotlin-reflect`) gör debug-APK:n stor
 (osorterade dex-filer) men krymps av R8; resten av ökningen i den minifierade APK:n är ca 4 MB kod.
-**Förslag** (beslut för release-flödet, inte gjort i grunden): bara `arm64-v8a` (+ `x86_64` för
-röktestets emulator) i `sideload` med `ndk { abiFilters }` eller ABI-uppdelade APK:er (Obtainium
-väljer filen), eller `packaging.jniLibs.useLegacyPackaging = true` (mindre nedladdning, större
-installation). Bara arm64-v8a skulle ta bort ca 35 MB.
+Bara `arm64-v8a` hade tagit bort ca 35 MB, men beslutet ovan väger tyngre.
 
 **R8:** ML Kit hittar sina komponentregistrarer via manifestets meta-data och skapar dem med en
 konstruktor utan argument, som R8 full mode tog bort ("Could not instantiate … NoSuchMethodException
@@ -1092,8 +1091,8 @@ så det togs bort på servern när receptet sparades.
 **Tester:** `Phase4EditorContractTest`; `RecipeEditOptionsTest` (`:core:sync`, båda versionerna);
 `RecipeEditorOptionsViewModelTest`; `RecipeEditorShot.EDITING_OPTIONS`, `LINK_PICKER`, `LINK_PICKER_EMPTY`
 i referensbilds- och ATF-testerna; röktestet `Phase3SmokeTest.editorOptions_flagsSubRecipeAndNutrition_goWithThePatch`
-(reglagen, arket och typerna under R8). Filväljaren är systemets och går inte att köra där, så
-uppladdningen är bara testad i `RecipeEditOptionsTest` och kontraktstestet.
+(reglagen, arket och typerna under R8) och `Phase3SmokeTest.stepFile_chosenInTheSystemFilePicker_isUploadedBeforeThePatch`
+(uppladdningen under R8, med systemets filväljare, se "Fas 4 komplettering 3").
 
 **Referensbilder** (Screenshots 42262662432, bara dessa togs): nio ändrade där "Privat recept" eller
 stegets reglage syns (`editor/phone_editor_new_*`, `phone_tall_editor_{editing,kept_edit,original}*`,
@@ -1365,8 +1364,8 @@ Planen §8.7 "Import klar". En AI-import tar 20–30 s och användaren lämnar o
 | Annat konto aktivt, eller utloggad | ingen notis; `AccountNotifications` tar också bort en öppen notis |
 
 Ett tryck tar tillbaka appen som den lämnades, med svaret på importskärmen. Notisen försvinner också
-om användaren kommer tillbaka på annat sätt. Resultatet ligger kvar i `RecipeImportViewModel` som
-förut, så om systemet dödar processen efter notisen får importen göras om (se klassens kommentar).
+om användaren kommer tillbaka på annat sätt. Svaret överlever att systemet dödar processen efter
+notisen, se "Fas 4 komplettering 3".
 
 **Varför en worker:** Android fryser en cachad process några sekunder efter att den lämnat skärmen.
 Anropet ligger i skärmens ViewModel och svaret skulle bli liggande tills användaren kom tillbaka, så
@@ -1388,6 +1387,80 @@ efter 25 s, appen är borta under tiden och notisen ska komma innan appen öppna
 workern. Det och kvotens gräns är inte prövade på en fysisk telefon. Mot en riktig AI-leverantör är
 importen fortfarande inte prövad.
 <!-- /Fas 4 komplettering-1 -->
+
+<!-- Fas 4 komplettering-3 -->
+## Fas 4 komplettering 3
+
+Luckor som slutkontrollen hittade, godkända av ägaren. Ingen Room-ändring.
+
+### Dela recept (`:feature:recipes`, `:core:sync`, plan §6.2, §8.6)
+
+Receptets meny har "Dela länk" och "Dela som text". Båda går till systemets delningsark. Två rader i
+menyn i stället för en rad och ett val efteråt: ett tryck mindre, och inget nytt läge på skärmen.
+Fakta i `Phase4ShareContractTest` (FACTS "Fas 4: dela recept").
+
+| Del | Var | Beteende |
+|---|---|---|
+| **Dela länk** | `RecipeRepository.shareLink`, `RecipeService.shareLink`, `RecipeDetailViewModel` | ett `GET /api/share-link/{id}` utan `/` när användaren trycker, aldrig i förväg och aldrig omförsök: varje anrop gör en ny länk på servern, och sökvägen utan `/` räknas för sig i proxyns logg (plan §4.1). Två tryck ger ett anrop (`fetchingShareLink`). Ett recept som inte skickats än frågar inte servern alls |
+| **Vem ser länken** | `RecipeRepository.observeShareLinkAvailable`, `TandoorCapabilities.plan` | inte i demoläget, inte för en gäst (403) och inte när utrymmet har `allow_sharing: false`, som nu tar bort `ServerFeature.SHARE_LINK`. Raden ligger kvar offline; svaret säger då att länken kräver anslutning och att texten går att dela |
+| **Dela som text** | `RecipeShareText` | det skärmen visar just nu: namn, beskrivning, portioner, ingredienser i vald enhet, steg och receptets källa. Serverns adress är inte med. Bara det lagrade receptet behövs, så det fungerar offline, i demoläget och för en gäst |
+| **Fel** | `DataProblem.SHARING_OFF`, `shareLinkFailedMessage`, `ErrorClassifier` | en 403 med fungerande token är en vägran, inget utloggat konto (`confirmForbidden`). Kroppen `{"error": "sharing_disabled"}` saknar `detail`, som annars skiljer Tandoor från en brandvägg: `ErrorClassifier` känner igen den, annars hade en vägrad länk pausat synken som "blockerad". Alla tre meddelandena säger att texten finns kvar |
+| **TalkBack** | `ShareItems` | raderna namnger receptet ("Dela en länk till Pannkakor") |
+
+**Tester:** `Phase4ShareContractTest`, `RecipeRepositoryTest`, `CapabilitiesTest`,
+`RecipeDetailViewModelTest`, `RecipeShareTextTest`, `RecipeScreensTest.theDetailMenuSharesByLinkAndAsText`,
+`DtoFixturesTest` och röktestet `Phase3SmokeTest.recipeShared_aLinkIsOneRequest_andTheTextNeedsNone`.
+Menyn syns inte i referensbilderna, så inga bilder ändrades.
+
+### AI-svaret överlever processen
+
+Notisen säger "klart att granska", men svaret låg bara i `RecipeImportViewModel`, och att göra om
+anropet kostar utrymmets krediter. `SavedStateHandle` räcker inte: svaret kommer ofta efter
+`onSaveInstanceState`.
+
+`AiImportWatch.whileRunning` lagrar svaret när det kommer och **före** notisen, också med appen på
+skärmen, i en `sync_state`-rad (`SyncEntities.KEPT_AI_IMPORT`, JSON i `hash`, `KeptImportStore`). Raden
+håller utkastet, bilderna, dubbletterna och sökvägen till fotot, aldrig en nyckel, och innehållet
+loggas inte. `RecipeImportViewModel` läser den när skärmen öppnas.
+
+| Händelse | Vad händer med raden |
+|---|---|
+| Svaret på ett foto, en PDF eller en AI-tolkad text kommer | skrivs. En länk eller en text är gratis att göra om och lagras inte |
+| Skärmen får svaret | skrivs om med fotots sökväg och länken texten kom med |
+| AI:n fördelar ingredienserna på stegen | skrivs om: det var ett betalt anrop till. "Ångra" efter processdöd finns inte |
+| "Öppna i redigeraren", "Börja om" eller bakåt från granskningen | tas bort (`forgetKeptResult`, på appens scope, så att det hinner klart när skärmen försvinner) |
+| Kontot byts, loggas ut eller demoläget startas | tas bort (`AccountNotificationCleanup`). Den kommer inte tillbaka med kontot |
+| Skärmen lämnas på annat sätt (omval av fliken) | står kvar till nästa gång Importera recept öppnas |
+
+Notisen öppnar `AppOpenDestinations.IMPORT_RESULT`: importen som den lämnades när den finns i stacken,
+också efter processdöd, annars en ny sida som hittar svaret. Det gäller också när uppgiften svepts
+bort. Fotot ligger i cachen och kan vara borta: granskningen visas då utan original. Något annat som
+delas till appen väntar tills svaret är hanterat, eftersom dess import annars skulle ersätta det.
+Ett utkast över 512 KB lagras inte: alla läsare av `sync_state` får betala för raden, och SQLites
+markör tar omkring 2 MB per rad. Lagringen får aldrig fälla importen.
+
+**Tester:** `AiImportWatchTest`, `KeptImportJsonTest`, `RecipeImportRepositoryTest`,
+`RecipeImportViewModelTest`, `AccountNotificationCleanupTest`, `ShellNavigationStateTest` och röktestet
+`Phase4SmokeTest.aiImportEndsWithTheAppAway_theNotificationSaysSo_andTheResultWaits`, som nu dödar
+processen efter notisen, trycker på den och kräver svaret utan ett andra AI-anrop.
+
+### Stegfilen under R8
+
+`Downloads` (`:smoke`) lägger en syntetisk PDF i Hämtade filer och kör DocumentsUI som `Gallery` kör
+bildväljaren: filen i senaste, annars genom lådan till Hämtade filer.
+`Phase3SmokeTest.stepFile_chosenInTheSystemFilePicker_isUploadedBeforeThePatch` kräver `POST
+/api/user-file/` med namn och innehåll före PATCH:en och stegets `file` med bara `{id, name}`.
+
+### Ägarens beslut (2026-11-07)
+
+- Sammanslagning i listvyn, "Tina ut"-påminnelse kvällen innan, pannstorlek och rutnätsvy på listan
+  flyttas till Fas 5 ([ROADMAP.md](ROADMAP.md)).
+- APK:n behåller alla fyra ABI, se "APK-storlek".
+
+**Bevakningen:** `fas4.editor` och `fas4.share` står nu i `PHASES`. Redigerarens 70 fakta är lika på
+2.6.15, 2.7.2 och `latest` (Tandoor-bevakning 42309088559), delningens skiljer sig på en punkt,
+som står i `reviewed-changes.json` under "2.7".
+<!-- /Fas 4 komplettering-3 -->
 
 <!-- Fas 4 fas3-rester -->
 ## Fas 3:s rester (`:feature:recipes`, `:core:sync`, `:feature:home`, `:feature:widgets`, Fas 4, bana fas3-rester)
@@ -2600,8 +2673,8 @@ Fas 2:s öppna punkter (se "Integration av Fas 2", "Kvar"), utan schemaändring:
   returtyp (kopplingens `move`, dryckens foto), Open Food Facts-svaret och Gemini/OpenAI-svaren
   lästes på huvudtråden (`NetworkOnMainThreadException`), och foto av kylen gick inte att nå med
   ett tomt skafferi. `DefaultBarcodeLookup` skriver nu felets typ (aldrig koden) i enhetens logg.
-- **Kvar (avsiktligt eller utanför fasen):** APK:n är ca 77 MB (ML Kit för fyra ABI); ABI-filter
-  eller uppdelade APK:er är användarens beslut. Kameravägen (CameraX-förhandsvisning, ML Kit på
+- **Kvar (avsiktligt eller utanför fasen):** APK:n är ca 77 MB (ML Kit för fyra ABI, beslutat att
+  behålla dem, se "APK-storlek"). Kameravägen (CameraX-förhandsvisning, ML Kit på
   levande bilder) prövas bara på en riktig telefon; röktestet går via galleriet. "80 % rätt andra
   gången samma butik används" är bara visat med syntetiska kvitton och inlärda alias, inte mätt på
   riktiga kvitton. Gemini och OpenAI är byggda efter dokumentationen och prövas bara mot falska
@@ -4318,7 +4391,7 @@ Varje natt (och manuellt, med valfria extra taggar):
    sviten: alla faser (Fas 0–3, Fas S och Fas 4:s klasser) och webbens skalningstabell.
 3. `contract-tests/watch/report.py` jämför varje taggs observerade fakta (varje
    `observed-facts.json` i `PHASES`: `fas0`, `fas1`, `fas2`, `fasS`, `fas3`, `fas4.autoplan`,
-   `fas4.fas3Rest`, `fas4.nutrition`) med 2.6.13 i samma körning (UUID:er, sekunder, versionen och
+   `fas4.fas3Rest`, `fas4.nutrition`, `fas4.editor`, `fas4.share`) med 2.6.13 i samma körning (UUID:er, sekunder, versionen och
    det testet självt skickade räknas bort, nyckelordens ordning spelar ingen roll) och skriver
    tabellen och diffen i jobbsammanfattningen. **En ny kontraktsklass som spelar in fakta ska in i
    `PHASES`,** annars jämförs de aldrig.
@@ -4340,6 +4413,7 @@ skrivs ur en körnings `contract-recordings-*`-artefakter (diffen mellan 2.6.13 
 taggen), aldrig för hand utan granskning. Fas 3:s och Fas 4:s fakta jämfördes inte förrän
 granskningen av Fas 4: skillnaderna (valideringsfel i nästlade listor kommer från 2.6.15 som ett
 objekt med index som nycklar) står därför också på en egen rad "2.6", tagna ur körning 42195359951.
+Redigerarens fakta jämfördes inte förrän komplettering 3 (körning 42309088559): inga skillnader.
 
 **Tandoor 2.7 (komplettering 2026-10-25):** 2.7.0 tog bort `api-token-auth` (302 till
 `/account/login/`). Appen loggar in via allauth headless (`TandoorAuthenticator`, se "Nätverk"),
@@ -4646,6 +4720,10 @@ den kod som skickas:
   JSON-LD ger det inspelade receptet, "Open in the editor" visar utkastet och inget sparas. (f)
   Demoläget: två recept, veckoförslag sparade i demot och snabb push som säger varför den saknas,
   utan en enda begäran.
+- **Fas 4 komplettering 3:** `Phase3SmokeTest` väljer en stegfil i systemets filväljare (`Downloads`,
+  DocumentsUI) och delar ett recept (`FakeTandoor` svarar med fixturen `fas4/share/lank`, och
+  delningsarket måste öppnas efter exakt en begäran). `Phase4SmokeTest` dödar processen efter
+  AI-notisen. Se "Fas 4 komplettering 3".
 - **Fas 3 (0.5.0, `Phase3SmokeTest`, tillagd i granskningen av Fas 4):** det Fas 3 lade till hade
   aldrig körts minifierat. `FakeRecipeEdits` (`FakeTandoor.recipeEdits`, med `enabled` före
   inloggningen) svarar som Tandoor på redigerarens skrivningar, och en ändring läses tillbaka, också

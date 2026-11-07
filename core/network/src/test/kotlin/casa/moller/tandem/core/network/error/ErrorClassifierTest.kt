@@ -140,6 +140,15 @@ class ErrorClassifierTest {
         assertEquals(TandemError.Blocked, classify(403, "{}", "application/json"))
     }
 
+    /** FACTS "Fas 4: dela recept": a share link refused by Tandoor must not pause the sync as "blocked". */
+    @Test
+    fun status403OfASpaceWithoutSharingIsTandoorsOwn() {
+        assertEquals(
+            TandemError.Unauthorized(UnauthorizedSource.TANDOOR),
+            classify(403, """{"error":"sharing_disabled"}""", "application/json"),
+        )
+    }
+
     @Test
     fun status403WithJsonObjectIsUnauthorizedWhateverTheLanguage() {
         assertEquals(

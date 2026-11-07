@@ -60,7 +60,9 @@ telefonen. Notiserna om listan och om det som går ut är av tills du slår på 
 - **Notis när en AI-import är klar:** lämnar du appen medan Tandoors AI läser ett foto, en PDF eller
   en text säger en notis till när receptet väntar på granskning, eller om det inte gick. Den här
   notisen är på när Tandem får visa notiser, och du stänger av den med kanalen "Import klar" i
-  systemets inställningar.
+  systemets inställningar. När svaret har kommit finns det kvar även om telefonen stänger Tandem,
+  så importen behöver inte göras om: notisen eller Importera recept tar dig till granskningen. Det
+  försvinner när du öppnat receptet, kastat det eller bytt konto.
 - Byter du konto eller loggar ut försvinner notiserna om det kontots lista och skafferi, och
   snabb push släpps hos UnifiedPush-appen och, om tjänsten går att nå, hos tjänsten.
 
@@ -113,6 +115,10 @@ telefonen. Notiserna om listan och om det som går ut är av tills du slår på 
 
 **Övrigt**
 
+- **Dela recept:** receptets meny har "Dela länk", en Tandoor-länk som går att öppna utan att logga
+  in, och "Dela som text" med ingredienser och steg så som de står på skärmen. Texten fungerar också
+  offline, i demoläget och för gäster. Länken finns inte i demoläget, för gäster eller när delning
+  är avstängd på servern.
 - **Näringsvärden** visas i kJ eller kcal som du valt i Tandoor.
 - **Anpassa Idag:** välj vilka receptkaruseller Idag visar och i vilken ordning (sparas i
   telefonen). Kan laga nu, Vill laga och Favoriter ligger kvar som de är.
