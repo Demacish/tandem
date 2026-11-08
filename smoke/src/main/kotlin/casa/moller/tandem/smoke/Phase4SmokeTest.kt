@@ -6,6 +6,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.Until
 import java.time.Instant
 import java.time.LocalDate
@@ -505,8 +506,10 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         app.tapDescription("Next week")
         app.device.waitForIdle()
         app.tapDescription("Next week")
-        app.waitFor(By.res(WEEK_AGENDA))
         val card = By.res(WEEK_SUGGEST_CARD)
+        // An empty week has its note and "Want to cook" above the agenda, where a screen swipe
+        // lands: the agenda itself is scrolled to the card.
+        app.waitFor(By.res(WEEK_AGENDA)).scrollUntil(Direction.DOWN, Until.findObject(card))
         for (attempt in 1..TAP_ATTEMPTS) {
             app.findInList(card)
             clickAtRest(listOf(card))
