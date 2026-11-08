@@ -2,6 +2,7 @@ package casa.moller.tandem.core.data.settings
 
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.timer.TimerMode
 import kotlinx.coroutines.flow.Flow
@@ -59,4 +60,9 @@ interface SettingsRepository {
 
     /** Hemma's offer of the expiry notification was answered with "Inte nu". */
     suspend fun setPantryExpiryOfferDismissed(dismissed: Boolean): Outcome<Unit>
+
+    // --- Fas 5 (kok lane) ---
+
+    /** Cook mode's handsfree control (plan §8.1 "Handsfree", #32), remembered for the next time. */
+    suspend fun setHandsfree(handsfree: HandsfreeSettings): Outcome<Unit>
 }

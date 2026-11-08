@@ -13,6 +13,7 @@ import casa.moller.tandem.core.model.diagnostics.LogExport
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.CookTextScale
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.model.timer.TimerCapabilities
@@ -188,6 +189,9 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings.Default) : Setti
     override suspend fun setExactAlarmPromptDismissed(dismissed: Boolean) = write { it.copy(exactAlarmPromptDismissed = dismissed) }
 
     override suspend fun setSystembolagetLink(shown: Boolean?) = write { it.copy(systembolagetLink = shown) }
+
+    // Fas 5 (kok lane)
+    override suspend fun setHandsfree(handsfree: HandsfreeSettings) = write { it.copy(handsfree = handsfree) }
 
     private fun write(transform: (AppSettings) -> AppSettings): Outcome<Unit> {
         if (failWrites) return Outcome.Failure(DataProblem.SETTINGS_NOT_SAVED.toError())

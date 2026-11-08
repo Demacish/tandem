@@ -5,7 +5,9 @@ import casa.moller.tandem.core.data.account.AccountSessions
 import casa.moller.tandem.core.data.internal.DefaultAccountRepository
 import casa.moller.tandem.core.data.internal.DefaultAppearanceRepository
 import casa.moller.tandem.core.data.internal.DefaultSettingsRepository
+import casa.moller.tandem.core.data.internal.InMemoryPanSizeRepository
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
+import casa.moller.tandem.core.data.recipe.PanSizeRepository
 import casa.moller.tandem.core.data.remote.NetworkTandoorRemote
 import casa.moller.tandem.core.data.remote.TandoorRemote
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -43,6 +45,10 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindTandoorRemote(impl: NetworkTandoorRemote): TandoorRemote
+
+    // --- Fas 5 (kok lane): the tin chosen for a recipe (plan §8.1 "Pannstorlek"), shared by the recipe view and cook mode. ---
+    @Binds
+    abstract fun bindPanSizeRepository(impl: InMemoryPanSizeRepository): PanSizeRepository
 
     // --- Phase 1b (integration lane): the modules' notification channels, created at startup. ---
     @Multibinds

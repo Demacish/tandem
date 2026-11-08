@@ -67,6 +67,9 @@ data class AppSettings(
     val pantryExpiryNotifications: Boolean = false,
     /** Hemma's offer of [pantryExpiryNotifications] was answered with "Inte nu" (never offered again). */
     val pantryExpiryOfferDismissed: Boolean = false,
+    // --- Fas 5 (kok lane): cook mode's handsfree control (plan §8.1, #32). ---
+    /** Volume keys, voice commands and reading aloud in cook mode (all off until chosen). */
+    val handsfree: HandsfreeSettings = HandsfreeSettings(),
 ) {
     /** Whether a drink shows "Sök på Systembolaget" for a UI in [languageTag] ("sv", "en-GB"). */
     fun systembolagetLinkShown(languageTag: String): Boolean =

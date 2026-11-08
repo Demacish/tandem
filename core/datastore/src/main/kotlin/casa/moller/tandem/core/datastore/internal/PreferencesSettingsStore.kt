@@ -14,6 +14,7 @@ import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.CookTextScale
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.SyncInterval
@@ -71,6 +72,11 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         // --- Fas 4 (skafferinotis lane) ---
         val PANTRY_EXPIRY_NOTIFICATIONS = booleanPreferencesKey("pantry_expiry_notifications")
         val PANTRY_EXPIRY_OFFER_DISMISSED = booleanPreferencesKey("pantry_expiry_offer_dismissed")
+
+        // --- Fas 5 (kok lane): cook mode's handsfree control ---
+        val HANDSFREE_ENABLED = booleanPreferencesKey("handsfree_enabled")
+        val HANDSFREE_VOICE = booleanPreferencesKey("handsfree_voice")
+        val HANDSFREE_READ_STEPS = booleanPreferencesKey("handsfree_read_steps")
     }
 
     companion object {
@@ -116,6 +122,12 @@ private fun Preferences.toAppSettings(): AppSettings {
             ?: defaults.pantryExpiryNotifications,
         pantryExpiryOfferDismissed = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_OFFER_DISMISSED]
             ?: defaults.pantryExpiryOfferDismissed,
+        // --- Fas 5 (kok lane) ---
+        handsfree = HandsfreeSettings(
+            enabled = this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] ?: defaults.handsfree.enabled,
+            voice = this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] ?: defaults.handsfree.voice,
+            readSteps = this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] ?: defaults.handsfree.readSteps,
+        ),
     )
 }
 
@@ -171,4 +183,8 @@ private fun MutablePreferences.write(settings: AppSettings) {
     // --- Fas 4 (skafferinotis lane) ---
     this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS] = settings.pantryExpiryNotifications
     this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_OFFER_DISMISSED] = settings.pantryExpiryOfferDismissed
+    // --- Fas 5 (kok lane) ---
+    this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] = settings.handsfree.enabled
+    this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] = settings.handsfree.voice
+    this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] = settings.handsfree.readSteps
 }

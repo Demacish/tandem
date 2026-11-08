@@ -6,6 +6,7 @@ import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.CookTextScale
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.timer.TimerMode
 import java.io.IOException
@@ -45,6 +46,9 @@ internal class DefaultSettingsRepository @Inject constructor(private val setting
 
     override suspend fun setPantryExpiryOfferDismissed(dismissed: Boolean): Outcome<Unit> =
         write { it.copy(pantryExpiryOfferDismissed = dismissed) }
+
+    // --- Fas 5 (kok lane) ---
+    override suspend fun setHandsfree(handsfree: HandsfreeSettings): Outcome<Unit> = write { it.copy(handsfree = handsfree) }
 
     override suspend fun setNotificationPermissionAsked(asked: Boolean): Outcome<Unit> =
         write { it.copy(notificationPermissionAsked = asked) }

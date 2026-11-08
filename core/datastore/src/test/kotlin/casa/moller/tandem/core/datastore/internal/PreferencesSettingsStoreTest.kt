@@ -10,6 +10,7 @@ import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.StoreScopes
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.PendingVersionNotice
 import casa.moller.tandem.core.model.settings.RecoveryReason
 import casa.moller.tandem.core.model.settings.SyncInterval
@@ -174,6 +175,8 @@ class PreferencesSettingsStoreTest {
             shoppingChangeNotifications = true,
             pantryExpiryNotifications = true,
             pantryExpiryOfferDismissed = true,
+            // Fas 5 (kok lane)
+            handsfree = HandsfreeSettings(enabled = true, voice = true, readSteps = false),
         )
         open().update { expected }
 
