@@ -131,9 +131,9 @@ class CookPanScreenTest {
             composeRule.waitForIdle()
         }
         composeRule.onNodeWithText("Scaled for a 20 cm tin (× 0.69)").assertIsDisplayed()
-        composeRule.onNodeWithText("276", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("276 g", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("As in the recipe (24 cm)").performScrollTo().performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("400", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("400 g", substring = true).assertIsDisplayed()
     }
 }

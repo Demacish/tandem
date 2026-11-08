@@ -94,9 +94,7 @@ internal class AndroidVoiceCommandRecognizer @Inject constructor(@ApplicationCon
     override suspend fun listenOnce(languageTag: String): VoiceResult = withContext(Dispatchers.Main.immediate) {
         when {
             !hasPermission() -> VoiceResult.Failed(VoiceFailure.NO_PERMISSION)
-
             !SpeechRecognizer.isOnDeviceRecognitionAvailable(context) -> VoiceResult.Failed(VoiceFailure.LANGUAGE_UNAVAILABLE)
-
             else -> listen(obtain(), languageTag).also { result -> if (result is VoiceResult.Failed) destroy() }
         }
     }

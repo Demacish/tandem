@@ -18,6 +18,26 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   rutnät"). Rutorna står i butikens ordning, tryck bockar av och lång tryckning öppnar Ändra. Valet
   sparas för varje konto.
 
+<!-- Fas 5, kok -->
+**Laga i köket**
+
+- **Handsfree i kokläget:** knappen bredvid Föregående och Nästa slår på handsfree. Då byter
+  volymknapparna steg (ned = nästa, upp = föregående) medan kokläget visas, men aldrig medan en
+  timer ringer. Med röstkommandon på säger du "nästa", "tillbaka" eller "upprepa" (också "nästa
+  steg", "gå tillbaka", "säg igen"; "next", "back" och "repeat" på engelska). Taligenkänningen sker i
+  telefonen och ljudet skickas aldrig någonstans; saknar telefonen igenkänning för språket säger
+  appen det, och volymknapparna fungerar ändå. Mikrofonen frågas om när du slår på rösten och är
+  bara på medan kokläget syns. Telefonen kan också läsa upp varje nytt steg. Allt är av tills du
+  slår på det, och valet sparas.
+- **Köksskärm:** ett mörkt läge för surfplattan på bänken (fungerar också på telefonen): klockan
+  stort, dagens måltider med "Laga" som öppnar kokläget med planerade portioner, morgondagens,
+  och timrarna som stora kort. Skärmen hålls på medan den visas. Öppnas från Idag (med text på
+  surfplattan) och under Mer.
+- **Pannstorlek:** ett recept som bakas i rund form (formens storlek i Tandoor) kan skalas till en
+  annan form i receptet och i kokläget, efter ytan som på Tandoors webb (24 → 20 cm ≈ 0,69),
+  ovanpå portionerna. Det står tydligt: "Skalat för 20 cm form (× 0,69)".
+<!-- /Fas 5, kok -->
+
 ## [0.6.0] – 2026-11-05
 
 Fas 4 ("Smart hushåll"): Tandem lär sig hur ni handlar och lagar. Butiken sorteras som du går,

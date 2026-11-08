@@ -123,13 +123,16 @@ private fun Preferences.toAppSettings(): AppSettings {
         pantryExpiryOfferDismissed = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_OFFER_DISMISSED]
             ?: defaults.pantryExpiryOfferDismissed,
         // --- Fas 5 (kok lane) ---
-        handsfree = HandsfreeSettings(
-            enabled = this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] ?: defaults.handsfree.enabled,
-            voice = this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] ?: defaults.handsfree.voice,
-            readSteps = this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] ?: defaults.handsfree.readSteps,
-        ),
+        handsfree = readHandsfree(defaults.handsfree),
     )
 }
+
+/** Fas 5 (kok lane): cook mode's handsfree control; a missing key reads as [defaults]'. */
+private fun Preferences.readHandsfree(defaults: HandsfreeSettings): HandsfreeSettings = HandsfreeSettings(
+    enabled = this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] ?: defaults.enabled,
+    voice = this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] ?: defaults.voice,
+    readSteps = this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] ?: defaults.readSteps,
+)
 
 /** The enum stored by name under [key], or null when absent or unknown (a newer version, garbage). */
 private fun <T : Enum<T>> Preferences.enumOrNull(key: Preferences.Key<String>, entries: List<T>): T? =

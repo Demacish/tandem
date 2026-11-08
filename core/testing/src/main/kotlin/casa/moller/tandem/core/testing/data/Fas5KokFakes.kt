@@ -35,10 +35,13 @@ class FakePanSizeRepository : PanSizeRepository {
  * with [hear], [hearNothing] or [fail]. [listening] says whether a round is open now (the
  * microphone would be on), [rounds] counts them and [languages] records their language.
  */
-class FakeVoiceCommandRecognizer(
-    var permission: Boolean = true,
-    var availability: VoiceAvailability = VoiceAvailability.AVAILABLE,
-) : VoiceCommandRecognizer {
+class FakeVoiceCommandRecognizer : VoiceCommandRecognizer {
+    /** RECORD_AUDIO is granted. */
+    var permission: Boolean = true
+
+    /** What [availability] answers for every language. */
+    var availability: VoiceAvailability = VoiceAvailability.AVAILABLE
+
     private val answers = Channel<VoiceResult>(Channel.UNLIMITED)
     private val open = MutableStateFlow(false)
 
@@ -69,7 +72,7 @@ class FakeVoiceCommandRecognizer(
 
     override fun hasPermission(): Boolean = permission
 
-    override suspend fun availability(languageTag: String): VoiceAvailability = availability
+    override suspend fun availability(languageTag: String): VoiceAvailability = this.availability
 
     override fun downloadLanguage(languageTag: String) {
         downloads += languageTag

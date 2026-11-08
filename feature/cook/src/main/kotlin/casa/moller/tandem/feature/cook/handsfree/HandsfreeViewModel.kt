@@ -190,8 +190,8 @@ class HandsfreeViewModel @Inject constructor(
 
     private fun readIfChosen(page: ShownPage) {
         val chosen = settings.value ?: return
-        if (!chosen.enabled || !chosen.readSteps || !visible.value || page.key == spokenKey) return
-        readAloud(page)
+        val wanted = chosen.enabled && chosen.readSteps
+        if (wanted && visible.value && page.key != spokenKey) readAloud(page)
     }
 
     private fun readAloud(page: ShownPage) {

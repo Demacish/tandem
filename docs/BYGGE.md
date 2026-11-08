@@ -1114,6 +1114,7 @@ sätts av integrationen. En rad per bana.
 | Bana | Punkt | Klart när | Läge |
 |---|---|---|---|
 | handla | Sammanslagning i listvyn och rutnätsvy (plan §8.2) | Samma livsmedel i omräkningsbara enheter är **en rad** på listan, i butiksläget och i delningstexten ("3 dl + 200 g grädde" → "5 dl"), räknat med Tandoors egna omräkningar och bastabell, också offline (cachen per konto, läst med de små tabellerna); det som inte går att räkna om står kvar på samma rad ("5 dl + 1 st"); att bocka av en rad bockar av alla dess poster i **en** bulk och att avmarkera tar tillbaka alla, servern behåller raderna (kontraktstest mot 2.6.13 och 2.7.1). Rutnätet slås på i listans meny och minns per konto; rutorna följer butikens ordning och de sammanslagna raderna, tryck bockar av, lång tryckning öppnar Ändra; varje ruta är **en** TalkBack-nod med namn, mängd, avdelning, läge och åtgärder; ATF och referensbilder på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | ✅ klart 2026-11-08 (PR 42477073185 och röktest "OK (37 tests)" 42477073270 på b237359; Contract 2.6.13/2.7.1 42474081585 och Tandoor-bevakning 42474081500 på e61ac91, kontraktstestet oförändrat sedan; referensbilder från Screenshots 42471117103), se "Sammanslagning och rutnät" |
+| kok | Handsfree (#32), köksskärm (#41), pannstorlek (plan §8.1, §8.7) | **Handsfree:** volymknapparna byter steg när handsfree är på (aldrig medan ett larm ringer, aldrig när det är av); "nästa/tillbaka/upprepa" fungerar på en telefon med svensk igenkänning i telefonen; uppläsning läser steget. **Köksskärm:** öppnas från Idag och Mer, mörk, stor text, skärmen på, dagens recept med ett tryck till kokläget, timrarna stora; i CI ett test som kör skärmen tre timmar utan läcka eller omritningsloop, och röktestet öppnar den. **Pannstorlek:** recept med `diameter` skalas efter ytan ovanpå portionerna i receptet och kokläget, offline, och det står "Skalat för 20 cm form". **BEHÖVER ENHET** (ägaren): 9 av 10 med fläkten på, tre timmar på en riktig surfplatta | pågår, se "Kokläget i Fas 5" |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 handla -->
@@ -1627,6 +1628,83 @@ på båda utan att rulla; fler rullar inne i raden.
 **Kvar till senare:** två recept sida vid sida på mycket breda skärmar (beslut ovan). Emulatorn:
 `Phase4SmokeTest`, se "Release-röktest".
 <!-- /Fas 4 kok2 -->
+
+<!-- Fas 5 kok -->
+## Kokläget i Fas 5 (`:feature:cook`, `:core:timer`, `:core:domain`, `:core:data`, Fas 5, bana kok)
+
+Plan §8.1 (handsfree, pannstorlek), §8.7 och §6.5 (köksskärmsläge #41), §7 #32/#41, §10 Fas 5.
+"Klart när" står i "Fas 5 – läge". Inget Room-schema ändrades.
+
+### Handsfree (#32)
+
+| Del | Var | Innehåll |
+|---|---|---|
+| Kommandon (ren) | `:core:domain` `voice/VoiceCommands` | `VoiceCommand` (NEXT, PREVIOUS, REPEAT). Hela yttrandet måste vara ett kommando efter normalisering (gemener, utan diakritiska tecken och skiljetecken, utfyllnadsord som "okej", "tack", "Tandem", "please" bort): "nästa", "nästa steg", "fortsätt", "gå vidare"; "tillbaka", "gå tillbaka", "bakåt", "föregående (steg)", "förra steget"; "upprepa", "säg igen", "läs upp", "en gång till"; engelska "next", "back", "repeat" med varianter. Samma fras två gånger räknas en gång; mer än sex ord är prat. Båda språken förstås alltid. Igenkännarens alternativ prövas i ordning |
+| Gränssnitt | `:core:data` `voice/Handsfree.kt` | `VoiceCommandRecognizer` (behörighet, `availability(språk)`, `downloadLanguage`, `listenOnce`, `release`), `VoiceResult`/`VoiceFailure`/`VoiceAvailability`; `StepSpeaker` (`speak` som väntar tills texten är uppläst, `release`) |
+| Android | `:core:timer` `voice/` | `AndroidVoiceCommandRecognizer`: **bara** `SpeechRecognizer.createOnDeviceSpeechRecognizer` (aldrig `createSpeechRecognizer`, alltså aldrig ljud till en nätverksigenkännare). Tillgänglighet från `checkRecognitionSupport` (installerade språk → finns, språk som kan hämtas → `DOWNLOADABLE` med `triggerModelDownload`, tomma listor eller inget svar på 3 s → prövas). Ett yttrande per runda med `EXTRA_PREFER_OFFLINE` och kommandona som `EXTRA_BIASING_STRINGS`; tystnad/ingen träff → `NothingHeard`, upptagen → `BUSY`, språk saknas → `LANGUAGE_UNAVAILABLE`; efter ett fel förstörs igenkännaren och nästa runda får en ny. `AndroidStepSpeaker`: `TextToSpeech` startas vid första uppläsningen, `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` medan den läser (`USAGE_ASSISTANT`), lämnas direkt efter. `VoiceModule` binder dem. `core:timer` är modulen för köksenhetens tjänster (timers, larm, röst) |
+| Manifest | `core/timer/src/main/AndroidManifest.xml` | `RECORD_AUDIO` (frågas i sammanhanget när rösten slås på, aldrig vid start), `<queries>` för `android.speech.RecognitionService` och `TTS_SERVICE`. Ingen förgrundstjänst och ingen `FOREGROUND_SERVICE_MICROPHONE` |
+| ViewModel | `feature/cook/handsfree/HandsfreeViewModel` | en per kokläge (båda recepten delar den, kommandona går till det som visas). Inställningen `AppSettings.handsfree` (`HandsfreeSettings`: på, röst, läs upp varje steg; nycklarna `handsfree_*` i inställningsfilen, av tills valt). Rösten körs bara när `listens && synlig` (routens `LifecycleResumeEffect`: resume → synlig, paus/skärm av/lämnar → inte); då kontrolleras behörighet och språk, sedan rundor: efter ord 400 ms paus, efter tystnad 150 ms, efter fel back-off 1, 2, 4, 8 s (högst 15 s), fem fel i rad → `FAILED` med "Försök igen". Uppläsning (`speaking`) avbryter rundan och mikrofonen öppnas först när texten är läst, så telefonen hör aldrig sig själv. "Upprepa" och "Läs upp" läser sidan; "läs upp varje steg" läser varje ny sida (inte den som visas när valet slås på). Språket för uppläsningen är stegets eget (`TimerDetector.guessLanguage`), annars UI:ts; igenkännaren lyssnar på UI:ts språk ("sv" → "sv-SE") |
+| Volymknapparna | `feature/cook/handsfree/VolumeKeys.kt`, `ui/CookScreen` | `volumeKey(key, down, repeat, active)`: ned = nästa, upp = föregående, bara första nedtryckningen; släpp och hållen knapp sväljs (volymen ändras inte); `active` = handsfree på och ingen timer ringer, annars ändrar knapparna volymen som vanligt. Kokläget ber om fokus igen när handsfree slås på och när arket stängs (knapparna når bara en fokuserad Compose-nod) |
+| UI | `feature/cook/handsfree/HandsfreeUi.kt` | `HandsfreeButton` (64 dp, mellan Föregående och Nästa, tonal när på, tillstånd "På/Av"), `HandsfreeBar` (lyssningsindikatorn under huvudet: volymknapparna, "Lyssnar – säg ”nästa”, ”tillbaka” eller ”upprepa”", "Hörde ”nästa”", "Läser upp steget", mikrofonen behövs med "Tillåt"/appens inställningar efter ett nej, språket kan hämtas, igenkänning saknas i telefonen, försöker igen, "Försök igen"; alltid "Läs upp"; en rad i korta fönster), `HandsfreeSheet`/`HandsfreeSheetContent` (huvudbrytaren, röstkommandon, läs upp varje steg, "Säg så här"; "Klar" fast under rullande innehåll). Utan `handsfree` ritas kokläget som före Fas 5 |
+
+### Köksskärmen (#41)
+
+`KitchenKey` (`FullScreenDestination`, döljer navigeringen på alla bredder), `KitchenRoute`,
+`KitchenScreen`, `KitchenViewModel` i `feature/cook/kitchen/`. Data: `HomeRepository.observeUpcomingMeals`
+(samma som Idag: i telefonen, offline och i demoläget) och `TimerController.timers` (inte klara,
+ringande först). Skärmen tvingar mörkt tema och ljusa systemikoner (`DarkSystemBars`), håller skärmen
+på (`KeepScreenOn`, båda räknas per fönster, så allt återställs när den lämnas, också när kokläget
+öppnas ovanpå), och har en egen typografi där timrarnas nedräkning är `displayLarge`. Klockan
+(`DateFormat.getTimeFormat`: telefonens 12/24 h) tickar en gång i minuten, timrarna en gång i
+sekunden och bara medan en timer visas; ViewModel tickar inte. En kolumn på telefon och surfplatta
+stående (måltider, timers, i morgon), två kolumner från 840 dp eller från 600 dp liggande (timers
+till vänster, måltider till höger). "Laga" öppnar kokläget med planerade portioner ovanpå
+köksskärmen (bakåt kommer tillbaka), en timer öppnar sitt kokläge som timerlistan. Ingångar:
+"Köksskärm" i Idags toppfält (ikon på telefon, knapp med text från 600 dp, `TODAY_KITCHEN_TAG`) och
+Mer → Köksskärm (`MoreScreen(onOpenKitchen)`); skalet: `ShellFeatures.Kitchen`, `entry<KitchenKey>`.
+
+**Tre timmar i CI:** `KitchenScreenTest.threeHoursWithTheScreenOn` kör skärmen med en riktig
+tickande klocka (testets bildklocka) i tre timmar: måltiderna ritas aldrig om, klockan högst en
+gång per minut, timrarna högst en gång per sekund, skärmen hålls på hela tiden och släpps när
+skärmen lämnas (`LocalKitchenRecompositions` är testets krok, en tom funktion i appen).
+`KitchenViewModelTest.threeHoursOnTheCounterChangeNothing`: inget nytt tillstånd och fortfarande en
+prenumeration på matsedeln efter tre timmar. Ägarens prov på en riktig surfplatta återstår.
+
+**Två recept sida vid sida (öppen punkt från 0.6.0), beslut:** fortfarande flikar på alla
+bredder. Två recept bredvid varandra halverar stegtexten, som ska vara stor i köket, och
+sidopanelen visar redan båda receptens timers. Köksskärmen visar dessutom alla timers och dagens
+recept på en gång. Frågan tas upp igen om ägaren efter köksprovet vill ha det.
+
+### Pannstorlek (plan §8.1)
+
+`:core:domain` `scaling/PanScaling`: `(ny / gammal)²` avrundat till två decimaler halvt uppåt,
+som Tandoors webb (vue3 `RecipeScalingDialog.changeDiameter`, samma i 2.6.13 och 2.7.1: webben
+sätter portionerna till `servings × faktor`), 1.0 utan form (`diameter` ≤ 0), formen 1–200 i
+receptets enhet (`diameter_text`, annars "cm"). Appen multiplicerar formens faktor med portionernas
+(`RecipeDisplay.build(extraFactor)`), så mängderna i listan och i stegtexten skalas båda. Vald form
+delas mellan receptvyn och kokläget genom `PanSizeRepository` (`:core:data`, i minnet per konto och
+demo, som webben börjar nästa besök på receptets form; inget Room-schema) och sparas dessutom i
+skärmens `SavedStateHandle` (processdöd). UI: receptvyn under portionerna (`DETAIL_PAN_TAG`) och
+kokläget i ingredienssektionen och sidopanelen (`COOK_PAN_TAG`): "Form 20 cm" med − / +, "Skalat för
+20 cm form (× 0,69)" och "Som i receptet (24 cm)". "Klart!" loggar portionerna som förut; "Lägg på
+inköpslistan" räknar fortfarande bara med portionerna (se öppna punkter). Kontraktsfakta:
+`Phase5PanContractTest` (FACTS "Fas 5: pannstorlek").
+
+### Tester
+
+`VoiceCommandsTest`, `PanScalingTest` (`:core:domain`); `InMemoryPanSizeRepositoryTest`
+(`:core:data`), `PreferencesSettingsStoreTest` (handsfree sparas); `VoicePlatformTest` (`:core:timer`:
+felkoder, språklistor, ingen mikrofon, manifestet); `HandsfreeViewModelTest` (falsk igenkännare och
+uppläsare: av som standard, bara synlig, kommandon och omstart, upprepa med stängd mikrofon, varje
+steg, stegets språk, ingen röst, mikrofonen i sammanhanget och efter nej, språk saknas/kan hämtas,
+back-off och "Försök igen", volymknapparnas regel), `CookPanViewModelTest`, `CookPanScreenTest`,
+`KitchenViewModelTest`, `KitchenScreenTest` (`:feature:cook`); `RecipeDetailPanTest`,
+`RecipeTinScreenshotTest` (`:feature:recipes`); `TodayKitchenTest` (`:feature:home`). Skärmbilder:
+`cook/*fas5_*` (handsfree i alla lägen och arket, formen, köksskärmen; telefon ljust/mörkt/sv/textstorlek
+2, telefon liggande, surfplatta i båda lägena), `recipes/phone_tall_detail_tin*`, `home/*_today_kitchen*`
+och Mer-bilderna i `:feature:shell` med raden Köksskärm; ATF i `Fas5KokAccessibilityTest`,
+`RecipeTinScreenshotTest`, `TodayKitchenTest`. Röktest: `Phase5KokSmokeTest` (se "Release-röktest").
+<!-- /Fas 5 kok -->
 
 <!-- Fas 4 ocr -->
 ## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)
@@ -4816,6 +4894,13 @@ den kod som skickas:
   DocumentsUI) och delar ett recept (`FakeTandoor` svarar med fixturen `fas4/share/lank`, och
   delningsarket måste öppnas efter exakt en begäran). `Phase4SmokeTest` dödar processen efter
   AI-notisen. Se "Fas 4 komplettering 3".
+- **Fas 5, bana kok (0.7.0, `Phase5KokSmokeTest`, demoläget, inte en enda begäran):** (a) köksskärmen
+  öppnas från Idags "Kitchen display" och från Mer, visar kvällens middag, "Cook" öppnar kokläget
+  ovanpå och bakåt kommer tillbaka; (b) handsfree slås på i kokläget (arkets brytare,
+  `cook:handsfree-switch`) och riktiga volymknappar (`pressKeyCode(KEYCODE_VOLUME_DOWN/UP)`) byter
+  steg 1 → 2 → 3 → 2; avstängt byter de inte steg; (c) demots kladdkaka (24 cm) i 20 cm form: "Scaled
+  for a 20 cm tin (× 0.69)", 100 g smör blir "69 g butter" och kokläget från receptet har samma form.
+  Rösten och uppläsningen kan inte provas på emulatorn (ingen igenkänning i telefonen).
 - **Fas 3 (0.5.0, `Phase3SmokeTest`, tillagd i granskningen av Fas 4):** det Fas 3 lade till hade
   aldrig körts minifierat. `FakeRecipeEdits` (`FakeTandoor.recipeEdits`, med `enabled` före
   inloggningen) svarar som Tandoor på redigerarens skrivningar, och en ändring läses tillbaka, också

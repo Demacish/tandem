@@ -26,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -75,7 +77,8 @@ import kotlinx.datetime.toJavaLocalDate
 private fun KitchenDisplayAction(onClick: () -> Unit) {
     val label = stringResource(R.string.home_kitchen_display)
     val modifier = Modifier.testTag(TODAY_KITCHEN_TAG)
-    if (LocalConfiguration.current.screenWidthDp.dp >= KitchenLabelMinWidth) {
+    val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+    if (windowWidth >= KitchenLabelMinWidth) {
         TandemTonalButton(
             text = label,
             onClick = onClick,

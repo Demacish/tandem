@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -47,6 +46,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.VolumeUp
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.voice.VoiceCommand
+import casa.moller.tandem.core.ui.recipe.currentLocale
 import casa.moller.tandem.feature.cook.R
 import java.util.Locale
 
@@ -190,7 +190,9 @@ private fun barText(state: HandsfreeUiState): BarText {
 @Composable
 private fun barIcon(state: HandsfreeUiState): ImageVector = when (state.voice) {
     VoiceStatus.LISTENING, VoiceStatus.STARTING, VoiceStatus.RETRYING -> TandemIcons.Mic
+
     VoiceStatus.SPEAKING -> TandemIcons.VolumeUp
+
     VoiceStatus.OFF,
     VoiceStatus.NEEDS_PERMISSION,
     VoiceStatus.DOWNLOADABLE,
@@ -221,8 +223,7 @@ internal fun commandWord(command: VoiceCommand): String = stringResource(
 @Composable
 private fun languageName(tag: String): String {
     val locale = Locale.forLanguageTag(tag)
-    val ui: Locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
-    return locale.getDisplayLanguage(ui).ifEmpty { tag }
+    return locale.getDisplayLanguage(currentLocale()).ifEmpty { tag }
 }
 
 /** The handsfree sheet over cook mode ([HandsfreeSheetContent]) while [HandsfreeUiState.sheetOpen]. */

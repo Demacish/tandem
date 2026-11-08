@@ -118,10 +118,16 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   text (0.6.0). Länken finns inte i demoläget, för gäster eller när utrymmet har delning avstängd.
 
 ## Fas 5: Plattform
-- Handsfree-kokläge med röst och uppläsning.
+- ✅ Handsfree-kokläge (0.7.0): volymknapparna byter steg, "nästa", "tillbaka" och "upprepa" med
+  taligenkänning i telefonen (aldrig via nätet) och uppläsning av stegen. Av som standard. Kvar:
+  köksprovet med fläkten på (9 av 10) görs på en riktig telefon.
 - Wear OS-app (till exempel Samsung Galaxy Watch 4 och senare): inköpslista och timers.
-- Påminnelse nära butiken, matsedeln i kalendern (iCal), köksskärmsläge för surfplattan.
-- Pannstorlek: skala ett recept efter formen, till exempel från 24 till 20 cm.
+- Påminnelse nära butiken, matsedeln i kalendern (iCal).
+- ✅ Köksskärmsläge för surfplattan (0.7.0): mörkt, mycket stor text, skärmen på, dagens recept med
+  ett tryck till kokläget och timrarna stora; från Idag och Mer. Kvar: tre timmar på en riktig
+  surfplatta.
+- ✅ Pannstorlek (0.7.0): skala ett recept efter formen, till exempel från 24 till 20 cm (efter ytan,
+  som Tandoors webb), i receptet och kokläget.
 - ✅ Sammanslagning i inköpslistans vy: samma vara i enheter som går att räkna om på en rad
   ("3 dl + 200 g grädde" blir "5 dl"), med Tandoors omräkningar, också offline; det som inte går att
   räkna om står kvar på samma rad. Att bocka av raden bockar av alla dess rader (0.7.0).
