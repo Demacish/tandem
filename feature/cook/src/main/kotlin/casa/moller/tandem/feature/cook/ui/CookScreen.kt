@@ -81,6 +81,7 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.timer.CookTimer
+import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.recipe.IconLabel
@@ -94,6 +95,13 @@ import casa.moller.tandem.feature.cook.CookAction
 import casa.moller.tandem.feature.cook.CookUiState
 import casa.moller.tandem.feature.cook.R
 import casa.moller.tandem.feature.cook.SilentAlarmCause
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeAction
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeBar
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeButton
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeSheet
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeUiState
+import casa.moller.tandem.feature.cook.handsfree.VolumeKey
+import casa.moller.tandem.feature.cook.handsfree.volumeKey
 import casa.moller.tandem.feature.cook.session.CookRecipeTabs
 import casa.moller.tandem.feature.cook.session.CookSessionAction
 import casa.moller.tandem.feature.cook.session.CookSessionUi
@@ -161,6 +169,10 @@ data class FoldBounds(val top: Float, val bottom: Float) {
  *   this recipe"), and the timers say their recipe. Empty (the default): one recipe, nothing added.
  * @param onSessionAction what the tabs and "Laga ett recept till" do ([CookSessionAction]).
  * @param onCloseTab ✕ with two recipes, when it differs from [onClose] (it can be undone, "Klart!" cannot).
+ * @param handsfree Fas 5 (plan §8.1 "Handsfree", #32): the handsfree control; null hides it (the
+ *   route always passes it). With handsfree on, the volume keys turn the pages (down = next, up =
+ *   previous) except while a timer alarm rings, and the listening indicator stands under the header.
+ * @param onHandsfreeAction what the handsfree button, indicator and sheet do.
  */
 @Composable
 fun CookScreen(
@@ -179,6 +191,8 @@ fun CookScreen(
     session: CookSessionUi = CookSessionUi(),
     onSessionAction: (CookSessionAction) -> Unit = {},
     onCloseTab: (() -> Unit)? = null,
+    handsfree: HandsfreeUiState? = null,
+    onHandsfreeAction: (HandsfreeAction) -> Unit = {},
 ) {
     val locale = currentLocale()
     val currentOnAction by rememberUpdatedState(onAction)
@@ -237,6 +251,8 @@ fun CookScreen(
                     warningActions = warningActions,
                     shoppingActions = shoppingActions,
                     pantryActions = pantryActions,
+                    handsfree = handsfree,
+                    onHandsfreeAction = onHandsfreeAction,
                 )
 
                 else -> Column(Modifier.fillMaxSize()) {
@@ -267,6 +283,7 @@ fun CookScreen(
             onDismiss = { adjustStepIndex = NO_ADJUST },
         )
     }
+    handsfree?.let { HandsfreeSheet(state = it, onAction = onHandsfreeAction) }
     state.notificationPrompt?.let {
         NotificationPromptDialog(
             onContinue = { onAction(CookAction.AcceptNotificationPrompt) },
@@ -348,6 +365,8 @@ private fun CookContent(
     session: CookSessionUi = CookSessionUi(),
     onSessionAction: (CookSessionAction) -> Unit = {},
     onCloseTab: (() -> Unit)? = null,
+    handsfree: HandsfreeUiState? = null,
+    onHandsfreeAction: (HandsfreeAction) -> Unit = {},
 ) {
     val now by rememberTimerNow()
     val timerActions = remember(onAction) {
@@ -376,7 +395,22 @@ private fun CookContent(
     // Fas 4: timers say their recipe when two recipes are open or the timers come from several.
     val showTimerRecipes = session.isTwo || state.timers.mapNotNull { it.recipeId }.distinct().size > 1
     val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(focusRequester) { runCatching { focusRequester.requestFocus() } }
+    // Fas 5: the volume keys only reach this column while it (or a child) has the focus, so it is
+    // asked for again when handsfree is turned on and when its sheet closes.
+    val volumeKeys = handsfree?.enabled == true && state.timers.none { it.state == TimerState.RINGING }
+    LaunchedEffect(focusRequester, handsfree?.enabled, handsfree?.sheetOpen) { runCatching { focusRequester.requestFocus() } }
+    val handsfreeBar: @Composable () -> Unit = {
+        handsfree?.let { HandsfreeBar(state = it, onAction = onHandsfreeAction, compact = availableHeight < CompactHeight) }
+    }
+    val pageButtons: @Composable (Modifier) -> Unit = { buttonsModifier ->
+        PageButtons(
+            state = state,
+            onAction = onAction,
+            modifier = buttonsModifier,
+            handsfree = handsfree,
+            onHandsfree = { onHandsfreeAction(HandsfreeAction.OpenSheet) },
+        )
+    }
     val progress = (state.page + 1).toFloat() / state.pageCount
     val pages: @Composable (Modifier, Boolean) -> Unit = { pagerModifier, showIngredients ->
         // Only the pager belongs to one recipe: the header and its tabs stay when the tab changes,
@@ -431,6 +465,7 @@ private fun CookContent(
             maxScrollHeight = maxScroll,
             compactHeight = availableHeight < CompactHeight,
             showTimerRecipes = showTimerRecipes,
+            pageButtons = pageButtons,
         )
     }
     // Where this column starts in the window, to place the tabletop halves around the fold.
@@ -440,6 +475,13 @@ private fun CookContent(
             .fillMaxSize()
             .onGloballyPositioned { windowTop = it.positionInWindow().y }
             .onKeyEvent { event ->
+                // Fas 5 (handsfree): the volume keys first; they keep their volume when not ours.
+                when (volumeKey(event.key, event.type == KeyEventType.KeyDown, event.nativeKeyEvent.repeatCount, volumeKeys)) {
+                    VolumeKey.NEXT -> return@onKeyEvent true.also { onAction(CookAction.Next) }
+                    VolumeKey.PREVIOUS -> return@onKeyEvent true.also { onAction(CookAction.Previous) }
+                    VolumeKey.SWALLOW -> return@onKeyEvent true
+                    VolumeKey.PASS -> Unit
+                }
                 if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
                 when (event.key) {
                     Key.DirectionRight, Key.PageDown -> true.also { onAction(CookAction.Next) }
@@ -455,12 +497,14 @@ private fun CookContent(
         when (layout) {
             CookLayout.PHONE -> {
                 header()
+                handsfreeBar()
                 pages(Modifier.weight(1f), true)
                 bottomArea(availableHeight * bottomShare(availableHeight))
             }
 
             CookLayout.TWO_PANE -> {
                 header()
+                handsfreeBar()
                 Row(Modifier.weight(1f)) {
                     CookSidePane(
                         state = state,
@@ -478,7 +522,7 @@ private fun CookContent(
                     VerticalDivider(Modifier.fillMaxHeight())
                     Column(Modifier.weight(STEP_PANE_WEIGHT)) {
                         pages(Modifier.weight(1f), false)
-                        PageButtons(state = state, onAction = onAction, modifier = Modifier.padding(TandemTheme.spacing.lg))
+                        pageButtons(Modifier.padding(TandemTheme.spacing.lg))
                     }
                 }
             }
@@ -490,6 +534,7 @@ private fun CookContent(
                 val upper = if (split != null) Modifier.height(with(density) { split.upper.toDp() }) else Modifier.weight(1f)
                 Column(upper.testTag(COOK_TABLETOP_UPPER_TAG)) {
                     header()
+                    handsfreeBar()
                     pages(Modifier.weight(1f), true)
                 }
                 if (split != null) {
@@ -693,6 +738,7 @@ private fun BottomArea(
     maxScrollHeight: Dp,
     compactHeight: Boolean,
     showTimerRecipes: Boolean = false,
+    pageButtons: @Composable (Modifier) -> Unit = { PageButtons(state = state, onAction = onAction, modifier = it) },
 ) {
     val spacing = TandemTheme.spacing
     Column(
@@ -727,7 +773,7 @@ private fun BottomArea(
                 )
             }
         }
-        PageButtons(state = state, onAction = onAction)
+        pageButtons(Modifier)
     }
 }
 
@@ -737,7 +783,13 @@ private fun BottomArea(
  * "Föregående" never breaks inside the word.
  */
 @Composable
-internal fun PageButtons(state: CookUiState, onAction: (CookAction) -> Unit, modifier: Modifier = Modifier) {
+internal fun PageButtons(
+    state: CookUiState,
+    onAction: (CookAction) -> Unit,
+    modifier: Modifier = Modifier,
+    handsfree: HandsfreeUiState? = null,
+    onHandsfree: () -> Unit = {},
+) {
     val spacing = TandemTheme.spacing
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
     BoxWithConstraints(modifier.fillMaxWidth()) {
@@ -764,11 +816,20 @@ internal fun PageButtons(state: CookUiState, onAction: (CookAction) -> Unit, mod
         if (stacked) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                 if (!state.isDonePage) next(Modifier.fillMaxWidth())
-                previous(Modifier.fillMaxWidth())
+                if (handsfree == null) {
+                    previous(Modifier.fillMaxWidth())
+                } else {
+                    // Fas 5: handsfree beside the page buttons (plan §8.1).
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                        previous(Modifier.weight(1f))
+                        HandsfreeButton(state = handsfree, onClick = onHandsfree)
+                    }
+                }
             }
         } else {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
                 previous(Modifier.weight(1f))
+                handsfree?.let { HandsfreeButton(state = it, onClick = onHandsfree) }
                 if (!state.isDonePage) {
                     next(Modifier.weight(1f))
                 } else {

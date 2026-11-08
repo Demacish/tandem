@@ -24,14 +24,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import casa.moller.tandem.core.designsystem.theme.TandemDarkTheme
+import casa.moller.tandem.core.domain.voice.VoiceCommand
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.accessibility.announce
+import casa.moller.tandem.core.ui.recipe.currentLocale
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeAction
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeEffect
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeViewModel
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.CookPageRequest
 import casa.moller.tandem.feature.cook.pantry.CookPantryRoute
@@ -44,6 +50,7 @@ import casa.moller.tandem.feature.cook.timers.TimersScreen
 import casa.moller.tandem.feature.cook.timers.TimersViewModel
 import casa.moller.tandem.feature.cook.ui.CookScreen
 import casa.moller.tandem.feature.cook.ui.DarkSystemBars
+import casa.moller.tandem.feature.cook.ui.stepPlainText
 import kotlinx.coroutines.launch
 /**
  * Cook mode for [key] (plan 6.2 "Kokläge", features #6–#8). Full screen on every width
@@ -183,6 +190,11 @@ fun CookRoute(
         viewModel.onAction(CookAction.RefreshCapabilities)
         onPauseOrDispose { }
     }
+    // Fas 5 (plan §8.1 "Handsfree", #32): one handsfree control for the cook mode, its commands go
+    // to the recipe shown; it listens only while cook mode is resumed.
+    val handsfreeViewModel = hiltViewModel<HandsfreeViewModel>(key = "cook-handsfree")
+    val handsfree by handsfreeViewModel.uiState.collectAsStateWithLifecycle()
+    HandsfreeEffects(handsfreeViewModel = handsfreeViewModel, shownViewModel = viewModel, shown = state)
     CookTheme(alwaysDark = state.alwaysDark) {
         // The pager and the dialogs follow the shown recipe by themselves (CookScreen); the header
         // with its tabs stays, so a tab switch keeps TalkBack's and the keyboard's focus on the tab.
@@ -204,9 +216,64 @@ fun CookRoute(
                 sessionViewModel.onAction(action)
                 if (action is CookSessionAction.OpenTimer) viewModels[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
             },
+            handsfree = handsfree,
+            onHandsfreeAction = handsfreeViewModel::onAction,
         )
         CookRecipePickerSheet(state = picker, onAction = sessionViewModel::onAction, offline = state.offline)
     }
+}
+
+/**
+ * Fas 5 (plan §8.1 "Handsfree", #32): what ties the handsfree control to the screen. Visible while
+ * resumed (the microphone closes on pause, screen off and when cook mode is left), the UI's
+ * language, the page shown (read aloud when chosen), the voice's "nästa"/"tillbaka" for the recipe
+ * shown, and the microphone asked for in context.
+ */
+@Composable
+private fun HandsfreeEffects(handsfreeViewModel: HandsfreeViewModel, shownViewModel: CookViewModel, shown: CookUiState) {
+    val context = LocalContext.current
+    val currentShown by rememberUpdatedState(shownViewModel)
+    val microphone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        handsfreeViewModel.onAction(HandsfreeAction.PermissionResult(granted))
+    }
+    LifecycleResumeEffect(handsfreeViewModel) {
+        handsfreeViewModel.onAction(HandsfreeAction.SetVisible(true))
+        onPauseOrDispose { handsfreeViewModel.onAction(HandsfreeAction.SetVisible(false)) }
+    }
+    val locale = currentLocale()
+    LaunchedEffect(handsfreeViewModel, locale) { handsfreeViewModel.onAction(HandsfreeAction.SetLanguage(locale.toLanguageTag())) }
+    val speech = cookSpeech(shown)
+    LaunchedEffect(handsfreeViewModel, shown.recipeId, shown.page, speech) {
+        if (speech.isNotEmpty()) handsfreeViewModel.onAction(HandsfreeAction.StepShown("${shown.recipeId}:${shown.page}", speech))
+    }
+    LaunchedEffect(handsfreeViewModel) {
+        handsfreeViewModel.effects.collect { effect ->
+            when (effect) {
+                is HandsfreeEffect.Command -> when (effect.command) {
+                    VoiceCommand.NEXT -> currentShown.onAction(CookAction.Next)
+                    VoiceCommand.PREVIOUS -> currentShown.onAction(CookAction.Previous)
+                    VoiceCommand.REPEAT -> Unit
+                }
+
+                HandsfreeEffect.RequestMicrophonePermission -> microphone.launch(Manifest.permission.RECORD_AUDIO)
+
+                HandsfreeEffect.OpenAppSettings -> context.openSettings(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri()),
+                )
+            }
+        }
+    }
+}
+
+/** What reading the page aloud says: "Steg 2 av 6. Koka pastan. Koka pastan i 4 liter vatten …". */
+@Composable
+private fun cookSpeech(state: CookUiState): String {
+    if (!state.hasDetail) return ""
+    if (state.isDonePage) return stringResource(R.string.cook_handsfree_speech_done)
+    val step = state.currentStep ?: return ""
+    val position = stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+    val text = stepPlainText(step.instruction).replace('\n', ' ')
+    return listOf(position, step.name, text).map { it.trim().trimEnd('.') }.filter { it.isNotEmpty() }.joinToString(". ")
 }
 
 /**

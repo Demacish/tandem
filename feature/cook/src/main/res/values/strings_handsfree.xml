@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.1 "Handsfree", #32): cook mode's handsfree control. -->
+<resources>
+    <string name="cook_handsfree">Handsfree</string>
+    <string name="cook_handsfree_state_on">On</string>
+    <string name="cook_handsfree_state_off">Off</string>
+    <string name="cook_handsfree_read_aloud">Read the step aloud</string>
+    <string name="cook_handsfree_keys_title">Volume keys turn the steps</string>
+    <string name="cook_handsfree_keys_body">Volume down: next step. Volume up: previous step.</string>
+    <string name="cook_handsfree_starting">Starting voice control…</string>
+    <string name="cook_handsfree_listening">Listening</string>
+    <string name="cook_handsfree_heard">Heard “%1$s”</string>
+    <string name="cook_handsfree_listening_body">Say “next”, “back” or “repeat”.</string>
+    <string name="cook_handsfree_speaking">Reading the step aloud…</string>
+    <string name="cook_handsfree_microphone_title">Voice control needs the microphone</string>
+    <string name="cook_handsfree_allow_microphone">Allow</string>
+    <string name="cook_handsfree_download_title">Voice control in %1$s needs a download</string>
+    <string name="cook_handsfree_download_body">The phone downloads the language so that it can recognise speech without the internet. The volume keys work meanwhile.</string>
+    <string name="cook_handsfree_download">Download</string>
+    <string name="cook_handsfree_unavailable_title">This phone cannot recognise %1$s by itself</string>
+    <string name="cook_handsfree_unavailable_body">Tandem never sends your voice anywhere, so voice control stays off. Use the volume keys.</string>
+    <string name="cook_handsfree_retrying">Voice control stalled, trying again…</string>
+    <string name="cook_handsfree_failed">Voice control is not working right now</string>
+    <string name="cook_handsfree_try_again">Try again</string>
+    <string name="cook_handsfree_speech_unavailable">The phone has no voice that can read this language aloud.</string>
+    <string name="cook_handsfree_word_next">next</string>
+    <string name="cook_handsfree_word_back">back</string>
+    <string name="cook_handsfree_word_repeat">repeat</string>
+    <string name="cook_handsfree_quoted">“%1$s”</string>
+    <string name="cook_handsfree_phrase_description">Say %1$s: %2$s</string>
+    <string name="cook_handsfree_sheet_intro">Cook without touching the screen. Everything happens on the phone, and only while cook mode is shown.</string>
+    <string name="cook_handsfree_switch_keys_body">The volume keys turn the steps: down for the next step, up for the previous one.</string>
+    <string name="cook_handsfree_switch_voice">Voice commands</string>
+    <string name="cook_handsfree_switch_voice_body">Say “next”, “back” or “repeat”. The phone recognises your voice by itself: no sound leaves your kitchen.</string>
+    <string name="cook_handsfree_switch_read">Read every step aloud</string>
+    <string name="cook_handsfree_switch_read_body">The phone reads a step when you turn to it. “Repeat” reads it again.</string>
+    <string name="cook_handsfree_say_title">What to say</string>
+    <string name="cook_handsfree_say_next">Next step</string>
+    <string name="cook_handsfree_say_back">Previous step</string>
+    <string name="cook_handsfree_say_repeat">Reads the step aloud again</string>
+    <string name="cook_handsfree_done">Done</string>
+    <string name="cook_handsfree_speech_done">Done! Save the meal in the cook log when you are ready.</string>
+</resources>

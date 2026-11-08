@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.1 "Handsfree", #32): kokläget utan händer. -->
+<resources>
+    <string name="cook_handsfree">Handsfree</string>
+    <string name="cook_handsfree_state_on">På</string>
+    <string name="cook_handsfree_state_off">Av</string>
+    <string name="cook_handsfree_read_aloud">Läs upp steget</string>
+    <string name="cook_handsfree_keys_title">Volymknapparna byter steg</string>
+    <string name="cook_handsfree_keys_body">Volym ned: nästa steg. Volym upp: föregående steg.</string>
+    <string name="cook_handsfree_starting">Startar röststyrningen …</string>
+    <string name="cook_handsfree_listening">Lyssnar</string>
+    <string name="cook_handsfree_heard">Hörde ”%1$s”</string>
+    <string name="cook_handsfree_listening_body">Säg ”nästa”, ”tillbaka” eller ”upprepa”.</string>
+    <string name="cook_handsfree_speaking">Läser upp steget …</string>
+    <string name="cook_handsfree_microphone_title">Röststyrningen behöver mikrofonen</string>
+    <string name="cook_handsfree_allow_microphone">Tillåt</string>
+    <string name="cook_handsfree_download_title">Röststyrning på %1$s behöver hämtas</string>
+    <string name="cook_handsfree_download_body">Telefonen hämtar språket så att den kan känna igen tal utan internet. Volymknapparna fungerar under tiden.</string>
+    <string name="cook_handsfree_download">Hämta</string>
+    <string name="cook_handsfree_unavailable_title">Telefonen kan inte känna igen %1$s på egen hand</string>
+    <string name="cook_handsfree_unavailable_body">Tandem skickar aldrig din röst någonstans, så röststyrningen är av. Använd volymknapparna.</string>
+    <string name="cook_handsfree_retrying">Röststyrningen hakade upp sig, försöker igen …</string>
+    <string name="cook_handsfree_failed">Röststyrningen fungerar inte just nu</string>
+    <string name="cook_handsfree_try_again">Försök igen</string>
+    <string name="cook_handsfree_speech_unavailable">Telefonen har ingen röst som kan läsa upp det här språket.</string>
+    <string name="cook_handsfree_word_next">nästa</string>
+    <string name="cook_handsfree_word_back">tillbaka</string>
+    <string name="cook_handsfree_word_repeat">upprepa</string>
+    <string name="cook_handsfree_quoted">”%1$s”</string>
+    <string name="cook_handsfree_phrase_description">Säg %1$s: %2$s</string>
+    <string name="cook_handsfree_sheet_intro">Laga mat utan att röra skärmen. Allt sker i telefonen och bara medan kokläget visas.</string>
+    <string name="cook_handsfree_switch_keys_body">Volymknapparna byter steg: ned för nästa, upp för föregående.</string>
+    <string name="cook_handsfree_switch_voice">Röstkommandon</string>
+    <string name="cook_handsfree_switch_voice_body">Säg ”nästa”, ”tillbaka” eller ”upprepa”. Telefonen känner igen rösten själv: inget ljud lämnar köket.</string>
+    <string name="cook_handsfree_switch_read">Läs upp varje steg</string>
+    <string name="cook_handsfree_switch_read_body">Telefonen läser steget när du byter till det. ”Upprepa” läser det igen.</string>
+    <string name="cook_handsfree_say_title">Säg så här</string>
+    <string name="cook_handsfree_say_next">Nästa steg</string>
+    <string name="cook_handsfree_say_back">Föregående steg</string>
+    <string name="cook_handsfree_say_repeat">Läser upp steget igen</string>
+    <string name="cook_handsfree_done">Klar</string>
+    <string name="cook_handsfree_speech_done">Klart! Spara måltiden i kokloggen när du är redo.</string>
+</resources>
