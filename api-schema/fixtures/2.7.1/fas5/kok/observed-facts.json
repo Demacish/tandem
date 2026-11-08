@@ -1,0 +1,21 @@
+{
+  "tandoorTag": "2.7.1",
+  "runDay": "2000-01-15",
+  "tin.create.status": 201,
+  "tin.detail.diameter": 24,
+  "tin.detail.diameterText": "cm",
+  "tin.detail.diameterType": "integer",
+  "none.detail.diameter": 0,
+  "none.detail.diameterText": "",
+  "list.found": true,
+  "list.hasDiameter": false,
+  "list.hasDiameterText": false,
+  "patch.20.status": 200,
+  "patch.20.diameter": 20,
+  "patch.decimal.status": 400,
+  "patch.null.status": 400,
+  "patch.negative.status": 200,
+  "patch.negative.diameter": -4,
+  "patch.longText.status": 400,
+  "mismatches": []
+}

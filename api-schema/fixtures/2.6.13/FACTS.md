@@ -1159,3 +1159,23 @@ och lägger till 1 dl tandem-grädde = 100 g.
   hittar också 1 l → 10 dl och mål utan `base_unit` via namnet. Det som inte går att räkna om står
   kvar på samma rad ("5 dl + 1 st"), som på webben. Se docs/BYGGE.md "Sammanslagning och rutnät".
 <!-- /Fas 5 omräkning -->
+
+<!-- Fas 5 pannstorlek -->
+## Fas 5: pannstorlek (plan §8.1, bana kok)
+
+`Phase5PanContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1) och spelar in till
+`fas5/kok/` (2026-11-08, inga avvikelser mot `EXPECTED`). Bevakningen jämför faktan (`fas5.kok`).
+
+- **a. Fälten.** `diameter` är ett heltal och `diameter_text` fri text (högst 32 tecken). Ett recept
+  med form (`diameter: 24`, `diameter_text: "cm"`) svarar 201 och detaljen har båda; ett utan form har
+  `diameter: 0` och `diameter_text: ""`. [O] Appen läser `diameter > 0` som en form och tom text som "cm".
+- **b. Bara i detaljen.** Översikten i `GET /api/recipe/` har varken `diameter` eller
+  `diameter_text`. [O] Appen skalar därför bara med den sparade detaljen (`recipe_detail`, också offline).
+- **c. Vad fältet tar emot.** `PATCH diameter: 20` → 200; `22.5` och `null` → 400 (`"A valid integer
+  is required."` respektive `"This field may not be null."`); `-4` lagras (200), därför räknar appen
+  allt som inte är positivt som "ingen form"; `diameter_text` med 33 tecken → 400. [O]
+- **d. Skalningen sker i webben, inte på servern.** Tandoors webb (vue3
+  `components/dialogs/RecipeScalingDialog.vue`, `changeDiameter`, likadan i 2.6.13 och 2.7.1) sätter
+  portionerna till `servings × Math.round((ny / gammal)² × 100) / 100`; 24 → 20 cm ger 0,69. [V källan]
+  Appen räknar likadant (`PanScaling.areaFactor`) och multiplicerar med portionernas faktor.
+<!-- /Fas 5 pannstorlek -->

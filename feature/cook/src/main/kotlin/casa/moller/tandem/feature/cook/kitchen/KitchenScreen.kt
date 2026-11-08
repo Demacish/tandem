@@ -116,17 +116,20 @@ fun KitchenScreen(
     KeepScreenOn()
     DarkSystemBars(enabled = true)
     TandemDarkTheme(enabled = true) {
-        MaterialTheme(colorScheme = MaterialTheme.colorScheme, shapes = MaterialTheme.shapes, typography = kitchenTypography()) {
-            Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .testTag(KITCHEN_TAG),
-                ) {
-                    val chosen = layout ?: kitchenLayoutFor(maxWidth, maxHeight)
+        Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .testTag(KITCHEN_TAG),
+            ) {
+                val chosen = layout ?: kitchenLayoutFor(maxWidth, maxHeight)
+                // A narrow window (a phone) gets one size less, so a large font never clips the time.
+                val compact = maxWidth < MediumWidth
+                val typography = kitchenTypography(compact)
+                MaterialTheme(colorScheme = MaterialTheme.colorScheme, shapes = MaterialTheme.shapes, typography = typography) {
                     Column(Modifier.fillMaxSize()) {
-                        KitchenHeader(onClose = onClose)
+                        KitchenHeader(onClose = onClose, compact = compact)
                         if (state.loading) {
                             LoadingState(modifier = Modifier.fillMaxSize())
                         } else {
@@ -139,11 +142,18 @@ fun KitchenScreen(
     }
 }
 
-/** The kitchen's type: the timers' countdown (`displaySmall` in [TimerCard]) and their names large. */
+/**
+ * The kitchen's type: the timers' countdown (`displaySmall` in [TimerCard]) and their names large;
+ * [compact] (phones) one step smaller.
+ */
 @Composable
-private fun kitchenTypography(): Typography {
+private fun kitchenTypography(compact: Boolean): Typography {
     val base = MaterialTheme.typography
-    return base.copy(displaySmall = base.displayLarge, titleMedium = base.headlineSmall, bodyMedium = base.titleMedium)
+    return base.copy(
+        displaySmall = if (compact) base.displayMedium else base.displayLarge,
+        titleMedium = if (compact) base.titleLarge else base.headlineSmall,
+        bodyMedium = base.titleMedium,
+    )
 }
 
 @Composable
@@ -196,9 +206,9 @@ private fun KitchenBody(
     }
 }
 
-/** The time, large, and the date; "Skärmen hålls på"; ✕ leaves. */
+/** The time, large, and the date; "Skärmen hålls på" where there is room; ✕ leaves. */
 @Composable
-private fun KitchenHeader(onClose: () -> Unit) {
+private fun KitchenHeader(onClose: () -> Unit, compact: Boolean) {
     val spacing = TandemTheme.spacing
     Row(
         modifier = Modifier
@@ -207,8 +217,8 @@ private fun KitchenHeader(onClose: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        KitchenClock(Modifier.weight(1f))
-        StatusChip(label = stringResource(R.string.kitchen_screen_on), icon = TandemIcons.Countertops)
+        KitchenClock(compact = compact, modifier = Modifier.weight(1f))
+        if (!compact) StatusChip(label = stringResource(R.string.kitchen_screen_on), icon = TandemIcons.Countertops)
         KitchenIconButton(
             icon = TandemIcons.Close,
             description = stringResource(R.string.kitchen_leave),
@@ -220,7 +230,7 @@ private fun KitchenHeader(onClose: () -> Unit) {
 
 /** "14:16" and "torsdag 24 oktober" in the phone's time zone and 12/24 hour choice, updated once a minute. */
 @Composable
-private fun KitchenClock(modifier: Modifier = Modifier) {
+private fun KitchenClock(compact: Boolean, modifier: Modifier = Modifier) {
     val minute by rememberMinute()
     val report = LocalKitchenRecompositions.current
     SideEffect { report(PART_CLOCK) }
@@ -237,7 +247,11 @@ private fun KitchenClock(modifier: Modifier = Modifier) {
             style = TandemTheme.extendedTypography.overline,
             color = MaterialTheme.colorScheme.primary,
         )
-        Text(text = time, style = MaterialTheme.typography.displayLarge, modifier = Modifier.testTag(KITCHEN_CLOCK_TAG))
+        Text(
+            text = time,
+            style = if (compact) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displayLarge,
+            modifier = Modifier.testTag(KITCHEN_CLOCK_TAG),
+        )
         Text(text = date, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

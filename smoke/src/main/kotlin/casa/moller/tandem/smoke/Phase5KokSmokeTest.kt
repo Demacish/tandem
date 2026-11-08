@@ -39,7 +39,7 @@ class Phase5KokSmokeTest : Phase2SmokeBase() {
         startDemo()
         app.tapDescription(KITCHEN)
         app.waitFor(By.desc(LEAVE_KITCHEN))
-        app.waitFor(By.text("Screen stays on"))
+        app.waitFor(By.res(KITCHEN_CLOCK))
         app.waitFor(By.text(DEMO_TONIGHT))
         app.capture("phase5-kitchen")
 
@@ -123,6 +123,9 @@ class Phase5KokSmokeTest : Phase2SmokeBase() {
     private companion object {
         const val KITCHEN = "Kitchen display"
         const val LEAVE_KITCHEN = "Leave the kitchen display"
+
+        /** feature:cook KITCHEN_CLOCK_TAG (resource id). */
+        const val KITCHEN_CLOCK = "kitchen:clock"
 
         /** feature:cook COOK_HANDSFREE_SWITCH_TAG (resource id). */
         const val HANDSFREE_SWITCH = "cook:handsfree-switch"

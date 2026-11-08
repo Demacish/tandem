@@ -172,3 +172,11 @@ och sammanslagning", `fas5/handla/`, 2026-11-08): listans form, `food_id`-filtre
 `Ingredient.conversions` (egna omräkningar i båda riktningarna, basenheter sist, namnet som basnyckel
 för källan), att servern aldrig slår ihop poster och att webben bara lägger ihop samma enhet. [O]
 <!-- /Fas 5 omräkning -->
+
+<!-- Fas 5 pannstorlek -->
+## Fas 5: pannstorlek (plan §8.1, bana kok)
+
+`Phase5PanContractTest` ger samma fakta som 2.6.13 (`../2.6.13/FACTS.md` "Fas 5: pannstorlek",
+`fas5/kok/`, 2026-11-08): heltalet `diameter` och `diameter_text` i detaljen men inte i listan, 400 för
+decimal och `null`, ett negativt värde lagras. [O]
+<!-- /Fas 5 pannstorlek -->
