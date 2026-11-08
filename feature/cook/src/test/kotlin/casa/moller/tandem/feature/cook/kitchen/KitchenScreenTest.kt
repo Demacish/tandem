@@ -144,8 +144,10 @@ class KitchenScreenTest {
         // The marinade has an hour left after three.
         composeRule.onNodeWithText("1:00:0", substring = true).assertIsDisplayed()
 
+        // Leaving the display: the change is applied (waitForIdle), then a frame recomposes without it.
         shown = false
-        composeRule.mainClock.advanceTimeByFrame()
+        composeRule.waitForIdle()
+        composeRule.mainClock.advanceTimeBy(SECOND_MILLIS)
         composeRule.waitForIdle()
         assertFalse(view.keepScreenOn)
     }
@@ -154,5 +156,6 @@ class KitchenScreenTest {
         const val THREE_HOURS_IN_MINUTES = 180
         const val THREE_HOURS_IN_SECONDS = 3 * 3600
         const val MINUTE_MILLIS = 60_000L
+        const val SECOND_MILLIS = 1_000L
     }
 }
