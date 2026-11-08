@@ -7,4 +7,20 @@
     <string name="cook_pan_larger">Larger tin</string>
     <string name="cook_pan_scaled">Scaled for a %1$d %2$s tin (× %3$s)</string>
     <string name="cook_pan_reset">As in the recipe (%1$d %2$s)</string>
+    <string name="kitchen_title">Kitchen display</string>
+    <string name="kitchen_leave">Leave the kitchen display</string>
+    <string name="kitchen_screen_on">Screen stays on</string>
+    <string name="kitchen_today">Today</string>
+    <string name="kitchen_tomorrow">Tomorrow</string>
+    <string name="kitchen_nothing_today">Nothing planned today</string>
+    <string name="kitchen_nothing_today_body">Plan meals in Week, or open a recipe and start cooking.</string>
+    <string name="kitchen_timers">Timers</string>
+    <string name="kitchen_no_timers">No timers running</string>
+    <string name="kitchen_no_timers_body">Start one from a step in cook mode.</string>
+    <string name="kitchen_cook">Cook</string>
+    <string name="kitchen_cook_description">Cook %1$s</string>
+    <plurals name="kitchen_servings">
+        <item quantity="one">%1$s serving</item>
+        <item quantity="other">%1$s servings</item>
+    </plurals>
 </resources>

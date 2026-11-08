@@ -201,6 +201,7 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onOpenFavorites: () -> Unit,
         onOpenShoppingList: () -> Unit,
         onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
+        onOpenKitchen: () -> Unit,
     ) {
         Placeholder(ShellTab.TODAY)
     }
@@ -278,6 +279,14 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     override fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?) {
         ShellScreenScaffold(title = "Timers", state = state, onNavigateBack = onBack) { padding ->
             Text(text = "Timers", modifier = Modifier.padding(padding))
+        }
+    }
+
+    // Fas 5 (kok lane)
+    @Composable
+    override fun Kitchen(onClose: () -> Unit, onStartCooking: (Long, Double?) -> Unit, onOpenTimer: (CookTimer) -> Unit) {
+        ShellScreenScaffold(title = "Kitchen display", state = state, onNavigateBack = onClose) { padding ->
+            Text(text = "Kitchen display", modifier = Modifier.padding(padding))
         }
     }
 

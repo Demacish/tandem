@@ -49,6 +49,7 @@ import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.CollectionsBookmark
+import casa.moller.tandem.core.designsystem.icon.Countertops
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.Sync
@@ -112,6 +113,7 @@ internal fun MoreScreen(
     modifier: Modifier = Modifier,
     selectedPage: NavKey? = null,
     crashNotice: @Composable () -> Unit = {},
+    onOpenKitchen: (() -> Unit)? = null,
 ) {
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
     val spacing = TandemTheme.spacing
@@ -175,6 +177,18 @@ internal fun MoreScreen(
                             onClick = { onOpenPage(PantryKey) },
                             selected = selectedPage == PantryKey,
                         )
+                    }
+
+                    // Fas 5 (kok lane, plan §8.7 #41): Mer → Köksskärm (full screen, not a page beside the list).
+                    if (onOpenKitchen != null) {
+                        SettingsGroup {
+                            SettingsRow(
+                                icon = TandemIcons.Countertops,
+                                title = stringResource(R.string.shell_more_kitchen),
+                                supporting = stringResource(R.string.shell_more_kitchen_supporting),
+                                onClick = onOpenKitchen,
+                            )
+                        }
                     }
 
                     // Phase 2 (books lane): Mer → Receptböcker (plan 6.1 "Mer: Böcker").

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.7 #41): the way from Idag to the kitchen display. -->
+<resources>
+    <string name="home_kitchen_display">Kitchen display</string>
+</resources>

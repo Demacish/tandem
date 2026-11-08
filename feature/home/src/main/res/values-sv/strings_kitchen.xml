@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.7 #41): vägen från Idag till köksskärmen. -->
+<resources>
+    <string name="home_kitchen_display">Köksskärm</string>
+</resources>

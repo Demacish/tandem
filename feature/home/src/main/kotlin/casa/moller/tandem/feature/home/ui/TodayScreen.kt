@@ -13,6 +13,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -31,7 +33,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
+import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.Countertops
 import casa.moller.tandem.core.designsystem.icon.Edit
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -61,6 +65,35 @@ import java.util.Locale
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.toJavaLocalDate
+
+/**
+ * Fas 5 (kok lane, plan §8.7 "Köksskärmsläge", #41, §6.5): "Köksskärm" in Idag's top bar. On a
+ * window at least [KitchenLabelMinWidth] wide (a tablet, where the kitchen display matters most)
+ * it is a labelled tonal button; on a phone an icon button with the same name for TalkBack.
+ */
+@Composable
+private fun KitchenDisplayAction(onClick: () -> Unit) {
+    val label = stringResource(R.string.home_kitchen_display)
+    val modifier = Modifier.testTag(TODAY_KITCHEN_TAG)
+    if (LocalConfiguration.current.screenWidthDp.dp >= KitchenLabelMinWidth) {
+        TandemTonalButton(
+            text = label,
+            onClick = onClick,
+            leadingIcon = TandemIcons.Countertops,
+            modifier = modifier.padding(end = TandemTheme.spacing.sm),
+        )
+    } else {
+        IconButton(onClick = onClick, modifier = modifier) {
+            Icon(imageVector = TandemIcons.Countertops, contentDescription = label)
+        }
+    }
+}
+
+/** From this window width "Köksskärm" has its label in Idag's top bar. */
+private val KitchenLabelMinWidth = 600.dp
+
+/** Test tag of "Köksskärm" in Idag's top bar. */
+const val TODAY_KITCHEN_TAG = "today:kitchen"
 
 /** Test tag of the Today list (scrolling in tests). */
 const val TODAY_LIST_TAG = "today:list"
@@ -92,6 +125,7 @@ fun TodayScreen(
     tonightShoppingAction: TonightShoppingAction? = null,
     pantry: TodayPantryState = TodayPantryState(),
     onOpenMakeNow: (useUpFirst: Boolean) -> Unit = {},
+    onOpenKitchen: (() -> Unit)? = null,
 ) {
     // Phase 1b (inställningar lane): the cold start ends when the stored day is shown (Diagnostics).
     ReportContentReady(ready = !state.loading)
@@ -102,7 +136,11 @@ fun TodayScreen(
         topBar = {
             TandemTopAppBar(
                 title = stringResource(R.string.home_title),
-                actions = { AppChromeStatusChip(Modifier.padding(end = spacing.md)) },
+                actions = {
+                    // Fas 5 (kok lane, plan §8.7 #41): the kitchen display; a labelled button where there is room (tablets).
+                    onOpenKitchen?.let { KitchenDisplayAction(onClick = it) }
+                    AppChromeStatusChip(Modifier.padding(end = spacing.md))
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },

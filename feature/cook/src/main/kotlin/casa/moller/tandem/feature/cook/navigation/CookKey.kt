@@ -59,3 +59,15 @@ data class CookPageRequest(val recipeId: Long, val step: Int)
  */
 @Serializable
 data object TimersKey : NavKey
+
+/**
+ * Fas 5 (kok lane, plan §8.7 "Köksskärmsläge", #41, §6.5): the kitchen display, a dark full-screen
+ * mode for the tablet on the counter (allowed on phones): the time, today's planned meals with one
+ * tap into cook mode, tomorrow's, and the active timers large. Opened from Idag and from Mer; back
+ * leaves it and everything it changed (dark bars, the screen kept on) is restored.
+ */
+@Serializable
+data object KitchenKey : NavKey, FullScreenDestination {
+    override val hidesNavigationOnAllWidths: Boolean
+        get() = true
+}

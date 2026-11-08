@@ -62,6 +62,7 @@ import casa.moller.tandem.core.ui.navigation.LocalAppChrome
 import casa.moller.tandem.core.ui.status.SafeModeInfoScreen
 import casa.moller.tandem.core.ui.status.TANDEM_RELEASES_URL
 import casa.moller.tandem.feature.cook.navigation.CookKey
+import casa.moller.tandem.feature.cook.navigation.KitchenKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.cook.navigation.cookKeyAlongside
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
@@ -505,6 +506,8 @@ internal fun ShellScaffold(
                     onOpenShoppingList = { navigation.selectTab(ShellTab.SHOPPING) },
                     // Fas S (hemma-ui lane): "Kan laga nu" and "Går ut snart" (#23, #28).
                     onOpenMakeNow = { useUpFirst -> navigation.navigate(MakeNowKey(useUpFirst)) },
+                    // Fas 5 (kok lane, #41): the kitchen display over Idag.
+                    onOpenKitchen = { navigation.navigate(KitchenKey, replace = { it is KitchenKey }) },
                 )
             }
             entry<RecipesKey>(metadata = ListDetailSceneStrategy.listPane(detailPlaceholder = { features.EmptyRecipePane() })) {
@@ -602,6 +605,14 @@ internal fun ShellScaffold(
                     activeSource = state.timerSource,
                 )
             }
+            // --- Fas 5 (kok lane, plan §8.7 #41): the kitchen display; cook mode opens on top of it. ---
+            entry<KitchenKey> {
+                features.Kitchen(
+                    onClose = { navigation.goBack() },
+                    onStartCooking = startCooking,
+                    onOpenTimer = { timer -> navigation.openTimerOf(timer, state.timerSource) },
+                )
+            }
             // --- Phase 2 (grund lane): Handla, Veckan and books; the lanes fill the routes. ---
             entry<WeekKey> { week(null) }
             entry<WeekAgendaKey> { key -> week(key.weekStart) }
@@ -681,6 +692,8 @@ internal fun ShellScaffold(
                     // A page picked in the list replaces the open one (and whatever was opened from it).
                     onOpenPage = { page -> navigation.navigate(page, replace = { it.isMorePage }) },
                     onConnectTandoor = onConnectTandoor,
+                    // Fas 5 (kok lane, #41): Mer → Köksskärm, full screen over the More tab.
+                    onOpenKitchen = { navigation.navigate(KitchenKey, replace = { it is KitchenKey }) },
                     selectedPage = navigation.stackOf(ShellTab.MORE).getOrNull(1),
                     crashNotice = crashNotice,
                 )

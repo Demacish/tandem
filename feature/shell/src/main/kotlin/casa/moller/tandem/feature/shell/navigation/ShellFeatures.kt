@@ -7,6 +7,7 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.drink.DrinkSuggestionSlot
 import casa.moller.tandem.feature.cook.CookRoute
 import casa.moller.tandem.feature.cook.TimersRoute
+import casa.moller.tandem.feature.cook.kitchen.KitchenRoute
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.home.TodayRoute
 import casa.moller.tandem.feature.mealplan.PlanMealRoute
@@ -61,6 +62,7 @@ internal interface ShellFeatures {
      * [onOpenShoppingList] is "Visa listan" after tonight's "Handla" (feature:shopping's sheet).
      * Fas S (hemma-ui lane): [onOpenMakeNow] is "Kan laga nu" (`MakeNowKey`), from "Går ut snart"
      * with the recipes that use soon-expiring foods first (true).
+     * Fas 5 (kok lane, #41): [onOpenKitchen] is "Köksskärm" (`KitchenKey`).
      */
     @Composable
     fun Today(
@@ -72,6 +74,7 @@ internal interface ShellFeatures {
         onOpenFavorites: () -> Unit,
         onOpenShoppingList: () -> Unit,
         onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
+        onOpenKitchen: () -> Unit,
     )
 
     /**
@@ -160,6 +163,13 @@ internal interface ShellFeatures {
      */
     @Composable
     fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?)
+
+    /**
+     * Fas 5 (kok lane, plan §8.7 #41): the kitchen display (feature:cook), full screen on every
+     * width; [onStartCooking] opens cook mode on top of it, [onOpenTimer] a timer's cook mode.
+     */
+    @Composable
+    fun Kitchen(onClose: () -> Unit, onStartCooking: (Long, Double?) -> Unit, onOpenTimer: (CookTimer) -> Unit)
 
     // --- Phase 2 (grund lane): Handla, Veckan and books (feature:shopping, feature:mealplan,
     // feature:recipes). The lanes fill the routes; the shell's tests show placeholders. ---
@@ -293,6 +303,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onOpenFavorites: () -> Unit,
         onOpenShoppingList: () -> Unit,
         onOpenMakeNow: (useUpFirst: Boolean) -> Unit,
+        onOpenKitchen: () -> Unit,
     ) {
         TodayRoute(
             onOpenRecipe = onOpenRecipe,
@@ -307,6 +318,8 @@ internal object RouteShellFeatures : ShellFeatures {
             },
             // Fas S (hemma-ui lane): "Kan laga nu" and "Går ut snart".
             onOpenMakeNow = onOpenMakeNow,
+            // Fas 5 (kok lane, #41): "Köksskärm".
+            onOpenKitchen = onOpenKitchen,
         )
     }
 
@@ -405,6 +418,12 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun Timers(onBack: () -> Unit, onOpenCook: (CookTimer) -> Unit, activeSource: String?) {
         TimersRoute(onBack = onBack, onOpenCook = onOpenCook, activeSource = activeSource)
+    }
+
+    // --- Fas 5 (kok lane) ---
+    @Composable
+    override fun Kitchen(onClose: () -> Unit, onStartCooking: (Long, Double?) -> Unit, onOpenTimer: (CookTimer) -> Unit) {
+        KitchenRoute(onClose = onClose, onStartCooking = onStartCooking, onOpenTimer = onOpenTimer)
     }
 
     // --- Phase 2 (grund lane) ---

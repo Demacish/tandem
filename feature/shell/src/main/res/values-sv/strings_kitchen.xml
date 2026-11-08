@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.7 #41): Mer → Köksskärm. -->
+<resources>
+    <string name="shell_more_kitchen">Köksskärm</string>
+    <string name="shell_more_kitchen_supporting">Mörk skärm med dagens recept och timers, för surfplattan på bänken</string>
+</resources>

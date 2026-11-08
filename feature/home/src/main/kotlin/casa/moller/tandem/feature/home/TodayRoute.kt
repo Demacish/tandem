@@ -45,6 +45,7 @@ fun TodayRoute(
     onOpenFavorites: () -> Unit = {},
     tonightShoppingAction: TonightShoppingAction? = null,
     onOpenMakeNow: ((useUpFirst: Boolean) -> Unit)? = null,
+    onOpenKitchen: (() -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val books by booksViewModel.uiState.collectAsStateWithLifecycle()
@@ -87,6 +88,8 @@ fun TodayRoute(
         tonightShoppingAction = tonightShoppingAction,
         pantry = pantry,
         onOpenMakeNow = { useUpFirst -> onOpenMakeNow?.invoke(useUpFirst) },
+        // Fas 5 (kok lane, #41): "Köksskärm" in the top bar.
+        onOpenKitchen = onOpenKitchen,
     )
 }
 

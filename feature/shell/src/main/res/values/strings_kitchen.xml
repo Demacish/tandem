@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.7 #41): Mer → Köksskärm. -->
+<resources>
+    <string name="shell_more_kitchen">Kitchen display</string>
+    <string name="shell_more_kitchen_supporting">A dark screen with today’s recipes and timers, for the tablet on the counter</string>
+</resources>
