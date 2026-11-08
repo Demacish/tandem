@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -33,6 +34,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.style.TextOverflow
 import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
@@ -248,10 +250,18 @@ internal fun HandsfreeSheet(state: HandsfreeUiState, onAction: (HandsfreeAction)
  * commands on the device, reading every step aloud; then what to say. "Klar" stays below the
  * scrolling rows (like the recipe's shopping sheet), so it is reachable at font scale 2.
  */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun HandsfreeSheetContent(state: HandsfreeUiState, onAction: (HandsfreeAction) -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
-    Column(modifier = modifier.fillMaxWidth().testTag(COOK_HANDSFREE_SHEET_TAG)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(COOK_HANDSFREE_SHEET_TAG)
+            // The sheet is a window of its own: its test tags are resource ids too, like the app's
+            // (the release smoke test finds the switches; they carry no user data).
+            .semantics { testTagsAsResourceId = true },
+    ) {
         Column(
             modifier = Modifier
                 .weight(1f, fill = false)

@@ -27,7 +27,7 @@ private const val KITCHEN_TABLET = "w1280dp-h800dp-land-mdpi"
 
 /**
  * Fas 5 (kok lane, plan §8.7 "Köksskärmsläge", #41): "Köksskärm" in Idag's top bar, an icon on a
- * phone and a labelled button on a tablet (both orientations); screenshots (`home/*_kitchen*`),
+ * phone and a labelled button on a tablet (both orientations); screenshots (`home/…_today_kitchen…`),
  * ATF and the tap.
  */
 @RunWith(AndroidJUnit4::class)

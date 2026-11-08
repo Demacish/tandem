@@ -241,7 +241,11 @@ private fun KitchenClock(compact: Boolean, modifier: Modifier = Modifier) {
         java.time.Instant.ofEpochMilli(minute.toEpochMilliseconds()).atZone(ZoneId.systemDefault())
             .format(DateTimeFormatter.ofPattern(DATE_PATTERN, locale))
     }
-    Column(modifier = modifier.semantics(mergeDescendants = true) { heading() }) {
+    Column(
+        modifier = modifier
+            .testTag(KITCHEN_CLOCK_TAG)
+            .semantics(mergeDescendants = true) { heading() },
+    ) {
         Text(
             text = stringResource(R.string.kitchen_title),
             style = TandemTheme.extendedTypography.overline,
@@ -250,7 +254,6 @@ private fun KitchenClock(compact: Boolean, modifier: Modifier = Modifier) {
         Text(
             text = time,
             style = if (compact) MaterialTheme.typography.displayMedium else MaterialTheme.typography.displayLarge,
-            modifier = Modifier.testTag(KITCHEN_CLOCK_TAG),
         )
         Text(text = date, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -344,69 +347,89 @@ private fun SectionTitle(text: String) {
 
 /**
  * A planned meal: picture, meal type, name and servings as one TalkBack item, and "Laga" (64 dp)
- * when it has a recipe. Tomorrow's meals ([onStartCooking] null) are smaller and have no button.
+ * when it has a recipe: beside the text on a wide card, below it (full width) on a narrow one, so
+ * the name is never squeezed. Tomorrow's meals ([onStartCooking] null) are smaller and have no button.
  */
 @Composable
 private fun MealCard(meal: KitchenMeal, onStartCooking: ((Long, Double?) -> Unit)?, large: Boolean) {
     val spacing = TandemTheme.spacing
     val report = LocalKitchenRecompositions.current
     SideEffect { report(PART_MEALS) }
-    val servings = ServingsText.number(meal.servings, currentLocale().toNumberStyle())
-    val servingsText = pluralStringResource(R.plurals.kitchen_servings, if (meal.servings == 1.0) 1 else PLURAL_OTHER, servings)
-    val cookDescription = stringResource(R.string.kitchen_cook_description, meal.title)
+    val recipeId = meal.recipeId
+    val cook: (@Composable (Modifier) -> Unit)? = if (onStartCooking != null && recipeId != null) {
+        { buttonModifier -> CookButton(meal, onClick = { onStartCooking(recipeId, meal.servings) }, modifier = buttonModifier) }
+    } else {
+        null
+    }
     Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainer) {
-        Row(
-            modifier = Modifier.padding(spacing.lg),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.lg),
-        ) {
-            if (meal.recipeId != null) {
-                RecipeImage(
-                    imageUrl = meal.imageUrl,
-                    modifier = Modifier
-                        .size(if (large) LargeImage else SmallImage)
-                        .clip(RoundedCornerShape(spacing.lg)),
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics(mergeDescendants = true) {},
-            ) {
-                Text(
-                    text = meal.mealType.uppercase(currentLocale()),
-                    style = TandemTheme.extendedTypography.overline,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = meal.title,
-                    style = if (large) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (meal.recipeId != null) {
-                    Text(
-                        text = servingsText,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        BoxWithConstraints(Modifier.padding(spacing.lg)) {
+            val narrow = maxWidth < NarrowCard
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.md)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.lg),
+                ) {
+                    if (recipeId != null) {
+                        RecipeImage(
+                            imageUrl = meal.imageUrl,
+                            modifier = Modifier
+                                .size(if (large && !narrow) LargeImage else SmallImage)
+                                .clip(RoundedCornerShape(spacing.lg)),
+                        )
+                    }
+                    MealText(meal = meal, large = large, modifier = Modifier.weight(1f))
+                    if (!narrow) cook?.invoke(Modifier)
                 }
-            }
-            if (onStartCooking != null && meal.recipeId != null) {
-                TandemPrimaryButton(
-                    text = stringResource(R.string.kitchen_cook),
-                    onClick = { onStartCooking(meal.recipeId, meal.servings) },
-                    leadingIcon = TandemIcons.Cooking,
-                    size = TandemButtonSize.Kitchen,
-                    modifier = Modifier
-                        .testTag(KITCHEN_COOK_TAG)
-                        .semantics { contentDescription = cookDescription },
-                )
+                if (narrow) cook?.invoke(Modifier.fillMaxWidth())
             }
         }
     }
 }
 
+/** Meal type, name and servings, one TalkBack item. */
+@Composable
+private fun MealText(meal: KitchenMeal, large: Boolean, modifier: Modifier = Modifier) {
+    val servings = ServingsText.number(meal.servings, currentLocale().toNumberStyle())
+    val servingsText = pluralStringResource(R.plurals.kitchen_servings, if (meal.servings == 1.0) 1 else PLURAL_OTHER, servings)
+    Column(modifier = modifier.semantics(mergeDescendants = true) {}) {
+        Text(
+            text = meal.mealType.uppercase(currentLocale()),
+            style = TandemTheme.extendedTypography.overline,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = meal.title,
+            style = if (large) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (meal.recipeId != null) {
+            Text(
+                text = servingsText,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** "Laga" for [meal], named for TalkBack ("Laga Krämig svamppasta"). */
+@Composable
+private fun CookButton(meal: KitchenMeal, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val description = stringResource(R.string.kitchen_cook_description, meal.title)
+    TandemPrimaryButton(
+        text = stringResource(R.string.kitchen_cook),
+        onClick = onClick,
+        leadingIcon = TandemIcons.Cooking,
+        size = TandemButtonSize.Kitchen,
+        modifier = modifier
+            .testTag(KITCHEN_COOK_TAG)
+            .semantics { contentDescription = description },
+    )
+}
+
+/** A meal card narrower than this puts "Laga" under the name. */
+private val NarrowCard = 480.dp
 private val MediumWidth = 600.dp
 private val ExpandedWidth = 840.dp
 private val LargeImage = 112.dp

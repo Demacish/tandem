@@ -260,17 +260,10 @@ class RecipeDetailViewModel @AssistedInject constructor(
                 amountText = ServingsText.number(current, style),
             )
         }
-        val pan = recipe?.takeIf(PanScaling::hasTin)?.let { tin ->
-            val current = PanScaling.current(tin, choices.pan)
-            PanState(
-                original = tin.diameter,
-                current = current,
-                unit = PanScaling.unit(tin),
-                factorText = ServingsText.number(PanScaling.areaFactor(tin.diameter, current), style),
-            )
+        val pan = recipe?.let { panState(it, choices.pan, style) }
+        val display = recipe?.let {
+            RecipeDisplay.build(it, servings?.current ?: 0.0, sources.preferences, style, extraFactor = PanScaling.factor(it, choices.pan))
         }
-        val panFactor = recipe?.let { PanScaling.factor(it, choices.pan) } ?: 1.0
-        val display = recipe?.let { RecipeDisplay.build(it, servings?.current ?: 0.0, sources.preferences, style, extraFactor = panFactor) }
         val showOverview = recipe?.showIngredientOverview ?: true
         // SyncStop markers (a fetch overtaken by a logout or account switch) are no error to show.
         val error = detail.error?.takeUnless { it.isTransientSyncStop }
@@ -315,6 +308,18 @@ class RecipeDetailViewModel @AssistedInject constructor(
             // energy in kJ or kcal as the user's `use_kj` says (plan §10 "Klart när").
             nutrition = NutritionEnergy.inPreferredUnit(recipe?.nutritionValues.orEmpty(), sources.preferences.useKj)
                 .map { NutritionRow(it.name, ServingsText.number(it.amount, style), it.unit) },
+        )
+    }
+
+    /** Fas 5 (plan §8.1 "Pannstorlek"): the tin picker, null for a recipe without a round tin. */
+    private fun panState(recipe: Recipe, chosen: Int?, style: NumberStyle): PanState? {
+        if (!PanScaling.hasTin(recipe)) return null
+        val current = PanScaling.current(recipe, chosen)
+        return PanState(
+            original = recipe.diameter,
+            current = current,
+            unit = PanScaling.unit(recipe),
+            factorText = ServingsText.number(PanScaling.areaFactor(recipe.diameter, current), style),
         )
     }
 
