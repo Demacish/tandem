@@ -12,7 +12,8 @@ import casa.moller.tandem.core.model.recipe.StepRecipeRef
  *
  * @property recipeId the recipe.
  * @property servings the servings it is scaled to.
- * @property factor `servings / max(recipe.servings, 1)`.
+ * @property factor `servings / max(recipe.servings, 1)`, times the tin's area factor when the recipe
+ *   is baked in another tin (Fas 5, `PanScaling`).
  * @property ingredients every ingredient of every step in step order, headers included (the
  *   overview list; Tandoor's `show_ingredient_overview`).
  * @property steps the steps in `order`.
@@ -65,9 +66,19 @@ object RecipeDisplay {
      * (`use_fractions`, `ingredient_decimals`) in [style] (from the UI's locale with
      * `Locale.toNumberStyle()`; [NumberStyle.Web] gives the web's exact text). Cheap enough to
      * call on every servings change; never throws.
+     *
+     * Fas 5 (kok lane, plan §8.1 "Pannstorlek"): [extraFactor] multiplies the servings' factor, the
+     * tin's area factor (`PanScaling.factor`); 1.0 (and anything not positive and finite) leaves it.
      */
-    fun build(recipe: Recipe, servings: Double, preferences: UserPreferences, style: NumberStyle): RecipeDisplayModel {
-        val factor = ServingsScaling.factor(recipe, servings)
+    fun build(
+        recipe: Recipe,
+        servings: Double,
+        preferences: UserPreferences,
+        style: NumberStyle,
+        extraFactor: Double = 1.0,
+    ): RecipeDisplayModel {
+        val tin = extraFactor.takeIf { it.isFinite() && it > 0.0 } ?: 1.0
+        val factor = ServingsScaling.factor(recipe, servings) * tin
         val steps = recipe.steps.sortedBy { it.order }
         val stepDisplays = steps.mapIndexed { index, step ->
             val ingredients = step.ingredients.sortedBy { it.order }
