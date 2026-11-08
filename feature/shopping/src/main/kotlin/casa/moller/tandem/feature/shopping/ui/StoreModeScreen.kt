@@ -141,10 +141,11 @@ fun StoreModeScreen(
                     stickyHeader(key = "header-${section.key}") {
                         AisleHeader(section = section, title = section.name ?: other)
                     }
-                    items(section.entries, key = { it.id }) { entry ->
-                        val check = RowActions(onToggle = { onAction(StoreModeAction.Check(entry.id)) })
+                    // Fas 5 (plan §8.2): merged rows as on the list; checking one checks every entry behind it.
+                    items(section.rows, key = { it.id }) { row ->
+                        val check = RowActions(onToggle = { onAction(StoreModeAction.Check(row.id)) })
                         ShoppingEntryRow(
-                            entry = entry,
+                            row = row,
                             format = format,
                             categoryName = section.name ?: other,
                             delayed = false,
@@ -266,7 +267,7 @@ private fun AisleHeader(section: ShoppingSection, title: String) {
             )
             Surface(shape = RoundedCornerShape(percent = 50), color = MaterialTheme.colorScheme.secondaryContainer) {
                 Text(
-                    text = pluralStringResource(R.plurals.shopping_section_count, section.entries.size, section.entries.size),
+                    text = pluralStringResource(R.plurals.shopping_section_count, section.rows.size, section.rows.size),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(horizontal = TandemTheme.spacing.md, vertical = TandemTheme.spacing.xs),
                 )

@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.shopping.IngredientParser
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
+import casa.moller.tandem.core.data.shopping.ShoppingViewPreferences
 import casa.moller.tandem.core.data.shopping.SupermarketRepository
+import casa.moller.tandem.core.domain.shopping.MergedShoppingRow
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.errorOrNull
@@ -23,6 +25,7 @@ import java.math.RoundingMode
 import java.text.DecimalFormatSymbols
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -59,6 +62,10 @@ import kotlinx.datetime.toLocalDateTime
  * - **Guest** (#42): read-only; actions that write are ignored (the repositories refuse them too).
  * - **Survives** rotation and process death: chosen list, store override, open sections and the
  *   text being typed live in [SavedStateHandle].
+ * - **Merged rows** (Fas 5, plan §8.2): a row may stand for several entries of the same food
+ *   ([MergedShoppingRow]); checking, "köp senare" and their undo act on every entry of the row (one
+ *   BULK_CHECK outbox row per entry, sent as one bulk call), the server's rows stay separate.
+ * - **Grid** (Fas 5): rows or large tiles, per account ([ShoppingViewPreferences]).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = ShoppingViewModel.Factory::class)
@@ -70,6 +77,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
     private val supermarkets: SupermarketRepository,
     private val parser: IngredientParser,
     private val clock: Clock,
+    private val viewPreferences: ShoppingViewPreferences,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -140,8 +148,10 @@ class ShoppingViewModel @AssistedInject internal constructor(
         listId,
         sections,
         addState,
-        combine(transient, shopping.observeHistory()) { state, history -> state to history },
-    ) { snapshot, list, (checkedOpen, laterOpen, addOpen), add, (local, history) ->
+        combine(transient, shopping.observeHistory(), viewPreferences.gridView) { state, history, grid ->
+            Triple(state, history, grid)
+        },
+    ) { snapshot, list, (checkedOpen, laterOpen, addOpen), add, (local, history, grid) ->
         val readOnly = snapshot.permissions.readOnly
         ShoppingUiState(
             loading = false,
@@ -168,6 +178,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
             // fix-ui: the progress counts what was checked today, not on earlier trips.
             progressSince = snapshot.now.toLocalDateTime(TimeZone.currentSystemDefault()).date
                 .atStartOfDayIn(TimeZone.currentSystemDefault()),
+            gridView = grid,
         ).also { latestDelayHours = snapshot.preferences.defaultDelayHours }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), ShoppingUiState())
 
@@ -181,9 +192,9 @@ class ShoppingViewModel @AssistedInject internal constructor(
     fun onAction(action: ShoppingAction) {
         when (action) {
             ShoppingAction.Refresh -> refresh()
-            is ShoppingAction.ToggleChecked -> entry(action.id)?.let(::toggleChecked)
+            is ShoppingAction.ToggleChecked -> row(action.id)?.let(::toggleChecked)
             is ShoppingAction.CheckSection -> checkSection(action.sectionKey)
-            is ShoppingAction.ToggleLater -> entry(action.id)?.let(::toggleLater)
+            is ShoppingAction.ToggleLater -> row(action.id)?.let(::toggleLater)
             ShoppingAction.Undo -> takeBack()
             is ShoppingAction.SelectList -> savedStateHandle[KEY_LIST] = action.listId
             is ShoppingAction.SelectStore -> selectStore(action.supermarketId)
@@ -203,6 +214,8 @@ class ShoppingViewModel @AssistedInject internal constructor(
             is ShoppingAction.EditUnit -> editing { it.copy(unit = action.text) }
             is ShoppingAction.EditCategory -> editing { it.copy(categoryId = action.categoryId) }
             is ShoppingAction.EditList -> editing { it.toggleList(action.listId) }
+            is ShoppingAction.EditPart -> editPart(action.id)
+            ShoppingAction.ToggleGrid -> toggleGrid()
             ShoppingAction.SaveEdit -> saveEdit()
             ShoppingAction.DeleteEdited -> deleteEdited()
             ShoppingAction.RemoveEditedRecipe -> removeEditedRecipe()
@@ -213,6 +226,9 @@ class ShoppingViewModel @AssistedInject internal constructor(
     private fun canWrite(): Boolean = !uiState.value.loading && !uiState.value.readOnly
 
     private fun entry(id: Long): ShoppingEntry? = uiState.value.grouped.all.firstOrNull { it.id == id }
+
+    /** The row on the screen that [id] (a row's id or one of its entries) belongs to. */
+    private fun row(id: Long): MergedShoppingRow? = uiState.value.grouped.rowOf(id)
 
     private fun refresh() {
         if (transient.value.refreshing) return
@@ -225,13 +241,16 @@ class ShoppingViewModel @AssistedInject internal constructor(
         }
     }
 
-    private fun toggleChecked(entry: ShoppingEntry) {
+    /** Checks or unchecks a row: every entry behind it (Fas 5), and "Ångra" takes all of them back. */
+    private fun toggleChecked(row: MergedShoppingRow) {
         if (!canWrite()) return
-        val checked = !entry.checked
+        val checked = !row.checked
+        val ids = row.ids
+        val name = row.first.food.name
         write(
-            message = if (checked) ShoppingMessage.Checked(entry.food.name, 1) else ShoppingMessage.Unchecked(entry.food.name),
-            undo = { shopping.setChecked(listOf(entry.id), !checked) },
-        ) { shopping.setChecked(listOf(entry.id), checked) }
+            message = if (checked) ShoppingMessage.Checked(name, 1) else ShoppingMessage.Unchecked(name),
+            undo = { shopping.setChecked(ids, !checked) },
+        ) { shopping.setChecked(ids, checked) }
     }
 
     private fun checkSection(key: String) {
@@ -239,26 +258,42 @@ class ShoppingViewModel @AssistedInject internal constructor(
         val section = uiState.value.grouped.sections.firstOrNull { it.key == key } ?: return
         val ids = section.entries.map { it.id }
         write(
-            message = ShoppingMessage.Checked(section.entries.first().food.name, ids.size),
+            message = ShoppingMessage.Checked(section.entries.first().food.name, section.rows.size),
             undo = { shopping.setChecked(ids, false) },
         ) { shopping.setChecked(ids, true) }
     }
 
-    private fun toggleLater(entry: ShoppingEntry) {
+    /** "Köp senare" or "Köp nu" for a row: every entry behind it (Fas 5). */
+    private fun toggleLater(row: MergedShoppingRow) {
         if (!canWrite()) return
         val now = clock.now()
-        if (entry.isDelayed(now)) {
-            val until = entry.delayUntil
-            write(ShoppingMessage.Undelayed(entry.food.name), undo = { shopping.setDelayed(listOf(entry.id), until) }) {
-                shopping.setDelayed(listOf(entry.id), null)
-            }
+        val ids = row.ids
+        val name = row.first.food.name
+        if (row.entries.any { it.isDelayed(now) }) {
+            // Each entry gets its own time back with "Ångra".
+            val before = row.entries.groupBy({ it.delayUntil }, { it.id })
+            write(ShoppingMessage.Undelayed(name), undo = { restoreDelays(before) }) { shopping.setDelayed(ids, null) }
         } else {
             // Tandoor's "köp senare": now + the user's default_delay (plan 8.2), at least one minute.
             val delay = (latestDelayHours * MINUTES_PER_HOUR).coerceAtLeast(1.0).minutes
-            write(ShoppingMessage.Delayed(entry.food.name), undo = { shopping.setDelayed(listOf(entry.id), null) }) {
-                shopping.setDelayed(listOf(entry.id), now + delay)
-            }
+            write(ShoppingMessage.Delayed(name), undo = { shopping.setDelayed(ids, null) }) { shopping.setDelayed(ids, now + delay) }
         }
+    }
+
+    /** Puts each group of entries back to its own "köp senare" time; stops at the first failure. */
+    private suspend fun restoreDelays(before: Map<Instant?, List<Long>>): Outcome<*> {
+        var result: Outcome<*> = Outcome.Success(Unit)
+        for ((until, ids) in before) {
+            result = shopping.setDelayed(ids, until)
+            if (result is Outcome.Failure) return result
+        }
+        return result
+    }
+
+    /** Fas 5 (plan §8.2): rows or the grid, remembered per account. Guests may switch too (it only changes the view). */
+    private fun toggleGrid() {
+        val grid = !uiState.value.gridView
+        viewModelScope.launch { viewPreferences.setGridView(grid) }
     }
 
     private fun takeBack() {
@@ -278,10 +313,13 @@ class ShoppingViewModel @AssistedInject internal constructor(
         transient.update { it.copy(confirmClear = false) }
         if (!confirmed || !canWrite()) return
         // 0.3.0 review (fix-data): the rows the dialog counted, so the deletion and the snackbar match it.
-        val cleared = uiState.value.grouped.checked
+        val grouped = uiState.value.grouped
+        val cleared = grouped.checked
         val ids = cleared.map { it.id }
         // 0.3.0 komplettering: "Ångra" puts the cleared rows back, checked ([putBackChecked]).
-        write(ShoppingMessage.ClearedChecked(ids.size), undo = { putBackChecked(cleared) }) { shopping.clearChecked(ids) }
+        // Fas 5: the message counts rows as the dialog does (a merged row is one).
+        val message = ShoppingMessage.ClearedChecked(grouped.checkedRows.size)
+        write(message, undo = { putBackChecked(cleared) }) { shopping.clearChecked(ids) }
     }
 
     /**
@@ -337,10 +375,12 @@ class ShoppingViewModel @AssistedInject internal constructor(
         }
     }
 
-    private fun openEdit(id: Long) {
+    private fun openEdit(id: Long, parts: List<ShoppingEntry>? = null) {
         if (!canWrite()) return
         val entry = entry(id) ?: return
         val state = uiState.value
+        // Fas 5: a merged row's sheet edits one entry at a time and offers the others.
+        val rowParts = parts ?: state.grouped.rowOf(id)?.entries.orEmpty()
         transient.update {
             it.copy(
                 edit = EditEntryState(
@@ -357,9 +397,17 @@ class ShoppingViewModel @AssistedInject internal constructor(
                     } ?: 0,
                     lists = state.lists,
                     listIds = entry.listIds,
+                    parts = rowParts.takeIf { it.size > 1 }.orEmpty(),
                 ),
             )
         }
+    }
+
+    /** Fas 5: the merged row's sheet switches to another of its entries (unsaved edits are dropped). */
+    private fun editPart(id: Long) {
+        val edit = transient.value.edit ?: return
+        if (edit.parts.none { it.id == id } || edit.entry.id == id) return
+        openEdit(id, edit.parts)
     }
 
     private inline fun editing(change: (EditEntryState) -> EditEntryState) {

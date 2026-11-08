@@ -46,8 +46,8 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     LIST_ONE_LIST({ ListShot(ShoppingSamples.state(entries = listOf(ShoppingSamples.milk), selectedListId = 1)) }),
     ADD({ Sheet { AddItemPanel(state = addState, format = format(), onAction = {}) } }),
     ADD_RECENT({ Sheet { AddItemPanel(state = recentState, format = format(), onAction = {}) } }),
-    EDIT({ Sheet { EditEntryPanel(state = editState, onAction = {}) } }),
-    EDIT_OFFLINE_FOOD({ Sheet { EditEntryPanel(state = editOfflineState, onAction = {}) } }),
+    EDIT({ Sheet { EditEntryPanel(state = editState, format = format(), onAction = {}) } }),
+    EDIT_OFFLINE_FOOD({ Sheet { EditEntryPanel(state = editOfflineState, format = format(), onAction = {}) } }),
     STORE_MODE({ StoreModeScreen(state = ShoppingSamples.storeModeState(), onAction = {}) }),
     STORE_MODE_DONE({ StoreModeScreen(state = ShoppingSamples.storeModeState(entries = listOf(ShoppingSamples.eggs)), onAction = {}) }),
 
@@ -71,12 +71,39 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     // 0.3.0 komplettering: the sheet as laid out on screen, "Lägg till n varor" pinned below the scrolling rows.
     RECIPE_SHEET_PINNED({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.sheet, onAction = {}) } }),
     RECIPE_BUTTON({ Sheet { RecipeShoppingButton(state = RecipeShoppingSamples.onList, onAction = {}, servings = 4.0) } }),
-    EDIT_FROM_RECIPE({ Sheet { EditEntryPanel(state = editState.copy(recipeRows = 4), onAction = {}) } }),
+    EDIT_FROM_RECIPE({ Sheet { EditEntryPanel(state = editState.copy(recipeRows = 4), format = format(), onAction = {}) } }),
 
     // Fas S (hemma-ui lane): "Lägg det som saknas på listan" from Kan laga nu, and "Packa upp" after shopping (#46).
     RECIPE_SHEET_FROM_PANTRY({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.fromPantry, onAction = {}) } }),
     LIST_UNPACK({ UnpackListShot() }),
+
+    // Fas 5 (plan §8.2): merged rows ("5 dl + 1 st grädde", "3 l mjölk") and the grid of large tiles.
+    LIST_MERGED({ ListShot(merged()) }),
+    GRID({ ListShot(merged(gridView = true)) }),
+    GRID_CHECKED_OPEN({ ListShot(merged(gridView = true, checkedExpanded = true)) }),
+    GRID_GUEST({ ListShot(merged(gridView = true, readOnly = true)) }),
+    EDIT_MERGED({ Sheet { EditEntryPanel(state = editMergedState, format = format(), onAction = {}) } }),
+    STORE_MODE_MERGED({
+        StoreModeScreen(
+            state = ShoppingSamples.storeModeState(entries = ShoppingSamples.mergedEntries, conversions = ShoppingSamples.conversions),
+            onAction = {},
+        )
+    }),
 }
+
+/** Fas 5: the list with the same foods in several units, merged with the sample conversions. */
+private fun merged(gridView: Boolean = false, checkedExpanded: Boolean = false, readOnly: Boolean = false): ShoppingUiState =
+    ShoppingSamples.state(
+        entries = ShoppingSamples.mergedEntries,
+        conversions = ShoppingSamples.conversions,
+        gridView = gridView,
+        checkedExpanded = checkedExpanded,
+        readOnly = readOnly,
+    )
+
+/** Fas 5: the edit sheet opened on the merged grädde row (3 dl, 200 g and a carton). */
+private val editMergedState: EditEntryState
+    get() = editState.copy(parts = listOf(ShoppingSamples.cream, ShoppingSamples.creamGrams, ShoppingSamples.creamCarton))
 
 @Composable
 private fun ListShot(state: ShoppingUiState) = ShoppingScreen(state = state, onAction = {})

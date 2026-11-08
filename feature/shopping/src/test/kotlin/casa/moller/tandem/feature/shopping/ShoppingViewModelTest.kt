@@ -20,9 +20,11 @@ import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeIngredientParser
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
+import casa.moller.tandem.core.testing.data.FakeShoppingViewPreferences
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSupermarketRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
+import casa.moller.tandem.core.testing.data.FakeUnitConversionRepository
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.shopping.ShoppingSamples.coffee
 import casa.moller.tandem.feature.shopping.ShoppingSamples.cream
@@ -63,15 +65,18 @@ class ShoppingViewModelTest {
     private val foreground = FakeForegroundSync()
     private val sync = FakeSyncRepository()
     private val preferences = FakePreferencesRepository(UserPreferences(defaultDelayHours = 4.0))
+    private val conversions = FakeUnitConversionRepository()
+    private val view = FakeShoppingViewPreferences()
 
     private fun viewModel(key: ShoppingListKey = ShoppingListKey(), saved: SavedStateHandle = SavedStateHandle()) = ShoppingViewModel(
         key = key,
         savedStateHandle = saved,
-        source = ShoppingSource(shopping, supermarkets, permissions, foreground, sync, preferences, clock),
+        source = ShoppingSource(shopping, supermarkets, permissions, foreground, sync, preferences, clock, conversions),
         shopping = shopping,
         supermarkets = supermarkets,
         parser = parser,
         clock = clock,
+        viewPreferences = view,
     )
 
     /** Starts collecting the state (as the screen does) and the effects. */
@@ -221,11 +226,12 @@ class ShoppingViewModelTest {
         val vm = ShoppingViewModel(
             ShoppingListKey(),
             SavedStateHandle(),
-            ShoppingSource(shopping, supermarkets, permissions, foreground, sync, preferences, clock),
+            ShoppingSource(shopping, supermarkets, permissions, foreground, sync, preferences, clock, conversions),
             shopping,
             supermarkets,
             failing,
             clock,
+            view,
         )
         open(vm)
         vm.onAction(ShoppingAction.AddTextChanged("1,5 kg potatis"))

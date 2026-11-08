@@ -45,4 +45,10 @@ class DatastoreFilesTest {
         assertEquals(File(context.filesDir, "datastore/ai_settings.preferences_pb"), DatastoreFiles.aiSettingsFile(context))
         assertEquals("ai_settings.preferences_pb", DatastoreFiles.AI_SETTINGS)
     }
+
+    @Test
+    fun theShoppingViewLivesInFilesDatastore() {
+        assertEquals(File(context.filesDir, "datastore/shopping_view.preferences_pb"), DatastoreFiles.shoppingViewFile(context))
+        assertEquals("shopping_view.preferences_pb", DatastoreFiles.SHOPPING_VIEW)
+    }
 }

@@ -96,7 +96,8 @@ class Phase5ConversionContractTest {
         // Units WITHOUT base_unit: "ounce" is a key of Tandoor's base table (the name counts for the
         // source), "pint" too (but a target needs base_unit).
         for (name in listOf(OUNCE, PINT)) {
-            val created = api("unit-$name", "POST", "/api/unit/", obj("name" to name, "plural_name" to null, "base_unit" to null), record = false)
+            val body = obj("name" to name, "plural_name" to null, "base_unit" to null)
+            val created = api("unit-$name", "POST", "/api/unit/", body, record = false)
             observe("seed.unit.$name.status", created.status)
             (created.json as? JsonObject)?.longAt("id")?.let { unitIds += it }
             observe("seed.unit.$name.baseUnit", (created.json as? JsonObject)?.stringAt("base_unit"))
@@ -139,8 +140,8 @@ class Phase5ConversionContractTest {
         observe("list.foodSpecific.baseUnit", own?.objAt("base_unit")?.stringAt("name"))
         observe("list.foodSpecific.convertedUnit", own?.objAt("converted_unit")?.stringAt("name"))
         observe("list.foodSpecific.amounts", listOf(own?.doubleAt("base_amount"), own?.doubleAt("converted_amount")))
-        observe("list.dl.baseUnit", results.mapNotNull { it.objAt("base_unit") }.firstOrNull { it.stringAt("name") == "dl" }?.stringAt("base_unit"))
-        observe("list.ml.baseUnit", results.mapNotNull { it.objAt("converted_unit") }.firstOrNull { it.stringAt("name") == "ml" }?.stringAt("base_unit"))
+        observe("list.dl.baseUnit", unitNamed(results.mapNotNull { it.objAt("base_unit") }, "dl")?.stringAt("base_unit"))
+        observe("list.ml.baseUnit", unitNamed(results.mapNotNull { it.objAt("converted_unit") }, "ml")?.stringAt("base_unit"))
 
         // ?food_id= gives only that food's conversions: the general ones are NOT included.
         val filtered = api("unit-conversion-list-food", "GET", "/api/unit-conversion/?food_id=$foodId&page_size=100")
@@ -151,7 +152,8 @@ class Phase5ConversionContractTest {
 
         // Who may read them: Tandoor's CustomIsUser (a member yes, a guest no). The units the same.
         if (env.readerToken.isNotBlank()) {
-            observe("list.member.status", api("unit-conversion-list-member", "GET", "/api/unit-conversion/?page_size=1", token = env.readerToken).status)
+            val member = api("unit-conversion-list-member", "GET", "/api/unit-conversion/?page_size=1", token = env.readerToken)
+            observe("list.member.status", member.status)
         }
         if (env.guestToken.isNotBlank()) {
             val guest = api("unit-conversion-list-guest", "GET", "/api/unit-conversion/?page_size=1", token = env.guestToken)
@@ -215,7 +217,8 @@ class Phase5ConversionContractTest {
         val byNote = recipe.arrAt("steps").objects().flatMap { it.arrAt("ingredients").objects() }.associateBy { it.stringAt("note") }
         for (line in lines) {
             val conversions = byNote[line.key]?.arrAt("conversions").objects()
-            observe("conversions.${line.key}.first", conversions.firstOrNull()?.let { "${round(it.doubleAt("amount"))} ${it.stringAt("unit")}" })
+            val first = conversions.firstOrNull()
+            observe("conversions.${line.key}.first", first?.let { "${round(it.doubleAt("amount"))} ${it.stringAt("unit")}" })
             val byUnit = conversions.associate { (it.stringAt("unit") ?: "?") to round(it.doubleAt("amount")) }
             observe("conversions.${line.key}", byUnit)
             for (unit in WATCHED_UNITS) observe("conversions.${line.key}.$unit", byUnit[unit])
@@ -246,7 +249,7 @@ class Phase5ConversionContractTest {
         observe("list.entries.units", mine.mapNotNull { it.objAt("unit")?.stringAt("name") }.sorted())
         observe("list.entry.hasNote", mine.any { it.containsKey("note") })
         observe("list.entry.unitKeys", mine.firstOrNull()?.objAt("unit")?.keys?.sorted())
-        observe("list.entry.gramsBaseUnit", mine.firstOrNull { it.objAt("unit")?.stringAt("name") == "g" }?.objAt("unit")?.stringAt("base_unit"))
+        observe("list.entry.gramsBaseUnit", unitNamed(mine.mapNotNull { it.objAt("unit") }, "g")?.stringAt("base_unit"))
 
         // Checking a merged row: one bulk call with all its ids, and unchecking the same way.
         val check = api("bulk-check-merged", "POST", "/api/shopping-list-entry/bulk/", obj("ids" to entryIds, "checked" to true))
@@ -289,8 +292,12 @@ class Phase5ConversionContractTest {
         assertTrue(mismatches.isEmpty(), "Observed facts differ from the Fas 5 conversion baseline:\n" + mismatches.joinToString("\n"))
     }
 
-    private fun entries(): List<JsonObject> = (api("entries", "GET", "/api/shopping-list-entry/?page_size=200", record = false).json as? JsonObject)
-        ?.arrAt("results").objects().filter { it.longAt("id") in entryIds }
+    private fun entries(): List<JsonObject> {
+        val list = api("entries", "GET", "/api/shopping-list-entry/?page_size=200", record = false).json as? JsonObject
+        return list?.arrAt("results").objects().filter { it.longAt("id") in entryIds }
+    }
+
+    private fun unitNamed(units: List<JsonObject>, name: String): JsonObject? = units.firstOrNull { it.stringAt("name") == name }
 
     private fun round(value: Double?): Double? = value?.let { (it * ROUNDING).roundToLong() / ROUNDING }
 

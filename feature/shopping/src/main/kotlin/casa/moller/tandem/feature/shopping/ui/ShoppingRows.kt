@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -48,7 +49,7 @@ import casa.moller.tandem.core.designsystem.icon.Check
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
-import casa.moller.tandem.core.model.shopping.ShoppingEntry
+import casa.moller.tandem.core.domain.shopping.MergedShoppingRow
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.ShoppingFormat
 
@@ -65,17 +66,20 @@ fun shoppingRowTag(id: Long): String = "shopping:row:$id"
 internal class RowActions(val onToggle: (() -> Unit)? = null, val onLater: (() -> Unit)? = null, val onEdit: (() -> Unit)? = null)
 
 /**
- * One entry on the list (plan 6.2, 6.6, Stitch ink_pslista_*): check mark, food, recipe label and
+ * One row on the list (plan 6.2, 6.6, Stitch ink_pslista_*): check mark, food, recipe label and
  * amount. ONE accessibility node, read as "2 dl grädde, Mejeri, avbockad" with the other actions
  * (köp senare, ändra) as TalkBack actions instead of extra buttons; colour is never the only
  * sign (strike-through and a check icon). At least [minHeight] high: 64 dp, the kitchen touch
  * target, on the list as in store mode (plan 6.6 "64 dp i kokläge och inköpslista", fix-ui);
  * [large] only makes the text and the check mark bigger (store mode).
+ *
+ * Fas 5 (plan §8.2): a [MergedShoppingRow] may stand for several entries of the same food ("5 dl +
+ * 1 st grädde", every recipe it came from); TalkBack also hears how many rows it merges.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ShoppingEntryRow(
-    entry: ShoppingEntry,
+    row: MergedShoppingRow,
     format: ShoppingFormat,
     categoryName: String,
     delayed: Boolean,
@@ -84,19 +88,23 @@ internal fun ShoppingEntryRow(
     large: Boolean = false,
     minHeight: Dp = TandemTheme.sizes.kitchenTouchTarget,
 ) {
-    val quantity = format.quantity(entry)
-    val food = format.food(entry)
+    val quantity = format.quantity(row)
+    val food = format.food(row)
+    val label = row.recipeNames.joinToString(", ").takeIf { it.isNotBlank() }
+    val merged = if (row.isMerged) pluralStringResource(R.plurals.shopping_row_merged, row.entries.size, row.entries.size) else null
     val description = buildList {
         add(listOfNotNull(quantity, food).joinToString(" "))
         add(categoryName)
-        entry.recipe?.recipeName?.takeIf { it.isNotBlank() }?.let(::add)
+        label?.let(::add)
+        merged?.let(::add)
         if (delayed) add(stringResource(R.string.shopping_row_later))
-        if (entry.pending) add(stringResource(R.string.shopping_row_pending))
+        if (row.pending) add(stringResource(R.string.shopping_row_pending))
     }.joinToString(", ")
-    val state = stringResource(if (entry.checked) R.string.shopping_row_checked else R.string.shopping_row_unchecked)
+    val checked = row.checked
+    val state = stringResource(if (checked) R.string.shopping_row_checked else R.string.shopping_row_unchecked)
     val laterLabel = stringResource(if (delayed) R.string.shopping_action_now else R.string.shopping_action_later)
     val editLabel = stringResource(R.string.shopping_action_edit)
-    val toggleLabel = stringResource(if (entry.checked) R.string.shopping_action_uncheck else R.string.shopping_action_check)
+    val toggleLabel = stringResource(if (checked) R.string.shopping_action_uncheck else R.string.shopping_action_check)
     val clickable = actions.onToggle
     val rowModifier = if (clickable != null) {
         Modifier.combinedClickable(
@@ -118,7 +126,7 @@ internal fun ShoppingEntryRow(
     ) {
         Row(
             modifier = Modifier
-                .testTag(shoppingRowTag(entry.id))
+                .testTag(shoppingRowTag(row.id))
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .heightIn(min = minHeight)
@@ -128,7 +136,7 @@ internal fun ShoppingEntryRow(
                     stateDescription = state
                     if (clickable != null) {
                         role = Role.Checkbox
-                        toggleableState = ToggleableState(entry.checked)
+                        toggleableState = ToggleableState(checked)
                         customActions = listOfNotNull(
                             actions.onLater?.let { later ->
                                 CustomAccessibilityAction(laterLabel) {
@@ -149,15 +157,14 @@ internal fun ShoppingEntryRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),
         ) {
-            CheckMark(checked = entry.checked, large = large)
+            CheckMark(checked = checked, large = large)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = food,
                     style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
-                    textDecoration = if (entry.checked) TextDecoration.LineThrough else null,
-                    color = if (entry.checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    textDecoration = if (checked) TextDecoration.LineThrough else null,
+                    color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 )
-                val label = entry.recipe?.recipeName?.takeIf { it.isNotBlank() }
                 if (label != null) {
                     Text(
                         text = label,
@@ -168,7 +175,7 @@ internal fun ShoppingEntryRow(
                     )
                 }
             }
-            if (entry.pending) {
+            if (row.pending) {
                 Icon(
                     imageVector = TandemIcons.Sync,
                     contentDescription = null,
@@ -181,7 +188,7 @@ internal fun ShoppingEntryRow(
                     text = quantity,
                     style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.labelLarge,
                     color = if (large) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    textDecoration = if (entry.checked) TextDecoration.LineThrough else null,
+                    textDecoration = if (checked) TextDecoration.LineThrough else null,
                 )
             }
         }

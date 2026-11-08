@@ -122,8 +122,10 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
 - Wear OS-app (till exempel Samsung Galaxy Watch 4 och senare): inköpslista och timers.
 - Påminnelse nära butiken, matsedeln i kalendern (iCal), köksskärmsläge för surfplattan.
 - Pannstorlek: skala ett recept efter formen, till exempel från 24 till 20 cm.
-- Sammanslagning i inköpslistans vy: samma vara i enheter som går att räkna om på en rad.
-- Rutnätsvy med stora rutor på inköpslistan, som tillval.
+- ✅ Sammanslagning i inköpslistans vy: samma vara i enheter som går att räkna om på en rad
+  ("3 dl + 200 g grädde" blir "5 dl"), med Tandoors omräkningar, också offline; det som inte går att
+  räkna om står kvar på samma rad. Att bocka av raden bockar av alla dess rader (0.7.0).
+- ✅ Rutnätsvy med stora rutor på inköpslistan, som tillval i listans meny, sparad per konto (0.7.0).
 - Påminnelse kvällen innan, till exempel "Tina ut kycklingen", från en tagg i måltidens anteckning.
 
 ## Övrigt

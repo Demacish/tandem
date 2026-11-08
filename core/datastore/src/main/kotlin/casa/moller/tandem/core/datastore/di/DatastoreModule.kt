@@ -7,6 +7,7 @@ import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.DiagnosticsStore
 import casa.moller.tandem.core.datastore.SecureAccountStore
 import casa.moller.tandem.core.datastore.SettingsStore
+import casa.moller.tandem.core.datastore.ShoppingViewStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.crypto.AeadProvider
 import casa.moller.tandem.core.datastore.crypto.AndroidKeystoreAeadProvider
@@ -15,6 +16,7 @@ import casa.moller.tandem.core.datastore.internal.EncryptedAiKeyStore
 import casa.moller.tandem.core.datastore.internal.PreferencesAiPreferencesStore
 import casa.moller.tandem.core.datastore.internal.PreferencesDiagnosticsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesSettingsStore
+import casa.moller.tandem.core.datastore.internal.PreferencesShoppingViewStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -84,6 +86,14 @@ object DatastoreModule {
     @Singleton
     fun provideAiPreferencesStore(@ApplicationContext context: Context): AiPreferencesStore = PreferencesAiPreferencesStore.create(
         produceFile = { DatastoreFiles.aiSettingsFile(context) },
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    // --- Fas 5 (lane handla): the shopping list's grid, per account on this device. ---
+    @Provides
+    @Singleton
+    fun provideShoppingViewStore(@ApplicationContext context: Context): ShoppingViewStore = PreferencesShoppingViewStore.create(
+        produceFile = { DatastoreFiles.shoppingViewFile(context) },
         scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     )
 }

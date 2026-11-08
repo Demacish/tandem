@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (bana handla, plan §8.2): ihopslagna rader och rutnätet med stora rutor på listan. -->
+    <plurals name="shopping_row_merged">
+        <item quantity="one">%d rad på listan</item>
+        <item quantity="other">%d rader på listan</item>
+    </plurals>
+    <string name="shopping_view_grid">Visa som rutnät</string>
+    <string name="shopping_view_list">Visa som lista</string>
+    <string name="shopping_edit_parts">Rader på listan</string>
+    <string name="shopping_edit_parts_body">Listan visar dem som en rad. Välj den du vill ändra.</string>
+    <string name="shopping_edit_part">%1$s, %2$s</string>
+</resources>

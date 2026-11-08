@@ -254,6 +254,62 @@ class ShoppingScreenshotTest {
     @Config(qualifiers = "sv-$TABLET_PORTRAIT")
     fun listUnpackTabletPortrait() = capture("tablet_portrait_shopping_unpack_light_sv", ShoppingShot.LIST_UNPACK)
 
+    // Fas 5 (plan §8.2): merged rows and the grid of large tiles (phone, landscape, tablet in both
+    // orientations, dark, font scale 2, Swedish); the edit sheet of a merged row; store mode.
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun listMerged() = capture("phone_shopping_merged_light_sv", ShoppingShot.LIST_MERGED)
+
+    @Test
+    fun listMergedDark() = capture("phone_shopping_merged_dark", ShoppingShot.LIST_MERGED, darkTheme = true)
+
+    @Test
+    fun grid() = capture("phone_shopping_grid_light", ShoppingShot.GRID)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun gridDarkSwedish() = capture("phone_shopping_grid_dark_sv", ShoppingShot.GRID, darkTheme = true)
+
+    @Test
+    fun gridFontScale2() = capture("phone_shopping_grid_font2_light", ShoppingShot.GRID, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun gridCheckedOpen() = capture("phone_shopping_grid_checked_open_light_sv", ShoppingShot.GRID_CHECKED_OPEN)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun gridGuest() = capture("phone_shopping_grid_guest_light_sv", ShoppingShot.GRID_GUEST)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun gridLandscape() = capture("phone_landscape_shopping_grid_light", ShoppingShot.GRID)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun gridTabletPortrait() = capture("tablet_portrait_shopping_grid_light_sv", ShoppingShot.GRID)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun gridTablet() = capture("tablet_shopping_grid_light", ShoppingShot.GRID)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun gridTabletDark() = capture("tablet_shopping_grid_dark", ShoppingShot.GRID, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun gridTabletPortraitDark() = capture("tablet_portrait_shopping_grid_dark_sv", ShoppingShot.GRID, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun editMerged() = capture("phone_shopping_edit_merged_light_sv", ShoppingShot.EDIT_MERGED)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun storeModeMerged() = capture("phone_store_mode_merged_light_sv", ShoppingShot.STORE_MODE_MERGED)
+
     private fun capture(
         name: String,
         shot: ShoppingShot,

@@ -1104,6 +1104,97 @@ kräver inloggning och går inte att visa med bildladdaren), den öppnas på web
 skapas på webben. Cirkelkollen ser bara recept vars steg är lagrade.
 <!-- /Fas 4 redigeraren som webben -->
 
+<!-- Fas 5 läge -->
+## Fas 5 – läge (0.7.0 "I köket" och framåt)
+
+Fas 5 "Plattform" är löpande (plan §10 Fas 5): varje punkt får ett eget "Klart när" när den
+påbörjas, utöver planens minimikrav. 0.7.0 byggs i parallella banor (`fas5/<bana>`); versionen
+sätts av integrationen. En rad per bana.
+
+| Bana | Punkt | Klart när | Läge |
+|---|---|---|---|
+| handla | Sammanslagning i listvyn och rutnätsvy (plan §8.2) | Samma livsmedel i omräkningsbara enheter är **en rad** på listan, i butiksläget och i delningstexten ("3 dl + 200 g grädde" → "5 dl"), räknat med Tandoors egna omräkningar och bastabell, också offline (cachen per konto, läst med de små tabellerna); det som inte går att räkna om står kvar på samma rad ("5 dl + 1 st"); att bocka av en rad bockar av alla dess poster i **en** bulk och att avmarkera tar tillbaka alla, servern behåller raderna (kontraktstest mot 2.6.13 och 2.7.1). Rutnätet slås på i listans meny och minns per konto; rutorna följer butikens ordning och de sammanslagna raderna, tryck bockar av, lång tryckning öppnar Ändra; varje ruta är **en** TalkBack-nod med namn, mängd, avdelning, läge och åtgärder; ATF och referensbilder på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | se "Sammanslagning och rutnät" |
+<!-- /Fas 5 läge -->
+
+<!-- Fas 5 handla -->
+## Sammanslagning och rutnät (`:feature:shopping`, `:core:domain`, `:core:sync`, Fas 5, handla)
+
+Plan §8.2 "Sammanslagning i vyn" och "Rutnätsvy med stora rutor"; fakta i
+`api-schema/fixtures/<version>/FACTS.md` "Fas 5 – omräkning och sammanslagning"
+(`Phase5ConversionContractTest`, eget steg i `contract.yml` efter webbens utcheckning, inspelningar i
+`fas5/handla/`, bevakningen jämför `fas5.handla`). **Bara vyn slår ihop:** posterna på servern står
+kvar var för sig; ingen schemaändring (Room är kvar på 6).
+
+**Omräkningen (`:core:domain` `UnitConverter`, ren).** Tandoors egna data: spacets omräkningar
+(`/api/unit-conversion/`, livsmedelsspecifika före allmänna, i båda riktningarna) och Tandoors bastabell
+(`CONVERSION_TABLE` i `unit_conversion_helper.py`, samma i 2.6.13–2.7.2: vikt `g`, `kg`, `ounce`,
+`pound`, volym `ml`, `l`, `tbsp`, `tsp`, `us_cup` …) med enhetens `base_unit`, eller namnet när den
+saknas. Ingen egen översättningstabell (plan §6.7): `dl` finns inte i Tandoors tabell, så "1 dl = 100
+ml" måste finnas som omräkning i spacet (Fas 1:s kontraktsspace har den). Varje omräkning är en faktor,
+så omräknaren söker en väg mellan enheterna (bredden först: livsmedelsspecifik, allmän, bassteg) och
+hittar också det Tandoors enkelriktade ordning missar (1 l → 1000 ml → 10 dl; ett mål utan
+`base_unit` via namnet). Där Tandoor räknar ut en omräkning för ett recept blir resultatet detsamma.
+En enhet utan id (en post skapad offline) hittas på namnet. Svaren cachas i omräknaren (trådsäker).
+
+**Sammanslagningen (`:core:domain` `ShoppingMerge`, `MergedShoppingRow`, `ShoppingQuantity`).** En rad
+per livsmedel (namnet, som Tandoor håller unikt per space; en offlinepost har inget livsmedels-id än)
+och läge (avbockad eller inte), inom varje avsnitt (`ShoppingGrouping`: avdelningarna, "Köp senare",
+"Avbockat"). Mängderna räknas om till den enhet flest poster har (lika: första postens) och läggs
+ihop; det som inte går att räkna om står kvar på samma rad efter nästa vanligaste enhet ("5 dl + 1
+st"), som webben, som visar en rad per livsmedel med en mängd per enhet och aldrig räknar om. Poster
+utan mängd ("mjölk") hör till raden men lägger inte till något. Summorna hålls till 6 decimaler;
+skärmen avrundar som webben (`ShoppingLineFormat`, användarens decimaler, decimalkomma på svenska).
+Tandoors poster har ingen anteckning (FACTS), så det som skiljer dem är receptet: raden visar alla
+recept den kommer från. `ShoppingSection.rows`, `GroupedShopping.laterRows`/`checkedRows`/`rowOf(id)`;
+`entries` finns kvar för det som gäller posterna (bocka av alla i en avdelning, rensa, ändra).
+
+**Vad en rad gör (`ShoppingViewModel`, `StoreModeViewModel`).** Radens id är dess första posts id, och
+varje id i raden hittar raden (`rowOf`). Bocka av / avmarkera och "Ångra": `setChecked(alla id)`, som
+köar en BULK_CHECK-rad per post med samma `batch_key` och skickas som **ett** `POST .../bulk/` (av och
+på igen före sändning tar ut varandra, inget skickas; `MergedRowSyncTest`). "Köp senare" och "Köp nu"
+gäller hela raden; "Ångra" ger varje post tillbaka sin egen tid. Lång tryckning öppnar Ändra för första
+posten med radens poster som chips ("Rader på listan", `EditEntryState.parts`, `ShoppingAction.EditPart`);
+"Spara" ändrar bara den valda posten. Räknare (avdelningens antal, "Köp senare (n)", "Avbockat (n)",
+framstegsraden, "Rensa"-frågan, butiksläget) räknar rader som skärmen visar. Delningstexten använder
+raderna.
+
+**Cachen (`:core:sync` `SyncStateUnitConversionRepository`, `:core:data` `UnitConversionRepository`).**
+En `sync_state`-rad per konto (`unit_conversions`, JSON i `hash`: reglerna och enheterna de nämner),
+skriven av `ShoppingTables` med de andra små tabellerna (start högst en gång i timmen, var 6:e timme)
+när listan är komplett; följer kontot (`deleteAccountData`). **Aldrig för gäster:** Tandoor svarar en
+gäst 403 med `detail`, som `ErrorClassifier` tar för en avvisad token (`isGuest` före anropet). Läsaren
+slår ihop spacets enheter (`unit`, med `base_unit`) och cachens. Demoläget läser demodatabasen: dess
+enheter, inga omräkningar (samma enhet och bastabellen på namnet slås ändå ihop). En trasig rad läses
+som inga omräkningar. `ShoppingSource` bygger en ny `UnitConverter` när cachen ändras. Testservrarna
+(`TestServer`, röktestets `FakeTandoor`) svarar på `/api/unit-conversion/` med `fas1/unit-conversion-list`.
+
+**Rutnätet (`ShoppingTiles`, `ShoppingViewPreferences`).** "Visa som rutnät"/"Visa som lista" i listans
+meny (`ShoppingAction.ToggleGrid`, även för gäster, det ändrar bara vyn). Valet sparas per konto i en
+egen liten Preferences DataStore (`:core:datastore` `ShoppingViewStore`, filen
+`shopping_view.preferences_pb`, bara konto-id:n; demoläget har en egen nyckel; konton som lämnat
+telefonen rensas vid nästa ändring), av som standard (`:core:sync` `DefaultShoppingViewPreferences`).
+Rutorna står i samma kort som raderna (avdelningarna i butikens ordning, två kolumner från 640 dp,
+"Köp senare", "Avbockat"), minst 112 dp breda och 104 dp höga, så många per rad som får plats (minst
+två). En ruta visar livsmedlet, mängden och avdelningen; tryck bockar av, lång tryckning öppnar Ändra;
+**en** TalkBack-nod ("5 dl + 1 st grädde, Mejeri, Potatisgratäng, Kladdkaka, 3 rader på listan",
+läget, "Bocka av", "Köp senare"/"Ändra" som åtgärder). Avbockade rutor har bock och genomstrykning,
+"köp senare" en klocka; färgen är aldrig enda tecknet. Gästens rutor gör ingenting.
+
+**Tester:** `ShoppingMergeTest` (`:core:domain`: samma enhet, densitet för ett livsmedel, bara för sitt
+livsmedel, vikt och volym ur bastabellen, eget steg efter bassteg, ingen omräkning, vanligaste enheten,
+avrundning, avbockat och inte, olika recept, utan mängd, utan enhet, offlineposter, faktorer åt båda
+hållen), `MergedRowSyncTest` (`:core:sync`: en BULK_CHECK per post och ett bulkanrop, av och på igen
+skickar inget, cachen per konto och källa, gästen frågar aldrig, trasig cache),
+`PreferencesShoppingViewStoreTest`, `MergedGroupingTest`, `MergedRowsViewModelTest` (en rad, utan
+omräkningar bara samma enhet, bocka av/avmarkera/ångra alla, köp senare med egna tider tillbaka,
+ändra en post i taget, rutnätet per konto och för gäster, butiksläget), `MergedRowsScreenTest` (en
+nod per rad och ruta med beskrivning, läge, roll och åtgärder, gästen, menyn, chipsen i Ändra), ATF
+(`ShoppingAccessibilityTest`, de nya `LIST_MERGED`, `GRID*`, `EDIT_MERGED`, `STORE_MODE_MERGED`) och
+referensbilder (`ShoppingScreenshotTest`: `phone_shopping_merged_*`, `phone_shopping_grid_*`,
+`phone_landscape_shopping_grid_light`, `tablet_portrait_shopping_grid_*`, `tablet_shopping_grid_*`,
+`phone_shopping_edit_merged_light_sv`, `phone_store_mode_merged_light_sv`).
+<!-- /Fas 5 handla -->
+
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
 

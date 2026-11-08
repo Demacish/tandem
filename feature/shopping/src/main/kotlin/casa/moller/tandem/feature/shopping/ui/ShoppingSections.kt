@@ -73,7 +73,7 @@ internal fun AisleCard(
                     modifier = Modifier.semantics { heading() },
                 )
                 Text(
-                    text = pluralStringResource(R.plurals.shopping_section_count, section.entries.size, section.entries.size),
+                    text = pluralStringResource(R.plurals.shopping_section_count, section.rows.size, section.rows.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )

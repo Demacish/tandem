@@ -127,13 +127,14 @@ class DtoFixturesTest {
         Route("PUT", "/api/recipe/\\d+/image/", RecipeImageDto.serializer()),
         // --- Fas 3 (import lane): the server-side import's answer. ---
         Route("POST", "/api/recipe-from-source/", RecipeFromSourceResponseDto.serializer()),
+        // --- Fas 5 (lane handla): the space's unit conversions, for the merged shopping rows. ---
+        Route("GET", "/api/unit-conversion/", PageDto.serializer(UnitConversionDto.serializer())),
     )
 
     /** Successful JSON fixtures that no DTO models, and why (Phase 0 names are numbered per version). */
     private val notModelled = mapOf(
-        "fas1/seed-unit-conversion-create" to "the app reads conversions from the ingredients",
-        "fas1/seed-unit-conversion-create-food" to "the app reads conversions from the ingredients",
-        "fas1/unit-conversion-list" to "the app reads conversions from the ingredients",
+        "fas1/seed-unit-conversion-create" to "contract setup; the app only reads the space's conversions (Fas 5)",
+        "fas1/seed-unit-conversion-create-food" to "contract setup; the app only reads the space's conversions (Fas 5)",
         // 0.3.0 review (fix-data): the Phase 2 recordings the app has no DTO for.
         "fas2/household-list-owner" to "capability probe only (CapabilityProbeService), the body is never parsed",
         "fas2/recipe-shopping-put" to "contract probe; the app uses shopping-list-recipe + entries, not recipe/{id}/shopping/",

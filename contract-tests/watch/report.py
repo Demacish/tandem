@@ -48,6 +48,8 @@ PHASES = (
     ("fas4.nutrition", os.path.join("fas4", "nutrition")),
     ("fas4.editor", os.path.join("fas4", "editor")),
     ("fas4.share", os.path.join("fas4", "share")),
+    # Fas 5, lane handla: unit conversions and merged shopping rows.
+    ("fas5.handla", os.path.join("fas5", "handla")),
 )
 
 

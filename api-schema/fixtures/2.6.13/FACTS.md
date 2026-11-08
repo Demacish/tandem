@@ -1122,3 +1122,40 @@ av receptet med stegens id.
 - **f. Kroppen har inget `detail`** (d, e), till skillnad från Tandoors andra 403. `ErrorClassifier`
   känner igen den: annars vore det "blockerad av brandvägg", som pausar synken. [S]
 <!-- /Fas 4 dela recept -->
+
+<!-- Fas 5 omräkning -->
+## Fas 5 – omräkning och sammanslagning (bana handla, plan §8.2)
+
+`Phase5ConversionContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1) efter webbens
+utcheckning och spelar in till `fas5/handla/` (2026-11-08, inga avvikelser mot `EXPECTED`, 2.6.13 och
+2.7.1 ger samma fakta). Bevakningen jämför faktan (`fas5.handla`). Klassen bygger på Fas 1:s enheter
+(`g`, `kg`, `ml`, `l` med `base_unit`, `dl` utan) och omräkningar (1 dl = 100 ml, 1 dl vetemjöl = 60 g)
+och lägger till 1 dl tandem-grädde = 100 g.
+
+- **a. Listan.** `GET /api/unit-conversion/` är DRF-paginerad (`count, next, previous, results,
+  timestamp`). En post: `id, name, base_amount, base_unit, converted_amount, converted_unit, food,
+  open_data_slug`; enheterna är hela `Unit` (med `base_unit`), `food` är `null` för en allmän
+  omräkning och annars hela livsmedlet. [O] `?food_id=` ger **bara** det livsmedlets omräkningar,
+  inte de allmänna. [O]
+- **b. Vem får läsa.** En medlem 200, **en gäst 403 med `detail`** (`CustomIsUser`), samma för
+  `GET /api/unit/`. [O] Appen frågar aldrig som gäst: 403 med `detail` tolkas som en avvisad token. [S]
+- **c. Vad Tandoor räknar ut** (`Ingredient.conversions`, `cookbook/helper/unit_conversion_helper.py`,
+  samma i 2.6.13 och 2.7.2) [O/K]: först egna omräkningar i flera steg i båda riktningarna (3 dl
+  grädde → 300 g och 300 ml; 200 g grädde → 2 dl och 200 ml), en livsmedelsspecifik **bara för sitt
+  livsmedel** (2 dl vetemjöl → 120 g), sedan basenheterna i spacet (300 g → 0,3 kg, 300 ml → 0,3 l).
+  Basnyckeln är enhetens `base_unit`, **eller namnet** när den saknas (1 "ounce" utan `base_unit` →
+  28,3495 g), men ett **mål måste ha `base_unit`** ("pint" utan blir aldrig ett mål). Basstegen tas
+  sist: 1 l grädde ger ml men **inte dl eller g** (l → ml är ett bassteg, ml → dl ett eget). Tabellen
+  har ingen `dl`.
+- **d. Listan slår aldrig ihop.** 3 dl, 200 g och 1 st av samma livsmedel är tre poster med samma
+  `food.id`; posterna har **ingen anteckning** (`note` finns inte). En `bulk` med alla tre id bockar
+  av alla, och en `bulk` med `checked: false` avmarkerar alla. [O]
+- **e. Webben** (`vue3/src/components/display/ShoppingLineItem.vue`, kontrollerat mot källkoden vid
+  taggen) visar **en rad per livsmedel** och lägger ihop mängder med **samma enhet och samma läge**
+  (avbockad, köp senare); andra enheter står under varandra på raden, inget räknas om. Att bocka av
+  raden skickar alla dess poster i en `bulk`. [K]
+- [S] Appen visar samma livsmedel som en rad per läge och räknar om till den vanligaste enheten med
+  Tandoors egna data: omräkningarna (a) och bastabellen (c) som faktorer i båda riktningarna, så den
+  hittar också 1 l → 10 dl och mål utan `base_unit` via namnet. Det som inte går att räkna om står
+  kvar på samma rad ("5 dl + 1 st"), som på webben. Se docs/BYGGE.md "Sammanslagning och rutnät".
+<!-- /Fas 5 omräkning -->

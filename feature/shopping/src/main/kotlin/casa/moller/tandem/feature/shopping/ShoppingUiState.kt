@@ -76,6 +76,9 @@ data class AddItemState(
  *   this one ("Ta bort … från listan" removes them all), 0 for a row without a recipe.
  * @property lists Tandoor's named lists the entry can be moved between (fix-ui, plan 3.5 "Flytt
  *   mellan listor"); [listIds] the ones it is on in the sheet ("Spara" sends a change).
+ * @property parts Fas 5 (plan §8.2): the entries of the merged row the sheet was opened on, when it
+ *   has more than one; the sheet edits one of them ([entry]) and switches with
+ *   [ShoppingAction.EditPart]. Empty for a row of its own.
  */
 data class EditEntryState(
     val entry: ShoppingEntry,
@@ -90,6 +93,7 @@ data class EditEntryState(
     val recipeRows: Int = 0,
     val lists: List<ShoppingList> = emptyList(),
     val listIds: Set<Long> = entry.listIds,
+    val parts: List<ShoppingEntry> = emptyList(),
 ) {
     val canChangeCategory: Boolean
         get() = entry.food.id != null
@@ -120,6 +124,8 @@ data class EditEntryState(
  * @property progressSince only entries checked from this time on count as done in the progress
  *   line (fix-ui: Tandoor keeps showing entries checked on earlier trips for days); null counts
  *   every checked entry.
+ * @property gridView Fas 5 (plan §8.2 "Rutnätsvy med stora rutor", Bring!): the list as a grid of
+ *   large tiles, remembered per account ([ShoppingAction.ToggleGrid]).
  */
 data class ShoppingUiState(
     val loading: Boolean = true,
@@ -144,13 +150,19 @@ data class ShoppingUiState(
     val confirmClearChecked: Boolean = false,
     val history: List<ShoppingHistoryItem> = emptyList(),
     val progressSince: Instant? = null,
+    val gridView: Boolean = false,
 ) {
     val canEdit: Boolean
         get() = !readOnly
 
-    /** Entries checked since [progressSince] out of those and all that are to buy now ("2 av 9"). */
+    /**
+     * Rows checked since [progressSince] out of those and all that are to buy now ("2 av 9"); a
+     * merged row counts once (Fas 5), when one of its entries was checked since then.
+     */
     val progressDone: Int
-        get() = grouped.checked.count { entry -> progressSince == null || (entry.completedAt ?: progressSince) >= progressSince }
+        get() = grouped.checkedRows.count { row ->
+            progressSince == null || row.entries.any { entry -> (entry.completedAt ?: progressSince) >= progressSince }
+        }
 
     val progressTotal: Int
         get() = grouped.toBuyCount + progressDone
@@ -212,6 +224,9 @@ sealed interface ShoppingAction {
     /** fix-ui: puts the edited entry on, or takes it off, the named list [listId] ("Spara" sends it). */
     data class EditList(val listId: Long) : ShoppingAction
 
+    /** Fas 5: the edit sheet of a merged row switches to its entry [id]. */
+    data class EditPart(val id: Long) : ShoppingAction
+
     data object SaveEdit : ShoppingAction
 
     data object DeleteEdited : ShoppingAction
@@ -230,6 +245,9 @@ sealed interface ShoppingAction {
 
     /** "Dela som text" (#13); the route builds the text in the app's language and opens the share sheet. */
     data object Share : ShoppingAction
+
+    /** Fas 5 (plan §8.2): rows or the grid of large tiles, from the list's menu. */
+    data object ToggleGrid : ShoppingAction
 }
 
 /** What a snackbar says after a change. */

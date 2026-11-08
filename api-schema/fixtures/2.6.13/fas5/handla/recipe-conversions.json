@@ -1,0 +1,609 @@
+{
+  "name": "recipe-conversions",
+  "request": {
+    "method": "GET",
+    "path": "/api/recipe/42/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 42,
+      "name": "Tandem omräkning",
+      "description": "",
+      "image": null,
+      "keywords": [],
+      "steps": [
+        {
+          "id": 48,
+          "name": "",
+          "instruction": "Vispa.",
+          "ingredients": [
+            {
+              "id": 104,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "tandem-grädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 3.0,
+              "conversions": [
+                {
+                  "food": "tandem-grädde",
+                  "unit": "dl",
+                  "amount": 3.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "ml",
+                  "amount": 300.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "g",
+                  "amount": 300.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "cup",
+                  "amount": 1.268025
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "l",
+                  "amount": 0.3
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "msk",
+                  "amount": 20.2884
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "tsk",
+                  "amount": 60.865199999999994
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "kg",
+                  "amount": 0.3
+                }
+              ],
+              "note": "cream-3-dl",
+              "order": 0,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 42,
+                  "name": "Tandem omräkning"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 105,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "tandem-grädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 1,
+                "name": "g",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "g",
+                "open_data_slug": null
+              },
+              "amount": 200.0,
+              "conversions": [
+                {
+                  "food": "tandem-grädde",
+                  "unit": "g",
+                  "amount": 200.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "dl",
+                  "amount": 2.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "ml",
+                  "amount": 200.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "kg",
+                  "amount": 0.2
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "cup",
+                  "amount": 0.84535
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "l",
+                  "amount": 0.2
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "msk",
+                  "amount": 13.5256
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "tsk",
+                  "amount": 40.5768
+                }
+              ],
+              "note": "cream-200-g",
+              "order": 1,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 42,
+                  "name": "Tandem omräkning"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 106,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "vetemjöl",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 5,
+                "name": "dl",
+                "plural_name": "dl",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 2.0,
+              "conversions": [
+                {
+                  "food": "vetemjöl",
+                  "unit": "dl",
+                  "amount": 2.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "ml",
+                  "amount": 200.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "g",
+                  "amount": 120.0
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "cup",
+                  "amount": 0.84535
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "l",
+                  "amount": 0.2
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "msk",
+                  "amount": 13.5256
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "tsk",
+                  "amount": 40.5768
+                },
+                {
+                  "food": "vetemjöl",
+                  "unit": "kg",
+                  "amount": 0.12
+                }
+              ],
+              "note": "flour-2-dl",
+              "order": 2,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 42,
+                  "name": "Tandem omräkning"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 107,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "tandem-grädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 16,
+                "name": "ounce",
+                "plural_name": "ounce",
+                "description": null,
+                "base_unit": null,
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "tandem-grädde",
+                  "unit": "ounce",
+                  "amount": 1.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "g",
+                  "amount": 28.34949254408346
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "kg",
+                  "amount": 0.02834949254408346
+                }
+              ],
+              "note": "cream-1-ounce",
+              "order": 3,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 42,
+                  "name": "Tandem omräkning"
+                }
+              ],
+              "checked": false
+            },
+            {
+              "id": 108,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde",
+                "plural_name": null,
+                "description": "",
+                "recipe": null,
+                "url": "",
+                "properties": [],
+                "properties_food_amount": 100.0,
+                "properties_food_unit": null,
+                "fdc_id": null,
+                "food_onhand": false,
+                "supermarket_category": null,
+                "parent": null,
+                "numchild": 0,
+                "inherit_fields": [],
+                "full_name": "tandem-grädde",
+                "ignore_shopping": false,
+                "substitute": [],
+                "substitute_siblings": false,
+                "substitute_children": false,
+                "substitute_onhand": false,
+                "child_inherit_fields": [],
+                "open_data_slug": null,
+                "shopping_lists": []
+              },
+              "unit": {
+                "id": 4,
+                "name": "l",
+                "plural_name": null,
+                "description": null,
+                "base_unit": "l",
+                "open_data_slug": null
+              },
+              "amount": 1.0,
+              "conversions": [
+                {
+                  "food": "tandem-grädde",
+                  "unit": "l",
+                  "amount": 1.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "cup",
+                  "amount": 4.22675
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "ml",
+                  "amount": 1000.0
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "msk",
+                  "amount": 67.628
+                },
+                {
+                  "food": "tandem-grädde",
+                  "unit": "tsk",
+                  "amount": 202.884
+                }
+              ],
+              "note": "cream-1-l",
+              "order": 4,
+              "is_header": false,
+              "no_amount": false,
+              "original_text": null,
+              "used_in_recipes": [
+                {
+                  "id": 42,
+                  "name": "Tandem omräkning"
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "instructions_markdown": "<p>Vispa.</p>",
+          "time": 0,
+          "order": 0,
+          "show_as_header": false,
+          "file": null,
+          "step_recipe": null,
+          "step_recipe_data": null,
+          "show_ingredients_table": true
+        }
+      ],
+      "working_time": 0,
+      "waiting_time": 0,
+      "created_by": {
+        "id": 1,
+        "username": "contract-admin",
+        "first_name": "",
+        "last_name": "",
+        "display_name": "contract-admin",
+        "is_staff": true,
+        "is_superuser": true,
+        "is_active": true
+      },
+      "created_at": "2000-01-15T00:00:00.000000+01:00",
+      "updated_at": "2000-01-15T00:00:00.000000+01:00",
+      "source_url": null,
+      "internal": true,
+      "show_ingredient_overview": true,
+      "nutrition": null,
+      "properties": [],
+      "food_properties": {
+        "1": {
+          "id": 1,
+          "name": "Tandem energi",
+          "description": null,
+          "unit": "kcal",
+          "order": 0,
+          "food_values": {
+            "73": {
+              "id": 73,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde"
+              },
+              "value": null
+            },
+            "12": {
+              "id": 12,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl"
+              },
+              "value": null
+            }
+          },
+          "total_value": 0,
+          "missing_value": true
+        },
+        "2": {
+          "id": 2,
+          "name": "Tandem protein",
+          "description": null,
+          "unit": "g",
+          "order": 0,
+          "food_values": {
+            "73": {
+              "id": 73,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde"
+              },
+              "value": null
+            },
+            "12": {
+              "id": 12,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl"
+              },
+              "value": null
+            }
+          },
+          "total_value": 0,
+          "missing_value": true
+        },
+        "4": {
+          "id": 4,
+          "name": "Tandem editor protein",
+          "description": null,
+          "unit": "g",
+          "order": 0,
+          "food_values": {
+            "73": {
+              "id": 73,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde"
+              },
+              "value": null
+            },
+            "12": {
+              "id": 12,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl"
+              },
+              "value": null
+            }
+          },
+          "total_value": 0,
+          "missing_value": true
+        },
+        "3": {
+          "id": 3,
+          "name": "Tandem gammalt namn",
+          "description": null,
+          "unit": "kcal",
+          "order": 0,
+          "food_values": {
+            "73": {
+              "id": 73,
+              "food": {
+                "id": 73,
+                "name": "tandem-grädde"
+              },
+              "value": null
+            },
+            "12": {
+              "id": 12,
+              "food": {
+                "id": 12,
+                "name": "vetemjöl"
+              },
+              "value": null
+            }
+          },
+          "total_value": 0,
+          "missing_value": true
+        }
+      },
+      "servings": 2,
+      "file_path": "",
+      "servings_text": "",
+      "diameter": 0,
+      "diameter_text": "",
+      "rating": null,
+      "last_cooked": null,
+      "private": false,
+      "shared": []
+    }
+  }
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (lane handla, plan §8.2): merged rows and the grid of large tiles on the list. -->
+    <plurals name="shopping_row_merged">
+        <item quantity="one">%d row on the list</item>
+        <item quantity="other">%d rows on the list</item>
+    </plurals>
+    <string name="shopping_view_grid">Show as grid</string>
+    <string name="shopping_view_list">Show as list</string>
+    <string name="shopping_edit_parts">Rows on the list</string>
+    <string name="shopping_edit_parts_body">The list shows these as one row. Choose the one to change.</string>
+    <string name="shopping_edit_part">%1$s, %2$s</string>
+</resources>

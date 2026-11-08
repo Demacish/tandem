@@ -164,3 +164,8 @@ GET /api/property-type/{id}/
 # --- Fas 4, komplettering 3: "Dela recept" (plan §6.2, §8.6; FACTS "Fas 4: dela recept") ---
 # No trailing slash; every call makes a new link, so one per share and never ahead of time.
 GET /api/share-link/{id}
+
+# --- Fas 5, lane handla: merged rows on the shopping list (plan §8.2; FACTS "Fas 5") ---
+# The space's own unit conversions, read with the small tables (not for guests: 403) and cached per
+# account, so the list can show "3 dl + 200 g grädde" as one row offline.
+GET /api/unit-conversion/

@@ -25,9 +25,11 @@ import casa.moller.tandem.core.testing.data.FakeForegroundSync
 import casa.moller.tandem.core.testing.data.FakeIngredientParser
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeShoppingRepository
+import casa.moller.tandem.core.testing.data.FakeShoppingViewPreferences
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSupermarketRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
+import casa.moller.tandem.core.testing.data.FakeUnitConversionRepository
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
@@ -228,11 +230,13 @@ class ShoppingScreenTest {
                 FakeSyncRepository(),
                 FakePreferencesRepository(),
                 clock,
+                FakeUnitConversionRepository(),
             ),
             shopping,
             supermarkets,
             FakeIngredientParser(),
             clock,
+            FakeShoppingViewPreferences(),
         )
         val storeModes = mutableListOf<StoreModeKey>()
         composeRule.setContent {

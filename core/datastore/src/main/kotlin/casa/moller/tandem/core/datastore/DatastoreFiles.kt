@@ -63,6 +63,17 @@ object DatastoreFiles {
     /** File name of the AI settings store. */
     const val AI_SETTINGS = "$AI_SETTINGS_NAME.preferences_pb"
 
+    /**
+     * Fas 5 (lane handla): how each account shows the shopping list (the grid, plan §8.2),
+     * `files/datastore/shopping_view.preferences_pb`. Only account ids, nothing personal.
+     */
+    const val SHOPPING_VIEW_NAME = "shopping_view"
+
+    /** File name of the shopping view store. */
+    const val SHOPPING_VIEW = "$SHOPPING_VIEW_NAME.preferences_pb"
+
+    internal fun shoppingViewFile(context: Context): File = context.preferencesDataStoreFile(SHOPPING_VIEW_NAME)
+
     internal fun secureAiKeysFile(context: Context): File = context.dataStoreFile(SECURE_AI_KEYS)
 
     internal fun aiSettingsFile(context: Context): File = context.preferencesDataStoreFile(AI_SETTINGS_NAME)

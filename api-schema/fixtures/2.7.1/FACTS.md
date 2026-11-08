@@ -163,3 +163,12 @@ skrivs med en PATCH, det som utelämnas står kvar, och ett annat namn på en eg
 sökvägen 200 med webbappens HTML, som varje okänd `/api/`-väg på 2.7, i stället för 302. Appen
 anropar den utan `/`. [O]
 <!-- /Fas 4 dela recept -->
+
+<!-- Fas 5 omräkning -->
+## Fas 5 – omräkning och sammanslagning (bana handla, plan §8.2)
+
+`Phase5ConversionContractTest` ger samma fakta som 2.6.13 (`../2.6.13/FACTS.md` "Fas 5 – omräkning
+och sammanslagning", `fas5/handla/`, 2026-11-08): listans form, `food_id`-filtret, gästens 403,
+`Ingredient.conversions` (egna omräkningar i båda riktningarna, basenheter sist, namnet som basnyckel
+för källan), att servern aldrig slår ihop poster och att webben bara lägger ihop samma enhet. [O]
+<!-- /Fas 5 omräkning -->

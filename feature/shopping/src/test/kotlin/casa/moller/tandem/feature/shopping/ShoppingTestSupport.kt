@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.domain.shopping.UnitConverter
 import casa.moller.tandem.core.model.shopping.Aisle
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.shopping.ShoppingFood
@@ -14,6 +15,8 @@ import casa.moller.tandem.core.model.shopping.ShoppingRecipeLabel
 import casa.moller.tandem.core.model.shopping.ShoppingUnit
 import casa.moller.tandem.core.model.shopping.Supermarket
 import casa.moller.tandem.core.model.shopping.SupermarketCategory
+import casa.moller.tandem.core.model.shopping.UnitConversions
+import casa.moller.tandem.core.testing.data.SampleConversions
 import casa.moller.tandem.core.testing.data.SampleShopping
 import casa.moller.tandem.core.ui.navigation.AppChrome
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
@@ -75,6 +78,24 @@ internal object ShoppingSamples {
 
     val entries = listOf(milk, cream, potato, toothpaste, eggs, onions, tomatoes, coffee, butter)
 
+    // Fas 5 (plan §8.2 "Sammanslagning i vyn"): the same food in convertible units. With
+    // [conversions] grädde reads "5 dl + 1 st" (3 dl + 200 g at 1 dl = 100 g, a carton apart),
+    // mjölk "3 l", and the checked eggs "12 st"; without them only the same unit merges.
+    private val cake = ShoppingRecipeLabel(listRecipeId = 5, recipeId = 15, recipeName = "Kladdkaka", servings = 8.0)
+    val creamGrams = ShoppingEntry(10, ShoppingFood(39, "grädde", categoryId = 2), ShoppingUnit(1, "g"), 200.0, recipe = cake)
+    val creamCarton = ShoppingEntry(11, ShoppingFood(39, "grädde", categoryId = 2), ShoppingUnit(6, "st"), 1.0)
+    val milkMore = ShoppingEntry(12, ShoppingFood(19, "mjölk", categoryId = 2), ShoppingUnit(4, "l"), 1.0, listIds = setOf(1))
+    val eggsMore = ShoppingEntry(
+        13,
+        ShoppingFood(18, "ägg", categoryId = 2),
+        ShoppingUnit(6, "st"),
+        6.0,
+        checked = true,
+        completedAt = now - 2.hours,
+    )
+    val mergedEntries = entries + listOf(creamGrams, creamCarton, milkMore, eggsMore)
+    val conversions: UnitConversions = SampleConversions.conversions
+
     val history = listOf(
         ShoppingHistoryItem(101, "havregryn", amount = 1.0, unitName = "paket", completedAt = now - 20.days),
         ShoppingHistoryItem(102, "bananer", amount = 6.0, completedAt = now - 20.days),
@@ -91,6 +112,8 @@ internal object ShoppingSamples {
         checkedExpanded: Boolean = false,
         selectedListId: Long? = null,
         householdMissing: Boolean = false,
+        conversions: UnitConversions = UnitConversions.NONE,
+        gridView: Boolean = false,
     ): ShoppingUiState = ShoppingUiState(
         loading = false,
         readOnly = readOnly,
@@ -100,20 +123,22 @@ internal object ShoppingSamples {
         supermarkets = supermarkets,
         store = store,
         categories = categories,
-        grouped = ShoppingGrouping.group(entries, categories, store, now),
+        grouped = ShoppingGrouping.group(entries, categories, store, now, UnitConverter(conversions)),
         pendingCount = pendingCount,
         syncNotice = syncNotice,
         checkedExpanded = checkedExpanded,
         add = AddItemState(recent = history.map { it.foodName }),
         history = history,
+        gridView = gridView,
     )
 
     fun storeModeState(
         entries: List<ShoppingEntry> = this.entries,
         readOnly: Boolean = false,
         learnedOrder: LearnedOrder? = null,
+        conversions: UnitConversions = UnitConversions.NONE,
     ): StoreModeUiState {
-        val grouped = ShoppingGrouping.group(entries, categories, store, now)
+        val grouped = ShoppingGrouping.group(entries, categories, store, now, UnitConverter(conversions))
         return StoreModeUiState(
             loading = false,
             readOnly = readOnly,

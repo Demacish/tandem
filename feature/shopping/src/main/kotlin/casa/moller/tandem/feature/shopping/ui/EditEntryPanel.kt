@@ -28,16 +28,24 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.feature.shopping.EditEntryState
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.ShoppingAction
+import casa.moller.tandem.feature.shopping.ShoppingFormat
 
 /**
  * Editing one entry (long press, plan 6.2 "Lång tryckning → ändra eller flytta kategori"): food,
  * amount and unit, the food's aisle (for the whole space, Tandoor's `supermarket_category`), the
  * named lists it is on (fix-ui, plan 3.5 "Flytt mellan listor"), "köp senare" / "köp nu", the
  * recipe it came from, and removing it (or, Phase 2 koppling lane, the whole recipe with its rows).
+ * Fas 5 (plan §8.2): opened on a merged row, it first lists the row's entries and edits the chosen
+ * one ([ShoppingAction.EditPart]).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun EditEntryPanel(state: EditEntryState, onAction: (ShoppingAction) -> Unit, modifier: Modifier = Modifier) {
+internal fun EditEntryPanel(
+    state: EditEntryState,
+    format: ShoppingFormat,
+    onAction: (ShoppingAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val spacing = TandemTheme.spacing
     val recipe = state.entry.recipe
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(spacing.md)) {
@@ -46,6 +54,7 @@ internal fun EditEntryPanel(state: EditEntryState, onAction: (ShoppingAction) ->
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.semantics { heading() },
         )
+        if (state.parts.size > 1) MergedParts(state, format, onAction)
         val recipeName = recipe?.recipeName?.takeIf { it.isNotBlank() }
         val recipeId = recipe?.recipeId
         if (recipeName != null) {
@@ -161,6 +170,29 @@ internal fun EditEntryPanel(state: EditEntryState, onAction: (ShoppingAction) ->
                 onClick = { onAction(ShoppingAction.RemoveEditedRecipe) },
                 leadingIcon = TandemIcons.Delete,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/** Fas 5: the entries of the merged row the sheet was opened on, the edited one selected. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MergedParts(state: EditEntryState, format: ShoppingFormat, onAction: (ShoppingAction) -> Unit) {
+    SmallHeading(stringResource(R.string.shopping_edit_parts))
+    Text(
+        text = stringResource(R.string.shopping_edit_parts_body),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.sm)) {
+        state.parts.forEach { part ->
+            val amount = format.quantity(part) ?: format.food(part)
+            val source = part.recipe?.recipeName?.takeIf { it.isNotBlank() }
+            FilterChip(
+                selected = part.id == state.entry.id,
+                onClick = { onAction(ShoppingAction.EditPart(part.id)) },
+                label = { Text(if (source != null) stringResource(R.string.shopping_edit_part, amount, source) else amount) },
             )
         }
     }

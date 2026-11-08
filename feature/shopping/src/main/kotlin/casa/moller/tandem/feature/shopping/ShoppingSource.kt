@@ -4,8 +4,10 @@ import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
 import casa.moller.tandem.core.data.shopping.SupermarketRepository
+import casa.moller.tandem.core.data.shopping.UnitConversionRepository
 import casa.moller.tandem.core.data.sync.ForegroundSync
 import casa.moller.tandem.core.data.sync.SyncRepository
+import casa.moller.tandem.core.domain.shopping.UnitConverter
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.onStart
  *
  * @property now the time "köp senare" is judged at; moves on when a delayed entry falls due.
  * @property pause why the list may be out of date: foreground polling's reason first, then the sync's.
+ * @property converter Fas 5: the account's unit conversions, for merged rows (plan §8.2).
  */
 internal data class ShoppingSnapshot(
     val entries: List<ShoppingEntry>,
@@ -46,8 +49,9 @@ internal data class ShoppingSnapshot(
     val preferences: UserPreferences,
     val pendingCount: Int,
     val pause: SyncPause?,
+    val converter: UnitConverter = ShoppingGrouping.NO_CONVERSIONS,
 ) {
-    fun grouped(): GroupedShopping = ShoppingGrouping.group(entries, categories, store, now)
+    fun grouped(): GroupedShopping = ShoppingGrouping.group(entries, categories, store, now, converter)
 }
 
 /**
@@ -64,6 +68,7 @@ internal class ShoppingSource @Inject constructor(
     private val sync: SyncRepository,
     private val preferences: PreferencesRepository,
     private val clock: Clock,
+    private val conversions: UnitConversionRepository,
 ) {
     /**
      * The list of [listId] (null = every entry) sorted by [storeOverride], or by the store chosen
@@ -90,7 +95,9 @@ internal class ShoppingSource @Inject constructor(
             polling,
         ) { perms, pending, syncPause, pollPause -> Status(perms, pending, pollPause ?: syncPause) }
             .distinctUntilChanged()
-        return combine(entries, reference, status) { (list, now), ref, state ->
+        // Fas 5: one converter per change of the cached conversions (it remembers what it found).
+        val converter = conversions.observeConversions().distinctUntilChanged().map { UnitConverter(it) }
+        return combine(entries, reference, status, converter.distinctUntilChanged()) { (list, now), ref, state, units ->
             ShoppingSnapshot(
                 entries = list,
                 now = now,
@@ -102,6 +109,7 @@ internal class ShoppingSource @Inject constructor(
                 preferences = ref.preferences,
                 pendingCount = state.pending,
                 pause = state.pause,
+                converter = units,
             )
         }
     }

@@ -6,6 +6,18 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**Handla**
+
+- **Samma vara på en rad:** står samma vara på listan i flera enheter, till exempel "3 dl grädde"
+  från ett recept och "200 g grädde" från ett annat, visas den som en rad ("5 dl grädde"). Appen
+  räknar om med omräkningarna och basenheterna i din Tandoor, också utan nät. Det som inte går att
+  räkna om står kvar på samma rad ("5 dl + 1 st"). Att bocka av raden bockar av alla dess rader i
+  Tandoor, och "Ångra" tar tillbaka alla. Lång tryckning visar raderna var för sig så att du kan ändra
+  en av dem. På webben och för andra står raderna kvar som de är.
+- **Rutnät med stora rutor:** visa listan som stora rutor i stället för rader (listans meny, "Visa som
+  rutnät"). Rutorna står i butikens ordning, tryck bockar av och lång tryckning öppnar Ändra. Valet
+  sparas för varje konto.
+
 ## [0.6.0] – 2026-11-05
 
 Fas 4 ("Smart hushåll"): Tandem lär sig hur ni handlar och lagar. Butiken sorteras som du går,

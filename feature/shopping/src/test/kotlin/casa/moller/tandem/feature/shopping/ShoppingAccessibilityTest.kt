@@ -172,6 +172,48 @@ class ShoppingAccessibilityTest {
     @Config(qualifiers = "w412dp-h3600dp-port-xhdpi")
     fun listUnpackDarkFontScale2() = check(ShoppingShot.LIST_UNPACK, darkTheme = true, fontScale = 2f)
 
+    // Fas 5 (plan §8.2): merged rows and the grid of large tiles.
+
+    @Test
+    fun listMerged() = check(ShoppingShot.LIST_MERGED)
+
+    @Test
+    fun listMergedDarkFontScale2() = check(ShoppingShot.LIST_MERGED, darkTheme = true, fontScale = 2f)
+
+    @Test
+    fun grid() = check(ShoppingShot.GRID)
+
+    @Test
+    fun gridDark() = check(ShoppingShot.GRID, darkTheme = true)
+
+    @Test
+    @Config(qualifiers = "w412dp-h3600dp-port-xhdpi")
+    fun gridFontScale2() = check(ShoppingShot.GRID, fontScale = 2f)
+
+    @Test
+    fun gridCheckedOpen() = check(ShoppingShot.GRID_CHECKED_OPEN)
+
+    @Test
+    fun gridGuest() = check(ShoppingShot.GRID_GUEST)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun gridPhoneLandscape() = check(ShoppingShot.GRID)
+
+    @Test
+    @Config(qualifiers = TABLET)
+    fun gridTablet() = check(ShoppingShot.GRID)
+
+    @Test
+    @Config(qualifiers = TABLET_PORTRAIT)
+    fun gridTabletPortraitDark() = check(ShoppingShot.GRID, darkTheme = true)
+
+    @Test
+    fun editMerged() = check(ShoppingShot.EDIT_MERGED)
+
+    @Test
+    fun storeModeMerged() = check(ShoppingShot.STORE_MODE_MERGED)
+
     private fun check(shot: ShoppingShot, darkTheme: Boolean = false, fontScale: Float = 1f, chrome: AppChrome = AppChrome()) {
         composeRule.setContent {
             ShoppingTestTheme(darkTheme = darkTheme, fontScale = fontScale, chrome = chrome) { shot.content() }

@@ -9,6 +9,7 @@ import casa.moller.tandem.core.network.dto.MealTypeDto
 import casa.moller.tandem.core.network.dto.PageDto
 import casa.moller.tandem.core.network.dto.RecipeBookDto
 import casa.moller.tandem.core.network.dto.RecipeBookEntryDto
+import casa.moller.tandem.core.network.dto.UnitConversionDto
 import casa.moller.tandem.core.network.dto.UnitDto
 import casa.moller.tandem.core.network.dto.UserPreferenceDto
 import casa.moller.tandem.core.network.dto.ViewLogCreateRequestDto
@@ -39,6 +40,10 @@ interface TaxonomyService {
 
     @GET("api/unit/")
     suspend fun units(@Query("page") page: Int?, @Query("page_size") pageSize: Int = MAX_PAGE_SIZE): PageDto<UnitDto>
+
+    /** Fas 5 (lane handla): the space's own conversions, for the merged shopping rows. Not for guests (403). */
+    @GET("api/unit-conversion/")
+    suspend fun unitConversions(@Query("page") page: Int?, @Query("page_size") pageSize: Int = MAX_PAGE_SIZE): PageDto<UnitConversionDto>
 
     @GET("api/meal-type/")
     suspend fun mealTypes(@Query("page") page: Int?, @Query("page_size") pageSize: Int = MAX_PAGE_SIZE): PageDto<MealTypeDto>

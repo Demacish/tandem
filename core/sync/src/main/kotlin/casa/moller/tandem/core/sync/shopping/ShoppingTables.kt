@@ -12,6 +12,7 @@ import casa.moller.tandem.core.network.paging.Paginator
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.permissions.isGuest
 import casa.moller.tandem.core.sync.remote.RemoteCaller
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,7 +62,23 @@ internal class ShoppingTables @Inject constructor(
         if (settings is Outcome.Success && sameSource(remote)) {
             database.shoppingDao().setMinAutosyncSeconds(accountId, settings.value.shoppingMinAutosyncIntervalOrNull())
         }
+        syncConversions(remote, background)
         reapplyQueued(database, accountId)
+    }
+
+    /**
+     * Fas 5 (lane handla, plan §8.2): the space's unit conversions for merged rows, cached per
+     * account ([SyncStateUnitConversionRepository]). Never for a guest: Tandoor answers 403 with a
+     * `detail` (FACTS "Fas 5"), which the guard would take for a rejected token. An incomplete list
+     * keeps the cache.
+     */
+    private suspend fun syncConversions(remote: ActiveSource.Remote, background: Boolean) {
+        val database = databases.get(remote.kind)
+        if (!sameSource(remote) || isGuest(database, remote.accountId)) return
+        val conversions = fetchAll(remote, background) { page -> taxonomy.unitConversions(page) }
+        if (conversions is Outcome.Success && conversions.value.complete && sameSource(remote)) {
+            SyncStateUnitConversionRepository.store(database, remote.accountId, conversions.value.items)
+        }
     }
 
     /**

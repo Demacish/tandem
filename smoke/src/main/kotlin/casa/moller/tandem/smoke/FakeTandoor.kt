@@ -539,6 +539,8 @@ class FakeTandoor(private val assets: AssetManager) : ExternalResource() {
             "/api/shopping-list/" to "fas2/shopping-list-list",
             "/api/supermarket/" to "fas2/supermarket-list",
             "/api/supermarket-category/" to "fas2/supermarket-category-list",
+            // Fas 5 (lane handla): the unit conversions are read with the shopping list's small tables.
+            "/api/unit-conversion/" to "fas1/unit-conversion-list",
             // Phase 2 (böcker lane): the role (guest mode) and the books are read with the small tables.
             USER_SPACE_PERSONAL_PATH to "14-user-space-all-personal",
             "/api/recipe-book/" to "fas1/recipe-book-list",

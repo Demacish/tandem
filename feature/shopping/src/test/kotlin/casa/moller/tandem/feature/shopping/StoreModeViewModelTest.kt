@@ -13,6 +13,7 @@ import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeStoreTripRepository
 import casa.moller.tandem.core.testing.data.FakeSupermarketRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
+import casa.moller.tandem.core.testing.data.FakeUnitConversionRepository
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.feature.shopping.ShoppingSamples.eggs
 import casa.moller.tandem.feature.shopping.ShoppingSamples.milk
@@ -45,6 +46,7 @@ class StoreModeViewModelTest {
     private val permissions = FakeSpacePermissionsRepository()
     private val foreground = FakeForegroundSync()
     private val trips = FakeStoreTripRepository()
+    private val conversions = FakeUnitConversionRepository()
 
     private fun viewModel(
         key: StoreModeKey = StoreModeKey(supermarketId = ShoppingSamples.store.id),
@@ -52,7 +54,16 @@ class StoreModeViewModelTest {
     ) = StoreModeViewModel(
         key = key,
         savedStateHandle = saved,
-        source = ShoppingSource(shopping, supermarkets, permissions, foreground, FakeSyncRepository(), FakePreferencesRepository(), clock),
+        source = ShoppingSource(
+            shopping,
+            supermarkets,
+            permissions,
+            foreground,
+            FakeSyncRepository(),
+            FakePreferencesRepository(),
+            clock,
+            conversions,
+        ),
         shopping = shopping,
         supermarkets = supermarkets,
         trips = trips,

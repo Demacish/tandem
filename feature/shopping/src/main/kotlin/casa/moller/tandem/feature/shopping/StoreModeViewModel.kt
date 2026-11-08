@@ -61,8 +61,9 @@ data class StoreModeUiState(
     val syncNotice: ShoppingSyncNotice? = null,
     val learnedOrder: LearnedOrder? = null,
 ) {
+    /** Rows still to buy (a merged row is one, Fas 5). */
     val toBuy: Int
-        get() = sections.sumOf { it.entries.size }
+        get() = sections.sumOf { it.rows.size }
 
     val total: Int
         get() = toBuy + inCart
@@ -165,7 +166,8 @@ class StoreModeViewModel @AssistedInject internal constructor(
             readOnly = readOnly,
             store = snapshot.store,
             sections = grouped.sections,
-            inCart = grouped.checked.count { (it.completedAt ?: openedAt) >= openedAt },
+            // Fas 5: rows, as the list counts them (a merged row once, when one of its entries went in).
+            inCart = grouped.checkedRows.count { row -> row.entries.any { (it.completedAt ?: openedAt) >= openedAt } },
             amountStyle = AmountStyle.of(snapshot.preferences),
             pendingCount = snapshot.pendingCount,
             syncNotice = ShoppingSyncNotice.of(snapshot.pause),
@@ -191,24 +193,26 @@ class StoreModeViewModel @AssistedInject internal constructor(
         }
     }
 
+    /** Into the cart: the row [id] belongs to, every entry behind it (Fas 5, plan §8.2). */
     private fun check(id: Long) {
         val state = uiState.value
         if (state.loading || state.readOnly) return
-        val section = state.sections.firstOrNull { section -> section.entries.any { it.id == id } } ?: return
-        val entry = section.entries.first { it.id == id }
+        val section = state.sections.firstOrNull { section -> section.rows.any { id in it } } ?: return
+        val row = section.rows.first { id in it }
+        val ids = row.ids
         val storeId = state.store?.id
         viewModelScope.launch {
             // The category this check walked first, if any: undo is single-level, so a check that
             // did not add it cannot take it away, and one that did has no other check in it.
             val added = section.categoryId?.let { walk(it, storeId) }
-            when (val result = shopping.setChecked(listOf(id), true)) {
+            when (val result = shopping.setChecked(ids, true)) {
                 is Outcome.Success -> {
                     undo = {
-                        shopping.setChecked(listOf(id), false).also { outcome ->
+                        shopping.setChecked(ids, false).also { outcome ->
                             if (outcome is Outcome.Success && added != null) unwalk(added, storeId)
                         }
                     }
-                    effectChannel.send(ShoppingEffect.Show(ShoppingMessage.Checked(entry.food.name, 1), undoable = true))
+                    effectChannel.send(ShoppingEffect.Show(ShoppingMessage.Checked(row.first.food.name, 1), undoable = true))
                 }
 
                 is Outcome.Failure -> {

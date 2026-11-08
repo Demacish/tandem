@@ -74,13 +74,15 @@ import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
+import casa.moller.tandem.core.designsystem.icon.GridView
 import casa.moller.tandem.core.designsystem.icon.History
 import casa.moller.tandem.core.designsystem.icon.MoreVert
 import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
+import casa.moller.tandem.core.designsystem.icon.ViewAgenda
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
-import casa.moller.tandem.core.model.shopping.ShoppingEntry
+import casa.moller.tandem.core.domain.shopping.MergedShoppingRow
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
@@ -228,6 +230,7 @@ fun ShoppingScreen(
             ModalBottomSheet(onDismissRequest = { onAction(ShoppingAction.CloseEdit) }, sheetState = sheetState) {
                 EditEntryPanel(
                     state = edit,
+                    format = format,
                     onAction = onAction,
                     modifier = Modifier
                         .verticalScroll(rememberScrollState())
@@ -237,7 +240,8 @@ fun ShoppingScreen(
             }
         }
         if (state.confirmClearChecked) {
-            val count = state.grouped.checked.size
+            // Fas 5: rows as the list shows them (a merged row is one).
+            val count = state.grouped.checkedRows.size
             AlertDialog(
                 onDismissRequest = { onAction(ShoppingAction.ConfirmClearChecked(false)) },
                 title = { Text(stringResource(R.string.shopping_clear_confirm_title)) },
@@ -286,6 +290,15 @@ private fun TopBarActions(state: ShoppingUiState, onAction: (ShoppingAction) -> 
         Icon(TandemIcons.MoreVert, contentDescription = stringResource(R.string.shopping_more))
     }
     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+        // Fas 5 (plan §8.2): rows or the grid of large tiles, remembered per account.
+        DropdownMenuItem(
+            text = { Text(stringResource(if (state.gridView) R.string.shopping_view_list else R.string.shopping_view_grid)) },
+            leadingIcon = { Icon(if (state.gridView) TandemIcons.ViewAgenda else TandemIcons.GridView, contentDescription = null) },
+            onClick = {
+                menuOpen = false
+                onAction(ShoppingAction.ToggleGrid)
+            },
+        )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.shopping_store_mode_title)) },
             leadingIcon = { Icon(TandemIcons.ShoppingCart, contentDescription = null) },
@@ -328,7 +341,7 @@ private fun ShoppingList(
     val horizontal = if (phone) spacing.screenHorizontal else spacing.xl
     val categoryNames = remember(state.categories) { state.categories.associate { it.id to it.name } }
     val other = stringResource(R.string.shopping_other_category)
-    val categoryOf: (ShoppingEntry) -> String = { entry -> entry.food.categoryId?.let(categoryNames::get) ?: other }
+    val categoryOf: (MergedShoppingRow) -> String = { row -> row.first.food.categoryId?.let(categoryNames::get) ?: other }
     BoxWithConstraints(modifier = modifier) {
         val columns = if (maxWidth >= TwoColumnMinWidth) 2 else 1
         val grouped = state.grouped
@@ -397,19 +410,13 @@ private fun ShoppingList(
                     AisleCard(
                         section = section,
                         title = title,
-                        onCheckAll = if (state.canEdit && section.entries.size > 1) checkAll else null,
+                        onCheckAll = if (state.canEdit && section.rows.size > 1) checkAll else null,
                         modifier = Modifier
                             .testTag(shoppingSectionTag(section.key))
                             // TalkBack follows the walking order, whichever column a card lands in.
                             .semantics { traversalIndex = index.toFloat() },
                     ) {
-                        section.entries.forEach { entry ->
-                            // Keyed: a row's swipe state never passes to the row that moves into its place.
-                            key(entry.id) {
-                                val actions = rememberRowActions(state, entry, onAction)
-                                ShoppingEntryRow(entry, format, title, delayed = false, actions = actions)
-                            }
-                        }
+                        SectionRows(state, section.rows, format, { title }, delayed = false, onAction = onAction)
                     }
                 }
             }
@@ -418,24 +425,14 @@ private fun ShoppingList(
                 item(key = "later", span = StaggeredGridItemSpan.FullLine) {
                     FoldingCard(
                         title = stringResource(R.string.shopping_later_title),
-                        count = grouped.later.size,
+                        count = grouped.laterRows.size,
                         expanded = state.laterExpanded,
                         onToggle = { onAction(ShoppingAction.ToggleLaterExpanded) },
                         modifier = Modifier
                             .testTag(shoppingSectionTag("later"))
                             .semantics { traversalIndex = afterAisles },
                     ) {
-                        grouped.later.forEach { entry ->
-                            key(entry.id) {
-                                ShoppingEntryRow(
-                                    entry,
-                                    format,
-                                    categoryOf(entry),
-                                    delayed = true,
-                                    actions = rememberRowActions(state, entry, onAction),
-                                )
-                            }
-                        }
+                        SectionRows(state, grouped.laterRows, format, categoryOf, delayed = true, onAction = onAction)
                     }
                 }
             }
@@ -443,7 +440,7 @@ private fun ShoppingList(
                 item(key = "checked", span = StaggeredGridItemSpan.FullLine) {
                     FoldingCard(
                         title = stringResource(R.string.shopping_checked_title),
-                        count = grouped.checked.size,
+                        count = grouped.checkedRows.size,
                         expanded = state.checkedExpanded,
                         onToggle = { onAction(ShoppingAction.ToggleCheckedExpanded) },
                         modifier = Modifier
@@ -462,12 +459,7 @@ private fun ShoppingList(
                             null
                         },
                     ) {
-                        grouped.checked.forEach { entry ->
-                            key(entry.id) {
-                                val actions = rememberRowActions(state, entry, onAction)
-                                ShoppingEntryRow(entry, format, categoryOf(entry), delayed = false, actions = actions)
-                            }
-                        }
+                        SectionRows(state, grouped.checkedRows, format, categoryOf, delayed = false, onAction = onAction)
                     }
                 }
             }
@@ -484,20 +476,51 @@ private fun ShoppingList(
 private const val TRAVERSAL_NOTICES = -1f
 
 /**
- * A row's actions: none for a guest; check, "köp senare" (not for checked rows) and edit otherwise.
- * Remembered per entry (fix-ui), so an unchanged row is not handed new lambdas on every emission.
+ * The rows of one card: rows, or (Fas 5, plan §8.2) the grid of large tiles. Keyed: a row's swipe
+ * state never passes to the row that moves into its place.
  */
 @Composable
-private fun rememberRowActions(state: ShoppingUiState, entry: ShoppingEntry, onAction: (ShoppingAction) -> Unit): RowActions {
+private fun SectionRows(
+    state: ShoppingUiState,
+    rows: List<MergedShoppingRow>,
+    format: ShoppingFormat,
+    categoryOf: (MergedShoppingRow) -> String,
+    delayed: Boolean,
+    onAction: (ShoppingAction) -> Unit,
+) {
+    if (state.gridView) {
+        ShoppingTiles(
+            rows = rows,
+            format = format,
+            categoryOf = categoryOf,
+            delayed = delayed,
+            actionsOf = { row -> rememberRowActions(state, row, onAction) },
+        )
+    } else {
+        rows.forEach { row ->
+            key(row.id) {
+                ShoppingEntryRow(row, format, categoryOf(row), delayed = delayed, actions = rememberRowActions(state, row, onAction))
+            }
+        }
+    }
+}
+
+/**
+ * A row's actions: none for a guest; check, "köp senare" (not for checked rows) and edit otherwise.
+ * Remembered per row (fix-ui), so an unchanged row is not handed new lambdas on every emission. A
+ * merged row (Fas 5) acts on all its entries: the ViewModel finds them by the row's id.
+ */
+@Composable
+private fun rememberRowActions(state: ShoppingUiState, row: MergedShoppingRow, onAction: (ShoppingAction) -> Unit): RowActions {
     val canEdit = state.canEdit
-    return remember(entry.id, entry.checked, canEdit, onAction) {
+    return remember(row.id, row.checked, canEdit, onAction) {
         if (!canEdit) {
             RowActions()
         } else {
-            val id = entry.id
+            val id = row.id
             RowActions(
                 onToggle = { onAction(ShoppingAction.ToggleChecked(id)) },
-                onLater = if (entry.checked) null else ({ onAction(ShoppingAction.ToggleLater(id)) }),
+                onLater = if (row.checked) null else ({ onAction(ShoppingAction.ToggleLater(id)) }),
                 onEdit = { onAction(ShoppingAction.OpenEdit(id)) },
             )
         }
