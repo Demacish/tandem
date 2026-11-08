@@ -505,8 +505,11 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         for (attempt in 1..TAP_ATTEMPTS) {
             app.findInList(card)
             clickAtRest(listOf(card))
-            if (nodeShows(TAP_WAIT_MS, ::isAcceptButton)) break
+            if (nodeShows(TAP_WAIT_MS) { isAcceptButton(it) || it.text?.toString() == SUGGEST_TITLE }) break
         }
+        // The demo plans dinners up to 7 days from today, so on a Sunday every dinner of next week is
+        // taken (seen 2026-11-08): the sheet then suggests lunches.
+        if (!nodeShows(TAP_WAIT_MS, ::isAcceptButton)) app.clickNodeWithText(DEMO_FREE_MEAL)
         app.waitForNode("\"Put n meals in the week\"", predicate = ::isAcceptButton)
         app.capture("phase4-demo-suggestions")
         for (attempt in 1..TAP_ATTEMPTS) {
@@ -577,6 +580,10 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         /** feature:mealplan WEEK_AGENDA_TAG and WEEK_SUGGEST_CARD_TAG (resource ids). */
         const val WEEK_AGENDA = "week:agenda"
         const val WEEK_SUGGEST_CARD = "mealplan:suggest-card"
+
+        /** feature:mealplan's suggestion sheet and a meal type the demo leaves free next week. */
+        const val SUGGEST_TITLE = "Suggest the week's meals"
+        const val DEMO_FREE_MEAL = "Lunch"
 
         /** (f) the demo's recipes (core:data assets/demo/en). */
         const val DEMO_TONIGHT = "Baked salmon with dill potatoes"
