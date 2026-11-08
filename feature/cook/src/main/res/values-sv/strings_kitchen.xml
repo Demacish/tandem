@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane): formen i kokläget (plan §8.1 "Pannstorlek") och köksskärmen (#41). -->
+<resources>
+    <string name="cook_pan_label">Form</string>
+    <string name="cook_pan_value">%1$d %2$s</string>
+    <string name="cook_pan_smaller">Mindre form</string>
+    <string name="cook_pan_larger">Större form</string>
+    <string name="cook_pan_scaled">Skalat för %1$d %2$s form (× %3$s)</string>
+    <string name="cook_pan_reset">Som i receptet (%1$d %2$s)</string>
+</resources>

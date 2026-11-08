@@ -20,6 +20,7 @@ import casa.moller.tandem.core.model.timer.TimerSuggestion
 import casa.moller.tandem.core.model.timer.TimerSuggestionSource
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeCookLogRepository
+import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
@@ -55,12 +56,13 @@ class CookViewModelTest {
     private val timers = FakeTimerController(clock)
     private val cookLog = FakeCookLogRepository()
     private val sync = FakeSyncRepository()
+    private val pans = FakePanSizeRepository()
 
     private val pasta = SampleRecipes.MushroomPasta
 
     private fun TestScope.viewModel(key: CookKey = CookKey(pasta.id), handle: SavedStateHandle = SavedStateHandle()): CookViewModel {
         val permissions = FakeSpacePermissionsRepository()
-        val viewModel = CookViewModel(key, handle, repository, preferences, settings, timers, cookLog, sync, clock, permissions)
+        val viewModel = CookViewModel(key, handle, repository, preferences, settings, timers, cookLog, sync, clock, permissions, pans)
         viewModel.onAction(CookAction.SetLocale(NumberStyle.English, "sv"))
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()

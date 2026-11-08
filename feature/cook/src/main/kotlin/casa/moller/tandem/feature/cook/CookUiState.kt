@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow
+import casa.moller.tandem.core.domain.scaling.PanScaling
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.settings.CookTextScale
 import casa.moller.tandem.core.model.timer.CookTimer
@@ -36,6 +37,7 @@ import kotlin.time.Duration
  *   ([CookLogSendState], from the sync's pause).
  * @property demo demo mode: the cook log stays on the device.
  * @property readOnly Phase 2 (#42): a guest; "Klart!" saves nothing (no rating, comment or log).
+ * @property pan Fas 5 (plan §8.1 "Pannstorlek"): the tin, when the recipe has one (`Recipe.diameter`).
  */
 @Immutable
 data class CookUiState(
@@ -48,6 +50,7 @@ data class CookUiState(
     val steps: List<CookStep> = emptyList(),
     val page: Int = 0,
     val servings: CookServings? = null,
+    val pan: CookPan? = null,
     val ingredientsExpanded: Boolean = true,
     val struckIngredientIds: Set<Long> = emptySet(),
     val unitChoices: Map<Long, Int> = emptyMap(),
@@ -180,6 +183,28 @@ data class CookServings(val current: Double, val original: Int, val text: String
 }
 
 /**
+ * Fas 5 (plan §8.1 "Pannstorlek"): the round tin the recipe is baked in this time.
+ *
+ * @property original the recipe's own tin (`Recipe.diameter`).
+ * @property current the tin chosen (the original until changed).
+ * @property unit `diameter_text`, or "cm" when the recipe left it empty.
+ * @property factor the area factor on top of the servings (core:domain `PanScaling`, 24 → 20 cm = 0.69).
+ * @property factorText [factor] in the UI's language ("0,69").
+ */
+@Immutable
+data class CookPan(val original: Int, val current: Int, val unit: String, val factor: Double, val factorText: String) {
+    /** Another tin than the recipe's: "Skalat för 20 cm form". */
+    val scaled: Boolean
+        get() = current != original
+
+    val canDecrease: Boolean
+        get() = current > PanScaling.MIN_DIAMETER
+
+    val canIncrease: Boolean
+        get() = current < PanScaling.MAX_DIAMETER
+}
+
+/**
  * The "Klart!" page (Stitch kokl_ge_klart, feature #8).
  *
  * @property servings whole servings for the cook log (Tandoor stores integers), from cook mode's
@@ -225,6 +250,15 @@ sealed interface CookAction {
     data object IncreaseServings : CookAction
 
     data object DecreaseServings : CookAction
+
+    /** Fas 5: a larger round tin (one unit, 24 → 25 cm). */
+    data object LargerPan : CookAction
+
+    /** Fas 5: a smaller round tin. */
+    data object SmallerPan : CookAction
+
+    /** Fas 5: back to the recipe's own tin. */
+    data object ResetPan : CookAction
 
     data object ToggleIngredients : CookAction
 

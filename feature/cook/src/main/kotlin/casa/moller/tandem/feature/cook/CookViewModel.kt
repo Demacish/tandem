@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.cooklog.CookLogRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
+import casa.moller.tandem.core.data.recipe.PanSizeRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.settings.SettingsRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
@@ -15,6 +16,7 @@ import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow
 import casa.moller.tandem.core.domain.recipe.RecipeDisplay
 import casa.moller.tandem.core.domain.recipe.ServingsText
+import casa.moller.tandem.core.domain.scaling.PanScaling
 import casa.moller.tandem.core.domain.scaling.ServingsScaling
 import casa.moller.tandem.core.domain.timer.StepTimerSuggestions
 import casa.moller.tandem.core.model.cooklog.CookLogDraft
@@ -85,6 +87,8 @@ class CookViewModel @AssistedInject constructor(
     private val clock: Clock,
     // Phase 2 (books lane, #42): a guest's "Klart!" saves nothing.
     permissions: SpacePermissionsRepository,
+    // Fas 5 (kok lane, plan §8.1 "Pannstorlek"): the tin chosen here or in the recipe view.
+    private val pans: PanSizeRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -126,12 +130,22 @@ class CookViewModel @AssistedInject constructor(
     private val settings: StateFlow<AppSettings> =
         settingsRepository.settings.stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings.Default)
 
+    /**
+     * Fas 5: the tin chosen for this recipe (shared with the recipe view), else the one this cook
+     * mode chose before a process death (its SavedStateHandle), else none (the recipe's own).
+     */
+    private val panChoice: Flow<Int?> = combine(
+        pans.observePanSize(recipeId),
+        savedStateHandle.getStateFlow(KEY_PAN, NO_PAN),
+    ) { shared, saved -> shared ?: saved.takeIf { it != NO_PAN } }
+
     private val recipeSources: Flow<RecipeSources> = combine(
         recipes.observeRecipe(recipeId),
         recipes.observeServingsChoice(recipeId),
         preferencesRepository.observeUserPreferences(),
         locale,
-    ) { detail, choice, preferences, locale -> RecipeSources(detail, choice, preferences, locale) }
+        panChoice,
+    ) { detail, choice, preferences, locale, pan -> RecipeSources(detail, choice, preferences, locale, pan) }
 
     private val timerSources: Flow<TimerSources> = combine(
         timerController.timers,
@@ -207,7 +221,18 @@ class CookViewModel @AssistedInject constructor(
             CookAction.Retry -> viewModelScope.launch { recipes.refreshRecipe(recipeId) }
             is CookAction.SetLocale -> locale.value = LocaleInfo(action.style, action.languageTag)
             is CookAction.SetOtherRecipes -> otherRecipes.value = action.recipeIds - recipeId
+            CookAction.LargerPan -> changePan { PanScaling.larger(it) }
+            CookAction.SmallerPan -> changePan { PanScaling.smaller(it) }
+            CookAction.ResetPan -> changePan { null }
         }
+    }
+
+    /** Fas 5 (plan §8.1 "Pannstorlek"): another tin; the recipe's own is stored as none. */
+    private fun changePan(next: (Int) -> Int?) {
+        val pan = uiState.value.pan ?: return
+        val target = next(pan.current)?.takeUnless { it == pan.original }
+        savedStateHandle[KEY_PAN] = target ?: NO_PAN
+        viewModelScope.launch { pans.setPanSize(recipeId, target) }
     }
 
     private fun goToPage(page: Int) {
@@ -382,7 +407,8 @@ class CookViewModel @AssistedInject constructor(
         val detail = recipe.detail
         val stored = detail.recipe
         val servings = stored?.let { buildServings(it, session.servings ?: key.servings ?: recipe.choice?.servings, recipe.locale.style) }
-        val steps = stored?.let { buildSteps(it, servings?.current ?: 0.0, recipe.preferences, recipe.locale) }.orEmpty()
+        val pan = stored?.takeIf(PanScaling::hasTin)?.let { buildPan(it, recipe.pan, recipe.locale.style) }
+        val steps = stored?.let { buildSteps(it, servings?.current ?: 0.0, recipe.preferences, recipe.locale, pan?.factor ?: 1.0) }.orEmpty()
         val page = if (stored != null) session.page.coerceIn(0, steps.size) else session.page
         val done = session.done
         return CookUiState(
@@ -396,6 +422,7 @@ class CookViewModel @AssistedInject constructor(
             steps = steps,
             page = page,
             servings = servings,
+            pan = pan,
             ingredientsExpanded = session.ingredientsOpen,
             struckIngredientIds = session.struck,
             unitChoices = session.units,
@@ -427,8 +454,26 @@ class CookViewModel @AssistedInject constructor(
         )
     }
 
-    private fun buildSteps(recipe: Recipe, servings: Double, preferences: UserPreferences, locale: LocaleInfo): List<CookStep> {
-        val display = RecipeDisplay.build(recipe, servings, preferences, locale.style)
+    private fun buildPan(recipe: Recipe, chosen: Int?, style: NumberStyle): CookPan {
+        val current = PanScaling.current(recipe, chosen)
+        val factor = PanScaling.areaFactor(recipe.diameter, current)
+        return CookPan(
+            original = recipe.diameter,
+            current = current,
+            unit = PanScaling.unit(recipe),
+            factor = factor,
+            factorText = ServingsText.number(factor, style),
+        )
+    }
+
+    private fun buildSteps(
+        recipe: Recipe,
+        servings: Double,
+        preferences: UserPreferences,
+        locale: LocaleInfo,
+        panFactor: Double,
+    ): List<CookStep> {
+        val display = RecipeDisplay.build(recipe, servings, preferences, locale.style, extraFactor = panFactor)
         if (display.steps.isEmpty()) {
             // A recipe without steps still gets one page with all its ingredients, then "Klart!".
             return listOf(
@@ -468,6 +513,7 @@ class CookViewModel @AssistedInject constructor(
         val choice: ServingsChoice?,
         val preferences: UserPreferences,
         val locale: LocaleInfo,
+        val pan: Int?,
     )
 
     private data class TimerSources(
@@ -500,6 +546,10 @@ class CookViewModel @AssistedInject constructor(
         const val KEY_LOG_SERVINGS = "cook_log_servings"
         const val KEY_PENDING = "cook_pending_timer"
         const val KEY_PROMPT_DECLINED = "cook_notification_prompt_declined"
+
+        // Fas 5 (kok lane): the tin this cook mode chose, for after a process death.
+        const val KEY_PAN = "cook_pan"
+        private const val NO_PAN = 0
 
         private const val NO_SERVINGS = 0.0
         private const val NO_RATING = -1

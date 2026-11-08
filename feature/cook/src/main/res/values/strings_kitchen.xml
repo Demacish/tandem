@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane): the tin size in cook mode (plan §8.1 "Pannstorlek") and the kitchen display (#41). -->
+<resources>
+    <string name="cook_pan_label">Tin</string>
+    <string name="cook_pan_value">%1$d %2$s</string>
+    <string name="cook_pan_smaller">Smaller tin</string>
+    <string name="cook_pan_larger">Larger tin</string>
+    <string name="cook_pan_scaled">Scaled for a %1$d %2$s tin (× %3$s)</string>
+    <string name="cook_pan_reset">As in the recipe (%1$d %2$s)</string>
+</resources>

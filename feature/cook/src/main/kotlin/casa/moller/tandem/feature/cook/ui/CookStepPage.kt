@@ -35,6 +35,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import casa.moller.tandem.core.designsystem.component.TandemButtonSize
+import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
 import casa.moller.tandem.core.designsystem.icon.FormatListBulleted
@@ -59,6 +61,7 @@ import casa.moller.tandem.core.ui.timer.sortedForDisplay
 import casa.moller.tandem.core.ui.timer.timerDurationText
 import casa.moller.tandem.core.ui.timer.timerStartDescription
 import casa.moller.tandem.feature.cook.CookAction
+import casa.moller.tandem.feature.cook.CookPan
 import casa.moller.tandem.feature.cook.CookServings
 import casa.moller.tandem.feature.cook.CookStep
 import casa.moller.tandem.feature.cook.CookUiState
@@ -235,6 +238,8 @@ private fun ExpandableIngredients(state: CookUiState, step: CookStep, onAction: 
                 state.servings?.let { servings ->
                     CookServingsControl(servings = servings, onAction = onAction, modifier = Modifier.padding(horizontal = spacing.lg))
                 }
+                // Fas 5 (plan §8.1 "Pannstorlek"): only for a recipe with a round tin.
+                state.pan?.let { pan -> CookPanControl(pan = pan, onAction = onAction, modifier = Modifier.padding(horizontal = spacing.lg)) }
                 CookIngredientRows(
                     rows = step.ingredients,
                     state = state,
@@ -301,6 +306,39 @@ internal fun CookServingsControl(servings: CookServings, onAction: (CookAction) 
     )
 }
 
+/**
+ * Fas 5 (plan §8.1 "Pannstorlek"): the round tin with − / + (64 dp), and when it is not the
+ * recipe's own, "Skalat för 20 cm form (× 0,69)" and a way back to the recipe's tin. The amounts
+ * of the step (and in its text) are scaled by the tin's area on top of the servings.
+ */
+@Composable
+internal fun CookPanControl(pan: CookPan, onAction: (CookAction) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.testTag(COOK_PAN_TAG)) {
+        StepperRow(
+            label = stringResource(R.string.cook_pan_label),
+            valueText = stringResource(R.string.cook_pan_value, pan.current, pan.unit),
+            onDecrease = { onAction(CookAction.SmallerPan) },
+            onIncrease = { onAction(CookAction.LargerPan) },
+            decreaseEnabled = pan.canDecrease,
+            decreaseDescription = stringResource(R.string.cook_pan_smaller),
+            increaseDescription = stringResource(R.string.cook_pan_larger),
+            increaseEnabled = pan.canIncrease,
+        )
+        if (pan.scaled) {
+            Text(
+                text = stringResource(R.string.cook_pan_scaled, pan.current, pan.unit, pan.factorText),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            TandemTextButton(
+                text = stringResource(R.string.cook_pan_reset, pan.original, pan.unit),
+                onClick = { onAction(CookAction.ResetPan) },
+                size = TandemButtonSize.Kitchen,
+            )
+        }
+    }
+}
+
 /** A label, a value and − / + buttons of 64 dp. */
 @Composable
 internal fun StepperRow(
@@ -312,6 +350,7 @@ internal fun StepperRow(
     decreaseDescription: String,
     increaseDescription: String,
     modifier: Modifier = Modifier,
+    increaseEnabled: Boolean = true,
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
@@ -323,7 +362,7 @@ internal fun StepperRow(
             )
         }
         KitchenIconButton(icon = TandemIcons.Remove, description = decreaseDescription, onClick = onDecrease, enabled = decreaseEnabled)
-        KitchenIconButton(icon = TandemIcons.Add, description = increaseDescription, onClick = onIncrease)
+        KitchenIconButton(icon = TandemIcons.Add, description = increaseDescription, onClick = onIncrease, enabled = increaseEnabled)
     }
 }
 
@@ -361,6 +400,7 @@ internal fun CookSidePane(
                 verticalArrangement = Arrangement.spacedBy(spacing.lg),
             ) {
                 state.servings?.let { CookServingsControl(servings = it, onAction = onAction) }
+                state.pan?.let { CookPanControl(pan = it, onAction = onAction) }
                 if (step != null && step.ingredients.isNotEmpty()) {
                     Column {
                         PaneHeading(
@@ -439,6 +479,9 @@ private val SidePaneCardsMinHeight = 560.dp
 /** Test tags. */
 internal const val COOK_SIDE_TIMERS_TAG = "cook:side-timers"
 internal const val COOK_STEP_IMAGE_TAG = "cook:step-image"
+
+/** Fas 5: the tin size control. */
+internal const val COOK_PAN_TAG = "cook:pan"
 
 /** Any quantity that selects the "other" plural form in English and Swedish. */
 private const val PLURAL_OTHER = 2

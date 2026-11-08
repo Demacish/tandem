@@ -19,6 +19,7 @@ import casa.moller.tandem.core.model.recipe.Food
 import casa.moller.tandem.core.model.recipe.Ingredient
 import casa.moller.tandem.core.model.recipe.RecipeDetailState
 import casa.moller.tandem.core.testing.data.FakeCookLogRepository
+import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
@@ -77,9 +78,11 @@ class CookFakes(
     val handle: SavedStateHandle = SavedStateHandle(),
     // Phase 2 (books lane, #42): a guest's "Klart!" saves nothing.
     val permissions: FakeSpacePermissionsRepository = FakeSpacePermissionsRepository(),
+    // Fas 5 (kok lane): the tin chosen in the recipe view or cook mode.
+    val pans: FakePanSizeRepository = FakePanSizeRepository(),
 ) {
     internal fun viewModel(key: CookKey, savedState: SavedStateHandle = handle): CookViewModel =
-        CookViewModel(key, savedState, recipes, preferences, settings, timers, cookLog, sync, clock, permissions)
+        CookViewModel(key, savedState, recipes, preferences, settings, timers, cookLog, sync, clock, permissions, pans)
 
     /** Fas 4: the cook session of [key] over these fakes (its own SavedStateHandle). */
     internal fun sessionViewModel(key: CookKey, savedState: SavedStateHandle = SavedStateHandle()): CookSessionViewModel =
