@@ -50,6 +50,8 @@ PHASES = (
     ("fas4.share", os.path.join("fas4", "share")),
     # Fas 5, lane handla: unit conversions and merged shopping rows.
     ("fas5.handla", os.path.join("fas5", "handla")),
+    # Fas 5 (kok lane): the tin size (plan §8.1 "Pannstorlek").
+    ("fas5.kok", os.path.join("fas5", "kok")),
 )
 
 

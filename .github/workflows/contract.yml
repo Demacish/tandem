@@ -413,6 +413,14 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase4EditorContractTest'
 
+      # Fas 5 (kok lane, plan §8.1 "Pannstorlek"): Recipe.diameter / diameter_text in the detail and
+      # the list, and what the field takes. Seeds and deletes its own recipes; a step of its own.
+      - name: Contract tests (Fas 5, tin size)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase5PanContractTest'
+
       # Fas 4, komplettering 3 (plan §6.2, §8.6): the share link. `allow_sharing` is read-only in the
       # API, so a second space with sharing off is made in the database, after every other class.
       - name: Create the space without sharing
