@@ -29,11 +29,24 @@
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- "Timer in the clock app" (AlarmClock.ACTION_SET_TIMER). -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!--
+        Fas 5 (kok lane, plan §8.1 "Handsfree"): voice commands in cook mode with the ON-DEVICE
+        recognizer only. Asked in context when the user turns the voice on, never at start; the
+        microphone is only open while cook mode is visible (no foreground service).
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <queries>
         <!-- Whether a clock app takes timers (TimerCapabilities.clockAppAvailable). -->
         <intent>
             <action android:name="android.intent.action.SET_TIMER" />
+        </intent>
+        <!-- Fas 5 (kok lane): the speech recognition service and the text-to-speech engine (package visibility). -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 
