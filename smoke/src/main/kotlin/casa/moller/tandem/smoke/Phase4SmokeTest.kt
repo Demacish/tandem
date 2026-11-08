@@ -500,7 +500,12 @@ class Phase4SmokeTest : Phase2SmokeBase() {
         // Suggestions are saved in the demo like any meal.
         app.tap("Week")
         app.waitFor(By.res(WEEK_AGENDA))
+        // The demo's meal plan runs from yesterday to a week ahead, so "next week" is full when
+        // today is a Sunday (no free day, no suggestions); the week after is always free.
         app.tapDescription("Next week")
+        app.device.waitForIdle()
+        app.tapDescription("Next week")
+        app.waitFor(By.res(WEEK_AGENDA))
         val card = By.res(WEEK_SUGGEST_CARD)
         for (attempt in 1..TAP_ATTEMPTS) {
             app.findInList(card)
