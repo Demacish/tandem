@@ -408,7 +408,9 @@ class CookViewModel @AssistedInject constructor(
         val stored = detail.recipe
         val servings = stored?.let { buildServings(it, session.servings ?: key.servings ?: recipe.choice?.servings, recipe.locale.style) }
         val pan = stored?.takeIf(PanScaling::hasTin)?.let { buildPan(it, recipe.pan, recipe.locale.style) }
-        val steps = stored?.let { buildSteps(it, servings?.current ?: 0.0, recipe.preferences, recipe.locale, pan?.factor ?: 1.0) }.orEmpty()
+        val steps = stored
+            ?.let { buildSteps(it, servings?.current ?: 0.0, recipe.preferences, recipe.locale, pan?.factor ?: 1.0) }
+            .orEmpty()
         val page = if (stored != null) session.page.coerceIn(0, steps.size) else session.page
         val done = session.done
         return CookUiState(

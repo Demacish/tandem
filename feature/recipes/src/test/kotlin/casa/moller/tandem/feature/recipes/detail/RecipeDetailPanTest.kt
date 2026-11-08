@@ -33,7 +33,8 @@ class RecipeDetailPanTest {
     private val pans = FakePanSizeRepository()
 
     private fun TestScope.viewModel(diameter: Int, handle: SavedStateHandle = SavedStateHandle()): RecipeDetailViewModel {
-        val repository = FakeRecipeRepository(details = listOf(pasta.copy(diameter = diameter, diameterText = "cm")), overviews = emptyList())
+        val tin = pasta.copy(diameter = diameter, diameterText = "cm")
+        val repository = FakeRecipeRepository(details = listOf(tin), overviews = emptyList())
         val viewModel = RecipeDetailViewModel(
             pasta.id,
             handle,

@@ -187,7 +187,12 @@ internal class AndroidVoiceCommandRecognizer @Inject constructor(@ApplicationCon
          * (BCP-47 tags such as "sv-SE"; the language part decides, "sv" matches "sv-SE"). Empty
          * lists say nothing (some engines report none): then it is tried.
          */
-        fun availabilityOf(languageTag: String, installed: List<String>, pending: List<String>, supported: List<String>): VoiceAvailability {
+        fun availabilityOf(
+            languageTag: String,
+            installed: List<String>,
+            pending: List<String>,
+            supported: List<String>,
+        ): VoiceAvailability {
             val language = Locale.forLanguageTag(languageTag).language
             fun List<String>.has(): Boolean = any { Locale.forLanguageTag(it).language.equals(language, ignoreCase = true) }
             return when {

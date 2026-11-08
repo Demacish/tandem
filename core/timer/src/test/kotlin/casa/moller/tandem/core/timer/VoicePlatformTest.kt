@@ -26,8 +26,9 @@ class VoicePlatformTest {
     fun errorCodesEndTheRoundAsCookModeExpects() {
         val nothing = listOf(SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT)
         nothing.forEach { assertEquals(VoiceResult.NothingHeard, AndroidVoiceCommandRecognizer.resultOfError(it)) }
-        assertEquals(VoiceResult.Failed(VoiceFailure.BUSY), AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_RECOGNIZER_BUSY))
-        assertEquals(VoiceResult.Failed(VoiceFailure.BUSY), AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_TOO_MANY_REQUESTS))
+        val busy = VoiceResult.Failed(VoiceFailure.BUSY)
+        assertEquals(busy, AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_RECOGNIZER_BUSY))
+        assertEquals(busy, AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_TOO_MANY_REQUESTS))
         assertEquals(
             VoiceResult.Failed(VoiceFailure.NO_PERMISSION),
             AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS),

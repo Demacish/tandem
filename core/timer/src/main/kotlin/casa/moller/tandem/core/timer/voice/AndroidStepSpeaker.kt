@@ -62,7 +62,9 @@ internal class AndroidStepSpeaker @Inject constructor(@ApplicationContext privat
     private suspend fun read(tts: TextToSpeech, text: String): SpeakResult = suspendCancellableCoroutine { continuation ->
         val id = UUID.randomUUID().toString()
         val once = AtomicBoolean(false)
-        val finish: (SpeakResult) -> Unit = { result -> if (once.compareAndSet(false, true) && continuation.isActive) continuation.resume(result) }
+        val finish: (SpeakResult) -> Unit = { result ->
+            if (once.compareAndSet(false, true) && continuation.isActive) continuation.resume(result)
+        }
         tts.setOnUtteranceProgressListener(
             object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) = Unit

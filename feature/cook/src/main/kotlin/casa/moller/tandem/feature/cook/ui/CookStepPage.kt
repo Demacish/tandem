@@ -239,7 +239,9 @@ private fun ExpandableIngredients(state: CookUiState, step: CookStep, onAction: 
                     CookServingsControl(servings = servings, onAction = onAction, modifier = Modifier.padding(horizontal = spacing.lg))
                 }
                 // Fas 5 (plan §8.1 "Pannstorlek"): only for a recipe with a round tin.
-                state.pan?.let { pan -> CookPanControl(pan = pan, onAction = onAction, modifier = Modifier.padding(horizontal = spacing.lg)) }
+                state.pan?.let { pan ->
+                    CookPanControl(pan = pan, onAction = onAction, modifier = Modifier.padding(horizontal = spacing.lg))
+                }
                 CookIngredientRows(
                     rows = step.ingredients,
                     state = state,

@@ -30,6 +30,8 @@ import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.core.ui.timer.LocalTimerClock
 import casa.moller.tandem.core.ui.timer.LocalTimerTicks
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeAction
+import casa.moller.tandem.feature.cook.handsfree.HandsfreeUiState
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.session.CookRecipePickerContent
 import casa.moller.tandem.feature.cook.session.CookSessionAction
@@ -169,6 +171,9 @@ internal fun CookWithFakes(
     // Fas 4: one recipe, and "Laga ett recept till" offered like in the app.
     session: CookSessionUi = CookSessionUi(canAdd = true),
     onSessionAction: (CookSessionAction) -> Unit = {},
+    // Fas 5 (kok lane): the handsfree control as the route passes it; null hides it (the older pictures).
+    handsfree: HandsfreeUiState? = null,
+    onHandsfreeAction: (HandsfreeAction) -> Unit = {},
 ) {
     val viewModel = remember(key) { fakes.viewModel(key).also(prepare) }
     val state by viewModel.uiState.collectAsState()
@@ -186,6 +191,8 @@ internal fun CookWithFakes(
         modifier = modifier,
         session = session,
         onSessionAction = onSessionAction,
+        handsfree = handsfree,
+        onHandsfreeAction = onHandsfreeAction,
     )
 }
 

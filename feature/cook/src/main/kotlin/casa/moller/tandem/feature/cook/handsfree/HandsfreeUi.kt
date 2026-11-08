@@ -83,7 +83,12 @@ internal fun HandsfreeButton(state: HandsfreeUiState, onClick: () -> Unit, modif
  * @param compact a short window (split screen, a phone in landscape): one line, no explanation.
  */
 @Composable
-internal fun HandsfreeBar(state: HandsfreeUiState, onAction: (HandsfreeAction) -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
+internal fun HandsfreeBar(
+    state: HandsfreeUiState,
+    onAction: (HandsfreeAction) -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false,
+) {
     if (!state.enabled) return
     val spacing = TandemTheme.spacing
     val text = barText(state)
@@ -186,7 +191,12 @@ private fun barText(state: HandsfreeUiState): BarText {
 private fun barIcon(state: HandsfreeUiState): ImageVector = when (state.voice) {
     VoiceStatus.LISTENING, VoiceStatus.STARTING, VoiceStatus.RETRYING -> TandemIcons.Mic
     VoiceStatus.SPEAKING -> TandemIcons.VolumeUp
-    VoiceStatus.OFF, VoiceStatus.NEEDS_PERMISSION, VoiceStatus.DOWNLOADABLE, VoiceStatus.UNAVAILABLE, VoiceStatus.FAILED -> TandemIcons.MicOff
+    VoiceStatus.OFF,
+    VoiceStatus.NEEDS_PERMISSION,
+    VoiceStatus.DOWNLOADABLE,
+    VoiceStatus.UNAVAILABLE,
+    VoiceStatus.FAILED,
+    -> TandemIcons.MicOff
 }
 
 @Composable
@@ -307,7 +317,14 @@ internal fun HandsfreeSheetContent(state: HandsfreeUiState, onAction: (Handsfree
 
 /** One switch row: the whole row toggles, one TalkBack item with the switch's state. */
 @Composable
-private fun HandsfreeSwitch(title: String, body: String, checked: Boolean, onChange: (Boolean) -> Unit, tag: String, enabled: Boolean = true) {
+private fun HandsfreeSwitch(
+    title: String,
+    body: String,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    tag: String,
+    enabled: Boolean = true,
+) {
     val spacing = TandemTheme.spacing
     Row(
         modifier = Modifier

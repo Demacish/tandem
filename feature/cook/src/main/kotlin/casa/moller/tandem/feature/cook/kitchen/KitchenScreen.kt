@@ -232,7 +232,11 @@ private fun KitchenClock(modifier: Modifier = Modifier) {
             .format(DateTimeFormatter.ofPattern(DATE_PATTERN, locale))
     }
     Column(modifier = modifier.semantics(mergeDescendants = true) { heading() }) {
-        Text(text = stringResource(R.string.kitchen_title), style = TandemTheme.extendedTypography.overline, color = MaterialTheme.colorScheme.primary)
+        Text(
+            text = stringResource(R.string.kitchen_title),
+            style = TandemTheme.extendedTypography.overline,
+            color = MaterialTheme.colorScheme.primary,
+        )
         Text(text = time, style = MaterialTheme.typography.displayLarge, modifier = Modifier.testTag(KITCHEN_CLOCK_TAG))
         Text(text = date, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -256,7 +260,10 @@ private fun rememberMinute(): State<Instant> {
     return minute
 }
 
-private fun Instant.toMinute(): Instant = Instant.fromEpochMilliseconds(toEpochMilliseconds() - toEpochMilliseconds().mod(MILLIS_PER_MINUTE))
+private fun Instant.toMinute(): Instant {
+    val millis = toEpochMilliseconds()
+    return Instant.fromEpochMilliseconds(millis - millis.mod(MILLIS_PER_MINUTE))
+}
 
 private fun LazyListScope.meals(state: KitchenUiState, onStartCooking: (Long, Double?) -> Unit) {
     item(key = "today") { SectionTitle(stringResource(R.string.kitchen_today)) }
@@ -364,7 +371,11 @@ private fun MealCard(meal: KitchenMeal, onStartCooking: ((Long, Double?) -> Unit
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (meal.recipeId != null) {
-                    Text(text = servingsText, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = servingsText,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
             if (onStartCooking != null && meal.recipeId != null) {
