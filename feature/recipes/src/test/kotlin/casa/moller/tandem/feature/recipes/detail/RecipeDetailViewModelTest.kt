@@ -19,6 +19,7 @@ import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.testing.MainDispatcherRule
+import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
@@ -49,13 +50,14 @@ class RecipeDetailViewModelTest {
     private val sessions = FakeSessionRepository()
 
     private val pasta = SampleRecipes.MushroomPasta.id
+    private val pans = FakePanSizeRepository()
 
     private fun TestScope.viewModel(
         id: Long = pasta,
         handle: SavedStateHandle = SavedStateHandle(),
         style: NumberStyle = NumberStyle.English,
     ): RecipeDetailViewModel {
-        val viewModel = RecipeDetailViewModel(id, handle, repository, preferences, sync, sessions)
+        val viewModel = RecipeDetailViewModel(id, handle, repository, preferences, sync, sessions, pans)
         viewModel.onAction(RecipeDetailAction.SetNumberStyle(style))
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()

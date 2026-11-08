@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow
+import casa.moller.tandem.core.domain.scaling.PanScaling
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.recipe.Keyword
@@ -20,6 +21,7 @@ import kotlin.time.Instant
  *   list entry while no detail is stored. Null when the recipe is unknown locally.
  * @property hasDetail the full recipe (ingredients, steps) is stored.
  * @property servings the servings shown (the user's choice or the recipe's own), null without detail.
+ * @property pan Fas 5 (plan §8.1 "Pannstorlek"): the round tin, when the recipe has one (`Recipe.diameter`).
  * @property ingredients the ingredient overview (headers included), scaled and formatted like
  *   Tandoor's web (core:domain `RecipeDisplay`); empty when the recipe shows its ingredients per
  *   step only.
@@ -45,6 +47,7 @@ data class RecipeDetailUiState(
     val header: RecipeHeader? = null,
     val hasDetail: Boolean = false,
     val servings: ServingsState? = null,
+    val pan: PanState? = null,
     val ingredients: List<IngredientRow> = emptyList(),
     val steps: List<StepItem> = emptyList(),
     val sourceUrl: String? = null,
@@ -122,6 +125,26 @@ data class ServingsState(val current: Double, val original: Int, val text: Strin
 }
 
 /**
+ * Fas 5 (plan §8.1 "Pannstorlek"): the tin picker of a recipe baked in a round tin.
+ *
+ * @property original the recipe's own tin (`diameter`).
+ * @property current the tin the amounts are scaled to.
+ * @property unit `diameter_text`, or "cm".
+ * @property factorText the area factor in the UI's language ("0,69", core:domain `PanScaling`).
+ */
+@Immutable
+data class PanState(val original: Int, val current: Int, val unit: String, val factorText: String) {
+    val isChanged: Boolean
+        get() = current != original
+
+    val canDecrease: Boolean
+        get() = current > PanScaling.MIN_DIAMETER
+
+    val canIncrease: Boolean
+        get() = current < PanScaling.MAX_DIAMETER
+}
+
+/**
  * One step of the recipe detail, from core:domain's `StepDisplay`.
  *
  * @property number 1-based position.
@@ -153,6 +176,15 @@ sealed interface RecipeDetailAction {
     data object DecreaseServings : RecipeDetailAction
 
     data object ResetServings : RecipeDetailAction
+
+    /** Fas 5: one size larger tin. */
+    data object LargerPan : RecipeDetailAction
+
+    /** Fas 5: one size smaller tin. */
+    data object SmallerPan : RecipeDetailAction
+
+    /** Fas 5: the recipe's own tin. */
+    data object ResetPan : RecipeDetailAction
 
     data class ToggleIngredient(val id: Long) : RecipeDetailAction
 

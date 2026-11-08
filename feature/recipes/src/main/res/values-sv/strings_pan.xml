@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kok lane, plan §8.1 "Pannstorlek"): formen för ett recept som bakas i rund form. -->
+<resources>
+    <string name="recipe_detail_pan_label">Form</string>
+    <string name="recipe_detail_pan_value">%1$d %2$s</string>
+    <string name="recipe_detail_pan_smaller">Mindre form</string>
+    <string name="recipe_detail_pan_larger">Större form</string>
+    <string name="recipe_detail_pan_scaled">Skalat för %1$d %2$s form (× %3$s)</string>
+    <string name="recipe_detail_pan_reset">Som i receptet (%1$d %2$s)</string>
+</resources>

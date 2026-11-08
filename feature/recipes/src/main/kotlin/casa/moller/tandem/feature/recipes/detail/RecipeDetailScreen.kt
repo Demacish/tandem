@@ -22,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -50,9 +51,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.CalloutCard
@@ -62,6 +65,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTonalButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.Add
 import casa.moller.tandem.core.designsystem.icon.Cooking
 import casa.moller.tandem.core.designsystem.icon.Delete
 import casa.moller.tandem.core.designsystem.icon.DownloadForOffline
@@ -70,6 +74,7 @@ import casa.moller.tandem.core.designsystem.icon.Edit
 import casa.moller.tandem.core.designsystem.icon.History
 import casa.moller.tandem.core.designsystem.icon.Link
 import casa.moller.tandem.core.designsystem.icon.MoreVert
+import casa.moller.tandem.core.designsystem.icon.Remove
 import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -435,6 +440,7 @@ private fun DetailContent(
                 } else {
                     StartCooking(onStartCooking)
                     Servings(state, onAction)
+                    TinSize(state, onAction)
                     Ingredients(state, onAction)
                     Nutrition(state)
                     shoppingActions?.invoke()
@@ -485,6 +491,7 @@ private fun TwoPaneContent(
             HeaderImage(state, Modifier.cappedAspectRatio(PHOTO_ASPECT_RATIO, PANE_PHOTO_MAX_HEIGHT))
             StartCooking(onStartCooking)
             Servings(state, onAction)
+            TinSize(state, onAction)
             Ingredients(state, onAction)
             Nutrition(state)
             shoppingActions?.invoke()
@@ -754,6 +761,61 @@ private fun Servings(state: RecipeDetailUiState, onAction: (RecipeDetailAction) 
     )
 }
 
+/**
+ * Fas 5 (plan §8.1 "Pannstorlek"): a recipe baked in a round tin (`Recipe.diameter`) offers the
+ * tin's size like the servings, and says plainly when the amounts are scaled for another tin
+ * ("Skalat för 20 cm form (× 0,69)", by area, on top of the servings). The choice goes along into
+ * cook mode. Nothing for a recipe without a tin.
+ */
+@Composable
+private fun TinSize(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit) {
+    val pan = state.pan ?: return
+    val spacing = TandemTheme.spacing
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(DETAIL_PAN_TAG),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                Text(
+                    text = stringResource(R.string.recipe_detail_pan_label),
+                    style = TandemTheme.extendedTypography.overline,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = stringResource(R.string.recipe_detail_pan_value, pan.current, pan.unit),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+                if (pan.isChanged) {
+                    Text(
+                        text = stringResource(R.string.recipe_detail_pan_scaled, pan.current, pan.unit, pan.factorText),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    TandemTextButton(
+                        text = stringResource(R.string.recipe_detail_pan_reset, pan.original, pan.unit),
+                        onClick = { onAction(RecipeDetailAction.ResetPan) },
+                    )
+                }
+            }
+            FilledTonalIconButton(onClick = { onAction(RecipeDetailAction.SmallerPan) }, enabled = pan.canDecrease) {
+                Icon(imageVector = TandemIcons.Remove, contentDescription = stringResource(R.string.recipe_detail_pan_smaller))
+            }
+            FilledTonalIconButton(onClick = { onAction(RecipeDetailAction.LargerPan) }, enabled = pan.canIncrease) {
+                Icon(imageVector = TandemIcons.Add, contentDescription = stringResource(R.string.recipe_detail_pan_larger))
+            }
+        }
+    }
+}
+
 @Composable
 private fun Ingredients(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -> Unit) {
     if (state.ingredients.isEmpty()) return
@@ -953,6 +1015,10 @@ private const val STEP_PANE_WEIGHT = 0.58f
 
 /** Test tags of the two scrolling panes on wide windows. */
 internal const val DETAIL_INGREDIENT_PANE_TAG = "recipe-detail:ingredient-pane"
+
+/** Fas 5: the tin size picker. */
+internal const val DETAIL_PAN_TAG = "recipe-detail:pan"
+
 internal const val DETAIL_STEP_PANE_TAG = "recipe-detail:step-pane"
 
 /** Step texts with scaled typographic fractions get a spoken form; others stay as they are. */

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
+import casa.moller.tandem.core.data.recipe.PanSizeRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -17,6 +18,7 @@ import casa.moller.tandem.core.domain.recipe.NutritionEnergy
 import casa.moller.tandem.core.domain.recipe.RecipeDisplay
 import casa.moller.tandem.core.domain.recipe.RecipeDisplayModel
 import casa.moller.tandem.core.domain.recipe.ServingsText
+import casa.moller.tandem.core.domain.scaling.PanScaling
 import casa.moller.tandem.core.domain.scaling.ServingsScaling
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -67,6 +69,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
     preferencesRepository: PreferencesRepository,
     syncRepository: SyncRepository,
     sessionRepository: SessionRepository,
+    // Fas 5 (kok lane, plan §8.1 "Pannstorlek"): the tin, shared with cook mode.
+    private val pans: PanSizeRepository,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -100,7 +104,11 @@ class RecipeDetailViewModel @AssistedInject constructor(
     private val sessionChoices: Flow<SessionChoices> = combine(
         savedStateHandle.getStateFlow(KEY_STRUCK, LongArray(0)),
         savedStateHandle.getStateFlow(KEY_UNITS, LongArray(0)),
-    ) { struck, units -> SessionChoices(struck.toSet(), units.toUnitChoices()) }
+        // Fas 5: the tin shared with cook mode, else this screen's own after a process death.
+        combine(pans.observePanSize(recipeId), savedStateHandle.getStateFlow(KEY_PAN, NO_PAN)) { shared, saved ->
+            shared ?: saved.takeIf { it != NO_PAN }
+        },
+    ) { struck, units, pan -> SessionChoices(struck.toSet(), units.toUnitChoices(), pan) }
 
     // No placeholder values for the servings choice and the preferences: after the screen comes
     // back (stop timeout), the cached state stays until the real values arrive instead of
@@ -137,6 +145,9 @@ class RecipeDetailViewModel @AssistedInject constructor(
             RecipeDetailAction.IncreaseServings -> changeServings { floor(it) + 1.0 }
             RecipeDetailAction.DecreaseServings -> changeServings { (ceil(it) - 1.0).coerceAtLeast(ServingsState.MIN_SERVINGS) }
             RecipeDetailAction.ResetServings -> viewModelScope.launch { recipes.setServingsChoice(recipeId, null) }
+            RecipeDetailAction.LargerPan -> changePan { PanScaling.larger(it) }
+            RecipeDetailAction.SmallerPan -> changePan { PanScaling.smaller(it) }
+            RecipeDetailAction.ResetPan -> changePan { null }
             is RecipeDetailAction.ToggleIngredient -> toggleIngredient(action.id)
             is RecipeDetailAction.SwitchUnit -> switchUnit(action.id)
             RecipeDetailAction.Refresh -> refresh()
@@ -172,6 +183,14 @@ class RecipeDetailViewModel @AssistedInject constructor(
             // The recipe's own servings are not stored as a choice, so a later server change wins.
             recipes.setServingsChoice(recipeId, target.takeUnless { it == servings.original.toDouble() })
         }
+    }
+
+    /** Fas 5 (plan §8.1 "Pannstorlek"): another tin, shared with cook mode; the recipe's own is stored as none. */
+    private fun changePan(next: (Int) -> Int?) {
+        val pan = uiState.value.pan ?: return
+        val target = next(pan.current)?.takeUnless { it == pan.original }
+        savedStateHandle[KEY_PAN] = target ?: NO_PAN
+        viewModelScope.launch { pans.setPanSize(recipeId, target) }
     }
 
     private fun toggleIngredient(id: Long) {
@@ -241,7 +260,17 @@ class RecipeDetailViewModel @AssistedInject constructor(
                 amountText = ServingsText.number(current, style),
             )
         }
-        val display = recipe?.let { RecipeDisplay.build(it, servings?.current ?: 0.0, sources.preferences, style) }
+        val pan = recipe?.takeIf(PanScaling::hasTin)?.let { tin ->
+            val current = PanScaling.current(tin, choices.pan)
+            PanState(
+                original = tin.diameter,
+                current = current,
+                unit = PanScaling.unit(tin),
+                factorText = ServingsText.number(PanScaling.areaFactor(tin.diameter, current), style),
+            )
+        }
+        val panFactor = recipe?.let { PanScaling.factor(it, choices.pan) } ?: 1.0
+        val display = recipe?.let { RecipeDisplay.build(it, servings?.current ?: 0.0, sources.preferences, style, extraFactor = panFactor) }
         val showOverview = recipe?.showIngredientOverview ?: true
         // SyncStop markers (a fetch overtaken by a logout or account switch) are no error to show.
         val error = detail.error?.takeUnless { it.isTransientSyncStop }
@@ -265,6 +294,7 @@ class RecipeDetailViewModel @AssistedInject constructor(
             },
             hasDetail = recipe != null,
             servings = servings,
+            pan = pan,
             ingredients = display?.takeIf { showOverview }?.ingredients.orEmpty(),
             steps = display?.toSteps(showOverview, sources.preferences).orEmpty(),
             sourceUrl = recipe?.sourceUrl?.takeIf { it.startsWith("https://") || it.startsWith("http://") },
@@ -320,7 +350,7 @@ class RecipeDetailViewModel @AssistedInject constructor(
 
     private data class SessionInfo(val isDemo: Boolean = false, val baseUrl: String? = null)
 
-    private data class SessionChoices(val struck: Set<Long>, val units: Map<Long, Int>)
+    private data class SessionChoices(val struck: Set<Long>, val units: Map<Long, Int>, val pan: Int?)
 
     private data class Sharing(val available: Boolean, val fetching: Boolean)
 
@@ -335,6 +365,10 @@ class RecipeDetailViewModel @AssistedInject constructor(
     internal companion object {
         const val KEY_STRUCK = "struck_ingredients"
         const val KEY_UNITS = "unit_choices"
+
+        // Fas 5 (kok lane): the tin this screen chose, for after a process death.
+        const val KEY_PAN = "pan_size"
+        private const val NO_PAN = 0
         private const val STOP_TIMEOUT_MILLIS = 5_000L
 
         /** Ingredient id / unit index pairs, flattened (a Bundle-friendly LongArray). */

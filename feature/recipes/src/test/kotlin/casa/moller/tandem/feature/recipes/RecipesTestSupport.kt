@@ -17,6 +17,7 @@ import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.recipe.RecipeQuery
+import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
@@ -76,6 +77,8 @@ internal class DetailFakes(
     val preferences: FakePreferencesRepository = FakePreferencesRepository(),
     val sessions: SessionRepository = FakeSessionRepository(),
     val handle: SavedStateHandle = SavedStateHandle(),
+    // Fas 5 (kok lane): the tin chosen here or in cook mode.
+    val pans: FakePanSizeRepository = FakePanSizeRepository(),
 )
 
 /** The recipe detail driven by a real ViewModel over [fakes]. */
@@ -89,7 +92,7 @@ internal fun DetailWithFakes(
     pairings: (@Composable () -> Unit)? = null,
 ) {
     val viewModel = remember(recipeId) {
-        RecipeDetailViewModel(recipeId, fakes.handle, fakes.repository, fakes.preferences, fakes.sync, fakes.sessions)
+        RecipeDetailViewModel(recipeId, fakes.handle, fakes.repository, fakes.preferences, fakes.sync, fakes.sessions, fakes.pans)
     }
     val state by viewModel.uiState.collectAsState()
     RecipeDetailScreen(
