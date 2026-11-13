@@ -216,7 +216,9 @@ class Phase3SmokeTest : Phase2SmokeBase() {
 
         scrollThroughTheForm(By.desc("Attach a file to step 1")).click()
         downloads.pick(app, STEP_FILE)
-        app.waitFor(By.text("File: $STEP_FILE"))
+        // Back from the picker the form may rest with the attach row just below the fold (seen
+        // 2026-11-13 on main, run 43436583776), so the label is scrolled to, not only waited for.
+        app.scrollTo(By.text("File: $STEP_FILE"))
         app.capture("phase4-step-file")
         save()
 
