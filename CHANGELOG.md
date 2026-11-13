@@ -13,6 +13,18 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   ≈ 0,69). Arket säger "Skalat för 20 cm form (× 0,69)", och portionerna i arket ändrar du som förut.
   Från Idag och Kan laga nu gäller receptets egen form.
 
+**Matsedeln i kalendern**
+
+- **Visa i telefonens kalender:** de kommande veckornas måltider står i en egen kalender, "Tandem –
+  matsedel", på telefonen, vid måltidstypens tid eller som heldag. Den skrivs från det som finns i
+  appen (också utan nät), följer ändringar i matsedeln och uppdateras minst en gång om dygnet.
+  Appen frågar om tillgång till kalendern när du slår på det. Stänger du av, loggar ut eller går
+  till demoläget tas kalendern bort. Finns i Veckans meny och under Mer → Inställningar.
+- **Prenumerationslänk:** en adress som kalenderappar kan prenumerera på, med en egen nyckel på
+  servern som bara kan läsa matsedeln (aldrig appens egen). Kopiera, dela eller öppna den i en
+  kalenderapp; "Ny länk" gör den gamla ogiltig och "Stäng av" tar bort nyckeln. Alla som har länken
+  kan läsa matsedeln. Inte för gäster.
+
 ## [0.7.0] – 2026-11-13
 
 Fas 5, första delen: I köket. Kokläget går att styra utan att röra skärmen, surfplattan kan stå

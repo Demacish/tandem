@@ -1340,6 +1340,87 @@ liggande telefon, surfplatta i båda orienteringarna, mörkt, svenska, teckensto
 `mealplan/*plan_meal_reminder*`).
 <!-- /Fas 5 planera -->
 
+<!-- Fas 5 kalender -->
+## Matsedeln i kalendern (`:core:sync`, `:core:domain`, `:core:network`, `:feature:mealplan`, `:feature:shell`, Fas 5, kalender)
+
+Plan §3.1 (Wear och iCal får egna, smalare tokens), §7 #36, §10 Fas 5 ("prenumerationen visar veckans
+måltider i telefonens kalender och uppdateras inom 24 h"). Fakta i `api-schema/fixtures/<version>/FACTS.md`
+"Fas 5: matsedeln i kalendern" (`Phase5IcalContractTest`, eget steg i `contract.yml`, inspelningar i
+`fas5/kalender/`, bevakningen jämför `fas5.kalender`). Två oberoende val, **båda av som standard**, på en
+sida som nås från Veckans meny ("⋮" → "Matsedeln i kalendern") och från Mer → Inställningar. Ingen
+ändring av Room (schema 6): länken ligger i `sync_state`, valet i en egen liten DataStore.
+
+**Varför två val.** Många kalenderappar på Android kan inte prenumerera på en adress (Samsung Kalender
+kan bara via ett konto), så appen skriver också själv matsedeln i en lokal kalender (b). Länken (a) är
+för den som vill ha matsedeln i en kalender som prenumererar (Google Kalender på webben, andra enheter).
+
+**b) Visa i telefonens kalender.**
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Händelserna | `core/domain/mealplan/MealCalendarEvents.kt` | en händelse per måltid i synkens fönster (i dag −14 .. +42 dagar), titel `<måltidstyp>: <titel eller recept>` som Tandoors eget flöde, beskrivning = anteckningen; med måltidstypens tid: start då i **telefonens** zon och slut en timme efter tiden på sista dagen (Tandoors flöde ger också 60 minuter), annars heldag (UTC-midnatt, `EVENT_TIMEZONE` UTC, som leverantören kräver). En tid i vårens glapp blir första ögonblicket efter. Nyckeln `<konto-id>/<måltids-id>` (`SYNC_DATA1`) och ett FNV-1a-fingeravtryck av allt som syns (`SYNC_DATA2`). `changes(önskade, lagrade)`: nya läggs till, ändrade skrivs om på sin rad, dubbletter, okända rader och måltider som inte längre finns tas bort; en andra körning gör ingenting |
+| Leverantören | `core/sync/calendar/CalendarGateway.kt` | `AndroidCalendarGateway` på `CalendarContract` som synkadapter för ett **lokalt** konto (`ACCOUNT_TYPE_LOCAL`, namnet "Tandem"): kalendern `tandem_meal_plan` ("Tandem – matsedel", `meal_calendar_name` i core:sync), skrivskyddad i kalenderappar (`CAL_ACCESS_READ`), händelserna "ledig". Inget konto läggs till i telefonens inställningar, inget skickas någonstans. Skrivningar i satser om 100 (`applyBatch`); att ta bort kalendern tar dess händelser |
+| Skrivaren | `core/sync/calendar/PhoneMealCalendar.kt` | läser den lagrade matsedeln (`MealPlanRepository.observeWeek` för veckorna i fönstret, offline) och för kalendern i takt, seriellt (mutex). Bara när valet är på och ett riktigt konto är aktivt (**gäster får**: det läser bara det lagrade); saknad behörighet eller en leverantör som vägrar sparas som problem (`LocalMealCalendarProblem`) i stället för att kastas |
+| Valet | `core/datastore/MealCalendarStore.kt` | egen fil `meal_calendar.preferences_pb`: på/av, senaste skrivning, antal måltider, problemet. Inget personligt |
+| Följet | `core/sync/calendar/MealCalendarSchedule.kt` | startas av `SyncStarter` (en rad). Med riktigt konto och b eller a på finns det periodiska arbetet, annars avbryts det. Medan processen lever skrivs kalendern om 2 s efter varje ändring av matsedeln i fönstret (här, eller från webben via synken, flyttad eller borttagen måltid) och vid byte av konto (det andra kontots matsedel ersätter). **Utloggad eller demoläge:** kalendern tas bort och valet slås av |
+| Arbetet | `core/sync/work/MealCalendarWork.kt` | `MealCalendarWorker` (periodiskt **var 12:e timme**, unikt `tandem.meal_calendar`, KEEP): med nät läses matsedeln (`MealPlanRepository.refresh`, genom `RemoteCaller`) och länkens token förnyas vid behov; sedan skrivs kalendern. Så är kalendern aldrig mer än ett dygn efter, också om synkintervallet är "manuellt". Klassnamnet behålls av `consumer-rules.pro` |
+
+Behörigheterna `READ_CALENDAR`/`WRITE_CALENDAR` (core:sync:s manifest) frågas **i sammanhanget** när
+brytaren slås på (`ActivityResultContracts.RequestMultiplePermissions`); nej lämnar valet av och visar ett
+kort med "Tillåt" och "Öppna inställningar". Återkallas behörigheten senare visar sidan "Tandem kan inte
+längre uppdatera kalendern". Avinstalleras appen ligger den lokala kalendern kvar i telefonen (Android
+tar inte bort lokala konton): stäng av valet först (står i "Kvar").
+
+**a) Prenumerationslänk.**
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Adressen | `core/network/capabilities/MealPlanIcal.kt` | `<server>/api/meal-plan/ical/?access_token=<token>` (inga datum: flödet räknar −90..+360 dagar när det läses); `webcalUrl` för kalenderappar. `tokenInUrl(version)`: alla versioner appen godtar (sett i 2.6.13 och 2.7.1); bevakningen larmar om det ändras, då döljs valet (`MealCalendarLinkBlock.UNSUPPORTED`) |
+| Tokenen | `core/sync/calendar/MealCalendarLinks.kt` | en **egen** token med scope `mealplan` (`POST /api/access-token/`, ett år), aldrig kontots. Sparas per konto i `sync_state` `meal_calendar_link` (JSON: id, token, utgång, tokens kvar att återkalla), följer kontot (`deleteAccountData`), databasen säkerhetskopieras aldrig. "Ny länk": ny token först, sedan återkallas den gamla (misslyckas det sparas id:t och återkallas vid nästa arbete). "Stäng av": `DELETE`; offline behålls länken (den vore annars giltig på servern), 404 räknas som återkallad. Förnyas **på plats** (`PATCH expires`, samma token, adressen fungerar vidare) när under 60 dagar återstår. Alla anrop genom `RemoteCaller` (kretsbrytaren, takten). Inte för gäster (`MealCalendarLinkBlock.GUEST`) eller i demoläget |
+
+`AuthService.renewAccessToken` (`PATCH api/access-token/{id}/`) och `GET /api/meal-plan/ical/` (anropas av
+kalenderappen, inte av Tandem) står i `api-schema/used-endpoints.txt`.
+
+**Sidan (`feature/mealplan/calendar/`).** `MealCalendarScreen(state, onAction, onBack)` +
+`MealCalendarViewModel` + `MealCalendarRoute`, nyckeln `MealCalendarKey` (`navigation/MealPlanKeys.kt`).
+En kolumn med läsbredd (bredvid Mer på breda fönster, `ListDetailSceneStrategy.detailPane`): inledning,
+gruppen "Telefonens kalender" (brytaren är **en** TalkBack-nod med rollen brytare, "Uppdaterad … · n
+måltider" som levande region, "Uppdatera nu"), korten för behörighet och leverantör, gruppen
+"Prenumerationslänk" ("Skapa länk"; sedan adressen markerbar med utgången, "Kopiera" (urklippet märkt
+känsligt, Android visar själv bekräftelsen), "Dela", "Öppna i kalenderapp" bara när en app öppnar
+`webcal://` (`<queries>` i feature:mealplan:s manifest), annars en förklaring, "Ny länk" och "Stäng av"
+med fråga först) och varningen "Alla som har länken kan läsa er matsedel". Demoläget och inget konto: en
+förklaring. Gäst och för gammal server: förklaring i stället för länken. Veckan: `WeekAction.OpenCalendar`
+i den nya menyn (`WEEK_MENU_TAG`), `WeekRoute(onOpenCalendar)`. Skalet: `ShellFeatures.Week(onOpenCalendar)`
+och `ShellFeatures.MealCalendar(onBack)`, raden i Mer → Inställningar efter AI, `MealCalendarKey` i
+`isMorePage`. Strängarna i `feature/mealplan` `strings_calendar.xml` (engelska och svenska).
+
+**Röktest (`Phase5KalenderSmokeTest`).** En middag i morgon från webben; behörigheterna ges med `pm grant`
+(som efter "Tillåt"); Mer → "Meal plan in your calendar" → brytaren: emulatorns riktiga
+kalenderleverantör har **en** händelse "Middag: Krämig svamppasta" kl. 18 i morgon i Tandems lokala
+konto; "Update now" lägger inte till något; av tar bort händelserna. Testets APK läser leverantören med
+`READ_CALENDAR` (egen behörighet i smoke-manifestet).
+
+**Tester:** `MealCalendarEventsTest` (tid i telefonens zon, heldag, flera dagar, mars och oktober i
+Europe/Stockholm och glappet, annan zon, titlar, fönstret, idempotens, flyttad/borttagen/dubblett/okänd,
+annat konto), `PhoneMealCalendarTest` (Robolectric mot `FakeCalendarProvider`: en SQLite-leverantör med
+de riktiga kolumnerna och leverantörens regler för synkadapter, obligatoriska fält, borttagning och
+kaskad; egen kalender, tider, en andra skrivning gör inget, flyttad/borttagen/främmande, fönstret,
+av/demo, återkallad behörighet), `MealCalendarLinksTest` (scope `mealplan`, adressen utan kontots
+token, ny länk återkallar efter, stäng av offline behåller, 404, förnyelse på plats, gäst och demo),
+`MealCalendarScheduleTest` (följer planen, utloggad och demo tar bort och slår av, arbetet läser med
+nät, periodiskt 12 h), `PreferencesMealCalendarStoreTest`, `DatastoreFilesTest`,
+`MealCalendarViewModelTest` (behörigheten i sammanhanget, nej, på/av/uppdatera, ny länk och stäng av
+väntar på ja, felmeddelanden), `MealCalendarScreenTest` (en nod för brytaren, knapparna, utan
+kalenderapp, frågan, gäst, gammal server, demo; ATF och referensbilder `mealplan/*meal_calendar*` på
+telefon stående och liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2).
+
+**Kvar:** behöver enhet (ägaren): b) i Samsung Kalender/Google Kalender och uppdaterad inom ett dygn;
+a) prenumeration i en kalender som stöder det. Länken återkallas inte när kontot loggas ut eller tas
+bort (den lokala raden försvinner med kontot, tokenen gäller på servern tills den går ut eller tas bort
+i Tandoor); den lokala kalendern finns kvar efter avinstallation.
+<!-- /Fas 5 kalender -->
+
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
 

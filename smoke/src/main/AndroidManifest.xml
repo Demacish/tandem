@@ -7,6 +7,12 @@
     <!-- The offline test checks that the emulator really has no network (ConnectivityManager). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+        Fas 5 (kalender lane): the calendar test reads the emulator's calendar provider, as a
+        calendar app would, to see the meals the app wrote (granted with pm grant in the test).
+    -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
     <!-- Package visibility (API 30+): the test launches the app under test by package name. -->
     <queries>
         <package android:name="casa.moller.tandem.minified" />
