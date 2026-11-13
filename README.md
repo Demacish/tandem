@@ -6,16 +6,19 @@ matsedel och inköpslista, offline först. Appen är en generisk Tandoor-klient:
 anges i appen och inget i koden är knutet till en viss server. Tandem är inte associerad med
 Tandoor-projektet.
 
-**Status: aktiv utveckling, 0.6.0.** Det här finns i dag:
+**Status: aktiv utveckling, 0.7.0.** Det här finns i dag:
 
 - **Recept:** sök offline och på servern, portioner och enheter som i Tandoors webb, skapa och
   redigera, importera från en länk, en text eller ett foto (texten läses i telefonen), näringsvärden.
 - **Laga:** kokläge med stor text, timers som hittas i stegen och larmar med låst skärm, två recept
-  samtidigt, "Klart!" med betyg.
-- **Handla och planera:** inköpslista som fungerar offline och synkas i hushållet, butiksläge med
-  inlärd ordning, "Dags igen?", veckans matsedel med förslag och dra och släpp.
+  samtidigt, handsfree (volymknapparna, röstkommandon i telefonen och uppläsning), pannstorlek,
+  köksskärm för surfplattan på bänken, "Klart!" med betyg.
+- **Handla och planera:** inköpslista som fungerar offline och synkas i hushållet, samma vara i olika
+  enheter på en rad, rutnät med stora rutor, butiksläge med inlärd ordning, "Dags igen?", veckans
+  matsedel med förslag och dra och släpp.
 - **Hemma:** skafferi per plats, "Kan laga nu", "Använd upp", streckkod, kvitto, drycker.
-- **Notiser, alla valfria:** när någon ändrar listan, när något går ut, och snabb push via en egen
+- **Notiser, alla valfria:** när någon ändrar listan, när något går ut, påminnelse kvällen innan
+  ("Tina ut kycklingen"), och snabb push via en egen
   liten tjänst ([docs/PUSH.md](docs/PUSH.md), experimentell).
 - Widgets, snabbinställningsruta, surfplatta i båda orienteringarna, gästläge och demoläge.
 

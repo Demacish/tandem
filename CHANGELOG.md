@@ -6,6 +6,32 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+## [0.7.0] – 2026-11-13
+
+Fas 5, första delen: I köket. Kokläget går att styra utan att röra skärmen, surfplattan kan stå
+som köksskärm på bänken, ett recept skalas efter formen du har, samma vara i olika enheter står på
+en rad i inköpslistan, och en rad i måltidens anteckning ger en påminnelse kvällen innan. Handsfree,
+rutnätet och påminnelserna är av tills du slår på dem. Inget av det kräver något extra av servern,
+och allt fungerar utan nät.
+
+**Laga i köket**
+
+- **Handsfree i kokläget:** knappen bredvid Föregående och Nästa slår på handsfree. Då byter
+  volymknapparna steg (ned = nästa, upp = föregående) medan kokläget visas, men aldrig medan en
+  timer ringer. Med röstkommandon på säger du "nästa", "tillbaka" eller "upprepa" (också "nästa
+  steg", "gå tillbaka", "säg igen"; "next", "back" och "repeat" på engelska). Taligenkänningen sker i
+  telefonen och ljudet skickas aldrig någonstans; saknar telefonen igenkänning för språket säger
+  appen det, och volymknapparna fungerar ändå. Mikrofonen frågas om när du slår på rösten och är
+  bara på medan kokläget syns. Telefonen kan också läsa upp varje nytt steg. Allt är av tills du
+  slår på det, och valet sparas. Samma val finns i Inställningar → Kokläge och timers.
+- **Köksskärm:** ett mörkt läge för surfplattan på bänken (fungerar också på telefonen): klockan
+  stort, dagens måltider med "Laga" som öppnar kokläget med planerade portioner, morgondagens,
+  och timrarna som stora kort. Skärmen hålls på medan den visas. Öppnas från Idag (med text på
+  surfplattan) och under Mer.
+- **Pannstorlek:** ett recept som bakas i rund form (formens storlek i Tandoor) kan skalas till en
+  annan form i receptet och i kokläget, efter ytan som på Tandoors webb (24 → 20 cm ≈ 0,69),
+  ovanpå portionerna. Det står tydligt: "Skalat för 20 cm form (× 0,69)".
+
 **Handla**
 
 - **Samma vara på en rad:** står samma vara på listan i flera enheter, till exempel "3 dl grädde"
@@ -18,27 +44,6 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   rutnät"). Rutorna står i butikens ordning, tryck bockar av och lång tryckning öppnar Ändra. Valet
   sparas för varje konto.
 
-<!-- Fas 5, kok -->
-**Laga i köket**
-
-- **Handsfree i kokläget:** knappen bredvid Föregående och Nästa slår på handsfree. Då byter
-  volymknapparna steg (ned = nästa, upp = föregående) medan kokläget visas, men aldrig medan en
-  timer ringer. Med röstkommandon på säger du "nästa", "tillbaka" eller "upprepa" (också "nästa
-  steg", "gå tillbaka", "säg igen"; "next", "back" och "repeat" på engelska). Taligenkänningen sker i
-  telefonen och ljudet skickas aldrig någonstans; saknar telefonen igenkänning för språket säger
-  appen det, och volymknapparna fungerar ändå. Mikrofonen frågas om när du slår på rösten och är
-  bara på medan kokläget syns. Telefonen kan också läsa upp varje nytt steg. Allt är av tills du
-  slår på det, och valet sparas.
-- **Köksskärm:** ett mörkt läge för surfplattan på bänken (fungerar också på telefonen): klockan
-  stort, dagens måltider med "Laga" som öppnar kokläget med planerade portioner, morgondagens,
-  och timrarna som stora kort. Skärmen hålls på medan den visas. Öppnas från Idag (med text på
-  surfplattan) och under Mer.
-- **Pannstorlek:** ett recept som bakas i rund form (formens storlek i Tandoor) kan skalas till en
-  annan form i receptet och i kokläget, efter ytan som på Tandoors webb (24 → 20 cm ≈ 0,69),
-  ovanpå portionerna. Det står tydligt: "Skalat för 20 cm form (× 0,69)".
-<!-- /Fas 5, kok -->
-
-<!-- Fas 5, planera -->
 **Planera**
 
 - **Påminnelse kvällen innan:** skriv "Påminn: Tina ut kycklingen" i en måltids anteckning, eller
@@ -56,7 +61,19 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 - Efter omställningen till eller från sommartid kunde morgonnotisen om det som går ut komma klockan
   7 eller 9 tills den slogs av och på. Nu planeras varje påminnelse efter klockan i telefonens
   tidszon, också när du reser.
-<!-- /Fas 5, planera -->
+
+**Kvar till senare**
+
+- Två recept sida vid sida på en riktigt bred skärm: kokläget har flikar på alla bredder, och
+  köksskärmen visar timrarna från båda recepten.
+- "Lägg på inköpslistan" från receptet och kokläget räknar med portionerna men ännu inte med formens
+  storlek.
+- "3 dl + 200 ml" blir en rad i ml bara om din Tandoor har en omräkning för dl (Tandoors egen
+  tabell saknar dl).
+- Röstkommandona i ett kök med fläkten på och köksskärmen tre timmar i sträck är prövade i CI men
+  ännu inte på en riktig telefon och surfplatta.
+- Wear OS-appen, matsedeln i kalendern, påminnelse nära butiken och resten av Fas 5 kommer i senare
+  versioner.
 
 ## [0.6.0] – 2026-11-05
 

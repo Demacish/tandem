@@ -118,16 +118,20 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   text (0.6.0). Länken finns inte i demoläget, för gäster eller när utrymmet har delning avstängd.
 
 ## Fas 5: Plattform
+Fasen är löpande och släpps i flera versioner. Första delen, **0.7.0 "I köket"** (2026-11-13),
+levererade punkterna markerade ✅. Resten kommer i senare versioner: Wear OS, påminnelse nära
+butiken, matsedeln i kalendern (iCal), en inkorg för recept från RSS, App Functions, biometriskt
+lås och target SDK 37.
+
 - ✅ Handsfree-kokläge (0.7.0): volymknapparna byter steg, "nästa", "tillbaka" och "upprepa" med
-  taligenkänning i telefonen (aldrig via nätet) och uppläsning av stegen. Av som standard. Kvar:
-  köksprovet med fläkten på (9 av 10) görs på en riktig telefon.
-- Wear OS-app (till exempel Samsung Galaxy Watch 4 och senare): inköpslista och timers.
-- Påminnelse nära butiken, matsedeln i kalendern (iCal).
+  taligenkänning i telefonen (aldrig via nätet) och uppläsning av stegen. Av som standard; slås på i
+  kokläget eller i Inställningar → Kokläge och timers. Kvar: köksprovet med fläkten på (9 av 10)
+  görs på en riktig telefon.
 - ✅ Köksskärmsläge för surfplattan (0.7.0): mörkt, mycket stor text, skärmen på, dagens recept med
   ett tryck till kokläget och timrarna stora; från Idag och Mer. Kvar: tre timmar på en riktig
   surfplatta.
 - ✅ Pannstorlek (0.7.0): skala ett recept efter formen, till exempel från 24 till 20 cm (efter ytan,
-  som Tandoors webb), i receptet och kokläget.
+  som Tandoors webb), i receptet och kokläget. Kvar: formens storlek följer inte med till inköpslistan.
 - ✅ Sammanslagning i inköpslistans vy: samma vara i enheter som går att räkna om på en rad
   ("3 dl + 200 g grädde" blir "5 dl"), med Tandoors omräkningar, också offline; det som inte går att
   räkna om står kvar på samma rad. Att bocka av raden bockar av alla dess rader (0.7.0).
@@ -135,6 +139,14 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
 - ✅ Påminnelse kvällen innan, till exempel "Tina ut kycklingen", från en rad "Påminn:" i måltidens
   anteckning eller fältet "Påminn kvällen innan" när måltiden planeras; valfri, med vald tid (0.7.0).
 - ✅ Morgonnotisen om det som går ut på en tid du väljer, och rätt klockslag efter sommartid (0.7.0).
+
+Kommer senare:
+
+- Wear OS-app (till exempel Samsung Galaxy Watch 4 och senare): inköpslista och timers.
+- Påminnelse nära butiken, matsedeln i kalendern (iCal).
+- Inkorg för recept från RSS-flöden.
+- App Functions (appen nås från systemets assistent), biometriskt lås, target SDK 37.
+- Två recept sida vid sida i kokläget på en riktigt bred skärm (0.7.0 har flikar på alla bredder).
 
 ## Övrigt
 - **Distribution:** GitHub Releases + Obtainium nu, Google Play senare. F-Droid är inte planerat.
