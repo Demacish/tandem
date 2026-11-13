@@ -61,7 +61,6 @@ import casa.moller.tandem.feature.mealplan.R
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
 import kotlin.time.Instant
 
 /** Test tag of the switch row "Visa i telefonens kalender". */
@@ -200,7 +199,7 @@ private fun LocalGroup(state: MealCalendarUiState, onAction: (MealCalendarAction
                 }
                 Text(
                     text = stringResource(R.string.calendar_local_off_note),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -305,7 +304,7 @@ private fun LinkGroup(state: MealCalendarUiState, onAction: (MealCalendarAction)
                 if (!state.canOpenInCalendarApp) {
                     Text(
                         text = stringResource(R.string.calendar_link_no_app),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -342,7 +341,7 @@ private fun LinkGroup(state: MealCalendarUiState, onAction: (MealCalendarAction)
 @Composable
 private fun PermissionButtons(onAction: (MealCalendarAction) -> Unit) {
     TandemTonalButton(text = stringResource(R.string.calendar_permission_allow), onClick = { onAction(MealCalendarAction.AskPermission) })
-    TandemTextButton(
+    TandemSecondaryButton(
         text = stringResource(R.string.calendar_permission_settings),
         onClick = { onAction(MealCalendarAction.OpenAppSettings) },
     )
@@ -373,7 +372,7 @@ private fun Address(url: String, expires: Instant?) {
             if (expires != null) {
                 Text(
                     text = stringResource(R.string.calendar_link_expires, date(expires)),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -461,7 +460,7 @@ private fun Divider() {
 /** "13 nov. 2026 14:05" in the app's language and the phone's zone. */
 @Composable
 private fun dateTime(instant: Instant): String {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
         .withLocale(locale)
         .format(java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds()).atZone(ZoneId.systemDefault()))
@@ -470,7 +469,7 @@ private fun dateTime(instant: Instant): String {
 /** "13 nov. 2027" in the app's language and the phone's zone. */
 @Composable
 private fun date(instant: Instant): String {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val locale = LocalConfiguration.current.locales[0]
     return DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
         .withLocale(locale)
         .format(java.time.Instant.ofEpochMilli(instant.toEpochMilliseconds()).atZone(ZoneId.systemDefault()))

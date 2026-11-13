@@ -6,10 +6,10 @@ import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.mealplan.MealCalendarLinkBlock
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.pantry.PantrySyncEnv
 import casa.moller.tandem.core.sync.reminder.ReminderClock
 import casa.moller.tandem.core.sync.testing.FakeTandoorServer
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
-import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.days
@@ -126,7 +126,7 @@ class MealCalendarLinksTest {
 
     @Test
     fun guestsAndDemoModeGetNoLink() = runBlocking {
-        graph.real.accountDao().setMembership(ACCOUNT_ID, groupLevel = "guest", householdId = null, householdName = null)
+        PantrySyncEnv.mirror(graph, groupLevel = "guest")
         assertEquals(MealCalendarLinkBlock.GUEST, links.observe().first().block)
         val refused = links.enable()
         assertEquals(DataProblem.READ_ONLY, (refused as Outcome.Failure).error.dataProblem())

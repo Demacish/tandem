@@ -43,6 +43,8 @@ class DtoFixturesTest {
         Route("POST", "/_allauth/app/v1/auth/login", AllauthResponseDto.serializer()),
         Route("POST", "/api/access-token/", AccessTokenDto.serializer()),
         Route("GET", "/api/access-token/", ListSerializer(AccessTokenDto.serializer())),
+        // Fas 5 (kalender lane): renewing the meal plan link's token.
+        Route("PATCH", "/api/access-token/\\d+/", AccessTokenDto.serializer()),
         Route("GET", "/api/user/\\d+/", UserDto.serializer()),
         Route("GET", "/api/user-preference/", ListSerializer(UserPreferenceDto.serializer())),
         Route("GET", "/api/space/current/", SpaceDto.serializer()),
