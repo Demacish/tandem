@@ -79,12 +79,15 @@ class FakeMealPlan(private val template: (String) -> JsonObject) {
         types[LUNCH] = MealType(LUNCH, "Lunch", 1, null)
     }
 
-    /** A meal created on the web: [from] as the browser sent it (offset, `Z` or naive server-local). */
+    /**
+     * A meal created on the web: [from] as the browser sent it (offset, `Z` or naive server-local);
+     * Fas 5 (planera lane): with a [note] ("Påminn: Tina ut kycklingen").
+     */
     @Synchronized
-    fun web(from: String, recipe: Long, recipeName: String, type: Long = DINNER, servings: Double = 4.0): Long {
+    fun web(from: String, recipe: Long, recipeName: String, type: Long = DINNER, servings: Double = 4.0, note: String = ""): Long {
         val id = nextMealId++
         val start = read(from, type, create = true)
-        meals[id] = Meal(id, "", recipe, recipeName, servings, "", start, start, type)
+        meals[id] = Meal(id, "", recipe, recipeName, servings, note, start, start, type)
         return id
     }
 

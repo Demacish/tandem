@@ -1257,12 +1257,13 @@ den är efter 21; `retryRun` ger nytt försök två timmar senare samma dag (Tan
 | Planen och bevakaren | `core/sync/mealplan/MealReminderSchedule.kt` | startas av `SyncStarter`; `ensure`/`cancel` som morgonnotisen. Medan processen lever (den gör det när synken kör, också i bakgrunden) bevakas kvällen från den valda tiden till midnatt: varje ändring av morgondagens påminnelser (här, på webben via synken, flyttad eller borttagen måltid) kör kollen igen efter 2 s, utan nätläsning |
 | Inställningarna | `feature/shell/settings/ReminderSettings.kt` | "Påminnelse kvällen innan" under "Notis när något går ut" på Synk och lagring (dold för gäst och i demoläget), med förklaringen av raden; påslagen utan behörighet → systemdialogen (`setNotification`), nekad → raden om Behörigheter. Raden "Tid" (en TalkBack-nod, knapp "Ändra tid") under varje påslagen påminnelse öppnar Materials tidsväljare i en dialog (urtavla, eller två fält vid teckenstorlek över 1,3 eller låga fönster; 24 timmar som telefonen) |
 
-**Röktest (spec, inte byggt i banan).** I röktestets app: slå på "Påminnelse kvällen innan", ge
-`POST_NOTIFICATIONS`, låt `FakeTandoor` ha en måltid i morgon med anteckningen "Påminn: Tina ut
-kycklingen", kör `am broadcast -n <paket>/casa.moller.tandem.smoke.SmokeWorkerReceiver --es worker meal`
-(kör `MealReminderWorker` utan indata = för i kväll, oavsett klockslag) och vänta på
-`data="SUCCEEDED"`; notisen med rubriken "Tina ut kycklingen" ska finnas (`dumpsys notification` eller
-UiAutomator), och ett tryck öppnar Veckan på morgondagen.
+**Röktest (`Phase5PlaneraSmokeTest`).** En måltid i morgon med anteckningen "Dubbel sats.\nPåminn:
+Tina ut kycklingen" i `FakeMealPlan` (`web(note = …)`); med inställningen av postar kvällsarbetet
+inget, påslagen (Synk och lagring) postar det **en** notis i kanalen `meal_reminders` med rubriken
+"Tina ut kycklingen" och receptets namn i texten, och en andra körning ändrar inget. Arbetet körs med
+`am broadcast -n <paket>/casa.moller.tandem.smoke.SmokeWorkerReceiver --es worker meal` (utan indata:
+för i kväll, oavsett klockslag), med processen borta som en riktig kväll. Trycket på notisen
+(Veckan på dagen) är testat i `ShellNavigationStateTest` och `OpenLaunchTest`, inte i röktestet.
 
 **Det instabila core:sync-testet ("Database is closed", `UncaughtExceptionsBeforeTest`).** Det som
 körde i bakgrunden i ett test (det ivriga statusflödet i `DefaultSyncRepository`, spegeln,
