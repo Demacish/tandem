@@ -16,6 +16,7 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.LocalTime
 
 /** [SettingsRepository] on top of the non-secret [SettingsStore] (like [DefaultAppearanceRepository]). */
 @Singleton
@@ -49,6 +50,13 @@ internal class DefaultSettingsRepository @Inject constructor(private val setting
 
     // --- Fas 5 (kok lane) ---
     override suspend fun setHandsfree(handsfree: HandsfreeSettings): Outcome<Unit> = write { it.copy(handsfree = handsfree) }
+
+    // --- Fas 5 (planera lane) ---
+    override suspend fun setPantryExpiryTime(time: LocalTime): Outcome<Unit> = write { it.copy(pantryExpiryTime = time) }
+
+    override suspend fun setMealReminders(enabled: Boolean): Outcome<Unit> = write { it.copy(mealReminders = enabled) }
+
+    override suspend fun setMealReminderTime(time: LocalTime): Outcome<Unit> = write { it.copy(mealReminderTime = time) }
 
     override suspend fun setNotificationPermissionAsked(asked: Boolean): Outcome<Unit> =
         write { it.copy(notificationPermissionAsked = asked) }

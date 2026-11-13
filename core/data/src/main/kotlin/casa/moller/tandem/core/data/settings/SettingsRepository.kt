@@ -6,6 +6,7 @@ import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.timer.TimerMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.LocalTime
 
 /**
  * The Phase 1b settings (plan 6.2 "Inställningar": Utseende, Beteende, Synk) next to
@@ -49,6 +50,17 @@ interface SettingsRepository {
 
     /** Fas 4: notify when someone else in the household changes the shopping list. */
     suspend fun setShoppingChangeNotifications(enabled: Boolean): Outcome<Unit>
+
+    // --- Fas 5 (planera lane): the daily reminders' times (plan §8.3, §8.8) ---
+
+    /** When the morning "Notis när något går ut" check runs (local wall-clock time); core:sync re-schedules it. */
+    suspend fun setPantryExpiryTime(time: LocalTime): Outcome<Unit>
+
+    /** "Påminnelse kvällen innan" for meals whose note has a "Påminn:" line (plan §8.3). */
+    suspend fun setMealReminders(enabled: Boolean): Outcome<Unit>
+
+    /** When the evening reminder comes (local wall-clock time). */
+    suspend fun setMealReminderTime(time: LocalTime): Outcome<Unit>
 
     /** Fas S (drycker lane): "Sök på Systembolaget" on drinks, null = follow the UI language. */
     suspend fun setSystembolagetLink(shown: Boolean?): Outcome<Unit>

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.datetime.LocalTime
 
 // Phase 1b (grund lane): fakes of the cook mode, timer, cook log, settings and diagnostics
 // contracts in core:data. Deterministic: time comes from a TestClock and only moves when the test
@@ -187,6 +188,13 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings.Default) : Setti
     override suspend fun setPantryExpiryOfferDismissed(dismissed: Boolean) = write { it.copy(pantryExpiryOfferDismissed = dismissed) }
 
     override suspend fun setExactAlarmPromptDismissed(dismissed: Boolean) = write { it.copy(exactAlarmPromptDismissed = dismissed) }
+
+    // Fas 5 (planera lane)
+    override suspend fun setPantryExpiryTime(time: LocalTime) = write { it.copy(pantryExpiryTime = time) }
+
+    override suspend fun setMealReminders(enabled: Boolean) = write { it.copy(mealReminders = enabled) }
+
+    override suspend fun setMealReminderTime(time: LocalTime) = write { it.copy(mealReminderTime = time) }
 
     override suspend fun setSystembolagetLink(shown: Boolean?) = write { it.copy(systembolagetLink = shown) }
 

@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.domain.pantry
 
+import casa.moller.tandem.core.domain.reminder.DailyRun
 import casa.moller.tandem.core.model.drink.DrinkKeywords
 import casa.moller.tandem.core.model.makenow.MakeNowRecipe
 import casa.moller.tandem.core.model.pantry.InventoryEntry
@@ -73,10 +74,32 @@ object ExpiryReminder {
     /** The calendar day of [now] in [zone]. */
     fun today(now: Instant, zone: TimeZone): LocalDate = now.toLocalDateTime(zone).date
 
-    /** Between [QUIET_FROM_HOUR] and [QUIET_UNTIL_HOUR] local time nothing is posted. */
-    fun isQuiet(now: Instant, zone: TimeZone): Boolean {
-        val hour = now.toLocalDateTime(zone).hour
-        return hour >= QUIET_FROM_HOUR || hour < QUIET_UNTIL_HOUR
+    /** Fas 5 (planera lane): the time of the morning check when the user has not chosen one. */
+    val DEFAULT_TIME: LocalTime = LocalTime(MORNING_HOUR, 0)
+
+    /**
+     * Between [QUIET_FROM_HOUR] and [QUIET_UNTIL_HOUR] local time nothing is posted. Fas 5 (planera
+     * lane): with a chosen [morning] earlier than [QUIET_UNTIL_HOUR] the quiet hours end at it; with
+     * one at or after [QUIET_FROM_HOUR] (a late "morning") they start at midnight instead, so the
+     * chosen time itself is never quiet.
+     */
+    fun isQuiet(now: Instant, zone: TimeZone, morning: LocalTime = DEFAULT_TIME): Boolean {
+        val local = now.toLocalDateTime(zone).time
+        val until = minOf(morning, LocalTime(QUIET_UNTIL_HOUR, 0))
+        val lateMorning = morning.hour >= QUIET_FROM_HOUR
+        return local < until || (!lateMorning && local.hour >= QUIET_FROM_HOUR)
+    }
+
+    /**
+     * Fas 5 (planera lane): the run after one that found Tandem on screen at [now]: the same day
+     * [RETRY_AFTER_HOURS] later, or null when that is in the quiet hours or tomorrow (the next
+     * morning's run takes it).
+     */
+    fun retryRun(now: Instant, zone: TimeZone, morning: LocalTime = DEFAULT_TIME): DailyRun? {
+        val later = now + RETRY_AFTER_HOURS.hours
+        val local = later.toLocalDateTime(zone)
+        if (local.date != today(now, zone) || isQuiet(later, zone, morning)) return null
+        return DailyRun(local.date, LocalTime(local.hour, local.minute))
     }
 
     /**

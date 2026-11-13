@@ -87,6 +87,15 @@ object TandemNotificationIds {
     /** Fas 4 (skafferinotis lane): the single "Grädde går ut i morgon" notification (core:sync); a new day's replaces it. */
     const val PANTRY_EXPIRY: Int = 1301
 
+    /**
+     * Fas 5 (planera lane): the evening reminders "Tina ut kycklingen" (core:sync), one per meal: posted
+     * with this tag and [mealReminder] of the reminder's key, so they never collide with the ids above.
+     */
+    const val MEAL_REMINDER_TAG: String = "tandem.meal_reminder"
+
+    /** The id of the evening reminder with [key] (under [MEAL_REMINDER_TAG]). */
+    fun mealReminder(key: String): Int = key.hashCode()
+
     /** The single "the import is done" notification (core:sync); the next import's replaces it. */
     const val IMPORT_DONE: Int = 1401
 

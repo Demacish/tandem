@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalTime
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -212,5 +213,32 @@ class PreferencesSettingsStoreTest {
         second.update { it.copy(systembolagetLink = null) }
         scopes.closeAll()
         assertNull(open().settings.first().systembolagetLink)
+    }
+
+    // --- Fas 5 (planera lane) ---
+
+    @Test
+    fun theReminderTimesSurviveARestartAndABrokenOneFallsBack() = runTest {
+        val first = open()
+        val defaults = first.settings.first()
+        assertEquals(LocalTime(8, 0), defaults.pantryExpiryTime)
+        assertEquals(LocalTime(19, 0), defaults.mealReminderTime)
+        assertFalse(defaults.mealReminders)
+        first.update { it.copy(pantryExpiryTime = LocalTime(6, 45), mealReminders = true, mealReminderTime = LocalTime(20, 30)) }
+        scopes.closeAll()
+        val second = open().settings.first()
+        assertEquals(LocalTime(6, 45), second.pantryExpiryTime)
+        assertEquals(true, second.mealReminders)
+        assertEquals(LocalTime(20, 30), second.mealReminderTime)
+        scopes.closeAll()
+
+        val dataStore = PreferenceDataStoreFactory.create(scope = scopes.newScope(), produceFile = { file })
+        dataStore.edit {
+            it[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_TIME] = -5
+            it[PreferencesSettingsStore.Keys.MEAL_REMINDER_TIME] = 24 * 60
+        }
+        val broken = PreferencesSettingsStore(dataStore).settings.first()
+        assertEquals(LocalTime(8, 0), broken.pantryExpiryTime)
+        assertEquals(LocalTime(19, 0), broken.mealReminderTime)
     }
 }

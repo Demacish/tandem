@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
@@ -25,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.LocalTime
 
 /** [SettingsStore] on a Preferences DataStore. Missing or unknown values fall back to defaults. */
 internal class PreferencesSettingsStore(private val dataStore: DataStore<Preferences>) : SettingsStore {
@@ -68,6 +70,11 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
 
         // --- Fas S (drycker lane): absent = not chosen (follows the UI language). ---
         val SYSTEMBOLAGET_LINK = booleanPreferencesKey("systembolaget_link")
+
+        // --- Fas 5 (planera lane): reminder times as minutes after midnight, local wall clock. ---
+        val PANTRY_EXPIRY_TIME = intPreferencesKey("pantry_expiry_time_minutes")
+        val MEAL_REMINDERS = booleanPreferencesKey("meal_reminders")
+        val MEAL_REMINDER_TIME = intPreferencesKey("meal_reminder_time_minutes")
 
         // --- Fas 4 (skafferinotis lane) ---
         val PANTRY_EXPIRY_NOTIFICATIONS = booleanPreferencesKey("pantry_expiry_notifications")
@@ -117,6 +124,10 @@ private fun Preferences.toAppSettings(): AppSettings {
             ?: defaults.shoppingChangeNotifications,
         // --- Fas S (drycker lane) ---
         systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
+        // --- Fas 5 (planera lane) ---
+        pantryExpiryTime = timeOrNull(PreferencesSettingsStore.Keys.PANTRY_EXPIRY_TIME) ?: defaults.pantryExpiryTime,
+        mealReminders = this[PreferencesSettingsStore.Keys.MEAL_REMINDERS] ?: defaults.mealReminders,
+        mealReminderTime = timeOrNull(PreferencesSettingsStore.Keys.MEAL_REMINDER_TIME) ?: defaults.mealReminderTime,
         // --- Fas 4 (skafferinotis lane) ---
         pantryExpiryNotifications = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS]
             ?: defaults.pantryExpiryNotifications,
@@ -133,6 +144,15 @@ private fun Preferences.readHandsfree(defaults: HandsfreeSettings): HandsfreeSet
     voice = this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] ?: defaults.voice,
     readSteps = this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] ?: defaults.readSteps,
 )
+
+/** Fas 5 (planera lane): a time of day stored as minutes after midnight; null when absent or outside the day. */
+private fun Preferences.timeOrNull(key: Preferences.Key<Int>): LocalTime? =
+    this[key]?.takeIf { it in 0 until MINUTES_PER_DAY }?.let { LocalTime(it / MINUTES_PER_HOUR, it % MINUTES_PER_HOUR) }
+
+private fun LocalTime.minutesOfDay(): Int = hour * MINUTES_PER_HOUR + minute
+
+private const val MINUTES_PER_HOUR = 60
+private const val MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
 
 /** The enum stored by name under [key], or null when absent or unknown (a newer version, garbage). */
 private fun <T : Enum<T>> Preferences.enumOrNull(key: Preferences.Key<String>, entries: List<T>): T? =
@@ -183,6 +203,10 @@ private fun MutablePreferences.write(settings: AppSettings) {
     } else {
         this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK] = systembolaget
     }
+    // --- Fas 5 (planera lane) ---
+    this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_TIME] = settings.pantryExpiryTime.minutesOfDay()
+    this[PreferencesSettingsStore.Keys.MEAL_REMINDERS] = settings.mealReminders
+    this[PreferencesSettingsStore.Keys.MEAL_REMINDER_TIME] = settings.mealReminderTime.minutesOfDay()
     // --- Fas 4 (skafferinotis lane) ---
     this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS] = settings.pantryExpiryNotifications
     this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_OFFER_DISMISSED] = settings.pantryExpiryOfferDismissed

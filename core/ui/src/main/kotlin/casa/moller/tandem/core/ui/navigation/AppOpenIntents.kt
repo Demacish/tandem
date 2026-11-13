@@ -50,11 +50,16 @@ object AppOpenIntents {
     /** Cook mode for a recipe: [COOK_PREFIX] followed by its id (the "I dag" widget, plan 8.7). */
     const val COOK_PREFIX: String = AppOpenDestinations.COOK_PREFIX
 
+    /** Fas 5 (planera lane): Veckan at a day: [WEEK_DAY_PREFIX] followed by `yyyy-MM-dd` (the evening reminder). */
+    const val WEEK_DAY_PREFIX: String = AppOpenDestinations.WEEK_DAY_PREFIX
+
     private const val SCHEME = AppOpenDestinations.SCHEME
 
     fun recipe(id: Long): String = "$RECIPE_PREFIX$id"
 
     fun cook(id: Long): String = "$COOK_PREFIX$id"
+
+    fun weekDay(date: String): String = "$WEEK_DAY_PREFIX$date"
 
     /** The intent that opens the app at [destination], or null without a launcher activity. */
     fun open(context: Context, destination: String): Intent? {

@@ -2,6 +2,7 @@ package casa.moller.tandem.core.model.settings
 
 import casa.moller.tandem.core.model.timer.TimerMode
 import kotlin.math.abs
+import kotlinx.datetime.LocalTime
 
 /** Which colour scheme the app uses (plan 6.4). */
 enum class ThemeMode {
@@ -62,6 +63,13 @@ data class AppSettings(
     val shoppingChangeNotifications: Boolean = false,
     // --- Fas S (drycker lane) ---
     val systembolagetLink: Boolean? = null,
+    // --- Fas 5 (planera lane): the times of the daily reminders (plan §8.3, §8.8; channel "Måltidspåminnelser"). ---
+    /** When the morning "Notis när något går ut" check runs, local wall-clock time (08:00 until chosen). */
+    val pantryExpiryTime: LocalTime = DEFAULT_PANTRY_EXPIRY_TIME,
+    /** "Påminnelse kvällen innan": a notification the evening before a meal whose note has "Påminn:" (off until chosen). */
+    val mealReminders: Boolean = false,
+    /** When the evening reminder comes, local wall-clock time (19:00 until chosen). */
+    val mealReminderTime: LocalTime = DEFAULT_MEAL_REMINDER_TIME,
     // --- Fas 4 (skafferinotis lane): "Notis när något går ut" (plan §8.8 "Använd upp", §8.7 "Måltidspåminnelser"). ---
     /** A morning notification when pantry entries expire today or tomorrow (off until chosen). */
     val pantryExpiryNotifications: Boolean = false,
@@ -78,6 +86,12 @@ data class AppSettings(
     companion object {
         /** Settings of a fresh install. */
         val Default: AppSettings = AppSettings()
+
+        /** Fas 5 (planera lane): the morning check's time when none is chosen (Fas 4's fixed 08:00). */
+        val DEFAULT_PANTRY_EXPIRY_TIME: LocalTime = LocalTime(8, 0)
+
+        /** Fas 5 (planera lane): the evening reminder's time when none is chosen. */
+        val DEFAULT_MEAL_REMINDER_TIME: LocalTime = LocalTime(19, 0)
     }
 }
 

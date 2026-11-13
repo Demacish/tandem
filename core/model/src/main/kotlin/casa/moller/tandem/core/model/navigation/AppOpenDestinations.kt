@@ -42,4 +42,7 @@ object AppOpenDestinations {
 
     /** Cook mode for a recipe: [COOK_PREFIX] followed by its id. */
     const val COOK_PREFIX: String = "cook:"
+
+    /** Fas 5 (planera lane): Veckan at a day: [WEEK_DAY_PREFIX] followed by the date (`yyyy-MM-dd`), the evening reminder's tap. */
+    const val WEEK_DAY_PREFIX: String = "week:"
 }
