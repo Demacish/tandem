@@ -1116,7 +1116,52 @@ sätts av integrationen. En rad per bana.
 | handla | Sammanslagning i listvyn och rutnätsvy (plan §8.2) | Samma livsmedel i omräkningsbara enheter är **en rad** på listan, i butiksläget och i delningstexten ("3 dl + 200 g grädde" → "5 dl"), räknat med Tandoors egna omräkningar och bastabell, också offline (cachen per konto, läst med de små tabellerna); det som inte går att räkna om står kvar på samma rad ("5 dl + 1 st"); att bocka av en rad bockar av alla dess poster i **en** bulk och att avmarkera tar tillbaka alla, servern behåller raderna (kontraktstest mot 2.6.13 och 2.7.1). Rutnätet slås på i listans meny och minns per konto; rutorna följer butikens ordning och de sammanslagna raderna, tryck bockar av, lång tryckning öppnar Ändra; varje ruta är **en** TalkBack-nod med namn, mängd, avdelning, läge och åtgärder; ATF och referensbilder på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | ✅ klart 2026-11-08 (PR 42477073185 och röktest "OK (37 tests)" 42477073270 på b237359; Contract 2.6.13/2.7.1 42474081585 och Tandoor-bevakning 42474081500 på e61ac91, kontraktstestet oförändrat sedan; referensbilder från Screenshots 42471117103), se "Sammanslagning och rutnät" |
 | kok | Handsfree (#32), köksskärm (#41), pannstorlek (plan §8.1, §8.7) | **Handsfree:** volymknapparna byter steg när handsfree är på (aldrig medan ett larm ringer, aldrig när det är av); "nästa/tillbaka/upprepa" fungerar på en telefon med svensk igenkänning i telefonen; uppläsning läser steget. **Köksskärm:** öppnas från Idag och Mer, mörk, stor text, skärmen på, dagens recept med ett tryck till kokläget, timrarna stora; i CI ett test som kör skärmen tre timmar utan läcka eller omritningsloop, och röktestet öppnar den. **Pannstorlek:** recept med `diameter` skalas efter ytan ovanpå portionerna i receptet och kokläget, offline, och det står "Skalat för 20 cm form". **BEHÖVER ENHET** (ägaren): 9 av 10 med fläkten på, tre timmar på en riktig surfplatta | ✅ klart 2026-11-13 i CI (PR 43430976135, röktest "OK (40 tests)" 43430976120, Contract 2.6.13/2.7.1 43430976206 och Tandoor-bevakning 43430976211 på cc1d317c; referensbilder från Screenshots 42477018620); enhetsproven återstår, se "Kokläget i Fas 5" |
 | planera | Påminnelse kvällen innan, "Tina ut" (plan §8.3), morgonnotisens tid och sommartidsfelet, det instabila core:sync-testet | En måltid vars anteckning har en rad "Påminn:" (eller "Remind:", valfri skiftläge) ger **en** notis kvällen innan i kanalen "Måltidspåminnelser" med radens text, en gång per måltid och kväll, också offline, aldrig för gäster eller i demoläget; flyttas måltiden, tas den bort eller förlorar raden (också genom synken) tas notisen bort; tryck öppnar Veckan på dagen. Fältet "Påminn kvällen innan" på Planera måltid skriver raden. Påslagen i Synk och lagring med vald tid (19.00), POST_NOTIFICATIONS frågas där. Morgonnotisen får vald tid (08.00). Båda planeras efter väggklockan i telefonens tidszon med en gemensam schemaläggare (engångsarbete per dag, ingen period), så sommartid och resor aldrig flyttar dem; tester med Europe/Stockholms omställningar i mars och oktober och byte av tidszon. core:sync-testerna stänger sin bakgrund deterministiskt (egen dispatcher, inga tysta tidsgränser). Skott och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | ✅ klart 2026-11-13 (PR 43453333263 på 04f6d16, grön i försök 1, 2 och 3, röktest "OK (41 tests)" 43453333734, Contract 43453332797; referensbilder från Screenshots 43441536423), se "Påminnelser kvällen innan och på morgonen" |
+| integration | 0.7.0 "I köket": banorna samlade på main och prövade tillsammans | Alla tre banorna på main; handsfree går också att slå på i Inställningar → Kokläge och timers (samma `AppSettings.handsfree` som kokläget ark, mikrofonen frågas när rösten slås på) och påminnelserna i Synk och lagring; röktestet kör banorna tillsammans: handsfree från inställningarna styr kokläget som öppnas från köksskärmen, köksskärmen visar timrarna från två recept i samma kokläge, och butiksläget som öppnas från rutnätet har de sammanslagna raderna och bockar av i **en** bulk. versionCode 9, versionName 0.7.0, CHANGELOG `[0.7.0] – 2026-11-13`, torrkörning grön | ✅ klart 2026-11-13 (PR 43479860265, röktest "OK (43 tests)" 43479862340 på bc248be, 25 min 42 s i emulatorn, jobbet 38 min av 50; torrkörning 43479860582 på bc248be; Contract 43464449468 på 29c154a, inget i dess sökvägar ändrades; referensbilder från Screenshots 43472197684), se "Integration av Fas 5 (0.7.0)" |
 <!-- /Fas 5 läge -->
+
+<!-- Fas 5 integration -->
+## Integration av Fas 5 (0.7.0)
+
+Banorna handla, kok och planera kom till main var för sig (se raderna ovan); integrationen
+(`fas5/integration`) lade till det som behövdes för att de ska fungera tillsammans och satte versionen.
+
+**Handsfree i inställningarna.** Kokläget slog bara på handsfree i sitt eget ark, och Mer → Kokläge
+och timers sa ingenting om det. Sidan har nu gruppen Handsfree (`CookingSettingsScreen`
+`HandsfreeGroup`): huvudbrytaren, röstkommandon och läs upp varje steg, samma `HandsfreeSettings`
+som arket (`SettingsAction.SetHandsfree` → `SettingsRepository.setHandsfree`, `CookingUiState.handsfree`).
+Röst och uppläsning går bara att ändra när huvudbrytaren är på, som i arket. Slås rösten på frågar
+routen efter `RECORD_AUDIO` (i sammanhanget, plan §8.1); säger användaren nej visar kokläget "Tillåt"
+som förut. Strängarna ligger i `feature/shell` `strings_handsfree.xml` (engelska och svenska).
+Tester: `SettingsViewModelTest.handsfreeIsTheSameSettingAsCookModesSheet`, `HandsfreeSettingsTest`
+(Compose), ATF och nya referensbilder `shell/handsfree_settings_{phone,tablet}_{light,dark_sv,off_font_scale_2_light}`;
+`settings_*cooking*` är omtagna eftersom sidan fick en grupp (Screenshots 43472197684). Bruset i
+pantry- och books-bilderna från samma inspelning checkades inte in.
+
+**Röktest (`Phase5IntegrationSmokeTest`).** (a) Demoläget, inte en enda begäran: handsfree slås på
+under Mer → Cook mode and timers; köksskärmen → "Cook" öppnar kokläget med "Volume keys turn the
+steps", och riktiga volymknappar byter steg 1 → 2 → 1; en timer i laxens första steg (20 min), "Cook
+another recipe" med Friday tacos och en timer i dess första steg (5 min); tillbaka på köksskärmen
+står båda timrarna med sitt recept ("<recept>: … left"). Med ett enda recept säger timerkortet bara
+steget ("Potatoes · 20 minutes, … left"); receptets namn kommer när det finns två. (b) Inloggad mot
+`FakeTandoor`: två "mjölk" i liter och två "grädde" i dl; listan visas som rutnät, butiksläget öppnas
+från listans meny och har raden "3 l mjölk, …, 2 rows on the list"; avbockningen når servern som
+**en** `POST …/bulk/` för båda posterna och ingen `PATCH`; tillbaka står listan kvar som rutnät och
+grädden är orörd.
+
+**Kontrollerat utan ändring:** köksskärmen läser `TimerController.timers`, så timrar från båda
+recepten i ett kokläge syns där med receptets namn (scenario a). Butiksläget och rutnätet använder
+`GroupedShopping.rows` från banan handla. Synk och lagring har påminnelserna (banan planera) och
+Kokläge och timers har nu handsfree; gäster och demoläget ser handsfree (bara lokala val) men inte
+påminnelserna. Inga nya notiskanaler (kvällspåminnelsen använder `meal_reminders` från 0.6.0), ingen
+ändring av Room (schema 6) och ingen ny navigering.
+
+**Version:** versionCode 9, versionName 0.7.0. `CHANGELOG.md` `[0.7.0] – 2026-11-13` med banornas
+punkter, handsfree i inställningarna och "Kvar till senare"; `[Unreleased]` är tom.
+
+**Kvar (behöver enhet):** köksprovet med fläkten på (9 av 10) och tre timmar på en riktig surfplatta
+(banan kok); sommartidsnätterna på en riktig telefon (banan planera). Formens storlek följer inte
+med till inköpslistan, och två recept sida vid sida på en bred skärm är inte byggt (banan kok).
+<!-- /Fas 5 integration -->
 
 <!-- Fas 5 handla -->
 ## Sammanslagning och rutnät (`:feature:shopping`, `:core:domain`, `:core:sync`, Fas 5, handla)
@@ -4998,6 +5043,11 @@ den kod som skickas:
   steg 1 → 2 → 3 → 2; avstängt byter de inte steg; (c) demots kladdkaka (24 cm) i 20 cm form: "Scaled
   for a 20 cm tin (× 0.69)", 100 g smör blir "69 g butter" och kokläget från receptet har samma form.
   Rösten och uppläsningen kan inte provas på emulatorn (ingen igenkänning i telefonen).
+- **Fas 5, integration (0.7.0, `Phase5IntegrationSmokeTest`):** (a) i demoläget, utan en enda
+  begäran: handsfree från Mer → Cook mode and timers, kokläget från köksskärmens "Cook" byter steg med
+  volymknapparna, en timer i vart och ett av två recept och båda på köksskärmen med sitt recept; (b)
+  inloggad: butiksläget öppnat från rutnätet har den sammanslagna raden och bockar av båda posterna i
+  en bulk. Se "Integration av Fas 5 (0.7.0)".
 - **Fas 3 (0.5.0, `Phase3SmokeTest`, tillagd i granskningen av Fas 4):** det Fas 3 lade till hade
   aldrig körts minifierat. `FakeRecipeEdits` (`FakeTandoor.recipeEdits`, med `enabled` före
   inloggningen) svarar som Tandoor på redigerarens skrivningar, och en ändring läses tillbaka, också
