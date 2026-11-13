@@ -65,10 +65,12 @@ class Phase5IntegrationSmokeTest : Phase2SmokeBase() {
 
         // A timer in each of two recipes in the same cook mode.
         startTimer(TONIGHT_TIMER)
-        app.waitFor(timerOf(DEMO_TONIGHT))
+        // With one recipe the timer card names only the step; the recipe shows once there are two.
+        app.waitFor(By.desc(Pattern.compile(".* left")))
         pickSecondRecipe(DEMO_SECOND)
         app.waitFor(tab(DEMO_SECOND))
         startTimer(SECOND_TIMER)
+        app.waitFor(timerOf(DEMO_TONIGHT))
         app.waitFor(timerOf(DEMO_SECOND))
         app.capture("phase5-integration-two-timers")
 
