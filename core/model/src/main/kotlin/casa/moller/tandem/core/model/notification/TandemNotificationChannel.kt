@@ -111,4 +111,11 @@ object TandemNotificationIds {
 
     /** The alarm notification of timer [timerId]. */
     fun timerAlarm(timerId: Long): Int = TIMER_ALARM_BASE + timerId.mod(TIMER_RANGE).toInt()
+
+    /**
+     * Fas 5 (wear lane, plan §7 #33): the bridge tag of the phone's timer notifications (core:timer).
+     * The Wear OS app keeps notifications with this tag off the watch (`BridgingManager`), because it
+     * shows the phone's timers itself; every other notification of the phone is still bridged.
+     */
+    const val TIMER_BRIDGE_TAG: String = "tandem.timer"
 }

@@ -72,6 +72,8 @@ internal class AndroidTimerNotifier @Inject constructor(
     override fun showOngoing(timer: CookTimer) {
         val builder = NotificationCompat.Builder(context, ONGOING_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_tandem_timer)
+            // Fas 5 (wear lane): Tandem on the watch shows the timers itself (TandemNotificationIds.TIMER_BRIDGE_TAG).
+            .extend(watchBridge())
             .setContentTitle(timer.label)
             // Fas 4 (two recipes at once): the recipe in the header ("Tandem • Krämig svamppasta").
             .setSubText(timer.recipeName)
@@ -189,6 +191,7 @@ internal class AndroidTimerNotifier @Inject constructor(
         ensureChannels()
         return NotificationCompat.Builder(context, ALARM_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_tandem_timer)
+            .extend(watchBridge())
             .setContentTitle(
                 context.resources.getQuantityString(R.plurals.timer_notification_ringing_summary, ringing.size, ringing.size),
             )
@@ -237,6 +240,7 @@ internal class AndroidTimerNotifier @Inject constructor(
 
     private fun alarmBuilder(timer: CookTimer): NotificationCompat.Builder = NotificationCompat.Builder(context, ALARM_CHANNEL)
         .setSmallIcon(R.drawable.ic_stat_tandem_timer)
+        .extend(watchBridge())
         .setContentTitle(timer.label)
         .setSubText(timer.recipeName)
         .setWhen(timer.endsAt?.toEpochMilliseconds() ?: System.currentTimeMillis())
@@ -245,6 +249,14 @@ internal class AndroidTimerNotifier @Inject constructor(
         .setGroup(ALARM_GROUP)
         .setSortKey(sortKey(timer))
         .setContentIntent(TimerIntents.openTimerPendingIntent(context, timer))
+
+    /**
+     * Fas 5 (wear lane, plan §7 #33): the timer notifications carry a bridge tag, so a watch with
+     * Tandem (which mirrors the timers itself and excludes the tag) never shows them twice. A watch
+     * without Tandem still gets them bridged as before.
+     */
+    private fun watchBridge(): NotificationCompat.WearableExtender =
+        NotificationCompat.WearableExtender().setBridgeTag(TandemNotificationIds.TIMER_BRIDGE_TAG)
 
     /** Fas 4 (two recipes at once): "Pastan · 10 min (Krämig svamppasta)", or just the label. */
     private fun labelWithRecipe(timer: CookTimer): String =

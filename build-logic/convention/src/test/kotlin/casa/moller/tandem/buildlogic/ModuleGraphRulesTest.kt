@@ -163,4 +163,40 @@ class ModuleGraphRulesTest {
         assertEquals(found.sorted(), found)
         assertEquals(2, found.size)
     }
+
+    @Test
+    fun theWatchUsesOnlyThePureModulesAndTheNetwork() {
+        // Fas 5 (wear lane): rule 6, an allow list.
+        assertEquals(
+            emptyList<String>(),
+            violations(
+                ":wear",
+                "implementation" to ":core:model",
+                "implementation" to ":core:common",
+                "implementation" to ":core:domain",
+                "implementation" to ":core:network",
+                "implementation" to ":core:watchlink",
+                "testImplementation" to ":core:testing",
+            ),
+        )
+        val allowed = setOf(":core:model", ":core:common", ":core:domain", ":core:network", ":core:watchlink")
+        assertEquals(allowed, ModuleGraphRules.WEAR_ALLOWED)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            ":core:data", ":core:sync", ":core:database", ":core:datastore", ":core:timer", ":core:ai", ":core:ui",
+            ":core:designsystem", ":core:watch", ":feature:shopping", ":app",
+        ],
+    )
+    fun theWatchNeverPullsInThePhone(target: String) {
+        listOf("implementation", "api", "testImplementation").forEach { configuration ->
+            val found = violations(":wear", configuration to target)
+            assertEquals(1, found.size, "$configuration $target: $found")
+            assertTrue(found.single().contains("the Wear OS app uses only"), found.single())
+        }
+        // The phone's side of the watch is an ordinary core module, out of every feature's reach (rule 1).
+        assertEquals(1, violations(":feature:shell", "implementation" to ":core:watch").size)
+    }
 }

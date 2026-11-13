@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Tandem for Wear OS (Fas 5, wear lane, plan §7 #33, docs/BYGGE.md "Klockan", docs/WEAR.md).
+    Same package and key as the phone app: the Wearable Data Layer only connects apps that share
+    both. POST_NOTIFICATIONS is asked in the app, next to the phone's timers, never at first start.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!--
+        Backup: nothing leaves the watch (the token is encrypted with a Keystore key that never
+        leaves it either). After a reset the phone pairs the watch again.
+    -->
+    <application
+        android:name=".TandemWearApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <uses-library
+            android:name="com.google.android.wearable"
+            android:required="false" />
+
+        <!-- Not standalone: the token comes from the phone app ("Koppla klockan"). Afterwards the
+             list works without the phone. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="false" />
+
+        <activity
+            android:name=".ui.WearMainActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The phone's requests (pair, unpair, status) and messages (timers). The Data Layer
+             delivers only from the same package with the same signature. -->
+        <service
+            android:name=".link.WatchListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.REQUEST_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/tandem"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
+        <!-- The shopping-list tile (count, first items, a running timer). -->
+        <service
+            android:name=".tile.ShoppingTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_shopping"
+            android:label="@string/tile_label"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/ic_tile_shopping" />
+        </service>
+
+        <!-- "Stoppa" / "Avbryt" on the watch's timer notifications. -->
+        <receiver
+            android:name=".timer.TimerActionReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

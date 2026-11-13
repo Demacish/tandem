@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tandem for Wear OS (Fas 5, wear lane). Swedish in values-sv; both are complete (plan §6.7). -->
+<resources>
+    <string name="app_name" translatable="false">Tandem</string>
+
+    <!-- The list -->
+    <string name="shopping_title">Shopping</string>
+    <string name="shopping_empty">Nothing left to buy</string>
+    <string name="shopping_loading">Fetching the list…</string>
+    <string name="shopping_no_aisle">Other</string>
+    <plurals name="shopping_checked_header">
+        <item quantity="one">%d checked off</item>
+        <item quantity="other">%d checked off</item>
+    </plurals>
+    <plurals name="shopping_merged">
+        <item quantity="one">%d row on the list</item>
+        <item quantity="other">%d rows on the list</item>
+    </plurals>
+    <string name="shopping_row_waiting">waiting to be sent</string>
+    <plurals name="shopping_pending">
+        <item quantity="one">%d check waits for the network</item>
+        <item quantity="other">%d checks wait for the network</item>
+    </plurals>
+    <string name="shopping_offline">Offline. Checks are sent when the watch is online.</string>
+    <string name="shopping_paused">The server is not answering. Next try at %s.</string>
+    <string name="shopping_throttled">Tandoor asked the watch to wait. Next try at %s.</string>
+    <string name="shopping_updated">Updated %s</string>
+    <string name="shopping_refresh">Update now</string>
+    <string name="shopping_store">Order of %s</string>
+    <string name="shopping_store_change">Tap to use the next store</string>
+    <string name="shopping_account">Logged in as %s</string>
+
+    <!-- Pairing states -->
+    <string name="pair_title">Pair with the phone</string>
+    <string name="pair_body">Open Tandem on your phone and choose More → Watch → Pair the watch.</string>
+    <string name="signed_out_title">Log in again on the phone</string>
+    <string name="signed_out_body">Tandoor no longer accepts the watch\'s key. Pair the watch again under More → Watch on the phone. Checks that wait are kept.</string>
+
+    <!-- Timers from the phone -->
+    <string name="timers_header">Timers on the phone</string>
+    <string name="timer_left">%s left</string>
+    <string name="timer_paused">Paused, %s left</string>
+    <string name="timer_ringing">Done!</string>
+    <string name="timer_finished">Done</string>
+    <string name="timer_stop">Stop</string>
+    <string name="timer_stop_label">Stop %s</string>
+    <string name="timer_cancel">Cancel timer</string>
+    <string name="timer_status_running">#time# left</string>
+    <string name="timer_notifications_off">Allow notifications to feel the alarm on the watch.</string>
+    <string name="timer_notifications_allow">Allow</string>
+    <string name="timer_channel_alarm_name">Timers (alarm)</string>
+    <string name="timer_channel_alarm_description">When a timer on the phone is done</string>
+    <string name="timer_channel_ongoing_name">Running timers</string>
+    <string name="timer_channel_ongoing_description">The phone\'s running timers with the time left</string>
+
+    <!-- The tile -->
+    <string name="tile_label">Shopping list</string>
+    <plurals name="tile_count">
+        <item quantity="one">%d to buy</item>
+        <item quantity="other">%d to buy</item>
+    </plurals>
+    <string name="tile_empty">Nothing to buy</string>
+    <string name="tile_not_paired">Pair the watch in Tandem on the phone</string>
+    <string name="tile_signed_out">Log in again on the phone</string>
+    <string name="tile_timer_running">%1$s · done at %2$s</string>
+    <string name="tile_timer_ringing">%s is done!</string>
+    <string name="tile_open">Open the shopping list</string>
+</resources>

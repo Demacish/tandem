@@ -31,6 +31,10 @@ internal data class DeclaredProjectDependency(val configuration: String, val pat
  * 5. `:core:ai` (Fas S, the only reader of the user's AI key) never depends on `:core:network`,
  *    `:core:sync` or `:core:database`: it has its own HTTP clients, so no Tandoor interceptor,
  *    header, token or cookie can reach the AI calls.
+ * 6. Fas 5 (wear lane): `:wear`, the Wear OS app, depends only on `:core:{model,common,domain,network,watchlink}`
+ *    (an allow list): the pure modules and Tandoor's network stack, never the phone's data, sync,
+ *    storage, timers, UI, AI or any feature (no ML Kit, camera or Room of the phone on a watch).
+ *    `:core:testing` stays allowed in its tests (rule 4).
  *
  * `:app` wires everything and is only checked for rule 4.
  */
@@ -49,6 +53,12 @@ internal object ModuleGraphRules {
     const val FEATURE_HOST: String = ":feature:shell"
 
     const val TESTING: String = ":core:testing"
+
+    /** Fas 5 (wear lane): the Wear OS app. */
+    const val WEAR: String = ":wear"
+
+    /** The only modules [WEAR] may use (rule 6). */
+    val WEAR_ALLOWED: Set<String> = setOf(":core:model", ":core:common", ":core:domain", ":core:network", ":core:watchlink")
 
     /** Test-only configurations: testImplementation, testDebugImplementation, androidTestImplementation, kspTest, ... */
     fun isTestConfiguration(name: String): Boolean = name.contains("test", ignoreCase = true)
@@ -81,6 +91,10 @@ internal object ModuleGraphRules {
             projectPath == AI && target in AI_FORBIDDEN ->
                 "$where: core:ai never depends on core:network/core:sync/core:database " +
                     "(no Tandoor interceptor, header, token or cookie may reach the AI calls)"
+
+            projectPath == WEAR && target != TESTING && target !in WEAR_ALLOWED ->
+                "$where: the Wear OS app uses only :core:{model,common,domain,network,watchlink}, " +
+                    "never the phone's data, sync, storage, timers, UI, AI or features"
 
             else -> null
         }

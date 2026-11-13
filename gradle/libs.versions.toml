@@ -91,6 +91,17 @@ mlkitBarcodeScanning = "17.3.0"   # com.google.mlkit (bundled model), not play-s
 mlkitTextRecognition = "16.0.1"   # bundled Latin text recognizer
 anthropicJava = "2.72.0"          # 2026-10-14; 2.73.0+ (2026-10-15 and later) were < 2 weeks old
 
+# --- wear lane (Fas 5, 0.8.0 "På språng", plan §7 #33, B15), verified 2026-11-13 against Google
+# Maven (release date >= 2 weeks before, published .sha1 checked on download). The Wear OS app
+# (:wear) and the phone's Data Layer side (:core:watch). docs/BYGGE.md "Klockan". ---
+wearCompose = "1.7.1"             # 2026-10-07: compose-material3 (Wear Material 3, stable) + foundation
+wearTiles = "1.6.2"               # 2026-07-29
+wearProtolayout = "1.4.2"         # 2026-07-29 (the tile's layout; what tiles 1.6.2 is built against)
+wearOngoing = "1.1.0"             # 2025-09-10: the running timer as an ongoing activity
+wearPhoneInteractions = "1.1.1"   # 2026-07-15: BridgingManager (the phone's timer notifications stay on the phone)
+playServicesWearable = "20.0.1"   # 2026-04-28: the Wearable Data Layer (MessageClient, CapabilityClient)
+concurrentFutures = "1.3.0"       # 2025-07-16: SuspendToFutureAdapter for the TileService
+
 [libraries]
 # Gradle plugins as libraries for build-logic (compileOnly in build-logic/convention)
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -221,6 +232,16 @@ mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version
 anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthropicJava" }
 # The SDK brings kotlin-reflect 1.9 (for Jackson's Kotlin module); pinned to our Kotlin version.
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+
+# --- wear lane (Fas 5): the Wear OS app and the phone's Data Layer side. ---
+androidx-wear-compose-material3 = { module = "androidx.wear.compose:compose-material3", version.ref = "wearCompose" }
+androidx-wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }
+androidx-wear-tiles = { module = "androidx.wear.tiles:tiles", version.ref = "wearTiles" }
+androidx-wear-protolayout = { module = "androidx.wear.protolayout:protolayout", version.ref = "wearProtolayout" }
+androidx-wear-ongoing = { module = "androidx.wear:wear-ongoing", version.ref = "wearOngoing" }
+androidx-wear-phone-interactions = { module = "androidx.wear:wear-phone-interactions", version.ref = "wearPhoneInteractions" }
+play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "playServicesWearable" }
+androidx-concurrent-futures-ktx = { module = "androidx.concurrent:concurrent-futures-ktx", version.ref = "concurrentFutures" }
 
 [bundles]
 compose-ui = [

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Listan -->
+    <string name="shopping_title">Handla</string>
+    <string name="shopping_empty">Inget kvar att köpa</string>
+    <string name="shopping_loading">Hämtar listan …</string>
+    <string name="shopping_no_aisle">Övrigt</string>
+    <plurals name="shopping_checked_header">
+        <item quantity="one">%d avbockad</item>
+        <item quantity="other">%d avbockade</item>
+    </plurals>
+    <plurals name="shopping_merged">
+        <item quantity="one">%d rad på listan</item>
+        <item quantity="other">%d rader på listan</item>
+    </plurals>
+    <string name="shopping_row_waiting">väntar på att skickas</string>
+    <plurals name="shopping_pending">
+        <item quantity="one">%d avbockning väntar på nät</item>
+        <item quantity="other">%d avbockningar väntar på nät</item>
+    </plurals>
+    <string name="shopping_offline">Ingen anslutning. Avbockningarna skickas när klockan har nät.</string>
+    <string name="shopping_paused">Servern svarar inte. Nästa försök kl. %s.</string>
+    <string name="shopping_throttled">Tandoor bad klockan vänta. Nästa försök kl. %s.</string>
+    <string name="shopping_updated">Uppdaterad %s</string>
+    <string name="shopping_refresh">Uppdatera nu</string>
+    <string name="shopping_store">Ordning för %s</string>
+    <string name="shopping_store_change">Tryck för nästa butik</string>
+    <string name="shopping_account">Inloggad som %s</string>
+
+    <!-- Koppling -->
+    <string name="pair_title">Koppla till telefonen</string>
+    <string name="pair_body">Öppna Tandem på telefonen och välj Mer → Klockan → Koppla klockan.</string>
+    <string name="signed_out_title">Logga in igen på telefonen</string>
+    <string name="signed_out_body">Tandoor godtar inte längre klockans nyckel. Koppla klockan igen under Mer → Klockan på telefonen. Avbockningar som väntar sparas.</string>
+
+    <!-- Timrar från telefonen -->
+    <string name="timers_header">Timrar på telefonen</string>
+    <string name="timer_left">%s kvar</string>
+    <string name="timer_paused">Pausad, %s kvar</string>
+    <string name="timer_ringing">Klar!</string>
+    <string name="timer_finished">Klar</string>
+    <string name="timer_stop">Stoppa</string>
+    <string name="timer_stop_label">Stoppa %s</string>
+    <string name="timer_cancel">Avbryt timern</string>
+    <string name="timer_status_running">#time# kvar</string>
+    <string name="timer_notifications_off">Tillåt aviseringar för att känna larmet på klockan.</string>
+    <string name="timer_notifications_allow">Tillåt</string>
+    <string name="timer_channel_alarm_name">Timrar (larm)</string>
+    <string name="timer_channel_alarm_description">När en timer på telefonen är klar</string>
+    <string name="timer_channel_ongoing_name">Pågående timrar</string>
+    <string name="timer_channel_ongoing_description">Telefonens pågående timrar med tiden som är kvar</string>
+
+    <!-- Rutan -->
+    <string name="tile_label">Inköpslista</string>
+    <plurals name="tile_count">
+        <item quantity="one">%d att köpa</item>
+        <item quantity="other">%d att köpa</item>
+    </plurals>
+    <string name="tile_empty">Inget att köpa</string>
+    <string name="tile_not_paired">Koppla klockan i Tandem på telefonen</string>
+    <string name="tile_signed_out">Logga in igen på telefonen</string>
+    <string name="tile_timer_running">%1$s · klar kl. %2$s</string>
+    <string name="tile_timer_ringing">%s är klar!</string>
+    <string name="tile_open">Öppna inköpslistan</string>
+</resources>
