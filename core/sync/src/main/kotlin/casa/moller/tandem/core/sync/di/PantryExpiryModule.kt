@@ -6,8 +6,6 @@ import casa.moller.tandem.core.sync.platform.MealRemindersChannelInstaller
 import casa.moller.tandem.core.sync.platform.PantryExpiryNotifier
 import casa.moller.tandem.core.sync.platform.SystemWallClock
 import casa.moller.tandem.core.sync.platform.WallClock
-import casa.moller.tandem.core.sync.work.PantryExpiryScheduler
-import casa.moller.tandem.core.sync.work.WorkManagerPantryExpiryScheduler
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -24,9 +22,6 @@ import dagger.multibindings.IntoSet
 internal abstract class PantryExpiryModule {
     @Binds
     abstract fun bindPantryExpiryNotifier(impl: AndroidPantryExpiryNotifier): PantryExpiryNotifier
-
-    @Binds
-    abstract fun bindPantryExpiryScheduler(impl: WorkManagerPantryExpiryScheduler): PantryExpiryScheduler
 
     @Binds
     abstract fun bindWallClock(impl: SystemWallClock): WallClock

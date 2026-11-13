@@ -21,13 +21,16 @@ import kotlinx.coroutines.withTimeoutOrNull
  * Hilt worker factory, and waits for the result:
  *
  * `am broadcast -n <package>/casa.moller.tandem.smoke.SmokeWorkerReceiver` prints
- * `data="SUCCEEDED"`. Only the shell (which holds DUMP) can send it. The class name is the one
+ * `data="SUCCEEDED"` (`--es worker meal`: the evening reminder, Fas 5).
+ * Only the shell (which holds DUMP) can send it. The class name is the one
  * core/sync/consumer-rules.pro keeps (WorkManager stores it the same way).
  */
 class SmokeWorkerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val result = goAsync()
-        val worker = Class.forName(PANTRY_EXPIRY_WORKER).asSubclass(ListenableWorker::class.java)
+        // Fas 5 (planera lane): `--es worker meal` runs the evening reminder (for this evening) instead.
+        val name = if (intent.getStringExtra(EXTRA_WORKER) == MEAL) MEAL_REMINDER_WORKER else PANTRY_EXPIRY_WORKER
+        val worker = Class.forName(name).asSubclass(ListenableWorker::class.java)
         val request = OneTimeWorkRequest.Builder(worker).build()
         val manager = WorkManager.getInstance(context)
         manager.enqueue(request)
@@ -42,6 +45,9 @@ class SmokeWorkerReceiver : BroadcastReceiver() {
 
     private companion object {
         const val PANTRY_EXPIRY_WORKER = "casa.moller.tandem.core.sync.work.PantryExpiryWorker"
+        const val MEAL_REMINDER_WORKER = "casa.moller.tandem.core.sync.work.MealReminderWorker"
+        const val EXTRA_WORKER = "worker"
+        const val MEAL = "meal"
         const val TIMED_OUT = "TIMED_OUT"
 
         /** Below the system's limit for a background broadcast (60 s). */

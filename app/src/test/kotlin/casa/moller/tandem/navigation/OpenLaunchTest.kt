@@ -44,6 +44,7 @@ class OpenLaunchTest {
         assertNull(OpenLaunch.requestFrom(open("settings")))
         assertNull(OpenLaunch.requestFrom(open("recipe:abc")))
         assertNull(OpenLaunch.requestFrom(open("recipe:0")))
+        assertNull(OpenLaunch.requestFrom(open("week:i-morgon")))
         assertNull(OpenLaunch.requestFrom(Intent(AppOpenIntents.ACTION)))
     }
 
@@ -59,6 +60,7 @@ class OpenLaunchTest {
             ShellOpenRequest.UseUp,
             ShellOpenRequest.AddItem,
             ShellOpenRequest.Cook(-3),
+            ShellOpenRequest.WeekDay("2026-11-14"),
         )
         for (request in requests) assertEquals(request, ShellOpenRequest.of(ShellOpenRequest.nameOf(request)))
     }

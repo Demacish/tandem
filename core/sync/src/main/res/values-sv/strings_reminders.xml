@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (planera lane): påminnelsen kvällen innan "Tina ut kycklingen" (plan §8.3, kanalen "Måltidspåminnelser"). -->
+<resources>
+    <string name="sync_meal_reminder_text">%1$s i morgon: %2$s</string>
+    <string name="sync_meal_reminder_text_no_type">I morgon: %1$s</string>
+</resources>

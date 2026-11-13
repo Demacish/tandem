@@ -19,6 +19,7 @@ import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.engine.SyncKeys
 import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.mealplan.MealReminderSchedule
 import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
 import casa.moller.tandem.core.sync.platform.AccountNotificationCleanup
 import casa.moller.tandem.core.sync.platform.SyncClock
@@ -79,6 +80,8 @@ class SyncStarter @Inject internal constructor(
     private val shoppingNotifications: ShoppingChangeNotifications,
     // Fas 4 (skafferinotis lane): the morning "Grädde går ut i morgon" check follows its setting.
     private val pantryExpiryReminders: PantryExpiryReminders,
+    // Fas 5 (planera lane): the evening "Tina ut kycklingen" reminder follows its setting.
+    private val mealReminders: MealReminderSchedule,
     // Fas 4 (push lane): renews the optional fast push registration of the active account.
     private val fastPush: DefaultFastPushRepository,
     // Fas 4 (integration): a list or pantry notification does not outlive the account on this phone.
@@ -116,6 +119,7 @@ class SyncStarter @Inject internal constructor(
         mirror.start()
         shoppingNotifications.start()
         pantryExpiryReminders.start()
+        mealReminders.start()
         fastPush.start()
         accountNotifications.start()
         scope.launch {

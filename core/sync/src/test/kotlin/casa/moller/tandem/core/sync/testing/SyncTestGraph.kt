@@ -86,10 +86,16 @@ import casa.moller.tandem.core.sync.shopping.ShoppingTables
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Instant
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.job
@@ -111,7 +117,20 @@ internal class SyncTestGraph(
     userId: Long = 1,
 ) {
     val context: Context = ApplicationProvider.getApplicationContext()
-    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Fas 5 (planera lane), the flaky "Database is closed": everything that runs in the background of
+     * this graph (the eager status flow of DefaultSyncRepository, the mirror, the watchers) runs on
+     * [scope], on threads of its own ([dispatcher]) instead of the shared Dispatchers.Default, and an
+     * exception there is kept here ([backgroundFailures]) instead of reaching the global handler of
+     * kotlinx-coroutines-test, which blamed the NEXT test (UncaughtExceptionsBeforeTest).
+     * [closePhone] stops it all and waits for its threads before the databases close.
+     */
+    private val executor: ExecutorService = Executors.newFixedThreadPool(BACKGROUND_THREADS) { task ->
+        Thread(task, "sync-test-graph").apply { isDaemon = true }
+    }
+    private val dispatcher: ExecutorCoroutineDispatcher = executor.asCoroutineDispatcher()
+    val backgroundFailures: MutableList<Throwable> = CopyOnWriteArrayList()
+    val scope = CoroutineScope(SupervisorJob() + dispatcher + CoroutineExceptionHandler { _, e -> backgroundFailures += e })
 
     /**
      * File databases (fresh per graph), like the app. Not in-memory: when a flow that opens a
@@ -373,9 +392,13 @@ internal class SyncTestGraph(
      * stays up: another phone of the test may share it.
      */
     fun closePhone() {
-        runBlocking { withTimeoutOrNull(STOP_TIMEOUT_MILLIS) { scope.coroutineContext.job.cancelAndJoin() } }
+        val stopped = runBlocking { withTimeoutOrNull(STOP_TIMEOUT_MILLIS) { scope.coroutineContext.job.cancelAndJoin() } }
+        // Fas 5 (planera lane): no silent timeout; nothing of this graph may run on into the next test.
+        dispatcher.close()
+        val idle = executor.awaitTermination(STOP_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)
         real.close()
         demoDatabase.close()
+        check(stopped != null && idle) { "work on the test graph's scope did not stop within $STOP_TIMEOUT_MILLIS ms" }
     }
 
     fun close() {
@@ -386,6 +409,9 @@ internal class SyncTestGraph(
     companion object {
         /** Far longer than any query; a test that hangs here would hide what it waits for. */
         private const val STOP_TIMEOUT_MILLIS = 10_000L
+
+        /** Threads of a graph's own background dispatcher (the work on [scope]). */
+        private const val BACKGROUND_THREADS = 4
 
         const val ACCOUNT_ID = "account-a"
 

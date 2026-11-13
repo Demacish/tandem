@@ -44,7 +44,7 @@ internal enum class PantryExpiryOutcome {
     /** A guest has no pantry (Tandoor answers 403 on its lists). */
     GUEST,
 
-    /** Between 21 and 7 o'clock: the coming morning's run takes it (every run sets the next one). */
+    /** Between 21 and 7 o'clock (or the chosen morning time): the coming morning's run takes it (every run sets the next one). */
     QUIET,
 
     /** Tandem is on screen (Idag's "Går ut snart" and Hemma show it): the next run comes a little later the same day. */
@@ -72,7 +72,7 @@ internal enum class PantryExpiryOutcome {
  * - Only with Settings → "Notis när något går ut" on (off by default), for a logged-in account of a
  *   household; never in demo mode, never for a guest (no pantry), never at night ([ExpiryReminder.isQuiet])
  *   and never while Tandem is on screen (Idag's "Går ut snart" says the same; the item stays new, and
- *   the worker runs again later the same day, `ExpiryReminder.delayUntilNextRun`).
+ *   the worker runs again later the same day, `ExpiryReminder.retryRun`).
  * - Works offline from the local pantry; online it reads the pantry first when the last complete
  *   read is older than the sync's own interval ([PantrySyncStep.PANTRY_INTERVAL_MILLIS]) and lets
  *   "Kan laga nu" refresh by its own once-a-minute rule, so the recipe count is current.
@@ -96,7 +96,8 @@ internal class PantryExpiryCheck @Inject constructor(
     private val running = Mutex()
 
     suspend fun run(): PantryExpiryOutcome = running.withLock {
-        if (!settings.settings.first().pantryExpiryNotifications) return@withLock PantryExpiryOutcome.OFF
+        val current = settings.settings.first()
+        if (!current.pantryExpiryNotifications) return@withLock PantryExpiryOutcome.OFF
         val remote = when (val source = sources.current()) {
             is ActiveSource.Remote -> source
             ActiveSource.Demo -> return@withLock PantryExpiryOutcome.DEMO
@@ -107,7 +108,8 @@ internal class PantryExpiryCheck @Inject constructor(
         val now = clock.now()
         val zone = clock.zone()
         when {
-            ExpiryReminder.isQuiet(now, zone) -> return@withLock PantryExpiryOutcome.QUIET
+            // Fas 5 (planera lane): the quiet hours end at the chosen morning time when it is earlier than 07:00.
+            ExpiryReminder.isQuiet(now, zone, current.pantryExpiryTime) -> return@withLock PantryExpiryOutcome.QUIET
             visibility.isVisible() -> return@withLock PantryExpiryOutcome.VISIBLE
             !notifier.canPost() -> return@withLock PantryExpiryOutcome.NOT_ALLOWED
         }

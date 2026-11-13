@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (planera lane): the evening reminder "Tina ut kycklingen" (plan §8.3, channel "Meal reminders"). -->
+<resources>
+    <!-- The line under the reminder's own text: the meal type and the meal, e.g. "Dinner tomorrow: Chicken stew". -->
+    <string name="sync_meal_reminder_text">%1$s tomorrow: %2$s</string>
+    <!-- The same without a meal type name. -->
+    <string name="sync_meal_reminder_text_no_type">Tomorrow: %1$s</string>
+</resources>
