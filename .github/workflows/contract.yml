@@ -487,6 +487,15 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase5ConversionContractTest'
 
+      # Fas 5, lane kalender (0.8.0, plan §3.1, §7 #36): the meal plan's iCal feed, the scope
+      # `mealplan`, the token in the URL (`?access_token=`) and creating/revoking such a token.
+      # Its own class; seeds and deletes its own meal types, meals and tokens.
+      - name: Contract tests (Fas 5, meal plan in the calendar)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase5IcalContractTest'
+
       - name: Check recordings for leaked secrets
         if: always()
         run: |

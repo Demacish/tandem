@@ -52,6 +52,8 @@ PHASES = (
     ("fas5.handla", os.path.join("fas5", "handla")),
     # Fas 5 (kok lane): the tin size (plan §8.1 "Pannstorlek").
     ("fas5.kok", os.path.join("fas5", "kok")),
+    # Fas 5 (kalender lane): the meal plan's iCal feed and the mealplan token (plan §7 #36).
+    ("fas5.kalender", os.path.join("fas5", "kalender")),
 )
 
 
