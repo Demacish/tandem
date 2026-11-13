@@ -166,6 +166,4 @@ class ReminderSettingsTest {
         composeRule.onNodeWithText("Save").assertIsDisplayed()
         composeRule.onNodeWithText("Cancel").assertIsDisplayed()
     }
-
-    private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertDoesNotExist() = assertDoesNotExist()
 }

@@ -126,7 +126,8 @@ class WallClockScheduleTest {
         assertFalse(ExpiryReminder.isQuiet(at("2026-11-05T06:00"), stockholm, LocalTime(6, 0)))
         assertTrue(ExpiryReminder.isQuiet(at("2026-11-05T05:59"), stockholm, LocalTime(6, 0)))
         assertFalse(ExpiryReminder.isQuiet(at("2026-11-05T21:30"), stockholm, LocalTime(21, 30)))
-        assertTrue(ExpiryReminder.isQuiet(at("2026-11-05T21:30"), stockholm, LocalTime(22, 0)))
+        assertFalse(ExpiryReminder.isQuiet(at("2026-11-05T23:59"), stockholm, LocalTime(22, 0)))
+        assertTrue(ExpiryReminder.isQuiet(at("2026-11-05T21:30"), stockholm))
         // The retry after "Tandem was on screen" is two hours later the same day, unless that is night.
         assertEquals(DailyRun(LocalDate(2026, 11, 5), LocalTime(10, 15)), ExpiryReminder.retryRun(at("2026-11-05T08:15"), stockholm))
         assertNull(ExpiryReminder.retryRun(at("2026-11-05T19:30"), stockholm))

@@ -27,8 +27,7 @@ class Phase5PlaneraSmokeTest : Phase2SmokeBase() {
 
     override fun servers(): List<FakeTandoor> = listOf(tandoor)
 
-    override fun extraReport(): List<String> =
-        listOf("--- notifications:") + device.postedNotifications().map { it.toString() }
+    override fun extraReport(): List<String> = listOf("--- notifications:") + device.postedNotifications().map { it.toString() }
 
     @Before
     fun allowNotifications() {
