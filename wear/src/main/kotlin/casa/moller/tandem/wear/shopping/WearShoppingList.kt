@@ -61,6 +61,9 @@ data class WearList(val aisles: List<WearAisle>, val checked: List<WearRow>) {
 object WearShoppingList {
     private const val PLURAL_AMOUNT = 2.0
     private const val QUANTITY_SEPARATOR = " + "
+    private const val IN_STORE = 0
+    private const val OTHER_AISLE = 1
+    private const val NO_AISLE = 2
 
     fun of(state: WearState, nowMillis: Long, locale: Locale): WearList {
         val lines = ShoppingLineFormat(locale.toNumberStyle())
@@ -72,7 +75,7 @@ object WearShoppingList {
         val walkingOrder = state.supermarket?.categoryOrder.orEmpty()
         val aisles = byAisle.entries
             .sortedWith(
-                compareBy<Map.Entry<Long?, List<WearEntry>>> { (id, _) -> if (id == null) 2 else if (id in walkingOrder) 0 else 1 }
+                compareBy<Map.Entry<Long?, List<WearEntry>>> { (id, _) -> aisleRank(id, walkingOrder) }
                     .thenBy { (id, _) -> walkingOrder.indexOf(id ?: -1L) }
                     .thenBy { (_, entries) -> entries.first().categoryName?.lowercase(locale).orEmpty() },
             )
@@ -81,6 +84,13 @@ object WearShoppingList {
             }
         val checked = rows(visible.filter { it.checked }, state, converter, lines)
         return WearList(aisles, checked)
+    }
+
+    /** The store's aisles first, then the others, the rows without an aisle last. */
+    private fun aisleRank(id: Long?, walkingOrder: List<Long>): Int = when {
+        id == null -> NO_AISLE
+        id in walkingOrder -> IN_STORE
+        else -> OTHER_AISLE
     }
 
     private fun rows(entries: List<WearEntry>, state: WearState, converter: UnitConverter, lines: ShoppingLineFormat): List<WearRow> =

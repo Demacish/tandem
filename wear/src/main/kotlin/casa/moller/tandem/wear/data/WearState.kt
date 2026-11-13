@@ -37,9 +37,11 @@ data class WearState(
     val visibleEntries: List<WearEntry>
         get() = if (pending.isEmpty()) entries else entries.map { entry -> pending[entry.id]?.let { entry.copy(checked = it) } ?: entry }
 
-    /** The store whose aisle order the list follows. */
+    /** The store whose aisle order the list follows: the chosen one, else the first with an order, else the first. */
     val supermarket: WearSupermarket?
-        get() = supermarkets.firstOrNull { it.id == supermarketId } ?: supermarkets.firstOrNull { it.categoryOrder.isNotEmpty() }
+        get() = supermarkets.firstOrNull { it.id == supermarketId }
+            ?: supermarkets.firstOrNull { it.categoryOrder.isNotEmpty() }
+            ?: supermarkets.firstOrNull()
 }
 
 /** The paired account, without its token. */

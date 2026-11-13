@@ -13,6 +13,9 @@ GitHub Releases. Repot `Demacish/tandem` är publikt, så ingen GitHub-token beh
    - *Inkludera förhandsversioner:* av.
 4. Installera. Android frågar första gången om Obtainium får installera okända appar.
 
+Releasen har också `tandem-wear-X.Y.Z.apk`, appen för klockor med Wear OS. Den matchar inte
+regexet ovan (Obtainium kan inte installera på en klocka); se [WEAR.md](WEAR.md).
+
 Taggen heter `vX.Y.Z` och appens versionsnamn `X.Y.Z`, så Obtainium känner igen installerad
 version. Releaser skapas av [`release.yml`](../.github/workflows/release.yml), se
 [RELEASE.md](RELEASE.md).

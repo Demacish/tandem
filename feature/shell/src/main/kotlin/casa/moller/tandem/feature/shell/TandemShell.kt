@@ -130,6 +130,7 @@ import casa.moller.tandem.feature.shell.navigation.ShoppingKey
 import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
 import casa.moller.tandem.feature.shell.navigation.TimerOpenRequest
 import casa.moller.tandem.feature.shell.navigation.TodayKey
+import casa.moller.tandem.feature.shell.navigation.WatchKey
 import casa.moller.tandem.feature.shell.navigation.WeekKey
 import casa.moller.tandem.feature.shell.navigation.isBookPage
 import casa.moller.tandem.feature.shell.navigation.isMorePage
@@ -146,6 +147,9 @@ import casa.moller.tandem.feature.shell.timer.TimerHudFrame
 import casa.moller.tandem.feature.shell.ui.icon
 import casa.moller.tandem.feature.shell.ui.label
 import casa.moller.tandem.feature.shell.ui.selectedIcon
+import casa.moller.tandem.feature.shell.watch.NoWatchPage
+import casa.moller.tandem.feature.shell.watch.RouteWatchPage
+import casa.moller.tandem.feature.shell.watch.WatchPage
 import casa.moller.tandem.feature.shopping.navigation.ShoppingHistoryKey
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListChoiceKey
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
@@ -242,6 +246,8 @@ fun TandemShell(
         crashNotice = crashNotice,
         onLogInAgain = onLogInAgain,
         onAddAccount = onAddAccount,
+        // Fas 5 (wear lane): Mer → Klockan with its ViewModels (tests leave the default NoWatchPage).
+        watchPage = RouteWatchPage,
     )
 }
 
@@ -330,6 +336,8 @@ internal fun ShellScaffold(
     onAddAccount: () -> Unit = {},
     // Fas 4 (push lane): Mer → Synk och lagring → Snabb push.
     fastPushPage: FastPushPage = RouteFastPushPage,
+    // Fas 5 (wear lane): Mer → Klockan. No row and no page unless the caller passes RouteWatchPage.
+    watchPage: WatchPage = NoWatchPage,
 ) {
     // The demo banner can be put away for this session; the "Demo" chip in the top bar stays.
     var demoBannerDismissed by rememberSaveable { mutableStateOf(false) }
@@ -703,6 +711,10 @@ internal fun ShellScaffold(
                     onOpenKitchen = { navigation.navigate(KitchenKey, replace = { it is KitchenKey }) },
                     selectedPage = navigation.stackOf(ShellTab.MORE).getOrNull(1),
                     crashNotice = crashNotice,
+                    // Fas 5 (wear lane, plan §7 #33): Mer → Klockan, only with a watch or a pairing.
+                    watchRow = { selected ->
+                        watchPage.MoreRow(selected = selected, onOpen = { navigation.navigate(WatchKey, replace = { it.isMorePage }) })
+                    },
                 )
             }
             // --- Phase 1b (inställningar lane): the settings sub-screens. ---
@@ -711,6 +723,10 @@ internal fun ShellScaffold(
                     onNavigateBack = { navigation.goBack() },
                     onOpenFastPush = { navigation.navigate(FastPushSettingsKey) },
                 )
+            }
+            // Fas 5 (wear lane): Mer → Klockan.
+            entry<WatchKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                watchPage.Watch(onNavigateBack = { navigation.goBack() })
             }
             // Fas 4 (push lane): the optional fast push, opened from the sync page.
             entry<FastPushSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {

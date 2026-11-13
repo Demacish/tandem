@@ -70,11 +70,7 @@ data class WatchStatusReply(
 
 /** [WatchLink.PATH_TIMERS]: the phone's cook timers as they are now (plan §8.1, §7 #33). */
 @Serializable
-data class TimerMirror(
-    val protocol: Int = WatchLink.PROTOCOL,
-    val sentAtEpochMillis: Long,
-    val timers: List<MirroredTimer> = emptyList(),
-)
+data class TimerMirror(val protocol: Int = WatchLink.PROTOCOL, val sentAtEpochMillis: Long, val timers: List<MirroredTimer> = emptyList())
 
 /**
  * One phone timer on the watch. Times are wall-clock epoch milliseconds like `CookTimer.endsAt`;

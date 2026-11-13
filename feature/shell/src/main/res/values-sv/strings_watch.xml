@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="watch_title">Klockan</string>
+    <string name="watch_more_paired">Kopplad: %s</string>
+    <string name="watch_more_ready">%s kan kopplas</string>
+    <string name="watch_more_no_app">Installera Tandem på %s</string>
+    <string name="watch_more_away">Kopplad, klockan är inte i närheten</string>
+
+    <string name="watch_intro_title">Tandem på klockan</string>
+    <string name="watch_intro_body">Klockan får en egen nyckel till Tandoor och hämtar inköpslistan själv, också när telefonen är avstängd. Bocka av på klockan; det skickas när klockan har nät. Timrar från kokläget syns på klockan också.</string>
+
+    <string name="watch_status_heading">Klockan</string>
+    <string name="watch_checking">Letar efter klockan …</string>
+    <string name="watch_unavailable">Klockor fungerar inte på den här telefonen</string>
+    <string name="watch_unavailable_body">För att hitta klockan behövs Google Play-tjänster och klockans app på telefonen (till exempel Galaxy Wearable eller Pixel Watch).</string>
+    <string name="watch_no_watch">Ingen klocka i närheten</string>
+    <string name="watch_no_watch_body">Slå på Bluetooth och håll klockan nära telefonen. Klockan behöver ha Tandem installerat.</string>
+    <string name="watch_no_app">Tandem finns inte på %s</string>
+    <string name="watch_no_app_body">Installera Tandem på klockan från en dator och kom sedan tillbaka hit. Guiden visar hur.</string>
+    <string name="watch_ready">%s hittades</string>
+    <string name="watch_ready_body">Tryck på Koppla klockan. Telefonen skapar en nyckel som bara klockan använder.</string>
+    <string name="watch_paired">Kopplad: %s</string>
+    <string name="watch_paired_body">Konto: %1$s. Klockans nyckel gäller till %2$s; telefonen förnyar den så länge de är kopplade.</string>
+    <string name="watch_other_account">Klockan hör till ett annat konto på telefonen. Koppla den igen för att använda det här kontot.</string>
+
+    <string name="watch_pair">Koppla klockan</string>
+    <string name="watch_pair_again">Koppla igen</string>
+    <string name="watch_unpair">Koppla från klockan</string>
+    <string name="watch_search_again">Leta igen</string>
+    <string name="watch_guide">Så installerar du Tandem på klockan</string>
+    <string name="watch_privacy">Nyckeln skickas bara direkt till en klocka i närheten, aldrig via molnet. Telefonens egen nyckel lämnar aldrig telefonen. När du kopplar från tas klockans nyckel bort i Tandoor.</string>
+
+    <string name="watch_demo">Inte i demoläget. Demoläget pratar aldrig med en server, så det finns ingen nyckel att ge klockan. Logga in för att koppla klockan.</string>
+    <string name="watch_guest">Gäster får bara läsa i Tandoor, så klockan skulle inte kunna bocka av något. Klockan går därför inte att koppla för en gäst. Använd klockan med ett medlemskonto.</string>
+    <string name="watch_no_account">Logga in för att koppla klockan.</string>
+
+    <string name="watch_message_paired">Klockan är kopplad. Den hämtar listan nu.</string>
+    <string name="watch_message_unpaired">Klockan är frånkopplad och dess nyckel borttagen.</string>
+    <string name="watch_message_unpaired_away">Klockans nyckel är borttagen. Klockan var inte i närheten, så den ber dig logga in igen tills du kopplar den.</string>
+    <string name="watch_message_no_watch">Ingen klocka med Tandem i närheten. Håll klockan nära telefonen och försök igen.</string>
+    <string name="watch_message_refused">Klockan tog inte emot nyckeln. Uppdatera Tandem på klockan och försök igen.</string>
+    <string name="watch_message_server">Nyckeln kunde inte skapas eller tas bort i Tandoor.</string>
+    <string name="watch_message_not_allowed">Det går inte just nu.</string>
+</resources>

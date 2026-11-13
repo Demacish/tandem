@@ -69,4 +69,5 @@ include(":feature:widgets")
 // of the watch (:core:watch: pairing, the watch token, timer mirroring) and the protocol both
 // share (:core:watchlink, pure Kotlin). docs/BYGGE.md "Klockan". ---
 include(":wear")
+include(":core:watch")
 include(":core:watchlink")

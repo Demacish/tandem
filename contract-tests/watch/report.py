@@ -54,6 +54,8 @@ PHASES = (
     ("fas5.kok", os.path.join("fas5", "kok")),
     # Fas 5 (kalender lane): the meal plan's iCal feed and the mealplan token (plan §7 #36).
     ("fas5.kalender", os.path.join("fas5", "kalender")),
+    # Fas 5 (wear lane): the Wear OS app's own token (plan §3.1, §7 #33).
+    ("fas5.wear", os.path.join("fas5", "wear")),
 )
 
 

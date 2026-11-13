@@ -421,6 +421,15 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase5PanContractTest'
 
+      # Fas 5 (wear lane, plan §3.1, §7 #33): the Wear OS app's own token: created and deleted with
+      # the phone's token, what it can read and check, refused after deletion, a token deleting
+      # itself, and a guest's answers. Creates and deletes its own tokens and entry; a step of its own.
+      - name: Contract tests (Fas 5, the watch token)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase5WearTokenContractTest'
+
       # Fas 4, komplettering 3 (plan §6.2, §8.6): the share link. `allow_sharing` is read-only in the
       # API, so a second space with sharing off is made in the database, after every other class.
       - name: Create the space without sharing

@@ -7,12 +7,7 @@ import casa.moller.tandem.wear.shopping.WearShoppingList
 import java.util.Locale
 
 /** What the tile says (plan §7 #33 "tile"): pure, so its rules are tested without a tile renderer. */
-data class TileContent(
-    val mode: Mode,
-    val toBuy: Int = 0,
-    val firstItems: List<String> = emptyList(),
-    val timer: TileTimer? = null,
-) {
+data class TileContent(val mode: Mode, val toBuy: Int = 0, val firstItems: List<String> = emptyList(), val timer: TileTimer? = null) {
     enum class Mode {
         NOT_PAIRED,
         SIGNED_OUT,
@@ -31,7 +26,9 @@ object ShoppingTile {
         val timer = timer(state.timers)
         return when {
             state.account == null -> TileContent(TileContent.Mode.NOT_PAIRED, timer = timer)
+
             state.signedOut -> TileContent(TileContent.Mode.SIGNED_OUT, timer = timer)
+
             else -> {
                 val list = WearShoppingList.of(state, nowMillis, locale)
                 TileContent(

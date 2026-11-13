@@ -6,6 +6,16 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**På språng: klockan**
+
+- **Tandem på klockan (Wear OS 5 och senare, t.ex. Galaxy Watch 4 och nyare):** inköpslistan i
+  butikens ordning att bocka av på klockan, också med telefonen avstängd. Klockan får en egen nyckel
+  till Tandoor (Mer → Klockan → Koppla klockan, gäller i 90 dagar och förnyas av telefonen) och
+  hämtar listan själv; avbockningar utan nät väntar på klockan och skickas när den har nät. Telefonens
+  timrar syns på klockan, och Stoppa på klockan stoppar larmet på telefonen. En ruta visar vad som
+  är kvar att köpa. Klockappen installeras från en dator, se [docs/WEAR.md](docs/WEAR.md); den
+  ligger som `tandem-wear-X.Y.Z.apk` i releasen. Koppla från klockan tar bort nyckeln i Tandoor.
+
 **Laga i köket**
 
 - **Inköpslistan i den form du valt:** "Lägg på inköpslistan" från receptet eller kokläget lägger nu

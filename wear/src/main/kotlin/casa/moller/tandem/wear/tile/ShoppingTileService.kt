@@ -72,7 +72,9 @@ internal object TileLayout {
             .addContent(spacer(4f))
         when (content.mode) {
             TileContent.Mode.NOT_PAIRED -> column.addContent(text(context.getString(R.string.tile_not_paired), 14f, ON_SURFACE, lines = 3))
+
             TileContent.Mode.SIGNED_OUT -> column.addContent(text(context.getString(R.string.tile_signed_out), 14f, ON_SURFACE, lines = 3))
+
             TileContent.Mode.LIST ->
                 if (content.toBuy == 0) {
                     column.addContent(text(context.getString(R.string.tile_empty), 16f, ON_SURFACE))

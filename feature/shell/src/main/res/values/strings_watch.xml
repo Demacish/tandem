@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (wear lane, plan §7 #33): Mer → Watch (Tandem on a Wear OS watch). -->
+<resources>
+    <string name="watch_title">Watch</string>
+    <string name="watch_more_paired">Paired: %s</string>
+    <string name="watch_more_ready">%s can be paired</string>
+    <string name="watch_more_no_app">Install Tandem on %s</string>
+    <string name="watch_more_away">Paired, the watch is not nearby</string>
+
+    <string name="watch_intro_title">Tandem on your watch</string>
+    <string name="watch_intro_body">The watch gets its own key to Tandoor and fetches the shopping list itself, also when the phone is switched off. Check items off on the watch; they are sent when the watch has a network. Timers from cook mode show on the watch too.</string>
+
+    <string name="watch_status_heading">Watch</string>
+    <string name="watch_checking">Looking for the watch…</string>
+    <string name="watch_unavailable">Watches are not supported on this phone</string>
+    <string name="watch_unavailable_body">Finding a watch needs Google Play services and the watch\'s phone app (for example Galaxy Wearable or Pixel Watch).</string>
+    <string name="watch_no_watch">No watch nearby</string>
+    <string name="watch_no_watch_body">Turn on Bluetooth and keep the watch close to the phone. The watch needs Tandem installed.</string>
+    <string name="watch_no_app">Tandem is not on %s</string>
+    <string name="watch_no_app_body">Install Tandem on the watch from a computer, then come back here. The guide explains how.</string>
+    <string name="watch_ready">%s found</string>
+    <string name="watch_ready_body">Tap Pair the watch. The phone creates a key just for the watch.</string>
+    <string name="watch_paired">Paired: %s</string>
+    <string name="watch_paired_body">Account: %1$s. The watch\'s key is valid until %2$s; the phone renews it while they are paired.</string>
+    <string name="watch_other_account">The watch belongs to another account on this phone. Pair it again to use this account.</string>
+
+    <string name="watch_pair">Pair the watch</string>
+    <string name="watch_pair_again">Pair again</string>
+    <string name="watch_unpair">Unpair the watch</string>
+    <string name="watch_search_again">Look again</string>
+    <string name="watch_guide">How to install Tandem on the watch</string>
+    <string name="watch_privacy">The key is only sent straight to a watch nearby, never through the cloud. The phone\'s own key never leaves the phone. Unpairing deletes the watch\'s key in Tandoor.</string>
+
+    <string name="watch_demo">Not in demo mode. Demo mode never talks to a server, so there is no key for a watch. Log in to pair the watch.</string>
+    <string name="watch_guest">Guests may only read in Tandoor, so the watch could not check anything off. The watch cannot be paired for a guest. Use the watch with a member account.</string>
+    <string name="watch_no_account">Log in to pair the watch.</string>
+
+    <string name="watch_message_paired">The watch is paired. It fetches the list now.</string>
+    <string name="watch_message_unpaired">The watch is unpaired and its key is deleted.</string>
+    <string name="watch_message_unpaired_away">The watch\'s key is deleted. The watch was not nearby, so it asks to log in again until you pair it.</string>
+    <string name="watch_message_no_watch">No watch with Tandem nearby. Keep the watch close to the phone and try again.</string>
+    <string name="watch_message_refused">The watch did not take the key. Update Tandem on the watch and try again.</string>
+    <string name="watch_message_server">The key could not be created or deleted in Tandoor.</string>
+    <string name="watch_message_not_allowed">That is not possible right now.</string>
+</resources>

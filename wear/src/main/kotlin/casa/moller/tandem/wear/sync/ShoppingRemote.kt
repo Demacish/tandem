@@ -46,6 +46,7 @@ class TandoorShoppingRemote(private val api: TandoorApi) : ShoppingRemote {
         }
         return when (read) {
             is Outcome.Failure -> read
+
             is Outcome.Success ->
                 if (read.value.complete) {
                     Outcome.Success(read.value.items.mapNotNull(::toEntry))

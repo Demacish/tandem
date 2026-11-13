@@ -66,6 +66,11 @@ class WearViewModel(
         uiState(stored, now, allowed)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), WearUiState())
 
+    init {
+        // The store publishes its state once it is read.
+        viewModelScope.launch { store.load() }
+    }
+
     /** The screen came to the front: fresh list and timers. */
     fun onStart() {
         notifications.value = notificationsAllowed()

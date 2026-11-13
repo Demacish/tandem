@@ -29,6 +29,8 @@ Vad som kommer härnäst: [docs/ROADMAP.md](docs/ROADMAP.md). Vad som ändrats: 
 Tandem släpps som signerad APK under [Releases](https://github.com/Demacish/tandem/releases).
 Enklast är att installera och uppdatera den med [Obtainium](https://github.com/ImranR98/Obtainium),
 se [docs/OBTAINIUM.md](docs/OBTAINIUM.md). Du behöver en egen Tandoor-server (2.6 eller senare).
+Appen för klockor med Wear OS (inköpslistan, timrarna och en ruta) installeras från en dator,
+se [docs/WEAR.md](docs/WEAR.md).
 Vill du bara titta finns ett demoläge med exempelrecept, utan server.
 
 ## Teknik

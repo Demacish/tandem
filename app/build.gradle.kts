@@ -190,6 +190,9 @@ dependencies {
     // Fas 3 (widgets lane): the widgets' receivers, the tile and the updater.
     implementation(projects.feature.widgets)
     implementation(projects.core.ai)
+    // --- wear lane (Fas 5): the phone's side of Tandem on a Wear OS watch (WatchRepository, the
+    // timer mirror, the Data Layer listener). The watch app itself is :wear. ---
+    implementation(projects.core.watch)
     // --- sync lane (Phase 1): WorkManager runs core:sync's @HiltWorker workers through the
     // HiltWorkerFactory that TandemApplication provides (Configuration.Provider). ---
     implementation(libs.androidx.work.runtime)

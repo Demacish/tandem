@@ -53,6 +53,8 @@ internal val NavKey.isMorePage: Boolean
         FastPushSettingsKey,
         // Fas 5 (kalender lane): Inställningar → Matsedeln i kalendern (feature:mealplan).
         MealCalendarKey,
+        // Fas 5 (wear lane): Mer → Klockan.
+        WatchKey,
         -> true
 
         else -> false

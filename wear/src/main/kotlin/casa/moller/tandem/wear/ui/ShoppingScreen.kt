@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumnDefaults
 import androidx.wear.compose.foundation.lazy.ScalingLazyListScope
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -65,7 +66,15 @@ fun ShoppingScreen(
     val listState = rememberScalingLazyListState(initialCenterItemIndex = 0)
     AppScaffold(modifier = modifier, timeText = { if (showTime) TimeText() }) {
         ScreenScaffold(scrollState = listState) { contentPadding ->
-            ScalingLazyColumn(state = listState, contentPadding = contentPadding, modifier = Modifier.fillMaxSize()) {
+            ScalingLazyColumn(
+                state = listState,
+                contentPadding = contentPadding,
+                modifier = Modifier.fillMaxSize(),
+                // Rows never shrink or fade at the edges: every row stays 48 dp and readable (ATF).
+                scalingParams = ScalingLazyColumnDefaults.scalingParams(edgeScale = 1f, edgeAlpha = 1f),
+                // The list starts at the top (the title), not with its first row in the middle.
+                autoCentering = null,
+            ) {
                 item(key = "title") {
                     ListHeader(modifier = Modifier.semantics { heading() }) { Text(stringResource(R.string.shopping_title)) }
                 }
@@ -234,12 +243,11 @@ private fun TimerItem(timer: MirroredTimer, nowMillis: Long, onAction: (WearActi
 private fun Status(state: WearUiState) {
     val context = LocalContext.current
     val time = { millis: Long -> DateFormat.getTimeFormat(context).format(Date(millis)) }
+    val retryAt = state.retryAtMillis
     val text = when {
         state.problem == WearProblem.OFFLINE -> stringResource(R.string.shopping_offline)
-        state.problem == WearProblem.THROTTLED && state.retryAtMillis != null ->
-            stringResource(R.string.shopping_throttled, time(state.retryAtMillis))
-        state.problem == WearProblem.SERVER && state.retryAtMillis != null ->
-            stringResource(R.string.shopping_paused, time(state.retryAtMillis))
+        state.problem == WearProblem.THROTTLED && retryAt != null -> stringResource(R.string.shopping_throttled, time(retryAt))
+        state.problem == WearProblem.SERVER && retryAt != null -> stringResource(R.string.shopping_paused, time(retryAt))
         state.pending > 0 -> pluralStringResource(R.plurals.shopping_pending, state.pending, state.pending)
         state.lastSyncMillis != null -> stringResource(R.string.shopping_updated, time(state.lastSyncMillis))
         else -> null

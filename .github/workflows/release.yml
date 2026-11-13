@@ -1,7 +1,8 @@
 name: Release
 
 # Tag v* -> signed sideload release APK (R8), apksigner verify, GitHub Release with the Swedish
-# CHANGELOG.md section, the APK, the R8 mapping and SHA256SUMS.
+# CHANGELOG.md section, the APK, the R8 mapping and SHA256SUMS. Fas 5 (wear lane): also the Wear
+# OS APK tandem-wear-<version>.apk (same key, checked) and its mapping.
 # Dry run (workflow_dispatch, default, or a push to a lane branch that touches the build or R8
 # configuration): the same build + sign + verify path with a THROWAWAY key made exactly like the
 # real one. The APK gets the package casa.moller.tandem.dryrun and a DRYRUN file name, it is kept
@@ -221,7 +222,8 @@ jobs:
           work="$(mktemp -d)"
           trap 'rm -rf "$keystore" "$work"' EXIT
           gradle_args=()
-          tasks=(:app:assembleSideloadRelease :app:bundlePlayRelease)
+          # Fas 5 (wear lane): the Wear OS app, same key and package (docs/WEAR.md).
+          tasks=(:app:assembleSideloadRelease :app:bundlePlayRelease :wear:assembleRelease)
           if [ "$DRY_RUN" = "true" ]; then
             echo "::group::Throwaway PKCS12 keystore (dry run)"
             password="$(openssl rand -hex 32)"
@@ -241,7 +243,7 @@ jobs:
             # never be mistaken for, or block updates of, a real release.
             gradle_args+=(-Ptandem.dryRun=true)
             # Lane pushes check the sideload R8 build; a manual dry run builds both like a release.
-            [ "$EVENT" = "workflow_dispatch" ] || tasks=(:app:assembleSideloadRelease)
+            [ "$EVENT" = "workflow_dispatch" ] || tasks=(:app:assembleSideloadRelease :wear:assembleRelease)
             echo "::endgroup::"
           fi
           printf '%s' "$SECRET_KEYSTORE_BASE64" | base64 --decode > "$keystore" \
@@ -299,10 +301,30 @@ jobs:
           mapping="tandem-${VERSION}-sideload-mapping.txt"
           cp "$apk" "dist/${name}"
           cp app/build/outputs/mapping/sideloadRelease/mapping.txt "dist/${mapping}"
-          (cd dist && sha256sum "$name" "$mapping" > SHA256SUMS)
+          # --- Fas 5 (wear lane): the Wear OS app, signed with the same key (the Data Layer needs
+          # the same package and signature; installed with adb, docs/WEAR.md). ---
+          wear_apk=wear/build/outputs/apk/release/wear-release.apk
+          [ -f "$wear_apk" ] || { echo "::error::Signed Wear OS APK not found"; ls -la wear/build/outputs/apk/release/ || true; exit 1; }
+          "$build_tools/apksigner" verify --verbose --print-certs --min-sdk-version 34 "$wear_apk" | tee apksigner-wear.txt
+          grep -qx "Verifies" apksigner-wear.txt || { echo "::error::apksigner did not verify the Wear OS APK"; exit 1; }
+          wear_fingerprint="$(sed -n 's/^.*Signer.*: certificate SHA-256 digest: //p' apksigner-wear.txt | head -n 1)"
+          if [ "$(normalize "$wear_fingerprint")" != "$(normalize "$fingerprint")" ]; then
+            echo "::error title=Different watch key::The Wear OS APK is not signed with the phone app's key; the watch could never pair."
+            exit 1
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            wear_name="tandem-wear-${VERSION}-DRYRUN-throwaway-key.apk"
+          else
+            wear_name="tandem-wear-${VERSION}.apk"
+          fi
+          wear_mapping="tandem-wear-${VERSION}-mapping.txt"
+          cp "$wear_apk" "dist/${wear_name}"
+          cp wear/build/outputs/mapping/release/mapping.txt "dist/${wear_mapping}"
+          (cd dist && sha256sum "$name" "$mapping" "$wear_name" "$wear_mapping" > SHA256SUMS)
           {
             echo "### Signed APK"
             echo "- \`${name}\`"
+            echo "- \`${wear_name}\` (Wear OS, same key)"
             echo "- Certificate SHA-256: \`${fingerprint}\`$([ "$DRY_RUN" = true ] && echo ' (throwaway dry-run key, package casa.moller.tandem.dryrun)')"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -356,6 +378,8 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             "$dist/tandem-${VERSION}-sideload.apk" \
             "$dist/tandem-${VERSION}-sideload-mapping.txt" \
+            "$dist/tandem-wear-${VERSION}.apk" \
+            "$dist/tandem-wear-${VERSION}-mapping.txt" \
             "$dist/SHA256SUMS" \
             -R "$GITHUB_REPOSITORY" --verify-tag --title "Tandem ${VERSION}" \
             --notes-file "$dist/release-notes.md"

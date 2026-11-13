@@ -84,7 +84,8 @@ jobs:
         # ciLint = ktlint, detekt, checkModuleGraph and Android Lint; ciTest = unit tests plus the
         # Roborazzi screenshots (recorded, or verified when tandem.screenshots.verify=true);
         # :build-logic:convention:test = the module graph rules' own tests.
-        run: ./gradlew --stacktrace --continue ciLint ciTest :app:assembleSideloadDebug :build-logic:convention:test
+        # Fas 5 (wear lane): :wear:assembleDebug packages the Wear OS app (same debug key as the phone).
+        run: ./gradlew --stacktrace --continue ciLint ciTest :app:assembleSideloadDebug :wear:assembleDebug :build-logic:convention:test
 
       # --- Phase 1 (grund lane): Room schemas (tandem.android.room, docs/BYGGE.md "Room") ---
       # The build above exports core/database/schemas/<database>/<version>.json. A new or changed
@@ -160,4 +161,15 @@ jobs:
           path: app/build/outputs/apk/sideload/debug/*.apk
           if-no-files-found: error
           # Signed with the committed debug key (app/debug.p12), so it installs over older ones.
+          retention-days: ${{ github.ref == 'refs/heads/main' && 7 || 3 }}
+
+      # Fas 5 (wear lane): the Wear OS debug APK (casa.moller.tandem.dev, the public debug key), so a
+      # debug watch app pairs with the debug phone app above (docs/WEAR.md, adb install).
+      - name: Upload Wear OS debug APK
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tandem-wear-debug
+          path: wear/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
           retention-days: ${{ github.ref == 'refs/heads/main' && 7 || 3 }}

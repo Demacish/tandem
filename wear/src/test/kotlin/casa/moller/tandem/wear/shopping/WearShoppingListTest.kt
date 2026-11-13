@@ -68,7 +68,7 @@ class WearShoppingListTest {
         val list = WearShoppingList.of(stored, 0L, sv)
 
         assertTrue(list.aisles.isEmpty())
-        assertEquals(listOf("limpa", "mjölk"), list.checked.map { it.food })
+        assertEquals("in list order", listOf("mjölk", "limpa"), list.checked.map { it.food })
         assertTrue(list.checked.first { it.food == "mjölk" }.pending)
         assertFalse(list.checked.first { it.food == "limpa" }.pending)
     }

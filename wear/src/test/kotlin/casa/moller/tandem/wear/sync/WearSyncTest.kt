@@ -64,9 +64,10 @@ class WearSyncTest {
         assertEquals(WearProblem.OFFLINE, store.load().guard.problem)
         assertTrue(tandoor.bulkCalls.isEmpty())
 
-        // Network again (WorkManager runs the job): one bulk call, the outbox is empty.
+        // Network again (WorkManager runs the job): one bulk call, the outbox is empty (the list
+        // was read a moment ago, so it is not read again).
         tandoor.offline = false
-        assertEquals(WearSync.Result.Done, sync.sync())
+        assertEquals(WearSync.Result.Fresh, sync.sync())
         assertEquals(listOf(listOf(1L) to true), tandoor.bulkCalls)
         assertTrue(tandoor.entries.first { it.id == 1L }.checked)
         assertTrue(store.load().pending.isEmpty())

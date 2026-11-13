@@ -86,6 +86,7 @@ import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
 import casa.moller.tandem.feature.shell.navigation.LanguageKey
 import casa.moller.tandem.feature.shell.navigation.PermissionsKey
 import casa.moller.tandem.feature.shell.navigation.SyncSettingsKey
+import casa.moller.tandem.feature.shell.navigation.WatchKey
 import casa.moller.tandem.feature.shell.settings.label
 import casa.moller.tandem.feature.shell.ui.GroupDivider
 import casa.moller.tandem.feature.shell.ui.SectionHeader
@@ -116,6 +117,8 @@ internal fun MoreScreen(
     selectedPage: NavKey? = null,
     crashNotice: @Composable () -> Unit = {},
     onOpenKitchen: (() -> Unit)? = null,
+    // Fas 5 (wear lane): Mer → Klockan (the row draws itself only with a watch or a pairing).
+    watchRow: @Composable (selected: Boolean) -> Unit = {},
 ) {
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
     val spacing = TandemTheme.spacing
@@ -192,6 +195,9 @@ internal fun MoreScreen(
                             )
                         }
                     }
+
+                    // Fas 5 (wear lane, plan §7 #33): Mer → Klockan.
+                    watchRow(selectedPage == WatchKey)
 
                     // Phase 2 (books lane): Mer → Receptböcker (plan 6.1 "Mer: Böcker").
                     SettingsGroup {
