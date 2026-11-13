@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (integration, plan §8.1 #32): handsfree on Mer → Kokläge och timers, the same setting as cook mode's Handsfree sheet. -->
+<resources>
+    <string name="settings_handsfree">Handsfree</string>
+    <string name="settings_handsfree_enabled">Handsfree in cook mode</string>
+    <string name="settings_handsfree_enabled_body">The volume keys turn the steps: down for the next step, up for the previous one. Also under the Handsfree button in cook mode.</string>
+    <string name="settings_handsfree_voice">Voice commands</string>
+    <string name="settings_handsfree_voice_body">Say “next”, “back” or “repeat” while cook mode is shown. The phone recognises your voice by itself: no sound leaves your kitchen.</string>
+    <string name="settings_handsfree_read">Read every step aloud</string>
+    <string name="settings_handsfree_read_body">The phone reads a step when you turn to it.</string>
+</resources>

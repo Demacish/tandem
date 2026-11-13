@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.SyncReason
@@ -222,6 +223,30 @@ class SettingsViewModelTest {
         vm.onAction(SettingsAction.SetMealReminderTime(LocalTime(21, 0)))
         assertEquals(SettingsEffect.Message(R.string.shell_settings_not_saved), effects.last())
         assertEquals(LocalTime(20, 30), state.value.mealReminderTime)
+    }
+
+    @Test
+    fun handsfreeIsTheSameSettingAsCookModesSheet() = runTest {
+        // Fas 5 (integration): Mer → Kokläge och timers writes AppSettings.handsfree, which cook mode reads.
+        val vm = newViewModel()
+        val state = collecting(vm.cooking)
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.effect.collect { effects += it } }
+        assertEquals(HandsfreeSettings(), state.value.handsfree)
+
+        vm.onAction(SettingsAction.SetHandsfree(HandsfreeSettings(enabled = true, voice = true)))
+        assertEquals(HandsfreeSettings(enabled = true, voice = true), settings.state.value.handsfree)
+        assertEquals(HandsfreeSettings(enabled = true, voice = true), state.value.handsfree)
+        assertEquals("the route asks for the microphone, not the ViewModel", emptyList<SettingsEffect>(), effects)
+
+        // Changed in cook mode's sheet: the page shows it.
+        settings.state.value = settings.state.value.copy(handsfree = HandsfreeSettings(enabled = true, readSteps = true))
+        assertEquals(HandsfreeSettings(enabled = true, readSteps = true), state.value.handsfree)
+
+        settings.failWrites = true
+        vm.onAction(SettingsAction.SetHandsfree(HandsfreeSettings()))
+        assertEquals(SettingsEffect.Message(R.string.shell_settings_not_saved), effects.last())
+        assertEquals(HandsfreeSettings(enabled = true, readSteps = true), state.value.handsfree)
     }
 
     @Test

@@ -6,6 +6,7 @@ import casa.moller.tandem.core.model.diagnostics.LogExport
 import casa.moller.tandem.core.model.preferences.UserPreferences
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.CookTextScale
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
 import casa.moller.tandem.core.model.sync.ForegroundPolling
@@ -31,6 +32,8 @@ data class AppearanceUiState(
 data class CookingUiState(
     val timerMode: TimerMode = TimerMode.IN_APP,
     val capabilities: TimerCapabilities = TimerCapabilities.AllGranted,
+    // Fas 5 (integration): cook mode's handsfree (plan §8.1 #32), the same setting as its sheet.
+    val handsfree: HandsfreeSettings = HandsfreeSettings(),
 ) {
     /** The clock app can be chosen (or is chosen already, so it can be changed back). */
     val clockAppSelectable: Boolean
@@ -124,6 +127,9 @@ sealed interface SettingsAction {
     data class SetCookModeAlwaysDark(val enabled: Boolean) : SettingsAction
 
     data class SetTimerMode(val mode: TimerMode) : SettingsAction
+
+    /** Fas 5 (integration): cook mode's handsfree; the route asks for the microphone when the voice is switched on. */
+    data class SetHandsfree(val handsfree: HandsfreeSettings) : SettingsAction
 
     data class SetSyncInterval(val interval: SyncInterval) : SettingsAction
 

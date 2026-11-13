@@ -14,8 +14,10 @@ import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.TandemButtonSize
 import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
+import casa.moller.tandem.core.designsystem.icon.Mic
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.ui.GroupDivider
@@ -25,7 +27,8 @@ import casa.moller.tandem.feature.shell.ui.SettingsRow
 /**
  * Mer → Kokläge och timers (plan 6.2 "Beteende: timer i appen eller i klockappen"): where timers
  * run, a warning when the system would let them ring late or silently (with the way to the
- * permissions overview), and a link to cook mode's look under Appearance.
+ * permissions overview), handsfree (Fas 5, plan §8.1 #32: the same setting as cook mode's sheet)
+ * and a link to cook mode's look under Appearance.
  */
 @Composable
 internal fun CookingSettingsScreen(
@@ -99,6 +102,8 @@ internal fun CookingSettingsScreen(
             )
         }
 
+        HandsfreeGroup(handsfree = state.handsfree, onChange = { onAction(SettingsAction.SetHandsfree(it)) })
+
         SettingsGroup {
             SettingsRow(
                 icon = TandemIcons.Shield,
@@ -116,5 +121,39 @@ internal fun CookingSettingsScreen(
                 onClick = onOpenAppearance,
             )
         }
+    }
+}
+
+/**
+ * Fas 5 (integration): cook mode's handsfree (plan §8.1 #32), the same [HandsfreeSettings] as the
+ * Handsfree sheet in cook mode. Voice and read-aloud need the main switch, as in the sheet; the
+ * route asks for the microphone when the voice is switched on.
+ */
+@Composable
+private fun HandsfreeGroup(handsfree: HandsfreeSettings, onChange: (HandsfreeSettings) -> Unit) {
+    SettingsGroup {
+        GroupHeading(text = stringResource(R.string.settings_handsfree), icon = TandemIcons.Mic)
+        SwitchRow(
+            title = stringResource(R.string.settings_handsfree_enabled),
+            body = stringResource(R.string.settings_handsfree_enabled_body),
+            checked = handsfree.enabled,
+            onCheckedChange = { onChange(handsfree.copy(enabled = it)) },
+        )
+        GroupDivider()
+        SwitchRow(
+            title = stringResource(R.string.settings_handsfree_voice),
+            body = stringResource(R.string.settings_handsfree_voice_body),
+            checked = handsfree.voice,
+            enabled = handsfree.enabled,
+            onCheckedChange = { onChange(handsfree.copy(voice = it)) },
+        )
+        GroupDivider()
+        SwitchRow(
+            title = stringResource(R.string.settings_handsfree_read),
+            body = stringResource(R.string.settings_handsfree_read_body),
+            checked = handsfree.readSteps,
+            enabled = handsfree.enabled,
+            onCheckedChange = { onChange(handsfree.copy(readSteps = it)) },
+        )
     }
 }

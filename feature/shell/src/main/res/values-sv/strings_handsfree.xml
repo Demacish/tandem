@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (integration, plan §8.1 #32): handsfree på Mer → Kokläge och timers, samma inställning som kokläget. -->
+<resources>
+    <string name="settings_handsfree">Handsfree</string>
+    <string name="settings_handsfree_enabled">Handsfree i kokläget</string>
+    <string name="settings_handsfree_enabled_body">Volymknapparna byter steg: ned för nästa, upp för föregående. Finns också under knappen Handsfree i kokläget.</string>
+    <string name="settings_handsfree_voice">Röstkommandon</string>
+    <string name="settings_handsfree_voice_body">Säg ”nästa”, ”tillbaka” eller ”upprepa” medan kokläget visas. Telefonen känner igen rösten själv: inget ljud lämnar köket.</string>
+    <string name="settings_handsfree_read">Läs upp varje steg</string>
+    <string name="settings_handsfree_read_body">Telefonen läser steget när du byter till det.</string>
+</resources>

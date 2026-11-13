@@ -108,7 +108,7 @@ class SettingsViewModel internal constructor(
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, AppearanceUiState())
 
     val cooking: StateFlow<CookingUiState> = combine(settings, timers.capabilities) { current, capabilities ->
-        CookingUiState(timerMode = current.timerMode, capabilities = capabilities)
+        CookingUiState(timerMode = current.timerMode, capabilities = capabilities, handsfree = current.handsfree)
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, CookingUiState())
 
     val sync: StateFlow<SyncSettingsUiState> = combine(
@@ -175,6 +175,8 @@ class SettingsViewModel internal constructor(
             is SettingsAction.SetCookModeAlwaysDark -> save { settingsRepository.setCookModeAlwaysDark(action.enabled) }
 
             is SettingsAction.SetTimerMode -> save { settingsRepository.setTimerMode(action.mode) }
+
+            is SettingsAction.SetHandsfree -> save { settingsRepository.setHandsfree(action.handsfree) }
 
             is SettingsAction.SetSyncInterval -> save { settingsRepository.setSyncInterval(action.interval) }
 

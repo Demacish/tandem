@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -78,9 +79,18 @@ internal object RouteSettingsPages : SettingsPages {
             viewModel.onAction(SettingsAction.RefreshPermissions(batteryUnrestricted = null))
             onPauseOrDispose { }
         }
+        // Fas 5 (integration, plan §8.1): the microphone is asked for in context, when the voice is
+        // switched on; cook mode asks again ("Tillåt") if it is still missing there.
+        val context = LocalContext.current
+        val microphoneLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
         CookingSettingsScreen(
             state = state,
-            onAction = viewModel::onAction,
+            onAction = { action ->
+                viewModel.onAction(action)
+                if (turnsVoiceOn(action, state) && !context.hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                    microphoneLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
             onNavigateBack = onNavigateBack,
             onOpenPermissions = onOpenPermissions,
             onOpenAppearance = onOpenAppearance,
@@ -182,3 +192,9 @@ private fun shareLog(context: Context, export: LogExport) {
         // No app can receive text: nothing to do (the screen stays as it was).
     }
 }
+
+/** Fas 5 (integration): [action] switches handsfree's voice on (it was off). */
+private fun turnsVoiceOn(action: SettingsAction, state: CookingUiState): Boolean =
+    action is SettingsAction.SetHandsfree && action.handsfree.voice && !state.handsfree.voice
+
+private fun Context.hasPermission(permission: String): Boolean = checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
