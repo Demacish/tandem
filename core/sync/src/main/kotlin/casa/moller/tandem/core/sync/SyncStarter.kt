@@ -16,6 +16,7 @@ import casa.moller.tandem.core.sync.account.AccountMirror
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.calendar.MealCalendarSchedule
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.engine.SyncKeys
 import casa.moller.tandem.core.sync.guard.SyncGuard
@@ -86,6 +87,8 @@ class SyncStarter @Inject internal constructor(
     private val fastPush: DefaultFastPushRepository,
     // Fas 4 (integration): a list or pantry notification does not outlive the account on this phone.
     private val accountNotifications: AccountNotificationCleanup,
+    // Fas 5 (kalender lane): "Matsedeln i kalendern" follows the plan, the account and its options.
+    private val mealCalendar: MealCalendarSchedule,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -122,6 +125,7 @@ class SyncStarter @Inject internal constructor(
         mealReminders.start()
         fastPush.start()
         accountNotifications.start()
+        mealCalendar.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

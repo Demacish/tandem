@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kalender lane, plan §7 #36): the local calendar "Visa i telefonens kalender" writes into. -->
+<resources>
+    <!-- The calendar's name in the phone's calendar apps. -->
+    <string name="meal_calendar_name">Tandem – meal plan</string>
+</resources>

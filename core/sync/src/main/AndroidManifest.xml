@@ -11,6 +11,13 @@
     -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!--
+        Fas 5 (kalender lane, plan §7 #36): "Visa i telefonens kalender" writes the meal plan into a
+        local calendar of its own. Asked in context when the user turns it on, never at start.
+    -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+
     <application>
         <!--
             Fas 4 (push lane): the optional fast push (docs/PUSH.md). The UnifiedPush connector
