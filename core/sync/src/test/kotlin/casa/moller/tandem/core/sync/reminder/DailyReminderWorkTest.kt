@@ -59,8 +59,8 @@ class DailyReminderWorkTest {
         runBlocking { scheduler.ensure(DailyReminderKind.MEAL, evening) }
         val first = pending()
         assertEquals(WorkInfo.State.ENQUEUED, first.state)
-        assertEquals(at("2026-11-13T19:00"), DailyRunInput.plannedAt(first.inputData))
-        assertEquals(DailyRun(LocalDate(2026, 11, 13), evening), DailyRunInput.runOf(first.inputData))
+        assertEquals(at("2026-11-13T19:00"), DailyRunInput.plannedOf(first.tags)?.at)
+        assertEquals(DailyRun(LocalDate(2026, 11, 13), evening), DailyRunInput.plannedOf(first.tags)?.run)
         assertTrue(DailyReminderKind.MEAL.tag in first.tags)
         assertTrue(MealReminderWorker::class.java.name in first.tags)
 
@@ -77,14 +77,14 @@ class DailyReminderWorkTest {
         runBlocking { scheduler.ensure(DailyReminderKind.MEAL, LocalTime(20, 30)) }
         val second = pending()
         assertNotEquals(first, second.id)
-        assertEquals(at("2026-11-13T20:30"), DailyRunInput.plannedAt(second.inputData))
+        assertEquals(at("2026-11-13T20:30"), DailyRunInput.plannedOf(second.tags)?.at)
 
         // The phone landed in New York (06:00 there): 20:30 New York time, the same evening there.
         clock.timeZone = newYork
         runBlocking { scheduler.ensure(DailyReminderKind.MEAL, LocalTime(20, 30)) }
         val third = pending()
         assertNotEquals(second.id, third.id)
-        assertEquals(at("2026-11-13T20:30", newYork), DailyRunInput.plannedAt(third.inputData))
+        assertEquals(at("2026-11-13T20:30", newYork), DailyRunInput.plannedOf(third.tags)?.at)
     }
 
     @Test

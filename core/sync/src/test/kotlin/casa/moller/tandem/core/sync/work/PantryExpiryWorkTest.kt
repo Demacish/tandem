@@ -205,7 +205,7 @@ class PantryExpiryWorkTest {
         assertTrue(legacy.all { it.state == WorkInfo.State.CANCELLED })
         val planned = manager.getWorkInfosForUniqueWork(DailyReminderKind.PANTRY_EXPIRY.workName).get().single()
         assertEquals(WorkInfo.State.ENQUEUED, planned.state)
-        assertEquals(local("2026-11-06T08:00"), DailyRunInput.plannedAt(planned.inputData))
+        assertEquals(local("2026-11-06T08:00"), DailyRunInput.plannedOf(planned.tags)?.at)
     }
 
     private fun worker(job: DailyReminderJob, scheduler: RecordingReminderScheduler, clock: ReminderClock, run: DailyRun?) =

@@ -101,7 +101,10 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
     }
 }
 
-private fun Preferences.toAppSettings(): AppSettings {
+/** Fas 5 (planera lane): the settings with the reminders' keys read on top ([readReminders]). */
+private fun Preferences.toAppSettings(): AppSettings = readReminders(baseSettings())
+
+private fun Preferences.baseSettings(): AppSettings {
     val defaults = AppSettings.Default
     return AppSettings(
         themeMode = enumOrNull(PreferencesSettingsStore.Keys.THEME_MODE, ThemeMode.entries) ?: defaults.themeMode,
@@ -124,10 +127,6 @@ private fun Preferences.toAppSettings(): AppSettings {
             ?: defaults.shoppingChangeNotifications,
         // --- Fas S (drycker lane) ---
         systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
-        // --- Fas 5 (planera lane) ---
-        pantryExpiryTime = timeOrNull(PreferencesSettingsStore.Keys.PANTRY_EXPIRY_TIME) ?: defaults.pantryExpiryTime,
-        mealReminders = this[PreferencesSettingsStore.Keys.MEAL_REMINDERS] ?: defaults.mealReminders,
-        mealReminderTime = timeOrNull(PreferencesSettingsStore.Keys.MEAL_REMINDER_TIME) ?: defaults.mealReminderTime,
         // --- Fas 4 (skafferinotis lane) ---
         pantryExpiryNotifications = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS]
             ?: defaults.pantryExpiryNotifications,
@@ -143,6 +142,13 @@ private fun Preferences.readHandsfree(defaults: HandsfreeSettings): HandsfreeSet
     enabled = this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] ?: defaults.enabled,
     voice = this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] ?: defaults.voice,
     readSteps = this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] ?: defaults.readSteps,
+)
+
+/** Fas 5 (planera lane): the daily reminders' switch and times; a missing or broken key reads as [settings]' default. */
+private fun Preferences.readReminders(settings: AppSettings): AppSettings = settings.copy(
+    pantryExpiryTime = timeOrNull(PreferencesSettingsStore.Keys.PANTRY_EXPIRY_TIME) ?: settings.pantryExpiryTime,
+    mealReminders = this[PreferencesSettingsStore.Keys.MEAL_REMINDERS] ?: settings.mealReminders,
+    mealReminderTime = timeOrNull(PreferencesSettingsStore.Keys.MEAL_REMINDER_TIME) ?: settings.mealReminderTime,
 )
 
 /** Fas 5 (planera lane): a time of day stored as minutes after midnight; null when absent or outside the day. */

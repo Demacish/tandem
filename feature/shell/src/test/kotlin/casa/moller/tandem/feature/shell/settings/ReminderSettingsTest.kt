@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
@@ -128,10 +129,11 @@ class ReminderSettingsTest {
         val pages = show(SAMPLE_SYNC_REMINDERS)
         val row = composeRule.onNodeWithTag(reminderTimeTag("evening")).performScrollTo()
         row.assert(hasClickAction())
-        row.assert(SemanticsMatcher("one node with the time and what it is for") { node ->
+        val oneNode = SemanticsMatcher("one node with the time and what it is for") { node ->
             val text = node.config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString()
             "Time" in text && "7:00" in text && "When the evening reminder comes" in text
-        })
+        }
+        row.assert(oneNode)
         row.performClick()
         composeRule.onNode(isDialog()).assertIsDisplayed()
         composeRule.onNodeWithText("Time of the evening reminder").assertIsDisplayed()

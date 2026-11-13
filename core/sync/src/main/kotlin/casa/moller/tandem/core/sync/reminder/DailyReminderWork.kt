@@ -71,19 +71,35 @@ internal object DailyRunInput {
     const val MINUTES: String = "minutes"
     const val RETRY: String = "retry"
 
-    /** The instant the run was planned for, in the zone the phone was in then (an app start compares it). */
-    const val AT: String = "at"
-
-    fun of(run: DailyRun, retry: Boolean, at: Instant? = null): Data = Data.Builder()
+    fun of(run: DailyRun, retry: Boolean): Data = Data.Builder()
         .putString(DATE, run.date.toString())
         .putInt(MINUTES, WallClockSchedule.minutesOf(run.time))
         .putBoolean(RETRY, retry)
-        .apply { if (at != null) putLong(AT, at.toEpochMilliseconds()) }
         .build()
 
-    /** The instant stored by [of], or null. */
-    fun plannedAt(data: Data): Instant? =
-        data.getLong(AT, Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE }?.let { Instant.fromEpochMilliseconds(it) }
+    /**
+     * What a planned run is, as a tag of its request (`WorkInfo` has the tags, not the input): the
+     * run, whether it is a retry, and the instant it was planned for in the zone the phone was in
+     * then, which an app start compares with the zone it finds.
+     */
+    data class Planned(val run: DailyRun, val retry: Boolean, val at: Instant)
+
+    private const val TAG_PREFIX = "tandem.reminder.run="
+
+    fun tagOf(run: DailyRun, retry: Boolean, at: Instant): String =
+        "$TAG_PREFIX${run.date}|${WallClockSchedule.minutesOf(run.time)}|$retry|${at.toEpochMilliseconds()}"
+
+    /** The [Planned] run among [tags], or null. */
+    fun plannedOf(tags: Set<String>): Planned? {
+        val parts = tags.firstOrNull { it.startsWith(TAG_PREFIX) }?.removePrefix(TAG_PREFIX)?.split('|') ?: return null
+        if (parts.size != PLANNED_PARTS) return null
+        val date = runCatching { LocalDate.parse(parts[0]) }.getOrNull() ?: return null
+        val minutes = parts[1].toIntOrNull() ?: return null
+        val at = parts[3].toLongOrNull() ?: return null
+        return Planned(DailyRun(date, WallClockSchedule.fromMinutes(minutes)), parts[2].toBoolean(), Instant.fromEpochMilliseconds(at))
+    }
+
+    private const val PLANNED_PARTS = 4
 
     fun runOf(data: Data): DailyRun? {
         val date = data.getString(DATE)?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
@@ -133,14 +149,14 @@ internal class WorkManagerDailyReminderScheduler @Inject constructor(
      * and replaced when it is an older day's.
      */
     private fun isGood(info: WorkInfo, time: LocalTime, now: Instant, zone: TimeZone): Boolean {
-        val run = DailyRunInput.runOf(info.inputData) ?: return false
+        val planned = DailyRunInput.plannedOf(info.tags) ?: return false
+        val run = planned.run
         val today = WallClockSchedule.today(now, zone)
-        val retryToday = DailyRunInput.isRetry(info.inputData) && run.date == today
+        val retryToday = planned.retry && run.date == today
         if (run.time != time && !retryToday) return false
         val at = run.at(zone)
         if (at <= now) return run.date == today
-        val plannedAt = DailyRunInput.plannedAt(info.inputData) ?: return false
-        return (plannedAt - at).absoluteValue <= WallClockSchedule.EARLY_TOLERANCE
+        return (planned.at - at).absoluteValue <= WallClockSchedule.EARLY_TOLERANCE
     }
 
     override fun plan(kind: DailyReminderKind, run: DailyRun, retry: Boolean) {
@@ -167,9 +183,10 @@ internal class WorkManagerDailyReminderScheduler @Inject constructor(
         val delay = WallClockSchedule.delayUntil(run, clock.now(), zone)
         return OneTimeWorkRequest.Builder(workerOf(kind))
             .setInitialDelay(delay.inWholeMilliseconds, TimeUnit.MILLISECONDS)
-            .setInputData(DailyRunInput.of(run, retry, run.at(zone)))
+            .setInputData(DailyRunInput.of(run, retry))
             .setConstraints(constraintsOf(kind))
             .addTag(kind.tag)
+            .addTag(DailyRunInput.tagOf(run, retry, run.at(zone)))
             .build()
     }
 

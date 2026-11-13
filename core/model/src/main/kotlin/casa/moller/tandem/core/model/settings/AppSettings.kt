@@ -84,14 +84,16 @@ data class AppSettings(
         systembolagetLink ?: languageTag.substringBefore('-').equals("sv", ignoreCase = true)
 
     companion object {
-        /** Settings of a fresh install. */
-        val Default: AppSettings = AppSettings()
+        // Fas 5 (planera lane): before [Default], which reads them while the companion is initialised.
 
         /** Fas 5 (planera lane): the morning check's time when none is chosen (Fas 4's fixed 08:00). */
         val DEFAULT_PANTRY_EXPIRY_TIME: LocalTime = LocalTime(8, 0)
 
         /** Fas 5 (planera lane): the evening reminder's time when none is chosen. */
         val DEFAULT_MEAL_REMINDER_TIME: LocalTime = LocalTime(19, 0)
+
+        /** Settings of a fresh install. */
+        val Default: AppSettings = AppSettings()
     }
 }
 

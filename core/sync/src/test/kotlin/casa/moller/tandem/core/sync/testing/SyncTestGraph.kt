@@ -117,6 +117,7 @@ internal class SyncTestGraph(
     userId: Long = 1,
 ) {
     val context: Context = ApplicationProvider.getApplicationContext()
+
     /**
      * Fas 5 (planera lane), the flaky "Database is closed": everything that runs in the background of
      * this graph (the eager status flow of DefaultSyncRepository, the mirror, the watchers) runs on

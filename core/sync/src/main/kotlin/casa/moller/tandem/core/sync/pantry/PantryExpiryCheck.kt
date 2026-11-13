@@ -110,7 +110,9 @@ internal class PantryExpiryCheck @Inject constructor(
         when {
             // Fas 5 (planera lane): the quiet hours end at the chosen morning time when it is earlier than 07:00.
             ExpiryReminder.isQuiet(now, zone, current.pantryExpiryTime) -> return@withLock PantryExpiryOutcome.QUIET
+
             visibility.isVisible() -> return@withLock PantryExpiryOutcome.VISIBLE
+
             !notifier.canPost() -> return@withLock PantryExpiryOutcome.NOT_ALLOWED
         }
         if (network.online.value) refresh(remote, now.toEpochMilliseconds())
