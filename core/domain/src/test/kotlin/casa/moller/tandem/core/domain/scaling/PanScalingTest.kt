@@ -76,6 +76,32 @@ class PanScalingTest {
         assertEquals("in", PanScaling.unit(Recipe(id = 1, name = "a", diameter = 9, diameterText = " in ")))
     }
 
+    @ParameterizedTest(name = "{0} servings × {1} = {2}")
+    @CsvSource(
+        // Tandoor's web sends servings × factor when the recipe goes on the list in another tin.
+        "4.0, 0.69, 2.76",
+        "8.0, 0.69, 5.52",
+        "3.0, 1.17, 3.51",
+        "2.5, 1.44, 3.6",
+        "1.0, 0.01, 0.01",
+        "7.0, 0.83, 5.81",
+        // The recipe's own tin, or no usable factor: the servings as they are.
+        "4.0, 1.0, 4.0",
+        "4.0, 0.0, 4.0",
+        "4.0, -1.0, 4.0",
+        "4.0, NaN, 4.0",
+    )
+    fun listServingsAreTheServingsTimesTheTin(servings: Double, factor: Double, expected: Double) {
+        assertEquals(expected, PanScaling.listServings(servings, factor))
+    }
+
+    @Test
+    fun listServingsAreRoundedToFourDecimals() {
+        // 3 × 0.83 is 2.4899999999999998 in binary; Tandoor gets 2.49.
+        assertEquals(2.49, PanScaling.listServings(3.0, 0.83))
+        assertEquals(0.3333, PanScaling.listServings(1.0 / 3.0, 0.9999999))
+    }
+
     @Test
     fun theTinMultipliesTheServingsInTheDisplay() {
         // The pasta is written for 4 servings with 400 g pasta (the recorded 2.6.13 recipe).

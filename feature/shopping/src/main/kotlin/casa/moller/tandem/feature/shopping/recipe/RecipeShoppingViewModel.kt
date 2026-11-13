@@ -11,6 +11,8 @@ import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.format.toNumberStyle
 import casa.moller.tandem.core.domain.recipe.IngredientRow
 import casa.moller.tandem.core.domain.recipe.RecipeDisplay
+import casa.moller.tandem.core.domain.recipe.ServingsText
+import casa.moller.tandem.core.domain.scaling.PanScaling
 import casa.moller.tandem.core.domain.scaling.ServingsScaling
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -73,6 +75,9 @@ data class RecipeShoppingRow(
  * @property fromPantry Fas S (hemma-ui lane): opened by "Lägg det som saknas på listan" (plan §8.8):
  *   only the foods the pantry lacks are ticked, and the others count as "Finns hemma" (in the pantry
  *   or marked at home), whatever Tandoor's `food_onhand` says.
+ * @property pan Fas 5 (plan §8.1 "Pannstorlek"): opened from a recipe or cook mode that shows the
+ *   recipe in another tin; the rows are scaled by the tin too, and "Lägg till" sends
+ *   `servings × factor` like Tandoor's web. Null in the recipe's own tin (or without one).
  */
 data class RecipeShoppingUiState(
     val loading: Boolean = true,
@@ -91,6 +96,7 @@ data class RecipeShoppingUiState(
     val removable: Int = onList,
     val adding: Boolean = false,
     val fromPantry: Boolean = false,
+    val pan: RecipeShoppingPan? = null,
 ) {
     val chosenCount: Int
         get() = toBuy.count { it.chosen } + atHome.count { it.chosen }
@@ -110,18 +116,33 @@ data class RecipeShoppingUiState(
     val canAdd: Boolean
         get() = available && !readOnly
 
+    /** What "Lägg till" sends as the list recipe's servings: the servings times the tin's factor. */
+    val listServings: Double
+        get() = PanScaling.listServings(servings, pan?.factor ?: 1.0)
+
     companion object {
         const val MIN_SERVINGS: Double = 1.0
     }
 }
+
+/**
+ * Fas 5 (plan §8.1 "Pannstorlek"): the tin the sheet scales by, "Skalat för 20 cm form (× 0,69)".
+ *
+ * @property diameter the chosen tin in the recipe's own [unit].
+ * @property factor its area factor (core:domain [PanScaling], 24 → 20 cm = 0.69), never 1.0 here.
+ * @property factorText [factor] in the UI's language ("0,69").
+ */
+data class RecipeShoppingPan(val diameter: Int, val unit: String, val factor: Double, val factorText: String)
 
 sealed interface RecipeShoppingAction {
     /**
      * "Lägg på inköpslistan": opens the sheet at the recipe detail's or cook mode's [servings].
      * Fas S (hemma-ui lane): [missingFoodIds] ticks exactly those foods ("Lägg det som saknas på
      * listan" from Kan laga nu); null = the usual choice (everything not on hand).
+     * Fas 5 (plan §8.1 "Pannstorlek"): [panSize] is the tin the recipe or cook mode shows (in the
+     * recipe's unit); null or the recipe's own tin = no tin scaling.
      */
-    data class Open(val servings: Double?, val missingFoodIds: Set<Long>? = null) : RecipeShoppingAction
+    data class Open(val servings: Double?, val missingFoodIds: Set<Long>? = null, val panSize: Int? = null) : RecipeShoppingAction
 
     data object Dismiss : RecipeShoppingAction
 
@@ -164,7 +185,9 @@ sealed interface RecipeShoppingEffect {
  * unticked. "Lägg till" creates ONE list recipe with the chosen entries ([ShoppingRepository.addRecipe]:
  * stored at once and queued, so it works offline); the list shows the recipe on each row, and
  * "Ta bort från listan" removes the recipe with its rows ([ShoppingRepository.removeListRecipe]),
- * with "Ångra" (fix-ui, [RemovedRecipeRows]). The recipe is read as stored
+ * with "Ångra" (fix-ui, [RemovedRecipeRows]). Fas 5 (plan §8.1 "Pannstorlek"): opened in another
+ * tin, the rows are scaled by the tin as well and the list recipe gets `servings × factor` (what
+ * Tandoor's web sends), so the list holds what the recipe showed. The recipe is read as stored
  * ([RecipeRepository.observeStoredRecipe]): the detail screen beside it refreshes it (fix-ui).
  * Guests see no button and every write is ignored here too (#42).
  */
@@ -195,14 +218,18 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
     private var removed: RemovedRecipeRows? = null
 
     private val choices: Flow<Choices> = combine(
-        savedStateHandle.getStateFlow(KEY_OPEN, false),
-        savedStateHandle.getStateFlow(KEY_SERVINGS, NO_SERVINGS),
-        savedStateHandle.getStateFlow(KEY_TOGGLED, LongArray(0)),
-        savedStateHandle.getStateFlow(KEY_LIST, NO_LIST),
-        savedStateHandle.getStateFlow<LongArray?>(KEY_MISSING, null),
-    ) { open, servings, toggled, list, missing ->
-        Choices(open, servings.takeIf { it > 0.0 }, toggled.toSet(), list.takeIf { it != NO_LIST }, missing?.toSet())
-    }
+        combine(
+            savedStateHandle.getStateFlow(KEY_OPEN, false),
+            savedStateHandle.getStateFlow(KEY_SERVINGS, NO_SERVINGS),
+            savedStateHandle.getStateFlow(KEY_TOGGLED, LongArray(0)),
+            savedStateHandle.getStateFlow(KEY_LIST, NO_LIST),
+            savedStateHandle.getStateFlow<LongArray?>(KEY_MISSING, null),
+        ) { open, servings, toggled, list, missing ->
+            Choices(open, servings.takeIf { it > 0.0 }, toggled.toSet(), list.takeIf { it != NO_LIST }, missing?.toSet())
+        },
+        // Fas 5 (plan §8.1 "Pannstorlek"): the tin the sheet was opened in.
+        savedStateHandle.getStateFlow(KEY_PAN, NO_PAN),
+    ) { choices, pan -> choices.copy(pan = pan.takeIf { it != NO_PAN }) }
 
     private val sources: Flow<Sources> = combine(
         recipes.observeStoredRecipe(recipeId).map { it.recipe },
@@ -224,7 +251,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
 
     fun onAction(action: RecipeShoppingAction) {
         when (action) {
-            is RecipeShoppingAction.Open -> open(action.servings, action.missingFoodIds)
+            is RecipeShoppingAction.Open -> open(action.servings, action.missingFoodIds, action.panSize)
             RecipeShoppingAction.Dismiss -> savedStateHandle[KEY_OPEN] = false
             is RecipeShoppingAction.Toggle -> toggled { it.toggle(action.id) }
             RecipeShoppingAction.SelectAll -> toggled { uiState.value.atHome.mapTo(HashSet()) { row -> row.id } }
@@ -239,11 +266,12 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         }
     }
 
-    private fun open(servings: Double?, missingFoodIds: Set<Long>?) {
+    private fun open(servings: Double?, missingFoodIds: Set<Long>?, panSize: Int?) {
         if (!uiState.value.canAdd) return
         savedStateHandle[KEY_SERVINGS] = servings?.takeIf { it > 0.0 } ?: NO_SERVINGS
         savedStateHandle[KEY_TOGGLED] = LongArray(0)
         savedStateHandle[KEY_MISSING] = missingFoodIds?.toLongArray()
+        savedStateHandle[KEY_PAN] = panSize?.takeIf { it > 0 } ?: NO_PAN
         savedStateHandle[KEY_OPEN] = true
     }
 
@@ -265,7 +293,8 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         viewModelScope.launch {
             val request = RecipeShoppingRequest(
                 recipeId = recipeId,
-                servings = state.servings,
+                // Fas 5: servings × the tin's factor, as Tandoor's web sends them.
+                servings = state.listServings,
                 ingredientIds = chosen,
                 listIds = state.listId?.let { setOf(it) }.orEmpty(),
             )
@@ -326,7 +355,8 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
             )
         }
         val servings = choices.servings ?: ServingsScaling.initialServings(recipe, null)
-        val rows = rows(recipe, servings, sources.preferences, style, choices.toggled, choices.missingFoodIds)
+        val pan = pan(recipe, choices.pan, style)
+        val rows = rows(recipe, servings, pan?.factor ?: 1.0, sources.preferences, style, choices)
         return RecipeShoppingUiState(
             loading = false,
             readOnly = readOnly,
@@ -344,23 +374,35 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
             removable = removable,
             adding = busy,
             fromPantry = choices.missingFoodIds != null,
+            pan = pan,
         )
+    }
+
+    /** Fas 5 (plan §8.1 "Pannstorlek"): the tin the sheet was opened in, null for the recipe's own. */
+    private fun pan(recipe: Recipe, chosen: Int?, style: NumberStyle): RecipeShoppingPan? {
+        if (chosen == null || !PanScaling.hasTin(recipe)) return null
+        val current = PanScaling.current(recipe, chosen)
+        val factor = PanScaling.areaFactor(recipe.diameter, current)
+        if (factor == 1.0) return null
+        return RecipeShoppingPan(current, PanScaling.unit(recipe), factor, ServingsText.number(factor, style))
     }
 
     private fun rows(
         recipe: Recipe,
         servings: Double,
+        panFactor: Double,
         preferences: UserPreferences,
         style: NumberStyle,
-        toggled: Set<Long>,
-        missingFoodIds: Set<Long>?,
+        choices: Choices,
     ): List<RecipeShoppingRow> {
+        val toggled = choices.toggled
+        val missingFoodIds = choices.missingFoodIds
         // Only ingredients with a food can become a list entry (Tandoor needs `food`).
         val foodOf = recipe.steps.flatMap { it.ingredients }
             .filter { !it.isHeader && !it.food?.name.isNullOrBlank() }
             .associate { it.id to it.food?.id?.takeIf { id -> id > 0 } }
         val withFood = foodOf.keys
-        return RecipeDisplay.build(recipe, servings, preferences, style).ingredients
+        return RecipeDisplay.build(recipe, servings, preferences, style, extraFactor = panFactor).ingredients
             .filterIsInstance<IngredientRow.Item>()
             .filter { it.id in withFood }
             .distinctBy { it.id }
@@ -389,6 +431,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         val toggled: Set<Long>,
         val listId: Long?,
         val missingFoodIds: Set<Long>? = null,
+        val pan: Int? = null,
     )
 
     private data class Sources(
@@ -406,7 +449,9 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         const val KEY_TOGGLED = "recipe-shopping-toggled"
         const val KEY_LIST = "recipe-shopping-list"
         const val KEY_MISSING = "recipe-shopping-missing"
+        const val KEY_PAN = "recipe-shopping-pan"
         const val NO_SERVINGS = -1.0
         const val NO_LIST = -1L
+        const val NO_PAN = 0
     }
 }

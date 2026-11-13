@@ -131,7 +131,8 @@ lås och target SDK 37.
   ett tryck till kokläget och timrarna stora; från Idag och Mer. Kvar: tre timmar på en riktig
   surfplatta.
 - ✅ Pannstorlek (0.7.0): skala ett recept efter formen, till exempel från 24 till 20 cm (efter ytan,
-  som Tandoors webb), i receptet och kokläget. Kvar: formens storlek följer inte med till inköpslistan.
+  som Tandoors webb), i receptet och kokläget. Efter 0.7.0: "Lägg på inköpslistan" lägger på mängderna
+  för den valda formen (portioner × formens faktor, som webben).
 - ✅ Sammanslagning i inköpslistans vy: samma vara i enheter som går att räkna om på en rad
   ("3 dl + 200 g grädde" blir "5 dl"), med Tandoors omräkningar, också offline; det som inte går att
   räkna om står kvar på samma rad. Att bocka av raden bockar av alla dess rader (0.7.0).

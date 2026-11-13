@@ -204,4 +204,112 @@ class RecipeShoppingViewModelTest {
         assertFalse(vm.uiState.value.fromPantry)
         assertTrue("smör" in vm.uiState.value.atHome.map { it.food })
     }
+
+    // Fas 5 (plan §8.1 "Pannstorlek"): the sheet opened from a recipe or cook mode in another tin.
+
+    /** The pasta baked in a 24 cm tin (only so that it has one). */
+    private fun tinViewModel(diameter: Int = 24): RecipeShoppingViewModel {
+        val tin = pasta.copy(diameter = diameter, diameterText = "cm")
+        val repository = FakeRecipeRepository(details = listOf(tin))
+        return RecipeShoppingViewModel(tin.id, SavedStateHandle(), repository, shopping, FakePreferencesRepository(), permissions)
+    }
+
+    @Test
+    fun inASmallerTinTheListGetsTheServingsTimesTheTinLikeTheWeb() = runTest {
+        val vm = tinViewModel()
+        val effects = open(vm)
+        vm.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 20))
+        val state = vm.uiState.value
+        assertTrue(state.open)
+        assertEquals("the stepper keeps the servings shown", 4.0, state.servings, 0.0)
+        assertEquals(RecipeShoppingPan(diameter = 20, unit = "cm", factor = 0.69, factorText = "0,69"), state.pan)
+        assertEquals("400 g × 0.69, as the recipe showed", "276 g", state.toBuy.first { it.id == 10111L }.amount)
+        assertEquals(2.76, state.listServings, 0.0)
+
+        vm.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        val request = RecipeShoppingRequest(pasta.id, 2.76, setOf(10111L, 10113L, 10121L, 10131L, 10132L))
+        assertEquals("Tandoor's web sends servings × factor", listOf(request), shopping.recipeRequests)
+        assertEquals(listOf<RecipeShoppingEffect>(RecipeShoppingEffect.Added(5, pasta.name)), effects)
+    }
+
+    @Test
+    fun theStepperChangesTheServingsAndTheTinStays() = runTest {
+        val vm = tinViewModel()
+        open(vm)
+        vm.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 20))
+        vm.onAction(RecipeShoppingAction.IncreaseServings)
+        vm.onAction(RecipeShoppingAction.IncreaseServings)
+        vm.onAction(RecipeShoppingAction.IncreaseServings)
+        vm.onAction(RecipeShoppingAction.IncreaseServings)
+        assertEquals(8.0, vm.uiState.value.servings, 0.0)
+        assertEquals("552 g", vm.uiState.value.toBuy.first { it.id == 10111L }.amount)
+        vm.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(5.52, shopping.recipeRequests.single().servings, 0.0)
+    }
+
+    @Test
+    fun aLargerTinScalesUp() = runTest {
+        val vm = tinViewModel(diameter = 20)
+        open(vm)
+        vm.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 24))
+        assertEquals(1.44, vm.uiState.value.pan?.factor)
+        assertEquals("576 g", vm.uiState.value.toBuy.first { it.id == 10111L }.amount)
+        vm.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(5.76, shopping.recipeRequests.single().servings, 0.0)
+    }
+
+    @Test
+    fun theRecipesOwnTinOrNoTinIsTheServingsAlone() = runTest {
+        // The recipe's own tin: nothing to say, nothing scaled.
+        val own = tinViewModel()
+        open(own)
+        own.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 24))
+        assertEquals(null, own.uiState.value.pan)
+        assertEquals("400 g", own.uiState.value.toBuy.first { it.id == 10111L }.amount)
+        own.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(4.0, shopping.recipeRequests.last().servings, 0.0)
+
+        // A recipe without a tin ignores a size (cook mode never sends one for it, but still).
+        val plain = viewModel()
+        open(plain)
+        plain.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 20))
+        assertEquals(null, plain.uiState.value.pan)
+        assertEquals("400 g", plain.uiState.value.toBuy.first { it.id == 10111L }.amount)
+        plain.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(4.0, shopping.recipeRequests.last().servings, 0.0)
+    }
+
+    @Test
+    fun theNextOpeningWithoutATinIsTheRecipesOwnAgain() = runTest {
+        val vm = tinViewModel()
+        open(vm)
+        vm.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 20))
+        vm.onAction(RecipeShoppingAction.Dismiss)
+        // Kan laga nu (and Idag) open the sheet without a tin.
+        vm.onAction(RecipeShoppingAction.Open(servings = null, missingFoodIds = setOf(1L)))
+        assertEquals(null, vm.uiState.value.pan)
+        assertEquals("400 g", vm.uiState.value.toBuy.first { it.id == 10111L }.amount)
+        vm.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(4.0, shopping.recipeRequests.single().servings, 0.0)
+    }
+
+    @Test
+    fun theTinSurvivesProcessDeathWithTheSheet() = runTest {
+        val handle = SavedStateHandle()
+        val tin = pasta.copy(diameter = 24, diameterText = "cm")
+        val repository = FakeRecipeRepository(details = listOf(tin))
+        val first = RecipeShoppingViewModel(tin.id, handle, repository, shopping, FakePreferencesRepository(), permissions)
+        open(first)
+        first.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 20))
+        val again = RecipeShoppingViewModel(tin.id, handle, repository, shopping, FakePreferencesRepository(), permissions)
+        open(again)
+        assertTrue(again.uiState.value.open)
+        assertEquals(20, again.uiState.value.pan?.diameter)
+    }
 }

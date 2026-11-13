@@ -73,7 +73,9 @@ import kotlinx.coroutines.launch
  * @param onRecipesChanged Fas 4: the recipes open in this cook mode, whenever they change, so the
  *   shell finds this cook mode for a timer of either recipe (`ShellNavigationState.openCook`).
  * @param shoppingAction Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page,
- *   given the recipe, cook mode's servings and its snackbar (feature:shopping's route, passed in by the shell).
+ *   given the recipe, cook mode's servings, its tin (Fas 5, plan §8.1 "Pannstorlek": null without
+ *   a tin; the list gets `servings × factor` like Tandoor's web) and its snackbar
+ *   (feature:shopping's route, passed in by the shell).
  */
 @Composable
 fun CookRoute(
@@ -83,7 +85,7 @@ fun CookRoute(
     pageRequest: CookPageRequest? = null,
     onPageRequestHandled: () -> Unit = {},
     onRecipesChanged: (Set<Long>) -> Unit = {},
-    shoppingAction: (@Composable (recipeId: Long, servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
+    shoppingAction: (@Composable (recipeId: Long, servings: Double?, panSize: Int?, snackbar: SnackbarHostState) -> Unit)? = null,
 ) {
     val sessionViewModel = hiltViewModel<CookSessionViewModel, CookSessionViewModel.Factory>(
         key = "cook-session",
@@ -195,6 +197,8 @@ fun CookRoute(
     val handsfreeViewModel = hiltViewModel<HandsfreeViewModel>(key = "cook-handsfree")
     val handsfree by handsfreeViewModel.uiState.collectAsStateWithLifecycle()
     HandsfreeEffects(handsfreeViewModel = handsfreeViewModel, shownViewModel = viewModel, shown = state)
+    // Fas 5 (plan §8.1 "Pannstorlek"): "Lägg på inköpslistan" goes on the list in the tin shown.
+    val panSize = state.pan?.current
     CookTheme(alwaysDark = state.alwaysDark) {
         // The pager and the dialogs follow the shown recipe by themselves (CookScreen); the header
         // with its tabs stays, so a tab switch keeps TalkBack's and the keyboard's focus on the tab.
@@ -208,7 +212,7 @@ fun CookRoute(
             onOpenNotificationSettings = { context.openSettings(notificationSettingsIntent(context)) },
             onOpenAlarmChannelSettings = { context.openSettings(alarmChannelSettingsIntent(context)) },
             onOpenExactAlarmSettings = { context.openSettings(exactAlarmSettingsIntent(context)) },
-            shoppingActions = shoppingAction?.let { action -> { action(activeId, state.servings?.current, snackbarHostState) } },
+            shoppingActions = shoppingAction?.let { action -> { action(activeId, state.servings?.current, panSize, snackbarHostState) } },
             // Fas S (hemma-ui lane, plan §8.8): "Tog något slut?" (hidden for a guest and without pantry items).
             pantryActions = { key(activeId) { CookPantryRoute(recipeId = activeId, snackbarHostState = snackbarHostState) } },
             session = sessionUi,

@@ -30,6 +30,9 @@ import kotlinx.coroutines.launch
  * @param servings the servings shown there (the sheet starts with them), null = the recipe's own.
  * @param snackbarHostState the screen's snackbar ("6 varor från … ligger på inköpslistan" with "Visa listan").
  * @param onOpenShoppingList "Visa listan" (the shell switches to the Handla tab).
+ * @param panSize Fas 5 (plan §8.1 "Pannstorlek"): the tin the recipe or cook mode shows, in the
+ *   recipe's unit; the sheet scales by it and sends `servings × factor` like Tandoor's web. Null
+ *   (Idag, Kan laga nu) or the recipe's own tin: the servings alone.
  */
 @Composable
 fun RecipeShoppingRoute(
@@ -38,6 +41,7 @@ fun RecipeShoppingRoute(
     snackbarHostState: SnackbarHostState,
     onOpenShoppingList: () -> Unit,
     modifier: Modifier = Modifier,
+    panSize: Int? = null,
 ) {
     val viewModel = hiltViewModel<RecipeShoppingViewModel, RecipeShoppingViewModel.Factory>(
         key = "recipe-shopping-$recipeId",
@@ -49,6 +53,7 @@ fun RecipeShoppingRoute(
         snackbarHostState = snackbarHostState,
         onOpenShoppingList = onOpenShoppingList,
         modifier = modifier,
+        panSize = panSize,
     )
 }
 
@@ -60,10 +65,11 @@ internal fun RecipeShoppingRoute(
     snackbarHostState: SnackbarHostState,
     onOpenShoppingList: () -> Unit,
     modifier: Modifier = Modifier,
+    panSize: Int? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     RecipeShoppingEffects(viewModel = viewModel, snackbarHostState = snackbarHostState, onOpenShoppingList = onOpenShoppingList)
-    RecipeShoppingButton(state = state, onAction = viewModel::onAction, servings = servings, modifier = modifier)
+    RecipeShoppingButton(state = state, onAction = viewModel::onAction, servings = servings, modifier = modifier, panSize = panSize)
     RecipeShoppingSheet(state = state, onAction = viewModel::onAction)
 }
 

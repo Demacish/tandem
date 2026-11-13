@@ -168,6 +168,18 @@ class ShoppingAccessibilityTest {
     @Test
     fun listUnpack() = check(ShoppingShot.LIST_UNPACK)
 
+    // Fas 5 (plan §8.1 "Pannstorlek"): the sheet in a smaller tin.
+
+    @Test
+    fun recipeSheetTin() = check(ShoppingShot.RECIPE_SHEET_TIN)
+
+    @Test
+    fun recipeSheetTinDarkFontScale2() = check(ShoppingShot.RECIPE_SHEET_TIN, darkTheme = true, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun recipeSheetTinLandscape() = check(ShoppingShot.RECIPE_SHEET_TIN)
+
     @Test
     @Config(qualifiers = "w412dp-h3600dp-port-xhdpi")
     fun listUnpackDarkFontScale2() = check(ShoppingShot.LIST_UNPACK, darkTheme = true, fontScale = 2f)

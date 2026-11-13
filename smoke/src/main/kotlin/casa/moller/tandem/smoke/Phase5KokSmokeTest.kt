@@ -1,6 +1,7 @@
 package casa.moller.tandem.smoke
 
 import android.view.KeyEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import java.util.regex.Pattern
@@ -21,6 +22,9 @@ import org.junit.runner.RunWith
  * - [tinSize_smallerTinScalesTheAmounts_inTheRecipeAndInCookMode]: the demo's chocolate cake (24 cm)
  *   in a 20 cm tin: "Scaled for a 20 cm tin (× 0.69)", 100 g butter becomes 69 g, and cook mode
  *   opened from the recipe uses the same tin.
+ * - [tinSize_addToShoppingList_inTheTinShown] (komplettering 1 after 0.7.0): "Add to shopping list"
+ *   in the 20 cm tin puts the amounts of the 20 cm tin on the list, like Tandoor's web (servings ×
+ *   0.69): the 100 g butter is 69 g on Handla.
  */
 @RunWith(AndroidJUnit4::class)
 class Phase5KokSmokeTest : Phase2SmokeBase() {
@@ -110,6 +114,47 @@ class Phase5KokSmokeTest : Phase2SmokeBase() {
         assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())
     }
 
+    @Test
+    fun tinSize_addToShoppingList_inTheTinShown() {
+        startDemo()
+        app.tap("Recipes")
+        app.tapInList(DEMO_CAKE)
+        app.scrollTo(By.desc("Smaller tin"))
+        app.waitFor(By.text("24 cm"))
+        for (size in 23 downTo 20) {
+            app.tapDescription("Smaller tin")
+            app.waitFor(By.text("$size cm"))
+        }
+        app.waitFor(By.text(SCALED_20))
+
+        // "Add to shopping list" under the ingredients; the sheet's title reads the same, so once
+        // the sheet shows the button is never looked for again.
+        app.scrollTo(By.text(ADD_TO_SHOPPING_LIST))
+        var attempt = 0
+        while (attempt++ < TAP_ATTEMPTS && app.findNode(::isSheetAdd) == null) {
+            app.clickNodeWithText(ADD_TO_SHOPPING_LIST)
+            nodeShows(TAP_WAIT_MS, ::isSheetAdd)
+        }
+        app.waitForNode("\"Add n items to the shopping list\"", predicate = ::isSheetAdd)
+        app.capture("phase5-tin-shopping-sheet")
+        for (tap in 1..TAP_ATTEMPTS) {
+            app.clickNodeWithText(ADD_TO_LIST)
+            if (nodeGone(TAP_WAIT_MS, ::isSheetAdd)) break
+        }
+        assertTrue("The sheet closed after adding", app.findNode(::isSheetAdd) == null)
+
+        // On Handla the cake's butter is the 20 cm tin's 69 g (the recipe's 100 g × 0.69), not 100 g.
+        app.device.pressBack()
+        app.waitForClickable("Shopping")
+        app.tap("Shopping")
+        app.findInList(By.desc(BUTTER_69))
+        app.capture("phase5-tin-shopping-list")
+        assertTrue("Not the 24 cm tin's 100 g", !app.device.hasObject(By.desc(BUTTER_100)))
+        assertEquals("Demo mode never talks to a server", emptyList<String>(), tandoor.requests.toList())
+    }
+
+    private fun isSheetAdd(node: AccessibilityNodeInfo): Boolean = node.text?.toString()?.let { ADD_TO_LIST.matcher(it).matches() } == true
+
     /** Opens the handsfree sheet, sets its main switch and closes it with "Done". */
     private fun setHandsfree(on: Boolean) {
         app.tapDescription("Handsfree")
@@ -133,5 +178,12 @@ class Phase5KokSmokeTest : Phase2SmokeBase() {
         /** The demo's recipes (core:data assets/demo/en); the cake is baked in a 24 cm tin, 100 g butter. */
         const val DEMO_TONIGHT = "Baked salmon with dill potatoes"
         const val DEMO_CAKE = "Sticky chocolate cake"
+
+        const val SCALED_20 = "Scaled for a 20 cm tin (× 0.69)"
+        const val ADD_TO_SHOPPING_LIST = "Add to shopping list"
+
+        /** Handla's row description starts with the amounts and the food ("69 g + … butter, Other, …"). */
+        val BUTTER_69: Pattern = Pattern.compile("(.* )?69 g( .*)? butter, .*")
+        val BUTTER_100: Pattern = Pattern.compile("(.* )?100 g( .*)? butter, .*")
     }
 }

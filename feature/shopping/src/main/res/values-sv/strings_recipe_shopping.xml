@@ -45,6 +45,8 @@
     </plurals>
     <string name="recipe_shopping_show_list">Visa listan</string>
     <string name="recipe_shopping_row_at_home">%1$s, finns hemma</string>
+    <!-- Fas 5 (plan §8.1 "Pannstorlek"): arket öppnat i en annan form. -->
+    <string name="recipe_shopping_pan_scaled">Skalat för %1$d %2$s form (× %3$s)</string>
 
     <!-- Listans ändringsark: ta bort hela receptet en rad kom från -->
     <plurals name="shopping_edit_remove_recipe">

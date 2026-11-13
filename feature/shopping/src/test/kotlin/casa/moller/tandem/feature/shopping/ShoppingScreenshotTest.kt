@@ -245,6 +245,27 @@ class ShoppingScreenshotTest {
     @Config(qualifiers = "sv-$PHONE")
     fun listUnpack() = capture("phone_shopping_unpack_light_sv", ShoppingShot.LIST_UNPACK)
 
+    // Fas 5 (plan §8.1 "Pannstorlek"): the sheet in a smaller tin, "Skalat för 20 cm form (× 0,69)".
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun recipeSheetTin() = capture("phone_recipe_shopping_tin_light_sv", ShoppingShot.RECIPE_SHEET_TIN)
+
+    @Test
+    fun recipeSheetTinDark() = capture("phone_recipe_shopping_tin_dark", ShoppingShot.RECIPE_SHEET_TIN, darkTheme = true)
+
+    @Test
+    fun recipeSheetTinFontScale2() = capture("phone_recipe_shopping_tin_font2_light", ShoppingShot.RECIPE_SHEET_TIN, fontScale = 2f)
+
+    @Test
+    @Config(qualifiers = PHONE_LANDSCAPE)
+    fun recipeSheetTinLandscape() = capture("phone_landscape_recipe_shopping_tin_light", ShoppingShot.RECIPE_SHEET_TIN)
+
+    @Test
+    @Config(qualifiers = "sv-$TABLET_PORTRAIT")
+    fun recipeSheetTinTabletPortraitDark() =
+        capture("tablet_portrait_recipe_shopping_tin_dark_sv", ShoppingShot.RECIPE_SHEET_TIN, darkTheme = true)
+
     @Test
     @Config(qualifiers = TABLET)
     fun listUnpackTabletDark() = capture("tablet_shopping_unpack_dark", ShoppingShot.LIST_UNPACK, darkTheme = true)

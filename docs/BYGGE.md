@@ -1117,6 +1117,7 @@ sätts av integrationen. En rad per bana.
 | kok | Handsfree (#32), köksskärm (#41), pannstorlek (plan §8.1, §8.7) | **Handsfree:** volymknapparna byter steg när handsfree är på (aldrig medan ett larm ringer, aldrig när det är av); "nästa/tillbaka/upprepa" fungerar på en telefon med svensk igenkänning i telefonen; uppläsning läser steget. **Köksskärm:** öppnas från Idag och Mer, mörk, stor text, skärmen på, dagens recept med ett tryck till kokläget, timrarna stora; i CI ett test som kör skärmen tre timmar utan läcka eller omritningsloop, och röktestet öppnar den. **Pannstorlek:** recept med `diameter` skalas efter ytan ovanpå portionerna i receptet och kokläget, offline, och det står "Skalat för 20 cm form". **BEHÖVER ENHET** (ägaren): 9 av 10 med fläkten på, tre timmar på en riktig surfplatta | ✅ klart 2026-11-13 i CI (PR 43430976135, röktest "OK (40 tests)" 43430976120, Contract 2.6.13/2.7.1 43430976206 och Tandoor-bevakning 43430976211 på cc1d317c; referensbilder från Screenshots 42477018620); enhetsproven återstår, se "Kokläget i Fas 5" |
 | planera | Påminnelse kvällen innan, "Tina ut" (plan §8.3), morgonnotisens tid och sommartidsfelet, det instabila core:sync-testet | En måltid vars anteckning har en rad "Påminn:" (eller "Remind:", valfri skiftläge) ger **en** notis kvällen innan i kanalen "Måltidspåminnelser" med radens text, en gång per måltid och kväll, också offline, aldrig för gäster eller i demoläget; flyttas måltiden, tas den bort eller förlorar raden (också genom synken) tas notisen bort; tryck öppnar Veckan på dagen. Fältet "Påminn kvällen innan" på Planera måltid skriver raden. Påslagen i Synk och lagring med vald tid (19.00), POST_NOTIFICATIONS frågas där. Morgonnotisen får vald tid (08.00). Båda planeras efter väggklockan i telefonens tidszon med en gemensam schemaläggare (engångsarbete per dag, ingen period), så sommartid och resor aldrig flyttar dem; tester med Europe/Stockholms omställningar i mars och oktober och byte av tidszon. core:sync-testerna stänger sin bakgrund deterministiskt (egen dispatcher, inga tysta tidsgränser). Skott och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | ✅ klart 2026-11-13 (PR 43453333263 på 04f6d16, grön i försök 1, 2 och 3, röktest "OK (41 tests)" 43453333734, Contract 43453332797; referensbilder från Screenshots 43441536423), se "Påminnelser kvällen innan och på morgonen" |
 | integration | 0.7.0 "I köket": banorna samlade på main och prövade tillsammans | Alla tre banorna på main; handsfree går också att slå på i Inställningar → Kokläge och timers (samma `AppSettings.handsfree` som kokläget ark, mikrofonen frågas när rösten slås på) och påminnelserna i Synk och lagring; röktestet kör banorna tillsammans: handsfree från inställningarna styr kokläget som öppnas från köksskärmen, köksskärmen visar timrarna från två recept i samma kokläge, och butiksläget som öppnas från rutnätet har de sammanslagna raderna och bockar av i **en** bulk. versionCode 9, versionName 0.7.0, CHANGELOG `[0.7.0] – 2026-11-13`, torrkörning grön | ✅ klart 2026-11-13 (PR 43479860265, röktest "OK (43 tests)" 43479862340 på bc248be, 25 min 42 s i emulatorn, jobbet 38 min av 50; torrkörning 43479860582 på bc248be; Contract 43464449468 på 29c154a, inget i dess sökvägar ändrades; referensbilder från Screenshots 43472197684), se "Integration av Fas 5 (0.7.0)" |
+| komplettering-1 | Formens storlek till inköpslistan (plan §8.1); två recept sida vid sida i kokläget på expanded bredd (beslut) | "Lägg på inköpslistan" från receptet och kokläget i en annan form lägger på `servings × faktor` som Tandoors webb (arket visar "Skalat för 20 cm form (× 0,69)" och formens mängder, stegaren ändrar portionerna och formen står kvar; Idag och Kan laga nu oförändrade); enhetstest av faktorn och arket, Compose-test, skärmbilder och ATF för arket, röktestet lägger demons kladdkaka i 20 cm form på listan och ser 69 g smör. Två recept sida vid sida byggs **inte** förrän ägaren efter enhetsprovet bestämmer det (beslutet i "Kokläget i Fas 5" står kvar). | pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 integration -->
@@ -1159,8 +1160,9 @@ påminnelserna. Inga nya notiskanaler (kvällspåminnelsen använder `meal_remin
 punkter, handsfree i inställningarna och "Kvar till senare"; `[Unreleased]` är tom.
 
 **Kvar (behöver enhet):** köksprovet med fläkten på (9 av 10) och tre timmar på en riktig surfplatta
-(banan kok); sommartidsnätterna på en riktig telefon (banan planera). Formens storlek följer inte
-med till inköpslistan, och två recept sida vid sida på en bred skärm är inte byggt (banan kok).
+(banan kok); sommartidsnätterna på en riktig telefon (banan planera). Två recept sida vid sida på en
+bred skärm är inte byggt (banan kok). Formens storlek följer med till inköpslistan sedan
+komplettering 1 (se "Fas 5 – läge").
 <!-- /Fas 5 integration -->
 
 <!-- Fas 5 handla -->
@@ -1827,9 +1829,32 @@ delas mellan receptvyn och kokläget genom `PanSizeRepository` (`:core:data`, i 
 demo, som webben börjar nästa besök på receptets form; inget Room-schema) och sparas dessutom i
 skärmens `SavedStateHandle` (processdöd). UI: receptvyn under portionerna (`DETAIL_PAN_TAG`) och
 kokläget i ingredienssektionen och sidopanelen (`COOK_PAN_TAG`): "Form 20 cm" med − / +, "Skalat för
-20 cm form (× 0,69)" och "Som i receptet (24 cm)". "Klart!" loggar portionerna som förut; "Lägg på
-inköpslistan" räknar fortfarande bara med portionerna (se öppna punkter). Kontraktsfakta:
+20 cm form (× 0,69)" och "Som i receptet (24 cm)". "Klart!" loggar portionerna som förut. "Lägg på
+inköpslistan" i en annan form: se "Inköpslistan i vald form" nedan. Kontraktsfakta:
 `Phase5PanContractTest` (FACTS "Fas 5: pannstorlek").
+
+### Inköpslistan i vald form (komplettering 1 efter 0.7.0)
+
+Tandoors webb sätter portionerna till `servings × faktor` när formen ändras, och "Add to shopping"
+skickar sedan de portionerna (FACTS "Fas 5: pannstorlek" d); servern skalar listreceptets poster med
+`servings / receptets portioner` (FACTS "Fas 2 c"). Appen gör likadant: receptvyn och kokläget ger
+platsen för "Lägg på inköpslistan" den form som visas (`RecipeDetailRoute(shoppingAction = { servings,
+panSize, snackbar -> … })`, `CookRoute(shoppingAction = { recipeId, servings, panSize, snackbar -> … })`,
+skalet skickar den vidare som `RecipeShoppingRoute(…, panSize = …)`). `RecipeShoppingAction.Open(panSize)`
+sparar formen i arkets `SavedStateHandle`; arket räknar faktorn själv ur det sparade receptet
+(`PanScaling.factor`, 1.0 för receptets egen form eller ett recept utan form, och då inget sägs).
+Raderna byggs med `RecipeDisplay.build(extraFactor)` som i receptet, arket visar "Skalat för 20 cm form
+(× 0,69)" (`RECIPE_SHOPPING_PAN_TAG`) under portionerna, och stegaren ändrar fortfarande portionerna
+(formen står kvar). "Lägg till" skickar `RecipeShoppingUiState.listServings` =
+`PanScaling.listServings(servings, faktor)`: `servings × faktor` avrundat till fyra decimaler (4 × 0,69
+= 2,76, inte 2,7600000000000002); outboxen och den lokala skalningen i `OfflineFirstShoppingRepository`
+är oförändrade, så det fungerar offline och i demoläget. Idag och Kan laga nu skickar ingen form
+(receptets egen). Tester: `PanScalingTest` (listServings), `RecipeShoppingViewModelTest` (mindre och
+större form, stegaren, egen form/ingen form, nästa öppning utan form, processdöd),
+`RecipeShoppingScreenTest`; skärmbilder `shopping/*recipe_shopping_tin*` (telefon ljust sv, mörkt,
+teckenstorlek 2, liggande, surfplatta stående mörkt sv) och ATF i `ShoppingAccessibilityTest`; röktest
+`Phase5KokSmokeTest.tinSize_addToShoppingList_inTheTinShown` (demons kladdkaka i 20 cm form: smöret
+står som 69 g på Handla, inte 100 g).
 
 ### Tester
 

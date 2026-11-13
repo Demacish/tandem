@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.model.shopping.ParsedIngredient
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingButton
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingContent
+import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingPan
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRow
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingSheetLayout
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingUiState
@@ -76,6 +77,9 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     // Fas S (hemma-ui lane): "Lägg det som saknas på listan" from Kan laga nu, and "Packa upp" after shopping (#46).
     RECIPE_SHEET_FROM_PANTRY({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.fromPantry, onAction = {}) } }),
     LIST_UNPACK({ UnpackListShot() }),
+
+    // Fas 5 (plan §8.1 "Pannstorlek"): the sheet opened from a recipe shown in a smaller tin.
+    RECIPE_SHEET_TIN({ PinnedSheet { RecipeShoppingSheetLayout(state = RecipeShoppingSamples.tin, onAction = {}) } }),
 
     // Fas 5 (plan §8.2): merged rows ("5 dl + 1 st grädde", "3 l mjölk") and the grid of large tiles.
     LIST_MERGED({ ListShot(merged()) }),
@@ -210,6 +214,28 @@ internal object RecipeShoppingSamples {
             RecipeShoppingRow(10112, "smör", "1 ½ msk", onHand = true),
             RecipeShoppingRow(10122, "salt", "", onHand = true),
         ),
+    )
+
+    /**
+     * Fas 5 (plan §8.1 "Pannstorlek"): a cake for a 24 cm tin opened from the recipe in a 20 cm tin:
+     * every amount × 0.69, and "Lägg till" sends 8 × 0.69 = 5.52 servings.
+     */
+    val tin = RecipeShoppingUiState(
+        loading = false,
+        available = true,
+        open = true,
+        recipeName = "Kladdkaka",
+        servings = 8.0,
+        servingsText = "bitar",
+        toBuy = listOf(
+            RecipeShoppingRow(133, "smör", "69 g"),
+            RecipeShoppingRow(134, "ägg", "1,38 st"),
+            RecipeShoppingRow(135, "strösocker", "1,73 dl"),
+            RecipeShoppingRow(136, "vetemjöl", "1,04 dl"),
+            RecipeShoppingRow(137, "kakao", "2,07 msk"),
+        ),
+        atHome = listOf(RecipeShoppingRow(139, "salt", "0,69 nypa", onHand = true)),
+        pan = RecipeShoppingPan(diameter = 20, unit = "cm", factor = 0.69, factorText = "0,69"),
     )
 
     /** The button under the ingredients with four of the recipe's rows on the list already. */

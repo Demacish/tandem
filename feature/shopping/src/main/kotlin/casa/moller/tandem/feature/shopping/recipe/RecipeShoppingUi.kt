@@ -52,6 +52,9 @@ const val RECIPE_SHOPPING_BUTTON_TAG = "recipe-shopping:button"
 /** Test tag of the sheet's add button. */
 const val RECIPE_SHOPPING_ADD_TAG = "recipe-shopping:add"
 
+/** Test tag of the sheet's "Skalat för 20 cm form (× 0,69)" (Fas 5, plan §8.1 "Pannstorlek"). */
+const val RECIPE_SHOPPING_PAN_TAG = "recipe-shopping:pan"
+
 /** Test tag of one ingredient row in the sheet. */
 fun recipeShoppingRowTag(id: Long): String = "recipe-shopping:row:$id"
 
@@ -62,6 +65,8 @@ fun recipeShoppingRowTag(id: Long): String = "recipe-shopping:row:$id"
  * no ingredient with a food).
  *
  * @param servings the servings shown where the button is (the sheet starts with them).
+ * @param panSize Fas 5 (plan §8.1 "Pannstorlek"): the tin shown there (the sheet scales by it and
+ *   sends `servings × factor`); null for the recipe's own.
  */
 @Composable
 fun RecipeShoppingButton(
@@ -69,6 +74,7 @@ fun RecipeShoppingButton(
     onAction: (RecipeShoppingAction) -> Unit,
     servings: Double?,
     modifier: Modifier = Modifier,
+    panSize: Int? = null,
 ) {
     if (state.readOnly || state.loading) return
     if (!state.available && state.onList == 0) return
@@ -77,7 +83,7 @@ fun RecipeShoppingButton(
         if (state.available) {
             TandemSecondaryButton(
                 text = stringResource(R.string.recipe_shopping_button),
-                onClick = { onAction(RecipeShoppingAction.Open(servings)) },
+                onClick = { onAction(RecipeShoppingAction.Open(servings, panSize = panSize)) },
                 leadingIcon = TandemIcons.ShoppingCart,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,6 +212,8 @@ fun RecipeShoppingContent(
             }
         }
         if (!compact) Servings(state = state, onAction = onAction)
+        // Fas 5 (plan §8.1 "Pannstorlek"): opened in another tin, the amounts say so.
+        state.pan?.let { pan -> PanNote(pan) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             FilterChip(
                 selected = state.allChosen,
@@ -282,6 +290,17 @@ private fun Servings(state: RecipeShoppingUiState, onAction: (RecipeShoppingActi
         onIncrease = { onAction(RecipeShoppingAction.IncreaseServings) },
         decreaseEnabled = state.canDecreaseServings,
         modifier = modifier,
+    )
+}
+
+/** Fas 5 (plan §8.1 "Pannstorlek"): "Skalat för 20 cm form (× 0,69)", as in the recipe and cook mode. */
+@Composable
+private fun PanNote(pan: RecipeShoppingPan) {
+    Text(
+        text = stringResource(R.string.recipe_shopping_pan_scaled, pan.diameter, pan.unit, pan.factorText),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.testTag(RECIPE_SHOPPING_PAN_TAG),
     )
 }
 

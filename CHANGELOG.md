@@ -6,6 +6,13 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**Laga i köket**
+
+- **Inköpslistan i den form du valt:** "Lägg på inköpslistan" från receptet eller kokläget lägger nu
+  på mängderna för formen du har valt, som Tandoors webb (portionerna × formens faktor, 24 → 20 cm
+  ≈ 0,69). Arket säger "Skalat för 20 cm form (× 0,69)", och portionerna i arket ändrar du som förut.
+  Från Idag och Kan laga nu gäller receptets egen form.
+
 ## [0.7.0] – 2026-11-13
 
 Fas 5, första delen: I köket. Kokläget går att styra utan att röra skärmen, surfplattan kan stå

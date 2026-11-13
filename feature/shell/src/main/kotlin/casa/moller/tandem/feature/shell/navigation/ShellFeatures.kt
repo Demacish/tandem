@@ -359,9 +359,9 @@ internal object RouteShellFeatures : ShellFeatures {
             onOpenRecipe = onOpenRecipe,
             onOpenOnWeb = onOpenOnWeb,
             onStartCooking = onStartCooking,
-            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" under the ingredients.
-            shoppingAction = { servings, snackbar ->
-                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
+            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" under the ingredients (Fas 5: in the tin shown).
+            shoppingAction = { servings, panSize, snackbar ->
+                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList, panSize = panSize)
             },
             // fix-ui: "Planera" beside the book buttons (hidden for guests by feature:recipes).
             onPlanMeal = onPlanMeal,
@@ -408,9 +408,10 @@ internal object RouteShellFeatures : ShellFeatures {
             pageRequest = pageRequest,
             onPageRequestHandled = onPageRequestHandled,
             onRecipesChanged = onRecipesChanged,
-            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page (Fas 4: of the shown recipe).
-            shoppingAction = { recipeId, servings, snackbar ->
-                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
+            // Phase 2 (koppling lane, #12): "Lägg på inköpslistan" on the last page (Fas 4: of the shown
+            // recipe; Fas 5: in its tin).
+            shoppingAction = { recipeId, servings, panSize, snackbar ->
+                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList, panSize = panSize)
             },
         )
     }

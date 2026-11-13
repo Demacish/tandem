@@ -45,6 +45,8 @@
     </plurals>
     <string name="recipe_shopping_show_list">Show list</string>
     <string name="recipe_shopping_row_at_home">%1$s, at home</string>
+    <!-- Fas 5 (plan §8.1 "Pannstorlek"): the sheet opened in another tin. -->
+    <string name="recipe_shopping_pan_scaled">Scaled for a %1$d %2$s tin (× %3$s)</string>
 
     <!-- The list's edit sheet: removing the whole recipe a row came from -->
     <plurals name="shopping_edit_remove_recipe">

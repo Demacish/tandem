@@ -99,6 +99,41 @@ class RecipeShoppingScreenTest {
         assertEquals(RecipeShoppingAction.RemoveFromList, actions.last())
     }
 
+    /** Fas 5 (plan §8.1 "Pannstorlek"): the button opens the sheet in the tin the recipe or cook mode shows. */
+    @Test
+    fun theButtonOpensTheSheetInTheTinShown() {
+        val actions = mutableListOf<RecipeShoppingAction>()
+        composeRule.setContent {
+            ShoppingTestTheme {
+                RecipeShoppingButton(state = RecipeShoppingSamples.onList, onAction = { actions += it }, servings = 8.0, panSize = 20)
+            }
+        }
+        composeRule.onNodeWithTag(RECIPE_SHOPPING_BUTTON_TAG).performClick()
+        assertEquals(RecipeShoppingAction.Open(8.0, panSize = 20), actions.last())
+    }
+
+    /** Fas 5: the sheet says which tin its amounts are for, as the recipe and cook mode do. */
+    @Test
+    fun theSheetInAnotherTinSaysSo() {
+        composeRule.setContent {
+            ShoppingTestTheme {
+                Box(modifier = Modifier.height(480.dp)) {
+                    RecipeShoppingSheetLayout(state = RecipeShoppingSamples.tin, onAction = {})
+                }
+            }
+        }
+        val scaled = context.getString(R.string.recipe_shopping_pan_scaled, 20, "cm", "0,69")
+        composeRule.onNodeWithTag(RECIPE_SHOPPING_PAN_TAG).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(scaled).assertExists()
+        composeRule.onNodeWithText("69 g").assertExists()
+    }
+
+    @Test
+    fun theSheetWithoutATinSaysNothingAboutOne() {
+        composeRule.setContent { ShoppingTestTheme { Scrolling { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = {}) } } }
+        composeRule.onNodeWithTag(RECIPE_SHOPPING_PAN_TAG).assertDoesNotExist()
+    }
+
     @Test
     fun aGuestSeesNoButton() {
         val guest = RecipeShoppingSamples.onList.copy(readOnly = true)

@@ -122,8 +122,9 @@ private class SyncFailure(val error: TandemError)
  * @param onStartCooking "Börja laga" (Phase 1b): opens cook mode for the recipe at the servings
  *   shown (null: the recipe's own). Null hides the button.
  * @param shoppingAction Phase 2 (koppling lane, #12): "Lägg på inköpslistan" under the ingredients,
- *   given the servings shown and the screen's snackbar (feature:shopping's route, passed in by the
- *   shell). Null shows nothing.
+ *   given the servings shown, the tin shown (Fas 5, plan §8.1 "Pannstorlek": null without a tin;
+ *   the list gets `servings × factor` like Tandoor's web) and the screen's snackbar
+ *   (feature:shopping's route, passed in by the shell). Null shows nothing.
  * @param onPlanMeal fix-ui (plan 6.2 "Receptdetalj: Åtgärder … Planera"): "Planera" beside
  *   "Favorit", "Vill laga" and "Lägg i bok" opens the plan-meal page for the recipe (the shell's
  *   `PlanMealKey`); hidden for guests and when null.
@@ -139,7 +140,7 @@ fun RecipeDetailRoute(
     onOpenOnWeb: (url: String) -> Unit,
     modifier: Modifier = Modifier,
     onStartCooking: ((recipeId: Long, servings: Double?) -> Unit)? = null,
-    shoppingAction: (@Composable (servings: Double?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
+    shoppingAction: (@Composable (servings: Double?, panSize: Int?, snackbarHostState: SnackbarHostState) -> Unit)? = null,
     onPlanMeal: ((recipeId: Long) -> Unit)? = null,
     onNavigate: ((NavKey) -> Unit)? = null,
     onEdit: ((recipeId: Long) -> Unit)? = null,
@@ -175,7 +176,7 @@ fun RecipeDetailRoute(
         onStartCooking = onStartCooking?.let { start -> { start(recipeId, state.servings?.current) } },
         // Phase 2 (books lane): "Favorit", "Vill laga" and "Lägg i bok" under the title.
         bookActions = { RecipeBookButtonsRoute(recipeId = recipeId, snackbarHostState = snackbarHostState, onPlanMeal = onPlanMeal) },
-        shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, snackbarHostState) } },
+        shoppingActions = shoppingAction?.let { action -> { action(state.servings?.current, state.pan?.current, snackbarHostState) } },
         // Fas S (drycker lane): "Passar med" / "Passar till" with its own ViewModel.
         pairings = onNavigate?.let { navigate ->
             {

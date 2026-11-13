@@ -42,6 +42,19 @@ object PanScaling {
     /** [areaFactor] for [recipe] baked in [chosen] (null: the recipe's own tin). */
     fun factor(recipe: Recipe, chosen: Int?): Double = areaFactor(recipe.diameter, current(recipe, chosen))
 
+    /**
+     * The servings to send when the recipe goes on the shopping list in another tin: `servings ×
+     * factor`, as Tandoor's web does (its scaling dialog sets the servings to `servings × factor`,
+     * and "Lägg på inköpslistan" then sends those; FACTS "Fas 5: pannstorlek" d). Rounded half up
+     * to four decimals, so 4 × 0.69 is 2.76 and not 2.7600000000000002; Tandoor scales the list
+     * recipe's entries by `servings / recipe servings`. A factor that is not positive and finite
+     * (or 1.0) leaves [servings] as they are.
+     */
+    fun listServings(servings: Double, factor: Double): Double {
+        if (!factor.isFinite() || factor <= 0.0 || factor == 1.0) return servings
+        return floor(servings * factor * SERVINGS_PRECISION + HALF) / SERVINGS_PRECISION
+    }
+
     /** One size up (the stepper's +), at most [MAX_DIAMETER]. */
     fun larger(current: Int): Int = (current + 1).coerceIn(MIN_DIAMETER, MAX_DIAMETER)
 
@@ -55,5 +68,6 @@ object PanScaling {
 
     private const val PERCENT = 100.0
     private const val HALF = 0.5
+    private const val SERVINGS_PRECISION = 10_000.0
     private const val MIN_FACTOR = 0.01
 }
