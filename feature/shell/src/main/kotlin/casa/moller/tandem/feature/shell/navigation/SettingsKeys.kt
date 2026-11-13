@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.shell.navigation
 
 import androidx.navigation3.runtime.NavKey
+import casa.moller.tandem.feature.mealplan.navigation.MealCalendarKey
 import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
@@ -50,6 +51,8 @@ internal val NavKey.isMorePage: Boolean
         AiSettingsKey,
         // Fas 4 (push lane): Synk och lagring → Snabb push.
         FastPushSettingsKey,
+        // Fas 5 (kalender lane): Inställningar → Matsedeln i kalendern (feature:mealplan).
+        MealCalendarKey,
         -> true
 
         else -> false

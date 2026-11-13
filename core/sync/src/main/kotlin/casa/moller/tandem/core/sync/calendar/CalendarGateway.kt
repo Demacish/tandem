@@ -132,8 +132,7 @@ internal class AndroidCalendarGateway @Inject constructor(@ApplicationContext pr
         /** Operations per `applyBatch` (the provider holds one transaction per batch). */
         const val BATCH: Int = 100
 
-        private val OWN_CALENDAR =
-            "${Calendars.ACCOUNT_NAME} = ? AND ${Calendars.ACCOUNT_TYPE} = ? AND ${Calendars.NAME} = ?"
+        private val OWN_CALENDAR = "${Calendars.ACCOUNT_NAME} = ? AND ${Calendars.ACCOUNT_TYPE} = ? AND ${Calendars.NAME} = ?"
         private val OWN_CALENDAR_ARGS = arrayOf(ACCOUNT_NAME, CalendarContract.ACCOUNT_TYPE_LOCAL, CALENDAR_NAME)
 
         /** [uri] as the local account's sync adapter: the only way to create a calendar and to write `SYNC_DATA*`. */

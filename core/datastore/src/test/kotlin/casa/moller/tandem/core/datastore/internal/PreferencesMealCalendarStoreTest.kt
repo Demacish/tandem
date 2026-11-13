@@ -34,7 +34,8 @@ class PreferencesMealCalendarStoreTest {
     @After
     fun tearDown() = runBlocking { scopes.closeAll() }
 
-    private fun open(): PreferencesMealCalendarStore = PreferencesMealCalendarStore.create(produceFile = { file }, scope = scopes.newScope())
+    private fun open(): PreferencesMealCalendarStore =
+        PreferencesMealCalendarStore.create(produceFile = { file }, scope = scopes.newScope())
 
     @Test
     fun offByDefault() = runTest {
@@ -52,7 +53,8 @@ class PreferencesMealCalendarStoreTest {
         scopes.closeAll()
 
         val store = open()
-        assertEquals(LocalCalendarRecord(enabled = true, lastWrittenMillis = 1_000, events = 5, problem = "PERMISSION"), store.state.first())
+        val kept = LocalCalendarRecord(enabled = true, lastWrittenMillis = 1_000, events = 5, problem = "PERMISSION")
+        assertEquals(kept, store.state.first())
         store.recordWrite(atMillis = 3_000, events = 6, problem = null)
         assertEquals(LocalCalendarRecord(enabled = true, lastWrittenMillis = 3_000, events = 6), store.state.first())
         store.setEnabled(false)

@@ -13,6 +13,7 @@ import casa.moller.tandem.feature.home.TodayRoute
 import casa.moller.tandem.feature.mealplan.PlanMealRoute
 import casa.moller.tandem.feature.mealplan.WeekRoute
 import casa.moller.tandem.feature.mealplan.WeekShoppingRoute
+import casa.moller.tandem.feature.mealplan.calendar.MealCalendarRoute
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
 import casa.moller.tandem.feature.pantry.PantryRoute
@@ -204,7 +205,10 @@ internal interface ShellFeatures {
     @Composable
     fun ShoppingHistory(onBack: () -> Unit)
 
-    /** The week agenda: the Veckan tab root (`weekStart` null) or a `WeekAgendaKey`. */
+    /**
+     * The week agenda: the Veckan tab root (`weekStart` null) or a `WeekAgendaKey`.
+     * Fas 5 (kalender lane): [onOpenCalendar] is "Matsedeln i kalendern" in its menu.
+     */
     @Composable
     fun Week(
         weekStart: String?,
@@ -212,7 +216,12 @@ internal interface ShellFeatures {
         onPlanMeal: (PlanMealKey) -> Unit,
         onWeekShopping: (WeekShoppingKey) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenCalendar: () -> Unit,
     )
+
+    /** Fas 5 (kalender lane, plan §7 #36): "Matsedeln i kalendern" (feature:mealplan). */
+    @Composable
+    fun MealCalendar(onBack: () -> Unit)
 
     /** The plan-meal sheet. */
     @Composable
@@ -477,6 +486,7 @@ internal object RouteShellFeatures : ShellFeatures {
         onPlanMeal: (PlanMealKey) -> Unit,
         onWeekShopping: (WeekShoppingKey) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenCalendar: () -> Unit,
     ) {
         WeekRoute(
             onOpenRecipe = onOpenRecipe,
@@ -484,7 +494,13 @@ internal object RouteShellFeatures : ShellFeatures {
             onWeekShopping = onWeekShopping,
             onStartCooking = onStartCooking,
             weekStart = weekStart,
+            onOpenCalendar = onOpenCalendar,
         )
+    }
+
+    @Composable
+    override fun MealCalendar(onBack: () -> Unit) {
+        MealCalendarRoute(onBack = onBack)
     }
 
     @Composable

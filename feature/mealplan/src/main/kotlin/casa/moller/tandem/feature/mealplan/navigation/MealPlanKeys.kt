@@ -51,3 +51,10 @@ data class WeekShoppingKey(val weekStart: String) :
         require(runCatching { LocalDate.parse(weekStart) }.isSuccess) { "weekStart is yyyy-MM-dd" }
     }
 }
+
+/**
+ * Fas 5 (kalender lane, plan §7 #36): "Matsedeln i kalendern", from Veckan's menu (on the Veckan
+ * stack) and from Mer → Inställningar (a page beside Mer on wide windows).
+ */
+@Serializable
+data object MealCalendarKey : NavKey

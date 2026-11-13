@@ -87,12 +87,11 @@ object MealCalendarEvents {
      * created offline (negative id) is written too; it gets its server id with the next sync and
      * its event is replaced then.
      */
-    fun of(accountId: String, meals: List<MealPlanEntry>, window: ClosedRange<LocalDate>, zone: TimeZone): List<MealCalendarEvent> =
-        meals
-            .filter { it.toDate >= window.start && it.fromDate <= window.endInclusive }
-            .distinctBy { it.id }
-            .sortedWith(compareBy<MealPlanEntry> { it.fromDate }.thenBy { it.mealType.order }.thenBy { it.id })
-            .map { eventOf(accountId, it, zone) }
+    fun of(accountId: String, meals: List<MealPlanEntry>, window: ClosedRange<LocalDate>, zone: TimeZone): List<MealCalendarEvent> = meals
+        .filter { it.toDate >= window.start && it.fromDate <= window.endInclusive }
+        .distinctBy { it.id }
+        .sortedWith(compareBy<MealPlanEntry> { it.fromDate }.thenBy { it.mealType.order }.thenBy { it.id })
+        .map { eventOf(accountId, it, zone) }
 
     /** One meal as an event (see [of]). */
     fun eventOf(accountId: String, meal: MealPlanEntry, zone: TimeZone): MealCalendarEvent {

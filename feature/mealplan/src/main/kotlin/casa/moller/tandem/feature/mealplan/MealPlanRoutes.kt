@@ -37,6 +37,7 @@ import kotlinx.coroutines.launch
  * @param onPlanMeal "+" on a day/meal or "Ändra" on a meal: the plan-meal page.
  * @param onWeekShopping "Handla för veckan" for the shown week.
  * @param onStartCooking "Laga" on today's meal: cook mode with the meal's servings (as on Idag).
+ * @param onOpenCalendar Fas 5 (kalender lane): "Matsedeln i kalendern" in the menu.
  */
 @Composable
 fun WeekRoute(
@@ -46,6 +47,7 @@ fun WeekRoute(
     onStartCooking: (recipeId: Long, servings: Double?) -> Unit,
     modifier: Modifier = Modifier,
     weekStart: String? = null,
+    onOpenCalendar: () -> Unit = {},
 ) {
     val viewModel = hiltViewModel<WeekViewModel, WeekViewModel.Factory>(
         key = "week-$weekStart",
@@ -58,6 +60,7 @@ fun WeekRoute(
         onWeekShopping = onWeekShopping,
         onStartCooking = onStartCooking,
         modifier = modifier,
+        onOpenCalendar = onOpenCalendar,
     )
 }
 
@@ -70,6 +73,7 @@ internal fun WeekRoute(
     onWeekShopping: (WeekShoppingKey) -> Unit,
     onStartCooking: (recipeId: Long, servings: Double?) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenCalendar: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -91,6 +95,7 @@ internal fun WeekRoute(
                 is WeekAction.OpenRecipe -> onOpenRecipe(action.recipeId)
                 is WeekAction.Cook -> action.meal.recipe?.let { onStartCooking(it.id, action.meal.servings) }
                 WeekAction.WeekShopping -> onWeekShopping(WeekShoppingKey(currentState.weekStart.toString()))
+                WeekAction.OpenCalendar -> onOpenCalendar()
                 else -> viewModel.onAction(action)
             }
         },

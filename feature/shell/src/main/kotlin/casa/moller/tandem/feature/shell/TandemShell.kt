@@ -65,6 +65,7 @@ import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.KitchenKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
 import casa.moller.tandem.feature.cook.navigation.cookKeyAlongside
+import casa.moller.tandem.feature.mealplan.navigation.MealCalendarKey
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
 import casa.moller.tandem.feature.mealplan.navigation.WeekShoppingKey
@@ -406,6 +407,8 @@ internal fun ShellScaffold(
                 onPlanMeal = { navigation.navigate(it, replace = { key -> key is PlanMealKey }) },
                 onWeekShopping = { navigation.navigate(it, replace = { key -> key is WeekShoppingKey }) },
                 onStartCooking = startCooking,
+                // Fas 5 (kalender lane): "Matsedeln i kalendern" from the menu.
+                onOpenCalendar = { navigation.navigate(MealCalendarKey, replace = { key -> key == MealCalendarKey }) },
             )
         }
         // --- Fas S (grund lane): Hemma, scanning and drinks, each through its module's one route. ---
@@ -458,6 +461,10 @@ internal fun ShellScaffold(
             entry<ScanReviewKey> { scan(it) }
             // Settings → AI is a page of the More list (beside it on wide windows), like the other settings.
             entry<AiSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) { scan(it) }
+            // Fas 5 (kalender lane): "Matsedeln i kalendern", beside Mer on wide windows like the settings.
+            entry<MealCalendarKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                features.MealCalendar(onBack = { navigation.goBack() })
+            }
             // drycker lane: "Drycker" is a list-detail scene of its own on wide windows (a picked drink
             // replaces the open one); a drink is a recipe, shown by the recipe detail.
             entry<DrinksKey>(

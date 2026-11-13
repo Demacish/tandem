@@ -324,9 +324,13 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
         onPlanMeal: (PlanMealKey) -> Unit,
         onWeekShopping: (WeekShoppingKey) -> Unit,
         onStartCooking: (Long, Double?) -> Unit,
+        onOpenCalendar: () -> Unit,
     ) {
         Placeholder(ShellTab.WEEK)
     }
+
+    @Composable
+    override fun MealCalendar(onBack: () -> Unit) = Page("Meal plan in your calendar", onBack)
 
     @Composable
     override fun PlanMeal(key: PlanMealKey, onDone: () -> Unit) = Page("Plan a meal ${key.date}", onDone)

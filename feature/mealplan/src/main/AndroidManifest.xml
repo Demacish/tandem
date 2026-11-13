@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+        Fas 5 (kalender lane, plan §7 #36): "Öppna i kalenderapp" is offered only when an app on the
+        phone opens a webcal:// subscription address (package visibility, Android 11+).
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="webcal" />
+        </intent>
+    </queries>
+</manifest>

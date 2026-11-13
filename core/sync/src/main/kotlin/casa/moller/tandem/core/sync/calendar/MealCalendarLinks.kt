@@ -87,6 +87,7 @@ internal class MealCalendarLinks @Inject constructor(
         if (read(source) != null) return@withLock Outcome.Success(Unit)
         when (val created = create(source)) {
             is Outcome.Failure -> created
+
             is Outcome.Success -> {
                 write(source, created.value)
                 Outcome.Success(Unit)
@@ -165,6 +166,7 @@ internal class MealCalendarLinks @Inject constructor(
         val body = AccessTokenCreateRequestDto(scope = MealPlanIcal.SCOPE, expires = expires)
         return when (val created = remote.call(source, background = false) { auth.createAccessToken(body) }) {
             is Outcome.Failure -> created
+
             is Outcome.Success -> created.value.toStored(expires)?.let { Outcome.Success(it) }
                 ?: Outcome.Failure(TandemError.Unknown(UNEXPECTED_ANSWER))
         }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kalender lane, plan §7 #36): "Matsedeln i kalendern" (Veckan's menu and More → Settings). -->
+<resources>
+    <string name="calendar_title">Meal plan in your calendar</string>
+    <string name="calendar_menu">Meal plan in your calendar</string>
+    <string name="calendar_more_supporting">In the phone\'s calendar or as a link to subscribe to</string>
+    <string name="calendar_more_options">More options</string>
+    <string name="calendar_intro">See the meals of the coming weeks next to your other plans. Choose one way or both; both are off until you turn them on.</string>
+
+    <!-- Not available -->
+    <string name="calendar_demo_title">Not in demo mode</string>
+    <string name="calendar_demo_body">The demo\'s meals stay in the app. Log in to your Tandoor server to show your own meal plan in the calendar.</string>
+    <string name="calendar_no_account_title">No account</string>
+    <string name="calendar_no_account_body">Log in to your Tandoor server to show the meal plan in the calendar.</string>
+
+    <!-- Option b: the phone's calendar -->
+    <string name="calendar_local_heading">This phone\'s calendar</string>
+    <string name="calendar_local_switch">Show in the phone\'s calendar</string>
+    <string name="calendar_local_body">Tandem writes the meals into a calendar of its own, “%1$s”, on this phone only. It works without a connection and is updated at least once a day and whenever the plan changes. Meals with a time for their meal type get that time, the others are all-day.</string>
+    <string name="calendar_local_name">Tandem – meal plan</string>
+    <plurals name="calendar_local_status">
+        <item quantity="one">Updated %2$s · %1$d meal</item>
+        <item quantity="other">Updated %2$s · %1$d meals</item>
+    </plurals>
+    <string name="calendar_local_waiting">Writing the calendar…</string>
+    <string name="calendar_local_refresh">Update now</string>
+    <string name="calendar_local_off_note">Turning it off removes the calendar and its meals from the phone. Logging out does too.</string>
+    <string name="calendar_permission_title">Calendar access needed</string>
+    <string name="calendar_permission_body">Tandem needs access to the calendar to write the meals there. Nothing else in your calendars is read or changed.</string>
+    <string name="calendar_permission_lost_title">Tandem can no longer update the calendar</string>
+    <string name="calendar_permission_lost_body">Access to the calendar was turned off. Allow it again, or turn the option off.</string>
+    <string name="calendar_permission_allow">Allow</string>
+    <string name="calendar_permission_settings">Open settings</string>
+    <string name="calendar_provider_title">The phone\'s calendar did not answer</string>
+    <string name="calendar_provider_body">The meals could not be written. Tandem tries again later; you can also update now.</string>
+
+    <!-- Option a: the subscription link -->
+    <string name="calendar_link_heading">Subscription link</string>
+    <string name="calendar_link_body">An address that calendar apps such as Google Calendar can subscribe to. Your Tandoor server sends the meal plan straight to the calendar, also on other devices. It uses a key of its own that can only read the meal plan.</string>
+    <string name="calendar_link_warning_title">Anyone with the link can read your meal plan</string>
+    <string name="calendar_link_warning_body">Share it only with people you trust. If it has spread, make a new link: the old one stops working.</string>
+    <string name="calendar_link_create">Create link</string>
+    <string name="calendar_link_address">Subscription address</string>
+    <string name="calendar_link_expires">Valid until %1$s, renewed automatically</string>
+    <string name="calendar_link_copy">Copy</string>
+    <string name="calendar_link_share">Share</string>
+    <string name="calendar_link_open">Open in calendar app</string>
+    <string name="calendar_link_no_app">No calendar app on this phone opens the link itself. Copy it and add it in the calendar app or on its website (in Google Calendar: “Other calendars” → “From URL”).</string>
+    <string name="calendar_link_replace">New link</string>
+    <string name="calendar_link_disable">Turn off</string>
+    <string name="calendar_link_share_chooser">Share the calendar link</string>
+    <string name="calendar_link_guest_title">Guests cannot create a link</string>
+    <string name="calendar_link_guest_body">The link needs a key of its own on the server. Ask someone in the household, or use the phone\'s calendar above.</string>
+    <string name="calendar_link_unsupported_title">This server cannot be subscribed to</string>
+    <string name="calendar_link_unsupported_body">This version of Tandoor cannot take the key in the address, so calendar apps cannot subscribe. Use the phone\'s calendar above.</string>
+
+    <!-- Confirmations -->
+    <string name="calendar_replace_title">Make a new link?</string>
+    <string name="calendar_replace_body">The old link stops working at once. Calendars that subscribe to it must subscribe to the new one.</string>
+    <string name="calendar_disable_title">Turn off the link?</string>
+    <string name="calendar_disable_body">The link stops working at once and calendars that subscribe to it no longer get the meal plan.</string>
+    <string name="calendar_cancel">Cancel</string>
+
+    <!-- Messages -->
+    <string name="calendar_msg_local_on">The meals are now in the calendar “%1$s”.</string>
+    <string name="calendar_msg_local_off">The calendar was removed from the phone.</string>
+    <string name="calendar_msg_refreshed">The calendar is up to date.</string>
+    <string name="calendar_msg_permission_denied">Without access to the calendar the meals cannot be shown there.</string>
+    <string name="calendar_msg_link_created">The link is ready.</string>
+    <string name="calendar_msg_link_replaced">New link ready. The old one no longer works.</string>
+    <string name="calendar_msg_link_disabled">The link is turned off.</string>
+    <string name="calendar_msg_copied">Link copied.</string>
+    <string name="calendar_msg_offline">The server could not be reached. Try again when you are connected.</string>
+    <string name="calendar_msg_guest">Guests cannot create a link.</string>
+    <string name="calendar_msg_failed">That did not work. Try again later.</string>
+    <string name="calendar_msg_local_failed">The calendar could not be written. Try again later.</string>
+</resources>

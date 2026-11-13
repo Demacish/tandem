@@ -66,6 +66,7 @@ import casa.moller.tandem.core.ui.DemoBanner
 import casa.moller.tandem.core.ui.household.HouseholdMissingCard
 import casa.moller.tandem.core.ui.language.AppLanguage
 import casa.moller.tandem.core.ui.toErrorText
+import casa.moller.tandem.feature.mealplan.navigation.MealCalendarKey
 import casa.moller.tandem.feature.pantry.navigation.PantryKey
 import casa.moller.tandem.feature.recipes.navigation.BooksKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
@@ -90,6 +91,7 @@ import casa.moller.tandem.feature.shell.ui.SectionHeader
 import casa.moller.tandem.feature.shell.ui.SettingsGroup
 import casa.moller.tandem.feature.shell.ui.SettingsRow
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
+import casa.moller.tandem.feature.mealplan.R as MealPlanR
 
 /**
  * "Mer" (plan 6.2 "Inställningar", design mer_inst_llningar with the corrections in
@@ -270,6 +272,15 @@ internal fun MoreScreen(
                             supporting = stringResource(R.string.shell_more_ai_supporting),
                             onClick = { onOpenPage(AiSettingsKey) },
                             selected = selectedPage == AiSettingsKey,
+                        )
+                        // Fas 5 (kalender lane, plan §7 #36): feature:mealplan's "Matsedeln i kalendern".
+                        GroupDivider()
+                        SettingsRow(
+                            icon = TandemIcons.CalendarMonth,
+                            title = stringResource(MealPlanR.string.calendar_menu),
+                            supporting = stringResource(MealPlanR.string.calendar_more_supporting),
+                            onClick = { onOpenPage(MealCalendarKey) },
+                            selected = selectedPage == MealCalendarKey,
                         )
                     }
 

@@ -151,6 +151,9 @@ sealed interface WeekAction {
     /** "Handla för veckan" for the shown week. */
     data object WeekShopping : WeekAction
 
+    /** Fas 5 (kalender lane): "Matsedeln i kalendern" in the menu (the route opens the page). */
+    data object OpenCalendar : WeekAction
+
     // Fas 4 "Förslag på veckans matsedel".
 
     /** Opens the suggestion sheet with a suggestion per free day. */

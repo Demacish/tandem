@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (kalender lane, plan §7 #36): "Matsedeln i kalendern" (Veckans meny och Mer → Inställningar). -->
+<resources>
+    <string name="calendar_title">Matsedeln i kalendern</string>
+    <string name="calendar_menu">Matsedeln i kalendern</string>
+    <string name="calendar_more_supporting">I telefonens kalender eller som länk att prenumerera på</string>
+    <string name="calendar_more_options">Fler val</string>
+    <string name="calendar_intro">Se de kommande veckornas måltider bland dina andra planer. Välj ett sätt eller båda; inget är på förrän du slår på det.</string>
+
+    <string name="calendar_demo_title">Inte i demoläget</string>
+    <string name="calendar_demo_body">Demons måltider stannar i appen. Logga in på din Tandoor-server för att visa er egen matsedel i kalendern.</string>
+    <string name="calendar_no_account_title">Inget konto</string>
+    <string name="calendar_no_account_body">Logga in på din Tandoor-server för att visa matsedeln i kalendern.</string>
+
+    <string name="calendar_local_heading">Telefonens kalender</string>
+    <string name="calendar_local_switch">Visa i telefonens kalender</string>
+    <string name="calendar_local_body">Tandem skriver måltiderna i en egen kalender, ”%1$s”, bara på den här telefonen. Det fungerar utan uppkoppling och uppdateras minst en gång om dygnet och varje gång matsedeln ändras. Måltider vars måltidstyp har en tid får den tiden, de andra blir heldag.</string>
+    <string name="calendar_local_name">Tandem – matsedel</string>
+    <plurals name="calendar_local_status">
+        <item quantity="one">Uppdaterad %2$s · %1$d måltid</item>
+        <item quantity="other">Uppdaterad %2$s · %1$d måltider</item>
+    </plurals>
+    <string name="calendar_local_waiting">Skriver kalendern …</string>
+    <string name="calendar_local_refresh">Uppdatera nu</string>
+    <string name="calendar_local_off_note">Stänger du av tas kalendern och dess måltider bort från telefonen. Det gör de också när du loggar ut.</string>
+    <string name="calendar_permission_title">Tillgång till kalendern behövs</string>
+    <string name="calendar_permission_body">Tandem behöver tillgång till kalendern för att skriva måltiderna där. Inget annat i dina kalendrar läses eller ändras.</string>
+    <string name="calendar_permission_lost_title">Tandem kan inte längre uppdatera kalendern</string>
+    <string name="calendar_permission_lost_body">Tillgången till kalendern har stängts av. Tillåt den igen eller stäng av valet.</string>
+    <string name="calendar_permission_allow">Tillåt</string>
+    <string name="calendar_permission_settings">Öppna inställningar</string>
+    <string name="calendar_provider_title">Telefonens kalender svarade inte</string>
+    <string name="calendar_provider_body">Måltiderna kunde inte skrivas. Tandem försöker igen senare; du kan också uppdatera nu.</string>
+
+    <string name="calendar_link_heading">Prenumerationslänk</string>
+    <string name="calendar_link_body">En adress som kalenderappar som Google Kalender kan prenumerera på. Er Tandoor-server skickar matsedeln direkt till kalendern, också på andra enheter. Den använder en egen nyckel som bara kan läsa matsedeln.</string>
+    <string name="calendar_link_warning_title">Alla som har länken kan läsa er matsedel</string>
+    <string name="calendar_link_warning_body">Dela den bara med dem du litar på. Har den spridits, skapa en ny länk: den gamla slutar då att fungera.</string>
+    <string name="calendar_link_create">Skapa länk</string>
+    <string name="calendar_link_address">Prenumerationsadress</string>
+    <string name="calendar_link_expires">Gäller till %1$s och förnyas av sig själv</string>
+    <string name="calendar_link_copy">Kopiera</string>
+    <string name="calendar_link_share">Dela</string>
+    <string name="calendar_link_open">Öppna i kalenderapp</string>
+    <string name="calendar_link_no_app">Ingen kalenderapp på telefonen öppnar länken själv. Kopiera den och lägg till den i kalenderappen eller på dess webbplats (i Google Kalender: ”Andra kalendrar” → ”Från webbadress”).</string>
+    <string name="calendar_link_replace">Ny länk</string>
+    <string name="calendar_link_disable">Stäng av</string>
+    <string name="calendar_link_share_chooser">Dela kalenderlänken</string>
+    <string name="calendar_link_guest_title">Gäster kan inte skapa en länk</string>
+    <string name="calendar_link_guest_body">Länken behöver en egen nyckel på servern. Be någon i hushållet, eller använd telefonens kalender ovan.</string>
+    <string name="calendar_link_unsupported_title">Den här servern går inte att prenumerera på</string>
+    <string name="calendar_link_unsupported_body">Den här versionen av Tandoor kan inte ta emot nyckeln i adressen, så kalenderappar kan inte prenumerera. Använd telefonens kalender ovan.</string>
+
+    <string name="calendar_replace_title">Skapa en ny länk?</string>
+    <string name="calendar_replace_body">Den gamla länken slutar fungera direkt. Kalendrar som prenumererar på den måste prenumerera på den nya.</string>
+    <string name="calendar_disable_title">Stänga av länken?</string>
+    <string name="calendar_disable_body">Länken slutar fungera direkt och kalendrar som prenumererar på den får inte längre matsedeln.</string>
+    <string name="calendar_cancel">Avbryt</string>
+
+    <string name="calendar_msg_local_on">Måltiderna finns nu i kalendern ”%1$s”.</string>
+    <string name="calendar_msg_local_off">Kalendern är borttagen från telefonen.</string>
+    <string name="calendar_msg_refreshed">Kalendern är uppdaterad.</string>
+    <string name="calendar_msg_permission_denied">Utan tillgång till kalendern kan måltiderna inte visas där.</string>
+    <string name="calendar_msg_link_created">Länken är klar.</string>
+    <string name="calendar_msg_link_replaced">Ny länk klar. Den gamla fungerar inte längre.</string>
+    <string name="calendar_msg_link_disabled">Länken är avstängd.</string>
+    <string name="calendar_msg_copied">Länken är kopierad.</string>
+    <string name="calendar_msg_offline">Servern gick inte att nå. Försök igen när du är uppkopplad.</string>
+    <string name="calendar_msg_guest">Gäster kan inte skapa en länk.</string>
+    <string name="calendar_msg_failed">Det gick inte. Försök igen senare.</string>
+    <string name="calendar_msg_local_failed">Kalendern kunde inte skrivas. Försök igen senare.</string>
+</resources>

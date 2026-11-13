@@ -1,27 +1,39 @@
 package casa.moller.tandem.feature.mealplan.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
+import casa.moller.tandem.core.designsystem.icon.MoreVert
+import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
@@ -90,7 +102,16 @@ fun WeekScreen(
     val format = remember(locale) { MealPlanFormat(locale) }
     Scaffold(
         modifier = modifier,
-        topBar = { TandemTopAppBar(title = stringResource(R.string.mealplan_title), actions = { AppChromeStatusChip() }) },
+        topBar = {
+            TandemTopAppBar(
+                title = stringResource(R.string.mealplan_title),
+                actions = {
+                    AppChromeStatusChip()
+                    // Fas 5 (kalender lane, plan §7 #36): "Matsedeln i kalendern".
+                    WeekMenu(onAction = onAction)
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
@@ -179,5 +200,29 @@ fun WeekScreen(
             onConfirm = { onAction(WeekAction.ConfirmDelete(true)) },
             onDismiss = { onAction(WeekAction.ConfirmDelete(false)) },
         )
+    }
+}
+
+/** Test tag of Veckan's menu button. */
+const val WEEK_MENU_TAG = "mealplan:week:menu"
+
+/** Fas 5 (kalender lane, plan §7 #36): Veckan's menu ("⋮"): "Matsedeln i kalendern". */
+@Composable
+private fun WeekMenu(onAction: (WeekAction) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }, modifier = Modifier.testTag(WEEK_MENU_TAG)) {
+            Icon(imageVector = TandemIcons.MoreVert, contentDescription = stringResource(R.string.calendar_more_options))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.calendar_menu)) },
+                leadingIcon = { Icon(imageVector = TandemIcons.CalendarMonth, contentDescription = null) },
+                onClick = {
+                    open = false
+                    onAction(WeekAction.OpenCalendar)
+                },
+            )
+        }
     }
 }
