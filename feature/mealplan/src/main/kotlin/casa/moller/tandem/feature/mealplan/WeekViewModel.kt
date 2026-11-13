@@ -114,8 +114,13 @@ class WeekViewModel @AssistedInject internal constructor(
 
     init {
         if (!savedStateHandle.contains(KEY_WEEK)) {
-            val start = weekStart?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: today()
+            val given = weekStart?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+            val start = given ?: today()
             savedStateHandle[KEY_WEEK] = MealPlanWeek.startOf(start).toString()
+            // Fas 5 (planera lane): a day that is not the Monday (the evening reminder's tap) is the chosen day.
+            if (given != null && given != MealPlanWeek.startOf(given) && !savedStateHandle.contains(KEY_DAY)) {
+                savedStateHandle[KEY_DAY] = given.toString()
+            }
         }
         // 0.3.0 komplettering: a meal removed on the plan-meal page gets the same "Ångra" as one removed here.
         viewModelScope.launch {

@@ -132,7 +132,9 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   ("3 dl + 200 g grädde" blir "5 dl"), med Tandoors omräkningar, också offline; det som inte går att
   räkna om står kvar på samma rad. Att bocka av raden bockar av alla dess rader (0.7.0).
 - ✅ Rutnätsvy med stora rutor på inköpslistan, som tillval i listans meny, sparad per konto (0.7.0).
-- Påminnelse kvällen innan, till exempel "Tina ut kycklingen", från en tagg i måltidens anteckning.
+- ✅ Påminnelse kvällen innan, till exempel "Tina ut kycklingen", från en rad "Påminn:" i måltidens
+  anteckning eller fältet "Påminn kvällen innan" när måltiden planeras; valfri, med vald tid (0.7.0).
+- ✅ Morgonnotisen om det som går ut på en tid du väljer, och rätt klockslag efter sommartid (0.7.0).
 
 ## Övrigt
 - **Distribution:** GitHub Releases + Obtainium nu, Google Play senare. F-Droid är inte planerat.

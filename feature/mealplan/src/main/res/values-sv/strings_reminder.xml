@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (planera lane): "Påminn kvällen innan" när en måltid planeras (plan §8.3). -->
+<resources>
+    <string name="mealplan_reminder_keyword">Påminn</string>
+    <string name="mealplan_reminder_label">Påminn kvällen innan</string>
+    <string name="mealplan_reminder_hint">t.ex. Tina ut kycklingen</string>
+    <string name="mealplan_reminder_supporting">En notis kvällen innan, om påminnelserna är på i Inställningar → Synk och lagring. Sparas i anteckningen som ”Påminn: …”, som också syns på webben.</string>
+</resources>

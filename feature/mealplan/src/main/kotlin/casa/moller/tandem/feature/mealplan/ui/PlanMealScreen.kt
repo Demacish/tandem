@@ -61,6 +61,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTextField
 import casa.moller.tandem.core.designsystem.component.TandemTopAppBar
 import casa.moller.tandem.core.designsystem.icon.Add
+import casa.moller.tandem.core.designsystem.icon.Alarm
 import casa.moller.tandem.core.designsystem.icon.Search
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -78,6 +79,9 @@ import casa.moller.tandem.feature.mealplan.R
 /** Test tag of the plan-meal form (scrolling in tests). */
 const val PLAN_MEAL_FORM_TAG = "plan-meal:form"
 
+/** Test tag of the "Påminn kvällen innan" field (Fas 5). */
+const val PLAN_MEAL_REMINDER_TAG = "plan-meal:reminder"
+
 /** Test tag of a recipe in the search results: `plan-meal:recipe:<id>`. */
 fun planMealRecipeTag(id: Long): String = "plan-meal:recipe:$id"
 
@@ -87,7 +91,8 @@ fun planMealCollectionTag(group: String, id: Long): String = "plan-meal:$group:$
 /**
  * "Planera måltid" (Stitch planera_m_ltid_ark, plan 6.2), stateless: the day (two weeks of chips or
  * any date), the meal type (or a new one), a recipe from the stored recipes or a title only, the
- * servings, a note and "Lägg på listan"; "Lägg till i matsedeln (lördag)" at the bottom. Editing a
+ * servings, a note, "Påminn kvällen innan" (Fas 5: a "Påminn:" line of the note, plan §8.3) and
+ * "Lägg på listan"; "Lägg till i matsedeln (lördag)" at the bottom. Editing a
  * meal has "Spara" and "Ta bort från matsedeln" (asks first, fix-ui). A full page on every width
  * (the content stays at a readable width on tablets; on phones without the tab bar), so the
  * keyboard and TalkBack work as on any page. While typing, the form ends at the keyboard's top and
@@ -252,6 +257,20 @@ private fun PlanMealForm(
                 label = stringResource(R.string.mealplan_note_label),
                 imeAction = ImeAction.Done,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        // Fas 5 (planera lane), plan §8.3: "Påminn kvällen innan", written into the note as "Påminn: …".
+        item(key = "reminder") {
+            val keyword = stringResource(R.string.mealplan_reminder_keyword)
+            TandemTextField(
+                value = state.reminder,
+                onValueChange = { onAction(PlanMealAction.Reminder(it, keyword)) },
+                label = stringResource(R.string.mealplan_reminder_label),
+                placeholder = stringResource(R.string.mealplan_reminder_hint),
+                supportingText = stringResource(R.string.mealplan_reminder_supporting),
+                leadingIcon = TandemIcons.Alarm,
+                imeAction = ImeAction.Done,
+                modifier = Modifier.fillMaxWidth().testTag(PLAN_MEAL_REMINDER_TAG),
             )
         }
         if (state.showAddToShopping) item(key = "add-to-shopping") { AddToShopping(checked = state.addToShopping, onAction = onAction) }

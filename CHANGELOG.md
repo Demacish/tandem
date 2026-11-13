@@ -38,6 +38,26 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   ovanpå portionerna. Det står tydligt: "Skalat för 20 cm form (× 0,69)".
 <!-- /Fas 5, kok -->
 
+<!-- Fas 5, planera -->
+**Planera**
+
+- **Påminnelse kvällen innan:** skriv "Påminn: Tina ut kycklingen" i en måltids anteckning, eller
+  fyll i "Påminn kvällen innan" när du planerar måltiden, så kommer en notis kvällen innan ("Tina ut
+  kycklingen – Middag i morgon: Kycklinggryta"). Tryck öppnar Veckan på den dagen. På engelska går
+  det lika bra att skriva "Remind:". Raden står i anteckningen, så den syns också på webben. Slås på
+  i Inställningar → Synk och lagring, med den tid du vill (19.00 om du inte väljer något). Fungerar
+  utan nät, en gång per måltid och kväll; flyttas eller tas måltiden bort försvinner notisen. Aldrig
+  för gäster eller i demoläget.
+- **Morgonnotisen när något går ut kommer när du vill:** välj tiden i Inställningar → Synk och
+  lagring (08.00 som förut om du inte väljer något).
+
+**Rättat**
+
+- Efter omställningen till eller från sommartid kunde morgonnotisen om det som går ut komma klockan
+  7 eller 9 tills den slogs av och på. Nu planeras varje påminnelse efter klockan i telefonens
+  tidszon, också när du reser.
+<!-- /Fas 5, planera -->
+
 ## [0.6.0] – 2026-11-05
 
 Fas 4 ("Smart hushåll"): Tandem lär sig hur ni handlar och lagar. Butiken sorteras som du går,

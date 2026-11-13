@@ -137,6 +137,10 @@ class SettingsViewModel internal constructor(
             shoppingNotifications = current.shoppingChangeNotifications,
             notificationsAllowed = inputs.notificationsAllowed,
             pantryExpiryNotifications = current.pantryExpiryNotifications,
+            // Fas 5 (planera lane)
+            pantryExpiryTime = current.pantryExpiryTime,
+            mealReminders = current.mealReminders,
+            mealReminderTime = current.mealReminderTime,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, SyncSettingsUiState())
 
@@ -191,6 +195,13 @@ class SettingsViewModel internal constructor(
             // Fas 4 (skafferinotis lane): same rule, the morning expiry notification.
             is SettingsAction.SetPantryExpiryNotifications ->
                 setNotification(action.enabled) { settingsRepository.setPantryExpiryNotifications(action.enabled) }
+
+            // Fas 5 (planera lane): the reminders' times, and the evening reminder (asks in context like the others).
+            is SettingsAction.SetPantryExpiryTime -> save { settingsRepository.setPantryExpiryTime(action.time) }
+
+            is SettingsAction.SetMealReminders -> setNotification(action.enabled) { settingsRepository.setMealReminders(action.enabled) }
+
+            is SettingsAction.SetMealReminderTime -> save { settingsRepository.setMealReminderTime(action.time) }
 
             is SettingsAction.NotificationPermissionResult -> viewModelScope.launch {
                 settingsRepository.setNotificationPermissionAsked(true)

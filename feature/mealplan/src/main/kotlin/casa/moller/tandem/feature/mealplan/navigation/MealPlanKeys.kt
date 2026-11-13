@@ -12,7 +12,9 @@ import kotlinx.serialization.Serializable
 /**
  * The agenda of one week, Monday first (plan 6.2: 7 days per page, a week grid on tablets).
  *
- * @property weekStart the week's Monday as `yyyy-MM-dd`; null = the current week.
+ * @property weekStart the week's Monday as `yyyy-MM-dd`; null = the current week. Fas 5 (planera
+ *   lane): another day of the week opens its week with that day chosen (first in the agenda, open
+ *   beside the days on wider windows), as the evening reminder does.
  */
 @Serializable
 data class WeekAgendaKey(val weekStart: String? = null) : NavKey {

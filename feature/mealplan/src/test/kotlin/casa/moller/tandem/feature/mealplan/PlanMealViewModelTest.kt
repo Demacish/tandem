@@ -178,6 +178,50 @@ class PlanMealViewModelTest {
         assertEquals(MealPlanUpdate(fromDate = day(5), servings = 3.0), changes(todayDinner, vm.uiState.value, dinner.id))
     }
 
+    // --- Fas 5 (planera lane): "Påminn kvällen innan" (plan §8.3) ---
+
+    @Test
+    fun aReminderIsSavedAsAPaminnLineOfTheNote() = runTest {
+        val vm = viewModel(PlanMealKey(date = day(5).toString()))
+        open(vm)
+        vm.onAction(PlanMealAction.SetKind(MealKind.TITLE))
+        vm.onAction(PlanMealAction.Title("Kycklinggryta"))
+        vm.onAction(PlanMealAction.Note("Dubbel sats"))
+        vm.onAction(PlanMealAction.Reminder("Tina ut kycklingen", "Påminn"))
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals("Dubbel sats\nPåminn: Tina ut kycklingen", mealPlans.drafts.single().note)
+    }
+
+    @Test
+    fun aMealsReminderIsShownInItsOwnFieldAndKeptWhenNothingChanged() = runTest {
+        val meal = todayDinner.copy(note = "Remind: Thaw the chicken\nDubbel sats")
+        mealPlans.meals.value = mealPlans.meals.value.map { if (it.id == meal.id) meal else it }
+        val vm = viewModel(PlanMealKey(date = meal.fromDate.toString(), mealPlanId = meal.id))
+        open(vm)
+        assertEquals("Dubbel sats", vm.uiState.value.note)
+        assertEquals("Thaw the chicken", vm.uiState.value.reminder)
+        // Nothing changed: the note is not sent, the line keeps its place and its word.
+        assertNull(changes(meal, vm.uiState.value, dinner.id).note)
+        // A new text keeps the word written on the web; an empty one removes the line.
+        vm.onAction(PlanMealAction.Reminder("Tina ut kycklingen", "Påminn"))
+        assertEquals("Dubbel sats\nRemind: Tina ut kycklingen", changes(meal, vm.uiState.value, dinner.id).note)
+        vm.onAction(PlanMealAction.Reminder("", "Påminn"))
+        assertEquals("Dubbel sats", changes(meal, vm.uiState.value, dinner.id).note)
+    }
+
+    @Test
+    fun aReminderTypedIntoTheNoteByHandStays() = runTest {
+        val vm = viewModel(PlanMealKey(date = day(5).toString()))
+        open(vm)
+        vm.onAction(PlanMealAction.SetKind(MealKind.TITLE))
+        vm.onAction(PlanMealAction.Title("Gryta"))
+        vm.onAction(PlanMealAction.Note("Påminn: Tina ut"))
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals("Påminn: Tina ut", mealPlans.drafts.single().note)
+    }
+
     @Test
     fun aTitleOnlyMealCanGetARecipe() = runTest {
         val vm = viewModel(PlanMealKey(date = leftovers.fromDate.toString(), mealPlanId = leftovers.id))

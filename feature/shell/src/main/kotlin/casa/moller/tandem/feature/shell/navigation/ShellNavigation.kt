@@ -17,6 +17,7 @@ import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.core.ui.navigation.FullScreenDestination
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
 import casa.moller.tandem.feature.pantry.navigation.MakeNowKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
@@ -228,6 +229,12 @@ class ShellNavigationState(
             ShellOpenRequest.UseUp -> {
                 selectTab(ShellTab.MORE)
                 navigate(MakeNowKey(useUpFirst = true), replace = { it is MakeNowKey })
+            }
+
+            // Fas 5 (planera lane): the evening reminder; the week of the day with that day chosen.
+            is ShellOpenRequest.WeekDay -> {
+                selectTab(ShellTab.WEEK)
+                navigate(WeekAgendaKey(weekStart = request.date), replace = { it is WeekAgendaKey })
             }
         }
     }

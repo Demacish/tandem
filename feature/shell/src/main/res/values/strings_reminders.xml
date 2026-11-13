@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (planera lane): the daily reminders' times and the evening reminder (plan §8.3, §8.8). -->
+<resources>
+    <!-- A row under a reminder switch; the value is a time such as "8:00 AM". -->
+    <string name="settings_reminder_time">Time</string>
+    <string name="settings_pantry_expiry_time_body">When the morning notification comes</string>
+    <string name="settings_meal_reminders">Reminder the evening before</string>
+    <string name="settings_meal_reminders_body">A notification the evening before a meal whose note has a line starting with “Remind:”, such as “Remind: Thaw the chicken”. When you plan a meal you can fill in “Remind the evening before”. Works offline.</string>
+    <string name="settings_meal_reminder_time_body">When the evening reminder comes</string>
+    <string name="settings_reminder_time_change">Change time</string>
+    <string name="settings_time_dialog_morning">Time of the morning notification</string>
+    <string name="settings_time_dialog_evening">Time of the evening reminder</string>
+    <string name="settings_time_dialog_save">Save</string>
+</resources>

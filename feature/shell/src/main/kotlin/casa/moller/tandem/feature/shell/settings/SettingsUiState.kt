@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import casa.moller.tandem.core.model.diagnostics.DiagnosticsSnapshot
 import casa.moller.tandem.core.model.diagnostics.LogExport
 import casa.moller.tandem.core.model.preferences.UserPreferences
+import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.CookTextScale
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
@@ -12,6 +13,7 @@ import casa.moller.tandem.core.model.sync.OfflineStorage
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
+import kotlinx.datetime.LocalTime
 
 // Phase 1b (inställningar lane): the states of the settings sub-screens under "More" (plan 6.2
 // "Inställningar"). Each screen is stateless (XScreen(state, onAction)); SettingsViewModel builds
@@ -50,6 +52,10 @@ data class SyncSettingsUiState(
     val notificationsAllowed: Boolean = true,
     // Fas 4 (skafferinotis lane): "Notis när något går ut" (plan §8.8 "Använd upp").
     val pantryExpiryNotifications: Boolean = false,
+    // Fas 5 (planera lane): the morning check's time and "Påminnelse kvällen innan" (plan §8.3).
+    val pantryExpiryTime: LocalTime = AppSettings.DEFAULT_PANTRY_EXPIRY_TIME,
+    val mealReminders: Boolean = false,
+    val mealReminderTime: LocalTime = AppSettings.DEFAULT_MEAL_REMINDER_TIME,
     // Review of Fas 4: a guest (the check says GUEST every morning) has no such switch.
     val readOnly: Boolean = false,
 )
@@ -128,6 +134,15 @@ sealed interface SettingsAction {
 
     /** Fas 4 (skafferinotis lane): a morning notification when something at home expires (asks for the permission when needed). */
     data class SetPantryExpiryNotifications(val enabled: Boolean) : SettingsAction
+
+    /** Fas 5 (planera lane): when the morning expiry notification comes. */
+    data class SetPantryExpiryTime(val time: LocalTime) : SettingsAction
+
+    /** Fas 5 (planera lane): "Påminnelse kvällen innan" (asks for the permission when needed). */
+    data class SetMealReminders(val enabled: Boolean) : SettingsAction
+
+    /** Fas 5 (planera lane): when the evening reminder comes. */
+    data class SetMealReminderTime(val time: LocalTime) : SettingsAction
 
     /** Fas 4: the answer to the notification permission dialog. */
     data class NotificationPermissionResult(val granted: Boolean) : SettingsAction

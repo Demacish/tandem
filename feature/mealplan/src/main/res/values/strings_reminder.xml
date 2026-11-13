@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (planera lane): "Påminn kvällen innan" on the plan-meal page (plan §8.3). -->
+<resources>
+    <!-- The word written before the reminder in the note ("Remind: Thaw the chicken"). Must stay "Remind" or "Påminn": the app reads only these two words, in any language. -->
+    <string name="mealplan_reminder_keyword">Remind</string>
+    <string name="mealplan_reminder_label">Remind the evening before</string>
+    <string name="mealplan_reminder_hint">e.g. Thaw the chicken</string>
+    <string name="mealplan_reminder_supporting">A notification the evening before, if reminders are on in Settings → Sync and storage. Saved in the note as “Remind: …”, also seen on the web.</string>
+</resources>

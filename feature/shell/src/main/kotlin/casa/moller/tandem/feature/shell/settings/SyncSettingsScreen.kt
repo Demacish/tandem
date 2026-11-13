@@ -92,7 +92,9 @@ internal fun SyncSettingsScreen(
             DownloadAll(state = state, onChange = { onAction(SettingsAction.SetDownloadAll(it)) })
             ShoppingNotifications(state = state, onChange = { onAction(SettingsAction.SetShoppingNotifications(it)) })
             if (!state.readOnly) {
-                PantryExpiryNotifications(state = state, onChange = { onAction(SettingsAction.SetPantryExpiryNotifications(it)) })
+                PantryExpiryNotifications(state = state, onAction = onAction)
+                // Fas 5 (planera lane): "Påminnelse kvällen innan" (a guest never gets it either).
+                MealReminders(state = state, onAction = onAction)
             }
             state.shopping?.let { ShoppingServerSettingsGroup(settings = it) }
         }
@@ -268,10 +270,10 @@ private fun ShoppingNotifications(state: SyncSettingsUiState, onChange: (Boolean
 /**
  * Fas 4 (skafferinotis lane) "Notis när något går ut" (plan §8.8 "Använd upp", channel
  * "Måltidspåminnelser"): the switch, and the same note as the list's when the system does not let
- * the app post. Hemma offers the same switch in context.
+ * the app post. Hemma offers the same switch in context. Fas 5 (planera lane): its time below it.
  */
 @Composable
-private fun PantryExpiryNotifications(state: SyncSettingsUiState, onChange: (Boolean) -> Unit) {
+private fun PantryExpiryNotifications(state: SyncSettingsUiState, onAction: (SettingsAction) -> Unit) {
     val spacing = TandemTheme.spacing
     SettingsGroup {
         SwitchRow(
@@ -279,8 +281,13 @@ private fun PantryExpiryNotifications(state: SyncSettingsUiState, onChange: (Boo
             body = stringResource(R.string.settings_pantry_expiry_notifications_body),
             icon = TandemIcons.Restaurant,
             checked = state.pantryExpiryNotifications,
-            onCheckedChange = onChange,
+            onCheckedChange = { onAction(SettingsAction.SetPantryExpiryNotifications(it)) },
         )
+        // Fas 5 (planera lane): the time the user chooses (08:00 until changed).
+        if (state.pantryExpiryNotifications) {
+            GroupDivider()
+            PantryExpiryTimeRow(state = state, onAction = onAction)
+        }
         if (state.pantryExpiryNotifications && !state.notificationsAllowed) {
             Text(
                 text = stringResource(R.string.settings_shopping_notifications_blocked),

@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.shell.navigation
 
 import casa.moller.tandem.core.ui.navigation.AppOpenIntents
+import kotlinx.datetime.LocalDate
 
 /**
  * Fas 3 (widgets lane): where something outside the shell wants the app opened (a launcher
@@ -37,6 +38,13 @@ sealed interface ShellOpenRequest {
     /** Fas 4 (skafferinotis lane): the expiry notification opens "Kan laga nu" with "Använd upp" first. */
     data object UseUp : ShellOpenRequest
 
+    /** Fas 5 (planera lane): the evening reminder opens Veckan at the meal's day ([date] `yyyy-MM-dd`). */
+    data class WeekDay(val date: String) : ShellOpenRequest {
+        init {
+            require(runCatching { LocalDate.parse(date) }.isSuccess) { "date is yyyy-MM-dd" }
+        }
+    }
+
     companion object {
         private const val TODAY = "today"
         private const val MORE = "more"
@@ -59,6 +67,10 @@ sealed interface ShellOpenRequest {
 
         private fun withId(destination: String): ShellOpenRequest? {
             idOf(destination, AppOpenIntents.RECIPE_PREFIX)?.let { return Recipe(it) }
+            if (destination.startsWith(AppOpenIntents.WEEK_DAY_PREFIX)) {
+                val date = destination.removePrefix(AppOpenIntents.WEEK_DAY_PREFIX)
+                return runCatching { LocalDate.parse(date) }.getOrNull()?.let { WeekDay(it.toString()) }
+            }
             return idOf(destination, AppOpenIntents.COOK_PREFIX)?.let { Cook(it) }
         }
 
@@ -78,6 +90,7 @@ sealed interface ShellOpenRequest {
             ImportResult -> AppOpenIntents.IMPORT_RESULT
             BarcodeScan -> AppOpenIntents.SCAN
             UseUp -> AppOpenIntents.USE_UP
+            is WeekDay -> AppOpenIntents.weekDay(request.date)
         }
 
         private fun tabName(tab: ShellTab): String = when (tab) {

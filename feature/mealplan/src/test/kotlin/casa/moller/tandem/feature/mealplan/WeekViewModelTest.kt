@@ -74,6 +74,20 @@ class WeekViewModelTest {
         return effects
     }
 
+    /** Fas 5 (planera lane): the evening reminder opens Veckan at the meal's day (a day that is not the Monday). */
+    @Test
+    fun aDayThatIsNotTheMondayOpensItsWeekWithThatDayChosen() = runTest {
+        val vm = viewModel(weekStart = MealPlanSamples.day(5).toString())
+        open(vm)
+        assertEquals(MealPlanSamples.weekStart, vm.uiState.value.weekStart)
+        assertEquals(MealPlanSamples.day(5), vm.uiState.value.selectedDay)
+        assertEquals(MealPlanSamples.day(5), vm.uiState.value.shownDay)
+        // The Monday itself chooses nothing (today stays the shown day of this week).
+        val monday = viewModel(weekStart = MealPlanSamples.weekStart.toString())
+        open(monday)
+        assertNull(monday.uiState.value.selectedDay)
+    }
+
     @Test
     fun opensOnThisWeekWithTodayAndKeepsItFresh() = runTest {
         val vm = viewModel()

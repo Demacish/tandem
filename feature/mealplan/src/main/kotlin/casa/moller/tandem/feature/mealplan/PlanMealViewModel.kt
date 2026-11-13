@@ -8,6 +8,7 @@ import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
+import casa.moller.tandem.core.domain.mealplan.MealReminderNote
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
@@ -63,6 +64,9 @@ enum class MealKind { RECIPE, TITLE }
  *   offered while the search is empty (fix-ui, plan 6.2 "välj recept (sök, Vill laga, Favoriter)").
  * @property confirmDelete "Ta bort från matsedeln?" is asked (fix-ui: no removal by a mis-tap);
  *   [onShoppingList] says that the meal's rows on the list go with it.
+ * @property reminder Fas 5 (planera lane): "Påminn kvällen innan" ("Tina ut kycklingen"); it is saved
+ *   as a line "[reminderKeyword]: …" of the note (core:domain `MealReminderNote`), so [note] here
+ *   is the note without that line.
  */
 data class PlanMealUiState(
     val loading: Boolean = true,
@@ -89,6 +93,9 @@ data class PlanMealUiState(
     val favorites: List<RecipeOverview> = emptyList(),
     val confirmDelete: Boolean = false,
     val onShoppingList: Boolean = false,
+    // Fas 5 (planera lane), plan §8.3: "Påminn kvällen innan", kept in the note as a "Påminn:" line.
+    val reminder: String = "",
+    val reminderKeyword: String? = null,
 ) {
     val showAddToShopping: Boolean
         get() = !editing && kind == MealKind.RECIPE && recipe != null
@@ -130,6 +137,12 @@ sealed interface PlanMealAction {
     data class Title(val text: String) : PlanMealAction
 
     data class Note(val text: String) : PlanMealAction
+
+    /**
+     * Fas 5 (planera lane): "Påminn kvällen innan"; [keyword] is the word the app's language writes
+     * before it ("Påminn", "Remind") when the note has no reminder line yet.
+     */
+    data class Reminder(val text: String, val keyword: String) : PlanMealAction
 
     data object MoreServings : PlanMealAction
 
@@ -273,7 +286,8 @@ class PlanMealViewModel @AssistedInject internal constructor(
                         recipe = meal.recipe,
                         title = meal.title,
                         servings = meal.servings,
-                        note = meal.note,
+                        note = MealReminderNote.withoutReminder(meal.note),
+                        reminder = MealReminderNote.reminderOf(meal.note).orEmpty(),
                         onShoppingList = meal.onShoppingList,
                     )
                 }
@@ -313,6 +327,8 @@ class PlanMealViewModel @AssistedInject internal constructor(
             is PlanMealAction.Title -> form.update { it.copy(title = action.text) }
 
             is PlanMealAction.Note -> form.update { it.copy(note = action.text) }
+
+            is PlanMealAction.Reminder -> form.update { it.copy(reminder = action.text, reminderKeyword = action.keyword) }
 
             PlanMealAction.MoreServings -> form.update { it.copy(servings = it.servings + 1) }
 
@@ -375,7 +391,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
                         recipeId = state.recipe?.id.takeIf { state.kind == MealKind.RECIPE },
                         title = state.title.trim(),
                         servings = state.servings,
-                        note = state.note.trim(),
+                        note = fullNote(null, state),
                         addToShopping = state.showAddToShopping && state.addToShopping,
                     ),
                 )
@@ -417,6 +433,26 @@ class PlanMealViewModel @AssistedInject internal constructor(
     }
 }
 
+/**
+ * Fas 5 (planera lane): the note to save: the note field with the reminder as its "Påminn:" line. An
+ * unchanged note and reminder keep [meal]'s note exactly as it was (its line in its place, its word);
+ * a reminder line uses the word of the meal's line, else the one the screen gave.
+ */
+internal fun fullNote(meal: MealPlanEntry?, state: PlanMealUiState): String {
+    val original = meal?.note
+    if (original != null &&
+        state.note.trim() == MealReminderNote.withoutReminder(original) &&
+        state.reminder.trim() == MealReminderNote.reminderOf(original).orEmpty()
+    ) {
+        return original
+    }
+    // The note field never holds the meal's own reminder line (it is in the reminder field), so a
+    // blank reminder removes it, and a line typed into the note by hand stays as typed.
+    if (state.reminder.isBlank()) return state.note.trim()
+    val keyword = original?.let { MealReminderNote.keywordOf(it) } ?: state.reminderKeyword ?: MealReminderNote.KEYWORDS.first()
+    return MealReminderNote.withReminder(state.note.trim(), state.reminder, keyword)
+}
+
 /** Only the fields that changed (plan 3.5: a PATCH carries the changed fields). */
 internal fun changes(meal: MealPlanEntry, state: PlanMealUiState, typeId: Long): MealPlanUpdate = MealPlanUpdate(
     fromDate = state.date.takeIf { it != meal.fromDate },
@@ -424,5 +460,5 @@ internal fun changes(meal: MealPlanEntry, state: PlanMealUiState, typeId: Long):
     recipeId = state.recipe?.id?.takeIf { it != meal.recipe?.id && state.kind == MealKind.RECIPE },
     title = state.title.trim().takeIf { it != meal.title },
     servings = state.servings.takeIf { it != meal.servings },
-    note = state.note.trim().takeIf { it != meal.note },
+    note = fullNote(meal, state).takeIf { it != meal.note },
 )

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (planera lane): tiderna för de dagliga påminnelserna och påminnelsen kvällen innan (plan §8.3, §8.8). -->
+<resources>
+    <string name="settings_reminder_time">Tid</string>
+    <string name="settings_pantry_expiry_time_body">När morgonens notis kommer</string>
+    <string name="settings_meal_reminders">Påminnelse kvällen innan</string>
+    <string name="settings_meal_reminders_body">En notis kvällen innan en måltid vars anteckning har en rad som börjar med ”Påminn:”, till exempel ”Påminn: Tina ut kycklingen”. När du planerar en måltid kan du fylla i ”Påminn kvällen innan”. Fungerar utan nät.</string>
+    <string name="settings_meal_reminder_time_body">När kvällens påminnelse kommer</string>
+    <string name="settings_reminder_time_change">Ändra tid</string>
+    <string name="settings_time_dialog_morning">Tid för morgonens notis</string>
+    <string name="settings_time_dialog_evening">Tid för kvällens påminnelse</string>
+    <string name="settings_time_dialog_save">Spara</string>
+</resources>

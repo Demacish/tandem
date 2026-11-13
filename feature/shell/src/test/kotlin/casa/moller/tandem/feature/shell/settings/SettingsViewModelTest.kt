@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -193,6 +194,34 @@ class SettingsViewModelTest {
         settings.failWrites = true
         vm.onAction(SettingsAction.SetPantryExpiryNotifications(true))
         assertEquals(SettingsEffect.Message(R.string.shell_settings_not_saved), effects.last())
+    }
+
+    @Test
+    fun theEveningReminderAsksForThePermissionAndTheTimesAreSaved() = runTest {
+        // Fas 5 (planera lane): "Påminnelse kvällen innan" and the reminders' times (plan §8.3, §8.8).
+        timers.setCapabilities(TimerCapabilities.AllGranted.copy(notificationsAllowed = false))
+        val vm = newViewModel()
+        val state = collecting(vm.sync)
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.effect.collect { effects += it } }
+        assertFalse(state.value.mealReminders)
+        assertEquals(LocalTime(19, 0), state.value.mealReminderTime)
+        assertEquals(LocalTime(8, 0), state.value.pantryExpiryTime)
+
+        vm.onAction(SettingsAction.SetMealReminders(true))
+        assertTrue(state.value.mealReminders)
+        assertEquals(listOf<SettingsEffect>(SettingsEffect.RequestNotificationPermission), effects)
+
+        vm.onAction(SettingsAction.SetMealReminderTime(LocalTime(20, 30)))
+        vm.onAction(SettingsAction.SetPantryExpiryTime(LocalTime(6, 45)))
+        assertEquals(LocalTime(20, 30), settings.state.value.mealReminderTime)
+        assertEquals(LocalTime(6, 45), state.value.pantryExpiryTime)
+        assertEquals("a time asks nothing", 1, effects.size)
+
+        settings.failWrites = true
+        vm.onAction(SettingsAction.SetMealReminderTime(LocalTime(21, 0)))
+        assertEquals(SettingsEffect.Message(R.string.shell_settings_not_saved), effects.last())
+        assertEquals(LocalTime(20, 30), state.value.mealReminderTime)
     }
 
     @Test

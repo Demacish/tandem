@@ -90,7 +90,9 @@ private val TwoPaneDaysWidth = 300.dp
 @Composable
 internal fun WeekAgenda(state: WeekUiState, format: MealPlanFormat, onAction: (WeekAction) -> Unit, modifier: Modifier = Modifier) {
     val spacing = TandemTheme.spacing
-    val todayIndex = state.days.indexOfFirst { it.date == state.today }
+    // Fas 5 (planera lane): a chosen day (the evening reminder opens Veckan at the meal's day) comes first, else today.
+    val chosen = state.selectedDay?.takeIf { day -> state.days.any { it.date == day } }
+    val todayIndex = state.days.indexOfFirst { it.date == (chosen ?: state.today) }
     val listState = rememberSaveable(state.weekStart, saver = LazyListState.Saver) {
         LazyListState(firstVisibleItemIndex = todayIndex.coerceAtLeast(0))
     }

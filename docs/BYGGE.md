@@ -1115,6 +1115,7 @@ sätts av integrationen. En rad per bana.
 |---|---|---|---|
 | handla | Sammanslagning i listvyn och rutnätsvy (plan §8.2) | Samma livsmedel i omräkningsbara enheter är **en rad** på listan, i butiksläget och i delningstexten ("3 dl + 200 g grädde" → "5 dl"), räknat med Tandoors egna omräkningar och bastabell, också offline (cachen per konto, läst med de små tabellerna); det som inte går att räkna om står kvar på samma rad ("5 dl + 1 st"); att bocka av en rad bockar av alla dess poster i **en** bulk och att avmarkera tar tillbaka alla, servern behåller raderna (kontraktstest mot 2.6.13 och 2.7.1). Rutnätet slås på i listans meny och minns per konto; rutorna följer butikens ordning och de sammanslagna raderna, tryck bockar av, lång tryckning öppnar Ändra; varje ruta är **en** TalkBack-nod med namn, mängd, avdelning, läge och åtgärder; ATF och referensbilder på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | ✅ klart 2026-11-08 (PR 42477073185 och röktest "OK (37 tests)" 42477073270 på b237359; Contract 2.6.13/2.7.1 42474081585 och Tandoor-bevakning 42474081500 på e61ac91, kontraktstestet oförändrat sedan; referensbilder från Screenshots 42471117103), se "Sammanslagning och rutnät" |
 | kok | Handsfree (#32), köksskärm (#41), pannstorlek (plan §8.1, §8.7) | **Handsfree:** volymknapparna byter steg när handsfree är på (aldrig medan ett larm ringer, aldrig när det är av); "nästa/tillbaka/upprepa" fungerar på en telefon med svensk igenkänning i telefonen; uppläsning läser steget. **Köksskärm:** öppnas från Idag och Mer, mörk, stor text, skärmen på, dagens recept med ett tryck till kokläget, timrarna stora; i CI ett test som kör skärmen tre timmar utan läcka eller omritningsloop, och röktestet öppnar den. **Pannstorlek:** recept med `diameter` skalas efter ytan ovanpå portionerna i receptet och kokläget, offline, och det står "Skalat för 20 cm form". **BEHÖVER ENHET** (ägaren): 9 av 10 med fläkten på, tre timmar på en riktig surfplatta | ✅ klart 2026-11-13 i CI (PR 43430976135, röktest "OK (40 tests)" 43430976120, Contract 2.6.13/2.7.1 43430976206 och Tandoor-bevakning 43430976211 på cc1d317c; referensbilder från Screenshots 42477018620); enhetsproven återstår, se "Kokläget i Fas 5" |
+| planera | Påminnelse kvällen innan, "Tina ut" (plan §8.3), morgonnotisens tid och sommartidsfelet, det instabila core:sync-testet | En måltid vars anteckning har en rad "Påminn:" (eller "Remind:", valfri skiftläge) ger **en** notis kvällen innan i kanalen "Måltidspåminnelser" med radens text, en gång per måltid och kväll, också offline, aldrig för gäster eller i demoläget; flyttas måltiden, tas den bort eller förlorar raden (också genom synken) tas notisen bort; tryck öppnar Veckan på dagen. Fältet "Påminn kvällen innan" på Planera måltid skriver raden. Påslagen i Synk och lagring med vald tid (19.00), POST_NOTIFICATIONS frågas där. Morgonnotisen får vald tid (08.00). Båda planeras efter väggklockan i telefonens tidszon med en gemensam schemaläggare (engångsarbete per dag, ingen period), så sommartid och resor aldrig flyttar dem; tester med Europe/Stockholms omställningar i mars och oktober och byte av tidszon. core:sync-testerna stänger sin bakgrund deterministiskt (egen dispatcher, inga tysta tidsgränser). Skott och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. | pågår (gren `fas5/planera`), se "Påminnelser kvällen innan och på morgonen" |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 handla -->
@@ -1195,6 +1196,98 @@ referensbilder (`ShoppingScreenshotTest`: `phone_shopping_merged_*`, `phone_shop
 `phone_landscape_shopping_grid_light`, `tablet_portrait_shopping_grid_*`, `tablet_shopping_grid_*`,
 `phone_shopping_edit_merged_light_sv`, `phone_store_mode_merged_light_sv`).
 <!-- /Fas 5 handla -->
+
+<!-- Fas 5 planera -->
+## Påminnelser kvällen innan och på morgonen (`:core:sync`, `:core:domain`, `:feature:mealplan`, `:feature:shell`, Fas 5, planera)
+
+Plan §8.3 "Påminnelse kvällen innan" ("Tina ut kycklingen"), §8.7 kanalen "Måltidspåminnelser"
+(finns sedan 0.6.0, byts aldrig) och Fas 4:s öppna punkter om morgonnotisen. Ingen ny endpoint,
+inget nytt Room-schema (kvar på 6): anteckningen är Tandoors `note`, det som redan sagts ligger i
+`sync_state`, inställningarna i DataStore.
+
+**Syntaxen (`:core:domain` `MealReminderNote`).** En rad i måltidens anteckning som börjar med
+`Påminn:` (svenska, appen skriver så på svenska) eller `Remind:` (engelska), valfritt skiftläge,
+mellanslag och ett Markdown-listtecken (`- `, `* `) före; texten efter kolon är notisens text. En
+rad utan text räknas inte, vid flera gäller den första med text. Raden läses lika naturligt på
+webben. `withReminder` sätter, byter (raden behåller sin plats och sitt ord) eller tar bort raden;
+`withoutReminder` ger resten. `MealReminders.due(meals, dag)`: måltiderna som **börjar** den dagen
+(en måltid över flera dagar påminns en gång), i måltidstypens ordning, en per nyckel
+(`dag|namn|text`, inte id: en offlinemåltid byter id när den skickas). `MealReminderNoteTest`.
+
+**Planera måltid (`PlanMealViewModel`, `PlanMealScreen`).** Fältet "Påminn kvällen innan" (ikon
+larm, exempel "t.ex. Tina ut kycklingen", förklaring om inställningen) under anteckningen. Vid
+öppning delas anteckningen i anteckningsfältet och påminnelsefältet; `fullNote` sätter ihop dem:
+oförändrat ger exakt den gamla anteckningen (ingen PATCH), en ny text behåller ordet från webben
+("Remind:"), annars språkets ord (`mealplan_reminder_keyword`, "Påminn"/"Remind", får bara vara ett
+av dem), tomt fält tar bort raden, en rad som skrivits för hand i anteckningen står kvar.
+`PlanMealAction.Reminder(text, keyword)`.
+
+**Schemaläggaren (`:core:domain` `WallClockSchedule`, `:core:sync` `reminder/DailyReminderWork.kt`).**
+Varje körning planeras som ett lokalt **datum och klockslag** (`DailyRun`), aldrig som "24 timmar
+efter förra": ögonblicket räknas ut i den tidszon telefonen har när det behövs (`occurrence`; en tid i
+vårens glapp blir första ögonblicket efter, en dubbel tid på hösten den första). Det rättar Fas 4:s
+fel: morgonkollen var periodiskt arbete på 24 timmar som flyttade nästa körning med
+`setNextScheduleTimeOverride`, och när den inte tog (en körning som aldrig kom så långt, en
+åsidosättning som WorkManager tappade) tog perioden över, så efter sommartid kom notisen 07 eller 09
+tills den slogs av och på. Nu:
+
+| Del | Innehåll |
+|---|---|
+| `DailyReminderKind` | `PANTRY_EXPIRY` (`tandem.reminder.pantry_expiry`, batteri inte lågt) och `MEAL` (`tandem.reminder.meal`, inga villkor); inget nätkrav |
+| `WorkManagerDailyReminderScheduler` | **engångsarbete** per körning med fördröjningen till `DailyRun` i telefonens zon och indata `date`, `minutes`, `retry`, `at` (det planerade ögonblicket). `ensure(kind, tid)` (varje appstart och varje ändrad tid): behåller en plan för samma tid och samma ögonblick i dagens zon, en körning som pågår, eller dagens försenade; annars `REPLACE` med nästa. `planAfterThisRun` (från en körning): `APPEND_OR_REPLACE`, så den pågående inte stoppas och nästa väntar på den. `cancel` tar bort planen och Fas 4:s periodiska `tandem.pantry.expiry` |
+| `DailyReminderWorker` | en körning som startar tidigt i telefonens zon (tidszonen bytt under väntan) planerar om sig själv och gör inget; annars jobbet, sedan nästa: ett nytt försök samma dag om jobbet ber om det, annars nästa dag med tiden som gäller **nu** (`next(.., after = datum)`). Alltid `success`. Utan indata (startad för hand, röktestets `SmokeWorkerReceiver`) körs jobbet direkt för i dag och inget planeras. En körning av Fas 4:s periodiska arbete (taggen `tandem.pantry`) gör bara `ensure` |
+| `DailyReminderJob` | `time()` (vald tid när inställningen är på och ett riktigt konto är aktivt, annars null: inget planeras efter körningen) och `run(DailyRun?)` |
+
+`PantryExpiryWorker` (samma klassnamn som i Fas 4, så röktestet och WorkManagers sparade namn
+fungerar) och `MealReminderWorker` är tunna skal; consumer-rules behåller namnen. Överlever omstart
+(WorkManager), fungerar offline.
+
+**Morgonnotisen.** `AppSettings.pantryExpiryTime` (DataStore `pantry_expiry_time_minutes`, 08.00).
+`PantryExpiryReminders` följer inställning, tid och konto med `ensure`/`cancel`. Nattspärren
+(`ExpiryReminder.isQuiet`) slutar vid den valda tiden när den är före 07 och börjar vid midnatt när
+den är efter 21; `retryRun` ger nytt försök två timmar senare samma dag (Tandem på skärmen).
+
+**Kvällspåminnelsen.** `AppSettings.mealReminders` (av) och `mealReminderTime` (19.00; DataStore
+`meal_reminders`, `meal_reminder_time_minutes`).
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Kollen | `core/sync/mealplan/MealReminderCheck.kt` | i ordning: inställningen, konto (demo och utloggad aldrig), gäst, kvällens datum (en körning som skjutits förbi midnatt gör inget), före den valda tiden (bara bevakaren), behörighet/kanal. Med nät läses planen först (`MealPlanRepository.refresh`), annars den lokala. Morgondagens måltider (`observeWeek`), `MealReminders.due`; `sync_state` `meal_reminders_notified` (`window_from` = måltidernas dag, `hash` = JSON-nycklar): nya postas, de som inte längre gäller (flyttad, borttagen, raden borta, ny text) tas bort och glöms. `withdrawAll` när inställningen slås av |
+| Notisen | `core/sync/platform/MealReminderNotifier.kt` | kanalen `meal_reminders`, taggen `TandemNotificationIds.MEAL_REMINDER_TAG`, id från nyckeln (en per måltid), rubrik = påminnelsens text ("Tina ut kycklingen"), text "Middag i morgon: Kycklinggryta" (måltidstypen som Tandoor kallar den), ikon `ic_stat_tandem_pantry`, kategori påminnelse. Tryck: `AppOpenDestinations.WEEK_DAY_PREFIX` + datum → `ShellOpenRequest.WeekDay` → Veckan, `WeekAgendaKey(weekStart = dagen)`: en dag som inte är måndag öppnar sin vecka med dagen vald (först i agendan, öppen bredvid dagarna på breda fönster). `AndroidAccountNotifications` tar bort dem vid kontobyte |
+| Planen och bevakaren | `core/sync/mealplan/MealReminderSchedule.kt` | startas av `SyncStarter`; `ensure`/`cancel` som morgonnotisen. Medan processen lever (den gör det när synken kör, också i bakgrunden) bevakas kvällen från den valda tiden till midnatt: varje ändring av morgondagens påminnelser (här, på webben via synken, flyttad eller borttagen måltid) kör kollen igen efter 2 s, utan nätläsning |
+| Inställningarna | `feature/shell/settings/ReminderSettings.kt` | "Påminnelse kvällen innan" under "Notis när något går ut" på Synk och lagring (dold för gäst och i demoläget), med förklaringen av raden; påslagen utan behörighet → systemdialogen (`setNotification`), nekad → raden om Behörigheter. Raden "Tid" (en TalkBack-nod, knapp "Ändra tid") under varje påslagen påminnelse öppnar Materials tidsväljare i en dialog (urtavla, eller två fält vid teckenstorlek över 1,3 eller låga fönster; 24 timmar som telefonen) |
+
+**Röktest (spec, inte byggt i banan).** I röktestets app: slå på "Påminnelse kvällen innan", ge
+`POST_NOTIFICATIONS`, låt `FakeTandoor` ha en måltid i morgon med anteckningen "Påminn: Tina ut
+kycklingen", kör `am broadcast -n <paket>/casa.moller.tandem.smoke.SmokeWorkerReceiver --es worker meal`
+(kör `MealReminderWorker` utan indata = för i kväll, oavsett klockslag) och vänta på
+`data="SUCCEEDED"`; notisen med rubriken "Tina ut kycklingen" ska finnas (`dumpsys notification` eller
+UiAutomator), och ett tryck öppnar Veckan på morgondagen.
+
+**Det instabila core:sync-testet ("Database is closed", `UncaughtExceptionsBeforeTest`).** Det som
+körde i bakgrunden i ett test (det ivriga statusflödet i `DefaultSyncRepository`, spegeln,
+bevakarna) körde på `Dispatchers.Default` och kunde leva kvar efter att testet stängt databasen; ett
+undantag där hamnade hos kotlinx-coroutines-tests globala hanterare och fällde **nästa** test.
+`SyncTestGraph` har nu en egen dispatcher (fyra trådar) för `scope` och en egen
+`CoroutineExceptionHandler` (`backgroundFailures`); `closePhone` avbryter och väntar in scopet,
+stänger dispatchern och väntar på dess trådar **innan** databaserna stängs, och fäller testet självt
+om något inte stannat inom 10 s (förut tyst). `DefaultSyncRepository` tar redan sitt scope injicerat
+(`@ApplicationScope`).
+
+**Tester:** `WallClockScheduleTest` (nästa körning, mars och oktober, glapp och dubbeltid, tidig i ny
+zon, efter midnatt, nattspärren med vald tid, `retryRun`), `MealReminderNoteTest`,
+`DailyReminderWorkTest` (testets WorkManager: planen behålls, ny tid och ny zon ersätter, avbryt,
+nästa efter den pågående, mars, tidig start, ingen plan när av, för hand, Fas 4:s arbete),
+`PantryExpiryWorkTest` (begäran, arbetaren med den riktiga kollen, oktober 08.00 → 08.00 efter 25 h,
+nytt försök, planen följer inställning, tid och konto, Fas 4:s periodiska arbete ersätts),
+`MealReminderCheckTest` (en per måltid och kväll, flyttad/borttagen/ändrad, offlinemåltid som skickas,
+före tiden och efter midnatt, tidszon, av/utloggad/demo/gäst/behörighet, `withdrawAll`),
+`MealReminderScheduleTest`, `PreferencesSettingsStoreTest`, `SettingsViewModelTest`,
+`PlanMealViewModelTest`, `WeekViewModelTest`, `ShellNavigationStateTest`, `OpenLaunchTest`,
+`ReminderSettingsTest` och `PlanMealReminderTest` (UI, skott och ATF: `shell/reminders_*` på telefon,
+liggande telefon, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2, blockerad;
+`mealplan/*plan_meal_reminder*`).
+<!-- /Fas 5 planera -->
 
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
@@ -1937,7 +2030,8 @@ telefonen.
 **Beslut:** gäster får ingen notis (Tandoor ger dem inget skafferi); demoläget postar aldrig;
 med Tandem på skärmen postas inget (inte bara på Hemma: Idag visar "Går ut snart"), och varan
 räknas då inte som sagd; ingen egen tid i inställningarna (08.00 i enhetens tidszon, nattspärr
-21–07).
+21–07). Fas 5 (planera): tiden väljs och schemat är ett annat, se "Påminnelser kvällen innan och
+på morgonen".
 
 **Fas S-resten: dubbla standardplatser.** Två telefoner som öppnade Hemma för första gången i
 samma ögonblick kunde båda se ett tomt hushåll och skapa Kyl, Frys och Skafferi var.

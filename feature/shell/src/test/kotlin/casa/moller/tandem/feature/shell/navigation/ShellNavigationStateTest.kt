@@ -7,6 +7,7 @@ import androidx.navigation3.runtime.NavKey
 import casa.moller.tandem.core.model.timer.CookTimer
 import casa.moller.tandem.feature.cook.navigation.CookKey
 import casa.moller.tandem.feature.cook.navigation.TimersKey
+import casa.moller.tandem.feature.mealplan.navigation.WeekAgendaKey
 import casa.moller.tandem.feature.pantry.navigation.MakeNowKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
@@ -209,6 +210,11 @@ class ShellNavigationStateTest {
         // Fas 4 (skafferinotis lane): the expiry notification opens "Kan laga nu" with "Använd upp" first.
         navigation.open(ShellOpenRequest.UseUp)
         assertEquals(listOf<NavKey>(TodayKey, MoreKey, MakeNowKey(useUpFirst = true)), navigation.backStack)
+        // Fas 5 (planera lane): the evening reminder opens Veckan at the meal's day, one such page at a time.
+        navigation.open(ShellOpenRequest.WeekDay("2026-11-14"))
+        assertEquals(listOf<NavKey>(TodayKey, WeekKey, WeekAgendaKey(weekStart = "2026-11-14")), navigation.backStack)
+        navigation.open(ShellOpenRequest.WeekDay("2026-11-15"))
+        assertEquals(listOf<NavKey>(TodayKey, WeekKey, WeekAgendaKey(weekStart = "2026-11-15")), navigation.backStack)
         // Fas 3 (import lane): a share opens the import on the Recipes tab, replacing an open import.
         navigation.openImport(ShareImportRequest(text = "https://example.com/x"))
         assertEquals(
