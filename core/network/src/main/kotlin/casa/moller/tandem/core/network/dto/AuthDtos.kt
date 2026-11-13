@@ -29,6 +29,10 @@ data class TokenAuthResponseDto(
 @Serializable
 data class AccessTokenCreateRequestDto(val scope: String, val expires: String)
 
+/** Fas 5 (kalender lane): body of `PATCH /api/access-token/{id}/` that only moves the expiry. */
+@Serializable
+data class AccessTokenExpiryDto(val expires: String)
+
 /**
  * One entry of `GET /api/access-token/` (an unpaginated array) or the `201` of a create.
  * [token] is plaintext in the create response and for ~15 s after; later it is masked as

@@ -228,6 +228,18 @@ class Phase5IcalContractTest {
         val again = api("token-radera-igen", "DELETE", "/api/access-token/$oldId/")
         observe("token.deleteAgain.status", again.status)
 
+        // Renewing keeps the link: PATCH `expires` of the replacement, same token, the feed still opens.
+        val newId = (replacement.json as? JsonObject)?.longAt("id")
+        if (newId != null && newToken != null) {
+            val later = ZonedDateTime.now(zone).plusDays(TOKEN_DAYS * 2).truncatedTo(ChronoUnit.SECONDS).toOffsetDateTime().toString()
+            val renewed = api("token-forlang", "PATCH", "/api/access-token/$newId/", obj("expires" to later))
+            observe("token.renew.status", renewed.status)
+            val renewedBody = renewed.json as? JsonObject
+            observe("token.renew.sameToken", renewedBody?.stringAt("token")?.let { it == newToken })
+            observe("token.renew.expiresMoved", renewedBody?.stringAt("expires")?.let { it.take(DATE_LENGTH) == later.take(DATE_LENGTH) })
+            observe("ical.renewed.status", feed("ical-forlangd", "/api/meal-plan/ical/?access_token=$newToken").status)
+        }
+
         // An expired mealplan token: created (201) and then refused like any other.
         val past = ZonedDateTime.now(zone).minusDays(1).truncatedTo(ChronoUnit.SECONDS).toOffsetDateTime().toString()
         val expired = api("token-utgangen", "POST", "/api/access-token/", obj("scope" to "mealplan", "expires" to past))
@@ -381,6 +393,7 @@ class Phase5IcalContractTest {
         const val MASK_WAIT_MILLIS = 16_000L
         const val NO_CONTENT = 204
         const val DATE_ONLY = 8
+        const val DATE_LENGTH = 10
         val BASIC: java.time.format.DateTimeFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss")
         val BASIC_DATE: java.time.format.DateTimeFormatter = java.time.format.DateTimeFormatter.BASIC_ISO_DATE
         val ICS_DATE = Regex("(?<![0-9])20\\d{6}(?![0-9])")
@@ -410,6 +423,10 @@ class Phase5IcalContractTest {
             "token.delete.status" to 204,
             "ical.revoked.status" to 403,
             "ical.replacement.status" to 200,
+            "token.renew.status" to 200,
+            "token.renew.sameToken" to true,
+            "token.renew.expiresMoved" to true,
+            "ical.renewed.status" to 200,
             "ical.expired.status" to 403,
         )
     }

@@ -7,6 +7,8 @@ POST /api-token-auth/
 GET /api/access-token/
 POST /api/access-token/
 DELETE /api/access-token/{id}/
+# Fas 5 (kalender lane): renewing the meal plan link's own token keeps its address.
+PATCH /api/access-token/{id}/
 
 # --- allauth headless, app client (Tandoor 2.7+, which removed api-token-auth) ---
 # Not in Tandoor's OpenAPI schema: django-allauth serves its own specification. UsedEndpointsTest
@@ -169,3 +171,8 @@ GET /api/share-link/{id}
 # The space's own unit conversions, read with the small tables (not for guests: 403) and cached per
 # account, so the list can show "3 dl + 200 g grädde" as one row offline.
 GET /api/unit-conversion/
+
+# --- Fas 5 (kalender lane): the meal plan in the calendar (plan §7 #36) ---
+# Never called by Tandem itself: the app builds this address with a token of the scope `mealplan`
+# for the user's calendar app (Phase5IcalContractTest). Listed so the schema watch sees a change.
+GET /api/meal-plan/ical/

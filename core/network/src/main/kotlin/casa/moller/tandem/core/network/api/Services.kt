@@ -2,6 +2,7 @@ package casa.moller.tandem.core.network.api
 
 import casa.moller.tandem.core.network.dto.AccessTokenCreateRequestDto
 import casa.moller.tandem.core.network.dto.AccessTokenDto
+import casa.moller.tandem.core.network.dto.AccessTokenExpiryDto
 import casa.moller.tandem.core.network.dto.AllauthLoginRequestDto
 import casa.moller.tandem.core.network.dto.AllauthResponseDto
 import casa.moller.tandem.core.network.dto.ServerSettingsDto
@@ -15,6 +16,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -46,6 +48,13 @@ interface AuthService {
     /** 204 with an empty body. A token may delete itself. */
     @DELETE("api/access-token/{id}/")
     suspend fun deleteAccessToken(@Path("id") id: Long)
+
+    /**
+     * Fas 5 (kalender lane): moves a token's expiry, the token itself stays (FACTS "Fas 5:
+     * matsedeln i kalendern"), so the calendar's subscription address keeps working.
+     */
+    @PATCH("api/access-token/{id}/")
+    suspend fun renewAccessToken(@Path("id") id: Long, @Body body: AccessTokenExpiryDto): AccessTokenDto
 }
 
 /**

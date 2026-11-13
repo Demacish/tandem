@@ -72,6 +72,17 @@ object DatastoreFiles {
     /** File name of the shopping view store. */
     const val SHOPPING_VIEW = "$SHOPPING_VIEW_NAME.preferences_pb"
 
+    /**
+     * Fas 5 (kalender lane): "Visa i telefonens kalender" on this phone and how its last write went
+     * (plan §7 #36), `files/datastore/meal_calendar.preferences_pb`. Nothing personal, no token.
+     */
+    const val MEAL_CALENDAR_NAME = "meal_calendar"
+
+    /** File name of the meal calendar store. */
+    const val MEAL_CALENDAR = "$MEAL_CALENDAR_NAME.preferences_pb"
+
+    internal fun mealCalendarFile(context: Context): File = context.preferencesDataStoreFile(MEAL_CALENDAR_NAME)
+
     internal fun shoppingViewFile(context: Context): File = context.preferencesDataStoreFile(SHOPPING_VIEW_NAME)
 
     internal fun secureAiKeysFile(context: Context): File = context.dataStoreFile(SECURE_AI_KEYS)

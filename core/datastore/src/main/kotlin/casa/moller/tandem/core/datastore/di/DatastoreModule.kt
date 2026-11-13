@@ -5,6 +5,7 @@ import casa.moller.tandem.core.datastore.AiKeyStore
 import casa.moller.tandem.core.datastore.AiPreferencesStore
 import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.DiagnosticsStore
+import casa.moller.tandem.core.datastore.MealCalendarStore
 import casa.moller.tandem.core.datastore.SecureAccountStore
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.ShoppingViewStore
@@ -15,6 +16,7 @@ import casa.moller.tandem.core.datastore.internal.EncryptedAccountStore
 import casa.moller.tandem.core.datastore.internal.EncryptedAiKeyStore
 import casa.moller.tandem.core.datastore.internal.PreferencesAiPreferencesStore
 import casa.moller.tandem.core.datastore.internal.PreferencesDiagnosticsStore
+import casa.moller.tandem.core.datastore.internal.PreferencesMealCalendarStore
 import casa.moller.tandem.core.datastore.internal.PreferencesSettingsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesShoppingViewStore
 import dagger.Module
@@ -94,6 +96,14 @@ object DatastoreModule {
     @Singleton
     fun provideShoppingViewStore(@ApplicationContext context: Context): ShoppingViewStore = PreferencesShoppingViewStore.create(
         produceFile = { DatastoreFiles.shoppingViewFile(context) },
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    // Fas 5 (kalender lane): "Visa i telefonens kalender" (plan §7 #36).
+    @Provides
+    @Singleton
+    fun provideMealCalendarStore(@ApplicationContext context: Context): MealCalendarStore = PreferencesMealCalendarStore.create(
+        produceFile = { DatastoreFiles.mealCalendarFile(context) },
         scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     )
 }
