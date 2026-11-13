@@ -130,7 +130,9 @@ class RecipeShoppingScreenTest {
 
     @Test
     fun theSheetWithoutATinSaysNothingAboutOne() {
-        composeRule.setContent { ShoppingTestTheme { Scrolling { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = {}) } } }
+        composeRule.setContent {
+            ShoppingTestTheme { Scrolling { RecipeShoppingContent(state = RecipeShoppingSamples.sheet, onAction = {}) } }
+        }
         composeRule.onNodeWithTag(RECIPE_SHOPPING_PAN_TAG).assertDoesNotExist()
     }
 
