@@ -1179,3 +1179,39 @@ och lägger till 1 dl tandem-grädde = 100 g.
   portionerna till `servings × Math.round((ny / gammal)² × 100) / 100`; 24 → 20 cm ger 0,69. [V källan]
   Appen räknar likadant (`PanScaling.areaFactor`) och multiplicerar med portionernas faktor.
 <!-- /Fas 5 pannstorlek -->
+
+<!-- Fas 5 kalender -->
+## Fas 5: matsedeln i kalendern (plan §3.1, §7 #36, bana kalender)
+
+`Phase5IcalContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1, eget steg) och spelar in till
+`fas5/kalender/` (2026-11-14, inga avvikelser mot `EXPECTED`; 2.7.1 gav exakt samma fakta). Bevakningen
+jämför faktan (`fas5.kalender`). Tokens i adresser ersätts av sanerarens falska, flödets datum flyttas
+som alla andra datum.
+
+- **a. Flödet.** `GET /api/meal-plan/ical/` → 200 `text/calendar`, `Content-Disposition: inline;
+  filename=meal_plan_….ics`. En `VEVENT` per måltid: `UID:mealplan-<id>@tandoor.recipes`,
+  `SUMMARY:<måltidstyp>: <titel eller receptets namn>`, `DESCRIPTION` = anteckningen (tom rad utan),
+  `DTSTART`/`DTEND` som **UTC-tider** (`20000116T170000Z`, ingen `TZID`, aldrig `VALUE=DATE`). [O]
+  - En måltid vars måltidstyp har tid (18:00) börjar 18:00 i serverns zon och varar **60 minuter**;
+    utan tid på måltidstypen blir det Tandoors **12:00** (aldrig heldag). En måltid över två dagar går
+    från första dagens tid till andra dagens. [O] Appens egen kalender (alternativ b) gör i stället
+    heldag utan tid (`MealCalendarEvents`).
+  - `from_date`/`to_date` filtrerar som listan (på `to_date`:s datum, båda inklusive); utan dem gäller
+    −90 till +360 dagar **räknat när flödet läses**, så en prenumerationsadress behöver inga datum. [O/K]
+  - `VERSION:` i kalenderhuvudet är Tandoors version i 2.6.13 och `2.0` i 2.7.x [K]; inget appen läser.
+- **b. Bara scopet `mealplan`.** En token med scope `mealplan` öppnar flödet (200); en `read write`-token
+  får 403, i headern och i adressen, och utan token 403. En `mealplan`-token får 403 på
+  `/api/meal-plan/`, `/api/recipe/` och `/api/access-token/`: den läser bara flödet. [O]
+- **c. Token i adressen.** `?access_token=<token>` utan `Authorization` → 200 med samma händelser
+  (django-oauth-toolkit läser OAuth 2-bearer i frågan, RFC 6750 §2.3). `?token=` och `?auth=` → 403. [O]
+  En kalender som prenumererar kan alltså använda adressen
+  `<server>/api/meal-plan/ical/?access_token=<mealplan-token>` (`MealPlanIcal.subscriptionUrl`).
+- **d. Skapa, byta, förlänga, återkalla.** Appens `read write`-token skapar en token med
+  `{"scope": "mealplan", "expires": …}` → 201 med fälten `created, expires, id, scope, token, updated`
+  och tokenen i klartext. **Efter 16 s visas den fortfarande i klartext** i `GET /api/access-token/`
+  (Tandoors regel för `mealplan` och `bookmarklet`). `PATCH {expires}` → 200, **samma token**, ny
+  utgång, flödet öppnas fortfarande (förnyelsen behåller adressen). `DELETE` → 204, därefter 403 på
+  flödet; en andra `DELETE` → 404. En ny token öppnar flödet medan den gamla är återkallad. En utgången
+  `mealplan`-token (201 att skapa) avvisas med 403. En gäst kan skapa en `mealplan`-token (201), men
+  appen erbjuder inte länken för gäster (de skriver aldrig). [O]
+<!-- /Fas 5 kalender -->

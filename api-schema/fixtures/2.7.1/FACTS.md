@@ -180,3 +180,12 @@ för källan), att servern aldrig slår ihop poster och att webben bara lägger 
 `fas5/kok/`, 2026-11-08): heltalet `diameter` och `diameter_text` i detaljen men inte i listan, 400 för
 decimal och `null`, ett negativt värde lagras. [O]
 <!-- /Fas 5 pannstorlek -->
+
+<!-- Fas 5 kalender -->
+## Fas 5: matsedeln i kalendern (plan §3.1, §7 #36, bana kalender)
+
+`Phase5IcalContractTest` ger exakt samma fakta som 2.6.13 (`../2.6.13/FACTS.md` "Fas 5: matsedeln i
+kalendern", `fas5/kalender/`, 2026-11-14): flödet bara med scopet `mealplan`, token i adressen som
+`?access_token=`, UTC-tider, 60 minuter, 12:00 utan måltidstypens tid, skapa/förläng (samma
+token)/återkalla. Enda skillnaden i flödet är `VERSION:2.0` i kalenderhuvudet. [O]
+<!-- /Fas 5 kalender -->

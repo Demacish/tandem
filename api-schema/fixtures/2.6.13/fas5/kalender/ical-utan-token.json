@@ -1,0 +1,27 @@
+{
+  "name": "ical-utan-token",
+  "request": {
+    "method": "GET",
+    "path": "/api/meal-plan/ical/",
+    "headers": {
+      "accept": "text/calendar",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "allow": "GET, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "text/calendar; charset=utf-8",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": "detail"
+  }
+}

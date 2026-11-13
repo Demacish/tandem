@@ -1,0 +1,40 @@
+{
+  "name": "token-skapa",
+  "request": {
+    "method": "POST",
+    "path": "/api/access-token/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "content-type": "application/json; charset=utf-8",
+      "x-forwarded-proto": "https"
+    },
+    "body": {
+      "scope": "mealplan",
+      "expires": "2001-01-14T00:00:00+01:00"
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "allow": "GET, POST, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 11,
+      "token": "tda_00000000_0000_0000_0000_000000000003",
+      "expires": "2001-01-14T00:00:00+01:00",
+      "scope": "mealplan",
+      "created": "2000-01-15T00:00:00.000000+01:00",
+      "updated": "2000-01-15T00:00:00.000000+01:00"
+    }
+  }
+}

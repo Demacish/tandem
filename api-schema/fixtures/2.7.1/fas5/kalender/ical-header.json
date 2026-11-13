@@ -1,0 +1,29 @@
+{
+  "name": "ical-header",
+  "request": {
+    "method": "GET",
+    "path": "/api/meal-plan/ical/",
+    "headers": {
+      "accept": "text/calendar",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000003",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, HEAD, OPTIONS",
+      "content-disposition": "inline; filename=meal_plan_1999-10-16 23:15:11.577219+00:00-2001-01-08 23:15:11.577230+00:00.ics",
+      "content-language": "en",
+      "content-type": "text/calendar",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": false,
+    "bodyText": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Tandoor Recipes//\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Krämig svamppasta\r\nDTSTART:20000115T170000Z\r\nDTEND:20000115T180000Z\r\nUID:mealplan-1@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Lunch: Shakshuka\r\nDTSTART:20000116T110000Z\r\nDTEND:20000116T120000Z\r\nUID:mealplan-2@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Rester\r\nDTSTART:20000116T183000Z\r\nDTEND:20000116T193000Z\r\nUID:mealplan-3@tandoor.recipes\r\nDESCRIPTION:Ät upp det som finns i **kylen**.\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Frukost: Ny titel\r\nDTSTART:20000119T170000Z\r\nDTEND:20000119T180000Z\r\nUID:mealplan-4@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Frukost: Sent UTC\r\nDTSTART:20000118T233000Z\r\nDTEND:20000119T003000Z\r\nUID:mealplan-5@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Två dagar\r\nDTSTART:20000120T170000Z\r\nDTEND:20000121T170000Z\r\nUID:mealplan-6@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Potatisgratäng\r\nDTSTART:20000122T170000Z\r\nDTEND:20000122T180000Z\r\nUID:mealplan-8@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Potatisgratäng\r\nDTSTART:20000124T170000Z\r\nDTEND:20000124T180000Z\r\nUID:mealplan-10@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Potatisgratäng\r\nDTSTART:20000125T170000Z\r\nDTEND:20000125T180000Z\r\nUID:mealplan-11@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Potatisgratäng\r\nDTSTART:20000126T170000Z\r\nDTEND:20000126T180000Z\r\nUID:mealplan-12@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Middag: Potatisgratäng\r\nDTSTART:20000127T170000Z\r\nDTEND:20000127T180000Z\r\nUID:mealplan-13@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Tandem kalender middag: Tandem kalender Kalenderns middag\r\nDTSTART:20000116T170000Z\r\nDTEND:20000116T180000Z\r\nUID:mealplan-50@tandoor.recipes\r\nDESCRIPTION:Dubbel sats.\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Tandem kalender matlåda: Tandem kalender Kalenderns matlåda\r\nDTSTART:20000117T110000Z\r\nDTEND:20000117T120000Z\r\nUID:mealplan-51@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSUMMARY:Tandem kalender middag: Tandem kalender Kalenderns gryta\r\nDTSTART:20000118T170000Z\r\nDTEND:20000119T170000Z\r\nUID:mealplan-52@tandoor.recipes\r\nDESCRIPTION:\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+  }
+}

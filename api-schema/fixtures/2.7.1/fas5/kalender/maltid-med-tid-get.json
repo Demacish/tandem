@@ -1,0 +1,48 @@
+{
+  "name": "maltid-med-tid-get",
+  "request": {
+    "method": "GET",
+    "path": "/api/meal-plan/50/",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Bearer tda_00000000_0000_0000_0000_000000000001",
+      "x-forwarded-proto": "https"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "allow": "GET, PUT, PATCH, DELETE, HEAD, OPTIONS",
+      "content-language": "en",
+      "content-type": "application/json",
+      "cross-origin-opener-policy": "same-origin",
+      "referrer-policy": "same-origin",
+      "server": "nginx",
+      "vary": "Accept, Accept-Language, Cookie",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN"
+    },
+    "isJson": true,
+    "body": {
+      "id": 50,
+      "title": "Tandem kalender Kalenderns middag",
+      "recipe": null,
+      "servings": 2.0,
+      "note": "Dubbel sats.",
+      "note_markdown": "Dubbel sats.",
+      "from_date": "2000-01-16T18:00:00+01:00",
+      "to_date": "2000-01-16T18:00:00+01:00",
+      "meal_type": {
+        "id": 5,
+        "name": "Tandem kalender middag",
+        "order": 70,
+        "time": "18:00:00",
+        "color": null,
+        "created_by": 1
+      },
+      "created_by": 1,
+      "meal_type_name": "Tandem kalender middag",
+      "shopping": false
+    }
+  }
+}
