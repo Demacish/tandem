@@ -4,6 +4,7 @@
 #
 # Expects the APKs built beforehand by
 #   ./gradlew :app:assembleSideloadMinified :smoke:assembleMinified
+# (in CI by smoke.yml's build job, downloaded to the same paths by each emulator shard)
 # and writes everything worth keeping to $SMOKE_OUT (default smoke-results/):
 #   instrumentation.txt   the test runner's output
 #   logcat.txt            the full device log of the run
@@ -54,6 +55,8 @@ logcat_pid=$!
 
 echo "::group::Instrumentation"
 # SMOKE_TESTS (a by-hand run, smoke.yml's "tests" input): only these classes; empty = every test.
+# Fas 5 (integration-08): otherwise SMOKE_FILTER (class or notClass) with SMOKE_CLASSES picks this
+# shard's half (smoke.yml's matrix); without them every test runs, as on one emulator before.
 filter=()
 if [ -n "${SMOKE_TESTS:-}" ]; then
   case "$SMOKE_TESTS" in
@@ -61,6 +64,17 @@ if [ -n "${SMOKE_TESTS:-}" ]; then
   esac
   echo "Only: $SMOKE_TESTS"
   filter=(-e class "$SMOKE_TESTS")
+elif [ -n "${SMOKE_FILTER:-}" ] && [ -n "${SMOKE_CLASSES:-}" ]; then
+  case "$SMOKE_FILTER" in
+    class|notClass) ;;
+    *) echo "::error::SMOKE_FILTER must be class or notClass"; exit 1 ;;
+  esac
+  classes="$(printf '%s' "$SMOKE_CLASSES" | tr -d ' \n')"
+  case "$classes" in
+    *[!A-Za-z0-9_.,]*) echo "::error::SMOKE_CLASSES may only name test classes"; exit 1 ;;
+  esac
+  echo "Shard ${SMOKE_SHARD:-?}: -e $SMOKE_FILTER $classes"
+  filter=(-e "$SMOKE_FILTER" "$classes")
 fi
 adb shell am instrument -w "${filter[@]}" "$TEST_PACKAGE/$RUNNER" 2>&1 | tr -d '\r' | tee "$OUT/instrumentation.txt"
 echo "::endgroup::"
@@ -150,7 +164,7 @@ grep -q '^OK (' "$OUT/instrumentation.txt" && ! grep -q -e 'FAILURES!!!' -e 'INS
 
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   {
-    echo "### Release smoke test"
+    echo "### Release smoke test${SMOKE_SHARD:+ (shard ${SMOKE_SHARD})}"
     echo "- Tests: $([ "$passed" = true ] && echo passed || echo '**FAILED**')"
     echo "- App crash: $([ "$crashed" = true ] && echo '**yes**' || echo none)"
     echo "- Sync workers finished: $(grep -c 'Worker result SUCCESS' "$OUT/workers.txt" || true)"

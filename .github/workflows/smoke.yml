@@ -23,7 +23,7 @@ on:
   workflow_call:
     outputs:
       ran:
-        description: "Result of the emulator job (success, failure or skipped)"
+        description: "Result of the emulator jobs (success, failure or skipped; both shards must pass for success)"
         value: ${{ jobs.smoke.result }}
 
 concurrency:
@@ -85,12 +85,16 @@ jobs:
           echo "run=${run}" >> "$GITHUB_OUTPUT"
           echo "Run the release smoke test: ${run}" | tee -a "$GITHUB_STEP_SUMMARY"
 
-  smoke:
-    name: Minified app on an emulator (API 36)
+  # Fas 5 (integration-08, 0.8.0): one build, two emulators. With 46 tests one emulator needed
+  # about 44 of its 50 minutes (and 49 min 50 s once), so the minified APKs are built once here,
+  # checked against their R8 mapping and handed to two emulator shards that run in parallel
+  # (docs/BYGGE.md "Release-röktest", "Två emulatorer").
+  build:
+    name: Build and check the minified app
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -122,8 +126,6 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      # Built before the emulator starts and the Gradle daemon is stopped afterwards: the runner
-      # (2 vCPU / 7 GB) cannot hold Gradle and an emulator at the same time.
       - name: Build the minified app and the smoke test APK
         run: |
           ./gradlew --stacktrace :app:assembleSideloadMinified :smoke:assembleMinified
@@ -132,40 +134,6 @@ jobs:
           for apk in app/build/outputs/apk/sideload/minified/*.apk; do
             echo "Minified APK: \`$(basename "$apk")\` $(stat -c %s "$apk") bytes" | tee -a "$GITHUB_STEP_SUMMARY"
           done
-
-      # The emulator's userdata partition needs about 7.5 GB; a fresh runner has about 5.5 GB left
-      # after the build. Remove large preinstalled toolchains this job never uses.
-      - name: Free disk space for the emulator
-        run: |
-          df -h / | tail -n 1
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup \
-            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell || true
-          df -h / | tail -n 1
-
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      - name: Run the smoke test on an emulator
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
-        with:
-          api-level: 36
-          target: google_apis
-          arch: x86_64
-          profile: pixel_6
-          cores: 2
-          ram-size: 3072M
-          disk-size: 4096M
-          # A hardware keyboard keeps the soft keyboard from covering the buttons.
-          enable-hw-keyboard: true
-          disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
-          script: bash scripts/ci/smoke-run.sh
-        env:
-          # Fas S (integration): a by-hand run may pick test classes; pushes, main and tags run all.
-          SMOKE_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
 
       # The incident check, independent of the emulator: every Retrofit service interface must
       # survive R8 (v0.0.1 lost ServerService, and with it the whole login), and the password
@@ -272,11 +240,110 @@ jobs:
           [ "$failed" -eq 0 ] || exit 1
           echo "The merged manifest has no datatransport backend and no MlKitInitProvider."
 
+      # Both shards install exactly these APKs; the mapping retraces a crash on the emulator.
+      - name: Hand the APKs to the emulator shards
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-apks
+          path: |
+            app/build/outputs/apk/sideload/minified/
+            smoke/build/outputs/apk/minified/
+            app/build/outputs/mapping/sideloadMinified/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload the R8 mapping
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-mapping
+          path: app/build/outputs/mapping/sideloadMinified/
+          if-no-files-found: warn
+          retention-days: 7
+
+  smoke:
+    name: Minified app on an emulator (API 36, shard ${{ matrix.shard }})
+    needs: [changes, build]
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      # Both shards always finish, so one run shows every failing test.
+      fail-fast: false
+      matrix:
+        # Shard 1 runs the classes listed here, shard 2 every other class (also every new one).
+        # Balanced by their times on main (run 43583033962): about 980 s of tests each.
+        include:
+          - shard: 1
+            filter: class
+          - shard: 2
+            filter: notClass
+    env:
+      SHARD_1_CLASSES: >-
+        casa.moller.tandem.smoke.Phase2SmokeTest,casa.moller.tandem.smoke.Phase4SmokeTest,casa.moller.tandem.smoke.Phase1bSmokeTest,casa.moller.tandem.smoke.Phase2AccountsSmokeTest,casa.moller.tandem.smoke.ReleaseSmokeTest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the APKs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: smoke-apks
+          path: .
+
+      # Java for retracing a crash with the SDK's retrace tool (scripts/ci/smoke-run.sh).
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # The emulator's userdata partition needs about 7.5 GB. Remove large preinstalled
+      # toolchains this job never uses.
+      - name: Free disk space for the emulator
+        run: |
+          df -h / | tail -n 1
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android/sdk/ndk /opt/ghc /usr/local/.ghcup \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost /usr/share/swift /usr/local/share/powershell || true
+          df -h / | tail -n 1
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the smoke test on an emulator
+        # A by-hand run with chosen classes runs them in shard 1 only.
+        if: matrix.shard == 1 || github.event_name != 'workflow_dispatch' || inputs.tests == ''
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 2
+          ram-size: 3072M
+          disk-size: 4096M
+          # A hardware keyboard keeps the soft keyboard from covering the buttons.
+          enable-hw-keyboard: true
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/ci/smoke-run.sh
+        env:
+          # Fas S (integration): a by-hand run may pick test classes; pushes, main and tags run all.
+          SMOKE_TESTS: ${{ github.event_name == 'workflow_dispatch' && inputs.tests || '' }}
+          SMOKE_SHARD: ${{ matrix.shard }}
+          SMOKE_FILTER: ${{ matrix.filter }}
+          SMOKE_CLASSES: ${{ env.SHARD_1_CLASSES }}
+
       - name: Upload smoke test results
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: smoke-results
+          name: smoke-results-${{ matrix.shard }}
           path: |
             smoke-results/
             app/build/outputs/mapping/sideloadMinified/
