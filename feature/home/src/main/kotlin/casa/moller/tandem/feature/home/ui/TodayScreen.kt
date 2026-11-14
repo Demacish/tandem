@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,8 +21,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -48,6 +47,7 @@ import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.layout.isLargeFontScale
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.navigation.LocalAppChrome
@@ -483,38 +483,13 @@ private fun RecipeRow(
 ) {
     val spacing = TandemTheme.spacing
     Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = horizontal, end = horizontal - spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (onOpenAll != null) {
-                TandemTextButton(
-                    text = allText,
-                    onClick = onOpenAll,
-                    trailingIcon = TandemIcons.ArrowForward,
-                )
-            }
-        }
+        CarouselHeading(title = title, subtitle = subtitle, horizontal = horizontal, actionText = allText, onAction = onOpenAll)
         LazyRow(
             contentPadding = PaddingValues(horizontal = horizontal),
             horizontalArrangement = Arrangement.spacedBy(spacing.md),
         ) {
             items(recipes, key = { it.id }) { recipe ->
-                HomeRecipeCard(recipe = recipe, width = cardWidth, onClick = { onOpenRecipe(recipe.id) })
+                HomeRecipeCard(recipe = recipe, width = cardWidth * carouselCardGrowth(), onClick = { onOpenRecipe(recipe.id) })
             }
         }
     }
@@ -567,3 +542,10 @@ private fun formatSyncTime(instant: Instant, locale: Locale): Pair<Boolean, Stri
 
 @Composable
 private fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
+
+/** B22: carousel cards grow at the largest text, so names get room instead of being cut. */
+@Composable
+@ReadOnlyComposable
+internal fun carouselCardGrowth(): Float = if (isLargeFontScale()) LARGE_TEXT_CARD_GROWTH else 1f
+
+private const val LARGE_TEXT_CARD_GROWTH = 1.5f

@@ -68,6 +68,8 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.layout.MediaRow
+import casa.moller.tandem.core.ui.layout.scaledMaxLines
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.core.ui.recipe.ServingsStepper
 import casa.moller.tandem.feature.mealplan.MealKind
@@ -393,23 +395,31 @@ private fun ChosenRecipe(recipe: RecipeOverview, onChange: () -> Unit) {
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Row(
+        // B22 sweep: at the largest text the name gets the whole width under the photo and "Change".
+        MediaRow(
             modifier = Modifier.padding(spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-        ) {
-            RecipeImage(
-                imageUrl = recipe.imageUrl,
-                placeholderIconSize = 24.dp,
-                modifier = Modifier.size(64.dp).clip(MaterialTheme.shapes.medium),
-            )
-            Column(modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
-                Text(text = stringResource(R.string.mealplan_chosen_recipe), style = MaterialTheme.typography.labelLarge)
-                Text(text = recipe.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                durationText(recipe.totalMinutes)?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
-            }
-            TandemTextButton(text = stringResource(R.string.mealplan_change_recipe), onClick = onChange)
-        }
+            gap = spacing.md,
+            leading = {
+                RecipeImage(
+                    imageUrl = recipe.imageUrl,
+                    placeholderIconSize = 24.dp,
+                    modifier = Modifier.size(64.dp).clip(MaterialTheme.shapes.medium),
+                )
+            },
+            content = {
+                Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                    Text(text = stringResource(R.string.mealplan_chosen_recipe), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        text = recipe.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = scaledMaxLines(2),
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    durationText(recipe.totalMinutes)?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
+                }
+            },
+            trailing = { TandemTextButton(text = stringResource(R.string.mealplan_change_recipe), onClick = onChange) },
+        )
     }
 }
 

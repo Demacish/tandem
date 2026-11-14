@@ -90,6 +90,7 @@ import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.navigation.AppChromeDemoBanner
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.recipe.IconLabel
@@ -488,55 +489,63 @@ private fun RecipeSort.label(): Int = when (this) {
     RecipeSort.TOTAL_TIME -> R.string.recipes_sort_total_time
 }
 
-/** Result count and what the server search is doing ("Searching Tandoor…", offline hint). */
+/**
+ * Result count and what the server search is doing ("Searching Tandoor…", offline hint). The
+ * count keeps its width and the hint moves under it when both do not fit on one line (B18).
+ */
 @Composable
 private fun StatusLine(state: RecipeListUiState) {
     val spacing = TandemTheme.spacing
-    Row(
+    LabelRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 24.dp)
             .semantics { liveRegion = LiveRegionMode.Polite },
-        horizontalArrangement = Arrangement.spacedBy(spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (state.isFiltered && state.loaded) {
-            Text(
-                text = pluralStringResource(R.plurals.recipes_result_count, state.recipes.size, state.recipes.size),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-        } else {
-            Box(Modifier.weight(1f))
-        }
-        when (state.serverSearch) {
-            ServerSearch.SEARCHING -> Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(spacing.xs),
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+        gap = spacing.md,
+        stackedGap = spacing.xs,
+        label = {
+            if (state.isFiltered && state.loaded) {
                 Text(
-                    text = stringResource(R.string.recipes_searching_server),
-                    style = MaterialTheme.typography.labelMedium,
+                    text = pluralStringResource(R.plurals.recipes_result_count, state.recipes.size, state.recipes.size),
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        },
+        trailing = { SearchStatus(state) },
+    )
+}
 
-            ServerSearch.OFFLINE -> IconLabel(icon = TandemIcons.CloudOff, text = stringResource(R.string.recipes_search_offline))
+/** What the server search is doing, or the offline hint; nothing when there is nothing to say. */
+@Composable
+private fun SearchStatus(state: RecipeListUiState) {
+    val spacing = TandemTheme.spacing
+    when (state.serverSearch) {
+        ServerSearch.SEARCHING -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+            Text(
+                text = stringResource(R.string.recipes_searching_server),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
-            ServerSearch.FAILED -> IconLabel(icon = TandemIcons.Warning, text = stringResource(R.string.recipes_search_failed))
+        ServerSearch.OFFLINE -> IconLabel(icon = TandemIcons.CloudOff, text = stringResource(R.string.recipes_search_offline))
 
-            ServerSearch.DONE -> if (state.serverOnlyCount > 0) {
-                IconLabel(
-                    icon = TandemIcons.Dns,
-                    text = pluralStringResource(R.plurals.recipes_from_server, state.serverOnlyCount, state.serverOnlyCount),
-                )
-            }
+        ServerSearch.FAILED -> IconLabel(icon = TandemIcons.Warning, text = stringResource(R.string.recipes_search_failed))
 
-            ServerSearch.IDLE -> if (state.offline && !state.isFiltered) {
-                IconLabel(icon = TandemIcons.CloudOff, text = stringResource(R.string.recipes_offline_hint))
-            }
+        ServerSearch.DONE -> if (state.serverOnlyCount > 0) {
+            IconLabel(
+                icon = TandemIcons.Dns,
+                text = pluralStringResource(R.plurals.recipes_from_server, state.serverOnlyCount, state.serverOnlyCount),
+            )
+        }
+
+        ServerSearch.IDLE -> if (state.offline && !state.isFiltered) {
+            IconLabel(icon = TandemIcons.CloudOff, text = stringResource(R.string.recipes_offline_hint))
         }
     }
 }

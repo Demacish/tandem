@@ -31,6 +31,7 @@ import casa.moller.tandem.core.designsystem.component.iconColor
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.sync.SyncPause
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.feature.shell.R
 
 /** Test tag of the banner for a held-back sync. */
@@ -76,19 +77,29 @@ internal fun SyncHeldBackBanner(
                 tint = tone.iconColor(),
                 modifier = Modifier.size(TandemTheme.sizes.icon),
             )
-            Column(modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
-                Text(
-                    text = stringResource(if (blocked) R.string.sync_blocked_title else R.string.sync_breaker_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(if (blocked) R.string.sync_blocked_body else R.string.sync_breaker_body),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            // Filled: a text button's colour is too faint on the warning container (ATF contrast).
-            TandemPrimaryButton(text = stringResource(R.string.sync_retry), onClick = onRetry, size = TandemButtonSize.Small)
+            // B22 sweep: "Try again" moves under the text when both do not fit on one line.
+            LabelRow(
+                modifier = Modifier.weight(1f),
+                gap = spacing.md,
+                stackedAlignment = Alignment.End,
+                label = {
+                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                        Text(
+                            text = stringResource(if (blocked) R.string.sync_blocked_title else R.string.sync_breaker_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = stringResource(if (blocked) R.string.sync_blocked_body else R.string.sync_breaker_body),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                },
+                trailing = {
+                    // Filled: a text button's colour is too faint on the warning container (ATF contrast).
+                    TandemPrimaryButton(text = stringResource(R.string.sync_retry), onClick = onRetry, size = TandemButtonSize.Small)
+                },
+            )
         }
     }
 }

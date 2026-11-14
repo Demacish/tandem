@@ -93,6 +93,7 @@ import casa.moller.tandem.core.model.recipe.DraftKeyword
 import casa.moller.tandem.core.model.recipe.DraftStep
 import casa.moller.tandem.core.ui.EmptyState
 import casa.moller.tandem.core.ui.LoadingState
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.readonly.ReadOnlyBanner
 import casa.moller.tandem.core.ui.recipe.RecipeImage
 import casa.moller.tandem.feature.recipes.R
@@ -457,31 +458,37 @@ private fun Servings(servings: Int, onAction: (RecipeEditorAction) -> Unit) {
     Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow) {
         // Rows that hold icon buttons are at least 48 dp tall: Compose clips a button's 48 dp touch
         // target to its row, and a row shorter than that (a large-font title) fails ATF.
-        Row(
+        // B22 sweep: the stepper moves under "Servings" when both do not fit on one line.
+        LabelRow(
             modifier = Modifier.fillMaxWidth().heightIn(min = TOUCH_TARGET).padding(horizontal = spacing.md, vertical = spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
+            gap = 0.dp,
+            stackedGap = 0.dp,
+            stackedAlignment = Alignment.End,
+            label = { Text(text = stringResource(R.string.recipe_editor_servings), style = MaterialTheme.typography.titleSmall) },
+            trailing = { ServingsButtons(servings, onAction) },
+        )
+    }
+}
+
+@Composable
+private fun ServingsButtons(servings: Int, onAction: (RecipeEditorAction) -> Unit) {
+    val spacing = TandemTheme.spacing
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(
+            onClick = { onAction(RecipeEditorAction.SetServings(servings - 1)) },
+            enabled = servings > 1,
+            modifier = Modifier.size(TOUCH_TARGET),
         ) {
-            Text(
-                text = stringResource(R.string.recipe_editor_servings),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(
-                onClick = { onAction(RecipeEditorAction.SetServings(servings - 1)) },
-                enabled = servings > 1,
-                modifier = Modifier.size(TOUCH_TARGET),
-            ) {
-                Icon(TandemIcons.Remove, contentDescription = stringResource(R.string.recipe_editor_servings_fewer))
-            }
-            Text(
-                text = servings.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                // A node that stays: TalkBack says the new value after + and −.
-                modifier = Modifier.padding(horizontal = spacing.sm).semantics { liveRegion = LiveRegionMode.Polite },
-            )
-            IconButton(onClick = { onAction(RecipeEditorAction.SetServings(servings + 1)) }, modifier = Modifier.size(TOUCH_TARGET)) {
-                Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_servings_more))
-            }
+            Icon(TandemIcons.Remove, contentDescription = stringResource(R.string.recipe_editor_servings_fewer))
+        }
+        Text(
+            text = servings.toString(),
+            style = MaterialTheme.typography.titleLarge,
+            // A node that stays: TalkBack says the new value after + and −.
+            modifier = Modifier.padding(horizontal = spacing.sm).semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        IconButton(onClick = { onAction(RecipeEditorAction.SetServings(servings + 1)) }, modifier = Modifier.size(TOUCH_TARGET)) {
+            Icon(TandemIcons.Add, contentDescription = stringResource(R.string.recipe_editor_servings_more))
         }
     }
 }

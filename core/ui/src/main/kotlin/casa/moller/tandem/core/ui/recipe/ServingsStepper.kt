@@ -27,6 +27,7 @@ import casa.moller.tandem.core.designsystem.icon.Remove
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.R
+import casa.moller.tandem.core.ui.layout.LabelRow
 
 /**
  * The servings picker of the recipe detail (plan 6.2: "Portionsväljare, minns valet per recept"):
@@ -58,40 +59,50 @@ fun ServingsStepper(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Row(
+        // B22: at the largest text the buttons move under "4 portioner" instead of breaking it.
+        LabelRow(
             modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-                Text(
-                    text = label,
-                    style = TandemTheme.extendedTypography.overline,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = valueText,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                if (onReset != null && resetText != null) {
-                    TandemTextButton(text = resetText, onClick = onReset)
+            gap = spacing.sm,
+            stackedGap = spacing.xs,
+            stackedAlignment = Alignment.End,
+            label = {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                    Text(
+                        text = label,
+                        style = TandemTheme.extendedTypography.overline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = valueText,
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                    if (onReset != null && resetText != null) {
+                        TandemTextButton(text = resetText, onClick = onReset)
+                    }
                 }
-            }
-            FilledTonalIconButton(onClick = onDecrease, enabled = decreaseEnabled) {
-                Icon(imageVector = TandemIcons.Remove, contentDescription = stringResource(R.string.ui_recipe_fewer_servings))
-            }
-            Text(
-                text = amountText,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .widthIn(min = 32.dp)
-                    .clearAndSetSemantics { },
-            )
-            FilledTonalIconButton(onClick = onIncrease) {
-                Icon(imageVector = TandemIcons.Add, contentDescription = stringResource(R.string.ui_recipe_more_servings))
-            }
-        }
+            },
+            trailing = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                ) {
+                    FilledTonalIconButton(onClick = onDecrease, enabled = decreaseEnabled) {
+                        Icon(imageVector = TandemIcons.Remove, contentDescription = stringResource(R.string.ui_recipe_fewer_servings))
+                    }
+                    Text(
+                        text = amountText,
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .widthIn(min = 32.dp)
+                            .clearAndSetSemantics { },
+                    )
+                    FilledTonalIconButton(onClick = onIncrease) {
+                        Icon(imageVector = TandemIcons.Add, contentDescription = stringResource(R.string.ui_recipe_more_servings))
+                    }
+                }
+            },
+        )
     }
 }

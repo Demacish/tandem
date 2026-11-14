@@ -66,6 +66,7 @@ import casa.moller.tandem.core.ui.AppStatusChip
 import casa.moller.tandem.core.ui.DemoBanner
 import casa.moller.tandem.core.ui.household.HouseholdMissingCard
 import casa.moller.tandem.core.ui.language.AppLanguage
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.toErrorText
 import casa.moller.tandem.feature.mealplan.R as MealPlanR
 import casa.moller.tandem.feature.mealplan.navigation.MealCalendarKey
@@ -451,15 +452,24 @@ private fun AccountCard(account: AccountSummary, state: ShellUiState, onCheckAga
                 ) {
                     val text = error.toErrorText()
                     Icon(text.icon, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                    Text(
-                        text = stringResource(R.string.shell_account_check_failed, text.title),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
+                    // B22 sweep: "Check again" moves under the error when both do not fit on one line.
+                    LabelRow(
                         modifier = Modifier.weight(1f),
-                    )
-                    TandemTextButton(
-                        text = stringResource(R.string.shell_account_check_again),
-                        onClick = onCheckAgain,
+                        gap = spacing.sm,
+                        stackedGap = 0.dp,
+                        label = {
+                            Text(
+                                text = stringResource(R.string.shell_account_check_failed, text.title),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        trailing = {
+                            TandemTextButton(
+                                text = stringResource(R.string.shell_account_check_again),
+                                onClick = onCheckAgain,
+                            )
+                        },
                     )
                 }
             }

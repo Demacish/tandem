@@ -39,6 +39,8 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.R
+import casa.moller.tandem.core.ui.layout.MediaRow
+import casa.moller.tandem.core.ui.layout.scaledMaxLines
 
 /**
  * A recipe in the grid of the recipe list (design recept_alla_recept): photo with the first
@@ -112,7 +114,8 @@ fun RecipeCard(
             Text(
                 text = recipe.name,
                 style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
+                // B22: more lines at the largest text, the grid has one column then.
+                maxLines = scaledMaxLines(2),
                 overflow = TextOverflow.Ellipsis,
             )
             // Part of the card's description; not read a second time.
@@ -153,60 +156,69 @@ fun RecipeListItem(
         ),
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
     ) {
-        Row(
+        // B22: at the largest text the texts get the whole width under the photo and the icons.
+        MediaRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 88.dp)
                 .padding(spacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            RecipeImage(
-                imageUrl = recipe.imageUrl,
-                dimmed = dimmed,
-                placeholderIconSize = TandemTheme.sizes.icon,
-                modifier = Modifier
-                    .size(THUMBNAIL_SIZE)
-                    .clip(MaterialTheme.shapes.medium),
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(spacing.xs),
-            ) {
-                if (recipe.keywords.isNotEmpty()) {
-                    Text(
-                        text = recipe.keywords.take(2).joinToString(" · ") { it.name },
-                        style = TandemTheme.extendedTypography.overline,
-                        color = colors.accent,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.clearAndSetSemantics { },
-                    )
-                }
-                Text(
-                    text = recipe.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+            endGap = 0.dp,
+            leading = {
+                RecipeImage(
+                    imageUrl = recipe.imageUrl,
+                    dimmed = dimmed,
+                    placeholderIconSize = TandemTheme.sizes.icon,
+                    modifier = Modifier
+                        .size(THUMBNAIL_SIZE)
+                        .clip(MaterialTheme.shapes.medium),
                 )
-                FlowRow(
-                    modifier = Modifier.clearAndSetSemantics { },
+            },
+            content = {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    if (recipe.keywords.isNotEmpty()) {
+                        Text(
+                            text = recipe.keywords.take(2).joinToString(" · ") { it.name },
+                            style = TandemTheme.extendedTypography.overline,
+                            color = colors.accent,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.clearAndSetSemantics { },
+                        )
+                    }
+                    Text(
+                        text = recipe.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = scaledMaxLines(2),
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    FlowRow(
+                        modifier = Modifier.clearAndSetSemantics { },
+                        horizontalArrangement = Arrangement.spacedBy(spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                    ) {
+                        RecipeTimeLabel(recipe.totalMinutes, color = colors.secondary)
+                        RecipeRatingLabel(recipe.rating, color = colors.content)
+                    }
+                }
+            },
+            trailing = {
+                // The gap before the icons is theirs, so a row without icons looks as it always did.
+                Row(
+                    modifier = Modifier.padding(start = spacing.md),
                     horizontalArrangement = Arrangement.spacedBy(spacing.md),
-                    verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    RecipeTimeLabel(recipe.totalMinutes, color = colors.secondary)
-                    RecipeRatingLabel(recipe.rating, color = colors.content)
+                    if (favorite != null) FavoriteToggle(favorite = favorite, onPhoto = false)
+                    // The card's state description says the same for TalkBack.
+                    Box(modifier = Modifier.clearAndSetSemantics { }) {
+                        when {
+                            dimmed -> NotDownloadedIcon()
+                            recipe.availableOffline -> OfflineIcon()
+                        }
+                    }
                 }
-            }
-            if (favorite != null) FavoriteToggle(favorite = favorite, onPhoto = false)
-            // The card's state description says the same for TalkBack.
-            Box(modifier = Modifier.clearAndSetSemantics { }) {
-                when {
-                    dimmed -> NotDownloadedIcon()
-                    recipe.availableOffline -> OfflineIcon()
-                }
-            }
-        }
+            },
+        )
     }
 }
 

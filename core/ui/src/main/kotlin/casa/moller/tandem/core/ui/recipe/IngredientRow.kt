@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.R
+import casa.moller.tandem.core.ui.layout.LabelRow
 
 /**
  * One ingredient of the recipe detail (plan 6.2): check box, food (with note) and the scaled
@@ -93,30 +94,40 @@ fun IngredientRow(
         horizontalArrangement = Arrangement.spacedBy(spacing.xs),
     ) {
         Checkbox(checked = struck, onCheckedChange = null, modifier = Modifier.padding(spacing.md))
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(vertical = spacing.sm)
-                .clearAndSetSemantics { },
-        ) {
-            Text(text = name, style = MaterialTheme.typography.bodyLarge, color = textColor, textDecoration = decoration)
-            if (!note.isNullOrBlank()) {
-                Text(
-                    text = note,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textDecoration = decoration,
-                )
-            }
-        }
-        if (amountText != null) {
-            Amount(
-                text = amountText,
-                struck = struck,
-                onSwitchUnit = onAmountClick,
-                minHeight = if (amountMinHeight.isSpecified) amountMinHeight else TandemTheme.sizes.minTouchTarget,
-            )
-        }
+        // B22: the amount moves under the name when both do not fit, so "vitlöksklyftor" never
+        // breaks inside the word at the largest text.
+        LabelRow(
+            modifier = Modifier.weight(1f),
+            gap = spacing.xs,
+            stackedGap = 0.dp,
+            label = {
+                Column(
+                    modifier = Modifier
+                        .padding(vertical = spacing.sm)
+                        .clearAndSetSemantics { },
+                ) {
+                    Text(text = name, style = MaterialTheme.typography.bodyLarge, color = textColor, textDecoration = decoration)
+                    if (!note.isNullOrBlank()) {
+                        Text(
+                            text = note,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textDecoration = decoration,
+                        )
+                    }
+                }
+            },
+            trailing = {
+                if (amountText != null) {
+                    Amount(
+                        text = amountText,
+                        struck = struck,
+                        onSwitchUnit = onAmountClick,
+                        minHeight = if (amountMinHeight.isSpecified) amountMinHeight else TandemTheme.sizes.minTouchTarget,
+                    )
+                }
+            },
+        )
     }
 }
 

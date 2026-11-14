@@ -86,6 +86,7 @@ import casa.moller.tandem.core.domain.recipe.UnitAmount
 import casa.moller.tandem.core.model.recipe.RecipeEditStatus
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.LoadingState
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.navigation.AppChromeStatusChip
 import casa.moller.tandem.core.ui.recipe.IconLabel
 import casa.moller.tandem.core.ui.recipe.IngredientHeader
@@ -778,41 +779,48 @@ private fun TinSize(state: RecipeDetailUiState, onAction: (RecipeDetailAction) -
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Row(
+        // B22: the buttons move under the tin size at the largest text, as the servings stepper.
+        LabelRow(
             modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
-        ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-                Text(
-                    text = stringResource(R.string.recipe_detail_pan_label),
-                    style = TandemTheme.extendedTypography.overline,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = stringResource(R.string.recipe_detail_pan_value, pan.current, pan.unit),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                )
-                if (pan.isChanged) {
+            gap = spacing.sm,
+            stackedGap = spacing.xs,
+            stackedAlignment = Alignment.End,
+            label = {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
                     Text(
-                        text = stringResource(R.string.recipe_detail_pan_scaled, pan.current, pan.unit, pan.factorText),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        text = stringResource(R.string.recipe_detail_pan_label),
+                        style = TandemTheme.extendedTypography.overline,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    TandemTextButton(
-                        text = stringResource(R.string.recipe_detail_pan_reset, pan.original, pan.unit),
-                        onClick = { onAction(RecipeDetailAction.ResetPan) },
+                    Text(
+                        text = stringResource(R.string.recipe_detail_pan_value, pan.current, pan.unit),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )
+                    if (pan.isChanged) {
+                        Text(
+                            text = stringResource(R.string.recipe_detail_pan_scaled, pan.current, pan.unit, pan.factorText),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        TandemTextButton(
+                            text = stringResource(R.string.recipe_detail_pan_reset, pan.original, pan.unit),
+                            onClick = { onAction(RecipeDetailAction.ResetPan) },
+                        )
+                    }
                 }
-            }
-            FilledTonalIconButton(onClick = { onAction(RecipeDetailAction.SmallerPan) }, enabled = pan.canDecrease) {
-                Icon(imageVector = TandemIcons.Remove, contentDescription = stringResource(R.string.recipe_detail_pan_smaller))
-            }
-            FilledTonalIconButton(onClick = { onAction(RecipeDetailAction.LargerPan) }, enabled = pan.canIncrease) {
-                Icon(imageVector = TandemIcons.Add, contentDescription = stringResource(R.string.recipe_detail_pan_larger))
-            }
-        }
+            },
+            trailing = {
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                    FilledTonalIconButton(onClick = { onAction(RecipeDetailAction.SmallerPan) }, enabled = pan.canDecrease) {
+                        Icon(imageVector = TandemIcons.Remove, contentDescription = stringResource(R.string.recipe_detail_pan_smaller))
+                    }
+                    FilledTonalIconButton(onClick = { onAction(RecipeDetailAction.LargerPan) }, enabled = pan.canIncrease) {
+                        Icon(imageVector = TandemIcons.Add, contentDescription = stringResource(R.string.recipe_detail_pan_larger))
+                    }
+                }
+            },
+        )
     }
 }
 
@@ -976,25 +984,32 @@ private fun Source(state: RecipeDetailUiState, onOpenUrl: (String) -> Unit) {
     )
 }
 
+/**
+ * "Ingredienser" with its hint "Tryck för att bocka av": the heading keeps its width and the hint
+ * moves under it when both do not fit on one line (B22, docs/design/README.md "Textstorlek och
+ * radbrytning").
+ */
 @Composable
 private fun SectionHeading(title: String, hint: String?) {
-    Row(
+    LabelRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 32.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier
-                .weight(1f)
-                .semantics { heading() },
-        )
-        if (hint != null) {
-            Text(text = hint, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
+        gap = 0.dp,
+        stackedGap = TandemTheme.spacing.xxs,
+        label = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
+        },
+        trailing = {
+            if (hint != null) {
+                Text(text = hint, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+    )
 }
 
 /** "1 okt. 2026" / "Oct 1, 2026" in the device's time zone. */

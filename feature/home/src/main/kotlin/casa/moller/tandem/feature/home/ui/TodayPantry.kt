@@ -29,10 +29,10 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
-import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.ChevronRight
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.pantry.ExpiryLabel
 import casa.moller.tandem.core.ui.pantry.expiryText
 import casa.moller.tandem.core.ui.pantry.foodTitle
@@ -64,37 +64,20 @@ internal fun TodayMakeNowRow(
     if (pantry.makeNow.isEmpty()) return
     val spacing = TandemTheme.spacing
     Column(modifier = modifier.testTag(TODAY_MAKE_NOW_TAG), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = horizontal, end = horizontal - spacing.sm),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.home_make_now_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    text = if (pantry.hasAll > 0) {
-                        pluralStringResource(R.plurals.home_make_now_subtitle, pantry.hasAll, pantry.hasAll)
-                    } else {
-                        stringResource(R.string.home_make_now_subtitle_almost)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            TandemTextButton(
-                text = stringResource(R.string.home_make_now_all),
-                onClick = onOpenMakeNow,
-                trailingIcon = TandemIcons.ArrowForward,
-            )
-        }
+        CarouselHeading(
+            title = stringResource(R.string.home_make_now_title),
+            subtitle = if (pantry.hasAll > 0) {
+                pluralStringResource(R.plurals.home_make_now_subtitle, pantry.hasAll, pantry.hasAll)
+            } else {
+                stringResource(R.string.home_make_now_subtitle_almost)
+            },
+            horizontal = horizontal,
+            actionText = stringResource(R.string.home_make_now_all),
+            onAction = onOpenMakeNow,
+        )
         LazyRow(contentPadding = PaddingValues(horizontal = horizontal), horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
             items(pantry.makeNow, key = { it.id }) { recipe ->
-                HomeRecipeCard(recipe = recipe, width = cardWidth, onClick = { onOpenRecipe(recipe.id) })
+                HomeRecipeCard(recipe = recipe, width = cardWidth * carouselCardGrowth(), onClick = { onOpenRecipe(recipe.id) })
             }
         }
     }
@@ -168,11 +151,21 @@ private fun ExpiringRow(item: TodayExpiring, today: LocalDate, onOpen: () -> Uni
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-            Text(text = name, style = MaterialTheme.typography.bodyLarge)
-            if (expiry.isNotEmpty()) ExpiryLabel(text = expiry, urgency = item.urgency)
-        }
-        Text(text = recipes, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        // B22: "4 recept" moves under the food when both do not fit on one line.
+        LabelRow(
+            modifier = Modifier.weight(1f),
+            gap = spacing.md,
+            stackedGap = spacing.xxs,
+            label = {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                    Text(text = name, style = MaterialTheme.typography.bodyLarge)
+                    if (expiry.isNotEmpty()) ExpiryLabel(text = expiry, urgency = item.urgency)
+                }
+            },
+            trailing = {
+                Text(text = recipes, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            },
+        )
         Icon(TandemIcons.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

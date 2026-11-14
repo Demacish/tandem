@@ -37,6 +37,7 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.ui.ErrorState
 import casa.moller.tandem.core.ui.R
+import casa.moller.tandem.core.ui.layout.LabelRow
 
 /*
  * Server status UI (feature #2, plan 3.6 "Säkert läge", design
@@ -138,19 +139,29 @@ fun LoginExpiredBanner(onLogInAgain: () -> Unit, modifier: Modifier = Modifier, 
                 tint = tone.iconColor(),
                 modifier = Modifier.size(TandemTheme.sizes.icon),
             )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.ui_login_expired_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(text = stringResource(R.string.ui_login_expired_body), style = MaterialTheme.typography.bodySmall)
-            }
-            // Filled: a text button's colour is too faint on the error container (ATF contrast 4.0:1).
-            TandemPrimaryButton(
-                text = stringResource(R.string.ui_login_expired_action),
-                onClick = onLogInAgain,
-                size = TandemButtonSize.Small,
+            // B22 sweep: "Log in again" moves under the text when both do not fit on one line.
+            LabelRow(
+                modifier = Modifier.weight(1f),
+                gap = spacing.md,
+                stackedAlignment = Alignment.End,
+                label = {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.ui_login_expired_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(text = stringResource(R.string.ui_login_expired_body), style = MaterialTheme.typography.bodySmall)
+                    }
+                },
+                trailing = {
+                    // Filled: a text button's colour is too faint on the error container (ATF contrast 4.0:1).
+                    TandemPrimaryButton(
+                        text = stringResource(R.string.ui_login_expired_action),
+                        onClick = onLogInAgain,
+                        size = TandemButtonSize.Small,
+                    )
+                },
             )
         }
     }

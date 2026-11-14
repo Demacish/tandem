@@ -63,6 +63,7 @@ import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.readonly.ReadOnlyNote
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
 import casa.moller.tandem.feature.mealplan.R
@@ -205,23 +206,30 @@ private fun LazyListScope.overview(
     item(key = "days") {
         val resources = LocalResources.current
         val range = format.range(state.from, state.to, resources)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
-                Text(text = range, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
-                Text(
-                    text = pluralStringResource(R.plurals.mealplan_week_shopping_planned, state.meals.size, state.meals.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        val description = stringResource(R.string.mealplan_week_shopping_change_days_description, range)
+        // B22 sweep: "Change days" moves under the dates when both do not fit on one line.
+        LabelRow(
+            gap = 0.dp,
+            stackedGap = 0.dp,
+            label = {
+                Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                    Text(text = range, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+                    Text(
+                        text = pluralStringResource(R.plurals.mealplan_week_shopping_planned, state.meals.size, state.meals.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            trailing = {
+                TandemTextButton(
+                    text = stringResource(R.string.mealplan_week_shopping_change_days),
+                    onClick = onPickDays,
+                    leadingIcon = TandemIcons.CalendarMonth,
+                    modifier = Modifier.semantics { contentDescription = description },
                 )
-            }
-            val description = stringResource(R.string.mealplan_week_shopping_change_days_description, range)
-            TandemTextButton(
-                text = stringResource(R.string.mealplan_week_shopping_change_days),
-                onClick = onPickDays,
-                leadingIcon = TandemIcons.CalendarMonth,
-                modifier = Modifier.semantics { contentDescription = description },
-            )
-        }
+            },
+        )
     }
     item(key = "intro") {
         Text(text = stringResource(R.string.mealplan_week_shopping_intro), style = MaterialTheme.typography.bodyLarge)
@@ -390,18 +398,24 @@ private fun LazyListScope.lines(state: WeekShoppingUiState, format: MealPlanForm
 private fun AisleCard(aisle: WeekShoppingAisle, readOnly: Boolean, format: MealPlanFormat, onAction: (WeekShoppingAction) -> Unit) {
     val spacing = TandemTheme.spacing
     Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = aisle.name ?: stringResource(R.string.mealplan_week_shopping_other_aisle),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f).semantics { heading() },
-            )
-            Text(
-                text = pluralStringResource(R.plurals.mealplan_week_shopping_aisle_count, aisle.lines.size, aisle.lines.size),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        LabelRow(
+            gap = 0.dp,
+            stackedGap = 0.dp,
+            label = {
+                Text(
+                    text = aisle.name ?: stringResource(R.string.mealplan_week_shopping_other_aisle),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
+            },
+            trailing = {
+                Text(
+                    text = pluralStringResource(R.plurals.mealplan_week_shopping_aisle_count, aisle.lines.size, aisle.lines.size),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            },
+        )
         LineGroup(lines = aisle.lines, readOnly = readOnly, format = format, onAction = onAction)
     }
 }

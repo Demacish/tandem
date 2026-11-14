@@ -51,6 +51,9 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.mealplan.MealPlanEntry
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.drink.DrinkSuggestion
+import casa.moller.tandem.core.ui.layout.LabelRow
+import casa.moller.tandem.core.ui.layout.MediaRow
+import casa.moller.tandem.core.ui.layout.scaledMaxLines
 import casa.moller.tandem.core.ui.recipe.RecipeImageTags
 import casa.moller.tandem.core.ui.recipe.cappedAspectRatio
 import casa.moller.tandem.feature.home.R
@@ -196,33 +199,38 @@ internal fun MealRow(entry: MealPlanEntry, label: String, onOpenRecipe: (Long) -
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        Row(
+        // B22: at the largest text the title gets the whole width under the photo.
+        MediaRow(
             modifier = Modifier
                 .heightIn(min = TandemTheme.sizes.minTouchTarget)
                 .padding(spacing.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-        ) {
-            HomeRecipeImage(
-                imageUrl = recipe?.imageUrl,
-                placeholderSize = 24.dp,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(MaterialTheme.shapes.medium),
-            )
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-                MealLabel(label = label, mealType = entry.mealType.name)
-                Text(text = entry.displayTitle, style = MaterialTheme.typography.titleMedium)
-                MealMeta(entry = entry)
-            }
-            if (recipe != null) {
-                Icon(
-                    imageVector = TandemIcons.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            gap = spacing.md,
+            leading = {
+                HomeRecipeImage(
+                    imageUrl = recipe?.imageUrl,
+                    placeholderSize = 24.dp,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(MaterialTheme.shapes.medium),
                 )
-            }
-        }
+            },
+            content = {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                    MealLabel(label = label, mealType = entry.mealType.name)
+                    Text(text = entry.displayTitle, style = MaterialTheme.typography.titleMedium)
+                    MealMeta(entry = entry)
+                }
+            },
+            trailing = {
+                if (recipe != null) {
+                    Icon(
+                        imageVector = TandemIcons.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+        )
     }
 }
 
@@ -327,7 +335,8 @@ internal fun HomeRecipeCard(recipe: RecipeOverview, width: Dp, onClick: () -> Un
             Text(
                 text = recipe.name,
                 style = MaterialTheme.typography.titleSmall,
-                maxLines = 2,
+                // B22: more lines at the largest text (the card is wider then, see TodayScreen).
+                maxLines = scaledMaxLines(2),
                 overflow = TextOverflow.Ellipsis,
             )
             durationText(recipe.totalMinutes)?.let { duration ->
@@ -420,24 +429,70 @@ internal fun SyncStatusCard(lastSynced: String?, running: Boolean, onSyncNow: ()
         color = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
     ) {
-        Row(
+        // B22: "Synka nu" moves under the text when both do not fit on one line.
+        LabelRow(
             modifier = Modifier.padding(start = spacing.lg, end = spacing.sm, top = spacing.xs, bottom = spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-        ) {
-            Icon(imageVector = TandemIcons.Sync, contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.iconSmall))
-            Text(
-                text = when {
-                    running -> stringResource(R.string.home_sync_running)
-                    lastSynced != null -> lastSynced
-                    else -> stringResource(R.string.home_sync_never)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = spacing.sm),
-            )
-            TandemTextButton(text = stringResource(R.string.home_sync_now), onClick = onSyncNow, enabled = !running)
-        }
+            gap = spacing.md,
+            stackedGap = 0.dp,
+            stackedAlignment = Alignment.End,
+            label = {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+                    Icon(imageVector = TandemIcons.Sync, contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.iconSmall))
+                    Text(
+                        text = when {
+                            running -> stringResource(R.string.home_sync_running)
+                            lastSynced != null -> lastSynced
+                            else -> stringResource(R.string.home_sync_never)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(vertical = spacing.sm),
+                    )
+                }
+            },
+            trailing = {
+                TandemTextButton(text = stringResource(R.string.home_sync_now), onClick = onSyncNow, enabled = !running)
+            },
+        )
     }
+}
+
+/**
+ * A carousel's heading and subtitle with its "All …" button, which moves under them when both do
+ * not fit on one line (B22, docs/design/README.md "Textstorlek och radbrytning").
+ */
+@Composable
+internal fun CarouselHeading(
+    title: String,
+    subtitle: String,
+    horizontal: Dp,
+    actionText: String,
+    onAction: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    LabelRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = horizontal, end = horizontal - TandemTheme.spacing.sm),
+        gap = 0.dp,
+        stackedGap = 0.dp,
+        label = {
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.semantics { heading() },
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        trailing = {
+            if (onAction != null) {
+                TandemTextButton(text = actionText, onClick = onAction, trailingIcon = TandemIcons.ArrowForward)
+            }
+        },
+    )
 }

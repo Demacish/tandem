@@ -42,6 +42,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.Delete
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.recipe.ServingsStepper
 import casa.moller.tandem.feature.shopping.R
 import java.util.Locale
@@ -92,19 +93,26 @@ fun RecipeShoppingButton(
             )
         }
         if (state.onList > 0) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-                Text(
-                    text = pluralStringResource(R.plurals.recipe_shopping_on_list, state.onList, state.onList),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                TandemTextButton(
-                    text = stringResource(R.string.recipe_shopping_remove),
-                    onClick = { onAction(RecipeShoppingAction.RemoveFromList) },
-                    leadingIcon = TandemIcons.Delete,
-                )
-            }
+            // B22 sweep: "Remove" moves under the count when both do not fit on one line.
+            LabelRow(
+                gap = spacing.sm,
+                stackedGap = 0.dp,
+                stackedAlignment = Alignment.End,
+                label = {
+                    Text(
+                        text = pluralStringResource(R.plurals.recipe_shopping_on_list, state.onList, state.onList),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                trailing = {
+                    TandemTextButton(
+                        text = stringResource(R.string.recipe_shopping_remove),
+                        onClick = { onAction(RecipeShoppingAction.RemoveFromList) },
+                        leadingIcon = TandemIcons.Delete,
+                    )
+                },
+            )
         }
     }
 }

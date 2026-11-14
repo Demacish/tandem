@@ -3,7 +3,6 @@ package casa.moller.tandem.feature.shell.settings
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectableGroup
@@ -20,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.InfoCard
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTonalButton
@@ -34,6 +34,7 @@ import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.sync.OfflineStorage
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncStatus
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.ui.GroupDivider
 import casa.moller.tandem.feature.shell.ui.SettingsGroup
@@ -223,21 +224,22 @@ private fun ShoppingServerSettingsGroup(settings: ShoppingServerSettings) {
 @Composable
 private fun ServerSetting(title: Int, body: Int, on: Boolean) {
     val spacing = TandemTheme.spacing
-    Row(
+    LabelRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = spacing.lg, vertical = spacing.md)
             .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.spacedBy(spacing.lg),
+        gap = spacing.lg,
         verticalAlignment = Alignment.Top,
-    ) {
-        SettingText(title = stringResource(title), body = stringResource(body), modifier = Modifier.weight(1f))
-        Text(
-            text = stringResource(if (on) R.string.settings_shopping_on else R.string.settings_shopping_off),
-            style = MaterialTheme.typography.titleMedium,
-            color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+        label = { SettingText(title = stringResource(title), body = stringResource(body)) },
+        trailing = {
+            Text(
+                text = stringResource(if (on) R.string.settings_shopping_on else R.string.settings_shopping_off),
+                style = MaterialTheme.typography.titleMedium,
+                color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+    )
 }
 
 /**
@@ -395,16 +397,15 @@ private fun Storage(storage: OfflineStorage, clearing: Boolean, onClear: () -> U
 
 @Composable
 private fun StorageLine(label: String, bytes: Long) {
-    Row(
+    LabelRow(
         modifier = Modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {},
-        horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(text = formatBytes(bytes), style = MaterialTheme.typography.bodyLarge)
-    }
+        gap = TandemTheme.spacing.md,
+        stackedGap = 0.dp,
+        label = { Text(text = label, style = MaterialTheme.typography.bodyLarge) },
+        trailing = { Text(text = formatBytes(bytes), style = MaterialTheme.typography.bodyLarge) },
+    )
 }
 
 /** "45 MB" in the app's language (Android's own file size format). */

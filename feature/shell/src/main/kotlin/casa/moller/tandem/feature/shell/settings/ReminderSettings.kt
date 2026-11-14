@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.Role
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.ui.GroupDivider
 import casa.moller.tandem.feature.shell.ui.SettingsGroup
@@ -128,8 +129,12 @@ private fun ReminderTimeRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(TandemIcons.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        SettingText(title = title, body = supporting, modifier = Modifier.weight(1f))
-        Text(text = value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        LabelRow(
+            modifier = Modifier.weight(1f),
+            gap = spacing.lg,
+            label = { SettingText(title = title, body = supporting) },
+            trailing = { Text(text = value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) },
+        )
     }
     if (picking) {
         ReminderTimeDialog(
