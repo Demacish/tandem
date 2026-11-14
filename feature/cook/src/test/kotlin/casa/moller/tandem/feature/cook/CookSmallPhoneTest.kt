@@ -315,7 +315,8 @@ class CookSmallPhoneTest {
                 texts.forEach { node ->
                     val layout = node.textLayout()
                     assertEquals("“$label” on one line", 1, layout.lineCount)
-                    assertFalse("“$label” not cut", layout.hasVisualOverflow)
+                    assertFalse("“$label” not ellipsized", layout.isLineEllipsized(0))
+                    assertFalse("“$label” not cut", layout.didOverflowWidth)
                 }
             }
         }

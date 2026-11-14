@@ -108,6 +108,7 @@ import casa.moller.tandem.feature.cook.handsfree.volumeKey
 import casa.moller.tandem.feature.cook.session.CookRecipeTabs
 import casa.moller.tandem.feature.cook.session.CookSessionAction
 import casa.moller.tandem.feature.cook.session.CookSessionUi
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -617,7 +618,7 @@ internal val CompactHeight = 480.dp
  * Device test 2026-11-14 (B4): two quick "Next" lost a step, because the second target cancelled
  * the first animation, `settledPage` then reported the page in between and that report overwrote
  * the newer target. A programmatic scroll now never writes back: the report needs a drag since
- * the last programmatic scroll.
+ * the last programmatic scroll, and the pager at rest on a page.
  */
 @Composable
 private fun PagerSync(pagerState: PagerState, page: Int, onAction: (CookAction) -> Unit) {
@@ -631,20 +632,26 @@ private fun PagerSync(pagerState: PagerState, page: Int, onAction: (CookAction) 
     LaunchedEffect(pagerState, page) {
         if (page >= pagerState.pageCount) return@LaunchedEffect
         // Also when an interrupted animation left the pager between two pages on this one.
-        if (pagerState.currentPage != page || pagerState.currentPageOffsetFraction != 0f) {
+        if (pagerState.currentPage != page || !pagerState.isOnAPage()) {
             swiped[0] = false
             pagerState.animateScrollToPage(page)
         }
     }
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { settled ->
-            if (swiped[0] && !pagerState.isScrollInProgress) {
-                swiped[0] = false
-                if (settled != currentPage) currentOnAction(CookAction.GoToPage(settled))
+        // The page the pager rests on: no scroll and no offset. Between a drag and its fling the
+        // scroll stops for a moment off the page, which is not a rest.
+        snapshotFlow { pagerState.currentPage.takeIf { !pagerState.isScrollInProgress && pagerState.isOnAPage() } }
+            .collect { rest ->
+                if (rest != null && swiped[0]) {
+                    swiped[0] = false
+                    if (rest != currentPage) currentOnAction(CookAction.GoToPage(rest))
+                }
             }
-        }
     }
 }
+
+/** No part of a neighbouring page shows (the pager is snapped). */
+private fun PagerState.isOnAPage(): Boolean = abs(currentPageOffsetFraction) < SNAPPED_FRACTION
 
 /**
  * ✕, recipe name and "Steg 3 av 6", A−/A+, then the progress bar. "Steg 3 av 6" is a polite live
@@ -1076,3 +1083,6 @@ internal const val COOK_CLOSE_TAG = "cook:close"
 internal const val COOK_ADD_RECIPE_TAG = "cook:add-recipe"
 
 private const val NO_ADJUST = -1
+
+/** Closer to a page than this (a fraction of a page) counts as resting on it. */
+private const val SNAPPED_FRACTION = 0.001f
