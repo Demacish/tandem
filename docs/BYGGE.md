@@ -68,6 +68,9 @@ kan installeras bredvid release-bygget.
 | `:core:model`, `:core:common`, `:core:domain` | ren Kotlin/JVM | `domain` → `model`, `common` |
 | `:contract-tests` | ren Kotlin/JVM | – (pratar HTTP med en tillfällig Tandoor) |
 | `:smoke` | `tandem.android.test` (test-APK) | – (svart låda: rör bara `:app`s minifierade APK via skärmen) |
+| `:wear` (Fas 5) | `tandem.android.application` + Compose för Wear OS, **ingen Hilt** | bara `core:{model,common,domain,network,watchlink}` (`checkModuleGraph` regel 6); Wear OS-appen, se "Klockan" |
+| `:core:watch` (Fas 5) | Android-bibliotek + Hilt | `core:{data,network,datastore,model,common,watchlink}`; telefonens sida av klockan (`WatchRepository`, Data Layer), se "Klockan" |
+| `:core:watchlink` (Fas 5) | ren Kotlin/JVM + serialization | –; protokollet mellan telefon och klocka |
 
 Alla moduler för Fas 1a, 1b, 2 och S finns redan i `settings.gradle.kts`. Nya beroenden läggs i modulens egen
 `build.gradle.kts`; använd typsäkra projektreferenser (`projects.core.model`) och katalogen
@@ -107,6 +110,9 @@ alltså av `pr.yml`). Den läser de projektberoenden modulen själv deklarerar o
 4. något annat än en testkonfiguration (`testImplementation` m.fl.) beror på `:core:testing`,
 5. `:core:ai` beror på `:core:network`, `:core:sync` eller `:core:database` (Fas S: AI-anropen har
    egna HTTP-klienter, så ingen Tandoor-interceptor, header, token eller cookie kan nå dem).
+6. `:wear` (Fas 5) beror på något annat än `:core:{model,common,domain,network,watchlink}` (en
+   tillåtelselista: aldrig telefonens data, synk, lagring, timrar, UI, AI eller features; `:core:testing`
+   bara i tester).
 
 Reglerna står i `build-logic/convention/src/main/kotlin/casa/moller/tandem/buildlogic/ModuleGraph.kt`.
 Reglernas egna tester (`ModuleGraphRulesTest`, bl.a. att `:feature:*` aldrig når `:core:timer` eller `:core:ai` i
@@ -1119,7 +1125,97 @@ sätts av integrationen. En rad per bana.
 | integration | 0.7.0 "I köket": banorna samlade på main och prövade tillsammans | Alla tre banorna på main; handsfree går också att slå på i Inställningar → Kokläge och timers (samma `AppSettings.handsfree` som kokläget ark, mikrofonen frågas när rösten slås på) och påminnelserna i Synk och lagring; röktestet kör banorna tillsammans: handsfree från inställningarna styr kokläget som öppnas från köksskärmen, köksskärmen visar timrarna från två recept i samma kokläge, och butiksläget som öppnas från rutnätet har de sammanslagna raderna och bockar av i **en** bulk. versionCode 9, versionName 0.7.0, CHANGELOG `[0.7.0] – 2026-11-13`, torrkörning grön | ✅ klart 2026-11-13 (PR 43479860265, röktest "OK (43 tests)" 43479862340 på bc248be, 25 min 42 s i emulatorn, jobbet 38 min av 50; torrkörning 43479860582 på bc248be; Contract 43464449468 på 29c154a, inget i dess sökvägar ändrades; referensbilder från Screenshots 43472197684), se "Integration av Fas 5 (0.7.0)" |
 | komplettering-1 | Formens storlek till inköpslistan (plan §8.1); två recept sida vid sida i kokläget på expanded bredd (beslut) | "Lägg på inköpslistan" från receptet och kokläget i en annan form lägger på `servings × faktor` som Tandoors webb (arket visar "Skalat för 20 cm form (× 0,69)" och formens mängder, stegaren ändrar portionerna och formen står kvar; Idag och Kan laga nu oförändrade); enhetstest av faktorn och arket, Compose-test, skärmbilder och ATF för arket, röktestet lägger demons kladdkaka i 20 cm form på listan och ser 69 g smör. Två recept sida vid sida byggs **inte** förrän ägaren efter enhetsprovet bestämmer det (beslutet i "Kokläget i Fas 5" står kvar). | ✅ formen klar 2026-11-13 (PR 43499205628 och röktest "OK (44 tests)" 43499306407 på 74df357; referensbilder från Screenshots 43495860331, bara `shopping/*recipe_shopping_tin*`), se "Inköpslistan i vald form"; två recept sida vid sida väntar på ägarens beslut |
 | kalender | Matsedeln i kalendern (#36, plan §3.1, §7), 0.8.0 | **Visa i telefonens kalender** (av som standard; Veckans meny och Mer → Inställningar): när den slås på frågas READ_CALENDAR/WRITE_CALENDAR i sammanhanget, och de kommande veckornas måltider (synkens fönster −14..+42 dagar) står i en egen lokal kalender "Tandem – matsedel" på telefonen, en händelse per måltid med måltidstyp och titel, vid måltidstypens tid (en timme) eller som heldag, skrivna från Room (offline). Kalendern följer matsedeln inom sekunder medan appen lever och skrivs om av WorkManager två gånger om dygnet, alltså **inom 24 h**; inga dubbletter, flyttade måltider flyttas, borttagna försvinner; avstängd, utloggad eller demoläge tar bort kalendern. Gäster får använda den. **Prenumerationslänk** (av som standard, inte för gäster eller i demoläget): en egen token med scope `mealplan` (aldrig kontots), adressen `…/api/meal-plan/ical/?access_token=…` att kopiera, dela eller öppna som `webcal://`, "Ny länk" återkallar den gamla, "Stäng av" återkallar, tokenen förlängs i förväg med samma adress; texten säger att alla med länken kan läsa matsedeln. Kontraktstest mot 2.6.13 och 2.7.1; i CI bevisade händelseavbildning (tidszon, sommartid, måltidstyper, flyttade och borttagna), idempotens och skrivningarna mot en exakt kalenderleverantör i Robolectric; Compose-, ATF- och referensbilder. **BEHÖVER ENHET** (ägaren): b) syns i Samsung Kalender/Google Kalender och uppdateras inom ett dygn; a) prenumereras i en kalender som stöder det. | ✅ klart i CI 2026-11-14 (PR 43533009740 på ebde838, röktest "OK (45 tests)" 43533169038 på ebde838, jobbet 41 min av 50; Contract 2.6.13/2.7.1 43530215254 på 643aec3 och Tandoor-bevakning 43523256160; referensbilder från Screenshots 43530230230); enhetsproven återstår, se "Matsedeln i kalendern" |
+| klocka | Wear OS-appen (#33, plan §3.1, §7, B15): inköpslistan, timrarna och rutan på klockan, klockans egen token | Klockan bockar av en vara med telefonen avstängd och servern får det när klockan har nät, med **klockans egen token** (`read write`, 90 dagar, skapad av telefonen i Mer → Klockan och skickad som en Data Layer-förfrågan bara till en klocka i närheten; telefonens token lämnar aldrig telefonen). Avbockningar utan nät väntar i klockans utkorg och skickas som **en** `bulk` per läge; vakten stoppar vid första 403/401 ("Logga in igen på telefonen") och backar vid 429 och fel (5 min → 2 h). Koppla från tar bort token på servern och tömmer klockan; en utloggad kontos klocka tar bort sin egen token. Telefonens timrar syns på klockan som pågående aktivitet och larm, och Stoppa på ena sidan stoppar båda. Rutan visar antal, de första varorna och nästa timer. Demoläget och gäster kan inte koppla (sagt rakt ut). Release bygger och signerar `tandem-wear-<version>.apk` med samma nyckel; docs/WEAR.md. I CI: klockans utkorg, tokenutbytet genom en låtsad Data Layer, kontraktstestet mot 2.6.13 och 2.7.1, timerspeglingen med fakes, skärmbilder och ATF på liten rund, stor rund och fyrkantig klocka och Mer → Klockan på telefon och surfplatta. **BEHÖVER ENHET** (ägaren): en riktig klocka med telefonen avstängd | 🚧 byggs, se "Klockan" |
 <!-- /Fas 5 läge -->
+
+<!-- Fas 5 klocka -->
+## Klockan (`:wear`, `:core:watch`, `:core:watchlink`, `:feature:shell`, Fas 5, klocka)
+
+Plan §7 #33, §3.1 ("Andra klienter får egna, smalare tokens"), §8.7 och B15 (Samsung Galaxy Watch 4
+och senare). Tre moduler: `:core:watchlink` (ren Kotlin: sökvägar, nyttolaster, tokenregler),
+`:core:watch` (telefonens sida, Hilt) och `:wear` (Wear OS-appen). Inget nytt Room-schema (telefonen
+är kvar på 6): kopplingen ligger i en egen DataStore-fil, klockans lista i en JSON-fil.
+
+**Beslut.**
+
+| Fråga | Beslut |
+|---|---|
+| minSdk på klockan | **34 (Wear OS 5)**, samma som telefonen, så de delade modulerna inte behöver `overrideLibrary`. Galaxy Watch 4 och senare har fått Wear OS 5 (One UI 6 Watch); Pixel Watch likaså |
+| UI | Compose för Wear OS med **Wear Material 3 1.7.1** (stabil sedan 2026-10-07), Tandems mörka färger på svart; `ScalingLazyColumn` (vridkronan rullar som standard) utan krympning och tonning vid kanterna, så varje rad är 48 dp och läsbar (ATF) |
+| DI på klockan | ingen Hilt: `WearGraph` i `TandemWearApplication`, så core:networks Hilt-moduler aldrig behövs |
+| Klockans token | `POST /api/access-token/` med telefonens token, `scope` `read write`, 90 dagar; förnyas av telefonen 30 dagar före (vid appstart med klockan i närheten); `WatchTokenPolicy` |
+| Transport | bara `MessageClient` (meddelanden och förfrågningar med svar), aldrig `DataItem` (sparas och kan gå via molnet); token bara till en nod med `isNearby` |
+| Gäster | erbjuds inte: Tandoor nekar en gästs avbockning, så klockan vore en lista som inte går att bocka av (kontraktstestet registrerar vad en gästs token får) |
+| Konto | ett per klocka, det aktiva vid kopplingen; byter man konto står "Klockan hör till ett annat konto" tills man kopplar igen |
+| Utan Play-tjänster | `DataLayerException` → `WatchAvailability.UNAVAILABLE`, raden i Mer syns inte |
+| Signering | samma `applicationId` (`casa.moller.tandem`) och nyckel som telefonen: debug `.dev` med `app/debug.p12`, release med samma miljövariabler, torrkörning `.dryrun`; versionen läses ur `app/build.gradle.kts` |
+
+**Protokollet (`:core:watchlink`).** `WatchLink`: förmågorna `tandem_wear` (klockan) och `tandem_phone`
+(telefonen), sökvägarna `/tandem/wear/pair|unpair|status` (förfrågningar telefon → klocka med
+`PairReply`/`WatchStatusReply`), `/tandem/timers` (meddelande telefon → klocka, `TimerMirror`),
+`/tandem/timers/request` (förfrågan klocka → telefon) och `/tandem/timer/action` (meddelande klocka →
+telefon, `TimerAction`). JSON med `ignoreUnknownKeys` och `protocol = 1`; `WatchCredentials.toString`
+redigerar token. `WatchLinkTest`.
+
+**Telefonen (`:core:watch`).**
+
+| Del | Innehåll |
+|---|---|
+| `DataLayer` / `PlayDataLayer` | noder, förmågan `tandem_wear` (`FILTER_REACHABLE`), förfrågan och meddelande; Play-fel → `DataLayerException` |
+| `WatchTokens` / `TandoorWatchTokens` | skapa (läser klartext och id ur 201, maskerad token = fel) och ta bort (404 = redan borta) med telefonens token |
+| `DefaultWatchRepository` | `state` (session, behörighet, koppling, upptäckt), `pair` (blockerad → `NOT_ALLOWED`; ingen klocka i närheten → `NO_WATCH` utan att skapa token; klockan nekar → token tas bort direkt), `unpair` (servern först, sedan klockan; utan servern raderar klockan sin egen), `maintain` (kontot borta → klockan raderar sin token när den nås, `revokeOnWatch`; förnyelse) |
+| `WatchTimerMirror` | `TimerController.timers` + kopplingen → `TimerMirror` till den kopplade klockan (debounce 250 ms); `act` kör `stopRinging`/`cancel` |
+| `PhoneWearListenerService` | `@AndroidEntryPoint`; tar emot `TimerAction` och svarar på `timers/request` |
+| `WatchLinkStarter` | startas i `TandemApplication`: spegeln, och `maintain` 10 s efter start och vid varje kontoändring |
+
+core:timer sätter bryggtaggen `TandemNotificationIds.TIMER_BRIDGE_TAG` på timernotiserna; klockan
+undantar den taggen (`BridgingManager`), så timrarna inte syns två gånger, medan telefonens övriga
+notiser bryggas som förut.
+
+**Mer → Klockan (`:feature:shell`).** `WatchKey` (en Mer-sida, detaljrutan på surfplatta),
+`WatchPage` med `RouteWatchPage` (två `WatchViewModel`, raden och sidan) och `NoWatchPage` (standard
+i `ShellScaffold`, så skalets befintliga tester och referensbilder är oförändrade; `TandemShell`
+skickar `RouteWatchPage`). Raden visas bara när `WatchState.showInMore` (en klocka hittad eller en
+koppling finns). Sidan: vad klockan gör, klockan eller varför ingen, kopplingen med konto och
+nyckelns giltighet, Koppla klockan / Koppla igen, Koppla från klockan, Leta igen, guiden
+(docs/WEAR.md) och vad som skickas vart; demo, gäst och utloggad visar bara varför. Ett serverfel
+står kvar som kort, resultaten som snackbar. Strängar i `strings_watch.xml` (en/sv).
+
+**Klockan (`:wear`).**
+
+| Del | Innehåll |
+|---|---|
+| `KeystoreCredentialsStore` | token krypterad med AES-256-GCM under en Keystore-nyckel i `noBackupFilesDir`; en förlorad nyckel = inte kopplad |
+| `WearStateStore` / `WearState` | listan, utkorgen (`pending`: id → önskat läge, sista trycket vinner, två tryck som tar ut varandra skickar inget), butikerna, vakten, timrarna; skrivs före publicering |
+| `WearSync` | utkorgen först (en `bulk` per läge), sedan listan högst var 2:a minut (eller tvingad), butikerna var 6:e timme; `WearGuard` före och efter |
+| `WearGuard` | 401/403 från Tandoor → `signedOut`, ingen fler begäran förrän ny koppling; 429 → vänta `Retry-After` (1 min–2 h, annars 5 min); övriga fel 5 min fördubblat till 2 h; inget nät räknas aldrig |
+| `WorkManagerSyncScheduler` / `WearSyncWorker` | engångsjobb med nätkrav (`tandem.wear.sync`, och `tandem.wear.sync.later` för en paus), inget periodiskt |
+| `WatchPairing` / `WatchListenerService` | svarar på telefonens förfrågningar; ett annat konto eller en annan server tömmer listan, en förnyad token behåller den och utkorgen |
+| `WearTimers` / `AndroidTimerNotifier` | spegeln, äldre meddelanden ignoreras; pågående aktivitet (`OngoingActivity`, kanalen `timer_ongoing`) och larm (`timer_alarm`, Stoppa, att svepa bort larmet stoppar det också); `POST_NOTIFICATIONS` frågas från knappen vid timrarna |
+| `WearShoppingList` | raderna med `ShoppingMerge` (samma enhet läggs ihop; klockan har inga omräkningar), butikens gångordning, "köp senare" dolt, avbockat sist |
+| `ShoppingTileService` | rutan: antal, tre första varorna, nästa timer; tryck öppnar listan; ber om synk när listan är äldre än 2 min |
+| `ShoppingScreen` / `WearViewModel` | tillstånden laddar, inte kopplad, logga in igen, listan med status (uppdaterad, offline, paus, väntande) |
+
+**Tester.** `WatchLinkTest` (protokollet, tokenregeln), `ModuleGraphRulesTest` (regel 6),
+`WearSyncTest` (avbockning offline som når servern när klockan har nät, sammanslagen rad = en `bulk`,
+första nekade token stoppar allt, 429, fördubblad paus, listan högst var 2:a minut, butikerna var
+6:e timme, inget utan koppling), `WatchPairingTest` (tokenutbytet som Data Layer levererar det),
+`WearTimersTest`, `WearShoppingListTest`, `ShoppingTileTest`, `WearViewModelTest`,
+`ShoppingScreenScreenshotTest` (liten rund, stor rund, fyrkantig; lista, svenska, största
+textstorleken 1,24, timrar + offline, inte kopplad, logga in igen, tom; ATF på varje),
+`DefaultWatchRepositoryTest` (tokenutbytet genom en låtsad Data Layer vars klocka svarar som
+klockappen), `TandoorWatchTokensTest` (HTTPS MockWebServer), `WatchScreenshotTest` (telefon i alla
+tillstånd, ljust, mörkt, svenska, teckenstorlek 2, liggande, Mer med raden, surfplatta i båda
+orienteringarna; ATF), `WatchScreenTest` och `Phase5WearTokenContractTest` (`fas5/wear`).
+
+**Inget röktest i emulatorn.** Röktestet tar redan omkring 41 av 50 minuter, och en Wear-emulator
+behöver en egen bild. I stället: release.yml kontrollerar att Wear-APK:n är signerad med samma nyckel,
+och röktestets befintliga Mer-steg kör `RouteWatchPage` i den minifierade appen utan klocka (raden
+syns inte). Förslag till integrationen: se publicApi i banans rapport.
+
+**Kvar (behöver enhet):** en riktig klocka med telefonen avstängd (bocka av i butiken, servern får det
+när klockan har nät), pågående aktivitet och larm på urtavlan, rutan, vridkronan.
+<!-- /Fas 5 klocka -->
 
 <!-- Fas 5 integration -->
 ## Integration av Fas 5 (0.7.0)

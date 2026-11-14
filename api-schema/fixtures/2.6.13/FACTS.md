@@ -1215,3 +1215,25 @@ som alla andra datum.
   `mealplan`-token (201 att skapa) avvisas med 403. En gäst kan skapa en `mealplan`-token (201), men
   appen erbjuder inte länken för gäster (de skriver aldrig). [O]
 <!-- /Fas 5 kalender -->
+
+<!-- Fas 5 klocka -->
+## Fas 5: klockans token (plan §3.1, §7 #33, bana klocka)
+
+`Phase5WearTokenContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1) och spelar in till
+`fas5/wear/` (2026-11-14, inga avvikelser mot `EXPECTED`, 2.6.13 och 2.7.1 svarar likadant).
+Bevakningen jämför faktan (`fas5.wear`).
+
+- **a. Skapa med telefonens token.** `POST /api/access-token/` med en `read write`-token som Bearer,
+  `{"scope": "read write", "expires": "<90 dagar fram>Z"}` → 201 med `token` i klartext, `id`, `scope`
+  `read write` och `expires` (serverns tidszon, samma ögonblick). [O] Listan (`GET /api/access-token/`)
+  har den med samma scope och utgång. [O]
+- **b. Vad klockans token får.** `GET /api/shopping-list-entry/` och `GET /api/supermarket/` → 200;
+  `POST /api/shopping-list-entry/bulk/` `{ids, checked: true}` → 200 och posten är avbockad på
+  servern. [O] Den får också skapa tokens (201), som varje `read write`-token (c). [O] Klockan gör
+  aldrig det.
+- **c. Ta bort.** `DELETE /api/access-token/{id}/` med telefonens token → 204; därefter får klockans
+  begäran **403 med `detail`** (som en ogiltig token, FACTS e: "Logga in igen"), och en andra DELETE
+  → 404. En token kan ta bort sig själv (204), därefter 403. [O]
+- **d. Gäst.** En gästs token kan skapa en token (201), men gästens `bulk` nekas med 403. [O]
+  [S] Appen kopplar därför inte en gästs klocka: listan skulle inte gå att bocka av.
+<!-- /Fas 5 klocka -->

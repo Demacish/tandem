@@ -35,10 +35,8 @@ internal val WATCH_GUEST = WatchUiState(WatchState(WatchAvailability.READY, watc
 internal val WATCH_SERVER_ERROR = WATCH_READY.copy(error = TandemError.Timeout)
 
 /** [WatchPage] with a fixed state: the row and the stateless screen, no Hilt. */
-internal class FixedWatchPage(
-    private val state: WatchUiState = WATCH_PAIRED,
-    private val onAction: (WatchAction) -> Unit = {},
-) : WatchPage {
+internal class FixedWatchPage(private val state: WatchUiState = WATCH_PAIRED, private val onAction: (WatchAction) -> Unit = {}) :
+    WatchPage {
     @Composable
     override fun MoreRow(selected: Boolean, onOpen: () -> Unit) = WatchMoreRow(state.watch, selected, onOpen)
 
