@@ -1209,8 +1209,8 @@ klockappen), `TandoorWatchTokensTest` (HTTPS MockWebServer), `WatchScreenshotTes
 tillstånd, ljust, mörkt, svenska, teckenstorlek 2, liggande, Mer med raden, surfplatta i båda
 orienteringarna; ATF), `WatchScreenTest` och `Phase5WearTokenContractTest` (`fas5/wear`).
 
-**Inget röktest i emulatorn.** Röktestet tar redan omkring 41 av 50 minuter, och en Wear-emulator
-behöver en egen bild. I stället: release.yml kontrollerar att Wear-APK:n är signerad med samma nyckel,
+**Inget röktest i emulatorn.** Röktestet tog då omkring 41 av 50 minuter (sedan 0.8.0 två
+emulatorer, se "Release-röktest"), och en Wear-emulator behöver en egen bild. I stället: release.yml kontrollerar att Wear-APK:n är signerad med samma nyckel,
 och röktestets befintliga Mer-steg kör `RouteWatchPage` i den minifierade appen utan klocka (raden
 syns inte). Förslag till integrationen: se publicApi i banans rapport.
 
@@ -1513,9 +1513,10 @@ kalenderapp, frågan, gäst, gammal server, demo; ATF och referensbilder `mealpl
 telefon stående och liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2).
 
 **Kvar:** behöver enhet (ägaren): b) i Samsung Kalender/Google Kalender och uppdaterad inom ett dygn;
-a) prenumeration i en kalender som stöder det. Länken återkallas inte när kontot loggas ut eller tas
-bort (den lokala raden försvinner med kontot, tokenen gäller på servern tills den går ut eller tas bort
-i Tandoor); den lokala kalendern finns kvar efter avinstallation.
+a) prenumeration i en kalender som stöder det. Den lokala kalendern finns kvar efter avinstallation.
+Sedan integrationen av 0.8.0 återkallas länkens token när kontot loggas ut eller tas bort (med nät;
+se "Integration av Fas 5 (0.8.0)"); offline gäller den på servern tills den går ut eller tas bort i
+Tandoor.
 <!-- /Fas 5 kalender -->
 
 <!-- Fas 5 butik -->
@@ -5403,6 +5404,21 @@ den kod som skickas:
   jobbets sammanfattning.
 - Kör det manuellt: Actions → *Release smoke test* → *Run workflow*. Aldrig på servern: det kräver
   en emulator.
+- **Två emulatorer (Fas 5, integration-08, 0.8.0).** Med 46 tester tog det enda emulatorjobbet 44
+  minuter av 50 (en gång 49 min 50 s). Sedan dess bygger jobbet `build` ("Build and check the
+  minified app", högst 30 min) båda APK:erna en gång, kör mappnings- och manifestkontrollerna och
+  lämnar APK:erna och mappningsfilen som artefakten `smoke-apks` (en dag). Två emulatorjobb
+  (`smoke`, matris `shard` 1 och 2, högst 40 min vardera, `fail-fast: false`) laddar ner dem och kör
+  `smoke-run.sh` parallellt: shard 1 kör klasserna i `SHARD_1_CLASSES` (`-e class`: Phase2,
+  Phase4, Phase1b, Phase2Accounts och ReleaseSmokeTest, ungefär 980 s), shard 2 alla andra
+  (`-e notClass`, ungefär 980 s), så en **ny** testklass hamnar i shard 2 utan att någon lista
+  ändras. Delningen är räknad på klassernas tider på main (körning 43583033962: tidsstämpeln på
+  varje klassrad i loggen är när klassen var klar); flytta en klass mellan listorna om ena halvan
+  blir mycket längre. Båda jobben kräver en klar `core:sync`-arbetare (båda halvorna loggar in).
+  En körning för hand med `tests` kör de klasserna i shard 1; shard 2 hoppar då över emulatorn.
+  `release.yml` läser `ran` = matrisjobbets resultat, som bara är `success` när båda gick igenom.
+  Vid fel heter artefakterna `smoke-results-1`/`smoke-results-2` (och `smoke-mapping` om bygget
+  fallerade); retracingen använder SDK:ns `retrace`, eftersom emulatorjobben inte har Gradle-cachen.
 
 ### v0.0.1: varför inloggningen kraschade
 

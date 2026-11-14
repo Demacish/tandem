@@ -1,10 +1,12 @@
 package casa.moller.tandem.core.sync.calendar
 
+import casa.moller.tandem.core.data.account.AccountRemovalHook
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.mealplan.MealPlanRepository
 import casa.moller.tandem.core.datastore.MealCalendarStore
 import casa.moller.tandem.core.domain.mealplan.MealCalendarEvents
 import casa.moller.tandem.core.domain.reminder.WallClockSchedule
+import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.mealplan.MealPlanWeek
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
@@ -38,6 +41,8 @@ import kotlinx.datetime.plus
  *   calendar again after [SETTLE]; a switch to another account writes that account's plan instead.
  * - Logging out (no account) or demo mode removes the calendar and turns the option off, so another
  *   person logging in on this phone never finds it on.
+ * - Fas 5 (integration-08, [AccountRemovalHook]): the same when the active account leaves the phone
+ *   and another stored account takes over; the option is the phone's, the plan was that account's.
  */
 @OptIn(FlowPreview::class)
 @Singleton
@@ -50,7 +55,7 @@ internal class MealCalendarSchedule @Inject constructor(
     private val mealPlans: MealPlanRepository,
     private val clock: WallClock,
     @ApplicationScope private val scope: CoroutineScope,
-) {
+) : AccountRemovalHook {
     private val started = AtomicBoolean(false)
 
     private data class Wanted(val source: ActiveSource, val local: Boolean, val link: Boolean)
@@ -82,6 +87,15 @@ internal class MealCalendarSchedule @Inject constructor(
                     }
                 }
         }
+    }
+
+    /** The calendar shows [account]'s plan: off and removed before the account goes (no token needed). */
+    override suspend fun beforeRemoval(account: ServerAccount, token: String) {
+        val active = sources.current() as? ActiveSource.Remote ?: return
+        if (active.accountId != account.id || !store.state.first().enabled) return
+        // Off first: a write that is still waiting then writes nothing (PhoneMealCalendar.write).
+        store.setEnabled(false)
+        calendar.remove()
     }
 
     /** Writes the calendar now and after every change of the stored plan in today's window. */

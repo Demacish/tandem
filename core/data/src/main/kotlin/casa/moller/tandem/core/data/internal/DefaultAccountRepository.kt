@@ -33,12 +33,15 @@ import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Instant
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -335,8 +338,9 @@ internal class DefaultAccountRepository(
 
     /**
      * Fas 5 (integration-08): every [AccountRemovalHook] with the account's token, before it goes
-     * (whatever was chosen for the token itself), at most [AccountRemovalHook.TIME_LIMIT_MILLIS]
-     * together and never cancelled half-way by a closing screen. An unreadable token skips them.
+     * (whatever was chosen for the token itself), side by side, at most
+     * [AccountRemovalHook.TIME_LIMIT_MILLIS] together and never cancelled half-way by a closing
+     * screen. An unreadable token skips them.
      */
     private suspend fun runRemovalHooks(account: ServerAccount) {
         val hooks = removalHooks()
@@ -348,7 +352,11 @@ internal class DefaultAccountRepository(
         } ?: return
         withContext(NonCancellable) {
             withTimeoutOrNull(AccountRemovalHook.TIME_LIMIT_MILLIS) {
-                hooks.forEach { hook -> hook.beforeRemoval(account, token) }
+                // Side by side: a slow server for one never keeps another (or a local one) from
+                // running, and a failing hook never stops the removal.
+                supervisorScope {
+                    hooks.forEach { hook -> launch(IGNORE_HOOK_FAILURE) { hook.beforeRemoval(account, token) } }
+                }
             }
         }
     }
@@ -412,6 +420,9 @@ internal class DefaultAccountRepository(
     private suspend fun activeAccount(): ServerAccount? = activeAccount(settingsStore.settings.first(), accountStore.accounts.first())
 
     internal companion object {
+        /** A hook that fails leaves its token to its own fallback; the account is removed anyway. */
+        private val IGNORE_HOOK_FAILURE = CoroutineExceptionHandler { _, _ -> }
+
         const val FIELD_USERNAME = "username"
         const val FIELD_PASSWORD = "password"
         const val FIELD_TOKEN = "token"

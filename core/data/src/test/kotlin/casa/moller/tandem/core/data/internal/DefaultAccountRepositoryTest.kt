@@ -554,7 +554,8 @@ class DefaultAccountRepositoryTest {
     }
 
     @Test
-    fun aHookThatNeverAnswersDoesNotHoldTheLogoutBack() = runTest {
+    fun aHookThatNeverAnswersOrFailsDoesNotHoldTheLogoutBackNorStopTheOthers() = runTest {
+        var ran = false
         val hooked = DefaultAccountRepository(
             remote = remote,
             accountStore = accounts,
@@ -562,12 +563,19 @@ class DefaultAccountRepositoryTest {
             health = health,
             now = { NOW },
             newId = { "account-${++ids}" },
-            removalHooks = { setOf(AccountRemovalHook { _, _ -> awaitCancellation() }) },
+            removalHooks = {
+                setOf(
+                    AccountRemovalHook { _, _ -> awaitCancellation() },
+                    AccountRemovalHook { _, _ -> error("a broken hook") },
+                    AccountRemovalHook { _, _ -> ran = true },
+                )
+            },
         )
         hooked.login(SERVER, "anna", "secret")
 
         assertEquals(TokenRevocation.REVOKED, hooked.logout(revokeToken = true).getOrNull())
         assertEquals(Session.NoAccount, hooked.session.first())
+        assertTrue(ran)
         assertTrue(currentTime >= AccountRemovalHook.TIME_LIMIT_MILLIS)
     }
 

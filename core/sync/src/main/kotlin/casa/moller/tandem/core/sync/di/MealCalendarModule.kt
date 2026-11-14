@@ -6,6 +6,7 @@ import casa.moller.tandem.core.sync.calendar.AndroidCalendarGateway
 import casa.moller.tandem.core.sync.calendar.CalendarGateway
 import casa.moller.tandem.core.sync.calendar.DefaultMealCalendarRepository
 import casa.moller.tandem.core.sync.calendar.MealCalendarLinks
+import casa.moller.tandem.core.sync.calendar.MealCalendarSchedule
 import casa.moller.tandem.core.sync.work.MealCalendarWork
 import casa.moller.tandem.core.sync.work.WorkManagerMealCalendarWork
 import dagger.Binds
@@ -31,4 +32,9 @@ internal abstract class MealCalendarModule {
     @Binds
     @IntoSet
     abstract fun bindLinkRemoval(impl: MealCalendarLinks): AccountRemovalHook
+
+    // Fas 5 (integration-08): "Visa i telefonens kalender" goes off with the account it shows.
+    @Binds
+    @IntoSet
+    abstract fun bindLocalCalendarRemoval(impl: MealCalendarSchedule): AccountRemovalHook
 }

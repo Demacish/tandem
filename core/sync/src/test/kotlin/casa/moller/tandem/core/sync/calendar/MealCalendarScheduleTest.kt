@@ -110,6 +110,23 @@ class MealCalendarScheduleTest {
     }
 
     @Test
+    fun theActiveAccountLeavingThePhoneTakesTheCalendarAlsoWhenAnotherAccountTakesOver() {
+        meal(1, "2026-11-14")
+        store.state.value = LocalCalendarRecord(enabled = true)
+        val schedule = schedule()
+        schedule.start()
+        waitFor { provider.events().size == 1 }
+
+        // Another stored account leaving changes nothing.
+        runBlocking { schedule.beforeRemoval(graph.account.copy(id = "someone-else"), "unused") }
+        assertTrue(store.state.value.enabled)
+        assertEquals(1, provider.events().size)
+
+        runBlocking { schedule.beforeRemoval(graph.account, "unused") }
+        waitFor { provider.calendars().isEmpty() && !store.state.value.enabled }
+    }
+
+    @Test
     fun demoModeRemovesTheCalendarAndTurnsItOff() {
         meal(1, "2026-11-14")
         store.state.value = LocalCalendarRecord(enabled = true)
