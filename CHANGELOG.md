@@ -6,6 +6,13 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+## [0.8.0] – 2026-11-14
+
+Fas 5, andra delen: På språng. Inköpslistan och timrarna följer med på klockan, matsedeln syns i
+telefonens kalender, och telefonen kan påminna dig om listan när du kommer nära butiken. Allt är av
+tills du slår på det, Tandem frågar om plats, kalender och notiser först när du väljer funktionen,
+och inget kräver något extra av servern. Klockappen installeras från en dator (se nedan).
+
 **På språng: klockan**
 
 - **Tandem på klockan (Wear OS 5 och senare, t.ex. Galaxy Watch 4 och nyare):** inköpslistan i
@@ -51,6 +58,22 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   inställningarna) och notiser. Ingen ständig platsspårning: telefonens geofences (Google
   Play-tjänster) märker när du kommer nära. Utan Google Play-tjänster finns valet inte, och sidan
   säger varför. Aldrig i demoläget; gäster kan använda den.
+
+**Konton**
+
+- **Utloggning tar med sig nycklarna Tandem skapat:** loggar du ut, eller tar bort ett konto under
+  Konton och servrar, tas klockans nyckel och kalenderlänkens nyckel bort i Tandoor direkt (med nät),
+  också när du väljer att behålla appens egen nyckel. Utan nät tar klockan bort sin nyckel nästa gång
+  telefonen når den; kalenderlänkens nyckel gäller då tills den går ut eller tas bort i Tandoor.
+
+**Kvar till senare**
+
+- Klockan, kalendern och påminnelsen nära butiken är prövade i CI men ännu inte på en riktig klocka,
+  i Samsungs och Googles kalendrar eller i en riktig butik (batteriet under en dag).
+- Behörighetssidan under Mer visar ännu inte plats och kalender; de frågas och förklaras på
+  funktionernas egna sidor.
+- Inkorg för recept från RSS, App Functions, biometriskt lås, target SDK 37 och två recept sida vid
+  sida i kokläget kommer i senare versioner.
 
 ## [0.7.0] – 2026-11-13
 

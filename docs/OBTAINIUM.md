@@ -9,7 +9,7 @@ GitHub Releases. Repot `Demacish/tandem` är publikt, så ingen GitHub-token beh
 2. **Lägg till app** → URL: `https://github.com/Demacish/tandem`.
 3. Rekommenderade appinställningar:
    - *Filtrera APK:er med reguljärt uttryck:* `tandem-.*-sideload\.apk$`
-     (varje release har en APK, `tandem-X.Y.Z-sideload.apk`, plus `SHA256SUMS` och R8-mappningen).
+     (varje release har en telefon-APK, `tandem-X.Y.Z-sideload.apk`, plus `SHA256SUMS` och R8-mappningarna).
    - *Inkludera förhandsversioner:* av.
 4. Installera. Android frågar första gången om Obtainium får installera okända appar.
 

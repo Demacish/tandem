@@ -118,10 +118,9 @@ Levererades i **0.6.0** (2026-11-05), med det som återstod av Fas 3.
   text (0.6.0). Länken finns inte i demoläget, för gäster eller när utrymmet har delning avstängd.
 
 ## Fas 5: Plattform
-Fasen är löpande och släpps i flera versioner. Första delen, **0.7.0 "I köket"** (2026-11-13),
-levererade punkterna markerade ✅. Resten kommer i senare versioner: Wear OS, påminnelse nära
-butiken, matsedeln i kalendern (iCal), en inkorg för recept från RSS, App Functions, biometriskt
-lås och target SDK 37.
+Fasen är löpande och släpps i flera versioner. Första delen, **0.7.0 "I köket"** (2026-11-13), och
+andra delen, **0.8.0 "På språng"** (2026-11-14), levererade punkterna markerade ✅. Resten kommer i
+senare versioner: en inkorg för recept från RSS, App Functions, biometriskt lås och target SDK 37.
 
 - ✅ Handsfree-kokläge (0.7.0): volymknapparna byter steg, "nästa", "tillbaka" och "upprepa" med
   taligenkänning i telefonen (aldrig via nätet) och uppläsning av stegen. Av som standard; slås på i
@@ -140,11 +139,18 @@ lås och target SDK 37.
 - ✅ Påminnelse kvällen innan, till exempel "Tina ut kycklingen", från en rad "Påminn:" i måltidens
   anteckning eller fältet "Påminn kvällen innan" när måltiden planeras; valfri, med vald tid (0.7.0).
 - ✅ Morgonnotisen om det som går ut på en tid du väljer, och rätt klockslag efter sommartid (0.7.0).
+- ✅ Wear OS-app (0.8.0; Wear OS 5, till exempel Samsung Galaxy Watch 4 och senare): inköpslistan att
+  bocka av också med telefonen avstängd, med klockans egen nyckel, telefonens timrar och en ruta.
+  Installeras från en dator (docs/WEAR.md). Kvar: provet på en riktig klocka.
+- ✅ Matsedeln i kalendern (0.8.0): som en egen kalender på telefonen eller som en
+  prenumerationslänk (iCal) med en egen nyckel som bara läser matsedeln. Kvar: provet i Samsungs och
+  Googles kalendrar.
+- ✅ Påminnelse nära butiken (0.8.0): en notis per besök när något står kvar på listan, med
+  geofences och platser som stannar i telefonen. Kvar: provet i en riktig butik och batteriet under
+  en dag.
 
 Kommer senare:
 
-- Wear OS-app (till exempel Samsung Galaxy Watch 4 och senare): inköpslista och timers.
-- Påminnelse nära butiken, matsedeln i kalendern (iCal).
 - Inkorg för recept från RSS-flöden.
 - App Functions (appen nås från systemets assistent), biometriskt lås, target SDK 37.
 - Två recept sida vid sida i kokläget på en riktigt bred skärm (0.7.0 har flikar på alla bredder).

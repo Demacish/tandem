@@ -49,7 +49,9 @@ avinstallera appen (och förlora lokal data) och installera om.
 ## 2. Släppa en version
 
 1. Höj `versionCode` (alltid +1) och `versionName` i `app/build.gradle.kts`. Taggen måste vara
-   `v` + `versionName`, annars stoppar `release.yml` innan något byggs.
+   `v` + `versionName`, annars stoppar `release.yml` innan något byggs. Klockappen (`:wear`, sedan
+   0.8.0) läser båda raderna därifrån, så den får alltid samma `versionCode` och `versionName` som
+   telefonen; ändra inte radernas form (`versionCode = 10`, `versionName = "0.8.0"`).
 2. Skriv avsnittet för versionen i `CHANGELOG.md` (svenska, **krävs**), med rubriken
    `## [0.0.1] – 2026-10-10`, `## v0.0.1` eller `## 0.0.1`. Saknas avsnittet stoppar
    `release.yml` innan något byggs (plan §4.4: release med svensk changelog). En torrkörning
@@ -88,11 +90,11 @@ kör `gh release create`. Det körs bara för en riktig release.
 | build: Secrets | Saknas någon av de fyra secrets stoppas jobbet **innan** något byggs, med ett tydligt felmeddelande. |
 | build: Release notes | Avsnittet för versionen ur `CHANGELOG.md` blir `release-notes.md`. Saknas det stoppas en riktig release här. |
 | build: Nyckelfil | `TANDEM_KEYSTORE_BASE64` avkodas till `$RUNNER_TEMP/tandem-release.p12` (PKCS12) och kontrolleras med `keytool -list`. Filen raderas när steget är klart. Lösenorden finns bara i det steget. |
-| build: Bygge | `:app:assembleSideloadRelease` (R8 + resurskrympning) och `:app:bundlePlayRelease`, utan configuration cache (den skulle spara lösenorden). Signeringen läses i `app/build.gradle.kts` bara från `TANDEM_KEYSTORE_PATH`, `TANDEM_KEYSTORE_PASSWORD`, `TANDEM_KEY_ALIAS` och `TANDEM_KEY_PASSWORD`; utan dem blir release-bygget osignerat. Signeringsschema v3 (med minSdk 34 hoppar signeraren över v2 och v1). |
-| build: Kontroll | `apksigner verify --print-certs --min-sdk-version 34`, kräver "Verifies", schema v3 och exakt en signerare, jämför fingeravtrycket med `TANDEM_CERT_SHA256` (saknas variabeln stoppas en riktig release). `SHA256SUMS` täcker APK:n och mappningsfilen. |
-| build: Artefakt | `dist/` (APK, `tandem-X.Y.Z-sideload-mapping.txt`, `SHA256SUMS`, `release-notes.md`) och Play-AAB:n, 90 dagar. AAB:n laddas inte upp till Play ännu (Fas P). |
+| build: Bygge | `:app:assembleSideloadRelease` (R8 + resurskrympning), `:app:bundlePlayRelease` och (sedan 0.8.0) klockappen `:wear:assembleRelease`, utan configuration cache (den skulle spara lösenorden). Signeringen läses i `app/build.gradle.kts` bara från `TANDEM_KEYSTORE_PATH`, `TANDEM_KEYSTORE_PASSWORD`, `TANDEM_KEY_ALIAS` och `TANDEM_KEY_PASSWORD`; utan dem blir release-bygget osignerat. Signeringsschema v3 (med minSdk 34 hoppar signeraren över v2 och v1). |
+| build: Kontroll | `apksigner verify --print-certs --min-sdk-version 34`, kräver "Verifies", schema v3 och exakt en signerare, jämför fingeravtrycket med `TANDEM_CERT_SHA256` (saknas variabeln stoppas en riktig release). Klockans APK kontrolleras likadant och måste ha **samma** certifikat som telefonens (Wear Data Layer kopplar bara ihop appar med samma paketnamn och nyckel), annars stoppas jobbet. `SHA256SUMS` täcker båda APK:erna och båda mappningsfilerna. |
+| build: Artefakt | `dist/` (APK, `tandem-X.Y.Z-sideload-mapping.txt`, `tandem-wear-X.Y.Z.apk`, `tandem-wear-X.Y.Z-mapping.txt`, `SHA256SUMS`, `release-notes.md`) och Play-AAB:n, 90 dagar. AAB:n laddas inte upp till Play ännu (Fas P). |
 | smoke | **Krav före publicering.** Anropar `smoke.yml`: den R8-minifierade appen (samma R8-konfiguration som releasen) loggar in mot en falsk Tandoor på en emulator, överlever processdöd och kallstart och loggar ut (`docs/BYGGE.md`, "Release-röktest"). Fallerar den, eller kraschar appen, publiceras ingenting. Körs inte vid torrkörningar på lane-grenar; där kör `smoke.yml` själv vid varje push som inte bara ändrar dokumentation, enhetstester eller kontraktstester. |
-| publish | Körs bara om `smoke` gick igenom. Laddar ner artefakten, kontrollerar `SHA256SUMS` och skapar GitHub Release `vX.Y.Z` med `tandem-X.Y.Z-sideload.apk`, `tandem-X.Y.Z-sideload-mapping.txt` och `SHA256SUMS`, och changelog-avsnittet som text. Mappningsfilen ligger kvar i releasen så länge den finns, så kraschrapporter går att läsa även efter artefaktens 90 dagar. Den är publik, precis som källkoden. Publiceras bara om emulatorjobbet i `smoke.yml` faktiskt kördes och gick igenom. |
+| publish | Körs bara om `smoke` gick igenom. Laddar ner artefakten, kontrollerar `SHA256SUMS` och skapar GitHub Release `vX.Y.Z` med `tandem-X.Y.Z-sideload.apk`, `tandem-X.Y.Z-sideload-mapping.txt`, klockappen `tandem-wear-X.Y.Z.apk` med `tandem-wear-X.Y.Z-mapping.txt` och `SHA256SUMS`, och changelog-avsnittet som text. Mappningsfilen ligger kvar i releasen så länge den finns, så kraschrapporter går att läsa även efter artefaktens 90 dagar. Den är publik, precis som källkoden. Publiceras bara om emulatorjobbet i `smoke.yml` faktiskt kördes och gick igenom. |
 
 ### Torrkörning
 
@@ -104,17 +106,19 @@ ingen release och körs i miljön `dry-run`, som inte har några secrets.
 
 APK:n byggs med `-Ptandem.dryRun=true`: paketnamnet blir **`casa.moller.tandem.dryrun`** och
 versionen får suffixet `-dryrun`. Filen heter `tandem-X.Y.Z-DRYRUN-throwaway-key.apk` (aldrig
-release-namnet som Obtainium letar efter) och sparas som artefakt i **2 dagar**. Installerar du
+release-namnet som Obtainium letar efter), klockans `tandem-wear-X.Y.Z-DRYRUN-throwaway-key.apk`
+(samma engångsnyckel, samma kontroll av certifikatet), och de sparas som artefakt i **2 dagar**. Installerar du
 den hamnar den **bredvid** den riktiga appen och kan aldrig blockera dess uppdateringar; avinstallera
 den när du är klar.
 
 - Manuellt: Actions → Release → *Run workflow* (`dry_run` är förvalt), eller
-  `gh workflow run release.yml --ref main -f dry_run=true`. Bygger både sideload-APK och Play-AAB.
+  `gh workflow run release.yml --ref main -f dry_run=true`. Bygger sideload-APK, Play-AAB och
+  klockans APK.
 - Automatiskt: vid push till en **lane-gren** (inte `main`, som får samma commit genom
   fast-forward) som ändrar något R8 ser: `release.yml`, någon `build.gradle.kts`,
   `proguard-rules.pro`/`consumer-rules.pro`, `build-logic/`, `gradle/libs.versions.toml`,
-  wrapper-versionen, `gradle.properties` eller `settings.gradle.kts`. Då byggs sideload-APK:n med
-  R8, så att saknade keep-regler upptäcks innan en tagg.
+  wrapper-versionen, `gradle.properties` eller `settings.gradle.kts`. Då byggs sideload-APK:n och
+  klockans APK med R8, så att saknade keep-regler upptäcks innan en tagg.
 - `dry_run=false` fungerar bara när workflowet körs på en tagg.
 
 ### Debug-nyckeln (inte en hemlighet)
@@ -130,4 +134,6 @@ installerats från ett bygge före nyckeln: avinstallera den en gång.
 
 ## 4. Installera
 
-Telefonerna installerar och uppdaterar via Obtainium: se [OBTAINIUM.md](OBTAINIUM.md).
+Telefonerna installerar och uppdaterar via Obtainium: se [OBTAINIUM.md](OBTAINIUM.md). Klockappen
+(`tandem-wear-X.Y.Z.apk`) installeras och uppdateras från en dator med `adb`, se [WEAR.md](WEAR.md);
+Obtainiums regex matchar inte den. Nämn det i release-texten när klockappen ändrats.
