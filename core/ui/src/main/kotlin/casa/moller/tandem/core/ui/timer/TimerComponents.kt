@@ -187,9 +187,19 @@ fun TimerBar(
     }
 }
 
-/** Ringing timers first (they need the user now), then the others oldest first. */
+/**
+ * Ringing timers first (they need the user now), then the running and paused ones, then the
+ * finished ones, each oldest first: a finished timer never pushes a running one out of a short
+ * timer bar (device test 2026-11-14, B6).
+ */
 fun List<CookTimer>.sortedForDisplay(): List<CookTimer> =
-    sortedWith(compareBy<CookTimer> { if (it.state == TimerState.RINGING) 0 else 1 }.thenBy { it.createdAt }.thenBy { it.id })
+    sortedWith(compareBy<CookTimer> { it.state.displayRank() }.thenBy { it.createdAt }.thenBy { it.id })
+
+private fun TimerState.displayRank(): Int = when (this) {
+    TimerState.RINGING -> 0
+    TimerState.RUNNING, TimerState.PAUSED -> 1
+    TimerState.FINISHED -> 2
+}
 
 /** One row of [TimerBar]: name and time, then the timer's buttons. */
 @Composable

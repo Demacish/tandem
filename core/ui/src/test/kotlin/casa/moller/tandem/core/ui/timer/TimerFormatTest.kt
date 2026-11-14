@@ -40,4 +40,18 @@ class TimerFormatTest {
         assertEquals(0.2f, a.progress(now), 0.001f)
         assertEquals(1f, b.ring(now).progress(now), 0.001f)
     }
+
+    @Test
+    fun finishedTimersComeAfterTheRunningOnes() {
+        // B6 (device test 2026-11-14): an older finished timer must not hide a running one.
+        val start = Instant.parse("2000-01-15T18:00:00Z")
+        val done = CookTimer.start(1, "Done", 1.minutes, start)
+        val running = CookTimer.start(2, "Running", 10.minutes, start + 1.seconds)
+        val paused = CookTimer.start(3, "Paused", 10.minutes, start + 2.seconds).pause(start + 3.seconds)
+        val ringing = CookTimer.start(4, "Ringing", 2.minutes, start + 3.seconds)
+        val now = start + 5.minutes
+        val list = listOf(done.ring(now).stopRinging(), running, paused, ringing.ring(now))
+
+        assertEquals(listOf(4L, 2L, 3L, 1L), list.sortedForDisplay().map { it.id })
+    }
 }

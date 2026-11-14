@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cook mode's timer area on a small phone (device test 2026-11-14, B6). -->
+<resources>
+    <!-- Click label of a warning folded to one line while a timer rings. -->
+    <string name="cook_warning_show">Show the whole warning</string>
+</resources>

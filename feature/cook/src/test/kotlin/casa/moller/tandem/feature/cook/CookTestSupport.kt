@@ -68,6 +68,12 @@ internal val FOLDABLE_FOLD = FoldBounds(top = 905f, bottom = 925f)
 /** Split screen: a phone window about 420 dp tall. */
 internal const val PHONE_SHORT = "w412dp-h420dp-port-xhdpi"
 
+/** The device test's phone (Galaxy S21 FE class, 2026-11-14): 360 × 780 dp. */
+internal const val PHONE_SMALL = "w360dp-h780dp-port-xhdpi"
+
+/** The same phone in landscape (two panes). */
+internal const val PHONE_SMALL_LANDSCAPE = "w780dp-h360dp-land-xhdpi"
+
 /** Fakes behind a real [CookViewModel], so tests and screenshots show what the app computes. */
 class CookFakes(
     val clock: TestClock = TestClock(),
@@ -210,6 +216,8 @@ internal fun CookSessionWithFakes(
     layout: CookLayout? = null,
     modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
+    // Device test 2026-11-14 (B6): two recipes with the handsfree row; null hides it.
+    handsfree: HandsfreeUiState? = null,
     sessionViewModel: CookSessionViewModel = remember {
         fakes.sessionViewModel(sessionKey).also { session ->
             sessionKey.alongsideRecipeId?.takeIf { showFirst }?.let { session.onAction(CookSessionAction.SelectRecipe(it)) }
@@ -250,6 +258,7 @@ internal fun CookSessionWithFakes(
             sessionViewModel.onAction(action)
             if (action is CookSessionAction.OpenTimer) models[action.recipeId]?.onAction(CookAction.GoToPage(action.step))
         },
+        handsfree = handsfree,
     )
     if (picker.open) {
         Surface { CookRecipePickerContent(state = picker, onAction = sessionViewModel::onAction) }

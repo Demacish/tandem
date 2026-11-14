@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.cook.ui
 
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +39,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -454,8 +457,19 @@ private fun CookContent(
             compactHeight = availableHeight < CompactHeight,
         )
     }
-    val bottomArea: @Composable (Dp) -> Unit = { maxScroll ->
-        BottomArea(
+    // Device test 2026-11-14 (B6): the ringing timers first, outside the scrolling part.
+    val ringingTimers: @Composable (Modifier) -> Unit = { ringingModifier ->
+        RingingTimers(
+            timers = state.timers,
+            now = now,
+            actions = timerActions,
+            onOpen = openTimer,
+            showRecipe = showTimerRecipes,
+            modifier = ringingModifier,
+        )
+    }
+    val otherTimers: @Composable (Modifier, Dp) -> Unit = { othersModifier, maxScroll ->
+        OtherTimersAndWarnings(
             state = state,
             now = now,
             timerActions = timerActions,
@@ -465,7 +479,7 @@ private fun CookContent(
             maxScrollHeight = maxScroll,
             compactHeight = availableHeight < CompactHeight,
             showTimerRecipes = showTimerRecipes,
-            pageButtons = pageButtons,
+            modifier = othersModifier,
         )
     }
     // Where this column starts in the window, to place the tabletop halves around the fold.
@@ -495,12 +509,21 @@ private fun CookContent(
             .focusTarget(),
     ) {
         when (layout) {
-            CookLayout.PHONE -> {
-                header()
-                handsfreeBar()
-                pages(Modifier.weight(1f), true)
-                bottomArea(availableHeight * bottomShare(availableHeight))
-            }
+            CookLayout.PHONE -> CookPhoneLayout(
+                top = {
+                    header()
+                    handsfreeBar()
+                },
+                pager = { pages(Modifier.fillMaxSize(), true) },
+                ringing = { ringingTimers(Modifier) },
+                // Its height is set by the layout (the share, and the step's minimum).
+                others = { otherTimers(Modifier, Dp.Infinity) },
+                buttons = { pageButtons(Modifier.padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.sm)) },
+                timerShare = bottomShare(availableHeight),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
 
             CookLayout.TWO_PANE -> {
                 header()
@@ -549,7 +572,10 @@ private fun CookContent(
                         .testTag(COOK_TABLETOP_CONTROLS_TAG),
                     verticalArrangement = Arrangement.Bottom,
                 ) {
-                    bottomArea(TABLETOP_TIMER_BAR_HEIGHT + TandemTheme.sizes.kitchenTouchTarget)
+                    // The buttons are measured first; the timers share what is left.
+                    ringingTimers(Modifier.weight(1f, fill = false))
+                    otherTimers(Modifier.weight(1f, fill = false), TABLETOP_TIMER_BAR_HEIGHT + TandemTheme.sizes.kitchenTouchTarget)
+                    pageButtons(Modifier.padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.sm))
                 }
             }
         }
@@ -579,17 +605,39 @@ private fun bottomShare(height: Dp): Float = if (height < CompactHeight) COMPACT
 internal val CompactHeight = 480.dp
 
 /**
- * Keeps the pager and the ViewModel's page in step: a swipe settles → [CookAction.GoToPage];
- * a page change from the buttons, the keyboard or a restored state → the pager scrolls there.
+ * Keeps the pager and the ViewModel's page in step. The ViewModel's [page] is the only truth:
+ * a page change from the buttons, the volume keys, the keyboard or a restored state scrolls the
+ * pager there, and only a page the **user** swiped to is reported back ([CookAction.GoToPage]).
+ *
+ * Device test 2026-11-14 (B4): two quick "Next" lost a step, because the second target cancelled
+ * the first animation, `settledPage` then reported the page in between and that report overwrote
+ * the newer target. A programmatic scroll now never writes back: the report needs a drag since
+ * the last programmatic scroll.
  */
 @Composable
 private fun PagerSync(pagerState: PagerState, page: Int, onAction: (CookAction) -> Unit) {
     val currentOnAction by rememberUpdatedState(onAction)
-    LaunchedEffect(page) {
-        if (pagerState.currentPage != page && page < pagerState.pageCount) pagerState.animateScrollToPage(page)
+    val currentPage by rememberUpdatedState(page)
+    // Plain holder, not state: only the effects below read and write it.
+    val swiped = remember(pagerState) { booleanArrayOf(false) }
+    LaunchedEffect(pagerState) {
+        pagerState.interactionSource.interactions.collect { if (it is DragInteraction.Start) swiped[0] = true }
+    }
+    LaunchedEffect(pagerState, page) {
+        if (page >= pagerState.pageCount) return@LaunchedEffect
+        // Also when an interrupted animation left the pager between two pages on this one.
+        if (pagerState.currentPage != page || pagerState.currentPageOffsetFraction != 0f) {
+            swiped[0] = false
+            pagerState.animateScrollToPage(page)
+        }
     }
     LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { settled -> currentOnAction(CookAction.GoToPage(settled)) }
+        snapshotFlow { pagerState.settledPage }.collect { settled ->
+            if (swiped[0] && !pagerState.isScrollInProgress) {
+                swiped[0] = false
+                if (settled != currentPage) currentOnAction(CookAction.GoToPage(settled))
+            }
+        }
     }
 }
 
@@ -721,14 +769,16 @@ private fun CookHeader(
 }
 
 /**
- * Phone and tabletop: warnings, the timer bar and the page buttons. The warnings and the timer
- * bar share one region of at most [maxScrollHeight] that scrolls inside, so the step above keeps
- * room and the 64 dp page buttons are always measured at full height (split screen, plan 6.5).
+ * Phone and tabletop: the warnings and the timers that do not ring (the ringing ones stand above,
+ * [RingingTimers]), in one region of at most [maxScrollHeight] that scrolls inside, so the step
+ * above keeps room and the 64 dp page buttons below are always measured at full height (split
+ * screen, plan 6.5). While a timer rings the warnings are one line each (B6). Draws nothing when
+ * there is neither.
  *
  * @param compactHeight a short window: the warnings are one line each ([AlarmWarnings]).
  */
 @Composable
-private fun BottomArea(
+private fun OtherTimersAndWarnings(
     state: CookUiState,
     now: Instant,
     timerActions: TimerActions,
@@ -738,49 +788,48 @@ private fun BottomArea(
     maxScrollHeight: Dp,
     compactHeight: Boolean,
     showTimerRecipes: Boolean = false,
-    pageButtons: @Composable (Modifier) -> Unit = { PageButtons(state = state, onAction = onAction, modifier = it) },
+    modifier: Modifier = Modifier,
 ) {
+    val others = state.timers.filter { it.state != TimerState.RINGING }
+    val warns = state.silentAlarmCause != null || state.showLateAlarmWarning
+    // The warnings are shown while a timer is set, as before.
+    if (state.timers.isEmpty() || (others.isEmpty() && !warns)) return
     val spacing = TandemTheme.spacing
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = spacing.lg, vertical = spacing.sm),
+            .heightIn(max = maxScrollHeight)
+            .verticalScroll(rememberScrollState())
+            .padding(start = spacing.lg, end = spacing.lg, top = spacing.sm)
+            .testTag(COOK_BOTTOM_TIMERS_TAG),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
-        if (state.timers.isNotEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxScrollHeight)
-                    .verticalScroll(rememberScrollState())
-                    .testTag(COOK_BOTTOM_TIMERS_TAG),
-                verticalArrangement = Arrangement.spacedBy(spacing.sm),
-            ) {
-                AlarmWarnings(state = state, onAction = onAction, actions = warningActions, compact = compactHeight)
-                TimerBar(
-                    timers = state.timers,
-                    now = now,
-                    actions = timerActions,
-                    onOpen = onOpenTimer,
-                    // Scaled with the text, so a large font shows both times too; maxScrollHeight still protects the step.
-                    maxHeight = if (showTimerRecipes) {
-                        PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale
-                    } else {
-                        PHONE_TIMER_BAR_HEIGHT
-                    },
-                    showRecipe = showTimerRecipes,
-                    modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
-                )
-            }
+        CompositionLocalProvider(LocalWarningsCollapsed provides state.timers.anyRinging()) {
+            AlarmWarnings(state = state, onAction = onAction, actions = warningActions, compact = compactHeight)
         }
-        pageButtons(Modifier)
+        TimerBar(
+            timers = others,
+            now = now,
+            actions = timerActions,
+            onOpen = onOpenTimer,
+            // Scaled with the text, so a large font shows both times too; maxScrollHeight still protects the step.
+            maxHeight = if (showTimerRecipes) {
+                PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale
+            } else {
+                PHONE_TIMER_BAR_HEIGHT
+            },
+            showRecipe = showTimerRecipes,
+            modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
+        )
     }
 }
 
 /**
  * "Föregående" and "Nästa" (64 dp, plan 6.6); on the last step "Klart!". With a large font
- * (scale 1.5 and up) on a narrow pane they are stacked, full width and without icons, so
- * "Föregående" never breaks inside the word.
+ * (scale 1.5 and up) on a narrow pane they are stacked, full width and without icons. A button
+ * whose label does not fit its share of the row drops its arrow, and if the label still does not
+ * fit it shows only the arrow, with the label for TalkBack ([FirstThatFits]): no label is ever
+ * broken inside a word (device test 2026-11-14, B10: "Före gåe…" at 360 dp in Swedish).
  */
 @Composable
 internal fun PageButtons(
@@ -794,22 +843,70 @@ internal fun PageButtons(
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val stacked = largeFont && maxWidth < StackedButtonsMaxWidth
+        val previousText = stringResource(R.string.cook_previous)
         val previous: @Composable (Modifier) -> Unit = { buttonModifier ->
-            TandemSecondaryButton(
-                text = stringResource(R.string.cook_previous),
-                onClick = { onAction(CookAction.Previous) },
-                enabled = state.page > 0,
-                leadingIcon = TandemIcons.ArrowBack.takeUnless { stacked },
-                size = TandemButtonSize.Kitchen,
+            val onClick = { onAction(CookAction.Previous) }
+            val enabled = state.page > 0
+            val withIcon: @Composable () -> Unit = {
+                TandemSecondaryButton(
+                    text = previousText,
+                    onClick = onClick,
+                    enabled = enabled,
+                    leadingIcon = TandemIcons.ArrowBack,
+                    size = TandemButtonSize.Kitchen,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            val textOnly: @Composable () -> Unit = {
+                TandemSecondaryButton(
+                    text = previousText,
+                    onClick = onClick,
+                    enabled = enabled,
+                    size = TandemButtonSize.Kitchen,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            val arrowOnly: @Composable () -> Unit = {
+                PageIconButton(
+                    icon = TandemIcons.ArrowBack,
+                    description = previousText,
+                    onClick = onClick,
+                    primary = false,
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            FirstThatFits(
+                variants = if (stacked) listOf(textOnly, arrowOnly) else listOf(withIcon, textOnly, arrowOnly),
                 modifier = buttonModifier,
             )
         }
+        val nextText = stringResource(if (state.page == state.donePage - 1) R.string.cook_next_done else R.string.cook_next)
         val next: @Composable (Modifier) -> Unit = { buttonModifier ->
-            TandemPrimaryButton(
-                text = stringResource(if (state.page == state.donePage - 1) R.string.cook_next_done else R.string.cook_next),
-                onClick = { onAction(CookAction.Next) },
-                trailingIcon = TandemIcons.ArrowForward.takeUnless { stacked },
-                size = TandemButtonSize.Kitchen,
+            val onClick = { onAction(CookAction.Next) }
+            val withIcon: @Composable () -> Unit = {
+                TandemPrimaryButton(
+                    text = nextText,
+                    onClick = onClick,
+                    trailingIcon = TandemIcons.ArrowForward,
+                    size = TandemButtonSize.Kitchen,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            val textOnly: @Composable () -> Unit = {
+                TandemPrimaryButton(text = nextText, onClick = onClick, size = TandemButtonSize.Kitchen, modifier = Modifier.fillMaxWidth())
+            }
+            val arrowOnly: @Composable () -> Unit = {
+                PageIconButton(
+                    icon = TandemIcons.ArrowForward,
+                    description = nextText,
+                    onClick = onClick,
+                    primary = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            FirstThatFits(
+                variants = if (stacked) listOf(textOnly, arrowOnly) else listOf(withIcon, textOnly, arrowOnly),
                 modifier = buttonModifier,
             )
         }
@@ -902,6 +999,13 @@ private fun Warning(
     dismiss: String? = null,
     onDismiss: () -> Unit = {},
 ) {
+    // B6: one line while a timer rings (LocalWarningsCollapsed); a tap shows the whole warning.
+    val collapsible = LocalWarningsCollapsed.current
+    var expanded by rememberSaveable(collapsible) { mutableStateOf(false) }
+    if (collapsible && !expanded) {
+        CollapsedWarning(title = title, onExpand = { expanded = true })
+        return
+    }
     if (compact) {
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -451,7 +452,10 @@ internal fun CookSidePane(
                             )
                         }
                     }
-                    AlarmWarnings(state = state, onAction = onAction, actions = warningActions, compact = shortPane)
+                    // B6 (device test 2026-11-14): one line each while a timer rings, under the ringing timers.
+                    CompositionLocalProvider(LocalWarningsCollapsed provides state.timers.anyRinging()) {
+                        AlarmWarnings(state = state, onAction = onAction, actions = warningActions, compact = shortPane)
+                    }
                 }
             }
         }

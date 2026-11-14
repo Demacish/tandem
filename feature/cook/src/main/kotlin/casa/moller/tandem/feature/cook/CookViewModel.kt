@@ -192,8 +192,8 @@ class CookViewModel @AssistedInject constructor(
 
     fun onAction(action: CookAction) {
         when (action) {
-            CookAction.Next -> goToPage(uiState.value.page + 1)
-            CookAction.Previous -> goToPage(uiState.value.page - 1)
+            CookAction.Next -> goToPage(pageNow() + 1)
+            CookAction.Previous -> goToPage(pageNow() - 1)
             is CookAction.GoToPage -> goToPage(action.page)
             CookAction.IncreaseServings -> changeServings { floor(it) + 1.0 }
             CookAction.DecreaseServings -> changeServings { ceil(it) - 1.0 }
@@ -233,6 +233,18 @@ class CookViewModel @AssistedInject constructor(
         val target = next(pan)?.takeUnless { it == pan.original }
         savedStateHandle[KEY_PAN] = target ?: NO_PAN
         viewModelScope.launch { pans.setPanSize(recipeId, target) }
+    }
+
+    /**
+     * The page as last chosen, read from [SavedStateHandle] itself: [uiState] follows it a moment
+     * later, so two quick "Next" (taps or volume keys) would both start from the same page and
+     * one would be lost (device test 2026-11-14, B4). A page kept from before the recipe loaded is
+     * clamped as the screen shows it.
+     */
+    private fun pageNow(): Int {
+        val state = uiState.value
+        val stored = savedStateHandle.get<Int>(KEY_PAGE) ?: key.startStep
+        return if (state.hasDetail) stored.coerceIn(0, state.donePage) else stored
     }
 
     private fun goToPage(page: Int) {
