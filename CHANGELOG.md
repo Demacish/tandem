@@ -18,17 +18,11 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
 - **Tandem på klockan (Wear OS 5 och senare, t.ex. Galaxy Watch 4 och nyare):** inköpslistan i
   butikens ordning att bocka av på klockan, också med telefonen avstängd. Klockan får en egen nyckel
   till Tandoor (Mer → Klockan → Koppla klockan, gäller i 90 dagar och förnyas av telefonen) och
-  hämtar listan själv; avbockningar utan nät väntar på klockan och skickas när den har nät. Telefonens
+  hämtar listan själv; avbockningar utan nät väntar på klockan och skickas när den har nät (når den
+  inte servern försöker den igen inom en kvart, och direkt när du öppnar appen). Telefonens
   timrar syns på klockan, och Stoppa på klockan stoppar larmet på telefonen. En ruta visar vad som
   är kvar att köpa. Klockappen installeras från en dator, se [docs/WEAR.md](docs/WEAR.md); den
   ligger som `tandem-wear-X.Y.Z.apk` i releasen. Koppla från klockan tar bort nyckeln i Tandoor.
-
-**Laga i köket**
-
-- **Inköpslistan i den form du valt:** "Lägg på inköpslistan" från receptet eller kokläget lägger nu
-  på mängderna för formen du har valt, som Tandoors webb (portionerna × formens faktor, 24 → 20 cm
-  ≈ 0,69). Arket säger "Skalat för 20 cm form (× 0,69)", och portionerna i arket ändrar du som förut.
-  Från Idag och Kan laga nu gäller receptets egen form.
 
 **Matsedeln i kalendern**
 
@@ -47,8 +41,8 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
 - **Påminn mig nära butiken:** en notis när du närmar dig en av dina butiker och något står kvar på
   inköpslistan, "Du är nära Testbutiken – 7 saker på listan"; ett tryck öppnar butiksläget för den
   butiken. Högst en gång per besök (först när du lämnat butiken och minst tre timmar efter förra
-  påminnelsen kan nästa komma). Av från början; finns under Mer → Inställningar och i butiksvalet
-  på Handla.
+  påminnelsen kan nästa komma). Slår du av platsen och sedan på igen fortsätter påminnelsen av sig
+  själv. Av från början; finns under Mer → Inställningar och i butiksvalet på Handla.
 - **Butikens plats:** stå i butiken och tryck "Jag är i butiken nu – använd min position", eller
   klistra in en geo:-länk, en kartlänk eller koordinater (decimalkomma går också). Avståndet väljer
   du mellan 100 och 500 m (200 m från början). Platserna stannar i telefonen: de skickas aldrig till
@@ -65,6 +59,14 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   Konton och servrar, tas klockans nyckel och kalenderlänkens nyckel bort i Tandoor direkt (med nät),
   också när du väljer att behålla appens egen nyckel. Utan nät tar klockan bort sin nyckel nästa gång
   telefonen når den; kalenderlänkens nyckel gäller då tills den går ut eller tas bort i Tandoor.
+
+**Rättat**
+
+- En rad "Påminn:" som du skriver direkt i måltidens anteckning skrivs inte längre över av texten i
+  "Påminn kvällen innan", och måltidens påminnelserad står kvar där den stod när du ändrar
+  anteckningen (i stället för att flyttas sist).
+- Ett recept med en form större än 200 (till exempel 240 mm) går nu att skala ett steg i taget,
+  239 och tillbaka till 240, i stället för att hoppa till 200 och fastna där.
 
 **Kvar till senare**
 
@@ -100,6 +102,10 @@ och allt fungerar utan nät.
 - **Pannstorlek:** ett recept som bakas i rund form (formens storlek i Tandoor) kan skalas till en
   annan form i receptet och i kokläget, efter ytan som på Tandoors webb (24 → 20 cm ≈ 0,69),
   ovanpå portionerna. Det står tydligt: "Skalat för 20 cm form (× 0,69)".
+- **Inköpslistan i den form du valt:** "Lägg på inköpslistan" från receptet eller kokläget lägger nu
+  på mängderna för formen du har valt, som Tandoors webb (portionerna × formens faktor, 24 → 20 cm
+  ≈ 0,69). Arket säger "Skalat för 20 cm form (× 0,69)", och portionerna i arket ändrar du som förut.
+  Från Idag och Kan laga nu gäller receptets egen form.
 
 **Handla**
 
@@ -135,8 +141,6 @@ och allt fungerar utan nät.
 
 - Två recept sida vid sida på en riktigt bred skärm: kokläget har flikar på alla bredder, och
   köksskärmen visar timrarna från båda recepten.
-- "Lägg på inköpslistan" från receptet och kokläget räknar med portionerna men ännu inte med formens
-  storlek.
 - "3 dl + 200 ml" blir en rad i ml bara om din Tandoor har en omräkning för dl (Tandoors egen
   tabell saknar dl).
 - Röstkommandona i ett kök med fläkten på och köksskärmen tre timmar i sträck är prövade i CI men
