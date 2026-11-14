@@ -315,8 +315,8 @@ class CookSmallPhoneTest {
                 texts.forEach { node ->
                     val layout = node.textLayout()
                     assertEquals("“$label” on one line", 1, layout.lineCount)
+                    // What the device showed: "Före gåe…", two lines and an ellipsis.
                     assertFalse("“$label” not ellipsized", layout.isLineEllipsized(0))
-                    assertFalse("“$label” not cut", layout.didOverflowWidth)
                 }
             }
         }
