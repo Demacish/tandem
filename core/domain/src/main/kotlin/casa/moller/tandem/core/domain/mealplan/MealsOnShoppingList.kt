@@ -32,19 +32,15 @@ object MealsOnShoppingList {
             .filter { it.mealPlanId == null && !it.checked && it.listRecipeId != null && it.recipeId != null }
             .groupBy { requireNotNull(it.recipeId) }
             .mapValuesTo(HashMap()) { (_, recipeRows) -> recipeRows.mapTo(HashSet()) { it.listRecipeId }.size }
-        val onList = LinkedHashSet<Long>()
-        for (meal in meals) {
-            if (meal.id in linkedMealIds) {
-                onList += meal.id
-                continue
-            }
-            val recipeId = meal.recipeId ?: continue
-            val left = unlinked[recipeId] ?: 0
-            if (left > 0) {
-                onList += meal.id
-                unlinked[recipeId] = left - 1
-            }
-        }
-        return onList
+        return meals.filterTo(LinkedHashSet()) { meal -> meal.id in linkedMealIds || takeOne(unlinked, meal.recipeId) }
+            .mapTo(LinkedHashSet()) { it.id }
+    }
+
+    /** Uses up one unlinked list recipe of [recipeId] from [left]; false when none is left. */
+    private fun takeOne(left: MutableMap<Long, Int>, recipeId: Long?): Boolean {
+        val count = recipeId?.let { left[it] } ?: 0
+        if (count <= 0 || recipeId == null) return false
+        left[recipeId] = count - 1
+        return true
     }
 }
