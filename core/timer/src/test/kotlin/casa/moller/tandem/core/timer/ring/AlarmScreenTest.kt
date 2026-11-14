@@ -3,6 +3,7 @@ package casa.moller.tandem.core.timer.ring
 import android.app.Activity
 import android.os.Looper
 import android.view.LayoutInflater
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.WindowCompat
@@ -41,6 +42,9 @@ class AlarmScreenTest {
     fun lightAppThemeKeepsTheAlarmAndItsBarsDark() {
         val activity = alarmScreen("Pastan · 10 min (Krämig svamppasta)")
         assertDarkBars(activity)
+        // Theme.Material's buttons are in capitals; the alarm keeps "Stop" as written (TalkBack, the smoke test).
+        assertFalse(activity.findViewById<Button>(R.id.timer_alarm_stop).isAllCaps)
+        assertFalse(activity.findViewById<Button>(R.id.timer_alarm_plus_one).isAllCaps)
         capture(activity, "phone_light_app_theme")
     }
 

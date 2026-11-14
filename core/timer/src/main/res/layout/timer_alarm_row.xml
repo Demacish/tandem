@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- One ringing timer on the lock-screen alarm: its name, "+1 min" and "Stop". -->
+<!-- One ringing timer on the lock-screen alarm: its name, "+1 min" and "Stop".
+     Not in capitals (Theme.Material's buttons are, device test B14): the text as written, also for TalkBack. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -28,6 +29,7 @@
             android:layout_weight="1"
             android:minHeight="64dp"
             android:text="@string/timer_action_plus_one_minute"
+            android:textAllCaps="false"
             android:textSize="20sp" />
 
         <Button
@@ -38,6 +40,7 @@
             android:layout_weight="1"
             android:minHeight="64dp"
             android:text="@string/timer_action_stop"
+            android:textAllCaps="false"
             android:textSize="20sp" />
     </LinearLayout>
 </LinearLayout>
