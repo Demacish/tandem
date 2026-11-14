@@ -115,6 +115,7 @@ class Gallery(private val context: Context) : ExternalResource() {
         /** The photo picker lives in the MediaProvider module (`com.google.android.providers.media.module` or AOSP's). */
         private val PICKER_PACKAGE: Pattern = Pattern.compile(".*providers\\.media.*|.*photopicker.*")
         private val PICKER: BySelector = By.pkg(PICKER_PACKAGE)
+
         // The picker speaks the PHONE's language: Swedish too (device test 2026-11-14, T1).
         private val CONFIRM: BySelector =
             By.pkg(PICKER_PACKAGE).clickable(true).text(Pattern.compile("Done|Add|Select|Allow|Klar|Lägg till|Välj|Tillåt"))

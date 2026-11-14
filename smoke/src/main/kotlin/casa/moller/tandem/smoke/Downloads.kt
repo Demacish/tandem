@@ -94,6 +94,7 @@ class Downloads(private val context: Context) : ExternalResource() {
         /** `com.google.android.documentsui` on Google's images, `com.android.documentsui` on AOSP. */
         val PICKER_PACKAGE: Pattern = Pattern.compile(".*documentsui.*")
         val PICKER: BySelector = By.pkg(PICKER_PACKAGE)
+
         // The picker speaks the PHONE's language: Swedish too (device test 2026-11-14, T1).
         val ROOTS: BySelector = By.pkg(PICKER_PACKAGE).desc(Pattern.compile("Show roots|Visa rötter"))
         val DOWNLOADS: BySelector = By.pkg(PICKER_PACKAGE).text(Pattern.compile("Downloads|Nedladdningar"))
