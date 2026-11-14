@@ -1307,6 +1307,56 @@ bakgrunden; klockan som tappar kontakten med servern (till exempel servern nere 
 avbockningarna inom en kvart när den är tillbaka, direkt när appen öppnas.
 <!-- /Fas 5 fix-08 -->
 
+<!-- Enhetstest 2026-11-14 -->
+## Enhetstest 2026-11-14 (Samsung Galaxy S21 FE, Android 16, svenska)
+
+Första provet av 0.8.0 på en riktig telefon (360 × 780 dp, teckenstorlek 1,0), på `main` före
+integrationens sista ändringar, byggt som `sideloadDebug` och `sideloadMinified`. Demoläget och
+röktestets falska Tandoor användes; ingen riktig server, så synk mot Tandoor är inte prövad på
+telefonen. Varje fynd rättades i en egen bana (`fas5/<bana>`), med tester i CI; det som bara kan
+visas på en telefon står som enhetsprov i banans rad i "Fas 5 – läge".
+
+**Fungerade utan fel på telefonen:**
+
+- Larmen: en tystad larmkanal låter ändå och kokläget varnar; "+1 min" med släckt skärm väcker
+  skärmen igen med ljud.
+- Processdöd: en timer ringer i tid i en ny process efter att appen dödats i bakgrunden (stod
+  tidigare som overifierat här).
+- Handla: lägga på listan från Idag, ta bort receptet och Ångra, "Handla för veckan" två gånger i
+  rad utan dubbletter, butiksläget med tänd skärm och "Dela som text", samma vara i två enheter på
+  en rad.
+- Recept: filtren och alla fyra sorteringar.
+- Hemma: receptet som använder varor som snart går ut står först i Kan laga nu, och "Lägg det som
+  saknas på listan" väljer bara det som saknas.
+- Inte ett fel: räknaren överst på inköpslistan räknar bara dagens avbockningar och skiljer sig
+  därför från "Avbockat (n)", som avsett.
+
+**Fynd och vem som rättade dem:**
+
+| Nr | Fynd | Bana | Se |
+|---|---|---|---|
+| B1 | Röststyrning på engelska avvisades: språket skickades utan land | rost | "Röst och uppläsning efter enhetstestet" |
+| B2 | Ett språk som kan hämtas visades som "kan inte känna igen", med felpip | rost | dito |
+| B3 | Telefonens igenkännare saknar svenska (beslut: "Båda vägarna") | rost | dito, "Ägarens beslut" |
+| B4 | Två snabba stegbyten gick bara ett steg | kokvy | "Enhetstestet 2026-11-14: kokläget" |
+| B5 | Efter Tyst → Larm tändes inte skärmen och ingen varning visades | larm | "Enhetstestet 2026-11-14: larmen" |
+| B6 | En ringande timer hamnade under varningskortet, Stopp syntes inte | kokvy | "Enhetstestet 2026-11-14: kokläget" |
+| B7 | "Handla för veckan" dubblerade en måltid som lagts på listan från Idag | data | "Enhetstestet 2026-11-14: inköpslistan och Kan laga nu" |
+| B8 | Första demostarten: Kan laga nu tomt och "Inget recept" tills omstart | data | dito |
+| B9 | Med olåst telefon syntes larmet bara fyra sekunder | larm | "Enhetstestet 2026-11-14: larmen" |
+| B10 | "Föregående" klipptes mitt i ordet | kokvy | "Enhetstestet 2026-11-14: kokläget" |
+| B11 | Uppläsningen var tyst vid medievolym 0 utan att appen sa det | rost | "Röst och uppläsning efter enhetstestet" |
+| B12 | Behörigheter saknade mikrofon, kalender och plats; "Ingen position" stämde inte | mer | "Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet" |
+| B13 | TalkBack sa "Stäng kalkylarket" om ytan bakom bottenark | mer | dito |
+| B14 | Ljust navigeringsfält under den mörka larmskärmen | larm | "Enhetstestet 2026-11-14: larmen" |
+| T1 | Röktestet gick inte att köra på en svensk Samsung utan lokal ändring | mer | "Release-röktest", "På en egen telefon" |
+| T2 | Testlistans punkt om Live Update stämde inte för Samsung (egen nedräkningsnotis där) | larm | "Enhetstestet 2026-11-14: larmen" |
+
+**Inte prövat än på telefonen:** flygplansläge, rotation, större teckenstorlek, TalkBack i hela
+appen och byte av klockslag; rättningarna ovan behöver också ett nytt varv på telefonen (se
+enhetsproven i respektive banas rad).
+<!-- /Enhetstest 2026-11-14 -->
+
 <!-- Fas 5 rost -->
 ## Röst och uppläsning efter enhetstestet (`:feature:cook`, `:core:timer`, `:core:domain`, `:core:data`, rost)
 
