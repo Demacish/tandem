@@ -222,12 +222,8 @@ private class LabelRowPolicy(
     }
 }
 
-private class MediaRowPolicy(
-    private val gap: Dp,
-    private val endGap: Dp,
-    private val stackedGap: Dp,
-    private val minContentWidth: Dp,
-) : MultiContentMeasurePolicy {
+private class MediaRowPolicy(private val gap: Dp, private val endGap: Dp, private val stackedGap: Dp, private val minContentWidth: Dp) :
+    MultiContentMeasurePolicy {
 
     override fun MeasureScope.measure(measurables: List<List<Measurable>>, constraints: Constraints): MeasureResult {
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
