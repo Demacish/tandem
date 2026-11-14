@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Enhetstestet 2026-11-14 (B13): Compose-bibliotekens svenska översättningar som säger fel sak.
+    TalkBack läste ytan bakom ett bottenark ("Close sheet") som "Stäng kalkylarket", och varje
+    snackbar ("Alert") som "Varning". Appens resurser går före bibliotekens, så samma namn här
+    ersätter dem. Namnen är de som Material 3 1.5.0-beta01 och Compose UI 1.12.1 (BOM 2026.09.00)
+    använder: `close_sheet` (androidx.compose.ui, skrimmet i ModalBottomSheet) och
+    `m3c_snackbar_pane_title` (androidx.compose.material3, SnackbarHost). Kontrolleras av
+    app/src/test/.../ui/MaterialStringsTest.kt; byts biblioteken, kontrollera namnen igen (docs/BYGGE.md).
+    De övriga svenska strängarna för ark, menyer, dialoger och snackbars stämmer.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="PrivateResource,ExtraTranslation">
+    <string name="close_sheet" tools:override="true">Stäng arket</string>
+    <string name="m3c_snackbar_pane_title" tools:override="true">Meddelande</string>
+</resources>
