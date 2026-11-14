@@ -78,11 +78,18 @@ internal fun TimerAdjustDialog(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
                     val shorter = adjusted(duration, longer = false)
                     val longer = adjusted(duration, longer = true)
+                    // Device test 2026-11-14 (round 3): at the limit the button is off and says only
+                    // "Kortare", never "0 s kortare".
                     KitchenIconButton(
                         icon = TandemIcons.Remove,
-                        description = stringResource(R.string.cook_timer_adjust_shorter, timerDurationText(duration - shorter)),
+                        description = if (shorter < duration) {
+                            stringResource(R.string.cook_timer_adjust_shorter, timerDurationText(duration - shorter))
+                        } else {
+                            stringResource(R.string.cook_timer_adjust_shorter_limit)
+                        },
                         onClick = { onChange(shorter) },
                         enabled = shorter < duration,
+                        modifier = Modifier.testTag(TIMER_ADJUST_SHORTER_TAG),
                     )
                     Text(
                         text = durationText,
@@ -94,9 +101,14 @@ internal fun TimerAdjustDialog(
                     )
                     KitchenIconButton(
                         icon = TandemIcons.Add,
-                        description = stringResource(R.string.cook_timer_adjust_longer, timerDurationText(longer - duration)),
+                        description = if (longer > duration) {
+                            stringResource(R.string.cook_timer_adjust_longer, timerDurationText(longer - duration))
+                        } else {
+                            stringResource(R.string.cook_timer_adjust_longer_limit)
+                        },
                         onClick = { onChange(longer) },
                         enabled = longer > duration,
+                        modifier = Modifier.testTag(TIMER_ADJUST_LONGER_TAG),
                     )
                 }
                 if (suggestion.isRange) {
@@ -149,4 +161,6 @@ internal fun adjusted(duration: Duration, longer: Boolean): Duration {
 internal val MIN_TIMER: Duration = 10.seconds
 internal val MAX_TIMER: Duration = 24.hours - 1.minutes
 internal const val TIMER_ADJUST_TAG = "cook:timer-adjust"
+internal const val TIMER_ADJUST_SHORTER_TAG = "cook:timer-adjust-shorter"
+internal const val TIMER_ADJUST_LONGER_TAG = "cook:timer-adjust-longer"
 private val DURATION_MIN_WIDTH = 120.dp

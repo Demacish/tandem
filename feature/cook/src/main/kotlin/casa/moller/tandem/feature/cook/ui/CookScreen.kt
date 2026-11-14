@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.cook.ui
 
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,7 +22,10 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -67,6 +71,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -77,6 +83,7 @@ import casa.moller.tandem.core.designsystem.component.TandemPrimaryButton
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.Add
+import casa.moller.tandem.core.designsystem.icon.MoreVert
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.icon.TextDecrease
 import casa.moller.tandem.core.designsystem.icon.TextIncrease
@@ -122,8 +129,12 @@ import kotlin.time.Instant
  *   the right (Stitch kokl_ge_surfplatta_*).
  * - [TABLETOP]: a half-folded foldable lying on the table: the step in the upper half, timers and
  *   buttons in the lower half, nothing on the fold (Stitch kokl_ge_bordsl_ge_vikbar_telefon).
+ * - [SHORT_WIDE]: wide but short (a phone in landscape, under [CompactHeight]): the step with a
+ *   slim header on the left takes the height, and a side column holds the ringing timers, the
+ *   handsfree row, the other timers and the page buttons (device test 2026-11-14, round 3, B20:
+ *   two panes left the step half a line at 780 × 360 dp).
  */
-enum class CookLayout { PHONE, TWO_PANE, TABLETOP }
+enum class CookLayout { PHONE, TWO_PANE, TABLETOP, SHORT_WIDE }
 
 /** Windows at least this wide get two panes (M3 medium and up). */
 internal val TwoPaneMinWidth = 600.dp
@@ -131,8 +142,13 @@ internal val TwoPaneMinWidth = 600.dp
 /** The step text is larger by default where there is room (plan 6.5 "extra stor text som standard"). */
 internal val LargeStepTextMinWidth = 840.dp
 
-internal fun cookLayoutFor(width: Dp, tabletop: Boolean): CookLayout = when {
+/**
+ * The layout for a window of [width] × [height]. Wide windows get two panes only when they are at
+ * least [CompactHeight] tall; a phone in landscape gets [CookLayout.SHORT_WIDE] (B20).
+ */
+internal fun cookLayoutFor(width: Dp, tabletop: Boolean, height: Dp = Dp.Infinity): CookLayout = when {
     tabletop -> CookLayout.TABLETOP
+    width >= TwoPaneMinWidth && height < CompactHeight -> CookLayout.SHORT_WIDE
     width >= TwoPaneMinWidth -> CookLayout.TWO_PANE
     else -> CookLayout.PHONE
 }
@@ -239,7 +255,7 @@ fun CookScreen(
                 .padding(padding)
                 .windowInsetsPadding(WindowInsets.safeDrawing),
         ) {
-            val chosen = layout ?: cookLayoutFor(maxWidth, tabletop)
+            val chosen = layout ?: cookLayoutFor(maxWidth, tabletop, maxHeight)
             when {
                 state.hasDetail -> CookContent(
                     state = state,
@@ -407,6 +423,8 @@ private fun CookContent(
     // tabs row and the handsfree explanation, so the top is as on a short window while it rings.
     val compactTop = availableHeight < CompactHeight ||
         (layout == CookLayout.PHONE && LocalDensity.current.fontScale >= LARGE_FONT_SCALE && state.timers.anyRinging())
+    // B20: a short wide window has a denser step page, an inline title and one row of page buttons.
+    val dense = layout == CookLayout.SHORT_WIDE
     val handsfreeBar: @Composable () -> Unit = {
         handsfree?.let { HandsfreeBar(state = it, onAction = onHandsfreeAction, compact = compactTop) }
     }
@@ -414,6 +432,8 @@ private fun CookContent(
         PageButtons(
             state = state,
             onAction = onAction,
+            // B20: one row in the side column; a label that does not fit leaves only its arrow.
+            allowStacked = !dense,
             modifier = buttonsModifier,
             handsfree = handsfree,
             onHandsfree = { onHandsfreeAction(HandsfreeAction.OpenSheet) },
@@ -437,6 +457,7 @@ private fun CookContent(
                         onAction = onAction,
                         showIngredients = showIngredients,
                         largeText = largeText,
+                        dense = dense,
                     )
                 } else {
                     CookDonePage(
@@ -460,6 +481,7 @@ private fun CookContent(
             session = session,
             onSessionAction = onSessionAction,
             compactHeight = compactTop,
+            inlineTitle = dense,
         )
     }
     // Device test 2026-11-14 (B6): the ringing timers first, outside the scrolling part.
@@ -475,6 +497,8 @@ private fun CookContent(
     }
     val otherTimers: @Composable (Modifier, Dp) -> Unit = { othersModifier, maxScroll ->
         OtherTimersAndWarnings(
+            // B20: in the side column the timers use its height (more than one card), not a phone's bar.
+            timerBarMaxHeight = if (dense) availableHeight else null,
             state = state,
             now = now,
             timerActions = timerActions,
@@ -554,6 +578,33 @@ private fun CookContent(
                         pageButtons(Modifier.padding(TandemTheme.spacing.lg))
                     }
                 }
+            }
+
+            CookLayout.SHORT_WIDE -> Row(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            ) {
+                Column(
+                    Modifier
+                        .weight(SHORT_STEP_PANE_WEIGHT)
+                        .fillMaxHeight(),
+                ) {
+                    header()
+                    pages(Modifier.weight(1f), true)
+                }
+                VerticalDivider(Modifier.fillMaxHeight())
+                CookShortSideColumn(
+                    ringing = { ringingTimers(Modifier) },
+                    handsfree = handsfreeBar,
+                    // Its height is set by the column (what the buttons and the ringing timers leave).
+                    others = { otherTimers(Modifier, Dp.Infinity) },
+                    buttons = { pageButtons(Modifier.padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.sm)) },
+                    modifier = Modifier
+                        .weight(SHORT_SIDE_PANE_WEIGHT)
+                        .fillMaxHeight()
+                        .testTag(COOK_SIDE_PANE_TAG),
+                )
             }
 
             CookLayout.TABLETOP -> {
@@ -668,103 +719,43 @@ private fun CookHeader(
     session: CookSessionUi,
     onSessionAction: (CookSessionAction) -> Unit,
     compactHeight: Boolean = false,
+    inlineTitle: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
     // A low window (a phone in landscape, split screen): the tabs take the title's place, or a row
     // of their own would leave the step two lines. Each tab has the name and "Steg 2 av 6" already.
     val tabsInHeader = session.isTwo && progress != null && compactHeight
+    val title = state.recipeName.ifEmpty { stringResource(R.string.cook_title) }
+    val stepOfText = when {
+        !state.hasDetail -> null
+        state.isDonePage -> stringResource(R.string.cook_done_page)
+        else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+    }
+    // K1 (device test 2026-11-14, round 3): the title may only break between words. When its
+    // longest word (inline: and "Step 3 of 6" beside it) does not fit between the icon buttons, the
+    // text size and "Cook another recipe" move into one overflow button.
+    val titleNeeds = longestWordWidth(title, MaterialTheme.typography.titleMedium) +
+        if (inlineTitle && stepOfText != null) textWidth(stepOfText, MaterialTheme.typography.labelLarge) + spacing.sm else 0.dp
+    val canAdd = state.hasDetail && session.canAdd
+    val actionCount = (if (canAdd) 1 else 0) + (if (state.hasDetail) 2 else 0)
     Column(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Fas 4: with two recipes ✕ closes the shown one only (the other stays); system back leaves cook mode.
-            val closeDescription = if (session.isTwo) {
-                stringResource(R.string.cook_close_recipe, state.recipeName.ifEmpty { stringResource(R.string.cook_title) })
-            } else {
-                stringResource(R.string.cook_close)
-            }
-            KitchenIconButton(
-                icon = TandemIcons.Close,
-                description = closeDescription,
-                onClick = onClose,
-                modifier = Modifier.testTag(COOK_CLOSE_TAG),
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val target = TandemTheme.sizes.kitchenTouchTarget
+            // Row and title paddings (spacing.xs each side), ✕ and the actions.
+            val titleRoom = maxWidth - spacing.xs * 4 - target * (1 + actionCount)
+            val overflow = actionCount > 1 && titleRoom < titleNeeds
+            CookHeaderRow(
+                state = state,
+                onAction = onAction,
+                onClose = onClose,
+                showScreenOn = showScreenOn,
+                session = session,
+                onSessionAction = onSessionAction,
+                tabsInHeader = tabsInHeader,
+                title = title,
+                inlineTitle = inlineTitle,
+                overflow = overflow,
             )
-            if (tabsInHeader) {
-                CookRecipeTabs(session = session, onAction = onSessionAction, announceStep = true, modifier = Modifier.weight(1f))
-            } else {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = spacing.xs),
-                ) {
-                    Text(
-                        text = state.recipeName.ifEmpty { stringResource(R.string.cook_title) },
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.semantics { heading() },
-                    )
-                    if (state.hasDetail) {
-                        val step = state.currentStep
-                        val announcement = when {
-                            state.isDonePage -> stringResource(R.string.cook_done_page)
-
-                            step != null && step.name.isNotBlank() ->
-                                stringResource(R.string.cook_step_of_named, state.page + 1, state.steps.size, step.name)
-
-                            else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
-                        }
-                        Text(
-                            text = if (state.isDonePage) {
-                                stringResource(R.string.cook_done_page)
-                            } else {
-                                stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
-                            },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .testTag(COOK_STEP_OF_TAG)
-                                .semantics {
-                                    contentDescription = announcement
-                                    liveRegion = LiveRegionMode.Polite
-                                },
-                        )
-                    }
-                }
-            }
-            if (showScreenOn) {
-                StatusChip(
-                    label = stringResource(R.string.cook_screen_on),
-                    icon = TandemIcons.Visibility,
-                    modifier = Modifier.padding(end = spacing.sm),
-                )
-            }
-            if (state.hasDetail && session.canAdd) {
-                // Fas 4 (two recipes at once, plan 8.1): "Laga ett recept till".
-                KitchenIconButton(
-                    icon = TandemIcons.Add,
-                    description = stringResource(R.string.cook_add_recipe),
-                    onClick = { onSessionAction(CookSessionAction.OpenPicker) },
-                    modifier = Modifier.testTag(COOK_ADD_RECIPE_TAG),
-                )
-            }
-            if (state.hasDetail) {
-                KitchenIconButton(
-                    icon = TandemIcons.TextDecrease,
-                    description = stringResource(R.string.cook_text_smaller),
-                    onClick = { onAction(CookAction.SmallerText) },
-                    enabled = state.canDecreaseText,
-                )
-                KitchenIconButton(
-                    icon = TandemIcons.TextIncrease,
-                    description = stringResource(R.string.cook_text_larger),
-                    onClick = { onAction(CookAction.LargerText) },
-                    enabled = state.canIncreaseText,
-                )
-            }
         }
         if (session.isTwo && progress != null && !tabsInHeader) CookRecipeTabs(session = session, onAction = onSessionAction)
         if (progress != null) {
@@ -780,6 +771,221 @@ private fun CookHeader(
     }
 }
 
+/** The header's row: ✕, the title (or the tabs), and the actions or their overflow button. */
+@Composable
+private fun CookHeaderRow(
+    state: CookUiState,
+    onAction: (CookAction) -> Unit,
+    onClose: () -> Unit,
+    showScreenOn: Boolean,
+    session: CookSessionUi,
+    onSessionAction: (CookSessionAction) -> Unit,
+    tabsInHeader: Boolean,
+    title: String,
+    inlineTitle: Boolean,
+    overflow: Boolean,
+) {
+    val spacing = TandemTheme.spacing
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Fas 4: with two recipes ✕ closes the shown one only (the other stays); system back leaves cook mode.
+        val closeDescription = if (session.isTwo) {
+            stringResource(R.string.cook_close_recipe, title)
+        } else {
+            stringResource(R.string.cook_close)
+        }
+        KitchenIconButton(
+            icon = TandemIcons.Close,
+            description = closeDescription,
+            onClick = onClose,
+            modifier = Modifier.testTag(COOK_CLOSE_TAG),
+        )
+        if (tabsInHeader) {
+            CookRecipeTabs(session = session, onAction = onSessionAction, announceStep = true, modifier = Modifier.weight(1f))
+        } else {
+            CookTitle(
+                state = state,
+                title = title,
+                inline = inlineTitle,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = spacing.xs),
+            )
+        }
+        if (showScreenOn) {
+            StatusChip(
+                label = stringResource(R.string.cook_screen_on),
+                icon = TandemIcons.Visibility,
+                modifier = Modifier.padding(end = spacing.sm),
+            )
+        }
+        when {
+            overflow -> CookHeaderOverflow(state = state, onAction = onAction, onSessionAction = onSessionAction, canAdd = session.canAdd)
+
+            state.hasDetail -> {
+                if (session.canAdd) {
+                    // Fas 4 (two recipes at once, plan 8.1): "Laga ett recept till".
+                    KitchenIconButton(
+                        icon = TandemIcons.Add,
+                        description = stringResource(R.string.cook_add_recipe),
+                        onClick = { onSessionAction(CookSessionAction.OpenPicker) },
+                        modifier = Modifier.testTag(COOK_ADD_RECIPE_TAG),
+                    )
+                }
+                KitchenIconButton(
+                    icon = TandemIcons.TextDecrease,
+                    description = stringResource(R.string.cook_text_smaller),
+                    onClick = { onAction(CookAction.SmallerText) },
+                    enabled = state.canDecreaseText,
+                )
+                KitchenIconButton(
+                    icon = TandemIcons.TextIncrease,
+                    description = stringResource(R.string.cook_text_larger),
+                    onClick = { onAction(CookAction.LargerText) },
+                    enabled = state.canIncreaseText,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The recipe's name (a heading, at most two lines broken between words, then an ellipsis) and
+ * "Steg 3 av 6" under it, a polite live region that says the step's name too. [inline] (a short
+ * wide window, B20): both on one line, the name shortened first, so the step keeps the height.
+ */
+@Composable
+private fun CookTitle(state: CookUiState, title: String, inline: Boolean, modifier: Modifier = Modifier) {
+    val titleText: @Composable (Modifier) -> Unit = { textModifier ->
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = if (inline) 1 else 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = textModifier.semantics { heading() },
+        )
+    }
+    val stepOf: @Composable () -> Unit = {
+        if (state.hasDetail) {
+            val step = state.currentStep
+            val announcement = when {
+                state.isDonePage -> stringResource(R.string.cook_done_page)
+
+                step != null && step.name.isNotBlank() ->
+                    stringResource(R.string.cook_step_of_named, state.page + 1, state.steps.size, step.name)
+
+                else -> stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+            }
+            Text(
+                text = if (state.isDonePage) {
+                    stringResource(R.string.cook_done_page)
+                } else {
+                    stringResource(R.string.cook_step_of, state.page + 1, state.steps.size)
+                },
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                // Inline it is measured first and never shortened; the name gives way.
+                maxLines = if (inline) 1 else Int.MAX_VALUE,
+                softWrap = !inline,
+                modifier = Modifier
+                    .testTag(COOK_STEP_OF_TAG)
+                    .semantics {
+                        contentDescription = announcement
+                        liveRegion = LiveRegionMode.Polite
+                    },
+            )
+        }
+    }
+    if (inline) {
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.sm),
+        ) {
+            titleText(Modifier.weight(1f, fill = false))
+            stepOf()
+        }
+    } else {
+        Column(modifier) {
+            titleText(Modifier)
+            stepOf()
+        }
+    }
+}
+
+/**
+ * K1: "Laga ett recept till", "Mindre text" and "Större text" behind one ⋮ button when they do
+ * not fit beside the recipe's name. The text size items keep the menu open, so the text can be
+ * changed a few steps at once while the step shows behind it. Every item is 64 dp (plan 6.6).
+ */
+@Composable
+private fun CookHeaderOverflow(
+    state: CookUiState,
+    onAction: (CookAction) -> Unit,
+    onSessionAction: (CookSessionAction) -> Unit,
+    canAdd: Boolean,
+) {
+    var open by rememberSaveable { mutableStateOf(false) }
+    val itemModifier = Modifier.heightIn(min = TandemTheme.sizes.kitchenTouchTarget)
+    Box {
+        KitchenIconButton(
+            icon = TandemIcons.MoreVert,
+            description = stringResource(R.string.cook_more_actions),
+            onClick = { open = true },
+            modifier = Modifier.testTag(COOK_MORE_ACTIONS_TAG),
+        )
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            if (canAdd) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.cook_add_recipe)) },
+                    onClick = {
+                        open = false
+                        onSessionAction(CookSessionAction.OpenPicker)
+                    },
+                    leadingIcon = { Icon(TandemIcons.Add, contentDescription = null) },
+                    modifier = itemModifier.testTag(COOK_ADD_RECIPE_TAG),
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.cook_text_smaller)) },
+                onClick = { onAction(CookAction.SmallerText) },
+                enabled = state.canDecreaseText,
+                leadingIcon = { Icon(TandemIcons.TextDecrease, contentDescription = null) },
+                modifier = itemModifier,
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.cook_text_larger)) },
+                onClick = { onAction(CookAction.LargerText) },
+                enabled = state.canIncreaseText,
+                leadingIcon = { Icon(TandemIcons.TextIncrease, contentDescription = null) },
+                modifier = itemModifier,
+            )
+        }
+    }
+}
+
+/** The width of [text]'s widest word in [style] (what a line must hold so no word breaks). */
+@Composable
+private fun longestWordWidth(text: String, style: TextStyle): Dp = textWidth(text, style, longestWord = true)
+
+/** The width of [text] on one line in [style] at the current font scale; with [longestWord], of its widest word. */
+@Composable
+private fun textWidth(text: String, style: TextStyle, longestWord: Boolean = false): Dp {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    return remember(text, style, density, measurer, longestWord) {
+        val parts = if (longestWord) text.split(WORD_GAP).filter { it.isNotEmpty() } else listOf(text)
+        val widest = parts.maxOfOrNull { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width } ?: 0
+        with(density) { widest.toDp() }
+    }
+}
+
+private val WORD_GAP = Regex("\\s+")
+
 /**
  * Phone and tabletop: the warnings and the timers that do not ring (the ringing ones stand above,
  * [RingingTimers]), in one region of at most [maxScrollHeight] that scrolls inside, so the step
@@ -788,6 +994,8 @@ private fun CookHeader(
  * there is neither.
  *
  * @param compactHeight a short window: the warnings are one line each ([AlarmWarnings]).
+ * @param timerBarMaxHeight how tall the timer bar may grow before it scrolls; null: about two
+ *   timers on a phone (B20: the side column of a short wide window passes its own height).
  */
 @Composable
 private fun OtherTimersAndWarnings(
@@ -801,6 +1009,7 @@ private fun OtherTimersAndWarnings(
     compactHeight: Boolean,
     showTimerRecipes: Boolean = false,
     modifier: Modifier = Modifier,
+    timerBarMaxHeight: Dp? = null,
 ) {
     val others = state.timers.filter { it.state != TimerState.RINGING }
     val warns = state.silentAlarmCause != null || state.showLateAlarmWarning
@@ -827,10 +1036,10 @@ private fun OtherTimersAndWarnings(
             actions = timerActions,
             onOpen = onOpenTimer,
             // Scaled with the text, so a large font shows both times too; maxScrollHeight still protects the step.
-            maxHeight = if (showTimerRecipes) {
-                PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale
-            } else {
-                PHONE_TIMER_BAR_HEIGHT
+            maxHeight = when {
+                timerBarMaxHeight != null -> timerBarMaxHeight
+                showTimerRecipes -> PHONE_TIMER_BAR_HEIGHT_WITH_RECIPES * LocalDensity.current.fontScale
+                else -> PHONE_TIMER_BAR_HEIGHT
             },
             showRecipe = showTimerRecipes,
             modifier = Modifier.testTag(COOK_TIMER_BAR_TAG),
@@ -844,6 +1053,9 @@ private fun OtherTimersAndWarnings(
  * whose label does not fit its share of the row drops its arrow, and if the label still does not
  * fit it shows only the arrow, with the label for TalkBack ([FirstThatFits]): no label is ever
  * broken inside a word (device test 2026-11-14, B10: "Före gåe…" at 360 dp in Swedish).
+ *
+ * @param allowStacked false keeps the buttons in one row at any font (B20: the side column of a
+ *   short wide window has no height to spare; the labels give way to their arrows instead).
  */
 @Composable
 internal fun PageButtons(
@@ -852,11 +1064,12 @@ internal fun PageButtons(
     modifier: Modifier = Modifier,
     handsfree: HandsfreeUiState? = null,
     onHandsfree: () -> Unit = {},
+    allowStacked: Boolean = true,
 ) {
     val spacing = TandemTheme.spacing
     val largeFont = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val stacked = largeFont && maxWidth < StackedButtonsMaxWidth
+        val stacked = allowStacked && largeFont && maxWidth < StackedButtonsMaxWidth
         val previousText = stringResource(R.string.cook_previous)
         val previous: @Composable (Modifier) -> Unit = { buttonModifier ->
             val onClick = { onAction(CookAction.Previous) }
@@ -1063,6 +1276,10 @@ private fun Warning(
 private const val SIDE_PANE_WEIGHT = 0.38f
 private const val STEP_PANE_WEIGHT = 0.62f
 
+/** B20: a short wide window gives the step a little more of the width than two panes do. */
+private const val SHORT_SIDE_PANE_WEIGHT = 0.4f
+private const val SHORT_STEP_PANE_WEIGHT = 0.6f
+
 /** About two timers at the bottom of a phone; more scroll inside the bar. */
 private val PHONE_TIMER_BAR_HEIGHT = 168.dp
 
@@ -1090,6 +1307,7 @@ internal const val COOK_BOTTOM_TIMERS_TAG = "cook:bottom-timers"
 internal const val COOK_STEP_OF_TAG = "cook:step-of"
 internal const val COOK_CLOSE_TAG = "cook:close"
 internal const val COOK_ADD_RECIPE_TAG = "cook:add-recipe"
+internal const val COOK_MORE_ACTIONS_TAG = "cook:more-actions"
 
 private const val NO_ADJUST = -1
 

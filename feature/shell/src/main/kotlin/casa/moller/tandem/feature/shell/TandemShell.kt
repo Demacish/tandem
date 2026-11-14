@@ -5,13 +5,10 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation3.ListDetailSceneStrategy
 import androidx.compose.material3.adaptive.navigation3.rememberListDetailSceneStrategy
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldValue
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
@@ -32,7 +29,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
@@ -144,9 +140,6 @@ import casa.moller.tandem.feature.shell.status.ServerNotice
 import casa.moller.tandem.feature.shell.status.ServerStatusFrame
 import casa.moller.tandem.feature.shell.status.serverNotice
 import casa.moller.tandem.feature.shell.timer.TimerHudFrame
-import casa.moller.tandem.feature.shell.ui.icon
-import casa.moller.tandem.feature.shell.ui.label
-import casa.moller.tandem.feature.shell.ui.selectedIcon
 import casa.moller.tandem.feature.shell.watch.NoWatchPage
 import casa.moller.tandem.feature.shell.watch.RouteWatchPage
 import casa.moller.tandem.feature.shell.watch.WatchPage
@@ -275,6 +268,8 @@ const val EXPANDED_RAIL_MIN_HEIGHT_DP: Int = 480
  * - from 1000 dp, if the window is at least 480 dp tall: the rail expanded with labels beside the
  *   icons. The M3 Expressive expanded rail takes the place of the permanent navigation drawer
  *   from the plan's table.
+ * - a collapsed rail on a window under 480 dp tall (a phone in landscape) is the shell's short rail
+ *   ([shellUsesShortRail], device test 2026-11-14 B21): all five tabs in view, labels only when they fit.
  *
  * The raw window width is used, not the size class: the V2 size classes have no bucket at
  * 1000 dp (only 600/840/1200/1600). There is deliberately no exception for the tabletop posture.
@@ -331,7 +326,9 @@ internal fun ShellScaffold(
     features: ShellFeatures,
     modifier: Modifier = Modifier,
     settingsPages: SettingsPages = RouteSettingsPages,
-    navigationSuiteType: NavigationSuiteType = shellNavigationSuiteType(currentShellWindowSize()),
+    // Device test 2026-11-14, round 3 (B21, B22): the window decides the rail's and the bar's labels too.
+    windowSize: DpSize = currentShellWindowSize(),
+    navigationSuiteType: NavigationSuiteType = shellNavigationSuiteType(windowSize),
     crashNotice: @Composable () -> Unit = {},
     onLogInAgain: (serverUrl: String) -> Unit = {},
     // Phase 2 (konto lane): Mer → Konton och servrar.
@@ -375,22 +372,16 @@ internal fun ShellScaffold(
             .onFailure { runCatching { uriHandler.openUri(url) } }
     }
 
-    NavigationSuiteScaffold(
-        navigationItems = {
-            ShellTab.entries.forEach { tab ->
-                val selected = tab == navigation.currentTab
-                NavigationSuiteItem(
-                    selected = selected,
-                    onClick = { navigation.selectTab(tab) },
-                    icon = { Icon(imageVector = if (selected) tab.selectedIcon() else tab.icon(), contentDescription = null) },
-                    label = { Text(stringResource(tab.label)) },
-                    navigationSuiteType = navigationSuiteType,
-                )
-            }
-        },
-        modifier = modifier.testTag(SHELL_TEST_TAG_PREFIX + navigationSuiteType),
+    // B21/B22 (device test 2026-11-14, round 3): the short rail of a phone in landscape and labels
+    // that never break inside a word; see ShellNavigationSuite.
+    ShellNavigationSuite(
         navigationSuiteType = navigationSuiteType,
+        shortRail = shellUsesShortRail(navigationSuiteType, windowSize),
+        windowWidth = windowSize.width,
         state = suiteState,
+        currentTab = navigation.currentTab,
+        onSelectTab = { navigation.selectTab(it) },
+        modifier = modifier.testTag(SHELL_TEST_TAG_PREFIX + navigationSuiteType),
     ) {
         // --- Phase 2 (grund lane): the Handla list at the tab root and for a ShoppingListKey. ---
         val shopping: @Composable (Long?, Long?) -> Unit = { listId, supermarketId ->

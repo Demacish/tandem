@@ -2,6 +2,7 @@ package casa.moller.tandem.core.ui.timer
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.SubcomposeMeasureScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -42,6 +45,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.icon.Alarm
@@ -201,7 +205,18 @@ private fun TimerState.displayRank(): Int = when (this) {
     TimerState.FINISHED -> 2
 }
 
-/** One row of [TimerBar]: name and time, then the timer's buttons. */
+/**
+ * One row of [TimerBar]: name and time, then the timer's buttons beside them, or below them when
+ * the texts would get too little of the width.
+ *
+ * Device test 2026-11-14 (round 3, K2): in the narrow side pane of a phone in landscape the buttons
+ * left the name a strip, so it broke inside a word ("Svamp en · c…") and a ringing card stood one
+ * word per line. The row now measures first: the texts stay beside the buttons only when their
+ * longest word fits there and they get at least [TimerInfoMinWidth] (scaled with the font);
+ * otherwise they take the card's whole width and the buttons wrap below them, aligned to the end
+ * (above them while the timer rings, so Stop is the first thing in the card).
+ * The measuring passes have no semantics, so TalkBack and tests only see the row that is shown.
+ */
 @Composable
 fun TimerBarItem(
     timer: CookTimer,
@@ -213,9 +228,10 @@ fun TimerBarItem(
 ) {
     val colors = timerColors(timer.state)
     val spacing = TandemTheme.spacing
+    val fontScale = LocalDensity.current.fontScale
     // Fas 4 (two recipes at once): at a large font the buttons beside the texts leave them a strip,
     // so the recipe breaks mid-word and the time goes out of view. The texts get the card's width.
-    val stacked = showRecipe && timer.recipeName != null && LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+    val alwaysStacked = showRecipe && timer.recipeName != null && fontScale >= LARGE_FONT_SCALE
     val info: @Composable (Modifier) -> Unit = { infoModifier ->
         TimerInfo(
             timer = timer,
@@ -227,34 +243,73 @@ fun TimerBarItem(
             modifier = infoModifier,
         )
     }
+    val buttons: @Composable () -> Unit = { TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe) }
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = colors.container,
         contentColor = colors.content,
     ) {
-        if (stacked) {
-            Column(modifier = Modifier.padding(start = spacing.lg, end = spacing.xs)) {
-                info(Modifier.fillMaxWidth())
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(spacing.xs, Alignment.End),
-                    itemVerticalAlignment = Alignment.CenterVertically,
-                ) {
-                    TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
+        SubcomposeLayout(Modifier.padding(start = spacing.lg, end = spacing.xs)) { constraints ->
+            val stacked = alwaysStacked ||
+                (constraints.hasBoundedWidth && textsTooNarrow(constraints.maxWidth, TimerInfoMinWidth * fontScale, info, buttons))
+            val content: @Composable () -> Unit = if (stacked) {
+                {
+                    val buttonRows: @Composable () -> Unit = {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(spacing.xs, Alignment.End),
+                            itemVerticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            buttons()
+                        }
+                    }
+                    Column(Modifier.fillMaxWidth()) {
+                        // A ringing timer's Stop first: in a short, narrow place at a large font the
+                        // name and "Tiden är ute!" could push it out of view (K2, kokvy's B6 rule).
+                        if (timer.state == TimerState.RINGING) buttonRows()
+                        info(Modifier.fillMaxWidth())
+                        if (timer.state != TimerState.RINGING) buttonRows()
+                    }
+                }
+            } else {
+                {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        info(Modifier.weight(1f))
+                        buttons()
+                    }
                 }
             }
-        } else {
-            Row(
-                modifier = Modifier.padding(start = spacing.lg, end = spacing.xs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                info(Modifier.weight(1f))
-                TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe)
-            }
+            val placeables = subcompose(if (stacked) TimerItemSlot.STACKED else TimerItemSlot.ROW, content)
+                .map { it.measure(constraints.copy(minHeight = 0)) }
+            val width = (placeables.maxOfOrNull { it.width } ?: 0).coerceIn(constraints.minWidth, constraints.maxWidth)
+            val height = (placeables.maxOfOrNull { it.height } ?: 0).coerceIn(constraints.minHeight, constraints.maxHeight)
+            layout(width, height) { placeables.forEach { it.placeRelative(0, 0) } }
         }
     }
 }
+
+/**
+ * True when [info] beside [buttons] in [maxWidth] would break a word or get less than [minWidth]
+ * (or its whole width, when that is less). Measured in probes without semantics.
+ */
+private fun SubcomposeMeasureScope.textsTooNarrow(
+    maxWidth: Int,
+    minWidth: Dp,
+    info: @Composable (Modifier) -> Unit,
+    buttons: @Composable () -> Unit,
+): Boolean {
+    val buttonsWidth = subcompose(TimerItemSlot.PROBE_BUTTONS) {
+        Row(Modifier.clearAndSetSemantics { }, verticalAlignment = Alignment.CenterVertically) { buttons() }
+    }.maxOf { it.maxIntrinsicWidth(Constraints.Infinity) }
+    val probe = subcompose(TimerItemSlot.PROBE_INFO) { Box(Modifier.clearAndSetSemantics { }) { info(Modifier) } }
+    val longestWord = probe.maxOf { it.minIntrinsicWidth(Constraints.Infinity) }
+    val whole = probe.maxOf { it.maxIntrinsicWidth(Constraints.Infinity) }
+    return maxWidth - buttonsWidth < maxOf(longestWord, minOf(whole, minWidth.roundToPx()))
+}
+
+/** The slots of [TimerBarItem]'s measuring: two probes without semantics, then the row shown. */
+private enum class TimerItemSlot { PROBE_BUTTONS, PROBE_INFO, ROW, STACKED }
 
 /**
  * A timer as a card (tablet cook mode's left pane, Stitch kokl_ge_surfplatta_*, and the timer
@@ -516,6 +571,12 @@ private const val TRACK_ALPHA = 0.24f
 
 /** Digits of equal width, so a countdown does not jitter. */
 private const val TABULAR_NUMBERS = "tnum"
+
+/**
+ * A timer row keeps its name and time beside the buttons only when they get at least this much of
+ * the width (times the font scale), else they stand above the buttons (K2, device test 2026-11-14).
+ */
+internal val TimerInfoMinWidth = 96.dp
 
 /** From this font scale a recipe's name may take two lines on a timer. */
 private const val LARGE_FONT_SCALE = 1.5f

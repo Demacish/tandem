@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cook mode on a phone in landscape and at a large font (device test 2026-11-14, round 3). -->
+<resources>
+    <!-- "Adjust the time": the minus button when the time is already the shortest a timer can be. -->
+    <string name="cook_timer_adjust_shorter_limit">Shorter</string>
+    <!-- "Adjust the time": the plus button when the time is already the longest a timer can be. -->
+    <string name="cook_timer_adjust_longer_limit">Longer</string>
+    <!-- The header's overflow button when the text size and "Cook another recipe" do not fit beside the recipe name. -->
+    <string name="cook_more_actions">More options</string>
+</resources>

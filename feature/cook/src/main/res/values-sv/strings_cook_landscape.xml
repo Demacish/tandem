@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cook_timer_adjust_shorter_limit">Kortare</string>
+    <string name="cook_timer_adjust_longer_limit">Längre</string>
+    <string name="cook_more_actions">Fler val</string>
+</resources>

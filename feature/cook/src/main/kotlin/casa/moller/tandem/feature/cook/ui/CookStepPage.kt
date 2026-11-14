@@ -76,6 +76,9 @@ import kotlin.time.Instant
  *
  * @param showIngredients false where the side pane shows them (two panes).
  * @param largeText a wide window: the step text starts larger.
+ * @param dense a short wide window (B20, device test 2026-11-14 round 3): less padding, and the
+ *   "STEG 3" line is left out because the header beside it says "Steg 3 av 6", so the step text
+ *   starts high enough to show several lines.
  */
 @Composable
 internal fun CookStepPage(
@@ -84,16 +87,17 @@ internal fun CookStepPage(
     onAction: (CookAction) -> Unit,
     showIngredients: Boolean,
     largeText: Boolean,
+    dense: Boolean = false,
 ) {
     val spacing = TandemTheme.spacing
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = spacing.screenHorizontal, vertical = spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(spacing.lg),
+            .padding(horizontal = spacing.screenHorizontal, vertical = if (dense) spacing.sm else spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(if (dense) spacing.sm else spacing.lg),
     ) {
-        StepTitle(step)
+        StepTitle(step, dense = dense)
         if (step.instruction.isNotBlank()) {
             StepInstruction(
                 markdown = step.instruction,
@@ -141,20 +145,26 @@ internal fun CookStepPage(
     }
 }
 
-/** "STEG 3" and the step's own name ("Stekning i panna"), a TalkBack heading. */
+/**
+ * "STEG 3" and the step's own name ("Stekning i panna"), a TalkBack heading. [dense]: only the
+ * name, smaller (the header says "Steg 3 av 6"); nothing when the step has no name.
+ */
 @Composable
-private fun StepTitle(step: CookStep) {
+private fun StepTitle(step: CookStep, dense: Boolean = false) {
+    if (dense && step.name.isBlank()) return
     Column(
         modifier = Modifier.semantics(mergeDescendants = true) { heading() },
         verticalArrangement = Arrangement.spacedBy(TandemTheme.spacing.xxs),
     ) {
-        Text(
-            text = stringResource(R.string.cook_step_heading, step.number).uppercase(),
-            style = TandemTheme.extendedTypography.overline,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        if (!dense) {
+            Text(
+                text = stringResource(R.string.cook_step_heading, step.number).uppercase(),
+                style = TandemTheme.extendedTypography.overline,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
         if (step.name.isNotBlank()) {
-            Text(text = step.name, style = MaterialTheme.typography.headlineSmall)
+            Text(text = step.name, style = if (dense) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall)
         }
     }
 }
