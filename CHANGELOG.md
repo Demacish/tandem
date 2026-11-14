@@ -108,13 +108,18 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   "Detaljerad" under Inställningar → Aviseringar → Popup-stil; Behörigheter berättar det.
 - Larmskärmen på låsskärmen är mörk hela vägen ned, också med appens ljusa tema: förut låg ett
   ljust navigeringsfält under den.
+- Mer → Behörigheter visar nu också mikrofonen (röstkommandon), kalendern (matsedeln i telefonens
+  kalender) och platsen (påminnelsen nära butiken), med vad som är tillåtet, varför Tandem behöver
+  det och en knapp till Androids inställningar. För platsen står det om den är exakt och tillåten
+  hela tiden, som påminnelsen behöver. Den gamla texten "Ingen position" är borta: platsen används
+  bara av påminnelsen nära butiken när du slår på den, och Tandem skickar den aldrig någonstans.
+- Skärmläsaren säger "Stäng arket" om ytan bakom ett ark (förut "Stäng kalkylarket") och
+  "Meddelande" när ett kort besked visas längst ned (förut "Varning").
 
 **Kvar till senare**
 
 - Klockan, kalendern och påminnelsen nära butiken är prövade i CI men ännu inte på en riktig klocka,
   i Samsungs och Googles kalendrar eller i en riktig butik (batteriet under en dag).
-- Behörighetssidan under Mer visar ännu inte plats och kalender; de frågas och förklaras på
-  funktionernas egna sidor.
 - Inkorg för recept från RSS, App Functions, biometriskt lås, target SDK 37 och två recept sida vid
   sida i kokläget kommer i senare versioner.
 
