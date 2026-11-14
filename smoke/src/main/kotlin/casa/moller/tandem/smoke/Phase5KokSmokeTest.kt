@@ -44,7 +44,9 @@ class Phase5KokSmokeTest : Phase2SmokeBase() {
         app.tapDescription(KITCHEN)
         app.waitFor(By.desc(LEAVE_KITCHEN))
         app.waitFor(By.res(KITCHEN_CLOCK))
-        app.waitFor(By.text(DEMO_TONIGHT))
+        // Device test 2026-11-14 (T1): on a 360 dp phone at midday breakfast and lunch fill the
+        // screen, so tonight's dinner is further down the list.
+        app.findInList(By.text(DEMO_TONIGHT))
         app.capture("phase5-kitchen")
 
         app.tapDescription("Cook $DEMO_TONIGHT")

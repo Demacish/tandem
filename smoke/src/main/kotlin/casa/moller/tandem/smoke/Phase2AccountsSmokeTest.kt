@@ -147,7 +147,7 @@ class Phase2AccountsSmokeTest : Phase2SmokeBase() {
         app.tap("Log in")
         app.waitFor(By.text("You’re connected"))
         app.tap("Continue")
-        app.waitForClickable("Recipes", FIRST_SYNC_TIMEOUT_MS)
+        app.waitForShellAfterIntro("Recipes", FIRST_SYNC_TIMEOUT_MS)
     }
 
     /** Mer → Konton och servrar → "Switch to …" (the other account), then the Handla tab. */

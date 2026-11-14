@@ -115,11 +115,13 @@ class Gallery(private val context: Context) : ExternalResource() {
         /** The photo picker lives in the MediaProvider module (`com.google.android.providers.media.module` or AOSP's). */
         private val PICKER_PACKAGE: Pattern = Pattern.compile(".*providers\\.media.*|.*photopicker.*")
         private val PICKER: BySelector = By.pkg(PICKER_PACKAGE)
-        private val CONFIRM: BySelector = By.pkg(PICKER_PACKAGE).clickable(true).text(Pattern.compile("Done|Add|Select|Allow"))
+        // The picker speaks the PHONE's language: Swedish too (device test 2026-11-14, T1).
+        private val CONFIRM: BySelector =
+            By.pkg(PICKER_PACKAGE).clickable(true).text(Pattern.compile("Done|Add|Select|Allow|Klar|Lägg till|Välj|Tillåt"))
         private val THUMBNAILS = listOf(
             By.pkg(PICKER_PACKAGE).res(Pattern.compile(".*:id/icon_thumbnail")),
-            By.pkg(PICKER_PACKAGE).desc(Pattern.compile("(?i)photo taken.*")),
-            By.pkg(PICKER_PACKAGE).clickable(true).desc(Pattern.compile("(?i).*(photo|image).*")),
+            By.pkg(PICKER_PACKAGE).desc(Pattern.compile("(?i)(photo taken|foto taget).*")),
+            By.pkg(PICKER_PACKAGE).clickable(true).desc(Pattern.compile("(?i).*(photo|image|foto|bild).*")),
         )
 
         /** A white till receipt with three item lines, a total and a card line (no numbers of a card). */

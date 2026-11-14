@@ -179,7 +179,7 @@ class ReleaseSmokeTest {
     private fun finishIntroAndOpenMore() {
         app.waitFor(By.text("You’re connected"))
         app.tap("Continue")
-        app.waitForClickable("More")
+        app.waitForShellAfterIntro("More", TandemApp.UI_TIMEOUT_MS)
         app.tap("More")
         openedMoreShowsVersion()
     }

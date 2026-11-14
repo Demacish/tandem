@@ -16,15 +16,42 @@ import java.io.File
 import java.util.regex.Pattern
 
 /**
- * The app under test, driven like a user would: by the texts on screen (English, the emulator's
- * locale). Nothing here knows app classes, so R8's renaming does not matter.
+ * The app under test, driven like a user would: by the texts on screen (English: [clearData] sets
+ * the app's own language, so a phone in another language works too, device test 2026-11-14 T1).
+ * Nothing here knows app classes, so R8's renaming does not matter.
  */
 class TandemApp(val device: UiDevice) {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
-    /** `pm clear`: no account, no settings, no Keystore keys of the app. */
+    /**
+     * `pm clear`: no account, no settings, no Keystore keys of the app. `pm clear` also forgets the
+     * app's language (Android's per-app language), so it is set to English again: the tests read
+     * English texts, also on a phone in Swedish (device test 2026-11-14, T1). On the English CI
+     * emulator this changes nothing. Only the test build's own language changes, never the phone's.
+     */
     fun clearData() {
         shell("pm clear $PACKAGE")
+        shell("cmd locale set-app-locales $PACKAGE --locales $APP_LOCALE")
+    }
+
+    /**
+     * After "You’re connected" → Continue: waits until the shell shows its [tab], tapping "Done" on
+     * the intro's battery tip, which only Samsung phones get after the first sync (feature:onboarding
+     * BatteryTipStep; device test 2026-11-14, T1). The CI emulator never shows it.
+     */
+    fun waitForShellAfterIntro(tab: String, timeoutMs: Long) {
+        val deadline = SystemClock.uptimeMillis() + timeoutMs
+        while (clickableWithText(tab).none { device.hasObject(it) }) {
+            dismissForeignAnrDialog()
+            if (device.hasObject(By.text(BATTERY_TIP_TITLE))) {
+                clickableWithText(BATTERY_TIP_DONE).firstNotNullOfOrNull { device.findObject(it) }?.click()
+                device.waitForIdle()
+            }
+            if (SystemClock.uptimeMillis() > deadline) {
+                throw AssertionError("No clickable \"$tab\" within $timeoutMs ms (app running: ${isRunning()})")
+            }
+            SystemClock.sleep(POLL_MS)
+        }
     }
 
     /** Starts the app from its launcher entry, like tapping the icon. */
@@ -471,6 +498,13 @@ class TandemApp(val device: UiDevice) {
     companion object {
         /** applicationId of :app's minified build type. */
         const val PACKAGE = "casa.moller.tandem.minified"
+
+        /** The app's language in every test ([clearData]): English with the emulator's region. */
+        const val APP_LOCALE = "en-US"
+
+        /** feature:onboarding onboarding_battery_title / _done (Samsung only). */
+        private const val BATTERY_TIP_TITLE = "A tip for Samsung phones"
+        private const val BATTERY_TIP_DONE = "Done"
         const val UI_TIMEOUT_MS = 20_000L
         private const val NETWORK_TIMEOUT_MS = 60_000L
         private const val OFFLINE_SETTLE_MS = 3_000L
