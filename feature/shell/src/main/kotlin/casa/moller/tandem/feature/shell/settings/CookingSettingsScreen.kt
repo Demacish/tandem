@@ -83,7 +83,9 @@ internal fun CookingSettingsScreen(
                 // muted or blocked alarm channel it is not shown over the lock screen.
                 when {
                     !capabilities.notificationsAllowed -> add(stringResource(R.string.settings_timer_alarm_warning_silent))
+
                     !capabilities.alarmChannelEnabled -> add(stringResource(R.string.settings_timer_alarm_warning_channel_off))
+
                     // Device test 2026-11-14 (B5): sounds, but no pop-up and no full screen.
                     capabilities.alarmMayStayHidden -> add(stringResource(R.string.settings_timer_alarm_warning_no_pop_up))
                 }

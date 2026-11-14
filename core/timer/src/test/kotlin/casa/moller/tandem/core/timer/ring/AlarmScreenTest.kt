@@ -19,9 +19,11 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-private const val PHONE = "w412dp-h915dp-port-xhdpi"
-private const val PHONE_SMALL = "w360dp-h780dp-port-xhdpi"
-private const val TABLET = "w1280dp-h800dp-land-hdpi"
+// Android's qualifier order: night mode before the density.
+private const val PHONE_LIGHT = "w412dp-h915dp-port-notnight-xhdpi"
+private const val PHONE_DARK = "w412dp-h915dp-port-night-xhdpi"
+private const val PHONE_SMALL_LIGHT = "w360dp-h780dp-port-notnight-xhdpi"
+private const val TABLET_LIGHT = "w1280dp-h800dp-land-notnight-hdpi"
 
 /**
  * Device test 2026-11-14 (B14): the lock-screen alarm is dark with dark system bars in both app
@@ -35,7 +37,7 @@ private const val TABLET = "w1280dp-h800dp-land-hdpi"
 class AlarmScreenTest {
 
     @Test
-    @Config(qualifiers = "$PHONE-notnight")
+    @Config(qualifiers = PHONE_LIGHT)
     fun lightAppThemeKeepsTheAlarmAndItsBarsDark() {
         val activity = alarmScreen("Pastan · 10 min (Krämig svamppasta)")
         assertDarkBars(activity)
@@ -43,7 +45,7 @@ class AlarmScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "sv-$PHONE-night")
+    @Config(qualifiers = "sv-$PHONE_DARK")
     fun darkAppThemeSwedish() {
         val activity = alarmScreen("Pastan · 10 min (Krämig svamppasta)", "Gräddning · 7 min (Kanelbullar)")
         assertDarkBars(activity)
@@ -51,7 +53,7 @@ class AlarmScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "sv-$PHONE_SMALL-notnight")
+    @Config(qualifiers = "sv-$PHONE_SMALL_LIGHT")
     fun fontScale2Swedish() {
         RuntimeEnvironment.setFontScale(2f)
         val activity = alarmScreen("Pastan · 10 min (Krämig svamppasta)")
@@ -60,7 +62,7 @@ class AlarmScreenTest {
     }
 
     @Test
-    @Config(qualifiers = "$TABLET-notnight")
+    @Config(qualifiers = TABLET_LIGHT)
     fun tabletLandscape() {
         val activity = alarmScreen("Pastan · 10 min (Krämig svamppasta)", "Gräddning · 7 min (Kanelbullar)")
         assertDarkBars(activity)

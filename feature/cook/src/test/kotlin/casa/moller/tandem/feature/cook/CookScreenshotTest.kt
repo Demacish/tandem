@@ -114,11 +114,6 @@ class CookPhoneScreenshotTest : CookScreenshotTest("phone") {
     @Test
     fun done() = capture("done_light") { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
 
-    /** Device test B5 (larm lane). */
-    @Test
-    @Config(qualifiers = "sv-$TABLET")
-    fun alarmNoPopUpSwedish() = capture("devicetest_alarm_no_pop_up_light_sv", fakes = noPopUp()) { CookWithFakes(fakes = it) }
-
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun doneOfflineSwedish() = capture(
@@ -309,6 +304,11 @@ class CookTabletScreenshotTest : CookScreenshotTest("tablet") {
 
     @Test
     fun done() = capture("done_light") { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
+
+    /** Device test B5 (larm lane). */
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun alarmNoPopUpSwedish() = capture("devicetest_alarm_no_pop_up_light_sv", fakes = noPopUp()) { CookWithFakes(fakes = it) }
 
     @Test
     fun fontScale2() = capture("step_font2_light", fontScale = 2f, fakes = CookFakes().withTimers()) { CookWithFakes(fakes = it) }

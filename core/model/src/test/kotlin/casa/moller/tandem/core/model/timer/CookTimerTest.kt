@@ -104,8 +104,8 @@ class CookTimerTest {
         assertTrue(noPopUp.alarmMayStayHidden)
         assertFalse(noPopUp.alarmMayBeSilent)
         assertFalse(TimerCapabilities.AllGranted.alarmMayStayHidden)
-        assertFalse("muted wins: its fix comes first", noPopUp.copy(alarmChannelEnabled = false).alarmMayStayHidden)
-        assertFalse("no notifications at all", noPopUp.copy(notificationsAllowed = false).alarmMayStayHidden)
+        assertFalse(noPopUp.copy(alarmChannelEnabled = false).alarmMayStayHidden, "muted wins: its fix comes first")
+        assertFalse(noPopUp.copy(notificationsAllowed = false).alarmMayStayHidden, "no notifications at all")
     }
 
     @Test
