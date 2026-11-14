@@ -13,6 +13,8 @@ import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.SyncInterval
 import casa.moller.tandem.core.model.settings.ThemeMode
+import casa.moller.tandem.core.model.shopping.StoreReminderAvailability
+import casa.moller.tandem.core.model.shopping.StoreReminderState
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.model.timer.TimerMode
@@ -59,6 +61,7 @@ class SettingsViewModelTest {
     private val sessions = FakeSessionRepository()
     private val preferences = FakePreferencesRepository()
     private val spacePermissions = FakeSpacePermissionsRepository()
+    private val storeReminders = FakeStoreReminderRepository()
 
     private fun newViewModel(distribution: String = "sideload", manufacturer: String = "Google") = SettingsViewModel(
         settingsRepository = settings,
@@ -72,6 +75,7 @@ class SettingsViewModelTest {
         manufacturer = manufacturer,
         preferences = preferences,
         spacePermissions = spacePermissions,
+        storeReminders = storeReminders,
     )
 
     @Test
@@ -388,6 +392,32 @@ class SettingsViewModelTest {
         // Allowed in Android's settings meanwhile (Fas S, fix-ui).
         vm.onAction(SettingsAction.RefreshPermissions(batteryUnrestricted = true, cameraAllowed = true))
         assertEquals(true, state.value.cameraAllowed)
+    }
+
+    @Test
+    fun theFeaturesPermissionsAreReadAgainToo() = runTest {
+        // Device test 2026-11-14 (B12): the microphone, the calendar and the position.
+        val vm = newViewModel()
+        val state = collecting(vm.permissions)
+        assertEquals(null, state.value.location)
+
+        vm.onAction(
+            SettingsAction.RefreshPermissions(
+                batteryUnrestricted = null,
+                microphoneAllowed = false,
+                calendarAllowed = true,
+                location = LocationAccess.WHILE_IN_USE,
+            ),
+        )
+        assertEquals(false, state.value.microphoneAllowed)
+        assertEquals(true, state.value.calendarAllowed)
+        assertEquals(LocationAccess.WHILE_IN_USE, state.value.location)
+        assertFalse(state.value.storeReminderUnavailable)
+
+        // Without Play services the position row says why it is not used.
+        storeReminders.state.value = StoreReminderState(availability = StoreReminderAvailability.NO_PLAY_SERVICES)
+        assertTrue(state.value.storeReminderUnavailable)
+        assertEquals("the readings stay", LocationAccess.WHILE_IN_USE, state.value.location)
     }
 
     @Test

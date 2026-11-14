@@ -99,7 +99,7 @@
     <!-- Behörigheter -->
     <string name="settings_permissions_intro">Tandem frågar om behörigheter när de behövs, till exempel vid din första timer. Här ser du vad som är tillåtet och kan ändra det i Androids inställningar.</string>
     <string name="settings_permissions_privacy_title">Allt stannar hos dig</string>
-    <string name="settings_permissions_privacy_body">Tandem pratar med din egen Tandoor-server, och bara när du använder dem med Open Food Facts (en okänd streckkod, inget annat) och den AI-tjänst du valt (fotot av kylen). Ingen position, inga kontakter, ingen spårning.</string>
+    <string name="settings_permissions_privacy_body">Tandem pratar med din egen Tandoor-server, och bara när du använder dem med Open Food Facts (en okänd streckkod, inget annat) och den AI-tjänst du valt (fotot av kylen). Inga kontakter, ingen spårning: din plats används bara av påminnelsen nära butiken när du slår på den, och Tandem skickar den aldrig någonstans.</string>
     <string name="settings_permission_notifications">Notiser</string>
     <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, nyheter om din server, och ändringar på inköpslistan och varor som går ut om du valt det.</string>
     <string name="settings_permission_alarm_channel">Larmljud för timers</string>
@@ -119,6 +119,17 @@
     <string name="settings_permission_restricted">Optimerad</string>
     <string name="settings_permission_open">Öppna inställningar</string>
     <string name="settings_permission_open_description">Öppna Androids inställningar för %1$s</string>
+    <!-- Enhetstestet 2026-11-14 (B12): behörigheterna för handsfree, matsedeln i kalendern och påminnelsen nära butiken. -->
+    <string name="settings_permission_microphone">Mikrofon</string>
+    <string name="settings_permission_microphone_body">Röstkommandon i kokläget med handsfree (”nästa”, ”tillbaka”, ”upprepa”). Tandem lyssnar bara när de är på och kokläget visas, och inget du säger sparas. Frågas när du slår på röstkommandon.</string>
+    <string name="settings_permission_calendar">Kalender</string>
+    <string name="settings_permission_calendar_body">”Visa i telefonens kalender” skriver din matsedel i en egen kalender på telefonen. Frågas när du slår på den; prenumerationslänken behöver ingen behörighet.</string>
+    <string name="settings_permission_location">Plats</string>
+    <string name="settings_permission_location_body">Bara för påminnelsen nära butiken, och bara när du slår på den: exakt plats och ”Tillåt alltid”, så att Android kan säga till Tandem när du kommer till en butik du valt, även när Tandem är stängd. Tandem skickar aldrig din plats någonstans.</string>
+    <string name="settings_permission_location_always">Tillåtet alltid</string>
+    <string name="settings_permission_location_while_in_use">Bara när appen används</string>
+    <string name="settings_permission_location_approximate">Bara ungefärlig</string>
+    <string name="settings_permission_location_no_play_services">Telefonen saknar Google Play-tjänster, så påminnelsen nära butiken finns inte och din plats används aldrig.</string>
 
     <!-- Diagnostik -->
     <string name="settings_diagnostics_versions">Versioner</string>

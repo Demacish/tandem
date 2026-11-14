@@ -100,6 +100,14 @@ data class ShoppingServerSettings(val addOnHand: Boolean, val excludeOnHand: Boo
  * @property showFullScreen the build can show the alarm over the lock screen (sideload).
  * @property cameraAllowed the scanners may use the camera (Fas S); null when unknown or the device
  *   has no camera (no row).
+ * @property microphoneAllowed handsfree's voice commands may listen (device test 2026-11-14, B12);
+ *   null when unknown or the device has no microphone (no row).
+ * @property calendarAllowed "Show in the phone's calendar" may write the meal plan (B12); null when
+ *   not read yet (no row).
+ * @property location how much of the position the reminder near the store may use (B12); null
+ *   when not read yet (no row).
+ * @property storeReminderUnavailable the phone has no Google Play services, so the reminder near
+ *   the store (the only user of the position) cannot be used: the row says so instead.
  */
 data class PermissionsUiState(
     val capabilities: TimerCapabilities = TimerCapabilities.AllGranted,
@@ -107,10 +115,45 @@ data class PermissionsUiState(
     val showBattery: Boolean = false,
     val showFullScreen: Boolean = false,
     val cameraAllowed: Boolean? = null,
+    // Device test 2026-11-14 (B12): the permissions of the 0.7.0/0.8.0 features.
+    val microphoneAllowed: Boolean? = null,
+    val calendarAllowed: Boolean? = null,
+    val location: LocationAccess? = null,
+    val storeReminderUnavailable: Boolean = false,
 ) {
     /** Exact alarms are granted by the build (sideload) and cannot be switched off. */
     val exactAlarmsFixed: Boolean
         get() = capabilities.exactAlarmsAllowed && !capabilities.exactAlarmsRequestable
+}
+
+/**
+ * Device test 2026-11-14 (B12): the position the phone allows, as the reminder near the store needs
+ * it (plan §7 #34): geofences need the precise position, and "Allow all the time" so the reminder
+ * comes while Tandem is closed.
+ */
+enum class LocationAccess {
+    /** No position at all. */
+    NONE,
+
+    /** Only "Approximate" (geofences do not work with it). */
+    APPROXIMATE,
+
+    /** Precise, but only while Tandem is in use. */
+    WHILE_IN_USE,
+
+    /** Precise and "Allow all the time": what the reminder needs. */
+    ALWAYS,
+    ;
+
+    companion object {
+        /** From the three location permissions as Android reports them. */
+        fun of(precise: Boolean, approximate: Boolean, background: Boolean): LocationAccess = when {
+            precise && background -> ALWAYS
+            precise -> WHILE_IN_USE
+            approximate -> APPROXIMATE
+            else -> NONE
+        }
+    }
 }
 
 /** Mer → Diagnostik. */
@@ -161,10 +204,17 @@ sealed interface SettingsAction {
 
     /**
      * The permissions screen came (back) to the foreground: read the permissions again (the user
-     * may have changed them in Android's settings). [batteryUnrestricted] and [cameraAllowed] are
-     * read by the screen.
+     * may have changed them in Android's settings). [batteryUnrestricted], [cameraAllowed] and the
+     * rest are read by the screen.
      */
-    data class RefreshPermissions(val batteryUnrestricted: Boolean?, val cameraAllowed: Boolean? = null) : SettingsAction
+    data class RefreshPermissions(
+        val batteryUnrestricted: Boolean?,
+        val cameraAllowed: Boolean? = null,
+        // Device test 2026-11-14 (B12)
+        val microphoneAllowed: Boolean? = null,
+        val calendarAllowed: Boolean? = null,
+        val location: LocationAccess? = null,
+    ) : SettingsAction
 }
 
 /** One-off results the screens show. */

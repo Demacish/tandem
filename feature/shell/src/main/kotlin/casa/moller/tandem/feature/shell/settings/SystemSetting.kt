@@ -73,5 +73,26 @@ internal enum class SystemSetting {
         } else {
             context.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         }
+
+        // Device test 2026-11-14 (B12): the permissions of handsfree, the calendar and the store reminder.
+
+        /** Whether handsfree's voice commands may listen; null on a device without a microphone (no row then). */
+        fun microphoneAllowed(context: Context): Boolean? {
+            val hasMicrophone = context.packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE)
+            return if (hasMicrophone) context.granted(Manifest.permission.RECORD_AUDIO) else null
+        }
+
+        /** Whether "Show in the phone's calendar" may read and write the calendar (both are needed). */
+        fun calendarAllowed(context: Context): Boolean =
+            context.granted(Manifest.permission.READ_CALENDAR) && context.granted(Manifest.permission.WRITE_CALENDAR)
+
+        /** How much of the position the reminder near the store may use. */
+        fun locationAccess(context: Context): LocationAccess = LocationAccess.of(
+            precise = context.granted(Manifest.permission.ACCESS_FINE_LOCATION),
+            approximate = context.granted(Manifest.permission.ACCESS_COARSE_LOCATION),
+            background = context.granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+        )
+
+        private fun Context.granted(permission: String): Boolean = checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 }

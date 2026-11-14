@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -21,6 +22,7 @@ import casa.moller.tandem.core.designsystem.component.InfoCard
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.BatteryAlert
+import casa.moller.tandem.core.designsystem.icon.Mic
 import casa.moller.tandem.core.designsystem.icon.PhotoCamera
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -33,7 +35,9 @@ import casa.moller.tandem.feature.shell.ui.SettingsGroup
  * docs/design/README.md): an OVERVIEW of what Tandem may do, never a forced step. Each row says
  * what the permission is for in plain words (no Android permission names), whether it is allowed,
  * and opens the right Android settings screen. Permissions are still asked in context (the
- * notification dialog at the first timer, plan 8.7).
+ * notification dialog at the first timer, plan 8.7). Since the device test 2026-11-14 (B12) it
+ * also lists the microphone (handsfree), the calendar and the position (the reminder near the
+ * store).
  */
 @Composable
 internal fun PermissionsScreen(
@@ -115,6 +119,7 @@ internal fun PermissionsScreen(
                     onOpen = { onOpenSystemSetting(SystemSetting.APP_DETAILS) },
                 )
             }
+            FeaturePermissionRows(state = state, onOpenSystemSetting = onOpenSystemSetting)
             if (state.showBattery) {
                 GroupDivider()
                 PermissionRow(
@@ -132,6 +137,71 @@ internal fun PermissionsScreen(
 }
 
 /**
+ * Device test 2026-11-14 (B12): the permissions of the 0.7.0/0.8.0 features, each asked in its
+ * feature (never at start) and changed on the app's page in Android's settings ("Permissions").
+ */
+@Composable
+private fun FeaturePermissionRows(state: PermissionsUiState, onOpenSystemSetting: (SystemSetting) -> Unit) {
+    state.microphoneAllowed?.let { allowed ->
+        GroupDivider()
+        PermissionRow(
+            icon = TandemIcons.Mic,
+            title = stringResource(R.string.settings_permission_microphone),
+            body = stringResource(R.string.settings_permission_microphone_body),
+            allowed = allowed,
+            onOpen = { onOpenSystemSetting(SystemSetting.APP_DETAILS) },
+        )
+    }
+    state.calendarAllowed?.let { allowed ->
+        GroupDivider()
+        PermissionRow(
+            icon = TandemIcons.CalendarMonth,
+            title = stringResource(R.string.settings_permission_calendar),
+            body = stringResource(R.string.settings_permission_calendar_body),
+            allowed = allowed,
+            onOpen = { onOpenSystemSetting(SystemSetting.APP_DETAILS) },
+        )
+    }
+    state.location?.let { access ->
+        GroupDivider()
+        val title = stringResource(R.string.settings_permission_location)
+        val body = stringResource(R.string.settings_permission_location_body)
+        if (state.storeReminderUnavailable) {
+            // Without Play services there are no geofences: nothing to allow, said instead of a state.
+            PermissionRow(
+                icon = TandemIcons.ShoppingCart,
+                title = title,
+                body = body,
+                allowed = null,
+                note = stringResource(R.string.settings_permission_location_no_play_services),
+                onOpen = null,
+                modifier = Modifier.testTag(PERMISSIONS_LOCATION_TAG),
+            )
+        } else {
+            PermissionRow(
+                icon = TandemIcons.ShoppingCart,
+                title = title,
+                body = body,
+                allowed = access == LocationAccess.ALWAYS,
+                allowedText = stringResource(R.string.settings_permission_location_always),
+                notAllowedText = stringResource(
+                    when (access) {
+                        LocationAccess.APPROXIMATE -> R.string.settings_permission_location_approximate
+                        LocationAccess.WHILE_IN_USE -> R.string.settings_permission_location_while_in_use
+                        else -> R.string.settings_permission_not_allowed
+                    },
+                ),
+                onOpen = { onOpenSystemSetting(SystemSetting.APP_DETAILS) },
+                modifier = Modifier.testTag(PERMISSIONS_LOCATION_TAG),
+            )
+        }
+    }
+}
+
+/** Test tag of the position's row, the last of the feature rows (screenshots scroll to it). */
+internal const val PERMISSIONS_LOCATION_TAG = "permissions:location"
+
+/**
  * One permission: what it is for, a state chip (text, icon and colour), and "Open settings" as
  * the row's one action. TalkBack reads the text and the state as one item, then the button.
  */
@@ -142,13 +212,14 @@ private fun PermissionRow(
     body: String,
     allowed: Boolean?,
     onOpen: (() -> Unit)?,
+    modifier: Modifier = Modifier,
     note: String? = null,
     allowedText: String = stringResource(R.string.settings_permission_allowed),
     notAllowedText: String = stringResource(R.string.settings_permission_not_allowed),
 ) {
     val spacing = TandemTheme.spacing
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(spacing.lg),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),

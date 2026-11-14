@@ -134,6 +134,9 @@ internal object RouteSettingsPages : SettingsPages {
                 SettingsAction.RefreshPermissions(
                     batteryUnrestricted = SystemSetting.batteryUnrestricted(context),
                     cameraAllowed = SystemSetting.cameraAllowed(context),
+                    microphoneAllowed = SystemSetting.microphoneAllowed(context),
+                    calendarAllowed = SystemSetting.calendarAllowed(context),
+                    location = SystemSetting.locationAccess(context),
                 ),
             )
             onPauseOrDispose { }

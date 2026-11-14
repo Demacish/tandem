@@ -11,11 +11,13 @@ import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.data.settings.SettingsRepository
+import casa.moller.tandem.core.data.shopping.StoreReminderRepository
 import casa.moller.tandem.core.data.sync.OfflineStorageRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.AppSettings
+import casa.moller.tandem.core.model.shopping.StoreReminderAvailability
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.feature.shell.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +58,8 @@ class SettingsViewModel internal constructor(
     preferences: PreferencesRepository,
     // Review of Fas 4: a guest gets no expiry notification, so no switch for it.
     spacePermissions: SpacePermissionsRepository,
+    // Device test 2026-11-14 (B12): without Play services the position row says why it is not used.
+    storeReminders: StoreReminderRepository,
 ) : ViewModel() {
 
     @Inject
@@ -70,6 +74,7 @@ class SettingsViewModel internal constructor(
         buildInfo: AppBuildInfo,
         preferences: PreferencesRepository,
         spacePermissions: SpacePermissionsRepository,
+        storeReminders: StoreReminderRepository,
     ) : this(
         settingsRepository,
         appearanceRepository,
@@ -82,6 +87,7 @@ class SettingsViewModel internal constructor(
         manufacturer = Build.MANUFACTURER.orEmpty(),
         preferences = preferences,
         spacePermissions = spacePermissions,
+        storeReminders = storeReminders,
     )
 
     private val effects = Channel<SettingsEffect>(Channel.BUFFERED)
@@ -93,8 +99,10 @@ class SettingsViewModel internal constructor(
     private val isDemo = sessionRepository.session.map { it is Session.Demo }.distinctUntilChanged()
     private val clearingImageCache = MutableStateFlow(false)
     private val exporting = MutableStateFlow(false)
-    private val batteryUnrestricted = MutableStateFlow<Boolean?>(null)
-    private val cameraAllowed = MutableStateFlow<Boolean?>(null)
+    private val readPermissions = MutableStateFlow(SettingsAction.RefreshPermissions(batteryUnrestricted = null))
+    private val storeReminderUnavailable = storeReminders.state
+        .map { it.availability == StoreReminderAvailability.NO_PLAY_SERVICES }
+        .distinctUntilChanged()
     private val showBattery = BatteryAdvice.appliesTo(manufacturer)
     private val showFullScreen = buildInfo.distribution == SIDELOAD
 
@@ -148,15 +156,19 @@ class SettingsViewModel internal constructor(
 
     val permissions: StateFlow<PermissionsUiState> = combine(
         timers.capabilities,
-        batteryUnrestricted,
-        cameraAllowed,
-    ) { capabilities, battery, camera ->
+        readPermissions,
+        storeReminderUnavailable,
+    ) { capabilities, read, noPlayServices ->
         PermissionsUiState(
             capabilities = capabilities,
-            batteryUnrestricted = battery,
+            batteryUnrestricted = read.batteryUnrestricted,
             showBattery = showBattery,
             showFullScreen = showFullScreen,
-            cameraAllowed = camera,
+            cameraAllowed = read.cameraAllowed,
+            microphoneAllowed = read.microphoneAllowed,
+            calendarAllowed = read.calendarAllowed,
+            location = read.location,
+            storeReminderUnavailable = noPlayServices,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, PermissionsUiState(showBattery = showBattery, showFullScreen = showFullScreen))
 
@@ -217,8 +229,7 @@ class SettingsViewModel internal constructor(
             SettingsAction.ExportLog -> exportLog()
 
             is SettingsAction.RefreshPermissions -> {
-                batteryUnrestricted.value = action.batteryUnrestricted
-                cameraAllowed.value = action.cameraAllowed
+                readPermissions.value = action
                 timers.refreshCapabilities()
             }
         }

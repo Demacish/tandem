@@ -88,6 +88,10 @@ internal val SAMPLE_PERMISSIONS = PermissionsUiState(
     showFullScreen = true,
     // Fas S review (fix-ui): the scanners' camera, not allowed yet (asked at the first scan).
     cameraAllowed = false,
+    // Device test 2026-11-14 (B12): voice commands allowed, the calendar not yet, the position only while in use.
+    microphoneAllowed = true,
+    calendarAllowed = false,
+    location = LocationAccess.WHILE_IN_USE,
 )
 
 internal val SAMPLE_DIAGNOSTICS = DiagnosticsUiState(
