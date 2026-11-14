@@ -1134,6 +1134,7 @@ sätts av integrationen. En rad per bana.
 | data | Enhetstestet 2026-11-14: B7 "Handla för veckan" dubblerar kvällens måltid från Idag, B8 tomt "Kan laga nu" vid första demostarten (plan §8.2, §8.3, §8.8) | **B7:** "Lägg på inköpslistan" på Idags "Ikväll" skickar måltidens id, så listreceptet får `mealplan` (Tandoor 2.6.13 och 2.7.1 sparar det, `ShoppingWritesContractTest.aListRecipeCreatedForAMealBelongsToTheMeal`), offline genom utkorgen och i demoläget; "Handla för veckan" visar då måltiden som "redan på listan" och lägger aldrig till den igen; ett listrecept av **samma recept utan måltid** med varor kvar att köpa (från receptet, kokläget, Idag före 0.8.0) täcker en måltid av receptet, den tidigaste (core:domain `MealsOnShoppingList`, enhetstest); arket på Idag räknar den måltidens rader. Sync-test mot falska 2.6.13 och 2.7.1 genom utkorgen, ViewModel- och Compose-test. **B8:** demoläget räknar "Kan laga nu" ur demodatabasen (alla lagrade recept, livsmedlen, skafferiet) varje gång den ändras, så en demostart på tom databas visar grupperna och "Går ut snart" utan omstart (sync-test som börjar bevaka före exempeldatan); ett riktigt kontos första synk läser grupperna före skafferiet: den första skafferiläsningen med varor efter en läsning utan skafferi frågar om "Använd upp" direkt i stället för efter minuten (sync-test, klockan står still). Room-schemat oförändrat (6). | ✅ klart i CI 2026-11-14 (PR 43626779258 och röktest 43626779201 på baac048: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; inga referensbilder ändrade, Contract berörs inte: kopplingen fanns redan i `ShoppingWritesContractTest`); demons första start och "Handla för veckan" på en riktig telefon återstår för ägaren, se "Enhetstestet 2026-11-14: inköpslistan och Kan laga nu" |
 | larm | Enhetstestet 2026-11-14 (Galaxy S21 FE): B5 larmkanalen under "hög", B9 larmet bara fyra sekunder med olåst telefon, B14 ljust navigeringsfält under larmskärmen, T2 Live Update på Samsung | **B5:** en larmkanal under nivån "hög" (Tyst → Larm på Samsung ger "standard" med ljud) räknas som fel: kokläget, Mer → Kokläge och timers och Behörigheter varnar ("Visa som popup-fönster"), knappen öppnar kanalens egna inställningar, och matrisen nivå 2/3/4 × ljud/inget ljud × helskärmsbehörighet är enhetstestad (en varning per fel, aldrig dubbelt ljud). **B9:** ett ringande larm ligger aldrig i en grupp med timernotiserna eller ringtjänstens notis (som är tyst på `timer_ongoing`), är kategori alarm, pågående, högsta prioritet och larmar själv, med "+1 min" och "Stopp"; Robolectric-test på den byggda notisen; hjälptexten i Behörigheter förklarar Popup-stil. **B14:** larmskärmen och dess systemfält är mörka i appens ljusa och mörka tema; tema- och fönstertest plus referensbilder. **T2:** BYGGE säger att Samsung inte visar någon Live Update och att processdöden är verifierad. Referensbilder och ATF för de nya varningarna (telefon, liggande, surfplatta i båda orienteringarna, mörkt, teckenstorlek 2, svenska); röktestet körs | ✅ klart i CI 2026-11-14 (PR 43632641496, röktest 43632640740 på 7ea5590: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)" efter en omkörning av shard 2, vars första försök föll på receptredigerarens underrecept i Phase3SmokeTest, utanför banan; Contract 43632641439; referensbilder från Screenshots 43622914462 och 43629944084, bara `timer/*devicetest_alarm_screen_*`, `cook/*devicetest_alarm_no_pop_up_*`, `cook/phone_alarm_channel_off_light_sv`, `shell/settings_*permissions*` och `shell/settings_*devicetest_*no_pop_up*`); på en riktig telefon återstår ägarens prov, se "Enhetstestet 2026-11-14: larmen" |
 | mer | Enhetstestet 2026-11-14: B12 Behörigheter utan mikrofon, kalender och plats, B13 "Stäng kalkylarket", T1 röktestet på en svensk Samsung (plan §8.7, §6.6, §6.7) | **B12:** Mer → Behörigheter har raderna Mikrofon (handsfree), Kalender (matsedeln i telefonens kalender) och Plats (påminnelsen nära butiken, med nivån exakt + "Tillåt alltid" som påminnelsen behöver: "Tillåtet alltid", "Bara när appen används", "Bara ungefärlig", "Inte tillåtet"), var och en med läge, varför och en knapp till appens sida i Androids inställningar, lästa igen när sidan kommer tillbaka; utan Play-tjänster säger platsraden varför i stället; "Ingen position" är ersatt. Inget frågas på sidan. Compose-, ViewModel- och enhetstester, referensbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. **B13:** TalkBack säger "Stäng arket" om skrimmet bakom bottenark och "Meddelande" om snackbaren (appens values-sv ersätter Compose UI:s `close_sheet` och Material 3:s `m3c_snackbar_pane_title`), övriga svenska ark-, meny- och dialogsträngar granskade; ett test i `:app` läser den lösta svenska strängen och skrimmet i ett riktigt `ModalBottomSheet`. **T1:** röktestet går på en riktig telefon på svenska utan lokal patch: appens språk sätts till engelska efter `pm clear`, Samsungs batteritips efter första synken trycks bort, köksskärmens test rullar till kvällens middag, systemets väljare känns igen på svenska; emulatorn grön med lika många tester; BYGGE beskriver körningen på en egen telefon | ✅ klart i CI 2026-11-14 (PR 43639727846 och röktest 43639742988 på 84abd1a: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", lika många som förut; referensbilder från Screenshots 43637917638, bara `shell/devicetest_feature_permissions_*` nya och `shell/settings_*permissions*` avsiktligt ändrade; Contract berörs inte); på telefonen återstår ägarens prov av sidan, TalkBack-namnen och röktestet, se "Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet" |
+| stortext | Enhetstestet 2026-11-14 omgång 3 (Galaxy S21 FE, största text och skärmzoom, 320 × 693 dp): B22 text som trycks ihop eller kapas utanför kokläget, B18 offline-sökningens antal (plan §6.6) | **Text bryts aldrig mitt i ett ord** (regeln i docs/design/README.md "Textstorlek och radbrytning"): en etikett med något efter får sin bredd först och det andra flyttar till en egen rad (`LabelRow`), listrader med bild ställer texterna under bilden (`MediaRow`), namn på kort får fler rader och karusellkorten blir bredare vid teckenstorlek ≥ 1,5. **B22:** receptvyns "Ingredienser" med "Tryck för att bocka av", portionerna och formen med plus/minus, ingrediensraderna; receptlistan som lista och rutnät; Idags synkrad med "Synka nu", karusellernas rubriker och kort, Går ut snart och måltidsraderna. **B18:** "3 recept" står kvar på en rad med offline-ledtråden under, också på 360 dp i teckenstorlek 1,0. Genomgång av samma mönster i Handla för veckan, Planera måltid, inköpsarket, Synk och lagring, påminnelsetiden, Mer, bannrarna för synk och inloggning och receptredigeraren. I CI: `LabelRowTest` (bredvid i 1,0, under i 2,0), `assertNoWordBreaks` och ATF i `RecipesLargeTextTest` och `TodayLargeTextTest`, skärmbilder 320 × 693 dp i 2,0 (ljust, mörkt, svenska) och 360 × 780 dp i 1,0; skärmbilderna i 412 dp och 1,0 oförändrade. Flikraden och kokläget hör till banan liggande. **BEHÖVER ENHET** (ägaren): samma skärmar på telefonen med största text och skärmzoom | pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -1862,6 +1863,73 @@ räknar på tom databas, seedar sedan) och `aFirstSyncsPantryLiftsTheExpiringRec
 <!-- /Fas 5 data -->
 
 <!-- Fas 5 mer -->
+## Enhetstestet 2026-11-14: största text utanför kokläget (`:core:ui`, `:feature:recipes`, `:feature:home`, bana stortext)
+
+Omgång 3 av enhetstestet körde Galaxy S21 FE med teckenstorlek och skärmzoom på max (skala 2,0,
+320 × 693 dp). Flera rader bröt ord mitt i: receptvyns "Ingredienser" stod en bokstav per rad,
+tolv rader högt, bredvid "Tryck för att bocka av"; "Portioner" och "4 portioner" bröts bredvid plus
+och minus; receptlistans rader kapade namnet ("Banan taco…") och bröt tiden ett ord per rad; Idags
+synkrad bröts bredvid "Synka nu" och karusellkorten kapade namnen (B22). Utan nät trycktes
+sökningens antal "3 recept" ihop till 16 dp bredvid "Offline: söker bland recepten på enheten" (B18,
+också i teckenstorlek 1,0 på 360 dp).
+
+**Orsaken** var samma mönster överallt: en `Row` med `weight(1f)` på etiketten. En `Row` mäter
+barnen utan vikt först, så ledtråden, antalet eller knappen fick sin hela bredd och etiketten det
+som blev över.
+
+**Regeln** står i docs/design/README.md "Textstorlek och radbrytning". Verktygen i
+`core:ui` (`casa.moller.tandem.core.ui.layout`, filen `LabelRow.kt`):
+
+- `LabelRow(label, trailing, modifier, gap, stackedGap, verticalAlignment, stackedAlignment,
+  minLabelShare)`: en `Layout` med två innehåll. Det som står efter mäts i sin naturliga storlek (en
+  rad för en text), etiketten med inneboende mått: raden behålls om etiketten bredvid får hela sin
+  bredd, eller minst `minLabelShare` (0,5) av raden och aldrig mindre än sitt längsta ord. Annars
+  hamnar det andra under etiketten (`stackedAlignment`, start för ledtrådar och antal, slut för
+  knappar och stegare). En tom plats räknas inte. Etiketten kommer först för TalkBack i båda formerna.
+  När raden behålls ritas den som den gamla `Row`en, så skärmbilderna i 412 dp och 1,0 är
+  oförändrade.
+- `MediaRow(leading, content, trailing, modifier, gap, endGap, stackedGap, minContentWidth)`: bild,
+  texter och ikoner; får texterna mindre än `minContentWidth` (120 dp) × teckenstorleken hamnar de
+  under bilden i hela bredden, med bild och ikoner på första raden.
+- `scaledMaxLines(lines)` och `isLargeFontScale()`: från teckenstorlek 1,5 (`LARGE_FONT_SCALE`)
+  får namn dubbelt så många rader, och Idags karusellkort blir 1,5 gånger bredare
+  (`carouselCardGrowth()` i feature:home).
+- `assertNoWordBreaks(vararg texts)` i `core:testing` (accessibility/): varje rad i en text slutar
+  vid ett mellanslag eller efter bindestreck, snedstreck eller tankstreck, och inget kapas med
+  ellips. Texter som är dolda för TalkBack (`clearAndSetSemantics`) syns bara i skärmbilderna.
+
+Kokvyns `FirstThatFits` (feature:cook) väljer bland färdiga varianter av en knapp och flyttades inte:
+ingen annan modul behövde den.
+
+**Rättat (B22, B18):** receptvyns rubriker med ledtråd (`SectionHeading`), `ServingsStepper` och
+formen, `IngredientRow` (mängden under namnet när båda inte ryms; gäller också kokläget, där den
+används), `RecipeListItem` och `RecipeCard`, offline-sökningens statusrad (`StatusLine`, med
+`SearchStatus` utbruten), Idags `SyncStatusCard`, `CarouselHeading` (Ofta lagade m.fl. och Kan laga
+nu), `HomeRecipeCard`, `MealRow` och Går ut snart.
+
+**Genomgången** (samma mönster, teckenstorlek 2,0 på 320 dp, läst i koden: varje `weight(1f)`
+bredvid en text, en textknapp eller ett chip): rättat i Handla (listans rader med mängd, i listan
+och butiksläget, och avdelningsrubriken med "Bocka av alla"), Handla för veckan (dagarna med
+"Ändra dagar", avdelningarnas antal), Planera måltid (valt recept med "Byt"), inköpsarket (raderna
+med mängd, "n rader på listan" med "Ta bort"), Synk och lagring (serverns inställningar med På/Av,
+lagringsraderna), påminnelsetiden, Mer (kontrollfel med "Kontrollera igen"), bannrarna för pausad
+synk och utgången inloggning, och receptredigerarens portioner. Utan ändring: rader där etiketten
+står bredvid bara en ikon, en brytare, en radioknapp eller ikonknappar (Veckans kort, butiksvalet,
+påminnelsen nära butiken, Inställningarnas brytare, historiken), Behörigheter (läget står under
+texten och knappen på egen rad) och Utseendes textstorlek (värdet mellan två knappar). Flikraden,
+navigeringsfältet och kokläget hör till banan liggande; `feature:scan` (streckkodens statuschip)
+ingick inte.
+
+**Tester:** `core:ui` `LabelRowTest` (bredvid i 1,0, under i 2,0, antalet behåller sin bredd,
+`MediaRow` i båda formerna, riktig textmätning med NATIVE-grafik); `feature:recipes`
+`RecipesLargeTextTest` (receptvyns portioner och ingredienser, listan som rader och rutnät,
+offline-sökningen; 320 × 693 dp i 2,0, ljust, mörkt och svenska) och
+`RecipesOfflineSearchSmallPhoneTest` (B18 på 360 × 780 dp i 1,0); `feature:home`
+`TodayLargeTextTest` (synkraden, Kan laga nu och en karusell). Alla med `assertNoWordBreaks` och
+ATF. Skärmbilderna heter `*_devicetest_*`.
+
+**Behöver enhet (ägaren):** samma skärmar på Galaxy S21 FE med största text och skärmzoom.
+
 ## Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet (`:feature:shell`, `:app`, `:smoke`, mer)
 
 **B12 – Mer → Behörigheter.** Tre nya rader efter kameran, i ett eget block

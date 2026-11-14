@@ -50,6 +50,7 @@ import casa.moller.tandem.core.designsystem.icon.Sync
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.domain.shopping.MergedShoppingRow
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.ShoppingFormat
 
@@ -158,39 +159,54 @@ internal fun ShoppingEntryRow(
             horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),
         ) {
             CheckMark(checked = checked, large = large)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = food,
-                    style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
-                    textDecoration = if (checked) TextDecoration.LineThrough else null,
-                    color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                )
-                if (label != null) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            if (row.pending) {
-                Icon(
-                    imageVector = TandemIcons.Sync,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(TandemTheme.sizes.iconSmall),
-                )
-            }
-            if (quantity != null) {
-                Text(
-                    text = quantity,
-                    style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.labelLarge,
-                    color = if (large) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    textDecoration = if (checked) TextDecoration.LineThrough else null,
-                )
-            }
+            // B22 sweep: the amount moves under the food when both do not fit on one line.
+            LabelRow(
+                modifier = Modifier.weight(1f),
+                gap = TandemTheme.spacing.md,
+                stackedGap = 0.dp,
+                label = {
+                    Column {
+                        Text(
+                            text = food,
+                            style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                            textDecoration = if (checked) TextDecoration.LineThrough else null,
+                            color = if (checked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (label != null) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                },
+                trailing = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(TandemTheme.spacing.md),
+                    ) {
+                        if (row.pending) {
+                            Icon(
+                                imageVector = TandemIcons.Sync,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(TandemTheme.sizes.iconSmall),
+                            )
+                        }
+                        if (quantity != null) {
+                            Text(
+                                text = quantity,
+                                style = if (large) MaterialTheme.typography.titleLarge else MaterialTheme.typography.labelLarge,
+                                color = if (large) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                textDecoration = if (checked) TextDecoration.LineThrough else null,
+                            )
+                        }
+                    }
+                },
+            )
         }
     }
 }

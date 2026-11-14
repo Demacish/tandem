@@ -115,6 +115,16 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   bara av påminnelsen nära butiken när du slår på den, och Tandem skickar den aldrig någonstans.
 - Skärmläsaren säger "Stäng arket" om ytan bakom ett ark (förut "Stäng kalkylarket") och
   "Meddelande" när ett kort besked visas längst ned (förut "Varning").
+- Med största text och skärmzoom bryts inga ord längre mitt i: i receptet hamnar "Tryck för att
+  bocka av" under rubriken "Ingredienser" (förut en bokstav per rad), plus och minus under
+  "4 portioner", och en mängd under ingrediensen när båda inte ryms. I receptlistan står namn,
+  nyckelord och tid under bilden, och namnen i rutnätet och på Idag får fler rader i stället för
+  att kapas. På Idag hamnar "Synka nu" och "Alla recept" under texten, och korten i karusellerna
+  blir bredare. Samma regel gäller Handla för veckan, Planera måltid, inköpsarket, Synk och lagring
+  och Mer.
+- Söker du utan nät står antalet träffar ("3 recept") kvar på en rad, och "Offline: söker bland
+  recepten på enheten" hamnar under det i stället för att trycka ihop antalet till en bokstav per
+  rad.
 
 **Kvar till senare**
 

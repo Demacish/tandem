@@ -404,21 +404,35 @@ private fun IngredientChoice(row: RecipeShoppingRow, onToggle: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {
         Checkbox(checked = row.chosen, onCheckedChange = null)
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
-            Text(text = row.food, style = MaterialTheme.typography.bodyLarge)
-            if (row.note.isNotBlank()) {
-                Text(text = row.note, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            if (row.onHand) StatusChip(label = stringResource(R.string.recipe_shopping_on_hand))
-        }
-        if (row.amount.isNotEmpty()) {
-            Text(
-                text = row.amount,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.End,
-            )
-        }
+        // B22 sweep: the amount moves under the food when both do not fit on one line.
+        LabelRow(
+            modifier = Modifier.weight(1f),
+            gap = spacing.sm,
+            stackedGap = 0.dp,
+            label = {
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+                    Text(text = row.food, style = MaterialTheme.typography.bodyLarge)
+                    if (row.note.isNotBlank()) {
+                        Text(
+                            text = row.note,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (row.onHand) StatusChip(label = stringResource(R.string.recipe_shopping_on_hand))
+                }
+            },
+            trailing = {
+                if (row.amount.isNotEmpty()) {
+                    Text(
+                        text = row.amount,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.End,
+                    )
+                }
+            },
+        )
     }
 }
 

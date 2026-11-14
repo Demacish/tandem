@@ -23,10 +23,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.dp
 import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.icon.ExpandMore
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.feature.shopping.R
 import casa.moller.tandem.feature.shopping.ShoppingSection
 
@@ -65,27 +67,38 @@ internal fun AisleCard(
                 .padding(start = TandemTheme.spacing.lg, end = TandemTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Text(
-                    text = pluralStringResource(R.plurals.shopping_section_count, section.rows.size, section.rows.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            if (onCheckAll != null) {
-                val description = stringResource(R.string.shopping_check_all_description, title)
-                TandemTextButton(
-                    text = stringResource(R.string.shopping_check_all),
-                    onClick = onCheckAll,
-                    modifier = Modifier.semantics { contentDescription = description },
-                )
-            }
+            // B22 sweep: "Check all" moves under the aisle when both do not fit on one line.
+            LabelRow(
+                modifier = Modifier.weight(1f),
+                gap = 0.dp,
+                stackedGap = 0.dp,
+                stackedAlignment = Alignment.End,
+                label = {
+                    Column {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.semantics { heading() },
+                        )
+                        Text(
+                            text = pluralStringResource(R.plurals.shopping_section_count, section.rows.size, section.rows.size),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                },
+                trailing = {
+                    if (onCheckAll != null) {
+                        val description = stringResource(R.string.shopping_check_all_description, title)
+                        TandemTextButton(
+                            text = stringResource(R.string.shopping_check_all),
+                            onClick = onCheckAll,
+                            modifier = Modifier.semantics { contentDescription = description },
+                        )
+                    }
+                },
+            )
         }
         rows()
     }
