@@ -57,9 +57,10 @@
             android:name="casa.moller.tandem.core.sync.storereminder.StoreGeofenceReceiver"
             android:exported="false" />
         <!--
-            Fas 5 (butik lane): puts the geofences back after a reboot, an app update and the
-            location being turned on. Disabled until the reminder near a store is on
-            (ComponentSystemEventSwitch); every action is a protected system broadcast.
+            Fas 5 (butik lane): puts the geofences back after a reboot and an app update. Disabled
+            until the reminder near a store is on (ComponentSystemEventSwitch); every action is a
+            protected system broadcast. The location being turned back on is followed at runtime
+            (StoreReminderSchedule, 0.8.0 review): Android does not deliver it to a manifest receiver.
         -->
         <receiver
             android:name="casa.moller.tandem.core.sync.storereminder.StoreReminderSystemReceiver"
@@ -68,8 +69,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.location.PROVIDERS_CHANGED" />
-                <action android:name="android.location.MODE_CHANGED" />
             </intent-filter>
         </receiver>
     </application>

@@ -4,6 +4,7 @@ import casa.moller.tandem.core.data.shopping.StoreReminderRepository
 import casa.moller.tandem.core.sync.platform.AndroidStoreReminderNotifier
 import casa.moller.tandem.core.sync.platform.StoreReminderNotifier
 import casa.moller.tandem.core.sync.storereminder.AndroidDeviceRegistrationKey
+import casa.moller.tandem.core.sync.storereminder.AndroidLocationSettingWatcher
 import casa.moller.tandem.core.sync.storereminder.AndroidStoreReminderPermissions
 import casa.moller.tandem.core.sync.storereminder.ComponentSystemEventSwitch
 import casa.moller.tandem.core.sync.storereminder.CurrentLocationGateway
@@ -11,6 +12,7 @@ import casa.moller.tandem.core.sync.storereminder.DefaultStoreReminderRepository
 import casa.moller.tandem.core.sync.storereminder.DeviceRegistrationKey
 import casa.moller.tandem.core.sync.storereminder.GeofenceGateway
 import casa.moller.tandem.core.sync.storereminder.GooglePlayServicesCheck
+import casa.moller.tandem.core.sync.storereminder.LocationSettingWatcher
 import casa.moller.tandem.core.sync.storereminder.PlayCurrentLocationGateway
 import casa.moller.tandem.core.sync.storereminder.PlayGeofenceGateway
 import casa.moller.tandem.core.sync.storereminder.PlayServicesCheck
@@ -47,6 +49,10 @@ internal abstract class StoreReminderModule {
 
     @Binds
     abstract fun bindSystemEventSwitch(impl: ComponentSystemEventSwitch): SystemEventSwitch
+
+    // 0.8.0 review (fix-08): the location setting while a store is watched (runtime receiver).
+    @Binds
+    abstract fun bindLocationSettingWatcher(impl: AndroidLocationSettingWatcher): LocationSettingWatcher
 
     @Binds
     abstract fun bindStoreReminderNotifier(impl: AndroidStoreReminderNotifier): StoreReminderNotifier

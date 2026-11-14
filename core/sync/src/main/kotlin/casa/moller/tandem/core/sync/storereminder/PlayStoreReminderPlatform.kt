@@ -3,15 +3,20 @@ package casa.moller.tandem.core.sync.storereminder
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.location.LocationManagerCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import casa.moller.tandem.core.domain.storereminder.StoreFence
 import casa.moller.tandem.core.domain.storereminder.StoreFences
 import casa.moller.tandem.core.domain.storereminder.StoreTransition
@@ -36,6 +41,10 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -209,6 +218,47 @@ internal class AndroidDeviceRegistrationKey @Inject constructor(@ApplicationCont
     } catch (e: PackageManager.NameNotFoundException) {
         -1L
     }
+}
+
+/**
+ * [LocationSettingWatcher] with a receiver for [LocationManager.MODE_CHANGED_ACTION] registered while
+ * collected (a protected system broadcast, so a receiver that is not exported gets it) and the
+ * process lifecycle's ON_START (0.8.0 review, fix-08). While the app is cached Android may hold the
+ * broadcast back; it is delivered when the process runs again, and the foreground check covers the rest.
+ */
+internal class AndroidLocationSettingWatcher @Inject constructor(@ApplicationContext private val context: Context) :
+    LocationSettingWatcher {
+    override fun locationOn(): Flow<Boolean> = callbackFlow {
+        val manager = context.getSystemService(LocationManager::class.java)
+        val read = { trySend(manager?.let(LocationManagerCompat::isLocationEnabled) ?: false) }
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == LocationManager.MODE_CHANGED_ACTION) read()
+            }
+        }
+        val foreground = object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                read()
+            }
+        }
+        val main = ContextCompat.getMainExecutor(context)
+        read()
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(LocationManager.MODE_CHANGED_ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        main.execute { ProcessLifecycleOwner.get().lifecycle.addObserver(foreground) }
+        awaitClose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (e: IllegalArgumentException) {
+                // Not registered (never expected): nothing to undo.
+            }
+            main.execute { ProcessLifecycleOwner.get().lifecycle.removeObserver(foreground) }
+        }
+    }.conflate()
 }
 
 /** [SystemEventSwitch] on [StoreReminderSystemReceiver]'s component state (off in the manifest). */

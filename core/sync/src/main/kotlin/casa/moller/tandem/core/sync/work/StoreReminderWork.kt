@@ -26,7 +26,8 @@ import javax.inject.Singleton
 /**
  * One geofence event ([StoreReminderWork.MODE_TRANSITION]: input [StoreReminderWork.KEY_STORES],
  * [StoreReminderWork.KEY_TRANSITION], [StoreReminderWork.KEY_AT]) or "put the geofences back"
- * ([StoreReminderWork.MODE_REGISTER], after a reboot, an app update or the location being turned on).
+ * ([StoreReminderWork.MODE_REGISTER], after a reboot or an app update; the location being turned
+ * back on is handled by `StoreReminderSchedule` at runtime, 0.8.0 review).
  * The class name is stored by WorkManager (kept by consumer-rules.pro).
  */
 @HiltWorker

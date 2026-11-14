@@ -3,7 +3,6 @@ package casa.moller.tandem.core.sync.storereminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.location.LocationManager
 import androidx.annotation.VisibleForTesting
 import casa.moller.tandem.core.sync.work.StoreReminderWork
 import casa.moller.tandem.core.sync.work.WorkManagerStoreReminderWork
@@ -36,10 +35,14 @@ class StoreGeofenceReceiver : BroadcastReceiver() {
 }
 
 /**
- * Fas 5 (butik lane): puts the geofences back after a reboot, an app update and the location
- * being turned back on (Play services drops them in all three cases). Off in the manifest and
- * switched on only while a geofence is wanted (`SystemEventSwitch`), so it never runs for someone
- * who does not use the reminder. Every action is a system broadcast; anything else is ignored.
+ * Fas 5 (butik lane): puts the geofences back after a reboot and an app update (Play services drops
+ * them in both cases). Off in the manifest and switched on only while a geofence is wanted
+ * (`SystemEventSwitch`), so it never runs for someone who does not use the reminder. Every action is
+ * a system broadcast; anything else is ignored.
+ *
+ * The location being turned back on is NOT here (0.8.0 review, fix-08): `MODE_CHANGED` and
+ * `PROVIDERS_CHANGED` are implicit broadcasts that Android never delivers to a manifest receiver of
+ * an app targeting API 26+; `StoreReminderSchedule` follows them with a runtime receiver instead.
  */
 class StoreReminderSystemReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -48,11 +51,6 @@ class StoreReminderSystemReceiver : BroadcastReceiver() {
     }
 
     internal companion object {
-        val ACTIONS: Set<String> = setOf(
-            Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED,
-            LocationManager.PROVIDERS_CHANGED_ACTION,
-            LocationManager.MODE_CHANGED_ACTION,
-        )
+        val ACTIONS: Set<String> = setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)
     }
 }

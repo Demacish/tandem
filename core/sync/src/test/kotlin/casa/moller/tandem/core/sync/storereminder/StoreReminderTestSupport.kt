@@ -16,7 +16,9 @@ import casa.moller.tandem.core.sync.platform.StoreReminderNotifier
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import okhttp3.OkHttpClient
@@ -145,4 +147,34 @@ internal class RecordingStoreNotifier : StoreReminderNotifier {
     override fun canPost(): Boolean = allowed
 
     override fun post(storeId: Long, storeName: String?, count: Int): Boolean = allowed && posted.add(Triple(storeId, storeName, count))
+}
+
+/**
+ * The location setting (0.8.0 review, fix-08): [on] is what the phone says now; [toggle] is the
+ * runtime receiver's broadcast, [foreground] the app coming back. Collected only while watched.
+ */
+internal class FakeLocationSetting(on: Boolean = true) : LocationSettingWatcher {
+    private val events = MutableSharedFlow<Boolean>(replay = 0, extraBufferCapacity = 16)
+
+    @Volatile
+    var on: Boolean = on
+        private set
+
+    /** How many collectors follow the setting now (0 while nothing is watched). */
+    val watchers: Int
+        get() = events.subscriptionCount.value
+
+    override fun locationOn(): Flow<Boolean> = flow {
+        emit(on)
+        events.collect { emit(it) }
+    }
+
+    fun toggle(on: Boolean) {
+        this.on = on
+        events.tryEmit(on)
+    }
+
+    fun foreground() {
+        events.tryEmit(on)
+    }
 }

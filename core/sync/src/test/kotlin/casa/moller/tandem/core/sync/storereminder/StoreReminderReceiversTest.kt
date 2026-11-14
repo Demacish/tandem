@@ -120,11 +120,15 @@ class StoreReminderReceiversTest {
     @Test
     fun theSystemEventsRegisterAgainAndNothingElseDoes() {
         val receiver = StoreReminderSystemReceiver()
-        for (action in listOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED, LocationManager.PROVIDERS_CHANGED_ACTION)) {
+        for (action in listOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)) {
             receiver.onReceive(context, Intent(action))
         }
         receiver.onReceive(context, Intent("casa.example.SOMETHING_ELSE"))
-        assertEquals(listOf("register", "register", "register"), work.calls)
+        // 0.8.0 review (fix-08): the location broadcasts never reach a manifest receiver; the
+        // schedule follows them at runtime, so this receiver does not claim them.
+        receiver.onReceive(context, Intent(LocationManager.MODE_CHANGED_ACTION))
+        receiver.onReceive(context, Intent(LocationManager.PROVIDERS_CHANGED_ACTION))
+        assertEquals(listOf("register", "register"), work.calls)
     }
 
     @Test

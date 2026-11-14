@@ -4,6 +4,7 @@ import casa.moller.tandem.core.domain.storereminder.StoreFence
 import casa.moller.tandem.core.domain.storereminder.StoreTransition
 import casa.moller.tandem.core.model.shopping.GeoPoint
 import casa.moller.tandem.core.model.shopping.StoreReminderPermissions
+import kotlinx.coroutines.flow.Flow
 
 // Fas 5 (butik lane, plan §7 #34): what the reminder near the store needs from the phone, behind
 // small interfaces so the logic is tested without Play services (PlayStoreReminderPlatform.kt has
@@ -61,9 +62,22 @@ internal interface DeviceRegistrationKey {
     fun versionCode(): Long
 }
 
-/** Turns the receiver for reboot, app update and location toggles on only while a geofence is wanted. */
+/** Turns the receiver for reboot and app update on only while a geofence is wanted. */
 internal interface SystemEventSwitch {
     fun setEnabled(enabled: Boolean)
+}
+
+/**
+ * The phone's location setting, followed only while the reminder watches a store (0.8.0 review,
+ * fix-08): Android delivers the location broadcasts (`MODE_CHANGED`, `PROVIDERS_CHANGED`) only to a
+ * receiver registered at runtime, never to one in the manifest of an app that targets API 26+.
+ */
+internal interface LocationSettingWatcher {
+    /**
+     * Whether the location is on: at once, then after every change of the setting (a runtime
+     * receiver while collected) and every time the app comes to the foreground.
+     */
+    fun locationOn(): Flow<Boolean>
 }
 
 /** A geofence broadcast as the receiver reads it. */

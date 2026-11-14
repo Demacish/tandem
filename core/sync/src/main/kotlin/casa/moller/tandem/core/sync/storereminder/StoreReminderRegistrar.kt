@@ -25,14 +25,15 @@ import kotlinx.coroutines.sync.withLock
  * - **Wanted:** a logged-in account (never demo mode, never nobody) with the reminder on and its
  *   enabled stores that have a place (core:domain `StoreFences.wanted`).
  * - **Nothing wanted:** every geofence is removed (turning the feature off, logging out, demo mode,
- *   another account without the reminder), and the receiver for reboot, update and location
- *   toggles is switched off, so a phone that never uses the reminder does no work at all.
+ *   another account without the reminder), and the receiver for reboot and update is switched
+ *   off, so a phone that never uses the reminder does no work at all.
  * - **Unchanged:** a set already registered for the same account, boot and app version is not
  *   registered again ([StoreFenceRegistration]); a reboot, an app update, a lost set (Play services
  *   said the location went off) or [sync] with `force` registers it again.
  * - **Problems** (location off, a permission taken back, Play services refusing) are stored on the
- *   account's record for the page and tried again at the next start, the next change or the next
- *   system event.
+ *   account's record for the page and tried again at the next start, the next change, the next
+ *   system event, the location being turned on or the app's next return to the foreground
+ *   (`StoreReminderSchedule`, 0.8.0 review).
  */
 @Singleton
 internal class StoreReminderRegistrar @Inject constructor(

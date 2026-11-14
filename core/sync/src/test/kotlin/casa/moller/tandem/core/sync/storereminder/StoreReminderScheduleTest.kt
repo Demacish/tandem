@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.StoreReminderRecord
 import casa.moller.tandem.core.datastore.StoreVisitRecord
+import casa.moller.tandem.core.model.shopping.StoreReminderProblem
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.storereminder.StoreReminderSamples.ACCOUNT
 import casa.moller.tandem.core.sync.storereminder.StoreReminderSamples.OTHER_ACCOUNT
@@ -44,7 +45,8 @@ class StoreReminderScheduleTest {
             FakeDeviceKey(),
             FakeSystemEventSwitch(),
         )
-    private val schedule = StoreReminderSchedule(sources, store, registrar, accounts, StorageHealthMonitor(), scope)
+    private val location = FakeLocationSetting()
+    private val schedule = StoreReminderSchedule(sources, store, registrar, accounts, StorageHealthMonitor(), scope, location)
 
     @After
     fun tearDown() {
@@ -100,5 +102,69 @@ class StoreReminderScheduleTest {
         accounts.clearAll()
         sources.source.value = ActiveSource.None
         eventually("nothing left") { store.records.value.isEmpty() && gateway.registered.isEmpty() }
+    }
+
+    // --- 0.8.0 review (fix-08): the location turned off and on while the process lives ---
+
+    @Test
+    fun turningTheLocationBackOnRegistersTheGeofencesAgain() = runBlocking {
+        schedule.start()
+        store.update(ACCOUNT) { StoreReminderRecord(enabled = true, spots = listOf(StoreReminderSamples.spot)) }
+        eventually("registered") { gateway.calls.count { it.startsWith("replace") } == 1 }
+        eventually("the setting is followed while a store is watched") { location.watchers == 1 }
+
+        // Location off: Play services drops the set and says so (StoreReminderJob MODE_LOST).
+        location.toggle(false)
+        registrar.onGeofencesLost()
+        gateway.registered = emptyList()
+        assertEquals(StoreReminderProblem.LOCATION_OFF.name, store.record().problem)
+        delay(200)
+        assertEquals("nothing is sent while the location is off", 1, gateway.calls.count { it.startsWith("replace") })
+
+        // On again, the app process still alive and nothing else changed: registered again.
+        location.toggle(true)
+        eventually("registered again") { gateway.registered.map { it.storeId } == listOf(STORE) }
+        eventually("the problem is gone") { store.record().problem == null }
+        assertEquals(ACCOUNT, store.registration.value?.accountId)
+    }
+
+    @Test
+    fun theLocationOnBeforeTheLostEventIsHandledStillRegistersAgain() = runBlocking {
+        schedule.start()
+        store.update(ACCOUNT) { StoreReminderRecord(enabled = true, spots = listOf(StoreReminderSamples.spot)) }
+        eventually("registered") { gateway.calls.count { it.startsWith("replace") } == 1 }
+        eventually("followed") { location.watchers == 1 }
+        // Off and on so fast that the registration still looks current: the turn-on forces it.
+        location.toggle(false)
+        location.toggle(true)
+        eventually("registered again (forced)") { gateway.calls.count { it.startsWith("replace") } == 2 }
+    }
+
+    @Test
+    fun aLostSetIsRegisteredAgainWhenTheAppComesBack() = runBlocking {
+        schedule.start()
+        store.update(ACCOUNT) { StoreReminderRecord(enabled = true, spots = listOf(StoreReminderSamples.spot)) }
+        eventually("registered") { gateway.calls.count { it.startsWith("replace") } == 1 }
+        eventually("followed") { location.watchers == 1 }
+        // The broadcast was missed (the app was cached), only the lost event came.
+        registrar.onGeofencesLost()
+        location.foreground()
+        eventually("registered again at the foreground check") { gateway.calls.count { it.startsWith("replace") } == 2 }
+        // An unchanged set is not registered again at the next foreground.
+        location.foreground()
+        delay(200)
+        assertEquals(2, gateway.calls.count { it.startsWith("replace") })
+    }
+
+    @Test
+    fun theSettingIsNotFollowedWithoutAWatchedStore() = runBlocking {
+        schedule.start()
+        store.update(ACCOUNT) { StoreReminderRecord(enabled = false, spots = listOf(StoreReminderSamples.spot)) }
+        delay(200)
+        assertEquals(0, location.watchers)
+        store.update(ACCOUNT) { it.copy(enabled = true) }
+        eventually("followed once on") { location.watchers == 1 }
+        store.update(ACCOUNT) { it.copy(enabled = false) }
+        eventually("and no longer when off") { location.watchers == 0 }
     }
 }
