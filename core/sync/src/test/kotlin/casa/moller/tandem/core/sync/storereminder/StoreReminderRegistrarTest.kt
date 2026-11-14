@@ -80,6 +80,26 @@ class StoreReminderRegistrarTest {
         assertNull(store.record().problem)
     }
 
+    /** 0.8.0 review (fix-08): the lost event can come after the location is back on. */
+    @Test
+    fun aLostSetWithTheLocationAlreadyBackOnIsRegisteredAgainAtOnce() = runBlocking {
+        want()
+        sync()
+        // Still off when the event is handled: nothing to do but wait.
+        permissions.permissions = FakePermissionReader.ALL.copy(locationOn = false)
+        registrar.onGeofencesLost()
+        assertNull(registrar.registerIfLocationOn())
+        assertEquals(1, gateway.calls.count { it.startsWith("replace") })
+        assertEquals(StoreReminderProblem.LOCATION_OFF.name, store.record().problem)
+        // Back on before the (late) event: registered again at once.
+        permissions.permissions = FakePermissionReader.ALL
+        registrar.onGeofencesLost()
+        assertNull(registrar.registerIfLocationOn())
+        assertEquals(2, gateway.calls.count { it.startsWith("replace") })
+        assertEquals(ACCOUNT, store.registration.value?.accountId)
+        assertNull(store.record().problem)
+    }
+
     @Test
     fun turningItOffRemovesEveryGeofenceAndTheSystemReceiver() {
         want()

@@ -55,6 +55,8 @@ internal class StoreReminderJob @Inject constructor(private val check: StoreRemi
 
             StoreReminderWork.MODE_LOST -> {
                 registrar.onGeofencesLost()
+                // A late event, the location already back on: registered again at once (fix-08).
+                registrar.registerIfLocationOn()
                 return emptyMap()
             }
         }

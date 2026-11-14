@@ -98,6 +98,13 @@ internal class StoreReminderRegistrar @Inject constructor(
         store.update(accountId) { record -> if (record.enabled) record.copy(problem = StoreReminderProblem.LOCATION_OFF.name) else record }
     }
 
+    /**
+     * After a lost set (0.8.0 review, fix-08): Play services' event can come after the location is
+     * already back on (the work is queued; the turn-on was handled first), so with the location on
+     * the set is registered again at once instead of waiting for the next foreground.
+     */
+    suspend fun registerIfLocationOn(): StoreReminderProblem? = if (permissions.read().locationOn) sync(force = true) else null
+
     private suspend fun recordProblem(
         accountId: String,
         record: StoreReminderRecord?,
