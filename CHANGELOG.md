@@ -78,6 +78,18 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   telefon.
 - Knapparna längst ned i kokläget bryter aldrig ett ord ("Före gåe…"): finns det inte plats för
   texten visas bara pilen, och skärmläsaren säger fortfarande "Föregående".
+- Röststyrning på engelska avvisades av telefonen eftersom språket saknade land. Nu får språket
+  alltid ett land, telefonens eget när språket talas där (annars till exempel amerikansk engelska).
+- När telefonen kan hämta språket för röststyrningen står det nu "Röststyrning på engelska behöver
+  hämtas" med knappen **Hämta**, och kokläget börjar lyssna själv när språket är hämtat. Kan
+  telefonen inte språket slutar kokläget försöka direkt, så igenkännaren piper inte om och om igen.
+- Kan telefonen inte känna igen svenska på egen hand säger kokläget det och erbjuder engelska
+  kommandon ("next", "back", "repeat") som telefonen känner igen själv. Den nya inställningen
+  **Använd telefonens taltjänst** (av från början, i kokläget under Handsfree och under Mer →
+  Kokläge och timers) lyssnar i stället på svenska med telefonens vanliga taltjänst, till exempel
+  Googles; utan nedladdat språkpaket kan talet då skickas över internet till den tjänsten.
+- Är medievolymen avstängd när stegen läses upp visar kokläget det med knappen **Höj volymen**,
+  eftersom volymknapparna byter steg när handsfree är på.
 
 **Kvar till senare**
 
