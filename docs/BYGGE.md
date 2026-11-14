@@ -1129,6 +1129,7 @@ sätts av integrationen. En rad per bana.
 | butik | Påminnelse nära butiken (#34, plan §7, §8.2, §8.7), 0.8.0 | **Påminn mig nära butiken** (av som standard; Mer → Inställningar och butiksvalet på Handla): per Tandoor-butik en plats på telefonen ("Jag är i butiken nu – använd min position" en gång, eller en inklistrad geo:-länk, kartlänk eller koordinater), avstånd 100–500 m (200 m), platserna per konto i DataStore, aldrig till servern, i loggar eller diagnostik, borta med kontot. Påslagen: en geofence per påslagen butik i Google Play-tjänster (ENTER/EXIT, två minuters svarstid, ingen förgrundstjänst, ingen ständig plats, ingen avfrågning), inlagda igen efter omstart, appuppdatering och påslagen plats, alla borta när valet slås av, i demoläget och vid utloggning. Behörigheterna frågas i sammanhanget och i ordning: exakt plats, förklaring och sedan "Tillåt alltid", notiser. ENTER ger **en** notis per besök i kanalen "Inköpslistan" (`shopping`) bara när listan har saker kvar: "Du är nära Testbutiken – 7 saker på listan" (plural), tryck öppnar butiksläget för butiken; nästa först efter EXIT och tidigast tre timmar efter förra (ett besök utan EXIT räknas som slut efter tolv timmar). Aldrig i demoläget, gäster får den. Utan Play-tjänster döljs valet med en förklaring. **I CI:** besöksregeln, omregistreringen och notisens innehåll (enhets-, Robolectric- och röktest). **BEHÖVER ENHET** (ägaren): påminnelsen kommer inom 200 m och en gång per besök, batteri under 1 %/dag | ✅ klart i CI 2026-11-14 (PR 43579244824 på 912d393, röktest "OK (46 tests)" 43579392322 på 912d393, jobbet 44 min av 50; Contract 43577387790 på 934a30b; referensbilder från Screenshots 43577392843, bara `shopping/*store_reminder*` och `shopping/*store_choice_reminder*`); enhetsproven återstår, se "Påminnelse nära butiken" |
 | integration-08 | 0.8.0 "På språng": banorna klocka, kalender och butik samlade på main och prövade tillsammans | Alla tre banorna på main; när ett konto loggas ut eller tas bort (också ett sparat konto som inte är aktivt) tas klockans token och kalenderlänkens `mealplan`-token bort i Tandoor med kontots token innan den försvinner, oavsett valet för kontots egen token, och den lokala kalendern slås av när kontot den visar lämnar telefonen; offline och med en trasig eller hängande krok går utloggningen igenom inom 10 s (enhetstester); Mer och Inställningar visar Klockan, Matsedeln i kalendern och Påminnelse nära butiken, gäster och demoläget följer samma regel i alla tre. Röktestet **körs** och ryms med god marginal (två emulatorer, var och en under 40 min). versionCode 10, versionName 0.8.0 (klockan samma ur `app/build.gradle.kts`), CHANGELOG `[0.8.0] – 2026-11-14`, RELEASE.md med klockans APK, torrkörning med båda APK:erna grön | ✅ klart 2026-11-14 (PR 43588166851 och röktest 43588166670 på 70db280: shard 1 "OK (14 tests)" 851 s, shard 2 "OK (32 tests)" 890 s, bygget 10 min, emulatorjobben 18 min av 40, hela körningen 29 min; torrkörning 43587957188 på 1045e57 med `tandem-0.8.0-DRYRUN-throwaway-key.apk` och `tandem-wear-0.8.0-DRYRUN-throwaway-key.apk`; inga referensbilder ändrade), se "Integration av Fas 5 (0.8.0)" |
 | fix-08 | Granskningen av 0.8.0 och resterna från 0.7.0 | **Butik:** plats av och på medan appen lever lägger in geofencerna igen utan processtart (mottagare i körning medan något bevakas, förgrundskoll; manifestet lovar inte längre platssändningarna). **Klocka:** klockans token-begäranden går genom synkens skydd (nekad token, 403, 429 och i bakgrunden kretsbrytaren stoppar dem; svaret registreras), förnyelsen är en bakgrundsbegäran och försöker inte oftare än var 6:e timme efter ett misslyckande; klockans avbockningar väntar aldrig timmar på WorkManagers backoff (högst 4 min backoff, sedan 15 min; ett tryck försöker direkt). **0.7.0:** en handskriven "Påminn:"-rad i anteckningen skrivs inte över och måltidens rad behåller sin plats; ett recept med form över 200 (240 mm) stegar 239 och tillbaka; CHANGELOG `[0.7.0]` stämmer med bygget 001b17bc. Ett test per beteende, röktestet körs | ✅ klart 2026-11-14 (PR 43596722670 och röktest 43596722686 på 0be2708/c4a45dd: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; inga referensbilder ändrade, Contract berörs inte); enhetsproven återstår, se "Granskningen av 0.8.0 (fix-08)" |
+| kokvy | Enhetstestet 2026-11-14 (Galaxy S21 FE, 360 × 780 dp): B4 snabba stegbyten, B6 ringande timer under varningen, B10 "Före gåe…" | **B4:** två tryck på Nästa eller två volym ned inom 100 ms hamnar på steg 3 av 3 (ViewModelns sida är enda sanningen, bara en svepning rapporterar tillbaka); Compose-test med två tryck och två volymknappstryck utan att vänta, enhetstest med en eftersläpande skärm, röktestens två handsfree-scenarier oförändrade. **B6:** en ringande timer med Stopp står överst i timerytan, ovanför varningarna, som är en rad (tryck visar hela) medan något ringer; en klar timer står efter de som går; med två receptflikar och handsfree-raden behåller steget minst 96 dp och timerknappen i steget går att nå; 360 × 780 dp i textstorlek 1,0 och 2,0, liggande och surfplatta. **B10:** ingen sidknapp bryter ett ord: knappen tappar pilen och sedan texten (pilen med texten för TalkBack) i båda språken och textstorlek 2; skärmbild på 360 dp på svenska | ⏳ påbörjad 2026-11-14, se "Enhetstestet 2026-11-14: kokläget" |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -2237,6 +2238,60 @@ back-off och "Försök igen", volymknapparnas regel), `CookPanViewModelTest`, `C
 och Mer-bilderna i `:feature:shell` med raden Köksskärm; ATF i `Fas5KokAccessibilityTest`,
 `RecipeTinScreenshotTest`, `TodayKitchenTest`. Röktest: `Phase5KokSmokeTest` (se "Release-röktest").
 <!-- /Fas 5 kok -->
+
+<!-- Fas 5 kokvy -->
+## Enhetstestet 2026-11-14: kokläget (`:feature:cook`, bana kokvy)
+
+Ägarens enhetstest på en Galaxy S21 FE (360 × 780 dp, svenska) hittade tre fel i kokläget som CI
+inte såg (emulatorn är bredare och långsammare). "Klart när" står i "Fas 5 – läge".
+
+**B4, snabba stegbyten.** Två tryck på Nästa (eller två volym ned) inom ungefär en halv sekund gav
+ett steg. Två orsaker: `CookViewModel` räknade nästa sida från `uiState`, som följer
+`SavedStateHandle` en bild senare, och `PagerSync` skickade `GoToPage(settledPage)` för varje sida
+pagern stannade på, också när en ny programstyrd rullning avbröt den förra och `settledPage` då
+var sidan emellan. Nu läser `Next`/`Previous` sidan ur `SavedStateHandle` (`pageNow`, begränsad
+till sidorna som visas), och `PagerSync` rapporterar bara en sida som användaren svept till: en
+`DragInteraction.Start` sedan den senaste programstyrda rullningen. En avbruten animation som
+lämnat pagern mellan två sidor rullas klart (`currentPageOffsetFraction`). Tester:
+`CookViewModelQuickPagesTest` (Main är en `StandardTestDispatcher`, så skärmen släpar efter varje
+åtgärd), `CookSmallPhoneTest` (två tryck och två volymknappstryck med 50 ms emellan medan sidan
+animeras, två tryck i samma bild, en svepning rapporterar fortfarande sin sida).
+
+**B6, timerytan.** På telefonen lägger `CookPhoneLayout` ut huvudet, steget och timerytan själv:
+knapparna och huvudet får sin höjd först, sedan de ringande timrarna (`RingingTimers`, utanför
+rullningen, med Stopp och +1 min), sedan behåller steget `MinStepHeight` = 96 dp (som kortfönstertestet) innan
+varningarna och de andra timrarna (`OtherTimersAndWarnings`, rullar inuti) får sitt; timrarna
+tillsammans högst 40 % av höjden som förut (33 % i korta fönster). Medan en timer ringer är varje
+varning en rad (`LocalWarningsCollapsed` → `CollapsedWarning`: ikon, rubrik, pil; 64 dp, "Visa hela
+varningen" för TalkBack, läget "Hopfälld"), ett tryck visar hela kortet; sidopanelen (liggande,
+surfplatta) gör likadant under sina timrar, och i en kort sidopanel (liggande telefon) får timrarna
+hela panelens höjd medan något ringer, så Stopp aldrig skärs av under rubriken. På telefon i
+textstorlek 1,5 och uppåt ritas huvudet (flikarna i huvudet) och handsfree-raden (en rad) som i ett
+kort fönster medan en timer ringer, annars får Stopp inte plats med två recept och handsfree.
+Mellanrummet ovanför timerytan räknas inte in i andelen, så bilderna utan ringande timer är
+oförändrade. Bordsläget lägger ringande och andra timrar ovanför
+knapparna med vikt, så knapparna alltid får full höjd. `sortedForDisplay` (`:core:ui`) ordnar
+ringande, sedan gående och pausade, sist klara, så en äldre klar timer aldrig skjuter en gående ur
+en kort timerrad (gäller också timerlistan). Villkoren och texterna för varningarna ägs av
+larmbanan; här ändrades bara hur de ritas.
+
+**B10, sidknapparna.** `FirstThatFits` (en `SubcomposeLayout`) mäter varje variant på en rad
+(`maxIntrinsicWidth`, utan semantik så att bara den som visas syns för TalkBack och testerna) och
+ritar den första som får plats: pil och text, bara text, bara pilen (`PageIconButton`, 64 dp, med
+texten som beskrivning). Staplade knappar vid stor text som förut. På 360 dp på svenska med
+handsfree blir "Föregående" en pil och "Nästa" står kvar som text.
+
+**Tester och bilder.** `CookSmallPhoneTest` (360 × 780 dp: B4 ovan; Stopp helt synligt ovanför
+den hopfällda varningen och kvar när den öppnas, också i textstorlek 2; varningen hel utan
+ringande timer; klara timrar efter gående; två recept med handsfree och ringande timer: steget minst
+96 dp, timerknappen nås, Stopp och Nästa helt synliga, också i textstorlek 2; B10 i båda språken,
+textstorlek 2, liggande och surfplatta), `TimerFormatTest` (ordningen). Skärmbilder `cook/*devicetest_*`
+(liten telefon ljust/mörkt/svenska/textstorlek 2, två recept med handsfree, liggande, surfplatta i
+båda lägena) och ATF i `CookSmallPhoneAccessibilityTest`. Omtagna, avsiktligt (B10, B6): de sex
+`cook/phone_fas5_handsfree_*` där "Föregående" förut bröts på två rader, pseudospråkets
+`phone_done_light_en_xa` och `phone_step_timers_light_en_xa` (lång text blir pilen) och
+`phone_landscape_ringing_many_ingredients_light` (den ringande timern får hela sidopanelen).
+<!-- /Fas 5 kokvy -->
 
 <!-- Fas 4 ocr -->
 ## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)

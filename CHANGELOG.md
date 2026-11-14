@@ -68,6 +68,17 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
 - Ett recept med en form större än 200 (till exempel 240 mm) går nu att skala ett steg i taget,
   239 och tillbaka till 240, i stället för att hoppa till 200 och fastna där.
 
+**Rättat efter enhetstestet**
+
+- Två snabba tryck på Nästa, eller två tryck på volymknappen med handsfree på, går nu två steg
+  framåt. Förut tappades ett steg om trycken kom tätare än ungefär en halv sekund.
+- En timer som ringer står nu överst i kokläget med Stopp synligt, ovanför varningarna om larmet.
+  Medan den ringer är varningarna en rad; tryck på raden för att läsa hela. En klar timer står
+  efter de som går, och steget behåller sin plats också med två recept och handsfree på en liten
+  telefon.
+- Knapparna längst ned i kokläget bryter aldrig ett ord ("Före gåe…"): finns det inte plats för
+  texten visas bara pilen, och skärmläsaren säger fortfarande "Föregående".
+
 **Kvar till senare**
 
 - Klockan, kalendern och påminnelsen nära butiken är prövade i CI men ännu inte på en riktig klocka,
