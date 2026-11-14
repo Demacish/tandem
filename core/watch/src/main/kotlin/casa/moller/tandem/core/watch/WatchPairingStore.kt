@@ -31,6 +31,8 @@ import kotlinx.serialization.json.Json
  *
  * @property revokeOnWatch the paired account left the phone (logout): the phone has no token to
  *   delete the watch token with, so the watch deletes its own the next time it is reachable.
+ * @property revokedOnServer Fas 5 (integration-08): the phone deleted the watch token on the server
+ *   just before the account left (`AccountRemovalHook`); the watch is then only wiped, it sends nothing.
  */
 @Serializable
 data class StoredWatchPairing(
@@ -42,6 +44,7 @@ data class StoredWatchPairing(
     val expiresEpochMillis: Long,
     val pairedAtEpochMillis: Long,
     val revokeOnWatch: Boolean = false,
+    val revokedOnServer: Boolean = false,
 )
 
 /** Reads and writes [StoredWatchPairing]. */

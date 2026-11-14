@@ -2,6 +2,7 @@ package casa.moller.tandem.core.data.internal
 
 import app.cash.turbine.test
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.account.AccountRemovalHook
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.data.files.CacheDirectories
 import casa.moller.tandem.core.data.session.Session
@@ -24,8 +25,10 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -512,6 +515,60 @@ class DefaultAccountRepositoryTest {
         assertEquals(setOf(first.id), accounts.tokens().keys)
         assertEquals(listOf(Triple("https://other.example.org", "tda_device_token_0002", 43L)), remote.revocations)
         assertEquals(first.id, (repository.session.first() as Session.LoggedIn).account.id)
+    }
+
+    @Test
+    fun theRemovalHooksGetTheAccountsTokenBeforeItLeavesWhateverWasChosenForIt() = runTest {
+        val seen = mutableListOf<Triple<String, String, Boolean>>()
+        val hooked = DefaultAccountRepository(
+            remote = remote,
+            accountStore = accounts,
+            settingsStore = settings,
+            health = health,
+            now = { NOW },
+            newId = { "account-${++ids}" },
+            removalHooks = {
+                setOf(
+                    AccountRemovalHook { account, token ->
+                        seen += Triple(account.id, token, accounts.tokens().containsKey(account.id))
+                    },
+                )
+            },
+        )
+        val first = hooked.login(SERVER, "anna", "secret").getOrNull()!!
+        remote.loginResult = Outcome.Success(
+            credentials(baseUrl = "https://other.example.org/", userId = 3, token = "tda_device_token_0002", tokenId = 43),
+        )
+        val second = hooked.login(SERVER, "bo", "secret").getOrNull()!!
+        assertTrue(hooked.activate(first.id) is Outcome.Success)
+
+        // Another stored account, its own token kept on the server: the hooks still run.
+        hooked.remove(second.id, revokeToken = false)
+        // The active account's logout.
+        hooked.logout(revokeToken = true)
+
+        assertEquals(
+            listOf(Triple(second.id, "tda_device_token_0002", true), Triple(first.id, "tda_device_token_0001", true)),
+            seen,
+        )
+    }
+
+    @Test
+    fun aHookThatNeverAnswersDoesNotHoldTheLogoutBack() = runTest {
+        val hooked = DefaultAccountRepository(
+            remote = remote,
+            accountStore = accounts,
+            settingsStore = settings,
+            health = health,
+            now = { NOW },
+            newId = { "account-${++ids}" },
+            removalHooks = { setOf(AccountRemovalHook { _, _ -> awaitCancellation() }) },
+        )
+        hooked.login(SERVER, "anna", "secret")
+
+        assertEquals(TokenRevocation.REVOKED, hooked.logout(revokeToken = true).getOrNull())
+        assertEquals(Session.NoAccount, hooked.session.first())
+        assertTrue(currentTime >= AccountRemovalHook.TIME_LIMIT_MILLIS)
     }
 
     @Test

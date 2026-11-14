@@ -1,13 +1,17 @@
 package casa.moller.tandem.core.sync.calendar
 
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.account.AccountRemovalHook
+import casa.moller.tandem.core.database.DatabaseKind
 import casa.moller.tandem.core.database.TandemDatabaseFactory
 import casa.moller.tandem.core.database.entity.SyncStateEntity
+import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.mealplan.MealCalendarLink
 import casa.moller.tandem.core.model.mealplan.MealCalendarLinkBlock
+import casa.moller.tandem.core.network.api.TandoorApiFactory
 import casa.moller.tandem.core.network.capabilities.MealPlanIcal
 import casa.moller.tandem.core.network.capabilities.TandoorVersionTable
 import casa.moller.tandem.core.network.dto.AccessTokenCreateRequestDto
@@ -49,6 +53,10 @@ import kotlinx.serialization.json.Json
  *
  * Every request goes through [RemoteCaller] (circuit breaker, rate limits). Never for guests (they
  * only read), never in demo mode, never where the server cannot take the token in the address.
+ *
+ * Fas 5 (integration-08): an [AccountRemovalHook]. When the account leaves the phone (logout or
+ * removal) its link's token is revoked with the account's token first ([beforeRemoval]); offline it
+ * stays valid until it expires or is deleted in Tandoor (docs/BYGGE.md "Integration av Fas 5 (0.8.0)").
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -57,7 +65,8 @@ internal class MealCalendarLinks @Inject constructor(
     private val databases: TandemDatabaseFactory,
     private val remote: RemoteCaller,
     private val clock: WallClock,
-) {
+    private val apiFactory: TandoorApiFactory,
+) : AccountRemovalHook {
     private val mutex = Mutex()
 
     /** The link of the active account (empty in demo mode and without an account). */
@@ -143,6 +152,25 @@ internal class MealCalendarLinks @Inject constructor(
                 write(source, current.copy(expires = renewed.value.expires ?: body.expires))
                 Outcome.Success(Unit)
             }
+        }
+    }
+
+    /**
+     * The account leaves the phone: revokes its link's token and those still waiting, with the
+     * account's [token] (also for a stored account that is not the active one). The row goes with
+     * the account's data afterwards.
+     */
+    override suspend fun beforeRemoval(account: ServerAccount, token: String) {
+        mutex.withLock {
+            val stored = decode(databases.get(DatabaseKind.REAL).syncStateDao().get(account.id, KEY)?.hash) ?: return
+            val api = try {
+                apiFactory.create(account.baseUrl, { token })
+            } catch (e: IllegalArgumentException) {
+                // A stored address that is not an https URL (never written by the app).
+                return
+            }
+            val leaving = ActiveSource.Remote(account, api)
+            (stored.revoke + stored.id).forEach { id -> revoke(leaving, id) }
         }
     }
 

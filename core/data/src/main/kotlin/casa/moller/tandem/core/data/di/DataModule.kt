@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.data.di
 
+import casa.moller.tandem.core.data.account.AccountRemovalHook
 import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.account.AccountSessions
 import casa.moller.tandem.core.data.internal.DefaultAccountRepository
@@ -53,4 +54,8 @@ internal abstract class DataModule {
     // --- Phase 1b (integration lane): the modules' notification channels, created at startup. ---
     @Multibinds
     abstract fun notificationChannelInstallers(): Set<NotificationChannelInstaller>
+
+    // --- Fas 5 (integration-08): the watch's and the calendar link's tokens go with the account. ---
+    @Multibinds
+    abstract fun accountRemovalHooks(): Set<AccountRemovalHook>
 }

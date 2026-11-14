@@ -1,10 +1,12 @@
 package casa.moller.tandem.core.watch
 
+import casa.moller.tandem.core.data.account.AccountRemovalHook
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.watch.WatchRepository
 import casa.moller.tandem.core.datastore.SecureAccountStore
+import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -46,6 +48,9 @@ import kotlinx.coroutines.sync.withLock
  * - **Upkeep** ([maintain], at app start and when the stored accounts change): the paired account
  *   left the phone → the watch deletes its own token as soon as it is reachable; the token
  *   expires within [WatchTokenPolicy.RENEW_BEFORE] and the watch is near → paired again.
+ * - **The account leaves the phone** (Fas 5, integration-08; [beforeRemoval], an
+ *   [AccountRemovalHook]): the phone deletes the watch token on the server with the account's
+ *   token while it still has it; the watch is then only wiped. Offline, the upkeep above remains.
  */
 @Singleton
 internal class DefaultWatchRepository @Inject constructor(
@@ -56,7 +61,8 @@ internal class DefaultWatchRepository @Inject constructor(
     private val dataLayer: DataLayer,
     private val store: WatchPairingStore,
     private val clock: Clock,
-) : WatchRepository {
+) : WatchRepository,
+    AccountRemovalHook {
     private val discovery = MutableStateFlow(Discovery())
     private val busy = MutableStateFlow(false)
     private val actions = Mutex()
@@ -107,7 +113,7 @@ internal class DefaultWatchRepository @Inject constructor(
         val stored = store.load() ?: return
         val known = accounts.accounts.first()
         if (known.none { it.id == stored.accountId }) {
-            val wiped = ask(stored.nodeId, WatchLink.PATH_UNPAIR, unpairRequest(stored.tokenId, revoke = true))
+            val wiped = ask(stored.nodeId, WatchLink.PATH_UNPAIR, unpairRequest(stored.tokenId, revoke = !stored.revokedOnServer))
             store.save(if (wiped) null else stored.copy(revokeOnWatch = true))
             return
         }
@@ -116,6 +122,16 @@ internal class DefaultWatchRepository @Inject constructor(
         if (active.id == stored.accountId && WatchTokenPolicy.needsRenewal(expires, clock.now())) {
             val near = discover().also { discovery.value = it }.tandemWatch
             if (near?.id == stored.nodeId && near.nearby) pair()
+        }
+    }
+
+    /** See the class comment; a failure leaves the pairing to [maintain] (the watch deletes its own token). */
+    override suspend fun beforeRemoval(account: ServerAccount, token: String) {
+        actions.withLock {
+            val stored = store.load()?.takeIf { it.accountId == account.id && !it.revokedOnServer } ?: return
+            if (tokens.delete(account.baseUrl, token, stored.tokenId) is Outcome.Success) {
+                store.save(stored.copy(revokedOnServer = true))
+            }
         }
     }
 
@@ -176,7 +192,9 @@ internal class DefaultWatchRepository @Inject constructor(
         val account = accounts.accounts.first().firstOrNull { it.id == stored.accountId }
         val phoneToken = account?.let { phoneToken(it.id) }
         var serverError: TandemError? = null
-        val serverDone = if (account != null && phoneToken != null) {
+        val serverDone = if (stored.revokedOnServer) {
+            true
+        } else if (account != null && phoneToken != null) {
             when (val deleted = tokens.delete(account.baseUrl, phoneToken, stored.tokenId)) {
                 is Outcome.Success -> true
 

@@ -5,11 +5,13 @@ import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.mealplan.MealCalendarLinkBlock
+import casa.moller.tandem.core.network.api.TandoorApiFactory
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.pantry.PantrySyncEnv
 import casa.moller.tandem.core.sync.reminder.ReminderClock
 import casa.moller.tandem.core.sync.testing.FakeTandoorServer
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
+import casa.moller.tandem.core.sync.testing.TestTls
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration.Companion.days
@@ -40,7 +42,7 @@ class MealCalendarLinksTest {
     private val stockholm = TimeZone.of("Europe/Stockholm")
     private val graph = SyncTestGraph()
     private val clock = ReminderClock(LocalDateTime.parse("2026-11-13T12:00").toInstant(stockholm), stockholm)
-    private val links = MealCalendarLinks(graph.sources, graph.databases, graph.caller, clock)
+    private val links = MealCalendarLinks(graph.sources, graph.databases, graph.caller, clock, TandoorApiFactory(TestTls.httpClient()))
     private val nextId = AtomicLong(40)
     private val created: MutableList<String> = CopyOnWriteArrayList()
 
@@ -122,6 +124,27 @@ class MealCalendarLinksTest {
         assertTrue(patched.single(), patched.single().contains("\"expires\":\"2028-09-18T11:00:00Z\""))
         assertEquals(address, links.observe().first().url)
         assertEquals(LocalDateTime.parse("2028-09-14T12:00").toInstant(stockholm), links.observe().first().expires)
+    }
+
+    @Test
+    fun theAccountLeavingThePhoneRevokesItsLinkWithTheAccountsToken() = runBlocking {
+        links.enable()
+        // "Byt länk" while the server failed left token 41 waiting; both go when the account leaves.
+        graph.server.respond("DELETE", "/api/access-token/41/") { FakeTandoorServer.json(502, "") }
+        links.replace()
+        graph.server.respond("DELETE", "/api/access-token/41/") { MockResponse.Builder().code(204).build() }
+        graph.server.requests.clear()
+
+        links.beforeRemoval(graph.account, graph.sources.token!!)
+
+        val deletes = graph.server.requests.filter { it.startsWith("DELETE") }
+        assertEquals(listOf("DELETE /api/access-token/41/", "DELETE /api/access-token/42/"), deletes)
+    }
+
+    @Test
+    fun anAccountWithoutALinkLeavesWithoutARequest() = runBlocking {
+        links.beforeRemoval(graph.account, graph.sources.token!!)
+        assertTrue(graph.server.requests.none { it.contains("access-token") })
     }
 
     @Test

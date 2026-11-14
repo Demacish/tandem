@@ -11,10 +11,12 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import casa.moller.tandem.core.database.entity.MealPlanEntity
 import casa.moller.tandem.core.database.entity.MealTypeEntity
 import casa.moller.tandem.core.datastore.LocalCalendarRecord
+import casa.moller.tandem.core.network.api.TandoorApiFactory
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.reminder.ReminderClock
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import casa.moller.tandem.core.sync.testing.TestTls
 import casa.moller.tandem.core.sync.work.MealCalendarJob
 import casa.moller.tandem.core.sync.work.MealCalendarWorker
 import casa.moller.tandem.core.sync.work.WorkManagerMealCalendarWork
@@ -57,7 +59,7 @@ class MealCalendarScheduleTest {
         provider = FakeCalendarProvider.install()
         shadowOf(app).grantPermissions(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
         calendar = PhoneMealCalendar(AndroidCalendarGateway(app), graph.sources, graph.mealPlans, store, clock)
-        links = MealCalendarLinks(graph.sources, graph.databases, graph.caller, clock)
+        links = MealCalendarLinks(graph.sources, graph.databases, graph.caller, clock, TandoorApiFactory(TestTls.httpClient()))
         graph.network.online.value = false
         runBlocking {
             graph.real.referenceDao().replaceMealTypes(ACCOUNT_ID, listOf(MealTypeEntity(ACCOUNT_ID, 2, "Middag", 0, "18:00:00")))

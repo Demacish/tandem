@@ -2,6 +2,7 @@ package casa.moller.tandem.core.data.internal
 
 import android.content.Context
 import casa.moller.tandem.core.data.DataProblem
+import casa.moller.tandem.core.data.account.AccountRemovalHook
 import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.account.AccountSessions
 import casa.moller.tandem.core.data.files.CacheDirectories
@@ -28,6 +29,7 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Instant
@@ -40,6 +42,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Accounts and session on top of [TandoorRemote] (network) and the encrypted
@@ -59,6 +62,8 @@ internal class DefaultAccountRepository(
     private val aiPreferences: AiPreferencesStore? = null,
     // Fas S komplettering: the app's cache directory ("Rensa appdata" empties cache/drink-camera).
     private val cacheDir: File? = null,
+    // Fas 5 (integration-08): tokens other modules made with the account's token (AccountRemovalHook).
+    private val removalHooks: () -> Set<AccountRemovalHook> = { emptySet() },
 ) : AccountRepository,
     SessionRepository,
     AccountSessions {
@@ -72,6 +77,8 @@ internal class DefaultAccountRepository(
         aiKeys: AiKeyStore,
         aiPreferences: AiPreferencesStore,
         @ApplicationContext context: Context,
+        // A Provider: the hooks' modules read the session from this repository themselves.
+        removalHooks: Provider<Set<@JvmSuppressWildcards AccountRemovalHook>>,
     ) : this(
         remote = remote,
         accountStore = accountStore,
@@ -82,6 +89,7 @@ internal class DefaultAccountRepository(
         aiKeys = aiKeys,
         aiPreferences = aiPreferences,
         cacheDir = context.cacheDir,
+        removalHooks = { removalHooks.get() },
     )
 
     /** Serializes writes that read-modify-write accounts and settings together. */
@@ -287,6 +295,7 @@ internal class DefaultAccountRepository(
     private suspend fun removeAccount(account: ServerAccount, revokeToken: Boolean): Outcome<TokenRevocation> {
         // Read before the account and its token are removed; kept in memory for the request.
         val token = if (revokeToken) accountStore.token(account.id) else null
+        runRemovalHooks(account)
         try {
             writeLock.withLock { accountStore.remove(account.id) }
         } catch (e: CancellationException) {
@@ -322,6 +331,26 @@ internal class DefaultAccountRepository(
             else -> TokenRevocation.SKIPPED
         }
         return Outcome.Success(revocation)
+    }
+
+    /**
+     * Fas 5 (integration-08): every [AccountRemovalHook] with the account's token, before it goes
+     * (whatever was chosen for the token itself), at most [AccountRemovalHook.TIME_LIMIT_MILLIS]
+     * together and never cancelled half-way by a closing screen. An unreadable token skips them.
+     */
+    private suspend fun runRemovalHooks(account: ServerAccount) {
+        val hooks = removalHooks()
+        if (hooks.isEmpty()) return
+        val token = try {
+            accountStore.token(account.id)?.takeIf { it.isNotBlank() }
+        } catch (e: IOException) {
+            null
+        } ?: return
+        withContext(NonCancellable) {
+            withTimeoutOrNull(AccountRemovalHook.TIME_LIMIT_MILLIS) {
+                hooks.forEach { hook -> hook.beforeRemoval(account, token) }
+            }
+        }
     }
 
     /** Revokes [token] of the (already removed) [account] if Tandem created it. */

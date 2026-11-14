@@ -170,6 +170,38 @@ class DefaultWatchRepositoryTest {
     }
 
     @Test
+    fun theAccountLeavingThePhoneDeletesTheWatchTokenOnTheServerFirst() = runTest {
+        repository.pair()
+
+        repository.beforeRemoval(anna, "phone-account-1")
+        assertEquals(listOf("phone-account-1" to 100L), tokens.deleted)
+        assertEquals(true, store.stored.value?.revokedOnServer)
+        // Not twice.
+        repository.beforeRemoval(anna, "phone-account-1")
+        assertEquals(1, tokens.deleted.size)
+
+        // Then the account is gone: the watch is only wiped, it sends nothing itself.
+        accounts.remove(anna.id)
+        repository.maintain()
+        assertEquals(listOf(UnpairRequest(tokenId = 100, revoke = false)), layer.unpairs)
+        assertNull(store.stored.value)
+    }
+
+    @Test
+    fun offlineTheWatchStillDeletesItsOwnTokenAndOtherAccountsAreLeftAlone() = runTest {
+        repository.pair()
+        repository.beforeRemoval(account("account-2"), "phone-account-2")
+        assertTrue(tokens.deleted.isEmpty())
+
+        tokens.failDelete = TandemError.NetworkUnavailable
+        repository.beforeRemoval(anna, "phone-account-1")
+        assertEquals(false, store.stored.value?.revokedOnServer)
+        accounts.remove(anna.id)
+        repository.maintain()
+        assertEquals(listOf(UnpairRequest(tokenId = 100, revoke = true)), layer.unpairs)
+    }
+
+    @Test
     fun thePhoneRenewsTheTokenThirtyDaysBeforeItExpires() = runTest {
         repository.pair()
         clock.advanceBy(59.days)
