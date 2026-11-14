@@ -6,6 +6,7 @@ import casa.moller.tandem.feature.recipes.navigation.BookDetailKey
 import casa.moller.tandem.feature.recipes.navigation.FavoritesKey
 import casa.moller.tandem.feature.recipes.navigation.WantToCookKey
 import casa.moller.tandem.feature.scan.navigation.AiSettingsKey
+import casa.moller.tandem.feature.shopping.navigation.StoreReminderKey
 import kotlinx.serialization.Serializable
 
 // Phase 1b (grund lane): the settings sub-screens under "Mer" (plan 6.2 "Inställningar",
@@ -55,6 +56,8 @@ internal val NavKey.isMorePage: Boolean
         MealCalendarKey,
         // Fas 5 (wear lane): Mer → Klockan.
         WatchKey,
+        // Fas 5 (butik lane): Inställningar → Påminnelse nära butiken (feature:shopping).
+        StoreReminderKey,
         -> true
 
         else -> false

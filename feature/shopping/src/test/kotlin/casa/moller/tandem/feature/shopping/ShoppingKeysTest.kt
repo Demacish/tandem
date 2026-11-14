@@ -4,6 +4,7 @@ import casa.moller.tandem.feature.shopping.navigation.ShoppingHistoryKey
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListChoiceKey
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import casa.moller.tandem.feature.shopping.navigation.StoreReminderKey
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -23,6 +24,7 @@ class ShoppingKeysTest {
         assertEquals(StoreModeKey(listId = -3), roundTrip(StoreModeKey.serializer(), StoreModeKey(listId = -3)))
         assertEquals(ShoppingListChoiceKey, roundTrip(ShoppingListChoiceKey.serializer(), ShoppingListChoiceKey))
         assertEquals(ShoppingHistoryKey, roundTrip(ShoppingHistoryKey.serializer(), ShoppingHistoryKey))
+        assertEquals(StoreReminderKey, roundTrip(StoreReminderKey.serializer(), StoreReminderKey))
     }
 
     @Test

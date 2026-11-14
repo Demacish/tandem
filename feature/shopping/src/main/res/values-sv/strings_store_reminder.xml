@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (butik lane, plan §7 #34): "Påminn mig nära butiken", sidan, butikens ark och behörigheterna. -->
+    <string name="store_reminder_title">Påminnelse nära butiken</string>
+    <string name="store_reminder_more_supporting">En notis när du är nära en butik och listan har saker kvar</string>
+    <string name="store_reminder_choice_row">Påminn mig nära en butik</string>
+    <string name="store_reminder_intro">Tandem kan påminna dig när du är nära någon av dina butiker och något står kvar på inköpslistan. Ange en gång var varje butik ligger; Tandem bevakar de platserna med telefonens platstjänst, utan att följa dig.</string>
+    <string name="store_reminder_switch">Påminn mig nära butiken</string>
+    <string name="store_reminder_switch_body">Högst en gång per besök, inom det avstånd du väljer. Av från början.</string>
+    <plurals name="store_reminder_watching">
+        <item quantity="one">Bevakar %d butik</item>
+        <item quantity="other">Bevakar %d butiker</item>
+    </plurals>
+    <string name="store_reminder_no_places">Ange var en butik ligger här nedanför för att få påminnelsen.</string>
+    <string name="store_reminder_starting">Startar …</string>
+    <string name="store_reminder_stores_heading">Butiker</string>
+    <string name="store_reminder_store_no_place">Ingen plats vald</string>
+    <string name="store_reminder_store_on">Påminner inom %1$d m</string>
+    <string name="store_reminder_store_off">Av · platsen sparad</string>
+    <string name="store_reminder_store_open">Ange platsen</string>
+    <string name="store_reminder_no_stores_title">Inga butiker ännu</string>
+    <string name="store_reminder_no_stores_body">Butiker läggs upp i Tandoor på webben. När det finns en syns den här.</string>
+    <string name="store_reminder_privacy_title">Platserna stannar i den här telefonen</string>
+    <string name="store_reminder_privacy_body">De skickas aldrig till din server eller någon annanstans, och de försvinner när kontot tas bort ur Tandem. Stänger du av påminnelsen slutar all bevakning.</string>
+    <string name="store_reminder_demo_title">Inte i demoläget</string>
+    <string name="store_reminder_demo_body">Påminnelsen nära butiken behöver dina egna butiker och din inköpslista. Logga in på din Tandoor för att använda den.</string>
+    <string name="store_reminder_no_account_title">Logga in först</string>
+    <string name="store_reminder_no_account_body">Påminnelsen använder butikerna och inköpslistan i ditt Tandoor-konto.</string>
+    <string name="store_reminder_no_play_title">Kräver Google Play-tjänster</string>
+    <string name="store_reminder_no_play_body">Påminnelsen nära butiken använder Google Play-tjänster för att märka, utan att tömma batteriet, när telefonen kommer nära en butik. Den här telefonen saknar dem (eller har en gammal version), så valet finns inte här. Allt annat i Tandem fungerar som vanligt.</string>
+    <!-- Butikens ark. -->
+    <string name="store_reminder_sheet_switch">Påminn mig nära den här butiken</string>
+    <string name="store_reminder_sheet_switch_body">Inom %1$d m från platsen</string>
+    <string name="store_reminder_saved_here">Platsen sparad %1$s från din position</string>
+    <string name="store_reminder_saved_pasted">Platsen sparad %1$s från en inklistrad plats</string>
+    <string name="store_reminder_radius">Avstånd: %1$d m</string>
+    <string name="store_reminder_radius_label">Avstånd</string>
+    <string name="store_reminder_radius_value">%1$d meter</string>
+    <string name="store_reminder_where">Var ligger butiken?</string>
+    <string name="store_reminder_where_change">Ändra platsen</string>
+    <string name="store_reminder_use_location">Jag är i butiken nu – använd min position</string>
+    <string name="store_reminder_locating">Letar efter din position …</string>
+    <string name="store_reminder_or_paste">Eller klistra in en geo:-länk, en kartlänk eller koordinater.</string>
+    <string name="store_reminder_paste_label">Plats</string>
+    <string name="store_reminder_paste_hint">Till exempel 12.3456, -45.6789</string>
+    <string name="store_reminder_paste_error">Hittade ingen plats i texten. Prova koordinater med decimaler eller en geo:-länk.</string>
+    <string name="store_reminder_paste_save">Spara platsen</string>
+    <string name="store_reminder_show_map">Visa på kartan</string>
+    <string name="store_reminder_forget">Ta bort platsen</string>
+    <string name="store_reminder_done">Klar</string>
+    <!-- Behörigheter, i sammanhanget. -->
+    <string name="store_reminder_background_title">Tillåta plats hela tiden?</string>
+    <string name="store_reminder_background_body">Påminnelsen kommer när du närmar dig en butik, även när Tandem inte är öppen. Android öppnar nu inställningarna: välj ”Tillåt alltid”. Tandem använder bara platsen för att märka när du är nära de butiker du valt; den skickas aldrig någonstans.</string>
+    <string name="store_reminder_continue">Fortsätt</string>
+    <string name="store_reminder_not_now">Inte nu</string>
+    <string name="store_reminder_denied_location_title">Platsen behövs</string>
+    <string name="store_reminder_denied_location_body">Utan telefonens plats kan Tandem inte märka när du är nära en butik eller använda din position som butikens plats. Du kan fortfarande klistra in en plats.</string>
+    <string name="store_reminder_denied_precise_title">Exakt plats behövs</string>
+    <string name="store_reminder_denied_precise_body">Med ungefärlig plats kan telefonen ha fel på flera kilometer, så påminnelsen kan inte komma inom några hundra meter. Välj ”Exakt” för Tandem.</string>
+    <string name="store_reminder_denied_background_title">Välj ”Tillåt alltid”</string>
+    <string name="store_reminder_denied_background_body">Påminnelsen kommer när Tandem inte är öppen och behöver därför platsen hela tiden. Öppna inställningarna, välj Plats och ”Tillåt alltid”.</string>
+    <string name="store_reminder_denied_notifications_title">Notiser är avstängda</string>
+    <string name="store_reminder_denied_notifications_body">Påminnelsen är en notis. Tillåt notiser för Tandem för att få den.</string>
+    <string name="store_reminder_lost_title">Påminnelsen kan inte komma just nu</string>
+    <string name="store_reminder_lost_body">En behörighet togs tillbaka i telefonens inställningar (plats hela tiden eller notiser). Tillåt den igen för att få påminnelsen.</string>
+    <string name="store_reminder_location_off_title">Platstjänsten är avstängd</string>
+    <string name="store_reminder_location_off_body">Telefonens plats är avstängd, så ingen butik bevakas. Slå på den så startar Tandem igen av sig själv.</string>
+    <string name="store_reminder_failed_title">Bevakningen kunde inte starta</string>
+    <string name="store_reminder_failed_body">Google Play-tjänster tog inte emot butikerna den här gången. Tandem försöker igen nästa gång appen startar.</string>
+    <string name="store_reminder_allow">Tillåt</string>
+    <string name="store_reminder_open_settings">Öppna inställningar</string>
+    <string name="store_reminder_open_location_settings">Platsinställningar</string>
+    <!-- Snackbarer. -->
+    <string name="store_reminder_msg_on">Påminnelsen nära butiken är på</string>
+    <string name="store_reminder_msg_off">Påminnelsen nära butiken är av</string>
+    <string name="store_reminder_msg_saved">Platsen sparad</string>
+    <string name="store_reminder_msg_saved_accuracy">Platsen sparad (inom ungefär %1$d m)</string>
+    <string name="store_reminder_msg_saved_turn_on">Platsen sparad. Slå på påminnelsen överst för att få den.</string>
+    <string name="store_reminder_msg_forgotten">Platsen borttagen</string>
+    <string name="store_reminder_msg_no_position">Ingen position kom. Försök igen vid ett fönster eller utomhus, eller klistra in platsen.</string>
+    <string name="store_reminder_msg_location_off">Slå på telefonens plats först</string>
+    <string name="store_reminder_msg_failed">Det gick inte. Försök igen.</string>
+</resources>

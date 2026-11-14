@@ -53,6 +53,9 @@ object AppOpenIntents {
     /** Fas 5 (planera lane): Veckan at a day: [WEEK_DAY_PREFIX] followed by `yyyy-MM-dd` (the evening reminder). */
     const val WEEK_DAY_PREFIX: String = AppOpenDestinations.WEEK_DAY_PREFIX
 
+    /** Fas 5 (butik lane): store mode for a store: [STORE_MODE_PREFIX] followed by its id (the reminder near the store). */
+    const val STORE_MODE_PREFIX: String = AppOpenDestinations.STORE_MODE_PREFIX
+
     private const val SCHEME = AppOpenDestinations.SCHEME
 
     fun recipe(id: Long): String = "$RECIPE_PREFIX$id"
@@ -60,6 +63,8 @@ object AppOpenIntents {
     fun cook(id: Long): String = "$COOK_PREFIX$id"
 
     fun weekDay(date: String): String = "$WEEK_DAY_PREFIX$date"
+
+    fun storeMode(storeId: Long): String = "$STORE_MODE_PREFIX$storeId"
 
     /** The intent that opens the app at [destination], or null without a launcher activity. */
     fun open(context: Context, destination: String): Intent? {

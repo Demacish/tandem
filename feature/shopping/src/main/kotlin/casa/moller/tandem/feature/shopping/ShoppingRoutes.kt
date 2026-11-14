@@ -197,7 +197,13 @@ fun StoreModeRoute(key: StoreModeKey, onClose: () -> Unit, modifier: Modifier = 
  * [onDismiss] closes without a choice.
  */
 @Composable
-fun ShoppingListChoiceRoute(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+fun ShoppingListChoiceRoute(
+    onChosen: (listId: Long?, supermarketId: Long?) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    // Fas 5 (butik lane): "Påminn mig nära en butik" below the stores; null shows no row.
+    onOpenStoreReminder: (() -> Unit)? = null,
+) {
     val viewModel: StoreChoiceViewModel = hiltViewModel()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -217,6 +223,7 @@ fun ShoppingListChoiceRoute(onChosen: (listId: Long?, supermarketId: Long?) -> U
         onBack = onDismiss,
         modifier = modifier,
         snackbarHostState = snackbarHostState,
+        onOpenReminder = onOpenStoreReminder,
     )
 }
 

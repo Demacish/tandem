@@ -126,6 +126,13 @@ class ShoppingAccessibilityTest {
     @Test
     fun storeChoiceEmpty() = check(ShoppingShot.STORE_CHOICE_EMPTY)
 
+    // Fas 5 (butik lane): the row to the reminder near the store.
+    @Test
+    fun storeChoiceReminder() = check(ShoppingShot.STORE_CHOICE_REMINDER)
+
+    @Test
+    fun storeChoiceReminderFontScale2() = check(ShoppingShot.STORE_CHOICE_REMINDER, darkTheme = true, fontScale = 2f)
+
     @Test
     fun history() = check(ShoppingShot.HISTORY)
 

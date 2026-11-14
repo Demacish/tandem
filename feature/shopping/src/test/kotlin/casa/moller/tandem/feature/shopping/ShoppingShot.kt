@@ -62,6 +62,12 @@ internal enum class ShoppingShot(val content: @Composable () -> Unit) {
     }),
     STORE_CHOICE({ ChoiceShot(StoreChoiceUiState(false, ShoppingSamples.supermarkets, selectedId = ShoppingSamples.store.id)) }),
     STORE_CHOICE_EMPTY({ ChoiceShot(StoreChoiceUiState(loading = false)) }),
+
+    // Fas 5 (butik lane): the store chooser with "Påminn mig nära en butik" below the stores.
+    STORE_CHOICE_REMINDER({
+        val state = StoreChoiceUiState(false, ShoppingSamples.supermarkets, selectedId = ShoppingSamples.store.id)
+        StoreChoiceScreen(state = state, onChoose = {}, onBack = {}, onOpenReminder = {})
+    }),
     HISTORY({ HistoryShot(ShoppingHistoryUiState(loading = false, items = ShoppingSamples.history)) }),
     HISTORY_EMPTY({ HistoryShot(ShoppingHistoryUiState(loading = false)) }),
 

@@ -50,6 +50,7 @@ import casa.moller.tandem.core.designsystem.component.TandemTextButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
 import casa.moller.tandem.core.designsystem.icon.CollectionsBookmark
 import casa.moller.tandem.core.designsystem.icon.Countertops
+import casa.moller.tandem.core.designsystem.icon.NotificationsActive
 import casa.moller.tandem.core.designsystem.icon.Restaurant
 import casa.moller.tandem.core.designsystem.icon.Share
 import casa.moller.tandem.core.designsystem.icon.Sync
@@ -93,6 +94,8 @@ import casa.moller.tandem.feature.shell.ui.SectionHeader
 import casa.moller.tandem.feature.shell.ui.SettingsGroup
 import casa.moller.tandem.feature.shell.ui.SettingsRow
 import casa.moller.tandem.feature.shell.ui.ShellScreenScaffold
+import casa.moller.tandem.feature.shopping.R as ShoppingR
+import casa.moller.tandem.feature.shopping.navigation.StoreReminderKey
 
 /**
  * "Mer" (plan 6.2 "Inställningar", design mer_inst_llningar with the corrections in
@@ -115,6 +118,8 @@ internal fun MoreScreen(
     onConnectTandoor: () -> Unit,
     modifier: Modifier = Modifier,
     selectedPage: NavKey? = null,
+    // Fas 5 (butik lane): Inställningar → Påminnelse nära butiken (TandemShell passes true).
+    storeReminderInMore: Boolean = false,
     crashNotice: @Composable () -> Unit = {},
     onOpenKitchen: (() -> Unit)? = null,
     // Fas 5 (wear lane): Mer → Klockan (the row draws itself only with a watch or a pairing).
@@ -288,6 +293,17 @@ internal fun MoreScreen(
                             onClick = { onOpenPage(MealCalendarKey) },
                             selected = selectedPage == MealCalendarKey,
                         )
+                        // Fas 5 (butik lane, plan §7 #34): feature:shopping's "Påminnelse nära butiken".
+                        if (storeReminderInMore) {
+                            GroupDivider()
+                            SettingsRow(
+                                icon = TandemIcons.NotificationsActive,
+                                title = stringResource(ShoppingR.string.store_reminder_title),
+                                supporting = stringResource(ShoppingR.string.store_reminder_more_supporting),
+                                onClick = { onOpenPage(StoreReminderKey) },
+                                selected = selectedPage == StoreReminderKey,
+                            )
+                        }
                     }
 
                     if (state.isDemo) {

@@ -45,6 +45,7 @@ class OpenLaunchTest {
         assertNull(OpenLaunch.requestFrom(open("recipe:abc")))
         assertNull(OpenLaunch.requestFrom(open("recipe:0")))
         assertNull(OpenLaunch.requestFrom(open("week:i-morgon")))
+        assertNull(OpenLaunch.requestFrom(open("store-mode:butiken")))
         assertNull(OpenLaunch.requestFrom(Intent(AppOpenIntents.ACTION)))
     }
 
@@ -61,6 +62,8 @@ class OpenLaunchTest {
             ShellOpenRequest.AddItem,
             ShellOpenRequest.Cook(-3),
             ShellOpenRequest.WeekDay("2026-11-14"),
+            // Fas 5 (butik lane): the reminder near the store.
+            ShellOpenRequest.StoreMode(1),
         )
         for (request in requests) assertEquals(request, ShellOpenRequest.of(ShellOpenRequest.nameOf(request)))
     }

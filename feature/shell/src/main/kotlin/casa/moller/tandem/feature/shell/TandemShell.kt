@@ -154,6 +154,7 @@ import casa.moller.tandem.feature.shopping.navigation.ShoppingHistoryKey
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListChoiceKey
 import casa.moller.tandem.feature.shopping.navigation.ShoppingListKey
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
+import casa.moller.tandem.feature.shopping.navigation.StoreReminderKey
 import java.time.LocalDate
 
 /**
@@ -245,6 +246,8 @@ fun TandemShell(
         modifier = modifier,
         crashNotice = crashNotice,
         onLogInAgain = onLogInAgain,
+        // Fas 5 (butik lane): Mer → Inställningar → Påminnelse nära butiken (the shell's tests leave it out).
+        storeReminderInMore = true,
         onAddAccount = onAddAccount,
         // Fas 5 (wear lane): Mer → Klockan with its ViewModels (tests leave the default NoWatchPage).
         watchPage = RouteWatchPage,
@@ -334,6 +337,8 @@ internal fun ShellScaffold(
     // Phase 2 (konto lane): Mer → Konton och servrar.
     accountsPage: AccountsPage = RouteAccountsPage,
     onAddAccount: () -> Unit = {},
+    // Fas 5 (butik lane): the row "Påminnelse nära butiken" in Mer (off in tests, so Mer's references stay as they were).
+    storeReminderInMore: Boolean = false,
     // Fas 4 (push lane): Mer → Synk och lagring → Snabb push.
     fastPushPage: FastPushPage = RouteFastPushPage,
     // Fas 5 (wear lane): Mer → Klockan. No row and no page unless the caller passes RouteWatchPage.
@@ -472,6 +477,10 @@ internal fun ShellScaffold(
             // Fas 5 (kalender lane): "Matsedeln i kalendern", beside Mer on wide windows like the settings.
             entry<MealCalendarKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 features.MealCalendar(onBack = { navigation.goBack() })
+            }
+            // Fas 5 (butik lane): "Påminnelse nära butiken", beside Mer on wide windows like the settings.
+            entry<StoreReminderKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                features.StoreReminder(onBack = { navigation.goBack() })
             }
             // drycker lane: "Drycker" is a list-detail scene of its own on wide windows (a picked drink
             // replaces the open one); a drink is a recipe, shown by the recipe detail.
@@ -651,6 +660,8 @@ internal fun ShellScaffold(
                         }
                     },
                     onDismiss = { navigation.goBack() },
+                    // Fas 5 (butik lane): the reminder near the store, opened over the chooser.
+                    onOpenStoreReminder = { navigation.navigate(StoreReminderKey, replace = { it == StoreReminderKey }) },
                 )
             }
             entry<ShoppingHistoryKey> { features.ShoppingHistory(onBack = { navigation.goBack() }) }
@@ -710,6 +721,7 @@ internal fun ShellScaffold(
                     // Fas 5 (kok lane, #41): Mer → Köksskärm, full screen over the More tab.
                     onOpenKitchen = { navigation.navigate(KitchenKey, replace = { it is KitchenKey }) },
                     selectedPage = navigation.stackOf(ShellTab.MORE).getOrNull(1),
+                    storeReminderInMore = storeReminderInMore,
                     crashNotice = crashNotice,
                     // Fas 5 (wear lane, plan §7 #33): Mer → Klockan, only with a watch or a pairing.
                     watchRow = { selected ->

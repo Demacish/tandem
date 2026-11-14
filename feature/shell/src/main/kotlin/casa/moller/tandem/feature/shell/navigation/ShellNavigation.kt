@@ -23,6 +23,7 @@ import casa.moller.tandem.feature.recipes.navigation.RecipeDetailKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeEditorKey
 import casa.moller.tandem.feature.recipes.navigation.RecipeImportKey
 import casa.moller.tandem.feature.scan.navigation.BarcodeScanKey
+import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
@@ -235,6 +236,12 @@ class ShellNavigationState(
             is ShellOpenRequest.WeekDay -> {
                 selectTab(ShellTab.WEEK)
                 navigate(WeekAgendaKey(weekStart = request.date), replace = { it is WeekAgendaKey })
+            }
+
+            // Fas 5 (butik lane): the reminder near a store; store mode over Handla, sorted for that store.
+            is ShellOpenRequest.StoreMode -> {
+                selectTab(ShellTab.SHOPPING)
+                navigate(StoreModeKey(supermarketId = request.storeId), replace = { it is StoreModeKey })
             }
         }
     }

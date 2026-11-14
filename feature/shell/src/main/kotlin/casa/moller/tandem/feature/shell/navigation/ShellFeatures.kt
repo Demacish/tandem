@@ -46,6 +46,7 @@ import casa.moller.tandem.feature.shopping.StoreModeRoute
 import casa.moller.tandem.feature.shopping.navigation.StoreModeKey
 import casa.moller.tandem.feature.shopping.recipe.RecipeMissingShoppingSheet
 import casa.moller.tandem.feature.shopping.recipe.RecipeShoppingRoute
+import casa.moller.tandem.feature.shopping.storereminder.StoreReminderRoute
 
 /**
  * The feature screens the shell hosts (navigation contract, docs/BYGGE.md "Navigering"). Each
@@ -197,9 +198,9 @@ internal interface ShellFeatures {
     @Composable
     fun StoreMode(key: StoreModeKey, onClose: () -> Unit)
 
-    /** The list / store chooser. */
+    /** The list / store chooser; Fas 5 (butik lane): [onOpenStoreReminder] is "Påminn mig nära en butik" below the stores. */
     @Composable
-    fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit)
+    fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit, onOpenStoreReminder: () -> Unit)
 
     /** The local shopping history. */
     @Composable
@@ -222,6 +223,10 @@ internal interface ShellFeatures {
     /** Fas 5 (kalender lane, plan §7 #36): "Matsedeln i kalendern" (feature:mealplan). */
     @Composable
     fun MealCalendar(onBack: () -> Unit)
+
+    /** Fas 5 (butik lane, plan §7 #34): "Påminnelse nära butiken" (feature:shopping). */
+    @Composable
+    fun StoreReminder(onBack: () -> Unit)
 
     /** The plan-meal sheet. */
     @Composable
@@ -470,8 +475,12 @@ internal object RouteShellFeatures : ShellFeatures {
     }
 
     @Composable
-    override fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit) {
-        ShoppingListChoiceRoute(onChosen = onChosen, onDismiss = onDismiss)
+    override fun ShoppingListChoice(
+        onChosen: (listId: Long?, supermarketId: Long?) -> Unit,
+        onDismiss: () -> Unit,
+        onOpenStoreReminder: () -> Unit,
+    ) {
+        ShoppingListChoiceRoute(onChosen = onChosen, onDismiss = onDismiss, onOpenStoreReminder = onOpenStoreReminder)
     }
 
     @Composable
@@ -501,6 +510,11 @@ internal object RouteShellFeatures : ShellFeatures {
     @Composable
     override fun MealCalendar(onBack: () -> Unit) {
         MealCalendarRoute(onBack = onBack)
+    }
+
+    @Composable
+    override fun StoreReminder(onBack: () -> Unit) {
+        StoreReminderRoute(onBack = onBack)
     }
 
     @Composable

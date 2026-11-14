@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        Fas 5 (butik lane, plan §7 #34): "Visa på kartan" for a store's place is offered only when an
+        app on the phone shows geo: places (package visibility, Android 11+). No map SDK in Tandem.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+    </queries>
+</manifest>

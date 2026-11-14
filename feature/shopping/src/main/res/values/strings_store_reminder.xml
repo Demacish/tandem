@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (butik lane, plan §7 #34): "Remind me near the store", the page, its store sheet and the permission steps. -->
+    <string name="store_reminder_title">Reminder near the store</string>
+    <string name="store_reminder_more_supporting">A notification when you are near a store and the list has things on it</string>
+    <string name="store_reminder_choice_row">Remind me near a store</string>
+    <string name="store_reminder_intro">Tandem can remind you when you are near one of your stores and something is still on the shopping list. Set where each store is once; Tandem watches those places with the phone\'s location service, without following you.</string>
+    <string name="store_reminder_switch">Remind me near the store</string>
+    <string name="store_reminder_switch_body">At most once per visit, within the distance you choose. Off by default.</string>
+    <plurals name="store_reminder_watching">
+        <item quantity="one">Watching %d store</item>
+        <item quantity="other">Watching %d stores</item>
+    </plurals>
+    <string name="store_reminder_no_places">Set where a store is below to get the reminder.</string>
+    <string name="store_reminder_starting">Starting…</string>
+    <string name="store_reminder_stores_heading">Stores</string>
+    <string name="store_reminder_store_no_place">No place set</string>
+    <string name="store_reminder_store_on">Reminds within %1$d m</string>
+    <string name="store_reminder_store_off">Off · place saved</string>
+    <string name="store_reminder_store_open">Set the place</string>
+    <string name="store_reminder_no_stores_title">No stores yet</string>
+    <string name="store_reminder_no_stores_body">Stores (supermarkets) are set up in Tandoor on the web. Once there is one, it shows here.</string>
+    <string name="store_reminder_privacy_title">The places stay on this phone</string>
+    <string name="store_reminder_privacy_body">They are never sent to your server or anywhere else, and they go when the account is removed from Tandem. Turning the reminder off stops all watching.</string>
+    <string name="store_reminder_demo_title">Not in demo mode</string>
+    <string name="store_reminder_demo_body">The reminder near the store needs your own stores and shopping list. Log in to your Tandoor to use it.</string>
+    <string name="store_reminder_no_account_title">Log in first</string>
+    <string name="store_reminder_no_account_body">The reminder uses the stores and the shopping list of your Tandoor account.</string>
+    <string name="store_reminder_no_play_title">Needs Google Play services</string>
+    <string name="store_reminder_no_play_body">The reminder near the store uses Google Play services to notice, without draining the battery, when the phone comes near a store. This phone does not have them (or has an old version), so the option is not available. Everything else in Tandem works as usual.</string>
+    <!-- The store sheet. -->
+    <string name="store_reminder_sheet_switch">Remind me near this store</string>
+    <string name="store_reminder_sheet_switch_body">Within %1$d m of the place</string>
+    <string name="store_reminder_saved_here">Place saved %1$s from your position</string>
+    <string name="store_reminder_saved_pasted">Place saved %1$s from a pasted place</string>
+    <string name="store_reminder_radius">Distance: %1$d m</string>
+    <string name="store_reminder_radius_label">Distance</string>
+    <string name="store_reminder_radius_value">%1$d metres</string>
+    <string name="store_reminder_where">Where is the store?</string>
+    <string name="store_reminder_where_change">Change the place</string>
+    <string name="store_reminder_use_location">I\'m in the store now – use my position</string>
+    <string name="store_reminder_locating">Finding your position…</string>
+    <string name="store_reminder_or_paste">Or paste a geo: link, a map link or coordinates.</string>
+    <string name="store_reminder_paste_label">Place</string>
+    <string name="store_reminder_paste_hint">For example 12.3456, -45.6789</string>
+    <string name="store_reminder_paste_error">No place found in the text. Try coordinates with decimals or a geo: link.</string>
+    <string name="store_reminder_paste_save">Save place</string>
+    <string name="store_reminder_show_map">Show on map</string>
+    <string name="store_reminder_forget">Remove place</string>
+    <string name="store_reminder_done">Done</string>
+    <!-- Permissions, asked in context. -->
+    <string name="store_reminder_background_title">Allow location all the time?</string>
+    <string name="store_reminder_background_body">The reminder comes when you get near a store, also when Tandem is not open. Android now opens the settings: choose “Allow all the time”. Tandem only uses the location to notice when you are near the stores you chose; it is never sent anywhere.</string>
+    <string name="store_reminder_continue">Continue</string>
+    <string name="store_reminder_not_now">Not now</string>
+    <string name="store_reminder_denied_location_title">Location is needed</string>
+    <string name="store_reminder_denied_location_body">Without the phone\'s location Tandem cannot notice when you are near a store, or use your position as a store\'s place. You can still paste a place.</string>
+    <string name="store_reminder_denied_precise_title">Precise location is needed</string>
+    <string name="store_reminder_denied_precise_body">With approximate location the phone can be off by several kilometres, so the reminder cannot come within a few hundred metres. Choose “Precise” for Tandem.</string>
+    <string name="store_reminder_denied_background_title">Choose “Allow all the time”</string>
+    <string name="store_reminder_denied_background_body">The reminder comes when Tandem is not open, so it needs location all the time. Open the settings, choose Location and “Allow all the time”.</string>
+    <string name="store_reminder_denied_notifications_title">Notifications are off</string>
+    <string name="store_reminder_denied_notifications_body">The reminder is a notification. Allow notifications for Tandem to get it.</string>
+    <string name="store_reminder_lost_title">The reminder cannot come right now</string>
+    <string name="store_reminder_lost_body">A permission was taken back in the phone\'s settings (location all the time or notifications). Allow it again to get the reminder.</string>
+    <string name="store_reminder_location_off_title">Location is off</string>
+    <string name="store_reminder_location_off_body">The phone\'s location is turned off, so no store is watched. Turn it on and Tandem starts again by itself.</string>
+    <string name="store_reminder_failed_title">Watching could not start</string>
+    <string name="store_reminder_failed_body">Google Play services did not take the stores this time. Tandem tries again the next time it starts.</string>
+    <string name="store_reminder_allow">Allow</string>
+    <string name="store_reminder_open_settings">Open settings</string>
+    <string name="store_reminder_open_location_settings">Location settings</string>
+    <!-- Snackbars. -->
+    <string name="store_reminder_msg_on">The reminder near the store is on</string>
+    <string name="store_reminder_msg_off">The reminder near the store is off</string>
+    <string name="store_reminder_msg_saved">Place saved</string>
+    <string name="store_reminder_msg_saved_accuracy">Place saved (within about %1$d m)</string>
+    <string name="store_reminder_msg_saved_turn_on">Place saved. Turn the reminder on at the top to get it.</string>
+    <string name="store_reminder_msg_forgotten">Place removed</string>
+    <string name="store_reminder_msg_no_position">No position came. Try again by a window or outdoors, or paste the place.</string>
+    <string name="store_reminder_msg_location_off">Turn on the phone\'s location first</string>
+    <string name="store_reminder_msg_failed">That did not work. Try again.</string>
+</resources>

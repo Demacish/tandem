@@ -178,6 +178,15 @@ class ShoppingScreenshotTest {
     @Test
     fun storeChoiceEmptyDark() = capture("phone_store_choice_empty_dark", ShoppingShot.STORE_CHOICE_EMPTY, darkTheme = true)
 
+    // Fas 5 (butik lane): "Påminn mig nära en butik" in the store chooser.
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun storeChoiceReminder() = capture("phone_store_choice_reminder_light_sv", ShoppingShot.STORE_CHOICE_REMINDER)
+
+    @Test
+    fun storeChoiceReminderFontScale2() =
+        capture("phone_store_choice_reminder_font2_dark", ShoppingShot.STORE_CHOICE_REMINDER, darkTheme = true, fontScale = 2f)
+
     @Test
     @Config(qualifiers = "sv-$PHONE")
     fun history() = capture("phone_history_light_sv", ShoppingShot.HISTORY)

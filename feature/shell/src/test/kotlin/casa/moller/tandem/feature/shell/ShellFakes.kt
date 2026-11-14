@@ -311,8 +311,11 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
     override fun StoreMode(key: StoreModeKey, onClose: () -> Unit) = Page("Store mode", onClose)
 
     @Composable
-    override fun ShoppingListChoice(onChosen: (listId: Long?, supermarketId: Long?) -> Unit, onDismiss: () -> Unit) =
-        Page("Lists and stores", onDismiss)
+    override fun ShoppingListChoice(
+        onChosen: (listId: Long?, supermarketId: Long?) -> Unit,
+        onDismiss: () -> Unit,
+        onOpenStoreReminder: () -> Unit,
+    ) = Page("Lists and stores", onDismiss)
 
     @Composable
     override fun ShoppingHistory(onBack: () -> Unit) = Page("Bought before", onBack)
@@ -331,6 +334,9 @@ internal class PlaceholderShellFeatures(private val state: ShellUiState) : Shell
 
     @Composable
     override fun MealCalendar(onBack: () -> Unit) = Page("Meal plan in your calendar", onBack)
+
+    @Composable
+    override fun StoreReminder(onBack: () -> Unit) = Page("Reminder near the store", onBack)
 
     @Composable
     override fun PlanMeal(key: PlanMealKey, onDone: () -> Unit) = Page("Plan a meal ${key.date}", onDone)

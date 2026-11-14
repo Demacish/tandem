@@ -45,6 +45,13 @@ sealed interface ShellOpenRequest {
         }
     }
 
+    /** Fas 5 (butik lane): the reminder near a store opens store mode sorted for that store. */
+    data class StoreMode(val storeId: Long) : ShellOpenRequest {
+        init {
+            require(storeId != 0L) { "a store id" }
+        }
+    }
+
     companion object {
         private const val TODAY = "today"
         private const val MORE = "more"
@@ -71,6 +78,7 @@ sealed interface ShellOpenRequest {
                 val date = destination.removePrefix(AppOpenIntents.WEEK_DAY_PREFIX)
                 return runCatching { LocalDate.parse(date) }.getOrNull()?.let { WeekDay(it.toString()) }
             }
+            idOf(destination, AppOpenIntents.STORE_MODE_PREFIX)?.let { return StoreMode(it) }
             return idOf(destination, AppOpenIntents.COOK_PREFIX)?.let { Cook(it) }
         }
 
@@ -91,6 +99,7 @@ sealed interface ShellOpenRequest {
             BarcodeScan -> AppOpenIntents.SCAN
             UseUp -> AppOpenIntents.USE_UP
             is WeekDay -> AppOpenIntents.weekDay(request.date)
+            is StoreMode -> AppOpenIntents.storeMode(request.storeId)
         }
 
         private fun tabName(tab: ShellTab): String = when (tab) {

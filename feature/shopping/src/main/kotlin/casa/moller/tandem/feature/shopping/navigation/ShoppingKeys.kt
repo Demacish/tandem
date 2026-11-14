@@ -37,3 +37,10 @@ data object ShoppingListChoiceKey : NavKey
 /** The local history of bought items (plan 8.2 "Lokal historik"). */
 @Serializable
 data object ShoppingHistoryKey : NavKey, FullScreenDestination
+
+/**
+ * Fas 5 (butik lane, plan §7 #34): "Påminnelse nära butiken", from Handla's store chooser and from
+ * Mer → Inställningar (beside Mer on wide windows, like the other settings pages).
+ */
+@Serializable
+data object StoreReminderKey : NavKey
