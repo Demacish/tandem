@@ -68,16 +68,16 @@ class VoicePlatformTest {
     }
 
     @Test
-    fun withoutARecognizerTheCheckSaysSoInAFullTag() = runTest {
-        // Robolectric has neither an on-device recognizer nor a speech service.
+    fun withoutASpeechServiceTheCheckSaysSoInAFullTag() = runTest {
+        // Robolectric has no speech service (no RecognitionService to resolve). The on-device
+        // recognizer is not asked here: whether the framework names one depends on the platform
+        // resources, and its callbacks would wait on the paused main looper.
         val recognizer = AndroidVoiceCommandRecognizer(context)
-        for (engine in VoiceEngine.entries) {
-            val check = recognizer.check("en", engine)
-            assertEquals(VoiceAvailability.NO_SERVICE, check.availability)
-            // B1: never the bare "en".
-            assertTrue(check.languageTag, check.languageTag.startsWith("en-"))
-            assertEquals(VoiceDownload.FAILED, recognizer.downloadLanguage(check.languageTag, engine))
-        }
+        val check = recognizer.check("en", VoiceEngine.SPEECH_SERVICE)
+        assertEquals(VoiceAvailability.NO_SERVICE, check.availability)
+        // B1: never the bare "en".
+        assertTrue(check.languageTag, check.languageTag.startsWith("en-"))
+        assertEquals(VoiceDownload.FAILED, recognizer.downloadLanguage(check.languageTag, VoiceEngine.SPEECH_SERVICE))
         recognizer.release()
     }
 
