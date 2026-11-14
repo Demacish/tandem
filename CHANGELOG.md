@@ -35,6 +35,23 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   kalenderapp; "Ny länk" gör den gamla ogiltig och "Stäng av" tar bort nyckeln. Alla som har länken
   kan läsa matsedeln. Inte för gäster.
 
+**Påminnelse nära butiken**
+
+- **Påminn mig nära butiken:** en notis när du närmar dig en av dina butiker och något står kvar på
+  inköpslistan, "Du är nära Testbutiken – 7 saker på listan"; ett tryck öppnar butiksläget för den
+  butiken. Högst en gång per besök (först när du lämnat butiken och minst tre timmar efter förra
+  påminnelsen kan nästa komma). Av från början; finns under Mer → Inställningar och i butiksvalet
+  på Handla.
+- **Butikens plats:** stå i butiken och tryck "Jag är i butiken nu – använd min position", eller
+  klistra in en geo:-länk, en kartlänk eller koordinater (decimalkomma går också). Avståndet väljer
+  du mellan 100 och 500 m (200 m från början). Platserna stannar i telefonen: de skickas aldrig till
+  servern och försvinner med kontot.
+- **Behörigheter i sammanhanget:** exakt plats när du sparar din position eller slår på
+  påminnelsen, sedan "Tillåt alltid" (Tandem förklarar först varför, sedan öppnar Android
+  inställningarna) och notiser. Ingen ständig platsspårning: telefonens geofences (Google
+  Play-tjänster) märker när du kommer nära. Utan Google Play-tjänster finns valet inte, och sidan
+  säger varför. Aldrig i demoläget; gäster kan använda den.
+
 ## [0.7.0] – 2026-11-13
 
 Fas 5, första delen: I köket. Kokläget går att styra utan att röra skärmen, surfplattan kan stå

@@ -1126,6 +1126,7 @@ sätts av integrationen. En rad per bana.
 | komplettering-1 | Formens storlek till inköpslistan (plan §8.1); två recept sida vid sida i kokläget på expanded bredd (beslut) | "Lägg på inköpslistan" från receptet och kokläget i en annan form lägger på `servings × faktor` som Tandoors webb (arket visar "Skalat för 20 cm form (× 0,69)" och formens mängder, stegaren ändrar portionerna och formen står kvar; Idag och Kan laga nu oförändrade); enhetstest av faktorn och arket, Compose-test, skärmbilder och ATF för arket, röktestet lägger demons kladdkaka i 20 cm form på listan och ser 69 g smör. Två recept sida vid sida byggs **inte** förrän ägaren efter enhetsprovet bestämmer det (beslutet i "Kokläget i Fas 5" står kvar). | ✅ formen klar 2026-11-13 (PR 43499205628 och röktest "OK (44 tests)" 43499306407 på 74df357; referensbilder från Screenshots 43495860331, bara `shopping/*recipe_shopping_tin*`), se "Inköpslistan i vald form"; två recept sida vid sida väntar på ägarens beslut |
 | kalender | Matsedeln i kalendern (#36, plan §3.1, §7), 0.8.0 | **Visa i telefonens kalender** (av som standard; Veckans meny och Mer → Inställningar): när den slås på frågas READ_CALENDAR/WRITE_CALENDAR i sammanhanget, och de kommande veckornas måltider (synkens fönster −14..+42 dagar) står i en egen lokal kalender "Tandem – matsedel" på telefonen, en händelse per måltid med måltidstyp och titel, vid måltidstypens tid (en timme) eller som heldag, skrivna från Room (offline). Kalendern följer matsedeln inom sekunder medan appen lever och skrivs om av WorkManager två gånger om dygnet, alltså **inom 24 h**; inga dubbletter, flyttade måltider flyttas, borttagna försvinner; avstängd, utloggad eller demoläge tar bort kalendern. Gäster får använda den. **Prenumerationslänk** (av som standard, inte för gäster eller i demoläget): en egen token med scope `mealplan` (aldrig kontots), adressen `…/api/meal-plan/ical/?access_token=…` att kopiera, dela eller öppna som `webcal://`, "Ny länk" återkallar den gamla, "Stäng av" återkallar, tokenen förlängs i förväg med samma adress; texten säger att alla med länken kan läsa matsedeln. Kontraktstest mot 2.6.13 och 2.7.1; i CI bevisade händelseavbildning (tidszon, sommartid, måltidstyper, flyttade och borttagna), idempotens och skrivningarna mot en exakt kalenderleverantör i Robolectric; Compose-, ATF- och referensbilder. **BEHÖVER ENHET** (ägaren): b) syns i Samsung Kalender/Google Kalender och uppdateras inom ett dygn; a) prenumereras i en kalender som stöder det. | ✅ klart i CI 2026-11-14 (PR 43533009740 på ebde838, röktest "OK (45 tests)" 43533169038 på ebde838, jobbet 41 min av 50; Contract 2.6.13/2.7.1 43530215254 på 643aec3 och Tandoor-bevakning 43523256160; referensbilder från Screenshots 43530230230); enhetsproven återstår, se "Matsedeln i kalendern" |
 | klocka | Wear OS-appen (#33, plan §3.1, §7, B15): inköpslistan, timrarna och rutan på klockan, klockans egen token | Klockan bockar av en vara med telefonen avstängd och servern får det när klockan har nät, med **klockans egen token** (`read write`, 90 dagar, skapad av telefonen i Mer → Klockan och skickad som en Data Layer-förfrågan bara till en klocka i närheten; telefonens token lämnar aldrig telefonen). Avbockningar utan nät väntar i klockans utkorg och skickas som **en** `bulk` per läge; vakten stoppar vid första 403/401 ("Logga in igen på telefonen") och backar vid 429 och fel (5 min → 2 h). Koppla från tar bort token på servern och tömmer klockan; en utloggad kontos klocka tar bort sin egen token. Telefonens timrar syns på klockan som pågående aktivitet och larm, och Stoppa på ena sidan stoppar båda. Rutan visar antal, de första varorna och nästa timer. Demoläget och gäster kan inte koppla (sagt rakt ut). Release bygger och signerar `tandem-wear-<version>.apk` med samma nyckel; docs/WEAR.md. I CI: klockans utkorg, tokenutbytet genom en låtsad Data Layer, kontraktstestet mot 2.6.13 och 2.7.1, timerspeglingen med fakes, skärmbilder och ATF på liten rund, stor rund och fyrkantig klocka och Mer → Klockan på telefon och surfplatta. **BEHÖVER ENHET** (ägaren): en riktig klocka med telefonen avstängd | ✅ klart i CI 2026-11-14 (PR 43534354040 och röktest "OK (44 tests)" 43536699048 på 6dc3f96; Contract 2.6.13/2.7.1 43529423632 och Tandoor-bevakning 43529423772 på 843b73a, kontraktstestet oförändrat sedan; torrkörning med `tandem-wear-0.7.0-DRYRUN-throwaway-key.apk` 43529423920; referensbilder från Screenshots 43531944788, bara `wear/*` och `shell/watch_*`); enhetsprovet återstår, se "Klockan" |
+| butik | Påminnelse nära butiken (#34, plan §7, §8.2, §8.7), 0.8.0 | **Påminn mig nära butiken** (av som standard; Mer → Inställningar och butiksvalet på Handla): per Tandoor-butik en plats på telefonen ("Jag är i butiken nu – använd min position" en gång, eller en inklistrad geo:-länk, kartlänk eller koordinater), avstånd 100–500 m (200 m), platserna per konto i DataStore, aldrig till servern, i loggar eller diagnostik, borta med kontot. Påslagen: en geofence per påslagen butik i Google Play-tjänster (ENTER/EXIT, två minuters svarstid, ingen förgrundstjänst, ingen ständig plats, ingen avfrågning), inlagda igen efter omstart, appuppdatering och påslagen plats, alla borta när valet slås av, i demoläget och vid utloggning. Behörigheterna frågas i sammanhanget och i ordning: exakt plats, förklaring och sedan "Tillåt alltid", notiser. ENTER ger **en** notis per besök i kanalen "Inköpslistan" (`shopping`) bara när listan har saker kvar: "Du är nära Testbutiken – 7 saker på listan" (plural), tryck öppnar butiksläget för butiken; nästa först efter EXIT och tidigast tre timmar efter förra (ett besök utan EXIT räknas som slut efter tolv timmar). Aldrig i demoläget, gäster får den. Utan Play-tjänster döljs valet med en förklaring. **I CI:** besöksregeln, omregistreringen och notisens innehåll (enhets-, Robolectric- och röktest). **BEHÖVER ENHET** (ägaren): påminnelsen kommer inom 200 m och en gång per besök, batteri under 1 %/dag | under arbete, se "Påminnelse nära butiken" |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -1516,6 +1517,103 @@ a) prenumeration i en kalender som stöder det. Länken återkallas inte när ko
 bort (den lokala raden försvinner med kontot, tokenen gäller på servern tills den går ut eller tas bort
 i Tandoor); den lokala kalendern finns kvar efter avinstallation.
 <!-- /Fas 5 kalender -->
+
+<!-- Fas 5 butik -->
+## Påminnelse nära butiken (`:core:sync`, `:core:domain`, `:core:datastore`, `:feature:shopping`, `:feature:shell`, Fas 5, butik)
+
+Plan §7 #34 (geofence per butik, opt-in, lokalt), §8.2 (butiker och butiksläget), §8.7 (kanalerna:
+påminnelsen går i **"Inköpslistan"** (`shopping`), som finns sedan Fas 4; ingen ny kanal), §10 Fas 5
+("inom 200 m från vald butik och högst en gång per besök, batteripåverkan under 1 % per dag"). Ingen
+ny endpoint, ingen ändring av Room (schema 6): platserna och besöken ligger i en egen liten DataStore.
+"Klart när" står i "Fas 5 – läge".
+
+**Beroende.** `com.google.android.gms:play-services-location` 21.4.0 (Google Maven, 2026-06-25, sha1
+kontrollerad) i `core:sync`, bara för geofences och en position. Den drar in play-services-base/-basement
+18.9.0 och -tasks 18.4.0 (inga telemetribibliotek). Utan Play-tjänster (eller med för gamla) säger
+`GooglePlayServicesCheck` nej och sidan visar "Kräver Google Play-tjänster" i stället för valet.
+
+**Den rena logiken (`:core:domain` `storereminder/`).**
+
+| Del | Innehåll |
+|---|---|
+| `GeoText.parse` | en plats ur inklistrad text, utan tjänst eller karta: `geo:` (RFC 5870 och Androids `geo:0,0?q=lat,lon(namn)`; `geo:0,0` ensam är ingen plats), kartlänkar (`!3d…!4d…` före `@lat,lon`, `q=`/`query=`/`ll=`/`center=`/`destination=`/`daddr=`, `mlat`/`mlon`, `#map=z/lat/lon`), två tal **med decimaler** (punkt med valfri avgränsare, komma bara med mellanslag eller semikolon emellan), väderstreck (`N`/`S`/`E`/`W`/`Ö`/`V`, grader) och grader-minuter-sekunder. Utanför intervallet eller tvetydigt ("59, 18") ger null. `GeoPoint.toString` skriver aldrig ut platsen |
+| `StoreVisits` | regeln "en gång per besök": ENTER påminner om butikens förra besök är slut (EXIT, eller äldre än `STALE_VISIT` = 12 h, så en EXIT som tappades efter en omstart inte tystar butiken för gott) och förra påminnelsen var minst `MIN_GAP` = **3 h** sedan; ENTER utan EXIT emellan är samma besök. Händelser upp till 10 min i fel ordning (två körningar som korsas) ignoreras, ett större steg bakåt är en ändrad klocka. Bara en **postad** påminnelse räknas mot mellanrummet (tom lista tystar inte nästa besök) |
+| `StoreReminderRadius` | 100–500 m i steg om 50 (reglaget har 7 steg mellan ändarna), 200 m från början |
+| `StoreFences` | geofencerna som ska finnas: påslagna butiker med plats när valet är på, högst 100 (Play-tjänsternas gräns), id `tandem.store.<butiks-id>` (inget annat), FNV-1a-fingeravtryck av uppsättningen |
+| `StoreReminderCount.open` | det som är kvar att köpa: inte avbockat och inte "köp senare", samma räkning som snabbinställningens "7 kvar" |
+
+**Lagringen (`:core:datastore` `StoreReminderStore`).** Egen fil `store_reminders.preferences_pb`
+(`DatastoreFiles.STORE_REMINDERS`, utanför säkerhetskopian som allt annat): per konto (`account.<id>`)
+JSON med på/av, butikernas platser (`StoreSpotRecord`, `toString` utan plats), besöken och senaste
+problemet, plus en enhetsgemensam `registration` (konto, fingeravtryck, telefonens `BOOT_COUNT`,
+appens versionCode). `retainOnly` glömmer konton som lämnat telefonen.
+
+**Plattformen (`:core:sync` `storereminder/`, allt bakom små gränssnitt så logiken testas utan Play-tjänster).**
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Geofencerna | `PlayStoreReminderPlatform.kt` `PlayGeofenceGateway` | `GeofencingClient`: alla appens geofences byts mot de önskade (ENTER och EXIT, `NEVER_EXPIRE`, svarstid **120 s** (`RESPONSIVENESS_MILLIS`, låter Play-tjänsterna samla positioner i stället för att väcka GPS:en), **ingen** utlösning när de läggs in, så att slå på i butiken inte påminner direkt). En gemensam muterbar PendingIntent till `StoreGeofenceReceiver`. `GEOFENCE_NOT_AVAILABLE` = platsen avslagen |
+| En position | `PlayCurrentLocationGateway` | `getCurrentLocation` med hög noggrannhet, högst 30 s, en position från senaste minuten duger; noggrannheten följer med till snackbaren ("inom ungefär 15 m") |
+| Behörigheterna | `AndroidStoreReminderPermissions` | exakt plats, bara ungefärlig, "Tillåt alltid", notiser (behörighet, appens notiser och kanalen), platsen på |
+| Registreringen | `StoreReminderRegistrar.kt` | seriell (mutex): vill det aktiva riktiga kontot något registreras det, annars tas allt bort och systemmottagaren slås av. En oförändrad uppsättning (samma konto, fingeravtryck, start och appversion) registreras inte igen vid varje processtart; `force` (efter ett systemevent och när valet slås på) gör det. Problem (`LOCATION_OFF`, `PERMISSION`, `FAILED`) sparas på kontot för sidan och prövas igen vid nästa start, ändring eller systemevent |
+| Följet | `StoreReminderSchedule.kt` | startas av `SyncStarter` (en rad) vid varje processtart: geofencerna följer konto, på/av och butikerna (besöken räknas inte som ändring); ett konto som tas bort tar med sig sina platser (aldrig medan lagringen behöver återställas) |
+| Mottagarna | `StoreReminderReceivers.kt` | `StoreGeofenceReceiver` (inte exporterad) läser händelsen (`PlayGeofenceEventReader`, bara våra id) och lämnar den med klockslaget till arbetet. `StoreReminderSystemReceiver` (`BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `PROVIDERS_CHANGED`, `MODE_CHANGED`) ber arbetet registrera om; den är **avslagen i manifestet** och slås bara på medan något bevakas (`ComponentSystemEventSwitch`), så en telefon som aldrig använder påminnelsen gör inget arbete alls. Levererar systemet inte platsändringen till manifestet läggs geofencerna in igen vid nästa processtart (fingeravtrycket glöms när Play-tjänsterna säger att de tappats) |
+| Arbetet | `work/StoreReminderWork.kt` | `StoreReminderWorker` (expedited engångsarbete, klassnamnet behålls av consumer-rules): läget `transition` (indata `stores`, `transition`, `at`) kör kollen, `register` registrerar om, `lost` glömmer registreringen. Utdata `outcomes` (bara utfallens namn, aldrig en plats) läses av röktestets mottagare |
+| Kollen | `StoreReminderCheck.kt` | för det aktiva riktiga kontot (demoläget och utloggad: aldrig; gäster: ja), valet på och butiken påslagen med plats: regeln ovan; vid "påminn" läses listan först om telefonen har nät (högst 8 s genom `RemoteCaller`, annars den sparade) och notisen postas bara om något är kvar. Besöken sparas direkt |
+| Notisen | `platform/StoreReminderNotifier.kt` | kanalen `shopping`, taggen `TandemNotificationIds.STORE_REMINDER_TAG`, id per butik, rubrik "Du är nära Testbutiken" ("Du är nära butiken" om butiken försvunnit i Tandoor), text "7 saker på listan" (plural), kategori påminnelse, försvinner själv efter 2 h och vid tryck. Tryck: `AppOpenDestinations.STORE_MODE_PREFIX` + butiks-id → `ShellOpenRequest.StoreMode` → Handla med `StoreModeKey(supermarketId)`. `AndroidAccountNotifications` tar bort dem vid kontobyte |
+
+Behörigheterna (`core:sync`:s manifest): `ACCESS_FINE_LOCATION` och `ACCESS_COARSE_LOCATION` (frågas
+tillsammans, Android 12+ kräver det), `ACCESS_BACKGROUND_LOCATION`, `RECEIVE_BOOT_COMPLETED`; plats och
+GPS som valfria hårdvarufunktioner. Ingen förgrundstjänst.
+
+**Sidan (`feature/shopping/storereminder/`).** `StoreReminderScreen(state, onAction, onBack)` +
+`StoreReminderViewModel` + `StoreReminderRoute`, nyckeln `StoreReminderKey` (`navigation/ShoppingKeys.kt`).
+En kolumn med läsbredd (bredvid Mer på breda fönster, `ListDetailSceneStrategy.detailPane`): inledning,
+brytaren (**en** TalkBack-nod med rollen brytare, "Bevakar n butiker" som levande region), högst ett kort
+(nekad behörighet med "Tillåt"/"Öppna inställningar"; för "Tillåt alltid" bara inställningarna, platsen
+avslagen med "Platsinställningar", en behörighet som tagits tillbaka, Play-tjänsterna vägrade), butikerna
+(en knapp per butik med plats och avstånd) och att platserna stannar i telefonen. Butikens ark
+(`StoreReminderSheetLayout`, "Klar" fast under det som rullar): butikens egen brytare och avståndet
+(reglage 100–500 m, sparas när det släpps), när och hur platsen sparades, "Visa på kartan" (bara när en
+app öppnar `geo:`, `<queries>` i feature:shoppings manifest) och "Ta bort platsen", "Jag är i butiken nu –
+använd min position" och fältet för en inklistrad plats (Klar på tangentbordet sparar). Behörigheterna i
+ordning och i sammanhanget: positionen frågar bara exakt plats; att slå på frågar exakt plats, visar sedan
+förklaringen innan Android öppnar sidan för "Tillåt alltid", sedan notiser, och slår bara på med alla tre.
+Demoläget, utan konto och utan Play-tjänster: en förklaring. Strängarna i `feature/shopping`
+`strings_store_reminder.xml` (engelska och svenska), notisens i `core/sync` `strings_store_reminder.xml`.
+
+**Skalet.** `ShellFeatures.StoreReminder(onBack)`; `ShoppingListChoice(…, onOpenStoreReminder)` ger raden
+"Påminn mig nära en butik" under butikerna i butiksvalet; Mer → Inställningar har raden efter "Matsedeln i
+kalendern" (`MoreScreen(storeReminderInMore)`, som bara `TandemShell` slår på, så skalets egna tester och
+Mers referensbilder är oförändrade); `StoreReminderKey` i `isMorePage`.
+
+**Röktest (`Phase5ButikSmokeTest`, billigt).** Två saker på listan; behörigheterna ges med `pm grant` (som
+efter "Tillåt" och "Tillåt alltid"); Mer → "Reminder near the store" → brytaren, Testbutiken får en
+inklistrad plats (påhittad, ute till havs) genom arket. Med processen borta skickar
+`am broadcast -n <paket>/casa.moller.tandem.smoke.SmokeWorkerReceiver --es worker store --el store 1`
+(bara i byggtypen `minified`, samma arbete som en geofence startar) en simulerad ENTER: mottagaren svarar
+`data="SUCCEEDED:POSTED"`, **en** notis i kanalen `shopping` med "Testbutiken" och "2 things on the list";
+en andra ENTER svarar `SUCCEEDED:SAME_VISIT` och postar inget. Emulatorn är `google_apis` (med
+Play-tjänster); utan dem visar sidan förklaringen och testet säger det.
+
+**Tester:** `GeoTextTest`, `StoreVisitsTest` (besöksregeln, radien, geofencerna, fingeravtrycket, antalet),
+`PreferencesStoreReminderStoreTest`, `DatastoreFilesTest`, `StoreReminderCheckTest` (en gång per besök,
+mellanrummet, tom lista, notiser av, demo/utloggad/av, butik utan plats, gäst, annat konto, läser listan med
+nät), `StoreReminderRegistrarTest` (en gång, omstart/uppdatering/tvingad, tappad uppsättning, av, demo och
+utloggning, annat konto, behörighet och plats av, utan Play-tjänster), `StoreReminderScheduleTest`,
+`StoreReminderReceiversTest` (händelse → arbete, systemevent → registrering, arbetets indata som röktestets,
+systemmottagaren av och på), `StoreReminderNotifierTest` (kanal, tagg, text och plural på engelska och
+svenska, tryck → butiksläget, utan behörighet eller med kanalen av), `DefaultStoreReminderRepositoryTest`,
+`StoreReminderViewModelTest` (behörigheterna i ordning, nej, positionen, arket), `StoreReminderScreenTest`
+(en nod för brytaren, korten, arket; ATF och referensbilder `shopping/*store_reminder*` på telefon stående och
+liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2), `ShoppingScreenshotTest`/
+`ShoppingAccessibilityTest` (`shopping/*store_choice_reminder*`), `ShoppingKeysTest`,
+`ShellNavigationStateTest`, `OpenLaunchTest`.
+
+**Kvar:** behöver enhet (ägaren): påminnelsen inom 200 m och en gång per besök utomhus, batteri under 1 % per
+dag (Inställningar → Batteri efter ett dygn med två bevakade butiker). Behörighetssidan under Mer listar inte
+platsen (som kalendern).
+<!-- /Fas 5 butik -->
 
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
