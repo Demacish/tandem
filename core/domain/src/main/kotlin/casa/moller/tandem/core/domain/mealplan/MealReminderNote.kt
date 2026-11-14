@@ -63,6 +63,60 @@ object MealReminderNote {
             }
         }.joinToString("\n").trim()
     }
+
+    /**
+     * The note to save from the meal page's two fields (0.7.0 review): [body] is the note field (the
+     * [original] note without its reminder lines, as the user edited it) and [text] the reminder
+     * field. Nothing the user wrote is lost:
+     *
+     * - a reminder line typed into the note field by hand stays as typed (it is the user's text);
+     *   the reminder field still counts, its line never comes after such a line;
+     * - the [original]'s reminder line keeps its place and its word: before the text it stood before
+     *   (when that text still starts the note) or after the text it stood after (when that text
+     *   still ends it), else at the end; its other reminder lines (hidden by both fields) stay
+     *   right after it;
+     * - without a reminder line in [original], "[keyword]: text" is added at the end.
+     *
+     * A blank [text] is the note field as it is (trimmed): the reminder was removed.
+     */
+    fun merge(original: String?, body: String, text: String, keyword: String = KEYWORDS.first()): String {
+        val reminder = text.lines().joinToString(" ") { it.trim() }.trim()
+        val bodyText = body.trim()
+        if (reminder.isEmpty()) return bodyText
+        val bodyLines = if (bodyText.isEmpty()) emptyList() else bodyText.lines()
+        val originalLines = original?.lines().orEmpty()
+        val own = originalLines.indexOfFirst(::hasReminderText)
+        val word = if (own >= 0) LINE.matchEntire(originalLines[own])?.groupValues?.get(1) else null
+        val block = buildList {
+            add("${(word ?: keyword).trim().ifEmpty { KEYWORDS.first() }}: $reminder")
+            if (own >= 0) addAll(originalLines.filterIndexed { index, line -> index != own && LINE.matches(line) })
+        }
+        var at = if (own < 0) bodyLines.size else placeIn(bodyLines, originalLines, own)
+        // The field is the reminder that counts (the first line with text): before any typed one.
+        val typed = bodyLines.indexOfFirst(::hasReminderText)
+        if (typed in 0 until at) at = typed
+        return (bodyLines.take(at) + block + bodyLines.drop(at)).joinToString("\n").trim()
+    }
+
+    /** Where the [original]'s reminder line at [own] goes among [body]'s lines (see [merge]). */
+    private fun placeIn(body: List<String>, original: List<String>, own: Int): Int {
+        val before = textLines(original.take(own))
+        val after = textLines(original.drop(own + 1))
+        return when {
+            before.isEmpty() -> 0
+            body.size >= before.size && body.take(before.size) == before -> before.size
+            after.isNotEmpty() && body.size >= after.size && body.takeLast(after.size) == after -> body.size - after.size
+            else -> body.size
+        }
+    }
+
+    /** The lines of [lines] that are not reminder lines, trimmed at the ends like the note field. */
+    private fun textLines(lines: List<String>): List<String> {
+        val text = lines.filterNot { LINE.matches(it) }.joinToString("\n").trim()
+        return if (text.isEmpty()) emptyList() else text.lines()
+    }
+
+    private fun hasReminderText(line: String): Boolean = LINE.matchEntire(line)?.groupValues?.get(2)?.isNotBlank() == true
 }
 
 /**

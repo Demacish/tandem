@@ -436,7 +436,9 @@ class PlanMealViewModel @AssistedInject internal constructor(
 /**
  * Fas 5 (planera lane): the note to save: the note field with the reminder as its "Påminn:" line. An
  * unchanged note and reminder keep [meal]'s note exactly as it was (its line in its place, its word);
- * a reminder line uses the word of the meal's line, else the one the screen gave.
+ * otherwise core:domain `MealReminderNote.merge` (0.7.0 review): the meal's reminder line keeps its
+ * place and word, a reminder line typed into the note by hand stays as typed, and the line uses the
+ * word of the meal's line, else the one the screen gave.
  */
 internal fun fullNote(meal: MealPlanEntry?, state: PlanMealUiState): String {
     val original = meal?.note
@@ -450,7 +452,7 @@ internal fun fullNote(meal: MealPlanEntry?, state: PlanMealUiState): String {
     // blank reminder removes it, and a line typed into the note by hand stays as typed.
     if (state.reminder.isBlank()) return state.note.trim()
     val keyword = original?.let { MealReminderNote.keywordOf(it) } ?: state.reminderKeyword ?: MealReminderNote.KEYWORDS.first()
-    return MealReminderNote.withReminder(state.note.trim(), state.reminder, keyword)
+    return MealReminderNote.merge(original, state.note, state.reminder, keyword)
 }
 
 /** Only the fields that changed (plan 3.5: a PATCH carries the changed fields). */

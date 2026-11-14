@@ -203,9 +203,10 @@ class PlanMealViewModelTest {
         assertEquals("Thaw the chicken", vm.uiState.value.reminder)
         // Nothing changed: the note is not sent, the line keeps its place and its word.
         assertNull(changes(meal, vm.uiState.value, dinner.id).note)
-        // A new text keeps the word written on the web; an empty one removes the line.
+        // A new text keeps the word written on the web and the line its place (0.7.0 review: it no
+        // longer moves to the end); an empty one removes the line.
         vm.onAction(PlanMealAction.Reminder("Tina ut kycklingen", "Påminn"))
-        assertEquals("Dubbel sats\nRemind: Tina ut kycklingen", changes(meal, vm.uiState.value, dinner.id).note)
+        assertEquals("Remind: Tina ut kycklingen\nDubbel sats", changes(meal, vm.uiState.value, dinner.id).note)
         vm.onAction(PlanMealAction.Reminder("", "Påminn"))
         assertEquals("Dubbel sats", changes(meal, vm.uiState.value, dinner.id).note)
     }
@@ -220,6 +221,35 @@ class PlanMealViewModelTest {
         vm.onAction(PlanMealAction.Save)
         advanceUntilIdle()
         assertEquals("Påminn: Tina ut", mealPlans.drafts.single().note)
+    }
+
+    /** 0.7.0 review: a reminder line typed into the note next to a meal's reminder is no longer overwritten. */
+    @Test
+    fun aTypedReminderLineIsKeptNextToTheMealsReminder() = runTest {
+        val meal = todayDinner.copy(note = "Middag\nPåminn: Tina ut")
+        mealPlans.meals.value = mealPlans.meals.value.map { if (it.id == meal.id) meal else it }
+        val vm = viewModel(PlanMealKey(date = meal.fromDate.toString(), mealPlanId = meal.id))
+        open(vm)
+        assertEquals("Middag", vm.uiState.value.note)
+        assertEquals("Tina ut", vm.uiState.value.reminder)
+        vm.onAction(PlanMealAction.Note("Middag\nPåminn: köp bröd"))
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals("Middag\nPåminn: Tina ut\nPåminn: köp bröd", mealPlans.meals.value.single { it.id == meal.id }.note)
+    }
+
+    /** 0.7.0 review: editing the note keeps the meal's reminder line where it was (not moved to the end). */
+    @Test
+    fun editingTheNoteKeepsTheReminderLineInItsPlace() = runTest {
+        val meal = todayDinner.copy(note = "Middag\nRemind: Tina ut\nEfterrätt glass")
+        mealPlans.meals.value = mealPlans.meals.value.map { if (it.id == meal.id) meal else it }
+        val vm = viewModel(PlanMealKey(date = meal.fromDate.toString(), mealPlanId = meal.id))
+        open(vm)
+        assertEquals("Middag\nEfterrätt glass", vm.uiState.value.note)
+        vm.onAction(PlanMealAction.Note("Middag\nEfterrätt glass och bär"))
+        assertEquals("Middag\nRemind: Tina ut\nEfterrätt glass och bär", changes(meal, vm.uiState.value, dinner.id).note)
+        vm.onAction(PlanMealAction.Note("Middag med sallad\nEfterrätt glass"))
+        assertEquals("Middag med sallad\nRemind: Tina ut\nEfterrätt glass", changes(meal, vm.uiState.value, dinner.id).note)
     }
 
     @Test

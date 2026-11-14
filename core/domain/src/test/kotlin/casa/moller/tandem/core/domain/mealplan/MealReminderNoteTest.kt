@@ -133,4 +133,51 @@ class MealReminderNoteTest {
     }
 
     private fun LocalDate.plusDays(days: Int): LocalDate = plus(days, DateTimeUnit.DAY)
+
+    // --- 0.7.0 review: the page's two fields merged without losing what the user wrote ---
+
+    @Test
+    fun aReminderTypedIntoTheNoteStaysNextToTheFieldsLine() {
+        // The field still says "Tina ut"; the user typed another reminder line into the note.
+        assertEquals(
+            "Middag\nPåminn: Tina ut\nPåminn: köp bröd",
+            MealReminderNote.merge("Middag\nPåminn: Tina ut", "Middag\nPåminn: köp bröd", "Tina ut"),
+        )
+        // A typed line above the field's place: the field's line goes before it, so it still counts.
+        val typedFirst = MealReminderNote.merge("Middag\nPåminn: Tina ut", "Påminn: köp bröd\nMiddag", "Tina ut")
+        assertEquals("Påminn: Tina ut\nPåminn: köp bröd\nMiddag", typedFirst)
+        assertEquals("Tina ut", MealReminderNote.reminderOf(typedFirst))
+        // A new meal: the field's line before the typed one, both kept.
+        assertEquals("Gryta\nPåminn: Tina ut\nPåminn: köp bröd", MealReminderNote.merge(null, "Gryta\nPåminn: köp bröd", "Tina ut"))
+    }
+
+    @Test
+    fun theMealsReminderLineKeepsItsPlaceWhenTheNoteIsEdited() {
+        val original = "Middag\nRemind: Tina ut\nEfterrätt glass"
+        // The text before it is unchanged: the line stays after it.
+        assertEquals(
+            "Middag\nRemind: Tina ut\nEfterrätt glass och bär",
+            MealReminderNote.merge(original, "Middag\nEfterrätt glass och bär", "Tina ut", "Påminn"),
+        )
+        // The text after it is unchanged: the line stays before it.
+        assertEquals(
+            "Middag med sallad\nRemind: Tina ut\nEfterrätt glass",
+            MealReminderNote.merge(original, "Middag med sallad\nEfterrätt glass", "Tina ut", "Påminn"),
+        )
+        // First line: stays first, with a new text.
+        assertEquals(
+            "Remind: Tina ut kycklingen\nDubbel sats",
+            MealReminderNote.merge("Remind: Thaw\nDubbel sats", "Dubbel sats", "Tina ut kycklingen"),
+        )
+        // Everything rewritten: at the end.
+        assertEquals("Annat\nRemind: Tina ut", MealReminderNote.merge(original, "Annat", "Tina ut"))
+        // Other reminder lines of the meal (hidden by both fields) stay right after it.
+        assertEquals("A\nPåminn: x\nPåminn: y\nB!", MealReminderNote.merge("A\nPåminn: x\nB\nPåminn: y", "A\nB!", "x"))
+    }
+
+    @Test
+    fun aBlankFieldIsTheNoteAsTyped() {
+        assertEquals("Middag\nPåminn: köp bröd", MealReminderNote.merge("Middag\nPåminn: Tina ut", " Middag\nPåminn: köp bröd ", "  "))
+        assertEquals("Påminn: Tina ut", MealReminderNote.merge(null, "", "Tina\nut"))
+    }
 }
