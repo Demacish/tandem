@@ -4853,8 +4853,11 @@ täcker alla `@Serializable`-klasser under `casa.moller.tandem`).
   (ikonerna bär då namnet för TalkBack), det första som ryms i höjden; ryms inte ens ikonerna
   rullar kolumnen. Bottenraden visar bara ikoner när någon av de fem etiketterna inte ryms på en
   rad i sin femtedel av bredden. Materials adaptiva riktlinjer behåller en skena (inte en
-  bottenrad) på ett kort brett fönster, så höjden går till innehållet. Testtaggar
-  `shell:tab:<flik>` och `shell:short-rail`.
+  bottenrad) på ett kort brett fönster, så höjden går till innehållet. Innehållet ligger alltid på
+  samma plats i kompositionen (Materials `NavigationSuiteScaffoldLayout` för alla tre), annars
+  tappar en vridning mellan bottenrad och kort skena skärmarnas sparade tillstånd och ViewModels
+  (röktestets vridning i kokläget hittade det; `ShellNavigationDeviceTest` prövar det med
+  `StateRestorationTester`). Testtaggar `shell:tab:<flik>` och `shell:short-rail`.
 - **List-detalj:** fliken Recept är list-panelen i en Navigation 3 list-detail-scen
   (`ListDetailSceneStrategy` ur `material3-adaptive-navigation3`). På medium/expanded visas ett
   recept som öppnas från listan i detaljpanelen bredvid listan; ett nytt val ersätter det
