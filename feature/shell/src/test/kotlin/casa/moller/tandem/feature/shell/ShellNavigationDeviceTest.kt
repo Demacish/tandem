@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
@@ -183,7 +184,8 @@ class ShellNavigationDeviceTest {
 
     @Test
     @Config(qualifiers = "sv-$PHONE_ZOOMED")
-    fun barFontScale2SwedishDarkScreenshot() = capture("devicetest_tabs_bar_zoomed_font2_dark_sv", ShellTab.WEEK, fontScale = 2f, darkTheme = true)
+    fun barFontScale2SwedishDarkScreenshot() =
+        capture("devicetest_tabs_bar_zoomed_font2_dark_sv", ShellTab.WEEK, fontScale = 2f, darkTheme = true)
 
     @Test
     @Config(qualifiers = "w600dp-h400dp-land-hdpi")

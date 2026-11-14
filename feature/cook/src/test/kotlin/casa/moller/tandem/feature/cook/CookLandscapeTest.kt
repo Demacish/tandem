@@ -318,7 +318,8 @@ class CookLandscapeTest {
     /** As CookSmallPhoneTest: each label on one line without an ellipsis, or only its arrow (64 dp, the label for TalkBack). */
     private fun assertLabelsWhole(vararg labels: String) {
         labels.forEach { label ->
-            val texts = composeRule.onAllNodesWithText(label, useUnmergedTree = true).fetchSemanticsNodes().filter { it.layoutInfo.isPlaced }
+            val texts = composeRule.onAllNodesWithText(label, useUnmergedTree = true).fetchSemanticsNodes()
+                .filter { it.layoutInfo.isPlaced }
             if (texts.isEmpty()) {
                 composeRule.onNodeWithContentDescription(label).assertIsDisplayed().assertHeightIsAtLeast(KITCHEN_TARGET)
             } else {
