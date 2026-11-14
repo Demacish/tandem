@@ -422,7 +422,9 @@ internal fun CookSidePane(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = paneHeight * TIMER_SECTION_SHARE)
+                        // B6 (device test 2026-11-14): on a short pane a ringing timer may take the
+                        // whole pane, so its Stop is never cut off below the heading.
+                        .heightIn(max = paneHeight * if (shortPane && state.timers.anyRinging()) 1f else TIMER_SECTION_SHARE)
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = spacing.lg, vertical = spacing.md)
                         .testTag(COOK_SIDE_TIMERS_TAG),

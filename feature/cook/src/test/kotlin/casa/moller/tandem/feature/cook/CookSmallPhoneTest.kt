@@ -192,6 +192,15 @@ class CookSmallPhoneTest {
     }
 
     @Test
+    @Config(qualifiers = PHONE_SMALL_LANDSCAPE)
+    fun aRingingTimerIsWholeInTheSidePaneInLandscape() {
+        show(ringingWithMutedChannel(), handsfree = KEYS_ONLY)
+
+        composeRule.onNodeWithContentDescription(STOP_MUSHROOMS).assertWhollyVisible()
+        composeRule.onNodeWithTag(COOK_WARNING_COLLAPSED_TAG).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun withoutARingingTimerTheWarningIsWhole() {
         show(
             CookFakes().apply {
