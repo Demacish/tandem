@@ -57,26 +57,29 @@ internal class DefaultStoreReminderRepository @Inject constructor(
                 ActiveSource.Loading -> flowOf(StoreReminderState(availability = StoreReminderAvailability.LOADING))
                 ActiveSource.None -> flowOf(StoreReminderState(availability = StoreReminderAvailability.NO_ACCOUNT))
                 ActiveSource.Demo -> flowOf(StoreReminderState(availability = StoreReminderAvailability.DEMO))
-                is ActiveSource.Remote -> if (!play.isAvailable()) {
-                    flowOf(StoreReminderState(availability = StoreReminderAvailability.NO_PLAY_SERVICES))
-                } else {
-                    val granted = permissions.read()
-                    combine(store.observe(source.accountId), store.registration) { record, registration ->
-                        val fences = StoreFences.wanted(record.enabled, record.spots.mapNotNull { it.toSpot() })
-                        StoreReminderState(
-                            availability = StoreReminderAvailability.AVAILABLE,
-                            enabled = record.enabled,
-                            spots = record.spots.mapNotNull { it.toSpot() }.associateBy { it.storeId },
-                            permissions = granted,
-                            problem = record.problem?.let { name -> StoreReminderProblem.entries.firstOrNull { it.name == name } },
-                            watched = if (registration?.accountId == source.accountId) fences.size else 0,
-                        )
-                    }
-                }
+                is ActiveSource.Remote -> remoteState(source.accountId)
             }
         }
         .catch { emit(StoreReminderState(availability = StoreReminderAvailability.NO_ACCOUNT)) }
         .distinctUntilChanged()
+
+    /** The page's state for a logged-in account (Play services first, then the stored record). */
+    private fun remoteState(accountId: String): Flow<StoreReminderState> {
+        if (!play.isAvailable()) return flowOf(StoreReminderState(availability = StoreReminderAvailability.NO_PLAY_SERVICES))
+        val granted = permissions.read()
+        return combine(store.observe(accountId), store.registration) { record, registration ->
+            val spots = record.spots.mapNotNull { it.toSpot() }
+            val fences = StoreFences.wanted(record.enabled, spots)
+            StoreReminderState(
+                availability = StoreReminderAvailability.AVAILABLE,
+                enabled = record.enabled,
+                spots = spots.associateBy { it.storeId },
+                permissions = granted,
+                problem = record.problem?.let { name -> StoreReminderProblem.entries.firstOrNull { it.name == name } },
+                watched = if (registration?.accountId == accountId) fences.size else 0,
+            )
+        }
+    }
 
     override suspend fun setEnabled(enabled: Boolean) {
         val accountId = accountId() ?: return

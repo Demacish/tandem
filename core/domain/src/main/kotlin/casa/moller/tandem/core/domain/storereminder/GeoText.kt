@@ -97,10 +97,13 @@ object GeoText {
         fun number(raw: String) = (if (decimalComma) raw.replace(',', '.') else raw).toDoubleOrNull()
         val lat = number(groups[1]) ?: return null
         val lon = number(groups[3]) ?: return null
-        val latSign = if (groups[2].equals("S", ignoreCase = true)) -1 else 1
-        val lonSign = if (groups[4].equals("W", ignoreCase = true) || groups[4].equals("V", ignoreCase = true)) -1 else 1
-        if ((latSign < 0 && lat < 0) || (lonSign < 0 && lon < 0)) return null
-        return point(lat * latSign, lon * lonSign)
+        val south = groups[2].equals("S", ignoreCase = true)
+        val west = groups[4].uppercase() in WEST
+        // "-59 S" says south twice: ambiguous, not a place.
+        val doubleSouth = south && lat < 0
+        val doubleWest = west && lon < 0
+        if (doubleSouth || doubleWest) return null
+        return point(if (south) -lat else lat, if (west) -lon else lon)
     }
 
     private fun dms(text: String): GeoPoint? {
@@ -128,8 +131,12 @@ object GeoText {
         return point(a, b)
     }
 
-    private fun point(lat: Double, lon: Double): GeoPoint? =
-        if (lat in -90.0..90.0 && lon in -180.0..180.0 && !(lat == 0.0 && lon == 0.0)) GeoPoint(lat, lon) else null
+    private fun point(lat: Double, lon: Double): GeoPoint? {
+        val inRange = lat in -90.0..90.0 && lon in -180.0..180.0
+        // 0,0 is what a map app writes when it has no place (Android's geo:0,0?q=…).
+        val nullIsland = lat == 0.0 && lon == 0.0
+        return if (inRange && !nullIsland) GeoPoint(lat, lon) else null
+    }
 
     /** Percent-decoding of the few characters a map link escapes around coordinates. */
     private fun decode(value: String): String = value
@@ -139,6 +146,7 @@ object GeoText {
         .replace("%28", "(")
         .replace("%29", ")")
 
+    private val WEST = setOf("W", "V")
     private const val MINUTES = 60.0
     private const val SECONDS = 60.0
 }

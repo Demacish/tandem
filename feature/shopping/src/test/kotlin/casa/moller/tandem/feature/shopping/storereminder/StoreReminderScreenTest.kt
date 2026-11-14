@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasTestTag
@@ -66,7 +67,8 @@ class StoreReminderScreenTest {
         composeRule.onNodeWithTag(STORE_REMINDER_CONTENT_TAG).performScrollToNode(hasTestTag(STORE_REMINDER_STORE_TAG + 3))
         composeRule.onNodeWithTag(STORE_REMINDER_STORE_TAG + 3).performClick()
         assertEquals(StoreReminderAction.OpenStore(3), actions.last())
-        composeRule.onNodeWithText("No place set").assertExists()
+        // The store's row is one node that says it has no place yet (the others say so too).
+        composeRule.onNodeWithTag(STORE_REMINDER_STORE_TAG + 3).assert(hasText("No place set"))
     }
 
     @Test
@@ -196,8 +198,7 @@ class StoreReminderScreenTest {
     fun phoneSheetDark() = captureSheet("phone_store_reminder_sheet_dark", StoreReminderSamples.sheetWithPlace, darkTheme = true)
 
     @Test
-    fun phoneSheetFontScale2() =
-        captureSheet("phone_store_reminder_sheet_font2_light", StoreReminderSamples.sheetWithPlace, fontScale = 2f)
+    fun phoneSheetFontScale2() = captureSheet("phone_store_reminder_sheet_font2_light", StoreReminderSamples.sheetWithPlace, fontScale = 2f)
 
     @Test
     @Config(qualifiers = PHONE_LANDSCAPE)

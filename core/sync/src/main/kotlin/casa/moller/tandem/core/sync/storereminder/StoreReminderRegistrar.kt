@@ -48,40 +48,46 @@ internal class StoreReminderRegistrar @Inject constructor(
 
     /** Brings the geofences in line; [force] registers even a set that looks unchanged. Never throws. */
     suspend fun sync(force: Boolean = false): StoreReminderProblem? = mutex.withLock {
-        val source = sources.current()
-        val accountId = (source as? ActiveSource.Remote)?.accountId
+        val accountId = (sources.current() as? ActiveSource.Remote)?.accountId
         val record = accountId?.let { store.observe(it).first() }
         val fences = if (record == null) emptyList() else StoreFences.wanted(record.enabled, record.spots.mapNotNull { it.toSpot() })
         val previous = store.registration.first()
-        if (fences.isEmpty()) {
-            if (previous != null || force) gateway.removeAll()
-            store.setRegistration(null)
-            systemEvents.setEnabled(false)
-            if (accountId != null && record?.problem != null) store.update(accountId) { it.copy(problem = null) }
+        if (accountId == null || record == null || fences.isEmpty()) {
+            removeEverything(accountId, record, previous, force)
             return@withLock null
         }
-        checkNotNull(accountId)
         systemEvents.setEnabled(true)
-        val problem = when {
-            !play.isAvailable() -> StoreReminderProblem.FAILED
-            !permissions.read().let { it.precise && it.background } -> StoreReminderProblem.PERMISSION
-            else -> null
-        }
-        if (problem != null) {
+        val blocked = blockedBy()
+        if (blocked != null) {
             if (previous != null) gateway.removeAll()
             store.setRegistration(null)
-            return@withLock recordProblem(accountId, record, problem)
+            return@withLock recordProblem(accountId, record, blocked)
         }
         val wanted = StoreFenceRegistration(accountId, StoreFences.fingerprint(fences), device.bootCount(), device.versionCode())
-        if (!force && previous == wanted && record?.problem == null) return@withLock null
-        val outcome = when (gateway.replaceAll(fences)) {
-            GeofenceResult.OK -> null
-            GeofenceResult.LOCATION_OFF -> StoreReminderProblem.LOCATION_OFF
-            GeofenceResult.PERMISSION -> StoreReminderProblem.PERMISSION
-            GeofenceResult.FAILED -> StoreReminderProblem.FAILED
-        }
+        if (!force && previous == wanted && record.problem == null) return@withLock null
+        val outcome = gateway.replaceAll(fences).asProblem()
         store.setRegistration(if (outcome == null) wanted else null)
         recordProblem(accountId, record, outcome)
+    }
+
+    /** Nothing is wanted: no geofences, no registration, no system-event receiver, no stale problem. */
+    private suspend fun removeEverything(
+        accountId: String?,
+        record: StoreReminderRecord?,
+        previous: StoreFenceRegistration?,
+        force: Boolean,
+    ) {
+        if (previous != null || force) gateway.removeAll()
+        store.setRegistration(null)
+        systemEvents.setEnabled(false)
+        if (accountId != null && record?.problem != null) store.update(accountId) { it.copy(problem = null) }
+    }
+
+    /** What keeps the geofences from being registered at all (Play services, the two permissions). */
+    private fun blockedBy(): StoreReminderProblem? {
+        if (!play.isAvailable()) return StoreReminderProblem.FAILED
+        val granted = permissions.read()
+        return if (granted.precise && granted.background) null else StoreReminderProblem.PERMISSION
     }
 
     /** Play services dropped every geofence (the location was turned off): registered again at the next sync. */
@@ -99,6 +105,13 @@ internal class StoreReminderRegistrar @Inject constructor(
         if (record?.problem != problem?.name) store.update(accountId) { it.copy(problem = problem?.name) }
         return problem
     }
+}
+
+private fun GeofenceResult.asProblem(): StoreReminderProblem? = when (this) {
+    GeofenceResult.OK -> null
+    GeofenceResult.LOCATION_OFF -> StoreReminderProblem.LOCATION_OFF
+    GeofenceResult.PERMISSION -> StoreReminderProblem.PERMISSION
+    GeofenceResult.FAILED -> StoreReminderProblem.FAILED
 }
 
 /** The domain's spot for a stored one (null for a place out of range, which is never written). */

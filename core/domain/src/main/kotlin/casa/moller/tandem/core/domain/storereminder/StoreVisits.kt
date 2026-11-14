@@ -61,15 +61,19 @@ object StoreVisits {
     fun onEnter(visit: StoreVisit, at: Instant): Pair<StoreVisit, EnterDecision> {
         if (isOutOfOrder(visit, at)) return visit to EnterDecision.OUT_OF_ORDER
         val entered = visit.copy(inside = true, lastTransitionAt = at)
-        val since = visit.lastTransitionAt?.let { at - it }
-        if (visit.inside && since != null && since >= Duration.ZERO && since < STALE_VISIT) {
+        if (visit.inside && isWithin(visit.lastTransitionAt, at, STALE_VISIT)) {
             return visit.copy(lastTransitionAt = at) to EnterDecision.SAME_VISIT
         }
-        val sinceReminder = visit.lastRemindedAt?.let { at - it }
-        if (sinceReminder != null && sinceReminder >= Duration.ZERO && sinceReminder < MIN_GAP) {
+        if (isWithin(visit.lastRemindedAt, at, MIN_GAP)) {
             return entered to EnterDecision.TOO_SOON
         }
         return entered to EnterDecision.REMIND
+    }
+
+    /** [earlier] lies less than [limit] before [at]; one "in the future" (a changed clock) does not. */
+    private fun isWithin(earlier: Instant?, at: Instant, limit: Duration): Boolean {
+        val since = earlier?.let { at - it } ?: return false
+        return since >= Duration.ZERO && since < limit
     }
 
     /** The visit after an EXIT at [at] (the store is re-armed). */

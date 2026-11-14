@@ -5,6 +5,11 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ComponentName
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ActivityInfo
+import android.content.pm.ResolveInfo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.model.navigation.AppOpenDestinations
@@ -13,6 +18,7 @@ import casa.moller.tandem.core.model.notification.TandemNotificationIds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
@@ -32,6 +38,28 @@ class StoreReminderNotifierTest {
 
     private fun posted(): Notification = shadowOf(manager).allNotifications.single()
 
+    /** The app module's launcher activity, which this library's test manifest does not have. */
+    @Before
+    fun aLauncherActivity() {
+        val launcher = ComponentName(context.packageName, "casa.example.Launcher")
+        val packages = shadowOf(context.packageManager)
+        packages.addActivityIfNotPresent(launcher)
+        packages.addIntentFilterForActivity(
+            launcher,
+            IntentFilter(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_LAUNCHER) },
+        )
+        val resolved = ResolveInfo().apply {
+            activityInfo = ActivityInfo().apply {
+                packageName = launcher.packageName
+                name = launcher.className
+            }
+        }
+        packages.addResolveInfoForIntent(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(context.packageName),
+            resolved,
+        )
+    }
+
     @Test
     fun theReminderSaysTheStoreAndWhatIsLeftInTheShoppingChannel() {
         shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
@@ -42,7 +70,7 @@ class StoreReminderNotifierTest {
         assertEquals("2 things on the list", notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString())
         assertEquals(Notification.CATEGORY_REMINDER, notification.category)
         assertEquals(AndroidStoreReminderNotifier.TIMEOUT_MILLIS, notification.timeoutAfter)
-        val tapped = shadowOf(notification.contentIntent).savedIntent
+        val tapped = shadowOf(checkNotNull(notification.contentIntent) { "no tap intent" }).savedIntent
         assertEquals(AppOpenDestinations.ACTION, tapped.action)
         assertEquals(AppOpenDestinations.STORE_MODE_PREFIX + 7, tapped.getStringExtra(AppOpenDestinations.EXTRA_DESTINATION))
         val active = manager.activeNotifications.single()

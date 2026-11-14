@@ -36,10 +36,9 @@ import kotlinx.coroutines.launch
  * Opening a map app and the system settings are the route's (platform) business.
  */
 @HiltViewModel
-class StoreReminderViewModel @Inject constructor(
-    private val reminders: StoreReminderRepository,
-    supermarkets: SupermarketRepository,
-) : ViewModel() {
+class StoreReminderViewModel @Inject constructor(private val reminders: StoreReminderRepository, supermarkets: SupermarketRepository) :
+    ViewModel() {
+
     private val effects = Channel<StoreReminderEffect>(Channel.BUFFERED)
 
     /** Snackbars and permission requests. */

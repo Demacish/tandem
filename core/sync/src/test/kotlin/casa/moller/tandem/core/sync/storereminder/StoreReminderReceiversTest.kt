@@ -7,9 +7,15 @@ import android.content.pm.PackageManager
 import android.location.LocationManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.Configuration
 import androidx.work.Data
+import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerFactory
+import androidx.work.WorkerParameters
+import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import casa.moller.tandem.core.datastore.StoreReminderRecord
 import casa.moller.tandem.core.domain.storereminder.StoreTransition
@@ -62,9 +68,25 @@ class StoreReminderReceiversTest {
 
     private val work = RecordingWork()
 
+    /** The input each StoreReminderWorker run got (Hilt's factory is not in this test). */
+    private val inputs = mutableListOf<Data>()
+
+    private class Done(context: Context, params: WorkerParameters) : Worker(context, params) {
+        override fun doWork(): Result = Result.success()
+    }
+
+    private val factory = object : WorkerFactory() {
+        override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker? {
+            if (workerClassName != StoreReminderWorker::class.java.name) return null
+            inputs += workerParameters.inputData
+            return Done(appContext, workerParameters)
+        }
+    }
+
     @Before
     fun setUp() {
-        WorkManagerTestInitHelper.initializeTestWorkManager(context)
+        val config = Configuration.Builder().setExecutor(SynchronousExecutor()).setWorkerFactory(factory).build()
+        WorkManagerTestInitHelper.initializeTestWorkManager(context, config)
         StoreGeofenceReceiver.workFactory = { work }
     }
 
@@ -110,7 +132,12 @@ class StoreReminderReceiversTest {
         val real = WorkManagerStoreReminderWork(context)
         real.transition(listOf(STORE), StoreTransition.ENTER, 1_234L)
         val info = WorkManager.getInstance(context).getWorkInfosByTag(StoreReminderWork.TAG).get().single()
-        assertEquals(WorkInfo.State.ENQUEUED, info.state)
+        assertEquals(WorkInfo.State.SUCCEEDED, info.state)
+        val input = inputs.single()
+        assertEquals(StoreReminderWork.MODE_TRANSITION, input.getString(StoreReminderWork.KEY_MODE))
+        assertEquals(listOf(STORE), input.getLongArray(StoreReminderWork.KEY_STORES)?.toList())
+        assertEquals("ENTER", input.getString(StoreReminderWork.KEY_TRANSITION))
+        assertEquals(1_234L, input.getLong(StoreReminderWork.KEY_AT, 0L))
     }
 
     @Test
@@ -128,8 +155,7 @@ class StoreReminderReceiversTest {
             FakeNetwork(online = false),
         )
         val gateway = FakeGeofenceGateway()
-        val registrar =
-            StoreReminderRegistrar(
+        val registrar = StoreReminderRegistrar(
             sources,
             store,
             gateway,
