@@ -104,7 +104,7 @@ internal fun TonightCard(
     onOpenRecipe: (Long) -> Unit,
     modifier: Modifier = Modifier,
     onStartCooking: ((recipeId: Long, servings: Double) -> Unit)? = null,
-    shoppingAction: (@Composable (recipeId: Long, servings: Double?) -> Unit)? = null,
+    shoppingAction: (@Composable (recipeId: Long, servings: Double?, mealPlanId: Long?) -> Unit)? = null,
 ) {
     val spacing = TandemTheme.spacing
     val recipe = entry.recipe
@@ -167,7 +167,8 @@ internal fun TonightCard(
                 )
             }
             // Phase 2 (integration lane): "Handla" (plan 6.2), feature:shopping's button through the shell.
-            if (recipe != null && shoppingAction != null) shoppingAction(recipe.id, entry.servings)
+            // 0.8.0 (B7): for this meal, so its rows are linked to it.
+            if (recipe != null && shoppingAction != null) shoppingAction(recipe.id, entry.servings, entry.id)
         }
     }
 }

@@ -14,6 +14,7 @@ import casa.moller.tandem.core.database.entity.OutboxOps
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.database.mapper.toModel
 import casa.moller.tandem.core.domain.mealplan.MealPlanDates
+import casa.moller.tandem.core.domain.mealplan.MealsOnShoppingList
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.catchingUnexpected
@@ -402,11 +403,12 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
             val missing = inRange.mapNotNull { it.recipe?.id }.distinct().filter { database.recipeDao().getDetail(accountId, it) == null }
             missing.forEach { recipeId -> details.fetch(source, recipeId, isBackground = false) }
         }
-        val onList = database.mealPlanDao().getMealIdsOnShoppingList(accountId).toSet()
+        val planned = inRange.distinctBy { it.id }.filter { it.recipe != null }
+        val onList = mealsOnShoppingList(database, accountId, planned)
         val autoAdd = database.referenceDao().getUserPreference(accountId)?.mealPlanAutoAddShopping ?: false
         val foods = database.referenceDao().getFoods(accountId).associateBy { it.id }
-        val meals = inRange.distinctBy { it.id }.filter { it.recipe != null }.map { meal ->
-            val already = meal.onShoppingList || meal.id in onList
+        val meals = planned.map { meal ->
+            val already = meal.id in onList
             val detail = database.recipeDao().getDetail(accountId, requireNotNull(meal.recipe).id)
             val factor = detail?.detail?.servings?.takeIf { it > 0 }?.let { meal.servings / it } ?: 1.0
             val ingredients = detail?.ingredients.orEmpty()
@@ -457,6 +459,21 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
     }
 
     // ------------------------------------------------------------------------------------ helpers
+
+    /**
+     * 0.8.0 (enhetstestet, B7): the [planned] meals "Handla för veckan" shows as "redan på listan"
+     * (core:domain [MealsOnShoppingList]): linked to a list recipe or entry (or Tandoor's `shopping`),
+     * or covered by a list recipe of the same recipe without a meal that still has rows to buy (added
+     * from the recipe, cook mode, or Idag before 0.8.0), one meal per such list recipe.
+     */
+    private suspend fun mealsOnShoppingList(database: TandemDatabase, accountId: String, planned: List<MealPlanEntry>): Set<Long> {
+        val linked = database.mealPlanDao().getMealIdsOnShoppingList(accountId).toSet() +
+            planned.filter { it.onShoppingList }.map { it.id }
+        val rows = database.shoppingDao().getEntries(accountId).map { entry ->
+            MealsOnShoppingList.Row(entry.listRecipeId, entry.recipeId, entry.mealPlanId, entry.checked)
+        }
+        return MealsOnShoppingList.of(planned.map { MealsOnShoppingList.Meal(it.id, it.recipe?.id) }, linked, rows)
+    }
 
     /**
      * fix-ui (Phase 2 review; FACTS "Fas 2 f": Tandoor deletes a meal's list recipe and its entries

@@ -63,7 +63,7 @@ internal val favoriteRecipes: List<RecipeOverview> = listOf(
  * Phase 2 (integration lane): what the shell puts in tonight's "Handla" slot, drawn here like
  * feature:shopping's button (feature:home cannot depend on it; the button has its own goldens).
  */
-internal fun tonightShoppingStub(text: String): TonightShoppingAction = { _, _, _ ->
+internal fun tonightShoppingStub(text: String): TonightShoppingAction = { _, _, _, _ ->
     TandemSecondaryButton(text = text, onClick = {}, leadingIcon = TandemIcons.ShoppingCart, modifier = Modifier.fillMaxWidth())
 }
 

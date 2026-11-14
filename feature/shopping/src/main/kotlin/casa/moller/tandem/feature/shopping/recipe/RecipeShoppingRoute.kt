@@ -33,6 +33,9 @@ import kotlinx.coroutines.launch
  * @param panSize Fas 5 (plan §8.1 "Pannstorlek"): the tin the recipe or cook mode shows, in the
  *   recipe's unit; the sheet scales by it and sends `servings × factor` like Tandoor's web. Null
  *   (Idag, Kan laga nu) or the recipe's own tin: the servings alone.
+ * @param mealPlanId 0.8.0 (enhetstestet, B7): the planned meal the button belongs to (Idag's
+ *   "Ikväll"); its rows are linked to the meal, so "Handla för veckan" knows it is on the list.
+ *   Null from a recipe or cook mode.
  */
 @Composable
 fun RecipeShoppingRoute(
@@ -42,10 +45,11 @@ fun RecipeShoppingRoute(
     onOpenShoppingList: () -> Unit,
     modifier: Modifier = Modifier,
     panSize: Int? = null,
+    mealPlanId: Long? = null,
 ) {
     val viewModel = hiltViewModel<RecipeShoppingViewModel, RecipeShoppingViewModel.Factory>(
-        key = "recipe-shopping-$recipeId",
-        creationCallback = { factory -> factory.create(recipeId) },
+        key = if (mealPlanId == null) "recipe-shopping-$recipeId" else "recipe-shopping-$recipeId-meal-$mealPlanId",
+        creationCallback = { factory -> factory.create(recipeId, mealPlanId) },
     )
     RecipeShoppingRoute(
         viewModel = viewModel,
@@ -127,7 +131,7 @@ fun RecipeMissingShoppingSheet(
 ) {
     val viewModel = hiltViewModel<RecipeShoppingViewModel, RecipeShoppingViewModel.Factory>(
         key = "recipe-shopping-missing-$recipeId",
-        creationCallback = { factory -> factory.create(recipeId) },
+        creationCallback = { factory -> factory.create(recipeId, null) },
     )
     RecipeMissingShoppingSheet(viewModel, missingFoodIds, request, snackbarHostState, onOpenShoppingList)
 }

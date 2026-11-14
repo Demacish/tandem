@@ -17,7 +17,11 @@ import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import casa.moller.tandem.core.testing.fixtures.TandoorFixtures
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.plus
@@ -78,6 +82,7 @@ class MakeNowSyncTest {
         tahiniExpires: String? = null,
         chickpeasExpire: String? = null,
         withDetail: (String) -> Boolean = { true },
+        readPantry: Boolean = true,
     ) {
         val id = { name: String -> foods.getValue(name) }
         graph.real.referenceDao().replaceFoods(
@@ -100,7 +105,7 @@ class MakeNowSyncTest {
         tandoor.seedEntry(fridge, "persilja", amount = 1.0, withFoodId = id("persilja"))
         tandoor.seedEntry(fridge, "blåbär", amount = 1.0, withFoodId = id("blåbär"))
         if (tahiniExpires != null) tandoor.seedEntry(fridge, "tahini", amount = 1.0, expires = tahiniExpires, withFoodId = id("tahini"))
-        read()
+        if (readPantry) read()
 
         val recorded = FakePantryTandoor.overviews("recipe-makenow-1", version) +
             FakePantryTandoor.overviews("recipe-makenow-foods-or", version) +
@@ -319,6 +324,65 @@ class MakeNowSyncTest {
         // Cream and salmon expire tomorrow: their recipes come first.
         assertTrue(state.recipes(MakeNowGroup.HAS_ALL).first().expiring.isNotEmpty())
         assertEquals("demo mode sends nothing", before, graph.server.requests.size)
+    }
+
+    /**
+     * 0.8.0 (enhetstestet, B8): the first demo start shows Idag while the sample data is still being
+     * written. "Kan laga nu" and "Går ut snart" follow the demo database, so the groups appear
+     * without a restart (they stayed empty until one before).
+     */
+    @Test
+    fun demoModeStartedOnAnEmptyDatabaseGetsItsGroupsWithoutARestart() = forEachVersion {
+        graph.sources.source.value = ActiveSource.Demo
+        coroutineScope {
+            val latest = MutableStateFlow<MakeNowState?>(null)
+            val collector = launch { graph.makeNow.observe(MakeNowFilter(), graph.clock.today()).collect { latest.value = it } }
+            // Computed once on the empty database, as when Idag opens before the seeder ran.
+            ok(graph.makeNow.refresh(force = true))
+            val empty = withTimeout(15.seconds) { latest.filterNotNull().first() }
+            assertTrue("[$version] $empty", empty.groups.values.all { it.isEmpty() })
+
+            ok(graph.demo.ensureSeeded())
+
+            val seeded = withTimeout(15.seconds) { latest.filterNotNull().first { it.names(MakeNowGroup.HAS_ALL).isNotEmpty() } }
+            assertTrue(seeded.names(MakeNowGroup.HAS_ALL).containsAll(listOf("Pannkakor", "Ugnsbakad lax med dillpotatis")))
+            assertTrue(seeded.names(MakeNowGroup.MISSING_1).contains("Havregrynsgröt med äpple och kanel"))
+            // "Går ut snart": cream and salmon expire tomorrow, and their recipes are known.
+            assertTrue(seeded.recipes(MakeNowGroup.HAS_ALL).first().expiring.isNotEmpty())
+            collector.cancel()
+        }
+    }
+
+    /**
+     * 0.8.0 (B8), a real account's first sync: "Kan laga nu" was read before the pantry, so the
+     * server was not asked which recipes use the expiring foods. The first pantry read refreshes at
+     * once instead of after the minute (the clock does not move here).
+     */
+    @Test
+    fun aFirstSyncsPantryLiftsTheExpiringRecipesWithoutWaitingTheMinute() = forEachVersion {
+        val tomorrow = graph.clock.today().plus(DatePeriod(days = 1)).toString()
+        contractState(chickpeasExpire = tomorrow, withDetail = { it != "Hummus" && it != "Falafel" }, readPantry = false)
+        tandoor.foodsOr[foods.getValue("kikärtor")] = FakePantryTandoor.overviews("recipe-makenow-foods-or", version)
+        coroutineScope {
+            val latest = MutableStateFlow<MakeNowState?>(null)
+            val collector = launch { graph.makeNow.observe(MakeNowFilter(), graph.clock.today()).collect { latest.value = it } }
+            ok(graph.makeNow.refresh(force = true))
+            val before = withTimeout(15.seconds) { latest.filterNotNull().first { it.names(MakeNowGroup.MISSING_1).isNotEmpty() } }
+            assertTrue("[$version] nothing expires yet", before.recipes(MakeNowGroup.MISSING_1).all { it.expiring.isEmpty() })
+
+            read()
+
+            val lifted = withTimeout(15.seconds) {
+                latest.filterNotNull().first { state ->
+                    state.recipes(MakeNowGroup.MISSING_1).any { it.recipe.name == "Hummus" && it.expiring.isNotEmpty() }
+                }
+            }
+            val hummus = lifted.recipes(MakeNowGroup.MISSING_1).single { it.recipe.name == "Hummus" }
+            assertEquals(listOf("kikärtor"), hummus.expiring.map { it.name })
+            val asked = tandoor.requests("GET", "/api/recipe/").map { (call, _) -> call }
+            assertEquals("[$version] $asked", 1, asked.count { "foods_or=${foods.getValue("kikärtor")}" in it })
+            collector.cancel()
+        }
     }
 
     private companion object {

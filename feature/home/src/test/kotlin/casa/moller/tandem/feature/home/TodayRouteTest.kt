@@ -64,8 +64,8 @@ class TodayRouteTest {
                     viewModel = viewModel,
                     booksViewModel = books,
                     onOpenFavorites = { openedFavorites++ },
-                    tonightShoppingAction = { recipeId, servings, _ ->
-                        Text(text = "$TONIGHT_SHOPPING $recipeId ${servings?.toInt()}")
+                    tonightShoppingAction = { recipeId, servings, mealPlanId, _ ->
+                        Text(text = "$TONIGHT_SHOPPING $recipeId ${servings?.toInt()} meal $mealPlanId")
                     },
                 )
             }
@@ -93,7 +93,9 @@ class TodayRouteTest {
     fun tonightCardHoldsTheShoppingSlotForMembersOnly() {
         setContent()
         val tonight = SampleRecipes.upcomingMeals.todayMeals.first { it.recipe?.id == SampleRecipes.MushroomPasta.id }
-        composeRule.onNodeWithText("$TONIGHT_SHOPPING ${SampleRecipes.MushroomPasta.id} ${tonight.servings.toInt()}").assertIsDisplayed()
+        // 0.8.0 (B7): the slot gets the meal's id, so the rows are linked to tonight's meal.
+        composeRule.onNodeWithText("$TONIGHT_SHOPPING ${SampleRecipes.MushroomPasta.id} ${tonight.servings.toInt()} meal ${tonight.id}")
+            .assertIsDisplayed()
     }
 
     @Test

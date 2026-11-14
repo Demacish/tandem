@@ -57,8 +57,8 @@ class RecipeShoppingViewModelTest {
     private val shopping = FakeShoppingRepository(entries = emptyList(), lists = listOf(ShoppingList(1, "Veckohandling")))
     private val permissions = FakeSpacePermissionsRepository()
 
-    private fun viewModel(recipeId: Long = pasta.id) =
-        RecipeShoppingViewModel(recipeId, SavedStateHandle(), recipes, shopping, FakePreferencesRepository(), permissions)
+    private fun viewModel(recipeId: Long = pasta.id, mealPlanId: Long? = null) =
+        RecipeShoppingViewModel(recipeId, mealPlanId, SavedStateHandle(), recipes, shopping, FakePreferencesRepository(), permissions)
 
     private fun TestScope.open(vm: RecipeShoppingViewModel): MutableList<RecipeShoppingEffect> {
         val effects = mutableListOf<RecipeShoppingEffect>()
@@ -156,6 +156,41 @@ class RecipeShoppingViewModelTest {
         assertEquals("one undo only", 1, shopping.recipeRequests.size)
     }
 
+    /**
+     * 0.8.0 (enhetstestet, B7): opened from Idag's "Ikväll", the list recipe is linked to the meal,
+     * so "Handla för veckan" sees the meal as already on the list; the button counts that meal's
+     * rows, not those added from the recipe itself or for another meal.
+     */
+    @Test
+    fun openedForAMealTheRowsAreLinkedToThatMeal() = runTest {
+        val own = ShoppingRecipeLabel(listRecipeId = -5, recipeId = pasta.id, recipeName = pasta.name, servings = 4.0)
+        val tonight = ShoppingRecipeLabel(listRecipeId = 9, recipeId = pasta.id, recipeName = pasta.name, mealPlanId = 3)
+        val other = ShoppingRecipeLabel(listRecipeId = 10, recipeId = pasta.id, recipeName = pasta.name, mealPlanId = 4)
+        shopping.entries.value = listOf(
+            ShoppingEntry(1, ShoppingFood(1, "champinjon"), amount = 400.0, recipe = own, ingredientId = 10111),
+            ShoppingEntry(2, ShoppingFood(6, "vispgrädde"), amount = 2.5, recipe = tonight, ingredientId = 10131),
+            ShoppingEntry(3, ShoppingFood(4, "pasta"), amount = 400.0, recipe = other, ingredientId = 10121),
+            ShoppingEntry(4, ShoppingFood(4, "pasta"), amount = 400.0, recipe = tonight, ingredientId = 10121),
+        )
+        val vm = viewModel(mealPlanId = 3)
+        open(vm)
+        assertEquals("only tonight's rows", 2, vm.uiState.value.onList)
+        assertEquals(listOf(9L), vm.uiState.value.onListRecipeIds)
+
+        vm.onAction(RecipeShoppingAction.Open(servings = 4.0))
+        vm.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(listOf(3L), shopping.recipeRequests.map { it.mealPlanId })
+
+        val fromRecipe = viewModel()
+        open(fromRecipe)
+        assertEquals("from the recipe: its own rows only", 1, fromRecipe.uiState.value.onList)
+        fromRecipe.onAction(RecipeShoppingAction.Open(servings = 4.0))
+        fromRecipe.onAction(RecipeShoppingAction.Add)
+        advanceUntilIdle()
+        assertEquals(listOf(3L, null), shopping.recipeRequests.map { it.mealPlanId })
+    }
+
     @Test
     fun aGuestGetsNoButtonAndNothingIsWritten() = runTest {
         permissions.setGuest(true)
@@ -211,7 +246,7 @@ class RecipeShoppingViewModelTest {
     private fun tinViewModel(diameter: Int = 24): RecipeShoppingViewModel {
         val tin = pasta.copy(diameter = diameter, diameterText = "cm")
         val repository = FakeRecipeRepository(details = listOf(tin))
-        return RecipeShoppingViewModel(tin.id, SavedStateHandle(), repository, shopping, FakePreferencesRepository(), permissions)
+        return RecipeShoppingViewModel(tin.id, null, SavedStateHandle(), repository, shopping, FakePreferencesRepository(), permissions)
     }
 
     @Test
@@ -304,10 +339,10 @@ class RecipeShoppingViewModelTest {
         val handle = SavedStateHandle()
         val tin = pasta.copy(diameter = 24, diameterText = "cm")
         val repository = FakeRecipeRepository(details = listOf(tin))
-        val first = RecipeShoppingViewModel(tin.id, handle, repository, shopping, FakePreferencesRepository(), permissions)
+        val first = RecipeShoppingViewModel(tin.id, null, handle, repository, shopping, FakePreferencesRepository(), permissions)
         open(first)
         first.onAction(RecipeShoppingAction.Open(servings = 4.0, panSize = 20))
-        val again = RecipeShoppingViewModel(tin.id, handle, repository, shopping, FakePreferencesRepository(), permissions)
+        val again = RecipeShoppingViewModel(tin.id, null, handle, repository, shopping, FakePreferencesRepository(), permissions)
         open(again)
         assertTrue(again.uiState.value.open)
         assertEquals(20, again.uiState.value.pan?.diameter)

@@ -10,6 +10,7 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.mealplan.MealPlanDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
+import casa.moller.tandem.core.model.shopping.RecipeShoppingRequest
 import casa.moller.tandem.core.model.shopping.ShoppingChange
 import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
 import casa.moller.tandem.core.sync.engine.DrainResult
@@ -176,6 +177,40 @@ class WeekShoppingSyncTest {
             phoneB.closePhone()
         }
         assertEquals(mapOf(pasta to 1, meatballs to 1), listRecipesByMeal())
+    }
+
+    /**
+     * 0.8.0 (enhetstestet, B7): tonight's meal put on the list from Idag ("Lägg på inköpslistan" with
+     * the meal's id) is "redan på listan" in "Handla för veckan", also after the server answered, and
+     * is never added a second time. A recipe put on the list WITHOUT a meal (from the recipe, cook
+     * mode, or Idag before 0.8.0) covers one meal of that recipe too.
+     */
+    @Test
+    fun aMealPutOnTheListFromTodayIsNotAddedAgain() = forEachVersion {
+        autoAdd(graph, on = false)
+        val pasta = meals.web("2026-10-13T00:00:00", recipe = PASTA)
+        val meatballs = meals.web("2026-10-15T00:00:00", recipe = MEATBALLS)
+        val meatballsAgain = meals.web("2026-10-17T00:00:00", recipe = MEATBALLS)
+        val first = preview()
+        assertTrue("[$version] ${first.meals}", first.meals.none { it.alreadyOnList })
+        fun ingredientsOf(meal: Long) = first.meals.first { it.meal.id == meal }.ingredients.mapTo(HashSet()) { it.ingredientId }
+
+        // Idag's "Ikväll": linked to the meal, so it counts at once (and after the server answered).
+        ok(graph.shopping.addRecipe(RecipeShoppingRequest(PASTA, 4.0, ingredientsOf(pasta), mealPlanId = pasta)))
+        // From the recipe: no meal; it covers the first meatballs only.
+        ok(graph.shopping.addRecipe(RecipeShoppingRequest(MEATBALLS, 4.0, ingredientsOf(meatballs))))
+        val offline = ok(repo.weekShoppingPreview(MONDAY, SUNDAY)).meals.filter { it.alreadyOnList }.map { it.meal.id }
+        assertEquals("[$version]", setOf(pasta, meatballs), offline.toSet())
+        drainAll()
+        assertEquals("[$version] the server stored the link", mapOf(pasta to 1), listRecipesByMeal())
+
+        val second = preview()
+        assertEquals("[$version]", setOf(pasta, meatballs), second.meals.filter { it.alreadyOnList }.map { it.meal.id }.toSet())
+        val selection = everything(second)
+        assertEquals(setOf(meatballsAgain), selection.ingredientIdsByMeal.keys)
+        ok(repo.addWeekToShopping(selection))
+        drainAll()
+        assertEquals("[$version] tonight's meal is on the list once", mapOf(pasta to 1, meatballsAgain to 1), listRecipesByMeal())
     }
 
     /**

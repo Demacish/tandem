@@ -93,5 +93,14 @@ fun TodayRoute(
     )
 }
 
-/** Phase 2 (integration lane): the slot for "Handla" on tonight's card: recipe id, planned servings, the screen's snackbar. */
-typealias TonightShoppingAction = @Composable (recipeId: Long, servings: Double?, snackbarHostState: SnackbarHostState) -> Unit
+/**
+ * Phase 2 (integration lane): the slot for "Handla" on tonight's card: recipe id, planned servings,
+ * the meal's id and the screen's snackbar. 0.8.0 (enhetstestet, B7): the meal's id goes with the
+ * rows, so "Handla för veckan" shows the meal as already on the list instead of adding it twice.
+ */
+typealias TonightShoppingAction = @Composable (
+    recipeId: Long,
+    servings: Double?,
+    mealPlanId: Long?,
+    snackbarHostState: SnackbarHostState,
+) -> Unit

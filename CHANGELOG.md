@@ -90,6 +90,14 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   Googles; utan nedladdat språkpaket kan talet då skickas över internet till den tjänsten.
 - Är medievolymen avstängd när stegen läses upp visar kokläget det med knappen **Höj volymen**,
   eftersom volymknapparna byter steg när handsfree är på.
+- "Handla för veckan" lade kvällens måltid på listan en gång till om du redan hade lagt den där från
+  Idag. Nu hör varorna från Idag till måltiden, och den står som "redan på listan". Ett recept som
+  ligger på listan utan måltid (lagt dit från receptet eller kokläget) räknas också, för en måltid
+  med samma recept.
+- Första gången demoläget startades var "Kan laga nu" tomt och "Går ut snart" visade "Inget recept"
+  tills appen startades om. Nu räknas de om så fort exempeldatan är på plats. Med ett riktigt konto
+  lyfts recepten med varor som snart går ut direkt när skafferiet har lästs första gången, i stället
+  för efter en minut.
 
 **Kvar till senare**
 

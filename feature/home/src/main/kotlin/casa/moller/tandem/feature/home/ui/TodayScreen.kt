@@ -401,10 +401,10 @@ private fun TodayMeals(
     snackbarHostState: SnackbarHostState,
 ) {
     val openRecipe: (Long) -> Unit = { onAction(HomeAction.OpenRecipe(it)) }
-    val shopping: (@Composable (recipeId: Long, servings: Double?) -> Unit)? = if (tonightShopping == null) {
+    val shopping: (@Composable (recipeId: Long, servings: Double?, mealPlanId: Long?) -> Unit)? = if (tonightShopping == null) {
         null
     } else {
-        { recipeId, servings -> tonightShopping(recipeId, servings, snackbarHostState) }
+        { recipeId, servings, mealPlanId -> tonightShopping(recipeId, servings, mealPlanId, snackbarHostState) }
     }
     val tonight = state.tonight
     when {

@@ -326,9 +326,9 @@ internal object RouteShellFeatures : ShellFeatures {
             onStartCooking = onStartCooking,
             onOpenWantToCook = onOpenWantToCook,
             onOpenFavorites = onOpenFavorites,
-            // Phase 2 (integration lane, plan 6.2): "Handla" on tonight's card.
-            tonightShoppingAction = { recipeId, servings, snackbar ->
-                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList)
+            // Phase 2 (integration lane, plan 6.2): "Handla" on tonight's card (0.8.0, B7: for the meal).
+            tonightShoppingAction = { recipeId, servings, mealPlanId, snackbar ->
+                RecipeShoppingRoute(recipeId, servings, snackbar, onOpenShoppingList, mealPlanId = mealPlanId)
             },
             // Fas S (hemma-ui lane): "Kan laga nu" and "Går ut snart".
             onOpenMakeNow = onOpenMakeNow,

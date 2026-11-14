@@ -68,7 +68,8 @@ data class RecipeShoppingRow(
  * @property servings the servings the amounts are scaled to (the recipe detail's at first).
  * @property toBuy ingredients not on hand; [atHome] the "Finns hemma" ones.
  * @property lists Tandoor's named lists; [listId] the one the rows go on, null = no list.
- * @property onList unchecked rows of this recipe already on the list (not from a planned meal).
+ * @property onList unchecked rows of this recipe already on the list: those not for a planned meal,
+ *   or, opened for a meal (0.8.0, B7), those of that meal.
  * @property onListRecipeIds their list recipes ("Ta bort från listan" removes these).
  * @property removable every row those list recipes hold, checked ones too: what "Ta bort från
  *   listan" removes (fix-ui: the message says this number, and "Ångra" puts the open rows back).
@@ -190,10 +191,15 @@ sealed interface RecipeShoppingEffect {
  * Tandoor's web sends), so the list holds what the recipe showed. The recipe is read as stored
  * ([RecipeRepository.observeStoredRecipe]): the detail screen beside it refreshes it (fix-ui).
  * Guests see no button and every write is ignored here too (#42).
+ * 0.8.0 (enhetstestet, B7): opened for a planned meal ([mealPlanId], Idag's "Ikväll"), the list
+ * recipe is linked to that meal (`mealplan`, FACTS "Fas 2 c"/ShoppingWritesContractTest), so
+ * "Handla för veckan" shows the meal as already on the list and never adds it twice; the button
+ * then counts that meal's rows, not the recipe's own.
  */
 @HiltViewModel(assistedFactory = RecipeShoppingViewModel.Factory::class)
 class RecipeShoppingViewModel @AssistedInject internal constructor(
-    @Assisted private val recipeId: Long,
+    @Assisted("recipe") private val recipeId: Long,
+    @Assisted("mealPlan") private val mealPlanId: Long?,
     private val savedStateHandle: SavedStateHandle,
     recipes: RecipeRepository,
     private val shopping: ShoppingRepository,
@@ -203,7 +209,7 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(recipeId: Long): RecipeShoppingViewModel
+        fun create(@Assisted("recipe") recipeId: Long, @Assisted("mealPlan") mealPlanId: Long?): RecipeShoppingViewModel
     }
 
     private val effectChannel = Channel<RecipeShoppingEffect>(Channel.BUFFERED)
@@ -243,10 +249,13 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
         build(sources, choices, style, busy)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), RecipeShoppingUiState())
 
-    /** Rows of the list recipe(s) of this recipe that are not for a planned meal (checked ones too). */
+    /**
+     * Rows of the list recipe(s) of this recipe that are not for a planned meal, or (B7) for the
+     * meal the sheet was opened for (checked ones too).
+     */
     private fun isOwnRecipeRow(entry: ShoppingEntry): Boolean {
         val label = entry.recipe ?: return false
-        return label.recipeId == recipeId && label.mealPlanId == null
+        return label.recipeId == recipeId && label.mealPlanId == mealPlanId
     }
 
     fun onAction(action: RecipeShoppingAction) {
@@ -297,6 +306,8 @@ class RecipeShoppingViewModel @AssistedInject internal constructor(
                 servings = state.listServings,
                 ingredientIds = chosen,
                 listIds = state.listId?.let { setOf(it) }.orEmpty(),
+                // 0.8.0 (B7): linked to the meal it was opened for.
+                mealPlanId = mealPlanId,
             )
             val result = shopping.addRecipe(request)
             adding.value = false

@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -105,6 +106,12 @@ import kotlinx.serialization.json.put
  *   [MAX_USE_UP_FOODS]) and stored per account, so a recipe whose detail was never downloaded is
  *   lifted as well (Fas S review, fix-data).
  * - **Demo mode:** the groups are computed from the demo recipes and the demo pantry; no network.
+ *   0.8.0 (enhetstestet, B8): they follow the demo database (every stored detail, the foods and the
+ *   pantry), so the first demo start, whose sample data is written while Idag already shows, gets
+ *   its groups without a restart.
+ * - **First sync of an account** (B8): "Använd upp" asks the server about the household's expiring
+ *   foods, which a first sync may not have read yet; the first pantry read that brings entries
+ *   after a read with an empty pantry refreshes at once instead of waiting for the minute.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -118,7 +125,13 @@ internal class DefaultMakeNowRepository @Inject constructor(
     private val pantry: OfflineFirstPantryRepository,
     private val changes: PantryChanges,
 ) : MakeNowRepository {
-    private data class Status(val refreshing: Boolean = false, val stale: Boolean = false, val lastFetchMillis: Long? = null)
+    /** [pantryEmpty]: the household had no pantry entries at [lastFetchMillis] (B8: a first sync). */
+    private data class Status(
+        val refreshing: Boolean = false,
+        val stale: Boolean = false,
+        val lastFetchMillis: Long? = null,
+        val pantryEmpty: Boolean = false,
+    )
 
     private val status = MutableStateFlow<Map<String, Status>>(emptyMap())
     private val refreshLock = Mutex()
@@ -136,25 +149,41 @@ internal class DefaultMakeNowRepository @Inject constructor(
         .flatMapLatest { source ->
             if (source !is ActiveSource.Stored) return@flatMapLatest flowOf(MakeNowState())
             channelFlow {
-                // On open, and after every change of the pantry (at most once a minute, the newest change wins).
-                launch {
-                    refreshSource(source, force = false, background = true)
-                    prefetchDetails(source)
-                }
-                launch {
-                    changes.changes.filter { it == source.accountId }.collectLatest {
-                        val last = status.value[source.accountId]?.lastFetchMillis
-                        val wait = if (last == null) 0 else last + MIN_INTERVAL_MILLIS - clock.nowMillis()
-                        if (wait > 0) delay(wait.coerceAtMost(MIN_INTERVAL_MILLIS))
-                        refreshSource(source, force = false, background = true)
-                        prefetchDetails(source)
-                    }
-                }
+                refreshWhileObserved(source)
                 state(source, filter, today).collect { send(it) }
             }
         }
         .catch { emit(MakeNowState(stale = true)) }
         .distinctUntilChanged()
+
+    /**
+     * What keeps the groups current while [observe] is collected. An account: on open, and after
+     * every change of the pantry (at most once a minute, the newest change wins). Demo mode (B8):
+     * computed on the device whenever its inputs change, also while the sample data is being written
+     * on the first start (no network, no limit).
+     */
+    private fun CoroutineScope.refreshWhileObserved(source: ActiveSource.Stored) {
+        if (source !is ActiveSource.Remote) {
+            launch { demoInputs(source).collectLatest { refreshSource(source, force = true, background = true) } }
+            return
+        }
+        launch {
+            refreshSource(source, force = false, background = true)
+            prefetchDetails(source)
+        }
+        launch {
+            changes.changes.filter { it == source.accountId }.collectLatest {
+                val own = status.value[source.accountId]
+                val last = own?.lastFetchMillis
+                // B8: the first pantry after a read without one (a first sync) is not kept waiting.
+                val firstPantry = own?.pantryEmpty == true && !pantryIsEmpty()
+                val wait = if (last == null || firstPantry) 0 else last + MIN_INTERVAL_MILLIS - clock.nowMillis()
+                if (wait > 0) delay(wait.coerceAtMost(MIN_INTERVAL_MILLIS))
+                refreshSource(source, force = firstPantry, background = true)
+                prefetchDetails(source)
+            }
+        }
+    }
 
     override suspend fun refresh(force: Boolean): Outcome<Unit> = catchingUnexpected {
         when (val source = sources.current()) {
@@ -207,13 +236,19 @@ internal class DefaultMakeNowRepository @Inject constructor(
         val now = clock.nowMillis()
         if (!force && last != null && now - last in 0 until MIN_INTERVAL_MILLIS) return Outcome.Success(Unit)
         setStatus(accountId) { it.copy(refreshing = true) }
+        val pantryEmpty = source is ActiveSource.Remote && pantryIsEmpty()
         val result = when (source) {
             is ActiveSource.Remote -> refreshRemote(source, background)
             ActiveSource.Demo -> refreshLocally(source)
         }
         setStatus(accountId) {
-            val fetched = if (result is Outcome.Success) now else it.lastFetchMillis
-            Status(refreshing = false, stale = result is Outcome.Failure, lastFetchMillis = fetched)
+            val success = result is Outcome.Success
+            Status(
+                refreshing = false,
+                stale = !success,
+                lastFetchMillis = if (success) now else it.lastFetchMillis,
+                pantryEmpty = if (success) pantryEmpty else it.pantryEmpty,
+            )
         }
         return result
     }
@@ -311,6 +346,19 @@ internal class DefaultMakeNowRepository @Inject constructor(
         } finally {
             prefetching.unlock()
         }
+    }
+
+    /** B8: the household has no pantry entries (yet). */
+    private suspend fun pantryIsEmpty(): Boolean = pantry.observePantry().first().all { it.entries.isEmpty() }
+
+    /**
+     * Demo mode (B8): what [refreshLocally] reads, as flows: every stored detail with its ingredients
+     * (the demo recipes, written by the seeder after demo mode started), the foods and the pantry.
+     * Each change computes the groups again (a few dozen recipes, on the device); the newest wins.
+     */
+    private fun demoInputs(source: ActiveSource.Stored): Flow<Unit> {
+        val database = databases.get(source.kind)
+        return combine(database.makeNowDao().observeAllDetailIds(source.accountId), availability(source, database)) { _, _ -> }
     }
 
     /** Demo mode: the groups computed on the device from every stored detail (the demo recipes). */

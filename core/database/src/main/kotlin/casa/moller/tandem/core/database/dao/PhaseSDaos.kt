@@ -197,6 +197,14 @@ abstract class MakeNowDao {
     /** Every recipe with a downloaded detail (the demo computes its groups from them). */
     @Query("SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL ORDER BY recipe_id")
     abstract suspend fun getDetailIds(accountId: String): List<Long>
+
+    /**
+     * 0.8.0 (B8): [getDetailIds] as a flow, so demo mode computes "Kan laga nu" again once the
+     * sample recipes are written (not only those already in `make_now`, like [observeDetailIds]).
+     * A recipe's ingredients are written with its detail row, so this emits for them too.
+     */
+    @Query("SELECT recipe_id FROM recipe_detail WHERE account_id = :accountId AND raw_json IS NOT NULL ORDER BY recipe_id")
+    abstract fun observeAllDetailIds(accountId: String): Flow<List<Long>>
 }
 
 /** "Kan laga nu" as stored: the groups, their recipes' ingredients and which details are downloaded (hemma-data lane). */
