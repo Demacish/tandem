@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,12 +19,13 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ShortNavigationBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.WideNavigationRailItem
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuite
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItem
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldLayout
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldState
@@ -72,9 +74,13 @@ internal fun shellUsesShortRail(navigationSuiteType: NavigationSuiteType, window
     navigationSuiteType == NavigationSuiteType.WideNavigationRailCollapsed && windowSize.height < EXPANDED_RAIL_MIN_HEIGHT_DP.dp
 
 /**
- * The shell's navigation around [content]: Material's [NavigationSuiteScaffold] with [navigationSuiteType],
- * or, when [shortRail], the short rail of this file in Material's scaffold layout (same show/hide
- * animation and window insets as the standard rail).
+ * The shell's navigation around [content]: Material's navigation suite for [navigationSuiteType]
+ * (bottom bar or rail), or, when [shortRail], the short rail of this file, both in Material's
+ * [NavigationSuiteScaffoldLayout] with its show/hide animation and window insets.
+ *
+ * [content] stays at the same place in the composition whichever navigation is shown, so turning
+ * the phone (bottom bar ↔ short rail) keeps every screen's saved state and ViewModels, as it did
+ * with Material's `NavigationSuiteScaffold` (the rotation test of the release smoke test).
  *
  * @param windowWidth the window's width, for the bottom bar's labels (each tab has a fifth of it).
  */
@@ -90,58 +96,69 @@ internal fun ShellNavigationSuite(
     content: @Composable () -> Unit,
 ) {
     val labels = ShellTab.entries.map { stringResource(it.label) }
-    if (shortRail) {
-        Surface(
-            modifier = modifier,
-            color = NavigationSuiteScaffoldDefaults.containerColor,
-            contentColor = NavigationSuiteScaffoldDefaults.contentColor,
-        ) {
-            val hidden = state.currentValue == NavigationSuiteScaffoldValue.Hidden && !state.isAnimating
-            val railInsets = WideNavigationRailDefaults.windowInsets
-            NavigationSuiteScaffoldLayout(
-                navigationSuite = { ShortRail(currentTab = currentTab, onSelectTab = onSelectTab, labels = labels) },
-                navigationSuiteType = NavigationSuiteType.WideNavigationRailCollapsed,
-                state = state,
-                content = {
-                    // As Material's scaffold: the rail has the start inset, the content does not pad it again.
-                    Box(Modifier.consumeWindowInsets(if (hidden) WindowInsets(0) else railInsets.only(WindowInsetsSides.Start))) {
-                        content()
-                    }
-                },
-            )
-        }
-        return
-    }
+    val layoutType = if (shortRail) NavigationSuiteType.WideNavigationRailCollapsed else navigationSuiteType
     val barLabels = navigationSuiteType != NavigationSuiteType.ShortNavigationBarCompact ||
         labelsFit(labels, MaterialTheme.typography.labelMedium, windowWidth / ShellTab.entries.size - LABEL_SLACK)
-    NavigationSuiteScaffold(
-        navigationItems = {
-            ShellTab.entries.forEachIndexed { index, tab ->
-                val selected = tab == currentTab
-                NavigationSuiteItem(
-                    selected = selected,
-                    onClick = { onSelectTab(tab) },
-                    icon = {
-                        Icon(
-                            imageVector = if (selected) tab.selectedIcon() else tab.icon(),
-                            contentDescription = if (barLabels) null else labels[index],
-                        )
-                    },
-                    label = if (barLabels) {
-                        { Text(labels[index], maxLines = 1) }
-                    } else {
-                        null
-                    },
-                    navigationSuiteType = navigationSuiteType,
-                    modifier = Modifier.testTag(shellTabTag(tab)),
-                )
-            }
-        },
+    Surface(
         modifier = modifier,
-        navigationSuiteType = navigationSuiteType,
-        state = state,
-        content = content,
-    )
+        color = NavigationSuiteScaffoldDefaults.containerColor,
+        contentColor = NavigationSuiteScaffoldDefaults.contentColor,
+    ) {
+        NavigationSuiteScaffoldLayout(
+            navigationSuite = {
+                if (shortRail) {
+                    ShortRail(currentTab = currentTab, onSelectTab = onSelectTab, labels = labels)
+                } else {
+                    NavigationSuite(navigationSuiteType = navigationSuiteType) {
+                        ShellTab.entries.forEachIndexed { index, tab ->
+                            val selected = tab == currentTab
+                            NavigationSuiteItem(
+                                selected = selected,
+                                onClick = { onSelectTab(tab) },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (selected) tab.selectedIcon() else tab.icon(),
+                                        contentDescription = if (barLabels) null else labels[index],
+                                    )
+                                },
+                                label = if (barLabels) {
+                                    { Text(labels[index], maxLines = 1) }
+                                } else {
+                                    null
+                                },
+                                navigationSuiteType = navigationSuiteType,
+                                modifier = Modifier.testTag(shellTabTag(tab)),
+                            )
+                        }
+                    }
+                }
+            },
+            navigationSuiteType = layoutType,
+            state = state,
+            content = {
+                // As Material's scaffold: the navigation has its insets, the content does not pad them again.
+                Box(Modifier.consumeWindowInsets(contentInsetsToConsume(layoutType, state))) { content() }
+            },
+        )
+    }
+}
+
+/**
+ * The window insets the navigation already handles, which the content must not pad again: as
+ * Material's `NavigationSuiteScaffold` (the bar's height is added because the layout takes it off
+ * the content's height). None while the navigation is hidden.
+ */
+@Composable
+private fun contentInsetsToConsume(type: NavigationSuiteType, state: NavigationSuiteScaffoldState): WindowInsets = when {
+    state.currentValue == NavigationSuiteScaffoldValue.Hidden && !state.isAnimating -> WindowInsets(0, 0, 0, 0)
+
+    type == NavigationSuiteType.ShortNavigationBarCompact || type == NavigationSuiteType.ShortNavigationBarMedium ->
+        ShortNavigationBarDefaults.windowInsets.only(WindowInsetsSides.Bottom).add(WindowInsets(bottom = SHORT_BAR_HEIGHT))
+
+    type == NavigationSuiteType.WideNavigationRailCollapsed || type == NavigationSuiteType.WideNavigationRailExpanded ->
+        WideNavigationRailDefaults.windowInsets.only(WindowInsetsSides.Start)
+
+    else -> WindowInsets(0, 0, 0, 0)
 }
 
 /**
@@ -271,6 +288,9 @@ internal fun shellTabTag(tab: ShellTab): String = "shell:tab:${tab.name.lowercas
 
 /** Test tag of the short rail (B21). */
 internal const val SHELL_SHORT_RAIL_TAG = "shell:short-rail"
+
+/** Material's short navigation bar. */
+private val SHORT_BAR_HEIGHT = 64.dp
 
 /** As wide as Material's collapsed rail. */
 private val SHORT_RAIL_WIDTH = 96.dp

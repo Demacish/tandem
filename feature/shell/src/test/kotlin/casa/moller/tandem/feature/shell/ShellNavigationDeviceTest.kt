@@ -1,8 +1,16 @@
 package casa.moller.tandem.feature.shell
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.material3.adaptive.navigationsuite.rememberNavigationSuiteScaffoldState
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
@@ -12,10 +20,12 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -131,8 +141,45 @@ class ShellNavigationDeviceTest {
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun aTallerLandscapePhoneShowsEveryLabel() {
         setShell()
-        ShellTab.entries.forEach { composeRule.onNode(hasText(string(it.label))).assertIsDisplayed() }
+        ShellTab.entries.forEach { tab ->
+            composeRule.onNodeWithTag(shellTabTag(tab)).assertIsDisplayed().assert(hasText(string(tab.label)))
+        }
         assertEveryTabReachable()
+    }
+
+    @Test
+    fun turningThePhoneKeepsTheScreensSavedState() {
+        // Bottom bar in portrait, the short rail in landscape: the screen under them must keep its
+        // saved state (and with it its ViewModels' SavedStateHandle), as before the short rail.
+        var landscape = false
+        val restoration = StateRestorationTester(composeRule)
+        restoration.setContent {
+            TandemTheme {
+                ShellNavigationSuite(
+                    navigationSuiteType = if (landscape) {
+                        NavigationSuiteType.WideNavigationRailCollapsed
+                    } else {
+                        NavigationSuiteType.ShortNavigationBarCompact
+                    },
+                    shortRail = landscape,
+                    windowWidth = if (landscape) 780.dp else 360.dp,
+                    state = rememberNavigationSuiteScaffoldState(),
+                    currentTab = ShellTab.TODAY,
+                    onSelectTab = {},
+                ) {
+                    var taps by rememberSaveable { mutableIntStateOf(0) }
+                    Text("taps=$taps", Modifier.clickable { taps++ })
+                }
+            }
+        }
+        composeRule.onNodeWithText("taps=0").performClick()
+        composeRule.onNodeWithText("taps=1").assertExists()
+
+        landscape = true
+        restoration.emulateSavedInstanceStateRestore()
+
+        composeRule.onNodeWithTag(SHELL_SHORT_RAIL_TAG).assertExists()
+        composeRule.onNodeWithText("taps=1").assertExists()
     }
 
     // --- B22 ---
@@ -158,7 +205,9 @@ class ShellNavigationDeviceTest {
     @Config(qualifiers = PHONE)
     fun aPhoneAtFontScale1KeepsItsLabels() {
         setShell()
-        ShellTab.entries.forEach { composeRule.onNode(hasText(string(it.label))).assertIsDisplayed() }
+        ShellTab.entries.forEach { tab ->
+            composeRule.onNodeWithTag(shellTabTag(tab)).assertIsDisplayed().assert(hasText(string(tab.label)))
+        }
     }
 
     // --- Screenshots and ATF ---
@@ -244,7 +293,9 @@ class ShellNavigationDeviceTest {
     private fun assertLabelsWholeOrIcons() {
         ShellTab.entries.forEach { tab ->
             val name = string(tab.label)
-            val shown = composeRule.onAllNodesWithText(name, useUnmergedTree = true).fetchSemanticsNodes()
+            // Only the tab's own label (the stand-in page has a title with the same word).
+            val shown = composeRule.onAllNodes(hasText(name) and hasAnyAncestor(hasTestTag(shellTabTag(tab))), useUnmergedTree = true)
+                .fetchSemanticsNodes()
                 .filter { it.layoutInfo.isPlaced && it.textLayoutOrNull() != null }
             shown.forEach { node ->
                 val layout = node.textLayoutOrNull()!!

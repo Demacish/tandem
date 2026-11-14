@@ -2,7 +2,6 @@ package casa.moller.tandem.core.ui.timer
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -28,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
@@ -244,6 +245,7 @@ fun TimerBarItem(
         )
     }
     val buttons: @Composable () -> Unit = { TimerButtons(timer = timer, actions = actions, colors = colors, showRecipe = showRecipe) }
+    val infoWidths = timerInfoWidths(timer, now, showRecipe)
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -252,7 +254,7 @@ fun TimerBarItem(
     ) {
         SubcomposeLayout(Modifier.padding(start = spacing.lg, end = spacing.xs)) { constraints ->
             val stacked = alwaysStacked ||
-                (constraints.hasBoundedWidth && textsTooNarrow(constraints.maxWidth, TimerInfoMinWidth * fontScale, info, buttons))
+                (constraints.hasBoundedWidth && textsTooNarrow(constraints.maxWidth, TimerInfoMinWidth * fontScale, infoWidths, buttons))
             val content: @Composable () -> Unit = if (stacked) {
                 {
                     val buttonRows: @Composable () -> Unit = {
@@ -290,26 +292,24 @@ fun TimerBarItem(
 }
 
 /**
- * True when [info] beside [buttons] in [maxWidth] would break a word or get less than [minWidth]
- * (or its whole width, when that is less). Measured in probes without semantics.
+ * True when the texts ([info]) beside [buttons] in [maxWidth] would break a word or get less than
+ * [minWidth] (or their whole width, when that is less). The buttons are measured in a probe without
+ * semantics.
  */
 private fun SubcomposeMeasureScope.textsTooNarrow(
     maxWidth: Int,
     minWidth: Dp,
-    info: @Composable (Modifier) -> Unit,
+    info: TimerInfoWidths,
     buttons: @Composable () -> Unit,
 ): Boolean {
     val buttonsWidth = subcompose(TimerItemSlot.PROBE_BUTTONS) {
         Row(Modifier.clearAndSetSemantics { }, verticalAlignment = Alignment.CenterVertically) { buttons() }
     }.maxOf { it.maxIntrinsicWidth(Constraints.Infinity) }
-    val probe = subcompose(TimerItemSlot.PROBE_INFO) { Box(Modifier.clearAndSetSemantics { }) { info(Modifier) } }
-    val longestWord = probe.maxOf { it.minIntrinsicWidth(Constraints.Infinity) }
-    val whole = probe.maxOf { it.maxIntrinsicWidth(Constraints.Infinity) }
-    return maxWidth - buttonsWidth < maxOf(longestWord, minOf(whole, minWidth.roundToPx()))
+    return maxWidth - buttonsWidth < maxOf(info.longestWord, minOf(info.whole, minWidth.roundToPx()))
 }
 
-/** The slots of [TimerBarItem]'s measuring: two probes without semantics, then the row shown. */
-private enum class TimerItemSlot { PROBE_BUTTONS, PROBE_INFO, ROW, STACKED }
+/** The slots of [TimerBarItem]'s measuring: a probe without semantics, then the row shown. */
+private enum class TimerItemSlot { PROBE_BUTTONS, ROW, STACKED }
 
 /**
  * A timer as a card (tablet cook mode's left pane, Stitch kokl_ge_surfplatta_*, and the timer
@@ -437,17 +437,57 @@ private fun TimerInfo(
         }
         // A paused timer says so on the same line ("3:12 · Pausad"), so the row keeps its height.
         Text(
-            text = when (timer.state) {
-                TimerState.RINGING -> stringResource(R.string.ui_timer_ringing)
-                TimerState.FINISHED -> stringResource(R.string.ui_timer_finished)
-                TimerState.PAUSED -> stringResource(R.string.ui_timer_paused_time, formatRemaining(timer.remaining(now)))
-                TimerState.RUNNING -> formatRemaining(timer.remaining(now))
-            },
-            style = timeStyle.copy(fontWeight = FontWeight.Bold, fontFeatureSettings = TABULAR_NUMBERS),
+            text = timerTimeText(timer, now),
+            style = timeStyle.timeText(),
             color = if (timer.state == TimerState.RUNNING) colors.accent else colors.content,
         )
     }
 }
+
+/** The big line of a timer: the time left ("3:12", "3:12 · Pausad"), or that it rang or finished. */
+@Composable
+private fun timerTimeText(timer: CookTimer, now: Instant): String = when (timer.state) {
+    TimerState.RINGING -> stringResource(R.string.ui_timer_ringing)
+    TimerState.FINISHED -> stringResource(R.string.ui_timer_finished)
+    TimerState.PAUSED -> stringResource(R.string.ui_timer_paused_time, formatRemaining(timer.remaining(now)))
+    TimerState.RUNNING -> formatRemaining(timer.remaining(now))
+}
+
+/** [timerTimeText]'s style: bold, digits of equal width. */
+private fun TextStyle.timeText(): TextStyle = copy(fontWeight = FontWeight.Bold, fontFeatureSettings = TABULAR_NUMBERS)
+
+/**
+ * The widths [TimerInfo] needs on one line, in pixels: [longestWord] its widest word (with the
+ * state icon in front of the name's), so nothing breaks inside a word, and [whole] every text whole.
+ * Measured with the texts' own styles (an intrinsic measurement would count a word's trailing space).
+ */
+private data class TimerInfoWidths(val longestWord: Int, val whole: Int)
+
+@Composable
+private fun timerInfoWidths(timer: CookTimer, now: Instant, showRecipe: Boolean): TimerInfoWidths {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val labelStyle = MaterialTheme.typography.labelLarge
+    val recipeStyle = MaterialTheme.typography.labelMedium
+    val timeStyle = MaterialTheme.typography.headlineSmall.timeText()
+    val recipe = timer.recipeName?.takeIf { showRecipe }
+    val time = timerTimeText(timer, now)
+    val iconAndGap = with(density) { (TandemTheme.sizes.iconSmall + TandemTheme.spacing.xs).roundToPx() }
+    return remember(timer.label, recipe, time, labelStyle, recipeStyle, timeStyle, density, measurer, iconAndGap) {
+        fun width(text: String, style: TextStyle) = measurer.measure(text, style, softWrap = false, maxLines = 1).size.width
+        fun longest(text: String, style: TextStyle) = text.split(WORD_GAP).filter { it.isNotEmpty() }.maxOfOrNull { width(it, style) } ?: 0
+        TimerInfoWidths(
+            longestWord = maxOf(
+                iconAndGap + longest(timer.label, labelStyle),
+                recipe?.let { longest(it, recipeStyle) } ?: 0,
+                longest(time, timeStyle),
+            ),
+            whole = maxOf(iconAndGap + width(timer.label, labelStyle), recipe?.let { width(it, recipeStyle) } ?: 0, width(time, timeStyle)),
+        )
+    }
+}
+
+private val WORD_GAP = Regex("\\s+")
 
 /** The buttons of one timer, by state: +1 min, pause/resume and remove; Stop while it rings. */
 @Composable
