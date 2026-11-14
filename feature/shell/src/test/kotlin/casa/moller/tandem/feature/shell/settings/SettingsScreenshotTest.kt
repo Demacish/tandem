@@ -198,6 +198,25 @@ class SettingsPhoneScreenshotTest : SettingsScreenshotTest("phone") {
     @Config(qualifiers = PHONE_SV)
     fun permissionsSwedish() = page("permissions_light_sv") { FixedSettingsPages().Permissions {} }
 
+    // --- Device test 2026-11-14 (B5, larm lane): the alarm channel sounds but does not pop up. ---
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun permissionsNoPopUpSwedish() = page("devicetest_permissions_no_pop_up_light_sv") {
+        FixedSettingsPages(permissions = SAMPLE_PERMISSIONS.copy(capabilities = CAPABILITIES_NO_POP_UP)).Permissions {}
+    }
+
+    @Test
+    @Config(qualifiers = PHONE_SV)
+    fun cookingNoPopUpSwedish() = page("devicetest_cooking_no_pop_up_light_sv") {
+        FixedSettingsPages(cooking = CookingUiState(capabilities = CAPABILITIES_NO_POP_UP)).Cooking({}, {}, {})
+    }
+
+    @Test
+    fun cookingNoPopUpDarkFontScale2() = page("devicetest_cooking_no_pop_up_font_scale_2_dark", darkTheme = true, fontScale = 2f) {
+        FixedSettingsPages(cooking = CookingUiState(capabilities = CAPABILITIES_NO_POP_UP)).Cooking({}, {}, {})
+    }
+
     @Test
     @Config(qualifiers = PHONE_SV)
     fun diagnosticsSwedish() = page("diagnostics_light_sv") { FixedSettingsPages().Diagnostics {} }

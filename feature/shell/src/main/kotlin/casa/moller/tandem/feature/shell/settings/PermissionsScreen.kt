@@ -74,7 +74,8 @@ internal fun PermissionsScreen(
                 icon = TandemIcons.Schedule,
                 title = stringResource(R.string.settings_permission_alarm_channel),
                 body = stringResource(R.string.settings_permission_alarm_channel_body),
-                allowed = capabilities.notificationsAllowed && capabilities.alarmChannelEnabled,
+                // Device test 2026-11-14 (B5): with sound AND pop-up (importance "high").
+                allowed = capabilities.notificationsAllowed && capabilities.alarmChannelEnabled && capabilities.alarmChannelPopsUp,
                 onOpen = {
                     // Without notifications at all, the channel cannot be switched on by itself.
                     onOpenSystemSetting(if (capabilities.notificationsAllowed) SystemSetting.ALARM_CHANNEL else SystemSetting.NOTIFICATIONS)

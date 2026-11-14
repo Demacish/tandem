@@ -44,6 +44,7 @@
     <string name="settings_timer_alarm_warning_silent">Tandem får inte visa notiser. En färdig timer ringer ändå, men larmet går bara att stänga av i Tandem, inte från låsskärmen.</string>
     <string name="settings_timer_alarm_warning_channel_off">Larmnotiserna för timers är tystade eller avstängda i notisinställningarna. En färdig timer ringer ändå, men larmet visas inte över låsskärmen.</string>
     <string name="settings_cooking_permissions_body">Notiser, larmljud och exakta larm för timers</string>
+    <string name="settings_timer_alarm_warning_no_pop_up">Larmnotiserna för timers visas inte som popup. En färdig timer ringer, men skärmen tänds inte och larmet syns inte över andra appar. Slå på ”Visa som popup-fönster” för ”Timers (larm)”.</string>
     <string name="settings_timer_alarm_warning_late">Tandem får inte ställa exakta larm, så Android kan försena en timer några minuter.</string>
     <string name="settings_open_permissions">Kontrollera behörigheter</string>
     <string name="settings_open_appearance">Textstorlek och mörkt kokläge</string>
@@ -102,7 +103,7 @@
     <string name="settings_permission_notifications">Notiser</string>
     <string name="settings_permission_notifications_body">Timers som räknar ned och ringer, nyheter om din server, och ändringar på inköpslistan och varor som går ut om du valt det.</string>
     <string name="settings_permission_alarm_channel">Larmljud för timers</string>
-    <string name="settings_permission_alarm_channel_body">Notistypen ”Timers (larm)” måste vara på, med ljud, så att en färdig timer visas över låsskärmen.</string>
+    <string name="settings_permission_alarm_channel_body">Notistypen ”Timers (larm)” måste vara på, med ljud och ”Visa som popup-fönster”, så att en färdig timer tänder skärmen och visas över låsskärmen. Syns larmet bara några sekunder när du använder telefonen? Välj ”Detaljerad” under Inställningar → Aviseringar → Popup-stil.</string>
     <string name="settings_permission_exact">Larm i rätt tid</string>
     <string name="settings_permission_exact_body">Låter en timer ringa på sekunden, även när telefonen sparar ström.</string>
     <string name="settings_permission_exact_always">Alltid tillåtet i den här versionen av Tandem.</string>

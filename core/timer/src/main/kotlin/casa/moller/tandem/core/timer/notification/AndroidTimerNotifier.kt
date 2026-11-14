@@ -51,6 +51,15 @@ import kotlin.time.Instant
  *   "Stop all"; silent, on its own and deliberately NOT the summary of the alarms' group (plan
  *   8.1): when an app removes a group summary, Android removes the group's children too, so the
  *   service stopping would take the still ringing alarms and the "Rang at 18:45" notices with it.
+ *   It is posted on the quiet `timer_ongoing` channel (device test B9, below).
+ * - **A ringing alarm stands on its own** (device test 2026-11-14, B9): with the phone unlocked and
+ *   the pop-up style "Brief" (Samsung), the heads-up lasts four seconds, and Stop then took three
+ *   taps: the shade, the group, the alarm. Android 16 bundles a group without a summary, and the
+ *   app's ungrouped notifications of one shade section, into one automatic group. So a RINGING
+ *   alarm has no group, and the ringing service's notification is in the silent section (the low
+ *   `timer_ongoing` channel, low priority) instead of beside it: the alarm (category alarm,
+ *   ongoing, highest priority, alerting) is the first notification in the shade, which Android
+ *   shows expanded with "+1 min" and "Stop". Only the quiet "Rang at" notices keep [ALARM_GROUP].
  * - **One sound at a time:** Android plays one notification sound at a time, so when a second
  *   alarm posts, its sound replaces the first one's, and cancelling it leaves the first one silent.
  *   [realertAlarm] posts a still ringing alarm again whenever another one stops.
@@ -149,6 +158,7 @@ internal class AndroidTimerNotifier @Inject constructor(
     }
 
     private fun postAlarm(id: Int, timer: CookTimer) {
+        // Device test B9: no group (see the class comment), so the alarm is never folded away.
         val builder = alarmBuilder(timer)
             .setContentText(context.getString(R.string.timer_notification_ringing))
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -170,6 +180,7 @@ internal class AndroidTimerNotifier @Inject constructor(
         val notification = alarmBuilder(timer)
             .setContentText(context.getString(R.string.timer_notification_missed, clockTime(rangAt)))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setGroup(ALARM_GROUP)
             .setSilent(true)
             .setAutoCancel(true)
             .build()
@@ -189,7 +200,9 @@ internal class AndroidTimerNotifier @Inject constructor(
 
     override fun ringingServiceNotification(ringing: List<CookTimer>): Notification {
         ensureChannels()
-        return NotificationCompat.Builder(context, ALARM_CHANNEL)
+        // Device test B9: the quiet channel and low priority keep it out of the alarms' shade
+        // section, so Android never bundles it with a ringing alarm (see the class comment).
+        return NotificationCompat.Builder(context, ONGOING_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_tandem_timer)
             .extend(watchBridge())
             .setContentTitle(
@@ -197,6 +210,7 @@ internal class AndroidTimerNotifier @Inject constructor(
             )
             .setContentText(ringing.joinToString(", ") { labelWithRecipe(it) })
             .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             // Never a group summary (see the class comment); the alarms themselves ring, this one never alerts.
             .setSilent(true)
@@ -246,7 +260,6 @@ internal class AndroidTimerNotifier @Inject constructor(
         .setWhen(timer.endsAt?.toEpochMilliseconds() ?: System.currentTimeMillis())
         .setShowWhen(true)
         .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-        .setGroup(ALARM_GROUP)
         .setSortKey(sortKey(timer))
         .setContentIntent(TimerIntents.openTimerPendingIntent(context, timer))
 
@@ -304,7 +317,10 @@ internal class AndroidTimerNotifier @Inject constructor(
         val ALARM_CHANNEL: String = TandemNotificationChannel.TIMER_ALARM.id
         val ONGOING_CHANNEL: String = TandemNotificationChannel.TIMER_ONGOING.id
 
-        /** The alarms and the "Rang at" notices form one group without an app summary (see the class comment). */
+        /**
+         * The quiet "Rang at" notices form one group without an app summary (see the class
+         * comment); a ringing alarm has no group since the device test (B9).
+         */
         const val ALARM_GROUP = "casa.moller.tandem.timer.ALARMS"
 
         private const val SORT_KEY_DIGITS = 20

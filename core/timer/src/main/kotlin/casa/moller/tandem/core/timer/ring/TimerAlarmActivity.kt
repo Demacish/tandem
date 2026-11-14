@@ -37,6 +37,8 @@ internal class TimerAlarmActivity : Activity() {
         setShowWhenLocked(true)
         setTurnScreenOn(true)
         setContentView(R.layout.timer_alarm_activity)
+        // Device test 2026-11-14 (B14): dark bars under the dark alarm, also with the app's light theme.
+        AlarmSystemBars.apply(window)
         val rows = findViewById<LinearLayout>(R.id.timer_alarm_rows)
         val engine = TimerEntryPoint.from(this).engine()
         scope.launch {

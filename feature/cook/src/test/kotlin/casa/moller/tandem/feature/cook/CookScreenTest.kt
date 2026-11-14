@@ -333,6 +333,35 @@ class CookScreenTest {
     }
 
     @Test
+    fun theNoPopUpWarningOpensTheChannelSettings() {
+        // Device test 2026-11-14 (B5): back on "Alarm" after "Silent", the channel sounds but is below "high".
+        var opened = ""
+        val fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(alarmChannelPopsUp = false))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+        }
+        composeRule.setContent {
+            TestFrame(clock = fakes.clock) {
+                val viewModel = remember { fakes.viewModel(CookKey(pasta.id)) }
+                val state by viewModel.uiState.collectAsState()
+                CookScreen(
+                    state = state,
+                    onAction = viewModel::onAction,
+                    onClose = {},
+                    onOpenNotificationSettings = { opened = "notifications" },
+                    onOpenAlarmChannelSettings = { opened = "channel" },
+                )
+            }
+        }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("The alarm does not pop up").assertIsDisplayed()
+        composeRule.onNodeWithText("The timer alarm is muted").assertDoesNotExist()
+        composeRule.onNodeWithText("Settings").performClick()
+        assertEquals("channel", opened)
+    }
+
+    @Test
     fun theStepHeaderAnnouncesEveryPage() {
         show()
         val header = composeRule.onNodeWithTag(COOK_STEP_OF_TAG)

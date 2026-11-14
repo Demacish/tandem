@@ -50,6 +50,7 @@ internal class FakeTimerSystem(
     var fullScreen: Boolean = true,
     var clockApp: Boolean = true,
     var alarmChannelAudible: Boolean = true,
+    var alarmChannelPopsUp: Boolean = true,
 ) : TimerSystem {
     val clockAppTimers = mutableListOf<Pair<String, Duration>>()
 
@@ -61,6 +62,7 @@ internal class FakeTimerSystem(
         exactAlarmsRequestable = !exactAlarms,
         fullScreenAlarmAllowed = fullScreen,
         clockAppAvailable = clockApp,
+        alarmChannelPopsUp = alarmChannelPopsUp,
     )
 
     override fun notificationsAllowed(): Boolean = notifications

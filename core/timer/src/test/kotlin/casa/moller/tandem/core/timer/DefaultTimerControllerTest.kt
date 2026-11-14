@@ -254,6 +254,51 @@ class DefaultTimerControllerTest {
     }
 
     @Test
+    fun aRingingAlarmStandsOnItsOwnAboveTheServiceNotification() = runTest {
+        // Device test 2026-11-14 (B9): unlocked phone, app in the background, pop-up style "Brief".
+        val engine = newEngine()
+        val other = engine.startTimer("Pastavattnet", 5.minutes)
+        val timer = engine.startTimer("Svampen", 1.minutes)
+        clock.advanceBy(1.minutes)
+
+        TimerAlarmReceiver.handle(engine, TimerIntents.ACTION_RING, timer.id)
+
+        val alarm = notification(TandemNotificationIds.timerAlarm(timer.id))
+        assertNull("not in a group Android could fold away", alarm.group)
+        assertEquals(0, alarm.flags and Notification.FLAG_GROUP_SUMMARY)
+        assertEquals(Notification.CATEGORY_ALARM, alarm.category)
+        assertTrue(alarm.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        @Suppress("DEPRECATION")
+        assertEquals("sorts first in the shade", Notification.PRIORITY_MAX, alarm.priority)
+        assertEquals("the alarm itself alerts", Notification.GROUP_ALERT_ALL, alarm.groupAlertBehavior)
+        assertTrue(alarm.flags and Notification.FLAG_INSISTENT != 0)
+        assertEquals(listOf("+1 min", "Stop"), alarm.actions.map { it.title.toString() })
+        assertEquals(Notification.VISIBILITY_PUBLIC, alarm.visibility)
+
+        val service = AndroidTimerNotifier(context, system, clock).ringingServiceNotification(engine.timers.value)
+        assertEquals("the quiet section, never bundled with the alarm", TandemNotificationChannel.TIMER_ONGOING.id, service.channelId)
+        @Suppress("DEPRECATION")
+        assertEquals(Notification.PRIORITY_LOW, service.priority)
+        // NotificationCompat puts a silent notification without a group into its "silent" group.
+        assertNotEquals(alarm.group, service.group)
+        assertNotNull("the other timer still counts down", notificationOrNull(TandemNotificationIds.timerOngoing(other.id)))
+    }
+
+    @Test
+    fun aQuietNoticeKeepsTheAlarmsGroupButARingingAlarmDoesNot() = runTest {
+        val engine = newEngine()
+        val timer = engine.startTimer("Ugnen", 20.minutes)
+        clock.advanceBy(20.minutes)
+        engine.onAlarm()
+        assertNull(notification(TandemNotificationIds.timerAlarm(timer.id)).group)
+
+        clock.advanceBy(TimerEngineConfig.DEFAULT_RING_TIMEOUT)
+        TimerAlarmReceiver.handle(engine, TimerIntents.ACTION_AUTO_SILENCE, timer.id)
+
+        assertEquals(AndroidTimerNotifier.ALARM_GROUP, notification(TandemNotificationIds.timerAlarm(timer.id)).group)
+    }
+
+    @Test
     fun playHasNoFullScreenAlarm() = runTest {
         system.fullScreen = false
         val engine = newEngine()
@@ -591,7 +636,8 @@ class DefaultTimerControllerTest {
         assertEquals(0, service.flags and Notification.FLAG_GROUP_SUMMARY)
         assertNotEquals("removing it must not take the alarms along", AndroidTimerNotifier.ALARM_GROUP, service.group)
         assertEquals("silent", Notification.GROUP_ALERT_SUMMARY, service.groupAlertBehavior)
-        assertEquals(TandemNotificationChannel.TIMER_ALARM.id, service.channelId)
+        // Device test B9: on the quiet channel, so Android never bundles it with a ringing alarm.
+        assertEquals(TandemNotificationChannel.TIMER_ONGOING.id, service.channelId)
     }
 
     @Test

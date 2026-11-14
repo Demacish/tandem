@@ -14,6 +14,7 @@ import android.provider.AlarmClock
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
+import casa.moller.tandem.core.model.timer.TimerCapabilities
 import casa.moller.tandem.core.timer.alarm.TimerAlarmReceiver
 import casa.moller.tandem.core.timer.alarm.TimerSystemEventReceiver
 import casa.moller.tandem.core.timer.engine.SystemEvent
@@ -118,6 +119,78 @@ class TimerPlatformTest {
         )
         assertTrue(system.alarmNotificationAudible())
         assertFalse(system.capabilities(notificationPermissionAsked = true).alarmMayBeSilent)
+    }
+
+    @Test
+    fun anAlarmChannelBackOnAlarmWithoutPopUpIsReported() {
+        // Device test 2026-11-14 (B5): Silent, then Alarm again: Samsung leaves "default" (3) with sound.
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(TandemNotificationChannel.TIMER_ALARM.id, "Timers", NotificationManager.IMPORTANCE_DEFAULT),
+        )
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        val system = AndroidTimerSystem(context)
+
+        val capabilities = system.capabilities(notificationPermissionAsked = true)
+
+        assertTrue("the alarm sounds", capabilities.alarmChannelEnabled)
+        assertTrue("the notification itself plays it", system.alarmNotificationAudible())
+        assertFalse(capabilities.alarmMayBeSilent)
+        assertFalse("no pop-up and no full screen below high", capabilities.alarmChannelPopsUp)
+        assertTrue("cook mode and the permissions page warn", capabilities.alarmMayStayHidden)
+    }
+
+    @Test
+    fun aHighAlarmChannelPopsUp() {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(TandemNotificationChannel.TIMER_ALARM.id, "Timers", NotificationManager.IMPORTANCE_HIGH),
+        )
+        shadowOf(context).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
+
+        val capabilities = AndroidTimerSystem(context).capabilities(notificationPermissionAsked = true)
+
+        assertTrue(capabilities.alarmChannelPopsUp)
+        assertFalse(capabilities.alarmMayStayHidden)
+    }
+
+    /**
+     * The whole matrix of the device test (B5): importance low (2, "Silent"), default (3) and high
+     * (4), with and without a sound, with and without the full-screen permission. Exactly one
+     * warning per broken case: a silent channel says "muted" (its fix brings the sound back), a
+     * sounding channel below high says "no pop-up"; the full-screen permission has its own row.
+     */
+    @Test
+    fun theAlarmChannelMatrix() {
+        data class Case(val importance: Int, val sound: Boolean, val silent: Boolean, val hidden: Boolean)
+        val cases = listOf(
+            Case(NotificationManager.IMPORTANCE_LOW, sound = true, silent = true, hidden = false),
+            Case(NotificationManager.IMPORTANCE_LOW, sound = false, silent = true, hidden = false),
+            Case(NotificationManager.IMPORTANCE_DEFAULT, sound = true, silent = false, hidden = true),
+            Case(NotificationManager.IMPORTANCE_DEFAULT, sound = false, silent = true, hidden = false),
+            Case(NotificationManager.IMPORTANCE_HIGH, sound = true, silent = false, hidden = false),
+            Case(NotificationManager.IMPORTANCE_HIGH, sound = false, silent = true, hidden = false),
+        )
+        for (case in cases) {
+            for (fullScreen in listOf(true, false)) {
+                val capabilities = TimerCapabilities.AllGranted.copy(
+                    alarmChannelEnabled = AndroidTimerSystem.channelAudible(case.importance, case.sound),
+                    alarmChannelPopsUp = AndroidTimerSystem.channelPopsUp(case.importance),
+                    fullScreenAlarmAllowed = fullScreen,
+                )
+                val name = "$case, full screen $fullScreen"
+                assertEquals(name, case.silent, capabilities.alarmMayBeSilent)
+                assertEquals(name, case.hidden, capabilities.alarmMayStayHidden)
+                assertEquals(name, fullScreen, capabilities.fullScreenAlarmAllowed)
+            }
+        }
+        // Not created yet: created high with the alarm sound before the first alarm.
+        assertTrue(AndroidTimerSystem.channelAudible(null, hasSound = false))
+        assertTrue(AndroidTimerSystem.channelPopsUp(null))
+        // Without notifications only the notifications warning applies.
+        val off = TimerCapabilities.AllGranted.copy(notificationsAllowed = false, alarmChannelPopsUp = false)
+        assertTrue(off.alarmMayBeSilent)
+        assertFalse(off.alarmMayStayHidden)
     }
 
     @Test

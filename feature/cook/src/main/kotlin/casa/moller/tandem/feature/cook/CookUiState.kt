@@ -110,6 +110,9 @@ data class CookUiState(
      *   channel cannot sound (blocked, set to "Silent" or without a sound). The ringing service
      *   still plays the alarm, but no alarm is shown over the lock screen; the channel's own
      *   settings page fixes it.
+     * - [SilentAlarmCause.ALARM_NO_POP_UP] (device test 2026-11-14, B5): the channel sounds but is
+     *   below "high" (Samsung after "Silent" and back to "Alarm"), so the alarm neither pops up nor
+     *   wakes the screen. The channel's page fixes it ("Show as pop-up").
      */
     val silentAlarmCause: SilentAlarmCause?
         get() = when {
@@ -120,6 +123,8 @@ data class CookUiState(
 
             !capabilities.alarmChannelEnabled -> SilentAlarmCause.ALARM_CHANNEL_OFF
 
+            capabilities.alarmMayStayHidden -> SilentAlarmCause.ALARM_NO_POP_UP
+
             else -> null
         }
 
@@ -129,7 +134,7 @@ data class CookUiState(
 }
 
 /** Why a timer's alarm may be silent or hard to stop ([CookUiState.silentAlarmCause]). */
-enum class SilentAlarmCause { NOTIFICATIONS_OFF, ALARM_CHANNEL_OFF }
+enum class SilentAlarmCause { NOTIFICATIONS_OFF, ALARM_CHANNEL_OFF, ALARM_NO_POP_UP }
 
 /**
  * What happens to a cook log saved now ("Klart!", plan 4.1 terms of 0.1.0), from the sync's pause.

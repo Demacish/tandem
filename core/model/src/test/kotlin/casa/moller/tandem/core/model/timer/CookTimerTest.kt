@@ -98,6 +98,17 @@ class CookTimerTest {
     }
 
     @Test
+    fun anAlarmChannelBelowHighMayStayHidden() {
+        // Device test 2026-11-14 (B5): the alarm sounds, but neither pops up nor wakes the screen.
+        val noPopUp = TimerCapabilities.AllGranted.copy(alarmChannelPopsUp = false)
+        assertTrue(noPopUp.alarmMayStayHidden)
+        assertFalse(noPopUp.alarmMayBeSilent)
+        assertFalse(TimerCapabilities.AllGranted.alarmMayStayHidden)
+        assertFalse("muted wins: its fix comes first", noPopUp.copy(alarmChannelEnabled = false).alarmMayStayHidden)
+        assertFalse("no notifications at all", noPopUp.copy(notificationsAllowed = false).alarmMayStayHidden)
+    }
+
+    @Test
     fun suggestionsCarryARangeOnlyForText() {
         val text = TimerSuggestion(
             label = "ca 20–25 min (25 min)",

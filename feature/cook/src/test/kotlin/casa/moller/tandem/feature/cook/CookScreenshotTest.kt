@@ -52,6 +52,12 @@ abstract class CookScreenshotTest(private val device: String) {
         composeRule.onRoot().captureRoboImage("$DEFAULT_ROBORAZZI_OUTPUT_DIR_PATH/cook/${device}_$name.png")
     }
 
+    /** Device test 2026-11-14 (B5): a running timer, and the alarm channel sounds but does not pop up. */
+    protected fun noPopUp(): CookFakes = CookFakes().apply {
+        timers.setCapabilities(TimerCapabilities.AllGranted.copy(alarmChannelPopsUp = false))
+        startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+    }
+
     /** Two timers: the pasta counting down (7:39 left) and the mushrooms paused. */
     protected fun CookFakes.withTimers(): CookFakes = apply {
         startTimer(1, "Pastan · 8–10 minuter (10 min)", 10.minutes)
@@ -107,6 +113,11 @@ class CookPhoneScreenshotTest : CookScreenshotTest("phone") {
 
     @Test
     fun done() = capture("done_light") { CookWithFakes(key = CookKey(pasta.id, startStep = 3), fakes = it) }
+
+    /** Device test B5 (larm lane). */
+    @Test
+    @Config(qualifiers = "sv-$TABLET")
+    fun alarmNoPopUpSwedish() = capture("devicetest_alarm_no_pop_up_light_sv", fakes = noPopUp()) { CookWithFakes(fakes = it) }
 
     @Test
     @Config(qualifiers = "sv-$PHONE")
@@ -197,6 +208,24 @@ class CookPhoneScreenshotTest : CookScreenshotTest("phone") {
             timers.setCapabilities(TimerCapabilities.AllGranted.copy(alarmChannelEnabled = false))
             startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
         },
+    ) { CookWithFakes(fakes = it) }
+
+    // --- Device test 2026-11-14 (B5, larm lane): the alarm sounds but does not pop up. ---
+
+    @Test
+    fun alarmNoPopUp() = capture("devicetest_alarm_no_pop_up_light", fakes = noPopUp()) { CookWithFakes(fakes = it) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun alarmNoPopUpSwedish() = capture("devicetest_alarm_no_pop_up_light_sv", fakes = noPopUp()) { CookWithFakes(fakes = it) }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE")
+    fun alarmNoPopUpDarkFontScale2Swedish() = capture(
+        "devicetest_alarm_no_pop_up_font2_dark_sv",
+        darkTheme = true,
+        fontScale = 2f,
+        fakes = noPopUp(),
     ) { CookWithFakes(fakes = it) }
 
     @Test
@@ -306,6 +335,12 @@ class CookTabletPortraitScreenshotTest : CookScreenshotTest("tablet_portrait") {
     fun twoPanesDarkSwedish() = capture("step_dark_sv", darkTheme = true, fakes = CookFakes().withTimers()) {
         CookWithFakes(fakes = it)
     }
+
+    /** Device test B5 (larm lane). */
+    @Test
+    fun alarmNoPopUpDark() = capture("devicetest_alarm_no_pop_up_dark", darkTheme = true, fakes = noPopUp()) {
+        CookWithFakes(fakes = it)
+    }
 }
 
 @RunWith(AndroidJUnit4::class)
@@ -314,6 +349,11 @@ class CookPhoneLandscapeScreenshotTest : CookScreenshotTest("phone_landscape") {
 
     @Test
     fun twoPanes() = capture("step_light", fakes = CookFakes().withTimers()) { CookWithFakes(fakes = it) }
+
+    /** Device test B5 (larm lane). */
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LANDSCAPE")
+    fun alarmNoPopUpSwedish() = capture("devicetest_alarm_no_pop_up_light_sv", fakes = noPopUp()) { CookWithFakes(fakes = it) }
 
     /** fix-ui: the ringing timer stays in view beside many ingredients. */
     @Test

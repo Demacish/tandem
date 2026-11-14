@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The lock-screen alarm (TimerAlarmActivity): always dark, like a clock app's alarm. -->
-    <style name="TandemTimer.Alarm" parent="android:Theme.DeviceDefault.NoActionBar">
+    <!--
+        The lock-screen alarm (TimerAlarmActivity): always dark, like a clock app's alarm.
+        Device test 2026-11-14 (B14): the parent was DeviceDefault, which One UI draws light when
+        the app is light (Tandem's theme setting), so a light navigation bar sat under the dark
+        alarm. Theme.Material is dark whatever the app theme or night mode; the bars are dark too
+        (colour before Android 15, light icons off and no contrast scrim from 15 on, edge to edge),
+        and TimerAlarmActivity sets the same appearance on its window (AlarmSystemBars).
+    -->
+    <style name="TandemTimer.Alarm" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/tandem_timer_alarm_background</item>
+        <item name="android:colorBackground">@color/tandem_timer_alarm_background</item>
+        <item name="android:statusBarColor">@color/tandem_timer_alarm_background</item>
+        <item name="android:navigationBarColor">@color/tandem_timer_alarm_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 
     <color name="tandem_timer_alarm_background">#FF151A17</color>

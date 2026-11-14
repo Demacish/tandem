@@ -47,6 +47,8 @@
     <string name="settings_timer_alarm_warning_silent">Tandem is not allowed to show notifications. A finished timer still rings, but you can only stop the alarm in Tandem, not from the lock screen.</string>
     <string name="settings_timer_alarm_warning_channel_off">The timer alarm notifications are muted or turned off in the notification settings. A finished timer still rings, but the alarm is not shown over the lock screen.</string>
     <string name="settings_cooking_permissions_body">Notifications, the alarm sound and exact alarms for timers</string>
+    <!-- Device test 2026-11-14 (B5): the alarm channel sounds but is below "high". -->
+    <string name="settings_timer_alarm_warning_no_pop_up">The timer alarm notifications do not pop up. A finished timer rings, but the screen does not light up and the alarm is not shown over other apps. Turn on pop-up for “Timers (alarm)” (Samsung: “Show as pop-up”).</string>
     <string name="settings_timer_alarm_warning_late">Tandem may not set exact alarms, so Android can delay a timer by a few minutes.</string>
     <string name="settings_open_permissions">Check permissions</string>
     <string name="settings_open_appearance">Text size and dark cook mode</string>
@@ -105,7 +107,7 @@
     <string name="settings_permission_notifications">Notifications</string>
     <string name="settings_permission_notifications_body">Timers counting down and ringing, news about your server, and changes to the shopping list and food about to expire when you chose that.</string>
     <string name="settings_permission_alarm_channel">Alarm sound for timers</string>
-    <string name="settings_permission_alarm_channel_body">The notification type “Timers (alarm)” must be on, with sound, so a finished timer is shown over the lock screen.</string>
+    <string name="settings_permission_alarm_channel_body">The notification type “Timers (alarm)” must be on, with sound and pop-up (Samsung: “Show as pop-up”), so a finished timer wakes the screen and is shown over the lock screen. If the alarm only shows for a few seconds while you use the phone, choose “Detailed” under Settings → Notifications → Pop-up notification style (Samsung).</string>
     <string name="settings_permission_exact">Alarms on time</string>
     <string name="settings_permission_exact_body">Lets a timer ring on the second, even when the phone is saving power.</string>
     <string name="settings_permission_exact_always">Always allowed in this version of Tandem.</string>

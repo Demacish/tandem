@@ -99,6 +99,17 @@ class SettingsAccessibilityTest {
     @Test
     fun permissionsDark() = check(darkTheme = true) { FixedSettingsPages().Permissions {} }
 
+    /** Device test 2026-11-14 (B5, larm lane). */
+    @Test
+    fun permissionsNoPopUp() = check {
+        FixedSettingsPages(permissions = SAMPLE_PERMISSIONS.copy(capabilities = CAPABILITIES_NO_POP_UP)).Permissions {}
+    }
+
+    @Test
+    fun cookingNoPopUpFontScale2() = check(fontScale = 2f) {
+        FixedSettingsPages(cooking = CookingUiState(capabilities = CAPABILITIES_NO_POP_UP)).Cooking({}, {}, {})
+    }
+
     @Test
     fun permissionsPlayLimitedFontScale2() = check(fontScale = 2f) {
         FixedSettingsPages(permissions = PermissionsUiState(capabilities = CAPABILITIES_LIMITED, showBattery = true)).Permissions {}

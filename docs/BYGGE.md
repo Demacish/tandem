@@ -288,7 +288,7 @@ modulerna är borttagna** (0.2.0): `TimerController` binds i `:core:timer` (`Tim
 | Id | Kanal | Viktighet | Ljud | Ägare |
 |---|---|---|---|---|
 | `timer_alarm` | Timers (larm) | hög | larmljud, `USAGE_ALARM` | `:core:timer` |
-| `timer_ongoing` | Pågående timers (nedräkning, Live Update) | låg | tyst | `:core:timer` |
+| `timer_ongoing` | Pågående timers (nedräkning, Live Update; sedan enhetstestet också ringtjänstens tysta notis) | låg | tyst | `:core:timer` |
 | `sync_problems` | Synkproblem (blockerad, utloggad, säkert läge) | låg | tyst | `:core:sync` |
 | `server` | Server ("Tandoor uppdaterades", sedan 0.1.0) | standard | notis | `:core:sync` |
 | `shopping` | Inköpslistan ("Anna lade till mjölk", Fas 4, bara när inställningen är på) | standard | notis | `:core:sync` |
@@ -1132,6 +1132,7 @@ sätts av integrationen. En rad per bana.
 | kokvy | Enhetstestet 2026-11-14 (Galaxy S21 FE, 360 × 780 dp): B4 snabba stegbyten, B6 ringande timer under varningen, B10 "Före gåe…" | **B4:** två tryck på Nästa eller två volym ned inom 100 ms hamnar på steg 3 av 3 (ViewModelns sida är enda sanningen, bara en svepning rapporterar tillbaka); Compose-test med två tryck och två volymknappstryck utan att vänta, enhetstest med en eftersläpande skärm, röktestens två handsfree-scenarier oförändrade. **B6:** en ringande timer med Stopp står överst i timerytan, ovanför varningarna, som är en rad (tryck visar hela) medan något ringer; en klar timer står efter de som går; med två receptflikar och handsfree-raden behåller steget minst 96 dp och timerknappen i steget går att nå; 360 × 780 dp i textstorlek 1,0 och 2,0, liggande och surfplatta. **B10:** ingen sidknapp bryter ett ord: knappen tappar pilen och sedan texten (pilen med texten för TalkBack) i båda språken och textstorlek 2; skärmbild på 360 dp på svenska | ✅ klart i CI 2026-11-14 (PR 43612273208 och röktest 43612317858 på 1c5c033: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; referensbilder från Screenshots 43610217814, bara `cook/*devicetest_*` nya och nio avsiktligt ändrade, se avsnittet); på en riktig telefon återstår ägarens prov, se "Enhetstestet 2026-11-14: kokläget" |
 | rost | Röst och uppläsning efter enhetstestet 2026-11-14 (B1, B2, B3, B11; plan §8.1, #32) | **B1:** igenkännaren får aldrig ett språk utan region: appens "en" blir telefonens region när språket talas där ("en-GB"), annars språkets vanliga ("en-US", "de-DE"; svenska alltid "sv-SE"), och igenkännarens egna språklistor avgör när de finns (enhetstest av avbildningen). **B2:** fel 12 (stöds inte) och 13 (inte nedladdat) skiljs åt och tomma stödlistor är "okänt"; "inte nedladdat" ger "Röststyrning på <språk> behöver hämtas" med **Hämta** (`triggerModelDownload` med lyssnare), "Hämtar …", "hämtas senare" med "Försök igen" eller "gick inte" med Hämta igen, och lyssnar själv när språket finns; efter ett säkert fel slutar rösten (ingen omförsöksloop, inget upprepat felpip). **B3 (ägarens beslut "Båda vägarna"):** standard är bara igenkänning i telefonen; saknas appens språk där sägs det rakt ut med erbjudandet "Använd engelska kommandon: next, back, repeat?" och engelska kommandon i telefonen (samma hämtningsflöde), orden visas på engelska; den frivilliga inställningen **Använd telefonens taltjänst** (av som standard, i kokläget ark och Mer → Kokläge och timers) lyssnar på appens språk med telefonens vanliga taltjänst och `EXTRA_PREFER_OFFLINE`, texten säger att talet då kan gå över internet; utan taltjänst sägs det. Samma tolkning av kommandon på båda vägarna, inget ljud eller hörd text loggas eller sparas. **B11:** med uppläsning vald (eller begärd) och volymen för uppläsningen på 0 visar kokläget "Medievolymen är avstängd" med **Höj volymen** (`adjustStreamVolume`, `FLAG_SHOW_UI`), och hjälptexten nämner det. Enhets-, ViewModel- (falsk igenkännare/uppläsare) och Robolectric-tester, referensbilder och ATF för de nya lägena. **BEHÖVER ENHET** (ägaren): engelska och nedladdningen på en Samsung, svenska med taltjänsten, volymknappen | ✅ klart i CI 2026-11-14 (PR 43614034031 och röktest shard 1 "OK (14 tests)", shard 2 "OK (32 tests)" 43609084151 före ombaseringen på kokvy; referensbilder från Screenshots 43606352402 och, efter ombaseringen, 43616064455: bara `cook/*rost_*`, `cook/phone_fas5_handsfree_{sheet_*,unavailable_light_sv,microphone_dark}`, `shell/handsfree_settings_*` och `shell/settings_*cooking*`); enhetsproven återstår, se "Röst och uppläsning efter enhetstestet" |
 | data | Enhetstestet 2026-11-14: B7 "Handla för veckan" dubblerar kvällens måltid från Idag, B8 tomt "Kan laga nu" vid första demostarten (plan §8.2, §8.3, §8.8) | **B7:** "Lägg på inköpslistan" på Idags "Ikväll" skickar måltidens id, så listreceptet får `mealplan` (Tandoor 2.6.13 och 2.7.1 sparar det, `ShoppingWritesContractTest.aListRecipeCreatedForAMealBelongsToTheMeal`), offline genom utkorgen och i demoläget; "Handla för veckan" visar då måltiden som "redan på listan" och lägger aldrig till den igen; ett listrecept av **samma recept utan måltid** med varor kvar att köpa (från receptet, kokläget, Idag före 0.8.0) täcker en måltid av receptet, den tidigaste (core:domain `MealsOnShoppingList`, enhetstest); arket på Idag räknar den måltidens rader. Sync-test mot falska 2.6.13 och 2.7.1 genom utkorgen, ViewModel- och Compose-test. **B8:** demoläget räknar "Kan laga nu" ur demodatabasen (alla lagrade recept, livsmedlen, skafferiet) varje gång den ändras, så en demostart på tom databas visar grupperna och "Går ut snart" utan omstart (sync-test som börjar bevaka före exempeldatan); ett riktigt kontos första synk läser grupperna före skafferiet: den första skafferiläsningen med varor efter en läsning utan skafferi frågar om "Använd upp" direkt i stället för efter minuten (sync-test, klockan står still). Room-schemat oförändrat (6). | ✅ klart i CI 2026-11-14 (PR 43626779258 och röktest 43626779201 på baac048: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; inga referensbilder ändrade, Contract berörs inte: kopplingen fanns redan i `ShoppingWritesContractTest`); demons första start och "Handla för veckan" på en riktig telefon återstår för ägaren, se "Enhetstestet 2026-11-14: inköpslistan och Kan laga nu" |
+| larm | Enhetstestet 2026-11-14 (Galaxy S21 FE): B5 larmkanalen under "hög", B9 larmet bara fyra sekunder med olåst telefon, B14 ljust navigeringsfält under larmskärmen, T2 Live Update på Samsung | **B5:** en larmkanal under nivån "hög" (Tyst → Larm på Samsung ger "standard" med ljud) räknas som fel: kokläget, Mer → Kokläge och timers och Behörigheter varnar ("Visa som popup-fönster"), knappen öppnar kanalens egna inställningar, och matrisen nivå 2/3/4 × ljud/inget ljud × helskärmsbehörighet är enhetstestad (en varning per fel, aldrig dubbelt ljud). **B9:** ett ringande larm ligger aldrig i en grupp med timernotiserna eller ringtjänstens notis (som är tyst på `timer_ongoing`), är kategori alarm, pågående, högsta prioritet och larmar själv, med "+1 min" och "Stopp"; Robolectric-test på den byggda notisen; hjälptexten i Behörigheter förklarar Popup-stil. **B14:** larmskärmen och dess systemfält är mörka i appens ljusa och mörka tema; tema- och fönstertest plus referensbilder. **T2:** BYGGE säger att Samsung inte visar någon Live Update och att processdöden är verifierad. Referensbilder och ATF för de nya varningarna (telefon, liggande, surfplatta i båda orienteringarna, mörkt, teckenstorlek 2, svenska); röktestet körs | pågår, se "Enhetstestet 2026-11-14: larmen" |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -4249,6 +4250,56 @@ borttagen) implementerar `CookLogRepository` offline först (plan 5.3/5.7, funkt
 <!-- /Fas 1b koklogg -->
 
 <!-- Fas 1b timer -->
+## Enhetstestet 2026-11-14: larmen (`:core:timer`, `:core:model`, `:feature:cook`, `:feature:shell`, bana larm)
+
+Enhetstestet på en Samsung Galaxy S21 FE (Android 16, One UI, svenska) hittade tre fel i larmen
+(B5, B9, B14) och en felaktig förväntan i testlistan (T2). "Klart när" står i "Fas 5 – läge".
+Inget Room-schema och inga kanaler ändrades.
+
+- **B5, larmkanalen under "hög":** helskärmslarm och heads-up kräver kanalens nivå "hög" (4).
+  Väljer man Tyst (2) och sedan Larm igen i kanalens inställningar ger Samsung nivån "standard"
+  (3) med ljud: larmet låter men skärmen tänds inte. Ny `TimerCapabilities.alarmChannelPopsUp`
+  (sist i konstruktorn med standardvärdet `true`, så andra anropare kompilerar) läses av
+  `AndroidTimerSystem.channelPopsUp` (nivå ≥ hög, eller kanalen finns inte än);
+  `channelAudible` är den gamla ljudregeln. `alarmMayStayHidden` = notiser på, kanalen låter men
+  når inte "hög". Den ger en egen varning, `SilentAlarmCause.ALARM_NO_POP_UP` i kokläget (samma
+  plats och knapp som den tystade kanalen: `ACTION_CHANNEL_NOTIFICATION_SETTINGS` för
+  `timer_alarm`; banan kokvy äger layouten), en rad i Mer → Kokläge och timers och "Inte
+  tillåtet" på raden "Larmljud för timers" i Behörigheter. Texterna nämner "Visa som
+  popup-fönster", eftersom Larm igen bara ger tillbaka ljudet; den tystade kanalens text nämner
+  det också, så att båda fixas i ett svep. Ringtjänsten spelar fortfarande ljudet själv bara när
+  kanalen inte låter (`alarmNotificationAudible` oförändrad), så nivå 3 ger aldrig dubbelt ljud.
+  Diagnostiken har raden "Alarm channel pops up".
+- **B9, larmet bara fyra sekunder med olåst telefon:** popup-stilen "Kort" (Samsung,
+  `DISABLE_HEADS_UP`) är telefonens inställning, men Stopp krävde sedan tre tryck eftersom larmet
+  låg i en grupp: larmen hade gruppen `ALARM_GROUP` utan sammanfattning, och Android 16 samlar en
+  grupp utan sammanfattning, liksom appens ogrupperade notiser i samma del av skuggan
+  ("AlertingSection"/"SilentSection"), i en automatisk grupp. Nu har ett **ringande** larm ingen
+  grupp (bara de tysta "Ringde 18:45" behåller `ALARM_GROUP`), och ringtjänstens notis ligger på
+  `timer_ongoing` med låg prioritet, alltså i den tysta delen och aldrig ihop med larmet. Larmet
+  är kategori alarm, pågående, `PRIORITY_MAX`, `FLAG_INSISTENT` och larmar själv
+  (`GROUP_ALERT_ALL`), så det står först i skuggan, där Android visar den första notisen utfälld
+  med "+1 min" och "Stopp". Fullskärmen används bara som förut (låst skärm, sideload). Texten i
+  Behörigheter säger hur popup-stilen ändras (Inställningar → Aviseringar → Popup-stil →
+  "Detaljerad"). Robolectric: `DefaultTimerControllerTest.aRingingAlarmStandsOnItsOwnAboveTheServiceNotification`
+  och `aQuietNoticeKeepsTheAlarmsGroupButARingingAlarmDoesNot`.
+- **B14, ljust navigeringsfält under larmskärmen:** `TandemTimer.Alarm` ärvde
+  `Theme.DeviceDefault`, som One UI ritar ljust när appen har ljust tema. Nu
+  `Theme.Material.NoActionBar` (mörk oavsett tema och nattläge) med mörka fält (färg före
+  Android 15, inga ljusa ikoner och ingen kontrastslöja efter), och `ring/AlarmSystemBars` sätter
+  samma utseende på fönstret. `ring/AlarmScreenTest` kontrollerar tema och fönster i appens ljusa
+  och mörka tema och tar referensbilder (`core/timer/src/test/screenshots/timer/devicetest_alarm_screen_*`;
+  `:core:timer` har nu `tandem.android.roborazzi`). Robolectric ritar inga systemfält, så bilderna
+  visar skärmens innehåll och testet fälten.
+- **T2:** se "Timers" → "Nedräkningen": på Samsung syns ingen Live Update (egen nedräkningsvy),
+  och testlistans punkt 15 gäller bara Android 16 från andra tillverkare. Processdöden är
+  verifierad på telefonen (samma avsnitt).
+
+**Behöver enhet (ägaren):** Tyst → Larm på Samsung ger varningen och knappen öppnar kanalen;
+med popup-fönster på igen försvinner den. Olåst telefon med popup-stilen "Kort": larmet står först
+i skuggan med Stopp synligt efter ett drag nedåt. Larmskärmen med appens ljusa tema och
+tre-knappsnavigering.
+
 ## Timers (`:core:timer`, Fas 1b)
 
 Den riktiga `TimerController` (plan 8.1, funktion #6/#7) är `engine/DefaultTimerController`,
@@ -4290,8 +4341,8 @@ bara via `core:data`.
   bakgrunden) ringer notisen ensam.
   - *Granskningsfixar 0.2.0 (fix-data):* tjänstens notis är **ingen gruppsammanfattning** (tar
     appen bort en sammanfattning tar systemet barnen med sig, alltså larmen och "Ringde 18:45").
-    Den ligger kvar på `timer_alarm` (kanaltabellen 8.7 är fast) men är tyst; tystar användaren
-    kanalen via den märks det ovan. Tjänsten **stoppas aldrig utifrån** (`stopService` direkt efter
+    Den låg på `timer_alarm` men tyst; sedan enhetstestet 2026-11-14 (B9) ligger den på
+    `timer_ongoing` (kanalerna själva är oförändrade, se "Enhetstestet 2026-11-14: larmen"). Tjänsten **stoppas aldrig utifrån** (`stopService` direkt efter
     `startForegroundService` kan krascha appen innan `startForeground`): `AndroidRinger.stop`
     skickar ett startkommando och tjänsten stoppar sig själv med sitt start-id när inget ringer.
     Android spelar **ett notisljud åt gången**: när ett av två ringande larm stoppas postas det
@@ -4307,14 +4358,23 @@ bara via `core:data`.
     eller annat tagit bort) och som aldrig fanns i en fil processen läst eller skrivit (id ≥ filens
     `next_id`; varje skrivning innehåller hela listan, så en fil med högre `next_id` utan timern
     betyder att den togs bort, även i en tidigare process). En förlorad fil läses som tom med
-    `next_id` 1, så dess timers ringer ändå. *Inte verifierat på en riktig enhet eller emulator ännu* (röktestet kör inga
-  timers); fungerar inte `systemExempted` byter vi till `mediaPlayback` och skriver varför här.
+    `next_id` 1, så dess timers ringer ändå. *Verifierat på en riktig telefon 2026-11-14*
+    (Samsung, Android 16, enhetstestet): appen dödades i bakgrunden och timern ringde i tid i en
+    ny process. Fungerar inte `systemExempted` någon gång byter vi till `mediaPlayback` och skriver
+    varför här.
 - **Nedräkningen (`notification/AndroidTimerNotifier`):** en pågående, tyst notis per löpande eller
   pausad timer (`timer_ongoing`): nedräknande kronometer till `endsAt`, "Klar 18:45", Pausa/+1 min
   (pausad: "Pausad · 07:00 kvar", Fortsätt/Avbryt). Den ber om att bli *promoted ongoing*
   (`setRequestPromotedOngoing`), vilket Android 16 visar som en Live Update med nedräkningen i
   statusraden; äldre versioner visar samma notis. Notiserna tas bort när timern inte längre
   löper. Kanalerna skapas precis innan något postas.
+  - **Samsung (enhetstestet 2026-11-14, T2):** One UI visar en nedräknande notis `when` som
+    klockslaget, inte som en kronometer, så `AndroidTimerNotifier.useCustomCountdown` ger Samsung
+    (och Android före 16) en egen nedräkningsvy med en Chronometer i stället. En sådan notis kan
+    inte bli en Live Update (den kräver standardstilen), så **på Samsung syns ingen Live Update**:
+    statusraden har bara timerikonen, och nedräkningen står i notisen i skuggan och på
+    låsskärmen. En Live Update med nedräkning i statusraden väntas bara på Android 16 från andra
+    tillverkare (Pixel, emulatorn).
 - **Omstart, uppdatering, klockbyte (`alarm/TimerSystemEventReceiver`):** `BOOT_COMPLETED`,
   `MY_PACKAGE_REPLACED`, `TIME_SET`, `TIMEZONE_CHANGED` och
   `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED` (alla skyddade broadcasts; allt annat ignoreras)

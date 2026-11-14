@@ -171,6 +171,15 @@ class CookAccessibilityTest {
         },
     ) { CookWithFakes(fakes = it) }
 
+    /** Device test 2026-11-14 (B5, larm lane): the alarm sounds but does not pop up. */
+    @Test
+    fun alarmNoPopUp() = check(
+        fakes = CookFakes().apply {
+            timers.setCapabilities(TimerCapabilities.AllGranted.copy(alarmChannelPopsUp = false))
+            startTimer(0, "Svampen · ca 5 minuter", 5.minutes)
+        },
+    ) { CookWithFakes(fakes = it) }
+
     @Test
     @Config(qualifiers = PHONE_LANDSCAPE)
     fun landscapeManyIngredientsRinging() = check(fakes = CookFakes().withManyIngredients().withRingingTimer()) {

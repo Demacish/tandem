@@ -345,7 +345,7 @@ class ShellViewModel internal constructor(
             timerMode = timerMode,
             syncInterval = syncInterval,
             downloadAllRecipes = downloadAllRecipes,
-            timersNeedAttention = capabilities.alarmMayBeSilent || capabilities.alarmMayBeLate,
+            timersNeedAttention = capabilities.alarmMayBeSilent || capabilities.alarmMayStayHidden || capabilities.alarmMayBeLate,
         )
 
         fun messageFor(result: Outcome<TokenRevocation>): ShellMessage = when (result) {

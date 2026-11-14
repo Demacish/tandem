@@ -69,7 +69,9 @@
     <string name="cook_alarm_silent_title">Notiserna är avstängda</string>
     <string name="cook_alarm_silent_body">Timern ringer ändå, men utan notis kan du bara stänga av larmet här i Tandem. Slå på notiserna för att kunna stoppa det från låsskärmen.</string>
     <string name="cook_alarm_channel_off_title">Larmnotisen för timers är tystad</string>
-    <string name="cook_alarm_channel_off_body">Timern ringer ändå, men larmet visas inte över låsskärmen. Slå på notistypen ”Timers (larm)” med ljud igen för att kunna stoppa det därifrån.</string>
+    <string name="cook_alarm_channel_off_body">Timern ringer ändå, men larmet visas inte över låsskärmen. Slå på notistypen ”Timers (larm)” igen, med ljud och ”Visa som popup-fönster”, för att kunna stoppa det därifrån.</string>
+    <string name="cook_alarm_no_pop_up_title">Larmet visas inte på skärmen</string>
+    <string name="cook_alarm_no_pop_up_body">Timern ringer, men skärmen tänds inte och larmet syns inte över andra appar. Slå på ”Visa som popup-fönster” i inställningarna för ”Timers (larm)”. Att välja ”Larm” igen ger bara tillbaka ljudet.</string>
     <string name="cook_alarm_late_title">Timern kan larma lite för sent</string>
     <string name="cook_alarm_late_body">Tandem får inte ställa exakta larm, så Android kan skjuta upp larmet några minuter.</string>
     <string name="cook_alarm_allow">Tillåt</string>

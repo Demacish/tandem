@@ -195,6 +195,11 @@ sealed interface TimerStartResult {
  * @property fullScreenAlarmAllowed the alarm may take over a locked screen (sideload build with
  *   `USE_FULL_SCREEN_INTENT` still granted); otherwise it is a heads-up notification.
  * @property clockAppAvailable an app handles `AlarmClock.ACTION_SET_TIMER` ([TimerMode.CLOCK_APP]).
+ * @property alarmChannelPopsUp the `timer_alarm` channel still has the importance "high" (or does
+ *   not exist yet): only then may the alarm pop up over other apps (heads-up) and take over the
+ *   screen (full-screen intent). Device test 2026-11-14 (B5): after "Silent" and back to "Alarm" in
+ *   the channel's settings, Samsung leaves the channel at "default" with its sound, so the alarm
+ *   rings but the screen stays dark until the user also turns "Show as pop-up" back on.
  */
 data class TimerCapabilities(
     val notificationsAllowed: Boolean,
@@ -204,6 +209,8 @@ data class TimerCapabilities(
     val exactAlarmsRequestable: Boolean,
     val fullScreenAlarmAllowed: Boolean,
     val clockAppAvailable: Boolean,
+    // Device test 2026-11-14 (B5, larm lane): last and with a default, so existing callers keep compiling.
+    val alarmChannelPopsUp: Boolean = true,
 ) {
     /** Show the system's notification dialog now (the user is starting a timer). */
     val shouldAskForNotifications: Boolean
@@ -212,6 +219,14 @@ data class TimerCapabilities(
     /** The alarm may not be seen or heard: warn and link to the system settings. */
     val alarmMayBeSilent: Boolean
         get() = !notificationsAllowed || !alarmChannelEnabled
+
+    /**
+     * The alarm sounds but neither pops up nor wakes the screen: notifications are on and the
+     * channel can sound, but its importance is below "high" ([alarmChannelPopsUp], device test B5).
+     * Warn with the way back: the channel's settings, "Pop-up" ("Visa som popup-fönster" on Samsung).
+     */
+    val alarmMayStayHidden: Boolean
+        get() = notificationsAllowed && alarmChannelEnabled && !alarmChannelPopsUp
 
     /** The alarm may ring late (inexact alarm, play build without the exact-alarm permission). */
     val alarmMayBeLate: Boolean

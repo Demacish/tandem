@@ -50,6 +50,7 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
             exactAlarmsRequestable = !exact && Manifest.permission.SCHEDULE_EXACT_ALARM in declaredPermissions,
             fullScreenAlarmAllowed = fullScreenAllowed(),
             clockAppAvailable = clockAppAvailable(),
+            alarmChannelPopsUp = alarmChannelPopsUp(),
         )
     }
 
@@ -73,9 +74,13 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
      * ([TimerCapabilities.alarmMayBeSilent]) and the ringing service plays the sound itself.
      */
     private fun alarmChannelAudible(): Boolean {
-        val channel = notifications.getNotificationChannelCompat(TandemNotificationChannel.TIMER_ALARM.id) ?: return true
-        return channel.importance >= NotificationManagerCompat.IMPORTANCE_DEFAULT && channel.sound != null
+        val channel = notifications.getNotificationChannelCompat(TandemNotificationChannel.TIMER_ALARM.id)
+        return channelAudible(channel?.importance, channel?.sound != null)
     }
+
+    /** The channel may pop up and take over the screen ([TimerCapabilities.alarmChannelPopsUp], device test B5). */
+    private fun alarmChannelPopsUp(): Boolean =
+        channelPopsUp(notifications.getNotificationChannelCompat(TandemNotificationChannel.TIMER_ALARM.id)?.importance)
 
     private fun clockAppAvailable(): Boolean =
         context.packageManager.resolveActivity(clockIntent(), PackageManager.MATCH_DEFAULT_ONLY) != null
@@ -100,4 +105,21 @@ internal class AndroidTimerSystem @Inject constructor(@ApplicationContext privat
     }
 
     private fun clockIntent(): Intent = Intent(AlarmClock.ACTION_SET_TIMER)
+
+    internal companion object {
+        /**
+         * The alarm channel sounds: it does not exist yet (null, created high with the alarm sound),
+         * or it is at least "default" (3) and has a sound. "Silent" in the shade is "low" (2).
+         */
+        fun channelAudible(importance: Int?, hasSound: Boolean): Boolean =
+            importance == null || (importance >= NotificationManagerCompat.IMPORTANCE_DEFAULT && hasSound)
+
+        /**
+         * The alarm channel may pop up (heads-up) and take over the screen (full-screen intent):
+         * both need "high" (4). Device test 2026-11-14 (B5): choosing "Alarm" again after "Silent"
+         * only gives "default" (3) on Samsung, with the sound back but no pop-up; the screen stays
+         * dark. The sound alone is [channelAudible].
+         */
+        fun channelPopsUp(importance: Int?): Boolean = importance == null || importance >= NotificationManagerCompat.IMPORTANCE_HIGH
+    }
 }

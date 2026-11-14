@@ -86,7 +86,7 @@ data class ShellUiState(
  * The settings under "More" in a few words (Phase 1b): each row's supporting text.
  *
  * @property timersNeedAttention the system may let a timer ring late or silently
- *   (`TimerCapabilities.alarmMayBeLate` / `alarmMayBeSilent`); the permissions row says so.
+ *   (`TimerCapabilities.alarmMayBeLate` / `alarmMayBeSilent` / `alarmMayStayHidden`); the permissions row says so.
  */
 data class SettingsSummary(
     val dynamicColor: Boolean = false,

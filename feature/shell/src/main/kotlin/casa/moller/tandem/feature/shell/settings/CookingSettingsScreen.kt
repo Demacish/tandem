@@ -75,7 +75,8 @@ internal fun CookingSettingsScreen(
         }
 
         val capabilities = state.capabilities
-        if (state.timerMode == TimerMode.IN_APP && (capabilities.alarmMayBeSilent || capabilities.alarmMayBeLate)) {
+        val warn = capabilities.alarmMayBeSilent || capabilities.alarmMayStayHidden || capabilities.alarmMayBeLate
+        if (state.timerMode == TimerMode.IN_APP && warn) {
             val reasons = buildList {
                 // By cause, as core:timer behaves (0.2.0 review): the ringing service always plays
                 // the alarm, but without notifications it can only be stopped in Tandem, and with a
@@ -83,6 +84,8 @@ internal fun CookingSettingsScreen(
                 when {
                     !capabilities.notificationsAllowed -> add(stringResource(R.string.settings_timer_alarm_warning_silent))
                     !capabilities.alarmChannelEnabled -> add(stringResource(R.string.settings_timer_alarm_warning_channel_off))
+                    // Device test 2026-11-14 (B5): sounds, but no pop-up and no full screen.
+                    capabilities.alarmMayStayHidden -> add(stringResource(R.string.settings_timer_alarm_warning_no_pop_up))
                 }
                 if (capabilities.alarmMayBeLate) add(stringResource(R.string.settings_timer_alarm_warning_late))
             }

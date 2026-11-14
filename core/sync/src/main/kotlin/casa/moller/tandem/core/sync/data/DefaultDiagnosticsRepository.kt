@@ -200,6 +200,8 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
         line("Notification permission asked", capabilities.notificationPermissionAsked.yesNo())
         line("Alarm channel can sound", capabilities.alarmChannelEnabled.yesNo())
         line("Alarm may be silent", capabilities.alarmMayBeSilent.yesNo())
+        // Device test 2026-11-14 (B5): the channel's importance is "high" (pop-up and full screen).
+        line("Alarm channel pops up", capabilities.alarmChannelPopsUp.yesNo())
         line("Exact alarms allowed", capabilities.exactAlarmsAllowed.yesNo())
         line("Exact alarms requestable", capabilities.exactAlarmsRequestable.yesNo())
         line("Full-screen alarm allowed", capabilities.fullScreenAlarmAllowed.yesNo())

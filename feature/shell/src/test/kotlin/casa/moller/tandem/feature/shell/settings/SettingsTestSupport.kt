@@ -77,6 +77,9 @@ internal val CAPABILITIES_LIMITED = TimerCapabilities.AllGranted.copy(
     fullScreenAlarmAllowed = false,
 )
 
+/** Device test 2026-11-14 (B5): back on "Alarm" after "Silent": the channel sounds but does not pop up. */
+internal val CAPABILITIES_NO_POP_UP = TimerCapabilities.AllGranted.copy(exactAlarmsRequestable = false, alarmChannelPopsUp = false)
+
 /** Sideload: exact alarms come with the build, the alarm can fill the lock screen. */
 internal val SAMPLE_PERMISSIONS = PermissionsUiState(
     capabilities = TimerCapabilities.AllGranted.copy(exactAlarmsRequestable = false),

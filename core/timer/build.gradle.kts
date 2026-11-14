@@ -7,6 +7,8 @@
 plugins {
     id("tandem.android.library")
     id("tandem.android.hilt")
+    // Device test 2026-11-14 (B14): screenshots of the lock-screen alarm (plain views, no Compose).
+    id("tandem.android.roborazzi")
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -30,4 +32,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(projects.core.testing)
+    // B14: View screenshots only (tandem.android.compose adds these for the Compose modules).
+    testImplementation(libs.roborazzi)
 }

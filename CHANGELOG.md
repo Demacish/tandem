@@ -98,6 +98,16 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   tills appen startades om. Nu räknas de om så fort exempeldatan är på plats. Med ett riktigt konto
   lyfts recepten med varor som snart går ut direkt när skafferiet har lästs första gången, i stället
   för efter en minut.
+- Har du ställt notistypen "Timers (larm)" på Tyst och sedan tillbaka på Larm kommer ljudet
+  tillbaka, men på Samsung tänds inte skärmen och larmet visas inte över andra appar förrän
+  "Visa som popup-fönster" också är på. Kokläget, Mer → Kokläge och timers och Behörigheter säger
+  nu det, och knappen öppnar inställningarna för just den notistypen.
+- Ett larm som ringer medan du använder telefonen ligger nu för sig självt överst bland notiserna
+  med "+1 min" och "Stopp" synliga, i stället för hopfällt i en grupp med Tandems andra notiser
+  (förut krävdes tre tryck). Visar telefonen popup-notiser bara några sekunder kan du välja
+  "Detaljerad" under Inställningar → Aviseringar → Popup-stil; Behörigheter berättar det.
+- Larmskärmen på låsskärmen är mörk hela vägen ned, också med appens ljusa tema: förut låg ett
+  ljust navigeringsfält under den.
 
 **Kvar till senare**
 

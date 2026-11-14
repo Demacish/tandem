@@ -979,6 +979,15 @@ internal fun AlarmWarnings(state: CookUiState, onAction: (CookAction) -> Unit, a
             compact = compact,
         )
 
+        // Device test 2026-11-14 (B5, larm lane): the alarm sounds but does not pop up.
+        SilentAlarmCause.ALARM_NO_POP_UP -> Warning(
+            title = stringResource(R.string.cook_alarm_no_pop_up_title),
+            body = stringResource(R.string.cook_alarm_no_pop_up_body),
+            action = stringResource(R.string.cook_open_settings),
+            onAction = actions.onOpenAlarmChannelSettings,
+            compact = compact,
+        )
+
         null -> if (state.showLateAlarmWarning) {
             val canAsk = state.capabilities.exactAlarmsRequestable && !state.exactAlarmPromptDismissed
             if (canAsk) {
