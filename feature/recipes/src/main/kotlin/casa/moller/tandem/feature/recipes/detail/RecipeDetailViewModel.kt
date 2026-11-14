@@ -145,8 +145,8 @@ class RecipeDetailViewModel @AssistedInject constructor(
             RecipeDetailAction.IncreaseServings -> changeServings { floor(it) + 1.0 }
             RecipeDetailAction.DecreaseServings -> changeServings { (ceil(it) - 1.0).coerceAtLeast(ServingsState.MIN_SERVINGS) }
             RecipeDetailAction.ResetServings -> viewModelScope.launch { recipes.setServingsChoice(recipeId, null) }
-            RecipeDetailAction.LargerPan -> changePan { PanScaling.larger(it) }
-            RecipeDetailAction.SmallerPan -> changePan { PanScaling.smaller(it) }
+            RecipeDetailAction.LargerPan -> changePan { PanScaling.larger(it.current, it.original) }
+            RecipeDetailAction.SmallerPan -> changePan { PanScaling.smaller(it.current, it.original) }
             RecipeDetailAction.ResetPan -> changePan { null }
             is RecipeDetailAction.ToggleIngredient -> toggleIngredient(action.id)
             is RecipeDetailAction.SwitchUnit -> switchUnit(action.id)
@@ -186,9 +186,9 @@ class RecipeDetailViewModel @AssistedInject constructor(
     }
 
     /** Fas 5 (plan §8.1 "Pannstorlek"): another tin, shared with cook mode; the recipe's own is stored as none. */
-    private fun changePan(next: (Int) -> Int?) {
+    private fun changePan(next: (PanState) -> Int?) {
         val pan = uiState.value.pan ?: return
-        val target = next(pan.current)?.takeUnless { it == pan.original }
+        val target = next(pan)?.takeUnless { it == pan.original }
         savedStateHandle[KEY_PAN] = target ?: NO_PAN
         viewModelScope.launch { pans.setPanSize(recipeId, target) }
     }

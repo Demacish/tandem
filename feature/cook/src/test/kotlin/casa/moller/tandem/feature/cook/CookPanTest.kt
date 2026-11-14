@@ -91,6 +91,24 @@ class CookPanViewModelTest {
         assertEquals("800 g", viewModel.uiState.value.amount(0, 10111))
     }
 
+    /** 0.7.0 review: a 240 mm tin (above PanScaling.MAX_DIAMETER) steps to 239 and back, never to 200. */
+    @Test
+    fun aTinLargerThanTwoHundredStepsByOneAndBack() = runTest(mainDispatcher.dispatcher) {
+        val fakes = CookFakes().withTin(diameter = 240, unit = "mm")
+        val viewModel = fakes.viewModel(CookKey(pasta.id))
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+        assertEquals(false, viewModel.uiState.value.pan?.canIncrease)
+        viewModel.onAction(CookAction.SmallerPan)
+        runCurrent()
+        assertEquals(239, viewModel.uiState.value.pan?.current)
+        assertEquals(true, viewModel.uiState.value.pan?.canIncrease)
+        viewModel.onAction(CookAction.LargerPan)
+        runCurrent()
+        assertEquals(240, viewModel.uiState.value.pan?.current)
+        assertEquals(emptyMap<Long, Int>(), fakes.pans.chosen.value)
+    }
+
     @Test
     fun aTinChosenInTheRecipeViewIsUsedAndSurvivesProcessDeath() = runTest(mainDispatcher.dispatcher) {
         val fakes = CookFakes().withTin()

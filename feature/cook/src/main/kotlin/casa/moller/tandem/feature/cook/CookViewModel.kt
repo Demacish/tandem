@@ -221,16 +221,16 @@ class CookViewModel @AssistedInject constructor(
             CookAction.Retry -> viewModelScope.launch { recipes.refreshRecipe(recipeId) }
             is CookAction.SetLocale -> locale.value = LocaleInfo(action.style, action.languageTag)
             is CookAction.SetOtherRecipes -> otherRecipes.value = action.recipeIds - recipeId
-            CookAction.LargerPan -> changePan { PanScaling.larger(it) }
-            CookAction.SmallerPan -> changePan { PanScaling.smaller(it) }
+            CookAction.LargerPan -> changePan { PanScaling.larger(it.current, it.original) }
+            CookAction.SmallerPan -> changePan { PanScaling.smaller(it.current, it.original) }
             CookAction.ResetPan -> changePan { null }
         }
     }
 
     /** Fas 5 (plan §8.1 "Pannstorlek"): another tin; the recipe's own is stored as none. */
-    private fun changePan(next: (Int) -> Int?) {
+    private fun changePan(next: (CookPan) -> Int?) {
         val pan = uiState.value.pan ?: return
-        val target = next(pan.current)?.takeUnless { it == pan.original }
+        val target = next(pan)?.takeUnless { it == pan.original }
         savedStateHandle[KEY_PAN] = target ?: NO_PAN
         viewModelScope.launch { pans.setPanSize(recipeId, target) }
     }

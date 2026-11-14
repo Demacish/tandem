@@ -16,16 +16,23 @@ import kotlin.math.floor
  * A diameter of 0 (Tandoor's default) or below means the recipe has no tin.
  */
 object PanScaling {
-    /** The smallest and largest tin the stepper offers (in the recipe's own unit). */
+    /**
+     * The smallest and largest tin the stepper offers (in the recipe's own unit). A recipe whose own
+     * tin is larger (Tandoor takes any integer, and `diameter_text` may be "mm": a 240 mm tin) goes up
+     * to its own size instead ([maxDiameter]), so the stepper never jumps or gets stuck below it.
+     */
     const val MIN_DIAMETER: Int = 1
     const val MAX_DIAMETER: Int = 200
+
+    /** The largest tin the stepper offers for a recipe whose own tin is [original]: [MAX_DIAMETER] or [original]. */
+    fun maxDiameter(original: Int): Int = maxOf(MAX_DIAMETER, original)
 
     /** The recipe names a tin to scale by. */
     fun hasTin(recipe: Recipe): Boolean = recipe.diameter > 0
 
     /** The tin in use: [chosen] when it is a valid size, else the recipe's own. */
     fun current(recipe: Recipe, chosen: Int?): Int =
-        chosen?.takeIf { hasTin(recipe) && it in MIN_DIAMETER..MAX_DIAMETER } ?: recipe.diameter
+        chosen?.takeIf { hasTin(recipe) && it in MIN_DIAMETER..maxDiameter(recipe.diameter) } ?: recipe.diameter
 
     /**
      * `(chosen / original)²` rounded half up to two decimals, like the web; 1.0 when either is not a
@@ -55,11 +62,14 @@ object PanScaling {
         return floor(servings * factor * SERVINGS_PRECISION + HALF) / SERVINGS_PRECISION
     }
 
-    /** One size up (the stepper's +), at most [MAX_DIAMETER]. */
-    fun larger(current: Int): Int = (current + 1).coerceIn(MIN_DIAMETER, MAX_DIAMETER)
+    /** One size up (the stepper's +), at most [maxDiameter] of the recipe's own tin [original]. */
+    fun larger(current: Int, original: Int = 0): Int = (current + 1).coerceIn(MIN_DIAMETER, maxDiameter(original))
 
-    /** One size down (the stepper's −), at least [MIN_DIAMETER]. */
-    fun smaller(current: Int): Int = (current - 1).coerceIn(MIN_DIAMETER, MAX_DIAMETER)
+    /** One size down (the stepper's −), at least [MIN_DIAMETER] (240 → 239 also above [MAX_DIAMETER]). */
+    fun smaller(current: Int, original: Int = 0): Int = (current - 1).coerceIn(MIN_DIAMETER, maxDiameter(maxOf(original, current)))
+
+    /** The stepper's + is enabled: [current] is below [maxDiameter] of the recipe's own tin [original]. */
+    fun canIncrease(current: Int, original: Int): Boolean = current < maxDiameter(original)
 
     /** The unit to show beside the size: Tandoor's `diameter_text`, or "cm" when the recipe left it empty. */
     fun unit(recipe: Recipe): String = recipe.diameterText.trim().ifEmpty { DEFAULT_UNIT }

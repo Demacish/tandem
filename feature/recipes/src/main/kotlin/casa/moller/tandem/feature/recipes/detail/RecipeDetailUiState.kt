@@ -140,8 +140,9 @@ data class PanState(val original: Int, val current: Int, val unit: String, val f
     val canDecrease: Boolean
         get() = current > PanScaling.MIN_DIAMETER
 
+    // 0.7.0 review: up to the recipe's own tin when it is larger than PanScaling.MAX_DIAMETER (240 mm).
     val canIncrease: Boolean
-        get() = current < PanScaling.MAX_DIAMETER
+        get() = PanScaling.canIncrease(current, original)
 }
 
 /**

@@ -70,6 +70,24 @@ class PanScalingTest {
         assertEquals(PanScaling.MAX_DIAMETER, PanScaling.larger(PanScaling.MAX_DIAMETER))
     }
 
+    /** 0.7.0 review: a recipe's own tin above [PanScaling.MAX_DIAMETER] (240 mm) steps by one and comes back. */
+    @Test
+    fun aTinLargerThanTheStepperRangeStepsByOne() {
+        val tart = Recipe(id = 1, name = "Tårta", diameter = 240, diameterText = "mm")
+        assertEquals(240, PanScaling.maxDiameter(240))
+        assertEquals(PanScaling.MAX_DIAMETER, PanScaling.maxDiameter(24))
+        assertEquals(239, PanScaling.smaller(240, 240))
+        assertEquals(240, PanScaling.larger(239, 240))
+        assertEquals(240, PanScaling.larger(240, 240))
+        assertTrue(PanScaling.canIncrease(239, 240))
+        assertFalse(PanScaling.canIncrease(240, 240))
+        assertFalse(PanScaling.canIncrease(PanScaling.MAX_DIAMETER, 24))
+        // A chosen 239 mm is a valid choice for this recipe (not reset to its own tin).
+        assertEquals(239, PanScaling.current(tart, 239))
+        assertEquals(240, PanScaling.current(tart, 241))
+        assertEquals(0.99, PanScaling.factor(tart, 239), 1e-12)
+    }
+
     @Test
     fun theUnitIsTheRecipesOrCentimetres() {
         assertEquals("cm", PanScaling.unit(Recipe(id = 1, name = "a", diameter = 24)))

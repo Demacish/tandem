@@ -84,6 +84,25 @@ class RecipeDetailPanTest {
         assertTrue(pans.chosen.value.isEmpty())
     }
 
+    /** 0.7.0 review: a recipe tin above PanScaling.MAX_DIAMETER (240 mm) steps 240 → 239 and back. */
+    @Test
+    fun aTinLargerThanTwoHundredStepsByOneAndBack() = runTest(mainDispatcher.dispatcher) {
+        val viewModel = viewModel(diameter = 240)
+        assertFalse(viewModel.uiState.value.pan!!.canIncrease)
+        assertTrue(viewModel.uiState.value.pan!!.canDecrease)
+        viewModel.onAction(RecipeDetailAction.SmallerPan)
+        runCurrent()
+        val smaller = viewModel.uiState.value.pan!!
+        assertEquals(239, smaller.current)
+        assertTrue(smaller.canIncrease)
+        assertEquals(mapOf(pasta.id to 239), pans.chosen.value)
+        viewModel.onAction(RecipeDetailAction.LargerPan)
+        runCurrent()
+        assertEquals(240, viewModel.uiState.value.pan?.current)
+        assertFalse(viewModel.uiState.value.pan!!.isChanged)
+        assertTrue(pans.chosen.value.isEmpty())
+    }
+
     @Test
     fun aTinChosenInCookModeShowsHere() = runTest(mainDispatcher.dispatcher) {
         val viewModel = viewModel(diameter = 24)
