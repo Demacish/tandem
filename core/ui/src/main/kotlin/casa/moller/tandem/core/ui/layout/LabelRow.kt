@@ -36,8 +36,9 @@ import kotlin.math.roundToInt
  * "Fit" means: [trailing] on ONE line, and beside it the label gets its whole one-line width, or at
  * least [minLabelShare] of the row and never less than its longest word. So a short label beside a
  * short hint stays one row exactly as a `Row` with `weight(1f)` would draw it, and nothing ever
- * breaks inside a word. Each slot emits one element (it is wrapped in a Box); an empty slot is
- * left out. The label comes first for TalkBack in both forms.
+ * breaks inside a word. Like that `Row`, it takes the whole width it is given. Each slot emits one
+ * element (it is wrapped in a Box); an empty slot is left out. The label comes first for TalkBack
+ * in both forms.
  *
  * @param gap the space between the label and [trailing] on one row.
  * @param stackedGap the space between them when [trailing] is under the label.
@@ -63,7 +64,7 @@ fun LabelRow(
         )
     }
     Layout(
-        contents = listOf<@Composable () -> Unit>({ Box { label() } }, { Box { trailing() } }),
+        contents = listOf<@Composable () -> Unit>({ Slot(label) }, { Slot(trailing) }),
         modifier = modifier,
         measurePolicy = policy,
     )
@@ -95,7 +96,7 @@ fun MediaRow(
         MediaRowPolicy(gap = gap, endGap = endGap, stackedGap = stackedGap, minContentWidth = minContentWidth * fontScale.coerceAtLeast(1f))
     }
     Layout(
-        contents = listOf<@Composable () -> Unit>({ Box { leading() } }, { Box { content() } }, { Box { trailing() } }),
+        contents = listOf<@Composable () -> Unit>({ Slot(leading) }, { Slot(content) }, { Slot(trailing) }),
         modifier = modifier,
         measurePolicy = policy,
     )
@@ -113,6 +114,12 @@ fun scaledMaxLines(lines: Int): Int = if (LocalDensity.current.fontScale >= LARG
 @Composable
 @ReadOnlyComposable
 fun isLargeFontScale(): Boolean = LocalDensity.current.fontScale >= LARGE_FONT_SCALE
+
+/** One slot: a Box that passes its minimum width on, so a filled label measures like `weight(1f)`. */
+@Composable
+private fun Slot(content: @Composable () -> Unit) {
+    Box(propagateMinConstraints = true) { content() }
+}
 
 /** From this font scale on names get more lines and carousel cards grow. */
 const val LARGE_FONT_SCALE = 1.5f
@@ -162,8 +169,11 @@ private class LabelRowPolicy(
         } else {
             Constraints.Infinity
         }
-        val labelPlaceable = label.measure(loose.copy(maxWidth = labelMaxWidth))
-        val width = (labelPlaceable.width + space + trailing.width).coerceIn(constraints.minWidth, constraints.maxWidth)
+        // The label fills what is left, as a weighted label did (its text aligns the same way).
+        val labelPlaceable = label.measure(
+            if (constraints.hasBoundedWidth) loose.copy(minWidth = labelMaxWidth, maxWidth = labelMaxWidth) else loose,
+        )
+        val width = rowWidth(labelPlaceable.width + space + trailing.width, constraints)
         val height = maxOf(labelPlaceable.height, trailing.height).coerceIn(constraints.minHeight, constraints.maxHeight)
         return layout(width, height) {
             labelPlaceable.placeRelative(0, verticalAlignment.align(labelPlaceable.height, height))
@@ -173,13 +183,17 @@ private class LabelRowPolicy(
 
     private fun MeasureScope.measureStacked(label: Placeable, trailing: Placeable, constraints: Constraints): MeasureResult {
         val space = if (label.height > 0 && trailing.height > 0) stackedGap.roundToPx() else 0
-        val width = maxOf(label.width, trailing.width).coerceIn(constraints.minWidth, constraints.maxWidth)
+        val width = rowWidth(maxOf(label.width, trailing.width), constraints)
         val height = (label.height + space + trailing.height).coerceIn(constraints.minHeight, constraints.maxHeight)
         return layout(width, height) {
             label.placeRelative(0, 0)
             trailing.placeRelative(stackedAlignment.align(trailing.width, width, layoutDirection), label.height + space)
         }
     }
+
+    /** The whole width when it is bounded, as the `Row` with a weighted label that this replaces. */
+    private fun rowWidth(content: Int, constraints: Constraints): Int =
+        if (constraints.hasBoundedWidth) constraints.maxWidth else content.coerceAtLeast(constraints.minWidth)
 
     override fun IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<List<IntrinsicMeasurable>>, height: Int): Int {
         val label = measurables[0].first().maxIntrinsicWidth(Constraints.Infinity)
@@ -239,7 +253,10 @@ private class MediaRowPolicy(
         contentSpace: Int,
     ): MeasureResult {
         val gapPx = gap.roundToPx()
-        val contentPlaceable = content.measure(loose.copy(maxWidth = contentSpace.coerceAtLeast(0)))
+        val contentWidth = contentSpace.coerceAtLeast(0)
+        val contentPlaceable = content.measure(
+            if (constraints.hasBoundedWidth) loose.copy(minWidth = contentWidth, maxWidth = contentWidth) else loose,
+        )
         val width = if (constraints.hasBoundedWidth) {
             constraints.maxWidth
         } else {
