@@ -1133,6 +1133,7 @@ sätts av integrationen. En rad per bana.
 | rost | Röst och uppläsning efter enhetstestet 2026-11-14 (B1, B2, B3, B11; plan §8.1, #32) | **B1:** igenkännaren får aldrig ett språk utan region: appens "en" blir telefonens region när språket talas där ("en-GB"), annars språkets vanliga ("en-US", "de-DE"; svenska alltid "sv-SE"), och igenkännarens egna språklistor avgör när de finns (enhetstest av avbildningen). **B2:** fel 12 (stöds inte) och 13 (inte nedladdat) skiljs åt och tomma stödlistor är "okänt"; "inte nedladdat" ger "Röststyrning på <språk> behöver hämtas" med **Hämta** (`triggerModelDownload` med lyssnare), "Hämtar …", "hämtas senare" med "Försök igen" eller "gick inte" med Hämta igen, och lyssnar själv när språket finns; efter ett säkert fel slutar rösten (ingen omförsöksloop, inget upprepat felpip). **B3 (ägarens beslut "Båda vägarna"):** standard är bara igenkänning i telefonen; saknas appens språk där sägs det rakt ut med erbjudandet "Använd engelska kommandon: next, back, repeat?" och engelska kommandon i telefonen (samma hämtningsflöde), orden visas på engelska; den frivilliga inställningen **Använd telefonens taltjänst** (av som standard, i kokläget ark och Mer → Kokläge och timers) lyssnar på appens språk med telefonens vanliga taltjänst och `EXTRA_PREFER_OFFLINE`, texten säger att talet då kan gå över internet; utan taltjänst sägs det. Samma tolkning av kommandon på båda vägarna, inget ljud eller hörd text loggas eller sparas. **B11:** med uppläsning vald (eller begärd) och volymen för uppläsningen på 0 visar kokläget "Medievolymen är avstängd" med **Höj volymen** (`adjustStreamVolume`, `FLAG_SHOW_UI`), och hjälptexten nämner det. Enhets-, ViewModel- (falsk igenkännare/uppläsare) och Robolectric-tester, referensbilder och ATF för de nya lägena. **BEHÖVER ENHET** (ägaren): engelska och nedladdningen på en Samsung, svenska med taltjänsten, volymknappen | ✅ klart i CI 2026-11-14 (PR 43614034031 och röktest shard 1 "OK (14 tests)", shard 2 "OK (32 tests)" 43609084151 före ombaseringen på kokvy; referensbilder från Screenshots 43606352402 och, efter ombaseringen, 43616064455: bara `cook/*rost_*`, `cook/phone_fas5_handsfree_{sheet_*,unavailable_light_sv,microphone_dark}`, `shell/handsfree_settings_*` och `shell/settings_*cooking*`); enhetsproven återstår, se "Röst och uppläsning efter enhetstestet" |
 | data | Enhetstestet 2026-11-14: B7 "Handla för veckan" dubblerar kvällens måltid från Idag, B8 tomt "Kan laga nu" vid första demostarten (plan §8.2, §8.3, §8.8) | **B7:** "Lägg på inköpslistan" på Idags "Ikväll" skickar måltidens id, så listreceptet får `mealplan` (Tandoor 2.6.13 och 2.7.1 sparar det, `ShoppingWritesContractTest.aListRecipeCreatedForAMealBelongsToTheMeal`), offline genom utkorgen och i demoläget; "Handla för veckan" visar då måltiden som "redan på listan" och lägger aldrig till den igen; ett listrecept av **samma recept utan måltid** med varor kvar att köpa (från receptet, kokläget, Idag före 0.8.0) täcker en måltid av receptet, den tidigaste (core:domain `MealsOnShoppingList`, enhetstest); arket på Idag räknar den måltidens rader. Sync-test mot falska 2.6.13 och 2.7.1 genom utkorgen, ViewModel- och Compose-test. **B8:** demoläget räknar "Kan laga nu" ur demodatabasen (alla lagrade recept, livsmedlen, skafferiet) varje gång den ändras, så en demostart på tom databas visar grupperna och "Går ut snart" utan omstart (sync-test som börjar bevaka före exempeldatan); ett riktigt kontos första synk läser grupperna före skafferiet: den första skafferiläsningen med varor efter en läsning utan skafferi frågar om "Använd upp" direkt i stället för efter minuten (sync-test, klockan står still). Room-schemat oförändrat (6). | ✅ klart i CI 2026-11-14 (PR 43626779258 och röktest 43626779201 på baac048: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; inga referensbilder ändrade, Contract berörs inte: kopplingen fanns redan i `ShoppingWritesContractTest`); demons första start och "Handla för veckan" på en riktig telefon återstår för ägaren, se "Enhetstestet 2026-11-14: inköpslistan och Kan laga nu" |
 | larm | Enhetstestet 2026-11-14 (Galaxy S21 FE): B5 larmkanalen under "hög", B9 larmet bara fyra sekunder med olåst telefon, B14 ljust navigeringsfält under larmskärmen, T2 Live Update på Samsung | **B5:** en larmkanal under nivån "hög" (Tyst → Larm på Samsung ger "standard" med ljud) räknas som fel: kokläget, Mer → Kokläge och timers och Behörigheter varnar ("Visa som popup-fönster"), knappen öppnar kanalens egna inställningar, och matrisen nivå 2/3/4 × ljud/inget ljud × helskärmsbehörighet är enhetstestad (en varning per fel, aldrig dubbelt ljud). **B9:** ett ringande larm ligger aldrig i en grupp med timernotiserna eller ringtjänstens notis (som är tyst på `timer_ongoing`), är kategori alarm, pågående, högsta prioritet och larmar själv, med "+1 min" och "Stopp"; Robolectric-test på den byggda notisen; hjälptexten i Behörigheter förklarar Popup-stil. **B14:** larmskärmen och dess systemfält är mörka i appens ljusa och mörka tema; tema- och fönstertest plus referensbilder. **T2:** BYGGE säger att Samsung inte visar någon Live Update och att processdöden är verifierad. Referensbilder och ATF för de nya varningarna (telefon, liggande, surfplatta i båda orienteringarna, mörkt, teckenstorlek 2, svenska); röktestet körs | ✅ klart i CI 2026-11-14 (PR 43632641496, röktest 43632640740 på 7ea5590: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)" efter en omkörning av shard 2, vars första försök föll på receptredigerarens underrecept i Phase3SmokeTest, utanför banan; Contract 43632641439; referensbilder från Screenshots 43622914462 och 43629944084, bara `timer/*devicetest_alarm_screen_*`, `cook/*devicetest_alarm_no_pop_up_*`, `cook/phone_alarm_channel_off_light_sv`, `shell/settings_*permissions*` och `shell/settings_*devicetest_*no_pop_up*`); på en riktig telefon återstår ägarens prov, se "Enhetstestet 2026-11-14: larmen" |
+| mer | Enhetstestet 2026-11-14: B12 Behörigheter utan mikrofon, kalender och plats, B13 "Stäng kalkylarket", T1 röktestet på en svensk Samsung (plan §8.7, §6.6, §6.7) | **B12:** Mer → Behörigheter har raderna Mikrofon (handsfree), Kalender (matsedeln i telefonens kalender) och Plats (påminnelsen nära butiken, med nivån exakt + "Tillåt alltid" som påminnelsen behöver: "Tillåtet alltid", "Bara när appen används", "Bara ungefärlig", "Inte tillåtet"), var och en med läge, varför och en knapp till appens sida i Androids inställningar, lästa igen när sidan kommer tillbaka; utan Play-tjänster säger platsraden varför i stället; "Ingen position" är ersatt. Inget frågas på sidan. Compose-, ViewModel- och enhetstester, referensbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. **B13:** TalkBack säger "Stäng arket" om skrimmet bakom bottenark och "Meddelande" om snackbaren (appens values-sv ersätter Compose UI:s `close_sheet` och Material 3:s `m3c_snackbar_pane_title`), övriga svenska ark-, meny- och dialogsträngar granskade; ett test i `:app` läser den lösta svenska strängen och skrimmet i ett riktigt `ModalBottomSheet`. **T1:** röktestet går på en riktig telefon på svenska utan lokal patch: appens språk sätts till engelska efter `pm clear`, Samsungs batteritips efter första synken trycks bort, köksskärmens test rullar till kvällens middag, systemets väljare känns igen på svenska; emulatorn grön med lika många tester; BYGGE beskriver körningen på en egen telefon | ⏳ pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -1809,6 +1810,59 @@ Prov: `MakeNowSyncTest.demoModeStartedOnAnEmptyDatabaseGetsItsGroupsWithoutARest
 räknar på tom databas, seedar sedan) och `aFirstSyncsPantryLiftsTheExpiringRecipesWithoutWaitingTheMinute`
 (klockan står still; utan rättningen väntar bevakningen en minut).
 <!-- /Fas 5 data -->
+
+<!-- Fas 5 mer -->
+## Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet (`:feature:shell`, `:app`, `:smoke`, mer)
+
+**B12 – Mer → Behörigheter.** Tre nya rader efter kameran, i ett eget block
+(`FeaturePermissionRows` i `PermissionsScreen.kt`), var och en med läge, varför Tandem behöver den och
+"Öppna inställningar" (appens sida i Androids inställningar, `SystemSetting.APP_DETAILS`, där
+Behörigheter finns):
+
+- **Mikrofon** (`RECORD_AUDIO`): handsfree-röstkommandon. Ingen rad på en enhet utan mikrofon.
+- **Kalender** (`READ_CALENDAR` och `WRITE_CALENDAR`): "Visa i telefonens kalender".
+  Prenumerationslänken behöver ingen behörighet, och texten säger det.
+- **Plats** (påminnelsen nära butiken): `LocationAccess.of(precise, approximate, background)` ger
+  `ALWAYS` (exakt och "Tillåt alltid", det påminnelsen behöver, "Tillåtet alltid"),
+  `WHILE_IN_USE` ("Bara när appen används"), `APPROXIMATE` ("Bara ungefärlig": geofences fungerar
+  inte med den, också med "Tillåt alltid") och `NONE`. Utan Google Play-tjänster
+  (`StoreReminderRepository.state`, `NO_PLAY_SERVICES`; det enda nya beroendet i
+  `SettingsViewModel`) säger raden att påminnelsen inte finns och att platsen aldrig används, utan
+  läge och knapp.
+
+Lägena läses av skärmen vid varje återkomst (`LifecycleResumeEffect` → `RefreshPermissions` med de
+nya fälten, som kameran); en rad som inte lästs än visas inte. Inget frågas på sidan: behörigheterna
+frågas i funktionerna (plan §8.7). Integritetskortets "Ingen position" är ersatt: platsen används
+bara av påminnelsen när den är på, och Tandem skickar den aldrig någonstans. Larmkanalens rad ändras
+av banan larm (B5) och är orörd här.
+
+Prov: `FeaturePermissionsTest` (vad raderna säger och öppnar, nivåerna, utan Play-tjänster, olästa
+rader, integritetskortet), `LocationAccessTest`, `SettingsViewModelTest.theFeaturesPermissionsAreReadAgainToo`;
+skärmbilder med ATF i `FeaturePermissions*ScreenshotTest` (telefon stående och liggande, surfplatta i
+båda orienteringarna; ljust, mörkt med allt tillåtet, svenska, teckenstorlek 2 med ungefärlig plats,
+mörkt svenskt utan Play-tjänster), rullade till platsraden (`PERMISSIONS_LOCATION_TAG`).
+Referensbilder: nya `shell/devicetest_feature_permissions_*`; alla `shell/settings_*permissions*`
+ändrades avsiktligt (de nya raderna i `SAMPLE_PERMISSIONS` och integritetstexten).
+
+**B13 – skärmläsaren.** Material 3:s `ModalBottomSheet` ger skrimmet bakom arket
+`contentDescription` från Compose UI:s `close_sheet`, på svenska "Stäng kalkylarket" (bibliotekets
+översättning av "Close sheet"), och `SnackbarHost` läser upp panelen som `m3c_snackbar_pane_title`,
+på svenska "Varning" (för "Alert"). `app/src/main/res/values-sv/strings_material.xml` ersätter dem
+med "Stäng arket" och "Meddelande": appens resurser går före bibliotekens, och namnen är
+bibliotekens privata (`tools:ignore="PrivateResource,ExtraTranslation"`). Engelskan är orörd.
+Namnen är lästa ur Material 3 1.5.0-beta01 och Compose UI 1.12.1 (BOM 2026.09.00), AAR:erna från
+Google Maven med kontrollerad SHA-1: `ModalBottomSheetKt` läser `close_sheet`, `SnackbarHostKt`
+läser `m3c_snackbar_pane_title`. De övriga svenska strängarna som Material 3 läser är rätt (arket
+"Ark på nedre delen av skärmen" och "Stäng/Komprimera/Utöka arket på nedre delen av skärmen",
+"Handtag", "Stäng navigeringsmenyn", "Dialogruta", menyer, verktygsfält, sök, tid och datum).
+`m3c_wide_navigation_rail_*` ("Stäng spår", "Navigeringsspår") är felöversatta men läses inte av
+någon klass i 1.5.0-beta01 och lämnas. `MaterialStringsTest` (`:app`) läser strängarna genom
+bibliotekens egna resurs-id på svenska och engelska och hittar "Stäng arket" på skrimmet i ett
+riktigt `ModalBottomSheet`. **Vid uppgradering av Compose eller Material 3:** byter biblioteken
+namn på strängarna kompilerar testet inte, och då letas de nya namnen upp på samma sätt.
+
+**T1 – röktestet på en egen telefon:** se "Release-röktest", "På en egen telefon".
+<!-- /Fas 5 mer -->
 
 <!-- Fas 4 läge -->
 ## Fas 4 – läge (uppföljning av delstegen)
@@ -5464,7 +5518,8 @@ den kod som skickas:
 - **Appen:** `:app:assembleSideloadMinified` (build type `minified`, se Byggvarianter).
 - **Testet:** modulen `:smoke` (`com.android.test`, `targetProjectPath = ":app"`,
   självinstrumenterande). En UiAutomator-test i svart låda: den känner inga appklasser, bara
-  texterna på skärmen (engelska, emulatorns språk), så obfuskeringen spelar ingen roll.
+  texterna på skärmen (engelska: testappens språk sätts före varje test, se "På en egen telefon"),
+  så obfuskeringen spelar ingen roll.
 - **Servern:** en falsk Tandoor i test-APK:n (MockWebServer över HTTPS på `localhost`) som svarar
   med de sanerade 2.6.13-fixturerna i `api-schema/fixtures/2.6.13` (server-settings,
   api-token-auth, access-token, space/current, user-preference, user). Certifikatet utfärdas
@@ -5726,6 +5781,49 @@ den kod som skickas:
   `release.yml` läser `ran` = matrisjobbets resultat, som bara är `success` när båda gick igenom.
   Vid fel heter artefakterna `smoke-results-1`/`smoke-results-2` (och `smoke-mapping` om bygget
   fallerade); retracingen använder SDK:ns `retrace`, eftersom emulatorjobben inte har Gradle-cachen.
+
+### På en egen telefon (enhetstestet 2026-11-14, T1)
+
+Röktestet går att köra på en riktig telefon med Android 14 eller senare, också på svenska och på en
+Samsung, utan att ändra koden:
+
+- **APK:erna:** bygg dem på en egen dator med `./gradlew :app:assembleSideloadMinified
+  :smoke:assembleMinified`, eller hämta artefakten `smoke-apks` från en körning av *Release smoke
+  test* (`gh run download <id> -n smoke-apks`, sparas en dag). Aldrig på servern.
+- **Installera och kör** med USB-felsökning påslagen:
+
+  ```bash
+  adb install -r app/build/outputs/apk/sideload/minified/*.apk
+  adb install -r smoke/build/outputs/apk/minified/*.apk
+  adb shell am instrument -w -e class casa.moller.tandem.smoke.Phase5KokSmokeTest \
+    casa.moller.tandem.smoke/androidx.test.runner.AndroidJUnitRunner
+  ```
+
+  Flera klasser skiljs med komma; utan `-e class` körs alla (en halvtimme eller mer). Använd inte
+  `scripts/ci/smoke-run.sh` på en egen telefon: det är gjort för CI-emulatorn och ändrar två globala
+  inställningar (`hide_error_dialogs`, `show_ime_with_hard_keyboard`).
+- **Servern är falsk:** testet startar en Tandoor-attrapp i test-APK:n (`FakeTandoor`, HTTPS på
+  `localhost` med de sanerade 2.6.13-fixturerna och en test-CA som bara byggtypen `minified` litar
+  på). AI-tjänsten, push-tjänsten och Open Food Facts är också attrapper i processen, så ingen
+  riktig server kontaktas och inga riktiga konton behövs.
+- **Vad som ändras på telefonen:** testappen `casa.moller.tandem.minified` är ett eget paket; en
+  installerad Tandem rörs inte. Före varje test rensas testappen (`pm clear`) och dess språk sätts
+  till engelska (`cmd locale set-app-locales casa.moller.tandem.minified --locales en-US`, eftersom
+  `pm clear` glömmer det och testerna läser engelska texter); telefonens eget språk ändras inte.
+  Testerna ger och tar testappens behörigheter (notiser, plats, kalender), slår flygplansläge, wifi
+  och mobildata av och på, släcker och låser skärmen, vrider skärmen och trycker på
+  volymknapparna. Testets yttersta regel lämnar telefonen upplåst, i naturlig orientering och med
+  nät. Testbilder och en testfil läggs i galleriet och i Hämtade filer och tas bort efter testet.
+- **Det testet klarar av själv:** Samsungs batteritips efter första synken ("A tip for Samsung
+  phones") trycks bort (`TandemApp.waitForShellAfterIntro`); köksskärmens test rullar till kvällens
+  middag när frukost och lunch fyller en liten skärm; systemets foto- och filväljare (som följer
+  telefonens språk) känns igen på engelska och svenska (de svenska namnen är inte provade på en
+  telefon än).
+- **Krav:** skärmlås utan kod (svep eller inget) medan testerna körs. Larmtesterna låser skärmen och
+  låser upp den med `wm dismiss-keyguard`, som inte går förbi en pinkod.
+- **Städa efteråt:** `adb uninstall casa.moller.tandem.minified` och `adb uninstall
+  casa.moller.tandem.smoke`. Stoppas kalendertestet mitt i kan kalendern "Tandem – matsedel" bli
+  kvar på telefonen; testet slår annars av den, vilket tar bort den.
 
 ### v0.0.1: varför inloggningen kraschade
 
