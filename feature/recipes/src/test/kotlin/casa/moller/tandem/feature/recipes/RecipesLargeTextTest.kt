@@ -1,12 +1,17 @@
 package casa.moller.tandem.feature.recipes
 
 import android.content.Context
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.onAllNodesWithContentDescription
-import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.model.recipe.RecipeQuery
@@ -61,10 +66,16 @@ class RecipesLargeTextTest : RecipesScreenshotTest("phone_largest") {
     @Config(qualifiers = "sv-$PHONE_LARGEST")
     fun detailIngredientsSwedish() {
         showDetail()
-        composeRule.onAllNodesWithContentDescription("parmesan", substring = true).onFirst().performScrollTo()
-        captureNow("devicetest_detail_ingredients_font2_light_sv")
         val heading = string(R.string.recipe_detail_ingredients)
         val hint = string(R.string.recipe_detail_ingredients_hint)
+        // The heading at the top of the screen, under the top bar, so the rows follow it.
+        composeRule.onNodeWithText(heading).performScrollTo()
+        val top = composeRule.onNodeWithText(heading).getUnclippedBoundsInRoot().top
+        val offset = with(composeRule.density) { (top - HEADING_TOP).toPx() }
+        composeRule.onAllNodes(hasScrollAction() and hasAnyDescendant(hasText(heading))).onLast()
+            .performSemanticsAction(SemanticsActions.ScrollBy) { scrollBy -> scrollBy(0f, offset) }
+        composeRule.waitForIdle()
+        captureNow("devicetest_detail_ingredients_font2_light_sv")
         // B22: "Ingredienser" was one letter per line beside "Tryck för att bocka av".
         composeRule.assertNoWordBreaks(heading, hint)
         val headingBounds = composeRule.onNodeWithText(heading).getUnclippedBoundsInRoot()
@@ -139,6 +150,9 @@ class RecipesLargeTextTest : RecipesScreenshotTest("phone_largest") {
 
     private companion object {
         const val PREFIX = "phone_largest"
+
+        /** Below the top bar at font scale 2. */
+        val HEADING_TOP = 96.dp
     }
 }
 

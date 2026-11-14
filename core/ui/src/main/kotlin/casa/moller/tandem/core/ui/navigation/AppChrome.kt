@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import casa.moller.tandem.core.ui.AppStatus
 import casa.moller.tandem.core.ui.AppStatusChip
 import casa.moller.tandem.core.ui.DemoBanner
+import casa.moller.tandem.core.ui.layout.isLargeFontScale
 
 /**
  * Marks a Navigation 3 key whose screen is shown ABOVE the tab bar (plan 6.1: recipe detail, cook
@@ -43,11 +44,14 @@ data class AppChrome(
 /** The [AppChrome] of the current screen; provided by the shell. */
 val LocalAppChrome = compositionLocalOf { AppChrome() }
 
-/** The status chip of [LocalAppChrome] (for a top bar's `actions`), or nothing. */
+/**
+ * The status chip of [LocalAppChrome] (for a top bar's `actions`), or nothing. At the largest text
+ * only its icon, so the screen title keeps its room (B22).
+ */
 @Composable
 fun AppChromeStatusChip(modifier: Modifier = Modifier) {
     val status = LocalAppChrome.current.status ?: return
-    AppStatusChip(status = status, modifier = modifier)
+    AppStatusChip(status = status, modifier = modifier, compact = isLargeFontScale())
 }
 
 /** The demo banner of [LocalAppChrome] for the top of a top-level screen, or nothing. */
