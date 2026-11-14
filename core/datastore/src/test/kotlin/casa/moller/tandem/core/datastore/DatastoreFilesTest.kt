@@ -57,4 +57,10 @@ class DatastoreFilesTest {
         assertEquals(File(context.filesDir, "datastore/meal_calendar.preferences_pb"), DatastoreFiles.mealCalendarFile(context))
         assertEquals("meal_calendar.preferences_pb", DatastoreFiles.MEAL_CALENDAR)
     }
+
+    @Test
+    fun theStoreRemindersLiveInFilesDatastore() {
+        assertEquals(File(context.filesDir, "datastore/store_reminders.preferences_pb"), DatastoreFiles.storeRemindersFile(context))
+        assertEquals("store_reminders.preferences_pb", DatastoreFiles.STORE_REMINDERS)
+    }
 }

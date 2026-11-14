@@ -81,6 +81,18 @@ object DatastoreFiles {
     /** File name of the meal calendar store. */
     const val MEAL_CALENDAR = "$MEAL_CALENDAR_NAME.preferences_pb"
 
+    /**
+     * Fas 5 (butik lane): "Påminn mig nära butiken" (plan §7 #34), per account: on/off, each store's
+     * place and radius and its visit, `files/datastore/store_reminders.preferences_pb`. The places are
+     * personal: only on this phone (never backed up, sent or logged).
+     */
+    const val STORE_REMINDERS_NAME = "store_reminders"
+
+    /** File name of the store reminder store. */
+    const val STORE_REMINDERS = "$STORE_REMINDERS_NAME.preferences_pb"
+
+    internal fun storeRemindersFile(context: Context): File = context.preferencesDataStoreFile(STORE_REMINDERS_NAME)
+
     internal fun mealCalendarFile(context: Context): File = context.preferencesDataStoreFile(MEAL_CALENDAR_NAME)
 
     internal fun shoppingViewFile(context: Context): File = context.preferencesDataStoreFile(SHOPPING_VIEW_NAME)

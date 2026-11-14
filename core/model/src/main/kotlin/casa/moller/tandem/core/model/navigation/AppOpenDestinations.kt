@@ -45,4 +45,7 @@ object AppOpenDestinations {
 
     /** Fas 5 (planera lane): Veckan at a day: [WEEK_DAY_PREFIX] followed by the date (`yyyy-MM-dd`), the evening reminder's tap. */
     const val WEEK_DAY_PREFIX: String = "week:"
+
+    /** Fas 5 (butik lane): store mode for a store: [STORE_MODE_PREFIX] followed by the supermarket's id (the reminder near the store). */
+    const val STORE_MODE_PREFIX: String = "store-mode:"
 }

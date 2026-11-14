@@ -10,6 +10,7 @@ import casa.moller.tandem.core.datastore.SecureAccountStore
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.ShoppingViewStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
+import casa.moller.tandem.core.datastore.StoreReminderStore
 import casa.moller.tandem.core.datastore.crypto.AeadProvider
 import casa.moller.tandem.core.datastore.crypto.AndroidKeystoreAeadProvider
 import casa.moller.tandem.core.datastore.internal.EncryptedAccountStore
@@ -19,6 +20,7 @@ import casa.moller.tandem.core.datastore.internal.PreferencesDiagnosticsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesMealCalendarStore
 import casa.moller.tandem.core.datastore.internal.PreferencesSettingsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesShoppingViewStore
+import casa.moller.tandem.core.datastore.internal.PreferencesStoreReminderStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -104,6 +106,14 @@ object DatastoreModule {
     @Singleton
     fun provideMealCalendarStore(@ApplicationContext context: Context): MealCalendarStore = PreferencesMealCalendarStore.create(
         produceFile = { DatastoreFiles.mealCalendarFile(context) },
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    // Fas 5 (butik lane): "Påminn mig nära butiken" (plan §7 #34), the places only on this phone.
+    @Provides
+    @Singleton
+    fun provideStoreReminderStore(@ApplicationContext context: Context): StoreReminderStore = PreferencesStoreReminderStore.create(
+        produceFile = { DatastoreFiles.storeRemindersFile(context) },
         scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     )
 }

@@ -50,7 +50,11 @@ enum class TandemNotificationChannel(val id: String, val importance: ChannelImpo
     /** "Tandoor was updated" (plan B18, since 0.1.0; core:sync `AndroidVersionChangeNotifier`). */
     SERVER("server", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = true),
 
-    /** Fas 4: someone in the household changed the shopping list (core:sync `AndroidShoppingChangeNotifier`). */
+    /**
+     * Fas 4: someone in the household changed the shopping list (core:sync `AndroidShoppingChangeNotifier`).
+     * Fas 5 (butik lane, plan §8.7 "Inköpslistan"): also "Du är nära <butik> – 7 saker på listan"
+     * (core:sync `AndroidStoreReminderNotifier`).
+     */
     SHOPPING("shopping", ChannelImportance.DEFAULT, ChannelSound.NOTIFICATION, inUse = true),
 
     /** An AI import ended while the app was away from the screen (core:sync `AndroidImportDoneNotifier`). */
@@ -95,6 +99,15 @@ object TandemNotificationIds {
 
     /** The id of the evening reminder with [key] (under [MEAL_REMINDER_TAG]). */
     fun mealReminder(key: String): Int = key.hashCode()
+
+    /**
+     * Fas 5 (butik lane, plan §7 #34): "Du är nära <butik> – 7 saker på listan" (core:sync), one per
+     * store, posted with this tag and [storeReminder] of the store's id in the channel "shopping".
+     */
+    const val STORE_REMINDER_TAG: String = "tandem.store_reminder"
+
+    /** The id of the reminder near store [storeId] (under [STORE_REMINDER_TAG]). */
+    fun storeReminder(storeId: Long): Int = storeId.hashCode()
 
     /** The single "the import is done" notification (core:sync); the next import's replaces it. */
     const val IMPORT_DONE: Int = 1401
