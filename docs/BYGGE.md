@@ -1135,6 +1135,7 @@ sätts av integrationen. En rad per bana.
 | larm | Enhetstestet 2026-11-14 (Galaxy S21 FE): B5 larmkanalen under "hög", B9 larmet bara fyra sekunder med olåst telefon, B14 ljust navigeringsfält under larmskärmen, T2 Live Update på Samsung | **B5:** en larmkanal under nivån "hög" (Tyst → Larm på Samsung ger "standard" med ljud) räknas som fel: kokläget, Mer → Kokläge och timers och Behörigheter varnar ("Visa som popup-fönster"), knappen öppnar kanalens egna inställningar, och matrisen nivå 2/3/4 × ljud/inget ljud × helskärmsbehörighet är enhetstestad (en varning per fel, aldrig dubbelt ljud). **B9:** ett ringande larm ligger aldrig i en grupp med timernotiserna eller ringtjänstens notis (som är tyst på `timer_ongoing`), är kategori alarm, pågående, högsta prioritet och larmar själv, med "+1 min" och "Stopp"; Robolectric-test på den byggda notisen; hjälptexten i Behörigheter förklarar Popup-stil. **B14:** larmskärmen och dess systemfält är mörka i appens ljusa och mörka tema; tema- och fönstertest plus referensbilder. **T2:** BYGGE säger att Samsung inte visar någon Live Update och att processdöden är verifierad. Referensbilder och ATF för de nya varningarna (telefon, liggande, surfplatta i båda orienteringarna, mörkt, teckenstorlek 2, svenska); röktestet körs | ✅ klart i CI 2026-11-14 (PR 43632641496, röktest 43632640740 på 7ea5590: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)" efter en omkörning av shard 2, vars första försök föll på receptredigerarens underrecept i Phase3SmokeTest, utanför banan; Contract 43632641439; referensbilder från Screenshots 43622914462 och 43629944084, bara `timer/*devicetest_alarm_screen_*`, `cook/*devicetest_alarm_no_pop_up_*`, `cook/phone_alarm_channel_off_light_sv`, `shell/settings_*permissions*` och `shell/settings_*devicetest_*no_pop_up*`); på en riktig telefon återstår ägarens prov, se "Enhetstestet 2026-11-14: larmen" |
 | mer | Enhetstestet 2026-11-14: B12 Behörigheter utan mikrofon, kalender och plats, B13 "Stäng kalkylarket", T1 röktestet på en svensk Samsung (plan §8.7, §6.6, §6.7) | **B12:** Mer → Behörigheter har raderna Mikrofon (handsfree), Kalender (matsedeln i telefonens kalender) och Plats (påminnelsen nära butiken, med nivån exakt + "Tillåt alltid" som påminnelsen behöver: "Tillåtet alltid", "Bara när appen används", "Bara ungefärlig", "Inte tillåtet"), var och en med läge, varför och en knapp till appens sida i Androids inställningar, lästa igen när sidan kommer tillbaka; utan Play-tjänster säger platsraden varför i stället; "Ingen position" är ersatt. Inget frågas på sidan. Compose-, ViewModel- och enhetstester, referensbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. **B13:** TalkBack säger "Stäng arket" om skrimmet bakom bottenark och "Meddelande" om snackbaren (appens values-sv ersätter Compose UI:s `close_sheet` och Material 3:s `m3c_snackbar_pane_title`), övriga svenska ark-, meny- och dialogsträngar granskade; ett test i `:app` läser den lösta svenska strängen och skrimmet i ett riktigt `ModalBottomSheet`. **T1:** röktestet går på en riktig telefon på svenska utan lokal patch: appens språk sätts till engelska efter `pm clear`, Samsungs batteritips efter första synken trycks bort, köksskärmens test rullar till kvällens middag, systemets väljare känns igen på svenska; emulatorn grön med lika många tester; BYGGE beskriver körningen på en egen telefon | ✅ klart i CI 2026-11-14 (PR 43639727846 och röktest 43639742988 på 84abd1a: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", lika många som förut; referensbilder från Screenshots 43637917638, bara `shell/devicetest_feature_permissions_*` nya och `shell/settings_*permissions*` avsiktligt ändrade; Contract berörs inte); på telefonen återstår ägarens prov av sidan, TalkBack-namnen och röktestet, se "Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet" |
 | stortext | Enhetstestet 2026-11-14 omgång 3 (Galaxy S21 FE, största text och skärmzoom, 320 × 693 dp): B22 text som trycks ihop eller kapas utanför kokläget, B18 offline-sökningens antal (plan §6.6) | **Text bryts aldrig mitt i ett ord** (regeln i docs/design/README.md "Textstorlek och radbrytning"): en etikett med något efter får sin bredd först och det andra flyttar till en egen rad (`LabelRow`), listrader med bild ställer texterna under bilden (`MediaRow`), namn på kort får fler rader och karusellkorten blir bredare vid teckenstorlek ≥ 1,5. **B22:** receptvyns "Ingredienser" med "Tryck för att bocka av", portionerna och formen med plus/minus, ingrediensraderna; receptlistan som lista och rutnät; Idags synkrad med "Synka nu", karusellernas rubriker och kort, Går ut snart och måltidsraderna. **B18:** "3 recept" står kvar på en rad med offline-ledtråden under, också på 360 dp i teckenstorlek 1,0. Genomgång av samma mönster i Handla för veckan, Planera måltid, inköpsarket, Synk och lagring, påminnelsetiden, Mer, bannrarna för synk och inloggning och receptredigeraren. I CI: `LabelRowTest` (bredvid i 1,0, under i 2,0), `assertNoWordBreaks` och ATF i `RecipesLargeTextTest` och `TodayLargeTextTest`, skärmbilder 320 × 693 dp i 2,0 (ljust, mörkt, svenska) och 360 × 780 dp i 1,0; skärmbilderna i 412 dp och 1,0 oförändrade. Flikraden och kokläget hör till banan liggande. **BEHÖVER ENHET** (ägaren): samma skärmar på telefonen med största text och skärmzoom | ✅ klart i CI 2026-11-15 (PR 43651845926 på aacfd74, röktest 43656216626 på ebc55b5: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; referensbilder från Screenshots 43650120813, nya `recipes/*devicetest_*` och `home/*devicetest_*`, avsiktligt ändrade bilder i teckenstorlek 2 och pseudospråken; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14: största text utanför kokläget" |
+| liggande | Enhetstestet 2026-11-14, omgång 3 (Galaxy S21 FE): B20 kokläget i liggande läge, B21 Mer utanför bild i liggande läge, B22 flikarnas namn brutna vid största text, K1 kokrubriken bryter ord, K2 timerraden bryter ord, K3 "Föregående" i liggande och "0 s kortare" (plan §6.5, §6.6) | **B20:** ett brett men kort fönster (minst 600 dp brett och under 480 dp högt, telefon i liggande läge) ger kokläget `SHORT_WIDE`: steget med en smal rubrik till vänster, sidokolumnen med ringande timrar (Stopp överst, ovanför varningarna), handsfree, övriga timrar och sidknapparna i en rad; vid 780 × 360 dp och teckenstorlek 1,0 syns minst fyra hela rader av steget, vid 693 × 320 dp och 2,0 minst två; surfplattor och andra höga breda fönster har kvar två delar; vridning behåller steg, timrar och öppen "Justera tiden". **B21:** alla fem flikar syns och går att trycka på vid 780 × 360 dp och vid 693 × 320 dp med 2,0 (skalets korta skena). **B22-flikar:** ingen fliketikett bryts inne i ett ord vid 320 × 693 dp och 2,0; får de inte plats visas bara ikonerna och TalkBack säger namnen. **K1:** kokrubrikens namn bryts bara mellan ord (högst två rader, sedan …); utan plats ligger textstorlek och "Laga ett recept till" i en ⋮-meny. **K2:** `TimerBarItem` bryter aldrig ett ord i timerns namn (texterna över knapparna när de annars skulle bli för smala, en ringande timers Stopp först), för alla som använder den. **K3:** sidknapparna bryter inget ord i liggande läge; "Justera tiden" läser aldrig upp ett steg på 0 s. Compose-, enhets- och Robolectric-tester, referensbilder och ATF; röktestet körs | 🔄 pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -1356,6 +1357,11 @@ visas på en telefon står som enhetsprov i banans rad i "Fas 5 – läge".
 **Inte prövat än på telefonen:** flygplansläge, rotation, större teckenstorlek, TalkBack i hela
 appen och byte av klockslag; rättningarna ovan behöver också ett nytt varv på telefonen (se
 enhetsproven i respektive banas rad).
+
+**Omgång 3 (samma telefon: flygplansläge, rotation, största text och skärmzoom, TalkBack lästes
+ur trädet):** liggande läge och flikarna rättades i banan liggande (B20,
+B21, flikraden i B22, och K1–K3 som kokvy lämnade öppna), se "Enhetstestet 2026-11-14, omgång 3:
+liggande läge, flikarna och kokrubriken".
 <!-- /Enhetstest 2026-11-14 -->
 
 <!-- Fas 5 rost -->
@@ -2573,6 +2579,67 @@ båda lägena) och ATF i `CookSmallPhoneAccessibilityTest`. Omtagna, avsiktligt 
 `phone_done_light_en_xa` och `phone_step_timers_light_en_xa` (lång text blir pilen) och
 `phone_landscape_ringing_many_ingredients_light` (den ringande timern får hela sidopanelen).
 <!-- /Fas 5 kokvy -->
+
+<!-- Fas 5 liggande -->
+## Enhetstestet 2026-11-14, omgång 3: liggande läge, flikarna och kokrubriken (`:feature:cook`, `:feature:shell`, `:core:ui`, bana liggande)
+
+Omgång 3 på samma Galaxy S21 FE vred telefonen och ställde in största text och skärmzoom (320 ×
+693 dp). "Klart när" står i "Fas 5 – läge". Inget Room-schema ändrades.
+
+**B20, kokläget i liggande läge.** `cookLayoutFor(width, tabletop, height)` gav två delar så fort
+fönstret var minst 600 dp brett; vid 780 × 360 dp tog rubriken, handsfree-raden och knappraden
+nästan hela höjden och steget fick cirka 62 dp. Nu får ett fönster som är minst 600 dp brett men
+under `CompactHeight` (480 dp) högt `CookLayout.SHORT_WIDE` (också en surfplatta i delad skärm
+som blivit låg): till vänster (60 %) rubriken på **en** rad (namnet förkortas först, "Steg 3 av 6"
+bredvid, `inlineTitle`) och steget, tätare (`CookStepPage(dense = true)`: mindre marginaler, ingen
+"STEG 3"-rad eftersom rubriken säger det, stegnamnet i titleMedium); till höger (40 %)
+`CookShortSideColumn` med de ringande timrarna överst, handsfree-raden, varningar och övriga timrar
+(rullar inuti, timerlistan får kolumnens höjd i stället för telefonens 168 dp) och sidknapparna i
+**en** rad längst ned (`PageButtons(allowStacked = false)`, en etikett som inte ryms blir pilen
+enligt kokvys `FirstThatFits`). Kolumnen ger knapparna sin höjd först, sedan de ringande timrarna
+(hela resten om de behöver), sedan handsfree och sist övriga. Ingredienserna står i det utfällbara
+avsnittet på steget som på telefonen. Vridning byter bara layout: steget (ViewModelns sida), timrarna
+och "Justera tiden" (sparat i `CookScreen`) står kvar. Sidokolumnen har taggen `cook:side-pane`
+som två delar hade, så röktestets vridning hittar timrarna där.
+
+**B21 och B22-flikar.** Se "Navigering", punkten "Kort skena och etiketter".
+
+**K1, kokrubriken.** Vid 360 dp och teckenstorlek 2 fick namnet cirka 100 dp mellan ikonknapparna
+och bröts inne i ordet ("Krämi g sv…"). `CookHeader` mäter namnets längsta ord (`TextMeasurer`,
+i linjebrytningen inline också "Steg 3 av 6") och jämför med platsen mellan ✕ och åtgärderna (64 dp
+var); ryms det inte flyttar Mindre text, Större text och Laga ett recept till in i en ⋮-knapp
+("Fler val", `cook:more-actions`) med en meny vars rader är 64 dp. Textstorleksraderna låter menyn
+vara öppen. Namnet bryts därmed bara mellan ord, högst två rader och sedan …; med plats ser rubriken
+ut som förut.
+
+**K2, timerraden.** `TimerBarItem` (`:core:ui`, används av timerlistan, telefonens timeryta, de
+ringande timrarna och sidopanelerna) mäter först i prober utan semantik: knapparnas bredd och
+texternas längsta ord och hela bredd. Får texterna inte sitt längsta ord och minst
+`TimerInfoMinWidth` (96 dp × teckenskalan, eller hela sin bredd om den är mindre) bredvid knapparna
+står de över knapparna i kortets hela bredd och knapparna radbryts under, högerställda; en ringande
+timer har knapparna **överst** så att Stopp aldrig skjuts ut ur en kort yta av namnet och "Tiden är
+ute!". Där det finns plats är raden som förut. Fas 4:s regel (två recept vid skala ≥ 1,5 staplas
+alltid) står kvar.
+
+**K3.** Sidknapparna använder samma `FirstThatFits` i alla layouter, också `SHORT_WIDE`, så
+"Föregående" blir pilen i stället för att brytas (kokvys test i liggande läge vid skala 2 fanns
+redan och gick igenom; de nya testerna täcker 780 × 360 och 693 × 320 dp på svenska). "Justera
+tiden": vid kortaste eller längsta tiden är −/+ avstängd och heter "Kortare"/"Längre" i stället för
+"0 s kortare".
+
+**Tester:** `CookLandscapeTest` (layoutvalet, synliga hela rader av ett långt steg vid 780 × 360
+och 693 × 320 dp, Stopp helt synligt ovanför den hopfällda varningen, två recept, vridning med öppen
+dialog, timernamn utan brutna ord, sidknappar på svenska, "Justera tiden" vid gränserna, rubrikens
+meny vid 360 dp och skala 2 och inga ändringar vid 412 dp), `TimerBarItemNarrowTest` (`:core:ui`),
+`ShellNavigationDeviceTest` (alla fem flikar helt synliga, med namn för TalkBack, och öppnar sin
+sida vid 780 × 360, 693 × 320 med skala 2 och 915 × 412 dp; inga brutna etiketter vid 320 × 693 dp
+och skala 2). ATF för samma lägen.
+
+**Referensbilder:** se raden i "Fas 5 – läge".
+
+**På en riktig telefon återstår** (ägaren): kokläget i liggande läge med handsfree och en ringande
+timer, sidomenyn med Mer i liggande läge, flikraden och kokrubriken med största text och skärmzoom.
+<!-- /Fas 5 liggande -->
 
 <!-- Fas 4 ocr -->
 ## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)
@@ -4778,6 +4845,16 @@ täcker alla `@Serializable`-klasser under `casa.moller.tandem`).
 - **Helskärm ovanför flikraden:** nycklar som implementerar `FullScreenDestination` (`:core:ui`)
   döljer bottenraden på kompakta fönster (telefon stående). På bredare fönster står railen kvar,
   om inte nyckeln sätter `hidesNavigationOnAllWidths` (kokläget).
+- **Kort skena och etiketter (enhetstestet 2026-11-14, omgång 3, B21/B22):** ett fönster som får
+  den hopfällda skenan men är under 480 dp högt (`shellUsesShortRail`, telefon i liggande läge)
+  ritar skalets egen korta skena (`ShellNavigationSuite.kt`): Material 3:s `WideNavigationRailItem`
+  i en centrerad kolumn i Materials `NavigationSuiteScaffoldLayout` (samma visa/dölj och insets),
+  utan skenans 44 dp toppmarginal. Etiketter på alla flikar, annars bara på den valda, annars inga
+  (ikonerna bär då namnet för TalkBack), det första som ryms i höjden; ryms inte ens ikonerna
+  rullar kolumnen. Bottenraden visar bara ikoner när någon av de fem etiketterna inte ryms på en
+  rad i sin femtedel av bredden. Materials adaptiva riktlinjer behåller en skena (inte en
+  bottenrad) på ett kort brett fönster, så höjden går till innehållet. Testtaggar
+  `shell:tab:<flik>` och `shell:short-rail`.
 - **List-detalj:** fliken Recept är list-panelen i en Navigation 3 list-detail-scen
   (`ListDetailSceneStrategy` ur `material3-adaptive-navigation3`). På medium/expanded visas ett
   recept som öppnas från listan i detaljpanelen bredvid listan; ett nytt val ersätter det

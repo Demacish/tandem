@@ -125,6 +125,20 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
 - Söker du utan nät står antalet träffar ("3 recept") kvar på en rad, och "Offline: söker bland
   recepten på enheten" hamnar under det i stället för att trycka ihop antalet till en bokstav per
   rad.
+- Kokläget i liggande läge på en telefon ger nu steget nästan hela höjden: rubriken är en smal rad,
+  och ringande timrar med Stopp, handsfree, de andra timrarna och knapparna Föregående och Nästa
+  står i en kolumn bredvid. Förut syntes bara en halv rad av steget. Surfplattor har kvar sina två
+  delar.
+- I liggande läge på en telefon syns nu alla fem flikar, också Mer, i sidomenyn. Får etiketterna
+  inte plats visas bara den valda flikens etikett eller bara ikonerna, och skärmläsaren säger
+  fortfarande flikens namn. Med största text bryts flikarnas namn aldrig mitt i ordet ("Rece/pt"):
+  får de inte plats visas bara ikonerna.
+- Receptets namn överst i kokläget bryts bara mellan ord. Med stor text på en smal telefon flyttar
+  Mindre text, Större text och Laga ett recept till in under en knapp med tre punkter.
+- En timers namn bryts inte längre mitt i ordet i en smal kolumn, och en ringande timer har Stopp
+  överst när texten inte får plats bredvid knapparna.
+- I "Justera tiden" säger skärmläsaren inte längre "0 s kortare" när tiden redan är den kortaste:
+  knappen heter då "Kortare" och går inte att trycka på.
 
 **Kvar till senare**
 
