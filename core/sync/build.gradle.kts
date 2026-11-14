@@ -58,6 +58,10 @@ dependencies {
     }
     implementation(libs.tink.android)
 
+    // --- Fas 5 (butik lane): "Påminn mig nära butiken" with Play services' geofences (Google Maven;
+    // without Play services the option is hidden, docs/BYGGE.md "Påminnelse nära butiken"). ---
+    implementation(libs.play.services.location)
+
     testImplementation(projects.core.testing)
     testImplementation(libs.androidx.work.testing)
     testImplementation(platform(libs.okhttp.bom))

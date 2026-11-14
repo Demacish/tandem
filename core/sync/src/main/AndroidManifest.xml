@@ -17,6 +17,25 @@
     -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
+    <!--
+        Fas 5 (butik lane, plan §7 #34): "Påminn mig nära butiken" with Play services' geofences.
+        The precise position (asked in context when a store's place is set or the reminder is
+        turned on, never at start; fine and coarse together, as Android 12+ requires), then
+        "Allow all the time" (the system's settings page, after Tandem explains why). No foreground
+        service, no continuous location. Boot: the geofences are put back after a reboot (the
+        receiver below is off unless the reminder is on).
+    -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Location is optional: without GPS the reminder still works on network positions, or is hidden without Play services. -->
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.gps"
+        android:required="false" />
 
     <application>
         <!--
@@ -30,5 +49,28 @@
                 <action android:name="org.unifiedpush.android.connector.PUSH_EVENT" />
             </intent-filter>
         </service>
+        <!--
+            Fas 5 (butik lane): Play services delivers the geofence events to this receiver through
+            Tandem's own PendingIntent; not exported.
+        -->
+        <receiver
+            android:name="casa.moller.tandem.core.sync.storereminder.StoreGeofenceReceiver"
+            android:exported="false" />
+        <!--
+            Fas 5 (butik lane): puts the geofences back after a reboot, an app update and the
+            location being turned on. Disabled until the reminder near a store is on
+            (ComponentSystemEventSwitch); every action is a protected system broadcast.
+        -->
+        <receiver
+            android:name="casa.moller.tandem.core.sync.storereminder.StoreReminderSystemReceiver"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.location.PROVIDERS_CHANGED" />
+                <action android:name="android.location.MODE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

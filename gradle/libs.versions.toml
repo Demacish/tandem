@@ -80,6 +80,10 @@ detekt = "2.0.0-alpha.6"
 composeRulesDetekt = "0.6.7"  # io.nlopez.compose.rules for detekt 2.0.0-alpha.6 (0.6.8 is < 2 weeks old)
 benchmark = "1.5.0"           # androidx.benchmark: Macrobenchmark (:benchmark)
 profileinstaller = "1.4.1"    # installs the baseline profile on sideloaded (non-Play) installs
+# --- butik lane (Fas 5, 0.8.0 "På språng", plan §7 #34), verified 2026-11-14 against Google Maven
+# (released 2026-06-25). Geofences and one position for "Påminn mig nära butiken" (core:sync);
+# brings play-services-base/-basement 18.9.0 and -tasks 18.4.0. ---
+playServicesLocation = "21.4.0"
 
 # --- grund lane (Fas S, 0.4.0 "Skafferi & drycker"), verified 2026-10-29 against Google Maven /
 # Maven Central (release date >= 2 weeks before, published .sha1 checked on download). Scanning
@@ -221,6 +225,8 @@ androidx-test-uiautomator = { module = "androidx.test.uiautomator:uiautomator", 
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRulesDetekt" }
 androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "benchmark" }
 androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "profileinstaller" }
+# --- butik lane (Fas 5): the reminder near the store's geofences (core:sync). ---
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 
 # --- grund lane (Fas S): scanning (feature:scan) and the fridge photo (core:ai). ---
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }

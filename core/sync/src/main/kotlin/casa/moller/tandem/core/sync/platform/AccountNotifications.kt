@@ -35,9 +35,10 @@ internal class AndroidAccountNotifications @Inject constructor(@ApplicationConte
         manager.cancel(TandemNotificationIds.PANTRY_EXPIRY)
         manager.cancel(TandemNotificationIds.IMPORT_DONE)
         manager.cancel(AndroidFastPushNotifier.TEST_NOTIFICATION_ID)
-        // Fas 5 (planera lane): the evening reminders, one per meal under their tag.
+        // Fas 5 (planera lane): the evening reminders, one per meal under their tag; (butik lane) the
+        // reminders near a store, one per store.
         runCatching { manager.activeNotifications }.getOrDefault(emptyList())
-            .filter { it.tag == TandemNotificationIds.MEAL_REMINDER_TAG }
+            .filter { it.tag == TandemNotificationIds.MEAL_REMINDER_TAG || it.tag == TandemNotificationIds.STORE_REMINDER_TAG }
             .forEach { manager.cancel(it.tag, it.id) }
     }
 }

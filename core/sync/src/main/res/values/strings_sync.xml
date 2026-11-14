@@ -12,7 +12,7 @@
 
     <!-- Fas 4: someone in the household changed the shopping list (channel "shopping"). -->
     <string name="sync_notification_channel_shopping">Shopping list</string>
-    <string name="sync_notification_channel_shopping_description">When someone else in the household adds, checks off or removes items.</string>
+    <string name="sync_notification_channel_shopping_description">When someone else in the household adds, checks off or removes items, and the reminder near the store.</string>
     <plurals name="sync_notification_shopping_title">
         <item quantity="one">The shopping list changed</item>
         <item quantity="other">%1$d changes on the shopping list</item>

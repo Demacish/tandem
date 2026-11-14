@@ -27,6 +27,7 @@ import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.push.DefaultFastPushRepository
 import casa.moller.tandem.core.sync.shopping.ShoppingChangeNotifications
+import casa.moller.tandem.core.sync.storereminder.StoreReminderSchedule
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -89,6 +90,8 @@ class SyncStarter @Inject internal constructor(
     private val accountNotifications: AccountNotificationCleanup,
     // Fas 5 (kalender lane): "Matsedeln i kalendern" follows the plan, the account and its options.
     private val mealCalendar: MealCalendarSchedule,
+    // Fas 5 (butik lane): the geofences of "Påminn mig nära butiken" follow the account and its stores.
+    private val storeReminders: StoreReminderSchedule,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -126,6 +129,7 @@ class SyncStarter @Inject internal constructor(
         fastPush.start()
         accountNotifications.start()
         mealCalendar.start()
+        storeReminders.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

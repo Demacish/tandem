@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (butik lane): the reminder near the store (plan §7 #34, channel "Shopping list"). -->
+<resources>
+    <!-- Title of the reminder near a store; %1$s is the store's name from Tandoor, e.g. "You're near Corner Shop". -->
+    <string name="sync_store_reminder_title">You\'re near %1$s</string>
+    <!-- The same when the store is no longer in Tandoor. -->
+    <string name="sync_store_reminder_title_unnamed">You\'re near the store</string>
+    <!-- The reminder's text: how many things are still to buy. -->
+    <plurals name="sync_store_reminder_text">
+        <item quantity="one">%1$d thing on the list</item>
+        <item quantity="other">%1$d things on the list</item>
+    </plurals>
+</resources>

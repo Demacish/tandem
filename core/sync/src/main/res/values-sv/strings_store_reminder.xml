@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (butik lane): påminnelsen nära butiken (plan §7 #34, kanalen "Inköpslistan"). -->
+<resources>
+    <string name="sync_store_reminder_title">Du är nära %1$s</string>
+    <string name="sync_store_reminder_title_unnamed">Du är nära butiken</string>
+    <plurals name="sync_store_reminder_text">
+        <item quantity="one">%1$d sak på listan</item>
+        <item quantity="other">%1$d saker på listan</item>
+    </plurals>
+</resources>
