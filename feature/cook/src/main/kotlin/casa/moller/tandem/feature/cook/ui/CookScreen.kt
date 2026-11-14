@@ -402,8 +402,12 @@ private fun CookContent(
     // asked for again when handsfree is turned on and when its sheet closes.
     val volumeKeys = handsfree?.enabled == true && state.timers.none { it.state == TimerState.RINGING }
     LaunchedEffect(focusRequester, handsfree?.enabled, handsfree?.sheetOpen) { runCatching { focusRequester.requestFocus() } }
+    // B6 (device test 2026-11-14): on a phone at a large font a ringing timer needs the room of the
+    // tabs row and the handsfree explanation, so the top is as on a short window while it rings.
+    val compactTop = availableHeight < CompactHeight ||
+        (layout == CookLayout.PHONE && LocalDensity.current.fontScale >= LARGE_FONT_SCALE && state.timers.anyRinging())
     val handsfreeBar: @Composable () -> Unit = {
-        handsfree?.let { HandsfreeBar(state = it, onAction = onHandsfreeAction, compact = availableHeight < CompactHeight) }
+        handsfree?.let { HandsfreeBar(state = it, onAction = onHandsfreeAction, compact = compactTop) }
     }
     val pageButtons: @Composable (Modifier) -> Unit = { buttonsModifier ->
         PageButtons(
@@ -454,7 +458,7 @@ private fun CookContent(
             progress = progress,
             session = session,
             onSessionAction = onSessionAction,
-            compactHeight = availableHeight < CompactHeight,
+            compactHeight = compactTop,
         )
     }
     // Device test 2026-11-14 (B6): the ringing timers first, outside the scrolling part.
@@ -520,6 +524,7 @@ private fun CookContent(
                 others = { otherTimers(Modifier, Dp.Infinity) },
                 buttons = { pageButtons(Modifier.padding(horizontal = TandemTheme.spacing.lg, vertical = TandemTheme.spacing.sm)) },
                 timerShare = bottomShare(availableHeight),
+                othersGap = TandemTheme.spacing.sm,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
@@ -797,10 +802,12 @@ private fun OtherTimersAndWarnings(
     val spacing = TandemTheme.spacing
     Column(
         modifier = modifier
+            // The gap above stays outside the limit, as before the device test (B6).
+            .padding(top = spacing.sm)
             .fillMaxWidth()
             .heightIn(max = maxScrollHeight)
             .verticalScroll(rememberScrollState())
-            .padding(start = spacing.lg, end = spacing.lg, top = spacing.sm)
+            .padding(horizontal = spacing.lg)
             .testTag(COOK_BOTTOM_TIMERS_TAG),
         verticalArrangement = Arrangement.spacedBy(spacing.sm),
     ) {

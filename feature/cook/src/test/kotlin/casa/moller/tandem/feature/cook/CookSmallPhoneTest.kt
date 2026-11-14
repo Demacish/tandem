@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.cook
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
@@ -22,7 +23,6 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
-import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -135,8 +135,15 @@ class CookSmallPhoneTest {
     @Test
     fun aSwipeStillTurnsThePageAndTheButtonsFollow() {
         show()
-        composeRule.onNodeWithTag(COOK_PAGER_TAG).performTouchInput { swipeLeft() }
+        // A slow drag over most of the page: it settles on the next page without a fling.
+        composeRule.onNodeWithTag(COOK_PAGER_TAG).performTouchInput {
+            down(Offset(width * DRAG_START, centerY))
+            repeat(DRAG_STEPS) { moveBy(Offset(-width * DRAG_STEP, 0f), delayMillis = FRAME_MILLIS) }
+            up()
+        }
         composeRule.waitForIdle()
+        // The pager moved, and the header (the ViewModel's page) followed it.
+        composeRule.onNodeWithText("STEP 2").assertIsDisplayed()
         composeRule.onNodeWithText("Step 2 of 3").assertIsDisplayed()
 
         composeRule.onNodeWithText("Next").performClick()
@@ -299,7 +306,9 @@ class CookSmallPhoneTest {
      */
     private fun assertLabelsWhole(vararg labels: String) {
         labels.forEach { label ->
+            // The labels measured but not shown (FirstThatFits) are in the unmerged tree, unplaced.
             val texts = composeRule.onAllNodesWithText(label, useUnmergedTree = true).fetchSemanticsNodes()
+                .filter { it.layoutInfo.isPlaced }
             if (texts.isEmpty()) {
                 composeRule.onNodeWithContentDescription(label).assertIsDisplayed().assertHeightIsAtLeast(KITCHEN_TARGET)
             } else {
@@ -335,6 +344,11 @@ class CookSmallPhoneTest {
     private companion object {
         /** Well inside the pager's page animation. */
         const val QUICK_MILLIS = 50L
+
+        const val DRAG_START = 0.9f
+        const val DRAG_STEPS = 10
+        const val DRAG_STEP = 0.07f
+        const val FRAME_MILLIS = 16L
 
         val KITCHEN_TARGET = 64.dp
         val KEYS_ONLY = HandsfreeUiState(settings = HandsfreeSettings(enabled = true))

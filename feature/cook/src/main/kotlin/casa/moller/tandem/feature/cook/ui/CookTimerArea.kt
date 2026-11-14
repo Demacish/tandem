@@ -142,7 +142,8 @@ internal fun CollapsedWarning(title: String, onExpand: () -> Unit, modifier: Mod
  *
  * Who gets room first: the buttons and the top whole, then the ringing timers, then the step keeps
  * [minStepHeight] before the others get theirs. The ringing timers and the others together take at
- * most [timerShare] of the height, so the step above keeps room on every window (plan 6.5).
+ * most [timerShare] of the height, so the step above keeps room on every window (plan 6.5); the
+ * [othersGap] above the others (their top padding) is not counted.
  */
 @Composable
 internal fun CookPhoneLayout(
@@ -153,6 +154,7 @@ internal fun CookPhoneLayout(
     buttons: @Composable () -> Unit,
     timerShare: Float,
     modifier: Modifier = Modifier,
+    othersGap: Dp = 0.dp,
     minStepHeight: Dp = MinStepHeight,
 ) {
     // One node per slot, whatever each slot emits.
@@ -177,7 +179,9 @@ internal fun CookPhoneLayout(
         val share = (height * timerShare).roundToInt()
         val ringingPlaceable = slots[RINGING].single().upTo(min(share, left))
         left -= ringingPlaceable.height
-        val othersPlaceable = slots[OTHERS].single().upTo(min(share - ringingPlaceable.height, left - minStep))
+        // The others' gap above them is not part of the share (as the timer region before B6).
+        val othersShare = share - ringingPlaceable.height + othersGap.roundToPx()
+        val othersPlaceable = slots[OTHERS].single().upTo(min(othersShare, left - minStep))
         left -= othersPlaceable.height
         val pagerPlaceable = slots[PAGER].single().measure(Constraints.fixed(width, left.coerceAtLeast(0)))
         layout(width, height) {
@@ -250,7 +254,7 @@ internal fun PageIconButton(
 }
 
 /** The step keeps at least this much of a phone's height when the timer area is full (B6). */
-internal val MinStepHeight = 128.dp
+internal val MinStepHeight = 96.dp
 
 private const val TOP = 0
 private const val PAGER = 1
