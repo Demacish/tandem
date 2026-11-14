@@ -33,6 +33,8 @@ import kotlinx.serialization.json.Json
  *   delete the watch token with, so the watch deletes its own the next time it is reachable.
  * @property revokedOnServer Fas 5 (integration-08): the phone deleted the watch token on the server
  *   just before the account left (`AccountRemovalHook`); the watch is then only wiped, it sends nothing.
+ * @property renewTriedAtEpochMillis 0.8.0 review (fix-08): when an automatic renewal last did not
+ *   work (0 = never); the next one waits `DefaultWatchRepository.RENEW_RETRY`, also in a new process.
  */
 @Serializable
 data class StoredWatchPairing(
@@ -45,6 +47,7 @@ data class StoredWatchPairing(
     val pairedAtEpochMillis: Long,
     val revokeOnWatch: Boolean = false,
     val revokedOnServer: Boolean = false,
+    val renewTriedAtEpochMillis: Long = 0L,
 )
 
 /** Reads and writes [StoredWatchPairing]. */

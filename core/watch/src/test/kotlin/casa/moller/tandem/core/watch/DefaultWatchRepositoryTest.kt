@@ -15,6 +15,7 @@ import casa.moller.tandem.core.testing.time.TestClock
 import casa.moller.tandem.core.watchlink.UnpairRequest
 import casa.moller.tandem.core.watchlink.WatchTokenPolicy
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -212,6 +213,40 @@ class DefaultWatchRepositoryTest {
         repository.maintain()
         assertEquals(listOf(100L, 101L), tokens.created)
         assertEquals(listOf("phone-account-1" to 100L), tokens.deleted)
+    }
+
+    /** 0.8.0 review (fix-08): an automatic renewal is a background request, a tap is not. */
+    @Test
+    fun theRenewalIsABackgroundRequestAndATapIsNot() = runTest {
+        repository.pair()
+        assertEquals(listOf(anna.id to false), tokens.requests)
+        clock.advanceBy(60.days)
+        repository.maintain()
+        // The new token (background) and the old one deleted (background).
+        assertEquals(listOf(anna.id to false, anna.id to true, anna.id to true), tokens.requests)
+    }
+
+    /** 0.8.0 review (fix-08): a renewal the server refused is not tried at every process start. */
+    @Test
+    fun aFailedRenewalWaitsBeforeTheNextTry() = runTest {
+        repository.pair()
+        clock.advanceBy(60.days)
+        tokens.failCreate = TandemError.Throttled(null)
+        repository.maintain()
+        assertEquals(2, tokens.requests.size)
+        assertEquals(clock.now().toEpochMilliseconds(), store.stored.value?.renewTriedAtEpochMillis)
+
+        // The next process starts within the pause: nothing is sent.
+        clock.advanceBy(DefaultWatchRepository.RENEW_RETRY - 1.minutes)
+        repository.maintain()
+        assertEquals(2, tokens.requests.size)
+
+        // After it: tried again, and paired.
+        tokens.failCreate = null
+        clock.advanceBy(1.minutes)
+        repository.maintain()
+        assertEquals(listOf(100L, 101L), tokens.created)
+        assertEquals(0L, store.stored.value?.renewTriedAtEpochMillis)
     }
 
     @Test

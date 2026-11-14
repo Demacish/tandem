@@ -85,14 +85,25 @@ internal class FakeWatchTokens : WatchTokens {
     var failCreate: TandemError? = null
     var failDelete: TandemError? = null
 
-    override suspend fun create(baseUrl: String, phoneToken: String, expires: Instant): Outcome<CreatedWatchToken> {
+    /** Every request as (account, background), also the failed ones (fix-08: what the guard is asked). */
+    val requests = mutableListOf<Pair<String, Boolean>>()
+
+    override suspend fun create(
+        accountId: String,
+        baseUrl: String,
+        phoneToken: String,
+        expires: Instant,
+        background: Boolean,
+    ): Outcome<CreatedWatchToken> {
+        requests += accountId to background
         failCreate?.let { return Outcome.Failure(it) }
         val id = nextId++
         created += id
         return Outcome.Success(CreatedWatchToken("$baseUrl/", "tda_00000000_0000_0000_0000_000000000$id", id, expires))
     }
 
-    override suspend fun delete(baseUrl: String, phoneToken: String, tokenId: Long): Outcome<Unit> {
+    override suspend fun delete(accountId: String, baseUrl: String, phoneToken: String, tokenId: Long, background: Boolean): Outcome<Unit> {
+        requests += accountId to background
         failDelete?.let { return Outcome.Failure(it) }
         deleted += phoneToken to tokenId
         return Outcome.Success(Unit)

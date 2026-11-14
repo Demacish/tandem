@@ -26,6 +26,8 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +49,12 @@ import kotlinx.coroutines.sync.withLock
  *   to delete its own token ([UnpairRequest.revoke]).
  * - **Upkeep** ([maintain], at app start and when the stored accounts change): the paired account
  *   left the phone → the watch deletes its own token as soon as it is reachable; the token
- *   expires within [WatchTokenPolicy.RENEW_BEFORE] and the watch is near → paired again.
+ *   expires within [WatchTokenPolicy.RENEW_BEFORE] and the watch is near → paired again, as a
+ *   BACKGROUND request through the sync's guard (0.8.0 review, fix-08: never while the account's
+ *   token is refused, the server blocks or throttles, or the circuit breaker is open), and after a
+ *   renewal that did not work not again before [RENEW_RETRY] has passed (also in a new process).
+ * - **Server protection:** every request ([WatchTokens]) passes the sync's guard; one the user
+ *   starts (pair, unpair, logout) is still held back while the token is refused, blocked or throttled.
  * - **The account leaves the phone** (Fas 5, integration-08; [beforeRemoval], an
  *   [AccountRemovalHook]): the phone deletes the watch token on the server with the account's
  *   token while it still has it; the watch is then only wiped. Offline, the upkeep above remains.
@@ -119,9 +126,15 @@ internal class DefaultWatchRepository @Inject constructor(
         }
         val active = (sessions.session.first() as? Session.LoggedIn)?.account ?: return
         val expires = Instant.fromEpochMilliseconds(stored.expiresEpochMillis)
-        if (active.id == stored.accountId && WatchTokenPolicy.needsRenewal(expires, clock.now())) {
-            val near = discover().also { discovery.value = it }.tandemWatch
-            if (near?.id == stored.nodeId && near.nearby) pair()
+        val now = clock.now()
+        if (active.id != stored.accountId || !WatchTokenPolicy.needsRenewal(expires, now)) return
+        if (now.toEpochMilliseconds() - stored.renewTriedAtEpochMillis < RENEW_RETRY.inWholeMilliseconds) return
+        val near = discover().also { discovery.value = it }.tandemWatch
+        if (near?.id != stored.nodeId || !near.nearby) return
+        val result = action { pairNow(background = true) }
+        if (result.outcome != WatchOutcome.PAIRED) {
+            val current = store.load()?.takeIf { it.tokenId == stored.tokenId }
+            if (current != null) store.save(current.copy(renewTriedAtEpochMillis = now.toEpochMilliseconds()))
         }
     }
 
@@ -129,7 +142,7 @@ internal class DefaultWatchRepository @Inject constructor(
     override suspend fun beforeRemoval(account: ServerAccount, token: String) {
         actions.withLock {
             val stored = store.load()?.takeIf { it.accountId == account.id && !it.revokedOnServer } ?: return
-            if (tokens.delete(account.baseUrl, token, stored.tokenId) is Outcome.Success) {
+            if (tokens.delete(account.id, account.baseUrl, token, stored.tokenId) is Outcome.Success) {
                 store.save(stored.copy(revokedOnServer = true))
             }
         }
@@ -144,7 +157,8 @@ internal class DefaultWatchRepository @Inject constructor(
         }
     }
 
-    private suspend fun pairNow(): WatchResult {
+    /** [background]: an automatic renewal ([maintain]), not a tap. */
+    private suspend fun pairNow(background: Boolean = false): WatchResult {
         val session = sessions.session.first()
         if (block(session, permissions.permissions.first()) != null) return WatchResult(WatchOutcome.NOT_ALLOWED)
         val account = (session as Session.LoggedIn).account
@@ -152,7 +166,8 @@ internal class DefaultWatchRepository @Inject constructor(
         val found = discover().also { discovery.value = it }
         val watch = found.tandemWatch?.takeIf { it.nearby } ?: return WatchResult(WatchOutcome.NO_WATCH)
 
-        val created = when (val made = tokens.create(account.baseUrl, phoneToken, WatchTokenPolicy.expiry(clock.now()))) {
+        val expiry = WatchTokenPolicy.expiry(clock.now())
+        val created = when (val made = tokens.create(account.id, account.baseUrl, phoneToken, expiry, background)) {
             is Outcome.Failure -> return WatchResult(WatchOutcome.SERVER, made.error)
             is Outcome.Success -> made.value
         }
@@ -168,7 +183,7 @@ internal class DefaultWatchRepository @Inject constructor(
         val reply = request(watch.id, WatchLink.PATH_PAIR, WatchCodec.encode(WatchCredentials.serializer(), credentials))
         if (reply?.ok != true) {
             // Never leave a token behind that no device holds.
-            tokens.delete(account.baseUrl, phoneToken, created.id)
+            tokens.delete(account.id, account.baseUrl, phoneToken, created.id, background)
             return WatchResult(if (reply == null) WatchOutcome.NO_WATCH else WatchOutcome.WATCH_REFUSED)
         }
         val previous = store.load()
@@ -183,7 +198,7 @@ internal class DefaultWatchRepository @Inject constructor(
                 pairedAtEpochMillis = clock.now().toEpochMilliseconds(),
             ),
         )
-        if (previous != null && previous.tokenId != created.id) deleteOld(previous)
+        if (previous != null && previous.tokenId != created.id) deleteOld(previous, background)
         return WatchResult(WatchOutcome.PAIRED)
     }
 
@@ -195,7 +210,7 @@ internal class DefaultWatchRepository @Inject constructor(
         val serverDone = if (stored.revokedOnServer) {
             true
         } else if (account != null && phoneToken != null) {
-            when (val deleted = tokens.delete(account.baseUrl, phoneToken, stored.tokenId)) {
+            when (val deleted = tokens.delete(account.id, account.baseUrl, phoneToken, stored.tokenId)) {
                 is Outcome.Success -> true
 
                 is Outcome.Failure -> {
@@ -221,10 +236,10 @@ internal class DefaultWatchRepository @Inject constructor(
     }
 
     /** The token of the pairing that was replaced, deleted with its own account's phone token. */
-    private suspend fun deleteOld(previous: StoredWatchPairing) {
+    private suspend fun deleteOld(previous: StoredWatchPairing, background: Boolean) {
         val owner = accounts.accounts.first().firstOrNull { it.id == previous.accountId } ?: return
         val token = phoneToken(owner.id) ?: return
-        tokens.delete(owner.baseUrl, token, previous.tokenId)
+        tokens.delete(owner.id, owner.baseUrl, token, previous.tokenId, background)
     }
 
     private suspend fun discover(): Discovery = try {
@@ -266,5 +281,10 @@ internal class DefaultWatchRepository @Inject constructor(
         Session.Demo -> WatchBlock.DEMO
         is Session.LoggedIn -> if (rights.readOnly) WatchBlock.GUEST else null
         Session.NoAccount, is Session.RecoveryNeeded -> WatchBlock.NO_ACCOUNT
+    }
+
+    internal companion object {
+        /** How long an automatic renewal that did not work waits before the next one (0.8.0 review, fix-08). */
+        val RENEW_RETRY: Duration = 6.hours
     }
 }

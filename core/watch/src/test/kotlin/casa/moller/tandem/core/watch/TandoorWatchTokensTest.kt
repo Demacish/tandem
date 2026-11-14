@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.watch
 
+import casa.moller.tandem.core.data.sync.RequestGuard
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
@@ -38,6 +39,7 @@ class TandoorWatchTokensTest {
     private val clientTrust = HandshakeCertificates.Builder().addTrustedCertificate(rootCa.certificate).build()
     private val server = MockWebServer()
     private lateinit var tokens: TandoorWatchTokens
+    private val guard = RecordingGuard()
     private val expires = Instant.parse("2027-02-12T10:00:00Z")
 
     @Before
@@ -50,7 +52,7 @@ class TandoorWatchTokensTest {
             .newBuilder()
             .sslSocketFactory(clientTrust.sslSocketFactory(), clientTrust.trustManager)
             .build()
-        tokens = TandoorWatchTokens(TandoorApiFactory(client))
+        tokens = TandoorWatchTokens(TandoorApiFactory(client), guard)
     }
 
     @After
@@ -73,7 +75,7 @@ class TandoorWatchTokensTest {
             ),
         )
 
-        val created = tokens.create(baseUrl(), "tda_phone", expires)
+        val created = tokens.create(ACCOUNT, baseUrl(), "tda_phone", expires)
 
         val request = requireNotNull(server.takeRequest(5, TimeUnit.SECONDS))
         assertEquals("POST", request.method)
@@ -94,7 +96,7 @@ class TandoorWatchTokensTest {
     fun aMaskedTokenIsNoToken() = runTest {
         server.enqueue(json(201, """{"id": 7, "token": "tda_************_******_***********0007", "scope": "read write"}"""))
 
-        assertTrue((tokens.create(baseUrl(), "tda_phone", expires) as Outcome.Failure).error is TandemError.Decode)
+        assertTrue((tokens.create(ACCOUNT, baseUrl(), "tda_phone", expires) as Outcome.Failure).error is TandemError.Decode)
     }
 
     @Test
@@ -103,12 +105,69 @@ class TandoorWatchTokensTest {
         server.enqueue(json(404, """{"detail": "No AccessToken matches the given query."}"""))
         server.enqueue(json(403, """{"detail": "Authentication credentials were not provided."}"""))
 
-        assertEquals(Outcome.Success(Unit), tokens.delete(baseUrl(), "tda_phone", 7))
-        assertEquals(Outcome.Success(Unit), tokens.delete(baseUrl(), "tda_phone", 7))
-        assertEquals(Outcome.Failure(TandemError.Unauthorized(UnauthorizedSource.TANDOOR)), tokens.delete(baseUrl(), "tda_phone", 7))
+        assertEquals(Outcome.Success(Unit), tokens.delete(ACCOUNT, baseUrl(), "tda_phone", 7))
+        assertEquals(Outcome.Success(Unit), tokens.delete(ACCOUNT, baseUrl(), "tda_phone", 7))
+        assertEquals(
+            Outcome.Failure(TandemError.Unauthorized(UnauthorizedSource.TANDOOR)),
+            tokens.delete(ACCOUNT, baseUrl(), "tda_phone", 7),
+        )
 
         val first = requireNotNull(server.takeRequest(5, TimeUnit.SECONDS))
         assertEquals("DELETE", first.method)
         assertEquals("/api/access-token/7/", first.url.encodedPath)
+    }
+
+    // --- 0.8.0 review (fix-08): every request passes the sync's guard (plan §5.4) ---
+
+    @Test
+    fun aRequestTheGuardHoldsBackIsNeverSent() = runTest {
+        guard.refuse = TandemError.Unauthorized(UnauthorizedSource.TANDOOR)
+
+        val created = tokens.create(ACCOUNT, baseUrl(), "tda_phone", expires, background = true)
+        val deleted = tokens.delete(ACCOUNT, baseUrl(), "tda_phone", 7)
+
+        assertEquals(Outcome.Failure(TandemError.Unauthorized(UnauthorizedSource.TANDOOR)), created)
+        assertEquals(Outcome.Failure(TandemError.Unauthorized(UnauthorizedSource.TANDOOR)), deleted)
+        assertEquals(0, server.requestCount)
+        assertEquals(listOf(ACCOUNT to true, ACCOUNT to false), guard.checked)
+        assertTrue("nothing sent, nothing recorded", guard.recorded.isEmpty())
+    }
+
+    @Test
+    fun theAnswerIsRecordedInTheGuard() = runTest {
+        server.enqueue(MockResponse.Builder().code(429).addHeader("Retry-After", "120").build())
+        server.enqueue(MockResponse.Builder().code(403).addHeader("Content-Type", "text/html").body("<html>blocked</html>").build())
+        server.enqueue(json(404, """{"detail": "No AccessToken matches the given query."}"""))
+
+        val throttled = tokens.create(ACCOUNT, baseUrl(), "tda_phone", expires, background = true)
+        assertTrue((throttled as Outcome.Failure).error is TandemError.Throttled)
+        tokens.delete(ACCOUNT, baseUrl(), "tda_phone", 7)
+        // A 404 counts as deleted, but still counts in the circuit breaker like every 404.
+        assertEquals(Outcome.Success(Unit), tokens.delete(ACCOUNT, baseUrl(), "tda_phone", 7))
+
+        assertEquals(3, guard.recorded.size)
+        assertTrue(guard.recorded[0].second is TandemError.Throttled)
+        assertEquals(TandemError.NotFound, guard.recorded[2].second)
+        assertTrue(guard.recorded.all { it.first == ACCOUNT })
+    }
+
+    /** The sync's guard as the watch token sees it: what was asked and recorded. */
+    private class RecordingGuard : RequestGuard {
+        var refuse: TandemError? = null
+        val checked = mutableListOf<Pair<String, Boolean>>()
+        val recorded = mutableListOf<Pair<String, TandemError?>>()
+
+        override fun check(accountId: String, background: Boolean): TandemError? {
+            checked += accountId to background
+            return refuse
+        }
+
+        override fun record(accountId: String, error: TandemError?) {
+            recorded += accountId to error
+        }
+    }
+
+    private companion object {
+        const val ACCOUNT = "account-1"
     }
 }
