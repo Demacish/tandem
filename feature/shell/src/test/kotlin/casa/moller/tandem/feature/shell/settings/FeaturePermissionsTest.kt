@@ -125,12 +125,13 @@ class FeaturePermissionsTest {
         return pages
     }
 
+    // The state chip is a content description (core:designsystem StatusChip), not a text.
     @Test
     fun eachNewRowSaysItsStateAndOpensTheAppsSettings() {
         val pages = show(SAMPLE_PERMISSIONS)
         composeRule.onNodeWithText("Microphone").performScrollTo()
         composeRule.onNodeWithText("Calendar").performScrollTo()
-        composeRule.onNodeWithText("Only while in use").performScrollTo()
+        composeRule.onNodeWithContentDescription("Only while in use").performScrollTo()
         for (title in listOf("Microphone", "Calendar", "Location")) {
             composeRule.onNodeWithContentDescription("Open Android’s settings for $title").performScrollTo().performClick()
         }
@@ -140,13 +141,13 @@ class FeaturePermissionsTest {
     @Test
     fun theLevelOfThePositionIsNamed() {
         show(PERMISSIONS_APPROXIMATE)
-        composeRule.onNodeWithText("Only approximate").performScrollTo()
+        composeRule.onNodeWithContentDescription("Only approximate").performScrollTo()
     }
 
     @Test
     fun allTheTimeIsWhatTheReminderNeeds() {
         show(PERMISSIONS_ALL_ALLOWED)
-        composeRule.onNodeWithText("Allowed all the time").performScrollTo()
+        composeRule.onNodeWithContentDescription("Allowed all the time").performScrollTo()
     }
 
     @Test
