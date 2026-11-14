@@ -1905,7 +1905,10 @@ ingen annan modul behövde den.
 formen, `IngredientRow` (mängden under namnet när båda inte ryms; gäller också kokläget, där den
 används), `RecipeListItem` och `RecipeCard`, offline-sökningens statusrad (`StatusLine`, med
 `SearchStatus` utbruten), Idags `SyncStatusCard`, `CarouselHeading` (Ofta lagade m.fl. och Kan laga
-nu), `HomeRecipeCard`, `MealRow` och Går ut snart.
+nu), `HomeRecipeCard`, `MealRow` och Går ut snart. Toppfältets statuschip ("Offline", "Demo", "Säkert
+läge") tog titelns plats vid teckenstorlek 2 ("Rece…"): `AppChromeStatusChip` visar då bara ikonen i
+en rund platta (`AppStatusChip(compact = true)`, TalkBack läser beskrivningen). När chippet visas
+avgör skalet som förut.
 
 **Genomgången** (samma mönster, teckenstorlek 2,0 på 320 dp, läst i koden: varje `weight(1f)`
 bredvid en text, en textknapp eller ett chip): rättat i Handla (listans rader med mängd, i listan
