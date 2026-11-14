@@ -8,4 +8,8 @@
     <string name="settings_handsfree_voice_body">Say “next”, “back” or “repeat” while cook mode is shown. The phone recognises your voice by itself: no sound leaves your kitchen.</string>
     <string name="settings_handsfree_read">Read every step aloud</string>
     <string name="settings_handsfree_read_body">The phone reads a step when you turn to it.</string>
+    <!-- Device test 2026-11-14 (rost lane, B3): the phone's speech service, opt-in. -->
+    <string name="settings_handsfree_voice_service_body">Say “next”, “back” or “repeat” while cook mode is shown. With the phone’s speech service, your speech may be sent over the internet to that service.</string>
+    <string name="settings_handsfree_speech_service">Use the phone’s speech service</string>
+    <string name="settings_handsfree_speech_service_body">Listens in the app’s language with the phone’s regular speech service (for example Google’s), without the internet when the phone has the language downloaded. Otherwise your speech may be sent over the internet to that service. Off: only the phone’s own recognition, nothing leaves the phone.</string>
 </resources>

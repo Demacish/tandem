@@ -31,8 +31,9 @@
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
     <!--
         Fas 5 (kok lane, plan §8.1 "Handsfree"): voice commands in cook mode with the ON-DEVICE
-        recognizer only. Asked in context when the user turns the voice on, never at start; the
-        microphone is only open while cook mode is visible (no foreground service).
+        recognizer (or, opt-in since the device test 2026-11-14, the phone's speech service). Asked
+        in context when the user turns the voice on, never at start; the microphone is only open
+        while cook mode is visible (no foreground service).
     -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 

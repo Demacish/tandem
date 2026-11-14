@@ -8,4 +8,8 @@
     <string name="settings_handsfree_voice_body">Säg ”nästa”, ”tillbaka” eller ”upprepa” medan kokläget visas. Telefonen känner igen rösten själv: inget ljud lämnar köket.</string>
     <string name="settings_handsfree_read">Läs upp varje steg</string>
     <string name="settings_handsfree_read_body">Telefonen läser steget när du byter till det.</string>
+    <!-- Enhetstestet 2026-11-14 (banan rost, B3): telefonens taltjänst, frivillig. -->
+    <string name="settings_handsfree_voice_service_body">Säg ”nästa”, ”tillbaka” eller ”upprepa” medan kokläget visas. Med telefonens taltjänst kan talet skickas över internet till den tjänsten.</string>
+    <string name="settings_handsfree_speech_service">Använd telefonens taltjänst</string>
+    <string name="settings_handsfree_speech_service_body">Lyssnar på appens språk med telefonens vanliga taltjänst (till exempel Googles), utan internet när telefonen har språket nedladdat. Annars kan talet skickas över internet till den tjänsten. Av: bara telefonens egen igenkänning, inget lämnar telefonen.</string>
 </resources>

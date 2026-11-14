@@ -8,15 +8,19 @@ import casa.moller.tandem.core.data.voice.SpeakResult
 import casa.moller.tandem.core.data.voice.StepSpeaker
 import casa.moller.tandem.core.data.voice.VoiceAvailability
 import casa.moller.tandem.core.data.voice.VoiceCommandRecognizer
+import casa.moller.tandem.core.data.voice.VoiceDownload
+import casa.moller.tandem.core.data.voice.VoiceEngine
 import casa.moller.tandem.core.data.voice.VoiceFailure
 import casa.moller.tandem.core.data.voice.VoiceResult
 import casa.moller.tandem.core.domain.timer.TimerDetector
 import casa.moller.tandem.core.domain.voice.VoiceCommand
 import casa.moller.tandem.core.domain.voice.VoiceCommands
+import casa.moller.tandem.core.domain.voice.VoiceLocales
 import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
@@ -29,9 +33,13 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -51,7 +59,22 @@ import kotlinx.coroutines.launch
  * - **Reading aloud** ([StepSpeaker]): the shown page on "upprepa" or "Läs upp", and every new page
  *   when chosen, in the language of the step's text (core:domain `TimerDetector.guessLanguage`),
  *   else the UI's.
+ *
+ * Device test 2026-11-14 (rost lane):
+ * - B1: the recognizer gets the UI's language as it is ("en") and answers with the full tag it
+ *   listens in ("en-US", core:domain `VoiceLocales`); reading aloud gets a region too.
+ * - B2: "not supported" and "not downloaded" are told apart; after either the voice stops (no
+ *   retry loop, so the recognizer's error beep is not repeated). "Not downloaded" offers "Hämta"
+ *   ([HandsfreeAction.DownloadLanguage]), waits for the download and listens again.
+ * - B3 (owner's decision "Båda vägarna"): on-device only by default; when the phone cannot
+ *   recognise the UI's language on the device, it offers the English commands
+ *   ([VoiceStatus.OFFER_ENGLISH], [HandsfreeSettings.englishCommands]), listened for on the device.
+ *   The opt-in [HandsfreeSettings.speechService] listens in the UI's language with the phone's
+ *   regular speech service ([VoiceEngine.SPEECH_SERVICE]). Matching is the same on both paths.
+ * - B11: with reading aloud wanted and its volume at 0, [HandsfreeUiState.volumeSilent] shows a
+ *   hint with "Höj volymen" ([HandsfreeAction.RaiseVolume]), because the volume keys turn the steps.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HandsfreeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
@@ -72,13 +95,30 @@ class HandsfreeViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val visible = MutableStateFlow(false)
-    private val language = MutableStateFlow(speechLanguage(Locale.getDefault().toLanguageTag()))
+
+    /** The UI's language as it is ("sv", "en", "en-GB"): the recognizer adds the region (B1). */
+    private val language = MutableStateFlow(Locale.getDefault().toLanguageTag())
     private val speaking = MutableStateFlow(false)
     private val problem = MutableStateFlow<VoiceStatus?>(null)
     private val listening = MutableStateFlow(false)
     private val retrying = MutableStateFlow(false)
     private val heard = MutableStateFlow<VoiceCommand?>(null)
     private val speechUnavailable = MutableStateFlow(false)
+
+    /** The full tag the voice listens in or checked last ("sv-SE", "en-US"); empty while off. */
+    private val voiceTag = MutableStateFlow("")
+    private val downloadFailed = MutableStateFlow(false)
+
+    /** "Hämta" pressed while the voice waits for it ([VoiceStatus.DOWNLOADABLE]). */
+    private val downloadRequests = Channel<Unit>(Channel.CONFLATED)
+
+    /** A step was read aloud on request in this cook mode: the volume hint matters then too (B11). */
+    private val readRequested = MutableStateFlow(false)
+
+    /** B11: the reading-aloud volume is 0 while reading aloud is wanted and cook mode is in front. */
+    private val volumeSilent: Flow<Boolean> = combine(settings, visible, readRequested) { chosen, visible, requested ->
+        visible && chosen != null && chosen.enabled && (chosen.readSteps || requested)
+    }.distinctUntilChanged().flatMapLatest { watch -> if (watch) speaker.observeSilent() else flowOf(false) }
 
     /** Bumped by "Försök igen" and a permission granted: the voice is checked and started again. */
     private val restarts = MutableStateFlow(0)
@@ -89,38 +129,49 @@ class HandsfreeViewModel @Inject constructor(
     private var heardJob: Job? = null
     private val detector = TimerDetector()
 
-    private val voiceFlags: Flow<VoiceFlags> = combine(speaking, problem, listening, retrying) { speaking, problem, listening, retrying ->
-        VoiceFlags(speaking, problem, listening, retrying)
-    }
+    private val voiceFlags: Flow<VoiceFlags> = combine(speaking, problem, listening, retrying, downloadFailed, ::VoiceFlags)
+
+    private val extras: Flow<Extras> = combine(language, heard, speechUnavailable, voiceTag, volumeSilent, ::Extras)
 
     val uiState: StateFlow<HandsfreeUiState> = combine(
         settings,
         voiceFlags,
-        combine(language, heard, speechUnavailable) { language, heard, unavailable -> Triple(language, heard, unavailable) },
+        extras,
         savedStateHandle.getStateFlow(KEY_SHEET, false),
         savedStateHandle.getStateFlow(KEY_DENIED, false),
-    ) { settings, flags, (language, heard, unavailable), sheet, denied ->
+    ) { settings, flags, extras, sheet, denied ->
         val chosen = settings ?: HandsfreeSettings()
         HandsfreeUiState(
             settings = chosen,
             voice = flags.status(chosen.listens),
-            languageTag = language,
-            heard = heard,
-            speechUnavailable = unavailable,
+            languageTag = extras.language,
+            voiceLanguageTag = extras.voiceTag,
+            heard = extras.heard,
+            speechUnavailable = extras.speechUnavailable,
             permissionDenied = denied,
             sheetOpen = sheet,
+            downloadFailed = flags.downloadFailed,
+            volumeSilent = extras.volumeSilent,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HandsfreeUiState())
 
     init {
         viewModelScope.launch {
             combine(
-                settings.filterNotNull().map { it.listens }.distinctUntilChanged(),
+                settings.filterNotNull().distinctUntilChanged { old, new ->
+                    old.listens == new.listens && old.speechService == new.speechService && old.englishCommands == new.englishCommands
+                },
                 visible,
                 language,
                 restarts,
-            ) { listens, visible, language, _ -> Session(active = listens && visible, languageTag = language) }
-                .collectLatest(::runVoice)
+            ) { chosen, visible, language, _ ->
+                Session(
+                    active = chosen.listens && visible,
+                    languageTag = language,
+                    speechService = chosen.speechService,
+                    englishCommands = chosen.englishCommands,
+                )
+            }.collectLatest(::runVoice)
         }
     }
 
@@ -133,13 +184,21 @@ class HandsfreeViewModel @Inject constructor(
             is HandsfreeAction.SetReadSteps -> setReadSteps(action.enabled)
             is HandsfreeAction.PermissionResult -> onPermissionResult(action.granted)
             HandsfreeAction.AllowMicrophone -> allowMicrophone()
-            HandsfreeAction.DownloadLanguage -> recognizer.downloadLanguage(language.value)
+            HandsfreeAction.DownloadLanguage -> downloadRequests.trySend(Unit)
             HandsfreeAction.Retry -> restarts.value++
             is HandsfreeAction.SetVisible -> setVisible(action.visible)
-            is HandsfreeAction.SetLanguage -> language.value = speechLanguage(action.languageTag)
+            is HandsfreeAction.SetLanguage -> language.value = action.languageTag
             is HandsfreeAction.StepShown -> onStepShown(ShownPage(action.key, action.speech))
-            HandsfreeAction.ReadAloud -> shown?.let { readAloud(it) }
+            HandsfreeAction.ReadAloud -> readOnRequest()
+            is HandsfreeAction.SetSpeechService -> update { it.copy(speechService = action.enabled) }
+            is HandsfreeAction.SetEnglishCommands -> update { it.copy(englishCommands = action.enabled) }
+            HandsfreeAction.RaiseVolume -> speaker.raiseVolume()
         }
+    }
+
+    private fun readOnRequest() {
+        readRequested.value = true
+        shown?.let(::readAloud)
     }
 
     private fun update(transform: (HandsfreeSettings) -> HandsfreeSettings) {
@@ -211,12 +270,18 @@ class HandsfreeViewModel @Inject constructor(
         }
     }
 
-    /** The voice for [session]: checks, then rounds of listening until something stops it. */
+    /**
+     * The voice for [session]: checks, then rounds of listening until something stops it. A
+     * missing language is downloaded on "Hämta" and checked again; a language the phone cannot
+     * recognise on the device leads to the English commands' offer (B3).
+     */
     private suspend fun runVoice(session: Session) {
         listening.value = false
         retrying.value = false
+        downloadFailed.value = false
         if (!session.active) {
             problem.value = null
+            voiceTag.value = ""
             recognizer.release()
             return
         }
@@ -224,26 +289,87 @@ class HandsfreeViewModel @Inject constructor(
             problem.value = VoiceStatus.NEEDS_PERMISSION
             return
         }
-        problem.value = VoiceStatus.STARTING
-        when (recognizer.availability(session.languageTag)) {
-            VoiceAvailability.AVAILABLE -> {
-                problem.value = null
-                // Reading aloud closes the microphone; it opens again when the step was read.
-                speaking.collectLatest { now -> if (!now && problem.value == null) listenRounds(session.languageTag) }
+        val engine = if (session.speechService) VoiceEngine.SPEECH_SERVICE else VoiceEngine.ON_DEVICE
+        val uiEnglish = VoiceLocales.isEnglish(session.languageTag)
+        val english = engine == VoiceEngine.ON_DEVICE && session.englishCommands && !uiEnglish
+        val wanted = if (english) VoiceLocales.ENGLISH else session.languageTag
+        while (true) {
+            problem.value = VoiceStatus.STARTING
+            val check = recognizer.check(wanted, engine)
+            voiceTag.value = check.languageTag
+            val end = when (check.availability) {
+                VoiceAvailability.AVAILABLE, VoiceAvailability.UNKNOWN -> listenWhileQuiet(check.languageTag, engine)
+                VoiceAvailability.DOWNLOADABLE -> VoiceEnd.NOT_DOWNLOADED
+                VoiceAvailability.UNAVAILABLE -> VoiceEnd.UNSUPPORTED
+                VoiceAvailability.NO_SERVICE -> VoiceEnd.NO_SERVICE
             }
-
-            VoiceAvailability.DOWNLOADABLE -> problem.value = VoiceStatus.DOWNLOADABLE
-
-            VoiceAvailability.UNAVAILABLE -> problem.value = VoiceStatus.UNAVAILABLE
+            if (end != VoiceEnd.NOT_DOWNLOADED) {
+                val offer = end == VoiceEnd.UNSUPPORTED && engine == VoiceEngine.ON_DEVICE && !english && !uiEnglish
+                problem.value = if (offer) offerEnglish() else statusAfter(end, engine)
+                return
+            }
+            // Downloaded now: check and listen again. Otherwise the status the download left.
+            if (!downloaded(check.languageTag, engine)) return
         }
     }
 
-    private suspend fun listenRounds(languageTag: String) {
+    private fun statusAfter(end: VoiceEnd, engine: VoiceEngine): VoiceStatus = when (end) {
+        VoiceEnd.NOT_DOWNLOADED -> VoiceStatus.DOWNLOADABLE
+        VoiceEnd.UNSUPPORTED -> VoiceStatus.UNAVAILABLE
+        VoiceEnd.NO_SERVICE -> if (engine == VoiceEngine.SPEECH_SERVICE) VoiceStatus.NO_SPEECH_SERVICE else VoiceStatus.UNAVAILABLE
+        VoiceEnd.NO_PERMISSION -> VoiceStatus.NEEDS_PERMISSION
+        VoiceEnd.GAVE_UP -> VoiceStatus.FAILED
+    }
+
+    /** B3 (a): the English commands are offered when the on-device recognizer may have English. */
+    private suspend fun offerEnglish(): VoiceStatus {
+        val english = recognizer.check(VoiceLocales.ENGLISH, VoiceEngine.ON_DEVICE).availability
+        return if (english == VoiceAvailability.UNAVAILABLE || english == VoiceAvailability.NO_SERVICE) {
+            VoiceStatus.UNAVAILABLE
+        } else {
+            VoiceStatus.OFFER_ENGLISH
+        }
+    }
+
+    /**
+     * B2: waits for "Hämta", then for the download. True when the language is on the phone now;
+     * false when the phone downloads it later ([VoiceStatus.DOWNLOAD_LATER], "Försök igen"). A
+     * failed download offers "Hämta" again and says it failed.
+     */
+    private suspend fun downloaded(languageTag: String, engine: VoiceEngine): Boolean {
+        // A tap from an earlier state does not count.
+        downloadRequests.tryReceive()
+        while (true) {
+            problem.value = VoiceStatus.DOWNLOADABLE
+            downloadRequests.receive()
+            problem.value = VoiceStatus.DOWNLOADING
+            downloadFailed.value = false
+            when (recognizer.downloadLanguage(languageTag, engine)) {
+                VoiceDownload.DONE -> return true
+
+                VoiceDownload.SCHEDULED -> {
+                    problem.value = VoiceStatus.DOWNLOAD_LATER
+                    return false
+                }
+
+                VoiceDownload.FAILED -> downloadFailed.value = true
+            }
+        }
+    }
+
+    /** Rounds of listening; reading aloud closes the microphone, which opens again when the step was read. */
+    private suspend fun listenWhileQuiet(languageTag: String, engine: VoiceEngine): VoiceEnd {
+        problem.value = null
+        return speaking.transformLatest { now -> if (!now) emit(listenRounds(languageTag, engine)) }.first()
+    }
+
+    /** Listens until a definite end ([VoiceEnd]); cancelled when a step is read aloud or the voice stops. */
+    private suspend fun listenRounds(languageTag: String, engine: VoiceEngine): VoiceEnd {
         var failures = 0
         try {
             while (true) {
                 listening.value = true
-                val result = recognizer.listenOnce(languageTag)
+                val result = recognizer.listenOnce(languageTag, engine)
                 listening.value = false
                 when (result) {
                     is VoiceResult.Heard -> {
@@ -260,22 +386,18 @@ class HandsfreeViewModel @Inject constructor(
                     }
 
                     is VoiceResult.Failed -> when (result.reason) {
-                        VoiceFailure.NO_PERMISSION -> {
-                            problem.value = VoiceStatus.NEEDS_PERMISSION
-                            return
-                        }
+                        // Definite answers: stop at once (B2), no retry loop and no repeated error beep.
+                        VoiceFailure.NO_PERMISSION -> return VoiceEnd.NO_PERMISSION
 
-                        VoiceFailure.LANGUAGE_UNAVAILABLE -> {
-                            problem.value = VoiceStatus.UNAVAILABLE
-                            return
-                        }
+                        VoiceFailure.LANGUAGE_UNAVAILABLE -> return VoiceEnd.UNSUPPORTED
+
+                        VoiceFailure.LANGUAGE_NOT_DOWNLOADED -> return VoiceEnd.NOT_DOWNLOADED
 
                         VoiceFailure.BUSY, VoiceFailure.AUDIO, VoiceFailure.OTHER -> {
                             failures++
                             if (failures >= MAX_FAILURES) {
                                 retrying.value = false
-                                problem.value = VoiceStatus.FAILED
-                                return
+                                return VoiceEnd.GAVE_UP
                             }
                             retrying.value = true
                             delay(backOffMillis(failures))
@@ -296,14 +418,14 @@ class HandsfreeViewModel @Inject constructor(
             heard.value = null
         }
         when (command) {
-            VoiceCommand.REPEAT -> shown?.let(::readAloud)
+            VoiceCommand.REPEAT -> readOnRequest()
             VoiceCommand.NEXT, VoiceCommand.PREVIOUS -> effectChannel.trySend(HandsfreeEffect.Command(command))
         }
     }
 
-    /** The step's own language when its words tell ("sv", "en"), else the UI's. */
+    /** The step's own language when its words tell ("sv", "en"), else the UI's; always with a region. */
     private fun readingLanguage(text: String): String {
-        val ui = language.value
+        val ui = speechLanguage(language.value)
         val guessed = detector.guessLanguage(text) ?: return ui
         return if (Locale.forLanguageTag(ui).language == guessed) ui else speechLanguage(guessed)
     }
@@ -313,11 +435,28 @@ class HandsfreeViewModel @Inject constructor(
         speaker.release()
     }
 
-    private data class Session(val active: Boolean, val languageTag: String)
+    private data class Session(val active: Boolean, val languageTag: String, val speechService: Boolean, val englishCommands: Boolean)
+
+    /** How listening in one language ended for good. */
+    private enum class VoiceEnd { NOT_DOWNLOADED, UNSUPPORTED, NO_SERVICE, NO_PERMISSION, GAVE_UP }
 
     private data class ShownPage(val key: String, val speech: String)
 
-    private data class VoiceFlags(val speaking: Boolean, val problem: VoiceStatus?, val listening: Boolean, val retrying: Boolean) {
+    private data class Extras(
+        val language: String,
+        val heard: VoiceCommand?,
+        val speechUnavailable: Boolean,
+        val voiceTag: String,
+        val volumeSilent: Boolean,
+    )
+
+    private data class VoiceFlags(
+        val speaking: Boolean,
+        val problem: VoiceStatus?,
+        val listening: Boolean,
+        val retrying: Boolean,
+        val downloadFailed: Boolean,
+    ) {
         fun status(listens: Boolean): VoiceStatus = when {
             speaking -> VoiceStatus.SPEAKING
             !listens -> VoiceStatus.OFF
@@ -354,14 +493,7 @@ class HandsfreeViewModel @Inject constructor(
 
         private const val MAX_SHIFT = 4
 
-        /** A tag the speech services understand: "sv" → "sv-SE" (Swedish has one region); others as they are. */
-        fun speechLanguage(tag: String): String {
-            val locale = Locale.forLanguageTag(tag)
-            return when {
-                locale.language.isEmpty() -> "en-US"
-                locale.language == "sv" && locale.country.isEmpty() -> "sv-SE"
-                else -> locale.toLanguageTag()
-            }
-        }
+        /** A tag the speech services understand, always with a region (B1): "sv" → "sv-SE", "en" → "en-US". */
+        fun speechLanguage(tag: String): String = VoiceLocales.resolve(tag)
     }
 }

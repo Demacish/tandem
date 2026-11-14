@@ -18,7 +18,7 @@
     <string name="cook_handsfree_download_body">Telefonen hämtar språket så att den kan känna igen tal utan internet. Volymknapparna fungerar under tiden.</string>
     <string name="cook_handsfree_download">Hämta</string>
     <string name="cook_handsfree_unavailable_title">Telefonen kan inte känna igen %1$s på egen hand</string>
-    <string name="cook_handsfree_unavailable_body">Tandem skickar aldrig din röst någonstans, så röststyrningen är av. Använd volymknapparna.</string>
+    <string name="cook_handsfree_unavailable_body">Tandem använder bara telefonens egen igenkänning, så röststyrningen är av. Använd volymknapparna, eller slå på ”Använd telefonens taltjänst” under Handsfree.</string>
     <string name="cook_handsfree_retrying">Röststyrningen hakade upp sig, försöker igen …</string>
     <string name="cook_handsfree_failed">Röststyrningen fungerar inte just nu</string>
     <string name="cook_handsfree_try_again">Försök igen</string>
@@ -28,16 +28,36 @@
     <string name="cook_handsfree_word_repeat">upprepa</string>
     <string name="cook_handsfree_quoted">”%1$s”</string>
     <string name="cook_handsfree_phrase_description">Säg %1$s: %2$s</string>
-    <string name="cook_handsfree_sheet_intro">Laga mat utan att röra skärmen. Allt sker i telefonen och bara medan kokläget visas.</string>
+    <string name="cook_handsfree_sheet_intro">Laga mat utan att röra skärmen. Tandem lyssnar bara medan kokläget visas.</string>
     <string name="cook_handsfree_switch_keys_body">Volymknapparna byter steg: ned för nästa, upp för föregående.</string>
     <string name="cook_handsfree_switch_voice">Röstkommandon</string>
     <string name="cook_handsfree_switch_voice_body">Säg ”nästa”, ”tillbaka” eller ”upprepa”. Telefonen känner igen rösten själv: inget ljud lämnar köket.</string>
     <string name="cook_handsfree_switch_read">Läs upp varje steg</string>
-    <string name="cook_handsfree_switch_read_body">Telefonen läser steget när du byter till det. ”Upprepa” läser det igen.</string>
+    <string name="cook_handsfree_switch_read_body">Telefonen läser steget när du byter till det. ”Upprepa” läser det igen. Är medievolymen avstängd visar kokläget ”Höj volymen”, eftersom volymknapparna byter steg.</string>
     <string name="cook_handsfree_say_title">Säg så här</string>
     <string name="cook_handsfree_say_next">Nästa steg</string>
     <string name="cook_handsfree_say_back">Föregående steg</string>
     <string name="cook_handsfree_say_repeat">Läser upp steget igen</string>
     <string name="cook_handsfree_done">Klar</string>
     <string name="cook_handsfree_speech_done">Klart! Spara måltiden i kokloggen när du är redo.</string>
+    <!-- Enhetstestet 2026-11-14 (banan rost): B1–B3 och B11. -->
+    <string name="cook_handsfree_listening_english_body">Säg ”next”, ”back” eller ”repeat” på engelska.</string>
+    <string name="cook_handsfree_download_failed">Hämtningen gick inte. Försök igen om en stund; volymknapparna fungerar under tiden.</string>
+    <string name="cook_handsfree_downloading">Hämtar %1$s för röststyrningen …</string>
+    <string name="cook_handsfree_download_later_title">Telefonen hämtar %1$s senare</string>
+    <string name="cook_handsfree_download_later_body">Ofta när den är på wifi och laddar. Försök igen när det är klart; volymknapparna fungerar under tiden.</string>
+    <string name="cook_handsfree_service_unavailable_title">Telefonens taltjänst kan inte känna igen %1$s</string>
+    <string name="cook_handsfree_service_unavailable_body">Använd volymknapparna, eller stäng av ”Använd telefonens taltjänst” under Handsfree.</string>
+    <string name="cook_handsfree_offer_english_title">Röststyrning på %1$s finns inte i telefonen</string>
+    <string name="cook_handsfree_offer_english_body">Använd engelska kommandon: ”next”, ”back”, ”repeat”? Telefonen känner igen dem själv.</string>
+    <string name="cook_handsfree_use_english">Använd engelska</string>
+    <string name="cook_handsfree_no_service_title">Telefonen har ingen taltjänst</string>
+    <string name="cook_handsfree_no_service_body">Installera eller slå på en taltjänst i telefonens inställningar, eller stäng av ”Använd telefonens taltjänst” under Handsfree. Volymknapparna fungerar under tiden.</string>
+    <string name="cook_handsfree_switch_voice_service_body">Säg ”nästa”, ”tillbaka” eller ”upprepa”. Med telefonens taltjänst kan talet skickas över internet till den tjänsten.</string>
+    <string name="cook_handsfree_switch_english">Engelska kommandon</string>
+    <string name="cook_handsfree_switch_english_body">För telefoner som inte känner igen %1$s själva: säg ”next”, ”back” eller ”repeat”. Igenkänningen sker fortfarande i telefonen.</string>
+    <string name="cook_handsfree_switch_service">Använd telefonens taltjänst</string>
+    <string name="cook_handsfree_switch_service_body">Lyssnar på appens språk med telefonens vanliga taltjänst (till exempel Googles), utan internet när telefonen har språket nedladdat. Annars kan talet skickas över internet till den tjänsten. Av: bara telefonens egen igenkänning, inget lämnar telefonen.</string>
+    <string name="cook_handsfree_volume_silent">Medievolymen är avstängd, så uppläsningen hörs inte.</string>
+    <string name="cook_handsfree_raise_volume">Höj volymen</string>
 </resources>

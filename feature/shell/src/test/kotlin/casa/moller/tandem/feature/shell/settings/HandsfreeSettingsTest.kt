@@ -34,6 +34,7 @@ internal val SAMPLE_COOKING_HANDSFREE = SAMPLE_COOKING.copy(handsfree = Handsfre
 private const val HANDSFREE = "Handsfree in cook mode"
 private const val VOICE = "Voice commands"
 private const val READ = "Read every step aloud"
+private const val SPEECH_SERVICE = "Use the phone’s speech service"
 
 /**
  * Fas 5 (integration), plan §8.1 #32: cook mode's handsfree on Mer → Kokläge och timers, the same
@@ -132,5 +133,23 @@ class HandsfreeSettingsTest {
         show(SAMPLE_COOKING)
         composeRule.onNodeWithText(VOICE).performScrollTo().assertIsNotEnabled()
         composeRule.onNodeWithText(READ).performScrollTo().assertIsNotEnabled()
+        composeRule.onNodeWithText(SPEECH_SERVICE).performScrollTo().assertIsNotEnabled()
+    }
+
+    @Test
+    fun theSpeechServiceIsOptInAndNeedsTheVoice() {
+        // Device test 2026-11-14, B3 (b): off by default, the same setting as cook mode's sheet.
+        val pages = show(SAMPLE_COOKING_HANDSFREE)
+        composeRule.onNodeWithText(SPEECH_SERVICE).performScrollTo().assertIsOff().assertIsEnabled().performClick()
+        assertEquals(
+            listOf<SettingsAction>(SettingsAction.SetHandsfree(HandsfreeSettings(enabled = true, voice = true, speechService = true))),
+            pages.actions,
+        )
+    }
+
+    @Test
+    fun withoutTheVoiceTheSpeechServiceCannotBeChanged() {
+        show(SAMPLE_COOKING.copy(handsfree = HandsfreeSettings(enabled = true)))
+        composeRule.onNodeWithText(SPEECH_SERVICE).performScrollTo().assertIsNotEnabled()
     }
 }

@@ -2,13 +2,18 @@ package casa.moller.tandem.core.timer
 
 import android.Manifest
 import android.app.Application
+import android.media.AudioManager
 import android.speech.SpeechRecognizer
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.voice.VoiceAvailability
+import casa.moller.tandem.core.data.voice.VoiceDownload
+import casa.moller.tandem.core.data.voice.VoiceEngine
 import casa.moller.tandem.core.data.voice.VoiceFailure
 import casa.moller.tandem.core.data.voice.VoiceResult
+import casa.moller.tandem.core.timer.voice.AndroidStepSpeaker
 import casa.moller.tandem.core.timer.voice.AndroidVoiceCommandRecognizer
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,11 +38,17 @@ class VoicePlatformTest {
             VoiceResult.Failed(VoiceFailure.NO_PERMISSION),
             AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS),
         )
-        listOf(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE).forEach {
-            assertEquals(VoiceResult.Failed(VoiceFailure.LANGUAGE_UNAVAILABLE), AndroidVoiceCommandRecognizer.resultOfError(it))
-        }
+        // Device test B2: 12 (no such language) and 13 (not downloaded yet) are not the same.
+        assertEquals(
+            VoiceResult.Failed(VoiceFailure.LANGUAGE_UNAVAILABLE),
+            AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED),
+        )
+        assertEquals(
+            VoiceResult.Failed(VoiceFailure.LANGUAGE_NOT_DOWNLOADED),
+            AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE),
+        )
         assertEquals(VoiceResult.Failed(VoiceFailure.AUDIO), AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_AUDIO))
-        // A network error can only come from a network recognizer, which is never used: just another failure.
+        // A network error (only the opt-in speech service can have one): another failure, with back-off.
         assertEquals(VoiceResult.Failed(VoiceFailure.OTHER), AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_NETWORK))
         assertEquals(VoiceResult.Failed(VoiceFailure.OTHER), AndroidVoiceCommandRecognizer.resultOfError(SpeechRecognizer.ERROR_CLIENT))
     }
@@ -51,8 +62,23 @@ class VoicePlatformTest {
         assertEquals(VoiceAvailability.DOWNLOADABLE, of(listOf("en-US"), supported = listOf("sv-SE", "de-DE")))
         assertEquals(VoiceAvailability.DOWNLOADABLE, of(listOf("en-US"), pending = listOf("sv-SE")))
         assertEquals(VoiceAvailability.UNAVAILABLE, of(listOf("en-US"), supported = listOf("de-DE")))
-        // An engine that reports nothing at all is tried.
-        assertEquals(VoiceAvailability.AVAILABLE, of(emptyList()))
+        assertEquals(VoiceAvailability.AVAILABLE, of(listOf("sv_SE")))
+        // Device test B2: a recognizer that reports nothing at all says nothing; the first round tells.
+        assertEquals(VoiceAvailability.UNKNOWN, of(emptyList()))
+    }
+
+    @Test
+    fun withoutARecognizerTheCheckSaysSoInAFullTag() = runTest {
+        // Robolectric has neither an on-device recognizer nor a speech service.
+        val recognizer = AndroidVoiceCommandRecognizer(context)
+        for (engine in VoiceEngine.entries) {
+            val check = recognizer.check("en", engine)
+            assertEquals(VoiceAvailability.NO_SERVICE, check.availability)
+            // B1: never the bare "en".
+            assertTrue(check.languageTag, check.languageTag.startsWith("en-"))
+            assertEquals(VoiceDownload.FAILED, recognizer.downloadLanguage(check.languageTag, engine))
+        }
+        recognizer.release()
     }
 
     @Test
@@ -64,6 +90,18 @@ class VoicePlatformTest {
         shadowOf(context).grantPermissions(Manifest.permission.RECORD_AUDIO)
         assertTrue(recognizer.hasPermission())
         recognizer.release()
+    }
+
+    @Test
+    fun aSilentMediaVolumeIsSeen() = runTest {
+        // Device test B11: reading aloud plays on the media stream; at 0 nothing is heard.
+        val audio = context.getSystemService(AudioManager::class.java)
+        val speaker = AndroidStepSpeaker(context)
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+        assertTrue(speaker.observeSilent().first())
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, 5, 0)
+        assertFalse(speaker.observeSilent().first())
+        speaker.release()
     }
 
     @Test

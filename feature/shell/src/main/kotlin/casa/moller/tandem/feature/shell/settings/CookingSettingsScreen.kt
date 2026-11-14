@@ -127,7 +127,9 @@ internal fun CookingSettingsScreen(
 /**
  * Fas 5 (integration): cook mode's handsfree (plan §8.1 #32), the same [HandsfreeSettings] as the
  * Handsfree sheet in cook mode. Voice and read-aloud need the main switch, as in the sheet; the
- * route asks for the microphone when the voice is switched on.
+ * route asks for the microphone when the voice is switched on. Device test B3 (owner's decision
+ * 2026-11-14): "Använd telefonens taltjänst" (opt-in, needs the voice) is the same setting as in
+ * the sheet.
  */
 @Composable
 private fun HandsfreeGroup(handsfree: HandsfreeSettings, onChange: (HandsfreeSettings) -> Unit) {
@@ -142,11 +144,23 @@ private fun HandsfreeGroup(handsfree: HandsfreeSettings, onChange: (HandsfreeSet
         GroupDivider()
         SwitchRow(
             title = stringResource(R.string.settings_handsfree_voice),
-            body = stringResource(R.string.settings_handsfree_voice_body),
+            body = stringResource(
+                if (handsfree.speechService) R.string.settings_handsfree_voice_service_body else R.string.settings_handsfree_voice_body,
+            ),
             checked = handsfree.voice,
             enabled = handsfree.enabled,
             onCheckedChange = { onChange(handsfree.copy(voice = it)) },
         )
+        // --- device test 2026-11-14 (rost lane, B3): the phone's speech service, opt-in ---
+        GroupDivider()
+        SwitchRow(
+            title = stringResource(R.string.settings_handsfree_speech_service),
+            body = stringResource(R.string.settings_handsfree_speech_service_body),
+            checked = handsfree.speechService,
+            enabled = handsfree.listens,
+            onCheckedChange = { onChange(handsfree.copy(speechService = it)) },
+        )
+        // --- /rost lane ---
         GroupDivider()
         SwitchRow(
             title = stringResource(R.string.settings_handsfree_read),

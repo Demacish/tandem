@@ -20,6 +20,8 @@ dependencies {
     // Implements core:data's TimerController; CookTimer and friends come from core:model.
     api(projects.core.data)
     implementation(projects.core.model)
+    // Device test 2026-11-14 (B1): the recognizer's full language tag (core:domain VoiceLocales).
+    implementation(projects.core.domain)
 
     implementation(libs.androidx.core.ktx)
     // The timers file (files/datastore/cook_timers.json), see store/TimerStore.kt.

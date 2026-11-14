@@ -17,6 +17,11 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -27,6 +32,12 @@ import kotlinx.coroutines.withTimeoutOrNull
  * duck (`AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`), and gives it back as soon as the step is read.
  *
  * The engine starts at the first [speak] (never at app start) and is shut down in [release].
+ *
+ * Device test 2026-11-14 (B11): with the media volume at 0 the step was read in silence. The
+ * volume of the stream these [attributes] play on ([AudioAttributes.getVolumeControlStream], the
+ * media stream for `USAGE_ASSISTANT`) is followed by [observeSilent] (read once a second while
+ * cook mode collects it; a cheap call, and Android has no public callback for volume changes) and
+ * raised by [raiseVolume] with the system's volume panel.
  */
 @Singleton
 internal class AndroidStepSpeaker @Inject constructor(@ApplicationContext private val context: Context) : StepSpeaker {
@@ -106,6 +117,27 @@ internal class AndroidStepSpeaker @Inject constructor(@ApplicationContext privat
         return engine.takeIf { ok }
     }
 
+    override fun observeSilent(): Flow<Boolean> = flow {
+        val audio = context.getSystemService(AudioManager::class.java)
+        if (audio == null) {
+            emit(false)
+            return@flow
+        }
+        val stream = attributes.volumeControlStream
+        while (true) {
+            // A muted stream reads as 0 too.
+            emit(audio.getStreamVolume(stream) == 0)
+            delay(VOLUME_POLL_MILLIS)
+        }
+    }.distinctUntilChanged().flowOn(Dispatchers.Default)
+
+    override fun raiseVolume() {
+        val audio = context.getSystemService(AudioManager::class.java) ?: return
+        val stream = attributes.volumeControlStream
+        // Raising a muted stream unmutes it; FLAG_SHOW_UI shows the phone's own volume panel.
+        audio.adjustStreamVolume(stream, AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
+    }
+
     override fun release() {
         engine?.shutdown()
         engine = null
@@ -114,5 +146,6 @@ internal class AndroidStepSpeaker @Inject constructor(@ApplicationContext privat
 
     private companion object {
         const val INIT_TIMEOUT_MILLIS = 5_000L
+        const val VOLUME_POLL_MILLIS = 1_000L
     }
 }

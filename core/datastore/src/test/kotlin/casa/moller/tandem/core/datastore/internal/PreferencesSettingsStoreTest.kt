@@ -177,7 +177,7 @@ class PreferencesSettingsStoreTest {
             pantryExpiryNotifications = true,
             pantryExpiryOfferDismissed = true,
             // Fas 5 (kok lane)
-            handsfree = HandsfreeSettings(enabled = true, voice = true, readSteps = false),
+            handsfree = HandsfreeSettings(enabled = true, voice = true, readSteps = false, speechService = true, englishCommands = true),
         )
         open().update { expected }
 

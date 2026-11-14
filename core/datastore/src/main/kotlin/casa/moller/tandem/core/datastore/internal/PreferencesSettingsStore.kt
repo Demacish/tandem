@@ -84,6 +84,10 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         val HANDSFREE_ENABLED = booleanPreferencesKey("handsfree_enabled")
         val HANDSFREE_VOICE = booleanPreferencesKey("handsfree_voice")
         val HANDSFREE_READ_STEPS = booleanPreferencesKey("handsfree_read_steps")
+
+        // --- device test 2026-11-14 (rost lane, B3): the speech service and the English commands ---
+        val HANDSFREE_SPEECH_SERVICE = booleanPreferencesKey("handsfree_speech_service")
+        val HANDSFREE_ENGLISH_COMMANDS = booleanPreferencesKey("handsfree_english_commands")
     }
 
     companion object {
@@ -142,6 +146,8 @@ private fun Preferences.readHandsfree(defaults: HandsfreeSettings): HandsfreeSet
     enabled = this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] ?: defaults.enabled,
     voice = this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] ?: defaults.voice,
     readSteps = this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] ?: defaults.readSteps,
+    speechService = this[PreferencesSettingsStore.Keys.HANDSFREE_SPEECH_SERVICE] ?: defaults.speechService,
+    englishCommands = this[PreferencesSettingsStore.Keys.HANDSFREE_ENGLISH_COMMANDS] ?: defaults.englishCommands,
 )
 
 /** Fas 5 (planera lane): the daily reminders' switch and times; a missing or broken key reads as [settings]' default. */
@@ -220,4 +226,6 @@ private fun MutablePreferences.write(settings: AppSettings) {
     this[PreferencesSettingsStore.Keys.HANDSFREE_ENABLED] = settings.handsfree.enabled
     this[PreferencesSettingsStore.Keys.HANDSFREE_VOICE] = settings.handsfree.voice
     this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] = settings.handsfree.readSteps
+    this[PreferencesSettingsStore.Keys.HANDSFREE_SPEECH_SERVICE] = settings.handsfree.speechService
+    this[PreferencesSettingsStore.Keys.HANDSFREE_ENGLISH_COMMANDS] = settings.handsfree.englishCommands
 }
