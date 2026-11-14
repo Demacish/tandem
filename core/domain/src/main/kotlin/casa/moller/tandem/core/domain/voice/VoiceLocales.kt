@@ -70,7 +70,7 @@ object VoiceLocales {
 
     /**
      * The usual region of a language: the one recognizers ship first. Swedish has one region
- * ("sv" → "sv-SE" also on a Finnish phone, as before the device test).
+     * ("sv" → "sv-SE" also on a Finnish phone, as before the device test).
      * Data, not logic: a language missing here gets the phone's region.
      */
     private val DEFAULT_REGION: Map<String, String> = mapOf(

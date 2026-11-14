@@ -86,7 +86,7 @@ class VoicePlatformTest {
         val recognizer = AndroidVoiceCommandRecognizer(context)
         shadowOf(context).denyPermissions(Manifest.permission.RECORD_AUDIO)
         assertFalse(recognizer.hasPermission())
-        assertEquals(VoiceResult.Failed(VoiceFailure.NO_PERMISSION), recognizer.listenOnce("sv-SE"))
+        assertEquals(VoiceResult.Failed(VoiceFailure.NO_PERMISSION), recognizer.listenOnce("sv-SE", VoiceEngine.ON_DEVICE))
         shadowOf(context).grantPermissions(Manifest.permission.RECORD_AUDIO)
         assertTrue(recognizer.hasPermission())
         recognizer.release()

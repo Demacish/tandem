@@ -126,24 +126,33 @@ internal fun HandsfreeBar(
                 horizontalArrangement = Arrangement.spacedBy(spacing.md),
             ) {
                 Icon(imageVector = barIcon(state), contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.icon))
-                // One TalkBack item: "Lyssnar. Säg nästa, tillbaka eller upprepa."
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .semantics(mergeDescendants = true) {},
-                ) {
-                    Text(
-                        text = text.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = if (compact) 1 else 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (!compact && text.body != null) {
-                        Text(text = text.body, style = MaterialTheme.typography.bodySmall)
+                val helpAction = barAction(state)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    // One TalkBack item: "Lyssnar. Säg nästa, tillbaka eller upprepa."
+                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                        Text(
+                            text = text.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = if (compact) 1 else 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!compact && text.body != null) {
+                            Text(text = text.body, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    // Under the text, not beside it: a long label ("Använd engelska") would squeeze the text
+                    // to a column of syllables on a narrow phone (device test, 360 dp).
+                    if (!compact) {
+                        helpAction?.let { (label, action) ->
+                            TandemPrimaryButton(text = label, onClick = { onAction(action) }, size = TandemButtonSize.Kitchen)
+                        }
                     }
                 }
-                barAction(state)?.let { (label, action) ->
-                    TandemPrimaryButton(text = label, onClick = { onAction(action) }, size = TandemButtonSize.Kitchen)
+                // A short window has no room for a second line: the button stays beside the one-line text.
+                if (compact) {
+                    helpAction?.let { (label, action) ->
+                        TandemPrimaryButton(text = label, onClick = { onAction(action) }, size = TandemButtonSize.Kitchen)
+                    }
                 }
                 IconButton(
                     onClick = { onAction(HandsfreeAction.ReadAloud) },
@@ -181,18 +190,30 @@ private fun VolumeHint(compact: Boolean, onRaise: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
         Icon(imageVector = TandemIcons.VolumeUp, contentDescription = null, modifier = Modifier.size(TandemTheme.sizes.icon))
-        Text(
-            text = stringResource(R.string.cook_handsfree_volume_silent),
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = if (compact) 1 else Int.MAX_VALUE,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f),
-        )
-        TandemTonalButton(
-            text = stringResource(R.string.cook_handsfree_raise_volume),
-            onClick = onRaise,
-            size = TandemButtonSize.Kitchen,
-        )
+        val text = stringResource(R.string.cook_handsfree_volume_silent)
+        val button: @Composable () -> Unit = {
+            TandemTonalButton(
+                text = stringResource(R.string.cook_handsfree_raise_volume),
+                onClick = onRaise,
+                size = TandemButtonSize.Kitchen,
+            )
+        }
+        if (compact) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            button()
+        } else {
+            // The button under the text, so the text keeps the row's width (font scale 2, narrow phones).
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                Text(text = text, style = MaterialTheme.typography.bodyMedium)
+                button()
+            }
+        }
     }
 }
 
