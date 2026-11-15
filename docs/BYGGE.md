@@ -1136,6 +1136,7 @@ sätts av integrationen. En rad per bana.
 | mer | Enhetstestet 2026-11-14: B12 Behörigheter utan mikrofon, kalender och plats, B13 "Stäng kalkylarket", T1 röktestet på en svensk Samsung (plan §8.7, §6.6, §6.7) | **B12:** Mer → Behörigheter har raderna Mikrofon (handsfree), Kalender (matsedeln i telefonens kalender) och Plats (påminnelsen nära butiken, med nivån exakt + "Tillåt alltid" som påminnelsen behöver: "Tillåtet alltid", "Bara när appen används", "Bara ungefärlig", "Inte tillåtet"), var och en med läge, varför och en knapp till appens sida i Androids inställningar, lästa igen när sidan kommer tillbaka; utan Play-tjänster säger platsraden varför i stället; "Ingen position" är ersatt. Inget frågas på sidan. Compose-, ViewModel- och enhetstester, referensbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, teckenstorlek 2 och svenska. **B13:** TalkBack säger "Stäng arket" om skrimmet bakom bottenark och "Meddelande" om snackbaren (appens values-sv ersätter Compose UI:s `close_sheet` och Material 3:s `m3c_snackbar_pane_title`), övriga svenska ark-, meny- och dialogsträngar granskade; ett test i `:app` läser den lösta svenska strängen och skrimmet i ett riktigt `ModalBottomSheet`. **T1:** röktestet går på en riktig telefon på svenska utan lokal patch: appens språk sätts till engelska efter `pm clear`, Samsungs batteritips efter första synken trycks bort, köksskärmens test rullar till kvällens middag, systemets väljare känns igen på svenska; emulatorn grön med lika många tester; BYGGE beskriver körningen på en egen telefon | ✅ klart i CI 2026-11-14 (PR 43639727846 och röktest 43639742988 på 84abd1a: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", lika många som förut; referensbilder från Screenshots 43637917638, bara `shell/devicetest_feature_permissions_*` nya och `shell/settings_*permissions*` avsiktligt ändrade; Contract berörs inte); på telefonen återstår ägarens prov av sidan, TalkBack-namnen och röktestet, se "Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet" |
 | stortext | Enhetstestet 2026-11-14 omgång 3 (Galaxy S21 FE, största text och skärmzoom, 320 × 693 dp): B22 text som trycks ihop eller kapas utanför kokläget, B18 offline-sökningens antal (plan §6.6) | **Text bryts aldrig mitt i ett ord** (regeln i docs/design/README.md "Textstorlek och radbrytning"): en etikett med något efter får sin bredd först och det andra flyttar till en egen rad (`LabelRow`), listrader med bild ställer texterna under bilden (`MediaRow`), namn på kort får fler rader och karusellkorten blir bredare vid teckenstorlek ≥ 1,5. **B22:** receptvyns "Ingredienser" med "Tryck för att bocka av", portionerna och formen med plus/minus, ingrediensraderna; receptlistan som lista och rutnät; Idags synkrad med "Synka nu", karusellernas rubriker och kort, Går ut snart och måltidsraderna. **B18:** "3 recept" står kvar på en rad med offline-ledtråden under, också på 360 dp i teckenstorlek 1,0. Genomgång av samma mönster i Handla för veckan, Planera måltid, inköpsarket, Synk och lagring, påminnelsetiden, Mer, bannrarna för synk och inloggning och receptredigeraren. I CI: `LabelRowTest` (bredvid i 1,0, under i 2,0), `assertNoWordBreaks` och ATF i `RecipesLargeTextTest` och `TodayLargeTextTest`, skärmbilder 320 × 693 dp i 2,0 (ljust, mörkt, svenska) och 360 × 780 dp i 1,0; skärmbilderna i 412 dp och 1,0 oförändrade. Flikraden och kokläget hör till banan liggande. **BEHÖVER ENHET** (ägaren): samma skärmar på telefonen med största text och skärmzoom | ✅ klart i CI 2026-11-15 (PR 43651845926 på aacfd74, röktest 43656216626 på ebc55b5: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; referensbilder från Screenshots 43650120813, nya `recipes/*devicetest_*` och `home/*devicetest_*`, avsiktligt ändrade bilder i teckenstorlek 2 och pseudospråken; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14: största text utanför kokläget" |
 | liggande | Enhetstestet 2026-11-14, omgång 3 (Galaxy S21 FE): B20 kokläget i liggande läge, B21 Mer utanför bild i liggande läge, B22 flikarnas namn brutna vid största text, K1 kokrubriken bryter ord, K2 timerraden bryter ord, K3 "Föregående" i liggande och "0 s kortare" (plan §6.5, §6.6) | **B20:** ett brett men kort fönster (minst 600 dp brett och under 480 dp högt, telefon i liggande läge) ger kokläget `SHORT_WIDE`: steget med en smal rubrik till vänster, sidokolumnen med ringande timrar (Stopp överst, ovanför varningarna), handsfree, övriga timrar och sidknapparna i en rad; vid 780 × 360 dp och teckenstorlek 1,0 syns minst fyra hela rader av steget, vid 693 × 320 dp och 2,0 minst två; surfplattor och andra höga breda fönster har kvar två delar; vridning behåller steg, timrar och öppen "Justera tiden". **B21:** alla fem flikar syns och går att trycka på vid 780 × 360 dp och vid 693 × 320 dp med 2,0 (skalets korta skena). **B22-flikar:** ingen fliketikett bryts inne i ett ord vid 320 × 693 dp och 2,0; får de inte plats visas bara ikonerna och TalkBack säger namnen. **K1:** kokrubrikens namn bryts bara mellan ord (högst två rader, sedan …); utan plats ligger textstorlek och "Laga ett recept till" i en ⋮-meny. **K2:** `TimerBarItem` bryter aldrig ett ord i timerns namn (texterna över knapparna när de annars skulle bli för smala, en ringande timers Stopp först), för alla som använder den. **K3:** sidknapparna bryter inget ord i liggande läge; "Justera tiden" läser aldrig upp ett steg på 0 s. Compose-, enhets- och Robolectric-tester, referensbilder och ATF; röktestet körs | ✅ klart i CI 2026-11-15 (PR 43660290931 och röktest 43660290874 på 77afbf3: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", lika många som förut; referensbilder från Screenshots 43651107198, nya `cook/*liggande*`, `shell/devicetest_tabs_*` och `ui/timer_bar_item_narrow_*`, avsiktligt ändrade kokrubriken och sidknapparna i `cook/small_devicetest_*`, `cook/phone_*font2*` och `cook/phone_landscape_*`, skalets `shell/*phone_landscape_*` (kort skena) och `shell/timer_hud_phone_*font_scale_2*`; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14, omgång 3: liggande läge, flikarna och kokrubriken" |
+| offline | Enhetstestet 2026-11-14, omgång 3 (Galaxy S21 FE mot en riktig Tandoor 2.6.13): B19 "Offline" kvar i minuter efter att nätet kommit tillbaka; N1 var "Ny dryck" finns (plan §3.5, §5.4) | **B19:** alla offlinemarkeringar följer **en** status (`ServerReachability`): skalets chip, raden "Offline: visar det som sparats i enheten" på Idag, receptvyn och sökningens "Offline: söker bland recepten på enheten". Offline = inget nät, eller så var serverns senaste svar ett anslutningsfel; varje svar från servern (en synk, kön, en receptläsning) tar bort markeringarna och ett anslutningsfel sätter dem, utan omstart, återupptagning eller dra-för-att-uppdatera. När nätet kommer tillbaka efter ett fel skickas **en** serverkontroll efter 3 s stabilt nät, högst en per 30 s, aldrig medan skyddet (§5.4) håller tillbaka bakgrundsanrop, och ingen alls om inget har misslyckats; samma nätövervakare som synken. Ett recept som öppnats offline läses om när appen är online igen, och en sökning som inte nådde servern frågar igen. Enhetstester med falskt nät och klocka (offline → online efter fördröjningen, lyckat anrop tar bort, misslyckat sätter, inga anropsskurar när nätet fladdrar, skyddet håller tillbaka, demoläget aldrig offline) och ViewModel-tester för skalet, Idag, receptvyn och listan; röktestet körs. **N1:** inget fel, vägen står i avsnittet. Inga skärmar ändras (bara när markeringarna visas). **BEHÖVER ENHET** (ägaren): starta utan nät, slå på nätet med appen i förgrunden; chip och rad försvinner inom några sekunder | pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -2640,6 +2641,73 @@ och skala 2). ATF för samma lägen.
 **På en riktig telefon återstår** (ägaren): kokläget i liggande läge med handsfree och en ringande
 timer, sidomenyn med Mer i liggande läge, flikraden och kokrubriken med största text och skärmzoom.
 <!-- /Fas 5 liggande -->
+
+<!-- Fas 5 offline -->
+## Enhetstestet 2026-11-14, omgång 3: offlinemarkeringarna (`:core:data`, `:core:sync`, `:feature:shell`, `:feature:home`, `:feature:recipes`, bana offline)
+
+Omgång 3 kördes mot en riktig Tandoor 2.6.13 med flygplansläge. Kön tömdes inom några sekunder
+när nätet kom tillbaka, men "Offline" stod kvar i minuter (B19): skalets chip kom från den senaste
+serverkontrollen (`ShellViewModel.refreshError`, som bara görs om vid återupptagning efter 15
+minuter eller med "Kontrollera igen"), och raden på Idag från Idags egen uppdatering
+(`HomeViewModel`, bara när fliken skapas eller vid dra-för-att-uppdatera). Handlas banner följde
+redan synkens nätpaus (`SyncStatus.pause == OFFLINE`) och försvann av sig själv. "Klart när" står
+i "Fas 5 – läge". Inget Room-schema ändrades.
+
+**En status för allt (`core:data` `sync.ServerReachability`, `core:sync` `data.DefaultServerReachability`):**
+
+- `offline: StateFlow<Boolean>`: ett konto är aktivt och antingen saknas nätet (samma
+  `ConnectivityMonitor` som synken, ingen andra callback) eller så var serverns senaste anrop ett
+  anslutningsfel (`isConnectivityProblem`: inget nät, okänd värd, tidsgräns). Demoläget och inget
+  konto: aldrig offline.
+- `ServerContact` (core:sync, singleton i minnet) minns per konto om senaste anropet nådde
+  servern. `RemoteCaller.call` och `DefaultRequestGuard.record` (klockans token) skriver dit efter
+  varje skickat anrop; ett HTTP-fel räknas som ett svar. Anrop som skyddet stoppar före sändning
+  räknas inte.
+- `report(error)` för anrop utanför core:sync: skalets serverkontroll rapporterar sitt resultat
+  (också ett lyckat), Idag rapporterar bara anslutningsfel (en uppdatering som inte var dags än
+  skickar inget och säger därför inget om servern).
+- **Kontroll efter återanslutning:** när nätet kommer tillbaka och serverns senaste anrop var ett
+  anslutningsfel skickas `SessionRepository.refreshServerInfo` (oinloggad läsning av serverns
+  inställningar, samma som skalets kontroll) efter `RECONNECT_DEBOUNCE_MILLIS` = 3 s stabilt nät.
+  Ett nät som försvinner igen under väntan avbryter den (`collectLatest`), och kontrollerna ligger
+  minst `MIN_CHECK_SPACING_MILLIS` = 30 s isär. `SyncGuard.check(background = true)` frågas först:
+  håller skyddet tillbaka (blockerad, strypt, kretsbrytare, import) skickas inget och felet
+  glöms, så att markeringen följer nätet och skyddets egen banner förklarar pausen. Utan tidigare
+  fel skickas ingenting; nätet ensamt avgör.
+
+**Var den används:**
+
+| Var | Före | Nu |
+|---|---|---|
+| Skalets chip (`ShellUiState.syncOffline`) | synkens nätpaus, eller `refreshError` med anslutningsfel | synkens nätpaus eller `offline`; ett gammalt anslutningsfel i `refreshError` tas bort så fort `offline` blir falskt (Mer visar inte längre "kunde inte ansluta") |
+| Skalets kontroll vid återupptagning | efter 15 min | efter 1 min medan appen är offline (`RESUME_OFFLINE_CHECK_INTERVAL_MILLIS`), annars 15 min som förut |
+| Idag, raden "Offline: visar det som sparats i enheten" | Idags egen kopia av senaste uppdateringen | `offline` eller synkens nätpaus |
+| Receptvyn | synkens nätpaus, eller hämtningens anslutningsfel (stod kvar tills receptet öppnades igen) | `offline` eller nätpausen; när appen är online igen läses det sparade receptet om, vilket släpper hämtningens gamla fel och hämtar en kopia som inte är färsk |
+| Receptlistans sökning, "Offline: söker bland recepten på enheten" | frågade servern igen först vid nästa tangenttryck eller nätpaus | frågar igen när `offline` blir falskt; om servern ska frågas avgörs fortfarande av nätet, så en felaktig "ej nåbar" hindrar aldrig ett försök |
+
+Handlas banner, kokloggens läge, Hemma och böckerna följer fortfarande synkens nätpaus, som redan
+följde nätet.
+
+**Tester:** `ServerReachabilityTest` (core:sync: nätet ensamt, fel sätter och svar tar bort,
+`RemoteCaller` skriver till statusen, offline → online efter fördröjningen med en kontroll, en
+misslyckad kontroll behåller markeringen, fladdrande nät ger inga skurar, skyddet håller tillbaka,
+demoläget, annat konto), nya fall i `ShellViewModelTest`, `HomeViewModelTest`,
+`RecipeDetailViewModelTest` och `RecipeListViewModelTest`; `FakeServerReachability` i core:testing.
+Inga referensbilder ändrades: skärmarna är desamma, bara när markeringarna visas har ändrats.
+
+**N1, "Ny dryck":** knappen finns och nås i sideload-bygget, i demoläget och inloggad, men inte
+som gäst (gäster skriver aldrig). Vägar: **Recept → chipet "Drycker" i samlingsraden** (det fjärde
+chipet efter Favoriter, Vill laga och Böcker; raden rullar i sidled och på 360 dp syns chipet
+delvis eller inte alls förrän man drar raden åt vänster) **→ knappen "Ny dryck" nere till höger**
+på sidan Drycker (visas när listan har laddats). Dessutom: ett recept → "Passar med" →
+kopplingsväljaren, där knappen "Ny dryck" står under "Drycker" när det inte finns några drycker
+än (drycken kopplas då till receptet).
+
+**På en riktig telefon återstår** (ägaren): starta utan nät och slå på nätet med appen i
+förgrunden; chipet, raden på Idag och receptvyn ska bli online inom några sekunder utan att
+något rörs. Samma sak med en server som inte svarar och sedan svarar igen (då vid nästa svar,
+eller vid återupptagning efter en minut).
+<!-- /Fas 5 offline -->
 
 <!-- Fas 4 ocr -->
 ## Textigenkänning av recept (`:feature:scan`, `:core:domain`, `:feature:recipes`, Fas 4)
