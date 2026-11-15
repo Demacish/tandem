@@ -15,10 +15,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -228,14 +230,16 @@ private fun Radius(radius: Int, onAction: (StoreReminderAction) -> Unit) {
     val spacing = TandemTheme.spacing
     val label = stringResource(R.string.store_reminder_radius_label)
     val value = stringResource(R.string.store_reminder_radius_value, radius)
+    // The SliderState overload (the value-based one is deprecated in material3 1.5): the state is
+    // the screen's radius, the ViewModel moves it through onValueChange, as the old overload did.
+    val slider = remember { SliderState(radius.toFloat(), StoreReminderRadius.SLIDER_STEPS, RADIUS_RANGE) }
+    slider.value = radius.toFloat()
     Column(modifier = Modifier.padding(horizontal = spacing.lg, vertical = spacing.md)) {
         Text(text = stringResource(R.string.store_reminder_radius, radius), style = MaterialTheme.typography.titleSmall)
         Slider(
-            value = radius.toFloat(),
+            state = slider,
             onValueChange = { onAction(StoreReminderAction.RadiusChanged(it)) },
             onValueChangeFinished = { onAction(StoreReminderAction.RadiusDone) },
-            valueRange = StoreReminderRadius.MIN_METERS.toFloat()..StoreReminderRadius.MAX_METERS.toFloat(),
-            steps = StoreReminderRadius.SLIDER_STEPS,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(STORE_REMINDER_RADIUS_TAG)
@@ -246,6 +250,8 @@ private fun Radius(radius: Int, onAction: (StoreReminderAction) -> Unit) {
         )
     }
 }
+
+private val RADIUS_RANGE = StoreReminderRadius.MIN_METERS.toFloat()..StoreReminderRadius.MAX_METERS.toFloat()
 
 /** "14 nov. 2026" in the app's language and the phone's zone. */
 @Composable
