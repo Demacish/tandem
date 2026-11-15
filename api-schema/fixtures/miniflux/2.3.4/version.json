@@ -1,0 +1,35 @@
+{
+  "name": "version",
+  "request": {
+    "method": "GET",
+    "path": "/v1/version",
+    "headers": {
+      "accept": "application/json",
+      "authorization": "Basic <redacted>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "X-Auth-Token, Authorization, Content-Type, Accept",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+      "referrer-policy": "no-referrer",
+      "vary": "Accept-Encoding",
+      "www-authenticate": "Basic realm=\"Restricted\"",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "isJson": true,
+    "body": {
+      "version": "2.3.4",
+      "commit": "238c5614",
+      "build_date": "2000-01-01T00:00:00Z",
+      "go_version": "go1.27.2",
+      "compiler": "gc",
+      "arch": "amd64",
+      "os": "linux"
+    }
+  }
+}

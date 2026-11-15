@@ -1,0 +1,58 @@
+{
+  "name": "me",
+  "request": {
+    "method": "GET",
+    "path": "/v1/me",
+    "headers": {
+      "accept": "application/json",
+      "x-auth-token": "<redacted>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "X-Auth-Token, Authorization, Content-Type, Accept",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+      "referrer-policy": "no-referrer",
+      "vary": "Accept-Encoding",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "isJson": true,
+    "body": {
+      "id": 1,
+      "username": "contract-admin",
+      "theme": "light_serif",
+      "language": "en_US",
+      "timezone": "UTC",
+      "entry_sorting_direction": "asc",
+      "entry_sorting_order": "published_at",
+      "stylesheet": "",
+      "custom_js": "",
+      "external_font_hosts": "",
+      "google_id": "",
+      "openid_connect_id": "",
+      "entries_per_page": 100,
+      "gesture_nav": "tap",
+      "last_login_at": "2000-01-01T00:00:00.000000Z",
+      "display_mode": "standalone",
+      "default_reading_speed": 265,
+      "cjk_reading_speed": 500,
+      "default_home_page": "unread",
+      "categories_sorting_order": "unread_count",
+      "media_playback_rate": 1,
+      "block_filter_entry_rules": "",
+      "keep_filter_entry_rules": "",
+      "mark_read_on_view": true,
+      "mark_read_on_media_player_completion": false,
+      "always_open_external_links": false,
+      "open_external_links_in_new_tab": true,
+      "keyboard_shortcuts": true,
+      "show_reading_time": true,
+      "entry_swipe": true,
+      "is_admin": true
+    }
+  }
+}

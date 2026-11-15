@@ -215,5 +215,26 @@ object TandemMigrations {
         "ALTER TABLE `food` ADD COLUMN `substitute_children` INTEGER NOT NULL DEFAULT 0",
     )
 
-    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    /**
+     * 0.9.0 (Fas 5, rss lane, plan §7 #35): the recipe inbox's cached posts (`inbox_entry`). Nothing
+     * else changes; the table starts empty and the inbox fills it when it is set up and refreshed.
+     * The SQL is Room's own for `InboxEntryEntity` (see `schemas/.../7.json`).
+     */
+    val MIGRATION_6_7: Migration = object : Migration(6, 7) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            SCHEMA_7_STATEMENTS.forEach { connection.execSQL(it) }
+        }
+    }
+
+    /** The statements of [MIGRATION_6_7], in order. */
+    internal val SCHEMA_7_STATEMENTS: List<String> = listOf(
+        "CREATE TABLE IF NOT EXISTS `inbox_entry` (`account_id` TEXT NOT NULL, `entry_id` INTEGER NOT NULL, " +
+            "`category_id` INTEGER, `title` TEXT NOT NULL, `url` TEXT NOT NULL, `feed_title` TEXT NOT NULL, " +
+            "`published_at` INTEGER, `image_url` TEXT, `excerpt` TEXT NOT NULL, `unread` INTEGER NOT NULL, " +
+            "`imported_at` INTEGER, `dismissed_at` INTEGER, `read_pending` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL, " +
+            "PRIMARY KEY(`account_id`, `entry_id`))",
+        "CREATE INDEX IF NOT EXISTS `index_inbox_entry_account_id_published_at` ON `inbox_entry` (`account_id`, `published_at`)",
+    )
+
+    val ALL: List<Migration> = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 }

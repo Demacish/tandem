@@ -195,6 +195,8 @@ class AccountIsolationTest {
             "make_now",
             "staple",
             "drink_draft",
+            // Fas 5 (schema 7, rss lane)
+            "inbox_entry",
         )
     }
 }

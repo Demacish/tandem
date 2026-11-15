@@ -17,4 +17,5 @@ Tandem testas mot.
 | Fil | Innehåll |
 |---|---|
 | `tandoor-2.6.13.yaml` | Schemat för baslinjeversionen (byts efter en grön körning mot en ny version). |
+| `fixtures/miniflux/<version>/` | Fas 5 (bana rss): inspelningar och `FACTS.md` från en tillfällig **Miniflux** (inkorgen för recept, `miniflux-contract.yml`). Ingen Tandoor; `MinifluxClientTest` i core:network läser dem. |
 | `used-endpoints.txt` | De endpoints appen faktiskt använder. Allow-list för schemadiffen i `tandoor-watch.yml`; uppdateras i samma PR som ett nytt anrop läggs till. |

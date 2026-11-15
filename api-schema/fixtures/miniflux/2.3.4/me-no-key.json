@@ -1,0 +1,28 @@
+{
+  "name": "me-no-key",
+  "request": {
+    "method": "GET",
+    "path": "/v1/me",
+    "headers": {
+      "accept": "application/json"
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "access-control-allow-headers": "X-Auth-Token, Authorization, Content-Type, Accept",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+      "referrer-policy": "no-referrer",
+      "vary": "Accept-Encoding",
+      "www-authenticate": "Basic realm=\"Restricted\"",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "isJson": true,
+    "body": {
+      "error_message": "access unauthorized"
+    }
+  }
+}

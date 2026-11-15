@@ -1,0 +1,33 @@
+{
+  "name": "feed-create",
+  "request": {
+    "method": "POST",
+    "path": "/v1/feeds",
+    "headers": {
+      "accept": "application/json",
+      "content-type": "application/json; charset=utf-8",
+      "x-auth-token": "<redacted>"
+    },
+    "body": {
+      "feed_url": "http://recipes.example.com:8099/recipes.xml",
+      "category_id": 2
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "access-control-allow-headers": "X-Auth-Token, Authorization, Content-Type, Accept",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+      "referrer-policy": "no-referrer",
+      "vary": "Accept-Encoding",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "isJson": true,
+    "body": {
+      "feed_id": 1
+    }
+  }
+}

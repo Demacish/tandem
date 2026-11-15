@@ -6,6 +6,8 @@ import casa.moller.tandem.core.datastore.AiPreferencesStore
 import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.DiagnosticsStore
 import casa.moller.tandem.core.datastore.MealCalendarStore
+import casa.moller.tandem.core.datastore.RecipeInboxKeyStore
+import casa.moller.tandem.core.datastore.RecipeInboxStore
 import casa.moller.tandem.core.datastore.SecureAccountStore
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.ShoppingViewStore
@@ -15,9 +17,11 @@ import casa.moller.tandem.core.datastore.crypto.AeadProvider
 import casa.moller.tandem.core.datastore.crypto.AndroidKeystoreAeadProvider
 import casa.moller.tandem.core.datastore.internal.EncryptedAccountStore
 import casa.moller.tandem.core.datastore.internal.EncryptedAiKeyStore
+import casa.moller.tandem.core.datastore.internal.EncryptedRecipeInboxKeyStore
 import casa.moller.tandem.core.datastore.internal.PreferencesAiPreferencesStore
 import casa.moller.tandem.core.datastore.internal.PreferencesDiagnosticsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesMealCalendarStore
+import casa.moller.tandem.core.datastore.internal.PreferencesRecipeInboxStore
 import casa.moller.tandem.core.datastore.internal.PreferencesSettingsStore
 import casa.moller.tandem.core.datastore.internal.PreferencesShoppingViewStore
 import casa.moller.tandem.core.datastore.internal.PreferencesStoreReminderStore
@@ -116,4 +120,21 @@ object DatastoreModule {
         produceFile = { DatastoreFiles.storeRemindersFile(context) },
         scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
     )
+
+    // Fas 5 (rss lane, plan §7 #35): "Inkorg för recept", the settings and (encrypted) the Miniflux keys.
+    @Provides
+    @Singleton
+    fun provideRecipeInboxStore(@ApplicationContext context: Context): RecipeInboxStore = PreferencesRecipeInboxStore.create(
+        produceFile = { DatastoreFiles.recipeInboxFile(context) },
+        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+    )
+
+    @Provides
+    @Singleton
+    fun provideRecipeInboxKeyStore(@ApplicationContext context: Context, keys: AeadProvider): RecipeInboxKeyStore =
+        EncryptedRecipeInboxKeyStore(
+            produceFile = { DatastoreFiles.secureInboxKeysFile(context) },
+            keys = keys,
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+        )
 }

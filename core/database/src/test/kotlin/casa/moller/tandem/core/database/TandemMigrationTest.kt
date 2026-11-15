@@ -8,6 +8,7 @@ import androidx.sqlite.execSQL
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import casa.moller.tandem.core.database.entity.InboxEntryEntity
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -49,7 +50,7 @@ class TandemMigrationTest {
 
     @Test
     fun everyVersionHasAMigration() {
-        assertEquals(6, TandemDatabase.VERSION)
+        assertEquals(7, TandemDatabase.VERSION)
         assertEquals((1 until TandemDatabase.VERSION).toList(), TandemMigrations.ALL.map { it.startVersion })
     }
 
@@ -293,6 +294,53 @@ class TandemMigrationTest {
         } finally {
             database.close()
         }
+    }
+
+    /** 0.8.0 -> 0.9.0 (Fas 5, rss lane): an empty `inbox_entry`; the stored rows of 0.8.0 stay. */
+    @Test
+    fun versionSixMigratesToSevenWithAnEmptyInbox() = runTest {
+        helper.createDatabase(6).apply {
+            execSQL(
+                "INSERT INTO outbox (account_id, op, entity, server_id, payload, attempts, created_at, state) " +
+                    "VALUES ('$ACCOUNT_A', 'VIEW_LOG', 'recipe', 3, '{}', 0, 1, 'PENDING')",
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(7, TandemMigrations.ALL).close()
+
+        val database = TandemDatabase.build(context, TEST_DB)
+        try {
+            assertEquals(3L, database.outboxDao().nextReady(ACCOUNT_A)?.serverId)
+            assertEquals(emptyList<Any>(), database.inboxDao().getAll(ACCOUNT_A))
+            database.inboxDao().upsert(
+                listOf(
+                    InboxEntryEntity(
+                        accountId = ACCOUNT_A,
+                        entryId = 9,
+                        categoryId = 2,
+                        title = "Linssoppa",
+                        url = "https://example.com/linssoppa",
+                        feedTitle = "Exempelköket",
+                        publishedAt = 1L,
+                        imageUrl = null,
+                        excerpt = "",
+                    ),
+                ),
+            )
+            assertEquals("Linssoppa", database.inboxDao().get(ACCOUNT_A, 9)?.title)
+            database.accountDao().deleteAccountData(ACCOUNT_A)
+            assertNull(database.inboxDao().get(ACCOUNT_A, 9))
+        } finally {
+            database.close()
+        }
+    }
+
+    /** 0.1.0 straight to 0.9.0: every migration in a row. */
+    @Test
+    fun versionOneMigratesToSeven() = runTest {
+        helper.createDatabase(1).close()
+        helper.runMigrationsAndValidate(7, TandemMigrations.ALL).close()
     }
 
     /** A detail row of schema 1 with [rawJson] (single quotes would end the SQL literal). */

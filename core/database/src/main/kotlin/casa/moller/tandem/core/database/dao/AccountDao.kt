@@ -85,6 +85,7 @@ abstract class AccountDao {
             "UNION SELECT account_id FROM food_alias UNION SELECT account_id FROM barcode_product " +
             "UNION SELECT account_id FROM make_now UNION SELECT account_id FROM staple " +
             "UNION SELECT account_id FROM drink_draft " +
+            "UNION SELECT account_id FROM inbox_entry " +
             "UNION SELECT id FROM server_account",
     )
     abstract suspend fun getStoredAccountIds(): List<String>
@@ -110,6 +111,8 @@ abstract class AccountDao {
         deletePhase2Tables(accountId)
         // Fas S (schema 5)
         deletePhaseSTables(accountId)
+        // Fas 5 (schema 7, rss lane)
+        deleteInboxEntries(accountId)
         deleteAccount(accountId)
     }
 
@@ -123,6 +126,10 @@ abstract class AccountDao {
         deleteStaples(accountId)
         deleteDrinkDrafts(accountId)
     }
+
+    /** Fas 5 (schema 7, rss lane): the recipe inbox's cached posts. */
+    @Query("DELETE FROM inbox_entry WHERE account_id = :accountId")
+    abstract suspend fun deleteInboxEntries(accountId: String)
 
     @Query("DELETE FROM inventory_location WHERE account_id = :accountId")
     abstract suspend fun deleteInventoryLocations(accountId: String)

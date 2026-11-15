@@ -34,6 +34,8 @@ dvs. `casa.moller.tandem` eller `casa.moller.tandem.dev`).
 | `files/datastore/diagnostics.preferences_pb` | Senast uppmätta kallstart och fulla synk (`DiagnosticsStore`, från 0.2.0): tider och antal recept. Ingen hemlighet | `file` |
 | `files/datastore/secure_ai_keys.pb` | Fas S: användarens AI-nycklar (en per tjänst) som ett JSON-dokument, **helt krypterat** med samma Tink-AEAD. Associated data: `casa.moller.tandem/datastore/secure_ai_keys.pb`. Nollställer aldrig nycklarna; ett oläsligt dokument läses som "inga nycklar" | `file` |
 | `files/datastore/ai_settings.preferences_pb` | Fas S: AI-inställningarna (tjänst, modell och egen bas-URL per tjänst, varningen kvitterad). Ingen hemlighet | `file` |
+| `files/datastore/secure_inbox_keys.pb` | Fas 5 (rss): inkorgens Miniflux-API-nycklar (en per konto) som ett JSON-dokument, **helt krypterat** med samma Tink-AEAD. Associated data: `casa.moller.tandem/datastore/secure_inbox_keys.pb`. Nollställer aldrig nycklarna; ett oläsligt dokument läses som "inga nycklar" | `file` |
+| `files/datastore/recipe_inbox.preferences_pb` | Fas 5 (rss): inkorgens inställningar per konto (Miniflux-adressen, valda kategorier, brytarna, senaste uppdatering). Ingen hemlighet | `file` |
 | `shared_prefs/tandem_secure_keyset.xml` | Tink-keysetet (nyckel `secure_accounts_keyset`), krypterat med Keystore-nyckeln | `sharedpref` |
 | Android Keystore-alias `tandem_secure_master_key` | AES-256-GCM-huvudnyckel som skyddar keysetet. Lämnar aldrig enheten | – |
 

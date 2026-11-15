@@ -11,6 +11,7 @@ import casa.moller.tandem.core.database.dao.DrinkDraftDao
 import casa.moller.tandem.core.database.dao.FoodAliasDao
 import casa.moller.tandem.core.database.dao.HomeSectionDao
 import casa.moller.tandem.core.database.dao.IdRewriteDao
+import casa.moller.tandem.core.database.dao.InboxDao
 import casa.moller.tandem.core.database.dao.MakeNowDao
 import casa.moller.tandem.core.database.dao.MealPlanDao
 import casa.moller.tandem.core.database.dao.OutboxDao
@@ -30,6 +31,7 @@ import casa.moller.tandem.core.database.entity.FoodEntity
 import casa.moller.tandem.core.database.entity.HomeSectionEntity
 import casa.moller.tandem.core.database.entity.HomeSectionRecipeEntity
 import casa.moller.tandem.core.database.entity.IdMappingEntity
+import casa.moller.tandem.core.database.entity.InboxEntryEntity
 import casa.moller.tandem.core.database.entity.IngredientEntity
 import casa.moller.tandem.core.database.entity.InventoryEntryEntity
 import casa.moller.tandem.core.database.entity.InventoryLocationEntity
@@ -109,6 +111,8 @@ import casa.moller.tandem.core.database.entity.UserPreferenceEntity
         MakeNowEntity::class,
         StapleEntity::class,
         DrinkDraftEntity::class,
+        // --- Fas 5 (schema 7, rss lane) ---
+        InboxEntryEntity::class,
     ],
     version = TandemDatabase.VERSION,
     exportSchema = true,
@@ -154,6 +158,10 @@ abstract class TandemDatabase : RoomDatabase() {
 
     abstract fun drinkDraftDao(): DrinkDraftDao
 
+    // --- Fas 5 (schema 7, rss lane) ---
+
+    abstract fun inboxDao(): InboxDao
+
     companion object {
         /**
          * Schema version. 1 = 0.1.0 (frozen); 2 = 0.2.0 adds `cook_log` ([TandemMigrations.MIGRATION_1_2]);
@@ -161,9 +169,10 @@ abstract class TandemDatabase : RoomDatabase() {
          * Phase 2 ([TandemMigrations.MIGRATION_3_4]: shopping, stores, books, `id_mapping`); 5 = 0.4.0,
          * the whole of Fas S ([TandemMigrations.MIGRATION_4_5]: pantry, aliases, Open Food Facts,
          * makenow, staples, drink drafts, food substitutes); 6 = still 0.4.0, the food tree for
-         * substitutes in stock ([TandemMigrations.MIGRATION_5_6], Fas S komplettering).
+         * substitutes in stock ([TandemMigrations.MIGRATION_5_6], Fas S komplettering); 7 = 0.9.0, the
+         * recipe inbox's posts ([TandemMigrations.MIGRATION_6_7], Fas 5 rss lane).
          */
-        const val VERSION: Int = 6
+        const val VERSION: Int = 7
 
         /** File name of the real database (the whole database folder is excluded from backup, data_extraction_rules.xml). */
         const val FILE_NAME: String = "tandem.db"

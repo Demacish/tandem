@@ -19,6 +19,7 @@ import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.calendar.MealCalendarSchedule
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.engine.SyncKeys
+import casa.moller.tandem.core.sync.inbox.RecipeInboxSchedule
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.mealplan.MealReminderSchedule
 import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
@@ -95,6 +96,8 @@ class SyncStarter @Inject internal constructor(
     private val storeReminders: StoreReminderSchedule,
     // Enhetstestet B17: demo mode's timers end with demo mode.
     private val demoTimers: DemoTimerCleanup,
+    // Fas 5 (rss lane): the recipe inbox's background refresh follows the account and its setting.
+    private val recipeInbox: RecipeInboxSchedule,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -134,6 +137,7 @@ class SyncStarter @Inject internal constructor(
         mealCalendar.start()
         storeReminders.start()
         demoTimers.start()
+        recipeInbox.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

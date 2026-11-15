@@ -1,0 +1,66 @@
+{
+  "minifluxTag": "2.3.4",
+  "version.status": 200,
+  "version.version": "2.3.4",
+  "apiKey.status": 201,
+  "apiKey.hasToken": true,
+  "me.status": 200,
+  "me.hasId": true,
+  "meWrongKey.status": 401,
+  "meWrongKey.json": true,
+  "meWrongKey.hasErrorMessage": true,
+  "meNoKey.status": 401,
+  "notApi.status": 404,
+  "notApi.contentType": "text/plain; charset=utf-8",
+  "category.created": true,
+  "feed.status": 201,
+  "feed.hasId": true,
+  "categories.status": 200,
+  "categories.recipesTitle": "Recept",
+  "categories.recipesUnread": 3,
+  "categories.recipesFeeds": 1,
+  "categories.newsUnread": 0,
+  "categoriesPlain.hasCounts": false,
+  "entries.status": 200,
+  "entries.total": 3,
+  "entries.titles": [
+    "Pannkakor med blåbär",
+    "Linssoppa",
+    "Kladdkaka"
+  ],
+  "entries.urls": [
+    "https://recipes.example.com/recept/pannkakor",
+    "https://recipes.example.com/recept/linssoppa",
+    "https://recipes.example.com/recept/kladdkaka"
+  ],
+  "entries.status.values": [
+    "unread"
+  ],
+  "entries.feedTitle": [
+    "Exempelköket"
+  ],
+  "entries.feedCategory": [
+    true
+  ],
+  "entries.hasPublishedAt": true,
+  "entries.firstEnclosureTypes": [
+    "image/jpeg"
+  ],
+  "entries.firstEnclosureUrls": [
+    "https://recipes.example.com/bilder/pannkakor.jpg"
+  ],
+  "entries.secondContentHasImage": true,
+  "entriesOther.total": 0,
+  "entriesLimit.count": 1,
+  "entriesLimit.total": 3,
+  "markRead.status": 204,
+  "markRead.emptyBody": true,
+  "afterRead.firstGone": true,
+  "afterRead.total": 2,
+  "markReadAgain.status": 204,
+  "unknownCategory.status": 400,
+  "unknownCategory.body": {
+    "error_message": "invalid category ID"
+  },
+  "mismatches": []
+}

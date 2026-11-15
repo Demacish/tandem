@@ -91,6 +91,31 @@ object DatastoreFiles {
     /** File name of the store reminder store. */
     const val STORE_REMINDERS = "$STORE_REMINDERS_NAME.preferences_pb"
 
+    /**
+     * Fas 5 (rss lane, plan §7 #35): the recipe inbox's non-secret settings per account (the Miniflux
+     * address, the chosen categories, the switches), `files/datastore/recipe_inbox.preferences_pb`.
+     * Never a key.
+     */
+    const val RECIPE_INBOX_NAME = "recipe_inbox"
+
+    /** File name of the recipe inbox store. */
+    const val RECIPE_INBOX = "$RECIPE_INBOX_NAME.preferences_pb"
+
+    /**
+     * Fas 5 (rss lane, plan §5.5): the inbox's Miniflux API keys, ONE document encrypted with the same
+     * Keystore-backed AEAD as [SECURE_ACCOUNTS]: `files/datastore/secure_inbox_keys.pb`. Covered by the
+     * backup exclusion (domain `file`); never in diagnostics, logs or exports.
+     */
+    const val SECURE_INBOX_KEYS = "secure_inbox_keys.pb"
+
+    /** Associated data of [SECURE_INBOX_KEYS] (binds the ciphertext to that file). */
+    internal val SECURE_INBOX_KEYS_ASSOCIATED_DATA: ByteArray
+        get() = "casa.moller.tandem/datastore/$SECURE_INBOX_KEYS".encodeToByteArray()
+
+    internal fun recipeInboxFile(context: Context): File = context.preferencesDataStoreFile(RECIPE_INBOX_NAME)
+
+    internal fun secureInboxKeysFile(context: Context): File = context.dataStoreFile(SECURE_INBOX_KEYS)
+
     internal fun storeRemindersFile(context: Context): File = context.preferencesDataStoreFile(STORE_REMINDERS_NAME)
 
     internal fun mealCalendarFile(context: Context): File = context.preferencesDataStoreFile(MEAL_CALENDAR_NAME)

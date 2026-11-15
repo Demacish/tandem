@@ -1,0 +1,51 @@
+{
+  "name": "categories-counts",
+  "request": {
+    "method": "GET",
+    "path": "/v1/categories?counts=true",
+    "headers": {
+      "accept": "application/json",
+      "x-auth-token": "<redacted>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "X-Auth-Token, Authorization, Content-Type, Accept",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+      "referrer-policy": "no-referrer",
+      "vary": "Accept-Encoding",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "isJson": true,
+    "body": [
+      {
+        "id": 2,
+        "title": "Recept",
+        "user_id": 1,
+        "hide_globally": false,
+        "feed_count": 1,
+        "total_unread": 3
+      },
+      {
+        "id": 1,
+        "title": "All",
+        "user_id": 1,
+        "hide_globally": false,
+        "feed_count": 0,
+        "total_unread": 0
+      },
+      {
+        "id": 3,
+        "title": "Nyheter",
+        "user_id": 1,
+        "hide_globally": false,
+        "feed_count": 0,
+        "total_unread": 0
+      }
+    ]
+  }
+}

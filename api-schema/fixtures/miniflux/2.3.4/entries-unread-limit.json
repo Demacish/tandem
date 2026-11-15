@@ -1,0 +1,115 @@
+{
+  "name": "entries-unread-limit",
+  "request": {
+    "method": "GET",
+    "path": "/v1/categories/2/entries?status=unread&order=published_at&direction=desc&limit=1",
+    "headers": {
+      "accept": "application/json",
+      "x-auth-token": "<redacted>"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-headers": "X-Auth-Token, Authorization, Content-Type, Accept",
+      "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "access-control-allow-origin": "*",
+      "content-type": "application/json",
+      "referrer-policy": "no-referrer",
+      "vary": "Accept-Encoding",
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY"
+    },
+    "isJson": true,
+    "body": {
+      "total": 3,
+      "entries": [
+        {
+          "id": 3,
+          "user_id": 1,
+          "feed_id": 1,
+          "status": "unread",
+          "hash": "092b06a1be841222ea0a01b44883c644b3d0377996394dbad3c6877247413a13",
+          "title": "Pannkakor med blåbär",
+          "url": "https://recipes.example.com/recept/pannkakor",
+          "comments_url": "",
+          "language": "sv",
+          "published_at": "2000-01-01T00:00:00Z",
+          "created_at": "2000-01-01T00:00:00.000000Z",
+          "changed_at": "2000-01-01T00:00:00.000000Z",
+          "content": "<p>Tunna pannkakor med <b>blåbär</b> &amp; grädde.</p>",
+          "author": "",
+          "share_code": "",
+          "starred": false,
+          "reading_time": 1,
+          "enclosures": [
+            {
+              "id": 1,
+              "user_id": 1,
+              "entry_id": 3,
+              "url": "https://recipes.example.com/bilder/pannkakor.jpg",
+              "mime_type": "image/jpeg",
+              "size": 12345,
+              "media_progression": 0
+            }
+          ],
+          "feed": {
+            "id": 1,
+            "user_id": 1,
+            "feed_url": "http://recipes.example.com:8099/recipes.xml",
+            "site_url": "https://recipes.example.com/",
+            "title": "Exempelköket",
+            "description": "Recept att pröva",
+            "language": "sv",
+            "checked_at": "2000-01-01T00:00:00.000000Z",
+            "next_check_at": "2000-01-01T00:00:00Z",
+            "etag_header": "",
+            "last_modified_header": "",
+            "parsing_error_message": "",
+            "parsing_error_count": 0,
+            "scraper_rules": "",
+            "rewrite_rules": "",
+            "blocklist_rules": "",
+            "keeplist_rules": "",
+            "block_filter_entry_rules": "",
+            "keep_filter_entry_rules": "",
+            "urlrewrite_rules": "",
+            "user_agent": "",
+            "cookie": "",
+            "username": "",
+            "password": "",
+            "disabled": false,
+            "no_media_player": false,
+            "ignore_http_cache": false,
+            "allow_self_signed_certificates": false,
+            "fetch_via_proxy": false,
+            "hide_globally": false,
+            "disable_http2": false,
+            "pushover_enabled": false,
+            "ntfy_enabled": false,
+            "crawler": false,
+            "ignore_entry_updates": false,
+            "apprise_service_urls": "",
+            "webhook_url": "",
+            "ntfy_priority": 0,
+            "ntfy_topic": "",
+            "pushover_priority": 0,
+            "proxy_url": "",
+            "category": {
+              "id": 2,
+              "title": "Recept",
+              "user_id": 1,
+              "hide_globally": false
+            },
+            "icon": {
+              "feed_id": 1,
+              "icon_id": 0,
+              "external_icon_id": ""
+            }
+          },
+          "tags": []
+        }
+      ]
+    }
+  }
+}
