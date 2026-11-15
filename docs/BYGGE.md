@@ -1862,7 +1862,7 @@ räknar på tom databas, seedar sedan) och `aFirstSyncsPantryLiftsTheExpiringRec
 (klockan står still; utan rättningen väntar bevakningen en minut).
 <!-- /Fas 5 data -->
 
-<!-- Fas 5 mer -->
+<!-- Fas 5 stortext -->
 ## Enhetstestet 2026-11-14: största text utanför kokläget (`:core:ui`, `:feature:recipes`, `:feature:home`, bana stortext)
 
 Omgång 3 av enhetstestet körde Galaxy S21 FE med teckenstorlek och skärmzoom på max (skala 2,0,
@@ -1932,7 +1932,9 @@ offline-sökningen; 320 × 693 dp i 2,0, ljust, mörkt och svenska) och
 ATF. Skärmbilderna heter `*_devicetest_*`.
 
 **Behöver enhet (ägaren):** samma skärmar på Galaxy S21 FE med största text och skärmzoom.
+<!-- /Fas 5 stortext -->
 
+<!-- Fas 5 mer -->
 ## Enhetstestet 2026-11-14: Behörigheter, skärmläsaren och röktestet (`:feature:shell`, `:app`, `:smoke`, mer)
 
 **B12 – Mer → Behörigheter.** Tre nya rader efter kameran, i ett eget block
