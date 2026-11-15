@@ -94,22 +94,22 @@ object LocalNetworkRules {
     private fun isLocalIpv6(a: ByteArray): Boolean {
         val b0 = a[0].toInt() and BYTE
         val b1 = a[1].toInt() and BYTE
-        return when {
-            // fe80::/10 link-local
-            b0 == 0xfe && (b1 and 0xc0) == 0x80 -> true
-            // ff00::/8 multicast
-            b0 == 0xff -> true
-            // fc00::/7 unique local (Tandem's choice, see the class comment)
-            (b0 and 0xfe) == 0xfc -> true
-            else -> false
-        }
+        val linkLocal = b0 == 0xfe && (b1 and 0xc0) == 0x80 // fe80::/10
+        val multicast = b0 == 0xff // ff00::/8
+        val uniqueLocal = (b0 and 0xfe) == 0xfc // fc00::/7, Tandem's choice (see the class comment)
+        return linkLocal || multicast || uniqueLocal
     }
 
-    private fun isLoopback(a: ByteArray): Boolean = when (a.size) {
-        IPV4_BYTES -> (a[0].toInt() and BYTE) == 127
-        IPV6_BYTES -> ipv4Mapped(a)?.let { (it[0].toInt() and BYTE) == 127 }
-            ?: (a.copyOfRange(0, IPV6_BYTES - 1).all { it.toInt() == 0 } && a[IPV6_BYTES - 1].toInt() == 1)
-        else -> false
+    private fun isLoopback(a: ByteArray): Boolean {
+        val v4 = when (a.size) {
+            IPV4_BYTES -> a
+            IPV6_BYTES -> ipv4Mapped(a)
+            else -> null
+        }
+        if (v4 != null) return (v4[0].toInt() and BYTE) == 127
+        if (a.size != IPV6_BYTES) return false
+        // ::1
+        return a.copyOfRange(0, IPV6_BYTES - 1).all { it.toInt() == 0 } && a[IPV6_BYTES - 1].toInt() == 1
     }
 
     /** The IPv4 address inside an IPv4-mapped IPv6 address (`::ffff:a.b.c.d`), else null. */

@@ -54,8 +54,9 @@ object TandemHttpClients {
         userAgent: String,
         debugLogging: Boolean,
         rateLimiter: TokenBucket = TokenBucket(),
-        logger: HttpLoggingInterceptor.Logger = HttpLoggingInterceptor.Logger.DEFAULT,
+        // Before the logger: callers pass the logger as a trailing lambda.
         localNetwork: LocalNetworkGuard = LocalNetworkGuard.None,
+        logger: HttpLoggingInterceptor.Logger = HttpLoggingInterceptor.Logger.DEFAULT,
     ): OkHttpClient {
         val dispatcher = Dispatcher().apply { maxRequestsPerHost = MAX_REQUESTS_PER_HOST }
         val builder = OkHttpClient.Builder()

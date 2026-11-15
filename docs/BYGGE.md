@@ -31,8 +31,8 @@ kan installeras bredvid release-bygget.
   `android.enableJetifier` i `gradle.properties`.
 - Bytekod: Java 17. CI kör på JDK 21 (krävs av Robolectric för SDK 36+).
 - targetSdk 37 (Android 17) sedan Fas 5 (bana sdk37), Wear OS-appen targetSdk 36
-  (`wearTargetSdk` i katalogen); se "Target SDK 37". Robolectric 4.17 kör enhetstesterna på SDK 37
-  (testernas manifest har targetSdk 37), klockans på 36.
+  (`wearTargetSdk` i katalogen); se "Target SDK 37". Robolectric kör enhetstesterna på SDK 36
+  (`config/robolectric/robolectric.properties`); Android 17-tester väljer 37 med `@Config`.
 - compileSdk 37 är ett krav (Compose 1.12, core 1.19, material3 1.5 och Navigation 3 kräver det).
   Det enda förhandsbiblioteket är material3 1.5.0-beta01 (Expressive), inkapslat i
   `core:designsystem`.
@@ -1270,10 +1270,18 @@ TCP-anslutning bara tidsgräns**, så Tandem avgör själv:
 
 ### CI
 
-- **Enhetstester** kör på Robolectric 4.17 med SDK 37 (testernas manifest har target 37;
-  `android-all-instrumented` 17 finns på Maven Central). Klockans tester kör på 36. Inga nya
-  referensbilder: raden Lokalt nätverk syns bara när den lästs, och de befintliga skärmbilderna
-  har den inte.
+- **Enhetstester** kör som standard på Robolectric **SDK 36**, fast apparna har target 37
+  (`config/robolectric/robolectric.properties`, `sdk=36`, som `AndroidCommon` lägger i varje
+  Android-moduls testresurser). Robolectric 4.17 stöder 37 (`android-all-instrumented` 17 finns),
+  men på 37 föll den första körningen (PR-körning 43713571634): Compose ui-test 1.12 drar in
+  Espresso 3.5.0, vars händelseinjektion anropar den dolda `InputManager.getInstance()` som API 37
+  inte har (`NoSuchMethodException` i varje Compose-test), Roborazzi 1.76.0 kunde inte fånga en
+  View på 37, och alla referensbilder är tagna på 36 (en ny nivå hade krävt att alla spelas in
+  igen). Tester av Android 17-beteende ber själva om 37 med `@Config(sdk = [37])` (annoteringen
+  vinner över filen), t.ex. `LocalNetworkPermissionTest`. Höj standarden när Compose drar in
+  Espresso ≥ 3.7.0 och Roborazzi fångar på 37, och spela då in referensbilderna på nytt.
+  Inga nya referensbilder i banan: raden Lokalt nätverk syns bara när den lästs, och de
+  befintliga skärmbilderna har den inte.
 - **Röktestet** kör på Googles stabila API 37-avbild `system-images;android-37.0;google_apis;x86_64`
   (`api-level: "37.0"` i `smoke.yml`; SDK:n kallar API 37 "37.0"), båda skärvorna, i stället för
   API 36. Röktestets falska Tandoor ligger på `localhost` (loopback, inte lokalt nät), så ingen

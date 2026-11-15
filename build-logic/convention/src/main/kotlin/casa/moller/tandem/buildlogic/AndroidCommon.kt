@@ -32,6 +32,9 @@ internal fun Project.configureAndroidCommon(android: CommonExtension) {
 
     // Robolectric needs merged Android resources in JVM unit tests.
     android.testOptions.unitTests.isIncludeAndroidResources = true
+    // Fas 5 (sdk37 lane): Robolectric's default SDK for every module's unit tests is 36 while the
+    // apps target 37 (config/robolectric/robolectric.properties says why; docs/BYGGE.md "Target SDK 37").
+    android.sourceSets.getByName("test").resources.directories.add(rootProject.file("config/robolectric").path)
 
     android.lint.apply {
         abortOnError = true
