@@ -1145,6 +1145,7 @@ sätts av integrationen. En rad per bana.
 | komplettering-enhet | Luckorna efter enhetstestet som går att täppa till utan telefon: det instabila kalenderröktestet, ett kontraktsfaktum för raden Nya, "Lägg till i matsedeln" vid största text, referensbilderna som varje inspelning skrev om, det föråldrade reglaget i påminnelsen nära butiken | **Kalendern:** att stänga av "Visa i telefonens kalender" (och utloggning, demoläge, konto som lämnar) sparar "av" och tar bort kalendern i samma steg under skrivlåset, så ingen väntande skrivning lägger tillbaka den; ett Robolectric-test som håller "av" medan en skrivning kommer in, och röktestet `Phase5KalenderSmokeTest` grönt i flera körningar i rad utan högre tidsgräns. **Nya:** `Phase5NyaContractTest` (eget steg, `fas5/nya/`, `fas5.nya`) visar mot 2.6.13 och 2.7.1 att `new=true&sort_order=-created_at&page_size=20` ger de nyaste först och det bakåtdaterade receptet efter alla nya. **Knappen:** vid teckenstorlek 2 på 320 dp kapas inte "Lägg till i matsedeln (…)" (kortare etikett utan dagen, TalkBack läser dagen), test med `assertNoWordBreaks` och omspelade referensbilder. **Skärmbilder:** en ny inspelning ändrar inga incheckade bilder utöver de avsiktliga. **Reglaget:** `SliderState`-varianten, ingen varning, oförändrade referensbilder. | ✅ klart i CI 2026-11-15 (PR 43688530582 och röktest 43689303843 på 5a2b63a, PR 43694171635 och röktest 43694171650 på 97c1994 med rättningen av `Phase1bSmokeTest`: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; torrkörning med båda APK:erna 43691564280 på 8774163; Contract 2.6.13/2.7.1 43684997721 och 43686684066; referensbilder från Screenshots 43686612108, bara de två `mealplan/phone_largest_devicetest_plan_meal_*_font2_light_sv`, och 43676697642 för de nio inaktuella; röktestet körs två gånger till på main), se "Komplettering efter enhetstestet" |
 | rss | Inkorg för recept (#35, plan §7, §8.4, §10 Fas 5), 0.9.0 | **Minimikravet:** ett oläst inlägg i en vald kategori i användarens Miniflux importeras med **två tryck** – inlägget (förhandsvisningen) och **Importera** – till samma granskning som en delad länk (#18): importen öppnas med inläggets adress och hämtar den direkt, och att godkänna granskningen markerar inlägget "Importerad" (och läst i Miniflux när valet är på); bevisat i `InboxViewModelTest` (inkorgens ViewModel genom importens ViewModel) och `RecipeImportViewModelTest`. **Allmän Miniflux-klient** (adress + API-nyckel i `X-Auth-Token`, egen OkHttp-klient, inget serverspecifikt), av som standard, inställd under Mer → Inställningar → Inkorg för recept; nyckeln krypterad, aldrig i loggar, säkerhetskopior eller sparat tillstånd. **Offline:** inläggen (titel, flöde, datum, bild, utdrag) ligger i Room (schema 7, `inbox_entry`, migrering 6 → 7 testad) och visas utan nät; uppdateras när inkorgen öppnas, med dra för att uppdatera och av WorkManager var 4:e timme med nät bara medan inkorgen är på. "Markera som läst" utan import, skickas direkt eller vid nästa uppdatering. **Utloggning/borttaget konto/Koppla från** tar bort nyckel, val och inlägg (`AccountRemovalHook`, `deleteAccountData`, test). **Eget skydd** (nekad nyckel stoppar, 429/403-paus, brytare för bakgrunden) som aldrig rör Tandoors `SyncGuard` och tvärtom (test åt båda hållen). Gäster läser men importerar inte; demoläget har en inbyggd inkorg utan nät. Vägar in: Recepts verktygsrad (antal nya) och "Nytt i inkorgen" på Idag (Anpassa Idag). **Kontraktstest** `MinifluxContractTest` mot en tillfällig Miniflux 2.3.4 (version och digest) med PostgreSQL och ett flöde i jobbet (`miniflux-contract.yml`): kategorier med olästa, olästa inlägg nyast först, markera läst, nekad nyckel; inspelningarna i `api-schema/fixtures/miniflux/2.3.4/`. Skärmbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, svenska och teckenstorlek 2. **BEHÖVER ENHET** (ägaren): mot den egna Miniflux-servern | ✅ klart i CI 2026-11-15 (PR 43719560265 på 225e156; Miniflux contract 43717226807 och Contract 2.6.13/2.7.1 43717226790 på e6db5d2, inget i deras sökvägar ändrades sedan; referensbilder från Screenshots 43717233137, bara `inbox/*` och `home/*today_inbox*`, `home/phone_today_customize_inbox_light_sv` nya, inga andra ändrade; röktestet körs på grenens sista SHA, inget eget röktestscenario, se "Inkorgen för recept") |
 | sdk37 | Target SDK 37 (Android 17), 0.9.0 "Till hands" (plan §10 Fas 5, §5.5, §6.5) | **targetSdk 37 på main** för telefonappen, testappen (`:smoke`) och `:benchmark` (katalogens `targetSdk`); Wear OS-appen stannar på 36 med skälet skrivet. **Varje beteendeändring i Android 17** (för appar med target 37 och för alla appar, från developer.android.com) står i "Target SDK 37" med om den rör Tandem, var, och vad som gjordes. **Lokalt nätverk:** en server på hemnätverket (RFC 1918, länklokal, CGNAT utan VPN, IPv6 ULA/länklokal, direktanslutna rutter, `.local`) fungerar på Android 17: introt frågar `ACCESS_LOCAL_NETWORK` i sammanhanget innan något skickas (förklaring + Tillåt), ett nej ger felet "Tandem får inte använda ditt lokala nätverk" med vägen till Androids inställningar, en anslutning som ändå stoppas blir `TandemError.LocalNetworkDenied` (räknas som offline, aldrig kretsbrytaren) i stället för en timeout, och Mer → Behörigheter har raden Lokalt nätverk (bara på Android 17+); samma fråga och fel för Miniflux i inkorgens inställningar; beslutslogiken enhetstestad (adressreglerna, interceptorn, introts flöde, raden, Robolectric på SDK 36 och 37). **CI grönt**, röktestet kört på Googles API 37-emulator (`android-37.0`, `google_apis`, x86_64). | Klar: på main 39b0ad0f (2026-11-15); PR 43731863459, röktestet på API 37 43731863472 (`OK (14 tests)` + `OK (32 tests)`) |
+| las | Lås appen (plan §5.5, §10 Fas 5 "biometrisk lås"), 0.9.0 | **Av/på och tiderna:** Mer → Säkerhet → Lås appen är av som standard; att slå på kräver att telefonens skärmlås bekräftas en gång (systemets `BiometricPrompt`, `BIOMETRIC_STRONG` eller `DEVICE_CREDENTIAL`), och utan skärmlås går det inte att slå på (sidan förklarar och öppnar systemets säkerhetsinställningar). "Lås efter" Direkt / 1 min (standard) / 5 min / 15 min räknas **bara i bakgrunden** (processens ON_STOP, skärmen av inräknad) på `elapsedRealtime`; en kallstart låser alltid; att slå på låset med appen öppen låser den inte (`AppLockPolicyTest`, `DefaultAppLockTest` med falsk klocka, också en sovande telefon vars timer är sen). **Låst:** innehållet ritas inte, läses inte av TalkBack och kan inte tryckas på, låsskärmen ("Lås upp", prompten öppnas av sig själv) ligger i ett eget fönster över appens öppna ark och dialoger, Recents visar ingen bild (`setRecentsScreenshotEnabled(false)`, ingen FLAG_SECURE). **Undantagen bevisade med tester:** larmskärmen är en egen aktivitet på låsskärmen och varken den, timrarnas tjänst och mottagare, widgetarnas mottagare, rutan, klockans lyssnare eller butikspåminnelsens mottagare håller låset (`AppLockSurfacesTest`); notis, djuplänk, delning och genväg väntar och når sitt mål efter upplåsningen (`AppLockGateTest` med falsk autentiserare); widgetarna och rutan visar "Låst – öppna Tandem"/"Låst" medan låset är på (`WidgetStatesTest`, `WidgetSessionTest`); App Functions får `AppLock.unlockedWithinTimeout()`. Referensbilder och ATF för låsskärmen och sidan (telefon i båda orienteringar, surfplatta i båda, mörkt, svenska, teckenstorlek 2). Röktestet oförändrat (låset av). | ⏳ pågår, se "Lås appen" |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 sdk37 -->
@@ -2189,6 +2190,96 @@ Miniflux-servern med riktiga receptbloggar.
 <!-- /Fas 5 rss -->
 
 <!-- Fas 5 data -->
+## Lås appen (`:core:model`, `:core:domain`, `:core:data`, `:core:datastore`, `:core:sync`, `:core:ui`, `:feature:shell`, `:feature:widgets`, `:app`, Fas 5, las)
+
+Plan §5.5 ("Biometrisk lås valfritt (fas 5)"), §10 Fas 5. "Klart när" står i "Fas 5 – läge". Ingen ny
+notiskanal, ingen ny tabell (två nycklar i inställningsfilen: `app_lock_enabled`, `app_lock_timeout`).
+
+**Delarna.**
+- `core:model` `AppLockSettings(enabled = false, timeout = ONE_MINUTE)`, `AppLockTimeout` (Direkt, 1,
+  5, 15 min) och `AppLockStatus` (`UNKNOWN`, `OFF`, `UNLOCKED`, `LOCKED`; `allowsContent`), i
+  `AppSettings.appLock`.
+- `core:domain` `AppLockPolicy` (ren logik): kallstart låst, `withSettings`, `toBackground`, `tick`,
+  `toForeground`, `unlocked`; `blocks(surface, status)` och `showsContent(surface, settings)` för
+  `AppSurface` (appen, App Functions, larmskärmen, timernotiser, bakgrundsarbete, påminnelser,
+  klockan, widgetar, rutan).
+- `core:data` `AppLock` (gränssnitt): `settings`, `status`, `isLocked`, `unlockedWithinTimeout()`,
+  `onUnlocked()`, `setEnabled`, `setTimeout`. Implementeras av `core:sync` `DefaultAppLock`
+  (`@Singleton`, startas först i `TandemApplication.onCreate`), som följer inställningen och
+  processens livscykel (`ProcessLifecycleOwner`: ON_STOP startar bakgrundstiden, ON_START tittar på
+  den) och mäter med `SyncClock.elapsedMillis()` (`elapsedRealtime`: går i djupsömn, flyttas inte när
+  telefonens klocka ändras). I bakgrunden låser en timer när tiden har gått, så appen är redan låst när
+  den kommer tillbaka; en sovande telefon kör timern sent, därför tittar ON_START och
+  `unlockedWithinTimeout()` på klockan igen. `FakeAppLock` i `core:testing`.
+- `core:ui` `DeviceAuthenticator` (`rememberDeviceAuthenticator()`, `LocalDeviceAuthenticator` för
+  tester): plattformens `android.hardware.biometrics.BiometricPrompt` med
+  `BIOMETRIC_STRONG or DEVICE_CREDENTIAL` (minSdk 34), `KeyguardManager.isDeviceSecure` för "har
+  telefonen skärmlås". Appen ser aldrig fingeravtryck eller pinkod. Behörigheten `USE_BIOMETRIC`
+  (normal, i appens manifest). **Inte androidx.biometric:** 1.1.0 (senaste stabila) kräver
+  `FragmentActivity` och drar in appcompat, 1.4.0 finns bara som alpha/beta (beta01 är yngre än två
+  veckor); plattformens API gör samma sak från API 30.
+- `:app`: `AppLockGate` runt hela `TandemApp`, `AppLockRoute`/`AppLockScreen` (låsskärmen) och
+  `AppLockViewModel`; `MainActivity` håller kvar startskärmen tills låsets läge är känt och slår av
+  Recents-bilden (`setRecentsScreenshotEnabled(!enabled)`, API 33+) medan låset är på. **Ingen
+  FLAG_SECURE** (ägaren tar skärmbilder vid enhetstesterna).
+- `:feature:shell`: Mer → **Säkerhet** → Lås appen (`AppLockKey`, `AppLockPage` med `RouteAppLockPage`
+  i produktion och `NoAppLockPage` som standard i skalets tester, så Mers referensbilder är
+  oförändrade), `AppLockSettingsScreen` + `AppLockSettingsViewModel`.
+- `:feature:widgets`: `ShoppingWidgetState.locked`, `TonightWidgetState.locked`.
+
+**Hur låset döljer appen.** `AppLockGate` låter innehållet ligga kvar i kompositionen (flikarnas
+stackar, ett öppet ark, kokläget), men ritar det inte (`drawWithContent {}`), tar bort det ur
+TalkBacks träd (`clearAndSetSemantics {}`) och lägger ett täcke som tar alla tryck över det, i appens
+eget fönster, så att första bilden efter att appen kommer tillbaka aldrig visar innehållet. Själva
+låsskärmen är en helskärms-`Dialog` (eget fönster, ingen dimning eller tonande), eftersom ett öppet
+ark eller en dialog från innehållet är ett fönster ovanför appens: låsets fönster läggs till senare
+och hamnar överst. Läget samlas med `collectAsState()` (inte livscykelmedvetet), så att låset redan är
+i kompositionen när appen kommer tillbaka. Medan läget är `UNKNOWN` (inställningen läses vid en
+kallstart) står startskärmen kvar. Systemets bakåt på låsskärmen lägger appen i bakgrunden.
+
+**Vägar in.** En notis, en djuplänk, en delning till Tandem, en genväg, en widget eller rutan öppnar
+`MainActivity` som vanligt; `AppViewModel` sparar förfrågan och `AppUiState.forLock(unlocked)` håller
+den borta från skalet tills appen är upplåst, sedan öppnar skalet den som förut. Prompten öppnas av sig
+själv när låsskärmen kommer fram och efter varje tur i bakgrunden; "Lås upp" öppnar den igen. Stängs
+prompten med bakåt händer inget mer förrän användaren trycker. Har telefonen inget skärmlås (längre)
+visar låsskärmen det, med "Ställ in skärmlås" och "Fortsätt utan lås" (låser upp den här gången;
+utan skärmlås kan vem som helst med den öppna telefonen ställa in ett och bekräfta det, så låset
+skyddar inget då). Inställningen förblir på.
+
+**Det som aldrig väntar på låset.** Larmskärmen (`core:timer` `TimerAlarmActivity`, egen aktivitet i
+egen uppgift med `showWhenLocked`), timrarnas notiser och åtgärder (Stopp, +1 min), WorkManager
+(synk, utkorg, påminnelsernas koll), list-, utgångs-, måltids- och butikspåminnelserna, handsfree och
+klockan (egen token). Inget av det läser `AppLock`; `AppLockSurfacesTest` läser det sammanslagna
+manifestet och klasserna. Kokläget och köksskärmen låses aldrig medan de är framme, eftersom tiden
+bara räknas i bakgrunden; larmskärmen framför appen räknas som förgrund (en aktivitet i processen
+syns). Med "Direkt" låses appen också efter en tur till kameran, bildväljaren eller systemets
+inställningar; resultatet kommer ändå fram (innehållet ligger kvar) och syns efter upplåsningen.
+
+**Widgetar, ruta och genvägar.** Startskärmen och snabbinställningarna syns utan upplåsning, så
+widgetarna och rutan "Handla" visar "Låst – öppna Tandem" (rutan: "Låst") **så länge låset är på**,
+upplåst eller inte (`AppLockPolicy.showsContent`); ett tryck öppnar appen, låsskärmen och sedan listan
+eller Veckan. Genvägarna till de senast lagade recepten (receptnamn) tas bort medan låset är på; de
+fasta genvägarna finns kvar. Notiserna (listnotiser, påminnelser) styrs som förut av sina egna
+reglage och visar sitt innehåll på telefonens låsskärm enligt telefonens inställning.
+
+**App Functions (bana funktioner).** Anropa `AppLock.unlockedWithinTimeout()` innan en funktion läser
+eller skriver användarens data, och vägra när den är `false`: den väntar tills inställningen är läst
+och är sann bara när låset är av, eller användaren låste upp och appen inte har varit i bakgrunden
+längre än tiden sedan dess. `AppLock.isLocked` (`StateFlow`) räcker för det som redan syns.
+
+**Tester.** `AppLockPolicyTest` (core:domain, alla tider, kallstart, undantagen), `DefaultAppLockTest`
+(core:sync, falsk klocka och testschemaläggare), `PreferencesSettingsStoreTest` (nycklarna),
+`AppLockGateTest` (falsk autentiserare: innehållet dolt, prompten av sig själv, förfrågningarna efter
+upplåsningen, utan skärmlås), `AppLockViewModelTest`, `AppLockSurfacesTest`, `AppLockSettingsTest`
+(sidan och dess ViewModel: bekräfta först, utan skärmlås, fel), `WidgetStatesTest` och
+`WidgetSessionTest` (platshållaren). Referensbilder med ATF: `app/src/test/screenshots/app/*lock*`
+(`AppLockScreenshotTest`) och `feature/shell/src/test/screenshots/shell/lock_*`
+(`AppLockScreenshotTest` i `:feature:shell`). Röktestet kör med låset av (standard) och är oförändrat.
+
+**Kvar / prövas på en riktig telefon.** Att prompten inte pausar aktiviteten (då skulle den öppnas igen
+vid varje återkomst; Android 11+ visar pinkoden i systemets eget fönster), att låsets fönster täcker
+ett öppet ark på Samsung, och att Recents-bilden är tom.
+
 ## Enhetstestet 2026-11-14: inköpslistan och Kan laga nu (`:core:sync`, `:core:domain`, `:feature:shopping`, `:feature:home`, data)
 
 **B7, "Handla för veckan" dubblerade kvällens måltid.** "Lägg på inköpslistan" på Idags "Ikväll"

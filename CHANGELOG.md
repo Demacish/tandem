@@ -36,6 +36,23 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   läget. Samma sak gäller din Miniflux för inkorgen. En server på internet behöver ingen
   behörighet.
 
+**Lås appen** (Fas 5, bana las)
+
+- **Lås appen med telefonens skärmlås:** under Mer → Säkerhet → Lås appen kan du kräva fingeravtryck,
+  ansikte eller telefonens pinkod, mönster eller lösenord för att öppna Tandem. Av som standard. När
+  du slår på låset bekräftar du skärmlåset en gång; har telefonen inget skärmlås förklarar sidan det
+  och öppnar telefonens inställningar i stället.
+- **Lås efter:** Direkt, 1 minut (standard), 5 eller 15 minuter i bakgrunden. Tiden räknas bara när
+  appen inte syns, så kokläget och köksskärmen låses aldrig medan de är framme. En omstart av appen
+  låser den alltid.
+- Medan appen är låst syns inget av innehållet, inte heller i listan över senaste appar. Skärmbilder
+  går fortfarande att ta. En notis, en länk, en delning till Tandem eller en genväg väntar bakom
+  låset och öppnas när du har låst upp.
+- Timrar och larm (också helskärmslarmet på telefonens låsskärm med Stopp och +1 min), notiserna,
+  synken, påminnelserna och klockan fungerar som vanligt utan att du låser upp. Widgetarna och
+  snabbinställningen "Handla" visar "Låst – öppna Tandem" i stället för listan och måltiderna så
+  länge låset är på, och genvägarna till senast lagade recept tas bort.
+
 ## [0.8.0] – 2026-11-14
 
 Fas 5, andra delen: På språng. Inköpslistan och timrarna följer med på klockan, matsedeln syns i
