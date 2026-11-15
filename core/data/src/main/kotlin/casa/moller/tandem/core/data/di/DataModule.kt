@@ -3,8 +3,10 @@ package casa.moller.tandem.core.data.di
 import casa.moller.tandem.core.data.account.AccountRemovalHook
 import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.account.AccountSessions
+import casa.moller.tandem.core.data.assistant.AssistantSettingsRepository
 import casa.moller.tandem.core.data.internal.DefaultAccountRepository
 import casa.moller.tandem.core.data.internal.DefaultAppearanceRepository
+import casa.moller.tandem.core.data.internal.DefaultAssistantSettingsRepository
 import casa.moller.tandem.core.data.internal.DefaultLocalNetworkAccess
 import casa.moller.tandem.core.data.internal.DefaultSettingsRepository
 import casa.moller.tandem.core.data.internal.InMemoryPanSizeRepository
@@ -64,4 +66,8 @@ internal abstract class DataModule {
     // --- Fas 5 (sdk37 lane): Android 17's local network permission, asked in the intro (docs/BYGGE.md "Target SDK 37"). ---
     @Binds
     abstract fun bindLocalNetworkAccess(impl: DefaultLocalNetworkAccess): LocalNetworkAccess
+
+    // --- Fas 5 (funktioner lane): Mer → Assistenten, the App Functions' switches (plan §8.7). ---
+    @Binds
+    abstract fun bindAssistantSettingsRepository(impl: DefaultAssistantSettingsRepository): AssistantSettingsRepository
 }

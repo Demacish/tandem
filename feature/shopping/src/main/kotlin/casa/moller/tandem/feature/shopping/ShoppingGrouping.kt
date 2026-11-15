@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shopping
 
+import casa.moller.tandem.core.data.shopping.ShoppingInput
 import casa.moller.tandem.core.domain.shopping.MergedShoppingRow
 import casa.moller.tandem.core.domain.shopping.ShoppingMerge
 import casa.moller.tandem.core.domain.shopping.UnitConverter
@@ -124,7 +125,7 @@ internal object ShoppingGrouping {
      * Splits free text into items (#11, plan 6.2 "Flera varor på en gång"): one per line, and
      * commas or semicolons between items ("mjölk, bröd, 6 ägg"); a decimal comma ("1,5 kg") stays.
      */
-    fun splitItems(text: String): List<String> = text.split(ITEM_SEPARATOR).map { it.trim() }.filter { it.isNotEmpty() }
+    fun splitItems(text: String): List<String> = ShoppingInput.splitItems(text)
 
     /**
      * An amount typed in the edit sheet: a decimal comma or point ("1,5", "0.25"), empty = no
@@ -135,6 +136,4 @@ internal object ShoppingGrouping {
         if (clean.isEmpty()) return 0.0
         return clean.toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
     }
-
-    private val ITEM_SEPARATOR = Regex("\\r?\\n|;|,(?!\\d)")
 }

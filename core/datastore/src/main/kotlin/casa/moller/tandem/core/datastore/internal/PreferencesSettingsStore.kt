@@ -13,6 +13,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
+import casa.moller.tandem.core.model.assistant.AssistantSettings
 import casa.moller.tandem.core.model.settings.AppLockSettings
 import casa.moller.tandem.core.model.settings.AppLockTimeout
 import casa.moller.tandem.core.model.settings.AppSettings
@@ -72,6 +73,10 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
 
         // --- Fas S (drycker lane): absent = not chosen (follows the UI language). ---
         val SYSTEMBOLAGET_LINK = booleanPreferencesKey("systembolaget_link")
+
+        // --- Fas 5 (funktioner lane): Mer → Assistenten (the App Functions, plan §8.7). ---
+        val ASSISTANT_ENABLED = booleanPreferencesKey("assistant_enabled")
+        val ASSISTANT_WHEN_LOCKED = booleanPreferencesKey("assistant_when_locked")
 
         // --- Fas 5 (planera lane): reminder times as minutes after midnight, local wall clock. ---
         val PANTRY_EXPIRY_TIME = intPreferencesKey("pantry_expiry_time_minutes")
@@ -145,6 +150,11 @@ private fun Preferences.baseSettings(): AppSettings {
             ?: defaults.shoppingChangeNotifications,
         // --- Fas S (drycker lane) ---
         systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
+        // --- Fas 5 (funktioner lane) ---
+        assistant = AssistantSettings(
+            enabled = this[PreferencesSettingsStore.Keys.ASSISTANT_ENABLED] ?: defaults.assistant.enabled,
+            allowWhenLocked = this[PreferencesSettingsStore.Keys.ASSISTANT_WHEN_LOCKED] ?: defaults.assistant.allowWhenLocked,
+        ),
         // --- Fas 4 (skafferinotis lane) ---
         pantryExpiryNotifications = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS]
             ?: defaults.pantryExpiryNotifications,
@@ -229,6 +239,9 @@ private fun MutablePreferences.write(settings: AppSettings) {
     } else {
         this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK] = systembolaget
     }
+    // --- Fas 5 (funktioner lane) ---
+    this[PreferencesSettingsStore.Keys.ASSISTANT_ENABLED] = settings.assistant.enabled
+    this[PreferencesSettingsStore.Keys.ASSISTANT_WHEN_LOCKED] = settings.assistant.allowWhenLocked
     // --- Fas 5 (planera lane) ---
     this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_TIME] = settings.pantryExpiryTime.minutesOfDay()
     this[PreferencesSettingsStore.Keys.MEAL_REMINDERS] = settings.mealReminders

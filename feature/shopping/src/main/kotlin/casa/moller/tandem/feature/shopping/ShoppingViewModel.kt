@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.shopping.IngredientParser
+import casa.moller.tandem.core.data.shopping.ShoppingInput
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
 import casa.moller.tandem.core.data.shopping.ShoppingViewPreferences
 import casa.moller.tandem.core.data.shopping.SupermarketRepository
@@ -11,7 +12,6 @@ import casa.moller.tandem.core.domain.shopping.MergedShoppingRow
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.errorOrNull
-import casa.moller.tandem.core.model.error.getOrNull
 import casa.moller.tandem.core.model.shopping.ParsedIngredient
 import casa.moller.tandem.core.model.shopping.ShoppingEntry
 import casa.moller.tandem.core.model.shopping.ShoppingEntryDraft
@@ -340,9 +340,10 @@ class ShoppingViewModel @AssistedInject internal constructor(
         if (items.isEmpty()) return
         transient.update { it.copy(adding = true) }
         viewModelScope.launch {
-            // Tandoor's parser online; the local parser when it fails or the device is offline.
-            val parsed = parser.parse(items).getOrNull()?.takeIf { it.size == items.size } ?: items.map(::parseLocally)
-            val drafts = parsed.map { it.toDraft() }
+            // Tandoor's parser online; the local parser when it fails or the device is offline
+            // (core:data ShoppingInput, shared with the App Function since Fas 5).
+            val lists = selectedLists()
+            val drafts = ShoppingInput.parse(parser, items).map { ShoppingInput.draft(it, lists) }
             val result = shopping.addAll(drafts)
             transient.update { it.copy(adding = false) }
             when (result) {
@@ -516,18 +517,7 @@ class ShoppingViewModel @AssistedInject internal constructor(
     private fun preview(text: String): List<ParsedIngredient> = ShoppingGrouping.splitItems(text).map(::parseLocally)
 
     /** The local parser, or the whole text as the food when it finds nothing. */
-    private fun parseLocally(item: String): ParsedIngredient =
-        parser.parseLocally(item)?.takeIf { it.foodName.isNotBlank() } ?: ParsedIngredient(item, 0.0, null, item)
-
-    private fun ParsedIngredient.toDraft(): ShoppingEntryDraft = ShoppingEntryDraft(
-        foodName = foodName.ifBlank { originalText },
-        amount = amount,
-        unitName = unitName,
-        unitId = unitId,
-        foodId = foodId,
-        note = note,
-        listIds = selectedLists(),
-    )
+    private fun parseLocally(item: String): ParsedIngredient = ShoppingInput.parseLocally(parser, item)
 
     /** The amount for the edit field: "1,5" in Swedish, empty for no amount. */
     private fun editableAmount(amount: Double): String {

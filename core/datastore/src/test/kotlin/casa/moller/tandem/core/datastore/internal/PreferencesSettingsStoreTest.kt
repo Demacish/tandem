@@ -9,6 +9,7 @@ import app.cash.turbine.test
 import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.StoreScopes
+import casa.moller.tandem.core.model.assistant.AssistantSettings
 import casa.moller.tandem.core.model.settings.AppLockSettings
 import casa.moller.tandem.core.model.settings.AppLockTimeout
 import casa.moller.tandem.core.model.settings.AppSettings
@@ -215,6 +216,21 @@ class PreferencesSettingsStoreTest {
         second.update { it.copy(systembolagetLink = null) }
         scopes.closeAll()
         assertNull(open().settings.first().systembolagetLink)
+    }
+
+    // --- Fas 5 (funktioner lane): Mer → Assistenten, both off until chosen ---
+
+    @Test
+    fun theAssistantSettingsAreOffUntilChosenAndSurviveARestart() = runTest {
+        val first = open()
+        assertEquals(AssistantSettings(enabled = false, allowWhenLocked = false), first.settings.first().assistant)
+        first.update { it.copy(assistant = AssistantSettings(enabled = true, allowWhenLocked = true)) }
+        scopes.closeAll()
+        val second = open()
+        assertEquals(AssistantSettings(enabled = true, allowWhenLocked = true), second.settings.first().assistant)
+        second.update { it.copy(assistant = it.assistant.copy(enabled = false)) }
+        scopes.closeAll()
+        assertEquals(AssistantSettings(enabled = false, allowWhenLocked = true), open().settings.first().assistant)
     }
 
     // --- Fas 5 (planera lane) ---

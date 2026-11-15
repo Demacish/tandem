@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.model.settings
 
+import casa.moller.tandem.core.model.assistant.AssistantSettings
 import casa.moller.tandem.core.model.timer.TimerMode
 import kotlin.math.abs
 import kotlinx.datetime.LocalTime
@@ -63,6 +64,8 @@ data class AppSettings(
     val shoppingChangeNotifications: Boolean = false,
     // --- Fas S (drycker lane) ---
     val systembolagetLink: Boolean? = null,
+    // --- Fas 5 (funktioner lane): Mer → Assistenten, the App Functions (plan §8.7), off until chosen. ---
+    val assistant: AssistantSettings = AssistantSettings(),
     // --- Fas 5 (planera lane): the times of the daily reminders (plan §8.3, §8.8; channel "Måltidspåminnelser"). ---
     /** When the morning "Notis när något går ut" check runs, local wall-clock time (08:00 until chosen). */
     val pantryExpiryTime: LocalTime = DEFAULT_PANTRY_EXPIRY_TIME,
