@@ -1355,14 +1355,47 @@ visas på en telefon står som enhetsprov i banans rad i "Fas 5 – läge".
 | T1 | Röktestet gick inte att köra på en svensk Samsung utan lokal ändring | mer | "Release-röktest", "På en egen telefon" |
 | T2 | Testlistans punkt om Live Update stämde inte för Samsung (egen nedräkningsnotis där) | larm | "Enhetstestet 2026-11-14: larmen" |
 
-**Inte prövat än på telefonen:** flygplansläge, rotation, större teckenstorlek, TalkBack i hela
-appen och byte av klockslag; rättningarna ovan behöver också ett nytt varv på telefonen (se
-enhetsproven i respektive banas rad).
+**Inte prövat i första omgången:** flygplansläge, rotation, större teckenstorlek (de tre prövades
+i omgång 3 nedan), TalkBack i hela appen och byte av klockslag; rättningarna ovan behöver också
+ett nytt varv på telefonen (se enhetsproven i respektive banas rad).
 
-**Omgång 3 (samma telefon: flygplansläge, rotation, största text och skärmzoom, TalkBack lästes
-ur trädet):** liggande läge och flikarna rättades i banan liggande (B20,
-B21, flikraden i B22, och K1–K3 som kokvy lämnade öppna), se "Enhetstestet 2026-11-14, omgång 3:
-liggande läge, flikarna och kokrubriken".
+### Omgång 3
+
+Samma telefon, nu inloggad mot en riktig Tandoor 2.6.13: flygplansläge, rotation, största text
+och största skärmzoom (320 × 693 dp), TalkBack granskat i appens träd och i koden (ingen lyssnade).
+
+**Fungerade utan fel på telefonen:**
+
+- Offline: recept, timers, Klart! och ändringar på inköpslistan fungerar utan nät. Recept som inte
+  är nedladdade är märkta och säger att de behöver nät; det nedladdade receptet visas med bild,
+  ingredienser, steg och "Sparad version från …". När flygplansläget slogs av tömdes kön av sig
+  själv inom några sekunder, och varje väntande ändring (en kokloggspost, nio nya listrader och tre
+  avbockningar) nådde servern exakt en gång, utan dubbletter; en vara som tagits bort offline
+  skickades aldrig. Kön stod kvar efter en omstart utan nät.
+- Två timers utan nät med släckt skärm: skärmen väcks, båda ringer och larmet låter tills Stopp.
+- Rotation: steget ("Steg 4 av 8"), båda timrarna och en öppen dialog "Justera tiden" med sitt
+  värde finns kvar efter vridningen.
+- Den automatiska granskningen av etiketter hittade inga tryckbara element utan etikett och inga
+  tryckytor under 48 dp på Idag, Recept, receptvyn, Veckan och Handla.
+- Inte fel: betyget visas som snittet av ens egna betyg avrundat till hela stjärnor; "A,2 B" utan
+  mellanslag efter kommat är en vara (decimalkomma).
+
+**Fynd och vem som rättade dem:**
+
+| Nr | Fynd | Bana | Se |
+|---|---|---|---|
+| B18 | Offline-sökningens antal träffar trycktes ihop till en bokstav per rad | stortext | "Enhetstestet 2026-11-14: största text utanför kokläget" |
+| B19 | "Offline" stod kvar i minuter efter att nätet kommit tillbaka (chipet, Idag, receptvyn) | offline | "Enhetstestet 2026-11-14, omgång 3: offlinemarkeringarna" |
+| B20 | Kokläget i liggande läge på telefon: stegtexten klipptes bort | liggande | "Enhetstestet 2026-11-14, omgång 3: liggande läge, flikarna och kokrubriken" |
+| B21 | Liggande läge på telefon: Mer hamnade utanför bild | liggande | dito |
+| B22 | Största text: ord bröts mitt i eller kapades i receptvyn, listan, Idag och flikraden | stortext, liggande (flikarna) | båda avsnitten ovan |
+| K1–K3 | Kokrubriken och timerraden bröt ord, "Föregående" i liggande läge, "0 s kortare" | liggande | "Enhetstestet 2026-11-14, omgång 3: liggande läge, flikarna och kokrubriken" |
+| N1 | Sidan med "Ny dryck" hittades inte | offline | inget fel: Recept → chipet "Drycker" (rulla samlingsraden) → "Ny dryck"; se offlineavsnittet |
+
+**Inte prövat än:** TalkBack med någon som lyssnar (bråk, nytt steg, startad timer, larmskärmens
+timernamn), två telefoner mot samma lista, surfplatta, klocka, ett riktigt butiksbesök, riktiga
+streckkoder och kvitton, en egen AI-nyckel och jämförelse med webben. Rättningarna i omgång 3
+behöver ett nytt varv på telefonen (enhetsproven i banornas rader).
 <!-- /Enhetstest 2026-11-14 -->
 
 <!-- Fas 5 rost -->
