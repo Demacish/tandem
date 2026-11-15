@@ -38,7 +38,7 @@ Vill du bara titta finns ett demoläge med exempelrecept, utan server.
 ## Teknik
 
 Kotlin, Jetpack Compose med Material 3 (Expressive), Navigation 3, Hilt, Retrofit/OkHttp,
-kotlinx.serialization, Room, WorkManager, DataStore + Tink. minSdk 34, targetSdk 36, compileSdk 37.
+kotlinx.serialization, Room, WorkManager, DataStore + Tink. minSdk 34, targetSdk 37 (the Wear OS app 36), compileSdk 37.
 Engelska är grundspråk (`values/`) och svenska (`values-sv/`) ska alltid vara komplett.
 
 ## Bygge och CI

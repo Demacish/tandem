@@ -7,7 +7,13 @@
 [versions]
 # --- SDK levels (read by build-logic convention plugins) ---
 minSdk = "34"
-targetSdk = "36"
+# Fas 5 (sdk37 lane, 0.9.0): Android 17. Every behavior change and its handling: docs/BYGGE.md
+# "Target SDK 37" (the local network permission, large screens, background audio, CT/ECH, ...).
+targetSdk = "37"
+# The Wear OS app stays on 36 (docs/BYGGE.md "Target SDK 37" -> "Klockan"): Play asks API 35 of
+# Wear OS apps, and API 37 (Wear OS 7) would need the local network permission on the watch, which
+# has no screen to ask for it yet. wear/build.gradle.kts reads this.
+wearTargetSdk = "36"
 # Required, not optional: Compose UI 1.12.1, core 1.19.1, material3 1.5.0-beta01,
 # navigation3 1.2.0 and adaptive-navigation3 1.3.0 all declare minCompileSdk=37 (AGP >= 9.1.0).
 compileSdk = "37"

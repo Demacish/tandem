@@ -262,7 +262,7 @@ jobs:
           retention-days: 7
 
   smoke:
-    name: Minified app on an emulator (API 36, shard ${{ matrix.shard }})
+    name: Minified app on an emulator (API 37, shard ${{ matrix.shard }})
     needs: [changes, build]
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
@@ -320,7 +320,10 @@ jobs:
         if: matrix.shard == 1 || github.event_name != 'workflow_dispatch' || inputs.tests == ''
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 36
+          # Fas 5 (sdk37 lane): Android 17, the app's target SDK, on Google's stable image
+          # "system-images;android-37.0;google_apis;x86_64" (the SDK names API 37 "37.0"; the
+          # action installs platforms;android-37.0 and that image). docs/BYGGE.md "Target SDK 37".
+          api-level: "37.0"
           target: google_apis
           arch: x86_64
           profile: pixel_6

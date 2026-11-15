@@ -8,6 +8,9 @@
 //   from release.yml's environment variables (the same ones :app reads), dry runs `.dryrun`.
 // - minSdk 34 (Wear OS 5, Android 14; Galaxy Watch 4 and later got it with One UI 6 Watch), the
 //   same as the phone, so the shared modules need no override (docs/BYGGE.md "Klockan").
+// - targetSdk 36 while the phone targets 37 (Fas 5, sdk37 lane): Google Play asks API 35 of Wear OS
+//   apps, and on Wear OS 7 (API 37) a target of 37 would need the local network permission, which
+//   the watch cannot ask for yet (docs/BYGGE.md "Target SDK 37").
 // - Versions follow the phone app: versionCode and versionName are read from app/build.gradle.kts,
 //   so the integration step bumps one file.
 // - No Hilt: a small hand-made graph (WearGraph), so core:network's Hilt modules stay unused here.
@@ -47,6 +50,9 @@ android {
         applicationId = "casa.moller.tandem"
         versionCode = phoneVersionCode
         versionName = phoneVersionName
+        // Fas 5 (sdk37 lane): the watch stays on target SDK 36 while the phone targets 37
+        // (gradle/libs.versions.toml wearTargetSdk, docs/BYGGE.md "Target SDK 37").
+        targetSdk = libs.versions.wearTargetSdk.get().toInt()
     }
 
     buildFeatures {
