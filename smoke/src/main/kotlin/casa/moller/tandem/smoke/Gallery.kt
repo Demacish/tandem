@@ -59,10 +59,13 @@ class Gallery(private val context: Context) : ExternalResource() {
     }
 
     /**
-     * Picks the newest photo in the system photo picker the app just opened (single choice: one
-     * tap returns to the app). Thumbnails are found by their resource id or description; the
-     * picker's own layout differs between Android builds, so a large clickable tile in the grid is
-     * the last resort. Every attempt leaves a screenshot and the window hierarchy.
+     * Picks the newest photo in the system photo picker the app just opened. Up to Android 16 one
+     * tap on a single choice returns to the app; Android 17's picker (`com.google.android.photopicker`,
+     * Fas 5 sdk37 lane) keeps the photo selected until "Done", whose text sits in a child of the
+     * clickable button. Thumbnails are found by their resource id or description; the picker's own
+     * layout differs between Android builds, so a large clickable tile in the grid is the last
+     * resort, never a button with a text (Android 17 shows "Choose cloud media app" with "Choose
+     * app" above the grid). Every attempt leaves a screenshot and the window hierarchy.
      */
     fun pickNewest(app: TandemApp) {
         val device = app.device
@@ -78,6 +81,14 @@ class Gallery(private val context: Context) : ExternalResource() {
                 app.capture("photo-picker-stuck")
                 throw AssertionError("No photo could be picked in the photo picker")
             }
+            // A photo is already selected (Android 17, or a multiple-choice picker): confirm it,
+            // never tap the tile again (that would deselect it).
+            device.findObject(CONFIRM)?.let { confirm ->
+                app.capture("photo-picker-${attempt++}")
+                runCatching { confirm.click() }
+                device.wait(Until.gone(PICKER), TAP_WAIT_MS)
+                continue
+            }
             val tile = thumbnail(device)
             if (tile == null) {
                 SystemClock.sleep(POLL_MS)
@@ -86,8 +97,8 @@ class Gallery(private val context: Context) : ExternalResource() {
             app.capture("photo-picker-${attempt++}")
             runCatching { tile.click() }
             device.wait(Until.gone(PICKER), TAP_WAIT_MS)
-            // A picker in multiple-choice mode needs its "Done"/"Add" button.
-            if (device.hasObject(PICKER)) device.findObject(CONFIRM)?.let { runCatching { it.click() } }
+            // A picker that keeps the choice selected needs its "Done"/"Add" button.
+            if (device.hasObject(PICKER)) device.wait(Until.findObject(CONFIRM), TAP_WAIT_MS)?.let { runCatching { it.click() } }
         }
     }
 
@@ -99,7 +110,9 @@ class Gallery(private val context: Context) : ExternalResource() {
             .filter { tile ->
                 val bounds = runCatching { tile.visibleBounds }.getOrNull() ?: return@filter false
                 val large = bounds.width() >= MIN_TILE_PX && bounds.height() >= MIN_TILE_PX
-                large && bounds.top > header && tile.text.isNullOrBlank()
+                // A button's text may sit in a child (Android 17's "Choose app", "Dismiss").
+                val labelled = !tile.text.isNullOrBlank() || tile.hasObject(By.text(ANY_TEXT))
+                large && bounds.top > header && !labelled
             }
             .minByOrNull { tile -> tile.visibleBounds.let { it.top * device.displayWidth + it.left } }
     }
@@ -116,9 +129,12 @@ class Gallery(private val context: Context) : ExternalResource() {
         private val PICKER_PACKAGE: Pattern = Pattern.compile(".*providers\\.media.*|.*photopicker.*")
         private val PICKER: BySelector = By.pkg(PICKER_PACKAGE)
 
-        // The picker speaks the PHONE's language: Swedish too (device test 2026-11-14, T1).
+        // The picker speaks the PHONE's language: Swedish too (device test 2026-11-14, T1). Not
+        // clickable(true): on Android 17 the text is a child of the clickable button (a tap on the
+        // text lands on the button).
         private val CONFIRM: BySelector =
-            By.pkg(PICKER_PACKAGE).clickable(true).text(Pattern.compile("Done|Add|Select|Allow|Klar|Lägg till|Välj|Tillåt"))
+            By.pkg(PICKER_PACKAGE).text(Pattern.compile("Done|Add|Select|Allow|Klar|Lägg till|Välj|Tillåt"))
+        private val ANY_TEXT: Pattern = Pattern.compile("(?s).+")
         private val THUMBNAILS = listOf(
             By.pkg(PICKER_PACKAGE).res(Pattern.compile(".*:id/icon_thumbnail")),
             By.pkg(PICKER_PACKAGE).desc(Pattern.compile("(?i)(photo taken|foto taget).*")),
