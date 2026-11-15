@@ -13,8 +13,6 @@ import casa.moller.tandem.core.model.assistant.AssistantRecipe
 import casa.moller.tandem.core.model.assistant.AssistantShoppingItem
 import casa.moller.tandem.core.ui.navigation.AppOpenIntents
 import java.time.LocalDate
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.datetime.toJavaLocalDate
 import kotlinx.datetime.toJavaLocalTime
 import kotlinx.datetime.toKotlinLocalDate
@@ -30,7 +28,10 @@ import kotlinx.datetime.toKotlinLocalDate
  * Assistenten): `isEnabled = false` here, [AssistantFunctionStates] enables them in the system, and
  * [AssistantActions] refuses again while the setting is off, the app is locked, nobody is logged in,
  * or (for the write) the user is a guest or the server is in safe mode. Nothing deletes anything.
- * The KDoc is the description the assistant reads (docs/BYGGE.md "App Functions").
+ * The KDoc is the description the assistant reads (docs/BYGGE.md "App Functions"). The functions
+ * run on the service's coroutine scope without switching threads: everything they call is a
+ * main-safe suspending repository (Room, DataStore, the outbox), and an exception thrown across a
+ * thread switch never reached the caller in the library's test rule.
  */
 @RequiresApi(Build.VERSION_CODES.BAKLAVA)
 @AppFunctionServiceEntryPoint(serviceName = "TandemAppFunctionService", appFunctionXmlFileName = "tandem_app_functions")
@@ -58,9 +59,9 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
         amount: Double? = null,
         unit: String? = null,
         listName: String? = null,
-    ): AddedToShoppingList = withContext(Dispatchers.IO) {
+    ): AddedToShoppingList {
         val added = AssistantErrors.valueOf(actions.addToShoppingList(text, amount, unit, listName))
-        AddedToShoppingList(added.items.map { it.toFunctionItem() }, added.list)
+        return AddedToShoppingList(added.items.map { it.toFunctionItem() }, added.list)
     }
 
     /**
@@ -71,8 +72,8 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
      * @return The items to buy; empty when there is nothing to buy.
      */
     @AppFunctionDeclaration(isDescribedByKDoc = true, isEnabled = false)
-    suspend fun getShoppingList(listName: String? = null): List<ShoppingListItem> = withContext(Dispatchers.IO) {
-        AssistantErrors.valueOf(actions.shoppingList(listName)).map { it.toFunctionItem() }
+    suspend fun getShoppingList(listName: String? = null): List<ShoppingListItem> {
+        return AssistantErrors.valueOf(actions.shoppingList(listName)).map { it.toFunctionItem() }
     }
 
     /**
@@ -83,9 +84,9 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
      * @return The day and its planned meals.
      */
     @AppFunctionDeclaration(isDescribedByKDoc = true, isEnabled = false)
-    suspend fun getMealPlan(date: LocalDate? = null): MealPlanForDay = withContext(Dispatchers.IO) {
+    suspend fun getMealPlan(date: LocalDate? = null): MealPlanForDay {
         val day = AssistantErrors.valueOf(actions.mealPlan(date?.toKotlinLocalDate()))
-        MealPlanForDay(day.date.toJavaLocalDate(), day.meals.map { it.toFunctionMeal() })
+        return MealPlanForDay(day.date.toJavaLocalDate(), day.meals.map { it.toFunctionMeal() })
     }
 
     /**
@@ -96,8 +97,8 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
      * @return The matching recipes with their ids; empty when nothing matches.
      */
     @AppFunctionDeclaration(isDescribedByKDoc = true, isEnabled = false)
-    suspend fun searchRecipes(query: String, maxResults: Int = 0): List<RecipeSummary> = withContext(Dispatchers.IO) {
-        AssistantErrors.valueOf(actions.searchRecipes(query, maxResults)).map { it.toSummary() }
+    suspend fun searchRecipes(query: String, maxResults: Int = 0): List<RecipeSummary> {
+        return AssistantErrors.valueOf(actions.searchRecipes(query, maxResults)).map { it.toSummary() }
     }
 
     /**
@@ -109,10 +110,10 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
      * @return The intent that opens the recipe in Tandem.
      */
     @AppFunctionDeclaration(isDescribedByKDoc = true, isEnabled = false)
-    suspend fun openRecipe(recipeId: Long, cookMode: Boolean = false): PendingIntent = withContext(Dispatchers.IO) {
+    suspend fun openRecipe(recipeId: Long, cookMode: Boolean = false): PendingIntent {
         val recipe = AssistantErrors.valueOf(actions.recipe(recipeId))
         val destination = if (cookMode) AppOpenIntents.cook(recipe.id) else AppOpenIntents.recipe(recipe.id)
-        AppOpenIntents.openPendingIntent(this@BaseTandemAppFunctionService, destination)
+        return AppOpenIntents.openPendingIntent(this, destination)
             ?: throw AppFunctionAppUnknownException("Tandem could not be opened on this phone.")
     }
 
