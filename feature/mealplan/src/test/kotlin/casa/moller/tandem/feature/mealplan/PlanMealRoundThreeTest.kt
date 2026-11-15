@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -192,7 +193,8 @@ class PlanMealRoundThreeTest {
             }
         }
         composeRule.onNodeWithTag(PLAN_MEAL_FORM_TAG).performScrollToNode(hasTestTag(PLAN_MEAL_REMINDER_TAG))
-        composeRule.onNodeWithTag(PLAN_MEAL_SAVE_TAG).performClick()
+        // The click action without a touch: no ripple caught half way in the picture.
+        composeRule.onNodeWithTag(PLAN_MEAL_SAVE_TAG).performSemanticsAction(SemanticsActions.OnClick)
         composeRule.waitForIdle()
         composeRule.onNodeWithTag(PLAN_MEAL_SAVE_ERROR_TAG).assertIsDisplayed()
         if (accessibility) composeRule.assertAccessible()
