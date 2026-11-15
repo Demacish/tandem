@@ -72,9 +72,8 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
      * @return The items to buy; empty when there is nothing to buy.
      */
     @AppFunctionDeclaration(isDescribedByKDoc = true, isEnabled = false)
-    suspend fun getShoppingList(listName: String? = null): List<ShoppingListItem> {
-        return AssistantErrors.valueOf(actions.shoppingList(listName)).map { it.toFunctionItem() }
-    }
+    suspend fun getShoppingList(listName: String? = null): List<ShoppingListItem> =
+        AssistantErrors.valueOf(actions.shoppingList(listName)).map { it.toFunctionItem() }
 
     /**
      * Gets the meals the household planned in Tandem's meal plan for one day, such as tonight's
@@ -97,9 +96,8 @@ abstract class BaseTandemAppFunctionService : AppFunctionService() {
      * @return The matching recipes with their ids; empty when nothing matches.
      */
     @AppFunctionDeclaration(isDescribedByKDoc = true, isEnabled = false)
-    suspend fun searchRecipes(query: String, maxResults: Int = 0): List<RecipeSummary> {
-        return AssistantErrors.valueOf(actions.searchRecipes(query, maxResults)).map { it.toSummary() }
-    }
+    suspend fun searchRecipes(query: String, maxResults: Int = 0): List<RecipeSummary> =
+        AssistantErrors.valueOf(actions.searchRecipes(query, maxResults)).map { it.toSummary() }
 
     /**
      * Opens a recipe stored in Tandem on the screen: the recipe itself, or cook mode with one step
