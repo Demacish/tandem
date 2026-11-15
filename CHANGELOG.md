@@ -139,6 +139,11 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   överst när texten inte får plats bredvid knapparna.
 - I "Justera tiden" säger skärmläsaren inte längre "0 s kortare" när tiden redan är den kortaste:
   knappen heter då "Kortare" och går inte att trycka på.
+- "Offline" uppe till höger och raden "Offline: visar det som sparats i enheten" på Idag stod kvar
+  i flera minuter efter att nätet kommit tillbaka. Nu försvinner de inom några sekunder, så fort
+  servern svarar: Tandem kontrollerar servern en gång när nätet är tillbaka, och varje lyckad
+  synk räknas. Ett recept som öppnades utan nät fylls i av sig självt, och en sökning som inte
+  nådde servern söker där igen.
 
 **Kvar till senare**
 
