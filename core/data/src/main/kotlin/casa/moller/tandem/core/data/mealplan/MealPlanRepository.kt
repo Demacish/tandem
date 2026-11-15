@@ -11,6 +11,7 @@ import casa.moller.tandem.core.model.mealplan.MealTypeDraft
 import casa.moller.tandem.core.model.mealplan.WeekShoppingPreview
 import casa.moller.tandem.core.model.mealplan.WeekShoppingSelection
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
@@ -49,6 +50,14 @@ interface MealPlanRepository {
 
     /** A new meal type for the whole space. Returns its (negative, until sent) id. */
     suspend fun createMealType(draft: MealTypeDraft): Outcome<Long>
+
+    /**
+     * Enhetstestet B15: the meal type [id] as it is now. A meal type created on this device has a
+     * negative id until its CREATE is sent; then it is stored under the server's id, and this flow
+     * follows it (the outbox's id rewrite), so a form that chose the new type keeps it selected.
+     * A server id is emitted as it is. Default: [id] unchanged.
+     */
+    fun observeMealTypeId(id: Long): Flow<Long> = flowOf(id)
 
     /** Meals whose offline change collided with someone else's (plan 3.5), until resolved. */
     fun observeConflicts(): Flow<List<MealPlanConflict>>

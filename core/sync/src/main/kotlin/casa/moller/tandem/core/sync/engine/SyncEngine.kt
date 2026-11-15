@@ -545,8 +545,11 @@ internal class SyncEngine @Inject constructor(
                     sortOrder = RecipeSortOrder.LAST_COOKED_DESC,
                     pageSize = SyncSchedule.OFTEN_COOKED_CANDIDATES,
                 ),
-                // `new=true` only sorts new recipes first (FACTS "Fas 1 c"); the `new` flag filters.
-                HomeSectionType.NEW to RecipeListQuery(newFirst = true, pageSize = size),
+                // Enhetstestet F1: "Nya" is the newest recipes on the server, newest first, also
+                // when none was added in the last 7 days (Tandoor's `new` flag): before, a server
+                // with only older recipes left the row empty after the first sync. `new=true` only
+                // floats the new ones to the top (FACTS "Fas 1 c"), `-created_at` orders the rest.
+                HomeSectionType.NEW to RecipeListQuery(newFirst = true, sortOrder = RecipeSortOrder.CREATED_DESC, pageSize = size),
                 HomeSectionType.RECENTLY_VIEWED to RecipeListQuery(
                     viewedOnOrAfter = today.minus(SyncSchedule.RECENTLY_VIEWED_DAYS, DateTimeUnit.DAY),
                     sortOrder = RecipeSortOrder.LAST_VIEWED_DESC,
@@ -574,8 +577,6 @@ internal class SyncEngine @Inject constructor(
                             .associate { it.overview.serverId to (it.overview.timesCooked ?: 0) }
                         inOrder.sortedByDescending { counts[it] ?: 0 }
                     }
-
-                    HomeSectionType.NEW -> results.filter { it.isNew }.mapNotNull { it.id }
 
                     else -> inOrder
                 }

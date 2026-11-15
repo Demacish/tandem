@@ -157,6 +157,23 @@ internal class OfflineFirstMealPlanRepository @Inject constructor(
         .catch { emit(emptyList()) }
         .distinctUntilChanged()
 
+    // Enhetstestet B15: a new meal type stays chosen when its CREATE is sent (the id rewrite).
+    override fun observeMealTypeId(id: Long): Flow<Long> = if (id >= 0) {
+        flowOf(id)
+    } else {
+        sources.source
+            .flatMapLatest { source ->
+                if (source is ActiveSource.Stored) {
+                    databases.get(source.kind).idRewriteDao().observeResolved(source.accountId, OutboxEntities.MEAL_TYPE, id)
+                        .map { it ?: id }
+                } else {
+                    flowOf(id)
+                }
+            }
+            .catch { emit(id) }
+            .distinctUntilChanged()
+    }
+
     override fun observeConflicts(): Flow<List<MealPlanConflict>> = sources.source
         .flatMapLatest { source ->
             if (source is ActiveSource.Remote) {

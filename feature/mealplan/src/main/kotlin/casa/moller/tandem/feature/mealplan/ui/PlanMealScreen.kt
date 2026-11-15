@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Checkbox
@@ -37,6 +39,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,13 +48,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +75,7 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.recipe.RecipeOverview
 import casa.moller.tandem.core.ui.LoadingState
 import casa.moller.tandem.core.ui.diagnostics.ReportContentReady
+import casa.moller.tandem.core.ui.layout.LabelRow
 import casa.moller.tandem.core.ui.layout.MediaRow
 import casa.moller.tandem.core.ui.layout.scaledMaxLines
 import casa.moller.tandem.core.ui.recipe.RecipeImage
@@ -75,11 +83,18 @@ import casa.moller.tandem.core.ui.recipe.ServingsStepper
 import casa.moller.tandem.feature.mealplan.MealKind
 import casa.moller.tandem.feature.mealplan.MealPlanFormat
 import casa.moller.tandem.feature.mealplan.PlanMealAction
+import casa.moller.tandem.feature.mealplan.PlanMealField
 import casa.moller.tandem.feature.mealplan.PlanMealUiState
 import casa.moller.tandem.feature.mealplan.R
 
 /** Test tag of the plan-meal form (scrolling in tests). */
 const val PLAN_MEAL_FORM_TAG = "plan-meal:form"
+
+/** Test tag of "Lägg till i matsedeln" / "Spara" (enhetstestet B15). */
+const val PLAN_MEAL_SAVE_TAG = "plan-meal:save"
+
+/** Test tag of the missing field said beside "Lägg till i matsedeln" (enhetstestet B15). */
+const val PLAN_MEAL_SAVE_ERROR_TAG = "plan-meal:save-error"
 
 /** Test tag of the "Påminn kvällen innan" field (Fas 5). */
 const val PLAN_MEAL_REMINDER_TAG = "plan-meal:reminder"
@@ -113,6 +128,16 @@ fun PlanMealScreen(
     val locale = LocalConfiguration.current.locales[0]
     val format = remember(locale) { MealPlanFormat(locale) }
     var picking by rememberSaveable { mutableStateOf(false) }
+    // Enhetstestet B15: a save that stopped at a missing field brings that field into view (and
+    // focuses it when it is a text field); the bar says which one beside the button.
+    val listState = rememberLazyListState()
+    val focus = remember { PlanMealFocus() }
+    LaunchedEffect(state.failedSaves) {
+        val field = state.firstMissing ?: return@LaunchedEffect
+        if (state.failedSaves == 0) return@LaunchedEffect
+        listState.animateScrollToItem(planMealFieldIndex(state, field))
+        focus.of(field)?.let { requester -> runCatching { requester.requestFocus() } }
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -134,6 +159,8 @@ fun PlanMealScreen(
                     format = format,
                     onAction = onAction,
                     onPickDate = { picking = true },
+                    listState = listState,
+                    focus = focus,
                     // fix-ui: the keyboard is handled here only. The Scaffold's padding already holds the
                     // save bar (which stays under the keyboard); consuming it leaves imePadding just
                     // the part of the keyboard above the bar, so the form ends at the keyboard's top.
@@ -163,11 +190,15 @@ private fun PlanMealForm(
     format: MealPlanFormat,
     onAction: (PlanMealAction) -> Unit,
     onPickDate: () -> Unit,
+    listState: LazyListState,
+    focus: PlanMealFocus,
     modifier: Modifier = Modifier,
 ) {
     val spacing = TandemTheme.spacing
     val errors = state.showErrors
+    // Keep the items in step with planMealFieldIndex (enhetstestet B15).
     LazyColumn(
+        state = listState,
         modifier = modifier.testTag(PLAN_MEAL_FORM_TAG),
         contentPadding = PaddingValues(horizontal = spacing.screenHorizontal, vertical = spacing.lg),
         verticalArrangement = Arrangement.spacedBy(spacing.lg),
@@ -202,7 +233,7 @@ private fun PlanMealForm(
                         imeAction = ImeAction.Search,
                         isError = errors && state.recipeMissing,
                         supportingText = stringResource(R.string.mealplan_recipe_missing).takeIf { errors && state.recipeMissing },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focus.recipe),
                     )
                 }
                 if (state.showCollections) {
@@ -238,7 +269,7 @@ private fun PlanMealForm(
                 placeholder = stringResource(R.string.mealplan_title_hint),
                 isError = missing,
                 supportingText = stringResource(R.string.mealplan_title_missing).takeIf { missing },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(focus.title),
             )
         }
         item(key = "servings") {
@@ -395,7 +426,10 @@ private fun ChosenRecipe(recipe: RecipeOverview, onChange: () -> Unit) {
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        // B22 sweep: at the largest text the name gets the whole width under the photo and "Change".
+        // B22 sweep: at the largest text the name gets the whole width under the photo. S2 (the
+        // owner's screenshot, "…köttfärsgry…"): the name has priority over "Byt recept", which moves
+        // under it unless the name fits on one line beside it (docs/design/README.md "Textstorlek
+        // och radbrytning").
         MediaRow(
             modifier = Modifier.padding(spacing.md),
             gap = spacing.md,
@@ -407,18 +441,27 @@ private fun ChosenRecipe(recipe: RecipeOverview, onChange: () -> Unit) {
                 )
             },
             content = {
-                Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
-                    Text(text = stringResource(R.string.mealplan_chosen_recipe), style = MaterialTheme.typography.labelLarge)
-                    Text(
-                        text = recipe.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = scaledMaxLines(2),
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    durationText(recipe.totalMinutes)?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
-                }
+                LabelRow(
+                    gap = spacing.sm,
+                    stackedGap = 0.dp,
+                    stackedAlignment = Alignment.End,
+                    minLabelShare = 1f,
+                    label = {
+                        Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                            Text(text = stringResource(R.string.mealplan_chosen_recipe), style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                text = recipe.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = scaledMaxLines(2),
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            durationText(recipe.totalMinutes)?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
+                        }
+                    },
+                    trailing = { TandemTextButton(text = stringResource(R.string.mealplan_change_recipe), onClick = onChange) },
+                )
             },
-            trailing = { TandemTextButton(text = stringResource(R.string.mealplan_change_recipe), onClick = onChange) },
+            trailing = {},
         )
     }
 }
@@ -499,7 +542,25 @@ private fun Notice(text: String) {
 private fun SaveBar(state: PlanMealUiState, format: MealPlanFormat, onAction: (PlanMealAction) -> Unit) {
     val spacing = TandemTheme.spacing
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.navigationBarsPadding().padding(spacing.md), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier.navigationBarsPadding().padding(spacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            // Enhetstestet B15: what stopped the save, beside the button (the field itself may be a
+            // screen height up); TalkBack says it when it appears.
+            state.firstMissing?.let { field ->
+                Text(
+                    text = stringResource(field.message()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier
+                        .widthIn(max = TandemTheme.sizes.maxReadingWidth)
+                        .fillMaxWidth()
+                        .testTag(PLAN_MEAL_SAVE_ERROR_TAG)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
             TandemPrimaryButton(
                 text = if (state.editing) {
                     stringResource(R.string.mealplan_save)
@@ -508,8 +569,49 @@ private fun SaveBar(state: PlanMealUiState, format: MealPlanFormat, onAction: (P
                 },
                 onClick = { onAction(PlanMealAction.Save) },
                 enabled = state.canSave,
-                modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth).fillMaxWidth(),
+                modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth).fillMaxWidth().testTag(PLAN_MEAL_SAVE_TAG),
             )
         }
     }
+}
+
+/** Enhetstestet B15: the text fields a failed save focuses. */
+internal class PlanMealFocus {
+    val recipe = FocusRequester()
+    val title = FocusRequester()
+
+    fun of(field: PlanMealField): FocusRequester? = when (field) {
+        PlanMealField.MEAL_TYPE -> null
+        PlanMealField.RECIPE -> recipe
+        PlanMealField.TITLE -> title
+    }
+}
+
+@StringRes
+private fun PlanMealField.message(): Int = when (this) {
+    PlanMealField.MEAL_TYPE -> R.string.mealplan_type_missing
+    PlanMealField.RECIPE -> R.string.mealplan_recipe_missing
+    PlanMealField.TITLE -> R.string.mealplan_title_missing
+}
+
+/**
+ * Enhetstestet B15: the index of [field]'s item in [PlanMealForm]'s list (its items in order: the
+ * read-only notice, the day, the meal type, the kind, then the recipe search or the chosen recipe,
+ * "Vill laga", "Favoriter" and the results, then the title).
+ */
+internal fun planMealFieldIndex(state: PlanMealUiState, field: PlanMealField): Int {
+    var index = if (state.readOnly) 1 else 0
+    index += 1 // The day.
+    if (field == PlanMealField.MEAL_TYPE) return index
+    index += 1 // The meal type.
+    if (state.kinds.size > 1) index += 1
+    if (field == PlanMealField.RECIPE || state.kind != MealKind.RECIPE) return index
+    if (state.recipe != null) return index + 1
+    index += 1 // The search.
+    if (state.showCollections) {
+        if (state.wantToCook.isNotEmpty()) index += 1 + state.wantToCook.size
+        if (state.favorites.isNotEmpty()) index += 1 + state.favorites.size
+        if (state.results.isNotEmpty()) index += 1
+    }
+    return index + if (state.results.isEmpty()) 1 else state.results.size
 }

@@ -337,6 +337,17 @@ class FakeMealPlanRepository(
         id
     }
 
+    /** Enhetstestet B15: temporary meal type ids and the server ids they were sent as ([sendMealType]). */
+    val mealTypeIds = MutableStateFlow<Map<Long, Long>>(emptyMap())
+
+    override fun observeMealTypeId(id: Long): Flow<Long> = mealTypeIds.map { it[id] ?: id }
+
+    /** The outbox sent the meal type created as [localId]: it is stored under [serverId] from now on. */
+    fun sendMealType(localId: Long, serverId: Long) {
+        mealTypes.update { list -> list.map { if (it.id == localId) it.copy(id = serverId) else it } }
+        mealTypeIds.update { it + (localId to serverId) }
+    }
+
     override fun observeConflicts(): Flow<List<MealPlanConflict>> = conflicts
 
     override suspend fun resolveConflict(conflict: MealPlanConflict, keepMine: Boolean): Outcome<Unit> {

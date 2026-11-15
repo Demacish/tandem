@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.recipes.list
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,6 +25,8 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -47,17 +50,22 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -101,6 +109,10 @@ import casa.moller.tandem.feature.recipes.R
 import casa.moller.tandem.feature.recipes.books.RecipeCollection
 import casa.moller.tandem.feature.recipes.books.RecipeCollectionsRow
 import casa.moller.tandem.feature.recipes.books.RecipeCollectionsState
+import kotlinx.coroutines.launch
+
+/** Test tag of the recipe search field (S3). */
+const val RECIPE_SEARCH_FIELD_TAG = "recipes:search"
 
 /**
  * The recipe list (plan 6.2 "Receptlista", designs recept_alla_recept and
@@ -290,6 +302,20 @@ private fun RecipeGrid(
 ) {
     val spacing = TandemTheme.spacing
     val columns = if (state.layout == RecipeListLayout.GRID) GridCells.Adaptive(GRID_MIN_CELL) else GridCells.Adaptive(LIST_MIN_CELL)
+    // S3 (the owner's screenshot): scrolling the results while typing moved the search field out
+    // of view with the keyboard still up, so one typed blind. A drag of the results now ends the
+    // typing: the keyboard goes and the field lets go of the focus.
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    var searchFocused by remember { mutableStateOf(false) }
+    LaunchedEffect(gridState) {
+        gridState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start && searchFocused) {
+                keyboard?.hide()
+                focusManager.clearFocus()
+            }
+        }
+    }
     LazyVerticalGrid(
         columns = columns,
         state = gridState,
@@ -300,7 +326,11 @@ private fun RecipeGrid(
     ) {
         fullWidth("demo") { AppChromeDemoBanner(Modifier.padding(top = spacing.sm)) }
         fullWidth("search") {
-            SearchField(text = state.query.text, onTextChange = { onAction(RecipeListAction.Search(it)) })
+            SearchField(
+                text = state.query.text,
+                onTextChange = { onAction(RecipeListAction.Search(it)) },
+                onFocusChange = { searchFocused = it },
+            )
         }
         // Phase 2 (books lane): Favoriter, Vill laga and Böcker above the filters (Stitch recept_s_k_filter_samlingar).
         if (books != null) fullWidth("collections") { RecipeCollectionsRow(state = books.state, onOpen = books.onOpen) }
@@ -347,14 +377,23 @@ private fun LazyGridScope.fullWidth(key: String, content: @Composable () -> Unit
 }
 
 @Composable
-private fun SearchField(text: String, onTextChange: (String) -> Unit) {
+private fun SearchField(text: String, onTextChange: (String) -> Unit, onFocusChange: (Boolean) -> Unit) {
     val focusManager = LocalFocusManager.current
+    // S3: the field comes wholly into view when it gets the focus (e.g. half scrolled away).
+    val inView = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
     TextField(
         value = text,
         onValueChange = onTextChange,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = TandemTheme.spacing.sm),
+            .padding(top = TandemTheme.spacing.sm)
+            .bringIntoViewRequester(inView)
+            .onFocusChanged { focus ->
+                onFocusChange(focus.isFocused)
+                if (focus.isFocused) scope.launch { inView.bringIntoView() }
+            }
+            .testTag(RECIPE_SEARCH_FIELD_TAG),
         placeholder = { Text(stringResource(R.string.recipes_search_hint)) },
         leadingIcon = { Icon(imageVector = TandemIcons.Search, contentDescription = null) },
         trailingIcon = if (text.isNotEmpty()) {

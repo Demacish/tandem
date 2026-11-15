@@ -368,4 +368,99 @@ class PlanMealViewModelTest {
         assertTrue(mealPlans.drafts.isEmpty())
         assertFalse(vm.uiState.value.canSave)
     }
+
+    /**
+     * Enhetstestet B15: on a server without meal types the new one was not chosen once the outbox
+     * had sent it (its temporary id was rewritten), and saving stopped at "Välj en måltidstyp".
+     */
+    @Test
+    fun withoutMealTypesANewOneIsChosenAndStaysChosenWhenSent() = runTest {
+        val plans = FakeMealPlanRepository(meals = emptyList(), mealTypes = emptyList())
+        val vm = PlanMealViewModel(
+            PlanMealKey(date = day(5).toString()),
+            plans,
+            recipes,
+            FakePreferencesRepository(UserPreferences()),
+            permissions,
+            clock,
+            books,
+            shopping,
+            removedMeals,
+        )
+        val effects = open(vm)
+        assertNull(vm.uiState.value.mealTypeId)
+        vm.onAction(PlanMealAction.SetKind(MealKind.TITLE))
+        vm.onAction(PlanMealAction.Title("Rester"))
+        vm.onAction(PlanMealAction.OpenNewMealType)
+        vm.onAction(PlanMealAction.NewMealTypeName("Middag"))
+        vm.onAction(PlanMealAction.CreateMealType)
+        advanceUntilIdle()
+        val temporary = plans.mealTypes.value.single().id
+        assertTrue("a temporary id until it is sent", temporary < 0)
+        assertEquals(temporary, vm.uiState.value.mealTypeId)
+
+        plans.sendMealType(temporary, serverId = 7)
+        advanceUntilIdle()
+        assertEquals("still chosen under the server's id", 7L, vm.uiState.value.mealTypeId)
+
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals(7L, plans.drafts.single().mealTypeId)
+        assertEquals(listOf<PlanMealEffect>(PlanMealEffect.Done), effects)
+    }
+
+    /** B15 offline: the new meal type is not sent yet, so the meal waits for it under the temporary id. */
+    @Test
+    fun offlineTheNewMealTypeIsSavedWithItsTemporaryId() = runTest {
+        val plans = FakeMealPlanRepository(meals = emptyList(), mealTypes = emptyList())
+        val vm = PlanMealViewModel(
+            PlanMealKey(date = day(5).toString()),
+            plans,
+            recipes,
+            FakePreferencesRepository(UserPreferences()),
+            permissions,
+            clock,
+            books,
+            shopping,
+            removedMeals,
+        )
+        val effects = open(vm)
+        vm.onAction(PlanMealAction.SetKind(MealKind.TITLE))
+        vm.onAction(PlanMealAction.Title("Äta ute"))
+        vm.onAction(PlanMealAction.OpenNewMealType)
+        vm.onAction(PlanMealAction.NewMealTypeName("Middag"))
+        vm.onAction(PlanMealAction.CreateMealType)
+        advanceUntilIdle()
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals(plans.mealTypes.value.single().id, plans.drafts.single().mealTypeId)
+        assertEquals(listOf<PlanMealEffect>(PlanMealEffect.Done), effects)
+    }
+
+    /** B15: every save that stops at a missing field says which (the page scrolls to it each time). */
+    @Test
+    fun aStoppedSaveNamesTheFirstMissingFieldEveryTime() = runTest {
+        val plans = FakeMealPlanRepository(meals = emptyList(), mealTypes = emptyList())
+        val vm = PlanMealViewModel(
+            PlanMealKey(date = day(5).toString()),
+            plans,
+            recipes,
+            FakePreferencesRepository(UserPreferences()),
+            permissions,
+            clock,
+            books,
+            shopping,
+            removedMeals,
+        )
+        open(vm)
+        assertNull("nothing before a save was tried", vm.uiState.value.firstMissing)
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals(PlanMealField.MEAL_TYPE, vm.uiState.value.firstMissing)
+        assertEquals(1, vm.uiState.value.failedSaves)
+        vm.onAction(PlanMealAction.Save)
+        advanceUntilIdle()
+        assertEquals(2, vm.uiState.value.failedSaves)
+        assertTrue(plans.drafts.isEmpty())
+    }
 }

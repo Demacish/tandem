@@ -29,6 +29,7 @@
     <string name="home_plan_week">Plan the week</string>
     <string name="home_browse_recipes">Browse recipes</string>
     <string name="home_empty_sections">Recipes you cook often, new recipes and the ones you viewed show up here after the first sync.</string>
+    <string name="home_empty_sections_synced">Recipes you cook, open or download show up here, and the newest recipes in Tandoor.</string>
 
     <!-- Recipe carousels (plan 3.3 "Hemsektioner"). -->
     <string name="home_section_pinned">Your downloads</string>
@@ -36,7 +37,7 @@
     <string name="home_section_often_cooked">Often cooked</string>
     <string name="home_section_often_cooked_subtitle">Your household\'s favourites</string>
     <string name="home_section_new">New</string>
-    <string name="home_section_new_subtitle">Recently added to Tandoor</string>
+    <string name="home_section_new_subtitle">Latest additions to Tandoor</string>
     <string name="home_section_recently_viewed">Recently viewed</string>
     <string name="home_section_recently_viewed_subtitle">Opened in the last two weeks</string>
     <string name="home_section_not_cooked_lately">Not cooked in a while</string>

@@ -341,8 +341,11 @@ private fun TodayContent(
         }
         if (state.sections.isEmpty()) {
             item(key = "sections-empty") {
+                // Enhetstestet F1: "after the first sync" only while it has not finished; afterwards
+                // what fills the rows (and no sync is said to be pending when none is).
+                val firstSyncDone = isDemo || state.lastSynced != null
                 Text(
-                    text = stringResource(R.string.home_empty_sections),
+                    text = stringResource(if (firstSyncDone) R.string.home_empty_sections_synced else R.string.home_empty_sections),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier

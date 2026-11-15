@@ -13,9 +13,10 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * - **Threading:** main-safe; every call returns quickly (persisting and scheduling happen
  *   inside, off the main thread).
- * - **Lifetime:** timers belong to the device, not to a screen, an account or demo mode: they
- *   survive leaving cook mode, rotation, process death and reboot ([CookTimer] explains the
- *   clock). Several run at once (at most [CookTimer.MAX_PARALLEL_TIMERS]).
+ * - **Lifetime:** timers belong to the device, not to a screen or an account: they survive
+ *   leaving cook mode, rotation, process death and reboot ([CookTimer] explains the clock). Demo
+ *   mode's timers end with demo mode ([cancelSource], enhetstestet B17). Several run at once
+ *   (at most [CookTimer.MAX_PARALLEL_TIMERS]).
  * - **Ringing:** a due timer becomes RINGING by itself (alarm), also with the app closed and the
  *   screen locked; [timers] shows it as soon as the process sees it.
  * - **Unknown id:** pause/resume/addOneMinute/cancel/stopRinging with an id that does not exist
@@ -81,4 +82,14 @@ interface TimerController {
 
     /** Reads the permissions and channel state again (call on resume: the user may have changed them in the system settings). */
     fun refreshCapabilities()
+
+    /**
+     * Enhetstestet B17: removes every timer started for [sourceKey] (`TimerSource`), running,
+     * ringing or finished, with its alarm and notifications. Leaving demo mode removes demo mode's
+     * timers this way, so none of them shows up in cook mode, the timer list, a widget or on the
+     * watch once a real account (or the intro) is active. Default: [cancel] for each of them.
+     */
+    suspend fun cancelSource(sourceKey: String) {
+        timers.value.filter { it.sourceKey == sourceKey }.forEach { cancel(it.id) }
+    }
 }

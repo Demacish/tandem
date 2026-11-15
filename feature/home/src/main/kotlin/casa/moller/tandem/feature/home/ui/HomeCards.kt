@@ -458,7 +458,9 @@ internal fun SyncStatusCard(lastSynced: String?, running: Boolean, onSyncNow: ()
 
 /**
  * A carousel's heading and subtitle with its "All …" button, which moves under them when both do
- * not fit on one line (B22, docs/design/README.md "Textstorlek och radbrytning").
+ * not fit on one line (B22, docs/design/README.md "Textstorlek och radbrytning"). S1 (the owner's
+ * screenshot, "Dina nedladdningar" wrapped beside "Alla recept"): the heading has priority, so the
+ * button stays beside it only while the heading and the subtitle each fit on one line.
  */
 @Composable
 internal fun CarouselHeading(
@@ -475,6 +477,7 @@ internal fun CarouselHeading(
             .padding(start = horizontal, end = horizontal - TandemTheme.spacing.sm),
         gap = 0.dp,
         stackedGap = 0.dp,
+        minLabelShare = 1f,
         label = {
             Column {
                 Text(

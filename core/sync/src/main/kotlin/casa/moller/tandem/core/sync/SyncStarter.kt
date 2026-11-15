@@ -23,6 +23,7 @@ import casa.moller.tandem.core.sync.guard.SyncGuard
 import casa.moller.tandem.core.sync.mealplan.MealReminderSchedule
 import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
 import casa.moller.tandem.core.sync.platform.AccountNotificationCleanup
+import casa.moller.tandem.core.sync.platform.DemoTimerCleanup
 import casa.moller.tandem.core.sync.platform.SyncClock
 import casa.moller.tandem.core.sync.platform.SyncScheduler
 import casa.moller.tandem.core.sync.push.DefaultFastPushRepository
@@ -92,6 +93,8 @@ class SyncStarter @Inject internal constructor(
     private val mealCalendar: MealCalendarSchedule,
     // Fas 5 (butik lane): the geofences of "Påminn mig nära butiken" follow the account and its stores.
     private val storeReminders: StoreReminderSchedule,
+    // Enhetstestet B17: demo mode's timers end with demo mode.
+    private val demoTimers: DemoTimerCleanup,
 ) {
     private val started = AtomicBoolean(false)
 
@@ -130,6 +133,7 @@ class SyncStarter @Inject internal constructor(
         accountNotifications.start()
         mealCalendar.start()
         storeReminders.start()
+        demoTimers.start()
         scope.launch {
             var previous: ActiveSource? = null
             sources.source

@@ -36,6 +36,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -51,6 +53,9 @@ import kotlinx.datetime.toLocalDateTime
 
 /** Plan a meal from a recipe, or a meal with only a title ("Rester", "Äta ute"). */
 enum class MealKind { RECIPE, TITLE }
+
+/** Enhetstestet B15: the form's fields that can be missing when "Lägg till i matsedeln" is tapped, in form order. */
+enum class PlanMealField { MEAL_TYPE, RECIPE, TITLE }
 
 /**
  * The plan-meal page (Stitch planera_m_ltid_ark, plan 6.2 "+ per dag/måltid → välj recept (sök) eller
@@ -96,6 +101,9 @@ data class PlanMealUiState(
     // Fas 5 (planera lane), plan §8.3: "Påminn kvällen innan", kept in the note as a "Påminn:" line.
     val reminder: String = "",
     val reminderKeyword: String? = null,
+    // Enhetstestet B15: counts the saves that stopped at a missing field, so the page shows the
+    // first one again (scrolls to it and says it beside the button) on every tap, not only the first.
+    val failedSaves: Int = 0,
 ) {
     val showAddToShopping: Boolean
         get() = !editing && kind == MealKind.RECIPE && recipe != null
@@ -108,6 +116,16 @@ data class PlanMealUiState(
 
     val typeMissing: Boolean
         get() = mealTypeId == null
+
+    /** Enhetstestet B15: the first missing field (form order) once a save was tried, else null. */
+    val firstMissing: PlanMealField?
+        get() = when {
+            !showErrors -> null
+            typeMissing -> PlanMealField.MEAL_TYPE
+            recipeMissing -> PlanMealField.RECIPE
+            titleMissing -> PlanMealField.TITLE
+            else -> null
+        }
 
     val canSave: Boolean
         get() = !loading && !readOnly && !gone && !saving
@@ -264,6 +282,23 @@ class PlanMealViewModel @AssistedInject internal constructor(
 
     init {
         viewModelScope.launch { load() }
+        viewModelScope.launch { followSentMealType() }
+    }
+
+    /**
+     * Enhetstestet B15: a meal type created here has a temporary id until the outbox sends it; then
+     * it is stored under the server's id. The chosen id follows, so the new type stays selected
+     * (before, the selection pointed at the old id and fell away, and saving said "Välj en
+     * måltidstyp" a screen height above the button).
+     */
+    private suspend fun followSentMealType() {
+        form.map { it.mealTypeId }
+            .distinctUntilChanged()
+            .flatMapLatest { id ->
+                if (id == null || id >= 0) emptyFlow() else mealPlans.observeMealTypeId(id).filter { it != id }.map { id to it }
+            }
+            .catch { }
+            .collect { (temporary, sent) -> form.update { if (it.mealTypeId == temporary) it.copy(mealTypeId = sent) else it } }
     }
 
     private suspend fun load() {
@@ -376,7 +411,7 @@ class PlanMealViewModel @AssistedInject internal constructor(
         val state = uiState.value
         if (!state.canSave) return
         if (state.titleMissing || state.recipeMissing || state.typeMissing) {
-            form.update { it.copy(showErrors = true) }
+            form.update { it.copy(showErrors = true, failedSaves = it.failedSaves + 1) }
             return
         }
         val typeId = state.mealTypeId ?: return

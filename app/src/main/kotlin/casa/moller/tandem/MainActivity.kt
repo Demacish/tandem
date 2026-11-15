@@ -123,7 +123,12 @@ class MainActivity : ComponentActivity() {
         if (!ColdStart.takeForFirstActivity()) return
         fullyDrawnReporter.addOnReportDrawnListener {
             val duration = ColdStart.elapsedSinceProcessStart() ?: return@addOnReportDrawnListener
-            applicationScope.launch { diagnostics.recordColdStart(duration) }
+            val context = applicationContext
+            applicationScope.launch {
+                // Enhetstestet B16: Android 15+ also says why the process started (off the main thread).
+                if (ColdStart.startedForAnActivity(context) == false) return@launch
+                diagnostics.recordColdStart(duration)
+            }
         }
     }
 

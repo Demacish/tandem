@@ -177,6 +177,11 @@ internal class DefaultTimerController @Inject constructor(
 
     override suspend fun clearFinished() = mutate { list, _ -> Change(list.filterNot { it.state == TimerState.FINISHED }, Unit) }
 
+    // Enhetstestet B17: after the stored timers are loaded, so a demo timer on disk goes too.
+    override suspend fun cancelSource(sourceKey: String) = mutate { list, _ ->
+        Change(list.filterNot { it.sourceKey == sourceKey }, Unit)
+    }
+
     override suspend fun onNotificationPermissionResult(granted: Boolean) {
         notificationPermissionAsked = true
         settings.setNotificationPermissionAsked(true)

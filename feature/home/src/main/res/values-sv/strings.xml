@@ -26,13 +26,14 @@
     <string name="home_plan_week">Planera veckan</string>
     <string name="home_browse_recipes">Bläddra bland recept</string>
     <string name="home_empty_sections">Recept ni lagar ofta, nya recept och de du har tittat på visas här efter första synkningen.</string>
+    <string name="home_empty_sections_synced">Här visas recept ni lagar, öppnar eller laddar ner, och de senast tillagda recepten i Tandoor.</string>
 
     <string name="home_section_pinned">Dina nedladdningar</string>
     <string name="home_section_pinned_subtitle">Sparade med Ladda ner offline</string>
     <string name="home_section_often_cooked">Ofta lagade</string>
     <string name="home_section_often_cooked_subtitle">Hushållets favoriter</string>
     <string name="home_section_new">Nya</string>
-    <string name="home_section_new_subtitle">Nyligen tillagda i Tandoor</string>
+    <string name="home_section_new_subtitle">Senast tillagda i Tandoor</string>
     <string name="home_section_recently_viewed">Nyligen visade</string>
     <string name="home_section_recently_viewed_subtitle">Öppnade de senaste två veckorna</string>
     <string name="home_section_not_cooked_lately">Inte lagat på länge</string>

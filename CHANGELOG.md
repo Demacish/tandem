@@ -144,6 +144,22 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   servern svarar: Tandem kontrollerar servern en gång när nätet är tillbaka, och varje lyckad
   synk räknas. Ett recept som öppnades utan nät fylls i av sig självt, och en sökning som inte
   nådde servern söker där igen.
+- En måltidstyp som skapas under Planera måltid förblir vald också när den har skickats till
+  servern. Förut föll valet bort, särskilt på en server utan måltidstyper, och "Lägg till i
+  matsedeln" verkade inte göra något. Saknas något när du sparar står det nu ovanför knappen,
+  sidan rullar till fältet som saknas och skärmläsaren läser upp det.
+- Diagnostik visade "Inte mätt än" för starttiden hur många gånger appen än startades. Nu mäts
+  varje kallstart (från att appen startas tills Idag eller receptlistan visar innehåll).
+- En timer från demoläget kunde synas i kokläget efter inloggning med ett riktigt konto. Nu tas
+  demolägets timrar bort, med sina larm och notiser, när demoläget lämnas.
+- Idag sa att raderna fylls "efter första synkningen" också när synken redan var klar. Efter
+  synken står det nu vad som fyller raderna. Raden Nya visar de senast tillagda recepten på servern,
+  nyast först, också när inget har lagts till den senaste veckan (förut var den tom).
+- Rubriken på en rad på Idag, till exempel "Dina nedladdningar", får hela bredden: "Alla recept"
+  hamnar under rubriken när de inte ryms på en rad bredvid varandra. Under Planera måltid hamnar
+  "Byt recept" på samma sätt under receptets namn, så att namnet inte kapas.
+- Rullar du sökresultaten under Recept medan du skriver i sökfältet försvinner tangentbordet, så
+  att du inte skriver i ett fält du inte ser.
 
 **Kvar till senare**
 

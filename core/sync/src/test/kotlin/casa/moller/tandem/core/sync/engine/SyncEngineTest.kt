@@ -11,6 +11,7 @@ import casa.moller.tandem.core.database.entity.OutboxEntities
 import casa.moller.tandem.core.database.entity.OutboxState
 import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.error.UnauthorizedSource
+import casa.moller.tandem.core.model.home.HomeSectionType
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.sync.SyncPause
 import casa.moller.tandem.core.model.sync.SyncPhase
@@ -484,6 +485,11 @@ class SyncEngineTest {
         const val PANNKAKOR = 3L
         const val STEP_PHOTO = "https://tandoor.example.com/media/files/0000_stegbild.png"
 
+        /** Enhetstestet F1: two recipes from long ago, newest first, as `new=true&sort_order=-created_at` lists them. */
+        const val NEWEST_PAGE = """{"count":2,"next":null,"previous":null,"results":[""" +
+            """{"id":4,"name":"Senast tillagda","new":false,"created_at":"2024-05-02T10:00:00+02:00"},""" +
+            """{"id":3,"name":"Äldre","new":false,"created_at":"2023-01-01T10:00:00+01:00"}]}"""
+
         /** Recipe 3: own 5, 4 and one unrated entry; recipe 4: only another member rated it. */
         val COOK_LOG = """
             {"count":5,"next":null,"previous":null,"results":[
@@ -519,5 +525,29 @@ class SyncEngineTest {
         graph.clock.advance(25.hours)
         assertEquals(SyncPhase.DONE, graph.engine.run(SyncReason.USER_REFRESH).phase)
         assertEquals(listOf(-3L), ids.getMappings(ACCOUNT_ID).map { it.localId })
+    }
+
+    /**
+     * Enhetstestet F1: on a server whose recipes are all older than Tandoor's 7 days (`new: false`),
+     * "Nya" stayed empty after the first sync. It now lists the newest recipes, newest first.
+     */
+    @Test
+    fun nyaListsTheNewestRecipesAlsoWhenNoneWasAddedThisWeek() = runBlocking {
+        server.handler = { request ->
+            if (request.url.encodedPath == "/api/recipe/" && request.url.queryParameter("new") != null) {
+                FakeTandoorServer.json(200, NEWEST_PAGE)
+            } else {
+                null
+            }
+        }
+
+        assertEquals(SyncPhase.DONE, graph.engine.run(SyncReason.FIRST_SYNC).phase)
+
+        val newest = graph.real.homeSectionDao().observeSectionRows(ACCOUNT_ID).first()
+            .filter { it.sectionType == HomeSectionType.NEW }
+            .map { it.item.overview.serverId }
+        assertEquals(listOf(4L, 3L), newest)
+        val asked = server.requestsTo("GET", "/api/recipe/").filter { "new=true" in it }
+        assertTrue("$asked", asked.isNotEmpty() && asked.all { "sort_order=-created_at" in it })
     }
 }
