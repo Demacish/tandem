@@ -12,11 +12,14 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -45,6 +48,7 @@ import casa.moller.tandem.feature.mealplan.MealPlanSamples.salmon
 import casa.moller.tandem.feature.mealplan.MealPlanSamples.todayDinner
 import casa.moller.tandem.feature.mealplan.navigation.PlanMealKey
 import casa.moller.tandem.feature.mealplan.ui.MoveMealPanel
+import casa.moller.tandem.feature.mealplan.ui.PLAN_MEAL_SAVE_ERROR_TAG
 import casa.moller.tandem.feature.mealplan.ui.PlanMealScreen
 import casa.moller.tandem.feature.mealplan.ui.WEEK_AGENDA_TAG
 import casa.moller.tandem.feature.mealplan.ui.WEEK_DAYS_TAG
@@ -325,7 +329,9 @@ class WeekScreenTest {
         composeRule.setContent {
             MealPlanTestTheme { PlanMealScreen(state = MealPlanSamples.planState(kind = MealKind.TITLE, showErrors = true), onAction = {}) }
         }
-        composeRule.onNodeWithText(string(R.string.mealplan_title_missing)).assertIsDisplayed()
+        // Enhetstestet B15: said in the form and again beside the button.
+        composeRule.onAllNodesWithText(string(R.string.mealplan_title_missing)).onFirst().assertIsDisplayed()
+        composeRule.onNodeWithTag(PLAN_MEAL_SAVE_ERROR_TAG).assertTextEquals(string(R.string.mealplan_title_missing))
     }
 
     @Test

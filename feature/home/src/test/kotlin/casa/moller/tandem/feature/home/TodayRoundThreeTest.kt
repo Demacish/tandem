@@ -63,18 +63,18 @@ class TodayRoundThreeTest {
     fun s1HeadingSwedish() {
         show(sampleHomeState().copy(sections = listOf(downloads)))
         scrollTo("section-PINNED")
-        capture("phone_small_devicetest_today_heading_light_sv")
         assertHeadingHasPriority()
         composeRule.assertAccessible()
+        capture("phone_small_devicetest_today_heading_light_sv")
     }
 
     @Test
     fun s1HeadingDark() {
         show(sampleHomeState().copy(sections = listOf(downloads)), darkTheme = true)
         scrollTo("section-PINNED")
-        capture("phone_small_devicetest_today_heading_dark")
         assertHeadingHasPriority()
         composeRule.assertAccessible()
+        capture("phone_small_devicetest_today_heading_dark")
     }
 
     @Test
@@ -82,9 +82,9 @@ class TodayRoundThreeTest {
     fun s1HeadingLargestTextSwedish() {
         show(sampleHomeState().copy(sections = listOf(downloads)), fontScale = 2f)
         scrollTo("section-PINNED")
-        capture("phone_largest_devicetest_today_heading_font2_light_sv")
         assertHeadingHasPriority()
         composeRule.assertAccessible()
+        capture("phone_largest_devicetest_today_heading_font2_light_sv")
     }
 
     @Test
@@ -101,10 +101,10 @@ class TodayRoundThreeTest {
     fun f1AfterTheFirstSyncTheTextSaysWhatFillsTheRows() {
         show(sampleHomeState().copy(sections = emptyList()))
         scrollTo("sections-empty")
-        capture("phone_small_devicetest_today_rows_empty_after_sync_light_sv")
         composeRule.onNodeWithText(string(R.string.home_empty_sections_synced)).assertIsDisplayed()
         assertTrue(composeRule.onAllNodesWithText(string(R.string.home_empty_sections)).isEmpty())
         composeRule.assertAccessible()
+        capture("phone_small_devicetest_today_rows_empty_after_sync_light_sv")
     }
 
     @Test
@@ -112,9 +112,9 @@ class TodayRoundThreeTest {
     fun f1AfterTheFirstSyncLargestTextSwedish() {
         show(sampleHomeState().copy(sections = emptyList()), fontScale = 2f)
         scrollTo("sections-empty")
-        capture("phone_largest_devicetest_today_rows_empty_after_sync_font2_light_sv")
         composeRule.assertNoWordBreaks(string(R.string.home_empty_sections_synced))
         composeRule.assertAccessible()
+        capture("phone_largest_devicetest_today_rows_empty_after_sync_font2_light_sv")
     }
 
     /** Either the heading and its subtitle are one line each beside the button, or the button is under them. */
