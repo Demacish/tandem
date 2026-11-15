@@ -226,7 +226,9 @@ private fun ConnectGroup(state: InboxSettingsUiState, onAction: (InboxSettingsAc
         }
     }
     val problem = state.connectProblem
-    if (problem != null) {
+    if (problem == InboxProblem.LOCAL_NETWORK && !state.secureStorageFailed) {
+        LocalNetworkCallout(refused = state.localNetworkRefused, onAction = onAction)
+    } else if (problem != null) {
         CalloutCard(
             title = stringResource(R.string.inbox_problem_title),
             body = stringResource(if (state.secureStorageFailed) R.string.inbox_settings_secure_storage else problem.text),
@@ -235,6 +237,35 @@ private fun ConnectGroup(state: InboxSettingsUiState, onAction: (InboxSettingsAc
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
     }
+}
+
+/**
+ * Fas 5 (sdk37 lane): the Miniflux address is on the local network, which Android 17 opens only
+ * with "Nearby devices": why, and "Allow" (Android's dialog), or "Open settings" after a refusal.
+ */
+@Composable
+private fun LocalNetworkCallout(refused: Boolean, onAction: (InboxSettingsAction) -> Unit) {
+    CalloutCard(
+        title = stringResource(R.string.inbox_problem_title),
+        body = stringResource(R.string.inbox_problem_local_network),
+        icon = TandemIcons.Shield,
+        tone = TandemTone.Warning,
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        actions = {
+            if (refused) {
+                TandemTonalButton(
+                    text = stringResource(R.string.inbox_settings_local_network_settings),
+                    onClick = { onAction(InboxSettingsAction.OpenAppSettings) },
+                    trailingIcon = TandemIcons.OpenInNew,
+                )
+            } else {
+                TandemPrimaryButton(
+                    text = stringResource(R.string.inbox_settings_local_network_allow),
+                    onClick = { onAction(InboxSettingsAction.AllowLocalNetwork) },
+                )
+            }
+        },
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)

@@ -1,6 +1,8 @@
 package casa.moller.tandem.core.network.di
 
 import casa.moller.tandem.core.common.AppBuildInfo
+import casa.moller.tandem.core.network.http.LocalNetworkGuard
+import casa.moller.tandem.core.network.http.LocalNetworkInterceptor
 import casa.moller.tandem.core.network.miniflux.MinifluxClient
 import dagger.Module
 import dagger.Provides
@@ -19,6 +21,11 @@ import javax.inject.Singleton
 object MinifluxModule {
     @Provides
     @Singleton
-    fun provideMinifluxClient(buildInfo: AppBuildInfo): MinifluxClient =
-        MinifluxClient(MinifluxClient.httpClient(MinifluxClient.userAgent(buildInfo.versionName)))
+    fun provideMinifluxClient(buildInfo: AppBuildInfo, localNetwork: LocalNetworkGuard): MinifluxClient =
+        MinifluxClient(
+            MinifluxClient.httpClient(MinifluxClient.userAgent(buildInfo.versionName)) {
+                // Fas 5 (sdk37 lane): a Miniflux at home that Android 17 keeps out is "allow the local network", not a timeout.
+                addInterceptor(LocalNetworkInterceptor(localNetwork))
+            },
+        )
 }

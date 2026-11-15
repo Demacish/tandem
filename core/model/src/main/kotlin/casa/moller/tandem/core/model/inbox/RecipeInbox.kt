@@ -75,6 +75,12 @@ enum class InboxProblem {
     /** The server could not be reached (no network, unknown host, timeout). */
     UNREACHABLE,
 
+    /**
+     * Fas 5 (sdk37 lane): the server is on the local network and Android 17 needs the permission
+     * "Nearby devices" first (`TandemError.LocalNetworkDenied`, docs/BYGGE.md "Target SDK 37").
+     */
+    LOCAL_NETWORK,
+
     /** The certificate is not trusted or the TLS handshake failed. */
     TLS,
 

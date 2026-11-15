@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.recipes.inbox
 
 import androidx.lifecycle.SavedStateHandle
+import casa.moller.tandem.core.data.server.LocalNetworkAccess
 import casa.moller.tandem.core.model.inbox.InboxProblem
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeRecipeInboxRepository
@@ -33,7 +34,17 @@ class InboxSettingsViewModelTest {
     private val inbox = FakeRecipeInboxRepository(initial = SampleInbox.notSetUp, posts = emptyList())
     private val handle = SavedStateHandle()
 
-    private fun viewModel() = InboxSettingsViewModel(handle, inbox)
+    private fun viewModel(localNetwork: LocalNetworkAccess = LocalNetworkAccess.NotNeeded) =
+        InboxSettingsViewModel(handle, inbox, localNetwork)
+
+    /** Fas 5 (sdk37 lane): Android 17's local network permission, scripted. */
+    private class FakeLocalNetwork(private val localHosts: Set<String>, var granted: Boolean = false) : LocalNetworkAccess {
+        override val permission: String = "android.permission.ACCESS_LOCAL_NETWORK"
+
+        override fun permissionMissing(): Boolean = !granted
+
+        override suspend fun needsPermission(serverAddress: String): Boolean = !granted && serverAddress in localHosts
+    }
 
     private fun TestScope.collect(flow: Flow<*>) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect {} }
@@ -140,5 +151,44 @@ class InboxSettingsViewModelTest {
         vm.onAction(InboxSettingsAction.ConfirmDisconnect)
         assertTrue("disconnect" in inbox.calls)
         assertFalse(vm.uiState.value.settings.connected)
+    }
+
+    // --- Fas 5 (sdk37 lane): a Miniflux at home on Android 17 (docs/BYGGE.md "Target SDK 37"). ---
+
+    @Test
+    fun aMinifluxAtHomeAsksForTheLocalNetworkBeforeTheKeyIsSent() = runTest {
+        val localNetwork = FakeLocalNetwork(localHosts = setOf("https://192.168.1.30/"))
+        val vm = viewModel(localNetwork)
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        vm.onAction(InboxSettingsAction.SetAddress("https://192.168.1.30/"))
+        vm.onAction(InboxSettingsAction.SetApiKey("miniflux-test-key"))
+        vm.onAction(InboxSettingsAction.Connect)
+        assertEquals(InboxProblem.LOCAL_NETWORK, vm.uiState.value.connectProblem)
+        assertTrue("nothing went to Miniflux", inbox.calls.isEmpty())
+
+        vm.onAction(InboxSettingsAction.AllowLocalNetwork)
+        assertEquals(listOf(InboxSettingsEffect.RequestLocalNetwork("android.permission.ACCESS_LOCAL_NETWORK")), effects)
+        // Allowed: "Anslut" goes on by itself.
+        localNetwork.granted = true
+        vm.onAction(InboxSettingsAction.LocalNetworkResult(granted = true))
+        assertNull(vm.uiState.value.connectProblem)
+        assertTrue(vm.uiState.value.settings.connected)
+    }
+
+    @Test
+    fun aRefusedLocalNetworkOffersAndroidsSettings() = runTest {
+        val vm = viewModel(FakeLocalNetwork(localHosts = setOf("https://rss.local/")))
+        collect(vm.uiState)
+        val effects = effectsOf(vm.effects)
+        vm.onAction(InboxSettingsAction.SetAddress("https://rss.local/"))
+        vm.onAction(InboxSettingsAction.SetApiKey("miniflux-test-key"))
+        vm.onAction(InboxSettingsAction.Connect)
+        vm.onAction(InboxSettingsAction.LocalNetworkResult(granted = false))
+        assertEquals(InboxProblem.LOCAL_NETWORK, vm.uiState.value.connectProblem)
+        assertTrue(vm.uiState.value.localNetworkRefused)
+        assertFalse(vm.uiState.value.settings.connected)
+        vm.onAction(InboxSettingsAction.OpenAppSettings)
+        assertEquals(listOf(InboxSettingsEffect.OpenAppSettings), effects)
     }
 }

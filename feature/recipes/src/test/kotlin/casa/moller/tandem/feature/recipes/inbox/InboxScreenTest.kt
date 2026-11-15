@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -126,6 +129,19 @@ class InboxScreenTest {
         composeRule.onNodeWithTag(INBOX_SETTINGS_CONNECT_TAG).assertIsNotEnabled()
         composeRule.onNodeWithText("Miniflux address").performTextInput("rss.example.com")
         assertEquals(InboxSettingsAction.SetAddress("rss.example.com"), actions.single())
+    }
+
+    // Fas 5 (sdk37 lane): a Miniflux at home on Android 17.
+    @Test
+    fun theLocalNetworkNoticeAsksAndAfterARefusalOpensTheSettings() {
+        val actions = mutableListOf<InboxSettingsAction>()
+        val asking = notConnected.copy(address = "https://192.168.1.30/", apiKey = "x", connectProblem = InboxProblem.LOCAL_NETWORK)
+        var state by mutableStateOf(asking)
+        show { InboxSettingsScreen(state = state, onAction = { actions += it }, onBack = {}) }
+        composeRule.onNodeWithText("Allow").performScrollTo().performClick()
+        state = asking.copy(localNetworkRefused = true)
+        composeRule.onNodeWithText("Open settings").performScrollTo().performClick()
+        assertEquals(listOf(InboxSettingsAction.AllowLocalNetwork, InboxSettingsAction.OpenAppSettings), actions)
     }
 
     @Test

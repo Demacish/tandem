@@ -19,6 +19,10 @@
     <string name="inbox_demo_note">Det här är demolägets exempelinkorg. Anslut en Tandoor-server för att använda din egen Miniflux.</string>
     <string name="inbox_problem_title">Kunde inte uppdatera</string>
     <string name="inbox_problem_unreachable">Det går inte att nå Miniflux. Visar inläggen som sparats i telefonen.</string>
+    <!-- Fas 5 (sdk37-banan): Android 17:s behörighet för det lokala nätverket ("Enheter i närheten"). -->
+    <string name="inbox_problem_local_network">Din Miniflux finns på ditt hemnätverk, och Android släpper bara fram Tandem dit med behörigheten Enheter i närheten. Tandem använder den bara för att nå din server.</string>
+    <string name="inbox_settings_local_network_allow">Tillåt</string>
+    <string name="inbox_settings_local_network_settings">Öppna inställningar</string>
     <string name="inbox_problem_auth">Miniflux godtog inte API-nyckeln. Ange en ny nyckel i inkorgens inställningar.</string>
     <string name="inbox_problem_not_miniflux">Adressen svarar inte som Miniflux. Kontrollera adressen.</string>
     <string name="inbox_problem_invalid_url">Ange adressen till din Miniflux-server. Den ska börja med https://.</string>

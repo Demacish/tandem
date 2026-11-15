@@ -74,6 +74,7 @@ val InboxProblem.text: Int
         InboxProblem.AUTH -> R.string.inbox_problem_auth
         InboxProblem.NOT_MINIFLUX -> R.string.inbox_problem_not_miniflux
         InboxProblem.UNREACHABLE -> R.string.inbox_problem_unreachable
+        InboxProblem.LOCAL_NETWORK -> R.string.inbox_problem_local_network
         InboxProblem.TLS -> R.string.inbox_problem_tls
         InboxProblem.THROTTLED -> R.string.inbox_problem_throttled
         InboxProblem.SERVER -> R.string.inbox_problem_server

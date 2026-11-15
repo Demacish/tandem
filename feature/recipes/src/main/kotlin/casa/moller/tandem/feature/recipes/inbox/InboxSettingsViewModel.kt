@@ -8,6 +8,7 @@ import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.dataProblem
 import casa.moller.tandem.core.data.inbox.InboxFailure
 import casa.moller.tandem.core.data.inbox.RecipeInboxRepository
+import casa.moller.tandem.core.data.server.LocalNetworkAccess
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.inbox.InboxAvailability
 import casa.moller.tandem.core.model.inbox.InboxCategory
@@ -57,6 +58,8 @@ data class InboxSettingsUiState(
     val categoriesProblem: InboxProblem? = null,
     val selected: Set<Long> = emptySet(),
     val confirmDisconnect: Boolean = false,
+    /** Fas 5 (sdk37 lane): Android's dialog for the local network was refused: "Open settings" instead of "Allow". */
+    val localNetworkRefused: Boolean = false,
 ) {
     /** The categories to tick: the server's, or (before they load or when they cannot) the chosen ones. */
     val categoryChoices: List<InboxCategory>
@@ -94,12 +97,29 @@ sealed interface InboxSettingsAction {
     data object DismissDialog : InboxSettingsAction
 
     data object OpenInbox : InboxSettingsAction
+
+    // --- Fas 5 (sdk37 lane): Android 17's local network permission, asked here in context. ---
+
+    /** "Allow" on the local network notice: Android's dialog. */
+    data object AllowLocalNetwork : InboxSettingsAction
+
+    /** Android's answer to that dialog. */
+    data class LocalNetworkResult(val granted: Boolean) : InboxSettingsAction
+
+    /** "Open settings" after a refusal: Tandem's page in Android's settings. */
+    data object OpenAppSettings : InboxSettingsAction
 }
 
 sealed interface InboxSettingsEffect {
     data class Message(@StringRes val text: Int) : InboxSettingsEffect
 
     data object OpenInbox : InboxSettingsEffect
+
+    /** Fas 5 (sdk37 lane): show Android's dialog for [permission] (the local network). */
+    data class RequestLocalNetwork(val permission: String) : InboxSettingsEffect
+
+    /** Fas 5 (sdk37 lane): Tandem's page in Android's settings. */
+    data object OpenAppSettings : InboxSettingsEffect
 }
 
 /**
@@ -107,10 +127,17 @@ sealed interface InboxSettingsEffect {
  * (address + API key, checked against the server before anything is stored), choose its categories,
  * the two switches, and "Koppla från". Off until the user sets it up; nothing server-specific is built
  * in. The key never goes into the saved state, a log or the screen after it is stored.
+ *
+ * Fas 5 (sdk37 lane): a Miniflux on the LOCAL network needs Android 17's permission "Nearby devices"
+ * ([LocalNetworkAccess]); "Anslut" asks before anything is sent and shows [InboxProblem.LOCAL_NETWORK]
+ * with "Allow" (docs/BYGGE.md "Target SDK 37").
  */
 @HiltViewModel
-class InboxSettingsViewModel @Inject constructor(private val handle: SavedStateHandle, private val inbox: RecipeInboxRepository) :
-    ViewModel() {
+class InboxSettingsViewModel @Inject constructor(
+    private val handle: SavedStateHandle,
+    private val inbox: RecipeInboxRepository,
+    private val localNetwork: LocalNetworkAccess,
+) : ViewModel() {
     private data class Local(
         val apiKey: String = "",
         val busy: InboxSettingsBusy? = null,
@@ -120,6 +147,7 @@ class InboxSettingsViewModel @Inject constructor(private val handle: SavedStateH
         val categoriesProblem: InboxProblem? = null,
         val selected: Set<Long>? = null,
         val confirmDisconnect: Boolean = false,
+        val localNetworkRefused: Boolean = false,
     )
 
     private val local = MutableStateFlow(Local())
@@ -141,6 +169,7 @@ class InboxSettingsViewModel @Inject constructor(private val handle: SavedStateH
             categoriesProblem = local.categoriesProblem,
             selected = local.selected ?: state.settings.categories.mapTo(HashSet()) { it.id },
             confirmDisconnect = local.confirmDisconnect,
+            localNetworkRefused = local.localNetworkRefused,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), InboxSettingsUiState())
 
@@ -181,6 +210,20 @@ class InboxSettingsViewModel @Inject constructor(private val handle: SavedStateH
             InboxSettingsAction.ConfirmDisconnect -> disconnect()
 
             InboxSettingsAction.OpenInbox -> effectChannel.trySend(InboxSettingsEffect.OpenInbox)
+
+            InboxSettingsAction.AllowLocalNetwork -> {
+                val permission = localNetwork.permission
+                if (permission == null) connect() else effectChannel.trySend(InboxSettingsEffect.RequestLocalNetwork(permission))
+            }
+
+            is InboxSettingsAction.LocalNetworkResult -> if (action.granted && !localNetwork.permissionMissing()) {
+                local.update { it.copy(localNetworkRefused = false) }
+                connect()
+            } else {
+                local.update { it.copy(localNetworkRefused = true) }
+            }
+
+            InboxSettingsAction.OpenAppSettings -> effectChannel.trySend(InboxSettingsEffect.OpenAppSettings)
         }
     }
 
@@ -189,6 +232,11 @@ class InboxSettingsViewModel @Inject constructor(private val handle: SavedStateH
         if (!state.canConnect) return
         local.update { it.copy(busy = InboxSettingsBusy.CONNECT, connectProblem = null, secureStorageFailed = false) }
         viewModelScope.launch {
+            // Fas 5 (sdk37 lane): a Miniflux at home needs the local network first; nothing is sent yet.
+            if (localNetwork.needsPermission(state.address)) {
+                local.update { it.copy(busy = null, connectProblem = InboxProblem.LOCAL_NETWORK) }
+                return@launch
+            }
             when (val answer = inbox.connect(state.address, state.apiKey)) {
                 is Outcome.Success -> {
                     val chosen = inbox.state.first().settings.categories

@@ -19,6 +19,10 @@
     <string name="inbox_demo_note">This is demo mode\'s sample inbox. Connect a Tandoor server to use your own Miniflux.</string>
     <string name="inbox_problem_title">Could not update</string>
     <string name="inbox_problem_unreachable">Miniflux cannot be reached. Showing the posts saved on the phone.</string>
+    <!-- Fas 5 (sdk37 lane): Android 17's local network permission ("Nearby devices"). -->
+    <string name="inbox_problem_local_network">Your Miniflux is on your home network, and Android only lets Tandem reach it with the permission Nearby devices. Tandem uses it only to reach your server.</string>
+    <string name="inbox_settings_local_network_allow">Allow</string>
+    <string name="inbox_settings_local_network_settings">Open settings</string>
     <string name="inbox_problem_auth">Miniflux did not accept the API key. Enter a new key in the inbox settings.</string>
     <string name="inbox_problem_not_miniflux">The address does not answer like Miniflux. Check the address.</string>
     <string name="inbox_problem_invalid_url">Enter the address of your Miniflux server. It must start with https://.</string>

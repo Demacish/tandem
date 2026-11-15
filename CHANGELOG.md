@@ -33,7 +33,8 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   lokala nätverk. Finns din Tandoor hemma (t.ex. 192.168.x.x eller ett namn som slutar på .local)
   frågar Tandem om behörigheten Enheter i närheten när du ansluter, och förklarar varför. Säger du
   nej visar Tandem hur du tillåter den i Androids inställningar, och Mer → Behörigheter visar
-  läget. En server på internet behöver ingen behörighet.
+  läget. Samma sak gäller din Miniflux för inkorgen. En server på internet behöver ingen
+  behörighet.
 
 ## [0.8.0] – 2026-11-14
 
