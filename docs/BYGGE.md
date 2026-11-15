@@ -1404,7 +1404,10 @@ matsedel och receptsökning utan nät), `TandemAppFunctionsTest` (:app, `AppFunc
 Android 16: den **genererade** metadatan med namn, parametrar, obligatoriska och beskrivningar, schemat
 i `assets/`, av som standard och av/på i systemet med inställningen, varje funktion genom
 `AppFunctionManager` med sina argument och svarstyper, `openRecipe` och ett datum direkt på tjänsten,
-varje avslag som rätt undantag, tjänsten i det sammanslagna manifestet bara för systemet),
+varje avslag som rätt undantag direkt på tjänsten (testregeln i `appfunctions-testing` 1.0.0-beta01
+svarar aldrig på en körning vars funktion kastar, så avslagen anropas på den genererade tjänsten;
+funktionerna byter inte tråd, eftersom ett undantag ur `withContext(Dispatchers.IO)` aldrig nådde
+anroparen under Robolectric), tjänsten i det sammanslagna manifestet bara för systemet),
 `PreferencesSettingsStoreTest` (av tills vald, överlever omstart), `AssistantSettingsTest` (ViewModel
 och Compose), `AssistantScreenshotTest` (ATF och referensbilder `shell/assistant_*`: telefon stående
 och liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2, av/på/låst/under
