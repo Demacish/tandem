@@ -4,9 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -53,6 +55,8 @@ private const val PHONE_LARGEST_TEXT = "w320dp-h693dp-port-xhdpi"
  * - B15: "Lägg till i matsedeln" did nothing visible, because "Välj en måltidstyp" stood a screen
  *   height up. A failed save now scrolls to the first missing field (and focuses it when it is a
  *   text field) and says what is missing beside the button, where TalkBack reads it.
+ * - Komplettering: "Lägg till i matsedeln (lörd…" was cut at the largest text; the button shows the
+ *   label without the day there.
  * - S2: the chosen recipe's name was cut ("…köttfärsgry…") beside "Byt recept"; the name has
  *   priority and "Byt recept" moves under it.
  */
@@ -153,6 +157,33 @@ class PlanMealRoundThreeTest {
         assertNameWhole()
         composeRule.assertAccessible()
         capture("phone_largest_devicetest_plan_meal_chosen_font2_light_sv")
+    }
+
+    /**
+     * Komplettering efter enhetstestet: at the largest text the button read "Lägg till i matsedeln
+     * (lörd…"; it now shows the label without the day (the day stands in the form) on whole words,
+     * and TalkBack still reads the day.
+     */
+    @Test
+    @Config(qualifiers = "sv-$PHONE_LARGEST_TEXT")
+    fun theSaveButtonIsNeverCutAtTheLargestText() {
+        showChosen(fontScale = 2f)
+        val short = string(R.string.mealplan_save_new_short)
+        composeRule.assertNoWordBreaks(short)
+        composeRule.onNodeWithTag(PLAN_MEAL_SAVE_TAG).assert(hasContentDescription("$short (", substring = true))
+    }
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_SMALL")
+    fun theSaveButtonKeepsTheDayWhenItFits() {
+        showChosen()
+        val short = string(R.string.mealplan_save_new_short)
+        composeRule.onNodeWithTag(PLAN_MEAL_SAVE_TAG).assert(hasText("$short (", substring = true))
+        composeRule.onNodeWithText("$short (", substring = true, useUnmergedTree = true).let { node ->
+            val layouts = mutableListOf<TextLayoutResult>()
+            node.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
+            assertFalse("the label with the day is not cut", layouts.first().hasVisualOverflow)
+        }
     }
 
     private fun showChosen(darkTheme: Boolean = false, fontScale: Float = 1f) {

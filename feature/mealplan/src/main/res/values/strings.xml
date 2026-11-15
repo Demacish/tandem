@@ -105,6 +105,8 @@
     <string name="mealplan_new_meal_type_hint">E.g. Snack</string>
     <string name="mealplan_add">Add</string>
     <string name="mealplan_save_new">Add to the plan (%1$s)</string>
+    <!-- Instead of mealplan_save_new when that would be cut (largest text on a narrow phone). -->
+    <string name="mealplan_save_new_short">Add to the plan</string>
     <string name="mealplan_save">Save</string>
     <string name="mealplan_delete_meal">Remove from the plan</string>
     <string name="mealplan_meal_gone">This meal is no longer in the plan.</string>

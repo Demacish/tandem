@@ -570,6 +570,9 @@ private fun SaveBar(state: PlanMealUiState, format: MealPlanFormat, onAction: (P
                 onClick = { onAction(PlanMealAction.Save) },
                 enabled = state.canSave,
                 modifier = Modifier.widthIn(max = TandemTheme.sizes.maxReadingWidth).fillMaxWidth().testTag(PLAN_MEAL_SAVE_TAG),
+                // Largest text on a narrow phone: without the day (it stands in the form) rather than
+                // "Lägg till i matsedeln (lörd…" (docs/design/README.md "Textstorlek och radbrytning").
+                shortText = if (state.editing) null else stringResource(R.string.mealplan_save_new_short),
             )
         }
     }

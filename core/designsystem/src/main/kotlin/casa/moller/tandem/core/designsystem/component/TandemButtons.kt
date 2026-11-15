@@ -1,5 +1,6 @@
 package casa.moller.tandem.core.designsystem.component
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
@@ -13,9 +14,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -45,6 +52,10 @@ private val KitchenButtonHeight: Dp = 64.dp
 /**
  * Main call to action: tomato pill ("Laga mat", "Anslut", "Logga in"). Use at most one per
  * screen section. Shape morphs when pressed (M3 Expressive).
+ *
+ * [shortText]: a shorter label shown instead of [text] when [text] would not fit on the button's
+ * two lines (largest text size on a narrow phone, docs/design/README.md "Textstorlek och
+ * radbrytning": never an ellipsis). TalkBack still reads [text].
  */
 @Composable
 fun TandemPrimaryButton(
@@ -55,6 +66,7 @@ fun TandemPrimaryButton(
     leadingIcon: ImageVector? = null,
     trailingIcon: ImageVector? = null,
     size: TandemButtonSize = TandemButtonSize.Medium,
+    shortText: String? = null,
 ) {
     Button(
         onClick = onClick,
@@ -68,7 +80,7 @@ fun TandemPrimaryButton(
             hasEndIcon = trailingIcon != null,
         ),
     ) {
-        ButtonContent(text, leadingIcon, trailingIcon, size)
+        ButtonContent(text, leadingIcon, trailingIcon, size, shortText)
     }
 }
 
@@ -181,7 +193,13 @@ private fun TonalButtonImpl(
 }
 
 @Composable
-private fun ButtonContent(text: String, leadingIcon: ImageVector?, trailingIcon: ImageVector?, size: TandemButtonSize) {
+private fun ButtonContent(
+    text: String,
+    leadingIcon: ImageVector?,
+    trailingIcon: ImageVector?,
+    size: TandemButtonSize,
+    shortText: String? = null,
+) {
     val iconSize = ButtonDefaults.iconSizeFor(size.height)
     val spacing = ButtonDefaults.iconSpacingFor(size.height)
     if (leadingIcon != null) {
@@ -189,14 +207,39 @@ private fun ButtonContent(text: String, leadingIcon: ImageVector?, trailingIcon:
         Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(iconSize))
         Spacer(Modifier.width(spacing))
     }
-    Text(
-        text = text,
-        style = ButtonDefaults.textStyleFor(size.height),
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-    )
+    val style = ButtonDefaults.textStyleFor(size.height)
+    if (shortText == null) {
+        Text(text = text, style = style, maxLines = BUTTON_MAX_LINES, overflow = TextOverflow.Ellipsis)
+    } else {
+        FittingLabel(text, shortText, style)
+    }
     if (trailingIcon != null) {
         Spacer(Modifier.width(spacing))
         Icon(trailingIcon, contentDescription = null, modifier = Modifier.size(iconSize))
+    }
+}
+
+private const val BUTTON_MAX_LINES = 2
+
+/**
+ * [text] when it fits on [BUTTON_MAX_LINES] lines in the width the button leaves for it, else
+ * [shortText]; TalkBack reads [text] either way.
+ */
+@Composable
+private fun FittingLabel(text: String, shortText: String, style: TextStyle) {
+    BoxWithConstraints {
+        val measurer = rememberTextMeasurer()
+        val width = constraints.maxWidth
+        val fits = remember(text, style, width, measurer) {
+            width == Constraints.Infinity ||
+                !measurer.measure(text, style, maxLines = BUTTON_MAX_LINES, constraints = Constraints(maxWidth = width)).hasVisualOverflow
+        }
+        Text(
+            text = if (fits) text else shortText,
+            style = style,
+            maxLines = BUTTON_MAX_LINES,
+            overflow = TextOverflow.Ellipsis,
+            modifier = if (fits) Modifier else Modifier.semantics { contentDescription = text },
+        )
     }
 }

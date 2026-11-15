@@ -105,6 +105,8 @@
     <string name="mealplan_new_meal_type_hint">T.ex. Mellanmål</string>
     <string name="mealplan_add">Lägg till</string>
     <string name="mealplan_save_new">Lägg till i matsedeln (%1$s)</string>
+    <!-- Instead of mealplan_save_new when that would be cut (largest text on a narrow phone). -->
+    <string name="mealplan_save_new_short">Lägg till i matsedeln</string>
     <string name="mealplan_save">Spara</string>
     <string name="mealplan_delete_meal">Ta bort från matsedeln</string>
     <string name="mealplan_meal_gone">Måltiden finns inte längre i matsedeln.</string>
