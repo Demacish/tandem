@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
@@ -179,11 +180,10 @@ class PlanMealRoundThreeTest {
         showChosen()
         val short = string(R.string.mealplan_save_new_short)
         composeRule.onNodeWithTag(PLAN_MEAL_SAVE_TAG).assert(hasText("$short (", substring = true))
-        composeRule.onNodeWithText("$short (", substring = true, useUnmergedTree = true).let { node ->
-            val layouts = mutableListOf<TextLayoutResult>()
-            node.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(layouts)
-            assertFalse("the label with the day is not cut", layouts.first().hasVisualOverflow)
-        }
+        val label = composeRule.onNodeWithText("$short (", substring = true, useUnmergedTree = true)
+            .fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("")
+        // The whole label with the day: no ellipsis, no word broken.
+        composeRule.assertNoWordBreaks(label)
     }
 
     private fun showChosen(darkTheme: Boolean = false, fontScale: Float = 1f) {
