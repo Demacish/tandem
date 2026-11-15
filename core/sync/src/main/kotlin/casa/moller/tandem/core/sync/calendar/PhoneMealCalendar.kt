@@ -20,6 +20,7 @@ import casa.moller.tandem.core.sync.platform.WallClock
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -90,11 +91,15 @@ internal class PhoneMealCalendar @Inject constructor(
      * it off and writes nothing, and a write that already holds the lock finishes before the calendar
      * is deleted. Removing first and storing "off" afterwards let a waiting write slip in between and
      * bring the calendar back for good (the flaky release smoke test, docs/BYGGE.md
-     * "Komplettering efter enhetstestet"). True when a calendar was there.
+     * "Komplettering efter enhetstestet"). Not cancellable once started: storing "off" wakes the
+     * schedule's `collectLatest`, which would otherwise cancel the removal half way. True when a
+     * calendar was there.
      */
-    suspend fun turnOff(): Boolean = mutex.withLock {
-        store.setEnabled(false)
-        removeLocked()
+    suspend fun turnOff(): Boolean = withContext(NonCancellable) {
+        mutex.withLock {
+            store.setEnabled(false)
+            removeLocked()
+        }
     }
 
     private suspend fun removeLocked(): Boolean {
