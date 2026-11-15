@@ -1,0 +1,190 @@
+name: Miniflux contract
+
+# Fas 5 (rss lane, plan §7 #35): the recipe inbox's Miniflux API against a REAL, throwaway Miniflux
+# (the project's own image, pinned by version AND digest) with PostgreSQL from Docker Hub's official
+# image, both started inside the runner and deleted with it. The feed it reads is served inside the
+# job too (contract-tests/miniflux/recipes.xml under the reserved name recipes.example.com, mapped to
+# the runner): nothing outside the job is contacted, never a real Miniflux. See
+# contract-tests/.../MinifluxContractTest.kt and api-schema/fixtures/miniflux/<version>/.
+on:
+  workflow_dispatch:
+  push:
+    # Branches only (a tag push repeats a SHA that was already tested).
+    branches: ["**"]
+    paths:
+      - "contract-tests/src/test/kotlin/casa/moller/tandem/contract/MinifluxContractTest.kt"
+      - "contract-tests/src/test/kotlin/casa/moller/tandem/contract/TandoorHttp.kt"
+      - "contract-tests/src/test/kotlin/casa/moller/tandem/contract/Sanitizer.kt"
+      - "contract-tests/miniflux/**"
+      - "core/network/src/main/kotlin/casa/moller/tandem/core/network/miniflux/**"
+      - "api-schema/fixtures/miniflux/**"
+      - ".github/workflows/miniflux-contract.yml"
+
+concurrency:
+  group: miniflux-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Miniflux ${{ matrix.miniflux.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        miniflux:
+          # Released 2026-10-20 (at least two weeks old when pinned on 2026-11-15). A newer release is
+          # added here by hand, with its digest from Docker Hub, and its recordings committed.
+          - tag: "2.3.4"
+            image: miniflux/miniflux:2.3.4@sha256:72e49f513a63104506aab98ba8cfc3a409d4fde23550a583dec07ec941f1e94e
+    env:
+      MINIFLUX_TAG: ${{ matrix.miniflux.tag }}
+      MINIFLUX_IMAGE: ${{ matrix.miniflux.image }}
+      MINIFLUX_URL: http://127.0.0.1:8090
+      MINIFLUX_ADMIN_USERNAME: contract-admin
+      MINIFLUX_FEED_URL: http://recipes.example.com:8099/recipes.xml
+      RECORDINGS: contract-tests/build/contract-recordings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Generate throwaway credentials
+        run: |
+          password="$(openssl rand -hex 24)"
+          db_password="$(openssl rand -hex 16)"
+          echo "::add-mask::${password}"
+          echo "::add-mask::${db_password}"
+          {
+            echo "MINIFLUX_ADMIN_PASSWORD=${password}"
+            echo "MINIFLUX_DB_PASSWORD=${db_password}"
+          } >> "$GITHUB_ENV"
+
+      # The feed: a plain static file server on the runner, bound to loopback only.
+      - name: Serve the test feed
+        run: |
+          mkdir -p "$RUNNER_TEMP/feed"
+          cp contract-tests/miniflux/recipes.xml "$RUNNER_TEMP/feed/recipes.xml"
+          nohup python3 -m http.server 8099 --bind 127.0.0.1 --directory "$RUNNER_TEMP/feed" > "$RUNNER_TEMP/feed.log" 2>&1 &
+          sleep 1
+          curl -sf -o /dev/null http://127.0.0.1:8099/recipes.xml
+
+      # Miniflux on the host network (it must reach the feed on loopback; FETCHER_ALLOW_PRIVATE_NETWORKS
+      # lets it, since 2.3 private addresses are refused by default) with recipes.example.com mapped there.
+      - name: Start PostgreSQL 16 and Miniflux
+        run: |
+          docker run -d --name miniflux-db -p 127.0.0.1:5432:5432 \
+            -e POSTGRES_USER=miniflux -e POSTGRES_DB=miniflux -e POSTGRES_PASSWORD="$MINIFLUX_DB_PASSWORD" \
+            postgres:16-alpine
+          for attempt in $(seq 1 30); do
+            if docker exec miniflux-db pg_isready -U miniflux -d miniflux > /dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          docker pull --quiet "$MINIFLUX_IMAGE"
+          docker run -d --name miniflux --network host \
+            --add-host recipes.example.com:127.0.0.1 \
+            -e DATABASE_URL="postgres://miniflux:${MINIFLUX_DB_PASSWORD}@127.0.0.1:5432/miniflux?sslmode=disable" \
+            -e RUN_MIGRATIONS=1 \
+            -e CREATE_ADMIN=1 \
+            -e ADMIN_USERNAME="$MINIFLUX_ADMIN_USERNAME" \
+            -e ADMIN_PASSWORD="$MINIFLUX_ADMIN_PASSWORD" \
+            -e LISTEN_ADDR=127.0.0.1:8090 \
+            -e BASE_URL=http://127.0.0.1:8090 \
+            -e FETCHER_ALLOW_PRIVATE_NETWORKS=1 \
+            -e POLLING_FREQUENCY=1440 \
+            "$MINIFLUX_IMAGE"
+          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$MINIFLUX_IMAGE")"
+          echo "Image: \`${digest}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-disabled: true
+
+      # Read only, like contract.yml: never writes the shared entry that main's PR run saves.
+      - name: Restore Gradle cache (read only)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties', '**/*.gradle.kts', 'gradle.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Compile contract tests
+        run: ./gradlew --stacktrace :contract-tests:testClasses
+
+      - name: Wait for Miniflux
+        run: |
+          for attempt in $(seq 1 60); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' "$MINIFLUX_URL/healthcheck" || true)" = "200" ]; then
+              echo "Miniflux answered after ${attempt} checks"
+              exit 0
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' miniflux)" != "true" ]; then
+              echo "::error::The Miniflux container stopped"
+              docker logs miniflux 2>&1 | tail -n 100
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Miniflux did not answer within 2 minutes"
+          docker logs miniflux 2>&1 | tail -n 100
+          exit 1
+
+      - name: Contract tests (Miniflux)
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.MinifluxContractTest'
+
+      - name: Check recordings for leaked secrets
+        if: always()
+        run: |
+          [ -d "$RECORDINGS" ] || { echo "No recordings"; exit 0; }
+          leaked=0
+          basic="$(printf '%s:%s' "$MINIFLUX_ADMIN_USERNAME" "$MINIFLUX_ADMIN_PASSWORD" | base64 -w0)"
+          for value in "$MINIFLUX_ADMIN_PASSWORD" "$MINIFLUX_DB_PASSWORD" "$basic"; do
+            if [ -n "$value" ] && grep -rqF -- "$value" "$RECORDINGS"; then leaked=1; fi
+          done
+          # The API key is recorded only as <redacted>.
+          if grep -rh '"x-auth-token"' "$RECORDINGS" | grep -v -e '<redacted>' -e 'tandem-contract-wrong-key'; then leaked=1; fi
+          if [ "$leaked" = 1 ]; then
+            echo "::error::A secret was found in the recordings; deleting them"
+            rm -rf "$RECORDINGS"
+            exit 1
+          fi
+          echo "Recordings are clean"
+
+      - name: Upload recordings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: miniflux-recordings-${{ matrix.miniflux.tag }}
+          path: ${{ env.RECORDINGS }}/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: miniflux-reports-${{ matrix.miniflux.tag }}
+          path: |
+            contract-tests/build/reports/
+            contract-tests/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Miniflux log
+        if: failure()
+        run: docker logs miniflux 2>&1 | tail -n 200 || true

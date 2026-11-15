@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fas 5 (rss lane): the feed MinifluxContractTest subscribes to. Served inside the runner by
+     miniflux-contract.yml under the reserved name recipes.example.com (mapped to the runner itself);
+     nothing outside the job is contacted. Three recipe posts, newest first. -->
+<rss version="2.0">
+  <channel>
+    <title>Exempelköket</title>
+    <link>https://recipes.example.com/</link>
+    <description>Recept att pröva</description>
+    <language>sv</language>
+    <item>
+      <title>Pannkakor med blåbär</title>
+      <link>https://recipes.example.com/recept/pannkakor</link>
+      <guid isPermaLink="true">https://recipes.example.com/recept/pannkakor</guid>
+      <pubDate>Fri, 13 Nov 2026 08:00:00 +0000</pubDate>
+      <description>&lt;p&gt;Tunna pannkakor med &lt;b&gt;blåbär&lt;/b&gt; &amp;amp; grädde.&lt;/p&gt;</description>
+      <enclosure url="https://recipes.example.com/bilder/pannkakor.jpg" type="image/jpeg" length="12345"/>
+    </item>
+    <item>
+      <title>Linssoppa</title>
+      <link>https://recipes.example.com/recept/linssoppa</link>
+      <guid isPermaLink="true">https://recipes.example.com/recept/linssoppa</guid>
+      <pubDate>Thu, 12 Nov 2026 08:00:00 +0000</pubDate>
+      <description>&lt;p&gt;&lt;img src="https://recipes.example.com/bilder/linssoppa.jpg" alt="Soppa"&gt;&lt;/p&gt;&lt;p&gt;En värmande soppa på röda linser.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Kladdkaka</title>
+      <link>https://recipes.example.com/recept/kladdkaka</link>
+      <guid isPermaLink="true">https://recipes.example.com/recept/kladdkaka</guid>
+      <pubDate>Wed, 11 Nov 2026 08:00:00 +0000</pubDate>
+      <description>Seg chokladkaka utan bild.</description>
+    </item>
+  </channel>
+</rss>

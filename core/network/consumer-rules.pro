@@ -43,3 +43,5 @@
 # kotlinx.serialization's own rules. smoke.yml checks that each of them is in the R8 mapping.
 -keep,allowobfuscation @kotlinx.serialization.Serializable class casa.moller.tandem.core.network.dto.**
 -keep,allowobfuscation @kotlinx.serialization.Serializable class casa.moller.tandem.core.network.openfoodfacts.**
+# Fas 5 (rss lane): the recipe inbox's Miniflux DTOs (decoded with explicit serializers; kept like the others).
+-keep,allowobfuscation @kotlinx.serialization.Serializable class casa.moller.tandem.core.network.miniflux.**
