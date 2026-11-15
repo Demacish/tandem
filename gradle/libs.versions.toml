@@ -47,10 +47,10 @@ coil = "3.6.3"
 browser = "1.10.0"
 
 # --- Data / background ---
-datastore = "1.2.1"       # datastore-tink exists only as 1.3.0-alpha -> own Tink Serializer on stable 1.2.1
+datastore = "1.3.0"       # datastore-tink exists only as 1.3.0-alpha -> own Tink Serializer on stable 1.2.1
 tink = "1.23.0"
 room3 = "3.0.3"           # androidx.room3 (fallback: androidx.room 2.8.5)
-paging = "3.5.2"
+paging = "3.5.3"
 work = "2.12.0"
 # --- Fas 4 (push lane): the UnifiedPush connector for the optional fast push (Apache-2.0, Maven
 # Central, released 2026-08-22). It depends on com.google.crypto.tink:tink, which is excluded in
