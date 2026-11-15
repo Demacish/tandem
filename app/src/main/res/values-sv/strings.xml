@@ -16,4 +16,7 @@
     <string name="app_recovery_clear_title">Rensa appdata?</string>
     <string name="app_recovery_clear_body">Alla inloggningar och inställningar tas bort från den här enheten. Ingenting raderas på din Tandoor-server.</string>
     <string name="app_clear_data_failed">En del data gick inte att rensa. Krypteringsnycklarna förstördes, så den går inte längre att läsa.</string>
+
+    <!-- Fas 5 (funktioner, plan §8.7): det telefonens assistentinställningar visar om Tandems appfunktioner. -->
+    <string name="app_assistant_display_description">Lägg till varor på inköpslistan, läs listan och matsedeln, hitta recept och öppna dem i Tandem.</string>
 </resources>

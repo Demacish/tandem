@@ -60,6 +60,32 @@
         </activity>
 
         <!--
+            Fas 5 (funktioner lane, plan §8.7): Tandem's App Functions for an assistant on the phone
+            ("lägg till mjölk på listan"). KSP generates the service and assets/tandem_app_functions.xml
+            from assistant/BaseTandemAppFunctionService.kt. Only the system binds it (the permission
+            is the system's), from Android 16 (API 36); every function is off until Mer → Assistenten.
+            docs/BYGGE.md "App Functions".
+        -->
+        <service
+            android:name=".assistant.TandemAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+            <property
+                android:name="android.app.appfunctions.schema"
+                android:value="app_functions_schema.xsd" />
+            <property
+                android:name="android.app.appfunctions.v2"
+                android:value="tandem_app_functions.xml" />
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+        <property
+            android:name="android.app.appfunctions.app_metadata"
+            android:resource="@xml/assistant_app_metadata" />
+
+        <!--
             WorkManager is initialized on demand with TandemApplication's configuration (the Hilt
             worker factory of core:sync), so its default startup initializer is removed. The other
             startup initializers (e.g. the process lifecycle) stay.

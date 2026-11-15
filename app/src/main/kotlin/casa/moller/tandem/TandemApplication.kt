@@ -5,9 +5,12 @@ import android.content.Context
 import android.os.Build
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import casa.moller.tandem.assistant.AssistantFunctionStates
+import casa.moller.tandem.assistant.AssistantHost
 import casa.moller.tandem.core.common.crash.CrashLogEnvironment
 import casa.moller.tandem.core.common.crash.CrashLogHandler
 import casa.moller.tandem.core.common.crash.CrashLogStore
+import casa.moller.tandem.core.data.assistant.AssistantActions
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.sync.SyncStarter
@@ -18,13 +21,15 @@ import casa.moller.tandem.feature.widgets.WidgetUpdater
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class TandemApplication :
     Application(),
-    Configuration.Provider {
+    Configuration.Provider,
+    AssistantHost {
 
     /** Creates the sync's @HiltWorker workers (core:sync); WorkManager starts on demand with it. */
     @Inject
@@ -53,6 +58,18 @@ class TandemApplication :
     @Inject
     lateinit var appLock: DefaultAppLock
 
+    // --- Fas 5 (funktioner lane, plan §8.7): the App Functions (assistant/), off until chosen. ---
+    /** What the App Functions' service calls; a Provider, so nothing is built at startup for it. */
+    @Inject
+    lateinit var assistantActionsProvider: Provider<AssistantActions>
+
+    /** The functions' enabled state in the system follows "Låt assistenten använda Tandem". */
+    @Inject
+    lateinit var assistantFunctionStates: AssistantFunctionStates
+
+    override val assistantActions: AssistantActions
+        get() = assistantActionsProvider.get()
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -75,6 +92,7 @@ class TandemApplication :
         syncStarter.start()
         widgetUpdater.start()
         watchLink.start()
+        assistantFunctionStates.start()
         // Phase 1b (plan 8.7): the channels exist before the first notification, so the system
         // settings and Mer → Behörigheter show them from the first start. Off the main thread
         // (binder calls, not needed for the first frame); a failure only delays them to the first

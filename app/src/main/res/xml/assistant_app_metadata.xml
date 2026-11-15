@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fas 5 (funktioner lane, plan §8.7): the app-level description an assistant reads for Tandem's
+    App Functions (assistant/BaseTandemAppFunctionService.kt). It says what the app is and how the
+    functions belong together; each function's own description is its KDoc. docs/BYGGE.md "App Functions".
+-->
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:instructions="Tandem is the household's cooking app for a self-hosted Tandoor recipe server: a shared shopping list, a weekly meal plan and the household's recipes, also offline.
+Tasks:
+- addToShoppingList adds items to the shopping list; one text can hold several items separated by commas, each with its own amount and unit.
+- getShoppingList gives the items still to buy.
+- getMealPlan gives the meals planned for a day (today when no day is given), for example tonight's dinner.
+- searchRecipes finds stored recipes and their ids; openRecipe opens one of them, or its cook mode, on the screen.
+Order: searchRecipes or getMealPlan first, to get the recipeId that openRecipe needs.
+Constraints:
+- Names of foods, lists and meal types are in the household's own language (often Swedish).
+- Nothing can be deleted or checked off through these functions.
+- The functions answer only when the user has allowed assistants in Tandem; they say so when they cannot."
+    appfn:displayDescription="@string/app_assistant_display_description" />

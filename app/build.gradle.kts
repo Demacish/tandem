@@ -210,6 +210,13 @@ dependencies {
     // sideloaded installs, where no store compiles it ahead of time. ---
     implementation(libs.androidx.profileinstaller)
 
+    // --- funktioner lane (Fas 5, plan §8.7): the App Functions (assistant/). KSP generates the
+    // AppFunctionService and assets/tandem_app_functions.xml; the testing artifact runs the functions
+    // through AppFunctionManager in Robolectric (AppFunctionTestRule). ---
+    implementation(libs.androidx.appfunctions)
+    ksp(libs.androidx.appfunctions.compiler)
+    testImplementation(libs.androidx.appfunctions.testing)
+
     // --- fix-bygg (0.1.0 review): ATF accessibility checks (assertAccessible) in the UI tests. ---
     testImplementation(projects.core.testing)
 }
