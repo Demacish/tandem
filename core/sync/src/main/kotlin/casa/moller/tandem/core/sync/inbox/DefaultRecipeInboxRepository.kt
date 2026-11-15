@@ -338,8 +338,7 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
 
         /** What the user is told for a Miniflux failure. */
         fun problemOf(error: TandemError): InboxProblem = when {
-            // Fas 5 (sdk37 lane): before the connectivity rule, which counts it as offline too.
-            error == TandemError.LocalNetworkDenied -> InboxProblem.LOCAL_NETWORK
+            error == TandemError.LocalNetworkDenied -> InboxProblem.LOCAL_NETWORK // Fas 5 (sdk37): before "offline"
             error.isConnectivityProblem -> InboxProblem.UNREACHABLE
             error is TandemError.Unauthorized -> InboxProblem.AUTH
             error is TandemError.TlsError -> InboxProblem.TLS
