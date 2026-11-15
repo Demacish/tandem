@@ -2215,7 +2215,7 @@ notiskanal, ingen ny tabell (två nycklar i inställningsfilen: `app_lock_enable
   tester): plattformens `android.hardware.biometrics.BiometricPrompt` med
   `BIOMETRIC_STRONG or DEVICE_CREDENTIAL` (minSdk 34), `KeyguardManager.isDeviceSecure` för "har
   telefonen skärmlås". Appen ser aldrig fingeravtryck eller pinkod. Behörigheten `USE_BIOMETRIC`
-  (normal, i appens manifest). **Inte androidx.biometric:** 1.1.0 (senaste stabila) kräver
+  (normal, i `core:ui`:s manifest, där Lint kräver den). **Inte androidx.biometric:** 1.1.0 (senaste stabila) kräver
   `FragmentActivity` och drar in appcompat, 1.4.0 finns bara som alpha/beta (beta01 är yngre än två
   veckor); plattformens API gör samma sak från API 30.
 - `:app`: `AppLockGate` runt hela `TandemApp`, `AppLockRoute`/`AppLockScreen` (låsskärmen) och
@@ -2250,7 +2250,7 @@ skyddar inget då). Inställningen förblir på.
 egen uppgift med `showWhenLocked`), timrarnas notiser och åtgärder (Stopp, +1 min), WorkManager
 (synk, utkorg, påminnelsernas koll), list-, utgångs-, måltids- och butikspåminnelserna, handsfree och
 klockan (egen token). Inget av det läser `AppLock`; `AppLockSurfacesTest` läser det sammanslagna
-manifestet och klasserna. Kokläget och köksskärmen låses aldrig medan de är framme, eftersom tiden
+manifestet (`android_merged_manifest`) och klasserna. Kokläget och köksskärmen låses aldrig medan de är framme, eftersom tiden
 bara räknas i bakgrunden; larmskärmen framför appen räknas som förgrund (en aktivitet i processen
 syns). Med "Direkt" låses appen också efter en tur till kameran, bildväljaren eller systemets
 inställningar; resultatet kommer ändå fram (innehållet ligger kvar) och syns efter upplåsningen.
