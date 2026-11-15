@@ -80,10 +80,26 @@ internal class PhoneMealCalendar @Inject constructor(
         }
     }
 
-    /** Deletes Tandem's calendar with all its events (turned off, logged out, demo mode); true when one was there. */
-    suspend fun remove(): Boolean = mutex.withLock {
-        if (!gateway.hasPermission()) return@withLock false
-        when (val removed = onProvider { gateway.removeCalendar() }) {
+    /** Deletes Tandem's calendar with all its events; true when one was there. The option itself is left as it is. */
+    suspend fun remove(): Boolean = mutex.withLock { removeLocked() }
+
+    /**
+     * Turns "Visa i telefonens kalender" off and deletes the calendar, as ONE step under the write
+     * lock (turned off, logged out, demo mode, the account leaving): the setting is stored first, so a
+     * [write] that waits for the lock (the twice-daily work, the plan follower, "Uppdatera nu") finds
+     * it off and writes nothing, and a write that already holds the lock finishes before the calendar
+     * is deleted. Removing first and storing "off" afterwards let a waiting write slip in between and
+     * bring the calendar back for good (the flaky release smoke test, docs/BYGGE.md
+     * "Komplettering efter enhetstestet"). True when a calendar was there.
+     */
+    suspend fun turnOff(): Boolean = mutex.withLock {
+        store.setEnabled(false)
+        removeLocked()
+    }
+
+    private suspend fun removeLocked(): Boolean {
+        if (!gateway.hasPermission()) return false
+        return when (val removed = onProvider { gateway.removeCalendar() }) {
             is ProviderResult.Done -> removed.value
             else -> false
         }

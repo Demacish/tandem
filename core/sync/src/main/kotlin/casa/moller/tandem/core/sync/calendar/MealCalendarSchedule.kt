@@ -72,10 +72,7 @@ internal class MealCalendarSchedule @Inject constructor(
                     when {
                         wanted.source !is ActiveSource.Remote -> {
                             work.cancel()
-                            if (wanted.local) {
-                                calendar.remove()
-                                store.setEnabled(false)
-                            }
+                            if (wanted.local) calendar.turnOff()
                         }
 
                         !wanted.local && !wanted.link -> work.cancel()
@@ -93,9 +90,8 @@ internal class MealCalendarSchedule @Inject constructor(
     override suspend fun beforeRemoval(account: ServerAccount, token: String) {
         val active = sources.current() as? ActiveSource.Remote ?: return
         if (active.accountId != account.id || !store.state.first().enabled) return
-        // Off first: a write that is still waiting then writes nothing (PhoneMealCalendar.write).
-        store.setEnabled(false)
-        calendar.remove()
+        // Off and removed under the write lock: a write that is still waiting then writes nothing.
+        calendar.turnOff()
     }
 
     /** Writes the calendar now and after every change of the stored plan in today's window. */

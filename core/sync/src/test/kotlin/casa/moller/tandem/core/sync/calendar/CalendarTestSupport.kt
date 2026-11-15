@@ -4,14 +4,25 @@ import casa.moller.tandem.core.datastore.LocalCalendarRecord
 import casa.moller.tandem.core.datastore.MealCalendarStore
 import casa.moller.tandem.core.sync.work.MealCalendarWork
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
-/** The local calendar's setting in memory. */
+/**
+ * The local calendar's setting in memory. With [holdOff] set, storing "off" waits for it (a slow
+ * DataStore write) after completing [offStarted].
+ */
 internal class FakeMealCalendarStore(initial: LocalCalendarRecord = LocalCalendarRecord()) : MealCalendarStore {
     override val state = MutableStateFlow(initial)
 
+    @Volatile var holdOff: CompletableDeferred<Unit>? = null
+    val offStarted = CompletableDeferred<Unit>()
+
     override suspend fun setEnabled(enabled: Boolean) {
+        if (!enabled) {
+            offStarted.complete(Unit)
+            holdOff?.await()
+        }
         state.update { if (enabled) it.copy(enabled = true) else LocalCalendarRecord() }
     }
 

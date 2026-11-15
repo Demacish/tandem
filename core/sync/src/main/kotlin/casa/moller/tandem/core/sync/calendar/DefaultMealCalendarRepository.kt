@@ -47,8 +47,7 @@ internal class DefaultMealCalendarRepository @Inject constructor(
 
     override suspend fun setLocalCalendar(enabled: Boolean): Outcome<Unit> {
         if (!enabled) {
-            calendar.remove()
-            store.setEnabled(false)
+            calendar.turnOff()
             return Outcome.Success(Unit)
         }
         if (sources.current() !is ActiveSource.Remote) return Outcome.Failure(DataProblem.NO_ACCOUNT.toError())

@@ -14,6 +14,10 @@ import casa.moller.tandem.core.sync.reminder.ReminderClock
 import casa.moller.tandem.core.sync.testing.SyncTestGraph
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
 import kotlin.time.Instant
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -172,11 +176,54 @@ class PhoneMealCalendarTest {
     }
 
     @Test
+    fun turnOffStoresOffAndRemovesTheCalendar() {
+        meal(1, "2026-11-14")
+        write()
+        assertTrue(runBlocking { calendar.turnOff() })
+        assertFalse(store.state.value.enabled)
+        assertTrue(provider.calendars().isEmpty())
+        assertTrue(provider.events().isEmpty())
+        assertEquals(Outcome.Success(0), write())
+        assertTrue(provider.calendars().isEmpty())
+    }
+
+    /**
+     * The flaky release smoke test (Phase5KalenderSmokeTest, "waiting until the calendar removed"):
+     * the twice-daily work's write waited for the lock while the calendar was being removed and ran
+     * before "off" was stored, so it put the calendar back for good. Storing "off" now happens under
+     * the same lock, before the calendar is deleted: a write that comes in meanwhile writes nothing.
+     */
+    @Test
+    fun aWriteThatComesInWhileTurningOffNeverBringsTheCalendarBack() {
+        meal(1, "2026-11-14")
+        write()
+        val slowOff = CompletableDeferred<Unit>()
+        store.holdOff = slowOff
+        runBlocking {
+            val off = async(Dispatchers.Default) { calendar.turnOff() }
+            store.offStarted.await()
+            val late = async(Dispatchers.Default) { calendar.write() }
+            delay(WRITE_QUEUED_MILLIS)
+            slowOff.complete(Unit)
+            assertTrue(off.await())
+            assertEquals(Outcome.Success(0), late.await())
+        }
+        assertFalse(store.state.value.enabled)
+        assertTrue(provider.calendars().isEmpty())
+        assertTrue(provider.events().isEmpty())
+    }
+
+    @Test
     fun aRevokedPermissionIsRecordedNotThrown() {
         shadowOf(app).denyPermissions(Manifest.permission.WRITE_CALENDAR)
         assertTrue(write() is Outcome.Failure)
         assertEquals("PERMISSION", store.state.value.problem)
         assertFalse(calendar.hasPermission())
         assertFalse(runBlocking { calendar.remove() })
+    }
+
+    private companion object {
+        /** Long enough for the late write to reach the lock before "off" is stored. */
+        const val WRITE_QUEUED_MILLIS = 200L
     }
 }
