@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -158,6 +159,8 @@ class PlanMealRoundThreeTest {
         composeRule.setContent {
             MealPlanTestTheme(darkTheme = darkTheme, fontScale = fontScale) { PlanMealScreen(state = state, onAction = {}) }
         }
+        // The chosen recipe comes after the days, the meal types and the kind: below the fold on 360 dp.
+        composeRule.onNodeWithTag(PLAN_MEAL_FORM_TAG).performScrollToNode(hasText(longName.name))
         composeRule.waitForIdle()
     }
 
@@ -209,4 +212,3 @@ private fun PlanMealUiState.after(action: PlanMealAction): PlanMealUiState = whe
 
     else -> this
 }
-
