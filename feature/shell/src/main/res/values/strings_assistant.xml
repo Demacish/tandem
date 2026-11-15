@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (funktioner lane, plan §8.7): Mer → Assistenten, the App Functions an assistant on the phone may use. -->
+<resources>
+    <string name="shell_assistant_title">Assistant</string>
+    <string name="shell_assistant_more_off">Off</string>
+    <string name="shell_assistant_more_on">On: the phone\'s assistant can use the list and the meal plan</string>
+    <string name="shell_assistant_switch_title">Let the assistant use Tandem</string>
+    <string name="shell_assistant_switch_body">An assistant on this phone, such as Gemini, can then add items to the shopping list and read the list, the meal plan and your recipes. What it reads may be sent to the assistant\'s own service.</string>
+    <string name="shell_assistant_locked_title">Allow the assistant when the app is locked</string>
+    <string name="shell_assistant_locked_body">Applies when the app lock is on. Otherwise Tandem only answers the assistant after you have unlocked the app.</string>
+    <string name="shell_assistant_can_title">What the assistant can do</string>
+    <string name="shell_assistant_can_body">• Add items to the shopping list, for example “add milk to the list”\n• Read what is left to buy\n• Read the meal plan for a day\n• Search your recipes and open one, or its cook mode\nIt can never remove or check off anything.</string>
+    <string name="shell_assistant_unsupported_title">Needs Android 16</string>
+    <string name="shell_assistant_unsupported_body">Assistants can use apps like this from Android 16. On this phone the setting does nothing.</string>
+    <string name="shell_assistant_guest_title">Guest: reading only</string>
+    <string name="shell_assistant_guest_body">You are a guest in this Tandoor space, so the assistant can read but not add anything.</string>
+    <string name="shell_assistant_demo_title">Demo mode</string>
+    <string name="shell_assistant_demo_body">In demo mode the assistant uses the sample data on this phone and nothing is sent to a server.</string>
+</resources>

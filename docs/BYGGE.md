@@ -34,8 +34,8 @@ kan installeras bredvid release-bygget.
   (`wearTargetSdk` i katalogen); se "Target SDK 37". Robolectric kör enhetstesterna på SDK 36
   (`config/robolectric/robolectric.properties`); Android 17-tester väljer 37 med `@Config`.
 - compileSdk 37 är ett krav (Compose 1.12, core 1.19, material3 1.5 och Navigation 3 kräver det).
-  Det enda förhandsbiblioteket är material3 1.5.0-beta01 (Expressive), inkapslat i
-  `core:designsystem`.
+  Förhandsbiblioteken är material3 1.5.0-beta01 (Expressive), inkapslat i `core:designsystem`, och
+  `androidx.appfunctions` 1.0.0-beta01 (Fas 5, bara i `:app`, se "App Functions").
 
 ## Byggvarianter
 
@@ -1144,6 +1144,7 @@ sätts av integrationen. En rad per bana.
 | resten | Enhetstestet 2026-11-14, omgång 3, sent inkomna: B15 ny måltidstyp inte vald och felet utom synhåll, B16 starttiden mäts aldrig, B17 demotimer efter inloggning, F1 Idags tomma rader och raden Nya, ägarens skärmbilder S1–S3 (plan §6.2, §6.6, §8.1, §8.3) | **B15:** en måltidstyp som skapas under Planera måltid är vald direkt och förblir vald när utkorgen skickat den (temp-id → server-id, `MealPlanRepository.observeMealTypeId`), också på en server utan måltidstyper och offline (måltiden väntar på typens CREATE); ett stoppat sparande rullar till första fältet som saknas, fokuserar det om det är ett textfält och säger vad som saknas ovanför knappen (`liveRegion`), vid varje försök. **B16:** en kallstart mäts och syns i Diagnostik (`ColdStartGate`: första aktiviteten högst 2 s efter `Application.onCreate`; Android 15+ dessutom `ApplicationStartInfo` = kall start för en aktivitet, läst utanför huvudtråden); en varm start och en process startad för bakgrundsarbete räknas inte. **B17:** inga demotimrar (gående, ringande, klara) med larm och notiser finns kvar när demoläget lämnats för ett konto eller introt, också om appen stängdes i demoläget (`DemoTimerCleanup`, `TimerController.cancelSource`); kontots timrar rörs inte. **F1:** Idags text om tomma rader säger "efter första synkningen" bara före den första synken, efteråt vad som fyller raderna; Nya = serverns senast tillagda recept, nyast först, högst 20, också när inget lagts till senaste veckan. **S1/S2:** karusellrubrikerna på Idag och receptnamnet under Planera måltid har företräde: knappen står bredvid bara när rubriken (och underrubriken) ryms på en rad var, annars under. **S3:** att dra i sökresultaten under Recept medan sökfältet har fokus döljer tangentbordet och släpper fokus; sökfältet rullas helt in när det får fokus. I CI: `PlanMealViewModelTest` (tre nya), `PlanMealRoundThreeTest`, `ColdStartTest`, `DemoTimerCleanupTest`, `SyncEngineTest.nyaListsTheNewestRecipesAlsoWhenNoneWasAddedThisWeek`, `TodayRoundThreeTest`, `RecipeSearchKeyboardTest`, ATF och skärmbilder 360 × 780 dp i 1,0 och 320 × 693 dp i 2,0. **BEHÖVER ENHET** (ägaren): samma steg på Galaxy S21 FE mot den riktiga servern | ✅ klart i CI 2026-11-15 (PR 43678242499 och röktest 43678269689 på 62802a5: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; referensbilder från Screenshots 43676697642; avsiktligt ändrade `home/phone_today_full_light`, `home/*today_nothing_planned*`, `home/phone_today_want_to_cook_light_sv`, `mealplan/phone_plan_meal_chosen_light`, `phone_plan_meal_edit_font2_light`, `phone_plan_meal_light_en_xa`, `phone_plan_meal_title_dark_sv`; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14, omgång 3: de sent inkomna fynden" |
 | komplettering-enhet | Luckorna efter enhetstestet som går att täppa till utan telefon: det instabila kalenderröktestet, ett kontraktsfaktum för raden Nya, "Lägg till i matsedeln" vid största text, referensbilderna som varje inspelning skrev om, det föråldrade reglaget i påminnelsen nära butiken | **Kalendern:** att stänga av "Visa i telefonens kalender" (och utloggning, demoläge, konto som lämnar) sparar "av" och tar bort kalendern i samma steg under skrivlåset, så ingen väntande skrivning lägger tillbaka den; ett Robolectric-test som håller "av" medan en skrivning kommer in, och röktestet `Phase5KalenderSmokeTest` grönt i flera körningar i rad utan högre tidsgräns. **Nya:** `Phase5NyaContractTest` (eget steg, `fas5/nya/`, `fas5.nya`) visar mot 2.6.13 och 2.7.1 att `new=true&sort_order=-created_at&page_size=20` ger de nyaste först och det bakåtdaterade receptet efter alla nya. **Knappen:** vid teckenstorlek 2 på 320 dp kapas inte "Lägg till i matsedeln (…)" (kortare etikett utan dagen, TalkBack läser dagen), test med `assertNoWordBreaks` och omspelade referensbilder. **Skärmbilder:** en ny inspelning ändrar inga incheckade bilder utöver de avsiktliga. **Reglaget:** `SliderState`-varianten, ingen varning, oförändrade referensbilder. | ✅ klart i CI 2026-11-15 (PR 43688530582 och röktest 43689303843 på 5a2b63a, PR 43694171635 och röktest 43694171650 på 97c1994 med rättningen av `Phase1bSmokeTest`: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; torrkörning med båda APK:erna 43691564280 på 8774163; Contract 2.6.13/2.7.1 43684997721 och 43686684066; referensbilder från Screenshots 43686612108, bara de två `mealplan/phone_largest_devicetest_plan_meal_*_font2_light_sv`, och 43676697642 för de nio inaktuella; röktestet körs två gånger till på main), se "Komplettering efter enhetstestet" |
 | rss | Inkorg för recept (#35, plan §7, §8.4, §10 Fas 5), 0.9.0 | **Minimikravet:** ett oläst inlägg i en vald kategori i användarens Miniflux importeras med **två tryck** – inlägget (förhandsvisningen) och **Importera** – till samma granskning som en delad länk (#18): importen öppnas med inläggets adress och hämtar den direkt, och att godkänna granskningen markerar inlägget "Importerad" (och läst i Miniflux när valet är på); bevisat i `InboxViewModelTest` (inkorgens ViewModel genom importens ViewModel) och `RecipeImportViewModelTest`. **Allmän Miniflux-klient** (adress + API-nyckel i `X-Auth-Token`, egen OkHttp-klient, inget serverspecifikt), av som standard, inställd under Mer → Inställningar → Inkorg för recept; nyckeln krypterad, aldrig i loggar, säkerhetskopior eller sparat tillstånd. **Offline:** inläggen (titel, flöde, datum, bild, utdrag) ligger i Room (schema 7, `inbox_entry`, migrering 6 → 7 testad) och visas utan nät; uppdateras när inkorgen öppnas, med dra för att uppdatera och av WorkManager var 4:e timme med nät bara medan inkorgen är på. "Markera som läst" utan import, skickas direkt eller vid nästa uppdatering. **Utloggning/borttaget konto/Koppla från** tar bort nyckel, val och inlägg (`AccountRemovalHook`, `deleteAccountData`, test). **Eget skydd** (nekad nyckel stoppar, 429/403-paus, brytare för bakgrunden) som aldrig rör Tandoors `SyncGuard` och tvärtom (test åt båda hållen). Gäster läser men importerar inte; demoläget har en inbyggd inkorg utan nät. Vägar in: Recepts verktygsrad (antal nya) och "Nytt i inkorgen" på Idag (Anpassa Idag). **Kontraktstest** `MinifluxContractTest` mot en tillfällig Miniflux 2.3.4 (version och digest) med PostgreSQL och ett flöde i jobbet (`miniflux-contract.yml`): kategorier med olästa, olästa inlägg nyast först, markera läst, nekad nyckel; inspelningarna i `api-schema/fixtures/miniflux/2.3.4/`. Skärmbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, svenska och teckenstorlek 2. **BEHÖVER ENHET** (ägaren): mot den egna Miniflux-servern | ✅ klart i CI 2026-11-15 (PR 43719560265 på 225e156; Miniflux contract 43717226807 och Contract 2.6.13/2.7.1 43717226790 på e6db5d2, inget i deras sökvägar ändrades sedan; referensbilder från Screenshots 43717233137, bara `inbox/*` och `home/*today_inbox*`, `home/phone_today_customize_inbox_light_sv` nya, inga andra ändrade; röktestet körs på grenens sista SHA, inget eget röktestscenario, se "Inkorgen för recept") |
+| funktioner | App Functions (plan §8.7: en assistent kan "lägga till mjölk på listan"), 0.9.0 | **"Lägg till mjölk på listan"** genom App Functionen `addToShoppingList(text = "mjölk")` lägger "mjölk" på inköpslistan genom **utkorgen**, tolkat exakt som Handlas "Lägg till" (core:data `ShoppingInput`), och servern får posten när utkorgen töms (`DefaultAssistantActionsTest.milkGoesOnTheListThroughTheOutboxAndReachesTheServer` mot de riktiga repositorierna och Tandoor 2.6.13/2.7.1, `TandemAppFunctionsTest` genom `AppFunctionManager`, röktestet `Phase5FunktionerSmokeTest` genom systemets `cmd app_function` i den minifierade appen). **Varje funktion** står i "App Functions" med sitt exakta namn, id och sina parametrar. Allt är **av** tills "Låt assistenten använda Tandem" (Mer → Assistenten) slås på; avstängt, låst app (utan "Tillåt assistenten när appen är låst"), utloggad, gäst (skrivning) och säkert läge (skrivning) ger tydliga fel; demoläget fungerar på demodata. Ingen funktion tar bort något. Android 16 (API 36) och senare. | pågår |
 | sdk37 | Target SDK 37 (Android 17), 0.9.0 "Till hands" (plan §10 Fas 5, §5.5, §6.5) | **targetSdk 37 på main** för telefonappen, testappen (`:smoke`) och `:benchmark` (katalogens `targetSdk`); Wear OS-appen stannar på 36 med skälet skrivet. **Varje beteendeändring i Android 17** (för appar med target 37 och för alla appar, från developer.android.com) står i "Target SDK 37" med om den rör Tandem, var, och vad som gjordes. **Lokalt nätverk:** en server på hemnätverket (RFC 1918, länklokal, CGNAT utan VPN, IPv6 ULA/länklokal, direktanslutna rutter, `.local`) fungerar på Android 17: introt frågar `ACCESS_LOCAL_NETWORK` i sammanhanget innan något skickas (förklaring + Tillåt), ett nej ger felet "Tandem får inte använda ditt lokala nätverk" med vägen till Androids inställningar, en anslutning som ändå stoppas blir `TandemError.LocalNetworkDenied` (räknas som offline, aldrig kretsbrytaren) i stället för en timeout, och Mer → Behörigheter har raden Lokalt nätverk (bara på Android 17+); samma fråga och fel för Miniflux i inkorgens inställningar; beslutslogiken enhetstestad (adressreglerna, interceptorn, introts flöde, raden, Robolectric på SDK 36 och 37). **CI grönt**, röktestet kört på Googles API 37-emulator (`android-37.0`, `google_apis`, x86_64). | Klar: på main 39b0ad0f (2026-11-15); PR 43731863459, röktestet på API 37 43731863472 (`OK (14 tests)` + `OK (32 tests)`) |
 | las | Lås appen (plan §5.5, §10 Fas 5 "biometrisk lås"), 0.9.0 | **Av/på och tiderna:** Mer → Säkerhet → Lås appen är av som standard; att slå på kräver att telefonens skärmlås bekräftas en gång (systemets `BiometricPrompt`, `BIOMETRIC_STRONG` eller `DEVICE_CREDENTIAL`), och utan skärmlås går det inte att slå på (sidan förklarar och öppnar systemets säkerhetsinställningar). "Lås efter" Direkt / 1 min (standard) / 5 min / 15 min räknas **bara i bakgrunden** (processens ON_STOP, skärmen av inräknad) på `elapsedRealtime`; en kallstart låser alltid; att slå på låset med appen öppen låser den inte (`AppLockPolicyTest`, `DefaultAppLockTest` med falsk klocka, också en sovande telefon vars timer är sen). **Låst:** innehållet ritas inte, läses inte av TalkBack och kan inte tryckas på, låsskärmen ("Lås upp", prompten öppnas av sig själv) ligger i ett eget fönster över appens öppna ark och dialoger, Recents visar ingen bild (`setRecentsScreenshotEnabled(false)`, ingen FLAG_SECURE). **Undantagen bevisade med tester:** larmskärmen är en egen aktivitet på låsskärmen och varken den, timrarnas tjänst och mottagare, widgetarnas mottagare, rutan, klockans lyssnare eller butikspåminnelsens mottagare håller låset (`AppLockSurfacesTest`); notis, djuplänk, delning och genväg väntar och når sitt mål efter upplåsningen (`AppLockGateTest` med falsk autentiserare); widgetarna och rutan visar "Låst – öppna Tandem"/"Låst" medan låset är på (`WidgetStatesTest`, `WidgetSessionTest`); App Functions får `AppLock.unlockedWithinTimeout()`. Referensbilder och ATF för låsskärmen och sidan (telefon i båda orienteringar, surfplatta i båda, mörkt, svenska, teckenstorlek 2). Röktestet oförändrat (låset av). | ✅ klart i CI 2026-11-15 (PR 43739215393, röktest 43739215318: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", Contract 43739215296 på 8e50683a; referensbilder från Screenshots 43734179632: bara nya bilder för låsskärmen, `app/*lock*` och `shell/lock_*`, inga befintliga ändrade); på telefonen återstår ägarens prov med fingeravtryck/pinkod och larmet medan appen är låst, se "Lås appen" |
 <!-- /Fas 5 läge -->
@@ -1302,6 +1303,118 @@ TCP-anslutning bara tidsgräns**, så Tandem avgör själv:
   FakeTandoors logg); omkörd grön utan ändring. Kommer det igen: undersök tryckets timing efter
   serversteget, inte Android 17.
 <!-- /Fas 5 sdk37 -->
+
+<!-- Fas 5 funktioner -->
+## App Functions (`:app`, `:core:sync`, `:core:data`, `:core:model`, `:core:datastore`, `:feature:shell`, `:feature:shopping`, Fas 5, funktioner)
+
+Plan §8.7 ("App Functions (alfa) så att en assistent kan 'lägga till mjölk på listan'"), §5.5 (inga
+tredjepartsanrop, låset), §5.4 (inget extra mot servern), §4.5 (inget serverspecifikt). "Klart när" står
+i "Fas 5 – läge". En assistent på telefonen (en app som systemet låter köra App Functions, t.ex.
+Gemini) hittar Tandems funktioner i systemets register och anropar dem; Tandem svarar från samma
+repositorier som skärmarna, offline först, och varje ändring går genom utkorgen.
+
+**Biblioteket.** `androidx.appfunctions:appfunctions` + KSP-kompilatorn `appfunctions-compiler` (och
+`appfunctions-testing` i testerna), **1.0.0-beta01** (2026-10-21): den nyaste versionen som är minst två
+veckor gammal (rc01 kom 2026-11-04). Drar med `androidx.appsearch` 1.1.0 och Guava (R8 krymper).
+**Android 16 (API 36) och senare:** `AppFunctionService` finns bara där; på Android 14–15 binder systemet
+aldrig tjänsten och funktionerna finns inte (sidan Mer → Assistenten säger det och switcharna går inte
+att använda). Tjänsten är `@RequiresApi(36)` och manifestet `tools:targetApi="36"`; appens minSdk är kvar 34.
+
+**Av som standard (beslut, plan §5.5 och Fas 5-regeln "allt i bakgrunden är av").** Funktionerna
+lämnar inköpslistan, matsedeln och receptnamn till en annan app, som kan skicka dem vidare till sin
+egen molnmodell; Tandem gör aldrig ett sådant anrop själv. Därför är **"Låt assistenten använda Tandem"
+av** tills användaren slår på den, och funktionerna är deklarerade `isEnabled = false`, så en assistent
+inte ens ser dem som användbara förrän dess. Ingen avvikelse från planen (planen säger inget om standard).
+
+### Funktionerna
+
+Id:t är `casa.moller.tandem.assistant.BaseTandemAppFunctionService#<namn>` (klassen med
+`@AppFunctionServiceEntryPoint`; KSP genererar tjänsten `casa.moller.tandem.assistant.TandemAppFunctionService`
+och schemat `assets/tandem_app_functions.xml`). Beskrivningen assistenten läser är funktionens KDoc
+(engelska); appens beskrivning med ordningen mellan funktionerna står i `res/xml/assistant_app_metadata.xml`
+(`appfn:instructions`, manifestets `android.app.appfunctions.app_metadata`).
+
+| Funktion | Parametrar (utelämnad = värdet efter `=`) | Svar | Gör |
+|---|---|---|---|
+| `addToShoppingList` | `text: String`, `amount: Double? = null`, `unit: String? = null`, `listName: String? = null` | `AddedToShoppingList(items: List<ShoppingListItem>, listName: String?)` | Lägger till som Handlas "Lägg till": `ShoppingInput.splitItems` ("mjölk, bröd, 6 ägg" = tre varor), Tandoors tolk online och den lokala per vara annars, `ShoppingRepository.addAll` (utkorgen). `amount`/`unit` ersätter tolkens värden och går bara för **en** vara. `listName` = en av hushållets namngivna listor (skiftläge spelar ingen roll); utan = ingen namngiven lista, som Handla utan vald lista |
+| `getShoppingList` | `listName: String? = null` | `List<ShoppingListItem>` (`food`, `amount?`, `unit?`, `note`, `lists`, `buyLater`, `waitingToSync`) | Det som är kvar att köpa (avbockat utelämnas), "köp senare" sist, högst 200 |
+| `getMealPlan` | `date: LocalDate? = null` | `MealPlanForDay(date, meals: List<PlannedMeal>)` (`title`, `mealType`, `time?`, `recipeId?`, `servings`, `note`) | Dagens måltider (telefonens dag) eller den angivna dagens, i måltidstypernas ordning; "ikväll" = middagen i dagens svar |
+| `searchRecipes` | `query: String`, `maxResults: Int = 0` | `List<RecipeSummary>` (`id`, `name`, `totalMinutes?`, `rating?`) | Receptlistans offline-sökning (FTS i Room, aldrig nätet, ingen last på servern), 1–25, 0 = 10 |
+| `openRecipe` | `recipeId: Long`, `cookMode: Boolean = false` | `PendingIntent` | Öppnar receptet eller kokläget i appen: en explicit intent till `MainActivity` med `FLAG_IMMUTABLE` (core:ui `AppOpenIntents`, samma väg som widgetarna); är appen låst kommer låsskärmen först |
+
+Inga funktioner tar bort, bockar av eller ändrar något befintligt.
+
+**Kontrollerna, i den här ordningen** (`core:data` `AssistantActions`, implementerad i `core:sync`
+`DefaultAssistantActions`), med felet assistenten får (`AssistantErrors`, meddelanden på engelska som
+assistenten återger med egna ord):
+
+| Avslag (`AssistantRefusal`) | När | `AppFunctionException` |
+|---|---|---|
+| `TURNED_OFF` | "Låt assistenten använda Tandem" av | `AppFunctionDisabledException` |
+| `LOCKED` | appen låst och "Tillåt assistenten när appen är låst" av | `AppFunctionPermissionRequiredException` |
+| `NOT_LOGGED_IN` | ingen inloggad och inte demoläge (också återställningsläget) | `AppFunctionPermissionRequiredException` |
+| `READ_ONLY` | bara skrivning: gäst i utrymmet (#42) | `AppFunctionNotSupportedException` |
+| `SAFE_MODE` | bara skrivning: säkert läge (ändringen skulle vänta osänd) | `AppFunctionNotSupportedException` |
+| `NOTHING_TO_ADD`, `AMOUNT_FOR_SEVERAL_ITEMS`, `INVALID_AMOUNT`, `EMPTY_QUERY` | fel indata | `AppFunctionInvalidArgumentException` |
+| `LIST_NOT_FOUND` (nämner listorna som finns), `RECIPE_NOT_FOUND` | finns inte | `AppFunctionElementNotFoundException` |
+| `NOT_SAVED` | telefonens lagring felade | `AppFunctionAppUnknownException` |
+
+**Demoläget** svarar från demodatabasen och skickar inget (testat). Läsning fungerar för gäster och i
+säkert läge.
+
+### Delarna
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Typerna | `core/model/assistant/Assistant.kt` | `AssistantSettings(enabled, allowWhenLocked)` (båda av), `AssistantRefusal`, `AssistantResult` (`Done`/`Refused`), `AssistantShoppingItem`, `AssistantAddition`, `AssistantMeal(Day)`, `AssistantRecipe` |
+| Inställningen | `core/datastore` `PreferencesSettingsStore` (`assistant_enabled`, `assistant_when_locked`), `core/data` `AssistantSettingsRepository` + `DefaultAssistantSettingsRepository` | i `AppSettings.assistant`, eget block |
+| Låset | `core/data/assistant/AssistantLockCheck.kt` | `suspend fun contentAllowed()`; bunden i `core/sync/di/AssistantModule.kt`. **Låset (bana las) var inte på main när banan byggdes:** bindningen svarar `true` (inget lås finns) och ska av integrationen bytas mot `AppLock.unlockedWithinTimeout()` (en rad) |
+| Tolkningen | `core/data/shopping/ShoppingInput.kt` | flyttad från feature:shopping: `splitItems`, `parse` (tolken, annars lokalt per vara), `draft`; `ShoppingViewModel` och `ShoppingGrouping.splitItems` använder den |
+| Åtgärderna | `core/sync/assistant/DefaultAssistantActions.kt` | kontrollerna ovan, sedan `ShoppingRepository`/`IngredientParser`/`MealPlanRepository`/`RecipeRepository` |
+| Tjänsten | `app/.../assistant/BaseTandemAppFunctionService.kt`, `AssistantFunctionTypes.kt`, `AssistantErrors.kt`, `AssistantHost.kt` | funktionerna och deras `@AppFunctionSerializable`-typer; tjänsten hämtar `AssistantActions` från applikationen (`AssistantHost`, `TandemApplication` via en Hilt-`Provider`), så testerna kör den med en fake utan Hilt |
+| Systemets läge | `app/.../assistant/AssistantFunctionStates.kt` | startas i `TandemApplication.onCreate`: följer inställningen och sätter funktionerna `APP_FUNCTION_STATE_ENABLED` / `DEFAULT` (= av) i systemet, bara det som skiljer, bara på API 36+; ett fel loggas (funktionerna vägrar ändå när inställningen är av) |
+| Manifestet | `app/src/main/AndroidManifest.xml` | tjänsten (`exported`, `android.permission.BIND_APP_FUNCTION_SERVICE`, `android.app.appfunctions.AppFunctionService`, egenskaperna `android.app.appfunctions.schema` och `.v2` = `tandem_app_functions.xml`) och `android.app.appfunctions.app_metadata` |
+| Sidan | `feature/shell/assistant/` (`AssistantSettingsScreen` + `AssistantSettingsViewModel` + `AssistantPage`, `AssistantSettingsKey`, `strings_assistant.xml`) | Mer → Inställningar → **Assistenten** (raden sist i gruppen, "Av"/"På: …"): "Låt assistenten använda Tandem", under den "Tillåt assistenten när appen är låst" (går bara att slå på när den första är på), vad assistenten kan och aldrig kan göra, gäst ("bara läsning"), demoläge, och under Android 16 "Kräver Android 16" med switcharna avstängda |
+
+### Pröva på en telefon (Android 16+)
+
+Gemini och andra assistenter anropar bara appar som Google har släppt in i sin förhandsversion
+(developer.android.com, "AppFunctions": privat förhandsversion), så det enklaste är adb mot telefonen
+(debug-bygget heter `casa.moller.tandem.dev`, release `casa.moller.tandem`):
+
+```sh
+# 1. Mer → Assistenten → "Låt assistenten använda Tandem" på (loggad in eller i demoläget).
+adb shell cmd app_function list-app-functions --package casa.moller.tandem
+adb shell cmd app_function execute-app-function --package casa.moller.tandem \
+  --function 'casa.moller.tandem.assistant.BaseTandemAppFunctionService#addToShoppingList' \
+  --parameters '{"text": "mjölk"}'
+adb shell cmd app_function execute-app-function --package casa.moller.tandem \
+  --function 'casa.moller.tandem.assistant.BaseTandemAppFunctionService#getMealPlan' --parameters '{}'
+```
+
+"mjölk" ska stå på Handla direkt (också i flygplansläge, "väntar på synk") och i Tandoor när telefonen
+har nät. Med inställningen av svarar systemet att funktionen är avstängd.
+
+**Tester:** `DefaultAssistantActionsTest` (core:sync, Robolectric, riktiga repositorier i
+`SyncTestGraph` mot den tillståndsfulla Tandoor-faken i formerna från 2.6.13 och 2.7.1: "mjölk" genom
+utkorgen till servern, tolkningen som "Lägg till", mängd/enhet, av, låst och "Tillåt när låst",
+utloggad, återställning, gäst, säkert läge, bara obockade varor, demoläget med namngivna listor,
+matsedel och receptsökning utan nät), `TandemAppFunctionsTest` (:app, `AppFunctionTestRule` på
+Android 16: den **genererade** metadatan med namn, parametrar, obligatoriska och beskrivningar, schemat
+i `assets/`, av som standard och av/på i systemet med inställningen, varje funktion genom
+`AppFunctionManager` med sina argument och svarstyper, `openRecipe` och ett datum direkt på tjänsten,
+varje avslag som rätt undantag, tjänsten i det sammanslagna manifestet bara för systemet),
+`PreferencesSettingsStoreTest` (av tills vald, överlever omstart), `AssistantSettingsTest` (ViewModel
+och Compose), `AssistantScreenshotTest` (ATF och referensbilder `shell/assistant_*`: telefon stående
+och liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2, av/på/under
+Android 16/gäst/demo, Mer med raden), röktestet `Phase5FunktionerSmokeTest` (de fem funktionerna
+publicerade av den minifierade appen, av = inget läggs till, på i Mer → Assistenten = "mjölk" hos servern).
+
+**Kvar:** "Tillåt assistenten när appen är låst" står på Mer → Assistenten och låskontrollen svarar
+"olåst" tills banan las är på main: integrationen binder `AssistantLockCheck` till låset och kan flytta
+switchen bredvid låsinställningen. **BEHÖVER ENHET** (ägaren): adb-kommandona ovan på en telefon med
+Android 16+, och en assistent när Google släpper in fler appar.
+<!-- /Fas 5 funktioner -->
 
 <!-- Fas 5 klocka -->
 ## Klockan (`:wear`, `:core:watch`, `:core:watchlink`, `:feature:shell`, Fas 5, klocka)

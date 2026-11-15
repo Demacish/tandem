@@ -87,6 +87,7 @@ import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.AccountsKey
 import casa.moller.tandem.feature.shell.navigation.AppLockKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
+import casa.moller.tandem.feature.shell.navigation.AssistantSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
 import casa.moller.tandem.feature.shell.navigation.LanguageKey
@@ -127,6 +128,8 @@ internal fun MoreScreen(
     storeReminderInMore: Boolean = false,
     // Fas 5 (rss lane): Inställningar → Inkorg för recept (TandemShell passes true).
     recipeInboxInMore: Boolean = false,
+    // Fas 5 (funktioner lane): Mer → Assistenten (the row draws itself and its divider; TandemShell passes it).
+    assistantRow: @Composable (selected: Boolean) -> Unit = {},
     crashNotice: @Composable () -> Unit = {},
     onOpenKitchen: (() -> Unit)? = null,
     // Fas 5 (wear lane): Mer → Klockan (the row draws itself only with a watch or a pairing).
@@ -324,6 +327,8 @@ internal fun MoreScreen(
                                 selected = selectedPage == RecipeInboxSettingsKey,
                             )
                         }
+                        // Fas 5 (funktioner lane, plan §8.7): Mer → Assistenten (App Functions, off by default).
+                        assistantRow(selectedPage == AssistantSettingsKey)
                     }
 
                     // Fas 5 (las lane, plan §5.5): Mer → Säkerhet → Lås appen.

@@ -25,6 +25,20 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   Miniflux pausar aldrig synken med Tandoor (eller tvärtom).
 - Gäster kan läsa inkorgen men inte importera. Demoläget har en liten inbyggd inkorg.
 
+**Assistenten** (Fas 5, bana funktioner)
+
+- **"Lägg till mjölk på listan" med telefonens assistent:** på Android 16 och senare kan en assistent
+  på telefonen (till exempel Gemini, när Google släpper in fler appar) lägga till varor på
+  inköpslistan, läsa vad som är kvar att köpa, läsa matsedeln för en dag (som kvällens middag) och
+  söka bland recepten och öppna ett, eller dess kokläge. Varorna tolkas precis som när du skriver dem
+  under Lägg till på Handla ("2 l mjölk, bröd, 6 ägg"), sparas i telefonen direkt och skickas till
+  Tandoor när det finns nät. Assistenten kan aldrig ta bort eller bocka av något.
+- Av som standard: slå på **Låt assistenten använda Tandem** under Mer → Inställningar → Assistenten.
+  Det assistenten läser kan skickas till assistentens egen tjänst. Som gäst kan assistenten bara läsa,
+  i säkert läge tar Tandem inte emot ändringar från den, och i demoläget använder den exempeldata.
+- **Tillåt assistenten när appen är låst** (av som standard) bestämmer om assistenten får svar medan
+  appen är låst.
+
 **Android 17**
 
 - **Byggd för Android 17 (target SDK 37):** appen följer Android 17:s nya regler. Klockappen ligger

@@ -100,6 +100,9 @@ import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
 import casa.moller.tandem.feature.shell.accounts.AccountsPage
 import casa.moller.tandem.feature.shell.accounts.RouteAccountsPage
 import casa.moller.tandem.feature.shell.accounts.sharePendingChanges
+import casa.moller.tandem.feature.shell.assistant.AssistantPage
+import casa.moller.tandem.feature.shell.assistant.NoAssistantPage
+import casa.moller.tandem.feature.shell.assistant.RouteAssistantPage
 import casa.moller.tandem.feature.shell.lock.AppLockPage
 import casa.moller.tandem.feature.shell.lock.NoAppLockPage
 import casa.moller.tandem.feature.shell.lock.RouteAppLockPage
@@ -112,6 +115,7 @@ import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.AccountsKey
 import casa.moller.tandem.feature.shell.navigation.AppLockKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
+import casa.moller.tandem.feature.shell.navigation.AssistantSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
 import casa.moller.tandem.feature.shell.navigation.FastPushSettingsKey
@@ -249,6 +253,8 @@ fun TandemShell(
         storeReminderInMore = true,
         // Fas 5 (rss lane): Mer → Inställningar → Inkorg för recept (the shell's tests leave it out).
         recipeInboxInMore = true,
+        // Fas 5 (funktioner lane): Mer → Assistenten with its ViewModels (tests leave the default NoAssistantPage).
+        assistantPage = RouteAssistantPage,
         onAddAccount = onAddAccount,
         // Fas 5 (wear lane): Mer → Klockan with its ViewModels (tests leave the default NoWatchPage).
         watchPage = RouteWatchPage,
@@ -348,6 +354,8 @@ internal fun ShellScaffold(
     storeReminderInMore: Boolean = false,
     // Fas 5 (rss lane): the row "Inkorg för recept" in Mer (off in tests, so Mer's references stay as they were).
     recipeInboxInMore: Boolean = false,
+    // Fas 5 (funktioner lane): Mer → Assistenten. No row and no page unless the caller passes RouteAssistantPage.
+    assistantPage: AssistantPage = NoAssistantPage,
     // Fas 4 (push lane): Mer → Synk och lagring → Snabb push.
     fastPushPage: FastPushPage = RouteFastPushPage,
     // Fas 5 (wear lane): Mer → Klockan. No row and no page unless the caller passes RouteWatchPage.
@@ -756,6 +764,13 @@ internal fun ShellScaffold(
                     selectedPage = navigation.stackOf(ShellTab.MORE).getOrNull(1),
                     storeReminderInMore = storeReminderInMore,
                     recipeInboxInMore = recipeInboxInMore,
+                    // Fas 5 (funktioner lane, plan §8.7): Mer → Assistenten.
+                    assistantRow = { selected ->
+                        assistantPage.MoreRow(
+                            selected = selected,
+                            onOpen = { navigation.navigate(AssistantSettingsKey, replace = { it.isMorePage }) },
+                        )
+                    },
                     crashNotice = crashNotice,
                     // Fas 5 (wear lane, plan §7 #33): Mer → Klockan, only with a watch or a pairing.
                     watchRow = { selected ->
@@ -784,6 +799,10 @@ internal fun ShellScaffold(
             // Fas 5 (las lane): Mer → Lås appen.
             entry<AppLockKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 appLockPage.AppLock(onNavigateBack = { navigation.goBack() })
+            }
+            // Fas 5 (funktioner lane): Mer → Assistenten.
+            entry<AssistantSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                assistantPage.Assistant(onNavigateBack = { navigation.goBack() })
             }
             // Fas 4 (push lane): the optional fast push, opened from the sync page.
             entry<FastPushSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {

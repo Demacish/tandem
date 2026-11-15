@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fas 5 (funktioner, plan §8.7): Mer → Assistenten, appfunktionerna som en assistent på telefonen får använda. -->
+<resources>
+    <string name="shell_assistant_title">Assistenten</string>
+    <string name="shell_assistant_more_off">Av</string>
+    <string name="shell_assistant_more_on">På: telefonens assistent kan använda listan och matsedeln</string>
+    <string name="shell_assistant_switch_title">Låt assistenten använda Tandem</string>
+    <string name="shell_assistant_switch_body">En assistent på telefonen, till exempel Gemini, kan då lägga till varor på inköpslistan och läsa listan, matsedeln och dina recept. Det den läser kan skickas till assistentens egen tjänst.</string>
+    <string name="shell_assistant_locked_title">Tillåt assistenten när appen är låst</string>
+    <string name="shell_assistant_locked_body">Gäller när appen är låst med Lås appen. Annars svarar Tandem assistenten först när du har låst upp appen.</string>
+    <string name="shell_assistant_can_title">Det här kan assistenten göra</string>
+    <string name="shell_assistant_can_body">• Lägga till varor på inköpslistan, till exempel ”lägg till mjölk på listan”\n• Läsa vad som är kvar att köpa\n• Läsa matsedeln för en dag\n• Söka bland recepten och öppna ett, eller dess kokläge\nDen kan aldrig ta bort eller bocka av något.</string>
+    <string name="shell_assistant_unsupported_title">Kräver Android 16</string>
+    <string name="shell_assistant_unsupported_body">Assistenter kan använda appar på det här sättet från Android 16. På den här telefonen gör inställningen ingenting.</string>
+    <string name="shell_assistant_guest_title">Gäst – bara läsning</string>
+    <string name="shell_assistant_guest_body">Du är gäst i det här Tandoor-utrymmet, så assistenten kan läsa men inte lägga till något.</string>
+    <string name="shell_assistant_demo_title">Demoläge</string>
+    <string name="shell_assistant_demo_body">I demoläget använder assistenten exempeldata på telefonen, och ingenting skickas till någon server.</string>
+</resources>

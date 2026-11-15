@@ -57,6 +57,8 @@ internal val NavKey.isMorePage: Boolean
         MealCalendarKey,
         // Fas 5 (wear lane): Mer → Klockan.
         WatchKey,
+        // Fas 5 (funktioner lane): Mer → Assistenten.
+        AssistantSettingsKey,
         // Fas 5 (butik lane): Inställningar → Påminnelse nära butiken (feature:shopping).
         StoreReminderKey,
         // Fas 5 (rss lane): Inställningar → Inkorg för recept (feature:recipes).
