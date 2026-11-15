@@ -28,4 +28,7 @@
     <string name="shortcut_import_long">Import a recipe from a link or text</string>
     <string name="shortcut_scan">Scan barcode</string>
     <string name="shortcut_scan_long">Scan a barcode</string>
+    <!-- Fas 5 (las lane): Mer → Lock the app is on; the widgets and the tile show nothing of the user's. -->
+    <string name="widget_locked">Locked – open Tandem</string>
+    <string name="widget_locked_short">Locked</string>
 </resources>

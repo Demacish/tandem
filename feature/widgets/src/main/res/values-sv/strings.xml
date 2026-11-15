@@ -27,4 +27,7 @@
     <string name="shortcut_import_long">Importera ett recept från en länk eller text</string>
     <string name="shortcut_scan">Skanna streckkod</string>
     <string name="shortcut_scan_long">Skanna en streckkod</string>
+    <!-- Fas 5 (las lane): Mer → Lås appen är på; widgetarna och rutan visar inget av användarens. -->
+    <string name="widget_locked">Låst – öppna Tandem</string>
+    <string name="widget_locked_short">Låst</string>
 </resources>

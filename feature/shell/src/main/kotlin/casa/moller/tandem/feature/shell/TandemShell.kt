@@ -100,6 +100,9 @@ import casa.moller.tandem.feature.scan.navigation.ScanReviewKey
 import casa.moller.tandem.feature.shell.accounts.AccountsPage
 import casa.moller.tandem.feature.shell.accounts.RouteAccountsPage
 import casa.moller.tandem.feature.shell.accounts.sharePendingChanges
+import casa.moller.tandem.feature.shell.lock.AppLockPage
+import casa.moller.tandem.feature.shell.lock.NoAppLockPage
+import casa.moller.tandem.feature.shell.lock.RouteAppLockPage
 import casa.moller.tandem.feature.shell.more.AboutScreen
 import casa.moller.tandem.feature.shell.more.LanguageScreen
 import casa.moller.tandem.feature.shell.more.LicenseTextScreen
@@ -107,6 +110,7 @@ import casa.moller.tandem.feature.shell.more.LicensesScreen
 import casa.moller.tandem.feature.shell.more.MoreScreen
 import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.AccountsKey
+import casa.moller.tandem.feature.shell.navigation.AppLockKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
@@ -248,6 +252,8 @@ fun TandemShell(
         onAddAccount = onAddAccount,
         // Fas 5 (wear lane): Mer → Klockan with its ViewModels (tests leave the default NoWatchPage).
         watchPage = RouteWatchPage,
+        // Fas 5 (las lane): Mer → Säkerhet → Lås appen (tests leave the default NoAppLockPage).
+        appLockPage = RouteAppLockPage,
     )
 }
 
@@ -346,6 +352,8 @@ internal fun ShellScaffold(
     fastPushPage: FastPushPage = RouteFastPushPage,
     // Fas 5 (wear lane): Mer → Klockan. No row and no page unless the caller passes RouteWatchPage.
     watchPage: WatchPage = NoWatchPage,
+    // Fas 5 (las lane): Mer → Säkerhet → Lås appen. No section and no page unless the caller passes RouteAppLockPage.
+    appLockPage: AppLockPage = NoAppLockPage,
 ) {
     // The demo banner can be put away for this session; the "Demo" chip in the top bar stays.
     var demoBannerDismissed by rememberSaveable { mutableStateOf(false) }
@@ -753,6 +761,13 @@ internal fun ShellScaffold(
                     watchRow = { selected ->
                         watchPage.MoreRow(selected = selected, onOpen = { navigation.navigate(WatchKey, replace = { it.isMorePage }) })
                     },
+                    // Fas 5 (las lane, plan §5.5): Mer → Säkerhet → Lås appen.
+                    appLockSection = { selected ->
+                        appLockPage.MoreSection(
+                            selected = selected,
+                            onOpen = { navigation.navigate(AppLockKey, replace = { it.isMorePage }) },
+                        )
+                    },
                 )
             }
             // --- Phase 1b (inställningar lane): the settings sub-screens. ---
@@ -765,6 +780,10 @@ internal fun ShellScaffold(
             // Fas 5 (wear lane): Mer → Klockan.
             entry<WatchKey>(metadata = ListDetailSceneStrategy.detailPane()) {
                 watchPage.Watch(onNavigateBack = { navigation.goBack() })
+            }
+            // Fas 5 (las lane): Mer → Lås appen.
+            entry<AppLockKey>(metadata = ListDetailSceneStrategy.detailPane()) {
+                appLockPage.AppLock(onNavigateBack = { navigation.goBack() })
             }
             // Fas 4 (push lane): the optional fast push, opened from the sync page.
             entry<FastPushSettingsKey>(metadata = ListDetailSceneStrategy.detailPane()) {

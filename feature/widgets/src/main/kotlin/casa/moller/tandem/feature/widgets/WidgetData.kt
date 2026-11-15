@@ -6,9 +6,12 @@ import casa.moller.tandem.core.data.home.HomeRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
 import casa.moller.tandem.core.data.preferences.PreferencesRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
+import casa.moller.tandem.core.data.security.AppLock
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.shopping.ShoppingRepository
+import casa.moller.tandem.core.domain.security.AppLockPolicy
+import casa.moller.tandem.core.domain.security.AppSurface
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.recipe.RecipeSort
 import dagger.hilt.EntryPoint
@@ -40,6 +43,9 @@ interface WidgetEntryPoint {
 
     fun recipes(): RecipeRepository
 
+    /** Fas 5 (las lane): Mer → Lås appen (a locked placeholder while it is on). */
+    fun appLock(): AppLock
+
     @ApplicationScope
     fun applicationScope(): CoroutineScope
 
@@ -60,24 +66,38 @@ internal class WidgetData(val entryPoint: WidgetEntryPoint, private val locale: 
         .map { it is Session.LoggedIn || it is Session.Demo }
         .distinctUntilChanged()
 
+    /**
+     * Fas 5 (las lane, plan §5.5): the lock is on, so the widgets, the tile and the launcher's
+     * recent recipes show nothing of the user's (the home screen is seen without unlocking).
+     */
+    private val locked: Flow<Boolean> = entryPoint.appLock().settings
+        .map { !AppLockPolicy.showsContent(AppSurface.WIDGET, it) }
+        .distinctUntilChanged()
+
     val shopping: Flow<ShoppingWidgetState> = combine(
         entryPoint.shopping().observeEntries(),
         signedIn,
         entryPoint.permissions().permissions.map { it.readOnly }.distinctUntilChanged(),
         entryPoint.preferences().observeUserPreferences(),
-    ) { entries, signedIn, readOnly, preferences ->
-        ShoppingWidgetState.of(entries, Clock.System.now(), signedIn, readOnly, locale, preferences)
+        locked,
+    ) { entries, signedIn, readOnly, preferences, locked ->
+        ShoppingWidgetState.of(entries, Clock.System.now(), signedIn, readOnly, locale, preferences, locked)
     }.catch { emit(ShoppingWidgetState()) }.distinctUntilChanged()
 
-    val tonight: Flow<TonightWidgetState> = combine(entryPoint.home().observeUpcomingMeals(), signedIn) { upcoming, signedIn ->
-        TonightWidgetState.of(upcoming, signedIn)
+    val tonight: Flow<TonightWidgetState> = combine(
+        entryPoint.home().observeUpcomingMeals(),
+        signedIn,
+        locked,
+    ) { upcoming, signedIn, locked ->
+        TonightWidgetState.of(upcoming, signedIn, locked)
     }.catch { emit(TonightWidgetState()) }.distinctUntilChanged()
 
-    /** The launcher's "senast lagade" (empty signed out, so the shortcuts go with the account). */
+    /** The launcher's "senast lagade" (empty signed out, so the shortcuts go with the account; empty while the lock is on). */
     val recentRecipes: Flow<List<RecentRecipe>> = combine(
         entryPoint.recipes().observeRecipes(RecipeQuery(sort = RecipeSort.LAST_COOKED)),
         signedIn,
-    ) { recipes, signedIn ->
-        if (signedIn) RecentRecipe.of(recipes) else emptyList()
+        locked,
+    ) { recipes, signedIn, locked ->
+        if (signedIn && !locked) RecentRecipe.of(recipes) else emptyList()
     }.catch { emit(emptyList()) }.distinctUntilChanged()
 }

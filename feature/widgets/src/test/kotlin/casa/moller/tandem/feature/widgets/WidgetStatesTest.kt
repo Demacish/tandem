@@ -73,6 +73,27 @@ class WidgetStatesTest {
         assertFalse(TonightWidgetState.of(UpcomingMeals(today = SampleRecipes.Today), signedIn = false).signedIn)
     }
 
+    // --- Fas 5 (las lane, plan §5.5) ---
+
+    @Test
+    fun withTheLockOnTheShoppingWidgetShowsNothingOfTheList() {
+        val state = ShoppingWidgetState.of(SampleShopping.entries, SampleShopping.now, locale = SWEDISH, locked = true)
+        assertTrue(state.locked)
+        assertTrue(state.rows.isEmpty())
+        assertEquals(0, state.remaining)
+        assertTrue(state.signedIn)
+        assertFalse(ShoppingWidgetState.of(SampleShopping.entries, SampleShopping.now, locale = SWEDISH).locked)
+    }
+
+    @Test
+    fun withTheLockOnTheTodayWidgetShowsNoMeals() {
+        val upcoming = SampleRecipes.upcomingMeals
+        val state = TonightWidgetState.of(upcoming, signedIn = true, locked = true)
+        assertTrue(state.locked)
+        assertTrue(state.meals.isEmpty())
+        assertTrue(TonightWidgetState.of(upcoming, signedIn = true).meals.isNotEmpty())
+    }
+
     private companion object {
         val SWEDISH: Locale = Locale.forLanguageTag("sv-SE")
     }

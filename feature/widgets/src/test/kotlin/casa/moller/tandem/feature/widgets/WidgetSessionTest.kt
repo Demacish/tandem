@@ -38,6 +38,30 @@ class WidgetSessionTest {
         onNode(hasText(context.getString(R.string.widget_tonight_empty))).assertExists()
     }
 
+    // --- Fas 5 (las lane, plan §5.5): Mer → Lås appen turned on while a widget is shown. ---
+
+    @Test
+    fun theShoppingWidgetShowsTheLockedPlaceholderInsteadOfTheList() = runGlanceAppWidgetUnitTest {
+        setContext(context)
+        val open = ShoppingWidgetState(rows = listOf(row(1, "mjölk")), remaining = 1)
+        val locked = ShoppingWidgetState(locked = true)
+        provideComposable { ShoppingWidgetLive(flowOf(open, locked), open) }
+        awaitIdle()
+        onNode(hasText(context.getString(R.string.widget_locked))).assertExists()
+        onNode(hasText("mjölk")).assertDoesNotExist()
+        onNode(hasText(remaining(1))).assertDoesNotExist()
+    }
+
+    @Test
+    fun theTodayWidgetShowsTheLockedPlaceholderInsteadOfTheMeals() = runGlanceAppWidgetUnitTest {
+        setContext(context)
+        val monday = TonightWidgetState(listOf(TonightWidgetState.Meal(1, "Krämig svamppasta", "Middag", 6)))
+        provideComposable { TonightWidgetLive(flowOf(monday, TonightWidgetState(locked = true)), monday) }
+        awaitIdle()
+        onNode(hasText(context.getString(R.string.widget_locked))).assertExists()
+        onNode(hasText("Krämig svamppasta")).assertDoesNotExist()
+    }
+
     private fun row(id: Long, text: String) = ShoppingWidgetState.Row(id, text)
 
     private fun remaining(count: Int): String = context.resources.getQuantityString(R.plurals.widget_shopping_remaining, count, count)

@@ -113,6 +113,9 @@ internal fun TonightWidgetContent(state: TonightWidgetState) {
         when {
             !state.signedIn -> Hint(context.getString(R.string.widget_sign_in), GlanceModifier.fillMaxSize().opensWeek())
 
+            // Fas 5 (las lane): Mer → Lås appen is on; a tap opens the app's lock screen, then Veckan.
+            state.locked -> Hint(context.getString(R.string.widget_locked), GlanceModifier.fillMaxSize().opensWeek())
+
             state.meals.isEmpty() -> Hint(context.getString(R.string.widget_tonight_empty), GlanceModifier.fillMaxSize().opensWeek())
 
             // A list, so that lunch and dinner, or a large font, can be scrolled to in a small widget.

@@ -135,7 +135,7 @@ internal fun ShoppingWidgetContent(state: ShoppingWidgetState) {
                 style = TextStyle(color = GlanceTheme.colors.onSurface, fontWeight = FontWeight.Bold, fontSize = TITLE),
                 modifier = GlanceModifier.defaultWeight(),
             )
-            if (state.signedIn && state.remaining > 0) {
+            if (state.signedIn && !state.locked && state.remaining > 0) {
                 Text(
                     text = context.resources.getQuantityString(R.plurals.widget_shopping_remaining, state.remaining, state.remaining),
                     style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = BODY),
@@ -146,6 +146,9 @@ internal fun ShoppingWidgetContent(state: ShoppingWidgetState) {
             !rowsFit -> Unit
 
             !state.signedIn -> Hint(context.getString(R.string.widget_sign_in), GlanceModifier.fillMaxWidth().opensList())
+
+            // Fas 5 (las lane): Mer → Lås appen is on; a tap opens the app's lock screen, then the list.
+            state.locked -> Hint(context.getString(R.string.widget_locked), GlanceModifier.fillMaxWidth().opensList())
 
             state.rows.isEmpty() -> Hint(context.getString(R.string.widget_shopping_empty), GlanceModifier.fillMaxWidth().opensList())
 

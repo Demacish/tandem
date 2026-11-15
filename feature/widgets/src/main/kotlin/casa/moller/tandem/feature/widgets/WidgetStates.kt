@@ -21,12 +21,15 @@ import kotlin.time.Instant
  * @property remaining how many entries are open in all (the header's "7 kvar").
  * @property signedIn false when there is no account and no demo: the widget says "Logga in".
  * @property readOnly a guest (plan 8.6): the rows have no check icon and a tap checks nothing.
+ * @property locked Fas 5 (las lane): Mer → Lås appen is on, so the widget and the tile show
+ *   "Låst – öppna Tandem" instead of the list (no rows, no count).
  */
 data class ShoppingWidgetState(
     val rows: List<Row> = emptyList(),
     val remaining: Int = 0,
     val signedIn: Boolean = true,
     val readOnly: Boolean = false,
+    val locked: Boolean = false,
 ) {
     /** One line: [text] as the list shows it; a tap checks entry [id]. */
     data class Row(val id: Long, val text: String)
@@ -45,7 +48,9 @@ data class ShoppingWidgetState(
             readOnly: Boolean = false,
             locale: Locale = Locale.getDefault(),
             preferences: UserPreferences = UserPreferences.Default,
+            locked: Boolean = false,
         ): ShoppingWidgetState {
+            if (locked) return ShoppingWidgetState(signedIn = signedIn, readOnly = readOnly, locked = true)
             val style = locale.toNumberStyle(FractionStyle.TYPOGRAPHIC)
             val format = ShoppingLineFormat(style, preferences.useFractions, preferences.ingredientDecimals)
             val open = entries.filter { !it.checked && !it.isDelayed(now) }.sortedBy { it.order }
@@ -64,15 +69,22 @@ data class ShoppingWidgetState(
  *
  * @property meals today's meals in meal-type order; a tap opens the recipe when there is one.
  * @property signedIn false when there is no account and no demo.
+ * @property locked Fas 5 (las lane): Mer → Lås appen is on: "Låst – öppna Tandem" instead of the meals.
  */
-data class TonightWidgetState(val meals: List<Meal> = emptyList(), val signedIn: Boolean = true) {
+data class TonightWidgetState(val meals: List<Meal> = emptyList(), val signedIn: Boolean = true, val locked: Boolean = false) {
     /** One meal: its [title] ("Krämig svamppasta"), the [mealType] ("Middag") and the recipe to open. */
     data class Meal(val id: Long, val title: String, val mealType: String, val recipeId: Long?)
 
     companion object {
         const val MAX_MEALS: Int = 4
 
-        fun of(upcoming: UpcomingMeals, signedIn: Boolean = true): TonightWidgetState = TonightWidgetState(
+        fun of(upcoming: UpcomingMeals, signedIn: Boolean = true, locked: Boolean = false): TonightWidgetState = if (locked) {
+            TonightWidgetState(signedIn = signedIn, locked = true)
+        } else {
+            fromMeals(upcoming, signedIn)
+        }
+
+        private fun fromMeals(upcoming: UpcomingMeals, signedIn: Boolean): TonightWidgetState = TonightWidgetState(
             meals = upcoming.todayMeals
                 .sortedWith(compareBy<MealPlanEntry> { it.mealType.order }.thenBy { it.mealType.time?.toSecondOfDay() ?: 0 })
                 .take(MAX_MEALS)

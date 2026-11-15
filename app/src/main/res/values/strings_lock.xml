@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (las lane, plan §5.5): the lock screen in front of the app (Mer → Lock the app). -->
+    <string name="app_lock_title">Tandem is locked</string>
+    <string name="app_lock_body">Unlock with your fingerprint, your face or the phone\'s screen lock.</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_prompt_title">Unlock Tandem</string>
+    <string name="app_lock_still_working">Timers, alarms and reminders keep working while the app is locked.</string>
+    <string name="app_lock_failed_title">Not unlocked</string>
+    <string name="app_lock_failed_body">The phone could not confirm the screen lock. Try again.</string>
+    <string name="app_lock_no_screen_lock_title">The phone has no screen lock</string>
+    <string name="app_lock_no_screen_lock_body">The app lock uses the phone\'s own screen lock. Set up a PIN, pattern or password in the phone\'s settings, or continue without the lock this time.</string>
+    <string name="app_lock_open_settings">Set up screen lock</string>
+    <string name="app_lock_continue_without">Continue without the lock</string>
+</resources>

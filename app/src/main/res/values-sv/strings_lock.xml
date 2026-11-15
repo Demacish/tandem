@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (las lane, plan §5.5): låsskärmen framför appen (Mer → Lås appen). -->
+    <string name="app_lock_title">Tandem är låst</string>
+    <string name="app_lock_body">Lås upp med fingeravtryck, ansikte eller telefonens skärmlås.</string>
+    <string name="app_lock_unlock">Lås upp</string>
+    <string name="app_lock_prompt_title">Lås upp Tandem</string>
+    <string name="app_lock_still_working">Timrar, larm och påminnelser fortsätter att fungera medan appen är låst.</string>
+    <string name="app_lock_failed_title">Inte upplåst</string>
+    <string name="app_lock_failed_body">Telefonen kunde inte bekräfta skärmlåset. Försök igen.</string>
+    <string name="app_lock_no_screen_lock_title">Telefonen har inget skärmlås</string>
+    <string name="app_lock_no_screen_lock_body">Appens lås använder telefonens eget skärmlås. Ställ in en pinkod, ett mönster eller ett lösenord i telefonens inställningar, eller fortsätt utan lås den här gången.</string>
+    <string name="app_lock_open_settings">Ställ in skärmlås</string>
+    <string name="app_lock_continue_without">Fortsätt utan lås</string>
+</resources>

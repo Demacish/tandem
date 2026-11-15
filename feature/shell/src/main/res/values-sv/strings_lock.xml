@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (las lane, plan §5.5): Mer → Säkerhet → Lås appen. -->
+    <string name="shell_lock_more_section">Säkerhet</string>
+    <string name="shell_lock_title">Lås appen</string>
+    <string name="shell_lock_more_off">Av</string>
+    <!-- %1$s: shell_lock_more_on_immediately eller shell_lock_more_on_minutes. -->
+    <string name="shell_lock_more_on">På · %1$s</string>
+    <string name="shell_lock_more_on_immediately">låses direkt</string>
+    <plurals name="shell_lock_more_on_minutes">
+        <item quantity="one">låses efter %1$d minut</item>
+        <item quantity="other">låses efter %1$d minuter</item>
+    </plurals>
+    <string name="shell_lock_switch_title">Fråga efter skärmlåset</string>
+    <string name="shell_lock_switch_body">Tandem öppnas först efter fingeravtryck, ansikte eller telefonens skärmlås.</string>
+    <string name="shell_lock_timeout_heading">Lås efter</string>
+    <string name="shell_lock_timeout_body">Hur länge Tandem får vara i bakgrunden innan appen frågar igen. En omstart av appen låser den alltid. Kokläget och köksskärmen låses aldrig medan de syns.</string>
+    <string name="shell_lock_timeout_immediately">Direkt</string>
+    <plurals name="shell_lock_timeout_minutes">
+        <item quantity="one">Efter %1$d minut</item>
+        <item quantity="other">Efter %1$d minuter</item>
+    </plurals>
+    <string name="shell_lock_no_screen_lock_title">Telefonen har inget skärmlås</string>
+    <string name="shell_lock_no_screen_lock_body">Låset använder telefonens eget skärmlås. Ställ först in en pinkod, ett mönster eller ett lösenord i telefonens inställningar.</string>
+    <string name="shell_lock_no_screen_lock_on_body">Låset använder telefonens eget skärmlås, som inte längre är inställt. Ställ in ett igen, eller stäng av låset.</string>
+    <string name="shell_lock_open_settings">Ställ in skärmlås</string>
+    <string name="shell_lock_keeps_working_title">Fungerar även när appen är låst</string>
+    <string name="shell_lock_keeps_working_body">Timrar och larm, också på telefonens låsskärm. Påminnelser och synk i bakgrunden. Tandem på klockan. Widgetarna och snabbinställningen visar ”Låst” i stället för listan.</string>
+    <string name="shell_lock_confirm_title">Slå på låset</string>
+    <string name="shell_lock_confirm_failed">Telefonen kunde inte bekräfta skärmlåset. Låset är fortfarande av.</string>
+</resources>

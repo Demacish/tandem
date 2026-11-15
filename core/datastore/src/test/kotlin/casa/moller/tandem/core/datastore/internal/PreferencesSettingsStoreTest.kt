@@ -9,6 +9,8 @@ import app.cash.turbine.test
 import casa.moller.tandem.core.datastore.DatastoreFiles
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
 import casa.moller.tandem.core.datastore.StoreScopes
+import casa.moller.tandem.core.model.settings.AppLockSettings
+import casa.moller.tandem.core.model.settings.AppLockTimeout
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.HandsfreeSettings
 import casa.moller.tandem.core.model.settings.PendingVersionNotice
@@ -240,5 +242,22 @@ class PreferencesSettingsStoreTest {
         val broken = PreferencesSettingsStore(dataStore).settings.first()
         assertEquals(LocalTime(8, 0), broken.pantryExpiryTime)
         assertEquals(LocalTime(19, 0), broken.mealReminderTime)
+    }
+
+    // --- Fas 5 (las lane) ---
+
+    @Test
+    fun theAppLockSurvivesARestartAndAnUnknownTimeoutFallsBack() = runTest {
+        val first = open()
+        assertEquals(AppLockSettings(enabled = false, timeout = AppLockTimeout.ONE_MINUTE), first.settings.first().appLock)
+        first.update { it.copy(appLock = AppLockSettings(enabled = true, timeout = AppLockTimeout.FIFTEEN_MINUTES)) }
+        scopes.closeAll()
+        assertEquals(AppLockSettings(enabled = true, timeout = AppLockTimeout.FIFTEEN_MINUTES), open().settings.first().appLock)
+        scopes.closeAll()
+
+        val dataStore = PreferenceDataStoreFactory.create(scope = scopes.newScope(), produceFile = { file })
+        dataStore.edit { it[PreferencesSettingsStore.Keys.APP_LOCK_TIMEOUT] = "AN_HOUR" }
+        val broken = PreferencesSettingsStore(dataStore).settings.first().appLock
+        assertEquals(AppLockSettings(enabled = true, timeout = AppLockTimeout.ONE_MINUTE), broken)
     }
 }

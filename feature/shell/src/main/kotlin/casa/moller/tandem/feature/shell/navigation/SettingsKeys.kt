@@ -61,6 +61,8 @@ internal val NavKey.isMorePage: Boolean
         StoreReminderKey,
         // Fas 5 (rss lane): Inställningar → Inkorg för recept (feature:recipes).
         RecipeInboxSettingsKey,
+        // Fas 5 (las lane): Mer → Lås appen.
+        AppLockKey,
         -> true
 
         else -> false

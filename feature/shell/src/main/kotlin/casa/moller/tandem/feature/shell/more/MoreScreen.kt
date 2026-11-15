@@ -85,6 +85,7 @@ import casa.moller.tandem.feature.shell.ShellUiState
 import casa.moller.tandem.feature.shell.accounts.roleLabel
 import casa.moller.tandem.feature.shell.navigation.AboutKey
 import casa.moller.tandem.feature.shell.navigation.AccountsKey
+import casa.moller.tandem.feature.shell.navigation.AppLockKey
 import casa.moller.tandem.feature.shell.navigation.AppearanceSettingsKey
 import casa.moller.tandem.feature.shell.navigation.CookingSettingsKey
 import casa.moller.tandem.feature.shell.navigation.DiagnosticsKey
@@ -130,6 +131,8 @@ internal fun MoreScreen(
     onOpenKitchen: (() -> Unit)? = null,
     // Fas 5 (wear lane): Mer → Klockan (the row draws itself only with a watch or a pairing).
     watchRow: @Composable (selected: Boolean) -> Unit = {},
+    // Fas 5 (las lane): Mer → Säkerhet → Lås appen (the section draws itself; TandemShell passes it).
+    appLockSection: @Composable (selected: Boolean) -> Unit = {},
 ) {
     var confirmLogout by rememberSaveable { mutableStateOf(false) }
     val spacing = TandemTheme.spacing
@@ -322,6 +325,9 @@ internal fun MoreScreen(
                             )
                         }
                     }
+
+                    // Fas 5 (las lane, plan §5.5): Mer → Säkerhet → Lås appen.
+                    appLockSection(selectedPage == AppLockKey)
 
                     if (state.isDemo) {
                         SectionHeader(stringResource(R.string.shell_more_section_demo))

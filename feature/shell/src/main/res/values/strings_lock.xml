@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fas 5 (las lane, plan §5.5): Mer → Security → Lock the app. -->
+    <string name="shell_lock_more_section">Security</string>
+    <string name="shell_lock_title">Lock the app</string>
+    <string name="shell_lock_more_off">Off</string>
+    <!-- %1$s: shell_lock_more_on_immediately or shell_lock_more_on_minutes. -->
+    <string name="shell_lock_more_on">On · %1$s</string>
+    <string name="shell_lock_more_on_immediately">locks immediately</string>
+    <plurals name="shell_lock_more_on_minutes">
+        <item quantity="one">locks after %1$d minute</item>
+        <item quantity="other">locks after %1$d minutes</item>
+    </plurals>
+    <string name="shell_lock_switch_title">Ask for the screen lock</string>
+    <string name="shell_lock_switch_body">Tandem opens only after your fingerprint, your face or the phone\'s screen lock.</string>
+    <string name="shell_lock_timeout_heading">Lock after</string>
+    <string name="shell_lock_timeout_body">How long Tandem may be in the background before it asks again. Restarting the app always locks it. Cook mode and the kitchen display never lock while they are on the screen.</string>
+    <string name="shell_lock_timeout_immediately">Immediately</string>
+    <plurals name="shell_lock_timeout_minutes">
+        <item quantity="one">After %1$d minute</item>
+        <item quantity="other">After %1$d minutes</item>
+    </plurals>
+    <string name="shell_lock_no_screen_lock_title">The phone has no screen lock</string>
+    <string name="shell_lock_no_screen_lock_body">The lock uses the phone\'s own screen lock. Set up a PIN, pattern or password in the phone\'s settings first.</string>
+    <string name="shell_lock_no_screen_lock_on_body">The lock uses the phone\'s own screen lock, which is no longer set up. Set one up again, or turn the lock off.</string>
+    <string name="shell_lock_open_settings">Set up screen lock</string>
+    <string name="shell_lock_keeps_working_title">Keeps working while locked</string>
+    <string name="shell_lock_keeps_working_body">Timers and alarms, also on the phone\'s lock screen. Reminders and sync in the background. Tandem on your watch. The widgets and the quick settings tile show “Locked” instead of your list.</string>
+    <string name="shell_lock_confirm_title">Turn on the app lock</string>
+    <string name="shell_lock_confirm_failed">The phone could not confirm the screen lock. The lock is still off.</string>
+</resources>

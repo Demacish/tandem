@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -36,8 +37,10 @@ import casa.moller.tandem.core.ui.CrashReportNotice
 import casa.moller.tandem.crash.CrashReportViewModel
 import casa.moller.tandem.feature.onboarding.OnboardingFlow
 import casa.moller.tandem.feature.shell.TandemShell
+import casa.moller.tandem.lock.AppLockViewModel
 import casa.moller.tandem.navigation.AppDestination
 import casa.moller.tandem.navigation.AppMessage
+import casa.moller.tandem.navigation.AppUiState
 import casa.moller.tandem.navigation.AppViewModel
 import casa.moller.tandem.recovery.RecoveryRoute
 
@@ -47,10 +50,18 @@ import casa.moller.tandem.recovery.RecoveryRoute
  * the shell's state ends with the account (also on a switch to another account: the shell entry
  * is keyed by the account, Phase 2 konto lane).
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashReports: CrashReportViewModel = hiltViewModel()) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+fun TandemApp(
+    viewModel: AppViewModel,
+    modifier: Modifier = Modifier,
+    crashReports: CrashReportViewModel = hiltViewModel(),
+    // Fas 5 (las lane, plan §5.5): Mer → Lås appen.
+    lock: AppLockViewModel = hiltViewModel(),
+) {
+    // Fas 5 (las lane): not lifecycle-aware on purpose. The lock must already be in the composition
+    // when the app comes back from the background, before its first frame is drawn.
+    val lockStatus by lock.status.collectAsState()
+    val appState by viewModel.uiState.collectAsStateWithLifecycle()
     // A crash log from an earlier run (plan 4.2 p7): a card on the welcome step and in Mer until
     // the user deletes it. Shown, copied or shared only when the user taps it.
     val crashReport by crashReports.report.collectAsStateWithLifecycle()
@@ -66,12 +77,28 @@ fun TandemApp(viewModel: AppViewModel, modifier: Modifier = Modifier, crashRepor
         }
     }
 
+    AppLockGate(
+        status = lockStatus,
+        lockScreen = { AppLockRoute(lock) },
+        onLeave = { context.leaveApp() },
+        modifier = modifier,
+    ) { unlocked ->
+        // Fas 5 (las lane): a notification tap, a deep link, a share or a shortcut waits for the unlock.
+        val state = appState.forLock(unlocked)
+        TandemNavDisplay(state = state, viewModel = viewModel, crashNotice = crashNotice)
+    }
+}
+
+/** The single-entry top-level back stack (intro, shell or recovery) for [state]. */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun TandemNavDisplay(state: AppUiState, viewModel: AppViewModel, crashNotice: @Composable () -> Unit) {
     NavDisplay(
         backStack = listOf(state.destination),
         // The theme's background behind every top-level screen: a cross-fade never shows the
         // window background (which follows the system's night mode until the app's own choice
         // has been applied to the window).
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             // Test tags become resource ids in the accessibility tree, so UiAutomator (the release

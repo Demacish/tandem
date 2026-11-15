@@ -13,6 +13,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import casa.moller.tandem.core.datastore.SettingsStore
 import casa.moller.tandem.core.datastore.StorageHealthMonitor
+import casa.moller.tandem.core.model.settings.AppLockSettings
+import casa.moller.tandem.core.model.settings.AppLockTimeout
 import casa.moller.tandem.core.model.settings.AppSettings
 import casa.moller.tandem.core.model.settings.CookTextScale
 import casa.moller.tandem.core.model.settings.HandsfreeSettings
@@ -88,6 +90,10 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
         // --- device test 2026-11-14 (rost lane, B3): the speech service and the English commands ---
         val HANDSFREE_SPEECH_SERVICE = booleanPreferencesKey("handsfree_speech_service")
         val HANDSFREE_ENGLISH_COMMANDS = booleanPreferencesKey("handsfree_english_commands")
+
+        // --- Fas 5 (las lane): Mer → Lås appen (plan §5.5); the timeout stored by name. ---
+        val APP_LOCK_ENABLED = booleanPreferencesKey("app_lock_enabled")
+        val APP_LOCK_TIMEOUT = stringPreferencesKey("app_lock_timeout")
     }
 
     companion object {
@@ -106,7 +112,15 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
 }
 
 /** Fas 5 (planera lane): the settings with the reminders' keys read on top ([readReminders]). */
-private fun Preferences.toAppSettings(): AppSettings = readReminders(baseSettings())
+private fun Preferences.toAppSettings(): AppSettings = readAppLock(readReminders(baseSettings()))
+
+/** Fas 5 (las lane): Mer → Lås appen; a missing key or an unknown timeout reads as the default. */
+private fun Preferences.readAppLock(settings: AppSettings): AppSettings = settings.copy(
+    appLock = AppLockSettings(
+        enabled = this[PreferencesSettingsStore.Keys.APP_LOCK_ENABLED] ?: settings.appLock.enabled,
+        timeout = enumOrNull(PreferencesSettingsStore.Keys.APP_LOCK_TIMEOUT, AppLockTimeout.entries) ?: settings.appLock.timeout,
+    ),
+)
 
 private fun Preferences.baseSettings(): AppSettings {
     val defaults = AppSettings.Default
@@ -228,4 +242,7 @@ private fun MutablePreferences.write(settings: AppSettings) {
     this[PreferencesSettingsStore.Keys.HANDSFREE_READ_STEPS] = settings.handsfree.readSteps
     this[PreferencesSettingsStore.Keys.HANDSFREE_SPEECH_SERVICE] = settings.handsfree.speechService
     this[PreferencesSettingsStore.Keys.HANDSFREE_ENGLISH_COMMANDS] = settings.handsfree.englishCommands
+    // --- Fas 5 (las lane) ---
+    this[PreferencesSettingsStore.Keys.APP_LOCK_ENABLED] = settings.appLock.enabled
+    this[PreferencesSettingsStore.Keys.APP_LOCK_TIMEOUT] = settings.appLock.timeout.name
 }

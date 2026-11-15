@@ -11,6 +11,7 @@ import casa.moller.tandem.core.common.crash.CrashLogStore
 import casa.moller.tandem.core.data.di.ApplicationScope
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.sync.SyncStarter
+import casa.moller.tandem.core.sync.security.DefaultAppLock
 import casa.moller.tandem.core.watch.WatchLinkStarter
 import casa.moller.tandem.diagnostics.ColdStart
 import casa.moller.tandem.feature.widgets.WidgetUpdater
@@ -48,6 +49,10 @@ class TandemApplication :
     @Inject
     lateinit var watchLink: WatchLinkStarter
 
+    /** Fas 5 (las lane, plan §5.5): Mer → Lås appen follows the process lifecycle from the start. */
+    @Inject
+    lateinit var appLock: DefaultAppLock
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -63,6 +68,8 @@ class TandemApplication :
         super.onCreate()
         // Phase 1b: tells a launch from a process started for background work (cold start timing).
         ColdStart.onApplicationCreated()
+        // Fas 5 (las lane): first, so a lock that is on is in place before any screen is shown.
+        appLock.start()
         // Phase 1 data layer (core:sync): image loader, account mirror, periodic sync, and a sync
         // request whenever the app comes to the foreground.
         syncStarter.start()

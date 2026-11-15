@@ -78,6 +78,8 @@ data class AppSettings(
     // --- Fas 5 (kok lane): cook mode's handsfree control (plan §8.1, #32). ---
     /** Volume keys, voice commands and reading aloud in cook mode (all off until chosen). */
     val handsfree: HandsfreeSettings = HandsfreeSettings(),
+    // --- Fas 5 (las lane): Mer → Lås appen (plan §5.5), off until chosen. ---
+    val appLock: AppLockSettings = AppLockSettings(),
 ) {
     /** Whether a drink shows "Sök på Systembolaget" for a UI in [languageTag] ("sv", "en-GB"). */
     fun systembolagetLinkShown(languageTag: String): Boolean =
