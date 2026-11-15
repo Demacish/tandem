@@ -160,6 +160,11 @@ och inget kräver något extra av servern. Klockappen installeras från en dator
   "Byt recept" på samma sätt under receptets namn, så att namnet inte kapas.
 - Rullar du sökresultaten under Recept medan du skriver i sökfältet försvinner tangentbordet, så
   att du inte skriver i ett fält du inte ser.
+- Med största text på en smal telefon kapas inte längre knappen på Planera måltid ("Lägg till i
+  matsedeln (lörd…"): den visar då "Lägg till i matsedeln" utan dagen, som redan står i formuläret,
+  och TalkBack läser fortfarande dagen.
+- Stänger du av "Visa i telefonens kalender" medan kalendern skrivs om i bakgrunden ligger den inte
+  längre kvar: valet sparas och kalendern tas bort i samma steg.
 
 **Kvar till senare**
 

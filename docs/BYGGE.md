@@ -1138,6 +1138,7 @@ sätts av integrationen. En rad per bana.
 | liggande | Enhetstestet 2026-11-14, omgång 3 (Galaxy S21 FE): B20 kokläget i liggande läge, B21 Mer utanför bild i liggande läge, B22 flikarnas namn brutna vid största text, K1 kokrubriken bryter ord, K2 timerraden bryter ord, K3 "Föregående" i liggande och "0 s kortare" (plan §6.5, §6.6) | **B20:** ett brett men kort fönster (minst 600 dp brett och under 480 dp högt, telefon i liggande läge) ger kokläget `SHORT_WIDE`: steget med en smal rubrik till vänster, sidokolumnen med ringande timrar (Stopp överst, ovanför varningarna), handsfree, övriga timrar och sidknapparna i en rad; vid 780 × 360 dp och teckenstorlek 1,0 syns minst fyra hela rader av steget, vid 693 × 320 dp och 2,0 minst två; surfplattor och andra höga breda fönster har kvar två delar; vridning behåller steg, timrar och öppen "Justera tiden". **B21:** alla fem flikar syns och går att trycka på vid 780 × 360 dp och vid 693 × 320 dp med 2,0 (skalets korta skena). **B22-flikar:** ingen fliketikett bryts inne i ett ord vid 320 × 693 dp och 2,0; får de inte plats visas bara ikonerna och TalkBack säger namnen. **K1:** kokrubrikens namn bryts bara mellan ord (högst två rader, sedan …); utan plats ligger textstorlek och "Laga ett recept till" i en ⋮-meny. **K2:** `TimerBarItem` bryter aldrig ett ord i timerns namn (texterna över knapparna när de annars skulle bli för smala, en ringande timers Stopp först), för alla som använder den. **K3:** sidknapparna bryter inget ord i liggande läge; "Justera tiden" läser aldrig upp ett steg på 0 s. Compose-, enhets- och Robolectric-tester, referensbilder och ATF; röktestet körs | ✅ klart i CI 2026-11-15 (PR 43660290931 och röktest 43660290874 på 77afbf3: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", lika många som förut; referensbilder från Screenshots 43651107198, nya `cook/*liggande*`, `shell/devicetest_tabs_*` och `ui/timer_bar_item_narrow_*`, avsiktligt ändrade kokrubriken och sidknapparna i `cook/small_devicetest_*`, `cook/phone_*font2*` och `cook/phone_landscape_*`, skalets `shell/*phone_landscape_*` (kort skena) och `shell/timer_hud_phone_*font_scale_2*`; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14, omgång 3: liggande läge, flikarna och kokrubriken" |
 | offline | Enhetstestet 2026-11-14, omgång 3 (Galaxy S21 FE mot en riktig Tandoor 2.6.13): B19 "Offline" kvar i minuter efter att nätet kommit tillbaka; N1 var "Ny dryck" finns (plan §3.5, §5.4) | **B19:** alla offlinemarkeringar följer **en** status (`ServerReachability`): skalets chip, raden "Offline: visar det som sparats i enheten" på Idag, receptvyn och sökningens "Offline: söker bland recepten på enheten". Offline = inget nät, eller så var serverns senaste svar ett anslutningsfel; varje svar från servern (en synk, kön, en receptläsning) tar bort markeringarna och ett anslutningsfel sätter dem, utan omstart, återupptagning eller dra-för-att-uppdatera. När nätet kommer tillbaka efter ett fel skickas **en** serverkontroll efter 3 s stabilt nät, högst en per 30 s, aldrig medan skyddet (§5.4) håller tillbaka bakgrundsanrop, och ingen alls om inget har misslyckats; samma nätövervakare som synken. Ett recept som öppnats offline läses om när appen är online igen, och en sökning som inte nådde servern frågar igen. Enhetstester med falskt nät och klocka (offline → online efter fördröjningen, lyckat anrop tar bort, misslyckat sätter, inga anropsskurar när nätet fladdrar, skyddet håller tillbaka, demoläget aldrig offline) och ViewModel-tester för skalet, Idag, receptvyn och listan; röktestet körs. **N1:** inget fel, vägen står i avsnittet. Inga skärmar ändras (bara när markeringarna visas). **BEHÖVER ENHET** (ägaren): starta utan nät, slå på nätet med appen i förgrunden; chip och rad försvinner inom några sekunder | ✅ klart i CI 2026-11-15 (PR 43663865736 på 86da9f4; röktest 43665560477 på 1db4a5c: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)", lika många som förut; inga referensbilder ändrade; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14, omgång 3: offlinemarkeringarna" |
 | resten | Enhetstestet 2026-11-14, omgång 3, sent inkomna: B15 ny måltidstyp inte vald och felet utom synhåll, B16 starttiden mäts aldrig, B17 demotimer efter inloggning, F1 Idags tomma rader och raden Nya, ägarens skärmbilder S1–S3 (plan §6.2, §6.6, §8.1, §8.3) | **B15:** en måltidstyp som skapas under Planera måltid är vald direkt och förblir vald när utkorgen skickat den (temp-id → server-id, `MealPlanRepository.observeMealTypeId`), också på en server utan måltidstyper och offline (måltiden väntar på typens CREATE); ett stoppat sparande rullar till första fältet som saknas, fokuserar det om det är ett textfält och säger vad som saknas ovanför knappen (`liveRegion`), vid varje försök. **B16:** en kallstart mäts och syns i Diagnostik (`ColdStartGate`: första aktiviteten högst 2 s efter `Application.onCreate`; Android 15+ dessutom `ApplicationStartInfo` = kall start för en aktivitet, läst utanför huvudtråden); en varm start och en process startad för bakgrundsarbete räknas inte. **B17:** inga demotimrar (gående, ringande, klara) med larm och notiser finns kvar när demoläget lämnats för ett konto eller introt, också om appen stängdes i demoläget (`DemoTimerCleanup`, `TimerController.cancelSource`); kontots timrar rörs inte. **F1:** Idags text om tomma rader säger "efter första synkningen" bara före den första synken, efteråt vad som fyller raderna; Nya = serverns senast tillagda recept, nyast först, högst 20, också när inget lagts till senaste veckan. **S1/S2:** karusellrubrikerna på Idag och receptnamnet under Planera måltid har företräde: knappen står bredvid bara när rubriken (och underrubriken) ryms på en rad var, annars under. **S3:** att dra i sökresultaten under Recept medan sökfältet har fokus döljer tangentbordet och släpper fokus; sökfältet rullas helt in när det får fokus. I CI: `PlanMealViewModelTest` (tre nya), `PlanMealRoundThreeTest`, `ColdStartTest`, `DemoTimerCleanupTest`, `SyncEngineTest.nyaListsTheNewestRecipesAlsoWhenNoneWasAddedThisWeek`, `TodayRoundThreeTest`, `RecipeSearchKeyboardTest`, ATF och skärmbilder 360 × 780 dp i 1,0 och 320 × 693 dp i 2,0. **BEHÖVER ENHET** (ägaren): samma steg på Galaxy S21 FE mot den riktiga servern | ✅ klart i CI 2026-11-15 (PR 43678242499 och röktest 43678269689 på 62802a5: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; referensbilder från Screenshots 43676697642; avsiktligt ändrade `home/phone_today_full_light`, `home/*today_nothing_planned*`, `home/phone_today_want_to_cook_light_sv`, `mealplan/phone_plan_meal_chosen_light`, `phone_plan_meal_edit_font2_light`, `phone_plan_meal_light_en_xa`, `phone_plan_meal_title_dark_sv`; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14, omgång 3: de sent inkomna fynden" |
+| komplettering-enhet | Luckorna efter enhetstestet som går att täppa till utan telefon: det instabila kalenderröktestet, ett kontraktsfaktum för raden Nya, "Lägg till i matsedeln" vid största text, referensbilderna som varje inspelning skrev om, det föråldrade reglaget i påminnelsen nära butiken | **Kalendern:** att stänga av "Visa i telefonens kalender" (och utloggning, demoläge, konto som lämnar) sparar "av" och tar bort kalendern i samma steg under skrivlåset, så ingen väntande skrivning lägger tillbaka den; ett Robolectric-test som håller "av" medan en skrivning kommer in, och röktestet `Phase5KalenderSmokeTest` grönt i flera körningar i rad utan högre tidsgräns. **Nya:** `Phase5NyaContractTest` (eget steg, `fas5/nya/`, `fas5.nya`) visar mot 2.6.13 och 2.7.1 att `new=true&sort_order=-created_at&page_size=20` ger de nyaste först och det bakåtdaterade receptet efter alla nya. **Knappen:** vid teckenstorlek 2 på 320 dp kapas inte "Lägg till i matsedeln (…)" (kortare etikett utan dagen, TalkBack läser dagen), test med `assertNoWordBreaks` och omspelade referensbilder. **Skärmbilder:** en ny inspelning ändrar inga incheckade bilder utöver de avsiktliga. **Reglaget:** `SliderState`-varianten, ingen varning, oförändrade referensbilder. | pågår |
 <!-- /Fas 5 läge -->
 
 <!-- Fas 5 klocka -->
@@ -1442,6 +1443,59 @@ timerlistan eller notiserna; Idag direkt efter första synken (Nya fylld, rätt 
 Idag och valt recept på 360 dp; sökning under Recept med tangentbordet uppe.
 <!-- /Fas 5 resten -->
 
+<!-- Fas 5 komplettering-enhet -->
+## Komplettering efter enhetstestet (`:core:sync`, `:core:designsystem`, `:feature:mealplan`, `:feature:shopping`, `contract-tests`, bana komplettering-enhet)
+
+Luckor efter banorna för enhetstestet 2026-11-14 som går att rätta utan telefon. "Klart när" står i
+raden "komplettering-enhet" i "Fas 5 – läge". Inget Room-schema ändrades (telefonen stannar på 6).
+
+**Det instabila kalenderröktestet.** `Phase5KalenderSmokeTest.turningItOnPutsTheMealInThePhonesCalendar`
+föll i första försöket på main två gånger (43615135520, 43658763487) med "Timed out after 20000 ms
+waiting until the calendar removed". Loggen från 43658763487 visar `MealCalendarWorker` klar
+00:54:58,9, alltså samtidigt som testet slog av valet: när valet slås på lägger schemat in det
+periodiska arbetet, som körs direkt, läser matsedeln och skriver kalendern. Orsaken var ordningen i
+`setLocalCalendar(false)`: först `PhoneMealCalendar.remove()` (under skrivlåset), **sedan**
+`store.setEnabled(false)`. En skrivning som väntade på låset (arbetet, planföljaren efter 2 s,
+"Uppdatera nu") fick låset mellan de två, såg valet fortfarande på och skapade kalendern igen; när
+"av" sedan sparades fanns ingen som tog bort den, så den låg kvar för gott. Samma ordning fanns för
+utloggning och demoläge i `MealCalendarSchedule`. Nu gör `PhoneMealCalendar.turnOff()` båda under
+låset: "av" sparas först, sedan tas kalendern bort. En skrivning som redan har låset blir klar innan
+kalendern tas bort, en som väntar ser "av" och skriver ingenting. Alla tre vägarna (brytaren,
+utloggning/demoläge, `AccountRemovalHook`) går genom `turnOff`. Tidsgränsen i röktestet är
+oförändrad. Test: `PhoneMealCalendarTest.aWriteThatComesInWhileTurningOffNeverBringsTheCalendarBack`
+håller "av"-skrivningen i DataStore (`FakeMealCalendarStore.holdOff`) medan en skrivning kommer in.
+
+**Raden Nya (F1).** Sedan banan resten frågar Idags rad Nya `GET /api/recipe/?new=true&sort_order=-created_at&page_size=20`
+och visar svaret som det kommer. `Phase5NyaContractTest` (eget steg i `contract.yml`, inspelningar i
+`api-schema/fixtures/<version>/fas5/nya/`, bevakningen jämför `fas5.nya`) skapar tre recept efter
+varandra och låser att de kommer först, nyast överst, att hela listan är sorterad efter `created_at`
+fallande, att det bakåtdaterade receptet från Fas 1-fröet (`new: false`) kommer efter alla nya, att
+`page_size` gäller och att `sort_order=-created_at` ensam ger samma topp. Fakta i `FACTS.md`
+"Fas 5: raden Nya".
+
+**"Lägg till i matsedeln" vid största text.** Knappen på Planera måltid kapades till "Lägg till i
+matsedeln (lörd…" vid teckenstorlek 2 på 320 dp. `TandemPrimaryButton` har fått `shortText`: ryms
+inte etiketten på knappens två rader (mätt med `TextMeasurer` i den bredd knappen lämnar) visas den
+kortare, och TalkBack läser den fulla. Planera måltid ger "Lägg till i matsedeln" utan dagen (dagen
+står i formuläret). Regeln i docs/design/README.md "Textstorlek och radbrytning" (knappar som inte
+ryms kortas i bestämd ordning). Test: `PlanMealRoundThreeTest.theSaveButtonIsNeverCutAtTheLargestText`
+och `theSaveButtonKeepsTheDayWhenItFits`.
+
+**Referensbilderna som varje inspelning skrev om.** Alla banor såg *Screenshots* skriva om åtta
+`pantry/phone_pantry_*` och `books/phone_landscape_books_light`. Det är inte datum eller klocka:
+testdatan har fasta datum (`SamplePantry.TODAY`), och två inspelningar på olika dagar och commits
+(43637917638 och 43676697642) är byte för byte lika, liksom alla andra referensbilder mot de
+incheckade. Bilderna var inspelade i oktober (0fd3c933, 904f3d3f) och skilde sig från dagens
+inspelning med ett färgsteg i kanterna på ikonen och texten i de gula "går ut"-etiketterna (och en
+enda pixel i böckerna). Det ryms i Roborazzis färgtolerans, så `pr.yml` var grönt och ingen checkade
+in dem. De är nu inspelade på nytt, och *Screenshots* listar varje ändrad fil i sammanfattningen.
+
+**Reglaget i påminnelsen nära butiken.** `StoreReminderSheet` använder `Slider(state = SliderState, …)`
+i stället för den föråldrade värdebaserade varianten (material3 1.5.0-beta01). Tillståndet skapas med
+`remember` och följer skärmens avstånd som den gamla varianten gjorde internt, så bilderna är
+oförändrade och varningen borta.
+<!-- /Fas 5 komplettering-enhet -->
+
 <!-- Fas 5 rost -->
 ## Röst och uppläsning efter enhetstestet (`:feature:cook`, `:core:timer`, `:core:domain`, `:core:data`, rost)
 
@@ -1733,7 +1787,7 @@ för den som vill ha matsedeln i en kalender som prenumererar (Google Kalender p
 |---|---|---|
 | Händelserna | `core/domain/mealplan/MealCalendarEvents.kt` | en händelse per måltid i synkens fönster (i dag −14 .. +42 dagar), titel `<måltidstyp>: <titel eller recept>` som Tandoors eget flöde, beskrivning = anteckningen; med måltidstypens tid: start då i **telefonens** zon och slut en timme efter tiden på sista dagen (Tandoors flöde ger också 60 minuter), annars heldag (UTC-midnatt, `EVENT_TIMEZONE` UTC, som leverantören kräver). En tid i vårens glapp blir första ögonblicket efter. Nyckeln `<konto-id>/<måltids-id>` (`SYNC_DATA1`) och ett FNV-1a-fingeravtryck av allt som syns (`SYNC_DATA2`). `changes(önskade, lagrade)`: nya läggs till, ändrade skrivs om på sin rad, dubbletter, okända rader och måltider som inte längre finns tas bort; en andra körning gör ingenting |
 | Leverantören | `core/sync/calendar/CalendarGateway.kt` | `AndroidCalendarGateway` på `CalendarContract` som synkadapter för ett **lokalt** konto (`ACCOUNT_TYPE_LOCAL`, namnet "Tandem"): kalendern `tandem_meal_plan` ("Tandem – matsedel", `meal_calendar_name` i core:sync), skrivskyddad i kalenderappar (`CAL_ACCESS_READ`), händelserna "ledig". Inget konto läggs till i telefonens inställningar, inget skickas någonstans. Skrivningar i satser om 100 (`applyBatch`); att ta bort kalendern tar dess händelser |
-| Skrivaren | `core/sync/calendar/PhoneMealCalendar.kt` | läser den lagrade matsedeln (`MealPlanRepository.observeWeek` för veckorna i fönstret, offline) och för kalendern i takt, seriellt (mutex). Bara när valet är på och ett riktigt konto är aktivt (**gäster får**: det läser bara det lagrade); saknad behörighet eller en leverantör som vägrar sparas som problem (`LocalMealCalendarProblem`) i stället för att kastas |
+| Skrivaren | `core/sync/calendar/PhoneMealCalendar.kt` | läser den lagrade matsedeln (`MealPlanRepository.observeWeek` för veckorna i fönstret, offline) och för kalendern i takt, seriellt (mutex). Bara när valet är på och ett riktigt konto är aktivt (**gäster får**: det läser bara det lagrade); saknad behörighet eller en leverantör som vägrar sparas som problem (`LocalMealCalendarProblem`) i stället för att kastas. **Av** (`turnOff`: avstängd, utloggad, demoläge, kontot lämnar telefonen) sparar "av" och tar bort kalendern i **samma** steg under låset, så en skrivning som väntar (arbetet, följet, "Uppdatera nu") aldrig lägger tillbaka den (komplettering-enhet) |
 | Valet | `core/datastore/MealCalendarStore.kt` | egen fil `meal_calendar.preferences_pb`: på/av, senaste skrivning, antal måltider, problemet. Inget personligt |
 | Följet | `core/sync/calendar/MealCalendarSchedule.kt` | startas av `SyncStarter` (en rad). Med riktigt konto och b eller a på finns det periodiska arbetet, annars avbryts det. Medan processen lever skrivs kalendern om 2 s efter varje ändring av matsedeln i fönstret (här, eller från webben via synken, flyttad eller borttagen måltid) och vid byte av konto (det andra kontots matsedel ersätter). **Utloggad eller demoläge:** kalendern tas bort och valet slås av |
 | Arbetet | `core/sync/work/MealCalendarWork.kt` | `MealCalendarWorker` (periodiskt **var 12:e timme**, unikt `tandem.meal_calendar`, KEEP): med nät läses matsedeln (`MealPlanRepository.refresh`, genom `RemoteCaller`) och länkens token förnyas vid behov; sedan skrivs kalendern. Så är kalendern aldrig mer än ett dygn efter, också om synkintervallet är "manuellt". Klassnamnet behålls av `consumer-rules.pro` |
@@ -5683,7 +5737,12 @@ också visar att inspelning och jämförelse är överens på löparen.
 **Jämförelsen är på** (0.2.0): 368 referensbilder (ca 34 MB) i åtta moduler, inspelade av
 *Screenshots* på integrationsgrenen, granskade i urval och incheckade tillsammans med
 `tandem.screenshots.verify=true`. Roborazzis tröskel är standard (0): en enda ändrad pixel fäller
-`pr.yml`, vilket prövades med en avsiktligt ändrad pixel i en referensbild på en kastgren.
+`pr.yml`, vilket prövades med en avsiktligt ändrad pixel i en referensbild på en kastgren. Men en
+pixel räknas som **lika** när färgen skiljer lite (Roborazzis standardjämförelse har en liten
+färgtolerans): en referensbild som skiljer med enstaka färgsteg klarar jämförelsen fast en ny
+inspelning skriver om den. Så låg nio bilder kvar från oktober tills komplettering-enhet checkade in
+dem (se "Komplettering efter enhetstestet"); *Screenshots* listar nu varje fil som inspelningen
+ändrar i sin sammanfattning, och den listan ska vara tom eller bara innehålla det man ändrat.
 
 **Den som ändrar en skärm** (eller ett typsnitt, en färg, ett bibliotek som ritar):
 
