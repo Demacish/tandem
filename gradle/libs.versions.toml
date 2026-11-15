@@ -59,7 +59,7 @@ unifiedpush-connector = "3.3.5"
 
 # --- Network / serialization ---
 retrofit = "3.0.0"        # depends on OkHttp 4.12; our explicit OkHttp 5 pin wins (binary compatible)
-okhttp = "5.5.0"
+okhttp = "5.5.1"
 kotlinxSerialization = "1.11.0"
 kotlinxCoroutines = "1.11.0"
 kotlinxDatetime = "0.8.0"
