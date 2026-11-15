@@ -336,9 +336,12 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
         /** Imported posts stay as "Importerad" this long. */
         const val KEEP_IMPORTED_MILLIS: Long = 30L * 24 * 60 * 60 * 1000
 
-        /** What the user is told for a Miniflux failure. */
+        /**
+         * What the user is told for a Miniflux failure. Fas 5 (sdk37 lane): Android 17's local
+         * network refusal comes before the connectivity rule, which counts it as offline too.
+         */
         fun problemOf(error: TandemError): InboxProblem = when {
-            error == TandemError.LocalNetworkDenied -> InboxProblem.LOCAL_NETWORK // Fas 5 (sdk37): before "offline"
+            error == TandemError.LocalNetworkDenied -> InboxProblem.LOCAL_NETWORK
             error.isConnectivityProblem -> InboxProblem.UNREACHABLE
             error is TandemError.Unauthorized -> InboxProblem.AUTH
             error is TandemError.TlsError -> InboxProblem.TLS
