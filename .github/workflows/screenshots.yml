@@ -77,6 +77,19 @@ jobs:
               changed="$(git status --porcelain --untracked-files=all -- "$dir" | wc -l)"
               echo "| \`${module}\` | ${count} | ${changed} |"
             done
+            # Verification tolerates tiny differences (Roborazzi's change threshold), so a golden that
+            # no longer matches the recording byte for byte can stay committed unnoticed: name every
+            # file this recording changes, so it is either committed or explained (docs/BYGGE.md
+            # "Skärmbilder").
+            changed_files="$(git status --porcelain --untracked-files=all -- ':(glob)**/src/test/screenshots/**' | cut -c4- | sort)"
+            if [ -n "$changed_files" ]; then
+              echo
+              echo "Changed or new goldens:"
+              echo
+              echo '```'
+              echo "$changed_files"
+              echo '```'
+            fi
             echo
             echo "Download **screenshot-goldens**, review it, unpack \`screenshot-goldens.tar\` at the repository root"
             echo "(\`tar -xf screenshot-goldens.tar\`) and commit it."
