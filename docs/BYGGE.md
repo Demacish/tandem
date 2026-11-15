@@ -1286,6 +1286,11 @@ TCP-anslutning bara tidsgräns**, så Tandem avgör själv:
   (`api-level: "37.0"` i `smoke.yml`; SDK:n kallar API 37 "37.0"), båda skärvorna, i stället för
   API 36. Röktestets falska Tandoor ligger på `localhost` (loopback, inte lokalt nät), så ingen
   behörighetsfråga dyker upp. `benchmark.yml` mäter kvar på API 36 (jämförbara siffror över tid).
+  Android 17:s fotoväljare (`com.google.android.photopicker`) håller ett enkelval markerat tills
+  man trycker Klar (texten ligger i ett barn till knappen) och visar kortet "Choose cloud media
+  app" ovanför rutnätet; `Gallery.pickNewest` bekräftar med Klar och tar aldrig en ruta med text
+  (sju test föll annars, körning 43715639040). Första gröna körningen på API 37: 43719012975
+  (`OK (14 tests)` + `OK (32 tests)`).
 <!-- /Fas 5 sdk37 -->
 
 <!-- Fas 5 klocka -->

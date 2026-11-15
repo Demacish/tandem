@@ -81,25 +81,24 @@ class Gallery(private val context: Context) : ExternalResource() {
                 app.capture("photo-picker-stuck")
                 throw AssertionError("No photo could be picked in the photo picker")
             }
-            // A photo is already selected (Android 17, or a multiple-choice picker): confirm it,
-            // never tap the tile again (that would deselect it).
-            device.findObject(CONFIRM)?.let { confirm ->
-                app.capture("photo-picker-${attempt++}")
-                runCatching { confirm.click() }
-                device.wait(Until.gone(PICKER), TAP_WAIT_MS)
-                continue
-            }
-            val tile = thumbnail(device)
-            if (tile == null) {
-                SystemClock.sleep(POLL_MS)
-                continue
-            }
-            app.capture("photo-picker-${attempt++}")
-            runCatching { tile.click() }
-            device.wait(Until.gone(PICKER), TAP_WAIT_MS)
-            // A picker that keeps the choice selected needs its "Done"/"Add" button.
-            if (device.hasObject(PICKER)) device.wait(Until.findObject(CONFIRM), TAP_WAIT_MS)?.let { runCatching { it.click() } }
+            if (tapOnce(app, attempt)) attempt++ else SystemClock.sleep(POLL_MS)
         }
+    }
+
+    /**
+     * One try: confirm a photo that is already selected (Android 17, or a multiple-choice picker;
+     * never tap its tile again, that would deselect it), or tap the newest tile. False when the
+     * grid has no tile yet.
+     */
+    private fun tapOnce(app: TandemApp, attempt: Int): Boolean {
+        val device = app.device
+        val target = device.findObject(CONFIRM) ?: thumbnail(device) ?: return false
+        app.capture("photo-picker-$attempt")
+        runCatching { target.click() }
+        device.wait(Until.gone(PICKER), TAP_WAIT_MS)
+        // A picker that keeps the choice selected needs its "Done"/"Add" button.
+        if (device.hasObject(PICKER)) device.wait(Until.findObject(CONFIRM), TAP_WAIT_MS)?.let { runCatching { it.click() } }
+        return true
     }
 
     private fun thumbnail(device: UiDevice): UiObject2? {
