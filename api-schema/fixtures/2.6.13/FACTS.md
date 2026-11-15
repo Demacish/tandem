@@ -1237,3 +1237,20 @@ Bevakningen jämför faktan (`fas5.wear`).
 - **d. Gäst.** En gästs token kan skapa en token (201), men gästens `bulk` nekas med 403. [O]
   [S] Appen kopplar därför inte en gästs klocka: listan skulle inte gå att bocka av.
 <!-- /Fas 5 klocka -->
+
+<!-- Fas 5 nya -->
+## Fas 5: raden Nya (F1, komplettering efter enhetstestet)
+
+`Phase5NyaContractTest` körs i `contract.yml` (push: 2.6.13 och 2.7.1) och spelar in till
+`fas5/nya/` (2026-11-15, inga avvikelser mot `EXPECTED`, 2.6.13 och 2.7.1 svarar likadant).
+Bevakningen jämför faktan (`fas5.nya`).
+
+- **a. Appens fråga.** `GET /api/recipe/?new=true&sort_order=-created_at&page_size=20` → 200; tre
+  recept skapade efter varandra kommer först, **nyast överst**, och hela sidan är sorterad efter
+  `created_at` fallande (översikten har `created_at`). `page_size` gäller. [O]
+- **b. Gamla recept.** Hela listan (`page_size=100`) är sorterad efter `created_at` fallande, och det
+  bakåtdaterade receptet (30 dagar, `new: false`) kommer efter alla nya. [O]
+- **c. Sorteringen bär ordningen.** `sort_order=-created_at` ensam ger samma tre först; `new=true`
+  ensam sorterar de nya efter **namn** (FACTS "Fas 1 c": nya först, sedan namn), inte efter ålder. [O]
+  [S] Idags rad Nya skickar därför båda och filtrerar inte på `new`.
+<!-- /Fas 5 nya -->

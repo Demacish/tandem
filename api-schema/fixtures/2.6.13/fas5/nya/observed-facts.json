@@ -1,0 +1,37 @@
+{
+  "tandoorTag": "2.6.13",
+  "runDay": "2000-01-15",
+  "create.statuses": [
+    201,
+    201,
+    201
+  ],
+  "nya.status": 200,
+  "nya.firstThree": [
+    "Tandem nya tre",
+    "Tandem nya två",
+    "Tandem nya ett"
+  ],
+  "nya.ownAreNew": [
+    true
+  ],
+  "nya.pageSizeHonoured": true,
+  "nya.hasCreatedAt": true,
+  "nya.sortedByCreatedDesc": true,
+  "all.complete": true,
+  "all.sortedByCreatedDesc": true,
+  "all.oldRecipeFound": true,
+  "all.oldRecipeNew": false,
+  "all.oldRecipeAfterEveryNew": true,
+  "sortOnly.firstThree": [
+    "Tandem nya tre",
+    "Tandem nya två",
+    "Tandem nya ett"
+  ],
+  "newOnly.firstThree": [
+    "Bönsallad",
+    "Falafel",
+    "Grönsakssoppa"
+  ],
+  "mismatches": []
+}

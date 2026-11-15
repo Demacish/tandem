@@ -189,3 +189,11 @@ kalendern", `fas5/kalender/`, 2026-11-14): flödet bara med scopet `mealplan`, t
 `?access_token=`, UTC-tider, 60 minuter, 12:00 utan måltidstypens tid, skapa/förläng (samma
 token)/återkalla. Enda skillnaden i flödet är `VERSION:2.0` i kalenderhuvudet. [O]
 <!-- /Fas 5 kalender -->
+
+<!-- Fas 5 nya -->
+## Fas 5: raden Nya (F1, komplettering efter enhetstestet)
+
+`Phase5NyaContractTest` ger exakt samma fakta som 2.6.13 (`../2.6.13/FACTS.md` "Fas 5: raden Nya",
+`fas5/nya/`, 2026-11-15): `new=true&sort_order=-created_at` ger de nyaste först och det bakåtdaterade
+receptet efter alla nya; `new=true` ensam sorterar efter namn. [O]
+<!-- /Fas 5 nya -->
