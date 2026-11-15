@@ -4,8 +4,8 @@ import android.os.SystemClock
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Until
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -33,7 +33,8 @@ class Phase5FunktionerSmokeTest : Phase2SmokeBase() {
         logIn()
 
         val listed = shell("cmd app_function list-app-functions --package ${TandemApp.PACKAGE}")
-        assumeFalse("This emulator has no App Function service: $listed", listed.contains("Can't find service"))
+        // Android 16+ always has the service; the smoke emulator runs API 37.
+        assertFalse("The emulator has no App Function service: $listed", listed.contains("Can't find service"))
         FUNCTIONS.forEach { name -> assertTrue("$name is published: $listed", listed.contains("$SERVICE#$name")) }
 
         // Off until the user allows it: nothing reaches the list.

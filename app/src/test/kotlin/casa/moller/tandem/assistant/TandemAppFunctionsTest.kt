@@ -96,7 +96,7 @@ class TandemAppFunctionsTest {
     @Test
     fun theGeneratedMetadataNamesEveryFunctionAndParameter() {
         // Read first, asserted outside the coroutine, so a failure names its own line.
-        val all = test { functions() }
+        val all = runBlocking { withTimeout(TEST_TIMEOUT) { functions() } }
         val byName = all.associateBy { it.id.substringAfter('#') }
         val dump = byName.values.joinToString("\n") { f ->
             "${f.id}: ${f.description} | " + f.parameters.joinToString { "${it.name} required=${it.isRequired} (${it.description})" }
