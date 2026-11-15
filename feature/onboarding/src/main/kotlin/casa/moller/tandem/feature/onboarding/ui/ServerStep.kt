@@ -96,7 +96,23 @@ internal fun ColumnScope.ServerStep(state: OnboardingUiState, actions: Onboardin
 
         ServerCheck.Checking -> CheckingRow()
 
-        is ServerCheck.Failed -> ServerErrorCard(check.error)
+        is ServerCheck.Failed -> ServerErrorCard(check.error, onOpenAppSettings = actions::onOpenAppSettings)
+
+        // Fas 5 (sdk37 lane): Android 17's local network permission, asked here in context.
+        ServerCheck.NeedsLocalNetwork -> CalloutCard(
+            title = stringResource(R.string.onboarding_local_network_title),
+            body = stringResource(R.string.onboarding_local_network_body),
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            icon = TandemIcons.Shield,
+            tone = TandemTone.Neutral,
+            actions = {
+                TandemPrimaryButton(
+                    text = stringResource(R.string.onboarding_local_network_allow),
+                    onClick = actions::onAllowLocalNetwork,
+                    size = TandemButtonSize.Small,
+                )
+            },
+        )
 
         is ServerCheck.NeedsConfirmation -> CalloutCard(
             title = if (check.server.compatibility == ServerCompatibility.UNRECOGNIZED) {
@@ -189,10 +205,11 @@ private fun CheckingRow() {
 
 /**
  * Inline error of the probe: the shared text for the error type plus, where it helps, what the
- * user can do about it (install a CA certificate, open paths in a firewall, add the sub-path).
+ * user can do about it (install a CA certificate, open paths in a firewall, add the sub-path,
+ * allow the local network in Android's settings).
  */
 @Composable
-private fun ServerErrorCard(error: TandemError) {
+private fun ServerErrorCard(error: TandemError, onOpenAppSettings: () -> Unit) {
     val text = error.toErrorText()
     // On the public settings endpoint a 401 means a login portal in front of Tandoor, not an
     // expired login, so the generic "Log in again" text would be wrong here.
@@ -213,6 +230,14 @@ private fun ServerErrorCard(error: TandemError) {
                 title = stringResource(R.string.onboarding_hint_title),
                 body = hint,
                 icon = TandemIcons.Info,
+            )
+        }
+        if (error == TandemError.LocalNetworkDenied) {
+            TandemTonalButton(
+                text = stringResource(R.string.onboarding_open_app_settings),
+                onClick = onOpenAppSettings,
+                trailingIcon = TandemIcons.OpenInNew,
+                size = TandemButtonSize.Small,
             )
         }
         TandemTextButton(
@@ -244,6 +269,8 @@ private fun serverErrorHint(error: TandemError): String? = when (error) {
     is TandemError.NotTandoor -> stringResource(R.string.onboarding_hint_not_tandoor)
 
     TandemError.Timeout -> stringResource(R.string.onboarding_hint_timeout)
+
+    TandemError.LocalNetworkDenied -> stringResource(R.string.onboarding_hint_local_network)
 
     else -> null
 }

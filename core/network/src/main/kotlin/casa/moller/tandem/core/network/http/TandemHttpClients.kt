@@ -21,6 +21,9 @@ import okhttp3.logging.HttpLoggingInterceptor
  *   OkHttp would otherwise turn into a 200 HTML page (FACTS g). The probe follows HTTPS redirects
  *   itself.
  * - **HTTPS only** ([HttpsOnlyInterceptor]) and a fixed User-Agent ([UserAgentInterceptor]).
+ * - **Android 17's local network** ([LocalNetworkInterceptor], Fas 5): a connection that failed
+ *   because the permission for the local network is missing becomes
+ *   `TandemError.LocalNetworkDenied` instead of a timeout. Outermost, so it sees every failure.
  * - **Logging only in debug builds**, headers only (never bodies, which carry tokens and
  *   passwords), with `Authorization` and cookies redacted.
  */
@@ -44,12 +47,15 @@ object TandemHttpClients {
     /**
      * @param userAgent `AppBuildInfo.userAgent` from `:app` (never this module's BuildConfig).
      * @param debugLogging true only for debug builds.
+     * @param localNetwork the phone's [AndroidLocalNetworkGuard]; [LocalNetworkGuard.None] where
+     *   Android 17's protection does not apply (the Wear OS app targets 36, tests).
      */
     fun create(
         userAgent: String,
         debugLogging: Boolean,
         rateLimiter: TokenBucket = TokenBucket(),
         logger: HttpLoggingInterceptor.Logger = HttpLoggingInterceptor.Logger.DEFAULT,
+        localNetwork: LocalNetworkGuard = LocalNetworkGuard.None,
     ): OkHttpClient {
         val dispatcher = Dispatcher().apply { maxRequestsPerHost = MAX_REQUESTS_PER_HOST }
         val builder = OkHttpClient.Builder()
@@ -60,6 +66,7 @@ object TandemHttpClients {
             .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .followRedirects(false)
             .followSslRedirects(false)
+            .addInterceptor(LocalNetworkInterceptor(localNetwork))
             .addInterceptor(HttpsOnlyInterceptor())
             .addInterceptor(UserAgentInterceptor(userAgent))
             .addInterceptor(RateLimitInterceptor(rateLimiter))

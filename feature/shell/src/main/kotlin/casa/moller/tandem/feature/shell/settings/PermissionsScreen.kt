@@ -142,6 +142,18 @@ internal fun PermissionsScreen(
  */
 @Composable
 private fun FeaturePermissionRows(state: PermissionsUiState, onOpenSystemSetting: (SystemSetting) -> Unit) {
+    // Fas 5 (sdk37 lane): Android 17's local network, asked in the intro when the server is at home.
+    state.localNetworkAllowed?.let { allowed ->
+        GroupDivider()
+        PermissionRow(
+            icon = TandemIcons.Dns,
+            title = stringResource(R.string.settings_permission_local_network),
+            body = stringResource(R.string.settings_permission_local_network_body),
+            allowed = allowed,
+            onOpen = { onOpenSystemSetting(SystemSetting.APP_DETAILS) },
+            modifier = Modifier.testTag(PERMISSIONS_LOCAL_NETWORK_TAG),
+        )
+    }
     state.microphoneAllowed?.let { allowed ->
         GroupDivider()
         PermissionRow(
@@ -200,6 +212,9 @@ private fun FeaturePermissionRows(state: PermissionsUiState, onOpenSystemSetting
 
 /** Test tag of the position's row, the last of the feature rows (screenshots scroll to it). */
 internal const val PERMISSIONS_LOCATION_TAG = "permissions:location"
+
+/** Fas 5 (sdk37 lane): test tag of the local network's row. */
+internal const val PERMISSIONS_LOCAL_NETWORK_TAG = "permissions:local-network"
 
 /**
  * One permission: what it is for, a state chip (text, icon and colour), and "Open settings" as

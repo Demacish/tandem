@@ -128,6 +128,9 @@
     <string name="settings_permission_microphone_body">Voice commands in cook mode’s handsfree (“next”, “back”, “repeat”). Tandem only listens while they are on and cook mode is shown, and nothing you say is saved. Asked when you turn on voice commands.</string>
     <string name="settings_permission_calendar">Calendar</string>
     <string name="settings_permission_calendar_body">“Show in the phone’s calendar” writes your meal plan into a calendar of its own on this phone. Asked when you turn it on; the subscription link needs no permission.</string>
+    <!-- Fas 5 (sdk37 lane): Android 17's local network permission ("Nearby devices"). -->
+    <string name="settings_permission_local_network">Local network</string>
+    <string name="settings_permission_local_network_body">Needed only when your Tandoor server is on your home network (for example 192.168.x.x or a name ending in .local). Android calls it “Nearby devices”; Tandem uses it only to reach your server. Asked when you connect to such a server.</string>
     <string name="settings_permission_location">Location</string>
     <string name="settings_permission_location_body">Only for the reminder near the store, and only when you turn it on: the precise location and “Allow all the time”, so Android can tell Tandem when you reach a store you chose, also when Tandem is closed. Tandem never sends your location anywhere.</string>
     <string name="settings_permission_location_always">Allowed all the time</string>

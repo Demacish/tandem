@@ -5,12 +5,14 @@ import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.account.AccountSessions
 import casa.moller.tandem.core.data.internal.DefaultAccountRepository
 import casa.moller.tandem.core.data.internal.DefaultAppearanceRepository
+import casa.moller.tandem.core.data.internal.DefaultLocalNetworkAccess
 import casa.moller.tandem.core.data.internal.DefaultSettingsRepository
 import casa.moller.tandem.core.data.internal.InMemoryPanSizeRepository
 import casa.moller.tandem.core.data.notification.NotificationChannelInstaller
 import casa.moller.tandem.core.data.recipe.PanSizeRepository
 import casa.moller.tandem.core.data.remote.NetworkTandoorRemote
 import casa.moller.tandem.core.data.remote.TandoorRemote
+import casa.moller.tandem.core.data.server.LocalNetworkAccess
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.data.settings.SettingsRepository
@@ -58,4 +60,8 @@ internal abstract class DataModule {
     // --- Fas 5 (integration-08): the watch's and the calendar link's tokens go with the account. ---
     @Multibinds
     abstract fun accountRemovalHooks(): Set<AccountRemovalHook>
+
+    // --- Fas 5 (sdk37 lane): Android 17's local network permission, asked in the intro (docs/BYGGE.md "Target SDK 37"). ---
+    @Binds
+    abstract fun bindLocalNetworkAccess(impl: DefaultLocalNetworkAccess): LocalNetworkAccess
 }

@@ -137,6 +137,7 @@ internal object RouteSettingsPages : SettingsPages {
                     microphoneAllowed = SystemSetting.microphoneAllowed(context),
                     calendarAllowed = SystemSetting.calendarAllowed(context),
                     location = SystemSetting.locationAccess(context),
+                    localNetworkAllowed = SystemSetting.localNetworkAllowed(context),
                 ),
             )
             onPauseOrDispose { }

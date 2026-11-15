@@ -10,6 +10,7 @@ class ConnectivityTest {
         assertTrue(TandemError.NetworkUnavailable.isConnectivityProblem)
         assertTrue(TandemError.UnknownHost.isConnectivityProblem)
         assertTrue(TandemError.Timeout.isConnectivityProblem)
+        assertTrue(TandemError.LocalNetworkDenied.isConnectivityProblem)
         assertFalse(TandemError.Blocked.isConnectivityProblem)
         assertFalse(TandemError.ServerError(502).isConnectivityProblem)
         assertFalse(TandemError.Unauthorized(UnauthorizedSource.TANDOOR).isConnectivityProblem)

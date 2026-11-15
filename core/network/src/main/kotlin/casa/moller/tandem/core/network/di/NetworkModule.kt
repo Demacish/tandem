@@ -1,6 +1,7 @@
 package casa.moller.tandem.core.network.di
 
 import casa.moller.tandem.core.common.AppBuildInfo
+import casa.moller.tandem.core.network.http.LocalNetworkGuard
 import casa.moller.tandem.core.network.http.TandemHttpClients
 import dagger.Module
 import dagger.Provides
@@ -22,8 +23,8 @@ object NetworkModule {
     @Provides
     @Singleton
     @TandoorHttpClient
-    fun provideTandoorHttpClient(buildInfo: AppBuildInfo): OkHttpClient =
-        TandemHttpClients.create(userAgent = buildInfo.userAgent, debugLogging = buildInfo.isDebug)
+    fun provideTandoorHttpClient(buildInfo: AppBuildInfo, localNetwork: LocalNetworkGuard): OkHttpClient =
+        TandemHttpClients.create(userAgent = buildInfo.userAgent, debugLogging = buildInfo.isDebug, localNetwork = localNetwork)
 
     @Provides
     @Singleton

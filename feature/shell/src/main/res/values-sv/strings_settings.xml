@@ -124,6 +124,9 @@
     <string name="settings_permission_microphone_body">Röstkommandon i kokläget med handsfree (”nästa”, ”tillbaka”, ”upprepa”). Tandem lyssnar bara när de är på och kokläget visas, och inget du säger sparas. Frågas när du slår på röstkommandon.</string>
     <string name="settings_permission_calendar">Kalender</string>
     <string name="settings_permission_calendar_body">”Visa i telefonens kalender” skriver din matsedel i en egen kalender på telefonen. Frågas när du slår på den; prenumerationslänken behöver ingen behörighet.</string>
+    <!-- Fas 5 (sdk37-banan): Android 17:s behörighet för det lokala nätverket ("Enheter i närheten"). -->
+    <string name="settings_permission_local_network">Lokalt nätverk</string>
+    <string name="settings_permission_local_network_body">Behövs bara när din Tandoor-server finns på ditt hemnätverk (till exempel 192.168.x.x eller ett namn som slutar på .local). Android kallar det ”Enheter i närheten”; Tandem använder det bara för att nå din server. Frågas när du ansluter till en sådan server.</string>
     <string name="settings_permission_location">Plats</string>
     <string name="settings_permission_location_body">Bara för påminnelsen nära butiken, och bara när du slår på den: exakt plats och ”Tillåt alltid”, så att Android kan säga till Tandem när du kommer till en butik du valt, även när Tandem är stängd. Tandem skickar aldrig din plats någonstans.</string>
     <string name="settings_permission_location_always">Tillåtet alltid</string>

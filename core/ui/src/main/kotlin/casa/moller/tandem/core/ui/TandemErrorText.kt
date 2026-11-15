@@ -76,6 +76,9 @@ private fun TandemError.spec(): ErrorSpec = when (this) {
     TandemError.Timeout ->
         ErrorSpec(R.string.ui_error_timeout_title, R.string.ui_error_timeout_body, TandemIcons.Schedule)
 
+    TandemError.LocalNetworkDenied ->
+        ErrorSpec(R.string.ui_error_local_network_title, R.string.ui_error_local_network_body, TandemIcons.WifiOff)
+
     is TandemError.TlsError -> when (kind) {
         TlsErrorKind.UNTRUSTED_CERTIFICATE ->
             ErrorSpec(R.string.ui_error_tls_untrusted_title, R.string.ui_error_tls_untrusted_body, TandemIcons.Lock)

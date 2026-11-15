@@ -6,8 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import casa.moller.tandem.core.common.net.LocalNetworkRules
 import casa.moller.tandem.core.model.notification.TandemNotificationChannel
 
 /**
@@ -92,6 +94,17 @@ internal enum class SystemSetting {
             approximate = context.granted(Manifest.permission.ACCESS_COARSE_LOCATION),
             background = context.granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION),
         )
+
+        /**
+         * Fas 5 (sdk37 lane): whether Tandem may reach a server on the local network ("Nearby
+         * devices"); null on Android 16 and older, where the permission does not exist (no row then).
+         */
+        fun localNetworkAllowed(context: Context): Boolean? =
+            if (LocalNetworkRules.enforced(Build.VERSION.SDK_INT, context.applicationInfo.targetSdkVersion)) {
+                context.granted(LocalNetworkRules.PERMISSION)
+            } else {
+                null
+            }
 
         private fun Context.granted(permission: String): Boolean = checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }

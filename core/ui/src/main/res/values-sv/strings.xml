@@ -26,6 +26,9 @@
     <string name="ui_error_unknown_host_body">Kontrollera adressen. Om servern bara nås hemifrån behöver du vara på hemnätverket eller ansluten via VPN.</string>
     <string name="ui_error_timeout_title">Servern svarar inte</string>
     <string name="ui_error_timeout_body">Det tog för lång tid att få svar. Försök igen om en stund.</string>
+    <!-- Fas 5 (sdk37-banan): Android 17 stänger det lokala nätverket utan "Enheter i närheten". -->
+    <string name="ui_error_local_network_title">Tandem får inte använda ditt lokala nätverk</string>
+    <string name="ui_error_local_network_body">Din server finns på ditt hemnätverk, och Android släpper bara fram Tandem dit med behörigheten Enheter i närheten. Tillåt den i Mer → Behörigheter och försök igen.</string>
     <string name="ui_error_tls_untrusted_title">Certifikatet är inte betrott</string>
     <string name="ui_error_tls_untrusted_body">Om servern använder en egen certifikatutfärdare, installera det certifikatet i Androids inställningar (Säkerhet, Kryptering och inloggningsuppgifter) och försök igen.</string>
     <string name="ui_error_tls_title">Säker anslutning misslyckades</string>

@@ -25,6 +25,16 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
   Miniflux pausar aldrig synken med Tandoor (eller tvärtom).
 - Gäster kan läsa inkorgen men inte importera. Demoläget har en liten inbyggd inkorg.
 
+**Android 17**
+
+- **Byggd för Android 17 (target SDK 37):** appen följer Android 17:s nya regler. Klockappen ligger
+  kvar på Android 16:s regler.
+- **Server på hemnätverket:** från Android 17 frågar telefonen innan en app får nå enheter på ditt
+  lokala nätverk. Finns din Tandoor hemma (t.ex. 192.168.x.x eller ett namn som slutar på .local)
+  frågar Tandem om behörigheten Enheter i närheten när du ansluter, och förklarar varför. Säger du
+  nej visar Tandem hur du tillåter den i Androids inställningar, och Mer → Behörigheter visar
+  läget. En server på internet behöver ingen behörighet.
+
 ## [0.8.0] – 2026-11-14
 
 Fas 5, andra delen: På språng. Inköpslistan och timrarna följer med på klockan, matsedeln syns i

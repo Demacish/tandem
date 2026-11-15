@@ -493,4 +493,85 @@ class OnboardingViewModelTest {
         assertFalse(text.contains("secret"))
         assertFalse(text.contains("tda_token"))
     }
+
+    // --- Fas 5 (sdk37 lane): Android 17's local network permission (docs/BYGGE.md "Target SDK 37"). ---
+
+    @Test
+    fun aHomeServerAsksForTheLocalNetworkBeforeAnythingIsSent() = runTest {
+        val localNetwork = FakeLocalNetworkAccess(localAddresses = setOf("192.168.1.20"))
+        val vm = viewModel(accounts, session, localNetwork = localNetwork).atServerStep("192.168.1.20")
+
+        vm.onConnect()
+        assertEquals(ServerCheck.NeedsLocalNetwork, vm.uiState.value.serverCheck)
+        assertTrue("nothing was probed yet", accounts.probes.isEmpty())
+
+        vm.events.test {
+            vm.onAllowLocalNetwork()
+            assertEquals(OnboardingEvent.RequestLocalNetwork("android.permission.ACCESS_LOCAL_NETWORK"), awaitItem())
+        }
+        // "Allow" in Android's dialog: the probe the user started goes on.
+        localNetwork.granted = true
+        vm.onLocalNetworkResult(granted = true)
+        assertEquals(OnboardingStep.LOGIN, vm.uiState.value.step)
+        assertEquals(listOf("192.168.1.20"), accounts.probes)
+    }
+
+    @Test
+    fun aRefusalExplainsHowToAllowItAndOpensTheSettings() = runTest {
+        val localNetwork = FakeLocalNetworkAccess(localAddresses = setOf("tandoor.local"))
+        val vm = viewModel(accounts, session, localNetwork = localNetwork).atServerStep("tandoor.local")
+        vm.onConnect()
+
+        vm.onLocalNetworkResult(granted = false)
+        assertEquals(ServerCheck.Failed(TandemError.LocalNetworkDenied), vm.uiState.value.serverCheck)
+        assertEquals(OnboardingStep.SERVER, vm.uiState.value.step)
+        assertTrue(accounts.probes.isEmpty())
+        vm.events.test {
+            vm.onOpenAppSettings()
+            assertEquals(OnboardingEvent.OpenAppSettings, awaitItem())
+        }
+
+        // Allowed in Android's settings, "Connect" again: straight to the probe.
+        localNetwork.granted = true
+        vm.onConnect()
+        assertEquals(OnboardingStep.LOGIN, vm.uiState.value.step)
+    }
+
+    @Test
+    fun aDialogThatSaysAllowButLeavesItMissingCountsAsRefused() = runTest {
+        // "Don't ask again" earlier: Android answers at once; the permission is still missing.
+        val localNetwork = FakeLocalNetworkAccess(localAddresses = setOf("10.0.0.5"))
+        val vm = viewModel(accounts, session, localNetwork = localNetwork).atServerStep("10.0.0.5")
+        vm.onConnect()
+        vm.onLocalNetworkResult(granted = true)
+        assertEquals(ServerCheck.Failed(TandemError.LocalNetworkDenied), vm.uiState.value.serverCheck)
+        assertTrue(accounts.probes.isEmpty())
+    }
+
+    @Test
+    fun serversOnTheInternetAndOlderAndroidsAreNeverAsked() = runTest {
+        val localNetwork = FakeLocalNetworkAccess(localAddresses = setOf("192.168.1.20"))
+        val vm = viewModel(accounts, session, localNetwork = localNetwork).atServerStep("tandoor.example.com")
+        vm.onConnect()
+        assertEquals(OnboardingStep.LOGIN, vm.uiState.value.step)
+        vm.events.test { expectNoEvents() }
+
+        // Android 16: no permission exists, a home address is probed directly.
+        val android16 = FakeLocalNetworkAccess(localAddresses = setOf("192.168.1.20"), permission = null)
+        val old = viewModel(FakeAccountRepository(), session, localNetwork = android16).atServerStep("192.168.1.20")
+        old.onConnect()
+        assertEquals(OnboardingStep.LOGIN, old.uiState.value.step)
+    }
+
+    @Test
+    fun aLocalNetworkRefusalDuringTheProbeShowsTheSameHelp() {
+        // The address looked public but Android still blocked it (e.g. a name that resolves to a home address later).
+        accounts.probeResult = Outcome.Failure(TandemError.LocalNetworkDenied)
+        val vm = newViewModel().atServerStep()
+        vm.onConnect()
+        assertEquals(ServerCheck.Failed(TandemError.LocalNetworkDenied), vm.uiState.value.serverCheck)
+        // A stray dialog answer changes nothing outside the notice.
+        vm.onLocalNetworkResult(granted = true)
+        assertEquals(ServerCheck.Failed(TandemError.LocalNetworkDenied), vm.uiState.value.serverCheck)
+    }
 }

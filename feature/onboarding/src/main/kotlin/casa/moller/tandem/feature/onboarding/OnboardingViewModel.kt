@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.DataProblem
 import casa.moller.tandem.core.data.account.AccountRepository
 import casa.moller.tandem.core.data.dataProblem
+import casa.moller.tandem.core.data.server.LocalNetworkAccess
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.sync.SyncRepository
@@ -43,6 +44,12 @@ import kotlinx.coroutines.launch
  * Nothing is retried automatically: every probe, login and first sync retry is started by the
  * user. Leaving the first sync early never cancels it: [SyncRepository.firstSync] goes on in the
  * background.
+ *
+ * Fas 5 (sdk37 lane): on Android 17 an address on the LOCAL network needs the permission "Nearby
+ * devices" ([LocalNetworkAccess]). "Connect" asks [LocalNetworkAccess.needsPermission] before the
+ * probe and shows [ServerCheck.NeedsLocalNetwork] (why, and "Allow"); the system dialog is the
+ * composable's ([OnboardingEvent.RequestLocalNetwork]); a refusal is [TandemError.LocalNetworkDenied]
+ * with a way to Android's settings (docs/BYGGE.md "Target SDK 37").
  */
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
@@ -51,6 +58,8 @@ class OnboardingViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val config: OnboardingConfig,
     private val syncRepository: SyncRepository,
+    // Fas 5 (sdk37 lane): Android 17's local network permission.
+    private val localNetwork: LocalNetworkAccess,
 ) : ViewModel(),
     OnboardingActions {
 
@@ -125,15 +134,56 @@ class OnboardingViewModel @Inject constructor(
         }
         setState { it.copy(serverCheck = ServerCheck.Checking) }
         probeJob = viewModelScope.launch {
-            // An unexpected throwable must show the generic error, not kill the app.
-            val result = catchingUnexpected { accountRepository.probe(current.serverUrl) }
-            setState { now ->
-                when (result) {
-                    is Outcome.Failure -> now.copy(serverCheck = ServerCheck.Failed(result.error))
-                    is Outcome.Success -> withServer(now, result.value)
-                }
+            // Fas 5 (sdk37 lane): ask for the local network first; the probe would only time out.
+            if (localNetwork.needsPermission(current.serverUrl)) {
+                setState { it.copy(serverCheck = ServerCheck.NeedsLocalNetwork) }
+                return@launch
+            }
+            probe(current.serverUrl)
+        }
+    }
+
+    private suspend fun probe(serverUrl: String) {
+        // An unexpected throwable must show the generic error, not kill the app.
+        val result = catchingUnexpected { accountRepository.probe(serverUrl) }
+        setState { now ->
+            when (result) {
+                is Outcome.Failure -> now.copy(serverCheck = ServerCheck.Failed(result.error))
+                is Outcome.Success -> withServer(now, result.value)
             }
         }
+    }
+
+    /** "Allow" on [ServerCheck.NeedsLocalNetwork]: the composable shows Android's dialog. */
+    override fun onAllowLocalNetwork() {
+        if (state.value.serverCheck != ServerCheck.NeedsLocalNetwork) return
+        val permission = localNetwork.permission
+        if (permission == null) {
+            onLocalNetworkResult(granted = true)
+            return
+        }
+        viewModelScope.launch { eventChannel.send(OnboardingEvent.RequestLocalNetwork(permission)) }
+    }
+
+    /**
+     * Android's answer to the local network dialog. Allowed: the probe the user started with
+     * "Connect" goes on. Refused (or "Don't ask again" earlier): [TandemError.LocalNetworkDenied]
+     * with "Open settings".
+     */
+    fun onLocalNetworkResult(granted: Boolean) {
+        val current = state.value
+        if (current.step != OnboardingStep.SERVER || current.serverCheck != ServerCheck.NeedsLocalNetwork) return
+        if (!granted || localNetwork.permissionMissing()) {
+            setState { it.copy(serverCheck = ServerCheck.Failed(TandemError.LocalNetworkDenied)) }
+            return
+        }
+        setState { it.copy(serverCheck = ServerCheck.Checking) }
+        probeJob = viewModelScope.launch { probe(current.serverUrl) }
+    }
+
+    /** "Open settings" after the local network was refused: Tandem's page in Android's settings. */
+    override fun onOpenAppSettings() {
+        viewModelScope.launch { eventChannel.send(OnboardingEvent.OpenAppSettings) }
     }
 
     private fun withServer(now: OnboardingUiState, server: ServerInfo): OnboardingUiState = when (server.compatibility) {

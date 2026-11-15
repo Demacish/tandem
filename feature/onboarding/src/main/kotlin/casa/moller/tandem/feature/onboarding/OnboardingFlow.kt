@@ -5,6 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +56,10 @@ fun OnboardingFlow(
     val currentOnFinished by rememberUpdatedState(onFinished)
     val context = LocalContext.current
     var language by remember(languageController) { mutableStateOf(languageController.current) }
+    // Fas 5 (sdk37 lane): Android 17's local network dialog, only after "Allow" on the server step.
+    val localNetworkLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        viewModel.onLocalNetworkResult(granted)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.start(startAtServerStep, serverUrl)
@@ -61,6 +67,8 @@ fun OnboardingFlow(
             when (event) {
                 OnboardingEvent.DemoStarted -> currentOnStartDemo()
                 OnboardingEvent.Finished -> currentOnFinished()
+                is OnboardingEvent.RequestLocalNetwork -> localNetworkLauncher.launch(event.permission)
+                OnboardingEvent.OpenAppSettings -> openAppSettings(context)
             }
         }
     }
@@ -94,6 +102,15 @@ fun OnboardingFlow(
         crashNotice = crashNotice,
         onCancel = onCancel,
     )
+}
+
+/**
+ * Fas 5 (sdk37 lane): this app's page in Android's settings, where "Permissions" -> "Nearby
+ * devices" opens the local network again after a refusal. Only an Intent.
+ */
+private fun openAppSettings(context: Context) {
+    val appDetails = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+    runCatching { context.startActivity(appDetails.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 /**

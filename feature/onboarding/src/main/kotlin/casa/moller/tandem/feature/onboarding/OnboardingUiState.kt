@@ -45,6 +45,12 @@ sealed interface ServerCheck {
 
     /** Older than 2.6.0: login is blocked. */
     data class TooOld(val server: ServerInfo) : ServerCheck
+
+    /**
+     * Fas 5 (sdk37 lane): the address is on the local network and Android 17 needs the permission
+     * "Nearby devices" first. Shows why, and "Allow" (the system dialog). Nothing was sent.
+     */
+    data object NeedsLocalNetwork : ServerCheck
 }
 
 /** Why the login step failed, with the message the screen shows for it. */
@@ -185,6 +191,12 @@ sealed interface OnboardingEvent {
 
     /** Logged in, first sync done (or left to run in the background): the app leaves the intro. */
     data object Finished : OnboardingEvent
+
+    /** Fas 5 (sdk37 lane): show Android's dialog for [permission] (the local network). */
+    data class RequestLocalNetwork(val permission: String) : OnboardingEvent
+
+    /** Fas 5 (sdk37 lane): open Tandem's page in Android's settings (the local network was refused). */
+    data object OpenAppSettings : OnboardingEvent
 }
 
 /** User actions of the intro. Implemented by [OnboardingViewModel]; screenshot tests use no-ops. */
@@ -231,6 +243,12 @@ interface OnboardingActions {
 
     /** "Done" on the battery tip. */
     fun onBatteryTipDone()
+
+    /** Fas 5 (sdk37 lane): "Allow" on the local network notice of the server step. */
+    fun onAllowLocalNetwork() = Unit
+
+    /** Fas 5 (sdk37 lane): "Open settings" after the local network was refused. */
+    fun onOpenAppSettings() = Unit
 }
 
 /**

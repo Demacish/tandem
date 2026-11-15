@@ -36,6 +36,8 @@ class TandemErrorTextTest {
         TandemError.ServerError(502),
         TandemError.Decode(),
         TandemError.Unknown(),
+        // Fas 5 (sdk37 lane): appended last, the indexes above stay.
+        TandemError.LocalNetworkDenied,
     )
 
     private fun texts(): List<TandemErrorText> {
@@ -68,5 +70,6 @@ class TandemErrorTextTest {
         val texts = texts()
         assertEquals("Certifikatet är inte betrott", texts[3].title)
         assertEquals("Logga in igen", texts[8].title)
+        assertEquals("Tandem får inte använda ditt lokala nätverk", texts.last().title)
     }
 }

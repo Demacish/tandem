@@ -30,6 +30,9 @@ kan installeras bredvid release-bygget.
 - Sätt inte `android.builtInKotlin`, `android.newDsl`, `android.disallowKotlinSourceSets` eller
   `android.enableJetifier` i `gradle.properties`.
 - Bytekod: Java 17. CI kör på JDK 21 (krävs av Robolectric för SDK 36+).
+- targetSdk 37 (Android 17) sedan Fas 5 (bana sdk37), Wear OS-appen targetSdk 36
+  (`wearTargetSdk` i katalogen); se "Target SDK 37". Robolectric 4.17 kör enhetstesterna på SDK 37
+  (testernas manifest har targetSdk 37), klockans på 36.
 - compileSdk 37 är ett krav (Compose 1.12, core 1.19, material3 1.5 och Navigation 3 kräver det).
   Det enda förhandsbiblioteket är material3 1.5.0-beta01 (Expressive), inkapslat i
   `core:designsystem`.
@@ -1141,7 +1144,141 @@ sätts av integrationen. En rad per bana.
 | resten | Enhetstestet 2026-11-14, omgång 3, sent inkomna: B15 ny måltidstyp inte vald och felet utom synhåll, B16 starttiden mäts aldrig, B17 demotimer efter inloggning, F1 Idags tomma rader och raden Nya, ägarens skärmbilder S1–S3 (plan §6.2, §6.6, §8.1, §8.3) | **B15:** en måltidstyp som skapas under Planera måltid är vald direkt och förblir vald när utkorgen skickat den (temp-id → server-id, `MealPlanRepository.observeMealTypeId`), också på en server utan måltidstyper och offline (måltiden väntar på typens CREATE); ett stoppat sparande rullar till första fältet som saknas, fokuserar det om det är ett textfält och säger vad som saknas ovanför knappen (`liveRegion`), vid varje försök. **B16:** en kallstart mäts och syns i Diagnostik (`ColdStartGate`: första aktiviteten högst 2 s efter `Application.onCreate`; Android 15+ dessutom `ApplicationStartInfo` = kall start för en aktivitet, läst utanför huvudtråden); en varm start och en process startad för bakgrundsarbete räknas inte. **B17:** inga demotimrar (gående, ringande, klara) med larm och notiser finns kvar när demoläget lämnats för ett konto eller introt, också om appen stängdes i demoläget (`DemoTimerCleanup`, `TimerController.cancelSource`); kontots timrar rörs inte. **F1:** Idags text om tomma rader säger "efter första synkningen" bara före den första synken, efteråt vad som fyller raderna; Nya = serverns senast tillagda recept, nyast först, högst 20, också när inget lagts till senaste veckan. **S1/S2:** karusellrubrikerna på Idag och receptnamnet under Planera måltid har företräde: knappen står bredvid bara när rubriken (och underrubriken) ryms på en rad var, annars under. **S3:** att dra i sökresultaten under Recept medan sökfältet har fokus döljer tangentbordet och släpper fokus; sökfältet rullas helt in när det får fokus. I CI: `PlanMealViewModelTest` (tre nya), `PlanMealRoundThreeTest`, `ColdStartTest`, `DemoTimerCleanupTest`, `SyncEngineTest.nyaListsTheNewestRecipesAlsoWhenNoneWasAddedThisWeek`, `TodayRoundThreeTest`, `RecipeSearchKeyboardTest`, ATF och skärmbilder 360 × 780 dp i 1,0 och 320 × 693 dp i 2,0. **BEHÖVER ENHET** (ägaren): samma steg på Galaxy S21 FE mot den riktiga servern | ✅ klart i CI 2026-11-15 (PR 43678242499 och röktest 43678269689 på 62802a5: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; referensbilder från Screenshots 43676697642; avsiktligt ändrade `home/phone_today_full_light`, `home/*today_nothing_planned*`, `home/phone_today_want_to_cook_light_sv`, `mealplan/phone_plan_meal_chosen_light`, `phone_plan_meal_edit_font2_light`, `phone_plan_meal_light_en_xa`, `phone_plan_meal_title_dark_sv`; Contract berörs inte); på telefonen återstår ägarens prov, se "Enhetstestet 2026-11-14, omgång 3: de sent inkomna fynden" |
 | komplettering-enhet | Luckorna efter enhetstestet som går att täppa till utan telefon: det instabila kalenderröktestet, ett kontraktsfaktum för raden Nya, "Lägg till i matsedeln" vid största text, referensbilderna som varje inspelning skrev om, det föråldrade reglaget i påminnelsen nära butiken | **Kalendern:** att stänga av "Visa i telefonens kalender" (och utloggning, demoläge, konto som lämnar) sparar "av" och tar bort kalendern i samma steg under skrivlåset, så ingen väntande skrivning lägger tillbaka den; ett Robolectric-test som håller "av" medan en skrivning kommer in, och röktestet `Phase5KalenderSmokeTest` grönt i flera körningar i rad utan högre tidsgräns. **Nya:** `Phase5NyaContractTest` (eget steg, `fas5/nya/`, `fas5.nya`) visar mot 2.6.13 och 2.7.1 att `new=true&sort_order=-created_at&page_size=20` ger de nyaste först och det bakåtdaterade receptet efter alla nya. **Knappen:** vid teckenstorlek 2 på 320 dp kapas inte "Lägg till i matsedeln (…)" (kortare etikett utan dagen, TalkBack läser dagen), test med `assertNoWordBreaks` och omspelade referensbilder. **Skärmbilder:** en ny inspelning ändrar inga incheckade bilder utöver de avsiktliga. **Reglaget:** `SliderState`-varianten, ingen varning, oförändrade referensbilder. | ✅ klart i CI 2026-11-15 (PR 43688530582 och röktest 43689303843 på 5a2b63a, PR 43694171635 och röktest 43694171650 på 97c1994 med rättningen av `Phase1bSmokeTest`: shard 1 "OK (14 tests)", shard 2 "OK (32 tests)"; torrkörning med båda APK:erna 43691564280 på 8774163; Contract 2.6.13/2.7.1 43684997721 och 43686684066; referensbilder från Screenshots 43686612108, bara de två `mealplan/phone_largest_devicetest_plan_meal_*_font2_light_sv`, och 43676697642 för de nio inaktuella; röktestet körs två gånger till på main), se "Komplettering efter enhetstestet" |
 | rss | Inkorg för recept (#35, plan §7, §8.4, §10 Fas 5), 0.9.0 | **Minimikravet:** ett oläst inlägg i en vald kategori i användarens Miniflux importeras med **två tryck** – inlägget (förhandsvisningen) och **Importera** – till samma granskning som en delad länk (#18): importen öppnas med inläggets adress och hämtar den direkt, och att godkänna granskningen markerar inlägget "Importerad" (och läst i Miniflux när valet är på); bevisat i `InboxViewModelTest` (inkorgens ViewModel genom importens ViewModel) och `RecipeImportViewModelTest`. **Allmän Miniflux-klient** (adress + API-nyckel i `X-Auth-Token`, egen OkHttp-klient, inget serverspecifikt), av som standard, inställd under Mer → Inställningar → Inkorg för recept; nyckeln krypterad, aldrig i loggar, säkerhetskopior eller sparat tillstånd. **Offline:** inläggen (titel, flöde, datum, bild, utdrag) ligger i Room (schema 7, `inbox_entry`, migrering 6 → 7 testad) och visas utan nät; uppdateras när inkorgen öppnas, med dra för att uppdatera och av WorkManager var 4:e timme med nät bara medan inkorgen är på. "Markera som läst" utan import, skickas direkt eller vid nästa uppdatering. **Utloggning/borttaget konto/Koppla från** tar bort nyckel, val och inlägg (`AccountRemovalHook`, `deleteAccountData`, test). **Eget skydd** (nekad nyckel stoppar, 429/403-paus, brytare för bakgrunden) som aldrig rör Tandoors `SyncGuard` och tvärtom (test åt båda hållen). Gäster läser men importerar inte; demoläget har en inbyggd inkorg utan nät. Vägar in: Recepts verktygsrad (antal nya) och "Nytt i inkorgen" på Idag (Anpassa Idag). **Kontraktstest** `MinifluxContractTest` mot en tillfällig Miniflux 2.3.4 (version och digest) med PostgreSQL och ett flöde i jobbet (`miniflux-contract.yml`): kategorier med olästa, olästa inlägg nyast först, markera läst, nekad nyckel; inspelningarna i `api-schema/fixtures/miniflux/2.3.4/`. Skärmbilder och ATF på telefon (stående, liggande), surfplatta i båda orienteringarna, mörkt, svenska och teckenstorlek 2. **BEHÖVER ENHET** (ägaren): mot den egna Miniflux-servern | ✅ klart i CI 2026-11-15 (PR 43719560265 på 225e156; Miniflux contract 43717226807 och Contract 2.6.13/2.7.1 43717226790 på e6db5d2, inget i deras sökvägar ändrades sedan; referensbilder från Screenshots 43717233137, bara `inbox/*` och `home/*today_inbox*`, `home/phone_today_customize_inbox_light_sv` nya, inga andra ändrade; röktestet körs på grenens sista SHA, inget eget röktestscenario, se "Inkorgen för recept") |
+| sdk37 | Target SDK 37 (Android 17), 0.9.0 "Till hands" (plan §10 Fas 5, §5.5, §6.5) | **targetSdk 37 på main** för telefonappen, testappen (`:smoke`) och `:benchmark` (katalogens `targetSdk`); Wear OS-appen stannar på 36 med skälet skrivet. **Varje beteendeändring i Android 17** (för appar med target 37 och för alla appar, från developer.android.com) står i "Target SDK 37" med om den rör Tandem, var, och vad som gjordes. **Lokalt nätverk:** en server på hemnätverket (RFC 1918, länklokal, CGNAT utan VPN, IPv6 ULA/länklokal, direktanslutna rutter, `.local`) fungerar på Android 17: introt frågar `ACCESS_LOCAL_NETWORK` i sammanhanget innan något skickas (förklaring + Tillåt), ett nej ger felet "Tandem får inte använda ditt lokala nätverk" med vägen till Androids inställningar, en anslutning som ändå stoppas blir `TandemError.LocalNetworkDenied` (räknas som offline, aldrig kretsbrytaren) i stället för en timeout, och Mer → Behörigheter har raden Lokalt nätverk (bara på Android 17+); beslutslogiken enhetstestad (adressreglerna, interceptorn, introts flöde, raden, Robolectric på SDK 36 och 37). **CI grönt**, röktestet kört på Googles API 37-emulator (`android-37.0`, `google_apis`, x86_64). | Pågår på `fas5/sdk37` |
 <!-- /Fas 5 läge -->
+
+<!-- Fas 5 sdk37 -->
+## Target SDK 37 (Android 17; `:app`, `:core:network`, `:core:data`, `:core:common`, `:feature:onboarding`, `:feature:shell`, Fas 5, sdk37)
+
+0.9.0 "Till hands" höjer telefonappens `targetSdk` från 36 till 37 (`gradle/libs.versions.toml`,
+läses av `tandem.android.application`, `tandem.android.library` (enhetstester och lint) och
+`tandem.android.test` (`:smoke`, `:benchmark`)). compileSdk var redan 37. Källor: bara
+developer.android.com ("Behavior changes: Apps targeting Android 17", "Behavior changes: all
+apps", Android 17 release notes, "Local network permission", "Local Network Definition",
+"Background audio hardening", "Restrictions on orientation and resizability are ignored",
+"Network security configuration", "Handle configuration changes", Wear OS 7 "Behavior changes")
+och Google Play-hjälpens sida om target API-krav, lästa 2026-11-15.
+
+### Klockan stannar på target 36
+
+`:wear` sätter `targetSdk = wearTargetSdk` (36) i `wear/build.gradle.kts`. Skäl: Google Play kräver
+API 35 av Wear OS-appar (31 augusti 2026), Wear OS 7 är byggt på Android 17 och skulle med target 37
+stänga det lokala nätverket för klockans egen synk (klockan har ingen skärm för att fråga
+`ACCESS_LOCAL_NETWORK`), och ett röktest på en Wear-emulator ingår inte i 0.9.0. Klockan följer
+ändå alla ändringar för alla appar nedan (ljudet: klockans larm låter genom sin notiskanal, alltså
+spelas av systemet). Höjs när klockan
+kan fråga om behörigheten och testas på Wear OS 7.
+
+### Ändringar för appar med target 37
+
+| Ändring | Rör Tandem? | Var | Vad som gjordes |
+|---|---|---|---|
+| **Lokalt nätverk kräver `ACCESS_LOCAL_NETWORK`** (behörighetsgruppen "Enheter i närheten"; utan den blockeras TCP/UDP till lokala adresser, TCP bara tidsgräns) | **Ja**: en egen Tandoor hemma (192.168.x.x, `tandoor.local`) | `:core:network`, `:core:data`, `:feature:onboarding`, `:feature:shell`, manifestet | Se "Lokalt nätverk" nedan. |
+| Storskärm (sw ≥ 600 dp): `screenOrientation`, `resizeableActivity`, `min/maxAspectRatio`, `setRequestedOrientation` ignoreras, Android 16:s undantag borta | Nej | – | Inga lås finns (kontrollerat i alla manifest och i koden). Kokläget (`CookLayout`: PHONE, SHORT_WIDE, två rutor) och köksskärmen anpassar sig efter fönstret, inte efter orienteringen. |
+| Aktiviteter startas inte om för `keyboard`, `keyboardHidden`, `navigation`, `touchscreen`, `colorMode` och dockläge (`recreateOnConfigChanges` för det gamla) | Nej | `MainActivity` (Compose) | Compose läser `LocalConfiguration`; inget byggs om vid omstart. Inget `recreateOnConfigChanges`. Röktestet kör med hårdvarutangentbord. |
+| Bakgrundsljud: med target 37 krävs en förgrundstjänst med "while-in-use", **utom** för `USAGE_ALARM` med exakta larm | Ja, larmets reservljud | `core:timer` `TimerRingingService` | Inget att ändra: tjänsten spelar bara när larmnotisen inte kan låta, med `USAGE_ALARM`, och sideload har alltid exakta larm (`USE_EXACT_ALARM`) och tjänsten `systemExempted`. Uppläsningen (`AndroidStepSpeaker`, `USAGE_ASSISTANT`) och "Höj volymen" sker bara medan kokläget syns. Se även "alla appar". |
+| Certificate Transparency på som standard | Nej (oförändrat) | `network_security_config.xml` | Basinställningen litar på användarens CA:er (`src="user"`, plan 5.5), och då stänger Android CT-kontrollen för den inställningen (regel 2 i dokumentationen). Medvetet: en Tandoor bakom en egen CA har inga CT-loggade certifikat. Röktestets CA (`@raw`) räknas likadant. |
+| Encrypted Client Hello (ECH) på som standard | Nej | – | Bara om nätverksbiblioteket stöder ECH (OkHttp via plattformens TLS); annars skickas ECH GREASE, som servrar ignorerar. Ingen `<domainEncryption>`. |
+| `MessageQueue` utan lås | Nej | – | Ingen reflektion i `MessageQueue` i appen; röktestet använder UiAutomator, inte Espresso. |
+| `static final`-fält går inte att ändra med reflektion | Nej | – | Ingen sådan kod (sökt `setAccessible`/`getDeclaredField`). |
+| Widgetuppdateringar med för stora bitmappar kastar `IllegalArgumentException` | Nej | `:feature:widgets` | Glance-widgetarna använder bara vektorresurser (`ImageProvider(R.drawable…)`), inga bitmappar. |
+| Lösenord döljs helt vid fysiskt tangentbord | Nej | inloggningen | Systeminställning; Tandems fält följer den. |
+| SMS-OTP fördröjs | Nej | – | Tandem läser inga SMS. |
+| Bakgrundsstarter via `IntentSender` (BAL), `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` | Nej | – | Inga `IntentSender`/`ActivityOptions`; notisernas `PendingIntent` startas av ett tryck. Helskärmslarmet går genom notisens full-screen intent (systemet). |
+| Inbyggda bibliotek via `System.load` måste vara skrivskyddade | Nej | – | Bara `System.loadLibrary` från APK:n (ML Kit). |
+| Kontakter (CP2): PII-kolumner och strikt SQL | Nej | – | Tandem läser inga kontakter. |
+| `setContentCaptureEnabled(false)` verkar inte längre | Nej | – | Används inte. |
+| `BluetoothSocket.read()` ger −1 | Nej | – | Ingen Bluetooth (klockan går genom Data Layer). |
+| NPU kräver `FEATURE_NEURAL_PROCESSING_UNIT` | Nej | `:feature:scan` | ML Kit använder inte NPU direkt; inget att deklarera. |
+| Strängare storlek på egna notisvyer | Nej | `core:timer` nedräkningens `RemoteViews` | Liten vy med text och `Chronometer`, inga bilder. |
+
+### Ändringar för alla appar (oavsett target)
+
+| Ändring | Rör Tandem? | Vad som gjordes |
+|---|---|---|
+| Bakgrundsljud kräver synlig aktivitet eller en förgrundstjänst som **inte** är `shortService` | Delvis | Play-bygget **utan** exakta larm kör larmtjänsten som `shortService`; på Android 17 tystas då reservljudet (bara när larmnotisens kanal är tystad) medan appen inte syns. Larmnotisens eget ljud spelas av systemet och påverkas inte. Mer → Behörigheter och kokläget varnar redan när exakta larm saknas eller larmkanalen inte låter (B5). Sideload (hushållets bygge) har alltid exakta larm. |
+| Minnesgränser per app (`MemoryLimiter:AnonSwap`) | Nej | Köksskärmens tretimmarstest i CI letar läckor; inget att ändra. |
+| SMS-OTP (WebOTP) | Nej | – |
+| `usesCleartextTraffic` ska bort i en framtida version | Nej | Används inte; `network_security_config.xml` förbjuder klartext. |
+| Implicita URI-rättigheter för `ACTION_SEND`/`ACTION_IMAGE_CAPTURE` försvinner i Android 18 | Nej | Tandem delar bara text (`EXTRA_TEXT`: recept, inköpslista, logg); bilderna som skickas till importen tas emot, inte skickas. |
+| Högst 50 000 nycklar i Keystore | Nej | Ett fåtal nycklar (huvudnyckeln som skyddar Tinks nyckelring). |
+| Loopback mellan profiler blockeras | Nej | Röktestets falska Tandoor kör i samma profil. |
+| Tangentbordets synlighet återställs inte efter rotation | Litet | Efter en rotation på inloggningen måste man trycka i fältet igen. Ingen ändring (ingen `stateAlwaysVisible`: tangentbordet ska inte tvingas fram). |
+| Pekplatta med pekarfångst | Nej | – |
+| Bluetooth-omparning | Nej | – |
+
+**Inget nytt i Android 17** (kontrollerat, inget att göra): förgrundstjänsttyper, exakta larm och
+`USE_FULL_SCREEN_INTENT` (timrarna och helskärmslarmet beter sig som på 16), `PendingIntent`-
+mutabilitet och exporterade komponenter (oförändrade sedan 12/14; geofence-intentet är explicit
+och `FLAG_MUTABLE` för Play-tjänsterna), edge-to-edge och prediktiv bakåt (tvingande redan med
+target 35/36, appen hanterar insets), JobScheduler/WorkManager-kvoter, urklipp,
+tillgänglighetstjänster (bara nya händelser för CJKV-inmatning i `TextView`) och inloggningsuppgifter.
+
+### Lokalt nätverk (`ACCESS_LOCAL_NETWORK`)
+
+Android 17 räknar som lokalt: ett nät med broadcast (wifi, Ethernet; aldrig mobilnät eller VPN)
+med IPv4 169.254/16, 100.64/10, 10/8, 172.16/12, 192.168/16, multicast och 255.255.255.255, och
+IPv6 länklokalt, multicast och direktanslutna rutter; `.local`-namn kräver behörigheten redan för
+uppslaget. DNS mot en lokal DNS-server (port 53) är undantagen. Utan behörighet **tar en
+TCP-anslutning bara tidsgräns**, så Tandem avgör själv:
+
+- **Reglerna** (`core:common` `LocalNetworkRules`, ren Kotlin, `LocalNetworkRulesTest`): Androids
+  lista, plus två egna val: IPv6 ULA (fc00::/7) räknas som lokalt (hemma är det länkens prefix;
+  att fråga en gång för mycket är billigare än en tyst tidsgräns), och 100.64/10 räknas **inte**
+  när en VPN är aktiv (mesh-VPN:er delar ut sådana adresser och trafik genom VPN är inte lokal).
+  Loopback är aldrig lokalt (röktestets `localhost`). Behörigheten gäller bara när **både**
+  enheten kör Android 17+ **och** appen har target 37+ (`enforced`).
+- **Vakten** (`core:network` `LocalNetworkGuard`, på telefonen `AndroidLocalNetworkGuard`):
+  behörigheten från paketmanagern, adresserna från systemets uppslag och det aktiva nätets
+  direktanslutna rutter (`ConnectivityManager`, bara wifi/Ethernet; därför deklarerar
+  `core:network` `ACCESS_NETWORK_STATE`). Loggar aldrig värdnamn eller adresser.
+- **Interceptorn** (`LocalNetworkInterceptor`, ytterst i `TandemHttpClients.create`, alltså i API-,
+  import- och bildklienterna): blockerar **aldrig** själv (en felaktig "lokal" får inte stoppa en
+  server som en VPN når) utan gör om ett **misslyckat** anrop till `TandemError.LocalNetworkDenied`
+  när behörigheten saknas och värden är lokal. Tandems egna fel, TLS-fel (också på en annan rutt)
+  och avbrutna anrop lämnas orörda; värden slås bara upp efter ett fel. Klockan
+  (`TandemHttpClients.create` utan vakt) och tester har `LocalNetworkGuard.None`.
+- **Felet** `TandemError.LocalNetworkDenied` räknas som `isConnectivityProblem`: offline-läget och
+  den sparade datan visas, kretsbrytaren och felräkningen rörs inte (inget nådde servern),
+  diagnostiken skriver `LocalNetworkDenied`, utkorgen `local-network-denied`. Texten
+  ("Tandem får inte använda ditt lokala nätverk … Tillåt den i Mer → Behörigheter") finns i
+  `core:ui` `TandemErrorText`.
+- **Introt** (`OnboardingViewModel`, `ServerStep`): Anslut frågar först
+  `LocalNetworkAccess.needsPermission(adress)` (`core:data`, värden läses som proben läser den,
+  uppslaget på IO med högst 3 s). Behövs den visas `ServerCheck.NeedsLocalNetwork` (varför, och att
+  Android kallar den Enheter i närheten) med **Tillåt**, som visar Androids dialog
+  (`OnboardingEvent.RequestLocalNetwork`). Ja: proben som användaren startade fortsätter. Nej, eller
+  "Fråga inte igen" (dialogen svarar direkt och behörigheten saknas fortfarande):
+  `ServerCheck.Failed(LocalNetworkDenied)` med tipset (Behörigheter → Enheter i närheten → Tillåt)
+  och **Öppna inställningar** (appens sida). Androids räknare för nekade frågor nollställs för den
+  här behörigheten, så Tillåt kan visa dialogen igen. Ingen fråga vid första start, ingen fråga för
+  en server på internet och ingen på Android 16 (där finns behörigheten inte).
+- **Mer → Behörigheter**: raden **Lokalt nätverk** (bara när behörigheten finns, alltså Android 17
+  med target 37), med läge, varför och knappen till appens sida i Androids inställningar, läst
+  igen när sidan kommer tillbaka (`SystemSetting.localNetworkAllowed`).
+- **Inloggning och kontroll av servern** efter introt (inloggningssteget, kontoväxling, serverns
+  statuskontroll, synken i bakgrunden) visar `LocalNetworkDenied` med samma text om behörigheten
+  dras tillbaka. Lägga till en server går genom introts serversteg och frågar där.
+- **Tester:** `LocalNetworkRulesTest` (alla intervall, mappade IPv4-adresser, VPN, rutter, `.local`,
+  namn som pekar hem), `LocalNetworkInterceptorTest` (bara ett misslyckat lokalt anrop utan
+  behörighet byter fel; egna fel, TLS och lyckade anrop orörda; ytterst i den delade klienten),
+  `DefaultLocalNetworkAccessTest` (värden ur adressen, inget uppslag med behörighet eller på
+  Android 16, hängande uppslag ger upp), `OnboardingViewModelTest` (fråga före proben, ja, nej,
+  "fråga inte igen", internet, Android 16, nej under proben), `FeaturePermissionsTest` (raden visas
+  bara när den lästs, öppnar appens sida) och `LocalNetworkPermissionTest` (Robolectric på SDK 37
+  läser behörigheten, på SDK 36 ingen rad).
+
+### CI
+
+- **Enhetstester** kör på Robolectric 4.17 med SDK 37 (testernas manifest har target 37;
+  `android-all-instrumented` 17 finns på Maven Central). Klockans tester kör på 36. Inga nya
+  referensbilder: raden Lokalt nätverk syns bara när den lästs, och de befintliga skärmbilderna
+  har den inte.
+- **Röktestet** kör på Googles stabila API 37-avbild `system-images;android-37.0;google_apis;x86_64`
+  (`api-level: "37.0"` i `smoke.yml`; SDK:n kallar API 37 "37.0"), båda skärvorna, i stället för
+  API 36. Röktestets falska Tandoor ligger på `localhost` (loopback, inte lokalt nät), så ingen
+  behörighetsfråga dyker upp. `benchmark.yml` mäter kvar på API 36 (jämförbara siffror över tid).
+<!-- /Fas 5 sdk37 -->
 
 <!-- Fas 5 klocka -->
 ## Klockan (`:wear`, `:core:watch`, `:core:watchlink`, `:feature:shell`, Fas 5, klocka)
@@ -6232,8 +6369,8 @@ den kod som skickas:
   arket är öppet och fältet tömts (ViewModel tömmer det först efter ett lyckat tillägg).
   Kontroller av att skärmen bytt använder resurs-id (`week:agenda`, `week-shopping:list`), inte
   att en rubrik rullat bort.
-- **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 36,
-  `google_apis`, x86_64, KVM) med `reactivecircus/android-emulator-runner` och kör
+- **CI:** `smoke.yml` bygger båda APK:erna, stoppar Gradle, startar en emulator (API 37 sedan
+  Fas 5 sdk37, tidigare 36; `google_apis`, x86_64, KVM) med `reactivecircus/android-emulator-runner` och kör
   `scripts/ci/smoke-run.sh`. Steget fallerar om ett test fallerar, om appen kraschar, om ingen
   av `core:sync`s WorkManager-arbetare blev klar (`Worker result SUCCESS` för
   `casa.moller.tandem.core.sync.work.*` i appens logcat, `workers.txt`: Hilt-fabriken och

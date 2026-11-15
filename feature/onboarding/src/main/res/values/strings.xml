@@ -44,6 +44,12 @@
     <string name="onboarding_hint_blocked">Something in front of Tandoor, such as a firewall, CrowdSec or a login portal (Authentik, Authelia), stopped the app. Tandem must reach /api/, /api-token-auth/ and /media/ directly, without a browser login.</string>
     <string name="onboarding_hint_not_tandoor">Use the same address you open Tandoor with in the browser. If Tandoor runs under a path, include it, for example https://example.com/tandoor.</string>
     <string name="onboarding_hint_timeout">If the server is only reachable from home, connect to your home Wi-Fi or VPN and try again.</string>
+    <!-- Fas 5 (sdk37 lane): Android 17's local network permission ("Nearby devices"), asked here in context. -->
+    <string name="onboarding_local_network_title">Your server is on your home network</string>
+    <string name="onboarding_local_network_body">Android asks before an app may talk to devices on your local network. Tandem only uses this to reach your Tandoor server; it does not look for anything else. Android calls the permission Nearby devices.</string>
+    <string name="onboarding_local_network_allow">Allow</string>
+    <string name="onboarding_hint_local_network">Open Tandem\'s page in Android\'s settings, choose Permissions → Nearby devices → Allow, then tap Connect again. You can also find it later in More → Permissions.</string>
+    <string name="onboarding_open_app_settings">Open settings</string>
     <string name="onboarding_no_tandoor_title">Don’t have a Tandoor server?</string>
     <string name="onboarding_no_tandoor_body">Tandoor Recipes is free software that you run yourself. Try Tandem with sample data first, or see how to get started.</string>
     <string name="onboarding_get_tandoor">How to get started with Tandoor</string>

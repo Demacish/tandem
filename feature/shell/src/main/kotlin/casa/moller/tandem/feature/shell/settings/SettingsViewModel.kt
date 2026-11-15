@@ -169,6 +169,7 @@ class SettingsViewModel internal constructor(
             calendarAllowed = read.calendarAllowed,
             location = read.location,
             storeReminderUnavailable = noPlayServices,
+            localNetworkAllowed = read.localNetworkAllowed,
         )
     }.stateIn(viewModelScope, WHILE_SUBSCRIBED, PermissionsUiState(showBattery = showBattery, showFullScreen = showFullScreen))
 

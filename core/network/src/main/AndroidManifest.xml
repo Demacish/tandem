@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+        Fas 5 (sdk37 lane): AndroidLocalNetworkGuard reads the active network (VPN or not, its
+        directly connected routes) to tell whether the server is on the local network that
+        Android 17 closes without ACCESS_LOCAL_NETWORK (the app declares that one). Already
+        granted to the app through core:sync; a normal permission.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+</manifest>

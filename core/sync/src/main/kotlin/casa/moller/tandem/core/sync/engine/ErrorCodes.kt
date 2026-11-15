@@ -16,6 +16,9 @@ internal fun TandemError.code(): String = when (this) {
 
     TandemError.Timeout -> "timeout"
 
+    // Fas 5 (sdk37 lane): Android 17 kept the app off the local network (docs/BYGGE.md "Target SDK 37").
+    TandemError.LocalNetworkDenied -> "local-network-denied"
+
     is TandemError.TlsError -> "tls"
 
     is TandemError.InvalidUrl -> "invalid-url"

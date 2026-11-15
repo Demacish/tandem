@@ -294,6 +294,7 @@ internal class DefaultDiagnosticsRepository @Inject constructor(
             TandemError.NetworkUnavailable -> "NetworkUnavailable"
             TandemError.UnknownHost -> "UnknownHost"
             TandemError.Timeout -> "Timeout"
+            TandemError.LocalNetworkDenied -> "LocalNetworkDenied"
             TandemError.Blocked -> "Blocked"
             TandemError.NotFound -> "NotFound"
             is TandemError.TlsError -> "TlsError(${error.kind.name})"

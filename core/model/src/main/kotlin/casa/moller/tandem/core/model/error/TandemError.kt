@@ -23,6 +23,14 @@ sealed interface TandemError {
     data object Timeout : TandemError
 
     /**
+     * Fas 5 (sdk37 lane): the server is on the local network (e.g. 192.168.x.x or `tandoor.local`)
+     * and Android 17 does not let Tandem reach it without the permission "Nearby devices"
+     * (`ACCESS_LOCAL_NETWORK`). Nothing reached the server. The user allows it in the intro or in
+     * Mer -> Behörigheter (docs/BYGGE.md "Target SDK 37"). Counts as a connectivity problem.
+     */
+    data object LocalNetworkDenied : TandemError
+
+    /**
      * The TLS handshake failed. For [TlsErrorKind.UNTRUSTED_CERTIFICATE] onboarding explains how
      * to install a user CA (plan 5.5: the app trusts user CAs, no pinning).
      */

@@ -2,6 +2,7 @@ package casa.moller.tandem.feature.onboarding
 
 import androidx.lifecycle.SavedStateHandle
 import casa.moller.tandem.core.data.account.AccountRepository
+import casa.moller.tandem.core.data.server.LocalNetworkAccess
 import casa.moller.tandem.core.data.server.ServerInfo
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
@@ -124,7 +125,24 @@ internal fun viewModel(
     handle: SavedStateHandle = SavedStateHandle(),
     config: OnboardingConfig = OnboardingConfig(),
     sync: SyncRepository = FakeSyncRepository(),
-) = OnboardingViewModel(handle, accounts, session, config, sync)
+    localNetwork: LocalNetworkAccess = LocalNetworkAccess.NotNeeded,
+) = OnboardingViewModel(handle, accounts, session, config, sync, localNetwork)
+
+/** Fas 5 (sdk37 lane): Android 17's local network permission, scripted. */
+internal class FakeLocalNetworkAccess(
+    var localAddresses: Set<String> = emptySet(),
+    var granted: Boolean = false,
+    override val permission: String? = "android.permission.ACCESS_LOCAL_NETWORK",
+) : LocalNetworkAccess {
+    val asked = mutableListOf<String>()
+
+    override fun permissionMissing(): Boolean = permission != null && !granted
+
+    override suspend fun needsPermission(serverAddress: String): Boolean {
+        asked += serverAddress
+        return permissionMissing() && serverAddress in localAddresses
+    }
+}
 
 /** Does nothing; for screenshot tests of fixed states. */
 internal object NoOpActions : OnboardingActions {

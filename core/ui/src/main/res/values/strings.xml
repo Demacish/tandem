@@ -31,6 +31,9 @@
     <string name="ui_error_unknown_host_body">Check the address. If the server can only be reached at home, connect to your home network or VPN.</string>
     <string name="ui_error_timeout_title">The server is not answering</string>
     <string name="ui_error_timeout_body">It took too long to get an answer. Try again in a moment.</string>
+    <!-- Fas 5 (sdk37 lane): Android 17 keeps the app off the local network without "Nearby devices". -->
+    <string name="ui_error_local_network_title">Tandem may not use your local network</string>
+    <string name="ui_error_local_network_body">Your server is on your home network, and Android only lets Tandem reach it with the permission Nearby devices. Allow it in More → Permissions, then try again.</string>
     <string name="ui_error_tls_untrusted_title">The certificate is not trusted</string>
     <string name="ui_error_tls_untrusted_body">If your server uses its own certificate authority, install that certificate in the Android settings (Security, Encryption and credentials) and try again.</string>
     <string name="ui_error_tls_title">Secure connection failed</string>

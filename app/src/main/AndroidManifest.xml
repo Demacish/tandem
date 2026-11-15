@@ -3,6 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+        Fas 5 (sdk37 lane): Android 17 blocks an app that targets API 37 from the LOCAL network
+        (a self-hosted Tandoor at home, e.g. 192.168.x.x) unless this runtime permission ("Nearby
+        devices") is granted. Asked in context, only when the server address is on the local
+        network (the server step of the intro); Mer -> Behörigheter shows it. Android 16 and older
+        do not know it. docs/BYGGE.md "Target SDK 37".
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <!--
         Backup: allowBackup=false turns off cloud backup, and data_extraction_rules.xml also

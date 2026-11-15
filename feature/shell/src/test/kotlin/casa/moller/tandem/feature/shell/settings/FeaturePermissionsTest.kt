@@ -1,5 +1,6 @@
 package casa.moller.tandem.feature.shell.settings
 
+import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -11,6 +12,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import casa.moller.tandem.core.data.shopping.StoreReminderRepository
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
@@ -29,6 +31,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -168,6 +171,22 @@ class FeaturePermissionsTest {
         composeRule.onNodeWithTag(PERMISSIONS_LOCATION_TAG).assertDoesNotExist()
     }
 
+    // Fas 5 (sdk37 lane): Android 17's local network.
+    @Test
+    fun theLocalNetworkRowShowsOnlyWhereAndroidAsksForIt() {
+        val pages = show(SAMPLE_PERMISSIONS.copy(localNetworkAllowed = false))
+        composeRule.onNodeWithTag(PERMISSIONS_LOCAL_NETWORK_TAG).performScrollTo()
+        composeRule.onNodeWithText("Local network").performScrollTo()
+        composeRule.onNodeWithContentDescription("Open Android’s settings for Local network").performScrollTo().performClick()
+        assertEquals(listOf(SystemSetting.APP_DETAILS), pages.openedSystemSettings)
+    }
+
+    @Test
+    fun noLocalNetworkRowOnAndroid16() {
+        show(SAMPLE_PERMISSIONS)
+        composeRule.onNodeWithTag(PERMISSIONS_LOCAL_NETWORK_TAG).assertDoesNotExist()
+    }
+
     @Test
     fun thePrivacyCardNoLongerSaysNoLocation() {
         show(SAMPLE_PERMISSIONS)
@@ -218,4 +237,24 @@ internal class FakeStoreReminderRepository(initial: StoreReminderState = StoreRe
     override fun refreshPermissions() = Unit
 
     override fun currentPermissions(): StoreReminderPermissions = StoreReminderPermissions()
+}
+
+/** Fas 5 (sdk37 lane): the local network row's state, read from Android (docs/BYGGE.md "Target SDK 37"). */
+@RunWith(AndroidJUnit4::class)
+class LocalNetworkPermissionTest {
+    private val context: Application = ApplicationProvider.getApplicationContext()
+
+    @Test
+    @Config(sdk = [37])
+    fun android17AsksAndReadsTheGrant() {
+        assertEquals(false, SystemSetting.localNetworkAllowed(context))
+        shadowOf(context).grantPermissions("android.permission.ACCESS_LOCAL_NETWORK")
+        assertEquals(true, SystemSetting.localNetworkAllowed(context))
+    }
+
+    @Test
+    @Config(sdk = [36])
+    fun android16HasNoSuchPermission() {
+        assertEquals(null, SystemSetting.localNetworkAllowed(context))
+    }
 }

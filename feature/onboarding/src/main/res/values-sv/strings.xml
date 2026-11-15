@@ -39,6 +39,12 @@
     <string name="onboarding_hint_blocked">Något framför Tandoor, till exempel en brandvägg, CrowdSec eller en inloggningsportal (Authentik, Authelia), stoppade appen. Tandem måste nå /api/, /api-token-auth/ och /media/ direkt, utan inloggning i webbläsaren.</string>
     <string name="onboarding_hint_not_tandoor">Använd samma adress som du öppnar Tandoor med i webbläsaren. Kör Tandoor under en sökväg tar du med den, till exempel https://exempel.se/tandoor.</string>
     <string name="onboarding_hint_timeout">Går servern bara att nå hemifrån? Anslut till ditt wifi hemma eller till VPN och försök igen.</string>
+    <!-- Fas 5 (sdk37-banan): Android 17:s behörighet för det lokala nätverket ("Enheter i närheten"), frågad här i sammanhanget. -->
+    <string name="onboarding_local_network_title">Din server finns på ditt hemnätverk</string>
+    <string name="onboarding_local_network_body">Android frågar innan en app får prata med enheter på ditt lokala nätverk. Tandem använder det bara för att nå din Tandoor-server och letar inte efter något annat. Android kallar behörigheten Enheter i närheten.</string>
+    <string name="onboarding_local_network_allow">Tillåt</string>
+    <string name="onboarding_hint_local_network">Öppna Tandems sida i Androids inställningar, välj Behörigheter → Enheter i närheten → Tillåt och tryck sedan på Anslut igen. Du hittar den också senare i Mer → Behörigheter.</string>
+    <string name="onboarding_open_app_settings">Öppna inställningar</string>
     <string name="onboarding_no_tandoor_title">Har du ingen Tandoor-server?</string>
     <string name="onboarding_no_tandoor_body">Tandoor Recipes är fri programvara som du kör själv. Prova Tandem med exempeldata först, eller läs hur du kommer igång.</string>
     <string name="onboarding_get_tandoor">Så kommer du igång med Tandoor</string>

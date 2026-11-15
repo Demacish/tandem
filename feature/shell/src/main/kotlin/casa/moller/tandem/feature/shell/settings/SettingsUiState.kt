@@ -120,6 +120,11 @@ data class PermissionsUiState(
     val calendarAllowed: Boolean? = null,
     val location: LocationAccess? = null,
     val storeReminderUnavailable: Boolean = false,
+    /**
+     * Fas 5 (sdk37 lane): "Nearby devices", which Android 17 asks before Tandem may reach a server
+     * on the local network; null (no row) on Android 16 and older (docs/BYGGE.md "Target SDK 37").
+     */
+    val localNetworkAllowed: Boolean? = null,
 ) {
     /** Exact alarms are granted by the build (sideload) and cannot be switched off. */
     val exactAlarmsFixed: Boolean
@@ -214,6 +219,8 @@ sealed interface SettingsAction {
         val microphoneAllowed: Boolean? = null,
         val calendarAllowed: Boolean? = null,
         val location: LocationAccess? = null,
+        // Fas 5 (sdk37 lane): Android 17's local network; null where it does not exist.
+        val localNetworkAllowed: Boolean? = null,
     ) : SettingsAction
 }
 
