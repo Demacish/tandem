@@ -1,6 +1,10 @@
 package casa.moller.tandem.feature.recipes.inbox
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
@@ -311,7 +315,12 @@ class InboxScreenTest {
         scrollTo: String? = null,
         content: @Composable () -> Unit,
     ) {
-        composeRule.setContent { TestFrame(darkTheme = darkTheme, fontScale = fontScale) { content() } }
+        composeRule.setContent {
+            TestFrame(darkTheme = darkTheme, fontScale = fontScale) {
+                // The preview is drawn on the sheet's surface in the app.
+                Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxSize()) { content() }
+            }
+        }
         if (scrollTo != null) composeRule.onNodeWithTag(INBOX_SETTINGS_CONTENT_TAG).performScrollToNode(hasTestTag(scrollTo))
         composeRule.waitForIdle()
         composeRule.assertAccessible()

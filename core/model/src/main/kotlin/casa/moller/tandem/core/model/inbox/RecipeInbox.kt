@@ -117,10 +117,7 @@ data class InboxSettings(
 }
 
 /** What the inbox screens show. */
-data class InboxState(
-    val availability: InboxAvailability = InboxAvailability.LOADING,
-    val settings: InboxSettings = InboxSettings(),
-) {
+data class InboxState(val availability: InboxAvailability = InboxAvailability.LOADING, val settings: InboxSettings = InboxSettings()) {
     /** The inbox has posts to show: set up for an account, or the demo's built-in one. */
     val inUse: Boolean
         get() = availability == InboxAvailability.DEMO || (availability == InboxAvailability.AVAILABLE && settings.enabled)

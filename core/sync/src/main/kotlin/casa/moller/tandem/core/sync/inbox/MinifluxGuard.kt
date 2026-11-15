@@ -62,16 +62,21 @@ internal class MinifluxGuard @Inject constructor(private val clock: SyncClock) {
             val current = if (old.accountId == accountId) old else State(accountId = accountId)
             when {
                 error == null -> current.copy(blockedPause = 0, refusedKey = current.refusedKey.takeIf { it != keyFingerprint })
+
                 error is TandemError.Unauthorized -> current.copy(refusedKey = keyFingerprint)
+
                 error is TandemError.Throttled -> {
                     val pause = (error.retryAfter?.inWholeMilliseconds ?: THROTTLED_DEFAULT).coerceIn(THROTTLED_MIN, THROTTLED_MAX)
                     current.copy(throttledUntil = maxOf(current.throttledUntil, now + pause))
                 }
+
                 error == TandemError.Blocked -> {
                     val pause = if (current.blockedPause <= 0) BLOCKED_FIRST else (current.blockedPause * 2).coerceAtMost(BLOCKED_MAX)
                     current.copy(blockedUntil = now + pause, blockedPause = pause)
                 }
+
                 error.isConnectivityProblem -> current
+
                 else -> {
                     val errors = (current.errorTimes + now).filter { now - it < BREAKER_WINDOW }
                     if (errors.size > BREAKER_MAX_ERRORS) {

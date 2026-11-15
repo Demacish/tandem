@@ -54,25 +54,23 @@ import okio.Buffer
 class MinifluxClient(private val client: OkHttpClient) {
 
     /** `GET /v1/me`: does the key work. */
-    suspend fun me(server: HttpUrl, apiKey: String): Outcome<MinifluxUserDto> =
-        get(server, apiKey, "v1/me", MinifluxUserDto.serializer())
+    suspend fun me(server: HttpUrl, apiKey: String): Outcome<MinifluxUserDto> = get(server, apiKey, "v1/me", MinifluxUserDto.serializer())
 
     /** `GET /v1/categories?counts=true`. */
     suspend fun categories(server: HttpUrl, apiKey: String): Outcome<List<MinifluxCategoryDto>> =
         get(server, apiKey, "v1/categories", ListSerializer(MinifluxCategoryDto.serializer()), "counts" to "true")
 
     /** `GET /v1/categories/{id}/entries?status=unread&order=published_at&direction=desc&limit=[limit]`. */
-    suspend fun unreadEntries(server: HttpUrl, apiKey: String, categoryId: Long, limit: Int = PAGE_SIZE): Outcome<MinifluxEntriesDto> =
-        get(
-            server,
-            apiKey,
-            "v1/categories/$categoryId/entries",
-            MinifluxEntriesDto.serializer(),
-            "status" to "unread",
-            "order" to "published_at",
-            "direction" to "desc",
-            "limit" to limit.coerceIn(1, PAGE_SIZE).toString(),
-        )
+    suspend fun unreadEntries(server: HttpUrl, apiKey: String, categoryId: Long, limit: Int = PAGE_SIZE): Outcome<MinifluxEntriesDto> = get(
+        server,
+        apiKey,
+        "v1/categories/$categoryId/entries",
+        MinifluxEntriesDto.serializer(),
+        "status" to "unread",
+        "order" to "published_at",
+        "direction" to "desc",
+        "limit" to limit.coerceIn(1, PAGE_SIZE).toString(),
+    )
 
     /** `PUT /v1/entries` `{"entry_ids": [...], "status": "read"}` (204). */
     suspend fun markRead(server: HttpUrl, apiKey: String, entryIds: List<Long>): Outcome<Unit> {
@@ -97,7 +95,10 @@ class MinifluxClient(private val client: OkHttpClient) {
     private fun request(server: HttpUrl, apiKey: String, path: String, vararg query: Pair<String, String>): Request.Builder? {
         val key = apiKey.trim()
         if (key.isEmpty() || !key.all { it in KEY_CHARS }) return null
-        val url = server.newBuilder().addPathSegments(path).apply { query.forEach { (name, value) -> addQueryParameter(name, value) } }.build()
+        val url = server.newBuilder()
+            .addPathSegments(path)
+            .apply { query.forEach { (name, value) -> addQueryParameter(name, value) } }
+            .build()
         return Request.Builder().url(url).header(HEADER_KEY, key).header("Accept", "application/json")
     }
 
@@ -158,7 +159,7 @@ class MinifluxClient(private val client: OkHttpClient) {
         val isJson = raw.contentType == "json"
         return when {
             raw.tooLarge -> TandemError.Decode(TOO_LARGE)
-            raw.code in 200..299 -> if (raw.contentType == "html") TandemError.NotTandoor(NotTandoorReason.HTML_RESPONSE, raw.code) else null
+            raw.code in 200..299 -> TandemError.NotTandoor(NotTandoorReason.HTML_RESPONSE, raw.code).takeIf { raw.contentType == "html" }
             raw.code in 300..399 -> TandemError.NotTandoor(NotTandoorReason.REDIRECT, raw.code)
             raw.code == 401 -> TandemError.Unauthorized(UnauthorizedSource.PROXY)
             raw.code == 403 -> if (hasErrorMessage) TandemError.Unauthorized(UnauthorizedSource.PROXY) else TandemError.Blocked

@@ -147,7 +147,8 @@ class MinifluxClientTest {
 
     @Test
     fun nothingPastTheSizeLimitIsRead() = runBlocking {
-        val huge = """{"total": 1, "entries": [{"id": 1, "content": """" + "x".repeat((MinifluxClient.MAX_BODY_BYTES + 10).toInt()) + """"}]}"""
+        val text = "x".repeat((MinifluxClient.MAX_BODY_BYTES + 10).toInt())
+        val huge = """{"total": 1, "entries": [{"id": 1, "content": "$text"}]}"""
         server.enqueue(jsonResponse(200, huge))
         assertEquals(Outcome.Failure(TandemError.Decode("miniflux-too-large")), client.unreadEntries(base, KEY, categoryId = 2))
     }
@@ -166,7 +167,10 @@ class MinifluxClientTest {
         )
         assertEquals(Outcome.Failure(TandemError.InvalidUrl(InvalidUrlReason.EMPTY)), MinifluxClient.normalize("  "))
         assertEquals(Outcome.Failure(TandemError.InvalidUrl(InvalidUrlReason.UNSUPPORTED_SCHEME)), MinifluxClient.normalize("ftp://x"))
-        assertEquals(Outcome.Failure(TandemError.InvalidUrl(InvalidUrlReason.MALFORMED)), MinifluxClient.normalize("https://user:pw@x.example"))
+        assertEquals(
+            Outcome.Failure(TandemError.InvalidUrl(InvalidUrlReason.MALFORMED)),
+            MinifluxClient.normalize("https://user:pw@x.example"),
+        )
     }
 
     private companion object {

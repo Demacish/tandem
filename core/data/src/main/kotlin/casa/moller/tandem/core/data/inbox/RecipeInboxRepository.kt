@@ -79,8 +79,7 @@ fun inboxFailure(problem: InboxProblem): Outcome.Failure = Outcome.Failure(Inbox
 object InboxFailure {
     private const val PREFIX = "tandem.inbox."
 
-    fun errorOf(problem: InboxProblem): TandemError =
-        TandemError.Unknown(PREFIX + problem.name)
+    fun errorOf(problem: InboxProblem): TandemError = TandemError.Unknown(PREFIX + problem.name)
 
     /** The [InboxProblem] [error] stands for, [InboxProblem.OTHER] for anything else. */
     fun problemOf(error: TandemError): InboxProblem {

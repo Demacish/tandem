@@ -124,7 +124,6 @@ class InboxViewModel @AssistedInject constructor(
         const val KEY_PREVIEW = "inbox_preview"
         const val STOP_TIMEOUT_MILLIS = 5_000L
 
-        fun InboxState.isDemoState(): Boolean =
-            availability == InboxAvailability.DEMO
+        fun InboxState.isDemoState(): Boolean = availability == InboxAvailability.DEMO
     }
 }

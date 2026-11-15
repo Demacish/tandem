@@ -31,6 +31,10 @@ data class InboxUiState(
     val isDemo: Boolean
         get() = availability == InboxAvailability.DEMO
 
+    /** "Uppdaterad …" under the posts: the last refresh worked and there is something to show. */
+    val updated: Instant?
+        get() = lastRefresh.takeIf { !isDemo && problem == null && entries.isNotEmpty() }
+
     /** Posts not imported yet (the count beside the title and on Recept's button). */
     val newCount: Int
         get() = entries.count { !it.imported }

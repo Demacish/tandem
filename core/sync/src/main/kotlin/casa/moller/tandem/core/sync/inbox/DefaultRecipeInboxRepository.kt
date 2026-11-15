@@ -81,8 +81,11 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
         .flatMapLatest { source ->
             when (source) {
                 ActiveSource.Loading -> flowOf(InboxState(InboxAvailability.LOADING))
+
                 ActiveSource.None -> flowOf(InboxState(InboxAvailability.NO_ACCOUNT))
+
                 ActiveSource.Demo -> flowOf(InboxState(InboxAvailability.DEMO))
+
                 is ActiveSource.Remote -> combine(store.observe(source.accountId), keys.accountsWithKey) { record, withKey ->
                     InboxState(InboxAvailability.AVAILABLE, settingsOf(record, connected = source.accountId in withKey))
                 }
@@ -245,6 +248,7 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
         for (category in categories) {
             when (val answer = call(accountId, key) { client.unreadEntries(server, key, category.id) }) {
                 is Outcome.Success -> answer.value.entries.mapNotNullTo(rows) { it.toRow(accountId, category.id, now) }
+
                 // A category deleted in Miniflux (FACTS: 400 "invalid category ID"): skipped, the others are read.
                 is Outcome.Failure -> if (answer.error !is TandemError.BadRequest && answer.error != TandemError.NotFound) {
                     return failureOf(answer.error)
@@ -265,6 +269,7 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
                 dao.readSent(accountId, pending)
                 null
             }
+
             is Outcome.Failure -> sent.error
         }
     }
@@ -272,10 +277,12 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
     override suspend fun dismiss(id: Long) {
         when (val source = sources.current()) {
             ActiveSource.Demo -> demo.dismiss(id)
+
             is ActiveSource.Remote -> {
                 dao.dismiss(source.accountId, id, clock.nowMillis())
                 sendReadsSoon(source.accountId)
             }
+
             else -> Unit
         }
     }
@@ -283,11 +290,13 @@ internal class DefaultRecipeInboxRepository @Inject constructor(
     override suspend fun markImported(id: Long) {
         when (val source = sources.current()) {
             ActiveSource.Demo -> demo.markImported(id, Instant.fromEpochMilliseconds(clock.nowMillis()))
+
             is ActiveSource.Remote -> {
                 val markRead = store.observe(source.accountId).first().markReadOnImport
                 dao.markImported(source.accountId, id, clock.nowMillis(), markRead)
                 if (markRead) sendReadsSoon(source.accountId)
             }
+
             else -> Unit
         }
     }

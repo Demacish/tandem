@@ -75,10 +75,8 @@ object SampleInbox {
  * [RecipeInboxRepository] in memory: [connect] takes [acceptedKey], [refreshFailure] makes refreshes
  * fail, and every call is listed in [calls].
  */
-class FakeRecipeInboxRepository(
-    initial: InboxState = SampleInbox.inUse,
-    posts: List<InboxEntry> = SampleInbox.posts,
-) : RecipeInboxRepository {
+class FakeRecipeInboxRepository(initial: InboxState = SampleInbox.inUse, posts: List<InboxEntry> = SampleInbox.posts) :
+    RecipeInboxRepository {
     val mutableState = MutableStateFlow(initial)
     val posts = MutableStateFlow(posts)
     val calls = mutableListOf<String>()

@@ -109,10 +109,8 @@ sealed interface InboxSettingsEffect {
  * in. The key never goes into the saved state, a log or the screen after it is stored.
  */
 @HiltViewModel
-class InboxSettingsViewModel @Inject constructor(
-    private val handle: SavedStateHandle,
-    private val inbox: RecipeInboxRepository,
-) : ViewModel() {
+class InboxSettingsViewModel @Inject constructor(private val handle: SavedStateHandle, private val inbox: RecipeInboxRepository) :
+    ViewModel() {
     private data class Local(
         val apiKey: String = "",
         val busy: InboxSettingsBusy? = null,

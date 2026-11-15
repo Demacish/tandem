@@ -27,11 +27,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -141,7 +142,10 @@ fun InboxScreen(
     if (preview != null) {
         ModalBottomSheet(
             onDismissRequest = { onAction(InboxAction.ClosePreview) },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = rememberBottomSheetState(
+                initialValue = SheetValue.Hidden,
+                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+            ),
         ) {
             InboxPreviewContent(entry = preview, readOnly = state.readOnly, onAction = onAction)
         }
@@ -196,10 +200,10 @@ private fun InboxList(state: InboxUiState, onAction: (InboxAction) -> Unit) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
-        if (!state.isDemo && state.problem == null && state.lastRefresh != null && state.entries.isNotEmpty()) {
+        state.updated?.let { updated ->
             item(key = "updated") {
                 Text(
-                    text = stringResource(R.string.inbox_updated, dateTime(state.lastRefresh)),
+                    text = stringResource(R.string.inbox_updated, dateTime(updated)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.readingWidth().padding(vertical = spacing.md),

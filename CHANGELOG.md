@@ -6,6 +6,25 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 
 ## [Unreleased]
 
+**Inkorg för recept** (Fas 5, bana rss)
+
+- **Inkorg för recept från din egen Miniflux:** under Mer → Inställningar → Inkorg för recept anger
+  du adressen till din Miniflux-server och en API-nyckel (skapas i Miniflux under Inställningar →
+  API-nycklar) och väljer en eller flera kategorier. Olästa inlägg i kategorierna visas i inkorgen
+  under Recept (knappen i verktygsraden, med antalet nya) och, om du vill, som "Nytt i inkorgen" på
+  Idag (Anpassa Idag). Tryck på ett inlägg för att se det och på **Importera** för att öppna
+  importens granskning direkt med receptet från inläggets sida: två tryck. När du går vidare från
+  granskningen till redigeraren står inlägget som "Importerad" och markeras som läst i Miniflux
+  (går att stänga av). "Markera som läst" tar bort ett inlägg utan import.
+- Inläggen sparas i telefonen och går att läsa utan nät; inkorgen uppdateras när du öppnar den och
+  några gånger om dagen när telefonen har nät, bara medan inkorgen är påslagen. Av som standard.
+- Nyckeln sparas krypterad i telefonen, följer aldrig med i säkerhetskopior och skickas bara till
+  din Miniflux-server. Utloggning, ett borttaget konto och "Koppla från" tar bort nyckeln, valen och
+  inläggen från telefonen.
+- Miniflux får ett eget skydd: en nyckel som nekas stoppar inkorgen tills du anger en ny, och fel hos
+  Miniflux pausar aldrig synken med Tandoor (eller tvärtom).
+- Gäster kan läsa inkorgen men inte importera. Demoläget har en liten inbyggd inkorg.
+
 ## [0.8.0] – 2026-11-14
 
 Fas 5, andra delen: På språng. Inköpslistan och timrarna följer med på klockan, matsedeln syns i

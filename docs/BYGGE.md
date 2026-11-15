@@ -142,7 +142,8 @@ Gemensamt för Android-moduler:
   (0.2.0) `step.image_url` och markerar detaljer med stegbild för ny hämtning (`MIGRATION_2_3`,
   testad 1 → 3; synksidan i `SyncEngineTest`), version 4 (0.3.0) hela Fas 2 (`MIGRATION_3_4`,
   se "Fas 2 – kontrakt"; testad 3 → 4 och 1 → 4), version 5 (0.4.0) hela Fas S (`MIGRATION_4_5`,
-  se "Fas S – kontrakt"; testad 4 → 5 och 1 → 5).
+  se "Fas S – kontrakt"; testad 4 → 5 och 1 → 5), version 7 (0.9.0) inkorgens `inbox_entry`
+  (`MIGRATION_6_7`, se "Inkorgen för recept"; testad 6 → 7 och 1 → 7).
 - **Migreringstester** (Robolectric) använder room3-testings `MigrationTestHelper`. Den läser
   schemafilerna som assets; `tandem.android.room` kopierar `schemas/` till enhetstesternas assets
   (uppgiften `copyRoomSchemasToUnitTestAssets<Variant>`, samma koppling som Room-pluginen gör för
@@ -1956,6 +1957,76 @@ appen lever** (appen i bakgrunden, plats av, plats på, gå till butiken: påmin
 öppnats; fix-08). Behörighetssidan under Mer listar inte
 platsen (som kalendern).
 <!-- /Fas 5 butik -->
+
+<!-- Fas 5 rss -->
+## Inkorgen för recept (`:core:network`, `:core:database`, `:core:datastore`, `:core:domain`, `:core:sync`, `:feature:recipes`, `:feature:home`, `:feature:shell`, Fas 5, rss)
+
+Plan §7 #35, §8.4 ("RSS-inkorg"), §10 Fas 5 ("ett inlägg i en vald kategori kan importeras med två
+tryck via samma granskningsvy som #18"), §4.5 (inget serverspecifikt: en **allmän Miniflux-klient**,
+adress och nyckel anges av användaren), §5.4 (eget skydd), §5.5 (nyckeln krypterad). Ingen ny notiskanal
+(ingen notis om nya inlägg). "Klart när" står i "Fas 5 – läge". Fakta i
+`api-schema/fixtures/miniflux/2.3.4/FACTS.md` (`MinifluxContractTest`, eget arbetsflöde
+`miniflux-contract.yml`). Vanliga RSS/Atom-flöden direkt i appen byggs **inte** nu (kräver en egen
+XML-läsare med storleks- och tidsgränser; står i "Kvar").
+
+**Två tryck.** Tryck 1: ett inlägg i inkorgen (eller på Idag) öppnar förhandsvisningen. Tryck 2:
+**Importera** öppnar `RecipeImportKey(sharedText = inläggets url, inboxEntryId, autoImport = true)`;
+importens ViewModel hämtar länken direkt (en gång, inte igen efter rotation eller processdöd, aldrig
+över ett sparat AI-svar), så nästa vy är granskningen (#18). "Öppna i redigeraren" anropar
+`RecipeInboxRepository.markImported(id)` (`NonCancellable`, skärmen stängs): inlägget står som
+"Importerad" och markeras läst i Miniflux om valet är på. Bevisat i `InboxViewModelTest.aPostIsImportedWithTwoTapsThroughTheImportReview`
+och `RecipeImportViewModelTest.anInboxPostIsFetchedAtOnceAndMarkedImportedWhenAccepted`.
+
+| Del | Fil | Innehåll |
+|---|---|---|
+| Typerna | `core/model/inbox/RecipeInbox.kt` | `InboxEntry` (id, titel, url, flöde, kategori, datum, bild, utdrag ≤ 400 tecken, `importedAt`), `InboxCategory` (olästa), `InboxSettings`, `InboxState` (`inUse`), `InboxAvailability`, `InboxProblem` |
+| Gränssnittet | `core/data/inbox/RecipeInboxRepository.kt` | `state`, `entries`, `entry(id)`, `connect(url, nyckel)` (prövar `/v1/me` och kategorierna innan något sparas), `serverCategories()`, `chooseCategories`, `setMarkReadOnImport`, `setShowOnToday`, `disconnect`, `refresh(background)`, `dismiss`, `markImported`; fel som `InboxFailure`/`inboxFailure(InboxProblem)` |
+| Klienten | `core/network/miniflux/MinifluxClient.kt`, `MinifluxDtos.kt`, `di/MinifluxModule.kt` | **egen OkHttp-klient** (som Open Food Facts: ingen Tandoor-interceptor, token eller cookie), en begäran åt gången per värd, 2/s, anslutning 10 s, läsning 20 s, hela anropet 30 s, inga omdirigeringar, bara https, högst 4 MB svar (läses aldrig längre). Nyckeln i `X-Auth-Token`, bara till adressen användaren angav. `GET v1/me`, `GET v1/categories?counts=true`, `GET v1/categories/{id}/entries?status=unread&order=published_at&direction=desc&limit=50`, `PUT v1/entries` `{"entry_ids","status":"read"}`. `normalize`: utan schema blir det https, `http://` nekas, en inklistrad `/v1/…` kapas, en undermapp står kvar |
+| Texten | `core/domain/inbox/InboxText.kt` | utdrag i ren text ur inläggets HTML (skript, stilar och kommentarer bort, entiteter avkodade, kapat vid ett ord) och första bilden (en https-bild-enclosure, annars första `<img src>` med https); ingen HTML visas någonsin, ingen WebView |
+| Tabellen | `core/database` `InboxEntryEntity`, `InboxDao`, schema 7 (`MIGRATION_6_7`) | `inbox_entry` per konto (nyckel konto + Miniflux-id): titel, url, flöde, datum, bild, utdrag, `unread`, `imported_at`, `dismissed_at`, `read_pending`. `applyRefresh` ersätter de olästa och behåller lokala märken; ett importerat stannar 30 dagar, ett med "läst" kvar att skicka stannar tills det skickats. Med i `AccountDao.deleteAccountData` |
+| Inställningarna | `core/datastore` `RecipeInboxStore` (`recipe_inbox.preferences_pb`) och `RecipeInboxKeyStore` (`secure_inbox_keys.pb`) | adress, valda kategorier, brytarna, senaste uppdatering och problem per konto; **nyckeln** krypterad med samma Keystore-AEAD som kontona, bara via `useKey`, aldrig i ett tillstånd, en logg eller diagnostik, aldrig i `SavedStateHandle` (sidan håller den i minnet tills servern tagit den). Båda utanför säkerhetskopian; `retainOnly` glömmer konton som lämnat |
+| Skyddet | `core/sync/inbox/MinifluxGuard.kt` | **eget**, delar inget med `SyncGuard`: nekad nyckel (401, 403 med Miniflux-JSON) stoppar tills en annan nyckel anges, 429 väntar `Retry-After` (30 s–1 h, 5 min utan), en brandväggs 403 pausar 5 min och dubblar till 2 h, fler än 3 fel på 10 min pausar **bakgrunden** i 30 min; anslutningsfel räknas aldrig |
+| Repositoryt | `core/sync/inbox/DefaultRecipeInboxRepository.kt` | Room + inställningarna + nyckeln; varje Miniflux-anrop genom skyddet (aldrig `RemoteCaller`); en uppdatering i taget (mutex): först de väntande "läst", sedan de valda kategoriernas olästa (en borttagen kategori, 400, hoppas över; ett annat fel lämnar cachen orörd och sparas som problem). "Läst" sparas först och skickas sedan i appens scope (offline vid nästa uppdatering). Byte av server tömmer cachen |
+| Demo | `core/sync/inbox/DemoInbox.kt` | tre inlägg på appens språk (example.com), "läst" och import bara i minnet, inget nät |
+| Följet och arbetet | `core/sync/inbox/RecipeInboxSchedule.kt`, `work/RecipeInboxWork.kt` | `SyncStarter` startar följet (en rad): `RecipeInboxWorker` periodiskt **var 4:e timme** med nätkrav och backoff 30 min (`tandem.recipe_inbox`, KEEP) bara medan ett riktigt konto har inkorgen på; av, utloggad och demo avbryter. `AccountRemovalHook` (ingen servertoken behövs): nyckel, val och inlägg bort när kontot lämnar telefonen |
+
+**Skärmarna (`feature/recipes/inbox/`).** `InboxScreen(state, onAction, onBack, onOpenSettings)` +
+`InboxViewModel` (assisted, `RecipeInboxKey(entryId)`) + `InboxRoute`: inläggen i en kolumn med läsbredd
+(telefon och surfplatta), varje rad **en** TalkBack-nod (`MediaRow`: bild, titel, "flöde · datum",
+"Importerad"), dra för att uppdatera, uppdateras när skärmen öppnas; ett misslyckat försök visar
+varför ovanför inläggen som står kvar; gäst (läsa, inte importera), demo, tomt och "inte inställd" (med
+"Ställ in"). Förhandsvisningen är ett bottenark (`InboxPreviewContent`: bild, titel, källa, utdrag;
+"Importera" fast under det som rullar, "Markera som läst", "Öppna i webbläsaren"). Inställningarna
+(`InboxSettingsScreen` + `InboxSettingsViewModel` + `InboxSettingsRoute`, `RecipeInboxSettingsKey`):
+adress och API-nyckel (dold, visa/dölj) med "Anslut", kategorierna som kryssrutor (en nod per kategori,
+olästa), "Spara kategorier", brytarna "Markera som läst efter import" (på) och "Visa på Idag" (på),
+"Koppla från" (frågar först), demo och utan konto en förklaring. Strängarna i `strings_inbox.xml`.
+
+**Vägarna in.** Recept: inkorgsknappen i verktygsraden med antalet nya (`InboxEntryViewModel`, bara när
+inkorgen är inställd, också för gäster). Idag: "Nytt i inkorgen" (`TodayInboxViewModel`, högst tre nya,
+ett tryck öppnar förhandsvisningen) och raden i "Anpassa Idag" (bara när inkorgen är inställd; samma
+val som "Visa på Idag"). Mer → Inställningar: raden efter "Påminnelse nära butiken"
+(`MoreScreen(recipeInboxInMore)`, som bara `TandemShell` slår på). Skalet: `ShellFeatures.RecipeInbox`
+och `RecipeInboxSettings`, `Today(onOpenInbox)`, `Recipes(onOpenInbox)`; inkorgen ligger på Recept-fliken,
+importen läggs ovanpå (tillbaka = inkorgen), inställningarna är en Mer-sida (`isMorePage`).
+
+**Tester:** `MinifluxClientTest` (mot inspelningarna från Miniflux 2.3.4: nyckeln bara i sin header,
+frågorna, typade fel, storleksgränsen, adressen), `InboxTextTest`, `InboxDaoTest`, `TandemMigrationTest`
+(6 → 7, 1 → 7), `AccountIsolationTest`, `RecipeInboxStoresTest`, `DatastoreFilesTest`, `MinifluxGuardTest`,
+`RecipeInboxRepositoryTest` (mot `FakeMiniflux` i processen: nyckeln sparas bara när servern tar den,
+offline-cachen, "läst" nu eller vid nästa uppdatering, import med och utan "läst", nekad nyckel stoppar
+inkorgen men aldrig Tandoors skydd och tvärtom, brytaren bara för bakgrunden, borttagen kategori,
+koppla från och kontots borttagning, demo utan nät, arbetet bara medan inkorgen är på),
+`InboxViewModelTest`, `InboxSettingsViewModelTest`, `RecipeImportViewModelTest`, `InboxScreenTest`
+(Compose, ATF och referensbilder `inbox/*` på telefon stående och liggande, surfplatta i båda
+orienteringarna, mörkt, svenska, teckenstorlek 2), `TodayInboxViewModelTest`, `TodayInboxTest`
+(referensbilder `home/*today_inbox*`, `home/phone_today_customize_inbox_light_sv`).
+
+**Kvar:** vanliga RSS/Atom-flöden utan Miniflux; en notis om nya inlägg (behövs inte för kriteriet);
+importen i demoläget säger att den behöver en server (som all import); inlägg markeras "Importerad" när
+granskningen godkänns, inte när receptet sparas i redigeraren. **BEHÖVER ENHET** (ägaren): mot den egna
+Miniflux-servern med riktiga receptbloggar.
+<!-- /Fas 5 rss -->
 
 <!-- Fas 5 data -->
 ## Enhetstestet 2026-11-14: inköpslistan och Kan laga nu (`:core:sync`, `:core:domain`, `:feature:shopping`, `:feature:home`, data)

@@ -38,12 +38,7 @@ const val TODAY_INBOX_TAG = "home:inbox"
  * when nothing is new.
  */
 @Composable
-internal fun TodayInboxCard(
-    inbox: TodayInboxState,
-    horizontal: Dp,
-    onOpenInbox: (entryId: Long?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+internal fun TodayInboxCard(inbox: TodayInboxState, horizontal: Dp, onOpenInbox: (entryId: Long?) -> Unit, modifier: Modifier = Modifier) {
     if (!inbox.visible) return
     val spacing = TandemTheme.spacing
     Column(modifier = modifier.testTag(TODAY_INBOX_TAG), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
@@ -87,7 +82,11 @@ private fun InboxPostRow(entry: InboxEntry, onOpen: () -> Unit) {
                     maxLines = scaledMaxLines(2),
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(text = entry.feedTitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = entry.feedTitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
         trailing = {},

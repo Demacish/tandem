@@ -19,8 +19,8 @@ import casa.moller.tandem.core.sync.account.identity
 import casa.moller.tandem.core.sync.calendar.MealCalendarSchedule
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.engine.SyncKeys
-import casa.moller.tandem.core.sync.inbox.RecipeInboxSchedule
 import casa.moller.tandem.core.sync.guard.SyncGuard
+import casa.moller.tandem.core.sync.inbox.RecipeInboxSchedule
 import casa.moller.tandem.core.sync.mealplan.MealReminderSchedule
 import casa.moller.tandem.core.sync.pantry.PantryExpiryReminders
 import casa.moller.tandem.core.sync.platform.AccountNotificationCleanup
