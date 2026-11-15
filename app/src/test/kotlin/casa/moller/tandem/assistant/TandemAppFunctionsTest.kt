@@ -88,9 +88,6 @@ class TandemAppFunctionsTest {
     private fun ExecuteAppFunctionResponse.value(): AppFunctionData =
         (this as? ExecuteAppFunctionResponse.Success)?.returnValue ?: throw AssertionError("not a success: $this")
 
-    private fun ExecuteAppFunctionResponse.error(): AppFunctionException =
-        (this as? ExecuteAppFunctionResponse.Error)?.error ?: throw AssertionError("not an error: $this")
-
     // ------------------------------------------------------------------ the generated metadata
 
     @Test
@@ -236,9 +233,21 @@ class TandemAppFunctionsTest {
 
     @Test
     fun everyRefusalIsTheMatchingAppFunctionError() = test {
+        // Called on the service itself: the library's test rule (1.0.0-beta01) never answers an
+        // execution whose function throws (it waits for ever, seen in CI), although the generated
+        // dispatcher turns the exception into ExecuteAppFunctionResponse.Error on a real phone.
+        val service = Robolectric.buildService(TandemAppFunctionService::class.java).create().get()
+
+        suspend fun failure(call: suspend () -> Any): AppFunctionException = try {
+            call()
+            throw AssertionError("no error")
+        } catch (e: AppFunctionException) {
+            e
+        }
+
         suspend fun addFails(refusal: AssistantRefusal, detail: String? = null): AppFunctionException {
             fake.addition = AssistantResult.Refused(refusal, detail)
-            return execute("addToShoppingList") { setString("text", "mjölk") }.error()
+            return failure { service.addToShoppingList("mjölk") }
         }
         assertTrue(addFails(AssistantRefusal.TURNED_OFF) is AppFunctionDisabledException)
         assertTrue(addFails(AssistantRefusal.LOCKED) is AppFunctionPermissionRequiredException)
@@ -257,7 +266,11 @@ class TandemAppFunctionsTest {
         }
 
         fake.recipe = AssistantResult.Refused(AssistantRefusal.RECIPE_NOT_FOUND)
-        assertTrue(execute("openRecipe") { setLong("recipeId", 9) }.error() is AppFunctionElementNotFoundException)
+        assertTrue(failure { service.openRecipe(9) } is AppFunctionElementNotFoundException)
+        fake.items = AssistantResult.Refused(AssistantRefusal.LOCKED)
+        assertTrue(failure { service.getShoppingList() } is AppFunctionPermissionRequiredException)
+        fake.recipes = AssistantResult.Refused(AssistantRefusal.EMPTY_QUERY)
+        assertTrue(failure { service.searchRecipes(" ") } is AppFunctionInvalidArgumentException)
     }
 
     private companion object {
