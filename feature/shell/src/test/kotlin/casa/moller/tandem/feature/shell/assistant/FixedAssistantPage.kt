@@ -7,7 +7,8 @@ import casa.moller.tandem.feature.shell.ui.GroupDivider
 
 internal val ASSISTANT_OFF = AssistantSettingsUiState(loaded = true)
 internal val ASSISTANT_ON = ASSISTANT_OFF.copy(enabled = true)
-internal val ASSISTANT_ON_LOCKED_ALLOWED = ASSISTANT_ON.copy(allowWhenLocked = true)
+internal val ASSISTANT_LOCKED = ASSISTANT_ON.copy(lockEnabled = true)
+internal val ASSISTANT_LOCKED_ALLOWED = ASSISTANT_LOCKED.copy(allowWhenLocked = true)
 internal val ASSISTANT_UNSUPPORTED = ASSISTANT_OFF.copy(supported = false)
 internal val ASSISTANT_GUEST = ASSISTANT_ON.copy(guest = true)
 internal val ASSISTANT_DEMO = ASSISTANT_ON.copy(demo = true)

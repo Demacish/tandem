@@ -28,6 +28,7 @@ import casa.moller.tandem.core.model.assistant.AssistantResult
 import casa.moller.tandem.core.model.assistant.AssistantSettings
 import casa.moller.tandem.core.model.assistant.AssistantShoppingItem
 import casa.moller.tandem.core.testing.data.FakeAssistantSettingsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -89,24 +90,28 @@ class TandemAppFunctionsTest {
     @Test
     fun theGeneratedMetadataNamesEveryFunctionAndParameter() = runBlocking {
         val byName = functions().associateBy { it.id.substringAfter('#') }
-        assertEquals(setOf("addToShoppingList", "getShoppingList", "getMealPlan", "searchRecipes", "openRecipe"), byName.keys)
-        assertTrue(functions().all { it.id.startsWith("$SERVICE#") })
+        val dump = byName.values.joinToString("\n") { f ->
+            "${f.id}: ${f.description} | " + f.parameters.joinToString { "${it.name} required=${it.isRequired} (${it.description})" }
+        }
+        assertEquals(dump, setOf("addToShoppingList", "getShoppingList", "getMealPlan", "searchRecipes", "openRecipe"), byName.keys)
+        assertTrue(dump, functions().all { it.id.startsWith("$SERVICE#") })
 
         fun parameters(name: String) = byName.getValue(name).parameters.map { it.name to it.isRequired }
-        assertEquals(listOf("text" to true, "amount" to false, "unit" to false, "listName" to false), parameters("addToShoppingList"))
-        assertEquals(listOf("listName" to false), parameters("getShoppingList"))
-        assertEquals(listOf("date" to false), parameters("getMealPlan"))
-        assertEquals(listOf("query" to true, "maxResults" to false), parameters("searchRecipes"))
-        assertEquals(listOf("recipeId" to true, "cookMode" to false), parameters("openRecipe"))
+        assertEquals(dump, listOf("text" to true, "amount" to false, "unit" to false, "listName" to false), parameters("addToShoppingList"))
+        assertEquals(dump, listOf("listName" to false), parameters("getShoppingList"))
+        assertEquals(dump, listOf("date" to false), parameters("getMealPlan"))
+        assertEquals(dump, listOf("query" to true, "maxResults" to false), parameters("searchRecipes"))
+        assertEquals(dump, listOf("recipeId" to true, "cookMode" to false), parameters("openRecipe"))
 
         // The KDoc is what the assistant reads: every function and parameter is described.
         byName.values.forEach { metadata ->
-            assertTrue("${metadata.id} has a description", metadata.description.isNotBlank())
-            metadata.parameters.forEach { assertTrue("${metadata.id}.${it.name} has a description", it.description.isNotBlank()) }
+            assertTrue("${metadata.id} has a description: $dump", metadata.description.isNotBlank())
+            metadata.parameters.forEach { assertTrue("${metadata.id}.${it.name} has a description: $dump", it.description.isNotBlank()) }
         }
-        assertTrue(byName.getValue("addToShoppingList").description.contains("shopping list"))
+        assertTrue(dump, byName.getValue("addToShoppingList").description.contains("shopping list"))
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun everyFunctionIsOffInTheSystemUntilTheUserTurnsTheAssistantOn() = runBlocking {
         val names = AssistantFunctionStates.functionIds().map { AppFunctionName(app.packageName, it) }

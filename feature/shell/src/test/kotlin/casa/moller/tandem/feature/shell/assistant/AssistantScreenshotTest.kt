@@ -32,7 +32,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Fas 5 (funktioner lane, plan §8.7): Mer → Assistenten on a tall phone (off, on, allowed while
- * locked, Android 15 and older, a guest, demo mode; light, dark, Swedish, font scale 2), the phone
+ * locked or not, Android 15 and older, a guest, demo mode; light, dark, Swedish, font scale 2), the phone
  * in landscape, Mer with the row, and the tablet's list-detail layout in both orientations. ATF on
  * each shot.
  */
@@ -47,7 +47,14 @@ class AssistantScreenshotTest {
     fun off() = page("phone_off_light", ASSISTANT_OFF)
 
     @Test
-    fun on() = page("phone_on_light", ASSISTANT_ON_LOCKED_ALLOWED)
+    fun on() = page("phone_on_light", ASSISTANT_ON)
+
+    @Test
+    fun locked() = page("phone_locked_light", ASSISTANT_LOCKED)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun lockedAllowedSwedish() = page("phone_locked_allowed_light_sv", ASSISTANT_LOCKED_ALLOWED)
 
     @Test
     fun onDark() = page("phone_on_dark", ASSISTANT_ON, darkTheme = true)

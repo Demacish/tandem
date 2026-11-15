@@ -117,7 +117,15 @@ internal class PreferencesSettingsStore(private val dataStore: DataStore<Prefere
 }
 
 /** Fas 5 (planera lane): the settings with the reminders' keys read on top ([readReminders]). */
-private fun Preferences.toAppSettings(): AppSettings = readAppLock(readReminders(baseSettings()))
+private fun Preferences.toAppSettings(): AppSettings = readAssistant(readAppLock(readReminders(baseSettings())))
+
+/** Fas 5 (funktioner lane): Mer → Assistenten; a missing key reads as off. */
+private fun Preferences.readAssistant(settings: AppSettings): AppSettings = settings.copy(
+    assistant = AssistantSettings(
+        enabled = this[PreferencesSettingsStore.Keys.ASSISTANT_ENABLED] ?: settings.assistant.enabled,
+        allowWhenLocked = this[PreferencesSettingsStore.Keys.ASSISTANT_WHEN_LOCKED] ?: settings.assistant.allowWhenLocked,
+    ),
+)
 
 /** Fas 5 (las lane): Mer → Lås appen; a missing key or an unknown timeout reads as the default. */
 private fun Preferences.readAppLock(settings: AppSettings): AppSettings = settings.copy(
@@ -150,11 +158,6 @@ private fun Preferences.baseSettings(): AppSettings {
             ?: defaults.shoppingChangeNotifications,
         // --- Fas S (drycker lane) ---
         systembolagetLink = this[PreferencesSettingsStore.Keys.SYSTEMBOLAGET_LINK],
-        // --- Fas 5 (funktioner lane) ---
-        assistant = AssistantSettings(
-            enabled = this[PreferencesSettingsStore.Keys.ASSISTANT_ENABLED] ?: defaults.assistant.enabled,
-            allowWhenLocked = this[PreferencesSettingsStore.Keys.ASSISTANT_WHEN_LOCKED] ?: defaults.assistant.allowWhenLocked,
-        ),
         // --- Fas 4 (skafferinotis lane) ---
         pantryExpiryNotifications = this[PreferencesSettingsStore.Keys.PANTRY_EXPIRY_NOTIFICATIONS]
             ?: defaults.pantryExpiryNotifications,

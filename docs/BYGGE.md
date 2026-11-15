@@ -1317,7 +1317,7 @@ repositorier som skärmarna, offline först, och varje ändring går genom utkor
 `appfunctions-testing` i testerna), **1.0.0-beta01** (2026-10-21): den nyaste versionen som är minst två
 veckor gammal (rc01 kom 2026-11-04). Drar med `androidx.appsearch` 1.1.0 och Guava (R8 krymper).
 **Android 16 (API 36) och senare:** `AppFunctionService` finns bara där; på Android 14–15 binder systemet
-aldrig tjänsten och funktionerna finns inte (sidan Mer → Assistenten säger det och switcharna går inte
+aldrig tjänsten och funktionerna finns inte (sidan Mer → Assistenten säger det och switchen går inte
 att använda). Tjänsten är `@RequiresApi(36)` och manifestet `tools:targetApi="36"`; appens minSdk är kvar 34.
 
 **Av som standard (beslut, plan §5.5 och Fas 5-regeln "allt i bakgrunden är av").** Funktionerna
@@ -1368,13 +1368,13 @@ säkert läge.
 |---|---|---|
 | Typerna | `core/model/assistant/Assistant.kt` | `AssistantSettings(enabled, allowWhenLocked)` (båda av), `AssistantRefusal`, `AssistantResult` (`Done`/`Refused`), `AssistantShoppingItem`, `AssistantAddition`, `AssistantMeal(Day)`, `AssistantRecipe` |
 | Inställningen | `core/datastore` `PreferencesSettingsStore` (`assistant_enabled`, `assistant_when_locked`), `core/data` `AssistantSettingsRepository` + `DefaultAssistantSettingsRepository` | i `AppSettings.assistant`, eget block |
-| Låset | `core/data/assistant/AssistantLockCheck.kt` | `suspend fun contentAllowed()`; bunden i `core/sync/di/AssistantModule.kt`. **Låset (bana las) var inte på main när banan byggdes:** bindningen svarar `true` (inget lås finns) och ska av integrationen bytas mot `AppLock.unlockedWithinTimeout()` (en rad) |
+| Låset | `core/data/assistant/AssistantLockCheck.kt` | `suspend fun contentAllowed()`; bunden i `core/sync/di/AssistantModule.kt` till Lås appens `AppLock.unlockedWithinTimeout()` (frågas vid varje anrop: låset av, eller upplåst inom låsets tid). "Tillåt assistenten när appen är låst" står **bredvid låset** på Mer → Lås appen (`AppLockSettingsScreen`, bara när låset och assistenten är på; `AppLockSettingsViewModel` läser och skriver den genom `AssistantSettingsRepository`) |
 | Tolkningen | `core/data/shopping/ShoppingInput.kt` | flyttad från feature:shopping: `splitItems`, `parse` (tolken, annars lokalt per vara), `draft`; `ShoppingViewModel` och `ShoppingGrouping.splitItems` använder den |
 | Åtgärderna | `core/sync/assistant/DefaultAssistantActions.kt` | kontrollerna ovan, sedan `ShoppingRepository`/`IngredientParser`/`MealPlanRepository`/`RecipeRepository` |
 | Tjänsten | `app/.../assistant/BaseTandemAppFunctionService.kt`, `AssistantFunctionTypes.kt`, `AssistantErrors.kt`, `AssistantHost.kt` | funktionerna och deras `@AppFunctionSerializable`-typer; tjänsten hämtar `AssistantActions` från applikationen (`AssistantHost`, `TandemApplication` via en Hilt-`Provider`), så testerna kör den med en fake utan Hilt |
 | Systemets läge | `app/.../assistant/AssistantFunctionStates.kt` | startas i `TandemApplication.onCreate`: följer inställningen och sätter funktionerna `APP_FUNCTION_STATE_ENABLED` / `DEFAULT` (= av) i systemet, bara det som skiljer, bara på API 36+; ett fel loggas (funktionerna vägrar ändå när inställningen är av) |
 | Manifestet | `app/src/main/AndroidManifest.xml` | tjänsten (`exported`, `android.permission.BIND_APP_FUNCTION_SERVICE`, `android.app.appfunctions.AppFunctionService`, egenskaperna `android.app.appfunctions.schema` och `.v2` = `tandem_app_functions.xml`) och `android.app.appfunctions.app_metadata` |
-| Sidan | `feature/shell/assistant/` (`AssistantSettingsScreen` + `AssistantSettingsViewModel` + `AssistantPage`, `AssistantSettingsKey`, `strings_assistant.xml`) | Mer → Inställningar → **Assistenten** (raden sist i gruppen, "Av"/"På: …"): "Låt assistenten använda Tandem", under den "Tillåt assistenten när appen är låst" (går bara att slå på när den första är på), vad assistenten kan och aldrig kan göra, gäst ("bara läsning"), demoläge, och under Android 16 "Kräver Android 16" med switcharna avstängda |
+| Sidan | `feature/shell/assistant/` (`AssistantSettingsScreen` + `AssistantSettingsViewModel` + `AssistantPage`, `AssistantSettingsKey`, `strings_assistant.xml`) | Mer → Inställningar → **Assistenten** (raden sist i gruppen, "Av"/"På: …"): "Låt assistenten använda Tandem", med Lås appen på en ruta om assistenten får svar när appen är låst (och var det ändras), vad assistenten kan och aldrig kan göra, gäst ("bara läsning"), demoläge, och under Android 16 "Kräver Android 16" med switchen avstängd |
 
 ### Pröva på en telefon (Android 16+)
 
@@ -1398,7 +1398,8 @@ har nät. Med inställningen av svarar systemet att funktionen är avstängd.
 **Tester:** `DefaultAssistantActionsTest` (core:sync, Robolectric, riktiga repositorier i
 `SyncTestGraph` mot den tillståndsfulla Tandoor-faken i formerna från 2.6.13 och 2.7.1: "mjölk" genom
 utkorgen till servern, tolkningen som "Lägg till", mängd/enhet, av, låst och "Tillåt när låst",
-utloggad, återställning, gäst, säkert läge, bara obockade varor, demoläget med namngivna listor,
+utloggad, återställning, gäst, säkert läge, låset genom appens egen bindning (`AssistantModule`) mot
+`FakeAppLock`, bara obockade varor, demoläget med namngivna listor,
 matsedel och receptsökning utan nät), `TandemAppFunctionsTest` (:app, `AppFunctionTestRule` på
 Android 16: den **genererade** metadatan med namn, parametrar, obligatoriska och beskrivningar, schemat
 i `assets/`, av som standard och av/på i systemet med inställningen, varje funktion genom
@@ -1406,13 +1407,13 @@ i `assets/`, av som standard och av/på i systemet med inställningen, varje fun
 varje avslag som rätt undantag, tjänsten i det sammanslagna manifestet bara för systemet),
 `PreferencesSettingsStoreTest` (av tills vald, överlever omstart), `AssistantSettingsTest` (ViewModel
 och Compose), `AssistantScreenshotTest` (ATF och referensbilder `shell/assistant_*`: telefon stående
-och liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2, av/på/under
-Android 16/gäst/demo, Mer med raden), röktestet `Phase5FunktionerSmokeTest` (de fem funktionerna
+och liggande, surfplatta i båda orienteringarna, mörkt, svenska, teckenstorlek 2, av/på/låst/under
+Android 16/gäst/demo, Mer med raden), `AppLockSettingsTest` och `AppLockScreenshotTest` (switchen
+bredvid låset; nya referensbilder `shell/lock_phone_on_assistant_light*`, låssidans övriga bilder
+oförändrade), röktestet `Phase5FunktionerSmokeTest` (de fem funktionerna
 publicerade av den minifierade appen, av = inget läggs till, på i Mer → Assistenten = "mjölk" hos servern).
 
-**Kvar:** "Tillåt assistenten när appen är låst" står på Mer → Assistenten och låskontrollen svarar
-"olåst" tills banan las är på main: integrationen binder `AssistantLockCheck` till låset och kan flytta
-switchen bredvid låsinställningen. **BEHÖVER ENHET** (ägaren): adb-kommandona ovan på en telefon med
+**Kvar:** **BEHÖVER ENHET** (ägaren): adb-kommandona ovan på en telefon med
 Android 16+, och en assistent när Google släpper in fler appar.
 <!-- /Fas 5 funktioner -->
 

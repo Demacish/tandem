@@ -64,8 +64,11 @@ internal class DefaultAssistantActions @Inject constructor(
         val unitName = unit?.trim()?.takeIf { it.isNotEmpty() }
         when {
             items.isEmpty() -> refuse(AssistantRefusal.NOTHING_TO_ADD)
+
             (amount != null || unitName != null) && items.size > 1 -> refuse(AssistantRefusal.AMOUNT_FOR_SEVERAL_ITEMS)
+
             amount != null && (!amount.isFinite() || amount < 0.0) -> refuse(AssistantRefusal.INVALID_AMOUNT)
+
             else -> withList(list) { target ->
                 val listIds = target?.let { setOf(it.id) }.orEmpty()
                 val drafts = ShoppingInput.parse(parser, items).map { parsed ->

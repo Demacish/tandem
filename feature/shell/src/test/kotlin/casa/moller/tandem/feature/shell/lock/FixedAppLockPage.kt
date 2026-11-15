@@ -11,6 +11,9 @@ internal val LOCK_ON_IMMEDIATELY = LOCK_ON.copy(timeout = AppLockTimeout.IMMEDIA
 internal val LOCK_NO_SCREEN_LOCK = LOCK_OFF.copy(screenLockMissing = true)
 internal val LOCK_ON_SCREEN_LOCK_GONE = LOCK_ON.copy(screenLockMissing = true)
 
+/** Fas 5 (funktioner lane): the assistant allowed, so "Tillåt assistenten när appen är låst" shows. */
+internal val LOCK_ON_ASSISTANT = LOCK_ON.copy(assistantEnabled = true)
+
 /** The section and the page with a fixed state. */
 internal class FixedAppLockPage(
     private val state: AppLockSettingsUiState = LOCK_ON,

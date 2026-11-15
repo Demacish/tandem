@@ -36,8 +36,8 @@ Rubriken är `## [X.Y.Z] – ÅÅÅÅ-MM-DD`.
 - Av som standard: slå på **Låt assistenten använda Tandem** under Mer → Inställningar → Assistenten.
   Det assistenten läser kan skickas till assistentens egen tjänst. Som gäst kan assistenten bara läsa,
   i säkert läge tar Tandem inte emot ändringar från den, och i demoläget använder den exempeldata.
-- **Tillåt assistenten när appen är låst** (av som standard) bestämmer om assistenten får svar medan
-  appen är låst.
+- Med **Lås appen** på får assistenten bara svar medan appen är upplåst. Under Mer → Lås appen kan du
+  slå på **Tillåt assistenten när appen är låst** (av som standard).
 
 **Android 17**
 

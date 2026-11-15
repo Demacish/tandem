@@ -58,8 +58,10 @@ class TandemApplication :
     @Inject
     lateinit var appLock: DefaultAppLock
 
-    // --- Fas 5 (funktioner lane, plan §8.7): the App Functions (assistant/), off until chosen. ---
-    /** What the App Functions' service calls; a Provider, so nothing is built at startup for it. */
+    /**
+     * Fas 5 (funktioner lane, plan §8.7): what the App Functions' service (assistant/) calls; a
+     * Provider, so nothing is built at startup for it.
+     */
     @Inject
     lateinit var assistantActionsProvider: Provider<AssistantActions>
 

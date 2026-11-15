@@ -15,6 +15,7 @@ import casa.moller.tandem.core.designsystem.component.CalloutCard
 import casa.moller.tandem.core.designsystem.component.InfoCard
 import casa.moller.tandem.core.designsystem.component.TandemSecondaryButton
 import casa.moller.tandem.core.designsystem.component.TandemTone
+import casa.moller.tandem.core.designsystem.icon.Mic
 import casa.moller.tandem.core.designsystem.icon.TandemIcons
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.settings.AppLockTimeout
@@ -92,6 +93,19 @@ internal fun AppLockSettingsScreen(
                         onClick = { onAction(AppLockSettingsAction.SetTimeout(timeout)) },
                     )
                 }
+            }
+        }
+        // Fas 5 (funktioner lane, plan §8.7): next to the lock, only while the assistant is allowed at all.
+        if (state.enabled && state.assistantEnabled) {
+            SettingsGroup {
+                SwitchRow(
+                    title = stringResource(R.string.shell_assistant_locked_title),
+                    body = stringResource(R.string.shell_assistant_locked_body),
+                    checked = state.assistantWhenLocked,
+                    onCheckedChange = { onAction(AppLockSettingsAction.SetAssistantWhenLocked(it)) },
+                    icon = TandemIcons.Mic,
+                    enabled = state.loaded,
+                )
             }
         }
         InfoCard(

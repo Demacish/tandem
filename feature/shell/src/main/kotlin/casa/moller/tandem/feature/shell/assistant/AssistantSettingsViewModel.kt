@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.assistant.AssistantSettingsRepository
 import casa.moller.tandem.core.data.permissions.SpacePermissionsRepository
+import casa.moller.tandem.core.data.security.AppLock
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.feature.shell.R
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,7 +25,8 @@ import kotlinx.coroutines.launch
  *
  * @property loaded the stored settings have been read.
  * @property enabled "Låt assistenten använda Tandem".
- * @property allowWhenLocked "Tillåt assistenten när appen är låst".
+ * @property allowWhenLocked "Tillåt assistenten när appen är låst" (the switch is on Mer → Lås appen).
+ * @property lockEnabled Mer → Lås appen is on: the page says whether the assistant gets an answer while locked.
  * @property supported the phone runs Android 16 or newer, where assistants can use App Functions.
  * @property guest the user is a guest in the Tandoor space: the assistant can only read.
  * @property demo demo mode: the assistant uses the sample data.
@@ -33,6 +35,7 @@ data class AssistantSettingsUiState(
     val loaded: Boolean = false,
     val enabled: Boolean = false,
     val allowWhenLocked: Boolean = false,
+    val lockEnabled: Boolean = false,
     val supported: Boolean = true,
     val guest: Boolean = false,
     val demo: Boolean = false,
@@ -41,8 +44,6 @@ data class AssistantSettingsUiState(
 /** What the user does on Mer → Assistenten. */
 sealed interface AssistantSettingsAction {
     data class SetEnabled(val enabled: Boolean) : AssistantSettingsAction
-
-    data class SetAllowWhenLocked(val allowed: Boolean) : AssistantSettingsAction
 }
 
 /** One-off effects for the route. */
@@ -52,23 +53,30 @@ sealed interface AssistantSettingsEffect {
 }
 
 /**
- * Mer → Assistenten (docs/BYGGE.md "App Functions"): the switches through core:data's
- * [AssistantSettingsRepository]; the App Functions in :app follow them.
+ * Mer → Assistenten (docs/BYGGE.md "App Functions"): the switch through core:data's
+ * [AssistantSettingsRepository] (the App Functions in :app follow it), and whether the app lock
+ * lets the assistant through.
  */
 @HiltViewModel
 class AssistantSettingsViewModel @Inject constructor(
     private val settings: AssistantSettingsRepository,
     permissions: SpacePermissionsRepository,
+    appLock: AppLock,
 ) : ViewModel() {
     private val effects = Channel<AssistantSettingsEffect>(Channel.BUFFERED)
 
     val effect: Flow<AssistantSettingsEffect> = effects.receiveAsFlow()
 
-    val uiState: StateFlow<AssistantSettingsUiState> = combine(settings.settings, permissions.permissions) { choice, space ->
+    val uiState: StateFlow<AssistantSettingsUiState> = combine(
+        settings.settings,
+        permissions.permissions,
+        appLock.settings,
+    ) { choice, space, lock ->
         AssistantSettingsUiState(
             loaded = true,
             enabled = choice.enabled,
             allowWhenLocked = choice.allowWhenLocked,
+            lockEnabled = lock.enabled,
             supported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA,
             guest = space.readOnly,
             demo = space.isDemo,
@@ -79,7 +87,6 @@ class AssistantSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val outcome = when (action) {
                 is AssistantSettingsAction.SetEnabled -> settings.setEnabled(action.enabled)
-                is AssistantSettingsAction.SetAllowWhenLocked -> settings.setAllowWhenLocked(action.allowed)
             }
             if (outcome is Outcome.Failure) effects.send(AssistantSettingsEffect.Message(R.string.shell_settings_not_saved))
         }

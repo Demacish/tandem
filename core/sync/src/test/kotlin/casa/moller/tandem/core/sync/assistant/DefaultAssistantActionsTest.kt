@@ -1,7 +1,6 @@
 package casa.moller.tandem.core.sync.assistant
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import casa.moller.tandem.core.data.assistant.AssistantLockCheck
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.shopping.ShoppingInput
 import casa.moller.tandem.core.database.entity.OutboxEntities
@@ -12,9 +11,13 @@ import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.mealplan.MealPlanWeek
 import casa.moller.tandem.core.model.recipe.RecipeQuery
 import casa.moller.tandem.core.model.server.ServerCompatibility
+import casa.moller.tandem.core.model.settings.AppLockSettings
+import casa.moller.tandem.core.model.settings.AppLockStatus
 import casa.moller.tandem.core.sync.account.ActiveSource
+import casa.moller.tandem.core.sync.di.AssistantModule
 import casa.moller.tandem.core.sync.shopping.ShoppingSyncEnv
 import casa.moller.tandem.core.sync.testing.SyncTestGraph.Companion.ACCOUNT_ID
+import casa.moller.tandem.core.testing.data.FakeAppLock
 import casa.moller.tandem.core.testing.data.FakeAssistantSettingsRepository
 import casa.moller.tandem.core.testing.time.FakeCalendarDays
 import kotlin.time.Clock
@@ -42,12 +45,12 @@ class DefaultAssistantActionsTest {
     private class Setup(val env: ShoppingSyncEnv) {
         val settings = FakeAssistantSettingsRepository(AssistantSettings(enabled = true))
 
-        @Volatile
-        var unlocked = true
+        /** Mer → Lås appen, read through the app's own binding ([AssistantModule]). */
+        val appLock = FakeAppLock()
         val days = FakeCalendarDays(env.graph.clock.today())
         val actions = DefaultAssistantActions(
             settings = settings,
-            lock = AssistantLockCheck { unlocked },
+            lock = AssistantModule.provideAssistantLockCheck(appLock),
             sessions = env.graph.sessions,
             permissions = env.graph.permissions,
             shopping = env.graph.shopping,
@@ -139,7 +142,8 @@ class DefaultAssistantActionsTest {
         assertEquals(AssistantRefusal.TURNED_OFF, refusal(actions.recipe(1)))
 
         settings.state.value = AssistantSettings(enabled = true)
-        unlocked = false
+        appLock.settingsState.value = AppLockSettings(enabled = true)
+        appLock.setStatus(AppLockStatus.LOCKED)
         assertEquals(AssistantRefusal.LOCKED, refusal(actions.addToShoppingList("mjölk")))
         assertEquals(AssistantRefusal.LOCKED, refusal(actions.shoppingList()))
         assertEquals(AssistantRefusal.LOCKED, refusal(actions.mealPlan()))
@@ -147,7 +151,12 @@ class DefaultAssistantActionsTest {
         assertEquals(AssistantRefusal.LOCKED, refusal(actions.recipe(1)))
         assertEquals("nothing stored while refused", 0, entryRows())
 
+        // Unlocked within the lock's timeout: answers again.
+        appLock.onUnlocked()
+        done(actions.shoppingList())
+
         // "Tillåt assistenten när appen är låst".
+        appLock.setStatus(AppLockStatus.LOCKED)
         settings.state.value = AssistantSettings(enabled = true, allowWhenLocked = true)
         done(actions.addToShoppingList("mjölk"))
         assertEquals(1, entryRows())

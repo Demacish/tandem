@@ -1,6 +1,7 @@
 package casa.moller.tandem.feature.shell.lock
 
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -9,12 +10,15 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import casa.moller.tandem.core.designsystem.theme.TandemTheme
+import casa.moller.tandem.core.model.assistant.AssistantSettings
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.settings.AppLockSettings
 import casa.moller.tandem.core.model.settings.AppLockStatus
 import casa.moller.tandem.core.model.settings.AppLockTimeout
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeAppLock
+import casa.moller.tandem.core.testing.data.FakeAssistantSettingsRepository
 import casa.moller.tandem.core.ui.security.DeviceAuthResult
 import casa.moller.tandem.feature.shell.R
 import casa.moller.tandem.feature.shell.settings.PHONE_TALL
@@ -46,7 +50,7 @@ class AppLockSettingsTest {
 
     @Test
     fun theLockIsOffUntilChosen() = runTest(main.dispatcher) {
-        val model = AppLockSettingsViewModel(FakeAppLock())
+        val model = AppLockSettingsViewModel(FakeAppLock(), FakeAssistantSettingsRepository())
         backgroundScope.launch { model.uiState.collect { } }
         testScheduler.advanceUntilIdle()
         assertFalse(model.uiState.value.enabled)
@@ -57,7 +61,7 @@ class AppLockSettingsTest {
     @Test
     fun turningItOnConfirmsTheScreenLockFirst() = runTest(main.dispatcher) {
         val lock = FakeAppLock()
-        val model = AppLockSettingsViewModel(lock)
+        val model = AppLockSettingsViewModel(lock, FakeAssistantSettingsRepository())
         backgroundScope.launch { model.uiState.collect { } }
         model.effect.test {
             model.onAction(AppLockSettingsAction.SetEnabled(true))
@@ -90,7 +94,7 @@ class AppLockSettingsTest {
 
     @Test
     fun withoutAScreenLockItCannotBeTurnedOn() = runTest(main.dispatcher) {
-        val model = AppLockSettingsViewModel(FakeAppLock())
+        val model = AppLockSettingsViewModel(FakeAppLock(), FakeAssistantSettingsRepository())
         backgroundScope.launch { model.uiState.collect { } }
         model.effect.test {
             model.onAction(AppLockSettingsAction.ScreenLockChecked(available = false))
@@ -111,7 +115,7 @@ class AppLockSettingsTest {
     @Test
     fun aFailedPromptOrWriteIsReported() = runTest(main.dispatcher) {
         val lock = FakeAppLock()
-        val model = AppLockSettingsViewModel(lock)
+        val model = AppLockSettingsViewModel(lock, FakeAssistantSettingsRepository())
         backgroundScope.launch { model.uiState.collect { } }
         model.effect.test {
             model.onAction(AppLockSettingsAction.SetEnabled(true))
@@ -160,9 +164,44 @@ class AppLockSettingsTest {
         composeRule.onNodeWithText("Security").assertExists()
     }
 
+    // --- Fas 5 (funktioner lane): "Tillåt assistenten när appen är låst" next to the lock ---
+
+    @Test
+    fun theAssistantSwitchIsStoredAndOnlyShownWithTheLockAndTheAssistantOn() = runTest(main.dispatcher) {
+        val assistant = FakeAssistantSettingsRepository(AssistantSettings(enabled = true))
+        val model = AppLockSettingsViewModel(FakeAppLock(AppLockSettings(enabled = true)), assistant)
+        backgroundScope.launch { model.uiState.collect { } }
+        testScheduler.advanceUntilIdle()
+        assertTrue(model.uiState.value.assistantEnabled)
+        assertFalse("off until chosen", model.uiState.value.assistantWhenLocked)
+        model.onAction(AppLockSettingsAction.SetAssistantWhenLocked(true))
+        testScheduler.advanceUntilIdle()
+        assertTrue(assistant.state.value.allowWhenLocked)
+        assertTrue(model.uiState.value.assistantWhenLocked)
+    }
+
+    @Test
+    fun theAssistantSwitchSitsNextToTheLock() {
+        val actions = mutableListOf<AppLockSettingsAction>()
+        composeRule.setContent { TandemTheme { AppLockSettingsScreen(LOCK_ON_ASSISTANT, { actions += it }, {}) } }
+        composeRule.onNodeWithText(ASSISTANT_WHEN_LOCKED).performScrollTo().assertIsOff().performClick()
+        assertEquals(listOf<AppLockSettingsAction>(AppLockSettingsAction.SetAssistantWhenLocked(true)), actions)
+    }
+
+    @Test
+    fun withoutTheAssistantThereIsNoAssistantSwitch() {
+        composeRule.setContent { TandemTheme { AppLockSettingsScreen(LOCK_ON, {}, {}) } }
+        composeRule.onNodeWithText(ASSISTANT_WHEN_LOCKED).assertDoesNotExist()
+    }
+
     @Test
     fun theMoreRowSaysOff() {
         composeRule.setContent { TandemTheme { AppLockMoreSection(LOCK_OFF, selected = false, onOpen = {}) } }
         composeRule.onNodeWithText("Off").assertExists()
+    }
+
+    private companion object {
+        /** feature:shell `shell_assistant_locked_title`. */
+        const val ASSISTANT_WHEN_LOCKED = "Allow the assistant when the app is locked"
     }
 }

@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.shell.lock
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import casa.moller.tandem.core.data.assistant.AssistantSettingsRepository
 import casa.moller.tandem.core.data.security.AppLock
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.settings.AppLockTimeout
@@ -30,6 +31,9 @@ import kotlinx.coroutines.launch
  * @property screenLockMissing the phone has no screen lock: the lock cannot be turned on, and the
  *   page explains it with the way to the system settings.
  * @property confirming the system's prompt is open to confirm turning the lock on.
+ * @property assistantEnabled Fas 5 (funktioner lane): "Låt assistenten använda Tandem" is on, so the
+ *   page offers "Tillåt assistenten när appen är låst" next to the lock.
+ * @property assistantWhenLocked "Tillåt assistenten när appen är låst".
  */
 data class AppLockSettingsUiState(
     val loaded: Boolean = false,
@@ -37,6 +41,8 @@ data class AppLockSettingsUiState(
     val timeout: AppLockTimeout = AppLockTimeout.DEFAULT,
     val screenLockMissing: Boolean = false,
     val confirming: Boolean = false,
+    val assistantEnabled: Boolean = false,
+    val assistantWhenLocked: Boolean = false,
 ) {
     /** The switch can be used: off with a screen lock to confirm, or on (turning it off needs nothing). */
     val switchEnabled: Boolean
@@ -58,6 +64,9 @@ sealed interface AppLockSettingsAction {
 
     /** How the prompt that confirms turning the lock on ended. */
     data class Confirmed(val result: DeviceAuthResult) : AppLockSettingsAction
+
+    /** Fas 5 (funktioner lane): "Tillåt assistenten när appen är låst". */
+    data class SetAssistantWhenLocked(val allowed: Boolean) : AppLockSettingsAction
 }
 
 /** One-off effects for the route. */
@@ -81,19 +90,25 @@ sealed interface AppLockSettingsEffect {
  * they cannot confirm; turning it off needs nothing (the app is open).
  */
 @HiltViewModel
-class AppLockSettingsViewModel @Inject constructor(private val appLock: AppLock) : ViewModel() {
+class AppLockSettingsViewModel @Inject constructor(
+    private val appLock: AppLock,
+    // Fas 5 (funktioner lane): "Tillåt assistenten när appen är låst" sits next to the lock.
+    private val assistant: AssistantSettingsRepository,
+) : ViewModel() {
     private val effects = Channel<AppLockSettingsEffect>(Channel.BUFFERED)
     private val page = MutableStateFlow(PageState())
 
     val effect: Flow<AppLockSettingsEffect> = effects.receiveAsFlow()
 
-    val uiState: StateFlow<AppLockSettingsUiState> = combine(appLock.settings, page) { settings, local ->
+    val uiState: StateFlow<AppLockSettingsUiState> = combine(appLock.settings, page, assistant.settings) { settings, local, helper ->
         AppLockSettingsUiState(
             loaded = true,
             enabled = settings.enabled,
             timeout = settings.timeout,
             screenLockMissing = local.screenLockMissing,
             confirming = local.confirming,
+            assistantEnabled = helper.enabled,
+            assistantWhenLocked = helper.allowWhenLocked,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), AppLockSettingsUiState())
 
@@ -104,7 +119,12 @@ class AppLockSettingsViewModel @Inject constructor(private val appLock: AppLock)
             AppLockSettingsAction.OpenScreenLockSettings -> effects.trySend(AppLockSettingsEffect.OpenScreenLockSettings)
             is AppLockSettingsAction.ScreenLockChecked -> page.update { it.copy(screenLockMissing = !action.available) }
             is AppLockSettingsAction.Confirmed -> onConfirmed(action.result)
+            is AppLockSettingsAction.SetAssistantWhenLocked -> setAssistantWhenLocked(action.allowed)
         }
+    }
+
+    private fun setAssistantWhenLocked(allowed: Boolean) {
+        viewModelScope.launch { report(assistant.setAllowWhenLocked(allowed)) }
     }
 
     private fun setEnabled(enabled: Boolean) {

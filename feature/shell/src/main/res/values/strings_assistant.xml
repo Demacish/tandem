@@ -7,7 +7,10 @@
     <string name="shell_assistant_switch_title">Let the assistant use Tandem</string>
     <string name="shell_assistant_switch_body">An assistant on this phone, such as Gemini, can then add items to the shopping list and read the list, the meal plan and your recipes. What it reads may be sent to the assistant\'s own service.</string>
     <string name="shell_assistant_locked_title">Allow the assistant when the app is locked</string>
-    <string name="shell_assistant_locked_body">Applies when the app lock is on. Otherwise Tandem only answers the assistant after you have unlocked the app.</string>
+    <string name="shell_assistant_locked_body">Otherwise Tandem only answers the assistant within the lock\'s time after you have unlocked the app.</string>
+    <string name="shell_assistant_lock_title">The app lock is on</string>
+    <string name="shell_assistant_lock_blocked_body">The assistant only gets an answer while Tandem is unlocked. Under More > Lock the app you can allow it while the app is locked.</string>
+    <string name="shell_assistant_lock_allowed_body">The assistant gets an answer even while Tandem is locked. You can change this under More > Lock the app.</string>
     <string name="shell_assistant_can_title">What the assistant can do</string>
     <string name="shell_assistant_can_body">• Add items to the shopping list, for example “add milk to the list”\n• Read what is left to buy\n• Read the meal plan for a day\n• Search your recipes and open one, or its cook mode\nIt can never remove or check off anything.</string>
     <string name="shell_assistant_unsupported_title">Needs Android 16</string>

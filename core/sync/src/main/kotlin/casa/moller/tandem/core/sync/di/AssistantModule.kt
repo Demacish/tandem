@@ -2,6 +2,7 @@ package casa.moller.tandem.core.sync.di
 
 import casa.moller.tandem.core.data.assistant.AssistantActions
 import casa.moller.tandem.core.data.assistant.AssistantLockCheck
+import casa.moller.tandem.core.data.security.AppLock
 import casa.moller.tandem.core.sync.assistant.DefaultAssistantActions
 import dagger.Binds
 import dagger.Module
@@ -21,11 +22,11 @@ internal abstract class AssistantModule {
 
     companion object {
         /**
-         * The app lock (Mer → Lås appen, las lane) is not on main yet: until it is, nothing locks
-         * the app, so the assistant is never refused for a lock. The integration binds this to the
-         * lock's `unlockedWithinTimeout()` (docs/BYGGE.md "App Functions").
+         * Mer → Lås appen (las lane): the assistant gets an answer while the lock is off, or within
+         * the lock's timeout after the user unlocked; asked again at every request (docs/BYGGE.md
+         * "App Functions", "Lås appen").
          */
         @Provides
-        fun provideAssistantLockCheck(): AssistantLockCheck = AssistantLockCheck { true }
+        fun provideAssistantLockCheck(lock: AppLock): AssistantLockCheck = AssistantLockCheck { lock.unlockedWithinTimeout() }
     }
 }

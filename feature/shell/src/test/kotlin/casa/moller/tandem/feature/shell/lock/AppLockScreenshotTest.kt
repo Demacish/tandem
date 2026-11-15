@@ -55,6 +55,14 @@ class AppLockScreenshotTest {
     @Test
     fun immediately() = page("phone_immediately_light", LOCK_ON_IMMEDIATELY)
 
+    // Fas 5 (funktioner lane): "Tillåt assistenten när appen är låst" next to the lock.
+    @Test
+    fun onWithTheAssistant() = page("phone_on_assistant_light", LOCK_ON_ASSISTANT)
+
+    @Test
+    @Config(qualifiers = "sv-$PHONE_TALL")
+    fun onWithTheAssistantSwedish() = page("phone_on_assistant_light_sv", LOCK_ON_ASSISTANT)
+
     @Test
     fun noScreenLock() = page("phone_no_screen_lock_light", LOCK_NO_SCREEN_LOCK)
 

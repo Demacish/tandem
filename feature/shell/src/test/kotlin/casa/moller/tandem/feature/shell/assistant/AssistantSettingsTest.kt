@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
@@ -16,7 +17,9 @@ import casa.moller.tandem.core.designsystem.theme.TandemTheme
 import casa.moller.tandem.core.model.account.SpacePermissions
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.assistant.AssistantSettings
+import casa.moller.tandem.core.model.settings.AppLockSettings
 import casa.moller.tandem.core.testing.MainDispatcherRule
+import casa.moller.tandem.core.testing.data.FakeAppLock
 import casa.moller.tandem.core.testing.data.FakeAssistantSettingsRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.feature.shell.R
@@ -33,9 +36,9 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Fas 5 (funktioner lane, plan §8.7): Mer → Assistenten. Both switches are off until chosen; the
- * page stores them through core:data, says when they could not be saved, and tells a guest and
- * demo mode what the assistant can do there.
+ * Fas 5 (funktioner lane, plan §8.7): Mer → Assistenten. The switch is off until chosen; the page
+ * stores it through core:data, says when it could not be saved, says with Lås appen on whether the
+ * assistant gets an answer while locked, and tells a guest and demo mode what it can do there.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -50,26 +53,33 @@ class AssistantSettingsTest {
     private fun string(@StringRes id: Int): String = ApplicationProvider.getApplicationContext<Context>().getString(id)
 
     @Test
-    fun theAssistantIsOffUntilChosenAndBothSwitchesAreStored() = runTest(main.dispatcher) {
+    fun theAssistantIsOffUntilChosenAndTheSwitchIsStored() = runTest(main.dispatcher) {
         val settings = FakeAssistantSettingsRepository()
-        val model = AssistantSettingsViewModel(settings, FakeSpacePermissionsRepository())
+        val lock = FakeAppLock()
+        val model = AssistantSettingsViewModel(settings, FakeSpacePermissionsRepository(), lock)
         backgroundScope.launch { model.uiState.collect { } }
         testScheduler.advanceUntilIdle()
         assertTrue(model.uiState.value.loaded)
         assertFalse(model.uiState.value.enabled)
         assertFalse(model.uiState.value.allowWhenLocked)
+        assertFalse(model.uiState.value.lockEnabled)
 
         model.onAction(AssistantSettingsAction.SetEnabled(true))
-        model.onAction(AssistantSettingsAction.SetAllowWhenLocked(true))
         testScheduler.advanceUntilIdle()
-        assertEquals(AssistantSettings(enabled = true, allowWhenLocked = true), settings.state.value)
-        assertTrue(model.uiState.value.enabled && model.uiState.value.allowWhenLocked)
+        assertEquals(AssistantSettings(enabled = true, allowWhenLocked = false), settings.state.value)
+        assertTrue(model.uiState.value.enabled)
+
+        // Mer → Lås appen on, and "Tillåt assistenten när appen är låst" chosen there.
+        lock.settingsState.value = AppLockSettings(enabled = true)
+        settings.state.value = settings.state.value.copy(allowWhenLocked = true)
+        testScheduler.advanceUntilIdle()
+        assertTrue(model.uiState.value.lockEnabled && model.uiState.value.allowWhenLocked)
     }
 
     @Test
     fun aSettingThatCannotBeSavedSaysSo() = runTest(main.dispatcher) {
         val settings = FakeAssistantSettingsRepository().apply { failWrites = true }
-        val model = AssistantSettingsViewModel(settings, FakeSpacePermissionsRepository())
+        val model = AssistantSettingsViewModel(settings, FakeSpacePermissionsRepository(), FakeAppLock())
         model.effect.test {
             model.onAction(AssistantSettingsAction.SetEnabled(true))
             assertEquals(AssistantSettingsEffect.Message(R.string.shell_settings_not_saved), awaitItem())
@@ -80,7 +90,7 @@ class AssistantSettingsTest {
     @Test
     fun aGuestAndDemoModeAreShown() = runTest(main.dispatcher) {
         val permissions = FakeSpacePermissionsRepository(SpacePermissions(SpaceRole.GUEST))
-        val model = AssistantSettingsViewModel(FakeAssistantSettingsRepository(), permissions)
+        val model = AssistantSettingsViewModel(FakeAssistantSettingsRepository(), permissions, FakeAppLock())
         backgroundScope.launch { model.uiState.collect { } }
         testScheduler.advanceUntilIdle()
         assertTrue(model.uiState.value.guest)
@@ -93,27 +103,23 @@ class AssistantSettingsTest {
     }
 
     @Test
-    fun theWholeRowTogglesAndTheLockSwitchWaitsForTheMainOne() {
+    fun theWholeRowToggles() {
         val actions = mutableListOf<AssistantSettingsAction>()
         composeRule.setContent { TandemTheme { AssistantSettingsScreen(ASSISTANT_OFF, { actions += it }, onNavigateBack = {}) } }
         val mainSwitch = string(R.string.shell_assistant_switch_title)
-        val lockSwitch = string(R.string.shell_assistant_locked_title)
 
         composeRule.onNodeWithText(mainSwitch).assertIsOff().assertIsEnabled().performClick()
         assertEquals(listOf<AssistantSettingsAction>(AssistantSettingsAction.SetEnabled(true)), actions)
-        composeRule.onNodeWithText(lockSwitch).assertIsOff().assertIsNotEnabled()
+        // Without the app lock nothing is said about it.
+        composeRule.onNodeWithText(string(R.string.shell_assistant_lock_title)).assertDoesNotExist()
     }
 
     @Test
-    fun onTheLockSwitchCanBeTurnedOn() {
-        val actions = mutableListOf<AssistantSettingsAction>()
-        composeRule.setContent { TandemTheme { AssistantSettingsScreen(ASSISTANT_ON, { actions += it }, onNavigateBack = {}) } }
-        val mainSwitch = string(R.string.shell_assistant_switch_title)
-        val lockSwitch = string(R.string.shell_assistant_locked_title)
-
-        composeRule.onNodeWithText(mainSwitch).assertIsOn()
-        composeRule.onNodeWithText(lockSwitch).assertIsEnabled().performClick()
-        assertEquals(listOf<AssistantSettingsAction>(AssistantSettingsAction.SetAllowWhenLocked(true)), actions)
+    fun withTheLockThePageSaysWhetherTheAssistantGetsThrough() {
+        composeRule.setContent { TandemTheme { AssistantSettingsScreen(ASSISTANT_LOCKED, {}, onNavigateBack = {}) } }
+        composeRule.onNodeWithText(string(R.string.shell_assistant_switch_title)).assertIsOn()
+        composeRule.onNodeWithText(string(R.string.shell_assistant_lock_title)).performScrollTo().assertExists()
+        composeRule.onNodeWithText(string(R.string.shell_assistant_lock_blocked_body)).assertExists()
     }
 
     @Test
