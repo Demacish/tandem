@@ -422,12 +422,13 @@ internal fun ShellScaffold(
             )
         }
         // --- Fas 5 (rss lane, #35): the recipe inbox lives on Recept, its settings under Mer. ---
+        // Selecting the tab that is already shown would return it to its first screen: only another tab is selected.
         val openInbox: (Long?) -> Unit = { entryId ->
-            navigation.selectTab(ShellTab.RECIPES)
+            if (navigation.currentTab != ShellTab.RECIPES) navigation.selectTab(ShellTab.RECIPES)
             navigation.navigate(RecipeInboxKey(entryId), replace = { it is RecipeInboxKey || it is RecipeImportKey })
         }
         val openInboxSettings: () -> Unit = {
-            navigation.selectTab(ShellTab.MORE)
+            if (navigation.currentTab != ShellTab.MORE) navigation.selectTab(ShellTab.MORE)
             navigation.navigate(RecipeInboxSettingsKey, replace = { it.isMorePage })
         }
         // --- Fas S (grund lane): Hemma, scanning and drinks, each through its module's one route. ---
