@@ -31,7 +31,7 @@ class DefaultAppLockTest {
     private val dispatcher = StandardTestDispatcher()
     private val scope = TestScope(dispatcher)
 
-    private fun lock(settings: AppLockSettings): Pair<DefaultAppLock, FakeSettingsStore> {
+    private fun create(settings: AppLockSettings): Pair<DefaultAppLock, FakeSettingsStore> {
         val store = FakeSettingsStore(AppSettings(appLock = settings))
         val lock = DefaultAppLock(store, clock, scope.backgroundScope)
         lock.followSettings()
@@ -40,7 +40,7 @@ class DefaultAppLockTest {
 
     @Test
     fun theStatusIsUnknownAndLockedUntilTheSettingIsRead() = scope.runTest {
-        val (lock, _) = lock(AppLockSettings())
+        val (lock, _) = create(AppLockSettings())
         assertEquals(AppLockStatus.UNKNOWN, lock.status.value)
         assertTrue(lock.isLocked.value)
         runCurrent()
@@ -51,7 +51,7 @@ class DefaultAppLockTest {
 
     @Test
     fun aColdStartLocksAndTheUserUnlocks() = scope.runTest {
-        val (lock, _) = lock(AppLockSettings(enabled = true))
+        val (lock, _) = create(AppLockSettings(enabled = true))
         runCurrent()
         lock.onForeground()
         assertEquals(AppLockStatus.LOCKED, lock.status.value)
@@ -63,7 +63,7 @@ class DefaultAppLockTest {
 
     @Test
     fun theTimerLocksInTheBackgroundSoTheAppComesBackLocked() = scope.runTest {
-        val (lock, _) = lock(AppLockSettings(enabled = true, timeout = AppLockTimeout.FIVE_MINUTES))
+        val (lock, _) = create(AppLockSettings(enabled = true, timeout = AppLockTimeout.FIVE_MINUTES))
         runCurrent()
         lock.onForeground()
         lock.onUnlocked()
@@ -80,7 +80,7 @@ class DefaultAppLockTest {
 
     @Test
     fun aSleepingPhoneThatRunsTheTimerLateIsCaughtByTheClock() = scope.runTest {
-        val (lock, _) = lock(AppLockSettings(enabled = true, timeout = AppLockTimeout.ONE_MINUTE))
+        val (lock, _) = create(AppLockSettings(enabled = true, timeout = AppLockTimeout.ONE_MINUTE))
         runCurrent()
         lock.onForeground()
         lock.onUnlocked()
@@ -97,7 +97,7 @@ class DefaultAppLockTest {
 
     @Test
     fun comingBackWithinTheTimeoutStopsTheTimer() = scope.runTest {
-        val (lock, _) = lock(AppLockSettings(enabled = true, timeout = AppLockTimeout.ONE_MINUTE))
+        val (lock, _) = create(AppLockSettings(enabled = true, timeout = AppLockTimeout.ONE_MINUTE))
         runCurrent()
         lock.onForeground()
         lock.onUnlocked()
@@ -113,7 +113,7 @@ class DefaultAppLockTest {
 
     @Test
     fun immediatelyLocksAsSoonAsTheAppLeavesTheScreen() = scope.runTest {
-        val (lock, _) = lock(AppLockSettings(enabled = true, timeout = AppLockTimeout.IMMEDIATELY))
+        val (lock, _) = create(AppLockSettings(enabled = true, timeout = AppLockTimeout.IMMEDIATELY))
         runCurrent()
         lock.onForeground()
         lock.onUnlocked()
@@ -123,7 +123,7 @@ class DefaultAppLockTest {
 
     @Test
     fun turningTheLockOnInTheAppKeepsItOpenAndOffUnlocks() = scope.runTest {
-        val (lock, store) = lock(AppLockSettings())
+        val (lock, store) = create(AppLockSettings())
         runCurrent()
         lock.onForeground()
         assertEquals(Outcome.Success(Unit), lock.setEnabled(true))

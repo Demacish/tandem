@@ -129,7 +129,6 @@ internal class SystemDeviceAuthenticator(private val context: Context) : DeviceA
     private fun Int.toResult(message: CharSequence): DeviceAuthResult = when (this) {
         BiometricPrompt.BIOMETRIC_ERROR_USER_CANCELED,
         BiometricPrompt.BIOMETRIC_ERROR_CANCELED,
-        BiometricPrompt.BIOMETRIC_ERROR_NEGATIVE_BUTTON,
         -> DeviceAuthResult.Cancelled
 
         BiometricPrompt.BIOMETRIC_ERROR_NO_DEVICE_CREDENTIAL -> DeviceAuthResult.NoScreenLock

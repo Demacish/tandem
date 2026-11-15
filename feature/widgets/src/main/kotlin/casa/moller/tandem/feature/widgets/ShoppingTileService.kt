@@ -34,9 +34,12 @@ class ShoppingTileService : TileService() {
             label = getString(R.string.widget_shopping_title)
             subtitle = when {
                 !state.signedIn -> getString(R.string.widget_sign_in)
+
                 // Fas 5 (las lane): no count while Mer → Lås appen is on (the tile shows on the lock screen too).
                 state.locked -> getString(R.string.widget_locked_short)
+
                 state.remaining == 0 -> getString(R.string.widget_shopping_empty_short)
+
                 else -> resources.getQuantityString(R.plurals.widget_shopping_remaining, state.remaining, state.remaining)
             }
             this.state = Tile.STATE_ACTIVE

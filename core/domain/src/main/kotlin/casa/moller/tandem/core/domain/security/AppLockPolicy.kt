@@ -52,10 +52,13 @@ object AppLockPolicy {
         val previous = state.settings
         return when {
             !settings.enabled -> state.copy(settings = settings, locked = false)
+
             // The first read of this process keeps the cold start's lock.
             previous == null -> state.copy(settings = settings)
+
             // Turned on in the app: the user just confirmed the screen lock.
             !previous.enabled -> state.copy(settings = settings, locked = false)
+
             else -> state.copy(settings = settings)
         }
     }
@@ -88,6 +91,7 @@ object AppLockPolicy {
      */
     fun blocks(surface: AppSurface, status: AppLockStatus): Boolean = when (surface) {
         AppSurface.APP, AppSurface.APP_FUNCTION -> !status.allowsContent
+
         AppSurface.ALARM_SCREEN,
         AppSurface.TIMER_NOTIFICATION,
         AppSurface.BACKGROUND_WORK,

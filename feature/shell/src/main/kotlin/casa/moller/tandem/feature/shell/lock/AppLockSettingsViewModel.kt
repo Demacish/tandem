@@ -122,8 +122,11 @@ class AppLockSettingsViewModel @Inject constructor(private val appLock: AppLock)
         page.update { it.copy(confirming = false) }
         when (result) {
             DeviceAuthResult.Succeeded -> viewModelScope.launch { report(appLock.setEnabled(true)) }
+
             DeviceAuthResult.Cancelled -> Unit
+
             DeviceAuthResult.NoScreenLock -> page.update { it.copy(screenLockMissing = true) }
+
             is DeviceAuthResult.Failed -> effects.trySend(
                 result.message?.let { AppLockSettingsEffect.SystemMessage(it) }
                     ?: AppLockSettingsEffect.Message(R.string.shell_lock_confirm_failed),

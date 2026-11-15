@@ -34,7 +34,7 @@ class AppLockSurfacesTest {
             ComponentName(context, ALARM_ACTIVITY),
             PackageManager.ComponentInfoFlags.of(0),
         )
-        assertTrue("the alarm shows on the phone's lock screen", alarm.flags and ActivityInfo.FLAG_SHOW_WHEN_LOCKED != 0)
+        assertTrue("the alarm shows on the phone's lock screen", (alarm.flags and ActivityInfo.FLAG_SHOW_WHEN_LOCKED) != 0)
         assertNotEquals(MainActivity::class.java.name, alarm.name)
     }
 
@@ -61,13 +61,11 @@ class AppLockSurfacesTest {
             .map { it.name }
         assertTrue(MainActivity::class.java.name in activities)
         assertTrue(ALARM_ACTIVITY in activities)
-        assertFalse(
-            "MainActivity must not show on the phone's lock screen",
-            context.packageManager.getActivityInfo(
-                ComponentName(context, MainActivity::class.java),
-                PackageManager.ComponentInfoFlags.of(0),
-            ).flags and ActivityInfo.FLAG_SHOW_WHEN_LOCKED != 0,
+        val main = context.packageManager.getActivityInfo(
+            ComponentName(context, MainActivity::class.java),
+            PackageManager.ComponentInfoFlags.of(0),
         )
+        assertFalse("MainActivity must not show on the phone's lock screen", (main.flags and ActivityInfo.FLAG_SHOW_WHEN_LOCKED) != 0)
     }
 
     private companion object {
