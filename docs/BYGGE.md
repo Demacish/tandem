@@ -1151,7 +1151,7 @@ sätts av integrationen. En rad per bana.
 ## Target SDK 37 (Android 17; `:app`, `:core:network`, `:core:data`, `:core:common`, `:feature:onboarding`, `:feature:shell`, Fas 5, sdk37)
 
 0.9.0 "Till hands" höjer telefonappens `targetSdk` från 36 till 37 (`gradle/libs.versions.toml`,
-läses av `tandem.android.application`, `tandem.android.library` (enhetstester och lint) och
+läses av `tandem.android.application`, `tandem.android.library` (testernas manifest och lint) och
 `tandem.android.test` (`:smoke`, `:benchmark`)). compileSdk var redan 37. Källor: bara
 developer.android.com ("Behavior changes: Apps targeting Android 17", "Behavior changes: all
 apps", Android 17 release notes, "Local network permission", "Local Network Definition",
