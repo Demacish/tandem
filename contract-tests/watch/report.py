@@ -56,6 +56,8 @@ PHASES = (
     ("fas5.kalender", os.path.join("fas5", "kalender")),
     # Fas 5 (wear lane): the Wear OS app's own token (plan §3.1, §7 #33).
     ("fas5.wear", os.path.join("fas5", "wear")),
+    # Fas 5 (komplettering efter enhetstestet): Idag's row Nya, newest first (F1).
+    ("fas5.nya", os.path.join("fas5", "nya")),
 )
 
 

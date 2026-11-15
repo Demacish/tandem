@@ -505,6 +505,15 @@ jobs:
           ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
           --tests 'casa.moller.tandem.contract.Phase5IcalContractTest'
 
+      # Fas 5, komplettering efter enhetstestet (0.8.0, F1): Idag's row "Nya" asks
+      # new=true&sort_order=-created_at and shows the answer as it comes: newest first, the
+      # back-dated seed recipe after every new one. Its own class; seeds and deletes its own recipes.
+      - name: Contract tests (Fas 5, the row Nya)
+        if: ${{ !cancelled() }}
+        run: >-
+          ./gradlew --stacktrace --no-configuration-cache :contract-tests:test
+          --tests 'casa.moller.tandem.contract.Phase5NyaContractTest'
+
       - name: Check recordings for leaked secrets
         if: always()
         run: |
