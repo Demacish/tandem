@@ -28,12 +28,15 @@ import casa.moller.tandem.core.model.assistant.AssistantResult
 import casa.moller.tandem.core.model.assistant.AssistantSettings
 import casa.moller.tandem.core.model.assistant.AssistantShoppingItem
 import casa.moller.tandem.core.testing.data.FakeAssistantSettingsRepository
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import org.junit.Assert.assertEquals
@@ -79,6 +82,9 @@ class TandemAppFunctionsTest {
         return manager.executeAppFunction(ExecuteAppFunctionRequest(app.packageName, metadata.id, data))
     }
 
+    /** [block] with a time limit: an execution that never answers fails its own test instead of hanging the run. */
+    private fun test(block: suspend CoroutineScope.() -> Unit) = runBlocking { withTimeout(TEST_TIMEOUT, block) }
+
     private fun ExecuteAppFunctionResponse.value(): AppFunctionData =
         (this as? ExecuteAppFunctionResponse.Success)?.returnValue ?: throw AssertionError("not a success: $this")
 
@@ -88,13 +94,15 @@ class TandemAppFunctionsTest {
     // ------------------------------------------------------------------ the generated metadata
 
     @Test
-    fun theGeneratedMetadataNamesEveryFunctionAndParameter() = runBlocking {
-        val byName = functions().associateBy { it.id.substringAfter('#') }
+    fun theGeneratedMetadataNamesEveryFunctionAndParameter() {
+        // Read first, asserted outside the coroutine, so a failure names its own line.
+        val all = test { functions() }
+        val byName = all.associateBy { it.id.substringAfter('#') }
         val dump = byName.values.joinToString("\n") { f ->
             "${f.id}: ${f.description} | " + f.parameters.joinToString { "${it.name} required=${it.isRequired} (${it.description})" }
         }
         assertEquals(dump, setOf("addToShoppingList", "getShoppingList", "getMealPlan", "searchRecipes", "openRecipe"), byName.keys)
-        assertTrue(dump, functions().all { it.id.startsWith("$SERVICE#") })
+        assertTrue(dump, all.all { it.id.startsWith("$SERVICE#") })
 
         fun parameters(name: String) = byName.getValue(name).parameters.map { it.name to it.isRequired }
         assertEquals(dump, listOf("text" to true, "amount" to false, "unit" to false, "listName" to false), parameters("addToShoppingList"))
@@ -103,17 +111,16 @@ class TandemAppFunctionsTest {
         assertEquals(dump, listOf("query" to true, "maxResults" to false), parameters("searchRecipes"))
         assertEquals(dump, listOf("recipeId" to true, "cookMode" to false), parameters("openRecipe"))
 
-        // The KDoc is what the assistant reads: every function and parameter is described.
+        // The KDoc is what the assistant reads: every parameter is described (the functions' own
+        // descriptions are in the schema, see below; the test rule's metadata leaves them out).
         byName.values.forEach { metadata ->
-            assertTrue("${metadata.id} has a description: $dump", metadata.description.isNotBlank())
             metadata.parameters.forEach { assertTrue("${metadata.id}.${it.name} has a description: $dump", it.description.isNotBlank()) }
         }
-        assertTrue(dump, byName.getValue("addToShoppingList").description.contains("shopping list"))
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun everyFunctionIsOffInTheSystemUntilTheUserTurnsTheAssistantOn() = runBlocking {
+    fun everyFunctionIsOffInTheSystemUntilTheUserTurnsTheAssistantOn() = test {
         val names = AssistantFunctionStates.functionIds().map { AppFunctionName(app.packageName, it) }
         assertEquals(5, manager.getAppFunctionStates(names).size)
         assertTrue("off by default", manager.getAppFunctionStates(names).none { it.isEnabled })
@@ -144,6 +151,9 @@ class TandemAppFunctionsTest {
         listOf("addToShoppingList", "getShoppingList", "getMealPlan", "searchRecipes", "openRecipe").forEach { name ->
             assertTrue("$name in $path", xml!!.contains("$SERVICE#$name"))
         }
+        // The functions' KDoc is their description for the assistant.
+        assertTrue("descriptions in $path", xml!!.contains("Adds one or more items to the household"))
+        assertTrue("descriptions in $path", xml.contains("Searches the recipes stored in Tandem"))
     }
 
     @Test
@@ -159,7 +169,7 @@ class TandemAppFunctionsTest {
     // ------------------------------------------------------------------ the functions
 
     @Test
-    fun addMilkToTheListReachesTheAssistantActions() = runBlocking {
+    fun addMilkToTheListReachesTheAssistantActions() = test {
         fake.addition = AssistantResult.Done(AssistantAddition(listOf(AssistantShoppingItem("mjölk", waitingToSync = true))))
 
         val added = execute("addToShoppingList") { setString("text", "mjölk") }
@@ -181,7 +191,7 @@ class TandemAppFunctionsTest {
     }
 
     @Test
-    fun theListMealsAndRecipesComeBackAsTheirTypes() = runBlocking {
+    fun theListMealsAndRecipesComeBackAsTheirTypes() = test {
         fake.items = AssistantResult.Done(listOf(AssistantShoppingItem("mjölk", 2.0, "l", lists = listOf("Veckohandling"))))
         val items = execute("getShoppingList").value()
             .getAppFunctionDataList(ExecuteAppFunctionResponse.Success.PROPERTY_RETURN_VALUE)!!
@@ -210,7 +220,7 @@ class TandemAppFunctionsTest {
     }
 
     @Test
-    fun aDateReachesTheMealPlanAndOpeningARecipeGivesAnIntent() = runBlocking {
+    fun aDateReachesTheMealPlanAndOpeningARecipeGivesAnIntent() = test {
         val service = Robolectric.buildService(TandemAppFunctionService::class.java).create().get()
         fake.meals = { date -> AssistantResult.Done(AssistantMealDay(date!!, emptyList())) }
         val day = service.getMealPlan(java.time.LocalDate.of(2026, 11, 20))
@@ -225,7 +235,7 @@ class TandemAppFunctionsTest {
     }
 
     @Test
-    fun everyRefusalIsTheMatchingAppFunctionError() = runBlocking {
+    fun everyRefusalIsTheMatchingAppFunctionError() = test {
         suspend fun addFails(refusal: AssistantRefusal, detail: String? = null): AppFunctionException {
             fake.addition = AssistantResult.Refused(refusal, detail)
             return execute("addToShoppingList") { setString("text", "mjölk") }.error()
@@ -253,5 +263,6 @@ class TandemAppFunctionsTest {
     private companion object {
         /** A function's id is `<the @AppFunctionServiceEntryPoint class>#<function>` (the compiler's rule). */
         const val SERVICE = "casa.moller.tandem.assistant.BaseTandemAppFunctionService"
+        val TEST_TIMEOUT = 30.seconds
     }
 }
