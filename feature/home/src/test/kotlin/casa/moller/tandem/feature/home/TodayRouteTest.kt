@@ -22,6 +22,7 @@ import casa.moller.tandem.core.model.mealplan.UpcomingMeals
 import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.testing.data.FakeHomeRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeBookRepository
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
@@ -42,6 +43,7 @@ class TodayRouteTest {
 
     private val home = FakeHomeRepository()
     private val sync = FakeSyncRepository()
+    private val reachability = FakeServerReachability()
     private val openedRecipes = mutableListOf<Long>()
     private var openedRecipesTab = 0
     private var openedWeek = 0
@@ -53,7 +55,7 @@ class TodayRouteTest {
     private val permissions = FakeSpacePermissionsRepository()
 
     private fun setContent() {
-        val viewModel = HomeViewModel(home, sync, currentHour = { 18 })
+        val viewModel = HomeViewModel(home, sync, reachability, currentHour = { 18 })
         val books = TodayBooksViewModel(bookRepository, permissions)
         composeRule.setContent {
             TandemTheme {

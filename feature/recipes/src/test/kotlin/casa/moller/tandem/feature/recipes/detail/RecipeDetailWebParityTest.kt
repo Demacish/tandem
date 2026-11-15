@@ -9,6 +9,7 @@ import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.feature.recipes.FakeSessionRepository
 import casa.moller.tandem.feature.recipes.detail.FixtureRecipes.double
@@ -91,6 +92,7 @@ class RecipeDetailWebParityTest {
             FakeSyncRepository(),
             FakeSessionRepository(),
             FakePanSizeRepository(),
+            FakeServerReachability(),
         )
         viewModel.onAction(RecipeDetailAction.SetNumberStyle(NumberStyle.Web))
         val collecting = backgroundScope.launch { viewModel.uiState.collect {} }

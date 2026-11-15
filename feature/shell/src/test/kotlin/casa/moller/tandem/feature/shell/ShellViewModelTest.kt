@@ -34,6 +34,7 @@ import casa.moller.tandem.core.model.timer.TimerMode
 import casa.moller.tandem.core.model.timer.TimerSource
 import casa.moller.tandem.core.model.timer.TimerState
 import casa.moller.tandem.core.testing.data.FakeAccountDirectory
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeServerStatusRepository
 import casa.moller.tandem.core.testing.data.FakeSettingsRepository
 import casa.moller.tandem.core.testing.data.FakeSpacePermissionsRepository
@@ -123,6 +124,9 @@ class ShellViewModelTest {
     private val accountDirectory = FakeAccountDirectory()
     private val permissions = FakeSpacePermissionsRepository()
 
+    // 0.8.0 device test B19: the app's one offline state.
+    private val reachability = FakeServerReachability()
+
     private fun newViewModel() = ShellViewModel(
         sessionRepository = sessions,
         appearanceRepository = appearance,
@@ -136,6 +140,7 @@ class ShellViewModelTest {
         timerController = timers,
         accounts = accountDirectory,
         permissions = permissions,
+        reachability = reachability,
     ) { nowMillis }
 
     // --- Phase 2 (konto lane) ---
@@ -206,7 +211,7 @@ class ShellViewModelTest {
 
     @Test
     fun aServerUpdateWithoutANotificationIsShownOnceAlsoAfterProcessDeath() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         serverStatus.versionNotice.value = update
         val vm = newViewModel()
 
@@ -226,7 +231,7 @@ class ShellViewModelTest {
 
     @Test
     fun noBannerWithoutAStoredNoticeOnTheFirstRunOrAfterANotification() = runTest {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         val vm = newViewModel()
         // The first login and a change the system notification told about store no notice;
         // the change itself (observeVersionChanges) is not shown by the shell.
@@ -248,7 +253,7 @@ class ShellViewModelTest {
 
     @Test
     fun noBannerNextToSafeModeAndNoneAfterLeavingTheAccount() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         sessions.state.value = LOGGED_IN.copy(serverVersion = "2.7.0", compatibility = ServerCompatibility.UNTESTED_NEWER)
         serverStatus.versionNotice.value = ServerVersionChange("2.6.13", "2.7.0", ServerCompatibility.UNTESTED_NEWER)
         val vm = newViewModel()
@@ -264,7 +269,7 @@ class ShellViewModelTest {
 
     @Test
     fun theSyncsUnauthorizedPauseAsksToLogInAgain() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         val vm = newViewModel()
         assertFalse(vm.uiState.value.loginExpired)
 
@@ -295,14 +300,14 @@ class ShellViewModelTest {
 
     @Test
     fun resetDemoDataIsIgnoredForARealAccount() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         newViewModel().resetDemoData()
         assertEquals(0, demoResets)
     }
 
     @Test
     fun theSyncsNetworkPauseShowsTheOfflineChip() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout) // not a connectivity problem
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503)) // not a connectivity problem
         val vm = newViewModel()
         assertFalse(vm.uiState.value.syncOffline)
 
@@ -316,7 +321,7 @@ class ShellViewModelTest {
 
     @Test
     fun loggedInSessionBecomesTheAccountCard() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout) // keep the stored version
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503)) // keep the stored version
         val state = newViewModel().uiState.value
 
         val account = (state.mode as ShellMode.Connected).account
@@ -355,7 +360,7 @@ class ShellViewModelTest {
     @Test
     fun untestedServerVersionMeansSafeMode() {
         sessions.state.value = LOGGED_IN.copy(serverVersion = "2.7.0", compatibility = ServerCompatibility.UNTESTED_NEWER)
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         assertTrue(newViewModel().uiState.value.isSafeMode)
     }
 
@@ -397,6 +402,68 @@ class ShellViewModelTest {
         )
         vm.refreshServerInfo()
         assertNull(vm.uiState.value.refreshError)
+    }
+
+    // --- 0.8.0 device test B19: the Offline chip follows the app's one offline state ---
+
+    @Test
+    fun aFailedCheckIsTheOfflineStateAndAnyLaterAnswerClearsTheChip() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        val vm = newViewModel()
+        assertEquals("the check's result goes to the one offline state", listOf<TandemError?>(TandemError.Timeout), reachability.reports)
+        assertEquals(AppStatus.Offline, vm.uiState.value.appStatus)
+
+        // The network came back and the outbox (or the check after the reconnect) got an answer.
+        reachability.offline.value = false
+        assertNull("the old \"could not connect\" is out of date", vm.uiState.value.refreshError)
+        assertFalse(vm.uiState.value.syncOffline)
+        assertNull(vm.uiState.value.appStatus)
+        assertEquals("no check of its own: the state came from elsewhere", 1, sessions.refreshes)
+    }
+
+    @Test
+    fun theOfflineStateAloneShowsAndHidesTheChip() {
+        val vm = newViewModel()
+        assertNull(vm.uiState.value.appStatus)
+
+        reachability.offline.value = true
+        assertTrue(vm.uiState.value.syncOffline)
+        assertEquals(AppStatus.Offline, vm.uiState.value.appStatus)
+
+        reachability.offline.value = false
+        assertFalse(vm.uiState.value.syncOffline)
+        assertNull(vm.uiState.value.appStatus)
+    }
+
+    @Test
+    fun aSuccessfulCheckClearsTheOfflineState() {
+        reachability.offline.value = true
+        val vm = newViewModel()
+        assertEquals(listOf<TandemError?>(null), reachability.reports)
+        assertFalse(reachability.offline.value)
+        assertFalse(vm.uiState.value.syncOffline)
+    }
+
+    @Test
+    fun aServerErrorIsNotClearedByTheOfflineState() {
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
+        val vm = newViewModel()
+        reachability.offline.value = true
+        reachability.offline.value = false
+        assertEquals("only a connectivity failure goes out of date", TandemError.ServerError(503), vm.uiState.value.refreshError)
+    }
+
+    @Test
+    fun whileOfflineAResumeChecksAgainAfterAMinute() {
+        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        val vm = newViewModel()
+        nowMillis += MINUTE / 2
+        vm.onAppResumed()
+        assertEquals(1, sessions.refreshes)
+
+        nowMillis += MINUTE
+        vm.onAppResumed()
+        assertEquals("offline: the next resume a minute later checks again", 2, sessions.refreshes)
     }
 
     @Test
@@ -562,7 +629,7 @@ class ShellViewModelTest {
 
     @Test
     fun aFailedCheckAlsoStartsTheWait() {
-        sessions.refreshResult = Outcome.Failure(TandemError.Timeout)
+        sessions.refreshResult = Outcome.Failure(TandemError.ServerError(503))
         val vm = newViewModel()
         nowMillis += 10 * MINUTE
         vm.onAppResumed()

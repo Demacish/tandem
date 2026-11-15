@@ -7,6 +7,7 @@ import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.recipes.FakeSessionRepository
@@ -43,6 +44,7 @@ class RecipeDetailPanTest {
             FakeSyncRepository(),
             FakeSessionRepository(),
             pans,
+            FakeServerReachability(),
         )
         viewModel.onAction(RecipeDetailAction.SetNumberStyle(NumberStyle.Swedish))
         backgroundScope.launch { viewModel.uiState.collect {} }

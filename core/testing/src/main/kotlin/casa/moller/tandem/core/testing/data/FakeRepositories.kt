@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 
 /**
@@ -85,9 +86,13 @@ class FakeRecipeRepository(
         return searchServerResult ?: Outcome.Success(overviews.value.matching(query, details.value))
     }
 
+    /** How often [observeRecipe] was collected (0.8.0 device test B19: read again when back online). */
+    var recipeCollections: Int = 0
+        private set
+
     override fun observeRecipe(id: Long): Flow<RecipeDetailState> = combine(overviews, details, detailOverrides) { list, byId, overrides ->
         overrides[id] ?: RecipeDetailState(recipeId = id, overview = list.firstOrNull { it.id == id }, recipe = byId[id])
-    }
+    }.onStart { recipeCollections++ }
 
     override suspend fun refreshRecipe(id: Long): Outcome<Unit> {
         refreshedIds += id

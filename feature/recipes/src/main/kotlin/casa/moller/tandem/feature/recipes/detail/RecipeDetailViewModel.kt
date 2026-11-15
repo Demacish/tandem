@@ -10,6 +10,7 @@ import casa.moller.tandem.core.data.recipe.PanSizeRepository
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
+import casa.moller.tandem.core.data.sync.ServerReachability
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.domain.format.NumberStyle
 import casa.moller.tandem.core.domain.format.toNumberStyle
@@ -36,6 +37,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,9 +45,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -60,7 +66,13 @@ import kotlinx.coroutines.launch
  * [RecipeDetailAction.SetNumberStyle].
  *
  * The recipe counts as viewed once per ViewModel, i.e. once per opening (plan 3.3 view log).
+ *
+ * Offline (0.8.0 device test B19): the notice follows [ServerReachability], the app's one offline
+ * state. When the app is online again, the stored copy is read again, which drops the last
+ * fetch's "could not connect" and fetches a copy that is not fresh (the repository's
+ * stale-while-revalidate), so a recipe opened offline fills in without reopening it.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel(assistedFactory = RecipeDetailViewModel.Factory::class)
 class RecipeDetailViewModel @AssistedInject constructor(
     @Assisted private val recipeId: Long,
@@ -71,6 +83,7 @@ class RecipeDetailViewModel @AssistedInject constructor(
     sessionRepository: SessionRepository,
     // Fas 5 (kok lane, plan §8.1 "Pannstorlek"): the tin, shared with cook mode.
     private val pans: PanSizeRepository,
+    reachability: ServerReachability,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -113,11 +126,23 @@ class RecipeDetailViewModel @AssistedInject constructor(
     // No placeholder values for the servings choice and the preferences: after the screen comes
     // back (stop timeout), the cached state stays until the real values arrive instead of
     // flashing the recipe's default servings and decimals for a frame.
+    private val offlineNow: Flow<Boolean> = combine(
+        syncRepository.status.map { it.pause == SyncPause.OFFLINE },
+        reachability.offline,
+    ) { paused, unreachable -> paused || unreachable }.distinctUntilChanged()
+
+    /** B19: the stored copy, read again every time the app is online again. */
+    private val storedDetail: Flow<RecipeDetailState> = offlineNow
+        .drop(1)
+        .filter { !it }
+        .runningFold(0) { returns, _ -> returns + 1 }
+        .flatMapLatest { recipes.observeRecipe(recipeId) }
+
     private val sources: Flow<Sources> = combine(
-        recipes.observeRecipe(recipeId),
+        storedDetail,
         recipes.observeServingsChoice(recipeId),
         preferencesRepository.observeUserPreferences(),
-        syncRepository.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged(),
+        offlineNow,
         sessionInfo,
     ) { detail, choice, preferences, offline, session -> Sources(detail, choice, preferences, offline, session) }
 

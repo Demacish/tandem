@@ -22,6 +22,7 @@ import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakePanSizeRepository
 import casa.moller.tandem.core.testing.data.FakePreferencesRepository
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.recipes.FakeSessionRepository
@@ -51,13 +52,14 @@ class RecipeDetailViewModelTest {
 
     private val pasta = SampleRecipes.MushroomPasta.id
     private val pans = FakePanSizeRepository()
+    private val reachability = FakeServerReachability()
 
     private fun TestScope.viewModel(
         id: Long = pasta,
         handle: SavedStateHandle = SavedStateHandle(),
         style: NumberStyle = NumberStyle.English,
     ): RecipeDetailViewModel {
-        val viewModel = RecipeDetailViewModel(id, handle, repository, preferences, sync, sessions, pans)
+        val viewModel = RecipeDetailViewModel(id, handle, repository, preferences, sync, sessions, pans, reachability)
         viewModel.onAction(RecipeDetailAction.SetNumberStyle(style))
         backgroundScope.launch { viewModel.uiState.collect {} }
         runCurrent()
@@ -179,6 +181,28 @@ class RecipeDetailViewModelTest {
         assertTrue(state.offline)
         assertTrue(state.showsSavedVersion)
         assertFalse(state.isDeleted)
+    }
+
+    @Test
+    fun backOnlineTheRecipeIsReadAgainAndTheNoticeFollowsTheOneOfflineState() = runTest(mainDispatcher.dispatcher) {
+        // 0.8.0 device test B19: opened while the server could not be reached.
+        reachability.offline.value = true
+        val viewModel = viewModel()
+        assertTrue(viewModel.uiState.value.offline)
+        assertEquals(1, repository.recipeCollections)
+
+        // The server answers again: the stored copy is read again (a fresh fetch state, and a
+        // copy that is not fresh is fetched), and the notice goes without reopening the recipe.
+        reachability.offline.value = false
+        runCurrent()
+        assertEquals(2, repository.recipeCollections)
+        assertFalse(viewModel.uiState.value.offline)
+
+        // Going offline again reads nothing.
+        reachability.offline.value = true
+        runCurrent()
+        assertEquals(2, repository.recipeCollections)
+        assertTrue(viewModel.uiState.value.offline)
     }
 
     @Test

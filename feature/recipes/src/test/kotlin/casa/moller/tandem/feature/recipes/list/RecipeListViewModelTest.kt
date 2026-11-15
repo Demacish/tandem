@@ -15,6 +15,7 @@ import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.model.sync.SyncStop
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeRecipeRepository
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import casa.moller.tandem.feature.recipes.FakeRecipeListPreferences
@@ -44,9 +45,10 @@ class RecipeListViewModelTest {
     private val sync = FakeSyncRepository()
     private val sessions = FakeSessionRepository()
     private val listPreferences = FakeRecipeListPreferences()
+    private val reachability = FakeServerReachability()
 
     private fun newViewModel(handle: SavedStateHandle = SavedStateHandle()) =
-        RecipeListViewModel(handle, repository, sync, listPreferences, sessions)
+        RecipeListViewModel(handle, repository, sync, listPreferences, sessions, reachability)
 
     /** Keeps uiState subscribed (it is WhileSubscribed) and returns the ViewModel. */
     private fun TestScope.subscribed(viewModel: RecipeListViewModel = newViewModel()): RecipeListViewModel {
@@ -147,6 +149,30 @@ class RecipeListViewModelTest {
         advanceUntilIdle()
         assertEquals(listOf(RecipeQuery(text = "pasta")), repository.searchedQueries)
         assertEquals(ServerSearch.DONE, viewModel.uiState.value.serverSearch)
+    }
+
+    @Test
+    fun aSearchThatCouldNotConnectAsksAgainWhenTheServerAnswersAgain() = runTest(mainDispatcher.dispatcher) {
+        // 0.8.0 device test B19: the network stayed up, but the server could not be reached.
+        repository.searchServerResult = Outcome.Failure(TandemError.Timeout)
+        reachability.offline.value = true
+        val viewModel = subscribed()
+        viewModel.onAction(RecipeListAction.Search("pasta"))
+        advanceUntilIdle()
+        assertEquals("the network decides whether to try", 1, repository.searchedQueries.size)
+        assertEquals(ServerSearch.OFFLINE, viewModel.uiState.value.serverSearch)
+
+        // A sync (or the check after the reconnect) got an answer: no keystroke needed.
+        repository.searchServerResult = null
+        reachability.offline.value = false
+        advanceUntilIdle()
+        assertEquals(2, repository.searchedQueries.size)
+        assertEquals(ServerSearch.DONE, viewModel.uiState.value.serverSearch)
+
+        // Losing the server again asks nothing.
+        reachability.offline.value = true
+        advanceUntilIdle()
+        assertEquals(2, repository.searchedQueries.size)
     }
 
     @Test

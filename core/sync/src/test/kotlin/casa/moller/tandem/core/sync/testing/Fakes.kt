@@ -12,6 +12,7 @@ import casa.moller.tandem.core.model.account.ServerAccount
 import casa.moller.tandem.core.model.diagnostics.ColdStartTiming
 import casa.moller.tandem.core.model.diagnostics.FullSyncTiming
 import casa.moller.tandem.core.model.error.Outcome
+import casa.moller.tandem.core.model.error.TandemError
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerVersionChange
 import casa.moller.tandem.core.model.settings.AppSettings
@@ -202,8 +203,13 @@ internal class FakeSessionRepository(initial: Session) : SessionRepository {
 
     override val session: Flow<Session> = sessionState
 
+    /** 0.8.0 device test B19: when set, [refreshServerInfo] fails with it. */
+    @Volatile
+    var refreshError: TandemError? = null
+
     override suspend fun refreshServerInfo(): Outcome<ServerInfo> {
         refreshes.incrementAndGet()
+        refreshError?.let { return Outcome.Failure(it) }
         return Outcome.Success(ServerInfo("https://tandoor.example.com/", serverVersion, ServerCompatibility.SUPPORTED))
     }
 

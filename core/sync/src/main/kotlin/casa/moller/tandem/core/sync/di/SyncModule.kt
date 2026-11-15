@@ -13,6 +13,7 @@ import casa.moller.tandem.core.data.sync.ImportGate
 import casa.moller.tandem.core.data.sync.OfflineStorageRepository
 import casa.moller.tandem.core.data.sync.PendingChangesExporter
 import casa.moller.tandem.core.data.sync.RequestGuard
+import casa.moller.tandem.core.data.sync.ServerReachability
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.sync.account.ActiveSourceProvider
 import casa.moller.tandem.core.sync.account.ActiveSources
@@ -21,6 +22,7 @@ import casa.moller.tandem.core.sync.data.DefaultImportGate
 import casa.moller.tandem.core.sync.data.DefaultOfflineStorageRepository
 import casa.moller.tandem.core.sync.data.DefaultPreferencesRepository
 import casa.moller.tandem.core.sync.data.DefaultRequestGuard
+import casa.moller.tandem.core.sync.data.DefaultServerReachability
 import casa.moller.tandem.core.sync.data.DefaultServerStatusRepository
 import casa.moller.tandem.core.sync.data.DefaultSyncRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
@@ -100,6 +102,10 @@ internal abstract class SyncModule {
     // 0.8.0 review (fix-08): the guard for requests outside core:sync (core:watch's watch token).
     @Binds
     abstract fun bindRequestGuard(impl: DefaultRequestGuard): RequestGuard
+
+    // 0.8.0 device test B19: the one offline state of every "Offline" notice.
+    @Binds
+    abstract fun bindServerReachability(impl: DefaultServerReachability): ServerReachability
 
     @Binds
     abstract fun bindDemoDataRepository(impl: DemoSeeder): DemoDataRepository

@@ -23,7 +23,10 @@ data class ShellUiState(
     val refreshError: TandemError? = null,
     val loggingOut: Boolean = false,
     val appVersion: AppVersion = AppVersion("", 0, ""),
-    /** The sync pauses because the device has no network (`SyncStatus.pause == OFFLINE`). */
+    /**
+     * The app is offline: the sync pauses for a missing network (`SyncStatus.pause == OFFLINE`) or
+     * `ServerReachability.offline` (0.8.0 device test B19: also the server's last request failed).
+     */
     val syncOffline: Boolean = false,
     /**
      * Tandoor refused the account's token (`SyncStatus.pause == UNAUTHORIZED`): the sync stopped

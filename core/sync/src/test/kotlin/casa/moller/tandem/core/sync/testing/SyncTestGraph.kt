@@ -30,6 +30,7 @@ import casa.moller.tandem.core.sync.data.DefaultSyncRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstCookLogRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstHomeRepository
 import casa.moller.tandem.core.sync.data.OfflineFirstRecipeRepository
+import casa.moller.tandem.core.sync.data.ServerContact
 import casa.moller.tandem.core.sync.demo.DemoSeeder
 import casa.moller.tandem.core.sync.drink.DrinkImageStore
 import casa.moller.tandem.core.sync.drink.DrinkOutboxHandler
@@ -174,7 +175,8 @@ internal class SyncTestGraph(
     val demo = DemoSeeder(databases, demoContent, clock, hasDemoFile = { true }, locale = { demoLocale })
 
     val guard = SyncGuard(clock)
-    val caller = RemoteCaller(guard, sources)
+    val contact = ServerContact()
+    val caller = RemoteCaller(guard, sources, contact)
     val details = DetailFetcher(sources, databases, caller, clock)
 
     // Phase 2 (böcker lane): the books' reader and the role.

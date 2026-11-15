@@ -8,6 +8,7 @@ import casa.moller.tandem.core.network.error.apiCall
 import casa.moller.tandem.core.sync.account.ActiveSource
 import casa.moller.tandem.core.sync.account.ActiveSources
 import casa.moller.tandem.core.sync.account.identity
+import casa.moller.tandem.core.sync.data.ServerContact
 import casa.moller.tandem.core.sync.guard.SyncGuard
 import javax.inject.Inject
 
@@ -16,8 +17,15 @@ import javax.inject.Inject
  * before it is sent and is recorded afterwards, and every failure becomes a typed
  * [Outcome.Failure] (`apiCall`). The shared OkHttp client adds the global limits (2 requests per
  * host at a time, about 5 per second, plan 4.1).
+ *
+ * 0.8.0 device test B19: every request that was sent also goes to [ServerContact], so any answer
+ * clears the app's "Offline" notices and a connectivity failure sets them (`ServerReachability`).
  */
-internal class RemoteCaller @Inject constructor(private val guard: SyncGuard, private val sources: ActiveSources) {
+internal class RemoteCaller @Inject constructor(
+    private val guard: SyncGuard,
+    private val sources: ActiveSources,
+    private val contact: ServerContact,
+) {
 
     /**
      * Sends [block] for [remote] unless the guard holds it back.
@@ -48,6 +56,7 @@ internal class RemoteCaller @Inject constructor(private val guard: SyncGuard, pr
         guard.check(remote.accountId, background)?.let { return Outcome.Failure(it) }
         val result = apiCall { remote.api.block() }
         val error = (result as? Outcome.Failure)?.error
+        contact.record(remote.accountId, error)
         if ((confirmUnauthorized || confirmForbidden) && error == TandemError.Unauthorized(UnauthorizedSource.TANDOOR)) {
             val probe = apiCall { remote.api.preferences.userPreferences() }
             if (probe is Outcome.Success) {

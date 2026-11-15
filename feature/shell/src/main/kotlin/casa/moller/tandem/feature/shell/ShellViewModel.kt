@@ -13,11 +13,13 @@ import casa.moller.tandem.core.data.session.SessionRepository
 import casa.moller.tandem.core.data.session.TokenRevocation
 import casa.moller.tandem.core.data.settings.AppearanceRepository
 import casa.moller.tandem.core.data.settings.SettingsRepository
+import casa.moller.tandem.core.data.sync.ServerReachability
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.data.timer.TimerController
 import casa.moller.tandem.core.model.account.SpaceRole
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
+import casa.moller.tandem.core.model.error.isConnectivityProblem
 import casa.moller.tandem.core.model.server.ServerCompatibility
 import casa.moller.tandem.core.model.server.ServerFeature
 import casa.moller.tandem.core.model.server.ServerVersionChange
@@ -103,6 +105,8 @@ class ShellViewModel internal constructor(
     // Phase 2 (konto lane): household, role and stored accounts for the account card.
     private val accounts: AccountDirectory,
     permissions: SpacePermissionsRepository,
+    // 0.8.0 device test B19: the app's one offline state (the "Offline" chip).
+    private val reachability: ServerReachability,
     /** Monotonic time in milliseconds, for the resume throttle. */
     private val elapsedMillis: () -> Long,
 ) : ViewModel(),
@@ -122,6 +126,7 @@ class ShellViewModel internal constructor(
         timerController: TimerController,
         accounts: AccountDirectory,
         permissions: SpacePermissionsRepository,
+        reachability: ServerReachability,
     ) : this(
         sessionRepository = sessionRepository,
         appearanceRepository = appearanceRepository,
@@ -135,6 +140,7 @@ class ShellViewModel internal constructor(
         timerController = timerController,
         accounts = accounts,
         permissions = permissions,
+        reachability = reachability,
         elapsedMillis = { System.nanoTime() / NANOS_PER_MILLI },
     )
 
@@ -150,7 +156,12 @@ class ShellViewModel internal constructor(
 
     // Phase 1 (sync lane): the "Offline" chip also follows the sync's own network pause; the
     // integration lane adds the "Log in again" banner for a token Tandoor no longer accepts.
-    private val syncPause = syncRepository.status.map { it.pause }.distinctUntilChanged()
+    // 0.8.0 device test B19: and the app's one offline state, which follows the network and the
+    // server's last answer instead of this ViewModel's last check.
+    private val syncPause = combine(
+        syncRepository.status.map { it.pause }.distinctUntilChanged(),
+        reachability.offline,
+    ) { pause, offline -> pause to offline }
 
     /** The server update shown in the banner until the user closes it (already marked as shown). */
     private val serverUpdate = MutableStateFlow<ServerVersionChange?>(null)
@@ -186,7 +197,7 @@ class ShellViewModel internal constructor(
         syncPause,
         combine(serverUpdate, accountCard) { update, card -> update to card },
         phase1b,
-    ) { (current, theme), ops, pause, (update, card), extras ->
+    ) { (current, theme), ops, (pause, offline), (update, card), extras ->
         val mode = current.toShellMode()
         ShellUiState(
             mode = mode,
@@ -195,7 +206,7 @@ class ShellViewModel internal constructor(
             refreshError = ops.refreshError,
             loggingOut = ops.loggingOut,
             appVersion = appVersion,
-            syncOffline = pause == SyncPause.OFFLINE,
+            syncOffline = pause == SyncPause.OFFLINE || offline,
             // Only for the account that is shown: never in demo mode or while switching.
             loginExpired = pause == SyncPause.UNAUTHORIZED && mode is ShellMode.Connected,
             resettingDemo = ops.resettingDemo,
@@ -237,6 +248,14 @@ class ShellViewModel internal constructor(
                     serverStatus.markVersionNoticeShown(change)
                 }
         }
+        viewModelScope.launch {
+            // 0.8.0 device test B19: once the server answers again (a sync, the outbox, the check
+            // after the network came back), a "could not connect" of the last check is out of date.
+            reachability.offline.collect { offline ->
+                if (offline) return@collect
+                operations.update { if (it.refreshError?.isConnectivityProblem == true) it.copy(refreshError = null) else it }
+            }
+        }
     }
 
     override fun dismissServerUpdate() {
@@ -250,14 +269,19 @@ class ShellViewModel internal constructor(
             val result = sessionRepository.refreshServerInfo()
             // Also after a failure, so a broken server is not probed on every resume (plan 4.1).
             lastCheckFinishedAt = elapsedMillis()
-            operations.update { it.copy(refreshing = false, refreshError = (result as? Outcome.Failure)?.error) }
+            val error = (result as? Outcome.Failure)?.error
+            // B19: the check is a request outside core:sync; its result is the app's offline state too.
+            reachability.report(error)
+            operations.update { it.copy(refreshing = false, refreshError = error) }
         }
     }
 
     override fun onAppResumed() {
         if (session.value !is Session.LoggedIn) return
         val last = lastCheckFinishedAt
-        if (last != null && elapsedMillis() - last < RESUME_CHECK_INTERVAL_MILLIS) return
+        // B19: while the app is offline a resume checks again after a minute instead of 15.
+        val interval = if (reachability.offline.value) RESUME_OFFLINE_CHECK_INTERVAL_MILLIS else RESUME_CHECK_INTERVAL_MILLIS
+        if (last != null && elapsedMillis() - last < interval) return
         refreshServerInfo()
     }
 
@@ -335,6 +359,9 @@ class ShellViewModel internal constructor(
     internal companion object {
         /** Plan 3.6 point 3: at most one automatic version check per 15 minutes on resume. */
         const val RESUME_CHECK_INTERVAL_MILLIS: Long = 15 * 60 * 1000L
+
+        /** 0.8.0 device test B19: the resume throttle while the app is offline (one cheap read). */
+        const val RESUME_OFFLINE_CHECK_INTERVAL_MILLIS: Long = 60 * 1000L
         private const val NANOS_PER_MILLI = 1_000_000L
 
         /** Pauses the shell shows as "held back" with "Try again" (plan 4.1). */

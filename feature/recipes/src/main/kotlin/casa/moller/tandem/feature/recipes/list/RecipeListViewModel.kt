@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.recipe.RecipeRepository
 import casa.moller.tandem.core.data.session.Session
 import casa.moller.tandem.core.data.session.SessionRepository
+import casa.moller.tandem.core.data.sync.ServerReachability
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.TandemError
@@ -31,11 +32,14 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -57,6 +61,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  *   in [RecipeListUiState.syncError], so an empty list explains itself instead of "no recipes".
  * - **Coming back** to the screen keeps the shown list (and its scroll position): the inputs
  *   have no placeholder values, so a new subscription shows the cached state until Room answers.
+ * - **Offline again online** (0.8.0 device test B19): a search that could not reach the server
+ *   ("Offline: searching the recipes on the device") asks again as soon as the app's one offline
+ *   state ([ServerReachability]) says the server answers, instead of waiting for the next keystroke.
  */
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
@@ -66,6 +73,7 @@ class RecipeListViewModel @Inject constructor(
     private val sync: SyncRepository,
     private val listPreferences: RecipeListPreferences,
     sessionRepository: SessionRepository,
+    reachability: ServerReachability,
 ) : ViewModel() {
 
     private val effectChannel = Channel<RecipeListEffect>(Channel.BUFFERED)
@@ -87,6 +95,16 @@ class RecipeListViewModel @Inject constructor(
         .distinctUntilChanged()
 
     private val offline: Flow<Boolean> = sync.status.map { it.pause == SyncPause.OFFLINE }.distinctUntilChanged()
+
+    /**
+     * B19: counts the times the app came back online. Only a part of the search request: whether
+     * the server is asked still follows the network ([offline]), so a wrong "unreachable" never
+     * keeps the search from trying.
+     */
+    private val backOnline: Flow<Int> = reachability.offline
+        .drop(1)
+        .filter { !it }
+        .runningFold(0) { returns, _ -> returns + 1 }
 
     private val syncInfo: Flow<SyncInfo> = sync.status
         .map { SyncInfo(offline = it.pause == SyncPause.OFFLINE, running = it.running, error = it.shownError()) }
@@ -185,8 +203,8 @@ class RecipeListViewModel @Inject constructor(
     }
 
     private suspend fun searchServerWhileTyping() {
-        val requests = combine(query, isDemo, offline, searchGeneration) { current, demo, isOffline, generation ->
-            SearchRequest(current, demo, isOffline, generation)
+        val requests = combine(query, isDemo, offline, searchGeneration, backOnline) { current, demo, isOffline, generation, returns ->
+            SearchRequest(current, demo, isOffline, generation, backOnline = returns)
         }
         requests.distinctUntilChanged().debounce(SEARCH_DEBOUNCE_MILLIS).collectLatest { request -> searchServer(request) }
     }
@@ -251,7 +269,14 @@ class RecipeListViewModel @Inject constructor(
 
     private data class Status(val sync: SyncInfo, val refreshing: Boolean, val serverSearch: ServerSearch, val layout: RecipeListLayout)
 
-    private data class SearchRequest(val query: RecipeQuery, val demo: Boolean, val offline: Boolean, val generation: Int)
+    /** [backOnline]: B19, a new value asks again after the app came back online. */
+    private data class SearchRequest(
+        val query: RecipeQuery,
+        val demo: Boolean,
+        val offline: Boolean,
+        val generation: Int,
+        val backOnline: Int,
+    )
 
     internal companion object {
         /**

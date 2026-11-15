@@ -3,6 +3,7 @@ package casa.moller.tandem.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import casa.moller.tandem.core.data.home.HomeRepository
+import casa.moller.tandem.core.data.sync.ServerReachability
 import casa.moller.tandem.core.data.sync.SyncRepository
 import casa.moller.tandem.core.model.error.Outcome
 import casa.moller.tandem.core.model.error.isConnectivityProblem
@@ -29,19 +30,26 @@ import kotlinx.coroutines.launch
  *
  * Requests (plan 4.1): one [HomeRepository.refresh] when the tab is first shown, then only when
  * the user pulls to refresh (which also asks the sync for a [SyncReason.USER_REFRESH]).
+ *
+ * The offline notice (0.8.0 device test B19) follows [ServerReachability], the app's one offline
+ * state: it goes away as soon as the network is back and the server answers anything (a sync, the
+ * outbox, the check after the reconnect), not only after the next pull to refresh. A refresh that
+ * could not connect reports that to the same state.
  */
 @HiltViewModel
 class HomeViewModel internal constructor(
     private val homeRepository: HomeRepository,
     private val syncRepository: SyncRepository,
+    private val reachability: ServerReachability,
     /** The current hour of the day (0-23) on the device, for the greeting. */
     private val currentHour: () -> Int,
 ) : ViewModel() {
 
     @Inject
-    constructor(homeRepository: HomeRepository, syncRepository: SyncRepository) : this(
+    constructor(homeRepository: HomeRepository, syncRepository: SyncRepository, reachability: ServerReachability) : this(
         homeRepository = homeRepository,
         syncRepository = syncRepository,
+        reachability = reachability,
         currentHour = { java.time.LocalTime.now().hour },
     )
 
@@ -55,13 +63,15 @@ class HomeViewModel internal constructor(
     private val customizing = MutableStateFlow(false)
     private val layout = combine(homeRepository.observeLayout(), customizing) { layout, open -> layout to open }
 
+    private val syncAndOffline = combine(syncRepository.status, reachability.offline) { sync, offline -> sync to offline }
+
     val uiState: StateFlow<HomeUiState> = combine(
         homeRepository.observeUpcomingMeals(),
         homeRepository.observeSections(),
-        syncRepository.status,
+        syncAndOffline,
         refreshes,
         layout,
-    ) { meals, sections, sync, refreshState, (layout, customizing) ->
+    ) { meals, sections, (sync, offline), refreshState, (layout, customizing) ->
         val (tonight, alsoToday) = meals.splitToday()
         HomeUiState(
             loading = false,
@@ -72,7 +82,7 @@ class HomeViewModel internal constructor(
             tomorrow = meals.tomorrowMeals.sortedBy { it.mealType.order },
             sections = layout.arrange(sections.filter { it.recipes.isNotEmpty() }),
             refreshing = refreshState.running,
-            offline = refreshState.offline || sync.pause == SyncPause.OFFLINE,
+            offline = offline || sync.pause == SyncPause.OFFLINE,
             lastSynced = sync.lastSuccess,
             syncRunning = sync.running,
             layout = layout,
@@ -116,14 +126,17 @@ class HomeViewModel internal constructor(
         viewModelScope.launch {
             val result = homeRepository.refresh()
             val error = (result as? Outcome.Failure)?.error
-            refreshes.update { RefreshState(running = false, offline = error?.isConnectivityProblem == true) }
+            // B19: no copy of its own that only the next refresh could clear; a success is not
+            // reported, because a refresh that was not due yet sent nothing.
+            if (error?.isConnectivityProblem == true) reachability.report(error)
+            refreshes.update { RefreshState(running = false) }
             // A failed automatic refresh is quiet: the stored content and the offline notice say
             // enough. A refresh the user asked for gets an answer.
             if (error != null && userAsked) effectChannel.send(HomeEffect.RefreshFailed(error))
         }
     }
 
-    private data class RefreshState(val running: Boolean = false, val offline: Boolean = false)
+    private data class RefreshState(val running: Boolean = false)
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

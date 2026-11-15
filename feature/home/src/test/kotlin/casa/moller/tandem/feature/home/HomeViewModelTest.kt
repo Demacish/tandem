@@ -14,6 +14,7 @@ import casa.moller.tandem.core.model.sync.SyncReason
 import casa.moller.tandem.core.model.sync.SyncStatus
 import casa.moller.tandem.core.testing.MainDispatcherRule
 import casa.moller.tandem.core.testing.data.FakeHomeRepository
+import casa.moller.tandem.core.testing.data.FakeServerReachability
 import casa.moller.tandem.core.testing.data.FakeSyncRepository
 import casa.moller.tandem.core.testing.data.SampleRecipes
 import kotlin.time.Instant
@@ -33,8 +34,9 @@ class HomeViewModelTest {
 
     private val home = FakeHomeRepository()
     private val sync = FakeSyncRepository()
+    private val reachability = FakeServerReachability()
 
-    private fun newViewModel(hour: Int = 19) = HomeViewModel(home, sync, currentHour = { hour })
+    private fun newViewModel(hour: Int = 19) = HomeViewModel(home, sync, reachability, currentHour = { hour })
 
     /** The first state that is not the initial loading placeholder. */
     private suspend fun ReceiveTurbine<HomeUiState>.awaitLoaded(): HomeUiState {
@@ -155,6 +157,42 @@ class HomeViewModelTest {
         home.refreshResult = Outcome.Failure(TandemError.ServerError(502))
         val vm = newViewModel()
         vm.uiState.test { assertFalse(awaitLoaded().offline) }
+    }
+
+    // --- 0.8.0 device test B19: the notice follows the app's one offline state ---
+
+    @Test
+    fun theOfflineNoticeGoesAwayWhenTheServerAnswersAgainWithoutPullToRefresh() = runTest {
+        home.refreshResult = Outcome.Failure(TandemError.Timeout)
+        val vm = newViewModel()
+        vm.uiState.test {
+            assertTrue(awaitLoaded().offline)
+            assertEquals("the failed refresh went to the one state", listOf<TandemError?>(TandemError.Timeout), reachability.reports)
+
+            // The network is back and a sync, the outbox or the reconnect check got an answer.
+            reachability.offline.value = false
+            assertFalse(awaitItem().offline)
+        }
+        assertEquals("no second refresh was needed", 1, home.refreshCount)
+    }
+
+    @Test
+    fun theOfflineStateAloneShowsTheNotice() = runTest {
+        val vm = newViewModel()
+        vm.uiState.test {
+            assertFalse(awaitLoaded().offline)
+            reachability.offline.value = true
+            assertTrue(awaitItem().offline)
+        }
+    }
+
+    @Test
+    fun onlyAConnectivityFailureIsReported() = runTest {
+        home.refreshResult = Outcome.Failure(TandemError.ServerError(502))
+        newViewModel().uiState.test { awaitLoaded() }
+        home.refreshResult = Outcome.Success(Unit)
+        newViewModel().uiState.test { awaitLoaded() }
+        assertTrue("a refresh that was not due sent nothing, so a success says nothing", reachability.reports.isEmpty())
     }
 
     @Test
